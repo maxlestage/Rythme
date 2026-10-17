@@ -258,14 +258,18 @@ fn single_constructor_types_and_unit() {
 }
 
 #[test]
-fn values_from_used_files_stay_unknown() {
-    let dir = std::env::temp_dir().join(format!("rythme-checker-use-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).unwrap();
-    std::fs::write(dir.join("lib.ry"), "fn triple(x) = x * 3\norigin = {x: 0, y: 0}\nfn upper(t) = t\n").unwrap();
-    std::fs::write(dir.join("main.ry"), "use \"lib.ry\"\nprint(triple(\"ab\"), origin.z, upper(3))\n").unwrap();
+fn values_of_used_files_are_known_but_not_what_their_functions_give() {
+    let dir = temp_file("lib.ry", "fn triple(x) = x * 3\norigin = {x: 0, y: 0}\nfn upper(t) = t\nloud = fn(t) = text(t)\n");
+    let dir = dir.parent().unwrap();
+    // `text` is defined again by the program: `loud` then gives what it gives.
+    let main = "use \"lib.ry\"\nfn text(n) = n\nprint(triple(2), upper(3), loud(5) + 1, origin.x + origin.y)\n";
+    std::fs::write(dir.join("main.ry"), main).unwrap();
+    let r = rythme(&[dir.join("main.ry").to_str().unwrap()]);
+    assert_eq!(r.stdout.trim(), "6 3 6 0", "{}", r.stderr);
+    assert!(!r.stderr.contains("error"), "{}", r.stderr);
+    std::fs::write(dir.join("main.ry"), "use \"lib.ry\"\nprint(origin.z)\n").unwrap();
     let r = rythme(&["check", dir.join("main.ry").to_str().unwrap()]);
-    assert_eq!(r.code, 0, "{}", r.stderr);
-    std::fs::remove_dir_all(&dir).ok();
+    assert!(r.stderr.contains("error[E010]: this record has no field `z`"), "{}", r.stderr);
 }
 
 #[test]

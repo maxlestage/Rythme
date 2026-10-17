@@ -209,6 +209,22 @@ impl Ty {
         }
     }
 
+    /// The same type, where functions may give back anything: what a
+    /// function of another file gives depends on the names it calls, which
+    /// the program may define again.
+    pub fn without_results(&self) -> Ty {
+        match self {
+            Ty::Func(f) => Ty::func(f.arity, Ty::Any, f.sig.clone()),
+            Ty::List(t) => Ty::list(t.without_results()),
+            Ty::Record(r) => Ty::record(r.fields.iter().map(|(k, t)| (k.clone(), t.without_results())).collect(), r.exact),
+            Ty::Data(d) => Ty::data(
+                d.name,
+                d.ctors.as_ref().map(|cs| cs.iter().map(|(c, fs)| (*c, fs.iter().map(Ty::without_results).collect())).collect()),
+            ),
+            t => t.clone(),
+        }
+    }
+
     /// The type of the elements, for a list.
     pub fn elem(&self) -> Ty {
         match self {

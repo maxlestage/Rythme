@@ -52,6 +52,8 @@ pub struct Knowledge {
     pub globals: HashMap<Sym, GlobalInfo>,
     pub ctors: HashMap<Sym, CtorMeta>,
     pub types: HashMap<Sym, Vec<Sym>>,
+    /// The types of the values defined by the `use`d files, when certain.
+    pub value_types: HashMap<Sym, Ty>,
 }
 
 fn func_info(def: &FnDef) -> GlobalInfo {
@@ -95,10 +97,14 @@ impl Knowledge {
 
     /// Adds the definitions of a module, without running it.
     pub fn add_items(&mut self, items: &[Item]) {
+        // A used file runs completely before the file that uses it: the
+        // types of its values are known from its own code.
+        let inferred = top_level_types(items, self);
         for item in items {
             match item {
                 Item::Stmt(Stmt::Fn(def)) => {
                     if let Some(n) = def.name {
+                        self.value_types.remove(&n);
                         self.globals.insert(n, func_info(def));
                     }
                 }
@@ -106,12 +112,19 @@ impl Knowledge {
                     let mut b = Vec::new();
                     p.bindings(&mut b);
                     for (s, sp) in b {
+                        // Defined by two files: the value depends on the order they run in.
+                        let again = self.globals.contains_key(&s);
+                        match inferred.get(&s) {
+                            Some(t) if !again => self.value_types.insert(s, t.without_results()),
+                            _ => self.value_types.remove(&s),
+                        };
                         self.globals.insert(s, GlobalInfo { kind: GKind::Value, arity: None, sig: String::new(), span: Some(sp) });
                     }
                 }
                 Item::Type(t) => {
                     self.types.insert(t.name, t.variants.iter().map(|v| v.name).collect());
                     for v in &t.variants {
+                        self.value_types.remove(&v.name);
                         self.ctors.insert(v.name, CtorMeta { type_name: t.name, arity: v.fields.len(), fields: v.fields.clone() });
                         self.globals.insert(v.name, ctor_info(v));
                     }
@@ -199,6 +212,8 @@ struct Checker<'a> {
     /// Did the code just checked use something that may check a value
     /// (`assert`, `?`, a function of the program...)? For tests.
     may_check: bool,
+    /// How many `fold` functions are being checked inside each other.
+    folds: usize,
 }
 
 impl<'a> Checker<'a> {
@@ -219,6 +234,7 @@ impl<'a> Checker<'a> {
             fn_defs: HashMap::new(),
             early: Vec::new(),
             may_check: false,
+            folds: 0,
         };
         for item in items {
             match item {
@@ -642,7 +658,7 @@ impl<'a> Checker<'a> {
             GKind::Func => Ty::func(g.arity, Ty::Any, Some(g.sig.as_str().into())),
             GKind::Ctor => self.ctor_fn_type(s),
             GKind::CtorValue => self.ctor_value_type(s),
-            GKind::Value => Ty::Any,
+            GKind::Value => self.know.value_types.get(&s).cloned().unwrap_or(Ty::Any),
         }
     }
 
@@ -1329,18 +1345,27 @@ impl<'a> Checker<'a> {
     /// then is what the function gave back. Its type is found by trying
     /// again until it is stable.
     fn fold_fn(&mut self, def: &FnDef, start: &Ty, elem: &Ty) -> Ty {
+        // Inside other `fold`s, the function would be checked too many times.
+        if self.folds >= 2 {
+            return self.func(def, Some(&[Ty::Any, elem.clone()]));
+        }
+        self.folds += 1;
         let mut total = start.clone();
         let reported = self.diags.len();
+        let mut stable = false;
         for _ in 0..4 {
             let f = self.func(def, Some(&[total.clone(), elem.clone()]));
             self.diags.truncate(reported);
             let next = total.join(&f.ret()).limit();
             if next == total {
-                return self.func(def, Some(&[total, elem.clone()]));
+                stable = true;
+                break;
             }
             total = next;
         }
-        self.func(def, Some(&[Ty::Any, elem.clone()]))
+        let t = self.func(def, Some(&[if stable { total } else { Ty::Any }, elem.clone()]));
+        self.folds -= 1;
+        t
     }
 
     /// What a call to a built-in function gives; reports an argument it
