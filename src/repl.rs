@@ -1,5 +1,6 @@
 //! The interactive mode: type code, see the result immediately.
 
+use std::borrow::Cow;
 use std::path::PathBuf;
 
 use rustyline::completion::{Completer, Pair};
@@ -22,6 +23,7 @@ const COMMANDS: &[&str] = &[":help", ":quit", ":doc", ":load", ":reset", ":lang"
 
 struct RyHelper {
     names: Vec<String>,
+    color: bool,
 }
 
 impl Completer for RyHelper {
@@ -50,7 +52,82 @@ impl Hinter for RyHelper {
     type Hint = String;
 }
 
-impl Highlighter for RyHelper {}
+impl Highlighter for RyHelper {
+    fn highlight<'l>(&self, line: &'l str, _pos: usize) -> Cow<'l, str> {
+        if self.color {
+            Cow::Owned(colorize(line))
+        } else {
+            Cow::Borrowed(line)
+        }
+    }
+
+    fn highlight_char(&self, _line: &str, _pos: usize, _forced: bool) -> bool {
+        self.color
+    }
+}
+
+/// Colors for the code typed in the REPL: keywords, texts, numbers, constructors, comments.
+fn colorize(line: &str) -> String {
+    const RESET: &str = "\x1b[0m";
+    let chars: Vec<(usize, char)> = line.char_indices().collect();
+    let at = |i: usize| chars.get(i).map(|(b, _)| *b).unwrap_or(line.len());
+    let mut out = String::with_capacity(line.len() * 2);
+    let mut i = 0;
+    while i < chars.len() {
+        let (start, c) = chars[i];
+        let mut j = i + 1;
+        let color = if c == '#' {
+            j = chars.len();
+            "\x1b[90m"
+        } else if c == '"' {
+            while j < chars.len() {
+                match chars[j].1 {
+                    '\\' => j += 2,
+                    '"' => {
+                        j += 1;
+                        break;
+                    }
+                    _ => j += 1,
+                }
+            }
+            j = j.min(chars.len());
+            "\x1b[32m"
+        } else if c.is_ascii_digit() {
+            while j < chars.len()
+                && (chars[j].1.is_ascii_alphanumeric()
+                    || chars[j].1 == '_'
+                    || (chars[j].1 == '.' && chars.get(j + 1).is_some_and(|n| n.1.is_ascii_digit())))
+            {
+                j += 1;
+            }
+            "\x1b[33m"
+        } else if c.is_alphabetic() || c == '_' {
+            while j < chars.len() && (chars[j].1.is_alphanumeric() || chars[j].1 == '_') {
+                j += 1;
+            }
+            let word = &line[start..at(j)];
+            if KEYWORDS.contains(&word) {
+                "\x1b[35m"
+            } else if c.is_uppercase() {
+                "\x1b[36m"
+            } else {
+                ""
+            }
+        } else {
+            ""
+        };
+        let text = &line[start..at(j)];
+        if color.is_empty() {
+            out.push_str(text);
+        } else {
+            out.push_str(color);
+            out.push_str(text);
+            out.push_str(RESET);
+        }
+        i = j;
+    }
+    out
+}
 
 impl Validator for RyHelper {}
 
@@ -98,7 +175,7 @@ pub fn run() -> i32 {
             return 1;
         }
     };
-    rl.set_helper(Some(RyHelper { names: names(&driver) }));
+    rl.set_helper(Some(RyHelper { names: names(&driver), color: driver.color }));
     let history = history_path();
     if let Some(h) = &history {
         let _ = rl.load_history(h);
@@ -248,4 +325,43 @@ fn command(driver: &mut Driver, input: &str) -> Next {
         }
     }
     Next::Continue
+}
+
+#[cfg(test)]
+mod tests {
+    use super::colorize;
+
+    fn strip(s: &str) -> String {
+        let mut out = String::new();
+        let mut chars = s.chars();
+        while let Some(c) = chars.next() {
+            if c == '\x1b' {
+                for c in chars.by_ref() {
+                    if c == 'm' {
+                        break;
+                    }
+                }
+            } else {
+                out.push(c);
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn colorize_keeps_the_text_unchanged() {
+        for line in [
+            "",
+            "fn f(x) = x * 2",
+            "print(\"été {x}\") # comment",
+            "\"unclosed",
+            "\"ends with \\",
+            "1.5e3 + 0xff",
+            "Some(élément)",
+            "日本 = 1",
+        ] {
+            assert_eq!(strip(&colorize(line)), line);
+        }
+        assert!(colorize("fn").contains("\x1b[35m"));
+    }
 }

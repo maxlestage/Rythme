@@ -11,7 +11,7 @@ use crate::builtins::BUILTINS;
 use crate::diagnostic::{Diagnostic, Fallible};
 use crate::source::Span;
 use crate::suggest;
-use crate::symbol::Sym;
+use crate::symbol::{Sym, SymMap};
 use crate::value::*;
 
 /// Why the evaluation of an expression stopped early.
@@ -78,12 +78,14 @@ fn stack_position() -> usize {
 }
 
 pub struct Interp {
-    pub globals: HashMap<Sym, Value>,
+    pub globals: SymMap<Value>,
     pub types: HashMap<Sym, Vec<Rc<CtorInfo>>>,
     pub tests: Vec<TestCase>,
     pub script_args: Vec<String>,
     depth: usize,
     stack_base: usize,
+    /// Reused buffer for the names bound by patterns (avoids an allocation per call).
+    scratch: Vec<(Sym, Value)>,
     rng: u64,
     some: Rc<CtorInfo>,
     none_info: Rc<CtorInfo>,
@@ -111,7 +113,7 @@ impl Interp {
         let err = ctor(result, "Err", &["error"]);
         let none = Value::Variant(Rc::new(Variant { ctor: none_info.clone(), fields: Vec::new() }));
 
-        let mut globals = HashMap::new();
+        let mut globals = SymMap::default();
         for b in BUILTINS {
             globals.insert(Sym::new(b.name), Value::Builtin(b));
         }
@@ -136,6 +138,7 @@ impl Interp {
             script_args: Vec::new(),
             depth: 0,
             stack_base: stack_position(),
+            scratch: Vec::new(),
             rng: seed,
             some,
             none_info,
@@ -428,7 +431,7 @@ impl Interp {
             }
             ExprKind::Match(subject, arms) => {
                 let v = self.eval(subject, env)?;
-                let mut binds = Vec::new();
+                let mut binds = std::mem::take(&mut self.scratch);
                 for arm in arms {
                     binds.clear();
                     if !match_pattern(&arm.pat, &v, &mut binds) {
@@ -439,13 +442,17 @@ impl Interp {
                         arm_env = arm_env.bind(s, x);
                     }
                     if let Some(g) = &arm.guard {
+                        self.scratch = binds;
                         let gv = self.eval(g, &arm_env)?;
+                        binds = std::mem::take(&mut self.scratch);
                         if !truth(&gv, g.span)? {
                             continue;
                         }
                     }
+                    self.scratch = binds;
                     return self.eval_tail(&arm.body, &arm_env);
                 }
+                self.scratch = binds;
                 Err(no_case(&v, subject.span).into())
             }
             ExprKind::Block(stmts) => self.exec_block(stmts, env.clone()),
@@ -668,7 +675,19 @@ impl Interp {
         if let Some(n) = clo.self_name {
             base = base.bind(n, Value::Func(clo.clone()));
         }
-        let mut binds = Vec::new();
+        // Fast path: one definition whose parameters are plain names.
+        if let [clause] = def.clauses.as_slice() {
+            if clause.guard.is_none() && clause.params.iter().all(|p| matches!(p.kind, PatKind::Bind(_) | PatKind::Wildcard)) {
+                let mut env = base;
+                for (p, a) in clause.params.iter().zip(args) {
+                    if let PatKind::Bind(s) = p.kind {
+                        env = env.bind(s, a);
+                    }
+                }
+                return Ok((0, env));
+            }
+        }
+        let mut binds = std::mem::take(&mut self.scratch);
         'clauses: for (ci, clause) in def.clauses.iter().enumerate() {
             binds.clear();
             for (p, a) in clause.params.iter().zip(&args) {
@@ -681,17 +700,21 @@ impl Interp {
                 env = env.bind(s, v);
             }
             if let Some(g) = &clause.guard {
+                self.scratch = binds;
                 let gv = match self.eval(g, &env) {
                     Ok(v) => v,
                     Err(Flow::Err(d)) => return Err(d),
                     Err(Flow::Return(_)) => return Err(question_outside(g.span)),
                 };
+                binds = std::mem::take(&mut self.scratch);
                 if !truth(&gv, g.span)? {
                     continue;
                 }
             }
+            self.scratch = binds;
             return Ok((ci, env));
         }
+        self.scratch = binds;
         Err(no_clause(def, &args, span))
     }
 }

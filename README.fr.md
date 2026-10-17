@@ -63,7 +63,13 @@ erreur[E005]: impossible d'utiliser `+` avec Text et Int
 
 ## Installer
 
-Il faut [Rust](https://rustup.rs) (une version stable récente).
+**Sans rien installer d'autre :** chaque version publiée est accompagnée de
+programmes prêts à l'emploi pour Linux, macOS et Windows sur la
+[page des versions](https://github.com/maxlestage/Rythme/releases).
+Téléchargez l'archive de votre système, extrayez `rythme` (`rythme.exe` sous
+Windows) et placez-le dans un dossier de votre `PATH`.
+
+**Avec [Rust](https://rustup.rs)** (une version stable récente) :
 
 ```sh
 cargo install --git https://github.com/maxlestage/Rythme
