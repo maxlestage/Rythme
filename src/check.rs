@@ -214,7 +214,75 @@ struct Checker<'a> {
     may_check: bool,
     /// How many `fold` functions are being checked inside each other.
     folds: usize,
+    /// The last call to a built-in function without effect, and where it is.
+    pure_call: Option<(Span, &'static str)>,
 }
+
+/// Built-in functions that only compute a value: no effect, and no function
+/// of the program called. (`int` and `unwrap` may be used to stop on bad input.)
+const WITHOUT_EFFECT: &[&str] = &[
+    "len",
+    "upper",
+    "lower",
+    "trim",
+    "split",
+    "join",
+    "contains",
+    "starts_with",
+    "ends_with",
+    "replace",
+    "chars",
+    "lines",
+    "repeat",
+    "parse_int",
+    "parse_float",
+    "text",
+    "type_of",
+    "abs",
+    "min",
+    "max",
+    "sqrt",
+    "pow",
+    "floor",
+    "ceil",
+    "round",
+    "sin",
+    "cos",
+    "tan",
+    "log",
+    "exp",
+    "is_even",
+    "is_odd",
+    "sum",
+    "product",
+    "first",
+    "last",
+    "rest",
+    "get",
+    "push",
+    "reverse",
+    "sort",
+    "unique",
+    "slice",
+    "take",
+    "drop",
+    "zip",
+    "enumerate",
+    "index_of",
+    "flatten",
+    "is_empty",
+    "keys",
+    "values",
+    "entries",
+    "has",
+    "put",
+    "remove",
+    "unwrap_or",
+    "is_some",
+    "is_none",
+    "is_ok",
+    "is_err",
+];
 
 impl<'a> Checker<'a> {
     fn new(items: &[Item], know: &'a Knowledge, repl: bool) -> Checker<'a> {
@@ -235,6 +303,7 @@ impl<'a> Checker<'a> {
             early: Vec::new(),
             may_check: false,
             folds: 0,
+            pure_call: None,
         };
         for item in items {
             match item {
@@ -424,6 +493,9 @@ impl<'a> Checker<'a> {
                 Item::Stmt(Stmt::Let(p, e)) => self.top_let(p, e),
                 Item::Stmt(Stmt::Expr(e)) => {
                     self.expr(e);
+                    if Some(i) != last_expr {
+                        self.lost_result(e);
+                    }
                 }
                 Item::Test(_, body, span) => {
                     self.fn_depth += 1;
@@ -468,6 +540,25 @@ impl<'a> Checker<'a> {
                 self.set_global(s, t);
             }
         }
+    }
+
+    /// A line that only calls a built-in function without effect, like
+    /// `push(list, 4)`, does nothing: values never change.
+    fn lost_result(&mut self, e: &Expr) {
+        let Some((span, name)) = self.pure_call.take() else { return };
+        if span != e.span {
+            return;
+        }
+        let sig = crate::builtins::lookup(name).map(|b| b.sig).unwrap_or(name);
+        self.diags.push(
+            Diagnostic::warning("W008", t!("the result of `{name}` is lost", "le résultat de `{name}` est perdu"))
+                .at(span)
+                .label(t!("this value is lost", "cette valeur est perdue"))
+                .help(t!(
+                    "values never change: `{sig}` gives a new value, and changes nothing.\nTo keep it, give it a name: `new = {sig}`",
+                    "les valeurs ne changent jamais : `{sig}` donne une nouvelle valeur, et ne modifie rien.\nPour la garder, donnez-lui un nom : `nouveau = {sig}`"
+                )),
+        );
     }
 
     /// A test fails when it stops with an error, or ends with `false`,
@@ -877,8 +968,11 @@ impl<'a> Checker<'a> {
                     let t = self.expr(e);
                     stops |= t == Ty::Never;
                     // Only the last line of a block gives its value.
-                    if i + 1 < n && !has_effect(e) {
-                        self.diags.push(unused_value(e));
+                    if i + 1 < n {
+                        if !has_effect(e) {
+                            self.diags.push(unused_value(e));
+                        }
+                        self.lost_result(e);
                     }
                     last = t;
                 }
@@ -1226,6 +1320,9 @@ impl<'a> Checker<'a> {
             let t = self.builtin_result(b, &exprs, &tys, span);
             if t != Ty::Never {
                 self.callbacks(b, &exprs, &tys);
+                if WITHOUT_EFFECT.contains(&b) {
+                    self.pure_call = Some((span, b));
+                }
             }
             return t;
         }

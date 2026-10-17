@@ -178,8 +178,18 @@ fn tests_that_check_nothing() {
 }
 
 #[test]
+fn results_of_functions_without_effect_that_are_lost() {
+    warns("numbers = [1, 2]\npush(numbers, 4)\nprint(numbers)", "W008", "the result of `push` is lost");
+    warns("numbers = [3, 1]\nnumbers.sort()\nprint(numbers)", "W008", "`sort(list)` gives a new value");
+    warns("fn f(name)\n  name |> upper\n  name\nend\nprint(f(\"a\"))", "W008", "the result of `upper` is lost");
+    // The last line gives the value; effects, and conversions that may stop the program, are not lost.
+    quiet("fn add(xs) = push(xs, 4)\nfn f(xs)\n  print(len(xs))\n  push(xs, 1)\nend\nprint(add([1]), f([2]))");
+    quiet("xs = [1, 2]\nxs |> map(fn(x) = print(x))\nunwrap(first(xs))\nint(\"42\")\neach(xs, fn(x) = push([x], x))\nprint(sort(xs))");
+}
+
+#[test]
 fn every_new_code_is_explained_in_both_languages() {
-    for code in ["W006", "W007"] {
+    for code in ["W006", "W007", "W008"] {
         let r = rythme(&["explain", code]);
         assert!(r.stdout.starts_with(code), "{code}");
         let r = common::rythme_lang("fr", &["explain", code]);

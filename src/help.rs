@@ -1643,6 +1643,28 @@ Faux :   test "double" = print(double(2))
 Juste :  test "double" = assert_eq(double(2), 4)
 Juste :  test "double" = double(2) == 4"#,
         ),
+        "W008" => (
+            r#"W008 — Result lost
+
+Values never change in Rythme: `push(list, 4)` does not add 4 to `list`, it
+gives a new list. A line that only calls such a function, and does nothing
+with what it gives, does nothing at all.
+
+Wrong:   push(numbers, 4)               # `numbers` is unchanged
+Right:   more = push(numbers, 4)
+Wrong:   name.upper()
+Right:   print(name.upper())"#,
+            r#"W008 — Résultat perdu
+
+Les valeurs ne changent jamais en Rythme : `push(liste, 4)` n'ajoute pas 4
+à `liste`, il donne une nouvelle liste. Une ligne qui ne fait qu'appeler une
+telle fonction, sans rien faire de ce qu'elle donne, ne fait rien du tout.
+
+Faux :   push(nombres, 4)               # `nombres` ne change pas
+Juste :  plus = push(nombres, 4)
+Faux :   nom.upper()
+Juste :  print(nom.upper())"#,
+        ),
         _ => return None,
     };
     Some(pick_owned(en, fr))
@@ -1658,5 +1680,5 @@ fn pick_owned(en: &str, fr: &str) -> String {
 
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
-    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "W001", "W002", "W003", "W004", "W005", "W006", "W007",
+    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008",
 ];
