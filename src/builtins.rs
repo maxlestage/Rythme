@@ -1628,9 +1628,16 @@ fn json_text(s: &str, out: &mut String) {
     out.push('"');
 }
 
-/// Writes a value as JSON, without recursion. `Err` gives the value that JSON
-/// cannot hold.
-fn write_json(it: &Interp, v: &Value, indent: Option<usize>) -> Result<String, Value> {
+/// Why a value cannot be written as JSON.
+enum Unwritable {
+    /// JSON cannot hold this value.
+    Value(Value),
+    /// The indentation of values nested very deeply would take too much memory.
+    TooLarge,
+}
+
+/// Writes a value as JSON, without recursion.
+fn write_json(it: &Interp, v: &Value, indent: Option<usize>) -> Result<String, Unwritable> {
     enum Item<'a> {
         Value(&'a Value, usize),
         Key(&'a str),
@@ -1650,6 +1657,9 @@ fn write_json(it: &Interp, v: &Value, indent: Option<usize>) -> Result<String, V
             }
             Item::Line(depth) => {
                 if let Some(n) = indent {
+                    if out.len() + n * depth > 100_000_000 {
+                        return Err(Unwritable::TooLarge);
+                    }
                     out.push('\n');
                     out.extend(std::iter::repeat_n(' ', n * depth));
                 }
@@ -1691,9 +1701,9 @@ fn write_json(it: &Interp, v: &Value, indent: Option<usize>) -> Result<String, V
                 Value::Variant(var) => match it.wrap(v) {
                     Wrap::None => out.push_str("null"),
                     Wrap::Some => todo.push(Item::Value(&var.fields[0], depth)),
-                    _ => return Err(v.clone()),
+                    _ => return Err(Unwritable::Value(v.clone())),
                 },
-                other => return Err(other.clone()),
+                other => return Err(Unwritable::Value(other.clone())),
             },
         }
     }
@@ -1713,7 +1723,19 @@ fn to_json(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     } else {
         None
     };
-    write_json(it, &a[0], indent).map(text_value).map_err(|bad| {
+    write_json(it, &a[0], indent).map(text_value).map_err(|why| {
+        let bad = match why {
+            Unwritable::Value(v) => v,
+            Unwritable::TooLarge => {
+                return Diagnostic::error("E023", t!("the JSON text would be too large", "le texte JSON serait trop grand"))
+                    .at(span)
+                    .help(t!(
+                        "the values are nested too deeply to be indented: write them on one line, with `to_json(value)`",
+                        "les valeurs sont imbriquées trop profondément pour être décalées : écrivez-les sur une ligne, avec `to_json(valeur)`"
+                    ))
+                    .boxed()
+            }
+        };
         let d = match bad {
             Value::Float(_) => Diagnostic::error(
                 "E023",

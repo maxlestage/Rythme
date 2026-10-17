@@ -337,6 +337,8 @@ fn json_nested_very_deeply_does_not_crash() {
     let depth = 200_000;
     let code = format!("j = repeat(\"[\", {depth}) + repeat(\"]\", {depth})\nv = unwrap(parse_json(j))\nprint(to_json(v) == j)");
     ok(&code, "true");
+    // Indented, this would take tens of gigabytes: an error, not a crash.
+    fails(&format!("j = repeat(\"[\", {depth}) + repeat(\"]\", {depth})\nto_json(unwrap(parse_json(j)), 2)"), "E023");
 }
 
 #[test]
