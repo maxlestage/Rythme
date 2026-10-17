@@ -226,6 +226,8 @@ const CALLS: &[(&str, usize)] = &[
     ("is_ok", 1),
     ("pow", 2),
     ("assert", 1),
+    ("assert_eq", 2),
+    ("print", 1),
     ("fail", 1),
     ("id", 1),
     ("twice", 1),
