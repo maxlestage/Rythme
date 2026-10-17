@@ -24,6 +24,7 @@ print("Best month: {best.month}, {text(best.amount, 2)}")
 ups = windows(sales, 2)
   |> filter(fn([before, after]) = after.amount > before.amount)
   |> map(fn([_, after]) = after.month)
+
 print("Better than the month before: {join(ups, ", ")}")
 
 quarters = chunks(amounts, 3) |> map(fn(q) = round(sum(q), 2))
