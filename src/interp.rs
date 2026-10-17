@@ -39,6 +39,8 @@ enum Entered {
 pub enum Tail {
     Done(Value),
     Call(Value, Vec<Value>, Span),
+    /// A call on the right of `and` / `or`: its result must be true or false.
+    Test(Value, Vec<Value>, Span),
 }
 
 #[derive(Clone)]
@@ -67,6 +69,29 @@ pub enum Wrap {
 }
 
 const MAX_RANGE: i64 = 50_000_000;
+
+/// The longest list (in elements) and text (in bytes) a program may build.
+/// Beyond, the computer would run out of memory, and Rythme would stop
+/// without a word; these limits stop a list or a text that grows without end.
+pub const MAX_LIST: usize = 50_000_000;
+pub const MAX_TEXT: usize = 100_000_000;
+
+/// A list (or a text) would be longer than `MAX_LIST` (`MAX_TEXT`).
+#[inline(never)]
+pub fn too_big(list: bool, span: Span) -> Box<Diagnostic> {
+    let msg = if list {
+        t!("this list would be too large (more than {MAX_LIST} elements)", "cette liste serait trop grande (plus de {MAX_LIST} éléments)")
+    } else {
+        t!("this text would be too large (more than {MAX_TEXT} characters)", "ce texte serait trop grand (plus de {MAX_TEXT} caractères)")
+    };
+    Diagnostic::error("E023", msg)
+        .at(span)
+        .help(t!(
+            "does it grow in a function that calls itself? Check that the function always reaches a case where it stops",
+            "grandit-il dans une fonction qui s'appelle elle-même ? Vérifiez que la fonction atteint toujours un cas où elle s'arrête"
+        ))
+        .boxed()
+}
 
 /// How many bytes of stack the interpreter may use for nested calls. The
 /// `rythme` command runs on a thread with a large stack and raises it.
@@ -102,6 +127,8 @@ pub struct Interp {
     scratch: Vec<(Sym, Value)>,
     /// Top-level names of the running file that are not defined yet.
     pending: SymMap<Span>,
+    /// Calls that may still be made (see `set_step_limit`).
+    steps_left: u64,
     rng: u64,
     some: Rc<CtorInfo>,
     none_info: Rc<CtorInfo>,
@@ -120,13 +147,14 @@ impl Interp {
     pub fn new() -> Interp {
         let option = Sym::new("Option");
         let result = Sym::new("Result");
-        let ctor = |t: Sym, n: &str, fields: &[&str]| {
-            Rc::new(CtorInfo { type_name: t, name: Sym::new(n), fields: fields.iter().map(|f| Sym::new(f)).collect() })
+        let ctor = |t: Sym, n: &str, fields: &[&str], index: usize| {
+            Rc::new(CtorInfo { type_name: t, name: Sym::new(n), fields: fields.iter().map(|f| Sym::new(f)).collect(), index, doc: None })
         };
-        let some = ctor(option, "Some", &["value"]);
-        let none_info = ctor(option, "None", &[]);
-        let ok = ctor(result, "Ok", &["value"]);
-        let err = ctor(result, "Err", &["error"]);
+        // In the order of `<`, as in Rust: `None < Some(x)`, `Ok(x) < Err(e)`.
+        let some = ctor(option, "Some", &["value"], 1);
+        let none_info = ctor(option, "None", &[], 0);
+        let ok = ctor(result, "Ok", &["value"], 0);
+        let err = ctor(result, "Err", &["error"], 1);
         let none = Value::Variant(Rc::new(Variant { ctor: none_info.clone(), fields: Vec::new() }));
 
         let mut globals = SymMap::default();
@@ -154,6 +182,7 @@ impl Interp {
             stack_base: stack_position(),
             scratch: Vec::new(),
             pending: SymMap::default(),
+            steps_left: u64::MAX,
             rng: seed,
             some,
             none_info,
@@ -211,6 +240,12 @@ impl Interp {
         }
     }
 
+    /// Stops the evaluation with an error after `calls` more function calls, so
+    /// that any program, even one that never ends, can be run safely (tests).
+    pub fn set_step_limit(&mut self, calls: u64) {
+        self.steps_left = calls;
+    }
+
     pub fn random_u64(&mut self) -> u64 {
         // xorshift64*
         let mut x = self.rng;
@@ -225,8 +260,8 @@ impl Interp {
 
     pub fn register_type(&mut self, t: &TypeDef) {
         let mut ctors = Vec::new();
-        for v in &t.variants {
-            let info = Rc::new(CtorInfo { type_name: t.name, name: v.name, fields: v.fields.clone() });
+        for (index, v) in t.variants.iter().enumerate() {
+            let info = Rc::new(CtorInfo { type_name: t.name, name: v.name, fields: v.fields.clone(), index, doc: t.doc.clone() });
             let value = if v.fields.is_empty() {
                 Value::Variant(Rc::new(Variant { ctor: info.clone(), fields: Vec::new() }))
             } else {
@@ -240,7 +275,7 @@ impl Interp {
 
     pub fn define_fn(&mut self, def: &Rc<FnDef>) {
         if let Some(name) = def.name {
-            let clo = Closure { def: def.clone(), env: Env::empty(), self_name: None };
+            let clo = Closure { def: def.clone(), env: Env::empty(), self_name: None, siblings: None };
             self.globals.insert(name, Value::Func(Rc::new(clo)));
         }
     }
@@ -311,6 +346,7 @@ impl Interp {
         match r {
             Ok(Tail::Done(v)) => Ok(v),
             Ok(Tail::Call(f, args, span)) => self.call(f, args, span),
+            Ok(Tail::Test(f, args, span)) => self.call(f, args, span).and_then(|v| truth(&v, span).map(Value::Bool)),
             Err(Flow::Return(v)) => Ok(v),
             Err(Flow::Err(d)) => Err(d),
         }
@@ -331,6 +367,7 @@ impl Interp {
                 match self.eval_tail(e, env)? {
                     Tail::Done(v) => Ok(v),
                     Tail::Call(f, args, span) => Ok(self.call(f, args, span)?),
+                    Tail::Test(f, args, span) => Ok(Value::Bool(truth(&self.call(f, args, span)?, span)?)),
                 }
             }
             ExprKind::Binary(op, l, r, op_span) if !matches!(op, BinOp::And | BinOp::Or) => {
@@ -359,6 +396,9 @@ impl Interp {
                             v => s.push_str(&v.display()),
                         },
                     }
+                    if s.len() > MAX_TEXT {
+                        return Err(too_big(false, e.span).into());
+                    }
                 }
                 Ok(Value::Text(Rc::from(s)))
             }
@@ -368,6 +408,7 @@ impl Interp {
                     match it {
                         ListItem::One(x) => v.push(self.eval(x, env)?),
                         ListItem::Spread(x) => match self.eval(x, env)? {
+                            Value::List(l) if v.len() + l.len() > MAX_LIST => return Err(too_big(true, e.span).into()),
                             Value::List(l) => v.extend(l.iter().cloned()),
                             other => return Err(spread_error(&other, x.span, true).into()),
                         },
@@ -395,7 +436,9 @@ impl Interp {
                 }
                 Ok(Value::Record(Rc::new(r)))
             }
-            ExprKind::Lambda(def) => Ok(Value::Func(Rc::new(Closure { def: def.clone(), env: env.clone(), self_name: None }))),
+            ExprKind::Lambda(def) => {
+                Ok(Value::Func(Rc::new(Closure { def: def.clone(), env: env.clone(), self_name: None, siblings: None })))
+            }
             ExprKind::Field(obj, name, nspan) => {
                 let v = self.eval(obj, env)?;
                 Ok(self.field(&v, name, *nspan)?)
@@ -452,7 +495,11 @@ impl Interp {
                 if (*op == BinOp::And) != left {
                     return Ok(Tail::Done(Value::Bool(left)));
                 }
-                self.eval_tail(r, env)
+                // Still a tail call, but its result must be true or false.
+                match self.eval_tail(r, env)? {
+                    Tail::Call(f, args, span) | Tail::Test(f, args, span) => Ok(Tail::Test(f, args, span)),
+                    Tail::Done(v) => Ok(Tail::Done(Value::Bool(truth(&v, r.span)?))),
+                }
             }
             ExprKind::If(c, a, b) => {
                 let cv = self.eval(c, env)?;
@@ -535,13 +582,14 @@ impl Interp {
 
     fn exec_block(&mut self, stmts: &[Stmt], mut env: Env) -> Result<Tail, Flow> {
         let n = stmts.len();
+        let mut siblings = None;
         for (i, s) in stmts.iter().enumerate() {
             match s {
                 Stmt::Let(p, x) => {
                     let v = match (&p.kind, &x.kind) {
                         // `name = fn(...) = ...` can call itself by its name.
                         (PatKind::Bind(name), ExprKind::Lambda(def)) => {
-                            Value::Func(Rc::new(Closure { def: def.clone(), env: env.clone(), self_name: Some(*name) }))
+                            Value::Func(Rc::new(Closure { def: def.clone(), env: env.clone(), self_name: Some(*name), siblings: None }))
                         }
                         _ => self.eval(x, &env)?,
                     };
@@ -560,7 +608,13 @@ impl Interp {
                     self.eval(x, &env)?;
                 }
                 Stmt::Fn(def) => {
-                    let clo = Closure { def: def.clone(), env: env.clone(), self_name: def.name };
+                    // The first of several functions written one after the other.
+                    if i == 0 || !matches!(stmts[i - 1], Stmt::Fn(_)) {
+                        let group: Vec<Rc<FnDef>> =
+                            stmts[i..].iter().map_while(|s| if let Stmt::Fn(d) = s { Some(d.clone()) } else { None }).collect();
+                        siblings = (group.len() > 1).then(|| Rc::from(group));
+                    }
+                    let clo = Closure { def: def.clone(), env: env.clone(), self_name: def.name, siblings: siblings.clone() };
                     if let Some(name) = def.name {
                         env = env.bind(name, Value::Func(Rc::new(clo)));
                     }
@@ -669,8 +723,23 @@ impl Interp {
         r
     }
 
-    fn call_loop(&mut self, mut f: Value, mut args: Vec<Value>, mut span: Span) -> Fallible<Value> {
+    fn call_loop(&mut self, f: Value, args: Vec<Value>, span: Span) -> Fallible<Value> {
+        let mut test = None;
+        let v = self.call_chain(f, args, span, &mut test)?;
+        match test {
+            Some(at) => Ok(Value::Bool(truth(&v, at)?)),
+            None => Ok(v),
+        }
+    }
+
+    /// Calls `f`, then the calls it makes in tail position, one after the
+    /// other. `test` is set when the result must be true or false.
+    fn call_chain(&mut self, mut f: Value, mut args: Vec<Value>, mut span: Span, test: &mut Option<Span>) -> Fallible<Value> {
         loop {
+            if self.steps_left == 0 {
+                return Err(out_of_steps(span));
+            }
+            self.steps_left -= 1;
             match f {
                 Value::Func(clo) => {
                     let def = clo.def.clone();
@@ -688,6 +757,12 @@ impl Interp {
                     match r {
                         Ok(Tail::Done(v)) => return Ok(v),
                         Ok(Tail::Call(nf, nargs, nspan)) => {
+                            f = nf;
+                            args = nargs;
+                            span = nspan;
+                        }
+                        Ok(Tail::Test(nf, nargs, nspan)) => {
+                            *test = Some(nspan);
                             f = nf;
                             args = nargs;
                             span = nspan;
@@ -722,6 +797,14 @@ impl Interp {
             return Err(fn_arity_error(def, args.len(), span));
         }
         let mut base = clo.env.clone();
+        if let Some(group) = &clo.siblings {
+            for d in group.iter().filter(|d| !Rc::ptr_eq(d, &clo.def)) {
+                if let Some(n) = d.name {
+                    let sibling = Closure { def: d.clone(), env: clo.env.clone(), self_name: d.name, siblings: Some(group.clone()) };
+                    base = base.bind(n, Value::Func(Rc::new(sibling)));
+                }
+            }
+        }
         if let Some(n) = clo.self_name {
             base = base.bind(n, Value::Func(clo.clone()));
         }
@@ -781,9 +864,9 @@ pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> boo
         (PatKind::Unit, Value::Unit) => true,
         (PatKind::Bool(a), Value::Bool(b)) => a == b,
         (PatKind::Int(a), Value::Int(b)) => a == b,
-        (PatKind::Int(a), Value::Float(b)) => (*a as f64) == *b,
+        (PatKind::Int(a), Value::Float(b)) => cmp_int_float(*a, *b) == Some(std::cmp::Ordering::Equal),
         (PatKind::Float(a), Value::Float(b)) => a == b,
-        (PatKind::Float(a), Value::Int(b)) => *a == (*b as f64),
+        (PatKind::Float(a), Value::Int(b)) => cmp_int_float(*b, *a) == Some(std::cmp::Ordering::Equal),
         (PatKind::Text(a), Value::Text(b)) => a == b,
         (PatKind::Ctor(name, pats), Value::Variant(var)) => {
             var.ctor.name == *name && pats.len() == var.fields.len() && pats.iter().zip(&var.fields).all(|(p, f)| match_pattern(p, f, out))
@@ -874,6 +957,23 @@ fn too_deep(depth: usize, span: Span) -> Box<Diagnostic> {
             "une fonction récursive qui ne s'arrête jamais ? Vérifiez qu'elle atteint toujours un cas de base.\nSinon, faites de l'appel récursif la toute dernière chose que fait la fonction\n(appel terminal), par exemple avec un accumulateur :\n  fn somme([], acc) = acc\n  fn somme([x, ..reste], acc) = somme(reste, acc + x)\nou utilisez `fold`, `map`, `filter`, qui n'ont pas de limite."
         ))
         .boxed()
+}
+
+#[inline(never)]
+fn out_of_steps(span: Span) -> Box<Diagnostic> {
+    Diagnostic::error(
+        "",
+        t!(
+            "the program was stopped: it made more calls than allowed for this run",
+            "le programme a été arrêté : il a fait plus d'appels que permis pour cette exécution"
+        ),
+    )
+    .at(span)
+    .help(t!(
+        "does it call itself forever? Check that it always reaches a base case",
+        "s'appelle-t-il sans fin ? Vérifiez qu'il atteint toujours un cas de base"
+    ))
+    .boxed()
 }
 
 #[inline(never)]
@@ -1019,6 +1119,12 @@ pub fn div_zero(span: Span) -> Box<Diagnostic> {
         .boxed()
 }
 
+fn zero_to_negative_power(span: Span) -> Box<Diagnostic> {
+    let mut d = div_zero(span);
+    d.notes.push(t!("`0 ** -n` is `1 / 0 ** n`", "`0 ** -n` vaut `1 / 0 ** n`"));
+    d
+}
+
 pub fn arity_error(name: &str, sig: &str, min: usize, max: usize, got: usize, span: Span, def: Option<Span>) -> Box<Diagnostic> {
     let s = if min == 1 { "" } else { "s" };
     let expected = if min == max {
@@ -1086,6 +1192,19 @@ pub fn binop(op: BinOp, l: &Value, r: &Value, span: Span) -> Fallible<Value> {
         BinOp::Ne => return Ok(Bool(!l.equals(r))),
         BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge => {
             let Some(o) = l.compare(r) else {
+                if [l, r].iter().any(|v| matches!(v, Float(f) if f.is_nan())) {
+                    return Err(Diagnostic::error(
+                        "E005",
+                        t!("`nan` (not a number) cannot be compared", "`nan` (pas un nombre) ne peut pas être comparé"),
+                    )
+                    .at(span)
+                    .label(format!("{} {} {}", l.describe(), op.symbol(), r.describe()))
+                    .help(t!(
+                        "`nan` is the result of a calculation that has none, like `0.0 * inf`: check where this value comes from",
+                        "`nan` est le résultat d'un calcul qui n'en a pas, comme `0.0 * inf` : vérifiez d'où vient cette valeur"
+                    ))
+                    .boxed());
+                }
                 let mut d = op_error(op, l, r, span);
                 if l.type_name() != r.type_name() {
                     d.helps.push(t!(
@@ -1136,6 +1255,9 @@ pub fn binop(op: BinOp, l: &Value, r: &Value, span: Span) -> Fallible<Value> {
                 }
                 BinOp::Pow => {
                     if b < 0 {
+                        if a == 0 {
+                            return Err(zero_to_negative_power(span));
+                        }
                         return Ok(Float((a as f64).powf(b as f64)));
                     }
                     match a {
@@ -1172,19 +1294,53 @@ pub fn binop(op: BinOp, l: &Value, r: &Value, span: Span) -> Fallible<Value> {
                     if b == 0.0 {
                         return Err(div_zero(span));
                     }
-                    a - b * (a / b).floor()
+                    // Exact, and with the sign of `b`: `-1.5 % 2.0` is 0.5, `5.0 % inf` is 5.0.
+                    let m = a % b;
+                    if m != 0.0 && (m < 0.0) != (b < 0.0) {
+                        m + b
+                    } else {
+                        m
+                    }
                 }
-                BinOp::Pow => a.powf(b),
+                BinOp::Pow => {
+                    if a == 0.0 && b < 0.0 {
+                        return Err(zero_to_negative_power(span));
+                    }
+                    if a < 0.0 && b.is_finite() && b.fract() != 0.0 {
+                        return Err(Diagnostic::error(
+                            "E023",
+                            t!(
+                                "a negative number ({}) to a fractional power ({}) has no value among real numbers",
+                                "un nombre négatif ({}) à une puissance non entière ({}) n'a pas de valeur parmi les nombres réels",
+                                fmt_float(a),
+                                fmt_float(b)
+                            ),
+                        )
+                        .at(span)
+                        .help(t!(
+                            "use `abs(x) ** p` for the power of its absolute value",
+                            "utilisez `abs(x) ** p` pour la puissance de sa valeur absolue"
+                        ))
+                        .boxed());
+                    }
+                    a.powf(b)
+                }
                 _ => unreachable!(),
             }))
         }
         (Text(a), Text(b)) if op == BinOp::Add => {
+            if a.len() + b.len() > MAX_TEXT {
+                return Err(too_big(false, span));
+            }
             let mut s = String::with_capacity(a.len() + b.len());
             s.push_str(a);
             s.push_str(b);
             Ok(Text(Rc::from(s)))
         }
         (List(a), List(b)) if op == BinOp::Add => {
+            if a.len() + b.len() > MAX_LIST {
+                return Err(too_big(true, span));
+            }
             let mut v = Vec::with_capacity(a.len() + b.len());
             v.extend(a.iter().cloned());
             v.extend(b.iter().cloned());

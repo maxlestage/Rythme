@@ -303,6 +303,15 @@ pub fn builtins_list() -> String {
     out
 }
 
+/// The `##` documentation of the type of a constructor, if it has one.
+fn push_type_doc(out: &mut String, c: &crate::value::CtorInfo) {
+    if let Some(doc) = &c.doc {
+        for line in doc.lines() {
+            out.push_str(&format!("  {line}\n"));
+        }
+    }
+}
+
 /// What `help(x)` shows inside a program or in the REPL.
 pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
     let Some(v) = v else {
@@ -333,13 +342,15 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
         }
         Value::Ctor(c) => {
             let fields: Vec<String> = c.fields.iter().map(|f| f.to_string()).collect();
-            t!(
+            let mut out = t!(
                 "{}({})\n  A constructor of the type `{}`.\n",
                 "{}({})\n  Un constructeur du type `{}`.\n",
                 c.name,
                 fields.join(", "),
                 c.type_name
-            )
+            );
+            push_type_doc(&mut out, c);
+            out
         }
         Value::Text(s) => topic(s).unwrap_or_else(|| unknown_topic(s)),
         other => {
@@ -353,6 +364,9 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
                 _ => None,
             };
             let mut out = t!("This is a value of type {ty}: {}\n", "Ceci est une valeur de type {ty} : {}\n", other.repr());
+            if let Value::Variant(var) = other {
+                push_type_doc(&mut out, &var.ctor);
+            }
             if let Some(cat) = cat {
                 let names: Vec<&str> = BUILTINS.iter().filter(|b| b.cat == cat).map(|b| b.name).collect();
                 out.push_str(&t!("Useful functions: {}\n", "Fonctions utiles : {}\n", names.join(", ")));
@@ -787,8 +801,9 @@ const TEXT_EN: &str = r#"TEXT
   int("42")                      # 42
   parse_int("x42")               # Err(...): a conversion that cannot crash
 
-Special characters: \n (new line), \t (tab), \" (quote), \\ (backslash),
-\{ and \} (braces, because { starts an insertion)."#;
+Special characters: \n (new line), \t (tab), \r (carriage return),
+\0 (null character), \" (quote), \\ (backslash), \{ and \} (braces, because
+{ starts an insertion), \u{e9} (any character by its Unicode number: é)."#;
 
 const TEXT_FR: &str = r#"TEXTE
 
@@ -809,8 +824,10 @@ const TEXT_FR: &str = r#"TEXTE
   int("42")                      # 42
   parse_int("x42")               # Err(...) : une conversion qui ne plante jamais
 
-Caractères spéciaux : \n (nouvelle ligne), \t (tabulation), \" (guillemet),
-\\ (barre oblique inverse), \{ et \} (accolades, car { commence une insertion)."#;
+Caractères spéciaux : \n (nouvelle ligne), \t (tabulation), \r (retour
+chariot), \0 (caractère nul), \" (guillemet), \\ (barre oblique inverse),
+\{ et \} (accolades, car { commence une insertion), \u{e9} (tout caractère
+par son numéro Unicode : é)."#;
 
 const RECORDS_EN: &str = r#"RECORDS
 
@@ -1655,12 +1672,23 @@ donc que dans une fonction, sur une Option ou un Result.
 
 A file could not be read, or a file given to `use` was not found, or files
 use each other in a circle. Paths in `use` are relative to the folder of the
-file that contains the `use`."#,
+file that contains the `use`. Programs are text files saved in UTF-8 (the
+usual choice of editors).
+
+`input()` also stops with this error when there is nothing more to read:
+the keyboard input was closed (Ctrl-D), or the text sent to the program
+(`rythme prog.ry < answers.txt`) has no more lines."#,
             r#"E017 — Problème de fichier
 
 Un fichier n'a pas pu être lu, ou un fichier donné à `use` est introuvable,
 ou des fichiers s'utilisent les uns les autres en cercle. Les chemins de
-`use` sont relatifs au dossier du fichier qui contient le `use`."#,
+`use` sont relatifs au dossier du fichier qui contient le `use`. Les
+programmes sont des fichiers texte enregistrés en UTF-8 (le choix habituel
+des éditeurs).
+
+`input()` s'arrête aussi avec cette erreur quand il n'y a plus rien à lire :
+la saisie au clavier a été fermée (Ctrl-D), ou le texte envoyé au programme
+(`rythme prog.ry < reponses.txt`) n'a plus de lignes."#,
         ),
         "E018" => (
             r#"E018 — Unexpected character

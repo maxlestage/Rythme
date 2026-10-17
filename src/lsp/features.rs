@@ -639,19 +639,35 @@ pub fn signature_help(cx: &Ctx, a: &Analysis, offset: usize) -> Json {
         }
         _ => return Json::Null,
     };
-    let params = params_of(&label);
-    let mut active = call.commas + usize::from(call.first_given);
+    // A built-in may show several forms: `random(a, b), random(list)`.
+    let forms: Vec<String> = label.split("), ").map(|f| if f.ends_with(')') { f.to_string() } else { format!("{f})") }).collect();
+    let given = call.commas + usize::from(call.first_given);
+    // The first form with room for the arguments given, else the longest.
+    let chosen = forms
+        .iter()
+        .position(|f| params_of(f).len() > given)
+        .unwrap_or_else(|| forms.iter().enumerate().max_by_key(|(_, f)| params_of(f).len()).map(|(i, _)| i).unwrap_or(0));
+    let params = params_of(&forms[chosen]);
+    let mut active = given;
     if !params.is_empty() {
         active = active.min(params.len() - 1);
     }
     let enc = cx.enc;
-    let param_json: Vec<Json> =
-        params.iter().map(|&(s, e)| obj([("label", Json::Arr(vec![enc.len(&label[..s]).into(), enc.len(&label[..e]).into()]))])).collect();
-    let mut sig = obj([("label", label.clone().into()), ("parameters", Json::Arr(param_json))]);
-    if let Some(d) = doc {
-        sig.set("documentation", markup(cx, d));
-    }
-    obj([("signatures", Json::Arr(vec![sig])), ("activeSignature", 0u32.into()), ("activeParameter", active.into())])
+    let signatures = forms
+        .iter()
+        .map(|form| {
+            let param_json: Vec<Json> = params_of(form)
+                .iter()
+                .map(|&(s, e)| obj([("label", Json::Arr(vec![enc.len(&form[..s]).into(), enc.len(&form[..e]).into()]))]))
+                .collect();
+            let mut sig = obj([("label", form.clone().into()), ("parameters", Json::Arr(param_json))]);
+            if let Some(d) = &doc {
+                sig.set("documentation", markup(cx, d.clone()));
+            }
+            sig
+        })
+        .collect();
+    obj([("signatures", Json::Arr(signatures)), ("activeSignature", chosen.into()), ("activeParameter", active.into())])
 }
 
 // ----- definition, highlights, outline ------------------------------------

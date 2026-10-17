@@ -102,13 +102,21 @@ fn every_example_is_true() {
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
-/// The signature names as many arguments as the function accepts.
+/// The signature names as many arguments as the function accepts. It may show
+/// several forms, like `random(a, b), random(list)`: the longest one counts.
 #[test]
 fn signatures_match_the_number_of_arguments() {
     for b in BUILTINS {
         assert!(b.min <= b.max, "{}", b.name);
-        let inside = b.sig.strip_prefix(b.name).and_then(|s| s.strip_prefix('(')).and_then(|s| s.strip_suffix(')'));
-        let params: Vec<&str> = inside.unwrap_or_else(|| panic!("{}: {}", b.name, b.sig)).split(", ").filter(|p| !p.is_empty()).collect();
+        let forms: Vec<Vec<&str>> = b
+            .sig
+            .split("), ")
+            .map(|form| {
+                let inside = form.strip_prefix(b.name).and_then(|s| s.strip_prefix('(')).map(|s| s.strip_suffix(')').unwrap_or(s));
+                inside.unwrap_or_else(|| panic!("{}: {}", b.name, b.sig)).split(", ").filter(|p| !p.is_empty()).collect()
+            })
+            .collect();
+        let params = forms.iter().max_by_key(|f| f.len()).unwrap();
         if b.max == usize::MAX {
             assert_eq!(params.last(), Some(&"..."), "{}", b.name);
         } else {

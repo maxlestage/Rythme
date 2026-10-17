@@ -169,12 +169,19 @@ pub struct Closure {
     /// The name under which a local function sees itself (for recursion):
     /// `fn name(...)` or `name = fn(...)` inside a block.
     pub self_name: Option<Sym>,
+    /// Local functions defined one after the other in a block see each other,
+    /// as functions do at the top level of a file.
+    pub siblings: Option<Rc<[Rc<FnDef>]>>,
 }
 
 pub struct CtorInfo {
     pub type_name: Sym,
     pub name: Sym,
     pub fields: Vec<Sym>,
+    /// Position of the constructor in its type: `<` orders values by it.
+    pub index: usize,
+    /// The `##` documentation of its type.
+    pub doc: Option<Rc<str>>,
 }
 
 pub struct Variant {
@@ -320,7 +327,7 @@ impl Value {
                 (Value::Unit, Value::Unit) => true,
                 (Value::Bool(x), Value::Bool(y)) => x == y,
                 (Value::Int(x), Value::Int(y)) => x == y,
-                (Value::Int(x), Value::Float(y)) | (Value::Float(y), Value::Int(x)) => (*x as f64) == *y,
+                (Value::Int(x), Value::Float(y)) | (Value::Float(y), Value::Int(x)) => cmp_int_float(*x, *y) == Some(Ordering::Equal),
                 (Value::Float(x), Value::Float(y)) => x == y,
                 (Value::Text(x), Value::Text(y)) => x == y,
                 (Value::List(x), Value::List(y)) => {
@@ -365,8 +372,8 @@ impl Value {
     pub fn compare(&self, other: &Value) -> Option<Ordering> {
         match (self, other) {
             (Value::Int(a), Value::Int(b)) => Some(a.cmp(b)),
-            (Value::Int(a), Value::Float(b)) => (*a as f64).partial_cmp(b),
-            (Value::Float(a), Value::Int(b)) => a.partial_cmp(&(*b as f64)),
+            (Value::Int(a), Value::Float(b)) => cmp_int_float(*a, *b),
+            (Value::Float(a), Value::Int(b)) => cmp_int_float(*b, *a).map(Ordering::reverse),
             (Value::Float(a), Value::Float(b)) => a.partial_cmp(b),
             (Value::Text(a), Value::Text(b)) => Some(a.cmp(b)),
             (Value::Bool(a), Value::Bool(b)) => Some(a.cmp(b)),
@@ -381,8 +388,9 @@ impl Value {
                 Some(a.len().cmp(&b.len()))
             }
             (Value::Variant(a), Value::Variant(b)) if a.ctor.type_name == b.ctor.type_name => {
+                // Constructors are ordered as the type lists them: `None < Some(x)`.
                 if a.ctor.name != b.ctor.name {
-                    return None;
+                    return (a.ctor.index != b.ctor.index).then(|| a.ctor.index.cmp(&b.ctor.index));
                 }
                 for (x, y) in a.fields.iter().zip(b.fields.iter()) {
                     match x.compare(y)? {
@@ -397,8 +405,15 @@ impl Value {
     }
 
     /// A total order over all values, used to sort without ever failing:
-    /// first by kind, then by value. Agrees with `compare` where it is defined.
+    /// first by kind, then by value. Agrees with `compare` where it is
+    /// defined: values are ordered by what they are worth (`1` like `1.0`),
+    /// and only then told apart (whole numbers before decimal ones).
     pub fn total_cmp(&self, other: &Value) -> Ordering {
+        self.order(other, false).then_with(|| self.order(other, true))
+    }
+
+    /// With `exact`, values of the same worth are told apart: `1 < 1.0`, `-0.0 < 0.0`.
+    fn order(&self, other: &Value, exact: bool) -> Ordering {
         fn rank(v: &Value) -> u8 {
             match v {
                 Value::Unit => 0,
@@ -411,25 +426,40 @@ impl Value {
                 Value::Func(_) | Value::Builtin(_) | Value::Ctor(_) => 7,
             }
         }
-        // Numbers: by value, then whole numbers before decimals, then exact value.
-        fn number_key(v: &Value) -> (f64, bool, i64) {
-            match v {
-                Value::Int(n) => (*n as f64, false, *n),
-                Value::Float(f) => (*f, true, 0),
-                _ => (0.0, false, 0),
+        // `nan` goes at one end, according to its sign (like `f64::total_cmp`).
+        fn nan_side(f: f64) -> Ordering {
+            if f.is_sign_negative() {
+                Ordering::Less
+            } else {
+                Ordering::Greater
+            }
+        }
+        fn floats(a: f64, b: f64, exact: bool) -> Ordering {
+            match (a.is_nan(), b.is_nan()) {
+                _ if exact => a.total_cmp(&b),
+                (false, false) => a.partial_cmp(&b).unwrap_or(Ordering::Equal),
+                (true, true) => nan_side(a).cmp(&nan_side(b)),
+                (true, false) => nan_side(a),
+                (false, true) => nan_side(b).reverse(),
+            }
+        }
+        fn int_float(i: i64, f: f64, exact: bool) -> Ordering {
+            match cmp_int_float(i, f) {
+                Some(Ordering::Equal) if exact => Ordering::Less,
+                Some(o) => o,
+                None => nan_side(f).reverse(),
             }
         }
         match (self, other) {
             (Value::Int(a), Value::Int(b)) => a.cmp(b),
-            (Value::Int(_) | Value::Float(_), Value::Int(_) | Value::Float(_)) => {
-                let (a, b) = (number_key(self), number_key(other));
-                a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)).then(a.2.cmp(&b.2))
-            }
+            (Value::Float(a), Value::Float(b)) => floats(*a, *b, exact),
+            (Value::Int(a), Value::Float(b)) => int_float(*a, *b, exact),
+            (Value::Float(a), Value::Int(b)) => int_float(*b, *a, exact).reverse(),
             (Value::Text(a), Value::Text(b)) => a.cmp(b),
             (Value::Bool(a), Value::Bool(b)) => a.cmp(b),
             (Value::List(a), Value::List(b)) => {
                 for (x, y) in a.iter().zip(b.iter()) {
-                    match x.total_cmp(y) {
+                    match x.order(y, exact) {
                         Ordering::Equal => continue,
                         o => return o,
                     }
@@ -437,12 +467,13 @@ impl Value {
                 a.len().cmp(&b.len())
             }
             (Value::Variant(a), Value::Variant(b)) => {
-                let by_name = a.ctor.type_name.name().cmp(&b.ctor.type_name.name()).then(a.ctor.name.name().cmp(&b.ctor.name.name()));
-                if by_name != Ordering::Equal {
-                    return by_name;
+                let by_ctor = a.ctor.type_name.name().cmp(&b.ctor.type_name.name()).then(a.ctor.index.cmp(&b.ctor.index));
+                let by_ctor = by_ctor.then_with(|| a.ctor.name.name().cmp(&b.ctor.name.name()));
+                if by_ctor != Ordering::Equal {
+                    return by_ctor;
                 }
                 for (x, y) in a.fields.iter().zip(b.fields.iter()) {
-                    match x.total_cmp(y) {
+                    match x.order(y, exact) {
                         Ordering::Equal => continue,
                         o => return o,
                     }
@@ -454,6 +485,24 @@ impl Value {
                 o => o,
             },
         }
+    }
+}
+
+/// The exact order between a whole number and a decimal one, `None` for `nan`.
+/// (Converting the whole number to a decimal could round it: 2^53 + 1 would
+/// equal 2^53.)
+pub fn cmp_int_float(i: i64, f: f64) -> Option<Ordering> {
+    const TWO_63: f64 = 9_223_372_036_854_775_808.0;
+    if f.is_nan() {
+        None
+    } else if f >= TWO_63 {
+        Some(Ordering::Less)
+    } else if f < -TWO_63 {
+        Some(Ordering::Greater)
+    } else {
+        // Both the whole part and the rest are exact.
+        let whole = f.trunc();
+        Some(i.cmp(&(whole as i64)).then_with(|| 0.0.partial_cmp(&(f - whole)).unwrap_or(Ordering::Equal)))
     }
 }
 

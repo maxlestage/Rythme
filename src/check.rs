@@ -38,6 +38,9 @@ pub struct CtorMeta {
     pub arity: usize,
 }
 
+/// The names of the types of Rythme's own values (see `type_of`).
+const BUILTIN_TYPES: &[&str] = &["Unit", "Bool", "Int", "Float", "Text", "List", "Record", "Function", "Option", "Result"];
+
 /// What is known before checking a module: built-ins, and what earlier code defined.
 #[derive(Clone, Default)]
 pub struct Knowledge {
@@ -208,6 +211,15 @@ impl<'a> Checker<'a> {
                     }
                 }
                 Item::Type(t) => {
+                    let name = t.name.name();
+                    if BUILTIN_TYPES.contains(&&*name) {
+                        self.diags.push(
+                            Diagnostic::error("E011", t!("the type `{name}` is part of Rythme", "le type `{name}` fait partie de Rythme"))
+                                .at(t.span)
+                                .help(t!("give your type another name", "donnez un autre nom à votre type")),
+                        );
+                        continue;
+                    }
                     if let Some(prev) = type_first.get(&t.name) {
                         if !self.repl {
                             self.diags.push(
@@ -269,8 +281,12 @@ impl<'a> Checker<'a> {
             if let Some(g) = self.know.globals.get(&s) {
                 match g.kind {
                     GKind::Builtin => self.diags.push(
-                        Diagnostic::warning("W003", t!("`{s}` hides the built-in function `{s}`", "`{s}` masque la fonction intégrée `{s}`"))
-                            .at(span)
+                        // `pi` is a value, not a function.
+                        Diagnostic::warning("W003", match g.arity {
+                            Some(_) => t!("`{s}` hides the built-in function `{s}`", "`{s}` masque la fonction intégrée `{s}`"),
+                            None => t!("`{s}` hides the built-in value `{s}`", "`{s}` masque la valeur intégrée `{s}`"),
+                        })
+                        .at(span)
                             .help(t!(
                                 "in this file, `{s}` will now mean your definition; choose another name to keep the built-in one",
                                 "dans ce fichier, `{s}` désignera désormais votre définition ; choisissez un autre nom pour garder celle intégrée"
@@ -567,8 +583,13 @@ impl<'a> Checker<'a> {
                     }
                 }
                 Stmt::Fn(def) => {
-                    if let Some(name) = def.name {
-                        self.declare_local_fn(name, def.span, true, Some(func_info(def)));
+                    // Functions written one after the other see each other.
+                    if i == 0 || !matches!(stmts[i - 1], Stmt::Fn(_)) {
+                        for d in stmts[i..].iter().map_while(|s| if let Stmt::Fn(d) = s { Some(d) } else { None }) {
+                            if let Some(name) = d.name {
+                                self.declare_local_fn(name, d.span, true, Some(func_info(d)));
+                            }
+                        }
                     }
                     self.func(def);
                 }
@@ -659,7 +680,8 @@ impl<'a> Checker<'a> {
             }
             ExprKind::Try(x) => {
                 self.expr(x);
-                if self.fn_depth == 0 {
+                // In `x??`, the inner `?` is already reported.
+                if self.fn_depth == 0 && !matches!(x.kind, ExprKind::Try(_)) {
                     self.diags.push(
                         Diagnostic::error(
                             "E016",
@@ -686,15 +708,24 @@ impl<'a> Checker<'a> {
             | ExprKind::Bool(_)
             | ExprKind::List(_)
             | ExprKind::Record(_) => {
-                self.diags.push(
-                    Diagnostic::error("E009", t!("this value is not a function", "cette valeur n'est pas une fonction"))
-                        .at(callee.span)
-                        .label(t!("cannot be called", "ne peut pas être appelé"))
-                        .help(t!(
-                            "to multiply, write `*` explicitly: `2 * (x + 1)`",
-                            "pour multiplier, écrivez `*` explicitement : `2 * (x + 1)`"
-                        )),
-                );
+                let d = Diagnostic::error("E009", t!("this value is not a function", "cette valeur n'est pas une fonction"))
+                    .at(callee.span)
+                    .label(t!("cannot be called", "ne peut pas être appelé"));
+                let d = match &callee.kind {
+                    ExprKind::Int(_) | ExprKind::Float(_) => d.help(t!(
+                        "to multiply, write `*` explicitly: `2 * (x + 1)`",
+                        "pour multiplier, écrivez `*` explicitement : `2 * (x + 1)`"
+                    )),
+                    ExprKind::Text(_) | ExprKind::Template(_) | ExprKind::List(_) => d.help(t!(
+                        "to take one element, use brackets: `x[0]`; between two values, a `,` may be missing",
+                        "pour prendre un élément, utilisez des crochets : `x[0]` ; entre deux valeurs, il manque peut-être une `,`"
+                    )),
+                    ExprKind::Record(_) => {
+                        d.help(t!("to read a field, use a dot: `person.name`", "pour lire un champ, utilisez un point : `personne.nom`"))
+                    }
+                    _ => d,
+                };
+                self.diags.push(d);
                 None
             }
             _ => {
@@ -804,11 +835,18 @@ impl<'a> Checker<'a> {
                 Diagnostic::warning("W002", t!("this `match` does not handle every case", "ce `match` ne traite pas tous les cas"))
                     .at(Span { end: subject.span.end, ..e.span })
                     .note(t!("not handled: {}", "non traité : {}", list.join(", ")))
-                    .help(t!(
-                        "add the missing cases, like `{} -> ...`, or a last case `_ -> ...`",
-                        "ajoutez les cas manquants, comme `{} -> ...`, ou un dernier cas `_ -> ...`",
-                        missing[0]
-                    )),
+                    .help(if missing[0] == "_" {
+                        t!(
+                            "add a last case `_ -> ...` for all the other values",
+                            "ajoutez un dernier cas `_ -> ...` pour toutes les autres valeurs"
+                        )
+                    } else {
+                        t!(
+                            "add the missing cases, like `{} -> ...`, or a last case `_ -> ...`",
+                            "ajoutez les cas manquants, comme `{} -> ...`, ou un dernier cas `_ -> ...`",
+                            missing[0]
+                        )
+                    }),
             );
         }
     }

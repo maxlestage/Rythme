@@ -7,7 +7,7 @@ use std::io::Write;
 use std::rc::Rc;
 
 use crate::diagnostic::{Diagnostic, Fallible};
-use crate::interp::{binop, overflow, resolve_index, Interp, Wrap};
+use crate::interp::{binop, overflow, resolve_index, too_big, Interp, Wrap, MAX_LIST, MAX_TEXT};
 use crate::source::{self, Span};
 use crate::value::*;
 
@@ -90,8 +90,8 @@ pub static BUILTINS: &[Builtin] = &[
        "Affiche l'invite, puis lit une ligne tapée au clavier et la renvoie sous forme de texte.",
        "name = input(\"Your name? \")"),
     b!("type_of", "type_of(value)", 1, 1, Basics, type_of,
-       "Returns the name of the type of a value: \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", or the name of your own type.",
-       "Renvoie le nom du type d'une valeur : \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", ou le nom de votre propre type.",
+       "Returns the name of the type of a value: \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (for `()`), \"Option\", \"Result\", or the name of your own type.",
+       "Renvoie le nom du type d'une valeur : \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (pour `()`), \"Option\", \"Result\", ou le nom de votre propre type.",
        "type_of([1, 2])            # \"List\""),
     b!("help", "help(value)", 0, 1, Basics, help,
        "Shows help: about a function (`help(map)`), a topic (`help(\"lists\")`), or what you can do with a value (`help([1, 2])`).",
@@ -125,7 +125,7 @@ pub static BUILTINS: &[Builtin] = &[
        "Returns the current time in seconds (a Float), counted from 1 January 1970. Subtract two times to measure a duration.",
        "Renvoie l'heure actuelle en secondes (un Float), comptées depuis le 1er janvier 1970. Soustrayez deux instants pour mesurer une durée.",
        "start = time()"),
-    b!("random", "random(min, max)", 0, 2, Basics, random,
+    b!("random", "random(a, b), random(list)", 0, 2, Basics, random,
        "random() gives a decimal number between 0 and 1; random(a, b) a whole number from a to b (included); random(list) a random element.",
        "random() donne un nombre décimal entre 0 et 1 ; random(a, b) un nombre entier de a à b (inclus) ; random(liste) un élément au hasard.",
        "random(1, 6)               # a dice roll"),
@@ -689,7 +689,22 @@ fn text_value(s: impl Into<Rc<str>>) -> Value {
 }
 
 fn f64_to_int(x: f64, span: Span) -> Fallible<Value> {
-    // i64 covers [-2^63, 2^63); NaN and infinities are outside of that range too.
+    if x.is_nan() {
+        return Err(Diagnostic::error(
+            "E022",
+            t!(
+                "`nan` (not a number) cannot be converted to a whole number",
+                "`nan` (pas un nombre) ne peut pas être converti en nombre entier"
+            ),
+        )
+        .at(span)
+        .help(t!(
+            "`nan` is the result of a calculation that has none, like `0.0 * inf`: check where this value comes from",
+            "`nan` est le résultat d'un calcul qui n'en a pas, comme `0.0 * inf` : vérifiez d'où vient cette valeur"
+        ))
+        .boxed());
+    }
+    // i64 covers [-2^63, 2^63); infinities are outside of that range too.
     if !(-9.223_372_036_854_776e18..9.223_372_036_854_776e18).contains(&x) {
         return Err(overflow(span));
     }
@@ -747,13 +762,32 @@ fn fixed(x: f64, digits: usize) -> String {
     }
 }
 
-fn input(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
+fn input(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    use std::io::BufRead;
     if let Some(p) = a.first() {
         crate::io::out(&p.display());
     }
-    let mut line = String::new();
-    let _ = std::io::stdin().read_line(&mut line);
-    Ok(text_value(line.trim_end_matches(['\n', '\r'])))
+    // The web playground has no keyboard input: it reads an empty text.
+    if cfg!(target_arch = "wasm32") {
+        return Ok(text_value(""));
+    }
+    let mut line = Vec::new();
+    // At the end of the input, an empty text would let a program that asks
+    // again and again run forever.
+    if !matches!(std::io::stdin().lock().read_until(b'\n', &mut line), Ok(n) if n > 0) {
+        if !a.is_empty() {
+            crate::io::out("\n");
+        }
+        return Err(Diagnostic::error("E017", t!("`input` found the end of the input", "`input` a atteint la fin de l'entrée"))
+            .at(span)
+            .label(t!("no more lines to read", "plus aucune ligne à lire"))
+            .note(t!(
+                "the keyboard input was closed (Ctrl-D), or the text sent to the program has ended",
+                "la saisie au clavier a été fermée (Ctrl-D), ou le texte envoyé au programme est terminé"
+            ))
+            .boxed());
+    }
+    Ok(text_value(String::from_utf8_lossy(&line).trim_end_matches(['\n', '\r'])))
 }
 
 fn type_of(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
@@ -790,7 +824,11 @@ fn assert_eq(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn fail(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    Err(Diagnostic::error("E021", a[0].display()).at(span).label(t!("the program stopped here", "le programme s'est arrêté ici")).boxed())
+    let mut msg = a[0].display();
+    if msg.trim().is_empty() {
+        msg = t!("the program stopped with `fail`", "le programme s'est arrêté avec `fail`");
+    }
+    Err(Diagnostic::error("E021", msg).at(span).label(t!("the program stopped here", "le programme s'est arrêté ici")).boxed())
 }
 
 fn args(it: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
@@ -1193,6 +1231,9 @@ fn join(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "join", span)?;
     let sep = if a.len() == 2 { text(a, 1, "join", span)? } else { "" };
     let parts: Vec<String> = l.iter().map(|v| v.display()).collect();
+    if parts.iter().map(|p| p.len() + sep.len()).sum::<usize>() > MAX_TEXT {
+        return Err(too_big(false, span));
+    }
     Ok(text_value(parts.join(sep)))
 }
 
@@ -1222,11 +1263,18 @@ fn replace(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     if old.is_empty() {
         return Err(invalid(t!("`replace` cannot replace an empty text", "`replace` ne peut pas remplacer un texte vide"), span));
     }
+    if new.len() > old.len() && s.len() + s.matches(old).count() * (new.len() - old.len()) > MAX_TEXT {
+        return Err(too_big(false, span));
+    }
     Ok(text_value(s.replace(old, new)))
 }
 
 fn chars(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    Ok(Value::list(text(a, 0, "chars", span)?.chars().map(|c| text_value(c.to_string())).collect()))
+    let s = text(a, 0, "chars", span)?;
+    if s.len() > MAX_LIST && s.chars().count() > MAX_LIST {
+        return Err(too_big(true, span));
+    }
+    Ok(Value::list(s.chars().map(|c| text_value(c.to_string())).collect()))
 }
 
 fn lines(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -2270,6 +2318,7 @@ fn flatten(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let mut out = Vec::new();
     for x in l.iter() {
         match x {
+            Value::List(inner) if out.len() + inner.len() > MAX_LIST => return Err(too_big(true, span)),
             Value::List(inner) => out.extend(inner.iter().cloned()),
             other => {
                 return Err(invalid(
@@ -2297,6 +2346,7 @@ fn flat_map(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let mut out = Vec::new();
     for x in l.iter() {
         match it.call(f.clone(), vec![x.clone()], span)? {
+            Value::List(inner) if out.len() + inner.len() > MAX_LIST => return Err(too_big(true, span)),
             Value::List(inner) => out.extend(inner.iter().cloned()),
             other => {
                 return Err(invalid(

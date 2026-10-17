@@ -472,7 +472,8 @@ impl<'a> Shaper<'a> {
         if *self.raw() == Tok::Fn && matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Ident(_))) {
             return self.fn_def(true);
         }
-        let first = self.expr()?;
+        // Like the parser: `[first, ..] = list`, `{name, ..} = person`, `Some(x) = value`.
+        let first = if self.pattern_before_eq() { self.pattern()? } else { self.expr()? };
         if *self.raw() == Tok::Eq {
             let eq = self.advance()?;
             self.set(eq, Indent::Inner(first));
@@ -481,6 +482,34 @@ impl<'a> Shaper<'a> {
             self.set(value, Indent::Inner(eq));
         }
         Some(first)
+    }
+
+    /// Does a definition with a bracketed pattern start here? The same test as the
+    /// parser's `pattern_before_eq`.
+    fn pattern_before_eq(&self) -> bool {
+        let mut i = self.pos;
+        if matches!(self.toks[i].tok, Tok::Ctor(_)) {
+            i += 1;
+        }
+        if !matches!(self.toks[i].tok, Tok::LParen | Tok::LBracket | Tok::LBrace) {
+            return false;
+        }
+        let mut depth = 0usize;
+        loop {
+            match self.toks[i].tok {
+                Tok::LParen | Tok::LBracket | Tok::LBrace => depth += 1,
+                Tok::RParen | Tok::RBracket | Tok::RBrace => {
+                    depth -= 1;
+                    if depth == 0 {
+                        break;
+                    }
+                }
+                Tok::Eof => return false,
+                _ => {}
+            }
+            i += 1;
+        }
+        matches!(self.toks.get(i + 1).map(|t| &t.tok), Some(Tok::Eq))
     }
 
     /// The statements of a block, up to `end`, one level deeper than the line of `anchor`.

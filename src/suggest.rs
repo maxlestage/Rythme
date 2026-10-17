@@ -30,15 +30,18 @@ where
 {
     let len = word.chars().count();
     let max = match len {
-        // Every one-letter name is one edit away from any other.
+        // Every one-letter name is one edit away from any other, and changing
+        // two letters of a three-letter name gives an unrelated name.
         0..=1 => return None,
-        2 => 1,
-        3..=5 => 2,
-        _ => 3,
+        2..=3 => 1,
+        4..=5 => 2,
+        // Nobody types such a long name by mistake (and comparing is slow).
+        6..=64 => 3,
+        _ => return None,
     };
     let mut best: Option<(usize, &str)> = None;
     for c in candidates {
-        if c == word || c.starts_with('_') && !word.starts_with('_') {
+        if c == word || c.starts_with('_') && !word.starts_with('_') || c.chars().count().abs_diff(len) > max {
             continue;
         }
         let d = distance(word, c);

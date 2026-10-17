@@ -420,6 +420,13 @@ fn signature_help_counts_the_arguments() {
     let sig = lsp.at("textDocument/signatureHelp", u, 3, 18);
     assert_eq!(sig.get("signatures").as_array()[0].get("label").as_str(), Some("map(list, f)"));
     assert_eq!(sig.get("activeParameter").as_u64(), Some(1));
+    // A built-in with several forms: one signature each.
+    lsp.change(u, 2, "z = random(1, \n");
+    let sig = lsp.at("textDocument/signatureHelp", u, 0, 14);
+    let labels: Vec<&str> = sig.get("signatures").as_array().iter().filter_map(|s| s.get("label").as_str()).collect();
+    assert_eq!(labels, ["random(a, b)", "random(list)"]);
+    assert_eq!(sig.get("activeSignature").as_u64(), Some(0));
+    assert_eq!(sig.get("activeParameter").as_u64(), Some(1));
     assert_eq!(lsp.stop(), 0);
 }
 
