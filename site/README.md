@@ -40,6 +40,22 @@ Paquets is fetched from its git repository. Without `public/rythme.wasm` the sit
 except the playground. `SITE_URL` sets the public address used in canonical and Open
 Graph links (taken from each request otherwise).
 
+## GitHub Pages
+
+The site is published at <https://maxlestage.github.io/Rythme/> by the `Website`
+workflow (`.github/workflows/pages.yml`), as static files:
+
+```sh
+./build.sh
+BASE_PATH=/Rythme SITE_URL=https://maxlestage.github.io/Rythme cargo run --release -- export dist
+```
+
+Every page is rendered by the app itself through Paquets' test client and written to
+`dist/<path>/index.html`, with `404.html`, `sitemap.xml`, `robots.txt`,
+`examples.json` and `public/`. Every link is behind `BASE_PATH`. `/` picks the language
+in the browser. In the repository settings, Pages must use **GitHub Actions** as its
+source (with "Deploy from a branch", GitHub shows the README instead).
+
 ## Checks
 
 ```sh

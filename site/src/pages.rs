@@ -6,7 +6,7 @@ use paquets::prelude::*;
 use crate::examples::EXAMPLES;
 use crate::highlight::{code_block, code_inline, diagnostic};
 use crate::i18n::{Lang, Texts};
-use crate::routes::{Page as PageKind, Route};
+use crate::routes::{Page as PageKind, Route, link};
 
 pub const REPO: &str = "https://github.com/maxlestage/Rythme";
 const RELEASES: &str = "https://github.com/maxlestage/Rythme/releases";
@@ -32,11 +32,11 @@ impl Ctx {
     }
 
     fn href(&self, page: PageKind) -> String {
-        Route::new(self.lang(), page).path()
+        Route::new(self.lang(), page).href()
     }
 
     fn asset(&self, path: &str) -> String {
-        format!("{path}?v={}", self.version)
+        format!("{}?v={}", link(path), self.version)
     }
 }
 
@@ -86,7 +86,7 @@ fn command(t: &Texts, text: &str) -> Element {
 
 /// A link that opens `code` in the playground (`#code=…`).
 pub fn playground_link(lang: Lang, code: &str, test: bool) -> String {
-    let mut href = format!("{}#code={}", Route::new(lang, PageKind::Playground).path(), percent_encode(code));
+    let mut href = format!("{}#code={}", Route::new(lang, PageKind::Playground).href(), percent_encode(code));
     if test {
         href.push_str("&mode=test");
     }
@@ -114,7 +114,7 @@ fn lang_switch(ctx: &Ctx, class: &str) -> Element {
         let route = if ctx.route.page == PageKind::NotFound { Route::new(l, PageKind::Home) } else { ctx.route.with_lang(l) };
         let link = a()
             .class("lang__link")
-            .href(route.path())
+            .href(route.href())
             .attr("hreflang", l.code())
             .attr("lang", l.code())
             .attr("title", l.name())
@@ -222,7 +222,7 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
     let lang = ctx.lang();
     let route = ctx.route;
     let mut seo =
-        Seo::new().site_name("Rythme").base_url(ctx.origin.clone()).image("/assets/og-image.svg").og_type("website").locale(lang.locale());
+        Seo::new().site_name("Rythme").base_url(ctx.origin.clone()).image("/assets/og-image.png").og_type("website").locale(lang.locale());
     if route.page == PageKind::NotFound {
         seo = seo.noindex(true);
     } else {
@@ -239,13 +239,14 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
             r#"<meta name="color-scheme" content="light dark"/>"#,
             r##"<meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)"/>"##,
             r##"<meta name="theme-color" content="#0e1118" media="(prefers-color-scheme: dark)"/>"##,
-            r#"<link rel="icon" href="/assets/logo.svg" type="image/svg+xml"/>"#,
+            r#"<link rel="icon" href="{icon}" type="image/svg+xml"/>"#,
             r#"<link rel="preconnect" href="https://fonts.googleapis.com"/>"#,
             r#"<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>"#,
             r#"<script>document.documentElement.classList.add("js")</script>"#,
             r#"<script src="{js}" defer=""></script>"#,
         ),
         js = ctx.asset("/site.js"),
+        icon = link("/assets/logo.svg"),
     );
     let body = div()
         .class("site")
@@ -585,6 +586,7 @@ pub fn playground(ctx: &Ctx) -> Page {
         .attr("data-lang", ctx.lang().code())
         .attr("data-wasm", ctx.asset("/rythme.wasm"))
         .attr("data-worker", ctx.asset("/playground-worker.js"))
+        .attr("data-examples", link("/examples.json"))
         .child(page_head(t.pg_title, t.pg_lead))
         .child(noscript().child(p().class("note note--box").text(t.pg_noscript)))
         .child(toolbar)

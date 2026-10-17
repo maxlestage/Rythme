@@ -35,7 +35,9 @@
   // ----- the language chosen with the switch, for the next visit of / -----
   for (const link of document.querySelectorAll(".lang__link[data-lang]")) {
     link.addEventListener("click", () => {
-      document.cookie = `rythme-lang=${link.dataset.lang}; Path=/; Max-Age=31536000; SameSite=Lax`;
+      // The cookie stays under the site's base path (`/Rythme` on GitHub Pages).
+      const path = link.pathname.slice(0, link.pathname.lastIndexOf(`/${link.dataset.lang}/`)) || "/";
+      document.cookie = `rythme-lang=${link.dataset.lang}; Path=${path}; Max-Age=31536000; SameSite=Lax`;
     });
   }
 

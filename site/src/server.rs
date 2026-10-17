@@ -11,13 +11,14 @@ use paquets::prelude::*;
 
 use crate::i18n::{Lang, pick_lang};
 use crate::pages::{self, Ctx};
-use crate::routes::{Page as PageKind, Route};
+use crate::routes::{Page as PageKind, Route, base, link};
 
 /// The cookie that remembers the language chosen with the switch (set by `site.js`).
 pub const LANG_COOKIE: &str = "rythme-lang";
 
 pub struct Site {
-    /// The public address (`SITE_URL`); `None`: taken from each request.
+    /// The public address, with the base path (`SITE_URL`); `None`: taken from each
+    /// request.
     pub site_url: Option<String>,
     /// Short hash of the styles and scripts, for `?v=` in their links.
     pub version: String,
@@ -60,10 +61,10 @@ impl Site {
         let header = |name: &str| req.header(name).map(|v| v.split(',').next().unwrap_or("").trim().to_owned());
         let host = header("x-forwarded-host").or_else(|| header("host")).unwrap_or_else(|| "localhost".into());
         if host.is_empty() || !host.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | ':')) {
-            return "http://localhost".to_owned();
+            return format!("http://localhost{}", base());
         }
         let proto = if header("x-forwarded-proto").as_deref() == Some("https") { "https" } else { "http" };
-        format!("{proto}://{host}")
+        format!("{proto}://{host}{}", base())
     }
 
     fn ctx(&self, req: &Request, route: Route) -> Ctx {
@@ -79,7 +80,7 @@ fn visitor_lang(req: &Request) -> Lang {
 
 /// `/`: the home page in the visitor's language.
 fn root(_site: &Site, req: &Request) -> Response {
-    Redirect::to(format!("/{}/", visitor_lang(req).code()))
+    Redirect::to(link(&format!("/{}/", visitor_lang(req).code())))
         .into_response()
         .header("vary", "Accept-Language, Cookie")
         .header("cache-control", "no-cache")
@@ -93,7 +94,7 @@ fn page(site: &Site, req: &Request) -> Response {
     };
     if !path.ends_with('/') {
         let query = req.uri().query().map(|q| format!("?{q}")).unwrap_or_default();
-        return Redirect::permanent(format!("{path}/{query}")).into_response();
+        return Redirect::permanent(format!("{}/{query}", link(path))).into_response();
     }
     pages::render(&site.ctx(req, route)).into_response().header("cache-control", "no-cache")
 }

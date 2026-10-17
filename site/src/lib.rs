@@ -3,6 +3,7 @@
 //! and the guide for teachers, in French and English.
 
 pub mod examples;
+pub mod export;
 pub mod highlight;
 pub mod i18n;
 pub mod pages;

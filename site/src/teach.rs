@@ -52,11 +52,11 @@ pub fn rewrite_link(dest: &str, lang: Lang) -> (String, bool) {
     if let Some(name) =
         file.strip_prefix("examples/").and_then(|f| f.strip_suffix(".ry")).filter(|name| crate::examples::find(name).is_some())
     {
-        return (format!("{}#{name}", Route::new(lang, Page::Examples).path()), false);
+        return (format!("{}#{name}", Route::new(lang, Page::Examples).href()), false);
     }
     match file {
-        "teaching.md" => (Route::new(Lang::En, Page::Teach).path(), false),
-        "enseigner.md" => (Route::new(Lang::Fr, Page::Teach).path(), false),
+        "teaching.md" => (Route::new(Lang::En, Page::Teach).href(), false),
+        "enseigner.md" => (Route::new(Lang::Fr, Page::Teach).href(), false),
         _ => (format!("{REPO}/tree/master/{file}"), true),
     }
 }
