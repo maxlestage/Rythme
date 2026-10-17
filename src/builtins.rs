@@ -564,6 +564,9 @@ fn args(it: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
 
 fn exit(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let code = if a.is_empty() { 0 } else { int(a, 0, "exit", span)? };
+    if !(0..=255).contains(&code) {
+        return Err(invalid(t!("an exit code goes from 0 to 255, not {code}", "un code de sortie va de 0 à 255, pas {code}"), span));
+    }
     if cfg!(target_arch = "wasm32") {
         return Err(Diagnostic::error("E021", t!("the program stopped with exit({code})", "le programme s'est arrêté avec exit({code})"))
             .at(span)
@@ -717,7 +720,7 @@ fn to_int(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
             if let Ok(n) = t.replace('_', "").parse::<i64>() {
                 return Ok(Value::Int(n));
             }
-            if let Ok(x) = t.parse::<f64>() {
+            if let Ok(x) = t.replace('_', "").parse::<f64>() {
                 return f64_to_int(x.trunc(), span);
             }
             Err(Diagnostic::error(
@@ -739,7 +742,7 @@ fn to_float(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     match &a[0] {
         Value::Int(n) => Ok(Value::Float(*n as f64)),
         Value::Float(x) => Ok(Value::Float(*x)),
-        Value::Text(s) => s.trim().parse::<f64>().map(Value::Float).map_err(|_| {
+        Value::Text(s) => s.trim().replace('_', "").parse::<f64>().map(Value::Float).map_err(|_| {
             Diagnostic::error("E022", t!("cannot convert \"{s}\" to a decimal number", "impossible de convertir \"{s}\" en nombre décimal"))
                 .at(span)
                 .help(t!(
@@ -894,6 +897,9 @@ fn repeat(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
             Ok(text_value(s.repeat(n)))
         }
         Value::List(l) => {
+            if l.is_empty() {
+                return Ok(Value::list(Vec::new()));
+            }
             if l.len().saturating_mul(n) > 50_000_000 {
                 return Err(invalid(t!("the repeated list would be too large", "la liste répétée serait trop grande"), span));
             }
@@ -917,7 +923,7 @@ fn parse_int(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn parse_float(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let s = text(a, 0, "parse_float", span)?;
-    Ok(match s.trim().parse::<f64>() {
+    Ok(match s.trim().replace('_', "").parse::<f64>() {
         Ok(x) => it.ok(Value::Float(x)),
         Err(_) => it.err(text_value(t!("\"{s}\" is not a number", "\"{s}\" n'est pas un nombre"))),
     })
@@ -1074,16 +1080,10 @@ fn reverse(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn sort_pairs(pairs: &mut [(Value, Value)], name: &str, span: Span) -> Fallible<()> {
-    let mut bad: Option<(Value, Value)> = None;
-    pairs.sort_by(|x, y| match x.0.compare(&y.0) {
-        Some(o) => o,
-        None => {
-            if bad.is_none() {
-                bad = Some((x.0.clone(), y.0.clone()));
-            }
-            Ordering::Equal
-        }
-    });
+    // Sort with a total order (it never fails), then check that neighbours
+    // can really be compared: mixed kinds or NaN end up side by side.
+    pairs.sort_by(|x, y| x.0.total_cmp(&y.0));
+    let bad = pairs.windows(2).find(|w| w[0].0.compare(&w[1].0).is_none()).map(|w| (w[0].0.clone(), w[1].0.clone()));
     if let Some((x, y)) = bad {
         return Err(Diagnostic::error(
             "E005",
@@ -1118,11 +1118,44 @@ fn sort_by(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn unique(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    // Same meaning as `==`. Numbers and texts are found quickly with a set;
+    // other values are compared with the ones kept so far.
+    #[derive(PartialEq, Eq, Hash)]
+    enum Key {
+        Int(i64),
+        Float(u64),
+        Text(Rc<str>),
+        Bool(bool),
+        Unit,
+    }
+    fn key(v: &Value) -> Option<Key> {
+        Some(match v {
+            Value::Int(n) => Key::Int(*n),
+            Value::Float(f) if f.is_nan() => return None,
+            Value::Float(f) if f.fract() == 0.0 && f.abs() < 9.0e18 => Key::Int(*f as i64),
+            Value::Float(f) => Key::Float(f.to_bits()),
+            Value::Text(s) => Key::Text(s.clone()),
+            Value::Bool(b) => Key::Bool(*b),
+            Value::Unit => Key::Unit,
+            _ => return None,
+        })
+    }
     let l = list(a, 0, "unique", span)?;
     let mut seen = HashSet::new();
+    let mut others: Vec<&Value> = Vec::new();
     let mut out = Vec::new();
     for x in l.iter() {
-        if seen.insert(x.repr()) {
+        let new = match key(x) {
+            Some(k) => seen.insert(k),
+            None => {
+                let new = !others.iter().any(|o| o.equals(x));
+                if new {
+                    others.push(x);
+                }
+                new
+            }
+        };
+        if new {
             out.push(x.clone());
         }
     }

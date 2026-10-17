@@ -139,7 +139,16 @@ pub fn check(items: &[Item], know: &Knowledge, repl: bool) -> Vec<Diagnostic> {
         fn_depth: 0,
         diags: Vec::new(),
         repl,
+        field_binds: HashSet::new(),
+        record_fields: HashSet::new(),
     };
+    for item in items {
+        match item {
+            Item::Stmt(s) => fields_in_stmt(s, &mut c.record_fields),
+            Item::Test(_, body, _) => fields_in_expr(body, &mut c.record_fields),
+            _ => {}
+        }
+    }
     c.collect(items);
     c.walk(items);
     c.diags
@@ -150,10 +159,12 @@ struct Local {
     span: Span,
     used: bool,
     warn: bool,
+    /// For a local function: its number of parameters and signature.
+    info: Option<GlobalInfo>,
 }
 
 enum Res {
-    Local,
+    Local(Option<GlobalInfo>),
     Global(GlobalInfo),
     Unknown,
 }
@@ -169,6 +180,10 @@ struct Checker<'a> {
     fn_depth: usize,
     diags: Vec<Diagnostic>,
     repl: bool,
+    /// Names bound by a record pattern under the field's own name (`{age}`).
+    field_binds: HashSet<Span>,
+    /// Field names written in the records of this module (for `record.f()`).
+    record_fields: HashSet<Rc<str>>,
 }
 
 impl<'a> Checker<'a> {
@@ -235,7 +250,12 @@ impl<'a> Checker<'a> {
                     .at(span)
                     .label(t!("defined again here", "défini à nouveau ici"))
                     .secondary(*prev, t!("first defined here", "défini une première fois ici"));
-                d = if info.kind == GKind::Func {
+                d = if matches!(info.kind, GKind::Ctor | GKind::CtorValue) {
+                    d.help(t!(
+                        "a constructor belongs to a single type: rename one of them",
+                        "un constructeur appartient à un seul type : renommez l'un des deux"
+                    ))
+                } else if info.kind == GKind::Func {
                     d.help(t!(
                         "to give several definitions to a function (one per case), write them one right after the other",
                         "pour donner plusieurs définitions à une fonction (une par cas), écrivez-les les unes juste après les autres"
@@ -273,7 +293,15 @@ impl<'a> Checker<'a> {
     }
 
     fn walk(&mut self, items: &[Item]) {
-        for item in items {
+        // The value of the last expression is shown by the REPL and `rythme -e`;
+        // the values of the other top-level expressions are lost.
+        let last_expr = items.iter().rposition(|it| matches!(it, Item::Stmt(Stmt::Expr(_))));
+        for (i, item) in items.iter().enumerate() {
+            if let Item::Stmt(Stmt::Expr(e)) = item {
+                if Some(i) != last_expr && !has_effect(e) {
+                    self.diags.push(unused_value(e));
+                }
+            }
             match item {
                 Item::Stmt(Stmt::Fn(def)) => self.func(def),
                 Item::Stmt(Stmt::Let(p, e)) => {
@@ -305,6 +333,10 @@ impl<'a> Checker<'a> {
     // ----- scopes ------------------------------------------------------
 
     fn declare_local(&mut self, s: Sym, span: Span, warn: bool) {
+        self.declare_local_fn(s, span, warn, None);
+    }
+
+    fn declare_local_fn(&mut self, s: Sym, span: Span, warn: bool, info: Option<GlobalInfo>) {
         let scope = self.scopes.last_mut().expect("scope");
         if let Some(prev) = scope.iter().find(|l| l.sym == s).map(|l| l.span) {
             self.diags.push(
@@ -316,7 +348,7 @@ impl<'a> Checker<'a> {
             );
             return;
         }
-        scope.push(Local { sym: s, span, used: false, warn });
+        scope.push(Local { sym: s, span, used: false, warn, info });
     }
 
     fn pop_scope(&mut self) {
@@ -324,12 +356,17 @@ impl<'a> Checker<'a> {
         for l in scope {
             let name = l.sym.name();
             if l.warn && !l.used && !name.starts_with('_') {
-                self.diags.push(
-                    Diagnostic::warning("W001", t!("`{name}` is never used", "`{name}` n'est jamais utilisé")).at(l.span).help(t!(
-                        "remove it, or name it `_{name}` if this is on purpose",
-                        "supprimez-le, ou nommez-le `_{name}` si c'est voulu"
-                    )),
-                );
+                // In `{name, age} = person`, renaming `age` would read another field.
+                let help = if self.field_binds.contains(&l.span) {
+                    t!(
+                        "remove `{name}` from the pattern, or write `{name}: _{name}` if this is on purpose",
+                        "retirez `{name}` du motif, ou écrivez `{name}: _{name}` si c'est voulu"
+                    )
+                } else {
+                    t!("remove it, or name it `_{name}` if this is on purpose", "supprimez-le, ou nommez-le `_{name}` si c'est voulu")
+                };
+                self.diags
+                    .push(Diagnostic::warning("W001", t!("`{name}` is never used", "`{name}` n'est jamais utilisé")).at(l.span).help(help));
             }
         }
     }
@@ -372,7 +409,7 @@ impl<'a> Checker<'a> {
             for l in scope.iter_mut().rev() {
                 if l.sym == s {
                     l.used = true;
-                    return Res::Local;
+                    return Res::Local(l.info.clone());
                 }
             }
         }
@@ -483,7 +520,7 @@ impl<'a> Checker<'a> {
             }
             self.pop_scope();
         }
-        if def.arity == 1 && def.name.is_some() {
+        if def.arity == 1 && def.name.is_some() && !self.repl {
             let pats: Vec<&Pattern> = def.clauses.iter().filter(|c| c.guard.is_none()).map(|c| &c.params[0]).collect();
             let missing = self.missing(&pats);
             if !missing.is_empty() {
@@ -508,22 +545,30 @@ impl<'a> Checker<'a> {
     }
 
     fn stmts(&mut self, stmts: &[Stmt]) {
-        for s in stmts {
+        let n = stmts.len();
+        for (i, s) in stmts.iter().enumerate() {
             match s {
                 Stmt::Let(p, e) => {
-                    if let (PatKind::Bind(_), ExprKind::Lambda(_)) = (&p.kind, &e.kind) {
+                    if let (PatKind::Bind(name), ExprKind::Lambda(def)) = (&p.kind, &e.kind) {
                         // `name = fn(...)` sees its own name, so that it can be recursive.
-                        self.bind_pattern(p, true);
+                        let info = GlobalInfo { sig: def.signature().replacen("fn(", &format!("{name}("), 1), ..func_info(def) };
+                        self.declare_local_fn(*name, p.span, true, Some(info));
                         self.expr(e);
                     } else {
                         self.expr(e);
                         self.bind_pattern(p, true);
                     }
                 }
-                Stmt::Expr(e) => self.expr(e),
+                Stmt::Expr(e) => {
+                    self.expr(e);
+                    // Only the last line of a block gives its value.
+                    if i + 1 < n && !has_effect(e) {
+                        self.diags.push(unused_value(e));
+                    }
+                }
                 Stmt::Fn(def) => {
-                    if let Some(n) = def.name {
-                        self.declare_local(n, def.span, true);
+                    if let Some(name) = def.name {
+                        self.declare_local_fn(name, def.span, true, Some(func_info(def)));
                     }
                     self.func(def);
                 }
@@ -593,7 +638,7 @@ impl<'a> Checker<'a> {
                 for a in args {
                     self.expr(a);
                 }
-                self.method(*name, args.len() + 1, e.span);
+                self.method(*name, args.len() + 1, e.span, name_span_of(e));
             }
             ExprKind::Field(obj, _, _) => self.expr(obj),
             ExprKind::Index(a, b) | ExprKind::Binary(_, a, b, _) | ExprKind::Range(a, b) => {
@@ -660,12 +705,13 @@ impl<'a> Checker<'a> {
         for a in args {
             self.expr(a);
         }
-        if let Some((name, Res::Global(g))) = res {
+        if let Some((name, Res::Global(g) | Res::Local(Some(g)))) = res {
             self.check_arity(name, &g, args.len(), span);
         }
     }
 
-    fn method(&mut self, name: Sym, n: usize, span: Span) {
+    /// `value.name(args)` calls a record's field `name`, or the function `name`.
+    fn method(&mut self, name: Sym, n: usize, span: Span, name_span: Span) {
         for scope in self.scopes.iter_mut().rev() {
             for l in scope.iter_mut().rev() {
                 if l.sym == name {
@@ -674,10 +720,35 @@ impl<'a> Checker<'a> {
                 }
             }
         }
+        // A record of this file has a field with this name: it may be what is called.
+        let maybe_field = self.record_fields.contains(&*name.name());
         let g = self.own.get(&name).or_else(|| self.know.globals.get(&name)).cloned();
-        if let Some(g) = g {
-            if matches!(g.kind, GKind::Builtin | GKind::Func) {
-                self.check_arity(name, &g, n, span);
+        match g {
+            Some(g) if matches!(g.kind, GKind::Builtin | GKind::Func) => {
+                if !maybe_field {
+                    self.check_arity(name, &g, n, span);
+                }
+            }
+            Some(_) => {}
+            None if maybe_field => {}
+            None => {
+                let shown = name.name();
+                let mut d =
+                    Diagnostic::warning("W005", t!("there is no function named `{shown}`", "il n'existe pas de fonction nommée `{shown}`"))
+                        .at(name_span)
+                        .label(t!("unknown", "inconnue"));
+                if let Some(h) = suggest::alias_hint(&shown) {
+                    d = d.help(h);
+                } else {
+                    let names: Vec<Rc<str>> = self.own.keys().chain(self.know.globals.keys()).map(|s| s.name()).collect();
+                    if let Some(best) = suggest::closest(&shown, names.iter().map(|s| &**s)) {
+                        d = d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?"));
+                    }
+                }
+                self.diags.push(d.note(t!(
+                    "`value.{shown}(...)` calls `{shown}(value, ...)`, or the field `{shown}` of a record",
+                    "`valeur.{shown}(...)` appelle `{shown}(valeur, ...)`, ou le champ `{shown}` d'un enregistrement"
+                )));
             }
         }
     }
@@ -791,13 +862,22 @@ impl<'a> Checker<'a> {
                 }
             }
             PatKind::List(ps, _) => ps.iter().for_each(|x| self.pattern(x)),
-            PatKind::Record(fs) => fs.iter().for_each(|(_, x)| self.pattern(x)),
+            PatKind::Record(fs) => {
+                for (k, x) in fs {
+                    if matches!(&x.kind, PatKind::Bind(s) if *s.name() == **k) {
+                        self.field_binds.insert(x.span);
+                    }
+                    self.pattern(x);
+                }
+            }
             PatKind::Or(alts) => {
+                let mut reported = false;
                 for a in alts {
                     self.pattern(a);
                     let mut b = Vec::new();
                     a.bindings(&mut b);
-                    if let Some((s, sp)) = b.first() {
+                    if let (Some((s, sp)), false) = (b.first(), reported) {
+                        reported = true;
                         self.diags.push(
                             Diagnostic::error(
                                 "E001",
@@ -819,18 +899,20 @@ impl<'a> Checker<'a> {
     /// Does the pattern accept every value it may receive?
     fn irrefutable(&self, p: &Pattern) -> bool {
         match &p.kind {
-            PatKind::Wildcard | PatKind::Bind(_) | PatKind::Unit => true,
-            PatKind::Record(fs) => fs.iter().all(|(_, x)| self.irrefutable(x)),
+            PatKind::Wildcard | PatKind::Bind(_) => true,
             PatKind::Ctor(name, args) => {
                 let single = self.ctors.get(name).and_then(|m| self.types.get(&m.type_name)).is_some_and(|v| v.len() == 1);
                 single && args.iter().all(|a| self.irrefutable(a))
             }
             PatKind::Or(alts) => alts.iter().any(|a| self.irrefutable(a)),
+            // A record pattern needs a record with these fields; `()` needs `()`.
             _ => false,
         }
     }
 
-    /// Cases that none of the patterns handle (empty if all are handled or unknown).
+    /// Cases that none of the patterns handle. When the answer is not clear
+    /// (patterns too intricate for this simple analysis), nothing is reported:
+    /// a warning must never be wrong.
     fn missing(&self, pats: &[&Pattern]) -> Vec<String> {
         let mut flat: Vec<&Pattern> = Vec::new();
         for p in pats {
@@ -847,25 +929,35 @@ impl<'a> Checker<'a> {
             PatKind::Ctor(name, _) => {
                 let Some(meta) = self.ctors.get(name) else { return Vec::new() };
                 let Some(variants) = self.types.get(&meta.type_name) else { return Vec::new() };
-                let covered: HashSet<Sym> = flat
-                    .iter()
-                    .filter_map(|p| match &p.kind {
-                        PatKind::Ctor(n, args) if args.iter().all(|a| self.irrefutable(a)) => Some(*n),
-                        _ => None,
-                    })
-                    .collect();
-                variants
-                    .iter()
-                    .filter(|v| !covered.contains(v))
-                    .map(|v| {
-                        let arity = self.ctors.get(v).map(|m| m.arity).unwrap_or(0);
-                        if arity == 0 {
-                            v.to_string()
-                        } else {
-                            format!("{v}({})", vec!["_"; arity].join(", "))
+                let mut out = Vec::new();
+                for v in variants {
+                    let arity = self.ctors.get(v).map(|m| m.arity).unwrap_or(0);
+                    let rows: Vec<&[Pattern]> = flat
+                        .iter()
+                        .filter_map(|p| match &p.kind {
+                            PatKind::Ctor(n, args) if n == v && args.len() == arity => Some(args.as_slice()),
+                            _ => None,
+                        })
+                        .collect();
+                    if rows.is_empty() {
+                        out.push(if arity == 0 { v.to_string() } else { format!("{v}({})", vec!["_"; arity].join(", ")) });
+                        continue;
+                    }
+                    if rows.iter().any(|args| args.iter().all(|a| self.irrefutable(a))) {
+                        continue;
+                    }
+                    // Look inside when only one field is ever refutable: `Some(Some(x))`, `Some(None)`.
+                    let refutable: Vec<usize> = (0..arity).filter(|&j| rows.iter().any(|a| !self.irrefutable(&a[j]))).collect();
+                    if let [j] = refutable.as_slice() {
+                        let inner: Vec<&Pattern> = rows.iter().map(|a| &a[*j]).collect();
+                        for m in self.missing(&inner).into_iter().take(3) {
+                            let mut fields = vec!["_".to_string(); arity];
+                            fields[*j] = m;
+                            out.push(format!("{v}({})", fields.join(", ")));
                         }
-                    })
-                    .collect()
+                    }
+                }
+                out
             }
             PatKind::Bool(_) => [true, false]
                 .into_iter()
@@ -875,20 +967,23 @@ impl<'a> Checker<'a> {
             PatKind::List(..) => {
                 let mut exact: HashSet<usize> = HashSet::new();
                 let mut min_rest: Option<usize> = None;
+                let mut unclear = false;
                 for p in &flat {
                     if let PatKind::List(elems, rest) = &p.kind {
-                        if elems.iter().all(|e| self.irrefutable(e)) {
-                            match rest {
-                                None => {
-                                    exact.insert(elems.len());
-                                }
-                                Some(_) => min_rest = Some(min_rest.map_or(elems.len(), |m| m.min(elems.len()))),
+                        if !elems.iter().all(|e| self.irrefutable(e)) {
+                            unclear = true;
+                            continue;
+                        }
+                        match rest {
+                            None => {
+                                exact.insert(elems.len());
                             }
+                            Some(_) => min_rest = Some(min_rest.map_or(elems.len(), |m| m.min(elems.len()))),
                         }
                     }
                 }
                 let shape = |n: usize| format!("[{}]", vec!["_"; n].join(", "));
-                match min_rest {
+                let missing: Vec<String> = match min_rest {
                     Some(m) => (0..m).filter(|n| !exact.contains(n)).map(shape).collect(),
                     None => {
                         let k = exact.iter().max().map_or(0, |m| m + 1);
@@ -898,10 +993,141 @@ impl<'a> Checker<'a> {
                             vec![format!("[{}, ..]", vec!["_"; k].join(", "))]
                         }
                     }
+                };
+                if unclear {
+                    Vec::new()
+                } else {
+                    missing
                 }
             }
             PatKind::Int(_) | PatKind::Float(_) | PatKind::Text(_) => vec!["_".to_string()],
             _ => Vec::new(),
         }
+    }
+}
+
+/// Collects the field names written in record literals (`{name: ...}`).
+fn fields_in_stmt(s: &Stmt, out: &mut HashSet<Rc<str>>) {
+    match s {
+        Stmt::Let(_, e) | Stmt::Expr(e) => fields_in_expr(e, out),
+        Stmt::Fn(def) => def.clauses.iter().for_each(|c| fields_in_expr(&c.body, out)),
+    }
+}
+
+fn fields_in_expr(e: &Expr, out: &mut HashSet<Rc<str>>) {
+    match &e.kind {
+        ExprKind::Record(items) => {
+            for it in items {
+                match it {
+                    RecordItem::Field(k, _, x) => {
+                        out.insert(k.clone());
+                        fields_in_expr(x, out);
+                    }
+                    RecordItem::Spread(x) => fields_in_expr(x, out),
+                }
+            }
+        }
+        ExprKind::Template(parts) => parts.iter().for_each(|p| {
+            if let TemplatePart::Expr(x) = p {
+                fields_in_expr(x, out)
+            }
+        }),
+        ExprKind::List(items) => items.iter().for_each(|it| match it {
+            ListItem::One(x) | ListItem::Spread(x) => fields_in_expr(x, out),
+        }),
+        ExprKind::Lambda(def) => def.clauses.iter().for_each(|c| fields_in_expr(&c.body, out)),
+        ExprKind::Call(f, args) => {
+            fields_in_expr(f, out);
+            args.iter().for_each(|a| fields_in_expr(a, out));
+        }
+        ExprKind::Method(r, _, args, _) => {
+            fields_in_expr(r, out);
+            args.iter().for_each(|a| fields_in_expr(a, out));
+        }
+        ExprKind::Field(x, _, _) | ExprKind::Unary(_, x) | ExprKind::Try(x) => fields_in_expr(x, out),
+        ExprKind::Index(a, b) | ExprKind::Binary(_, a, b, _) | ExprKind::Range(a, b) => {
+            fields_in_expr(a, out);
+            fields_in_expr(b, out);
+        }
+        ExprKind::If(c, a, b) => {
+            fields_in_expr(c, out);
+            fields_in_expr(a, out);
+            fields_in_expr(b, out);
+        }
+        ExprKind::Match(s, arms) => {
+            fields_in_expr(s, out);
+            for arm in arms {
+                if let Some(g) = &arm.guard {
+                    fields_in_expr(g, out);
+                }
+                fields_in_expr(&arm.body, out);
+            }
+        }
+        ExprKind::Block(stmts) => stmts.iter().for_each(|s| fields_in_stmt(s, out)),
+        _ => {}
+    }
+}
+
+/// Can evaluating this expression do anything besides computing a value
+/// (call a function, or leave the function with `?`)?
+fn has_effect(e: &Expr) -> bool {
+    match &e.kind {
+        ExprKind::Call(..) | ExprKind::Method(..) | ExprKind::Try(_) => true,
+        ExprKind::Template(parts) => parts.iter().any(|p| matches!(p, TemplatePart::Expr(x) if has_effect(x))),
+        ExprKind::List(items) => items.iter().any(|it| match it {
+            ListItem::One(x) | ListItem::Spread(x) => has_effect(x),
+        }),
+        ExprKind::Record(items) => items.iter().any(|it| match it {
+            RecordItem::Field(_, _, x) | RecordItem::Spread(x) => has_effect(x),
+        }),
+        ExprKind::Field(x, _, _) | ExprKind::Unary(_, x) => has_effect(x),
+        ExprKind::Index(a, b) | ExprKind::Binary(_, a, b, _) | ExprKind::Range(a, b) => has_effect(a) || has_effect(b),
+        ExprKind::If(c, a, b) => has_effect(c) || has_effect(a) || has_effect(b),
+        ExprKind::Match(s, arms) => has_effect(s) || arms.iter().any(|a| has_effect(&a.body) || a.guard.as_ref().is_some_and(has_effect)),
+        ExprKind::Block(stmts) => stmts.iter().any(|s| match s {
+            Stmt::Let(_, x) | Stmt::Expr(x) => has_effect(x),
+            Stmt::Fn(_) => false,
+        }),
+        _ => false,
+    }
+}
+
+/// Does the expression start with a minus sign (`- tax`, `-3 * x`)?
+fn starts_with_minus(e: &Expr) -> bool {
+    match &e.kind {
+        ExprKind::Unary(UnOp::Neg, _) => true,
+        ExprKind::Int(n) => *n < 0,
+        ExprKind::Float(f) => *f < 0.0,
+        ExprKind::Binary(_, l, _, _) | ExprKind::Range(l, _) | ExprKind::Index(l, _) | ExprKind::Field(l, _, _) => starts_with_minus(l),
+        _ => false,
+    }
+}
+
+/// An error for an expression statement whose value is thrown away.
+fn unused_value(e: &Expr) -> Diagnostic {
+    let d = Diagnostic::error(
+        "E024",
+        t!("this line computes a value but does nothing with it", "cette ligne calcule une valeur mais n'en fait rien"),
+    )
+    .at(e.span)
+    .label(t!("this value is lost", "cette valeur est perdue"));
+    if starts_with_minus(e) {
+        d.help(t!(
+            "a line that starts with `-` is a new statement. To continue the line above,\nend that line with `-` instead:\n  total = price -\n    discount",
+            "une ligne qui commence par `-` est une nouvelle instruction. Pour continuer la ligne\nprécédente, terminez plutôt cette ligne par `-` :\n  total = prix -\n    remise"
+        ))
+    } else {
+        d.help(t!(
+            "to keep the value, give it a name: `result = ...`; to show it: `print(...)`.\nValues never change: `x + 1` does not change `x`.",
+            "pour garder la valeur, donnez-lui un nom : `resultat = ...` ; pour l'afficher : `print(...)`.\nLes valeurs ne changent jamais : `x + 1` ne modifie pas `x`."
+        ))
+    }
+}
+
+/// Where the name is in `value.name(args)`.
+fn name_span_of(e: &Expr) -> Span {
+    match &e.kind {
+        ExprKind::Method(_, _, _, span) => *span,
+        _ => e.span,
     }
 }

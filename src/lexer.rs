@@ -10,6 +10,8 @@ use crate::symbol::Sym;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tok {
     Int(i64),
+    /// 9223372036854775808: only valid after `-` (the smallest whole number).
+    IntMinMagnitude,
     Float(f64),
     Str(Vec<StrPart>),
     /// A lowercase name: `x`, `print`, `_`.
@@ -148,7 +150,9 @@ pub fn keyword_text(tok: &Tok) -> Option<&'static str> {
 }
 
 pub fn lex(src: &str, file: u32) -> Fallible<Lexed> {
-    let mut lx = Lexer { src, pos: 0, file, docs: HashMap::new(), pending_doc: Vec::new() };
+    // Some editors (Notepad) start files with an invisible byte order mark.
+    let pos = if src.starts_with('\u{FEFF}') { '\u{FEFF}'.len_utf8() } else { 0 };
+    let mut lx = Lexer { src, pos, file, docs: HashMap::new(), pending_doc: Vec::new(), depth: 0 };
     let tokens = lx.tokens(false)?;
     Ok(Lexed { tokens, docs: lx.docs })
 }
@@ -159,6 +163,8 @@ struct Lexer<'a> {
     file: u32,
     docs: HashMap<usize, String>,
     pending_doc: Vec<String>,
+    /// How many texts are being read inside `{...}` of other texts.
+    depth: usize,
 }
 
 fn is_ident_start(c: char) -> bool {
@@ -184,6 +190,12 @@ impl<'a> Lexer<'a> {
         Some(c)
     }
 
+    /// The text of the current line, from its start up to `pos`.
+    fn line_before(&self, pos: usize) -> &str {
+        let line_start = self.src[..pos].rfind('\n').map_or(0, |i| i + 1);
+        &self.src[line_start..pos]
+    }
+
     fn span(&self, start: usize) -> Span {
         Span::new(self.file, start, self.pos)
     }
@@ -199,7 +211,7 @@ impl<'a> Lexer<'a> {
         let mut depth = 0usize;
         loop {
             while let Some(c) = self.peek() {
-                if c == ' ' || c == '\t' || c == '\r' || (interpolation && c == '\n') {
+                if c == ' ' || c == '\t' || c == '\r' {
                     self.bump();
                 } else {
                     break;
@@ -222,13 +234,18 @@ impl<'a> Lexer<'a> {
             };
             let tok = match c {
                 '\n' | ';' => {
+                    // A blank line separates a `##` comment from what follows.
+                    if c == '\n' && self.line_before(start).trim().is_empty() {
+                        self.pending_doc.clear();
+                    }
                     if !matches!(toks.last(), None | Some(Token { tok: Tok::Newline, .. })) {
                         toks.push(Token { tok: Tok::Newline, span: self.span(start) });
                     }
                     continue;
                 }
                 '#' => {
-                    let doc = self.peek() == Some('#');
+                    // `##` documents the next definition only when it starts its line.
+                    let doc = self.peek() == Some('#') && self.line_before(start).trim().is_empty();
                     while let Some(c) = self.peek() {
                         if c == '\n' {
                             break;
@@ -341,8 +358,8 @@ impl<'a> Lexer<'a> {
                         return Err(self
                             .error("E018", start, t!("`++` is not an operator in Rythme", "`++` n'est pas un opérateur en Rythme"))
                             .help(t!(
-                                "use `+` to join two lists or two texts: `[1] + [2]`, `\"ab\" + \"cd\"`",
-                                "utilisez `+` pour joindre deux listes ou deux textes : `[1] + [2]`, `\"ab\" + \"cd\"`"
+                                "to add one, write `x + 1` and give the result a new name (values never change);\nto join two lists or two texts, use `+`: `[1] + [2]`",
+                                "pour ajouter un, écrivez `x + 1` et donnez un nouveau nom au résultat (les valeurs ne changent jamais) ;\npour joindre deux listes ou deux textes, utilisez `+` : `[1] + [2]`"
                             ))
                             .boxed());
                     }
@@ -495,19 +512,30 @@ impl<'a> Lexer<'a> {
         let text: String = self.src[start..self.pos].chars().filter(|&c| c != '_').collect();
         if float {
             Ok(Tok::Float(text.parse().unwrap_or(f64::INFINITY)))
+        } else if text == "9223372036854775808" {
+            Ok(Tok::IntMinMagnitude)
         } else {
-            text.parse::<i64>().map(Tok::Int).map_err(|_| {
-                self.error("E012", start, t!("the number `{text}` is too large", "le nombre `{text}` est trop grand"))
-                    .help(t!(
-                        "whole numbers go from -9223372036854775808 to 9223372036854775807; use a decimal number like `{text}.0` for bigger values",
-                        "les nombres entiers vont de -9223372036854775808 à 9223372036854775807 ; utilisez un nombre décimal comme `{text}.0` pour des valeurs plus grandes"
-                    ))
-                    .boxed()
-            })
+            text.parse::<i64>().map(Tok::Int).map_err(|_| too_large(&text, self.span(start)))
         }
     }
 
     fn string(&mut self, start: usize) -> Fallible<Tok> {
+        if self.depth >= 32 {
+            return Err(self
+                .error(
+                    "E001",
+                    start,
+                    t!("texts are nested too deeply inside `{{...}}`", "les textes sont imbriqués trop profondément dans des `{{...}}`"),
+                )
+                .boxed());
+        }
+        self.depth += 1;
+        let r = self.string_inner(start);
+        self.depth -= 1;
+        r
+    }
+
+    fn string_inner(&mut self, start: usize) -> Fallible<Tok> {
         let mut parts = Vec::new();
         let mut cur = String::new();
         loop {
@@ -578,6 +606,8 @@ impl<'a> Lexer<'a> {
                     }
                     parts.push(StrPart::Code(code));
                 }
+                // Windows line ends inside a text become plain new lines.
+                '\r' if self.peek() == Some('\n') => {}
                 c => cur.push(c),
             }
         }
@@ -588,10 +618,21 @@ impl<'a> Lexer<'a> {
     }
 }
 
+pub fn too_large(text: &str, span: Span) -> Box<Diagnostic> {
+    Diagnostic::error("E012", t!("the number `{text}` is too large", "le nombre `{text}` est trop grand"))
+        .at(span)
+        .help(t!(
+            "whole numbers go from -9223372036854775808 to 9223372036854775807; use a decimal number like `{text}.0` for bigger values",
+            "les nombres entiers vont de -9223372036854775808 à 9223372036854775807 ; utilisez un nombre décimal comme `{text}.0` pour des valeurs plus grandes"
+        ))
+        .boxed()
+}
+
 /// Human description of a token for error messages.
 pub fn describe(tok: &Tok) -> String {
     match tok {
         Tok::Int(n) => t!("the number `{n}`", "le nombre `{n}`"),
+        Tok::IntMinMagnitude => t!("the number `9223372036854775808`", "le nombre `9223372036854775808`"),
         Tok::Float(f) => t!("the number `{f}`", "le nombre `{f}`"),
         Tok::Str(_) => t!("a text", "un texte"),
         Tok::Ident(s) | Tok::Ctor(s) | Tok::Reserved(s) => t!("the name `{s}`", "le nom `{s}`"),

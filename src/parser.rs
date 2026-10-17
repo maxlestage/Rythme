@@ -13,7 +13,7 @@ use crate::source::Span;
 use crate::symbol::Sym;
 
 pub fn parse(lexed: Lexed) -> Fallible<Vec<Item>> {
-    let mut p = Parser { toks: lexed.tokens, pos: 0, sig: vec![true], docs: lexed.docs, last: Span::default() };
+    let mut p = Parser { toks: lexed.tokens, pos: 0, sig: vec![true], docs: lexed.docs, last: Span::default(), depth: 0 };
     p.program()
 }
 
@@ -25,7 +25,12 @@ struct Parser {
     docs: HashMap<usize, String>,
     /// Span of the last consumed token.
     last: Span,
+    /// How many expressions are being read inside each other.
+    depth: usize,
 }
+
+/// Deeper nesting is surely a mistake, and would exhaust the stack.
+const MAX_NESTING: usize = 256;
 
 /// Tokens that may start a line and still continue the previous expression.
 fn is_continuation(t: &Tok) -> bool {
@@ -524,10 +529,15 @@ impl Parser {
             }
             _ => {
                 let tok = self.toks[self.pos].clone();
-                let mut d = self.unexpected_token(&tok, t!("`=` or a new line", "`=` ou une nouvelle ligne"));
-                if matches!(tok.tok, Tok::Arrow) {
-                    d.helps.push(t!("functions use `=`: `fn(x) = x * 2`", "les fonctions utilisent `=` : `fn(x) = x * 2`"));
-                }
+                let mut d = if matches!(tok.tok, Tok::Arrow | Tok::FatArrow) {
+                    let arrow = lexer::symbol_text(&tok.tok);
+                    Diagnostic::error("E001", t!("functions use `=`, not `{arrow}`", "les fonctions utilisent `=`, pas `{arrow}`"))
+                        .at(tok.span)
+                        .help(t!("write `fn(x) = x * 2`", "écrivez `fn(x) = x * 2`"))
+                        .boxed()
+                } else {
+                    self.unexpected_token(&tok, t!("`=` or a new line", "`=` ou une nouvelle ligne"))
+                };
                 d.helps.push(t!(
                     "a function is written `fn name(x) = expression`,\nor with its body on the following lines, finished by `end`",
                     "une fonction s'écrit `fn nom(x) = expression`,\nou avec son corps sur les lignes suivantes, terminé par `end`"
@@ -536,7 +546,7 @@ impl Parser {
             }
         };
         let arity = params.len();
-        Ok(FnDef { name, clauses: vec![Clause { params, guard, body, span: head }], arity, doc, span: name_span })
+        Ok(FnDef { name, clauses: vec![Rc::new(Clause { params, guard, body, span: head })], arity, doc, span: name_span })
     }
 
     fn type_def(&mut self) -> Fallible<Item> {
@@ -702,7 +712,7 @@ impl Parser {
     fn not_expr(&mut self) -> Fallible<Expr> {
         if matches!(self.peek(), Tok::Not) {
             let t = self.advance();
-            let e = self.not_expr()?;
+            let e = self.deeper(|p| p.not_expr())?;
             let span = t.span.to(e.span);
             return Ok(Expr::new(ExprKind::Unary(UnOp::Not, Box::new(e)), span));
         }
@@ -740,20 +750,71 @@ impl Parser {
 
     fn pipe_expr(&mut self) -> Fallible<Expr> {
         let mut l = self.range_expr()?;
+        let mut piped = false;
         while matches!(self.peek_cont(), Tok::PipeGt) {
             self.take_cont();
             self.skip_newlines();
-            let r = self.postfix()?;
-            let span = l.span.to(r.span);
-            l = match r.kind {
-                ExprKind::Call(callee, mut args) => {
-                    args.insert(0, l);
-                    Expr::new(ExprKind::Call(callee, args), span)
-                }
-                kind => Expr::new(ExprKind::Call(Box::new(Expr::new(kind, r.span)), vec![l]), span),
-            };
+            l = self.pipe_step(l)?;
+            piped = true;
+        }
+        let arithmetic = matches!(
+            self.peek_cont(),
+            Tok::Plus | Tok::Minus | Tok::Star | Tok::Slash | Tok::SlashSlash | Tok::Percent | Tok::StarStar | Tok::DotDot
+        );
+        if piped && arithmetic {
+            let op = self.peek_token();
+            let sym = lexer::symbol_text(&op.tok);
+            return Err(Diagnostic::error("E001", t!("`{sym}` cannot follow a `|>` step directly", "`{sym}` ne peut pas suivre directement une étape `|>`"))
+                .at(op.span)
+                .help(t!(
+                    "`|>` comes after the calculations: put the pipeline in parentheses,\nlike `(x |> f) {sym} 1`, or continue it with a function: `x |> f |> fn(v) = v {sym} 1`",
+                    "`|>` passe après les calculs : mettez l'enchaînement entre parenthèses,\ncomme `(x |> f) {sym} 1`, ou continuez-le avec une fonction : `x |> f |> fn(v) = v {sym} 1`"
+                ))
+                .boxed());
         }
         Ok(l)
+    }
+
+    /// After `|>`: a function, with its other arguments if any. The value on the
+    /// left becomes the first argument; `?`, `[i]` and `.field` written after
+    /// the step apply to its result.
+    fn pipe_step(&mut self, input: Expr) -> Fallible<Expr> {
+        let start = input.span;
+        let mut callee = self.primary()?;
+        // `x |> record.field` or `x |> value.method(args)`.
+        while matches!(self.raw(), Tok::Dot) {
+            self.advance();
+            let t = self.advance();
+            let name = self.member_name(&t)?;
+            if matches!(self.raw(), Tok::LParen) {
+                self.advance();
+                let mut args = self.comma_list(&Tok::RParen, |p| p.expr())?;
+                args.insert(0, input);
+                let call = Expr::new(ExprKind::Method(Box::new(callee), Sym::new(&name), args, t.span), start.to(self.last));
+                return self.postfix_ops(call);
+            }
+            let span = callee.span.to(t.span);
+            callee = Expr::new(ExprKind::Field(Box::new(callee), name, t.span), span);
+        }
+        let mut args = vec![input];
+        if matches!(self.raw(), Tok::LParen) {
+            self.advance();
+            args.extend(self.comma_list(&Tok::RParen, |p| p.expr())?);
+        }
+        let call = Expr::new(ExprKind::Call(Box::new(callee), args), start.to(self.last));
+        self.postfix_ops(call)
+    }
+
+    /// The name after a `.`: a field or a function. Keywords are allowed, so
+    /// that records can have fields like `type` or `class`.
+    fn member_name(&self, t: &Token) -> Fallible<Rc<str>> {
+        match &t.tok {
+            Tok::Ident(s) | Tok::Ctor(s) | Tok::Reserved(s) => Ok(s.name()),
+            other => match lexer::keyword_text(other) {
+                Some(k) => Ok(Rc::from(k)),
+                None => Err(self.unexpected_token(t, t!("a field or function name after `.`", "un nom de champ ou de fonction après `.`"))),
+            },
+        }
     }
 
     fn range_expr(&mut self) -> Fallible<Expr> {
@@ -804,7 +865,12 @@ impl Parser {
         match self.peek() {
             Tok::Minus => {
                 let t = self.advance();
-                let e = self.unary()?;
+                if matches!(self.peek(), Tok::IntMinMagnitude) {
+                    // -9223372036854775808, the smallest whole number.
+                    let n = self.advance();
+                    return Ok(Expr::new(ExprKind::Int(i64::MIN), t.span.to(n.span)));
+                }
+                let e = self.deeper(|p| p.unary())?;
                 let span = t.span.to(e.span);
                 Ok(match e.kind {
                     ExprKind::Int(n) => Expr::new(ExprKind::Int(n.wrapping_neg()), span),
@@ -829,7 +895,12 @@ impl Parser {
     }
 
     fn postfix(&mut self) -> Fallible<Expr> {
-        let mut e = self.primary()?;
+        let e = self.primary()?;
+        self.postfix_ops(e)
+    }
+
+    /// Calls, `[index]`, `?`, `.field` and `.method()` after an expression.
+    fn postfix_ops(&mut self, mut e: Expr) -> Fallible<Expr> {
         loop {
             self.skip_soft();
             match self.raw() {
@@ -862,18 +933,7 @@ impl Parser {
                     }
                     self.take_cont();
                     let t = self.advance();
-                    let name: Rc<str> = match &t.tok {
-                        Tok::Ident(s) | Tok::Ctor(s) => s.name(),
-                        other => match lexer::keyword_text(other) {
-                            Some(k) => Rc::from(k),
-                            None => {
-                                return Err(self.unexpected_token(
-                                    &t,
-                                    t!("a field or function name after `.`", "un nom de champ ou de fonction après `.`"),
-                                ))
-                            }
-                        },
-                    };
+                    let name = self.member_name(&t)?;
                     if matches!(self.raw(), Tok::LParen) {
                         self.advance();
                         let args = self.comma_list(&Tok::RParen, |p| p.expr())?;
@@ -918,7 +978,32 @@ impl Parser {
         })
     }
 
+    /// Runs `f` one nesting level deeper, refusing absurdly deep code.
+    fn deeper<T>(&mut self, f: impl FnOnce(&mut Self) -> Fallible<T>) -> Fallible<T> {
+        if self.depth >= MAX_NESTING {
+            let at = self.peek_token().span;
+            return Err(Diagnostic::error(
+                "E001",
+                t!(
+                    "this code is nested too deeply (more than {MAX_NESTING} levels)",
+                    "ce code est imbriqué trop profondément (plus de {MAX_NESTING} niveaux)"
+                ),
+            )
+            .at(at)
+            .help(t!("split it into several named values or functions", "découpez-le en plusieurs valeurs ou fonctions nommées"))
+            .boxed());
+        }
+        self.depth += 1;
+        let r = f(self);
+        self.depth -= 1;
+        r
+    }
+
     fn primary(&mut self) -> Fallible<Expr> {
+        self.deeper(|p| p.primary_inner())
+    }
+
+    fn primary_inner(&mut self) -> Fallible<Expr> {
         let tok = self.peek_token();
         let span = tok.span;
         match tok.tok {
@@ -947,6 +1032,7 @@ impl Parser {
                 Ok(Expr::new(ExprKind::Ctor(s), span))
             }
             Tok::Reserved(s) => Err(self.reserved_error(s, span)),
+            Tok::IntMinMagnitude => Err(lexer::too_large("9223372036854775808", span)),
             Tok::LParen => {
                 self.advance();
                 self.nested(false, |p| {
@@ -1034,28 +1120,21 @@ impl Parser {
             return Ok(RecordItem::Spread(self.expr()?));
         }
         let t = self.advance();
-        let key: Rc<str> = match &t.tok {
-            Tok::Ident(s) | Tok::Ctor(s) => s.name(),
-            Tok::Str(parts) if parts.iter().all(|p| matches!(p, StrPart::Lit(_))) => {
-                Rc::from(parts.iter().map(|p| if let StrPart::Lit(s) = p { s.as_str() } else { "" }).collect::<String>())
-            }
-            other => match lexer::keyword_text(other) {
-                Some(k) => Rc::from(k),
-                None => {
-                    let mut d = self.unexpected_token(&t, t!("a field name", "un nom de champ"));
-                    d.helps.push(t!(
-                        "a record is written `{{name: \"Ada\", age: 36}}`; for a block of code, use `do ... end`",
-                        "un enregistrement s'écrit `{{nom: \"Ada\", age: 36}}` ; pour un bloc de code, utilisez `do ... end`"
-                    ));
-                    return Err(d);
-                }
-            },
+        let Some(key) = field_key(&t.tok) else {
+            let mut d = self.unexpected_token(&t, t!("a field name", "un nom de champ"));
+            d.helps.push(t!(
+                "a record is written `{{name: \"Ada\", age: 36}}`; for a block of code, use `do ... end`",
+                "un enregistrement s'écrit `{{nom: \"Ada\", age: 36}}` ; pour un bloc de code, utilisez `do ... end`"
+            ));
+            return Err(d);
         };
         if self.eat(&Tok::Colon) {
             return Ok(RecordItem::Field(key, t.span, self.expr()?));
         }
         match t.tok {
             Tok::Ident(s) => Ok(RecordItem::Field(key, t.span, Expr::new(ExprKind::Var(s), t.span))),
+            // `{class}` would read a variable named `class`, which cannot exist.
+            Tok::Reserved(s) => Err(self.reserved_error(s, t.span)),
             _ => Err(self.unexpected(t!("`:` and a value", "`:` et une valeur"))),
         }
     }
@@ -1069,7 +1148,7 @@ impl Parser {
             match part {
                 StrPart::Lit(s) => out.push(TemplatePart::Lit(Rc::from(s))),
                 StrPart::Code(tokens) => {
-                    let mut sub = Parser { toks: tokens, pos: 0, sig: vec![false], docs: HashMap::new(), last: span };
+                    let mut sub = Parser { toks: tokens, pos: 0, sig: vec![false], docs: HashMap::new(), last: span, depth: self.depth };
                     let e =
                         sub.expr().and_then(
                             |e| {
@@ -1223,6 +1302,10 @@ impl Parser {
     // ----- patterns ----------------------------------------------------
 
     fn pattern(&mut self) -> Fallible<Pattern> {
+        self.deeper(|p| p.pattern_inner())
+    }
+
+    fn pattern_inner(&mut self) -> Fallible<Pattern> {
         let first = self.pattern_atom()?;
         if !matches!(self.peek(), Tok::Bar) {
             return Ok(first);
@@ -1360,19 +1443,16 @@ impl Parser {
                         return Ok(None);
                     }
                     let t = p.advance();
-                    let key: Rc<str> = match &t.tok {
-                        Tok::Ident(s) => s.name(),
-                        other => match lexer::keyword_text(other) {
-                            Some(k) => Rc::from(k),
-                            None => return Err(p.unexpected_token(&t, t!("a field name", "un nom de champ"))),
-                        },
+                    let Some(key) = field_key(&t.tok) else {
+                        return Err(p.unexpected_token(&t, t!("a field name", "un nom de champ")));
                     };
                     if p.eat(&Tok::Colon) {
                         return Ok(Some((key, p.pattern()?)));
                     }
                     match t.tok {
                         Tok::Ident(s) => Ok(Some((key, Pattern { kind: PatKind::Bind(s), span: t.span }))),
-                        _ => Err(p.unexpected(t!("`:`", "`:`"))),
+                        Tok::Reserved(s) => Err(p.reserved_error(s, t.span)),
+                        _ => Err(p.unexpected(t!("`:` and a pattern", "`:` et un motif"))),
                     }
                 })?;
                 return Ok(Pattern { kind: PatKind::Record(fields.into_iter().flatten().collect()), span: span.to(self.last) });
@@ -1388,6 +1468,18 @@ impl Parser {
             }
         };
         Ok(Pattern { kind, span })
+    }
+}
+
+/// The name of a field in a record or a record pattern: a name, a keyword
+/// (`type`, `class`...), or a text (`"full name"`).
+fn field_key(tok: &Tok) -> Option<Rc<str>> {
+    match tok {
+        Tok::Ident(s) | Tok::Ctor(s) | Tok::Reserved(s) => Some(s.name()),
+        Tok::Str(parts) if parts.iter().all(|p| matches!(p, StrPart::Lit(_))) => {
+            Some(Rc::from(parts.iter().map(|p| if let StrPart::Lit(s) = p { s.as_str() } else { "" }).collect::<String>()))
+        }
+        other => lexer::keyword_text(other).map(Rc::from),
     }
 }
 

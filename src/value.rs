@@ -201,8 +201,7 @@ impl Value {
             Value::List(_) => "List".into(),
             Value::Record(_) => "Record".into(),
             Value::Variant(v) => v.ctor.type_name.name().to_string(),
-            Value::Func(_) | Value::Builtin(_) => "Function".into(),
-            Value::Ctor(c) => c.type_name.name().to_string(),
+            Value::Func(_) | Value::Builtin(_) | Value::Ctor(_) => "Function".into(),
         }
     }
 
@@ -221,100 +220,145 @@ impl Value {
     /// How the value is written in code: texts with quotes.
     pub fn repr(&self) -> String {
         let mut out = String::new();
-        self.write_repr(&mut out);
+        self.write_repr(&mut out, usize::MAX);
         out
     }
 
-    fn write_repr(&self, out: &mut String) {
-        match self {
-            Value::Unit => out.push_str("()"),
-            Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
-            Value::Int(n) => out.push_str(&n.to_string()),
-            Value::Float(f) => out.push_str(&fmt_float(*f)),
-            Value::Text(s) => write_text_repr(s, out),
-            Value::List(l) => {
-                out.push('[');
-                for (i, v) in l.iter().enumerate() {
-                    if i > 0 {
-                        out.push_str(", ");
-                    }
-                    v.write_repr(out);
-                }
-                out.push(']');
+    /// Writes the value without recursion (values can be nested millions of
+    /// levels deep), stopping once `limit` bytes are written.
+    fn write_repr(&self, out: &mut String, limit: usize) {
+        enum Item<'a> {
+            Value(&'a Value),
+            Str(&'static str),
+            Key(&'a str),
+        }
+        let mut todo = vec![Item::Value(self)];
+        while let Some(item) = todo.pop() {
+            if out.len() > limit {
+                return;
             }
-            Value::Record(r) => {
-                out.push('{');
-                for (i, (k, v)) in r.iter().enumerate() {
-                    if i > 0 {
-                        out.push_str(", ");
-                    }
+            match item {
+                Item::Str(s) => out.push_str(s),
+                Item::Key(k) => {
                     if is_plain_key(k) {
                         out.push_str(k);
                     } else {
                         write_text_repr(k, out);
                     }
                     out.push_str(": ");
-                    v.write_repr(out);
                 }
-                out.push('}');
-            }
-            Value::Variant(v) => {
-                out.push_str(&v.ctor.name.name());
-                if !v.fields.is_empty() {
-                    out.push('(');
-                    for (i, f) in v.fields.iter().enumerate() {
-                        if i > 0 {
-                            out.push_str(", ");
+                Item::Value(v) => match v {
+                    Value::Unit => out.push_str("()"),
+                    Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
+                    Value::Int(n) => out.push_str(&n.to_string()),
+                    Value::Float(f) => out.push_str(&fmt_float(*f)),
+                    Value::Text(s) => write_text_repr(s, out),
+                    Value::List(l) => {
+                        out.push('[');
+                        todo.push(Item::Str("]"));
+                        for (i, x) in l.iter().enumerate().rev() {
+                            todo.push(Item::Value(x));
+                            if i > 0 {
+                                todo.push(Item::Str(", "));
+                            }
                         }
-                        f.write_repr(out);
                     }
-                    out.push(')');
-                }
+                    Value::Record(r) => {
+                        out.push('{');
+                        todo.push(Item::Str("}"));
+                        for i in (0..r.len()).rev() {
+                            todo.push(Item::Value(&r.vals[i]));
+                            todo.push(Item::Key(&r.keys[i]));
+                            if i > 0 {
+                                todo.push(Item::Str(", "));
+                            }
+                        }
+                    }
+                    Value::Variant(var) => {
+                        out.push_str(&var.ctor.name.name());
+                        if !var.fields.is_empty() {
+                            out.push('(');
+                            todo.push(Item::Str(")"));
+                            for (i, x) in var.fields.iter().enumerate().rev() {
+                                todo.push(Item::Value(x));
+                                if i > 0 {
+                                    todo.push(Item::Str(", "));
+                                }
+                            }
+                        }
+                    }
+                    Value::Func(c) => match c.def.name {
+                        Some(n) => out.push_str(&format!("<fn {n}>")),
+                        None => out.push_str("<fn>"),
+                    },
+                    Value::Builtin(b) => out.push_str(&format!("<fn {}>", b.name)),
+                    Value::Ctor(c) => out.push_str(&format!("<{} {}>", t!("constructor", "constructeur"), c.name)),
+                },
             }
-            Value::Func(c) => match c.def.name {
-                Some(n) => out.push_str(&format!("<fn {n}>")),
-                None => out.push_str("<fn>"),
-            },
-            Value::Builtin(b) => out.push_str(&format!("<fn {}>", b.name)),
-            Value::Ctor(c) => out.push_str(&format!("<{} {}>", t!("constructor", "constructeur"), c.name)),
         }
     }
 
     /// A short description for error messages: `Text "abc"`, `List [1, 2]`.
     pub fn describe(&self) -> String {
-        let mut r = self.repr();
+        let mut r = String::new();
+        self.write_repr(&mut r, 160);
         if r.chars().count() > 40 {
             r = r.chars().take(37).collect::<String>() + "...";
         }
         match self {
             Value::Unit => "()".into(),
             Value::Func(_) | Value::Builtin(_) | Value::Ctor(_) => r,
-            Value::Variant(_) => format!("{} {r}", self.type_name()),
             _ => format!("{} {r}", self.type_name()),
         }
     }
 
+    /// Structural equality, without recursion.
     pub fn equals(&self, other: &Value) -> bool {
-        match (self, other) {
-            (Value::Unit, Value::Unit) => true,
-            (Value::Bool(a), Value::Bool(b)) => a == b,
-            (Value::Int(a), Value::Int(b)) => a == b,
-            (Value::Int(a), Value::Float(b)) | (Value::Float(b), Value::Int(a)) => (*a as f64) == *b,
-            (Value::Float(a), Value::Float(b)) => a == b,
-            (Value::Text(a), Value::Text(b)) => a == b,
-            (Value::List(a), Value::List(b)) => a.len() == b.len() && a.iter().zip(b.iter()).all(|(x, y)| x.equals(y)),
-            (Value::Record(a), Value::Record(b)) => a.len() == b.len() && a.iter().all(|(k, v)| b.get(k).is_some_and(|w| v.equals(w))),
-            (Value::Variant(a), Value::Variant(b)) => {
-                a.ctor.name == b.ctor.name
-                    && a.ctor.type_name == b.ctor.type_name
-                    && a.fields.len() == b.fields.len()
-                    && a.fields.iter().zip(b.fields.iter()).all(|(x, y)| x.equals(y))
+        let mut todo = vec![(self, other)];
+        while let Some((a, b)) = todo.pop() {
+            let same = match (a, b) {
+                (Value::Unit, Value::Unit) => true,
+                (Value::Bool(x), Value::Bool(y)) => x == y,
+                (Value::Int(x), Value::Int(y)) => x == y,
+                (Value::Int(x), Value::Float(y)) | (Value::Float(y), Value::Int(x)) => (*x as f64) == *y,
+                (Value::Float(x), Value::Float(y)) => x == y,
+                (Value::Text(x), Value::Text(y)) => x == y,
+                (Value::List(x), Value::List(y)) => {
+                    if x.len() != y.len() {
+                        return false;
+                    }
+                    todo.extend(x.iter().zip(y.iter()));
+                    true
+                }
+                (Value::Record(x), Value::Record(y)) => {
+                    if x.len() != y.len() {
+                        return false;
+                    }
+                    for (k, v) in x.iter() {
+                        match y.get(k) {
+                            Some(w) => todo.push((v, w)),
+                            None => return false,
+                        }
+                    }
+                    true
+                }
+                (Value::Variant(x), Value::Variant(y)) => {
+                    if x.ctor.name != y.ctor.name || x.ctor.type_name != y.ctor.type_name || x.fields.len() != y.fields.len() {
+                        return false;
+                    }
+                    todo.extend(x.fields.iter().zip(y.fields.iter()));
+                    true
+                }
+                (Value::Func(x), Value::Func(y)) => Rc::ptr_eq(x, y),
+                (Value::Builtin(x), Value::Builtin(y)) => std::ptr::eq(*x, *y),
+                (Value::Ctor(x), Value::Ctor(y)) => x.name == y.name,
+                _ => false,
+            };
+            if !same {
+                return false;
             }
-            (Value::Func(a), Value::Func(b)) => Rc::ptr_eq(a, b),
-            (Value::Builtin(a), Value::Builtin(b)) => std::ptr::eq(*a, *b),
-            (Value::Ctor(a), Value::Ctor(b)) => a.name == b.name,
-            _ => false,
         }
+        true
     }
 
     /// Order between two values of the same kind; `None` if they cannot be compared.
@@ -349,6 +393,122 @@ impl Value {
                 Some(Ordering::Equal)
             }
             _ => None,
+        }
+    }
+
+    /// A total order over all values, used to sort without ever failing:
+    /// first by kind, then by value. Agrees with `compare` where it is defined.
+    pub fn total_cmp(&self, other: &Value) -> Ordering {
+        fn rank(v: &Value) -> u8 {
+            match v {
+                Value::Unit => 0,
+                Value::Bool(_) => 1,
+                Value::Int(_) | Value::Float(_) => 2,
+                Value::Text(_) => 3,
+                Value::List(_) => 4,
+                Value::Record(_) => 5,
+                Value::Variant(_) => 6,
+                Value::Func(_) | Value::Builtin(_) | Value::Ctor(_) => 7,
+            }
+        }
+        // Numbers: by value, then whole numbers before decimals, then exact value.
+        fn number_key(v: &Value) -> (f64, bool, i64) {
+            match v {
+                Value::Int(n) => (*n as f64, false, *n),
+                Value::Float(f) => (*f, true, 0),
+                _ => (0.0, false, 0),
+            }
+        }
+        match (self, other) {
+            (Value::Int(a), Value::Int(b)) => a.cmp(b),
+            (Value::Int(_) | Value::Float(_), Value::Int(_) | Value::Float(_)) => {
+                let (a, b) = (number_key(self), number_key(other));
+                a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)).then(a.2.cmp(&b.2))
+            }
+            (Value::Text(a), Value::Text(b)) => a.cmp(b),
+            (Value::Bool(a), Value::Bool(b)) => a.cmp(b),
+            (Value::List(a), Value::List(b)) => {
+                for (x, y) in a.iter().zip(b.iter()) {
+                    match x.total_cmp(y) {
+                        Ordering::Equal => continue,
+                        o => return o,
+                    }
+                }
+                a.len().cmp(&b.len())
+            }
+            (Value::Variant(a), Value::Variant(b)) => {
+                let by_name = a.ctor.type_name.name().cmp(&b.ctor.type_name.name()).then(a.ctor.name.name().cmp(&b.ctor.name.name()));
+                if by_name != Ordering::Equal {
+                    return by_name;
+                }
+                for (x, y) in a.fields.iter().zip(b.fields.iter()) {
+                    match x.total_cmp(y) {
+                        Ordering::Equal => continue,
+                        o => return o,
+                    }
+                }
+                a.fields.len().cmp(&b.fields.len())
+            }
+            _ => match rank(self).cmp(&rank(other)) {
+                Ordering::Equal => self.repr().cmp(&other.repr()),
+                o => o,
+            },
+        }
+    }
+}
+
+/// Values that may hold other values.
+fn is_container(v: &Value) -> bool {
+    matches!(v, Value::List(_) | Value::Record(_) | Value::Variant(_))
+}
+
+/// Frees nested values one by one instead of recursively, so that a structure
+/// nested millions of levels deep does not overflow the stack when it is freed.
+fn drop_iteratively(mut todo: Vec<Value>) {
+    while let Some(v) = todo.pop() {
+        match v {
+            Value::Variant(mut rc) => {
+                if let Some(var) = Rc::get_mut(&mut rc) {
+                    todo.append(&mut var.fields);
+                }
+            }
+            Value::List(mut l) => {
+                if let Some(items) = Rc::get_mut(&mut l.data) {
+                    todo.append(items);
+                }
+            }
+            Value::Record(mut rc) => {
+                if let Some(r) = Rc::get_mut(&mut rc) {
+                    todo.append(&mut r.vals);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+impl Drop for Variant {
+    fn drop(&mut self) {
+        if self.fields.iter().any(is_container) {
+            drop_iteratively(std::mem::take(&mut self.fields));
+        }
+    }
+}
+
+impl Drop for List {
+    fn drop(&mut self) {
+        if let Some(items) = Rc::get_mut(&mut self.data) {
+            if items.iter().any(is_container) {
+                drop_iteratively(std::mem::take(items));
+            }
+        }
+    }
+}
+
+impl Drop for Record {
+    fn drop(&mut self) {
+        if self.vals.iter().any(is_container) {
+            drop_iteratively(std::mem::take(&mut self.vals));
         }
     }
 }
