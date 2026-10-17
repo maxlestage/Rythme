@@ -166,8 +166,9 @@ impl Env {
 pub struct Closure {
     pub def: Rc<FnDef>,
     pub env: Env,
-    /// Local named functions see themselves (for recursion) through this.
-    pub bind_self: bool,
+    /// The name under which a local function sees itself (for recursion):
+    /// `fn name(...)` or `name = fn(...)` inside a block.
+    pub self_name: Option<Sym>,
 }
 
 pub struct CtorInfo {

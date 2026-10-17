@@ -237,5 +237,17 @@ impl Colors {
 /// Colors are used when writing to a terminal, unless `NO_COLOR` is set.
 pub fn use_color() -> bool {
     use std::io::IsTerminal;
-    std::env::var_os("NO_COLOR").is_none() && std::io::stderr().is_terminal()
+    terminal_supports_color() && std::io::stderr().is_terminal()
+}
+
+/// `NO_COLOR` turns colors off. Old Windows consoles do not understand color
+/// codes, so on Windows colors are only used in terminals known to support them.
+pub fn terminal_supports_color() -> bool {
+    if std::env::var_os("NO_COLOR").is_some() {
+        return false;
+    }
+    if cfg!(windows) {
+        return ["WT_SESSION", "TERM", "TERM_PROGRAM", "ANSICON", "ConEmuANSI"].iter().any(|v| std::env::var_os(v).is_some());
+    }
+    true
 }

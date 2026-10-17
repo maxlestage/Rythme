@@ -1,0 +1,39 @@
+{
+  "name": "rythme",
+  "displayName": "Rythme",
+  "description": "Syntax highlighting, indentation and snippets for the Rythme language (.ry)",
+  "version": "0.1.0",
+  "publisher": "rythme",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maxlestage/Rythme"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": ["Programming Languages", "Snippets"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "rythme",
+        "aliases": ["Rythme", "rythme"],
+        "extensions": [".ry"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "rythme",
+        "scopeName": "source.rythme",
+        "path": "./syntaxes/rythme.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "rythme",
+        "path": "./snippets/rythme.json"
+      }
+    ]
+  }
+}

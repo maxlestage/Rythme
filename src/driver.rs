@@ -240,7 +240,7 @@ impl Driver {
             );
             return true;
         }
-        let color = std::io::stdout().is_terminal() && std::env::var_os("NO_COLOR").is_none();
+        let color = std::io::stdout().is_terminal() && crate::diagnostic::terminal_supports_color();
         let (green, red, reset) = if color { ("\x1b[32m", "\x1b[31m", "\x1b[0m") } else { ("", "", "") };
         let n = tests.len();
         println!("{}", t!("Running {n} test(s)", "Exécution de {n} test(s)"));
