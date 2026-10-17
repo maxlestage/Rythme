@@ -281,7 +281,10 @@ impl Server {
                 Ok(Json::Null)
             }
             "textDocument/hover" => self.at(params, features::hover),
-            "textDocument/completion" => self.at(params, features::completion),
+            "textDocument/completion" => {
+                let trigger = params.get_path(&["context", "triggerCharacter"]).as_str().map(str::to_string);
+                self.at(params, |cx, a, offset| features::completion(cx, a, offset, trigger.as_deref()))
+            }
             "textDocument/signatureHelp" => self.at(params, features::signature_help),
             "textDocument/definition" => self.at(params, features::definition),
             "textDocument/documentHighlight" => self.at(params, features::highlights),
@@ -525,7 +528,7 @@ impl Server {
     }
 
     /// Runs a feature at the position given in `params` (`null` for unknown documents).
-    fn at(&mut self, params: &Json, f: fn(&Ctx, &Analysis, usize) -> Json) -> Reply {
+    fn at(&mut self, params: &Json, f: impl Fn(&Ctx, &Analysis, usize) -> Json) -> Reply {
         let cx = self.cx;
         let Some(a) = self.analysis(params) else { return Ok(Json::Null) };
         let offset = a.lines.offset(&a.text, pos_of(params.get("position")), cx.enc);

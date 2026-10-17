@@ -34,8 +34,12 @@ fn temp_dir(name: &str) -> PathBuf {
 
 impl Lsp {
     fn spawn(lang: &str) -> Lsp {
+        Lsp::spawn_with(lang, &["lsp"])
+    }
+
+    fn spawn_with(lang: &str, args: &[&str]) -> Lsp {
         let mut child = Command::new(env!("CARGO_BIN_EXE_rythme"))
-            .arg("lsp")
+            .args(args)
             .env("RYTHME_LANG", lang)
             .env("NO_COLOR", "1")
             .stdin(Stdio::piped())
@@ -301,6 +305,12 @@ fn messages_follow_the_editor_language() {
     let diags = lsp.diagnostics("file:///nowhere/en.ry");
     assert!(diags[0].get("message").as_str().unwrap().starts_with("nom inconnu"), "{:?}", diags[0]);
     assert_eq!(lsp.stop(), 0);
+    // `--lang` on the command line wins over the language of the editor.
+    let mut lsp = Lsp::spawn_with("", &["--lang", "fr", "lsp", "--stdio"]);
+    lsp.result("initialize", r#"{"processId":null,"locale":"en-US","capabilities":{}}"#);
+    let diags = lsp.open("file:///nowhere/cli.ry", "print(inconnu)\n");
+    assert!(diags[0].get("message").as_str().unwrap().starts_with("nom inconnu"), "{:?}", diags[0]);
+    assert_eq!(lsp.stop(), 0);
 }
 
 #[test]
@@ -478,6 +488,19 @@ fn several_files() {
     let mut found: Vec<(String, u64)> = refs.as_array().iter().map(|r| (r.get("uri").as_str().unwrap().to_string(), range(r).0)).collect();
     found.sort();
     assert_eq!(found, [(gu.clone(), 1), (gu.clone(), 2), (mu.clone(), 1)]);
+    // File names inside `use "..."`, but not the file itself.
+    let typed = |line: u32, character: u32, trigger: &str| {
+        format!(
+            r#"{{"textDocument":{{"uri":{}}},"position":{{"line":{line},"character":{character}}},"context":{{"triggerKind":2,"triggerCharacter":{}}}}}"#,
+            s(&mu),
+            s(trigger)
+        )
+    };
+    lsp.change(&mu, 2, "use \"\nprint(area(2, 3), square(2))\n");
+    assert_eq!(labels(&lsp.result("textDocument/completion", &typed(0, 5, "\""))), ["broken.ry", "geometry.ry"]);
+    lsp.change(&mu, 3, "x = 6 /\n");
+    assert!(lsp.result("textDocument/completion", &typed(0, 7, "/")).as_array().is_empty(), "no list after a division");
+    lsp.change(&mu, 4, main_text);
     // Rename across files.
     let edit = lsp.result(
         "textDocument/rename",

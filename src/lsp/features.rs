@@ -82,7 +82,9 @@ pub fn diagnostic_json(cx: &Ctx, a: &Analysis, d: &Diagnostic) -> Json {
         }
     };
     let mut message = d.message.clone();
-    if !d.label.is_empty() {
+    // The label, unless it repeats the message ("expected `)` here").
+    let label = d.label.trim_end_matches(" here").trim_end_matches(" ici");
+    if !label.is_empty() && !d.message.contains(label) {
         message.push_str(&format!(" ({})", d.label));
     }
     for note in &d.notes {
@@ -468,13 +470,16 @@ fn snippets() -> Vec<(&'static str, &'static str, String, String)> {
     ]
 }
 
-pub fn completion(cx: &Ctx, a: &Analysis, offset: usize) -> Json {
+/// `trigger` is the character that made the editor ask, if any.
+pub fn completion(cx: &Ctx, a: &Analysis, offset: usize, trigger: Option<&str>) -> Json {
     let text = &a.text;
     let offset = offset.min(text.len());
     let sc = scan::scan(text, offset);
     match sc.place {
         Place::Comment => return Json::Arr(Vec::new()),
         Place::Text => return use_completion(cx, a, offset, sc.text_start),
+        // `"` and `/` ask for file names in `use "..."`; elsewhere they are a text or a division.
+        Place::Code if matches!(trigger, Some("\"" | "/")) => return Json::Arr(Vec::new()),
         Place::Code => {}
     }
     let start = scan::word_at(text, offset).map_or(offset, |(s, _)| s.min(offset));
