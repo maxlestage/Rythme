@@ -1621,6 +1621,22 @@ impl<'a> Checker<'a> {
         };
         match field {
             // The field of the record.
+            Some(Some(ft)) if ft.never(FUNC) => {
+                for a in args {
+                    self.expr(a);
+                }
+                self.diags.push(
+                    Diagnostic::error("E009", t!("the field `{name}` is not a function", "le champ `{name}` n'est pas une fonction"))
+                        .at(e.span)
+                        .label(t!("cannot be called", "ne peut pas être appelé"))
+                        .note(t!("`{name}` is {}", "`{name}` est {}", what(None, &ft)))
+                        .help(t!(
+                            "to read the field, write it without parentheses: `.{name}`",
+                            "pour lire le champ, écrivez-le sans parenthèses : `.{name}`"
+                        )),
+                );
+                Ty::Never
+            }
             Some(Some(ft)) => {
                 self.may_check = true;
                 self.call_target(None, &Res::Unknown, ft, None, args, e.span)

@@ -93,7 +93,7 @@ fn built_in_functions_given_the_wrong_kind_of_value() {
 #[test]
 fn values_that_are_not_functions() {
     finds("x = 5\nprint(x(1))", "E009", "`x` is not a function");
-    finds("r = {a: 1}\nprint(r.a(2))", "E009", "this value is not a function");
+    finds("r = {a: 1}\nprint(r.a(2))", "E009", "the field `a` is not a function");
     finds("double = fn(x) = x * 2\nprint(double(1, 2))", "E004", "`double` takes 1 argument, but 2 were given");
     finds("print((fn(a, b) = a + b)(1))", "E004", "takes 2 arguments, but 1 was given");
 }
