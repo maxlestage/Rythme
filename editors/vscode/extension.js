@@ -18,6 +18,8 @@ const INSTALL_URL = 'https://github.com/maxlestage/Rythme#install';
 let client;
 /** @type {vscode.OutputChannel} */
 let output;
+/** Changes of .ry files, also those made outside of the editor. */
+let watcher;
 /** Help pages shown by the commands, by address. */
 const pages = new Map();
 const pagesChanged = new vscode.EventEmitter();
@@ -143,7 +145,7 @@ async function startServer() {
     // changes of .ry files outside of the editor (for the files they `use`).
     synchronize: {
       configurationSection: 'rythme',
-      fileEvents: vscode.workspace.createFileSystemWatcher('**/*.ry'),
+      fileEvents: watcher,
     },
     outputChannel: output,
   };
@@ -188,8 +190,9 @@ function restartServer() {
   return restarting;
 }
 
+/** Quotes a word for the shell; backslashes always (Git Bash would remove them). */
 function quote(arg) {
-  return /^[\w./:\\-]+$/.test(arg) ? arg : `"${arg.replace(/"/g, '\\"')}"`;
+  return /^[\w./:-]+$/.test(arg) ? arg : `"${arg.replace(/"/g, '\\"')}"`;
 }
 
 /** Runs `rythme [subcommand] file` in a terminal, after saving the file. */
@@ -273,8 +276,10 @@ async function showHelp() {
 
 async function activate(context) {
   output = vscode.window.createOutputChannel('Rythme');
+  watcher = vscode.workspace.createFileSystemWatcher('**/*.ry');
   context.subscriptions.push(
     output,
+    watcher,
     pagesChanged,
     vscode.workspace.registerTextDocumentContentProvider('rythme-help', {
       onDidChange: pagesChanged.event,
