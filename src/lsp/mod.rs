@@ -17,7 +17,7 @@ mod scan;
 pub mod text;
 
 use std::collections::HashMap;
-use std::io::{BufRead, Read, Write};
+use std::io::{BufRead, IsTerminal, Read, Write};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -100,11 +100,27 @@ pub fn run(args: &[String], mut chosen: Option<lang::Lang>) -> i32 {
         match a.as_str() {
             // Added by some editors; standard input and output are the only transport.
             "--stdio" => {}
-            "--lang" => chosen = args.next().and_then(|v| lang::parse(v)).or(chosen),
+            "--lang" => {
+                chosen = args.next().and_then(|v| lang::parse(v)).or(chosen);
+                lang::set(chosen.unwrap_or_else(lang::get));
+            }
+            "--help" | "-h" => {
+                crate::io::out_line(crate::help::topic("editors").unwrap_or_default().trim_end());
+                return 0;
+            }
             other => {
                 eprintln!("{}", t!("rythme lsp: unknown option `{other}` (ignored)", "rythme lsp : option inconnue `{other}` (ignorée)"))
             }
         }
+    }
+    if std::io::stdin().is_terminal() {
+        eprintln!(
+            "{}",
+            t!(
+                "rythme lsp is the language server: your editor starts it and talks to it. See `rythme help editors`. (Ctrl-C to quit)",
+                "rythme lsp est le serveur de langage : votre éditeur le lance et dialogue avec lui. Voir `rythme help editors`. (Ctrl-C pour quitter)"
+            )
+        );
     }
     let stdin = std::io::stdin();
     let mut input = stdin.lock();

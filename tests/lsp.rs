@@ -705,3 +705,11 @@ fn typing_the_examples_never_breaks_the_server() {
     }
     assert_eq!(lsp.stop(), 0);
 }
+
+#[test]
+fn help_when_started_by_hand() {
+    let out = Command::new(env!("CARGO_BIN_EXE_rythme")).args(["lsp", "--lang", "fr", "--help"]).output().unwrap();
+    assert_eq!(out.status.code(), Some(0));
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert!(text.contains("RYTHME DANS VOTRE ÉDITEUR") && text.contains("rythme lsp"), "{text}");
+}
