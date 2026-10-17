@@ -1,0 +1,16 @@
+# Three ways to compute Fibonacci numbers.
+
+## The definition, one case per line. Simple, but slow for big n.
+fn fib(0) = 0
+fn fib(1) = 1
+fn fib(n) = fib(n - 1) + fib(n - 2)
+
+## Fast version: the recursive call is the last thing done (tail call),
+## so it can go as deep as needed.
+fn fast_fib(n) = step(n, 0, 1)
+fn step(0, a, _) = a
+fn step(n, a, b) = step(n - 1, b, a + b)
+
+print(fib(20))
+print(fast_fib(90))
+print(0..10 |> map(fast_fib))

@@ -1,0 +1,11 @@
+# Prime numbers with the sieve of Eratosthenes, written recursively.
+
+fn sieve([]) = []
+fn sieve([p, ..rest]) = [p, ..sieve(filter(rest, fn(n) = n % p != 0))]
+
+primes = sieve(2..100)
+print(primes)
+print("{len(primes)} primes below 100, their sum is {sum(primes)}")
+
+fn is_prime(n) = n >= 2 and all(2..floor(sqrt(n)), fn(d) = n % d != 0)
+print(1..30 |> filter(is_prime))

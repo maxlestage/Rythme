@@ -1,0 +1,7 @@
+# Using another file.
+# Run it with:  rythme examples/modules/main.ry
+
+use "geometry.ry"
+
+print(rectangle_area(3, 4))
+print(distance(origin, {x: 3, y: 4}))
