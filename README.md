@@ -5,6 +5,10 @@ Programs are files ending in `.ry`. The interpreter is written in Rust.
 
 *[Version française →](README.fr.md)*
 
+**Documentation:** the [reference manual](docs/reference.md) (the whole
+language, precisely), the [guide for teachers](docs/teaching.md), and
+[all the documents](docs/README.md).
+
 ```rythme
 # Values never change. Everything is a function. There are no loops.
 fn square(x) = x * x
@@ -169,7 +173,8 @@ test "double works" = assert_eq(double(21), 42)
 use "geometry.ry"
 ```
 
-More: [`examples/`](examples), `rythme help syntax`, `rythme learn`.
+More: the [reference manual](docs/reference.md), [`examples/`](examples),
+`rythme help syntax`, `rythme learn`.
 
 ## Examples
 
