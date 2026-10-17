@@ -402,3 +402,14 @@ fn names_from_other_languages() {
         assert!(r.stderr.contains(hint), "{name}: {}", r.stderr);
     }
 }
+
+#[test]
+fn help_on_a_value_lists_each_function_once() {
+    let r = common::rythme(&["-e", "help([1, 2])"]);
+    let names: Vec<&str> = r.stdout.lines().filter_map(|l| l.split_once(": ").map(|p| p.1)).flat_map(|l| l.split(", ")).collect();
+    for name in ["map", "chunks", "len", "join"] {
+        assert_eq!(names.iter().filter(|n| **n == name).count(), 1, "{name}: {}", r.stdout);
+    }
+    let r = common::rythme(&["-e", "help({a: 1})"]);
+    assert!(r.stdout.contains("map_values") && r.stdout.contains("to_json"), "{}", r.stdout);
+}

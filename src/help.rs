@@ -233,11 +233,15 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
             if let Some(cat) = cat {
                 let names: Vec<&str> = BUILTINS.iter().filter(|b| b.cat == cat).map(|b| b.name).collect();
                 out.push_str(&t!("Useful functions: {}\n", "Fonctions utiles : {}\n", names.join(", ")));
-                if cat == Category::Lists {
-                    out.push_str(&t!(
-                        "Also: len, contains, reverse, slice, take, drop\n",
-                        "Aussi : len, contains, reverse, slice, take, drop\n"
-                    ));
+                // Functions of other categories that work on this kind of value too.
+                let also = match cat {
+                    Category::Lists => "len, contains, join, repeat, min, max, to_json",
+                    Category::Records => "len, get, contains, is_empty, to_json",
+                    Category::Options => "map",
+                    _ => "",
+                };
+                if !also.is_empty() {
+                    out.push_str(&t!("Also: {also}\n", "Aussi : {also}\n"));
                 }
             }
             if let Value::Variant(var) = other {
