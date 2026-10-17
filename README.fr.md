@@ -38,8 +38,9 @@ fn carre(x) = x * x
     `def`, `class`... chacun reçoit une explication de la façon de faire en
     Rythme.
   - Le programme est vérifié **avant** d'être exécuté : tous les noms
-    inconnus, les mauvais nombres d'arguments et les cas oubliés sont signalés
-    d'un coup.
+    inconnus, les mauvais nombres d'arguments, les opérations sur de mauvaises
+    sortes de valeurs (`"âge : " + 36`, `len(5)`, un champ mal écrit) et les
+    cas oubliés sont signalés d'un coup.
   - `rythme explain E003` explique n'importe quel code d'erreur en détail,
     avec des exemples.
   - `rythme help`, `rythme help map`, `help(x)` dans le code, `:doc` dans le
@@ -188,8 +189,10 @@ suite :
   à peu près aussi rapide que Python, loin de Rust compilé. Suite : une
   machine virtuelle à bytecode.
 - **Types.** Les valeurs sont vérifiées à l'exécution (strictement : aucune
-  conversion silencieuse). Suite : l'inférence de types dans `rythme check`,
-  pour trouver plus d'erreurs avant l'exécution.
+  conversion silencieuse), et `rythme check` infère leurs types quand ils
+  sont certains, pour signaler avant l'exécution les opérations qui
+  échoueraient à coup sûr. Suite : les types des paramètres des fonctions,
+  pour trouver encore plus d'erreurs avant l'exécution.
 - **Outils.** Suite : un formateur (`rythme fmt`), un serveur de langage
   (erreurs et documentation dans tous les éditeurs), un gestionnaire de
   paquets, et un bac à sable en ligne (l'interpréteur compilé en WebAssembly)

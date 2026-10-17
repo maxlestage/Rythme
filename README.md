@@ -35,7 +35,9 @@ fn square(x) = x * x
   - Coming from another language? `for`, `return`, `null`, `x += 1`, `&&`,
     `def`, `class`... each gets an explanation of the Rythme way.
   - The program is checked **before** it runs: all the unknown names, wrong
-    numbers of arguments and forgotten cases are reported at once.
+    numbers of arguments, operations on the wrong kinds of values
+    (`"age: " + 36`, `len(5)`, a misspelled field) and forgotten cases are
+    reported at once.
   - `rythme explain E003` explains any error code in detail, with examples.
   - `rythme help`, `rythme help map`, `help(x)` in code, `:doc` in the REPL,
     `rythme learn` for a guided tour.
@@ -208,7 +210,8 @@ mode) and is organised as a pipeline:
 |------|------|
 | [`src/lexer.rs`](src/lexer.rs) | text → tokens (with `{...}` inside texts) |
 | [`src/parser.rs`](src/parser.rs) | tokens → syntax tree, with hints for common mistakes |
-| [`src/check.rs`](src/check.rs) | finds errors before running: names, arguments, forgotten cases |
+| [`src/check.rs`](src/check.rs) | finds errors before running: names, arguments, kinds of values, forgotten cases |
+| [`src/types.rs`](src/types.rs) | what the checker knows for sure about values: their types |
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
 | [`src/builtins.rs`](src/builtins.rs) | ~90 built-in functions, documented in two languages |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
@@ -226,8 +229,10 @@ for small programs. Honest limits, and what comes next:
 - **Speed.** It is a tree-walking interpreter: about as fast as Python, far
   from compiled Rust. Next: a bytecode virtual machine.
 - **Types.** Values are checked at run time (strongly: no silent
-  conversions). Next: type inference in `rythme check`, so that more mistakes
-  are found before running.
+  conversions), and `rythme check` infers their types when they are certain,
+  to report before running the operations that would always fail. Next: the
+  types of the parameters of functions, so that even more mistakes are found
+  before running.
 - **Tooling.** Next: a formatter (`rythme fmt`), a language server (errors and
   documentation inside every editor), a package manager, and a web playground
   (the interpreter compiled to WebAssembly) so that anyone can try Rythme

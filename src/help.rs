@@ -1148,7 +1148,9 @@ Wrong:   fn name(1) = "one"
 Right:   fn name(1) = "one"
          fn name(_) = "another number"
 
-`rythme check` warns about forgotten cases before running (W002)."#,
+`rythme check` warns about forgotten cases before running (W002). When the
+kind of the value is certain, it also reports, before running, a case that
+can never fit it: `[first, ..rest]` for a Text, `Circle(r)` for a number."#,
             r#"E006 — Aucun cas ne correspond
 
 Aucun des cas d'un `match` (ou des définitions d'une fonction) n'accepte
@@ -1159,7 +1161,10 @@ Faux :   fn nom(1) = "un"
 Juste :  fn nom(1) = "un"
          fn nom(_) = "un autre nombre"
 
-`rythme check` prévient des cas oubliés avant l'exécution (W002)."#,
+`rythme check` prévient des cas oubliés avant l'exécution (W002). Quand la
+nature de la valeur est certaine, il signale aussi, avant l'exécution, un cas
+qui ne peut jamais lui convenir : `[premier, ..reste]` pour un Text,
+`Cercle(r)` pour un nombre."#,
         ),
         "E007" => (
             r#"E007 — Index out of range
