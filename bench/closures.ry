@@ -1,0 +1,19 @@
+# Closures and higher-order functions.
+
+fn compose(f, g) = fn(x) = f(g(x))
+fn adder(n) = fn(x) = x + n
+fn twice(f) = fn(x) = f(f(x))
+
+fn apply_n(_, 0, x) = x
+fn apply_n(f, n, x) = apply_n(f, n - 1, f(x))
+
+plus5 = compose(twice(adder(1)), adder(3))
+scale = 3
+weighted = 1..1_000_000 |> map(fn(x) = x * scale) |> fold(0, fn(acc, x) = acc + x % 10)
+
+fn counter(start)
+  next = fn(x) = x + start
+  fn(n) = apply_n(next, n, 0)
+end
+
+print(apply_n(plus5, 1_000_000, 0), weighted, counter(2)(1_000_000))
