@@ -922,9 +922,7 @@ fn match_pat(p: &Pat, v: &Value, slots: &mut [Value], first: usize) -> bool {
         (Pat::Float(a), Value::Int(b)) => *a == (*b as f64),
         (Pat::Text(a), Value::Text(b)) => a == b,
         (Pat::Ctor(name, pats), Value::Variant(var)) => {
-            var.ctor.name == *name
-                && pats.len() == var.fields.len()
-                && pats.iter().zip(&var.fields).all(|(p, f)| match_pat(p, f, slots, first))
+            var.ctor.name == *name && pats.len() == var.fields.len() && match_each(pats, &var.fields, slots, first)
         }
         (Pat::List(pats, rest), Value::List(l)) => {
             let n = pats.len();
@@ -935,7 +933,7 @@ fn match_pat(p: &Pat, v: &Value, slots: &mut [Value], first: usize) -> bool {
             if !len_ok {
                 return false;
             }
-            if !pats.iter().zip(l.iter()).all(|(p, x)| match_pat(p, x, slots, first)) {
+            if !match_each(pats, l.as_slice(), slots, first) {
                 return false;
             }
             if let Some(Some(slot)) = rest {
@@ -947,6 +945,26 @@ fn match_pat(p: &Pat, v: &Value, slots: &mut [Value], first: usize) -> bool {
         (Pat::Or(alts), _) => alts.iter().any(|a| match_pat(a, v, slots, first)),
         _ => false,
     }
+}
+
+/// `match_pat` on each value with the pattern at the same place; names and
+/// `_`, the most common parts, without a nested call.
+#[inline(always)]
+fn match_each(pats: &[Pat], vals: &[Value], slots: &mut [Value], first: usize) -> bool {
+    for (p, v) in pats.iter().zip(vals) {
+        let ok = match p {
+            Pat::Any => true,
+            Pat::Bind(slot) => {
+                set(&mut slots[*slot as usize - first], v.clone());
+                true
+            }
+            _ => match_pat(p, v, slots, first),
+        };
+        if !ok {
+            return false;
+        }
+    }
+    true
 }
 
 pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> bool {
