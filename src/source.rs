@@ -34,7 +34,10 @@ pub struct SourceFile {
 impl SourceFile {
     /// 1-based line and column (in characters) of a byte offset.
     pub fn line_col(&self, offset: usize) -> (usize, usize) {
-        let offset = offset.min(self.text.len());
+        let mut offset = offset.min(self.text.len());
+        while !self.text.is_char_boundary(offset) {
+            offset -= 1;
+        }
         let line = match self.line_starts.binary_search(&offset) {
             Ok(i) => i,
             Err(i) => i - 1,

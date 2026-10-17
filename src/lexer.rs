@@ -153,7 +153,7 @@ pub fn lex(src: &str, file: u32) -> Fallible<Lexed> {
     // Some editors (Notepad) start files with an invisible byte order mark.
     let pos = if src.starts_with('\u{FEFF}') { '\u{FEFF}'.len_utf8() } else { 0 };
     let mut lx = Lexer { src, pos, file, docs: HashMap::new(), pending_doc: Vec::new(), depth: 0 };
-    let tokens = lx.tokens(false)?;
+    let tokens = lx.tokens(None)?;
     Ok(Lexed { tokens, docs: lx.docs })
 }
 
@@ -204,9 +204,10 @@ impl<'a> Lexer<'a> {
         Diagnostic::error(code, msg).at(Span::new(self.file, start, self.pos.max(start + 1)))
     }
 
-    /// Lexes tokens until the end of the text, or (inside `{...}` in a text)
-    /// until the closing brace.
-    fn tokens(&mut self, interpolation: bool) -> Fallible<Vec<Token>> {
+    /// Lexes tokens until the end of the text, or (inside `{...}` in a text,
+    /// `brace` being the position of the `{`) until the closing brace.
+    fn tokens(&mut self, brace: Option<usize>) -> Fallible<Vec<Token>> {
+        let interpolation = brace.is_some();
         let mut toks: Vec<Token> = Vec::new();
         let mut depth = 0usize;
         loop {
@@ -219,15 +220,8 @@ impl<'a> Lexer<'a> {
             }
             let start = self.pos;
             let Some(c) = self.bump() else {
-                if interpolation {
-                    return Err(self
-                        .error("E002", start, t!("this `{{` in a text is never closed", "cette `{{` dans un texte n'est jamais fermée"))
-                        .help(t!(
-                            "close it with `}}`, or write `\\{{` to get a literal brace",
-                            "fermez-la avec `}}`, ou écrivez `\\{{` pour obtenir une accolade"
-                        ))
-                        .incomplete()
-                        .boxed());
+                if let Some(brace) = brace {
+                    return Err(self.unclosed_brace(brace).boxed());
                 }
                 toks.push(Token { tok: Tok::Eof, span: Span::new(self.file, start, start) });
                 return Ok(toks);
@@ -430,6 +424,18 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    /// The `{` at `brace`, which starts a value inserted in a text, is never closed.
+    fn unclosed_brace(&self, brace: usize) -> Diagnostic {
+        Diagnostic::error("E002", t!("this `{{` in a text is never closed", "cette `{{` dans un texte n'est jamais fermée"))
+            .at(Span::new(self.file, brace, brace + 1))
+            .label(t!("starts a value inserted in the text", "commence une valeur insérée dans le texte"))
+            .help(t!(
+                "close it with `}}`, or write `\\{{` to get a literal brace: \"\\{{\"",
+                "fermez-la avec `}}`, ou écrivez `\\{{` pour obtenir une accolade : \"\\{{\""
+            ))
+            .incomplete()
+    }
+
     fn unexpected_char(&self, c: char, start: usize) -> Diagnostic {
         let d = self.error("E018", start, t!("unexpected character `{c}`", "caractère inattendu `{c}`"));
         match c {
@@ -456,9 +462,25 @@ impl<'a> Lexer<'a> {
                 self.bump();
             }
             let digits: String = self.src[digits_start..self.pos].chars().filter(|&c| c != '_').collect();
-            return i64::from_str_radix(&digits, radix).map(Tok::Int).map_err(|_| {
-                self.error("E018", start, t!("invalid number `{}`", "nombre invalide `{}`", &self.src[start..self.pos])).boxed()
-            });
+            let text = &self.src[start..self.pos];
+            if !digits.is_empty() && digits.chars().all(|c| c.is_digit(radix)) {
+                return i64::from_str_radix(&digits, radix).map(Tok::Int).map_err(|_| {
+                    Diagnostic::error("E012", t!("the number `{text}` is too large", "le nombre `{text}` est trop grand"))
+                        .at(self.span(start))
+                        .help(t!(
+                            "whole numbers go up to 9223372036854775807 (0x7fffffffffffffff)",
+                            "les nombres entiers vont jusqu'à 9223372036854775807 (0x7fffffffffffffff)"
+                        ))
+                        .boxed()
+                });
+            }
+            return Err(self
+                .error("E018", start, t!("invalid number `{text}`", "nombre invalide `{text}`"))
+                .help(t!(
+                    "hexadecimal numbers use the digits 0 to 9 and a to f, like `0xff`; binary numbers use 0 and 1, like `0b101`",
+                    "les nombres hexadécimaux utilisent les chiffres 0 à 9 et a à f, comme `0xff` ; les binaires 0 et 1, comme `0b101`"
+                ))
+                .boxed());
         }
         while self.peek().is_some_and(|c| c.is_ascii_digit() || c == '_') {
             self.bump();
@@ -583,8 +605,8 @@ impl<'a> Lexer<'a> {
                             return Err(self
                                 .error("E018", at, t!("unknown escape sequence in text", "séquence d'échappement inconnue dans le texte"))
                                 .help(t!(
-                                    "valid escapes: \\n (new line), \\t (tab), \\\\ (backslash), \\\" (quote), \\{{ and \\}} (braces)",
-                                    "échappements valides : \\n (nouvelle ligne), \\t (tabulation), \\\\ (barre oblique), \\\" (guillemet), \\{{ et \\}} (accolades)"
+                                    "valid escapes: \\n (new line), \\t (tab), \\r (carriage return), \\0 (null character), \\\\ (backslash),\n\\\" (quote), \\{{ and \\}} (braces), \\u{{e9}} (a character by its Unicode number: é)",
+                                    "échappements valides : \\n (nouvelle ligne), \\t (tabulation), \\r (retour chariot), \\0 (caractère nul), \\\\ (barre oblique),\n\\\" (guillemet), \\{{ et \\}} (accolades), \\u{{e9}} (un caractère par son numéro Unicode : é)"
                                 ))
                                 .boxed())
                         }
@@ -594,7 +616,28 @@ impl<'a> Lexer<'a> {
                     if !cur.is_empty() {
                         parts.push(StrPart::Lit(std::mem::take(&mut cur)));
                     }
-                    let code = self.tokens(true)?;
+                    let code = match self.tokens(Some(at)) {
+                        // A text started inside `{...}` reached the end of the code: the
+                        // `{` was probably meant literally, as in "{" or "{name: ".
+                        Err(d) if d.incomplete && d.span.is_some_and(|s| s.start as usize != at) => {
+                            let mut e = self.unclosed_brace(at);
+                            if let Some(inner) = d.span {
+                                e = e.secondary(
+                                    inner,
+                                    t!("inside it, this text is never closed", "à l'intérieur, ce texte n'est jamais fermé"),
+                                );
+                            }
+                            return Err(e.boxed());
+                        }
+                        Err(mut d) => {
+                            // (An unclosed `{` already says how to write a brace.)
+                            if d.span.is_some_and(|s| s.start as usize != at) {
+                                add_literal_brace_help(&mut d);
+                            }
+                            return Err(d);
+                        }
+                        Ok(code) => code,
+                    };
                     if code.len() == 1 {
                         return Err(self
                             .error("E001", at, t!("empty `{{}}` in a text", "`{{}}` vide dans un texte"))
@@ -615,6 +658,17 @@ impl<'a> Lexer<'a> {
             parts.push(StrPart::Lit(cur));
         }
         Ok(Tok::Str(parts))
+    }
+}
+
+/// For a mistake inside the `{...}` of a text: maybe the brace was meant literally.
+pub fn add_literal_brace_help(d: &mut Diagnostic) {
+    let help = t!(
+        "inside a text, `{{` starts an inserted value: to write braces, use `\\{{` and `\\}}`, like \"\\{{\\\"a\\\": 1\\}}\"",
+        "dans un texte, `{{` commence une valeur insérée : pour écrire des accolades, utilisez `\\{{` et `\\}}`, comme \"\\{{\\\"a\\\": 1\\}}\""
+    );
+    if !d.helps.contains(&help) {
+        d.helps.push(help);
     }
 }
 

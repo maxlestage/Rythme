@@ -175,7 +175,7 @@ pub fn run() -> i32 {
     let mut rl: Editor<RyHelper, DefaultHistory> = match Editor::new() {
         Ok(rl) => rl,
         Err(e) => {
-            eprintln!("{e}");
+            crate::io::err_line(&e.to_string());
             return 1;
         }
     };
@@ -241,9 +241,15 @@ pub fn run() -> i32 {
                     crate::io::out_line(&t!("(cancelled)", "(annulé)"));
                 }
             }
-            Err(ReadlineError::Eof) => break,
+            Err(ReadlineError::Eof) => {
+                // Unfinished code at the end of the input: show what is missing.
+                if !buffer.trim().is_empty() {
+                    eval(&mut driver, &buffer);
+                }
+                break;
+            }
             Err(e) => {
-                eprintln!("{e}");
+                crate::io::err_line(&e.to_string());
                 break;
             }
         }

@@ -18,6 +18,59 @@ use crate::{lexer, parser, source, suggest};
 #[derive(Debug)]
 pub struct Reported;
 
+/// `path` is a folder: a message that lists the Rythme files inside it.
+pub fn folder_error(path: &Path) -> Diagnostic {
+    let shown = path.display();
+    let mut d = Diagnostic::error("E017", t!("`{shown}` is a folder, not a file", "`{shown}` est un dossier, pas un fichier"));
+    let mut files: Vec<String> = std::fs::read_dir(path)
+        .map(|entries| entries.flatten().map(|e| e.file_name().to_string_lossy().to_string()).filter(|n| n.ends_with(".ry")).collect())
+        .unwrap_or_default();
+    files.sort();
+    if !files.is_empty() {
+        let list: Vec<String> = files.iter().take(5).map(|f| format!("`{}`", path.join(f).display())).collect();
+        d = d.help(t!("give a file inside it, like {}", "donnez un fichier qu'il contient, comme {}", list.join(", ")));
+    }
+    d
+}
+
+/// Reads a source file, explaining in the user's language why it cannot be read.
+pub fn read_source(path: &Path) -> Result<String, Box<Diagnostic>> {
+    let shown = path.display();
+    if path.is_dir() {
+        return Err(folder_error(path).boxed());
+    }
+    let bytes = std::fs::read(path).map_err(|e| {
+        let msg = match e.kind() {
+            std::io::ErrorKind::NotFound => t!("file `{shown}` not found", "fichier `{shown}` introuvable"),
+            std::io::ErrorKind::PermissionDenied => {
+                t!("no permission to read the file `{shown}`", "pas la permission de lire le fichier `{shown}`")
+            }
+            _ => t!("cannot read the file `{shown}`: {e}", "impossible de lire le fichier `{shown}` : {e}"),
+        };
+        Diagnostic::error("E017", msg).boxed()
+    })?;
+    String::from_utf8(bytes).map_err(|e| {
+        let bytes = e.as_bytes();
+        let at = e.utf8_error().valid_up_to();
+        let line = bytes[..at].iter().filter(|&&b| b == b'\n').count() + 1;
+        let mut d = Diagnostic::error(
+            "E017",
+            t!(
+                "the file `{shown}` is not text in the UTF-8 encoding (unexpected byte on line {line})",
+                "le fichier `{shown}` n'est pas du texte dans l'encodage UTF-8 (octet inattendu à la ligne {line})"
+            ),
+        );
+        if bytes.starts_with(&[0xFF, 0xFE]) || bytes.starts_with(&[0xFE, 0xFF]) {
+            d = d.note(t!("it looks like it was saved in UTF-16", "il semble avoir été enregistré en UTF-16"));
+        }
+        d.help(t!(
+            "save it again with the UTF-8 encoding (most editors have it in \"Save as\" or in the status bar)",
+            "enregistrez-le à nouveau avec l'encodage UTF-8 (la plupart des éditeurs le proposent dans « Enregistrer sous » ou dans la barre d'état)"
+        ))
+        .boxed()
+    })
+}
+
 pub struct Module {
     pub path: Option<PathBuf>,
     pub items: Vec<Item>,
@@ -89,14 +142,10 @@ impl Driver {
         if let Some(m) = self.modules.get(&canon) {
             return Some(m.clone());
         }
-        let src = match std::fs::read_to_string(path) {
+        let src = match read_source(path) {
             Ok(s) => s,
-            Err(e) => {
-                let shown = path.display();
-                self.report(&Diagnostic::error(
-                    "E017",
-                    t!("cannot read the file `{shown}`: {e}", "impossible de lire le fichier `{shown}` : {e}"),
-                ));
+            Err(d) => {
+                self.report(&d);
                 return None;
             }
         };
@@ -219,6 +268,12 @@ impl Driver {
         }
         if path.is_file() {
             return Some(path.canonicalize().unwrap_or(path));
+        }
+        for dir in [&path, &base.join(p)] {
+            if dir.is_dir() {
+                self.report(&folder_error(dir).at(span));
+                return None;
+            }
         }
         let mut d = Diagnostic::error("E017", t!("file `{p}` not found", "fichier `{p}` introuvable")).at(span).note(t!(
             "looked for: {}",

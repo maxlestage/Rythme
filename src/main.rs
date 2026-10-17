@@ -1,5 +1,6 @@
 //! The `rythme` command.
 
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use rythme::diagnostic::Diagnostic;
@@ -14,7 +15,9 @@ const STACK_SIZE: usize = 1 << 30;
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     std::panic::set_hook(Box::new(|info| {
-        eprintln!(
+        // Written directly: the hook must never fail, even if the error output is closed.
+        let _ = writeln!(
+            std::io::stderr(),
             "{}\n{info}",
             t!(
                 "Rythme ran into an internal problem. This is a bug in Rythme, not in your program.\nPlease report it, with your program, at https://github.com/maxlestage/Rythme/issues",
@@ -40,16 +43,25 @@ fn cli(mut args: Vec<String>) -> i32 {
     lang::set(lang::detect());
     // Options placed before the command.
     while let Some(first) = args.first() {
-        if first == "--lang" && args.len() > 1 {
-            if let Some(l) = lang::parse(&args[1]) {
-                lang::set(l);
+        if first == "--lang" || first.starts_with("--lang=") {
+            let (value, used) = match first.strip_prefix("--lang=") {
+                Some(v) => (Some(v.to_string()), 1),
+                None => (args.get(1).cloned(), 2),
+            };
+            match value.as_deref().and_then(lang::parse) {
+                Some(l) => lang::set(l),
+                None => {
+                    let what = match value {
+                        Some(v) => t!("unknown language `{v}`", "langue inconnue `{v}`"),
+                        None => t!("`--lang` needs a language", "`--lang` attend une langue"),
+                    };
+                    return usage_error(t!(
+                        "{what}: write `--lang fr` or `--lang en`, like `rythme --lang fr hello.ry`",
+                        "{what} : écrivez `--lang fr` ou `--lang en`, comme `rythme --lang fr bonjour.ry`"
+                    ));
+                }
             }
-            args.drain(..2);
-        } else if let Some(v) = first.strip_prefix("--lang=") {
-            if let Some(l) = lang::parse(v) {
-                lang::set(l);
-            }
-            args.remove(0);
+            args.drain(..used.min(args.len()));
         } else if first == "--no-color" {
             std::env::set_var("NO_COLOR", "1");
             args.remove(0);
@@ -67,7 +79,7 @@ fn cli(mut args: Vec<String>) -> i32 {
                 Some(name) => match help::topic(name) {
                     Some(text) => rythme::io::out_line(text.trim_end()),
                     None => {
-                        eprintln!("{}", help::unknown_topic(name));
+                        rythme::io::err_line(&help::unknown_topic(name));
                         return 2;
                     }
                 },
@@ -89,10 +101,11 @@ fn cli(mut args: Vec<String>) -> i32 {
                     0
                 }
                 None => {
-                    eprintln!(
-                        "{}",
-                        t!("unknown code `{code}`. Known codes: {}", "code inconnu `{code}`. Codes connus : {}", help::CODES.join(" "))
-                    );
+                    rythme::io::err_line(&t!(
+                        "unknown code `{code}`. Known codes: {}",
+                        "code inconnu `{code}`. Codes connus : {}",
+                        help::CODES.join(" ")
+                    ));
                     2
                 }
             },
@@ -122,7 +135,7 @@ fn cli(mut args: Vec<String>) -> i32 {
             None => usage_error(t!("which code? Example: rythme -e 'print(1 + 2)'", "quel code ? Exemple : rythme -e 'print(1 + 2)'")),
         },
         _ => {
-            if cmd.ends_with(".ry") || Path::new(&cmd).is_file() || Path::new(&format!("{cmd}.ry")).is_file() {
+            if cmd.ends_with(".ry") || Path::new(&cmd).exists() || Path::new(&format!("{cmd}.ry")).is_file() {
                 return run_file(&cmd, rest, false);
             }
             let commands = ["run", "check", "test", "help", "explain", "learn", "repl", "version"];
@@ -137,7 +150,7 @@ fn cli(mut args: Vec<String>) -> i32 {
 }
 
 fn usage_error(msg: String) -> i32 {
-    eprintln!("{msg}");
+    rythme::io::err_line(&msg);
     2
 }
 
@@ -146,6 +159,9 @@ fn find_script(name: &str) -> Result<PathBuf, Box<Diagnostic>> {
     let path = PathBuf::from(name);
     if path.is_file() {
         return Ok(path);
+    }
+    if path.is_dir() {
+        return Err(rythme::driver::folder_error(&path).boxed());
     }
     let with_ext = PathBuf::from(format!("{name}.ry"));
     if path.extension().is_none() && with_ext.is_file() {
