@@ -25,6 +25,7 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ("tests", &["test"]),
     ("modules", &["use", "files", "fichiers"]),
     ("repl", &["interactive", "interactif"]),
+    ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide"]),
     ("builtins", &["functions-list", "fonctions-integrees", "library", "bibliotheque", "bibliothèque", "stdlib"]),
 ];
 
@@ -48,6 +49,7 @@ Commandes
   rythme help SUJET         aide sur un sujet ou une fonction
   rythme explain E003       expliquer un code d'erreur
   rythme -e "code"          exécuter un morceau de code
+  rythme lsp                serveur de langage, pour les éditeurs (VS Code, Neovim...)
   option --lang fr|en       langue des messages (ou variable RYTHME_LANG)
 
 Sujets (rythme help SUJET)
@@ -64,6 +66,7 @@ Sujets (rythme help SUJET)
   tests       écrire et lancer des tests
   modules     utiliser plusieurs fichiers
   repl        le mode interactif
+  editors     Rythme dans votre éditeur (VS Code, Neovim, Helix...)
   builtins    toutes les fonctions intégrées
 
 Une fonction précise : rythme help map
@@ -82,6 +85,7 @@ Commands
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
   rythme -e "code"          run a piece of code
+  rythme lsp                language server, for editors (VS Code, Neovim...)
   option --lang fr|en       language of the messages (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
@@ -98,6 +102,7 @@ Topics (rythme help TOPIC)
   tests       writing and running tests
   modules     using several files
   repl        the interactive mode
+  editors     Rythme in your editor (VS Code, Neovim, Helix...)
   builtins    every built-in function
 
 A specific function: rythme help map
@@ -406,6 +411,7 @@ fn topic_text(name: &str) -> &'static str {
         "tests" => pick(TESTS_EN, TESTS_FR),
         "modules" => pick(MODULES_EN, MODULES_FR),
         "repl" => pick(REPL_EN, REPL_FR),
+        "editors" => pick(EDITORS_EN, EDITORS_FR),
         _ => "",
     }
 }
@@ -1090,6 +1096,45 @@ const MODULES_FR: &str = r#"PLUSIEURS FICHIERS
 Le chemin est relatif au fichier qui contient `use`. Tout ce qui est défini au
 premier niveau du fichier utilisé devient disponible. Chaque fichier n'est
 exécuté qu'une fois."#;
+
+const EDITORS_EN: &str = r#"RYTHME IN YOUR EDITOR
+
+Rythme helps inside the editor too: problems as you type, the documentation
+of a function under the mouse, completion, the parameters of a call, go to
+definition, references, rename, quick fixes for typos. This is the language
+server, that the editor starts by itself:
+  rythme lsp
+
+VS Code
+  the extension in editors/vscode: colors, snippets and the language server.
+  Settings: rythme.path (the program), rythme.language (en, fr or auto).
+
+Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
+  every editor that speaks the Language Server Protocol: tell it to start
+  `rythme lsp` for .ry files. Ready-made configurations: editors/README.md
+
+The language of the messages follows the editor, unless `--lang fr|en` or
+RYTHME_LANG chooses it: rythme --lang fr lsp"#;
+
+const EDITORS_FR: &str = r#"RYTHME DANS VOTRE ÉDITEUR
+
+Rythme aide aussi dans l'éditeur : les problèmes pendant la frappe, la
+documentation d'une fonction sous la souris, la complétion, les paramètres
+d'un appel, aller à la définition, les références, renommer, les corrections
+rapides des fautes de frappe. C'est le serveur de langage, que l'éditeur
+lance tout seul :
+  rythme lsp
+
+VS Code
+  l'extension dans editors/vscode : couleurs, extraits de code et serveur de
+  langage. Réglages : rythme.path (le programme), rythme.language (en, fr ou auto).
+
+Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
+  tout éditeur qui parle le Language Server Protocol : demandez-lui de lancer
+  `rythme lsp` pour les fichiers .ry. Configurations prêtes : editors/README.fr.md
+
+La langue des messages suit celle de l'éditeur, sauf si `--lang fr|en` ou
+RYTHME_LANG la choisit : rythme --lang fr lsp"#;
 
 const REPL_EN: &str = r#"THE INTERACTIVE MODE
 
