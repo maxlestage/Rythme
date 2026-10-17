@@ -191,6 +191,26 @@ entier), mais vos propres noms peuvent être en français, accents compris :
 
 Pour aller plus loin : [`examples/`](examples), `rythme help syntax`, `rythme learn`.
 
+## Exemples
+
+| Fichier | Montre |
+|---------|--------|
+| [`hello.ry`](examples/hello.ry) | le premier programme classique |
+| [`fizzbuzz.ry`](examples/fizzbuzz.ry) | `match` sur une liste, intervalles, `each` |
+| [`fibonacci.ry`](examples/fibonacci.ry) | définitions par cas, appels terminaux, documentation `##` |
+| [`shapes.ry`](examples/shapes.ry) | vos propres types, gardes, `sort_by` |
+| [`quicksort.ry`](examples/quicksort.ry) | motifs de listes, `filter`, `+` sur les listes |
+| [`words.ry`](examples/words.ry) | traitement de texte, `group_by`, enregistrements |
+| [`cipher.ry`](examples/cipher.ry) | le chiffre de César : `char_code`, `char`, compter les lettres |
+| [`results.ry`](examples/results.ry) | `Option`, `Result`, `?` |
+| [`students.ry`](examples/students.ry) | enregistrements, mise à jour, regroupements, moyennes |
+| [`sales.ry`](examples/sales.ry) | un rapport : `scan`, colonnes alignées avec `pad_left`, `windows`, `chunks`, JSON |
+| [`tree.ry`](examples/tree.ry) | un type récursif : arbre binaire de recherche |
+| [`primes.ry`](examples/primes.ry) | un crible récursif, `all`, `and` |
+| [`testing.ry`](examples/testing.ry) | les blocs `test` |
+| [`modules/`](examples/modules) | `use` pour répartir un programme en plusieurs fichiers |
+| [`bonjour.ry`](examples/bonjour.ry) | des noms avec des accents |
+
 ## Éditeurs
 
 - **VS Code** : couleurs, indentation et extraits de code dans [`editors/vscode`](editors/vscode).

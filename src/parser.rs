@@ -451,8 +451,8 @@ impl Parser {
                         "les enregistrements ne peuvent pas être modifiés ; construisez-en un nouveau : `nouveau = {{..ancien, {name}: valeur}}`"
                     )),
                     ExprKind::Index(..) => d.help(t!(
-                        "lists cannot be changed; build a new list with `map`, `+` or `[..xs, x]`",
-                        "les listes ne peuvent pas être modifiées ; construisez une nouvelle liste avec `map`, `+` ou `[..xs, x]`"
+                        "values cannot be changed; build a new one: `set_at(list, i, x)` for a list, `put(record, name, x)` for a record",
+                        "les valeurs ne peuvent pas être modifiées ; construisez-en une nouvelle : `set_at(liste, i, x)` pour une liste, `put(enreg, nom, x)` pour un enregistrement"
                     )),
                     _ => d.help(t!("to compare two values, use `==`", "pour comparer deux valeurs, utilisez `==`")),
                 };
