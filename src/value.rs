@@ -29,22 +29,24 @@ pub enum Value {
 #[derive(Clone)]
 pub struct List {
     data: Rc<Vec<Value>>,
-    start: usize,
-    end: usize,
+    // 32-bit positions keep every value small (a list of 4 billion
+    // elements would not fit in memory anyway).
+    start: u32,
+    end: u32,
 }
 
 impl List {
     pub fn new(v: Vec<Value>) -> List {
-        let end = v.len();
+        let end = u32::try_from(v.len()).expect("a list of more than 4 billion elements");
         List { data: Rc::new(v), start: 0, end }
     }
 
     pub fn as_slice(&self) -> &[Value] {
-        &self.data[self.start..self.end]
+        &self.data[self.start as usize..self.end as usize]
     }
 
     pub fn len(&self) -> usize {
-        self.end - self.start
+        (self.end - self.start) as usize
     }
 
     pub fn is_empty(&self) -> bool {
@@ -59,7 +61,7 @@ impl List {
     pub fn slice(&self, from: usize, to: usize) -> List {
         let to = to.min(self.len());
         let from = from.min(to);
-        List { data: self.data.clone(), start: self.start + from, end: self.start + to }
+        List { data: self.data.clone(), start: self.start + from as u32, end: self.start + to as u32 }
     }
 
     pub fn get(&self, i: usize) -> Option<&Value> {
