@@ -1,0 +1,26 @@
+# Errors are values: Option, Result and the ? operator.
+
+fn safe_divide(a, b) = if b == 0 then Err("cannot divide {a} by zero") else Ok(a / b)
+
+## Reads two numbers from texts and divides them.
+## Any error stops here and is passed on to the caller with `?`.
+fn divide_texts(a, b)
+  x = parse_float(a)?
+  y = parse_float(b)?
+  safe_divide(x, y)
+end
+
+fn show(result) = match result
+  Ok(value) -> "ok: {value}"
+  Err(message) -> "error: {message}"
+end
+
+print(show(divide_texts("10", "4")))
+print(show(divide_texts("10", "0")))
+print(show(divide_texts("ten", "4")))
+
+# Options: a value that may be missing.
+scores = {ada: 19, alan: 17}
+print(get(scores, "ada"))
+print(get(scores, "grace") |> unwrap_or(0))
+print(first([]) |> is_none)

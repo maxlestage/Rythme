@@ -1,0 +1,29 @@
+# A small class report: records, sorting, grouping and averages.
+
+students = [
+  {name: "Ada", grades: [18, 19, 17], group: "A"},
+  {name: "Alan", grades: [15, 16, 14], group: "B"},
+  {name: "Grace", grades: [19, 20, 18], group: "A"},
+  {name: "Edsger", grades: [12, 15, 13], group: "B"},
+]
+
+fn average(numbers) = sum(numbers) / len(numbers)
+
+fn mention(avg) =
+  if avg >= 18 then "excellent"
+  else if avg >= 15 then "very good"
+  else if avg >= 12 then "good"
+  else "keep going"
+
+report = students
+  |> map(fn(s) = {..s, avg: average(s.grades)})
+  |> sort_by(fn(s) = -s.avg)
+
+report |> each(fn(s) = print("{s.name}: {round(s.avg, 1)} ({mention(s.avg)})"))
+
+best = report |> first |> unwrap
+print("Best student: {best.name}")
+
+group_by(report, fn(s) = s.group)
+  |> entries
+  |> each(fn([group, members]) = print("Group {group}: {round(average(map(members, fn(m) = m.avg)), 2)}"))

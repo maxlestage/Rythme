@@ -1,0 +1,5 @@
+# The classic first program.
+# Run it with:  rythme hello.ry
+
+name = "World"
+print("Hello, {name}!")
