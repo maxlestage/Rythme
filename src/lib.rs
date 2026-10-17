@@ -21,6 +21,7 @@ pub mod repl;
 pub mod source;
 pub mod suggest;
 pub mod symbol;
+pub mod types;
 pub mod value;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

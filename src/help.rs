@@ -1117,7 +1117,10 @@ Right:   "age: " + text(36)       (convert it first)
 
 Conditions must be true or false:
 Wrong:   if len(list) then ... else ...
-Right:   if len(list) > 0 then ... else ..."#,
+Right:   if len(list) > 0 then ... else ...
+
+When the kinds of the values are certain, `rythme check` finds this mistake
+before the program runs, even in code that does not run every time."#,
             r#"E005 — Mauvaise sorte de valeur
 
 L'opération ne fonctionne pas avec cette sorte de valeur. Rythme ne convertit
@@ -1129,7 +1132,10 @@ Juste :  "âge : " + text(36)      (la convertir d'abord)
 
 Les conditions doivent être true ou false :
 Faux :   if len(liste) then ... else ...
-Juste :  if len(liste) > 0 then ... else ..."#,
+Juste :  if len(liste) > 0 then ... else ...
+
+Quand la nature des valeurs est certaine, `rythme check` trouve cette erreur
+avant l'exécution, même dans du code qui ne s'exécute pas à chaque fois."#,
         ),
         "E006" => (
             r#"E006 — No case matches
@@ -1213,14 +1219,20 @@ The record (or the constructor) has no field with this name.
 
 Wrong:   {name: "Ada"}.nmae
 Right:   {name: "Ada"}.name
-Safe:    get(record, "name")     # an Option, never an error"#,
+Safe:    get(record, "name")     # an Option, never an error
+
+When the fields of the record are certain, `rythme check` finds this mistake
+before the program runs, and suggests the closest field."#,
             r#"E010 — Champ inconnu
 
 L'enregistrement (ou le constructeur) n'a pas de champ de ce nom.
 
 Faux :   {nom: "Ada"}.nmo
 Juste :  {nom: "Ada"}.nom
-Sûr :    get(enregistrement, "nom")   # une Option, jamais d'erreur"#,
+Sûr :    get(enregistrement, "nom")   # une Option, jamais d'erreur
+
+Quand les champs de l'enregistrement sont certains, `rythme check` trouve
+cette erreur avant l'exécution, et propose le champ le plus proche."#,
         ),
         "E011" => (
             r#"E011 — Already defined
@@ -1534,14 +1546,36 @@ autre nom pour garder les deux."#,
         "W004" => (
             r#"W004 — Case never reached
 
-Cases are tried in order. A case that accepts everything (`_`, or a plain
-name) catches every value, so the cases after it can never be used. Put it
-last."#,
+Cases are tried in order, and a value goes to the first one that fits. A
+case (or a definition of a function) can never be used when:
+  - a case before it accepts everything (`_`, or a plain name): put that
+    one last;
+  - a case before it already handles the same values: `1 -> ...` twice;
+  - the value can never have this shape: a Text never matches a list
+    pattern like `[first, ..rest]`, a number never matches `Some(x)`.
+
+  match name                     # `name` is a Text
+    [first, ..] -> first         # W004: a Text is not a list
+    _ -> "?"
+  end
+To look at the characters of a text, use `chars(name)`."#,
             r#"W004 — Cas jamais atteint
 
-Les cas sont essayés dans l'ordre. Un cas qui accepte tout (`_`, ou un
-simple nom) attrape toutes les valeurs : les cas suivants ne peuvent jamais
-servir. Mettez-le en dernier."#,
+Les cas sont essayés dans l'ordre, et une valeur va au premier qui lui
+convient. Un cas (ou une définition d'une fonction) ne peut jamais servir
+quand :
+  - un cas avant lui accepte tout (`_`, ou un simple nom) : mettez celui-ci
+    en dernier ;
+  - un cas avant lui traite déjà les mêmes valeurs : `1 -> ...` deux fois ;
+  - la valeur ne peut jamais avoir cette forme : un Text ne correspond
+    jamais à un motif de liste comme `[premier, ..reste]`, un nombre jamais
+    à `Some(x)`.
+
+  match nom                      # `nom` est un Text
+    [premier, ..] -> premier     # W004 : un Text n'est pas une liste
+    _ -> "?"
+  end
+Pour parcourir les caractères d'un texte, utilisez `chars(nom)`."#,
         ),
         "W005" => (
             r#"W005 — Unknown function after a dot
@@ -1561,6 +1595,54 @@ du fichier n'a un tel champ : c'est sans doute une faute de frappe.
 Faux :   [1, 2].lenght()
 Juste :  [1, 2].len()"#,
         ),
+        "W006" => (
+            r#"W006 — Comparison always false
+
+Values of different kinds are never equal: Rythme never converts them
+silently. When `x` is a number, `x == "1"` is always false and `x != "1"`
+always true. It is often a forgotten conversion, or a value inside an Option
+compared as if it were outside.
+
+Wrong:   if count == "3" then ...            (a number and a text)
+Right:   if count == 3 then ...
+Wrong:   get(scores, "ada") == 19            (an Option and a number)
+Right:   get(scores, "ada") == Some(19)
+Right:   unwrap_or(get(scores, "ada"), 0) == 19"#,
+            r#"W006 — Comparaison toujours fausse
+
+Des valeurs de natures différentes ne sont jamais égales : Rythme ne les
+convertit jamais en silence. Quand `x` est un nombre, `x == "1"` est
+toujours faux et `x != "1"` toujours vrai. C'est souvent une conversion
+oubliée, ou une valeur dans une Option comparée comme si elle était dehors.
+
+Faux :   if nombre == "3" then ...           (un nombre et un texte)
+Juste :  if nombre == 3 then ...
+Faux :   get(notes, "ada") == 19             (une Option et un nombre)
+Juste :  get(notes, "ada") == Some(19)
+Juste :  unwrap_or(get(notes, "ada"), 0) == 19"#,
+        ),
+        "W007" => (
+            r#"W007 — Test that checks nothing
+
+A test fails when it stops with an error, or when it ends with `false`,
+`None` or `Err(...)`. A test that only computes or prints a value can only
+fail by crashing: it never checks that the value is right.
+
+Wrong:   test "double" = double(2)
+Wrong:   test "double" = print(double(2))
+Right:   test "double" = assert_eq(double(2), 4)
+Right:   test "double" = double(2) == 4"#,
+            r#"W007 — Test qui ne vérifie rien
+
+Un test échoue s'il s'arrête sur une erreur, ou s'il finit par `false`,
+`None` ou `Err(...)`. Un test qui ne fait que calculer ou afficher une valeur
+ne peut échouer qu'en plantant : il ne vérifie jamais que la valeur est juste.
+
+Faux :   test "double" = double(2)
+Faux :   test "double" = print(double(2))
+Juste :  test "double" = assert_eq(double(2), 4)
+Juste :  test "double" = double(2) == 4"#,
+        ),
         _ => return None,
     };
     Some(pick_owned(en, fr))
@@ -1576,5 +1658,5 @@ fn pick_owned(en: &str, fr: &str) -> String {
 
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
-    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "W001", "W002", "W003", "W004", "W005",
+    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "W001", "W002", "W003", "W004", "W005", "W006", "W007",
 ];
