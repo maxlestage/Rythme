@@ -1223,7 +1223,11 @@ impl<'a> Checker<'a> {
             return Ty::Never;
         }
         if let Some(b) = builtin {
-            return self.builtin_result(b, &exprs, &tys, span);
+            let t = self.builtin_result(b, &exprs, &tys, span);
+            if t != Ty::Never {
+                self.callbacks(b, &exprs, &tys);
+            }
+            return t;
         }
         match &fty {
             Ty::Func(f) => {
@@ -1292,8 +1296,14 @@ impl<'a> Checker<'a> {
                 self.func(def, Some(&cb.params))
             };
         }
+        tys
+    }
+
+    /// The functions given to a built-in function must take what it gives
+    /// them, and return what it needs.
+    fn callbacks(&mut self, b: &str, exprs: &[&Expr], tys: &[Ty]) {
         for (i, t) in tys.iter().enumerate() {
-            let Some(cb) = types::callback(b, i, &tys) else { continue };
+            let Some(cb) = types::callback(b, i, tys) else { continue };
             let Ty::Func(f) = t else { continue };
             let n = cb.params.len();
             if let Some((min, max)) = f.arity {
@@ -1338,7 +1348,6 @@ impl<'a> Checker<'a> {
                 }
             }
         }
-        tys
     }
 
     /// `fold(list, start, fn(total, x) = ...)`: the total starts as `start`,
@@ -1416,7 +1425,16 @@ impl<'a> Checker<'a> {
 
     fn no_clause(&mut self, def: &FnDef, exprs: &[&Expr], tys: &[Ty], span: Span) {
         let name = def.name.map(|n| n.name().to_string()).unwrap_or_else(|| "fn".to_string());
-        let shown: Vec<String> = exprs.iter().zip(tys).map(|(e, t)| literal(e).map(|v| v.repr()).unwrap_or_else(|| t.name())).collect();
+        // Like the run time shows them when they are written in the code (`5`, `None`), or by their type.
+        let shown: Vec<String> = exprs
+            .iter()
+            .zip(tys)
+            .map(|(e, t)| match (&e.kind, literal(e)) {
+                (_, Some(v)) => v.repr(),
+                (ExprKind::Ctor(c), None) if matches!(t, Ty::Data(_)) => c.to_string(),
+                _ => t.name(),
+            })
+            .collect();
         let mut d = Diagnostic::error(
             "E006",
             t!(

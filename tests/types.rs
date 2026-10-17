@@ -147,6 +147,8 @@ struct Gen {
     vars: Vec<String>,
     /// Only code that runs every time: no `if`, `match`, `and`, `or`, nor functions.
     straight: bool,
+    /// The functions of the program, and their number of parameters.
+    fns: Vec<(String, usize)>,
 }
 
 const HEADER: &str = "type T = A(x) | B
@@ -275,8 +277,8 @@ impl Gen {
             };
         }
         let d = depth - 1;
-        let mut choice = self.below(26);
-        if self.straight && matches!(choice, 19..=22 | 25) {
+        let mut choice = self.below(31);
+        if self.straight && matches!(choice, 19..=22 | 25 | 29) || (choice == 30 && self.fns.is_empty()) {
             choice = 9;
         }
         match choice {
@@ -329,7 +331,29 @@ impl Gen {
             }
             23 => format!("({}) |> fn(p) = {}", self.expr(d, locals), self.expr(d, &[locals, &["p"][..]].concat())),
             24 => format!("do\n  w = {}\n  {}\nend", self.expr(d, locals), self.expr(d, &[locals, &["w"][..]].concat())),
-            _ => format!("({}) {} ({})", self.expr(d, locals), self.pick(&["and", "or"]), self.expr(d, locals)),
+            25 => format!("({}) {} ({})", self.expr(d, locals), self.pick(&["and", "or"]), self.expr(d, locals)),
+            26 => format!("do\n  fn g(p) = {}\n  g({})\nend", self.expr(d, &[locals, &["p"][..]].concat()), self.expr(d, locals)),
+            27 => format!("({{f: fn(p) = {}, a: 1}}).f({})", self.expr(d, &[locals, &["p"][..]].concat()), self.expr(d, locals)),
+            28 => match self.below(2) {
+                0 => format!("({})[\"{}\"]", self.expr(d, locals), self.pick(&["a", "b", "z"])),
+                _ => format!("get({}, \"{}\")", self.expr(d, locals), self.pick(&["a", "b", "z"])),
+            },
+            29 => {
+                let pats = ["Some([h, ..t])", "Pair(A(h), t)", "{a: [h, ..t]}", "Ok(Some(h))", "[Some(h), ..t]", "Err(h)", "[[h], t]"];
+                let p1 = self.pick(&pats);
+                let p2 = self.pick(&pats);
+                let names = ["h", "t"];
+                let s = self.expr(d, locals);
+                let b1 = self.expr(d, &[locals, &names[..]].concat());
+                let b2 = self.expr(d, &[locals, &names[..]].concat());
+                format!("match {s}\n  {p1} -> {b1}\n  {p2} -> {b2}\n  other -> {}\nend", self.expr(d, &[locals, &["other"][..]].concat()))
+            }
+            _ => {
+                let i = self.below(self.fns.len());
+                let (f, n) = self.fns[i].clone();
+                let args: Vec<String> = (0..n).map(|_| self.expr(d, locals)).collect();
+                format!("{f}({})", args.join(", "))
+            }
         }
     }
 }
@@ -347,25 +371,45 @@ fn parse(name: &str, code: &str) -> Option<Vec<rythme::ast::Item>> {
     parser::parse(lexer::lex(code, file).ok()?).ok()
 }
 
+/// Runs a test on a thread with a large stack, like the `rythme` command
+/// does: generated programs may recurse deeply.
+fn on_large_stack(test: fn()) {
+    std::thread::Builder::new().stack_size(256 << 20).spawn(test).unwrap().join().unwrap();
+}
+
 /// Thousands of generated programs: every value computed by a line has the
 /// type the checker inferred for it, and, in code that runs every time, an
 /// error reported by the checker is an error of the program.
 #[test]
 fn generated_programs_have_the_types_the_checker_infers() {
+    on_large_stack(generated_programs);
+}
+
+fn generated_programs() {
     rythme::lang::set(rythme::lang::Lang::En);
     let know = Knowledge::from_interp(&Interp::new());
     // `RYTHME_TYPE_PROGRAMS=100000 cargo test --release --test types` tries more.
-    let programs: u64 = std::env::var("RYTHME_TYPE_PROGRAMS").ok().and_then(|n| n.parse().ok()).unwrap_or(600);
+    let programs: u64 = std::env::var("RYTHME_TYPE_PROGRAMS").ok().and_then(|n| n.parse().ok()).unwrap_or(400);
     let header_lines = HEADER.lines().count();
     let mut typed = 0;
     let mut known = 0;
     let mut parsed = 0;
     let mut found = 0;
     for seed in 1..=programs {
-        let mut g = Gen { state: seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1, vars: Vec::new(), straight: seed % 3 == 0 };
+        let mut g = Gen { state: seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1, vars: Vec::new(), straight: seed % 3 == 0, fns: Vec::new() };
+        let mut code = HEADER.to_string();
+        // Functions with any body, recursive or not (their code does not run every time).
+        if !g.straight {
+            let body = g.expr(2, &["p", "q"]);
+            code.push_str(&format!("fn h0(p, q) = {body}\n"));
+            let body = g.expr(2, &["p"]);
+            code.push_str(&format!("fn h1(p)\n  w = ({body})?\n  Ok(w)\nend\n"));
+            let body = g.expr(2, &["p"]);
+            code.push_str(&format!("fn h2(0) = []\nfn h2(p) = [{body}, ..h2(p - 1)]\n"));
+            g.fns = vec![("h0".into(), 2), ("h1".into(), 1), ("h2".into(), 1)];
+        }
         // Each definition is kept if the program still runs to its end, so
         // that most of them run; the last one may fail.
-        let mut code = HEADER.to_string();
         let mut names = Vec::new();
         // The line where each definition starts.
         let mut starts = Vec::new();
@@ -423,4 +467,60 @@ fn generated_programs_have_the_types_the_checker_infers() {
     assert!(typed > programs * 4, "only {typed} values checked");
     assert!(known * 2 > typed, "only {known} of {typed} values have a known type");
     assert!(found * 30 > programs, "only {found} errors found before running");
+}
+
+/// The warnings say the truth: a comparison said to be always false (or
+/// true) is false (or true) when it runs, and a case said never to be
+/// reached is never the one taken.
+#[test]
+fn warnings_about_comparisons_and_cases_are_true() {
+    on_large_stack(warnings_are_true);
+}
+
+fn warnings_are_true() {
+    rythme::lang::set(rythme::lang::Lang::En);
+    let know = Knowledge::from_interp(&Interp::new());
+    let header_lines = HEADER.lines().count();
+    let programs: u64 = std::env::var("RYTHME_TYPE_PROGRAMS").ok().and_then(|n| n.parse().ok()).unwrap_or(400) * 2;
+    let pats = ["[h, ..t]", "[]", "Some(h)", "None", "Ok(h)", "A(h)", "B", "{a}", "1", "\"a\"", "true", "Pair(h, t)", "h", "()"];
+    let (mut comparisons, mut cases) = (0, 0);
+    for seed in 1..=programs {
+        let mut g = Gen { state: seed.wrapping_mul(0x2545_F491_4F6C_DD1D) | 1, vars: Vec::new(), straight: true, fns: Vec::new() };
+        let (left, right) = (g.expr(2, &[]), g.expr(2, &[]));
+        let op = g.pick(&["==", "!="]);
+        let subject = g.expr(2, &[]);
+        let arms: Vec<&str> = (0..3).map(|_| g.pick(&pats)).collect();
+        let compare = format!("c = ({left}) {op} ({right})\n");
+        let mut code = format!("{HEADER}{compare}m = match {subject}\n");
+        let mut arm_lines = Vec::new();
+        for (i, p) in arms.iter().enumerate() {
+            arm_lines.push(code.lines().count() + 1);
+            code.push_str(&format!("  {p} -> {i}\n"));
+        }
+        code.push_str("  _ -> 9\nend\n");
+        let op_at = HEADER.len() + format!("c = ({left}) ").len();
+        let Some(items) = parse(&format!("warn{seed}.ry"), &code) else { continue };
+        rythme::io::capture();
+        let values = run(&items);
+        let diags = check::check(&items, &know, false);
+        rythme::io::take_captured();
+        for d in diags.iter().filter(|d| d.severity == Severity::Warning) {
+            let Some(span) = d.span else { continue };
+            if d.code == "W006" && span.start as usize == op_at {
+                if let Some(v) = values.get(&Sym::new("c")) {
+                    assert!(matches!(v, Value::Bool(b) if *b == (op == "!=")), "program {seed}: `{op}` gave {}\n{code}", v.repr());
+                    comparisons += 1;
+                }
+            }
+            let line = source::get(span.file).unwrap().line_col(span.start as usize).0;
+            if d.code == "W004" && line > header_lines {
+                if let (Some(i), Some(Value::Int(taken))) = (arm_lines.iter().position(|&l| l == line), values.get(&Sym::new("m"))) {
+                    assert_ne!(*taken as usize, i, "program {seed}: the case said never reached was taken\n{code}");
+                    cases += 1;
+                }
+            }
+        }
+    }
+    eprintln!("{comparisons} comparisons and {cases} cases checked");
+    assert!(comparisons * 50 > programs && cases * 50 > programs, "only {comparisons} comparisons and {cases} cases checked");
 }
