@@ -109,6 +109,8 @@ cargo install --path .       # or install it in your PATH
 | `rythme hello.ry`           | run a program (`rythme run hello.ry` also works) |
 | `rythme check hello.ry`     | find problems without running the program      |
 | `rythme test hello.ry`      | run the tests written in the file              |
+| `rythme fmt hello.ry`       | give the code its official layout (also a folder: `rythme fmt .`) |
+| `rythme fmt --check .`      | list the files to format, without changing them (for CI) |
 | `rythme help [topic]`       | help on a topic or a function                  |
 | `rythme explain E003`       | explain an error code                          |
 | `rythme learn`              | guided tour of the language                    |
@@ -214,6 +216,7 @@ mode) and is organised as a pipeline:
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |
+| [`src/format.rs`](src/format.rs) | `rythme fmt`: the official layout, which never changes the meaning |
 
 `cargo test` runs the examples and ~30 tests of the language, the messages
 and the commands.
@@ -228,10 +231,11 @@ for small programs. Honest limits, and what comes next:
 - **Types.** Values are checked at run time (strongly: no silent
   conversions). Next: type inference in `rythme check`, so that more mistakes
   are found before running.
-- **Tooling.** Next: a formatter (`rythme fmt`), a language server (errors and
-  documentation inside every editor), a package manager, and a web playground
-  (the interpreter compiled to WebAssembly) so that anyone can try Rythme
-  without installing anything.
+- **Tooling.** `rythme fmt` formats the code in the official style (see
+  `rythme help fmt`). Next: a language server (errors and documentation
+  inside every editor), a package manager, and a web playground (the
+  interpreter compiled to WebAssembly) so that anyone can try Rythme without
+  installing anything.
 - **Languages.** Messages exist in English and French; adding a language means
   translating the texts of `src/`. Contributions are welcome.
 - Numbers are 64-bit: whole numbers stop with an error beyond ±9.2 × 10¹⁸

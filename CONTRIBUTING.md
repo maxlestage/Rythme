@@ -27,6 +27,10 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ interp.rs
 - `driver.rs` loads files and the files they `use`, checks them, runs them,
   and runs tests.
 - `diagnostic.rs` prints messages in the style of Rust.
+- `format.rs` is `rythme fmt`, the formatter: run `cargo run -- fmt examples`
+  after changing an example. Its tests (`tests/format.rs`) check on every
+  piece of code of the repository that it never changes the meaning of a
+  program nor loses a comment.
 - `builtins.rs` holds the standard library; `help.rs` the help topics and the
   explanation of every error code; `suggest.rs` the "did you mean" logic and
   the hints for people coming from other languages.
