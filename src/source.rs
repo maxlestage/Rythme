@@ -60,19 +60,34 @@ thread_local! {
     static FILES: RefCell<Vec<Rc<SourceFile>>> = const { RefCell::new(Vec::new()) };
 }
 
-/// Registers a source file and returns its id.
-pub fn add(name: &str, text: &str) -> u32 {
+fn new_file(name: &str, text: &str) -> SourceFile {
     let mut line_starts = vec![0];
     for (i, b) in text.bytes().enumerate() {
         if b == b'\n' {
             line_starts.push(i + 1);
         }
     }
-    let file = SourceFile { name: name.to_string(), text: Rc::from(text), line_starts };
+    SourceFile { name: name.to_string(), text: Rc::from(text), line_starts }
+}
+
+/// Registers a source file and returns its id.
+pub fn add(name: &str, text: &str) -> u32 {
+    let file = new_file(name, text);
     FILES.with(|f| {
         let mut f = f.borrow_mut();
         f.push(Rc::new(file));
         (f.len() - 1) as u32
+    })
+}
+
+/// Gives a registered file a new text. The language server keeps one id per
+/// file and calls this at each edit, instead of registering a new file.
+pub fn replace(id: u32, name: &str, text: &str) {
+    let file = Rc::new(new_file(name, text));
+    FILES.with(|f| {
+        if let Some(slot) = f.borrow_mut().get_mut(id as usize) {
+            *slot = file;
+        }
     })
 }
 

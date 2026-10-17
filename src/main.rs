@@ -38,16 +38,20 @@ fn main() {
 
 fn cli(mut args: Vec<String>) -> i32 {
     lang::set(lang::detect());
+    // The language asked with `--lang`: the language server keeps it over the editor's.
+    let mut chosen = None;
     // Options placed before the command.
     while let Some(first) = args.first() {
         if first == "--lang" && args.len() > 1 {
             if let Some(l) = lang::parse(&args[1]) {
                 lang::set(l);
+                chosen = Some(l);
             }
             args.drain(..2);
         } else if let Some(v) = first.strip_prefix("--lang=") {
             if let Some(l) = lang::parse(v) {
                 lang::set(l);
+                chosen = Some(l);
             }
             args.remove(0);
         } else if first == "--no-color" {
@@ -117,6 +121,7 @@ fn cli(mut args: Vec<String>) -> i32 {
             Some(file) => check_file(file),
             None => usage_error(t!("which file? Example: rythme check hello.ry", "quel fichier ? Exemple : rythme check bonjour.ry")),
         },
+        "lsp" => rythme::lsp::run(&rest, chosen),
         "-e" | "eval" => match rest.first() {
             Some(code) => eval_code(code),
             None => usage_error(t!("which code? Example: rythme -e 'print(1 + 2)'", "quel code ? Exemple : rythme -e 'print(1 + 2)'")),
@@ -125,7 +130,7 @@ fn cli(mut args: Vec<String>) -> i32 {
             if cmd.ends_with(".ry") || Path::new(&cmd).is_file() || Path::new(&format!("{cmd}.ry")).is_file() {
                 return run_file(&cmd, rest, false);
             }
-            let commands = ["run", "check", "test", "help", "explain", "learn", "repl", "version"];
+            let commands = ["run", "check", "test", "help", "explain", "learn", "repl", "version", "lsp"];
             let mut msg = t!("unknown command or file `{cmd}`", "commande ou fichier inconnu `{cmd}`");
             if let Some(best) = suggest::closest(&cmd, commands.iter().copied()) {
                 msg.push_str(&t!("\ndid you mean `rythme {best}`?", "\nvouliez-vous dire `rythme {best}` ?"));

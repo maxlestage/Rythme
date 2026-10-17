@@ -128,20 +128,7 @@ impl Driver {
                 continue;
             };
             if self.loading.contains(&dep) {
-                self.report(
-                    &Diagnostic::error(
-                        "E017",
-                        t!(
-                            "`{p}` uses itself (directly or through other files)",
-                            "`{p}` s'utilise lui-même (directement ou via d'autres fichiers)"
-                        ),
-                    )
-                    .at(*span)
-                    .help(t!(
-                        "move what both files need into a third file, used by both",
-                        "déplacez ce dont les deux fichiers ont besoin dans un troisième fichier, utilisé par les deux"
-                    )),
-                );
+                self.report(&use_cycle(p, *span));
                 ok = false;
                 continue;
             }
@@ -213,38 +200,13 @@ impl Driver {
     }
 
     fn resolve_use(&mut self, p: &str, span: Span, base: &Path) -> Option<PathBuf> {
-        let mut path = base.join(p);
-        if path.extension().is_none() {
-            path.set_extension("ry");
-        }
-        if path.is_file() {
-            return Some(path.canonicalize().unwrap_or(path));
-        }
-        let mut d = Diagnostic::error("E017", t!("file `{p}` not found", "fichier `{p}` introuvable")).at(span).note(t!(
-            "looked for: {}",
-            "cherché : {}",
-            path.display()
-        ));
-        let dir = path.parent().map(Path::to_path_buf).unwrap_or_default();
-        let wanted = path.file_name().map(|f| f.to_string_lossy().to_string()).unwrap_or_default();
-        let mut files = Vec::new();
-        if let Ok(entries) = std::fs::read_dir(if dir.as_os_str().is_empty() { Path::new(".") } else { &dir }) {
-            for e in entries.flatten() {
-                let name = e.file_name().to_string_lossy().to_string();
-                if name.ends_with(".ry") {
-                    files.push(name);
-                }
+        match find_use(p, span, base) {
+            Ok(path) => Some(path),
+            Err(d) => {
+                self.report(&d);
+                None
             }
         }
-        if let Some(best) = suggest::closest(&wanted, files.iter().map(|s| s.as_str())) {
-            d = d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?"));
-        }
-        d = d.help(t!(
-            "the path is relative to the folder of the file that contains `use`",
-            "le chemin est relatif au dossier du fichier qui contient `use`"
-        ));
-        self.report(&d);
-        None
     }
 
     /// Runs a checked module, after the modules it uses.
@@ -320,4 +282,53 @@ impl Driver {
         out_line(&format!("{color}{summary}{reset}"));
         failed == 0
     }
+}
+
+/// The file named by `use "p"`, looked for in the folder `base`, or an error
+/// explaining that it is missing (also used by the language server).
+pub fn find_use(p: &str, span: Span, base: &Path) -> Result<PathBuf, Box<Diagnostic>> {
+    let mut path = base.join(p);
+    if path.extension().is_none() {
+        path.set_extension("ry");
+    }
+    if path.is_file() {
+        return Ok(path.canonicalize().unwrap_or(path));
+    }
+    let mut d = Diagnostic::error("E017", t!("file `{p}` not found", "fichier `{p}` introuvable")).at(span).note(t!(
+        "looked for: {}",
+        "cherché : {}",
+        path.display()
+    ));
+    let dir = path.parent().map(Path::to_path_buf).unwrap_or_default();
+    let wanted = path.file_name().map(|f| f.to_string_lossy().to_string()).unwrap_or_default();
+    let mut files = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(if dir.as_os_str().is_empty() { Path::new(".") } else { &dir }) {
+        for e in entries.flatten() {
+            let name = e.file_name().to_string_lossy().to_string();
+            if name.ends_with(".ry") {
+                files.push(name);
+            }
+        }
+    }
+    if let Some(best) = suggest::closest(&wanted, files.iter().map(|s| s.as_str())) {
+        d = d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?"));
+    }
+    d = d.help(t!(
+        "the path is relative to the folder of the file that contains `use`",
+        "le chemin est relatif au dossier du fichier qui contient `use`"
+    ));
+    Err(d.boxed())
+}
+
+/// The error for `use "p"` when files use each other in a circle.
+pub fn use_cycle(p: &str, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E017",
+        t!("`{p}` uses itself (directly or through other files)", "`{p}` s'utilise lui-même (directement ou via d'autres fichiers)"),
+    )
+    .at(span)
+    .help(t!(
+        "move what both files need into a third file, used by both",
+        "déplacez ce dont les deux fichiers ont besoin dans un troisième fichier, utilisé par les deux"
+    ))
 }

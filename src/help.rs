@@ -118,6 +118,11 @@ pub fn topic(name: &str) -> Option<String> {
     if name.trim() == "pi" {
         return Some(t!("pi\n  The number π = 3.141592653589793.", "pi\n  Le nombre π = 3.141592653589793."));
     }
+    if canonical_topic(name).is_none() {
+        if let Some(text) = keyword_help(name.trim()) {
+            return Some(text);
+        }
+    }
     let t = canonical_topic(name)?;
     if t == "builtins" {
         return Some(builtins_list());
@@ -142,6 +147,114 @@ pub fn unknown_topic(name: &str) -> String {
     }
     out.push_str(&t!("\nSee the list of topics with `rythme help`.", "\nVoyez la liste des sujets avec `rythme help`."));
     out
+}
+
+/// Every keyword, explained: (keyword, English, French, example, topic).
+const KEYWORD_DOCS: &[(&str, &str, &str, &str, &str)] = &[
+    (
+        "fn",
+        "Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.",
+        "Définit une fonction : `fn nom(x) = expression`, ou avec son corps sur les lignes suivantes, terminé par `end`. Sans nom, `fn(x) = x * 2` est une fonction anonyme.",
+        "fn double(x) = x * 2",
+        "functions",
+    ),
+    (
+        "if",
+        "Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.",
+        "Choisit entre deux valeurs : `if condition then valeur else autre`. Chaque `if` a un `else`, car un `if` donne toujours une valeur.",
+        "if n < 0 then \"negative\" else \"positive\"",
+        "syntax",
+    ),
+    (
+        "then",
+        "Separates the condition of an `if` from the value it gives when the condition is true.",
+        "Sépare la condition d'un `if` de la valeur donnée quand la condition est vraie.",
+        "if n < 0 then \"negative\" else \"positive\"",
+        "syntax",
+    ),
+    (
+        "else",
+        "Gives the value of an `if` when the condition is false. It is always required; `else if` chains several conditions.",
+        "Donne la valeur d'un `if` quand la condition est fausse. Il est toujours obligatoire ; `else if` enchaîne plusieurs conditions.",
+        "if n < 0 then \"negative\" else if n == 0 then \"zero\" else \"positive\"",
+        "syntax",
+    ),
+    (
+        "match",
+        "Chooses according to the shape of a value: one case per line, `pattern -> result`, finished by `end`. Cases are tried in order, and `rythme check` warns about forgotten cases.",
+        "Choisit selon la forme d'une valeur : un cas par ligne, `motif -> résultat`, terminé par `end`. Les cas sont essayés dans l'ordre, et `rythme check` signale les cas oubliés.",
+        "match list\n  [] -> \"empty\"\n  [x, ..rest] -> \"starts with {x}\"\nend",
+        "match",
+    ),
+    (
+        "end",
+        "Closes a block: a function written on several lines, a `match`, a `do` or a `test`.",
+        "Ferme un bloc : une fonction écrite sur plusieurs lignes, un `match`, un `do` ou un `test`.",
+        "fn greet(name)\n  print(\"Hello, {name}!\")\nend",
+        "syntax",
+    ),
+    (
+        "do",
+        "Groups several steps inside an expression, up to `end`. The last line gives the value.",
+        "Regroupe plusieurs étapes dans une expression, jusqu'à `end`. La dernière ligne donne la valeur.",
+        "total = do\n  a = 1\n  a + 1\nend",
+        "syntax",
+    ),
+    (
+        "type",
+        "Defines your own type and its variants. Each variant is a constructor, with or without fields.",
+        "Définit votre propre type et ses variantes. Chaque variante est un constructeur, avec ou sans champs.",
+        "type Shape = Circle(radius) | Rect(width, height)",
+        "types",
+    ),
+    (
+        "test",
+        "Defines a test, next to the code. `rythme test file.ry` runs the tests of the file.",
+        "Définit un test, à côté du code. `rythme test fichier.ry` lance les tests du fichier.",
+        "test \"double works\" = assert_eq(double(21), 42)",
+        "tests",
+    ),
+    (
+        "use",
+        "Uses the definitions of another file. The path is relative to the folder of the file that contains `use`.",
+        "Utilise les définitions d'un autre fichier. Le chemin est relatif au dossier du fichier qui contient `use`.",
+        "use \"geometry.ry\"",
+        "modules",
+    ),
+    (
+        "and",
+        "True when both conditions are true. The second one is computed only if the first one is true.",
+        "Vrai quand les deux conditions sont vraies. La seconde n'est calculée que si la première est vraie.",
+        "if age >= 18 and has_ticket then \"enter\" else \"wait\"",
+        "syntax",
+    ),
+    (
+        "or",
+        "True when at least one of the conditions is true. The second one is computed only if the first one is false.",
+        "Vrai quand au moins une des conditions est vraie. La seconde n'est calculée que si la première est fausse.",
+        "is_weekend = day == \"saturday\" or day == \"sunday\"",
+        "syntax",
+    ),
+    ("not", "Inverts a condition: `not true` is `false`.", "Inverse une condition : `not true` vaut `false`.", "if not done then \"wait\" else \"go\"", "syntax"),
+    ("true", "One of the two values of the type Bool.", "L'une des deux valeurs du type Bool.", "is_ready = true", "syntax"),
+    ("false", "One of the two values of the type Bool.", "L'une des deux valeurs du type Bool.", "is_ready = false", "syntax"),
+];
+
+/// The documentation of a keyword in the current language, with an example
+/// and the help topic that tells more.
+pub fn keyword_doc(word: &str) -> Option<(&'static str, &'static str, &'static str)> {
+    KEYWORD_DOCS.iter().find(|k| k.0 == word).map(|&(_, en, fr, example, topic)| (pick(en, fr), example, topic))
+}
+
+/// What `rythme help then` shows.
+pub fn keyword_help(word: &str) -> Option<String> {
+    let (doc, example, topic) = keyword_doc(word)?;
+    let mut out = format!("{word}  ({})\n  {doc}\n  {}\n", t!("keyword", "mot-clé"), t!("Example:", "Exemple :"));
+    for line in example.lines() {
+        out.push_str(&format!("    {line}\n"));
+    }
+    out.push_str(&t!("  More: rythme help {topic}\n", "  Plus : rythme help {topic}\n"));
+    Some(out)
 }
 
 pub fn builtin_doc(b: &Builtin) -> String {
