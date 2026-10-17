@@ -1,0 +1,24 @@
+[package]
+name = "rythme-site"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "MIT"
+description = "The website of Rythme, written with Paquets: home, playground, examples and guide, in English and French."
+
+# Standalone crate, with its own workspace: the interpreter does not depend on it.
+[workspace]
+
+[dependencies]
+# Pages rendered on the server by active, served by vitesse behind securite.
+paquets = { git = "https://github.com/maxlestage/Paquets", default-features = false }
+pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+# The tests run every piece of code of the site through the real interpreter.
+rythme = { path = ".." }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

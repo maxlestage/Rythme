@@ -69,6 +69,10 @@ lancer des tests, lire l'aide, en français ou en anglais, sans rien
 installer. Une fois GitHub Pages activé pour ce dépôt, elle est publiée sur
 <https://maxlestage.github.io/Rythme/>.
 
+Le dossier [`site/`](site) est le site web de Rythme (accueil, visite du
+langage, exemples, playground et guide pour les enseignants, en français et en
+anglais), écrit en Rust avec Paquets.
+
 ## Installer
 
 **Sans rien installer d'autre :** chaque version publiée est accompagnée de
