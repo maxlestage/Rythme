@@ -327,7 +327,7 @@ impl Server {
                 let td = params.get("textDocument");
                 let Some(uri) = td.get("uri").as_str() else { return };
                 let text: Rc<str> = Rc::from(td.get("text").as_str().unwrap_or(""));
-                let path = uri_to_path(uri).map(|p| p.canonicalize().unwrap_or(p));
+                let path = uri_to_path(uri).map(|p| text::canonical(&p));
                 let doc = Doc { uri: uri.to_string(), path, text, version: td.get("version").as_i64(), analysis: None };
                 self.docs.insert(uri.to_string(), doc);
                 self.refresh(uri);

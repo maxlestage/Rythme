@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use super::index::{self, Def, DefId, Index};
-use super::text::{path_to_uri, short_name, LineIndex};
+use super::text::{canonical, path_to_uri, short_name, LineIndex};
 use crate::ast::Item;
 use crate::check::{self, Knowledge};
 use crate::diagnostic::Diagnostic;
@@ -136,7 +136,8 @@ impl<'a> Loader<'a> {
         for item in &items {
             let Item::Use(p, span) = item else { continue };
             let dep = match driver::find_use(p, *span, &base) {
-                Ok(dep) => dep,
+                // The same form of path as the open documents (see `text::canonical`).
+                Ok(dep) => canonical(&dep),
                 Err(d) => {
                     complete = false;
                     if parsed {

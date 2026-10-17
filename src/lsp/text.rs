@@ -157,15 +157,42 @@ pub fn uri_to_path(uri: &str) -> Option<PathBuf> {
     Some(PathBuf::from(path))
 }
 
+/// The canonical form of a path, as the server keeps it. On Windows,
+/// `canonicalize` gives `\\?\C:\dir\x.ry`, where `/` no longer separates
+/// folders (`use "lib/x.ry"` would not be found): `C:\dir\x.ry` is kept instead.
+pub fn canonical(path: &Path) -> PathBuf {
+    let Ok(c) = path.canonicalize() else { return path.to_path_buf() };
+    let s = c.to_string_lossy();
+    if let Some(rest) = s.strip_prefix(r"\\?\UNC\") {
+        return PathBuf::from(format!(r"\\{rest}"));
+    }
+    match s.strip_prefix(r"\\?\") {
+        Some(rest) if rest.as_bytes().get(1) == Some(&b':') => PathBuf::from(rest),
+        _ => c,
+    }
+}
+
 /// The `file://` address of a path.
 pub fn path_to_uri(path: &Path) -> String {
-    let s = path.to_string_lossy().replace('\\', "/");
+    let raw = path.to_string_lossy();
+    // On Windows, `canonicalize` gives `\\?\C:\x` for `C:\x`, and
+    // `\\?\UNC\host\share` for `\\host\share`.
+    let raw = match raw.strip_prefix(r"\\?\UNC\") {
+        Some(rest) => format!(r"\\{rest}"),
+        None => raw.strip_prefix(r"\\?\").unwrap_or(&raw).to_string(),
+    };
     let mut out = String::from("file://");
-    // `\\host\share` becomes `file://host/share`.
-    let s = match s.strip_prefix("//") {
-        Some(rest) => rest.to_string(),
-        None if s.starts_with('/') => s,
-        None => format!("/{s}"),
+    let s = match raw.strip_prefix(r"\\") {
+        // `\\host\share` becomes `file://host/share`.
+        Some(rest) => rest.replace('\\', "/"),
+        None => {
+            let s = raw.replace('\\', "/");
+            if s.starts_with('/') {
+                s
+            } else {
+                format!("/{s}")
+            }
+        }
     };
     for (i, b) in s.bytes().enumerate() {
         let keep = b.is_ascii_alphanumeric() || matches!(b, b'/' | b'-' | b'_' | b'.' | b'~') || (b == b':' && i == 2);
@@ -235,6 +262,10 @@ mod tests {
             assert_eq!(uri_to_path("file:///home/ada/caf%C3%A9%20x.ry"), Some(PathBuf::from("/home/ada/café x.ry")));
             assert_eq!(path_to_uri(Path::new("/home/ada/café x.ry")), "file:///home/ada/caf%C3%A9%20x.ry");
         }
+        // Windows paths, as `canonicalize` gives them.
+        assert_eq!(path_to_uri(Path::new(r"\\?\C:\Users\Ada\x.ry")), "file:///C:/Users/Ada/x.ry");
+        assert_eq!(path_to_uri(Path::new(r"\\?\UNC\server\share\x.ry")), "file://server/share/x.ry");
+        assert_eq!(path_to_uri(Path::new(r"C:\Program Files\x.ry")), "file:///C:/Program%20Files/x.ry");
         assert_eq!(uri_to_path("untitled:Untitled-1"), None);
         assert_eq!(uri_to_path("file:///bad%zz"), None);
         assert_eq!(short_name("file:///a/b/g%C3%A9o.ry"), "géo.ry");

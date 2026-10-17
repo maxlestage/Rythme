@@ -30,6 +30,10 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ interp.rs
 - `builtins.rs` holds the standard library; `help.rs` the help topics and the
   explanation of every error code; `suggest.rs` the "did you mean" logic and
   the hints for people coming from other languages.
+- `lsp/` is the language server (`rythme lsp`): it reuses the lexer, the
+  parser and the checker to give the same help inside editors. Its tests
+  (`tests/lsp.rs`) talk to it like an editor does. The VS Code extension
+  (`editors/vscode`) is checked with `npm run check`.
 
 ## Messages: always in two languages
 

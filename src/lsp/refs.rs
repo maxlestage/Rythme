@@ -13,7 +13,7 @@ use super::features::{location, range_in};
 use super::index::{DefId, DefKind, Target};
 use super::json::{obj, Json};
 use super::scan;
-use super::text::path_to_uri;
+use super::text::{canonical, path_to_uri};
 use super::{Reply, RpcError, Server};
 use crate::builtins;
 use crate::lexer::{KEYWORDS, RESERVED};
@@ -81,7 +81,7 @@ fn ry_files(roots: &[PathBuf]) -> Vec<PathBuf> {
             if kind.is_dir() && depth < 16 {
                 todo.push((e.path(), depth + 1));
             } else if kind.is_file() && name.ends_with(".ry") {
-                out.push(e.path().canonicalize().unwrap_or_else(|_| e.path()));
+                out.push(canonical(&e.path()));
             }
         }
     }
@@ -126,8 +126,8 @@ impl Server {
                 if dep.extension().is_none() {
                     dep.set_extension("ry");
                 }
-                if let Ok(dep) = dep.canonicalize() {
-                    users.entry(dep).or_default().push(f.clone());
+                if dep.is_file() {
+                    users.entry(canonical(&dep)).or_default().push(f.clone());
                 }
             }
         }

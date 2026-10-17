@@ -660,8 +660,11 @@ fn typing_the_examples_never_breaks_the_server() {
     let init = r#"{"processId":null,"capabilities":{"textDocument":{"completion":{"completionItem":{"snippetSupport":true}},"documentSymbol":{"hierarchicalDocumentSymbolSupport":true}}}}"#;
     let (mut lsp, _) = Lsp::start("en", init);
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("examples");
-    let mut files: Vec<PathBuf> =
-        std::fs::read_dir(&dir).unwrap().flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|e| e == "ry")).collect();
+    let mut files: Vec<PathBuf> = [dir.clone(), dir.join("modules")]
+        .iter()
+        .flat_map(|d| std::fs::read_dir(d).unwrap().flatten().map(|e| e.path()))
+        .filter(|p| p.extension().is_some_and(|e| e == "ry"))
+        .collect();
     files.sort();
     for (n, file) in files.iter().enumerate() {
         let text = std::fs::read_to_string(file).unwrap();
