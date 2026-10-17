@@ -1,0 +1,654 @@
+//! Every page of the site, written with active (through Paquets' prelude). Mobile
+//! first: one column, a burger menu, and more room as the screen grows (`site.css`).
+
+use paquets::prelude::*;
+
+use crate::examples::EXAMPLES;
+use crate::highlight::{code_block, code_inline, diagnostic};
+use crate::i18n::{Lang, Texts};
+use crate::routes::{Page as PageKind, Route};
+
+pub const REPO: &str = "https://github.com/maxlestage/Rythme";
+const RELEASES: &str = "https://github.com/maxlestage/Rythme/releases";
+const PAQUETS: &str = "https://paquets-90dfc06b6fea.herokuapp.com/";
+const FONTS: &str = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap";
+
+/// What a request needs to render a page.
+pub struct Ctx {
+    pub route: Route,
+    /// Absolute origin of the site, for canonical and Open Graph URLs.
+    pub origin: String,
+    /// Short hash of `site.css` and `site.js`, for `?v=` in their links.
+    pub version: String,
+}
+
+impl Ctx {
+    fn t(&self) -> &'static Texts {
+        self.route.lang.texts()
+    }
+
+    fn lang(&self) -> Lang {
+        self.route.lang
+    }
+
+    fn href(&self, page: PageKind) -> String {
+        Route::new(self.lang(), page).path()
+    }
+
+    fn asset(&self, path: &str) -> String {
+        format!("{path}?v={}", self.version)
+    }
+}
+
+// ----- Small pieces ---------------------------------------------------------------------
+
+/// The four beats of the logo; they play while a program runs.
+fn beats() -> Element {
+    span().class("beats").attr("aria-hidden", "true").children((0..4).map(|_| i()))
+}
+
+fn external(link: Element) -> Element {
+    link.attr("target", "_blank").attr("rel", "noopener")
+}
+
+fn button_link(href: impl Into<String>, class: &str, text: &str) -> Element {
+    a().class("btn").class(class.to_owned()).href(href.into()).text(text.to_owned())
+}
+
+/// The heading of a section: a small label, a title and a lead.
+fn section_head(id: &str, title: &str, lead: &str) -> Element {
+    header()
+        .class("section__head")
+        .child(h2().id(format!("{id}-title")).text(title.to_owned()))
+        .child(p().class("lead").text(lead.to_owned()))
+}
+
+/// A shell command with a copy button (made to work by `site.js`).
+fn command(t: &Texts, text: &str) -> Element {
+    div()
+        .class("command")
+        .child(
+            code()
+                .attr("translate", "no")
+                .child(span().class("command__prompt").attr("aria-hidden", "true").text("$"))
+                .text(text.to_owned()),
+        )
+        .child(
+            button()
+                .class("command__copy")
+                .attr("type", "button")
+                .attr("data-copy", text.to_owned())
+                .attr("data-copied", t.copied)
+                .attr("hidden", "")
+                .text(t.copy),
+        )
+}
+
+/// A link that opens `code` in the playground (`#code=…`).
+pub fn playground_link(lang: Lang, code: &str, test: bool) -> String {
+    let mut href = format!("{}#code={}", Route::new(lang, PageKind::Playground).path(), percent_encode(code));
+    if test {
+        href.push_str("&mode=test");
+    }
+    href
+}
+
+/// The same as JavaScript's `encodeURIComponent`.
+pub fn percent_encode(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() * 3);
+    for b in s.bytes() {
+        if b.is_ascii_alphanumeric() || b"-_.!~*'()".contains(&b) {
+            out.push(b as char);
+        } else {
+            out.push_str(&format!("%{b:02X}"));
+        }
+    }
+    out
+}
+
+// ----- Layout ---------------------------------------------------------------------------
+
+/// FR / EN: the same page in the other language.
+fn lang_switch(ctx: &Ctx, class: &str) -> Element {
+    div().class("lang").class(class.to_owned()).attr("role", "group").attr("aria-label", ctx.t().lang_aria).children(Lang::ALL.map(|l| {
+        let route = if ctx.route.page == PageKind::NotFound { Route::new(l, PageKind::Home) } else { ctx.route.with_lang(l) };
+        let link = a()
+            .class("lang__link")
+            .href(route.path())
+            .attr("hreflang", l.code())
+            .attr("lang", l.code())
+            .attr("title", l.name())
+            .attr("data-lang", l.code())
+            .text(l.code().to_uppercase());
+        if l == ctx.lang() { link.class("is-active").attr("aria-current", "true") } else { link }
+    }))
+}
+
+/// The pages of the navigation, with their names.
+fn nav_pages(t: &Texts) -> [(PageKind, &'static str); 4] {
+    [
+        (PageKind::Learn, t.nav_learn),
+        (PageKind::Examples, t.nav_examples),
+        (PageKind::Playground, t.nav_playground),
+        (PageKind::Teach, t.nav_teach),
+    ]
+}
+
+fn github_icon() -> Element {
+    svg()
+        .attr("class", "icon")
+        .attr("viewBox", "0 0 16 16")
+        .attr("width", "18")
+        .attr("height", "18")
+        .attr("aria-hidden", "true")
+        .child(path().attr("fill", "currentColor").attr(
+            "d",
+            "M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z",
+        ))
+}
+
+fn site_header(ctx: &Ctx) -> Element {
+    let t = ctx.t();
+    let links = nav_pages(t).map(|(page, text)| {
+        let link = a().class("nav__link").href(ctx.href(page)).text(text);
+        let link = if page == ctx.route.page { link.class("is-active").attr("aria-current", "page") } else { link };
+        li().child(link)
+    });
+    header().class("bar").id("top").child(
+        div()
+            .class("bar__inner")
+            .child(
+                a().class("brand")
+                    .href(ctx.href(PageKind::Home))
+                    .attr("aria-label", t.brand_aria)
+                    .child(span().class("brand__word").text("Rythme"))
+                    .child(beats()),
+            )
+            .child(nav().class("nav").id("nav").attr("aria-label", t.nav_aria).child(
+                ul().class("nav__list").children(links).child(li().class("nav__item--github").child(external(
+                    a().class("nav__link nav__link--github").href(REPO).child(github_icon()).child(span().text("GitHub")),
+                ))),
+            ))
+            .child(lang_switch(ctx, "lang--bar"))
+            .child(
+                button()
+                    .class("burger")
+                    .attr("type", "button")
+                    .attr("aria-controls", "nav")
+                    .attr("aria-expanded", "false")
+                    .attr("aria-label", t.menu)
+                    .attr("hidden", "")
+                    .child(span().class("burger__box").attr("aria-hidden", "true").children((0..3).map(|_| span().class("burger__line")))),
+            ),
+    )
+}
+
+fn site_footer(ctx: &Ctx) -> Element {
+    let t = ctx.t();
+    footer().class("foot").child(
+        div()
+            .class("foot__inner")
+            .child(
+                div()
+                    .class("foot__brand")
+                    .child(
+                        a().class("brand")
+                            .href(ctx.href(PageKind::Home))
+                            .attr("aria-label", t.brand_aria)
+                            .child(span().class("brand__word").text("Rythme"))
+                            .child(beats()),
+                    )
+                    .child(p().text(t.footer_tagline)),
+            )
+            .child(
+                nav()
+                    .class("foot__links")
+                    .attr("aria-label", t.nav_aria)
+                    .children(nav_pages(t).map(|(page, text)| a().href(ctx.href(page)).text(text))),
+            )
+            .child(
+                div()
+                    .class("foot__meta")
+                    .child(external(a().href(REPO).text(t.footer_source)))
+                    .child(external(a().href(format!("{REPO}/blob/master/LICENSE")).text(t.footer_license)))
+                    .child(external(a().href(PAQUETS).text(t.footer_made)))
+                    .child(lang_switch(ctx, "lang--foot")),
+            ),
+    )
+}
+
+/// The page around `content`: head tags, header with the burger menu, footer.
+fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
+    let lang = ctx.lang();
+    let route = ctx.route;
+    let mut seo =
+        Seo::new().site_name("Rythme").base_url(ctx.origin.clone()).image("/assets/og-image.svg").og_type("website").locale(lang.locale());
+    if route.page == PageKind::NotFound {
+        seo = seo.noindex(true);
+    } else {
+        seo = seo.canonical(route.path());
+        for l in Lang::ALL {
+            seo = seo.alternate(l.code(), route.with_lang(l).path());
+        }
+        seo = seo.alternate("x-default", route.with_lang(Lang::Fr).path());
+    }
+    // `js` on <html> before the first paint: the menu folds behind the burger only
+    // when the script that opens it can run.
+    let head = format!(
+        concat!(
+            r#"<meta name="color-scheme" content="light dark"/>"#,
+            r##"<meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)"/>"##,
+            r##"<meta name="theme-color" content="#0e1118" media="(prefers-color-scheme: dark)"/>"##,
+            r#"<link rel="icon" href="/assets/logo.svg" type="image/svg+xml"/>"#,
+            r#"<link rel="preconnect" href="https://fonts.googleapis.com"/>"#,
+            r#"<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>"#,
+            r#"<script>document.documentElement.classList.add("js")</script>"#,
+            r#"<script src="{js}" defer=""></script>"#,
+        ),
+        js = ctx.asset("/site.js"),
+    );
+    let body = div()
+        .class("site")
+        .child(a().class("skip").href("#main").text(ctx.t().skip))
+        .child(site_header(ctx))
+        .child(content.id("main"))
+        .child(site_footer(ctx));
+    Page::new(title)
+        .lang(lang.code())
+        .description(description)
+        .seo(seo)
+        .plain()
+        .stylesheet(FONTS)
+        .stylesheet(ctx.asset("/site.css"))
+        .head(head)
+        .body(body)
+}
+
+// ----- Home -------------------------------------------------------------------------------
+
+pub fn home(ctx: &Ctx) -> Page {
+    let t = ctx.t();
+    let content = main().class("home").child(hero(ctx)).child(why(t)).child(errors(t)).child(habits(t)).child(install(t)).child(cta(ctx));
+    layout(ctx, t.meta_title, t.meta_description, content)
+}
+
+fn hero(ctx: &Ctx) -> Element {
+    let t = ctx.t();
+    section()
+        .class("hero")
+        .attr("aria-labelledby", "hero-title")
+        .child(
+            div()
+                .class("hero__text")
+                .child(p().class("eyebrow").text(t.hero_eyebrow))
+                .child(h1().class("hero__title").id("hero-title").text(t.hero_title))
+                .child(p().class("hero__lead").text(t.hero_lead))
+                .child(
+                    div()
+                        .class("hero__actions")
+                        .child(button_link(ctx.href(PageKind::Playground), "btn--primary btn--lg", t.cta_try))
+                        .child(button_link("#install", "btn--ghost btn--lg", t.cta_install)),
+                ),
+        )
+        .child(
+            figure()
+                .class("score")
+                .child(
+                    div().class("score__head").child(span().class("file").text("main.ry")).child(
+                        a().class("score__run").href(playground_link(ctx.lang(), t.hero_code, false)).text(format!("▶ {}", t.pg_run)),
+                    ),
+                )
+                .child(code_block(t.hero_code))
+                .child(figcaption().class("score__out").child(span().class("score__label").text(t.hero_output)).child(code().text("20"))),
+        )
+}
+
+fn why(t: &Texts) -> Element {
+    section().class("section").id("why").attr("aria-labelledby", "why-title").child(section_head("why", t.why_title, t.why_lead)).child(
+        ul().class("cards").children(t.why.iter().enumerate().map(|(n, item)| {
+            li().class("card")
+                .child(span().class("card__num").text(format!("0{}", n + 1)))
+                .child(h3().text(item.title))
+                .child(p().text(item.text))
+        })),
+    )
+}
+
+fn errors(t: &Texts) -> Element {
+    section()
+        .class("section section--split")
+        .id("errors")
+        .attr("aria-labelledby", "errors-title")
+        .child(
+            div()
+                .class("split__text")
+                .child(section_head("errors", t.errors_title, t.errors_lead))
+                .child(ul().class("checks").children(t.errors_points.iter().map(|point| li().text(*point)))),
+        )
+        .child(
+            div()
+                .class("terminal")
+                .child(
+                    div()
+                        .class("terminal__head")
+                        .attr("aria-hidden", "true")
+                        .child(i())
+                        .child(i())
+                        .child(i())
+                        .child(span().text("rythme main.ry")),
+                )
+                .child(code_block(t.errors_code))
+                .child(diagnostic(t.errors_message)),
+        )
+}
+
+fn habits(t: &Texts) -> Element {
+    section()
+        .class("section")
+        .id("habits")
+        .attr("aria-labelledby", "habits-title")
+        .child(section_head("habits", t.habits_title, t.habits_lead))
+        .child(
+            div().class("table-wrap").child(
+                table()
+                    .class("habits")
+                    .child(thead().child(tr().children(t.habits_head.iter().map(|h| th().attr("scope", "col").text(*h)))))
+                    .child(tbody().children(t.habits.iter().map(|h| {
+                        tr().child(td().attr("data-label", t.habits_head[0]).child(code().class("habit__other").text(h.other)))
+                            .child(td().attr("data-label", t.habits_head[1]).child(code_inline(h.rythme)))
+                            .child(td().attr("data-label", t.habits_head[2]).text(h.note))
+                    }))),
+            ),
+        )
+}
+
+fn install(t: &Texts) -> Element {
+    let steps = t.install_steps.iter().enumerate().map(|(n, step)| {
+        let body = if n == 0 {
+            div().child(p().text(step.text)).child(external(a().class("btn btn--ghost").href(RELEASES).text("Releases →")))
+        } else {
+            div().child(command(t, step.text))
+        };
+        li().class("step").child(span().class("step__num").text(format!("{}", n + 1))).child(h3().text(step.title)).child(body)
+    });
+    section()
+        .class("section")
+        .id("install")
+        .attr("aria-labelledby", "install-title")
+        .child(section_head("install", t.install_title, t.install_lead))
+        .child(ol().class("steps").children(steps))
+        .child(h3().class("subhead").text(t.commands_title))
+        .child(dl().class("commands").children(t.commands.iter().map(|(cmd, what)| {
+            div().class("commands__row").child(dt().child(code().attr("translate", "no").text(*cmd))).child(dd().text(*what))
+        })))
+        .child(p().class("note").text(t.commands_lang))
+}
+
+fn cta(ctx: &Ctx) -> Element {
+    let t = ctx.t();
+    section()
+        .class("cta")
+        .attr("aria-labelledby", "cta-title")
+        .child(beats())
+        .child(h2().id("cta-title").text(t.cta_title))
+        .child(p().text(t.cta_text))
+        .child(button_link(ctx.href(PageKind::Playground), "btn--primary btn--lg", t.cta_try))
+}
+
+// ----- Learn ------------------------------------------------------------------------------
+
+/// The top of an inner page.
+fn page_head(title: &str, lead: &str) -> Element {
+    header().class("page-head").child(h1().text(title.to_owned())).child(p().class("lead").text(lead.to_owned()))
+}
+
+pub fn learn(ctx: &Ctx) -> Page {
+    let t = ctx.t();
+    let lang = ctx.lang();
+    let steps = t.tour.iter().enumerate().map(|(n, step)| {
+        let test = step.code.contains("test \"");
+        li().class("tour__step")
+            .id(format!("step-{}", n + 1))
+            .child(
+                div()
+                    .class("tour__text")
+                    .child(span().class("card__num").text(format!("0{}", n + 1)))
+                    .child(h2().text(step.title))
+                    .child(p().text(step.text)),
+            )
+            .child(
+                div()
+                    .class("tour__code")
+                    .child(code_block(step.code))
+                    .child(a().class("tour__try").href(playground_link(lang, step.code, test)).text(format!("▶ {}", t.learn_try))),
+            )
+    });
+    let next = t.learn_next.iter().enumerate().map(|(n, item)| {
+        let card = li().class("card");
+        let title =
+            if n == 2 { h3().child(a().href(ctx.href(PageKind::Examples)).text(item.title)) } else { h3().child(code().text(item.title)) };
+        card.child(title).child(p().text(item.text))
+    });
+    let content = main()
+        .class("page")
+        .child(page_head(t.learn_title, t.learn_lead))
+        .child(ol().class("tour").children(steps))
+        .child(p().class("note note--box").text(t.learn_names))
+        .child(
+            section()
+                .class("section")
+                .attr("aria-labelledby", "next-title")
+                .child(h2().id("next-title").text(t.learn_next_title))
+                .child(ul().class("cards cards--3").children(next)),
+        );
+    layout(ctx, &format!("{} — Rythme", t.learn_title), t.learn_lead, content)
+}
+
+// ----- Examples ---------------------------------------------------------------------------
+
+pub fn examples(ctx: &Ctx) -> Page {
+    let t = ctx.t();
+    let lang = ctx.lang();
+    let jump = nav()
+        .class("chips")
+        .attr("aria-label", t.ex_jump)
+        .children(EXAMPLES.iter().map(|e| a().class("chip").href(format!("#{}", e.name)).text(format!("{}.ry", e.name))));
+    let list = EXAMPLES.iter().map(|e| {
+        article()
+            .class("example")
+            .id(e.name)
+            .attr("aria-labelledby", format!("{}-title", e.name))
+            .child(
+                header()
+                    .class("example__head")
+                    .child(
+                        div()
+                            .child(h2().id(format!("{}-title", e.name)).class("file").text(format!("{}.ry", e.name)))
+                            .child(p().text(e.about(lang))),
+                    )
+                    .child(button_link(
+                        format!("{}#example={}", ctx.href(PageKind::Playground), e.name),
+                        "btn--ghost btn--sm",
+                        &format!("▶ {}", t.ex_open),
+                    )),
+            )
+            .child(
+                div().class("example__body").child(code_block(e.code)).child(
+                    div()
+                        .class("example__out")
+                        .child(span().class("score__label").text(t.ex_output))
+                        .child(pre().class("output").child(code().text(e.output.trim_end().to_owned()))),
+                ),
+            )
+    });
+    let content = main().class("page").child(page_head(t.ex_title, t.ex_lead)).child(jump).child(div().class("examples").children(list));
+    layout(ctx, &format!("{} — Rythme", t.ex_title), t.ex_lead, content)
+}
+
+// ----- Playground -------------------------------------------------------------------------
+
+pub fn playground(ctx: &Ctx) -> Page {
+    let t = ctx.t();
+    let toolbar = div()
+        .class("toolbar")
+        .child(
+            div().class("picker").child(label().attr("for", "example").text(t.pg_example)).child(
+                select()
+                    .id("example")
+                    .child(option().attr("value", "welcome").text(t.pg_welcome))
+                    .children(EXAMPLES.iter().map(|e| option().attr("value", e.name).text(format!("{}.ry", e.name)))),
+            ),
+        )
+        .child(
+            div()
+                .class("actions")
+                .child(button().class("btn").attr("type", "button").id("check").attr("disabled", "").text(t.pg_check))
+                .child(button().class("btn").attr("type", "button").id("test").attr("disabled", "").text(t.pg_test))
+                .child(
+                    button()
+                        .class("btn btn--primary")
+                        .attr("type", "button")
+                        .id("run")
+                        .attr("disabled", "")
+                        .child(span().text(t.pg_run))
+                        .child(span().class("kbd").attr("aria-hidden", "true").text("Ctrl+Enter")),
+                )
+                .child(button().class("btn btn--stop").attr("type", "button").id("stop").attr("hidden", "").text(t.pg_stop)),
+        );
+    let workspace = div()
+        .class("workspace")
+        .child(
+            section()
+                .class("panel")
+                .attr("aria-labelledby", "file-name")
+                .child(
+                    div()
+                        .class("panel__head")
+                        .child(span().class("file").id("file-name").text("main.ry"))
+                        .child(span().class("status").id("lines")),
+                )
+                .child(
+                    div().class("editor").child(div().class("gutter").id("gutter").attr("aria-hidden", "true").text("1")).child(
+                        div().class("editor__code").child(pre().id("highlight").attr("aria-hidden", "true")).child(
+                            textarea()
+                                .id("source")
+                                .attr("spellcheck", "false")
+                                .attr("autocapitalize", "off")
+                                .attr("autocomplete", "off")
+                                .attr("autocorrect", "off")
+                                .attr("aria-label", t.pg_code)
+                                .text(t.pg_welcome_code),
+                        ),
+                    ),
+                ),
+        )
+        .child(
+            section()
+                .class("panel")
+                .attr("aria-labelledby", "output-title")
+                .child(
+                    div()
+                        .class("panel__head")
+                        .child(span().class("file").id("output-title").text(t.pg_output))
+                        .child(span().class("status").id("status").attr("role", "status")),
+                )
+                .child(pre().class("output output--live").id("output").attr("tabindex", "0")),
+        );
+    let help = section()
+        .class("help")
+        .attr("aria-labelledby", "help-title")
+        .child(
+            div()
+                .class("help__nav")
+                .child(h2().id("help-title").text(t.pg_help))
+                .child(p().text(t.pg_help_intro))
+                .child(div().class("topics").id("topics"))
+                .child(
+                    form()
+                        .class("search")
+                        .id("search-form")
+                        .child(
+                            input()
+                                .id("search")
+                                .attr("type", "search")
+                                .attr("spellcheck", "false")
+                                .attr("autocomplete", "off")
+                                .attr("placeholder", t.pg_search)
+                                .attr("aria-label", t.pg_search),
+                        )
+                        .child(button().class("btn").attr("type", "submit").text(t.pg_search_go)),
+                ),
+        )
+        .child(pre().class("help__text").id("help-text").attr("tabindex", "0"));
+    let content = main()
+        .class("page page--wide playground")
+        .attr("data-lang", ctx.lang().code())
+        .attr("data-wasm", ctx.asset("/rythme.wasm"))
+        .attr("data-worker", ctx.asset("/playground-worker.js"))
+        .child(page_head(t.pg_title, t.pg_lead))
+        .child(noscript().child(p().class("note note--box").text(t.pg_noscript)))
+        .child(toolbar)
+        .child(workspace)
+        .child(help)
+        .child(p().class("note").text(t.pg_limits));
+    layout(ctx, &format!("{} — Rythme", t.pg_title), t.pg_lead, content)
+        .head(format!(r#"<script src="{}" defer=""></script>"#, ctx.asset("/playground.js")))
+}
+
+// ----- Teach ------------------------------------------------------------------------------
+
+pub fn teach(ctx: &Ctx) -> Page {
+    let t = ctx.t();
+    let guide = crate::teach::render(ctx.lang());
+    let toc = nav()
+        .class("toc")
+        .attr("aria-labelledby", "toc-title")
+        .child(p().class("toc__title").id("toc-title").text(t.teach_toc))
+        .child(ol().children(guide.sections.iter().map(|(id, text)| li().child(a().href(format!("#{id}")).text(text.clone())))));
+    let content = main()
+        .class("page")
+        .child(page_head(&guide.title, t.teach_lead))
+        .child(div().class("doc").child(toc).child(article().class("prose").html(guide.html.clone())));
+    layout(ctx, &format!("{} — Rythme", guide.title), t.teach_lead, content)
+}
+
+// ----- Not found ------------------------------------------------------------------------
+
+pub fn not_found(ctx: &Ctx) -> Page {
+    let t = ctx.t();
+    let content = main()
+        .class("page nf")
+        .child(p().class("eyebrow").text("404"))
+        .child(h1().text(t.nf_title))
+        .child(p().class("lead").text(t.nf_text))
+        .child(
+            div()
+                .class("hero__actions")
+                .child(button_link(ctx.href(PageKind::Home), "btn--primary btn--lg", t.nf_home))
+                .child(button_link(ctx.href(PageKind::Playground), "btn--ghost btn--lg", t.nav_playground)),
+        );
+    layout(ctx, &format!("404 — {}", t.nf_title), t.nf_text, content).status(404)
+}
+
+/// The page of a route.
+pub fn render(ctx: &Ctx) -> Page {
+    match ctx.route.page {
+        PageKind::Home => home(ctx),
+        PageKind::Learn => learn(ctx),
+        PageKind::Examples => examples(ctx),
+        PageKind::Playground => playground(ctx),
+        PageKind::Teach => teach(ctx),
+        PageKind::NotFound => not_found(ctx),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn encodes_like_javascript() {
+        assert_eq!(percent_encode("a b\n|>é"), "a%20b%0A%7C%3E%C3%A9");
+        assert_eq!(percent_encode("f(x)*2"), "f(x)*2");
+    }
+}
