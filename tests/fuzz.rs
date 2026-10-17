@@ -658,7 +658,7 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
     fn number(_: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
         Ok(Value::Int(4))
     }
-    let fakes: [(&str, builtins::BuiltinFn); 10] = [
+    let fakes: [(&str, builtins::BuiltinFn); 9] = [
         ("print", quiet),
         ("debug", same),
         ("input", empty_text),
@@ -668,7 +668,6 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
         ("read_file", no_file),
         ("write_file", no_file),
         ("file_exists", number),
-        ("help", quiet),
     ];
     SANDBOX.get_or_init(|| {
         fakes
@@ -745,7 +744,9 @@ fn pipeline(src: &str) -> Result<Stage, String> {
         Err(d) => return check_diag(&d, file, src).map(|_| Stage::Parser),
     };
     let mut interp = sandboxed_interp();
-    let diags = check::check(&items, &Knowledge::from_interp(&interp), false);
+    // One program in four is checked and run as in the REPL (names can be defined again).
+    let repl = src.len().is_multiple_of(4);
+    let diags = check::check(&items, &Knowledge::from_interp(&interp), repl);
     for d in &diags {
         check_diag(d, file, src)?;
     }
@@ -753,7 +754,7 @@ fn pipeline(src: &str) -> Result<Stage, String> {
         return Ok(Stage::Checker);
     }
     let mut stage = Stage::Ran;
-    match interp.exec_items(&items, Mode::Run) {
+    match interp.exec_items(&items, if repl { Mode::Repl } else { Mode::Run }) {
         Ok(Some(v)) => {
             let _ = (v.repr(), v.describe());
         }

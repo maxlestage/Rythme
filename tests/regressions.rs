@@ -442,6 +442,37 @@ fn mistakes_inside_an_insertion_explain_how_to_write_braces() {
 }
 
 #[test]
+fn characters_copied_from_documents_are_explained() {
+    for (code, expected) in [
+        ("x = 1\u{a0}+ 2", "U+00A0"),
+        ("x = 1\u{200b}+ 2", "U+200B"),
+        ("x = 1\n\u{feff}y = 2", "U+FEFF"),
+        ("x = 1\u{1}", "U+0001"),
+        ("x = 5 − 3", "write `-` instead"),
+        ("x = 5 × 3", "write `*` instead"),
+        ("x = 1 ≠ 2", "write `!=` instead"),
+        ("print（1）", "write `(` instead"),
+        ("x = ‘a’", "double quotes"),
+    ] {
+        let r = fails(code, "E018");
+        assert!(r.stderr.contains(expected), "{code:?}: {}", r.stderr);
+    }
+    let r = common::rythme_lang("fr", &["-e", "x = 1\u{a0}+ 2"]);
+    assert!(r.stderr.contains("espace spéciale"), "{}", r.stderr);
+}
+
+#[test]
+fn every_file_given_to_check_is_checked_and_code_gets_its_arguments() {
+    let good = temp_file("good.ry", "print(1)\n");
+    let bad = temp_file("bad.ry", "print(nope)\n");
+    let r = rythme(&["check", bad.to_str().unwrap(), good.to_str().unwrap()]);
+    assert_eq!(r.code, 1);
+    assert!(r.stdout.contains("bad.ry: 1 error") && r.stdout.contains("good.ry: no problems"), "{}", r.stdout);
+    let r = rythme(&["-e", "print(args())", "a", "b c"]);
+    assert_eq!(r.stdout, "[\"a\", \"b c\"]\n");
+}
+
+#[test]
 fn number_errors_say_what_is_wrong() {
     let r = fails("print(0xFFFFFFFFFFFFFFFF)", "E012");
     assert!(r.stderr.contains("too large"), "{}", r.stderr);
@@ -545,6 +576,13 @@ fn help_shows_the_documentation_of_types() {
 }
 
 // ----- REPL ---------------------------------------------------------------
+
+#[test]
+fn repl_commands_accept_what_the_command_line_accepts() {
+    let file = temp_file("plain_name", "fn twice(x) = 2 * x\n");
+    let out = repl(&format!(":load {}\ntwice(4)\n:explain E003 please\n", file.display()));
+    assert!(out.contains("\n8\n") && out.contains("E003 — Unknown name"), "{out}");
+}
 
 #[test]
 fn repl_shows_the_error_of_code_left_unfinished_at_the_end() {

@@ -127,11 +127,12 @@ fn cli(mut args: Vec<String>) -> i32 {
             None => usage_error(t!("which file? Example: rythme test my_tests.ry", "quel fichier ? Exemple : rythme test mes_tests.ry")),
         },
         "check" | "verifier" | "vérifier" => match rest.first() {
-            Some(file) => check_file(file),
+            // Every file is checked, even after one with errors.
+            Some(_) => rest.iter().map(|file| check_file(file)).fold(0, i32::max),
             None => usage_error(t!("which file? Example: rythme check hello.ry", "quel fichier ? Exemple : rythme check bonjour.ry")),
         },
         "-e" | "eval" => match rest.first() {
-            Some(code) => eval_code(code),
+            Some(code) => eval_code(code, rest[1..].to_vec()),
             None => usage_error(t!("which code? Example: rythme -e 'print(1 + 2)'", "quel code ? Exemple : rythme -e 'print(1 + 2)'")),
         },
         _ => {
@@ -234,8 +235,9 @@ fn check_file(name: &str) -> i32 {
     }
 }
 
-fn eval_code(code: &str) -> i32 {
+fn eval_code(code: &str, script_args: Vec<String>) -> i32 {
     let mut driver = Driver::new();
+    driver.interp.script_args = script_args;
     let cwd = std::env::current_dir().unwrap_or_default();
     let Some(module) = driver.load_source("<code>", code, None, &cwd) else { return 1 };
     match driver.execute(&module, Mode::Run) {

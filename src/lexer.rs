@@ -437,14 +437,45 @@ impl<'a> Lexer<'a> {
     }
 
     fn unexpected_char(&self, c: char, start: usize) -> Diagnostic {
+        // Spaces and marks that cannot be seen, often copied from a document or a web page.
+        let space = matches!(c, '\u{a0}' | '\u{2000}'..='\u{200a}' | '\u{202f}' | '\u{205f}' | '\u{3000}');
+        let invisible =
+            c.is_control() || matches!(c, '\u{ad}' | '\u{200b}'..='\u{200f}' | '\u{2028}'..='\u{202e}' | '\u{2060}' | '\u{feff}');
+        if space || invisible {
+            let code = format!("U+{:04X}", c as u32);
+            let d = self.error("E018", start, t!("unexpected invisible character {code}", "caractère invisible inattendu {code}"));
+            return d.help(if space {
+                t!(
+                    "this is a special space (often copied from a document or a web page): replace it with a normal space",
+                    "c'est une espace spéciale (souvent copiée depuis un document ou une page web) : remplacez-la par une espace normale"
+                )
+            } else {
+                t!(
+                    "this character cannot be seen (it is often copied from a document or a web page): delete it",
+                    "ce caractère ne se voit pas (il est souvent copié depuis un document ou une page web) : supprimez-le"
+                )
+            });
+        }
         let d = self.error("E018", start, t!("unexpected character `{c}`", "caractère inattendu `{c}`"));
+        let instead = |s: &str| d.clone().help(t!("write `{s}` instead", "écrivez plutôt `{s}`"));
         match c {
-            '\'' => d.help(t!("texts use double quotes: \"hello\"", "les textes s'écrivent entre guillemets droits : \"bonjour\"")),
+            '\'' | '‘' | '’' | '‚' => {
+                d.help(t!("texts use double quotes: \"hello\"", "les textes s'écrivent entre guillemets droits : \"bonjour\""))
+            }
             '^' => d.help(t!("use `**` for powers: `2 ** 10`", "utilisez `**` pour les puissances : `2 ** 10`")),
             '`' => d.help(t!("texts use double quotes: \"hello\"", "les textes s'écrivent entre guillemets droits : \"bonjour\"")),
-            '“' | '”' | '«' | '»' => {
+            '“' | '”' | '„' | '«' | '»' => {
                 d.help(t!("use straight double quotes `\"` for texts", "utilisez des guillemets droits `\"` pour les textes"))
             }
+            '−' | '–' | '—' => instead("-"),
+            '×' | '·' | '∗' => instead("*"),
+            '÷' | '∕' => instead("/"),
+            '≠' => instead("!="),
+            '≤' => instead("<="),
+            '≥' => instead(">="),
+            '→' => instead("->"),
+            // Full-width forms of `,` `(` `)`..., typed with an Asian keyboard layout.
+            '\u{ff01}'..='\u{ff5e}' => instead(&char::from_u32(c as u32 - 0xfee0).unwrap_or(c).to_string()),
             '$' => d.help(t!(
                 "to insert a value in a text, use braces: \"total: {{x}}\"",
                 "pour insérer une valeur dans un texte, utilisez des accolades : \"total : {{x}}\""
