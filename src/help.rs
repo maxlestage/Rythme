@@ -581,6 +581,17 @@ Safe access (never an error)
   first([])                      # None
   get(numbers, 10)               # None
 
+"Change" a list: you get a new list, the old one stays the same
+  set_at(numbers, 0, 9)          # [9, 1, 2]
+  insert_at(numbers, 1, 7)       # [3, 7, 1, 2]
+  remove_at(numbers, -1)         # [3, 1]
+
+Pieces of a list
+  take_while(numbers, fn(x) = x > 2)      # [3]
+  chunks([1, 2, 3, 4, 5], 2)              # [[1, 2], [3, 4], [5]]
+  windows([1, 2, 3], 2)                   # [[1, 2], [2, 3]]
+  0..10 |> step_by(5)                     # [0, 5, 10]
+
 Take a list apart with patterns
   match numbers
     [] -> "empty"
@@ -609,6 +620,17 @@ Accès sûr (jamais d'erreur)
   first([])                      # None
   get(nombres, 10)               # None
 
+« Modifier » une liste : on obtient une nouvelle liste, l'ancienne ne change pas
+  set_at(nombres, 0, 9)          # [9, 1, 2]
+  insert_at(nombres, 1, 7)       # [3, 7, 1, 2]
+  remove_at(nombres, -1)         # [3, 1]
+
+Des morceaux d'une liste
+  take_while(nombres, fn(x) = x > 2)      # [3]
+  chunks([1, 2, 3, 4, 5], 2)              # [[1, 2], [3, 4], [5]]
+  windows([1, 2, 3], 2)                   # [[1, 2], [2, 3]]
+  0..10 |> step_by(5)                     # [0, 5, 10]
+
 Décomposer une liste avec des motifs
   match nombres
     [] -> "vide"
@@ -630,6 +652,9 @@ const TEXT_EN: &str = r#"TEXT
   replace("2024", "4", "5")      # "2025"
   contains("hello", "ell")       # true
   text(42)                       # "42"
+  text(3.14159, 2)               # "3.14" (a number with 2 decimals)
+  pad_left("7", 3, "0")          # "007"  (and pad_right: to line up columns)
+  char_code("A")   char(66)      # 65 and "B"
   int("42")                      # 42
   parse_int("x42")               # Err(...): a conversion that cannot crash
 
@@ -649,6 +674,9 @@ const TEXT_FR: &str = r#"TEXTE
   replace("2024", "4", "5")      # "2025"
   contains("bonjour", "jour")    # true
   text(42)                       # "42"
+  text(3.14159, 2)               # "3.14" (un nombre avec 2 décimales)
+  pad_left("7", 3, "0")          # "007"  (et pad_right : pour aligner des colonnes)
+  char_code("A")   char(66)      # 65 et "B"
   int("42")                      # 42
   parse_int("x42")               # Err(...) : une conversion qui ne plante jamais
 
@@ -671,10 +699,18 @@ Take apart
 
 Useful functions
   keys(ada)   values(ada)   has(ada, "name")   get(ada, "x")   put(ada, "x", 1)
+  entries(ada)                   # [["name", "Ada"], ["born", 1815]]
+  from_entries([["x", 1]])       # {x: 1}
 
 Records as dictionaries
   counts = {apple: 2}
-  put(counts, "pear", 5)         # {apple: 2, pear: 5}"#;
+  put(counts, "pear", 5)         # {apple: 2, pear: 5}
+  map_values(counts, fn(n) = n * 10)      # {apple: 20}
+  group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+
+JSON, the format of data on the web
+  parse_json(text)               # Ok(...): objects become records, arrays lists
+  to_json(value)                 # the text, ready to save with write_file"#;
 
 const RECORDS_FR: &str = r#"ENREGISTREMENTS
 
@@ -692,10 +728,18 @@ Décomposer
 
 Fonctions utiles
   keys(ada)   values(ada)   has(ada, "nom")   get(ada, "x")   put(ada, "x", 1)
+  entries(ada)                   # [["nom", "Ada"], ["naissance", 1815]]
+  from_entries([["x", 1]])       # {x: 1}
 
 Les enregistrements comme dictionnaires
   compte = {pomme: 2}
-  put(compte, "poire", 5)        # {pomme: 2, poire: 5}"#;
+  put(compte, "poire", 5)        # {pomme: 2, poire: 5}
+  map_values(compte, fn(n) = n * 10)      # {pomme: 20}
+  group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+
+JSON, le format des données du web
+  parse_json(texte)              # Ok(...) : les objets deviennent des enregistrements, les tableaux des listes
+  to_json(valeur)                # le texte, prêt à enregistrer avec write_file"#;
 
 const TYPES_EN: &str = r#"YOUR OWN TYPES
 
@@ -826,6 +870,9 @@ Quick tools
   unwrap(Some(3))                # 3 (stops the program on None or Err)
   is_some(x)   is_none(x)   is_ok(x)   is_err(x)
   map(Some(2), fn(x) = x * 10)   # Some(20)
+  ok_or(get(person, "age"), "no age")   # Err("no age") if missing: ready for ?
+  and_then(x, f)                 # one more step that may fail
+  map_err(r, fn(e) = "config: {e}")     # explain an error better
 
 To stop the whole program: fail("message")."#;
 
@@ -854,6 +901,9 @@ Outils rapides
   unwrap(Some(3))                # 3 (arrête le programme sur None ou Err)
   is_some(x)   is_none(x)   is_ok(x)   is_err(x)
   map(Some(2), fn(x) = x * 10)   # Some(20)
+  ok_or(get(personne, "age"), "pas d'âge")   # Err("pas d'âge") s'il manque : prêt pour ?
+  and_then(x, f)                 # une étape de plus qui peut échouer
+  map_err(r, fn(e) = "config : {e}")    # mieux expliquer une erreur
 
 Pour arrêter tout le programme : fail("message")."#;
 
@@ -867,7 +917,9 @@ Instead of a loop that prints:       1..5 |> each(fn(i) = print(i))
 Instead of a loop that transforms:   map(list, f)
 Instead of a loop that selects:      filter(list, f)
 Instead of a loop that accumulates:  fold(list, start, f)   or sum, product
-Instead of a loop that searches:     find, any, all, index_of
+Instead of running totals:           scan(list, start, f)
+Instead of a loop that searches:     find, any, all, index_of, min_by, max_by
+Instead of "break":                  take_while(list, f)
 Instead of "while":                  a recursive function
 
   # Python:  total = 0
@@ -896,7 +948,9 @@ Au lieu d'une boucle qui affiche :      1..5 |> each(fn(i) = print(i))
 Au lieu d'une boucle qui transforme :   map(liste, f)
 Au lieu d'une boucle qui sélectionne :  filter(liste, f)
 Au lieu d'une boucle qui accumule :     fold(liste, depart, f)   ou sum, product
-Au lieu d'une boucle qui cherche :      find, any, all, index_of
+Au lieu de totaux cumulés :             scan(liste, depart, f)
+Au lieu d'une boucle qui cherche :      find, any, all, index_of, min_by, max_by
+Au lieu de « break » :                  take_while(liste, f)
 Au lieu de « tant que » :               une fonction récursive
 
   # Python :  total = 0

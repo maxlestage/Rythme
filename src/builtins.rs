@@ -81,10 +81,10 @@ pub static BUILTINS: &[Builtin] = &[
        "Shows a value with its position in the code (on the error output) and returns it unchanged. Handy in the middle of a pipeline.",
        "Affiche une valeur avec sa position dans le code (sur la sortie d'erreur) et la renvoie telle quelle. Pratique au milieu d'un enchaînement.",
        "[1, 2] |> debug |> sum      # [debug file.ry:1:10] [1, 2]"),
-    b!("text", "text(value)", 1, 1, Basics, to_text,
-       "Converts any value to text.",
-       "Convertit n'importe quelle valeur en texte.",
-       "text(42) + \"!\"            # \"42!\""),
+    b!("text", "text(value, decimals)", 1, 2, Basics, to_text,
+       "Converts any value to text. With a number of decimals, writes a number with exactly that many digits after the point.",
+       "Convertit n'importe quelle valeur en texte. Avec un nombre de décimales, écrit un nombre avec exactement autant de chiffres après la virgule.",
+       "text(42) + \"!\"            # \"42!\"\ntext(3.14159, 2)           # \"3.14\"\ntext(5, 2)                 # \"5.00\""),
     b!("input", "input(prompt)", 0, 1, Basics, input,
        "Shows the prompt, then reads a line typed on the keyboard and returns it as text.",
        "Affiche l'invite, puis lit une ligne tapée au clavier et la renvoie sous forme de texte.",
@@ -113,13 +113,17 @@ pub static BUILTINS: &[Builtin] = &[
        "Returns the list of the words given after the file name on the command line.",
        "Renvoie la liste des mots donnés après le nom du fichier sur la ligne de commande.",
        "# rythme hello.ry Ada   ->   args() == [\"Ada\"]"),
+    b!("env", "env(name)", 1, 1, Basics, env,
+       "The value of an environment variable of the system, as an Option: `Some(text)`, or `None` if it is not set.",
+       "La valeur d'une variable d'environnement du système, sous forme d'Option : `Some(texte)`, ou `None` si elle n'est pas définie.",
+       "env(\"HOME\")                # Some(\"/home/ada\")"),
     b!("exit", "exit(code)", 0, 1, Basics, exit,
        "Stops the program immediately. The code (0 by default) tells the system if everything went well (0) or not.",
        "Arrête immédiatement le programme. Le code (0 par défaut) indique au système si tout s'est bien passé (0) ou non.",
        "exit(1)"),
     b!("time", "time()", 0, 0, Basics, time,
-       "Returns the current time in seconds (a Float). Subtract two times to measure a duration.",
-       "Renvoie l'heure actuelle en secondes (un Float). Soustrayez deux instants pour mesurer une durée.",
+       "Returns the current time in seconds (a Float), counted from 1 January 1970. Subtract two times to measure a duration.",
+       "Renvoie l'heure actuelle en secondes (un Float), comptées depuis le 1er janvier 1970. Soustrayez deux instants pour mesurer une durée.",
        "start = time()"),
     b!("random", "random(min, max)", 0, 2, Basics, random,
        "random() gives a decimal number between 0 and 1; random(a, b) a whole number from a to b (included); random(list) a random element.",
@@ -169,6 +173,18 @@ pub static BUILTINS: &[Builtin] = &[
     b!("sin", "sin(x)", 1, 1, Numbers, sin, "Sine (x in radians).", "Sinus (x en radians).", "sin(pi / 2)                # 1.0"),
     b!("cos", "cos(x)", 1, 1, Numbers, cos, "Cosine (x in radians).", "Cosinus (x en radians).", "cos(0)                     # 1.0"),
     b!("tan", "tan(x)", 1, 1, Numbers, tan, "Tangent (x in radians).", "Tangente (x en radians).", "tan(0)                     # 0.0"),
+    b!("asin", "asin(x)", 1, 1, Numbers, asin,
+       "Arc sine: the angle (in radians) whose sine is x, for x from -1 to 1.",
+       "Arc sinus : l'angle (en radians) dont le sinus est x, pour x de -1 à 1.",
+       "asin(1)                    # 1.5707963267948966"),
+    b!("acos", "acos(x)", 1, 1, Numbers, acos,
+       "Arc cosine: the angle (in radians) whose cosine is x, for x from -1 to 1.",
+       "Arc cosinus : l'angle (en radians) dont le cosinus est x, pour x de -1 à 1.",
+       "acos(1)                    # 0.0"),
+    b!("atan", "atan(y, x)", 1, 2, Numbers, atan,
+       "Arc tangent: the angle (in radians) whose tangent is y. With two numbers, the angle of the point (x, y), from -pi to pi.",
+       "Arc tangente : l'angle (en radians) dont la tangente est y. Avec deux nombres, l'angle du point (x, y), de -pi à pi.",
+       "atan(1)                    # 0.7853981633974483\natan(1, -1)                # 2.356194490192345"),
     b!("log", "log(x, base)", 1, 2, Numbers, log,
        "Logarithm: natural (base e) by default, or in the given base.",
        "Logarithme : naturel (base e) par défaut, ou dans la base donnée.",
@@ -176,6 +192,14 @@ pub static BUILTINS: &[Builtin] = &[
     b!("exp", "exp(x)", 1, 1, Numbers, exp, "e to the power x.", "e à la puissance x.", "exp(0)                     # 1.0"),
     b!("is_even", "is_even(n)", 1, 1, Numbers, is_even, "Is the whole number even?", "Le nombre entier est-il pair ?", "is_even(4)                 # true"),
     b!("is_odd", "is_odd(n)", 1, 1, Numbers, is_odd, "Is the whole number odd?", "Le nombre entier est-il impair ?", "is_odd(4)                  # false"),
+    b!("gcd", "gcd(a, b)", 2, 2, Numbers, gcd,
+       "Greatest common divisor of two whole numbers: the largest number that divides both.",
+       "Plus grand commun diviseur (PGCD) de deux nombres entiers : le plus grand nombre qui divise les deux.",
+       "gcd(12, 18)                # 6"),
+    b!("lcm", "lcm(a, b)", 2, 2, Numbers, lcm,
+       "Least common multiple of two whole numbers: the smallest number divisible by both.",
+       "Plus petit commun multiple (PPCM) de deux nombres entiers : le plus petit nombre divisible par les deux.",
+       "lcm(4, 6)                  # 12"),
     // ----- Text -----
     b!("len", "len(x)", 1, 1, Text, len,
        "Length of a text (in characters), a list or a record.",
@@ -183,10 +207,22 @@ pub static BUILTINS: &[Builtin] = &[
        "len(\"été\")                 # 3\nlen([1, 2])                # 2"),
     b!("upper", "upper(text)", 1, 1, Text, upper, "The text in uppercase.", "Le texte en majuscules.", "upper(\"abc\")               # \"ABC\""),
     b!("lower", "lower(text)", 1, 1, Text, lower, "The text in lowercase.", "Le texte en minuscules.", "lower(\"ABC\")               # \"abc\""),
+    b!("capitalize", "capitalize(text)", 1, 1, Text, capitalize,
+       "The text with its first character in uppercase (the rest is unchanged).",
+       "Le texte avec son premier caractère en majuscule (le reste ne change pas).",
+       "capitalize(\"élise\")        # \"Élise\""),
     b!("trim", "trim(text)", 1, 1, Text, trim,
        "The text without spaces and line breaks at the start and the end.",
        "Le texte sans espaces ni retours à la ligne au début et à la fin.",
        "trim(\"  hi \")              # \"hi\""),
+    b!("pad_left", "pad_left(text, width, fill)", 2, 3, Text, pad_left,
+       "Adds `fill` (a space by default) before the text until it is `width` characters long: numbers line up in columns. A value that is not a text is first shown as `print` shows it.",
+       "Ajoute `fill` (un espace par défaut) avant le texte jusqu'à ce qu'il fasse `width` caractères : les nombres s'alignent en colonnes. Une valeur qui n'est pas un texte est d'abord montrée comme `print` la montre.",
+       "pad_left(\"7\", 3, \"0\")       # \"007\"\npad_left(42, 5)            # \"   42\""),
+    b!("pad_right", "pad_right(text, width, fill)", 2, 3, Text, pad_right,
+       "Adds `fill` (a space by default) after the text until it is `width` characters long.",
+       "Ajoute `fill` (un espace par défaut) après le texte jusqu'à ce qu'il fasse `width` caractères.",
+       "pad_right(\"ab\", 4, \".\")    # \"ab..\""),
     b!("split", "split(text, separator)", 1, 2, Text, split,
        "Cuts a text into a list of texts. Without separator, cuts at spaces.",
        "Découpe un texte en une liste de textes. Sans séparateur, découpe aux espaces.",
@@ -219,6 +255,26 @@ pub static BUILTINS: &[Builtin] = &[
        "The list of the lines of a text.",
        "La liste des lignes d'un texte.",
        "lines(\"a\\nb\")              # [\"a\", \"b\"]"),
+    b!("char_code", "char_code(char)", 1, 1, Text, char_code,
+       "The number of a character (its Unicode code point).",
+       "Le numéro d'un caractère (son point de code Unicode).",
+       "char_code(\"A\")             # 65"),
+    b!("char", "char(code)", 1, 1, Text, to_char,
+       "The character with this number (Unicode code point): the opposite of `char_code`.",
+       "Le caractère qui a ce numéro (point de code Unicode) : l'inverse de `char_code`.",
+       "char(65)                   # \"A\"\nchar(char_code(\"a\") + 1)   # \"b\""),
+    b!("is_digit", "is_digit(text)", 1, 1, Text, is_digit,
+       "Is the text made only of digits from 0 to 9 (and not empty)?",
+       "Le texte n'est-il fait que de chiffres de 0 à 9 (et non vide) ?",
+       "is_digit(\"42\")             # true\nis_digit(\"4a\")             # false"),
+    b!("is_letter", "is_letter(text)", 1, 1, Text, is_letter,
+       "Is the text made only of letters, accented ones included (and not empty)?",
+       "Le texte n'est-il fait que de lettres, accentuées comprises (et non vide) ?",
+       "is_letter(\"été\")           # true"),
+    b!("is_space", "is_space(text)", 1, 1, Text, is_space,
+       "Is the text made only of spaces, tabs and line breaks (and not empty)?",
+       "Le texte n'est-il fait que d'espaces, de tabulations et de retours à la ligne (et non vide) ?",
+       "is_space(\" \\n\")            # true"),
     b!("repeat", "repeat(x, n)", 2, 2, Text, repeat,
        "A text or a list repeated n times.",
        "Un texte ou une liste répété n fois.",
@@ -231,6 +287,14 @@ pub static BUILTINS: &[Builtin] = &[
        "Reads a decimal number from a text: `Ok(number)` or `Err(message)`.",
        "Lit un nombre décimal dans un texte : `Ok(nombre)` ou `Err(message)`.",
        "parse_float(\"2.5\")         # Ok(2.5)"),
+    b!("parse_json", "parse_json(text)", 1, 1, Text, parse_json,
+       "Reads a JSON text: `Ok(value)`, or `Err(message)` if the text is not valid JSON. Objects become records, arrays lists, and null `None`.",
+       "Lit un texte JSON : `Ok(valeur)`, ou `Err(message)` si le texte n'est pas du JSON valide. Les objets deviennent des enregistrements, les tableaux des listes, et null `None`.",
+       "parse_json(\"[1, 2.5, null]\")   # Ok([1, 2.5, None])\nparse_json(\"[1,\")         # Err(...)"),
+    b!("to_json", "to_json(value, indent)", 1, 2, Text, to_json,
+       "Writes a value as JSON text: records become objects, lists arrays, and `None` null. With `indent`, one element per line, shifted by that many spaces.",
+       "Écrit une valeur en texte JSON : les enregistrements deviennent des objets, les listes des tableaux, et `None` null. Avec `indent`, un élément par ligne, décalé de ce nombre d'espaces.",
+       "to_json([1.5, None, true])  # \"[1.5, null, true]\""),
     // ----- Lists -----
     b!("map", "map(list, f)", 2, 2, Lists, map,
        "Applies the function f to each element and returns the list of the results. Also works on Option and Result.",
@@ -244,6 +308,10 @@ pub static BUILTINS: &[Builtin] = &[
        "Combines all the elements into one value: starts with `start`, then computes f(result, element) for each element.",
        "Combine tous les éléments en une seule valeur : part de `start`, puis calcule f(résultat, élément) pour chaque élément.",
        "fold([1, 2, 3], 0, fn(total, x) = total + x)   # 6"),
+    b!("scan", "scan(list, start, f)", 3, 3, Lists, scan,
+       "Like fold, but gives the list of every intermediate result: running totals, for example.",
+       "Comme fold, mais donne la liste de tous les résultats intermédiaires : des totaux cumulés, par exemple.",
+       "scan([1, 2, 3], 0, fn(total, x) = total + x)   # [1, 3, 6]"),
     b!("each", "each(list, f)", 2, 2, Lists, each,
        "Calls f on each element, for its effect (like printing). Returns ().",
        "Appelle f sur chaque élément, pour son effet (comme afficher). Renvoie ().",
@@ -251,44 +319,80 @@ pub static BUILTINS: &[Builtin] = &[
     b!("sum", "sum(list)", 1, 1, Lists, sum, "The sum of the numbers of a list.", "La somme des nombres d'une liste.", "sum([1, 2, 3])             # 6"),
     b!("product", "product(list)", 1, 1, Lists, product, "The product of the numbers of a list.", "Le produit des nombres d'une liste.", "product([2, 3, 4])         # 24"),
     b!("first", "first(list)", 1, 1, Lists, first,
-       "The first element, as an Option: `Some(x)`, or `None` if the list is empty.",
-       "Le premier élément, sous forme d'Option : `Some(x)`, ou `None` si la liste est vide.",
+       "The first element of a list (or character of a text), as an Option: `Some(x)`, or `None` if there is none.",
+       "Le premier élément d'une liste (ou caractère d'un texte), sous forme d'Option : `Some(x)`, ou `None` s'il n'y en a pas.",
        "first([7, 8])              # Some(7)"),
     b!("last", "last(list)", 1, 1, Lists, last,
-       "The last element, as an Option.",
-       "Le dernier élément, sous forme d'Option.",
+       "The last element of a list (or character of a text), as an Option.",
+       "Le dernier élément d'une liste (ou caractère d'un texte), sous forme d'Option.",
        "last([7, 8])               # Some(8)"),
     b!("rest", "rest(list)", 1, 1, Lists, rest,
-       "The list without its first element.",
-       "La liste sans son premier élément.",
+       "The list (or text) without its first element.",
+       "La liste (ou le texte) sans son premier élément.",
        "rest([7, 8, 9])            # [8, 9]"),
     b!("get", "get(x, key)", 2, 2, Lists, get,
-       "The element at a position of a list or text, or the field of a record, as an Option (never an error).",
-       "L'élément à une position d'une liste ou d'un texte, ou le champ d'un enregistrement, sous forme d'Option (jamais d'erreur).",
+       "The element at a position of a list or text, or the field of a record, as an Option (never an error). Negative positions count from the end.",
+       "L'élément à une position d'une liste ou d'un texte, ou le champ d'un enregistrement, sous forme d'Option (jamais d'erreur). Les positions négatives comptent depuis la fin.",
        "get([7, 8], 5)             # None\nget({a: 1}, \"a\")           # Some(1)"),
     b!("push", "push(list, x)", 2, 2, Lists, push,
        "A new list with x added at the end.",
        "Une nouvelle liste avec x ajouté à la fin.",
        "push([1, 2], 3)            # [1, 2, 3]"),
+    b!("set_at", "set_at(list, i, x)", 3, 3, Lists, set_at,
+       "A new list where the element at position i is replaced by x. Negative positions count from the end.",
+       "Une nouvelle liste où l'élément à la position i est remplacé par x. Les positions négatives comptent depuis la fin.",
+       "set_at([1, 2, 3], 0, 9)    # [9, 2, 3]"),
+    b!("insert_at", "insert_at(list, i, x)", 3, 3, Lists, insert_at,
+       "A new list with x inserted so that it is at position i (-1 adds it at the end).",
+       "Une nouvelle liste avec x inséré pour qu'il soit à la position i (-1 l'ajoute à la fin).",
+       "insert_at([1, 2, 3], 1, 9)  # [1, 9, 2, 3]"),
+    b!("remove_at", "remove_at(list, i)", 2, 2, Lists, remove_at,
+       "A new list without the element at position i. Negative positions count from the end.",
+       "Une nouvelle liste sans l'élément à la position i. Les positions négatives comptent depuis la fin.",
+       "remove_at([1, 2, 3], -1)   # [1, 2]"),
     b!("reverse", "reverse(x)", 1, 1, Lists, reverse, "The list or text in reverse order.", "La liste ou le texte dans l'ordre inverse.", "reverse([1, 2, 3])         # [3, 2, 1]"),
     b!("sort", "sort(list)", 1, 1, Lists, sort,
-       "The list sorted from smallest to largest (numbers, texts in alphabetical order...).",
-       "La liste triée du plus petit au plus grand (nombres, textes dans l'ordre alphabétique...).",
+       "The list sorted from smallest to largest (numbers, texts in alphabetical order...). For the largest first: `sort(list) |> reverse`.",
+       "La liste triée du plus petit au plus grand (nombres, textes dans l'ordre alphabétique...). Pour le plus grand d'abord : `sort(liste) |> reverse`.",
        "sort([3, 1, 2])            # [1, 2, 3]"),
     b!("sort_by", "sort_by(list, key)", 2, 2, Lists, sort_by,
-       "Sorts the list by the value that the function `key` gives for each element.",
-       "Trie la liste selon la valeur que la fonction `key` donne pour chaque élément.",
+       "Sorts the list by the value that the function `key` gives for each element. Elements with the same value keep their order.",
+       "Trie la liste selon la valeur que la fonction `key` donne pour chaque élément. Les éléments de même valeur gardent leur ordre.",
        "sort_by([\"ccc\", \"a\"], len)  # [\"a\", \"ccc\"]"),
     b!("unique", "unique(list)", 1, 1, Lists, unique,
        "The list without duplicates (the first occurrence is kept).",
        "La liste sans doublons (la première occurrence est gardée).",
        "unique([1, 2, 1])          # [1, 2]"),
+    b!("shuffle", "shuffle(list)", 1, 1, Lists, shuffle,
+       "The elements of the list in a random order.",
+       "Les éléments de la liste dans un ordre au hasard.",
+       "shuffle([1, 2, 3])         # [3, 1, 2], or another order"),
     b!("slice", "slice(x, start, end)", 2, 3, Lists, slice,
        "The part of a list or text from position `start` (included) to `end` (excluded). Negative positions count from the end.",
        "La partie d'une liste ou d'un texte de la position `start` (incluse) à `end` (exclue). Les positions négatives comptent depuis la fin.",
        "slice([1, 2, 3, 4], 1, 3)  # [2, 3]\nslice(\"hello\", -3)         # \"llo\""),
     b!("take", "take(x, n)", 2, 2, Lists, take, "The first n elements of a list or text.", "Les n premiers éléments d'une liste ou d'un texte.", "take([1, 2, 3], 2)         # [1, 2]"),
     b!("drop", "drop(x, n)", 2, 2, Lists, drop, "The list or text without its first n elements.", "La liste ou le texte sans ses n premiers éléments.", "drop([1, 2, 3], 2)         # [3]"),
+    b!("take_while", "take_while(x, f)", 2, 2, Lists, take_while,
+       "The first elements of a list (or characters of a text), as long as f is true for them.",
+       "Les premiers éléments d'une liste (ou caractères d'un texte), tant que f est vraie pour eux.",
+       "take_while([1, 3, 4, 5], is_odd)   # [1, 3]\ntake_while(\"42 cm\", is_digit)     # \"42\""),
+    b!("drop_while", "drop_while(x, f)", 2, 2, Lists, drop_while,
+       "The list (or text) without its first elements for which f is true.",
+       "La liste (ou le texte) sans ses premiers éléments pour lesquels f est vraie.",
+       "drop_while([1, 3, 4, 5], is_odd)   # [4, 5]"),
+    b!("step_by", "step_by(x, n)", 2, 2, Lists, step_by,
+       "One element out of n of a list (or text), starting with the first. On a range: the numbers with a step.",
+       "Un élément sur n d'une liste (ou d'un texte), en commençant par le premier. Sur un intervalle : les nombres avec un pas.",
+       "0..10 |> step_by(5)        # [0, 5, 10]"),
+    b!("chunks", "chunks(x, n)", 2, 2, Lists, chunks,
+       "Cuts a list (or text) into pieces of n elements; the last piece may be shorter.",
+       "Découpe une liste (ou un texte) en morceaux de n éléments ; le dernier morceau peut être plus court.",
+       "chunks([1, 2, 3, 4, 5], 2)  # [[1, 2], [3, 4], [5]]"),
+    b!("windows", "windows(x, n)", 2, 2, Lists, windows,
+       "Every group of n neighbouring elements of a list (or text), in order: handy to compare each element with the next one.",
+       "Chaque groupe de n éléments voisins d'une liste (ou d'un texte), dans l'ordre : pratique pour comparer chaque élément au suivant.",
+       "windows([1, 2, 3, 4], 2)   # [[1, 2], [2, 3], [3, 4]]"),
     b!("zip", "zip(a, b)", 2, 2, Lists, zip,
        "Pairs the elements of two lists: [[a1, b1], [a2, b2], ...].",
        "Associe les éléments de deux listes : [[a1, b1], [a2, b2], ...].",
@@ -308,6 +412,14 @@ pub static BUILTINS: &[Builtin] = &[
        "The position of an element in a list (or of a piece of text in a text), as an Option.",
        "La position d'un élément dans une liste (ou d'un morceau de texte dans un texte), sous forme d'Option.",
        "index_of([5, 6, 7], 6)     # Some(1)"),
+    b!("min_by", "min_by(list, key)", 2, 2, Lists, min_by,
+       "The element for which the function `key` gives the smallest value (the first one if there are several).",
+       "L'élément pour lequel la fonction `key` donne la plus petite valeur (le premier s'il y en a plusieurs).",
+       "min_by([\"ccc\", \"a\", \"bb\"], len)   # \"a\""),
+    b!("max_by", "max_by(list, key)", 2, 2, Lists, max_by,
+       "The element for which the function `key` gives the largest value (the first one if there are several).",
+       "L'élément pour lequel la fonction `key` donne la plus grande valeur (le premier s'il y en a plusieurs).",
+       "people = [{name: \"Ada\", age: 36}, {name: \"Alan\", age: 41}]\nmax_by(people, fn(p) = p.age).name   # \"Alan\""),
     b!("flatten", "flatten(list)", 1, 1, Lists, flatten, "Joins a list of lists into one list.", "Réunit une liste de listes en une seule liste.", "flatten([[1], [2, 3]])     # [1, 2, 3]"),
     b!("flat_map", "flat_map(list, f)", 2, 2, Lists, flat_map,
        "Like map, when f returns a list: the lists are joined.",
@@ -329,12 +441,20 @@ pub static BUILTINS: &[Builtin] = &[
        "The list of the [name, value] pairs of a record.",
        "La liste des paires [nom, valeur] d'un enregistrement.",
        "entries({a: 1})            # [[\"a\", 1]]"),
+    b!("from_entries", "from_entries(list)", 1, 1, Records, from_entries,
+       "Builds a record from a list of [name, value] pairs: the opposite of `entries`.",
+       "Construit un enregistrement à partir d'une liste de paires [nom, valeur] : l'inverse de `entries`.",
+       "from_entries([[\"a\", 1], [\"b\", 2]])   # {a: 1, b: 2}"),
     b!("has", "has(record, name)", 2, 2, Records, has, "Does the record have this field?", "L'enregistrement a-t-il ce champ ?", "has({a: 1}, \"a\")           # true"),
     b!("put", "put(record, name, value)", 3, 3, Records, put,
        "A new record with the field set to the value (added or replaced).",
        "Un nouvel enregistrement avec le champ fixé à la valeur (ajouté ou remplacé).",
        "put({a: 1}, \"b\", 2)        # {a: 1, b: 2}"),
     b!("remove", "remove(record, name)", 2, 2, Records, remove, "A new record without this field.", "Un nouvel enregistrement sans ce champ.", "remove({a: 1, b: 2}, \"a\")  # {b: 2}"),
+    b!("map_values", "map_values(record, f)", 2, 2, Records, map_values,
+       "A new record where f is applied to every value; the names stay the same.",
+       "Un nouvel enregistrement où f est appliquée à chaque valeur ; les noms restent les mêmes.",
+       "map_values({a: 1, b: 2}, fn(x) = x * 10)   # {a: 10, b: 20}"),
     // ----- Option and Result -----
     b!("unwrap", "unwrap(x)", 1, 1, Options, unwrap,
        "The value inside `Some(x)` or `Ok(x)`. Stops the program with an error for `None` or `Err(e)`.",
@@ -348,6 +468,18 @@ pub static BUILTINS: &[Builtin] = &[
     b!("is_none", "is_none(option)", 1, 1, Options, is_none, "Is it `None`?", "Est-ce `None` ?", "is_none(None)              # true"),
     b!("is_ok", "is_ok(result)", 1, 1, Options, is_ok, "Is it `Ok(...)`?", "Est-ce `Ok(...)` ?", "is_ok(Ok(1))               # true"),
     b!("is_err", "is_err(result)", 1, 1, Options, is_err, "Is it `Err(...)`?", "Est-ce `Err(...)` ?", "is_err(Err(\"oops\"))       # true"),
+    b!("and_then", "and_then(x, f)", 2, 2, Options, and_then,
+       "Chains steps that may fail: for `Some(x)` or `Ok(x)`, gives f(x), which must be an Option or a Result; `None` and `Err(e)` stay as they are.",
+       "Enchaîne des étapes qui peuvent échouer : pour `Some(x)` ou `Ok(x)`, donne f(x), qui doit être une Option ou un Result ; `None` et `Err(e)` restent tels quels.",
+       "parse_int(\"42\") |> and_then(fn(n) = if n > 0 then Ok(n) else Err(\"not positive\"))   # Ok(42)"),
+    b!("ok_or", "ok_or(option, error)", 2, 2, Options, ok_or,
+       "Turns an Option into a Result: `Some(x)` gives `Ok(x)`, and `None` gives `Err(error)`. Handy before `?`.",
+       "Transforme une Option en Result : `Some(x)` donne `Ok(x)`, et `None` donne `Err(error)`. Pratique avant `?`.",
+       "ok_or(None, \"missing\")      # Err(\"missing\")"),
+    b!("map_err", "map_err(result, f)", 2, 2, Options, map_err,
+       "For `Err(e)`, gives `Err(f(e))`; `Ok(x)` stays as it is. Handy to explain an error better.",
+       "Pour `Err(e)`, donne `Err(f(e))` ; `Ok(x)` reste tel quel. Pratique pour mieux expliquer une erreur.",
+       "map_err(Err(\"not found\"), fn(e) = \"config: {e}\")   # Err(\"config: not found\")"),
     // ----- Files -----
     b!("read_file", "read_file(path)", 1, 1, Files, read_file,
        "Reads a whole text file: `Ok(text)`, or `Err(message)` if it cannot be read.",
@@ -357,6 +489,10 @@ pub static BUILTINS: &[Builtin] = &[
        "Writes a text in a file (replacing its content): `Ok(())` or `Err(message)`.",
        "Écrit un texte dans un fichier (en remplaçant son contenu) : `Ok(())` ou `Err(message)`.",
        "write_file(\"out.txt\", \"hello\")"),
+    b!("append_file", "append_file(path, text)", 2, 2, Files, append_file,
+       "Adds a text at the end of a file, creating the file if needed: `Ok(())` or `Err(message)`.",
+       "Ajoute un texte à la fin d'un fichier, en créant le fichier si besoin : `Ok(())` ou `Err(message)`.",
+       "append_file(\"log.txt\", \"done\\n\")"),
     b!("file_exists", "file_exists(path)", 1, 1, Files, file_exists, "Does this file exist?", "Ce fichier existe-t-il ?", "file_exists(\"notes.txt\")"),
 ];
 
@@ -403,11 +539,30 @@ fn a_function() -> String {
 fn a_record() -> String {
     t!("a record", "un enregistrement")
 }
+fn a_list_or_text() -> String {
+    t!("a list or a text", "une liste ou un texte")
+}
+
+/// Adds how to get a list out of a text or a record, the usual mistake.
+fn list_hint(mut d: Box<Diagnostic>, v: &Value) -> Box<Diagnostic> {
+    match v {
+        Value::Text(_) => d.helps.push(t!(
+            "a text is not a list: `chars(text)` gives the list of its characters",
+            "un texte n'est pas une liste : `chars(texte)` donne la liste de ses caractères"
+        )),
+        Value::Record(_) => d.helps.push(t!(
+            "a record is not a list: `entries(record)`, `keys(record)` or `values(record)` give one",
+            "un enregistrement n'est pas une liste : `entries(enreg)`, `keys(enreg)` ou `values(enreg)` en donnent une"
+        )),
+        _ => {}
+    }
+    d
+}
 
 fn list<'a>(a: &'a [Value], i: usize, f: &str, span: Span) -> Fallible<&'a List> {
     match &a[i] {
         Value::List(l) => Ok(l),
-        v => Err(wrong(f, i, a_list(), v, span)),
+        v => Err(list_hint(wrong(f, i, a_list(), v, span), v)),
     }
 }
 
@@ -444,14 +599,63 @@ fn func(a: &[Value], i: usize, f: &str, span: Span) -> Fallible<Value> {
 fn record<'a>(a: &'a [Value], i: usize, f: &str, span: Span) -> Fallible<&'a Rc<Record>> {
     match &a[i] {
         Value::Record(r) => Ok(r),
-        v => Err(wrong(f, i, a_record(), v, span)),
+        v => {
+            let mut d = wrong(f, i, a_record(), v, span);
+            if let Value::List(_) = v {
+                // The record functions that have a cousin for lists.
+                let cousin = match f {
+                    "put" => "set_at(list, i, x)",
+                    "remove" => "remove_at(list, i)",
+                    "has" => "contains(list, x)",
+                    _ => "",
+                };
+                if !cousin.is_empty() {
+                    d.helps.push(t!("for a list, use `{cousin}`", "pour une liste, utilisez `{cousin}`"));
+                }
+            }
+            Err(d)
+        }
     }
 }
 
 fn count_arg(a: &[Value], i: usize, f: &str, span: Span) -> Fallible<usize> {
     let n = int(a, i, f, span)?;
     usize::try_from(n)
-        .map_err(|_| invalid(t!("`{f}` needs a positive number, not {n}", "`{f}` a besoin d'un nombre positif, pas {n}"), span))
+        .map_err(|_| invalid(t!("`{f}` needs a number of 0 or more, not {n}", "`{f}` a besoin d'un nombre positif ou nul, pas {n}"), span))
+}
+
+/// A size for `step_by`, `chunks` and `windows`: 1 or more.
+fn size_arg(a: &[Value], i: usize, f: &str, span: Span) -> Fallible<usize> {
+    match count_arg(a, i, f, span)? {
+        0 => Err(invalid(t!("`{f}` needs a number of 1 or more, not 0", "`{f}` a besoin d'un nombre supérieur ou égal à 1, pas 0"), span)),
+        n => Ok(n),
+    }
+}
+
+/// A position in a list (negative = from the end), which must exist.
+fn position(a: &[Value], i: usize, len: usize, f: &str, span: Span) -> Fallible<usize> {
+    let n = int(a, i, f, span)?;
+    resolve_index(n, len).ok_or_else(|| out_of_range(n, len, len.checked_sub(1), span))
+}
+
+fn out_of_range(n: i64, len: usize, last: Option<usize>, span: Span) -> Box<Diagnostic> {
+    let what = if len == 0 {
+        t!("the list is empty", "la liste est vide")
+    } else {
+        t!("the list has {len} element(s)", "la liste a {len} élément(s)")
+    };
+    let d = Diagnostic::error("E007", t!("position {n} is out of range: {what}", "la position {n} est hors limites : {what}"))
+        .at(span)
+        .label(t!("no element here", "aucun élément ici"));
+    match last {
+        Some(last) => d
+            .help(t!(
+                "valid positions go from 0 to {last} (or from -1 backwards, counting from the end)",
+                "les positions valides vont de 0 à {last} (ou de -1 en reculant, en comptant depuis la fin)"
+            ))
+            .boxed(),
+        None => d.boxed(),
+    }
 }
 
 fn invalid(msg: String, span: Span) -> Box<Diagnostic> {
@@ -505,11 +709,42 @@ fn debug(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(a[0].clone())
 }
 
-fn to_text(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
+fn to_text(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    if a.len() == 2 {
+        let digits = count_arg(a, 1, "text", span)?;
+        if digits > 100 {
+            return Err(invalid(
+                t!("`text` writes at most 100 decimals, not {digits}", "`text` écrit au plus 100 décimales, pas {digits}"),
+                span,
+            ));
+        }
+        return Ok(text_value(match &a[0] {
+            Value::Int(n) if digits == 0 => n.to_string(),
+            Value::Int(n) => format!("{n}.{}", "0".repeat(digits)),
+            Value::Float(x) => fixed(*x, digits),
+            v => return Err(wrong("text", 0, a_number(), v, span)),
+        }));
+    }
     Ok(match &a[0] {
         Value::Text(_) => a[0].clone(),
         v => text_value(v.display()),
     })
+}
+
+/// A decimal number with exactly `digits` decimals, rounded like `round` does
+/// (halves away from zero).
+fn fixed(x: f64, digits: usize) -> String {
+    if !x.is_finite() {
+        return fmt_float(x);
+    }
+    let p = 10f64.powi(digits as i32);
+    let r = if digits <= 15 && x.fract() != 0.0 && (x * p).is_finite() { (x * p).round() / p } else { x };
+    let s = format!("{r:.digits$}");
+    // -0.001 written with 2 decimals is 0.00, not -0.00.
+    match s.strip_prefix('-') {
+        Some(rest) if rest.chars().all(|c| c == '0' || c == '.') => rest.to_string(),
+        _ => s,
+    }
 }
 
 fn input(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
@@ -560,6 +795,15 @@ fn fail(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn args(it: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
     Ok(Value::list(it.script_args.iter().map(|s| text_value(s.as_str())).collect()))
+}
+
+fn env(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let name = text(a, 0, "env", span)?;
+    // The system refuses these names; they are never set.
+    if name.is_empty() || name.contains(['=', '\0']) {
+        return Ok(it.none());
+    }
+    Ok(it.option(std::env::var_os(name).map(|v| text_value(v.to_string_lossy()))))
 }
 
 fn exit(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -705,7 +949,12 @@ fn round(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         let x = number(a, 0, "round", span)?;
         let d = int(a, 1, "round", span)?.clamp(-15, 15);
         let p = 10f64.powi(d as i32);
-        return Ok(Value::Float((x * p).round() / p));
+        let scaled = x * p;
+        // Whole numbers have no decimals to round (and x * p may become infinite).
+        if (d >= 0 && x.fract() == 0.0) || !scaled.is_finite() {
+            return Ok(Value::Float(x));
+        }
+        return Ok(Value::Float(scaled.round() / p));
     }
     rounding(a, "round", span, f64::round)
 }
@@ -767,6 +1016,31 @@ fn tan(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::Float(number(a, 0, "tan", span)?.tan()))
 }
 
+/// The number given to `asin` or `acos`, which must be from -1 to 1.
+fn unit_interval(a: &[Value], name: &str, span: Span) -> Fallible<f64> {
+    let x = number(a, 0, name, span)?;
+    if !(-1.0..=1.0).contains(&x) {
+        return Err(invalid(t!("`{name}` needs a number from -1 to 1, not {x}", "`{name}` a besoin d'un nombre de -1 à 1, pas {x}"), span));
+    }
+    Ok(x)
+}
+
+fn asin(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    Ok(Value::Float(unit_interval(a, "asin", span)?.asin()))
+}
+
+fn acos(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    Ok(Value::Float(unit_interval(a, "acos", span)?.acos()))
+}
+
+fn atan(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let y = number(a, 0, "atan", span)?;
+    if a.len() == 2 {
+        return Ok(Value::Float(y.atan2(number(a, 1, "atan", span)?)));
+    }
+    Ok(Value::Float(y.atan()))
+}
+
 fn exp(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::Float(number(a, 0, "exp", span)?.exp()))
 }
@@ -805,6 +1079,29 @@ fn is_odd(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::Bool(int(a, 0, "is_odd", span)? % 2 != 0))
 }
 
+/// Euclid's algorithm, on the absolute values (they always fit in a u64).
+fn gcd_of(mut a: u64, mut b: u64) -> u64 {
+    while b != 0 {
+        (a, b) = (b, a % b);
+    }
+    a
+}
+
+fn gcd(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let (x, y) = (int(a, 0, "gcd", span)?, int(a, 1, "gcd", span)?);
+    let g = gcd_of(x.unsigned_abs(), y.unsigned_abs());
+    i64::try_from(g).map(Value::Int).map_err(|_| overflow(span))
+}
+
+fn lcm(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let (x, y) = (int(a, 0, "lcm", span)?, int(a, 1, "lcm", span)?);
+    if x == 0 || y == 0 {
+        return Ok(Value::Int(0));
+    }
+    let (x, y) = (x.unsigned_abs(), y.unsigned_abs());
+    (x / gcd_of(x, y)).checked_mul(y).and_then(|m| i64::try_from(m).ok()).map(Value::Int).ok_or_else(|| overflow(span))
+}
+
 // ----- Text --------------------------------------------------------------
 
 fn len(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -824,8 +1121,57 @@ fn lower(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(text_value(text(a, 0, "lower", span)?.to_lowercase()))
 }
 
+fn capitalize(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let s = text(a, 0, "capitalize", span)?;
+    let mut cs = s.chars();
+    Ok(match cs.next() {
+        Some(c) => text_value(c.to_uppercase().chain(cs).collect::<String>()),
+        None => a[0].clone(),
+    })
+}
+
 fn trim(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(text_value(text(a, 0, "trim", span)?.trim()))
+}
+
+/// A text of exactly one character.
+fn one_char(a: &[Value], i: usize, f: &str, span: Span) -> Fallible<char> {
+    let s = text(a, i, f, span)?;
+    let mut cs = s.chars();
+    match (cs.next(), cs.next()) {
+        (Some(c), None) => Ok(c),
+        _ => Err(invalid(
+            t!(
+                "`{f}` needs a single character, but \"{s}\" has {}",
+                "`{f}` a besoin d'un seul caractère, mais \"{s}\" en a {}",
+                s.chars().count()
+            ),
+            span,
+        )),
+    }
+}
+
+fn pad(a: &[Value], name: &str, before: bool, span: Span) -> Fallible<Value> {
+    let width = count_arg(a, 1, name, span)?;
+    let fill = if a.len() == 3 { one_char(a, 2, name, span)? } else { ' ' };
+    let s = a[0].display();
+    let missing = width.saturating_sub(s.chars().count());
+    if missing == 0 {
+        return Ok(text_value(s));
+    }
+    if width > 100_000_000 {
+        return Err(invalid(t!("the padded text would be too large", "le texte complété serait trop grand"), span));
+    }
+    let fill: String = std::iter::repeat_n(fill, missing).collect();
+    Ok(text_value(if before { fill + &s } else { s + &fill }))
+}
+
+fn pad_left(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    pad(a, "pad_left", true, span)
+}
+
+fn pad_right(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    pad(a, "pad_right", false, span)
 }
 
 fn split(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -887,6 +1233,42 @@ fn lines(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::list(text(a, 0, "lines", span)?.lines().map(text_value).collect()))
 }
 
+fn char_code(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    Ok(Value::Int(one_char(a, 0, "char_code", span)? as i64))
+}
+
+fn to_char(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let n = int(a, 0, "char", span)?;
+    match u32::try_from(n).ok().and_then(char::from_u32) {
+        Some(c) => Ok(text_value(c.to_string())),
+        None => Err(Diagnostic::error("E023", t!("{n} is not the number of a character", "{n} n'est pas le numéro d'un caractère"))
+            .at(span)
+            .help(t!(
+                "character numbers go from 0 to 1114111, except 55296 to 57343",
+                "les numéros de caractères vont de 0 à 1114111, sauf de 55296 à 57343"
+            ))
+            .boxed()),
+    }
+}
+
+/// Is the text not empty, with only characters that pass `test`?
+fn made_of(a: &[Value], name: &str, span: Span, test: fn(char) -> bool) -> Fallible<Value> {
+    let s = text(a, 0, name, span)?;
+    Ok(Value::Bool(!s.is_empty() && s.chars().all(test)))
+}
+
+fn is_digit(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    made_of(a, "is_digit", span, |c| c.is_ascii_digit())
+}
+
+fn is_letter(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    made_of(a, "is_letter", span, char::is_alphabetic)
+}
+
+fn is_space(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    made_of(a, "is_space", span, char::is_whitespace)
+}
+
 fn repeat(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let n = count_arg(a, 1, "repeat", span)?;
     match &a[0] {
@@ -929,6 +1311,425 @@ fn parse_float(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     })
 }
 
+// ----- JSON --------------------------------------------------------------
+
+/// A JSON reader that never recurses: arrays and objects may be nested
+/// millions of levels deep.
+struct Json<'a> {
+    src: &'a str,
+    bytes: &'a [u8],
+    pos: usize,
+}
+
+/// An array or an object being read.
+enum Open {
+    List(Vec<Value>),
+    /// The fields read so far, and the name of the field being read.
+    Record(Record, Rc<str>),
+}
+
+impl Json<'_> {
+    fn peek(&self) -> Option<u8> {
+        self.bytes.get(self.pos).copied()
+    }
+
+    fn skip_space(&mut self) {
+        while let Some(b' ' | b'\t' | b'\n' | b'\r') = self.peek() {
+            self.pos += 1;
+        }
+    }
+
+    fn error(&self, msg: String) -> String {
+        let mut end = self.pos.min(self.src.len());
+        while !self.src.is_char_boundary(end) {
+            end -= 1;
+        }
+        let before = &self.src[..end];
+        let line = before.matches('\n').count() + 1;
+        let column = before.rsplit('\n').next().unwrap_or("").chars().count() + 1;
+        t!("JSON, line {line}, column {column}: {msg}", "JSON, ligne {line}, colonne {column} : {msg}")
+    }
+
+    fn expected(&self, what: &str) -> String {
+        match self.src.get(self.pos..).and_then(|rest| rest.chars().next()) {
+            Some(c) => self.error(t!("expected {what}, but found `{c}`", "on attendait {what}, mais on trouve `{c}`")),
+            None => self.error(t!("expected {what}, but the text ends", "on attendait {what}, mais le texte se termine")),
+        }
+    }
+
+    fn value(&mut self, it: &Interp) -> Result<Value, String> {
+        let mut open: Vec<Open> = Vec::new();
+        'values: loop {
+            self.skip_space();
+            let mut v = match self.peek() {
+                Some(b'[') => {
+                    self.pos += 1;
+                    self.skip_space();
+                    if self.peek() != Some(b']') {
+                        open.push(Open::List(Vec::new()));
+                        continue;
+                    }
+                    self.pos += 1;
+                    Value::list(Vec::new())
+                }
+                Some(b'{') => {
+                    self.pos += 1;
+                    self.skip_space();
+                    if self.peek() != Some(b'}') {
+                        let key = self.key()?;
+                        open.push(Open::Record(Record::new(), key));
+                        continue;
+                    }
+                    self.pos += 1;
+                    Value::Record(Rc::new(Record::new()))
+                }
+                Some(b'"') => text_value(self.string()?),
+                Some(b'-' | b'0'..=b'9') => self.number()?,
+                Some(b't') if self.word("true") => Value::Bool(true),
+                Some(b'f') if self.word("false") => Value::Bool(false),
+                Some(b'n') if self.word("null") => it.none(),
+                _ => return Err(self.expected(&t!("a value", "une valeur"))),
+            };
+            // A value is complete: put it in the array or the object it belongs
+            // to, and close the ones that end right after it.
+            loop {
+                self.skip_space();
+                match open.last_mut() {
+                    None if self.pos < self.bytes.len() => return Err(self.expected(&t!("the end of the text", "la fin du texte"))),
+                    None => return Ok(v),
+                    Some(Open::List(items)) => {
+                        items.push(v);
+                        match self.peek() {
+                            Some(b',') => {
+                                self.pos += 1;
+                                continue 'values;
+                            }
+                            Some(b']') => self.pos += 1,
+                            _ => return Err(self.expected(&t!("`,` or `]`", "`,` ou `]`"))),
+                        }
+                    }
+                    Some(Open::Record(fields, key)) => {
+                        fields.set(key.clone(), v);
+                        match self.peek() {
+                            Some(b',') => {
+                                self.pos += 1;
+                                self.skip_space();
+                                *key = self.key()?;
+                                continue 'values;
+                            }
+                            Some(b'}') => self.pos += 1,
+                            _ => return Err(self.expected(&t!("`,` or `}}`", "`,` ou `}}`"))),
+                        }
+                    }
+                }
+                v = match open.pop() {
+                    Some(Open::List(items)) => Value::list(items),
+                    Some(Open::Record(fields, _)) => Value::Record(Rc::new(fields)),
+                    None => return Ok(Value::Unit),
+                };
+            }
+        }
+    }
+
+    /// `"name":` before a value in an object.
+    fn key(&mut self) -> Result<Rc<str>, String> {
+        if self.peek() != Some(b'"') {
+            return Err(self.expected(&t!("a name in quotes", "un nom entre guillemets")));
+        }
+        let key = self.string()?;
+        self.skip_space();
+        if self.peek() != Some(b':') {
+            return Err(self.expected("`:`"));
+        }
+        self.pos += 1;
+        Ok(Rc::from(key))
+    }
+
+    fn word(&mut self, word: &str) -> bool {
+        let found = self.src[self.pos..].starts_with(word);
+        if found {
+            self.pos += word.len();
+        }
+        found
+    }
+
+    fn digits(&mut self) -> usize {
+        let start = self.pos;
+        while self.peek().is_some_and(|b| b.is_ascii_digit()) {
+            self.pos += 1;
+        }
+        self.pos - start
+    }
+
+    fn number(&mut self) -> Result<Value, String> {
+        let start = self.pos;
+        if self.peek() == Some(b'-') {
+            self.pos += 1;
+        }
+        let first = self.peek();
+        let n = self.digits();
+        let bad = |json: &mut Self| {
+            json.pos = start;
+            json.error(t!(
+                "invalid number: JSON writes numbers like 0, -12, 3.5 or 1e-3",
+                "nombre invalide : JSON écrit les nombres comme 0, -12, 3.5 ou 1e-3"
+            ))
+        };
+        // JSON writes no `+` and no useless zero in front: 0, 7, -12.
+        if n == 0 || (n > 1 && first == Some(b'0')) {
+            return Err(bad(self));
+        }
+        let mut whole = true;
+        if self.peek() == Some(b'.') {
+            self.pos += 1;
+            whole = false;
+            if self.digits() == 0 {
+                return Err(bad(self));
+            }
+        }
+        if let Some(b'e' | b'E') = self.peek() {
+            self.pos += 1;
+            whole = false;
+            if let Some(b'+' | b'-') = self.peek() {
+                self.pos += 1;
+            }
+            if self.digits() == 0 {
+                return Err(bad(self));
+            }
+        }
+        let s = &self.src[start..self.pos];
+        if whole {
+            if let Ok(n) = s.parse::<i64>() {
+                return Ok(Value::Int(n));
+            }
+        }
+        // Also whole numbers too large for an Int.
+        s.parse::<f64>().map(Value::Float).map_err(|_| bad(self))
+    }
+
+    /// A text in quotes, with its escapes (`\n`, `\"`, `é`...).
+    fn string(&mut self) -> Result<String, String> {
+        self.pos += 1;
+        let mut out = String::new();
+        loop {
+            // Copy the plain characters at once. The bytes where it stops are
+            // ASCII, so they are always at the start of a character.
+            let start = self.pos;
+            while self.peek().is_some_and(|b| b != b'"' && b != b'\\' && b >= 0x20) {
+                self.pos += 1;
+            }
+            out.push_str(&self.src[start..self.pos]);
+            let c = match self.peek() {
+                Some(b'"') => {
+                    self.pos += 1;
+                    return Ok(out);
+                }
+                Some(b'\\') => {
+                    self.pos += 1;
+                    match self.peek() {
+                        Some(b'"') => '"',
+                        Some(b'\\') => '\\',
+                        Some(b'/') => '/',
+                        Some(b'b') => '\u{8}',
+                        Some(b'f') => '\u{c}',
+                        Some(b'n') => '\n',
+                        Some(b'r') => '\r',
+                        Some(b't') => '\t',
+                        Some(b'u') => {
+                            self.pos += 1;
+                            out.push(self.unicode()?);
+                            continue;
+                        }
+                        _ => {
+                            return Err(self.error(t!(
+                                "invalid escape: after `\\` comes one of \" \\ / b f n r t u",
+                                "échappement invalide : après `\\` vient l'un de \" \\ / b f n r t u"
+                            )))
+                        }
+                    }
+                }
+                Some(_) => {
+                    return Err(self.error(t!(
+                        "a line break or a tab inside a text is written with `\\`: `\\n`, `\\t`",
+                        "un retour à la ligne ou une tabulation dans un texte s'écrit avec `\\` : `\\n`, `\\t`"
+                    )))
+                }
+                None => {
+                    return Err(self.error(t!("a text is never closed: `\"` is missing", "un texte n'est jamais fermé : il manque `\"`")))
+                }
+            };
+            self.pos += 1;
+            out.push(c);
+        }
+    }
+
+    fn hex4(&mut self) -> Result<u32, String> {
+        match self.src.get(self.pos..self.pos + 4).and_then(|h| u32::from_str_radix(h, 16).ok().filter(|_| !h.starts_with('+'))) {
+            Some(n) => {
+                self.pos += 4;
+                Ok(n)
+            }
+            None => {
+                Err(self.error(t!("`\\u` must be followed by 4 hexadecimal digits", "`\\u` doit être suivi de 4 chiffres hexadécimaux")))
+            }
+        }
+    }
+
+    /// The character of a `\uXXXX` escape: those beyond U+FFFF take two escapes.
+    fn unicode(&mut self) -> Result<char, String> {
+        let half = || {
+            t!(
+                "invalid `\\u` escape: half of a character (a surrogate) without its other half",
+                "échappement `\\u` invalide : une moitié de caractère (surrogate) sans son autre moitié"
+            )
+        };
+        let high = self.hex4()?;
+        let code = if (0xD800..0xDC00).contains(&high) {
+            if !self.src[self.pos..].starts_with("\\u") {
+                return Err(self.error(half()));
+            }
+            self.pos += 2;
+            let low = self.hex4()?;
+            if !(0xDC00..0xE000).contains(&low) {
+                return Err(self.error(half()));
+            }
+            0x10000 + ((high - 0xD800) << 10) + (low - 0xDC00)
+        } else {
+            high
+        };
+        char::from_u32(code).ok_or_else(|| self.error(half()))
+    }
+}
+
+fn parse_json(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let s = text(a, 0, "parse_json", span)?;
+    // Some editors start their files with an invisible mark (BOM).
+    let s = s.strip_prefix('\u{feff}').unwrap_or(s);
+    let mut json = Json { src: s, bytes: s.as_bytes(), pos: 0 };
+    Ok(match json.value(it) {
+        Ok(v) => it.ok(v),
+        Err(e) => it.err(text_value(e)),
+    })
+}
+
+fn json_text(s: &str, out: &mut String) {
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+}
+
+/// Writes a value as JSON, without recursion. `Err` gives the value that JSON
+/// cannot hold.
+fn write_json(it: &Interp, v: &Value, indent: Option<usize>) -> Result<String, Value> {
+    enum Item<'a> {
+        Value(&'a Value, usize),
+        Key(&'a str),
+        Raw(&'static str),
+        /// A new line, indented for this depth (nothing on a single line).
+        Line(usize),
+    }
+    let comma = if indent.is_some() { "," } else { ", " };
+    let mut out = String::new();
+    let mut todo = vec![Item::Value(v, 0)];
+    while let Some(item) = todo.pop() {
+        match item {
+            Item::Raw(s) => out.push_str(s),
+            Item::Key(k) => {
+                json_text(k, &mut out);
+                out.push_str(": ");
+            }
+            Item::Line(depth) => {
+                if let Some(n) = indent {
+                    out.push('\n');
+                    out.extend(std::iter::repeat_n(' ', n * depth));
+                }
+            }
+            Item::Value(v, depth) => match v {
+                Value::Unit => out.push_str("null"),
+                Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
+                Value::Int(n) => out.push_str(&n.to_string()),
+                Value::Float(f) if f.is_finite() => out.push_str(&fmt_float(*f)),
+                Value::Text(s) => json_text(s, &mut out),
+                Value::List(l) if l.is_empty() => out.push_str("[]"),
+                Value::Record(r) if r.is_empty() => out.push_str("{}"),
+                Value::List(l) => {
+                    out.push('[');
+                    todo.push(Item::Raw("]"));
+                    todo.push(Item::Line(depth));
+                    for (i, x) in l.iter().enumerate().rev() {
+                        todo.push(Item::Value(x, depth + 1));
+                        todo.push(Item::Line(depth + 1));
+                        if i > 0 {
+                            todo.push(Item::Raw(comma));
+                        }
+                    }
+                }
+                Value::Record(r) => {
+                    out.push('{');
+                    todo.push(Item::Raw("}"));
+                    todo.push(Item::Line(depth));
+                    let fields: Vec<(&Rc<str>, &Value)> = r.iter().collect();
+                    for (i, (k, x)) in fields.into_iter().enumerate().rev() {
+                        todo.push(Item::Value(x, depth + 1));
+                        todo.push(Item::Key(k));
+                        todo.push(Item::Line(depth + 1));
+                        if i > 0 {
+                            todo.push(Item::Raw(comma));
+                        }
+                    }
+                }
+                Value::Variant(var) => match it.wrap(v) {
+                    Wrap::None => out.push_str("null"),
+                    Wrap::Some => todo.push(Item::Value(&var.fields[0], depth)),
+                    _ => return Err(v.clone()),
+                },
+                other => return Err(other.clone()),
+            },
+        }
+    }
+    Ok(out)
+}
+
+fn to_json(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let indent = if a.len() == 2 {
+        let n = count_arg(a, 1, "to_json", span)?;
+        if n > 16 {
+            return Err(invalid(
+                t!("`to_json` indents by 16 spaces at most, not {n}", "`to_json` décale de 16 espaces au plus, pas {n}"),
+                span,
+            ));
+        }
+        Some(n)
+    } else {
+        None
+    };
+    write_json(it, &a[0], indent).map(text_value).map_err(|bad| {
+        let d = match bad {
+            Value::Float(_) => Diagnostic::error(
+                "E023",
+                t!("`to_json` cannot write {} in JSON", "`to_json` ne peut pas écrire {} en JSON", bad.describe()),
+            )
+            .help(t!("JSON has no infinite numbers and no NaN", "JSON n'a ni nombres infinis ni NaN")),
+            _ => Diagnostic::error("E005", t!("`to_json` cannot write {} in JSON", "`to_json` ne peut pas écrire {} en JSON", bad.describe()))
+                .help(t!(
+                    "JSON only holds numbers, texts, true and false, lists, records and null (`None`):\nturn your value into a record first, like {{kind: \"Circle\", radius: r}}",
+                    "JSON ne contient que des nombres, des textes, true et false, des listes, des enregistrements et null (`None`) :\ntransformez d'abord votre valeur en enregistrement, comme {{sorte: \"Cercle\", rayon: r}}"
+                )),
+        };
+        d.at(span).boxed()
+    })
+}
+
 // ----- Lists -------------------------------------------------------------
 
 fn map(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -951,7 +1752,9 @@ fn map(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
                 Ok(it.ok(r))
             }
             Wrap::None | Wrap::Err => Ok(v.clone()),
-            Wrap::Other => Err(wrong("map", 0, t!("a list, an Option or a Result", "une liste, une Option ou un Result"), v, span)),
+            Wrap::Other => {
+                Err(list_hint(wrong("map", 0, t!("a list, an Option or a Result", "une liste, une Option ou un Result"), v, span), v))
+            }
         },
     }
 }
@@ -976,6 +1779,18 @@ fn fold(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         acc = it.call(f.clone(), vec![acc, x.clone()], span)?;
     }
     Ok(acc)
+}
+
+fn scan(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let l = list(a, 0, "scan", span)?;
+    let f = func(a, 2, "scan", span)?;
+    let mut acc = a[1].clone();
+    let mut out = Vec::with_capacity(l.len());
+    for x in l.iter() {
+        acc = it.call(f.clone(), vec![acc, x.clone()], span)?;
+        out.push(acc.clone());
+    }
+    Ok(Value::list(out))
 }
 
 fn each(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -1071,6 +1886,34 @@ fn push(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::list(v))
 }
 
+fn set_at(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let l = list(a, 0, "set_at", span)?;
+    let i = position(a, 1, l.len(), "set_at", span)?;
+    let mut v = l.as_slice().to_vec();
+    v[i] = a[2].clone();
+    Ok(Value::list(v))
+}
+
+fn insert_at(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let l = list(a, 0, "insert_at", span)?;
+    // One more place than there are elements: after the last one.
+    let n = int(a, 1, "insert_at", span)?;
+    let i = resolve_index(n, l.len() + 1).ok_or_else(|| out_of_range(n, l.len(), Some(l.len()), span))?;
+    let mut v = Vec::with_capacity(l.len() + 1);
+    v.extend(l.as_slice()[..i].iter().cloned());
+    v.push(a[2].clone());
+    v.extend(l.as_slice()[i..].iter().cloned());
+    Ok(Value::list(v))
+}
+
+fn remove_at(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let l = list(a, 0, "remove_at", span)?;
+    let i = position(a, 1, l.len(), "remove_at", span)?;
+    let mut v = l.as_slice().to_vec();
+    v.remove(i);
+    Ok(Value::list(v))
+}
+
 fn reverse(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(match &a[0] {
         Value::List(l) => Value::list(l.iter().rev().cloned().collect()),
@@ -1162,6 +2005,16 @@ fn unique(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::list(out))
 }
 
+fn shuffle(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let mut v = list(a, 0, "shuffle", span)?.as_slice().to_vec();
+    // Fisher-Yates: every order is equally likely.
+    for i in (1..v.len()).rev() {
+        let j = (it.random_u64() % (i as u64 + 1)) as usize;
+        v.swap(i, j);
+    }
+    Ok(Value::list(v))
+}
+
 /// Start and end positions for `slice`, `take` and `drop` (negative = from the end).
 fn bounds(len: usize, start: i64, end: Option<i64>) -> (usize, usize) {
     let fix = |n: i64| -> usize {
@@ -1185,7 +2038,7 @@ fn length_of(v: &Value, name: &str, span: Span) -> Fallible<usize> {
     match v {
         Value::List(l) => Ok(l.len()),
         Value::Text(s) => Ok(s.chars().count()),
-        v => Err(wrong(name, 0, t!("a list or a text", "une liste ou un texte"), v, span)),
+        v => Err(wrong(name, 0, a_list_or_text(), v, span)),
     }
 }
 
@@ -1207,6 +2060,80 @@ fn drop(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let len = length_of(&a[0], "drop", span)?;
     let n = count_arg(a, 1, "drop", span)?;
     Ok(cut(&a[0], n.min(len), len))
+}
+
+/// How many elements (or characters) at the start make f true.
+fn leading(it: &mut Interp, a: &[Value], name: &str, span: Span) -> Fallible<usize> {
+    let len = length_of(&a[0], name, span)?;
+    let f = func(a, 1, name, span)?;
+    match &a[0] {
+        Value::List(l) => {
+            for (i, x) in l.iter().enumerate() {
+                if !test(it, &f, x, name, span)? {
+                    return Ok(i);
+                }
+            }
+        }
+        Value::Text(s) => {
+            for (i, c) in s.chars().enumerate() {
+                if !test(it, &f, &text_value(c.to_string()), name, span)? {
+                    return Ok(i);
+                }
+            }
+        }
+        _ => {}
+    }
+    Ok(len)
+}
+
+fn take_while(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let n = leading(it, a, "take_while", span)?;
+    Ok(cut(&a[0], 0, n))
+}
+
+fn drop_while(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let n = leading(it, a, "drop_while", span)?;
+    let len = length_of(&a[0], "drop_while", span)?;
+    Ok(cut(&a[0], n, len))
+}
+
+fn step_by(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    length_of(&a[0], "step_by", span)?;
+    let n = size_arg(a, 1, "step_by", span)?;
+    Ok(match &a[0] {
+        Value::Text(s) => text_value(s.chars().step_by(n).collect::<String>()),
+        Value::List(l) => Value::list(l.iter().step_by(n).cloned().collect()),
+        _ => Value::Unit,
+    })
+}
+
+/// The pieces of a list or text: `count` pieces of `n` elements, `step` apart.
+fn pieces(v: &Value, n: usize, step: usize, count: usize) -> Value {
+    match v {
+        // Pieces of a list share its elements instead of copying them.
+        Value::List(l) => Value::list((0..count).map(|k| Value::List(l.slice(k * step, k * step + n))).collect()),
+        Value::Text(s) => {
+            let cs: Vec<char> = s.chars().collect();
+            Value::list((0..count).map(|k| text_value(cs[k * step..(k * step + n).min(cs.len())].iter().collect::<String>())).collect())
+        }
+        _ => Value::Unit,
+    }
+}
+
+fn chunks(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let len = length_of(&a[0], "chunks", span)?;
+    let n = size_arg(a, 1, "chunks", span)?;
+    Ok(pieces(&a[0], n, n, len.div_ceil(n)))
+}
+
+fn windows(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let len = length_of(&a[0], "windows", span)?;
+    let n = size_arg(a, 1, "windows", span)?;
+    let count = (len + 1).saturating_sub(n);
+    if matches!(a[0], Value::Text(_)) && count.saturating_mul(n) > 100_000_000 {
+        return Err(invalid(t!("the result of `windows` would be too large", "le résultat de `windows` serait trop grand"), span));
+    }
+    Ok(pieces(&a[0], n, 1, count))
 }
 
 fn zip(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -1270,8 +2197,50 @@ fn index_of(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         (Value::List(l), x) => it.option(l.iter().position(|v| v.equals(x)).map(|i| Value::Int(i as i64))),
         (Value::Text(s), Value::Text(sub)) => it.option(s.find(&**sub).map(|byte| Value::Int(s[..byte].chars().count() as i64))),
         (Value::Text(_), v) => return Err(wrong("index_of", 1, a_text(), v, span)),
-        (v, _) => return Err(wrong("index_of", 0, t!("a list or a text", "une liste ou un texte"), v, span)),
+        (v, _) => return Err(wrong("index_of", 0, a_list_or_text(), v, span)),
     })
+}
+
+/// The element whose key is the smallest (`Less`) or the largest (`Greater`);
+/// the first one on a tie.
+fn extreme_by(it: &mut Interp, a: &[Value], name: &str, want: Ordering, span: Span) -> Fallible<Value> {
+    let l = list(a, 0, name, span)?;
+    let f = func(a, 1, name, span)?;
+    let mut best: Option<(Value, &Value)> = None;
+    for x in l.iter() {
+        let k = it.call(f.clone(), vec![x.clone()], span)?;
+        match &best {
+            None => best = Some((k, x)),
+            Some((bk, _)) => match k.compare(bk) {
+                Some(o) if o == want => best = Some((k, x)),
+                Some(_) => {}
+                None => {
+                    return Err(Diagnostic::error(
+                        "E005",
+                        t!("`{name}` cannot compare {} and {}", "`{name}` ne peut pas comparer {} et {}", k.describe(), bk.describe()),
+                    )
+                    .at(span)
+                    .help(t!(
+                        "the function `key` must give values of the same kind for every element: all numbers, or all texts...",
+                        "la fonction `key` doit donner des valeurs de même nature pour chaque élément : tous des nombres, ou tous des textes..."
+                    ))
+                    .boxed())
+                }
+            },
+        }
+    }
+    match best {
+        Some((_, x)) => Ok(x.clone()),
+        None => Err(invalid(t!("`{name}` of an empty list", "`{name}` d'une liste vide"), span)),
+    }
+}
+
+fn min_by(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    extreme_by(it, a, "min_by", Ordering::Less, span)
+}
+
+fn max_by(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    extreme_by(it, a, "max_by", Ordering::Greater, span)
 }
 
 fn flatten(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -1296,6 +2265,11 @@ fn flatten(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn flat_map(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    if it.wrap(&a[0]) != Wrap::Other {
+        let mut d = wrong("flat_map", 0, a_list(), &a[0], span);
+        d.helps.push(t!("for an Option or a Result, use `and_then(x, f)`", "pour une Option ou un Result, utilisez `and_then(x, f)`"));
+        return Err(d);
+    }
     let l = list(a, 0, "flat_map", span)?;
     let f = func(a, 1, "flat_map", span)?;
     let mut out = Vec::new();
@@ -1378,6 +2352,37 @@ fn entries(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::list(r.iter().map(|(k, v)| Value::list(vec![Value::Text(k.clone()), v.clone()])).collect()))
 }
 
+fn from_entries(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let l = list(a, 0, "from_entries", span)?;
+    let mut r = Record::new();
+    for pair in l.iter() {
+        match pair {
+            Value::List(p) if p.len() == 2 && matches!(p.as_slice()[0], Value::Text(_)) => {
+                if let Value::Text(k) = &p.as_slice()[0] {
+                    r.set(k.clone(), p.as_slice()[1].clone());
+                }
+            }
+            other => {
+                return Err(Diagnostic::error(
+                    "E023",
+                    t!(
+                        "`from_entries` needs a list of [name, value] pairs, but it contains {}",
+                        "`from_entries` a besoin d'une liste de paires [nom, valeur], mais elle contient {}",
+                        other.describe()
+                    ),
+                )
+                .at(span)
+                .help(t!(
+                    "each pair is a list of two elements whose name is a text, like [\"age\", 36]",
+                    "chaque paire est une liste de deux éléments dont le nom est un texte, comme [\"age\", 36]"
+                ))
+                .boxed())
+            }
+        }
+    }
+    Ok(Value::Record(Rc::new(r)))
+}
+
 fn has(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let r = record(a, 0, "has", span)?;
     Ok(Value::Bool(r.get(text(a, 1, "has", span)?).is_some()))
@@ -1395,6 +2400,16 @@ fn remove(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let r = record(a, 0, "remove", span)?;
     let k = text(a, 1, "remove", span)?;
     Ok(Value::Record(Rc::new(r.without(k))))
+}
+
+fn map_values(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let r = record(a, 0, "map_values", span)?;
+    let f = func(a, 1, "map_values", span)?;
+    let mut out = Record::new();
+    for (k, v) in r.iter() {
+        out.set(k.clone(), it.call(f.clone(), vec![v.clone()], span)?);
+    }
+    Ok(Value::Record(Rc::new(out)))
 }
 
 // ----- Option and Result -------------------------------------------------
@@ -1455,6 +2470,59 @@ fn is_err(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::Bool(option_or_result(it, &a[0], "is_err", span)? == Wrap::Err))
 }
 
+fn and_then(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let kind = option_or_result(it, &a[0], "and_then", span)?;
+    let f = func(a, 1, "and_then", span)?;
+    if matches!(kind, Wrap::None | Wrap::Err) {
+        return Ok(a[0].clone());
+    }
+    let r = it.call(f, vec![Interp::payload(&a[0])], span)?;
+    match (kind, it.wrap(&r)) {
+        (Wrap::Some, Wrap::Some | Wrap::None) | (Wrap::Ok, Wrap::Ok | Wrap::Err) => Ok(r),
+        _ => {
+            let expected = if kind == Wrap::Some {
+                t!("an Option (Some or None)", "une Option (Some ou None)")
+            } else {
+                t!("a Result (Ok or Err)", "un Result (Ok ou Err)")
+            };
+            Err(Diagnostic::error(
+                "E005",
+                t!(
+                    "the function given to `and_then` must return {expected}, but it returned {}",
+                    "la fonction donnée à `and_then` doit renvoyer {expected}, mais elle a renvoyé {}",
+                    r.describe()
+                ),
+            )
+            .at(span)
+            .help(t!(
+                "to change the value inside without another check, use `map(x, f)`",
+                "pour changer la valeur à l'intérieur sans autre vérification, utilisez `map(x, f)`"
+            ))
+            .boxed())
+        }
+    }
+}
+
+fn ok_or(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    match it.wrap(&a[0]) {
+        Wrap::Some => Ok(it.ok(Interp::payload(&a[0]))),
+        Wrap::None => Ok(it.err(a[1].clone())),
+        _ => Err(wrong("ok_or", 0, t!("an Option", "une Option"), &a[0], span)),
+    }
+}
+
+fn map_err(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let f = func(a, 1, "map_err", span)?;
+    match it.wrap(&a[0]) {
+        Wrap::Ok => Ok(a[0].clone()),
+        Wrap::Err => {
+            let e = it.call(f, vec![Interp::payload(&a[0])], span)?;
+            Ok(it.err(e))
+        }
+        _ => Err(wrong("map_err", 0, t!("a Result", "un Result"), &a[0], span)),
+    }
+}
+
 // ----- Files -------------------------------------------------------------
 
 fn io_message(e: &std::io::Error, path: &str) -> String {
@@ -1477,6 +2545,16 @@ fn write_file(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let path = text(a, 0, "write_file", span)?;
     let content = a[1].display();
     Ok(match std::fs::write(path, content) {
+        Ok(()) => it.ok(Value::Unit),
+        Err(e) => it.err(text_value(io_message(&e, path))),
+    })
+}
+
+fn append_file(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let path = text(a, 0, "append_file", span)?;
+    let content = a[1].display();
+    let written = std::fs::OpenOptions::new().append(true).create(true).open(path).and_then(|mut f| f.write_all(content.as_bytes()));
+    Ok(match written {
         Ok(()) => it.ok(Value::Unit),
         Err(e) => it.err(text_value(io_message(&e, path))),
     })
