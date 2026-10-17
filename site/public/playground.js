@@ -385,7 +385,7 @@
     for (const b of [runBtn, checkBtn, testBtn]) b.disabled = false;
     newWorker();
     try {
-      examples = await (await fetch("/examples.json")).json();
+      examples = await (await fetch(page.dataset.examples)).json();
     } catch {
       examples = {};
     }

@@ -1,7 +1,7 @@
-name: Playground
+name: Website
 
-# Publishes the web playground (playground/) on GitHub Pages.
-# Enable it once in Settings → Pages → Source: "GitHub Actions".
+# Publishes the website (site/, written with Paquets) on GitHub Pages, exported to
+# static files behind /Rythme. Needs, once, in Settings → Pages → Source: "GitHub Actions".
 
 on:
   push:
@@ -25,20 +25,28 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - name: Build the playground
+      - name: Access to the git dependencies of Paquets
+        # Optional: a REPOS_TOKEN secret (a GitHub token that can read the repositories
+        # of Paquets' ecosystem) if some of them are private. The token stays out of URLs.
+        env:
+          REPOS_TOKEN: ${{ secrets.REPOS_TOKEN }}
         run: |
-          playground/build.sh
-          mkdir -p site
-          cp playground/web/rythme.wasm playground/web/examples.json site/
-          {
-            printf '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
-            printf '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n</head>\n<body>\n'
-            cat playground/web/index.html
-            printf '\n</body>\n</html>\n'
-          } > site/index.html
+          if [ -n "$REPOS_TOKEN" ]; then
+            echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> "$GITHUB_ENV"
+            git config --global credential.https://github.com.helper \
+              '!f() { test "$1" = get && echo username=x-access-token && echo "password=$REPOS_TOKEN"; }; f'
+          fi
+      - name: Interpreter for the playground (WebAssembly)
+        run: site/build.sh
+      - name: Static export
+        working-directory: site
+        env:
+          BASE_PATH: /Rythme
+          SITE_URL: https://maxlestage.github.io/Rythme
+        run: cargo run --release -- export dist
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: site/dist
 
   deploy:
     needs: build

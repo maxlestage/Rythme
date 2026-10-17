@@ -13,6 +13,8 @@ description = "The website of Rythme, written with Paquets: home, playground, ex
 # Pages rendered on the server by active, served by vitesse behind securite.
 paquets = { git = "https://github.com/maxlestage/Paquets", default-features = false }
 pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+# The runtime of the static export.
+tokio = { version = "1", features = ["rt-multi-thread"] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

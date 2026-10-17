@@ -63,11 +63,10 @@ erreur[E005]: impossible d'utiliser `+` avec Text et Int
 
 ## Essayer dans le navigateur
 
-Le dossier [`playground/`](playground) contient une page web qui fait tourner
-le vrai interpréteur, compilé en WebAssembly : modifier du code, le lancer,
-lancer des tests, lire l'aide, en français ou en anglais, sans rien
-installer. Une fois GitHub Pages activé pour ce dépôt, elle est publiée sur
-<https://maxlestage.github.io/Rythme/>.
+Le site <https://maxlestage.github.io/Rythme/> a un playground qui fait
+tourner le vrai interpréteur, compilé en WebAssembly ([`playground/`](playground)) :
+modifier du code, le lancer, lancer des tests, lire l'aide, en français ou en
+anglais, sans rien installer.
 
 Le dossier [`site/`](site) est le site web de Rythme (accueil, visite du
 langage, exemples, playground et guide pour les enseignants, en français et en

@@ -1,6 +1,36 @@
-//! The URLs of the site: `/{lang}/` and its four pages.
+//! The URLs of the site: `/{lang}/` and its four pages, behind an optional base path
+//! (`/Rythme` when the site is exported for GitHub Pages).
+
+use std::sync::OnceLock;
 
 pub use crate::i18n::Lang;
+
+static BASE: OnceLock<String> = OnceLock::new();
+
+/// Sets the base path once, before anything is rendered: `""` (the default) or
+/// `/Rythme`.
+pub fn set_base(base: &str) {
+    let _ = BASE.set(normalize_base(base));
+}
+
+/// `""`, or `/something` without a trailing slash.
+pub fn normalize_base(base: &str) -> String {
+    match base.trim().trim_end_matches('/') {
+        "" => String::new(),
+        b if b.starts_with('/') => b.to_owned(),
+        b => format!("/{b}"),
+    }
+}
+
+/// The base path, without trailing slash (empty by default).
+pub fn base() -> &'static str {
+    BASE.get().map_or("", String::as_str)
+}
+
+/// A link to `path` (which starts with `/`), behind the base path.
+pub fn link(path: &str) -> String {
+    format!("{}{path}", base())
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Page {
@@ -58,6 +88,11 @@ impl Route {
             Page::Home => format!("/{}/", self.lang.code()),
             page => format!("/{}/{}/", self.lang.code(), page.slug()),
         }
+    }
+
+    /// The link to the page, behind the base path.
+    pub fn href(&self) -> String {
+        link(&self.path())
     }
 
     /// The same page in another language.
