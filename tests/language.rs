@@ -142,6 +142,8 @@ fn helpful_errors() {
     fails("fail(\"stop\")", "E021");
     fails("int(\"abc\")", "E022");
     fails("y = x + 1\nx = 2", "E003");
+    let r = fails("x = f()\nfn f() = y + 1\ny = 2", "E003");
+    assert!(r.stderr.contains("not defined yet") && r.stderr.contains("defined later"), "{}", r.stderr);
     fails("True", "E003");
     fails("x = 1 < 2 < 3", "E001");
 }

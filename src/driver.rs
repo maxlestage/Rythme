@@ -1,7 +1,7 @@
 //! Loads files (and the files they `use`), checks them, runs them, runs tests.
 
 use std::collections::{HashMap, HashSet};
-use std::io::{IsTerminal, Write};
+use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
@@ -9,6 +9,7 @@ use crate::ast::Item;
 use crate::check::{self, Knowledge};
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::interp::{Interp, Mode};
+use crate::io::out_line;
 use crate::source::Span;
 use crate::value::Value;
 use crate::{lexer, parser, source, suggest};
@@ -60,9 +61,7 @@ impl Driver {
             Severity::Error => self.errors += 1,
             Severity::Warning => self.warnings += 1,
         }
-        let _ = std::io::stdout().flush();
-        eprint!("{}", d.render(self.color));
-        eprintln!();
+        crate::io::err(&format!("{}\n", d.render(self.color)));
     }
 
     pub fn parse(&mut self, name: &str, src: &str) -> Result<Vec<Item>, Box<Diagnostic>> {
@@ -231,19 +230,16 @@ impl Driver {
     pub fn run_tests(&mut self) -> bool {
         let tests = std::mem::take(&mut self.interp.tests);
         if tests.is_empty() {
-            println!(
-                "{}",
-                t!(
-                    "No tests found. Write one like this:\n  test \"addition\" = assert_eq(1 + 1, 2)",
-                    "Aucun test trouvé. Écrivez-en un comme ceci :\n  test \"addition\" = assert_eq(1 + 1, 2)"
-                )
-            );
+            out_line(&t!(
+                "No tests found. Write one like this:\n  test \"addition\" = assert_eq(1 + 1, 2)",
+                "Aucun test trouvé. Écrivez-en un comme ceci :\n  test \"addition\" = assert_eq(1 + 1, 2)"
+            ));
             return true;
         }
         let color = std::io::stdout().is_terminal() && crate::diagnostic::terminal_supports_color();
         let (green, red, reset) = if color { ("\x1b[32m", "\x1b[31m", "\x1b[0m") } else { ("", "", "") };
         let n = tests.len();
-        println!("{}", t!("Running {n} test(s)", "Exécution de {n} test(s)"));
+        out_line(&t!("Running {n} test(s)", "Exécution de {n} test(s)"));
         let mut failed = 0;
         for test in &tests {
             let outcome = match self.interp.eval_test(&test.body) {
@@ -257,21 +253,18 @@ impl Driver {
                 Err(d) => Some(*d),
             };
             match outcome {
-                None => println!("  {green}✓{reset} {}", test.name),
+                None => out_line(&format!("  {green}✓{reset} {}", test.name)),
                 Some(d) => {
                     failed += 1;
-                    println!("  {red}✗{reset} {}", test.name);
+                    out_line(&format!("  {red}✗{reset} {}", test.name));
                     self.report(&d);
                 }
             }
         }
         let passed = n - failed;
         let summary = t!("{n} test(s): {passed} passed, {failed} failed", "{n} test(s) : {passed} réussi(s), {failed} échoué(s)");
-        if failed == 0 {
-            println!("{green}{summary}{reset}");
-        } else {
-            println!("{red}{summary}{reset}");
-        }
+        let color = if failed == 0 { green } else { red };
+        out_line(&format!("{color}{summary}{reset}"));
         failed == 0
     }
 }

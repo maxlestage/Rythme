@@ -69,6 +69,14 @@ error[E001]: `for` is not used in Rythme
       or write a recursive function. See `rythme help functional`.
 ```
 
+## Try it in your browser
+
+The [`playground/`](playground) folder holds a web page that runs the real
+interpreter, compiled to WebAssembly: edit code, run it, run tests, read the
+help, in English or French, without installing anything. Once GitHub Pages is
+enabled for this repository, it is published at
+<https://maxlestage.github.io/Rythme/>.
+
 ## Install
 
 **Without installing anything else:** each published version comes with

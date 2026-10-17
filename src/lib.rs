@@ -13,8 +13,10 @@ pub mod diagnostic;
 pub mod driver;
 pub mod help;
 pub mod interp;
+pub mod io;
 pub mod lexer;
 pub mod parser;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod repl;
 pub mod source;
 pub mod suggest;

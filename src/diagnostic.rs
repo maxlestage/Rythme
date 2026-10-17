@@ -164,8 +164,10 @@ impl Diagnostic {
                     n += 1;
                 }
                 let times = if n > 1 { format!(" (×{n})") } else { String::new() };
+                // Anonymous functions have an empty name.
+                let who = if name.is_empty() { t!("an anonymous function", "une fonction anonyme") } else { format!("`{name}`") };
                 out.push_str(&format!(
-                    "{pad}     {} `{name}`{times} {} {}\n",
+                    "{pad}     {} {who}{times} {} {}\n",
                     t!("in", "dans"),
                     t!("called at", "appelée en"),
                     source::location(*span)

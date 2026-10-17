@@ -70,6 +70,14 @@ pub fn set_stack_budget(bytes: usize) {
     STACK_BUDGET.store(bytes, std::sync::atomic::Ordering::Relaxed);
 }
 
+/// Maximum number of nested calls, for hosts whose stack cannot be measured
+/// (WebAssembly in a browser).
+static MAX_DEPTH: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(usize::MAX);
+
+pub fn set_max_depth(depth: usize) {
+    MAX_DEPTH.store(depth, std::sync::atomic::Ordering::Relaxed);
+}
+
 /// Approximate address of the top of the stack.
 #[inline(always)]
 fn stack_position() -> usize {
@@ -86,6 +94,8 @@ pub struct Interp {
     stack_base: usize,
     /// Reused buffer for the names bound by patterns (avoids an allocation per call).
     scratch: Vec<(Sym, Value)>,
+    /// Top-level names of the running file that are not defined yet.
+    pending: SymMap<Span>,
     rng: u64,
     some: Rc<CtorInfo>,
     none_info: Rc<CtorInfo>,
@@ -127,9 +137,7 @@ impl Interp {
         types.insert(option, vec![some.clone(), none_info.clone()]);
         types.insert(result, vec![ok.clone(), err.clone()]);
 
-        let seed =
-            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos() as u64).unwrap_or(0x2545F4914F6CDD1D)
-                | 1;
+        let seed = ((crate::io::now() * 1e9) as u64 ^ 0x2545_F491_4F6C_DD1D) | 1;
 
         Interp {
             globals,
@@ -139,6 +147,7 @@ impl Interp {
             depth: 0,
             stack_base: stack_position(),
             scratch: Vec::new(),
+            pending: SymMap::default(),
             rng: seed,
             some,
             none_info,
@@ -239,6 +248,14 @@ impl Interp {
                 _ => {}
             }
         }
+        self.pending.clear();
+        for item in items {
+            if let Item::Stmt(Stmt::Let(pat, _)) = item {
+                let mut names = Vec::new();
+                pat.bindings(&mut names);
+                self.pending.extend(names.into_iter().filter(|(s, _)| !self.globals.contains_key(s)));
+            }
+        }
         let mut last = None;
         for item in items {
             last = None;
@@ -250,6 +267,7 @@ impl Interp {
                         return Err(pattern_mismatch(pat, &v));
                     }
                     for (s, v) in binds {
+                        self.pending.remove(&s);
                         self.globals.insert(s, v);
                     }
                 }
@@ -539,6 +557,17 @@ impl Interp {
 
     pub fn unknown_name(&self, s: Sym, env: &Env, span: Span) -> Box<Diagnostic> {
         let name = s.name();
+        if let Some(def) = self.pending.get(&s) {
+            return Diagnostic::error("E003", t!("`{name}` is not defined yet", "`{name}` n'est pas encore défini"))
+                .at(span)
+                .label(t!("used here", "utilisé ici"))
+                .secondary(*def, t!("defined later, here", "défini plus loin, ici"))
+                .help(t!(
+                    "the file runs from top to bottom: move this definition above the line that uses it (directly or through a function)",
+                    "le fichier s'exécute de haut en bas : déplacez cette définition au-dessus de la ligne qui l'utilise (directement ou via une fonction)"
+                ))
+                .boxed();
+        }
         let mut d =
             Diagnostic::error("E003", t!("unknown name `{name}`", "nom inconnu `{name}`")).at(span).label(t!("not defined", "non défini"));
         if let Some(h) = suggest::alias_hint(&name) {
@@ -614,7 +643,9 @@ impl Interp {
 
     /// Calls a function value with arguments.
     pub fn call(&mut self, f: Value, args: Vec<Value>, span: Span) -> Fallible<Value> {
-        if stack_position().abs_diff(self.stack_base) > STACK_BUDGET.load(std::sync::atomic::Ordering::Relaxed) {
+        if stack_position().abs_diff(self.stack_base) > STACK_BUDGET.load(std::sync::atomic::Ordering::Relaxed)
+            || self.depth >= MAX_DEPTH.load(std::sync::atomic::Ordering::Relaxed)
+        {
             return Err(too_deep(self.depth, span));
         }
         self.depth += 1;
@@ -828,7 +859,7 @@ fn too_deep(depth: usize, span: Span) -> Box<Diagnostic> {
 
 #[inline(never)]
 fn add_frame(d: &mut Diagnostic, def: &FnDef, span: Span) {
-    let name = def.name.map(|n| n.name().to_string()).unwrap_or_else(|| "fn".to_string());
+    let name = def.name.map(|n| n.name().to_string()).unwrap_or_default();
     d.push_frame(name, span);
 }
 
