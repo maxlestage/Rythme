@@ -128,6 +128,8 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme bonjour.ry`         | lancer un programme (`rythme run bonjour.ry` marche aussi) |
 | `rythme check bonjour.ry`   | trouver les problèmes sans lancer le programme      |
 | `rythme test bonjour.ry`    | lancer les tests écrits dans le fichier             |
+| `rythme fmt bonjour.ry`     | mettre le code en forme dans le style officiel (aussi un dossier : `rythme fmt .`) |
+| `rythme fmt --check .`      | lister les fichiers à mettre en forme, sans les changer (pour l'intégration continue) |
 | `rythme help [sujet]`       | aide sur un sujet ou une fonction                   |
 | `rythme explain E003`       | expliquer un code d'erreur                          |
 | `rythme learn`              | visite guidée du langage                            |
@@ -238,10 +240,11 @@ suite :
 - **Types.** Les valeurs sont vérifiées à l'exécution (strictement : aucune
   conversion silencieuse). Suite : l'inférence de types dans `rythme check`,
   pour trouver plus d'erreurs avant l'exécution.
-- **Outils.** Suite : un formateur (`rythme fmt`), un serveur de langage
-  (erreurs et documentation dans tous les éditeurs), un gestionnaire de
-  paquets, et un bac à sable en ligne (l'interpréteur compilé en WebAssembly)
-  pour essayer Rythme sans rien installer.
+- **Outils.** `rythme fmt` met le code en forme dans le style officiel (voir
+  `rythme help fmt`). Suite : un serveur de langage (erreurs et documentation
+  dans tous les éditeurs), un gestionnaire de paquets, et un bac à sable en
+  ligne (l'interpréteur compilé en WebAssembly) pour essayer Rythme sans rien
+  installer.
 - **Langues.** Les messages existent en anglais et en français ; ajouter une
   langue consiste à traduire les textes de `src/`. Les contributions sont
   bienvenues.

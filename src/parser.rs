@@ -33,7 +33,7 @@ struct Parser {
 const MAX_NESTING: usize = 256;
 
 /// Tokens that may start a line and still continue the previous expression.
-fn is_continuation(t: &Tok) -> bool {
+pub(crate) fn is_continuation(t: &Tok) -> bool {
     matches!(
         t,
         Tok::PipeGt

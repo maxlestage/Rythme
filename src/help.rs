@@ -25,6 +25,7 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ("tests", &["test"]),
     ("modules", &["use", "files", "fichiers"]),
     ("repl", &["interactive", "interactif"]),
+    ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme"]),
     ("builtins", &["functions-list", "fonctions-integrees", "library", "bibliotheque", "bibliothèque", "stdlib"]),
 ];
 
@@ -44,6 +45,7 @@ Commandes
   rythme fichier.ry         lancer un programme
   rythme check fichier.ry   trouver les problèmes sans lancer le programme
   rythme test fichier.ry    lancer les tests d'un fichier
+  rythme fmt fichier.ry     mettre le code en forme (--check : vérifier seulement)
   rythme learn              visite guidée du langage, pas à pas
   rythme help SUJET         aide sur un sujet ou une fonction
   rythme explain E003       expliquer un code d'erreur
@@ -64,6 +66,7 @@ Sujets (rythme help SUJET)
   tests       écrire et lancer des tests
   modules     utiliser plusieurs fichiers
   repl        le mode interactif
+  fmt         la mise en forme officielle du code (rythme fmt)
   builtins    toutes les fonctions intégrées
 
 Une fonction précise : rythme help map
@@ -78,6 +81,7 @@ Commands
   rythme file.ry            run a program
   rythme check file.ry      find problems without running the program
   rythme test file.ry       run the tests of a file
+  rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
@@ -98,6 +102,7 @@ Topics (rythme help TOPIC)
   tests       writing and running tests
   modules     using several files
   repl        the interactive mode
+  fmt         the official layout of the code (rythme fmt)
   builtins    every built-in function
 
 A specific function: rythme help map
@@ -297,6 +302,7 @@ fn topic_text(name: &str) -> &'static str {
         "tests" => pick(TESTS_EN, TESTS_FR),
         "modules" => pick(MODULES_EN, MODULES_FR),
         "repl" => pick(REPL_EN, REPL_FR),
+        "fmt" => pick(FMT_EN, FMT_FR),
         _ => "",
     }
 }
@@ -1066,6 +1072,77 @@ Commandes
   :reset          tout oublier           :lang fr|en    changer de langue
   :learn          visite guidée          :explain E003  expliquer une erreur
 La touche Tab complète les noms."#;
+
+const FMT_EN: &str = r#"FORMATTING: rythme fmt
+
+`rythme fmt` gives code the official layout of Rythme: every program looks
+the same, and nobody has to argue about spaces.
+
+  rythme fmt hello.ry            format a file (it is rewritten)
+  rythme fmt .                   every .ry file of a folder and its subfolders
+  rythme fmt --check .           only check: lists the files to format and
+                                 fails (exit code 1) if there are any, for CI
+  rythme fmt - < hello.ry        reads the code, writes the result
+
+The style
+  - 2 spaces per level of indentation
+  - spaces around operators: x = a + b * 2   xs |> map(f)   n -> n * 2
+  - none inside brackets or around ..: f(x)   [1, 2]   {name: "Ada"}   1..10
+  - a pipeline written on several lines: one step per line
+      total = prices
+        |> filter(fn(p) = p > 10)
+        |> sum
+  - a type written on several lines: one variant per line
+      type Shape =
+        | Circle(radius)
+        | Rect(width, height)
+  - a list written on several lines ends with a comma
+  - one statement per line (no `;`), and `end` on its own line
+  - a blank line around a definition written on several lines; never two
+    blank lines in a row
+  - every comment is kept; the comments at the end of consecutive lines
+    are aligned
+
+Line breaks are kept where the language allows a choice, and long lines are
+kept as written. The formatter never changes what a program does: a file with
+a syntax error is left as it is, and the error is shown."#;
+
+const FMT_FR: &str = r#"MISE EN FORME : rythme fmt
+
+`rythme fmt` donne au code la mise en forme officielle de Rythme : tous les
+programmes se ressemblent, et personne n'a à discuter des espaces.
+
+  rythme fmt bonjour.ry          mettre en forme un fichier (il est réécrit)
+  rythme fmt .                   tous les fichiers .ry d'un dossier et de ses
+                                 sous-dossiers
+  rythme fmt --check .           vérifier seulement : liste les fichiers à
+                                 mettre en forme et échoue (code de sortie 1)
+                                 s'il y en a, pour l'intégration continue
+  rythme fmt - < bonjour.ry      lit le code, écrit le résultat
+
+Le style
+  - 2 espaces par niveau d'indentation
+  - des espaces autour des opérateurs : x = a + b * 2   xs |> map(f)   n -> n * 2
+  - aucun dans les crochets ni autour de .. : f(x)   [1, 2]   {nom: "Ada"}   1..10
+  - un enchaînement écrit sur plusieurs lignes : une étape par ligne
+      total = prix
+        |> filter(fn(p) = p > 10)
+        |> sum
+  - un type écrit sur plusieurs lignes : une variante par ligne
+      type Forme =
+        | Cercle(rayon)
+        | Rect(largeur, hauteur)
+  - une liste écrite sur plusieurs lignes finit par une virgule
+  - une instruction par ligne (pas de `;`), et `end` sur sa propre ligne
+  - une ligne vide autour d'une définition écrite sur plusieurs lignes ;
+    jamais deux lignes vides de suite
+  - chaque commentaire est gardé ; les commentaires en fin de lignes
+    consécutives sont alignés
+
+Les retours à la ligne sont gardés là où le langage laisse le choix, et les
+lignes longues sont gardées telles quelles. La mise en forme ne change jamais
+ce que fait un programme : un fichier avec une erreur de syntaxe est laissé
+tel quel, et l'erreur est affichée."#;
 
 // ----- error explanations -----------------------------------------------
 

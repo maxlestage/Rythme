@@ -117,6 +117,7 @@ fn cli(mut args: Vec<String>) -> i32 {
             Some(file) => check_file(file),
             None => usage_error(t!("which file? Example: rythme check hello.ry", "quel fichier ? Exemple : rythme check bonjour.ry")),
         },
+        "fmt" | "format" | "formater" => rythme::format::command(&rest),
         "-e" | "eval" => match rest.first() {
             Some(code) => eval_code(code),
             None => usage_error(t!("which code? Example: rythme -e 'print(1 + 2)'", "quel code ? Exemple : rythme -e 'print(1 + 2)'")),
@@ -125,7 +126,7 @@ fn cli(mut args: Vec<String>) -> i32 {
             if cmd.ends_with(".ry") || Path::new(&cmd).is_file() || Path::new(&format!("{cmd}.ry")).is_file() {
                 return run_file(&cmd, rest, false);
             }
-            let commands = ["run", "check", "test", "help", "explain", "learn", "repl", "version"];
+            let commands = ["run", "check", "test", "fmt", "help", "explain", "learn", "repl", "version"];
             let mut msg = t!("unknown command or file `{cmd}`", "commande ou fichier inconnu `{cmd}`");
             if let Some(best) = suggest::closest(&cmd, commands.iter().copied()) {
                 msg.push_str(&t!("\ndid you mean `rythme {best}`?", "\nvouliez-vous dire `rythme {best}` ?"));

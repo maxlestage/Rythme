@@ -507,6 +507,15 @@ pub fn playground(ctx: &Ctx) -> Page {
                 .child(button().class("btn").attr("type", "button").id("test").attr("disabled", "").text(t.pg_test))
                 .child(
                     button()
+                        .class("btn")
+                        .attr("type", "button")
+                        .id("format")
+                        .attr("disabled", "")
+                        .attr("title", t.pg_format_title)
+                        .text(t.pg_format),
+                )
+                .child(
+                    button()
                         .class("btn btn--primary")
                         .attr("type", "button")
                         .id("run")
