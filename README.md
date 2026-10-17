@@ -77,6 +77,10 @@ help, in English or French, without installing anything. Once GitHub Pages is
 enabled for this repository, it is published at
 <https://maxlestage.github.io/Rythme/>.
 
+The [`site/`](site) folder is the website of Rythme (home, tour of the
+language, examples, playground and guide for teachers, in English and French),
+written in Rust with Paquets.
+
 ## Install
 
 **Without installing anything else:** each published version comes with
