@@ -70,9 +70,67 @@ impl List {
 /// A record: named fields, kept in the order they were written.
 #[derive(Clone, Default)]
 pub struct Record {
-    keys: Vec<Rc<str>>,
+    /// The names of the fields, shared by the records made from one another
+    /// (`{..r, x: 1}`) and by the records made by the same `{...}` in the code.
+    shape: Rc<Shape>,
     vals: Vec<Value>,
-    index: HashMap<Rc<str>, usize>,
+}
+
+/// The names of the fields of records, in order.
+#[derive(Clone, Default)]
+pub struct Shape {
+    keys: Vec<Rc<str>>,
+    /// Where each name is, for records with many fields: small ones are
+    /// searched in order, which is faster.
+    index: Option<HashMap<Rc<str>, usize>>,
+}
+
+/// Records with more fields than this find them with an index.
+const INDEXED: usize = 12;
+
+impl Shape {
+    /// The fields of a record, all different.
+    pub fn new(keys: Vec<Rc<str>>) -> Shape {
+        let mut shape = Shape { keys, index: None };
+        shape.add_index();
+        shape
+    }
+
+    pub fn len(&self) -> usize {
+        self.keys.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.keys.is_empty()
+    }
+
+    fn add_index(&mut self) {
+        if self.index.is_none() && self.keys.len() > INDEXED {
+            self.index = Some(self.keys.iter().enumerate().map(|(i, k)| (k.clone(), i)).collect());
+        }
+    }
+
+    fn position(&self, key: &str) -> Option<usize> {
+        match &self.index {
+            Some(index) => index.get(key).copied(),
+            None => self.keys.iter().position(|k| same_key(k, key)),
+        }
+    }
+
+    fn push(&mut self, key: Rc<str>) {
+        if let Some(index) = &mut self.index {
+            index.insert(key.clone(), self.keys.len());
+        }
+        self.keys.push(key);
+        self.add_index();
+    }
+}
+
+/// Names written in the code are shared: comparing their addresses is
+/// often enough, and they are short.
+#[inline]
+fn same_key(a: &str, b: &str) -> bool {
+    a.len() == b.len() && (std::ptr::eq(a.as_ptr(), b.as_ptr()) || a.bytes().zip(b.bytes()).all(|(x, y)| x == y))
 }
 
 impl Record {
@@ -80,16 +138,21 @@ impl Record {
         Record::default()
     }
 
+    /// A record with the fields of `shape`, in order.
+    pub fn with_shape(shape: Rc<Shape>, vals: Vec<Value>) -> Record {
+        debug_assert_eq!(shape.len(), vals.len());
+        Record { shape, vals }
+    }
+
     pub fn get(&self, key: &str) -> Option<&Value> {
-        self.index.get(key).map(|&i| &self.vals[i])
+        self.shape.position(key).map(|i| &self.vals[i])
     }
 
     pub fn set(&mut self, key: Rc<str>, val: Value) {
-        match self.index.get(&key) {
-            Some(&i) => self.vals[i] = val,
+        match self.shape.position(&key) {
+            Some(i) => self.vals[i] = val,
             None => {
-                self.index.insert(key.clone(), self.keys.len());
-                self.keys.push(key);
+                Rc::make_mut(&mut self.shape).push(key);
                 self.vals.push(val);
             }
         }
@@ -106,19 +169,19 @@ impl Record {
     }
 
     pub fn len(&self) -> usize {
-        self.keys.len()
+        self.vals.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.keys.is_empty()
+        self.vals.is_empty()
     }
 
     pub fn keys(&self) -> &[Rc<str>] {
-        &self.keys
+        &self.shape.keys
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (&Rc<str>, &Value)> {
-        self.keys.iter().zip(self.vals.iter())
+        self.shape.keys.iter().zip(self.vals.iter())
     }
 }
 
@@ -227,7 +290,7 @@ impl Value {
                         todo.push(Item::Str("}"));
                         for i in (0..r.len()).rev() {
                             todo.push(Item::Value(&r.vals[i]));
-                            todo.push(Item::Key(&r.keys[i]));
+                            todo.push(Item::Key(&r.shape.keys[i]));
                             if i > 0 {
                                 todo.push(Item::Str(", "));
                             }
@@ -426,19 +489,26 @@ fn is_container(v: &Value) -> bool {
 fn drop_iteratively(mut todo: Vec<Value>) {
     while let Some(v) = todo.pop() {
         match v {
+            // A value whose parts hold no other values is freed directly.
             Value::Variant(mut rc) => {
                 if let Some(var) = Rc::get_mut(&mut rc) {
-                    todo.append(&mut var.fields);
+                    if var.fields.iter().any(is_container) {
+                        todo.append(&mut var.fields);
+                    }
                 }
             }
             Value::List(mut l) => {
                 if let Some(items) = Rc::get_mut(&mut l.data) {
-                    todo.append(items);
+                    if items.iter().any(is_container) {
+                        todo.append(items);
+                    }
                 }
             }
             Value::Record(mut rc) => {
                 if let Some(r) = Rc::get_mut(&mut rc) {
-                    todo.append(&mut r.vals);
+                    if r.vals.iter().any(is_container) {
+                        todo.append(&mut r.vals);
+                    }
                 }
             }
             _ => {}

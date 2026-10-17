@@ -448,15 +448,24 @@ impl Interp {
                 }
                 Ok(Value::list(v))
             }
+            Kind::NewRecord(shape, values) => {
+                let mut vals = Vec::with_capacity(values.len());
+                for x in values {
+                    vals.push(self.operand(x, fr)?);
+                }
+                Ok(Value::Record(Rc::new(Record::with_shape(shape.clone(), vals))))
+            }
             Kind::Record(items) => {
                 let mut r = Record::new();
-                for it in items {
+                for (i, it) in items.iter().enumerate() {
                     match it {
                         compile::Field::Field(k, x) => {
                             let v = self.eval(x, fr)?;
                             r.set(k.clone(), v);
                         }
                         compile::Field::Spread(x) => match self.eval(x, fr)? {
+                            // `{..r, ...}`: a copy of `r` to start with, which shares its names.
+                            Value::Record(src) if i == 0 => r = (*src).clone(),
                             Value::Record(src) => {
                                 for (k, v) in src.iter() {
                                     r.set(k.clone(), v.clone());

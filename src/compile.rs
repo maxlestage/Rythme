@@ -9,7 +9,7 @@ use std::rc::Rc;
 use crate::ast::{BinOp, Expr, ExprKind, FnDef, ListItem, PatKind, Pattern, RecordItem, Stmt as AstStmt, TemplatePart, UnOp};
 use crate::source::Span;
 use crate::symbol::Sym;
-use crate::value::Value;
+use crate::value::{Shape, Value};
 
 /// An expression ready to run.
 pub struct Node {
@@ -29,6 +29,8 @@ pub enum Kind {
     Template(Vec<Part>),
     List(Vec<Item>),
     Record(Vec<Field>),
+    /// `{a: x, b: y}`: different names and no `..`.
+    NewRecord(Rc<Shape>, Vec<Node>),
     Lambda(Rc<FnDef>, Rc<FnCode>),
     Call(Box<Node>, Vec<Node>),
     Method(Box<Method>),
@@ -178,6 +180,12 @@ pub fn top(e: &Expr) -> Code {
     let node = c.expr(e);
     let f = c.funcs.pop().unwrap();
     Code { node, slots: f.max as usize }
+}
+
+/// The same name of a record field everywhere in the code (finding a field
+/// then often only compares addresses).
+fn key(k: &str) -> Rc<str> {
+    Sym::new(k).name()
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -348,7 +356,7 @@ impl Compiler {
                 });
                 Pat::List(items, rest)
             }
-            PatKind::Record(fields) => Pat::Record(fields.iter().map(|(k, p)| (k.clone(), self.pattern(p))).collect()),
+            PatKind::Record(fields) => Pat::Record(fields.iter().map(|(k, p)| (key(k), self.pattern(p))).collect()),
             PatKind::Or(alts) => Pat::Or(alts.iter().map(|p| self.pattern(p)).collect()),
         }
     }
@@ -387,15 +395,34 @@ impl Compiler {
                     })
                     .collect(),
             ),
-            ExprKind::Record(items) => Kind::Record(
-                items
-                    .iter()
-                    .map(|it| match it {
-                        RecordItem::Field(k, _, x) => Field::Field(k.clone(), self.expr(x)),
-                        RecordItem::Spread(x) => Field::Spread(self.expr(x)),
-                    })
-                    .collect(),
-            ),
+            ExprKind::Record(items) => {
+                let mut keys: Vec<Rc<str>> = Vec::with_capacity(items.len());
+                for it in items {
+                    match it {
+                        RecordItem::Field(k, ..) if !keys.contains(k) => keys.push(key(k)),
+                        _ => break,
+                    }
+                }
+                if keys.len() == items.len() {
+                    let values = items
+                        .iter()
+                        .map(|it| match it {
+                            RecordItem::Field(_, _, x) | RecordItem::Spread(x) => self.expr(x),
+                        })
+                        .collect();
+                    Kind::NewRecord(Rc::new(Shape::new(keys)), values)
+                } else {
+                    Kind::Record(
+                        items
+                            .iter()
+                            .map(|it| match it {
+                                RecordItem::Field(k, _, x) => Field::Field(key(k), self.expr(x)),
+                                RecordItem::Spread(x) => Field::Spread(self.expr(x)),
+                            })
+                            .collect(),
+                    )
+                }
+            }
             ExprKind::Lambda(def) => Kind::Lambda(def.clone(), Rc::new(self.func(def, None))),
             ExprKind::Call(callee, args) => Kind::Call(self.boxed(callee), self.exprs(args)),
             ExprKind::Method(recv, name, args, name_span) => {
@@ -404,7 +431,7 @@ impl Compiler {
                 let args = self.exprs(args);
                 Kind::Method(Box::new(Method { recv, name: *name, key: name.name(), func, args, name_span: *name_span }))
             }
-            ExprKind::Field(obj, name, span) => Kind::Field(self.boxed(obj), name.clone(), *span),
+            ExprKind::Field(obj, name, span) => Kind::Field(self.boxed(obj), key(name), *span),
             ExprKind::Index(obj, idx) => Kind::Index(self.boxed(obj), self.boxed(idx)),
             ExprKind::Unary(op, x) => Kind::Unary(*op, self.boxed(x)),
             ExprKind::Binary(op @ (BinOp::And | BinOp::Or), l, r, _) => Kind::Logic(*op, self.boxed(l), self.boxed(r)),
