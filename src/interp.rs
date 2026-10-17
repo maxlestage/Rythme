@@ -111,6 +111,8 @@ pub struct Interp {
     /// The frames of the running functions, one after the other: their
     /// arguments and local names, then the arguments of the calls being prepared.
     stack: Vec<Value>,
+    /// The stack of the functions that a builtin calls, kept between calls.
+    spare: Vec<Value>,
     /// Top-level names of the running file that are not defined yet.
     pending: SymMap<Span>,
     rng: u64,
@@ -164,6 +166,7 @@ impl Interp {
             depth: 0,
             stack_base: stack_position(),
             stack: Vec::new(),
+            spare: Vec::new(),
             pending: SymMap::default(),
             rng: seed,
             some,
@@ -761,6 +764,19 @@ impl Interp {
         self.call_value(f, argc, span)
     }
 
+    /// Calls a function value with one argument (like `call`, without a vector).
+    pub fn call1(&mut self, f: &Value, a: Value, span: Span) -> Fallible<Value> {
+        self.stack.push(a);
+        self.call_value(f.clone(), 1, span)
+    }
+
+    /// Calls a function value with two arguments (like `call`, without a vector).
+    pub fn call2(&mut self, f: &Value, a: Value, b: Value, span: Span) -> Fallible<Value> {
+        self.stack.push(a);
+        self.stack.push(b);
+        self.call_value(f.clone(), 2, span)
+    }
+
     /// Calls a function value with the `argc` values on top of the stack as
     /// arguments, and removes them.
     fn call_value(&mut self, f: Value, argc: usize, span: Span) -> Fallible<Value> {
@@ -819,8 +835,15 @@ impl Interp {
                     if argc < b.min || argc > b.max {
                         return Err(builtin_arity_error(b, argc, span));
                     }
-                    let args: Vec<Value> = self.stack.drain(base..).collect();
-                    return (b.func)(self, &args, span);
+                    // The builtin reads its arguments where they are, and the
+                    // functions it calls (`map`...) get a stack of their own.
+                    let spare = std::mem::take(&mut self.spare);
+                    let stack = std::mem::replace(&mut self.stack, spare);
+                    let r = (b.func)(self, &stack[base..], span);
+                    let mut spare = std::mem::replace(&mut self.stack, stack);
+                    spare.clear();
+                    self.spare = spare;
+                    return r;
                 }
                 Value::Ctor(c) => {
                     if argc != c.fields.len() {

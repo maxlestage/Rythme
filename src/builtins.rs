@@ -460,7 +460,7 @@ fn invalid(msg: String, span: Span) -> Box<Diagnostic> {
 
 /// Calls a function that must answer true or false.
 fn test(it: &mut Interp, f: &Value, x: &Value, name: &str, span: Span) -> Fallible<bool> {
-    match it.call(f.clone(), vec![x.clone()], span)? {
+    match it.call1(f, x.clone(), span)? {
         Value::Bool(b) => Ok(b),
         other => Err(Diagnostic::error(
             "E005",
@@ -937,7 +937,7 @@ fn map(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         Value::List(l) => {
             let mut out = Vec::with_capacity(l.len());
             for x in l.iter() {
-                out.push(it.call(f.clone(), vec![x.clone()], span)?);
+                out.push(it.call1(&f, x.clone(), span)?);
             }
             Ok(Value::list(out))
         }
@@ -973,7 +973,7 @@ fn fold(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let f = func(a, 2, "fold", span)?;
     let mut acc = a[1].clone();
     for x in l.iter() {
-        acc = it.call(f.clone(), vec![acc, x.clone()], span)?;
+        acc = it.call2(&f, acc, x.clone(), span)?;
     }
     Ok(acc)
 }
@@ -982,7 +982,7 @@ fn each(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "each", span)?;
     let f = func(a, 1, "each", span)?;
     for x in l.iter() {
-        it.call(f.clone(), vec![x.clone()], span)?;
+        it.call1(&f, x.clone(), span)?;
     }
     Ok(Value::Unit)
 }
@@ -1111,7 +1111,7 @@ fn sort_by(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let f = func(a, 1, "sort_by", span)?;
     let mut pairs = Vec::with_capacity(l.len());
     for x in l.iter() {
-        pairs.push((it.call(f.clone(), vec![x.clone()], span)?, x.clone()));
+        pairs.push((it.call1(&f, x.clone(), span)?, x.clone()));
     }
     sort_pairs(&mut pairs, "sort_by", span)?;
     Ok(Value::list(pairs.into_iter().map(|p| p.1).collect()))
@@ -1300,7 +1300,7 @@ fn flat_map(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let f = func(a, 1, "flat_map", span)?;
     let mut out = Vec::new();
     for x in l.iter() {
-        match it.call(f.clone(), vec![x.clone()], span)? {
+        match it.call1(&f, x.clone(), span)? {
             Value::List(inner) => out.extend(inner.iter().cloned()),
             other => {
                 return Err(invalid(
@@ -1337,7 +1337,7 @@ fn group_by(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let mut keys: Vec<Rc<str>> = Vec::new();
     let mut groups: std::collections::HashMap<Rc<str>, Vec<Value>> = std::collections::HashMap::new();
     for x in l.iter() {
-        let k: Rc<str> = Rc::from(it.call(f.clone(), vec![x.clone()], span)?.display());
+        let k: Rc<str> = Rc::from(it.call1(&f, x.clone(), span)?.display());
         groups.entry(k.clone()).or_insert_with(|| {
             keys.push(k.clone());
             Vec::new()
