@@ -531,8 +531,12 @@ impl Interp {
     /// Evaluates a condition: `true` or `false`.
     #[inline(always)]
     fn condition(&mut self, c: &Node, fr: &Frame) -> Result<bool, Flow> {
-        match self.eval(c, fr)? {
-            Value::Bool(b) => Ok(b),
+        let v = self.eval(c, fr)?;
+        match v {
+            Value::Bool(b) => {
+                discard(v);
+                Ok(b)
+            }
             other => Err(condition_error(&other, c.span).into()),
         }
     }
@@ -804,12 +808,18 @@ impl Interp {
                     if argc != code.arity {
                         return Err(fn_arity_error(&clo.def, argc, span));
                     }
-                    self.stack.resize_with(base + code.slots, || Value::Unit);
+                    if code.slots > argc {
+                        self.stack.resize_with(base + code.slots, || Value::Unit);
+                    }
                     let fr = Frame { base, captured: &clo.captured };
-                    let ci = match self.enter(&clo, &fr, span)? {
-                        Entered::Clause(ci) => ci,
-                        // A `?` in a guard ended the call.
-                        Entered::Return(v) => return Ok(v),
+                    let ci = if code.simple && code.self_slot.is_none() {
+                        0
+                    } else {
+                        match self.enter(&clo, &fr, span)? {
+                            Entered::Clause(ci) => ci,
+                            // A `?` in a guard ended the call.
+                            Entered::Return(v) => return Ok(v),
+                        }
                     };
                     match self.eval_tail(&code.clauses[ci].body, &fr) {
                         Ok(Tail::Done(v)) => return Ok(v),
