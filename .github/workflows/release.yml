@@ -1,0 +1,50 @@
+name: Release
+
+# Builds ready-to-use programs for Linux, macOS and Windows when a version tag
+# (like v0.1.0) is pushed, and attaches them to the GitHub release.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: rythme-linux-x86_64.tar.gz
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            archive: rythme-macos-arm64.tar.gz
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            archive: rythme-macos-x86_64.tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: rythme-windows-x86_64.zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+      - name: Package (Linux, macOS)
+        if: runner.os != 'Windows'
+        run: tar -czf ${{ matrix.archive }} -C target/${{ matrix.target }}/release rythme
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path target/${{ matrix.target }}/release/rythme.exe -DestinationPath ${{ matrix.archive }}
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.archive }}

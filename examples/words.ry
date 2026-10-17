@@ -1,0 +1,16 @@
+# Count the words of a text, the functional way.
+
+poem = "the rose is red the violet is blue the sugar is sweet"
+
+fn count_words(text) =
+  split(text)
+    |> group_by(fn(w) = w)
+    |> entries
+    |> map(fn([word, list]) = {word, count: len(list)})
+    |> sort_by(fn(e) = -e.count)
+
+count_words(poem)
+  |> take(3)
+  |> each(fn(e) = print("{e.word}: {e.count}"))
+
+print("{len(split(poem))} words, {len(unique(split(poem)))} different")

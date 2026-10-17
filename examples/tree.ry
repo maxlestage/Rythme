@@ -1,0 +1,27 @@
+# A binary search tree: a type that contains itself.
+
+type Tree = Leaf | Node(left, value, right)
+
+fn insert(Leaf, x) = Node(Leaf, x, Leaf)
+fn insert(Node(l, v, r), x) =
+  if x < v then Node(insert(l, x), v, r)
+  else if x > v then Node(l, v, insert(r, x))
+  else Node(l, v, r)
+
+fn to_list(Leaf) = []
+fn to_list(Node(l, v, r)) = to_list(l) + [v] + to_list(r)
+
+fn contains_value(Leaf, _) = false
+fn contains_value(Node(l, v, r), x) =
+  if x == v then true
+  else if x < v then contains_value(l, x)
+  else contains_value(r, x)
+
+fn height(Leaf) = 0
+fn height(Node(l, _, r)) = 1 + max(height(l), height(r))
+
+tree = [50, 30, 70, 20, 40, 60, 80, 30] |> fold(Leaf, insert)
+
+print(to_list(tree))
+print("height: {height(tree)}")
+print(contains_value(tree, 60), contains_value(tree, 65))

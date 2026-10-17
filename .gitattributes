@@ -1,0 +1,3 @@
+* text=auto eol=lf
+*.ry text eol=lf linguist-language=Text
+*.out text eol=lf
