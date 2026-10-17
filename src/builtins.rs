@@ -1106,7 +1106,10 @@ fn reverse(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 fn sort_pairs(pairs: &mut [(Value, Value)], name: &str, span: Span) -> Fallible<()> {
     // Sort with a total order (it never fails), then check that neighbours
     // can really be compared: mixed kinds or NaN end up side by side.
-    pairs.sort_by(|x, y| x.0.total_cmp(&y.0));
+    pairs.sort_by(|x, y| match (&x.0, &y.0) {
+        (Value::Int(a), Value::Int(b)) => a.cmp(b),
+        (a, b) => a.total_cmp(b),
+    });
     let bad = pairs.windows(2).find(|w| w[0].0.compare(&w[1].0).is_none()).map(|w| (w[0].0.clone(), w[1].0.clone()));
     if let Some((x, y)) = bad {
         return Err(Diagnostic::error(
@@ -1125,6 +1128,12 @@ fn sort_pairs(pairs: &mut [(Value, Value)], name: &str, span: Span) -> Fallible<
 
 fn sort(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "sort", span)?;
+    // Whole numbers alone: sorted as such, much faster (equal ones cannot be told apart).
+    if l.iter().all(|v| matches!(v, Value::Int(_))) {
+        let mut ints: Vec<i64> = l.iter().map(|v| if let Value::Int(n) = v { *n } else { 0 }).collect();
+        ints.sort_unstable();
+        return Ok(Value::list(ints.into_iter().map(Value::Int).collect()));
+    }
     let mut pairs: Vec<(Value, Value)> = l.iter().map(|v| (v.clone(), Value::Unit)).collect();
     sort_pairs(&mut pairs, "sort", span)?;
     Ok(Value::list(pairs.into_iter().map(|p| p.0).collect()))
