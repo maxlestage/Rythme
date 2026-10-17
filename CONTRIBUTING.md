@@ -51,9 +51,16 @@ in `help::CODES` (a test checks it).
    Use the helpers (`list`, `text`, `int`, `func`...) to check the arguments:
    they produce clear errors.
 2. Add a line to `BUILTINS` with its signature, number of arguments,
-   category, documentation in English and French, and an example.
-3. Add its name to the VS Code grammar (`editors/vscode/syntaxes`); a test
-   checks that the two lists match.
+   category, documentation in English and French, and an example. Each
+   example line `code   # value` is run by `tests/stdlib.rs`: it must give
+   exactly that value.
+3. Add its name to the VS Code grammar (`editors/vscode/syntaxes`), to
+   `site/src/highlight.rs`, `site/public/playground.js` and
+   `playground/web/index.html`, in the order of `BUILTINS`; tests check that
+   the lists match.
+4. If other languages call it differently (`padStart`, `rjust`...), add the
+   names to `suggest::alias_hint`, and test the edge cases (empty values,
+   negative positions, accents) in `tests/stdlib.rs`.
 
 ## Design rules
 

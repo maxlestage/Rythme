@@ -181,8 +181,10 @@ More: [`examples/`](examples), `rythme help syntax`, `rythme learn`.
 | [`shapes.ry`](examples/shapes.ry) | your own types, guards, `sort_by` |
 | [`quicksort.ry`](examples/quicksort.ry) | list patterns, `filter`, `+` on lists |
 | [`words.ry`](examples/words.ry) | text processing, `group_by`, records |
+| [`cipher.ry`](examples/cipher.ry) | the Caesar cipher: `char_code`, `char`, counting letters |
 | [`results.ry`](examples/results.ry) | `Option`, `Result`, `?` |
 | [`students.ry`](examples/students.ry) | records, record update, grouping, averages |
+| [`sales.ry`](examples/sales.ry) | a report: `scan`, columns lined up with `pad_left`, `windows`, `chunks`, JSON |
 | [`tree.ry`](examples/tree.ry) | a recursive type: binary search tree |
 | [`primes.ry`](examples/primes.ry) | a recursive sieve, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | `test` blocks |
@@ -210,13 +212,14 @@ mode) and is organised as a pipeline:
 | [`src/parser.rs`](src/parser.rs) | tokens → syntax tree, with hints for common mistakes |
 | [`src/check.rs`](src/check.rs) | finds errors before running: names, arguments, forgotten cases |
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
-| [`src/builtins.rs`](src/builtins.rs) | ~90 built-in functions, documented in two languages |
+| [`src/builtins.rs`](src/builtins.rs) | ~120 built-in functions, documented in two languages, JSON included |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |
 
-`cargo test` runs the examples and ~30 tests of the language, the messages
-and the commands.
+`cargo test` runs the examples, checks that every example of the standard
+library gives the value it shows, and runs ~70 tests of the language, the
+library, the messages and the commands.
 
 ## Status and roadmap
 

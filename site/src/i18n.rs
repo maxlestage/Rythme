@@ -355,7 +355,7 @@ pub const FR: Texts = Texts {
     learn_next: [
         item("rythme learn", "Une visite guidée, à suivre seul, dans votre terminal."),
         item("rythme help syntax", "Toute la syntaxe sur une page, et help(f) pour chaque fonction."),
-        item("Les exemples", "Des programmes complets : FizzBuzz, quicksort, arbres, textes…"),
+        item("Les exemples", "Des programmes complets : FizzBuzz, quicksort, arbres, textes, chiffre de César, rapport en JSON…"),
     ],
     teach_lead: "Un plan de cours en 12 séances, et pourquoi Rythme convient à un premier cours de programmation comme à un cours de programmation fonctionnelle.",
     teach_toc: "Sur cette page",
@@ -523,7 +523,7 @@ pub const EN: Texts = Texts {
     learn_next: [
         item("rythme learn", "A guided tour to follow alone, in your terminal."),
         item("rythme help syntax", "The whole syntax on one page, and help(f) for every function."),
-        item("The examples", "Complete programs: FizzBuzz, quicksort, trees, text processing…"),
+        item("The examples", "Complete programs: FizzBuzz, quicksort, trees, text processing, the Caesar cipher, a JSON report…"),
     ],
     teach_lead: "A course outline in 12 sessions, and why Rythme fits a first programming course and a functional programming course alike.",
     teach_toc: "On this page",

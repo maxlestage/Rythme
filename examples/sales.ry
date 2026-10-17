@@ -1,0 +1,30 @@
+# A sales report: running totals, a table with aligned columns, the best
+# month, the months that went up, quarters, and JSON for other programs.
+
+sales = [
+  {month: "January", amount: 1200.0},
+  {month: "February", amount: 950.5},
+  {month: "March", amount: 1430.25},
+  {month: "April", amount: 1610.0},
+  {month: "May", amount: 1385.75},
+  {month: "June", amount: 1720.4},
+]
+
+amounts = map(sales, fn(s) = s.amount)
+totals = scan(amounts, 0, fn(total, x) = total + x)
+
+fn row(month, amount, total) = pad_right(month, 10) + pad_left(amount, 9) + pad_left(total, 10)
+
+print(row("Month", "Amount", "Total"))
+zip(sales, totals) |> each(fn([s, total]) = print(row(s.month, text(s.amount, 2), text(total, 2))))
+
+best = max_by(sales, fn(s) = s.amount)
+print("Best month: {best.month}, {text(best.amount, 2)}")
+
+ups = windows(sales, 2)
+  |> filter(fn([before, after]) = after.amount > before.amount)
+  |> map(fn([_, after]) = after.month)
+print("Better than the month before: {join(ups, ", ")}")
+
+quarters = chunks(amounts, 3) |> map(fn(q) = round(sum(q), 2))
+print(to_json({year: 2026, quarters, best: best.month}, 2))
