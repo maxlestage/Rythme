@@ -5,6 +5,10 @@ Les programmes sont des fichiers qui finissent par `.ry`. L'interpréteur est é
 
 *[English version →](README.md)*
 
+**Documentation :** le [manuel de référence](docs/reference.fr.md) (tout le
+langage, avec précision), le [guide pour les enseignants](docs/enseigner.md),
+et [tous les documents](docs/README.md#en-français).
+
 ```rythme
 # Les valeurs ne changent jamais. Tout est fonction. Il n'y a pas de boucles.
 fn carre(x) = x * x
@@ -189,7 +193,8 @@ langages répandus (c'est ce qui permet de partager du code dans le monde
 entier), mais vos propres noms peuvent être en français, accents compris :
 `prénom`, `âge`, `résultat`.
 
-Pour aller plus loin : [`examples/`](examples), `rythme help syntax`, `rythme learn`.
+Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
+[`examples/`](examples), `rythme help syntax`, `rythme learn`.
 
 ## Exemples
 
