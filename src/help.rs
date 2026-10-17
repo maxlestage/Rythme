@@ -112,6 +112,9 @@ pub fn topic(name: &str) -> Option<String> {
     if let (Some(b), None) = (builtin, canonical_topic(name)) {
         return Some(builtin_doc(b));
     }
+    if let Some(text) = explain(name) {
+        return Some(text);
+    }
     if name.trim() == "pi" {
         return Some(t!("pi\n  The number π = 3.141592653589793.", "pi\n  Le nombre π = 3.141592653589793."));
     }

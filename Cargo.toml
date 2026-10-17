@@ -13,7 +13,8 @@ categories = ["compilers", "command-line-utilities"]
 name = "rythme"
 path = "src/main.rs"
 
-[dependencies]
+# The interactive mode needs a terminal; the web playground (wasm32) has none.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 rustyline = "14"
 
 [profile.release]

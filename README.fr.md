@@ -61,6 +61,14 @@ erreur[E005]: impossible d'utiliser `+` avec Text et Int
   = en savoir plus : `rythme explain E005`
 ```
 
+## Essayer dans le navigateur
+
+Le dossier [`playground/`](playground) contient une page web qui fait tourner
+le vrai interpréteur, compilé en WebAssembly : modifier du code, le lancer,
+lancer des tests, lire l'aide, en français ou en anglais, sans rien
+installer. Une fois GitHub Pages activé pour ce dépôt, elle est publiée sur
+<https://maxlestage.github.io/Rythme/>.
+
 ## Installer
 
 **Sans rien installer d'autre :** chaque version publiée est accompagnée de

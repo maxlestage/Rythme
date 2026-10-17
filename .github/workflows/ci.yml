@@ -29,3 +29,14 @@ jobs:
           cargo build --release
           for f in examples/*.ry; do ./target/release/rythme "$f" > /dev/null; done
           ./target/release/rythme test examples/testing.ry
+
+  playground:
+    name: Web playground (WebAssembly)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Build
+        run: playground/build.sh

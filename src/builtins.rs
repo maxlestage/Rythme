@@ -477,9 +477,7 @@ fn test(it: &mut Interp, f: &Value, x: &Value, name: &str, span: Span) -> Fallib
 }
 
 fn out(s: &str) {
-    let stdout = std::io::stdout();
-    let mut lock = stdout.lock();
-    let _ = writeln!(lock, "{s}");
+    crate::io::out_line(s);
 }
 
 fn text_value(s: impl Into<Rc<str>>) -> Value {
@@ -503,8 +501,7 @@ fn print(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
 }
 
 fn debug(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let _ = std::io::stdout().flush();
-    eprintln!("[debug {}] {}", source::location(span), a[0].repr());
+    crate::io::err(&format!("[debug {}] {}\n", source::location(span), a[0].repr()));
     Ok(a[0].clone())
 }
 
@@ -517,9 +514,8 @@ fn to_text(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
 
 fn input(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
     if let Some(p) = a.first() {
-        print!("{}", p.display());
+        crate::io::out(&p.display());
     }
-    let _ = std::io::stdout().flush();
     let mut line = String::new();
     let _ = std::io::stdin().read_line(&mut line);
     Ok(text_value(line.trim_end_matches(['\n', '\r'])))
@@ -568,13 +564,17 @@ fn args(it: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
 
 fn exit(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let code = if a.is_empty() { 0 } else { int(a, 0, "exit", span)? };
+    if cfg!(target_arch = "wasm32") {
+        return Err(Diagnostic::error("E021", t!("the program stopped with exit({code})", "le programme s'est arrêté avec exit({code})"))
+            .at(span)
+            .boxed());
+    }
     let _ = std::io::stdout().flush();
     std::process::exit(code as i32);
 }
 
 fn time(_: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
-    let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0);
-    Ok(Value::Float(t))
+    Ok(Value::Float(crate::io::now()))
 }
 
 fn random(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
