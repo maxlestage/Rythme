@@ -6,6 +6,7 @@ use std::rc::Rc;
 
 use crate::ast::FnDef;
 use crate::builtins::Builtin;
+use crate::compile::FnCode;
 use crate::symbol::Sym;
 
 #[derive(Clone)]
@@ -121,54 +122,12 @@ impl Record {
     }
 }
 
-/// The environment of local names. It is persistent: adding a name creates a
-/// new environment and leaves the old one untouched.
-#[derive(Clone, Default)]
-pub struct Env(Option<Rc<EnvNode>>);
-
-pub struct EnvNode {
-    sym: Sym,
-    val: Value,
-    next: Env,
-}
-
-impl Env {
-    pub fn empty() -> Env {
-        Env(None)
-    }
-
-    pub fn bind(&self, sym: Sym, val: Value) -> Env {
-        Env(Some(Rc::new(EnvNode { sym, val, next: self.clone() })))
-    }
-
-    pub fn lookup(&self, sym: Sym) -> Option<&Value> {
-        let mut cur = &self.0;
-        while let Some(node) = cur {
-            if node.sym == sym {
-                return Some(&node.val);
-            }
-            cur = &node.next.0;
-        }
-        None
-    }
-
-    pub fn names(&self) -> Vec<Sym> {
-        let mut out = Vec::new();
-        let mut cur = &self.0;
-        while let Some(node) = cur {
-            out.push(node.sym);
-            cur = &node.next.0;
-        }
-        out
-    }
-}
-
 pub struct Closure {
     pub def: Rc<FnDef>,
-    pub env: Env,
-    /// The name under which a local function sees itself (for recursion):
-    /// `fn name(...)` or `name = fn(...)` inside a block.
-    pub self_name: Option<Sym>,
+    pub code: Rc<FnCode>,
+    /// The local names of enclosing functions that the function uses, in the
+    /// order of `code.captures`.
+    pub captured: Vec<Value>,
 }
 
 pub struct CtorInfo {

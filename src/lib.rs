@@ -9,6 +9,7 @@ pub mod lang;
 pub mod ast;
 pub mod builtins;
 pub mod check;
+pub mod compile;
 pub mod diagnostic;
 pub mod driver;
 pub mod help;
