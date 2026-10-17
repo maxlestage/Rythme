@@ -80,6 +80,28 @@ The [`site/`](site) folder is the website of Rythme (home, tour of the
 language, examples, playground and guide for teachers, in English and French),
 written in Rust with Paquets.
 
+### Deploy the website on Heroku
+
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/maxlestage/Rythme)
+
+1. Tap the button (it works from a phone), choose an app name, tap **Deploy
+   app**. Heroku reads [`app.json`](app.json) and builds the playground (the
+   interpreter in WebAssembly) and the server with the
+   [emk/rust buildpack](https://elements.heroku.com/buildpacks/emk/heroku-buildpack-rust)
+   ([`RustConfig`](RustConfig), [`heroku-build.sh`](heroku-build.sh),
+   [`Procfile`](Procfile)). The first build takes a few minutes.
+2. To deploy every merge into `master`: in GitHub, *Settings → Secrets and
+   variables → Actions*, add the secret `HEROKU_API_KEY` (Heroku → *Account
+   settings* → *API Key*) and the variable `HEROKU_APP_NAME`. The
+   [`Deploy to Heroku`](.github/workflows/heroku.yml) workflow does the rest,
+   and creates the app if it does not exist.
+
+Command line: `heroku create --stack heroku-26 --buildpack emk/rust`, then
+`git push heroku master`. With Docker instead: `heroku create --stack container`
+([`heroku.yml`](heroku.yml), [`Dockerfile`](Dockerfile)), or on any host,
+`docker build -t rythme-site . && docker run --rm -p 8080:8080 rythme-site`.
+Details in [`site/README.md`](site/README.md#heroku).
+
 ## Install
 
 **Without installing anything else:** each published version comes with
