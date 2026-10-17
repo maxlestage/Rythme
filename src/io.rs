@@ -33,13 +33,22 @@ fn captured(f: impl FnOnce(&mut String)) -> bool {
     })
 }
 
+/// When the reader of the output went away (`rythme prog.ry | head`), stop
+/// quietly instead of computing output that nobody will read.
+fn stop_if_closed(result: std::io::Result<()>) {
+    if let Err(e) = result {
+        if e.kind() == std::io::ErrorKind::BrokenPipe {
+            std::process::exit(0);
+        }
+    }
+}
+
 /// Writes text on the standard output.
 pub fn out(text: &str) {
     if !captured(|b| b.push_str(text)) {
         let stdout = std::io::stdout();
         let mut lock = stdout.lock();
-        let _ = lock.write_all(text.as_bytes());
-        let _ = lock.flush();
+        stop_if_closed(lock.write_all(text.as_bytes()).and_then(|_| lock.flush()));
     }
 }
 
@@ -50,7 +59,7 @@ pub fn out_line(text: &str) {
     }) {
         let stdout = std::io::stdout();
         let mut lock = stdout.lock();
-        let _ = writeln!(lock, "{text}");
+        stop_if_closed(writeln!(lock, "{text}"));
     }
 }
 

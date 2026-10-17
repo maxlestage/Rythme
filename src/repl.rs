@@ -167,7 +167,11 @@ enum Next {
 
 pub fn run() -> i32 {
     let mut driver = new_driver();
-    println!("Rythme {} — {}", crate::VERSION, t!(":help for help, :quit to leave", ":help pour l'aide, :quit pour quitter"));
+    crate::io::out_line(&format!(
+        "Rythme {} — {}",
+        crate::VERSION,
+        t!(":help for help, :quit to leave", ":help pour l'aide, :quit pour quitter")
+    ));
     let mut rl: Editor<RyHelper, DefaultHistory> = match Editor::new() {
         Ok(rl) => rl,
         Err(e) => {
@@ -181,6 +185,8 @@ pub fn run() -> i32 {
         let _ = rl.load_history(h);
     }
     let mut buffer = String::new();
+    // The last code run, so that a pasted `|> step` line can continue it.
+    let mut last_input: Option<String> = None;
     loop {
         if let Some(h) = rl.helper_mut() {
             h.names = names(&driver);
@@ -203,27 +209,36 @@ pub fn run() -> i32 {
                     match trimmed {
                         "exit" | "quit" | "quitter" => break,
                         "help" | "aide" => {
-                            println!("{}", help::topic("repl").unwrap_or_default());
+                            crate::io::out_line(&help::topic("repl").unwrap_or_default());
                             continue;
                         }
                         _ => {}
                     }
+                    // A line starting with `|>` or `.name` continues the previous code
+                    // (a multi-line pipeline pasted line by line).
+                    let continues =
+                        trimmed.starts_with("|>") || (trimmed.starts_with('.') && trimmed[1..].starts_with(char::is_alphabetic));
+                    if let (true, Some(prev)) = (continues, &last_input) {
+                        buffer.push_str(prev);
+                    }
                 }
                 buffer.push_str(&line);
                 buffer.push('\n');
-                if !line.trim().is_empty() && incomplete(&buffer) {
+                // Wait for the end of an unfinished block; blank lines are kept,
+                // and two blank lines in a row run the code anyway.
+                if incomplete(&buffer) && !buffer.ends_with("\n\n\n") {
                     continue;
                 }
                 let _ = rl.add_history_entry(buffer.trim_end());
                 eval(&mut driver, &buffer);
-                buffer.clear();
+                last_input = Some(std::mem::take(&mut buffer));
             }
             Err(ReadlineError::Interrupted) => {
                 if buffer.is_empty() {
-                    println!("{}", t!("(type :quit to leave)", "(tapez :quit pour quitter)"));
+                    crate::io::out_line(&t!("(type :quit to leave)", "(tapez :quit pour quitter)"));
                 } else {
                     buffer.clear();
-                    println!("{}", t!("(cancelled)", "(annulé)"));
+                    crate::io::out_line(&t!("(cancelled)", "(annulé)"));
                 }
             }
             Err(ReadlineError::Eof) => break,
@@ -245,9 +260,9 @@ fn eval(driver: &mut Driver, code: &str) {
     if let Ok(Some(v)) = driver.execute(&m, Mode::Repl) {
         if !matches!(v, Value::Unit) {
             if driver.color {
-                println!("\x1b[36m{}\x1b[0m", v.repr());
+                crate::io::out_line(&format!("\x1b[36m{}\x1b[0m", v.repr()));
             } else {
-                println!("{}", v.repr());
+                crate::io::out_line(&v.repr());
             }
         }
     }
@@ -259,46 +274,49 @@ fn command(driver: &mut Driver, input: &str) -> Next {
     let arg = parts.next().unwrap_or("").trim();
     match cmd {
         ":quit" | ":q" | ":exit" | ":quitter" => return Next::Quit,
-        ":help" | ":h" | ":?" | ":aide" => println!("{}", help::topic("repl").unwrap_or_default()),
+        ":help" | ":h" | ":?" | ":aide" => crate::io::out_line(&help::topic("repl").unwrap_or_default()),
         ":doc" => {
             if arg.is_empty() {
-                println!("{}", t!("usage: :doc NAME (a function, a topic...)", "utilisation : :doc NOM (une fonction, un sujet...)"));
+                crate::io::out_line(&t!("usage: :doc NAME (a function, a topic...)", "utilisation : :doc NOM (une fonction, un sujet...)"));
             } else if let Some(v) = driver.interp.globals.get(&Sym::new(arg)).cloned() {
-                println!("{}", help::help_for_value(&driver.interp, Some(&v)).trim_end());
+                crate::io::out_line(help::help_for_value(&driver.interp, Some(&v)).trim_end());
             } else {
-                println!("{}", help::topic(arg).unwrap_or_else(|| help::unknown_topic(arg)).trim_end());
+                crate::io::out_line(help::topic(arg).unwrap_or_else(|| help::unknown_topic(arg)).trim_end());
             }
         }
         ":load" | ":charger" => {
             if arg.is_empty() {
-                println!("{}", t!("usage: :load file.ry", "utilisation : :load fichier.ry"));
+                crate::io::out_line(&t!("usage: :load file.ry", "utilisation : :load fichier.ry"));
             } else {
                 let mut path = PathBuf::from(arg);
                 if path.extension().is_none() {
                     path.set_extension("ry");
                 }
-                if let Some(m) = driver.load_file(&path) {
+                if let Some(m) = driver.reload_file(&path) {
                     if driver.execute(&m, Mode::Run).is_ok() {
-                        println!("{}", t!("{} loaded", "{} chargé", path.display()));
+                        crate::io::out_line(&t!("{} loaded", "{} chargé", path.display()));
                     }
                 }
             }
         }
         ":reset" => {
             *driver = new_driver();
-            println!("{}", t!("Everything was forgotten.", "Tout a été oublié."));
+            crate::io::out_line(&t!("Everything was forgotten.", "Tout a été oublié."));
         }
         ":lang" | ":langue" => match lang::parse(arg) {
             Some(l) => {
                 lang::set(l);
-                println!("{}", t!("Messages are now in English.", "Les messages sont maintenant en français."));
+                crate::io::out_line(&t!("Messages are now in English.", "Les messages sont maintenant en français."));
             }
-            None => println!("{}", t!("usage: :lang fr  or  :lang en", "utilisation : :lang fr  ou  :lang en")),
+            None => crate::io::out_line(&t!("usage: :lang fr  or  :lang en", "utilisation : :lang fr  ou  :lang en")),
         },
         ":learn" | ":apprendre" => help::learn(),
         ":explain" | ":expliquer" => match help::explain(arg) {
-            Some(text) => println!("{text}"),
-            None => println!("{}", t!("unknown code; codes look like E003 or W001", "code inconnu ; les codes ressemblent à E003 ou W001")),
+            Some(text) => crate::io::out_line(&text),
+            None => crate::io::out_line(&t!(
+                "unknown code; codes look like E003 or W001",
+                "code inconnu ; les codes ressemblent à E003 ou W001"
+            )),
         },
         ":names" | ":noms" => {
             let builtin: std::collections::HashSet<&str> = BUILTINS.iter().map(|b| b.name).collect();
@@ -311,9 +329,9 @@ fn command(driver: &mut Driver, input: &str) -> Next {
                 .collect();
             own.sort();
             if own.is_empty() {
-                println!("{}", t!("Nothing defined yet.", "Rien n'est encore défini."));
+                crate::io::out_line(&t!("Nothing defined yet.", "Rien n'est encore défini."));
             } else {
-                println!("{}", own.join("  "));
+                crate::io::out_line(&own.join("  "));
             }
         }
         other => {
@@ -321,7 +339,7 @@ fn command(driver: &mut Driver, input: &str) -> Next {
             if let Some(best) = suggest::closest(other, COMMANDS.iter().copied()) {
                 msg.push_str(&t!(" — did you mean `{best}`?", " — vouliez-vous dire `{best}` ?"));
             }
-            println!("{msg}  ({})", t!(":help lists the commands", ":help liste les commandes"));
+            crate::io::out_line(&format!("{msg}  ({})", t!(":help lists the commands", ":help liste les commandes")));
         }
     }
     Next::Continue

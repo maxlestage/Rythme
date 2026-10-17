@@ -5,10 +5,10 @@ use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use crate::ast::Item;
+use crate::ast::{FnDef, Item, Stmt};
 use crate::check::{self, Knowledge};
 use crate::diagnostic::{Diagnostic, Severity};
-use crate::interp::{Interp, Mode};
+use crate::interp::{Interp, Mode, Wrap};
 use crate::io::out_line;
 use crate::source::Span;
 use crate::value::Value;
@@ -34,6 +34,9 @@ pub struct Driver {
     pub warnings: usize,
     /// In the REPL, names can be defined again.
     pub repl: bool,
+    /// The function defined by the previous REPL input: typing `fn fib(0) = 0`
+    /// then `fn fib(n) = ...` gives one function with two definitions.
+    last_repl_fn: Option<Rc<FnDef>>,
 }
 
 impl Default for Driver {
@@ -53,6 +56,7 @@ impl Driver {
             errors: 0,
             warnings: 0,
             repl: false,
+            last_repl_fn: None,
         }
     }
 
@@ -68,6 +72,15 @@ impl Driver {
         let file = source::add(name, src);
         let lexed = lexer::lex(src, file)?;
         parser::parse(lexed)
+    }
+
+    /// Like `load_file`, but reads the file again even if it was loaded before
+    /// (the REPL's `:load` after the file was edited).
+    pub fn reload_file(&mut self, path: &Path) -> Option<Rc<Module>> {
+        let canon = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+        self.modules.remove(&canon);
+        self.executed.remove(&canon);
+        self.load_file(path)
     }
 
     /// Parses and checks a file and the files it uses, reporting any problem.
@@ -98,13 +111,14 @@ impl Driver {
 
     /// Parses and checks source code. `base` is the folder used to find `use`d files.
     pub fn load_source(&mut self, name: &str, src: &str, path: Option<PathBuf>, base: &Path) -> Option<Rc<Module>> {
-        let items = match self.parse(name, src) {
+        let mut items = match self.parse(name, src) {
             Ok(items) => items,
             Err(d) => {
                 self.report(&d);
                 return None;
             }
         };
+        let repl_fn = if self.repl { self.merge_repl_definitions(&mut items) } else { None };
         let mut deps = Vec::new();
         let mut ok = true;
         for item in &items {
@@ -153,7 +167,37 @@ impl Driver {
         if failed {
             return None;
         }
+        if self.repl {
+            self.last_repl_fn = repl_fn;
+        }
         Some(Rc::new(Module { path, items, deps }))
+    }
+
+    /// In the REPL, a lone `fn` with the same name and number of parameters as
+    /// the function typed just before adds a definition to it instead of
+    /// replacing it. Returns the function this input defines, if any.
+    fn merge_repl_definitions(&mut self, items: &mut [Item]) -> Option<Rc<FnDef>> {
+        let [Item::Stmt(Stmt::Fn(def))] = items else { return None };
+        let Some(prev) = &self.last_repl_fn else { return Some(def.clone()) };
+        if prev.name != def.name || prev.arity != def.arity {
+            return Some(def.clone());
+        }
+        let mut clauses = prev.clauses.clone();
+        clauses.extend(def.clauses.iter().cloned());
+        let merged = Rc::new(FnDef {
+            name: def.name,
+            clauses,
+            arity: def.arity,
+            doc: prev.doc.clone().or_else(|| def.doc.clone()),
+            span: prev.span,
+        });
+        let (name, n) = (def.name.map(|s| s.to_string()).unwrap_or_default(), merged.clauses.len());
+        out_line(&t!(
+            "(`{name}` now has {n} definitions, tried in order; :reset to start again)",
+            "(`{name}` a maintenant {n} définitions, essayées dans l'ordre ; :reset pour recommencer)"
+        ));
+        *def = merged.clone();
+        Some(merged)
     }
 
     fn add_dep_knowledge(&self, dep: &PathBuf, know: &mut Knowledge, seen: &mut HashSet<PathBuf>) {
@@ -249,6 +293,15 @@ impl Driver {
                         "utilisez `assert_eq(obtenu, attendu)` pour voir les valeurs"
                     )))
                 }
+                // `Err(...)` or `None`: a `?` stopped the test, or the test gave a failure value.
+                Ok(v) if matches!(self.interp.wrap(&v), Wrap::Err | Wrap::None) => Some(
+                    Diagnostic::error("E015", t!("the test ended with {}", "le test s'est terminé avec {}", v.repr())).at(test.span).help(
+                        t!(
+                            "a test passes when it ends without error, and its value is not `false`, `Err(...)` or `None`",
+                            "un test réussit s'il se termine sans erreur, et que sa valeur n'est ni `false`, ni `Err(...)`, ni `None`"
+                        ),
+                    ),
+                ),
                 Ok(_) => None,
                 Err(d) => Some(*d),
             };

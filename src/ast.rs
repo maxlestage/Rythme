@@ -82,7 +82,8 @@ pub enum Stmt {
 #[derive(Debug)]
 pub struct FnDef {
     pub name: Option<Sym>,
-    pub clauses: Vec<Clause>,
+    /// One per definition (`fn fib(0) = 0`, `fn fib(n) = ...`), tried in order.
+    pub clauses: Vec<Rc<Clause>>,
     pub arity: usize,
     pub doc: Option<Rc<str>>,
     pub span: Span,
@@ -179,7 +180,8 @@ impl Pattern {
                 }
             }
             PatKind::Record(fs) => fs.iter().for_each(|(_, p)| p.bindings(out)),
-            PatKind::Or(ps) => ps.iter().for_each(|p| p.bindings(out)),
+            // Alternatives may not bind names; looking at the first one avoids repeated errors.
+            PatKind::Or(ps) => ps.iter().take(1).for_each(|p| p.bindings(out)),
             _ => {}
         }
     }
