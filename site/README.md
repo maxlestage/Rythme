@@ -40,6 +40,36 @@ Paquets is fetched from its git repository. Without `public/rythme.wasm` the sit
 except the playground. `SITE_URL` sets the public address used in canonical and Open
 Graph links (taken from each request otherwise).
 
+## Heroku
+
+The repository deploys this site, with its playground, on Heroku in two ways:
+
+| Way | Files | Stack |
+|---|---|---|
+| emk/rust buildpack (default) | `app.json`, `RustConfig`, `heroku-build.sh`, `Procfile` | `heroku-26` |
+| Docker | `heroku.yml`, `Dockerfile` | `container` |
+
+`heroku-build.sh` (run by the buildpack once Rust is installed, or by hand from the
+repository) compiles `playground/` to `site/public/rythme.wasm`, then the server to
+`site/target/release/rythme-site`; the `Procfile` starts it from `site/`. The
+`Dockerfile` does the same in an image of about 120 MB, run as a non-root user.
+The server listens on `PORT`, set by Heroku.
+
+- **One tap:** the *Deploy to Heroku* button of the main README
+  (`https://heroku.com/deploy?template=https://github.com/maxlestage/Rythme`).
+- **Every merge into `master`:** the secret `HEROKU_API_KEY` and the variable
+  `HEROKU_APP_NAME` in *Settings → Secrets and variables → Actions*; the workflow
+  `.github/workflows/heroku.yml` builds through the Heroku Platform API and creates the
+  app if needed. Optional variables: `HEROKU_REGION` (`us` or `eu`), `HEROKU_BUILD`
+  (`buildpack` or `docker`). Without the secret, the workflow does nothing.
+- **Command line:** `heroku create --stack heroku-26 --buildpack emk/rust` (or
+  `--stack container` for Docker), then `git push heroku master`.
+
+Config vars, all optional: `SITE_URL` (the public address, e.g. a custom domain;
+taken from each request otherwise), `REPOS_TOKEN` (a GitHub token, only if some git
+dependencies of Paquets are private; buildpack only). Heroku has no free plan: an Eco
+dyno costs about $5 a month.
+
 ## GitHub Pages
 
 The site is published at <https://maxlestage.github.io/Rythme/> by the `Website`

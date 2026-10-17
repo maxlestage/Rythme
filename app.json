@@ -1,0 +1,27 @@
+{
+  "name": "Rythme",
+  "description": "The website of Rythme, a simple, purely functional programming language with help everywhere: tour of the language, examples, guide for teachers and a playground running the real interpreter in WebAssembly, in English and French.",
+  "repository": "https://github.com/maxlestage/Rythme",
+  "website": "https://github.com/maxlestage/Rythme",
+  "logo": "https://raw.githubusercontent.com/maxlestage/Rythme/master/site/public/assets/logo.svg",
+  "keywords": [
+    "rust",
+    "programming-language",
+    "functional",
+    "education",
+    "wasm"
+  ],
+  "stack": "heroku-26",
+  "buildpacks": [
+    {
+      "url": "emk/rust"
+    }
+  ],
+  "env": {
+    "REPOS_TOKEN": {
+      "description": "Only if some git dependencies of the site (Paquets and its repositories) are private: a GitHub token that can read them. Leave empty otherwise.",
+      "required": false
+    }
+  },
+  "success_url": "/"
+}

@@ -40,3 +40,56 @@ jobs:
           targets: wasm32-unknown-unknown
       - name: Build
         run: playground/build.sh
+
+  website:
+    name: Website (Heroku buildpack)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+      - name: Access to the git dependencies of Paquets
+        # Optional: a REPOS_TOKEN secret if some of them are private (see pages.yml).
+        env:
+          REPOS_TOKEN: ${{ secrets.REPOS_TOKEN }}
+        run: |
+          if [ -n "$REPOS_TOKEN" ]; then
+            echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> "$GITHUB_ENV"
+            git config --global credential.https://github.com.helper \
+              '!f() { test "$1" = get && echo username=x-access-token && echo "password=$REPOS_TOKEN"; }; f'
+          fi
+      - name: Format, lint and test
+        working-directory: site
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test
+      - name: Build as Heroku does (RustConfig)
+        run: ./heroku-build.sh
+      - name: Start as Heroku does (Procfile) and check the pages
+        run: |
+          PORT=5000 bash -c "$(sed -n 's/^web: //p' Procfile)" &
+          for _ in $(seq 1 50); do curl -fs -o /dev/null localhost:5000/en/ && break; sleep 0.2; done
+          for path in /en/ /fr/ /en/learn/ /fr/examples/ /en/playground/ /examples.json /sitemap.xml /site.css; do
+            curl -fsS -o /dev/null -w "%{http_code} $path\n" "localhost:5000$path"
+          done
+          curl -fsS -o /dev/null -w '%{content_type}\n' localhost:5000/rythme.wasm | grep application/wasm
+
+  docker:
+    name: Website (Docker image)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: docker build -t rythme-site .
+      - name: Start with a port chosen as Heroku does and check the pages
+        run: |
+          docker run -d --name site -e PORT=5000 -p 5000:5000 rythme-site
+          for _ in $(seq 1 50); do curl -fs -o /dev/null localhost:5000/en/ && break; sleep 0.2; done
+          for path in /en/ /fr/ /en/playground/ /examples.json; do
+            curl -fsS -o /dev/null -w "%{http_code} $path\n" "localhost:5000$path"
+          done
+          curl -fsS -o /dev/null -w '%{content_type}\n' localhost:5000/rythme.wasm | grep application/wasm
+          docker logs site

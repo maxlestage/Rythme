@@ -28,7 +28,9 @@ pub struct Site {
 /// the crate folder.
 pub fn site_dir() -> PathBuf {
     if let Some(dir) = std::env::var_os("SITE_DIR") {
-        return PathBuf::from(dir);
+        // Absolute: `run` moves into it, and a relative `SITE_DIR` would then point
+        // elsewhere.
+        return std::path::absolute(&dir).unwrap_or_else(|_| PathBuf::from(dir));
     }
     if Path::new("public").is_dir() {
         return PathBuf::from(".");
