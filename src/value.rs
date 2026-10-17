@@ -497,8 +497,27 @@ fn is_container(v: &Value) -> bool {
     matches!(v, Value::List(_) | Value::Record(_) | Value::Variant(_))
 }
 
-/// Frees nested values one by one instead of recursively, so that a structure
-/// nested millions of levels deep does not overflow the stack when it is freed.
+thread_local! {
+    /// How many values are being freed one inside the other.
+    static FREEING: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Frees the parts of a value. A few levels are freed recursively, which is
+/// faster; deeper ones one by one, so that a structure nested millions of
+/// levels deep does not overflow the stack when it is freed.
+fn free_parts(parts: &mut Vec<Value>) {
+    const RECURSIVE: usize = 32;
+    let depth = FREEING.with(|d| d.get());
+    if depth < RECURSIVE {
+        FREEING.with(|d| d.set(depth + 1));
+        parts.clear();
+        FREEING.with(|d| d.set(depth));
+    } else {
+        drop_iteratively(std::mem::take(parts));
+    }
+}
+
+/// Frees nested values one by one instead of recursively.
 fn drop_iteratively(mut todo: Vec<Value>) {
     while let Some(v) = todo.pop() {
         match v {
@@ -532,7 +551,7 @@ fn drop_iteratively(mut todo: Vec<Value>) {
 impl Drop for Variant {
     fn drop(&mut self) {
         if self.fields.iter().any(is_container) {
-            drop_iteratively(std::mem::take(&mut self.fields));
+            free_parts(&mut self.fields);
         }
     }
 }
@@ -541,7 +560,7 @@ impl Drop for List {
     fn drop(&mut self) {
         if let Some(items) = Rc::get_mut(&mut self.data) {
             if items.iter().any(is_container) {
-                drop_iteratively(std::mem::take(items));
+                free_parts(items);
             }
         }
     }
@@ -550,7 +569,7 @@ impl Drop for List {
 impl Drop for Record {
     fn drop(&mut self) {
         if self.vals.iter().any(is_container) {
-            drop_iteratively(std::mem::take(&mut self.vals));
+            free_parts(&mut self.vals);
         }
     }
 }
