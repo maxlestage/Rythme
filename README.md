@@ -71,7 +71,13 @@ error[E001]: `for` is not used in Rythme
 
 ## Install
 
-You need [Rust](https://rustup.rs) (any recent stable version).
+**Without installing anything else:** each published version comes with
+ready-to-use programs for Linux, macOS and Windows on the
+[Releases page](https://github.com/maxlestage/Rythme/releases). Download the
+archive for your system, extract `rythme` (`rythme.exe` on Windows) and put it
+in a folder of your `PATH`.
+
+**With [Rust](https://rustup.rs)** (any recent stable version):
 
 ```sh
 cargo install --git https://github.com/maxlestage/Rythme

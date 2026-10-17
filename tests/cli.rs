@@ -159,6 +159,12 @@ fn editor_grammar_knows_every_builtin() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("editors/vscode/syntaxes/rythme.tmLanguage.json");
     let grammar = std::fs::read_to_string(path).unwrap();
     for b in rythme::builtins::BUILTINS {
-        assert!(grammar.contains(&format!("|{}|", b.name)) || grammar.contains(&format!("({}|", b.name)) || grammar.contains(&format!("|{})", b.name)), "{} is missing from the VS Code grammar", b.name);
+        assert!(
+            grammar.contains(&format!("|{}|", b.name))
+                || grammar.contains(&format!("({}|", b.name))
+                || grammar.contains(&format!("|{})", b.name)),
+            "{} is missing from the VS Code grammar",
+            b.name
+        );
     }
 }
