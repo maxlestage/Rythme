@@ -481,6 +481,25 @@ fn files_that_cannot_be_read_are_explained() {
 }
 
 #[test]
+fn use_finds_files_in_nested_folders_on_every_system() {
+    // main.ry -> app/screen.ry -> app/parts/button.ry -> ../../shared.ry, and app/screen.ry -> ../shared.ry.
+    let root = temp_file("anchor.txt", "").parent().unwrap().join("nested");
+    std::fs::create_dir_all(root.join("app/parts")).unwrap();
+    std::fs::write(root.join("main.ry"), "use \"app/screen.ry\"\nprint(screen())\n").unwrap();
+    std::fs::write(root.join("shared.ry"), "fn shared() = \"shared\"\nprint(\"shared loaded\")\n").unwrap();
+    std::fs::write(
+        root.join("app/screen.ry"),
+        "use \"parts/button\"\nuse \"../shared.ry\"\nfn screen() = \"screen with {button()} and {shared()}\"\n",
+    )
+    .unwrap();
+    std::fs::write(root.join("app/parts/button.ry"), "use \"../../shared.ry\"\nfn button() = \"button ({shared()})\"\n").unwrap();
+    let r = rythme(&[root.join("main.ry").to_str().unwrap()]);
+    assert_eq!(r.stdout, "shared loaded\nscreen with button (shared) and shared\n", "{}", r.stderr);
+    let r = rythme(&["check", root.join("app/screen.ry").to_str().unwrap()]);
+    assert_eq!(r.code, 0, "{}", r.stderr);
+}
+
+#[test]
 fn a_wrong_language_option_is_reported() {
     for args in [&["--lang", "xx", "help"][..], &["--lang"], &["--lang=", "help"]] {
         let r = rythme(args);

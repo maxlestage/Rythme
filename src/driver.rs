@@ -18,6 +18,26 @@ use crate::{lexer, parser, source, suggest};
 #[derive(Debug)]
 pub struct Reported;
 
+/// The folder `base` followed by the path written in `use`. Its parts,
+/// separated by `/` (or `\`), are added one by one, `..` going up a folder,
+/// so that the same program works on every system.
+fn join_use(base: &Path, p: &str) -> PathBuf {
+    if Path::new(p).is_absolute() {
+        return PathBuf::from(p);
+    }
+    let mut path = base.to_path_buf();
+    for part in p.split(['/', '\\']) {
+        match part {
+            "" | "." => {}
+            ".." if path.file_name().is_some() => {
+                path.pop();
+            }
+            part => path.push(part),
+        }
+    }
+    path
+}
+
 /// `path` is a folder: a message that lists the Rythme files inside it.
 pub fn folder_error(path: &Path) -> Diagnostic {
     let shown = path.display();
@@ -172,10 +192,14 @@ impl Driver {
         let mut ok = true;
         for item in &items {
             let Item::Use(p, span) = item else { continue };
-            let Some(dep) = self.resolve_use(p, *span, base) else {
+            let Some(path) = self.resolve_use(p, *span, base) else {
                 ok = false;
                 continue;
             };
+            // Modules are known by their canonical path; they are read through the
+            // path written in the code (shorter in messages, and on Windows a
+            // canonical path does not accept `/` in the paths joined to it).
+            let dep = path.canonicalize().unwrap_or_else(|_| path.clone());
             if self.loading.contains(&dep) {
                 self.report(
                     &Diagnostic::error(
@@ -194,7 +218,7 @@ impl Driver {
                 ok = false;
                 continue;
             }
-            match self.load_file(&dep) {
+            match self.load_file(&path) {
                 Some(_) => deps.push(dep),
                 None => ok = false,
             }
@@ -262,14 +286,14 @@ impl Driver {
     }
 
     fn resolve_use(&mut self, p: &str, span: Span, base: &Path) -> Option<PathBuf> {
-        let mut path = base.join(p);
+        let mut path = join_use(base, p);
         if path.extension().is_none() {
             path.set_extension("ry");
         }
         if path.is_file() {
-            return Some(path.canonicalize().unwrap_or(path));
+            return Some(path);
         }
-        for dir in [&path, &base.join(p)] {
+        for dir in [&path, &join_use(base, p)] {
             if dir.is_dir() {
                 self.report(&folder_error(dir).at(span));
                 return None;
