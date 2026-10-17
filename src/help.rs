@@ -1343,12 +1343,22 @@ Plus simple : sum(liste)  ou  fold(liste, 0, fn(a, x) = a + x)"#,
 
 `assert(condition)` or `assert_eq(actual, expected)` found that something is
 not as expected. In a test, this means the test fails: the message shows the
-values to compare."#,
+values to compare.
+
+`rythme check` finds before running an `assert_eq` that can never pass,
+because its two values are of kinds that are never equal:
+Wrong:   assert_eq(parse_int("3"), 3)      # a Result is never an Int
+Right:   assert_eq(parse_int("3"), Ok(3))"#,
             r#"E015 — Assertion échouée
 
 `assert(condition)` ou `assert_eq(obtenu, attendu)` a constaté que quelque
 chose n'est pas comme prévu. Dans un test, cela veut dire que le test échoue :
-le message montre les valeurs à comparer."#,
+le message montre les valeurs à comparer.
+
+`rythme check` trouve avant l'exécution un `assert_eq` qui ne peut jamais
+réussir, parce que ses deux valeurs sont de natures jamais égales :
+Faux :   assert_eq(parse_int("3"), 3)      # un Result n'est jamais un Int
+Juste :  assert_eq(parse_int("3"), Ok(3))"#,
         ),
         "E016" => (
             r#"E016 — Wrong use of ?
@@ -1670,6 +1680,25 @@ Juste :  plus = push(nombres, 4)
 Faux :   nom.upper()
 Juste :  print(nom.upper())"#,
         ),
+        "W009" => (
+            r#"W009 — A function shown instead of its value
+
+A function shown in a text or printed appears as `<fn name>`. To show what
+it gives, call it, with parentheses, even when it takes no argument.
+
+  fn greeting() = "hello"
+Wrong:   print("{greeting}")          # shows <fn greeting>
+Right:   print("{greeting()}")        # shows hello"#,
+            r#"W009 — Une fonction affichée au lieu de sa valeur
+
+Une fonction affichée dans un texte ou par `print` apparaît comme
+`<fn nom>`. Pour afficher ce qu'elle donne, appelez-la, avec des
+parenthèses, même quand elle ne prend pas d'argument.
+
+  fn salut() = "bonjour"
+Faux :   print("{salut}")             # affiche <fn salut>
+Juste :  print("{salut()}")           # affiche bonjour"#,
+        ),
         _ => return None,
     };
     Some(pick_owned(en, fr))
@@ -1685,5 +1714,5 @@ fn pick_owned(en: &str, fr: &str) -> String {
 
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
-    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008",
+    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008", "W009",
 ];

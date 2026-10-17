@@ -1024,7 +1024,9 @@ impl<'a> Checker<'a> {
                 let mut stops = false;
                 for p in parts {
                     if let TemplatePart::Expr(x) = p {
-                        stops |= self.expr(x) == Ty::Never;
+                        let t = self.expr(x);
+                        stops |= t == Ty::Never;
+                        self.shown_function(x, &t);
                     }
                 }
                 if stops {
@@ -1480,6 +1482,15 @@ impl<'a> Checker<'a> {
         if name == "pow" && tys.len() == 2 {
             return self.arith(BinOp::Pow, Some(exprs[0]), &tys[0], Some(exprs[1]), &tys[1], span);
         }
+        if name == "assert_eq" && tys.len() == 2 && tys[0].is_known() && tys[1].is_known() && !may_be_equal(&tys[0], &tys[1]) {
+            self.never_equal_assertion(exprs, tys, span);
+            return Ty::Never;
+        }
+        if name == "print" {
+            for (e, t) in exprs.iter().zip(tys) {
+                self.shown_function(e, t);
+            }
+        }
         match types::builtin_call(name, tys) {
             None => Ty::Any,
             Some(Outcome::Gives(t)) => {
@@ -1513,6 +1524,50 @@ impl<'a> Checker<'a> {
                 Ty::Never
             }
         }
+    }
+
+    /// `assert_eq(actual, expected)` with values of kinds that are never equal.
+    fn never_equal_assertion(&mut self, exprs: &[&Expr], tys: &[Ty], span: Span) {
+        let (a, b) = (tys[0].name(), tys[1].name());
+        let mut d = Diagnostic::error(
+            "E015",
+            t!(
+                "this assertion always fails: {a} and {b} are never equal",
+                "cette assertion échoue toujours : {a} et {b} ne sont jamais égaux"
+            ),
+        )
+        .at(span)
+        .label(format!("{} ≠ {}", short(Some(exprs[0]), &tys[0]), short(Some(exprs[1]), &tys[1])));
+        let wrapped = |t: &Ty| matches!(t.kinds(), OPTION | RESULT);
+        d = if wrapped(&tys[0]) != wrapped(&tys[1]) {
+            d.help(t!(
+                "one value is inside an Option or a Result: compare it with `Some(...)` or `Ok(...)`,\nlike `assert_eq(parse_int(\"3\"), Ok(3))`",
+                "une valeur est dans une Option ou un Result : comparez-la avec `Some(...)` ou `Ok(...)`,\ncomme `assert_eq(parse_int(\"3\"), Ok(3))`"
+            ))
+        } else {
+            d.help(t!(
+                "values of different kinds are never equal: Rythme never converts values silently",
+                "des valeurs de natures différentes ne sont jamais égales : Rythme ne convertit jamais les valeurs en silence"
+            ))
+        };
+        self.diags.push(d);
+    }
+
+    /// A function shown in a text or printed appears as `<fn name>`: it was
+    /// probably meant to be called.
+    fn shown_function(&mut self, e: &Expr, t: &Ty) {
+        let Ty::Func(f) = t else { return };
+        let call = match (&e.kind, f.arity) {
+            (ExprKind::Var(s), Some((0, _))) => format!("{s}()"),
+            (ExprKind::Var(s), _) => format!("{s}(...)"),
+            _ => "f(...)".to_string(),
+        };
+        self.diags.push(
+            Diagnostic::warning("W009", t!("this shows a function, not a value", "ceci affiche une fonction, pas une valeur"))
+                .at(e.span)
+                .label(t!("a function, shown as `<fn ...>`", "une fonction, affichée comme `<fn ...>`"))
+                .help(t!("to show what it gives, call it: `{call}`", "pour afficher ce qu'elle donne, appelez-la : `{call}`")),
+        );
     }
 
     /// Can at least one definition of the function accept arguments of these types?

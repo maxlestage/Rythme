@@ -188,8 +188,23 @@ fn results_of_functions_without_effect_that_are_lost() {
 }
 
 #[test]
+fn assertions_that_can_never_pass() {
+    let e = finds("test \"parse\" = assert_eq(parse_int(\"3\"), 3)", "E015", "this assertion always fails: Result and Int are never equal");
+    assert!(e.contains("Ok(3)"), "{e}");
+    finds("test \"t\" = assert_eq(len(\"ab\"), \"2\")", "E015", "Int and Text are never equal");
+    quiet("test \"numbers\" = assert_eq(1, 1.0)\ntest \"same\" = assert_eq(parse_int(\"3\"), Ok(3))\nfn f(x) = x\ntest \"any\" = assert_eq(f(1), 1)");
+}
+
+#[test]
+fn functions_shown_instead_of_their_value() {
+    warns("fn greeting() = \"hello\"\nprint(\"{greeting}!\")", "W009", "call it: `greeting()`");
+    warns("print(len)", "W009", "this shows a function, not a value");
+    quiet("fn greeting() = \"hello\"\nprint(\"{greeting()}!\", greeting())\nhelp(greeting)");
+}
+
+#[test]
 fn every_new_code_is_explained_in_both_languages() {
-    for code in ["W006", "W007", "W008"] {
+    for code in ["W006", "W007", "W008", "W009"] {
         let r = rythme(&["explain", code]);
         assert!(r.stdout.starts_with(code), "{code}");
         let r = common::rythme_lang("fr", &["explain", code]);
