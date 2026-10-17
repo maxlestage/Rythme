@@ -85,8 +85,27 @@ fn check(src: &str, origin: &str) -> String {
     assert_eq!(comments(&out), comments(src), "{origin}: comments changed:\n{src}\n--- became ---\n{out}");
     let again = format(&out).unwrap_or_else(|d| panic!("{origin}: the result does not format:\n{out}\n{}", d[0].render(false)));
     assert_eq!(again, out, "{origin}: formatting twice gives something else:\n{src}\n--- first ---\n{out}");
-    for line in out.lines() {
-        assert!(!line.contains('\t') || line.contains('"'), "{origin}: a tab in:\n{out}");
+    // Outside texts written on several lines (kept as they are): no tabs, no
+    // spaces at the end of lines, two spaces per level.
+    let texts: Vec<(usize, usize)> = lexer::lex(&out, 7)
+        .unwrap()
+        .tokens
+        .iter()
+        .filter(|t| matches!(t.tok, Tok::Str(_)))
+        .map(|t| (t.span.start as usize, t.span.end as usize))
+        .collect();
+    let in_text = |at: usize| texts.iter().any(|&(start, end)| start < at && at < end);
+    let mut at = 0;
+    for line in out.split_inclusive('\n') {
+        let code = line.trim_end_matches('\n').trim_end_matches('\r');
+        let indent = code.len() - code.trim_start().len();
+        if !in_text(at) {
+            assert!(indent % 2 == 0 && !code[..indent].contains('\t'), "{origin}: odd indentation:\n{out}");
+        }
+        if !in_text(at + code.len()) {
+            assert!(!code.ends_with([' ', '\t']), "{origin}: spaces at the end of a line:\n{out}");
+        }
+        at += line.len();
     }
     if !out.is_empty() {
         assert!(out.ends_with('\n') && !out.ends_with("\n\n"), "{origin}: wrong end of file:\n{out:?}");
@@ -384,10 +403,12 @@ impl Gen {
 
     /// A line break or a space, where both are allowed.
     fn sp(&mut self) -> &'static str {
-        if self.rng.chance(15) {
-            "\n  "
-        } else {
-            " "
+        match self.rng.below(20) {
+            0 | 1 => "\n  ",
+            2 => "  # why\n      ",
+            3 => "\n\n",
+            4 => "\n  # step\n  ",
+            _ => " ",
         }
     }
 
@@ -489,7 +510,7 @@ impl Gen {
     fn program(&mut self) -> String {
         let mut out = String::new();
         for _ in 0..1 + self.rng.below(5) {
-            let item = match self.rng.below(7) {
+            let item = match self.rng.below(11) {
                 0 => {
                     let (e, c) = (self.expr(), self.comment());
                     format!("fn g(x, y) = {e}{c}")
@@ -510,6 +531,18 @@ impl Gen {
                     let e = self.expr();
                     format!("## Docs.\nfn k(0) = 0\nfn k(n) =\n  {e}")
                 }
+                5 => {
+                    let (a, b, sp) = (self.expr(), self.expr(), self.sp());
+                    format!("test \"block\"\n  fn local([first, ..], {{name, type: t}}) if first > 0 ={sp}{a}\n  assert({b});  x = 1\nend")
+                }
+                6 => {
+                    let (a, sp) = (self.expr(), self.sp());
+                    format!("fn m(v) = match v\n  # first case\n  Some({{\"key\": k}}) | Ok([k]) ->{sp}{a}\n\n  -1 | 2.5 -> v.type\n  _ -> do v end\nend")
+                }
+                7 => {
+                    let (a, b) = (self.expr(), self.expr());
+                    format!("use \"other.ry\"\nz = [\n  {a},\n  # comment\n  {b}\n]")
+                }
                 _ => {
                     let (e, c) = (self.expr(), self.comment());
                     format!("x = {e}{c}")
@@ -525,15 +558,18 @@ impl Gen {
 #[test]
 fn generated_programs_keep_their_meaning() {
     let mut g = Gen { rng: Rng(0x1234_5678_9abc_def1), depth: 0 };
+    let mut rng = Rng(0x0bad_cafe_dead_beef);
     let mut valid = 0;
-    for i in 0..3000 {
+    for i in 0..1200 {
         let src = g.program();
         if tree(&src).is_some() {
-            check(&src, &format!("generated program {i}"));
+            let origin = format!("generated program {i}");
+            let expected = check(&src, &origin);
+            assert_eq!(check(&respace(&src, &mut rng), &origin), expected, "{origin}: spaces changed the result");
             valid += 1;
         }
     }
-    assert!(valid > 1500, "only {valid} generated programs parse");
+    assert!(valid > 1000, "only {valid} generated programs parse");
 }
 
 // ----- the command ----------------------------------------------------------------

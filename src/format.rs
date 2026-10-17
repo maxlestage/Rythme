@@ -284,6 +284,9 @@ enum Indent {
     Same(usize),
     /// One level deeper than the line of piece `n`.
     Inner(usize),
+    /// Two levels deeper: a `match` subject continued on the next line, which
+    /// must not look like a case.
+    Deeper(usize),
     /// `then` or `else` of the `if` number `n`.
     Branch(usize),
 }
@@ -917,6 +920,11 @@ impl<'a> Shaper<'a> {
         let m = self.advance()?;
         let subject = self.with_sig(true, Self::expr)?;
         self.set(subject, Indent::Inner(m));
+        for p in subject + 1..=self.last {
+            if matches!(self.s.indent[p], Indent::Inner(a) if a == subject) {
+                self.set(p, Indent::Deeper(subject));
+            }
+        }
         if *self.raw() != Tok::Newline {
             return None;
         }
@@ -1319,6 +1327,7 @@ impl Printer<'_> {
             Indent::Top => 0,
             Indent::Same(a) => self.line_of[a],
             Indent::Inner(a) => self.line_of[a] + 1,
+            Indent::Deeper(a) => self.line_of[a] + 2,
             Indent::Branch(k) => self.branch(k, i == self.shape.ifs[k].then),
         }
     }
@@ -1652,6 +1661,7 @@ mod tests {
         gives("xs |> map(f)\n  |> sum\n", "xs\n  |> map(f)\n  |> sum\n");
         gives("total = xs |>\n  map(f) |> # double\n  sum\n", "total = xs\n  |> map(f)  # double\n  |> sum\n");
         same("fn count_words(text) =\n  split(text)\n    |> group_by(fn(w) = w)\n    |> entries\n");
+        gives("m = match xs\n|> len\n0 -> 1\nend\n", "m = match xs\n    |> len\n  0 -> 1\nend\n");
     }
 
     #[test]
