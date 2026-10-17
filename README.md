@@ -43,6 +43,9 @@ fn square(x) = x * x
   - `rythme explain E003` explains any error code in detail, with examples.
   - `rythme help`, `rythme help map`, `help(x)` in code, `:doc` in the REPL,
     `rythme learn` for a guided tour.
+  - Inside your editor: the problems as you type, the documentation under
+    the mouse, completion, go to definition, rename (`rythme lsp`, the
+    language server, for VS Code, Neovim, Helix, Emacs...).
   - Every message, every piece of documentation exists in **English and
     French** (`--lang fr`, or automatically from your system language).
 
@@ -141,6 +144,7 @@ cargo install --path .       # or install it in your PATH
 | `rythme explain E003`       | explain an error code                          |
 | `rythme learn`              | guided tour of the language                    |
 | `rythme -e 'print(1 + 2)'`  | run a piece of code                            |
+| `rythme lsp`                | language server, started by your editor ([editors](editors)) |
 
 Add `--lang fr` or `--lang en` before the command to choose the language of
 the messages, or set `RYTHME_LANG`.
@@ -222,7 +226,14 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 
 ## Editors
 
-- **VS Code**: colors, indentation and snippets in [`editors/vscode`](editors/vscode).
+- **VS Code**: the extension in [`editors/vscode`](editors/vscode): colors,
+  snippets, and the language server, for the problems as you type, the
+  documentation on hover, completion, the parameters of a call, go to
+  definition, references, rename, an outline and formatting, in English or
+  French.
+- **Neovim, Helix, Zed, Emacs, Sublime Text, Kate...**: every editor that
+  speaks the Language Server Protocol can start `rythme lsp`; a few lines of
+  configuration for each are in [`editors/README.md`](editors/README.md).
 
 ## For teachers
 
@@ -246,6 +257,7 @@ mode) and is organised as a pipeline:
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |
 | [`src/format.rs`](src/format.rs) | `rythme fmt`: the official layout, which never changes the meaning |
+| [`src/lsp/`](src/lsp) | the language server (`rythme lsp`): help inside editors |
 
 `cargo test` runs the examples, checks that every example of the standard
 library gives the value it shows, and runs ~70 tests of the language, the
@@ -262,10 +274,10 @@ for small programs. Honest limits, and what comes next:
   conversions). Next: type inference in `rythme check`, so that more mistakes
   are found before running.
 - **Tooling.** `rythme fmt` formats the code in the official style (see
-  `rythme help fmt`). Next: a language server (errors and documentation
-  inside every editor), a package manager, and a web playground (the
-  interpreter compiled to WebAssembly) so that anyone can try Rythme without
-  installing anything.
+  `rythme help fmt`), and the language server (`rythme lsp`) brings errors and
+  documentation inside every editor (see `rythme help editors`). The web
+  playground runs the interpreter compiled to WebAssembly. Next: a package
+  manager.
 - **Languages.** Messages exist in English and French; adding a language means
   translating the texts of `src/`. Contributions are welcome.
 - Numbers are 64-bit: whole numbers stop with an error beyond ±9.2 × 10¹⁸

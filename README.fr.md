@@ -48,6 +48,9 @@ fn carre(x) = x * x
     avec des exemples.
   - `rythme help`, `rythme help map`, `help(x)` dans le code, `:doc` dans le
     mode interactif, `rythme learn` pour une visite guidée.
+  - Dans votre éditeur : les problèmes pendant la frappe, la documentation
+    sous la souris, la complétion, aller à la définition, renommer
+    (`rythme lsp`, le serveur de langage, pour VS Code, Neovim, Helix, Emacs...).
   - Chaque message, chaque documentation existe en **français et en
     anglais** (`--lang fr`, ou automatiquement selon la langue du système).
 
@@ -134,6 +137,7 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme explain E003`       | expliquer un code d'erreur                          |
 | `rythme learn`              | visite guidée du langage                            |
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
+| `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
 
 Ajoutez `--lang fr` ou `--lang en` avant la commande pour choisir la langue
 des messages, ou définissez `RYTHME_LANG`.
@@ -220,7 +224,14 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 
 ## Éditeurs
 
-- **VS Code** : couleurs, indentation et extraits de code dans [`editors/vscode`](editors/vscode).
+- **VS Code** : l'extension dans [`editors/vscode`](editors/vscode) : couleurs,
+  extraits de code, et le serveur de langage, pour les problèmes pendant la
+  frappe, la documentation au survol, la complétion, les paramètres d'un
+  appel, aller à la définition, les références, renommer, le plan du
+  fichier et la mise en forme, en français ou en anglais.
+- **Neovim, Helix, Zed, Emacs, Sublime Text, Kate...** : tout éditeur qui
+  parle le Language Server Protocol peut lancer `rythme lsp` ; quelques
+  lignes de configuration pour chacun sont dans [`editors/README.fr.md`](editors/README.fr.md).
 
 ## Pour les enseignants
 
@@ -241,10 +252,10 @@ suite :
   conversion silencieuse). Suite : l'inférence de types dans `rythme check`,
   pour trouver plus d'erreurs avant l'exécution.
 - **Outils.** `rythme fmt` met le code en forme dans le style officiel (voir
-  `rythme help fmt`). Suite : un serveur de langage (erreurs et documentation
-  dans tous les éditeurs), un gestionnaire de paquets, et un bac à sable en
-  ligne (l'interpréteur compilé en WebAssembly) pour essayer Rythme sans rien
-  installer.
+  `rythme help fmt`), et le serveur de langage (`rythme lsp`) apporte les
+  erreurs et la documentation dans tous les éditeurs (voir
+  `rythme help editors`). Le bac à sable en ligne fait tourner l'interpréteur
+  compilé en WebAssembly. Suite : un gestionnaire de paquets.
 - **Langues.** Les messages existent en anglais et en français ; ajouter une
   langue consiste à traduire les textes de `src/`. Les contributions sont
   bienvenues.
