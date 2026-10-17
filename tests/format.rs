@@ -635,9 +635,14 @@ fn fmt_refuses_code_with_syntax_errors() {
     assert!(r.stderr.contains("error[E002]") && r.stderr.contains("bad.ry:2:7"), "{}", r.stderr);
     assert!(r.stdout.contains("1 file(s) left as they are because of errors"), "{}", r.stdout);
     assert_eq!(std::fs::read_to_string(&bad).unwrap(), "fn f(x) =\nprint(\"hello)\n");
-    let r = rythme(&["fmt", dir.join("missing.ry").to_str().unwrap()]);
+    let r = rythme(&["fmt", dir.join("bda.ry").to_str().unwrap()]);
     assert_eq!(r.code, 1);
-    assert!(r.stderr.contains("error[E017]"), "{}", r.stderr);
+    assert!(r.stderr.contains("error[E017]") && r.stderr.contains("bad.ry"), "a suggestion:\n{}", r.stderr);
+    // Without `.ry`, like `rythme run hello`.
+    std::fs::write(dir.join("good.ry"), "x  = 1\n").unwrap();
+    let r = rythme(&["fmt", dir.join("good").to_str().unwrap()]);
+    assert_eq!(r.code, 0, "{}", r.stderr);
+    assert_eq!(std::fs::read_to_string(dir.join("good.ry")).unwrap(), "x = 1\n");
     std::fs::remove_dir_all(&dir).ok();
 }
 

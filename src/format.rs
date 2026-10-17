@@ -1439,7 +1439,13 @@ pub fn command(args: &[String]) -> i32 {
             run.stdin();
             continue;
         }
-        let path = Path::new(target);
+        // `rythme fmt hello` formats `hello.ry`, like `rythme run hello`.
+        let with_ext = PathBuf::from(format!("{target}.ry"));
+        let path = if !Path::new(target).exists() && Path::new(target).extension().is_none() && with_ext.is_file() {
+            with_ext.as_path()
+        } else {
+            Path::new(target)
+        };
         if path.is_dir() {
             let mut found = Vec::new();
             ry_files(path, &mut found);
