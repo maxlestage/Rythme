@@ -70,6 +70,29 @@ pub enum Wrap {
 
 const MAX_RANGE: i64 = 50_000_000;
 
+/// The longest list (in elements) and text (in bytes) a program may build.
+/// Beyond, the computer would run out of memory, and Rythme would stop
+/// without a word; these limits stop a list or a text that grows without end.
+pub const MAX_LIST: usize = 50_000_000;
+pub const MAX_TEXT: usize = 100_000_000;
+
+/// A list (or a text) would be longer than `MAX_LIST` (`MAX_TEXT`).
+#[inline(never)]
+pub fn too_big(list: bool, span: Span) -> Box<Diagnostic> {
+    let msg = if list {
+        t!("this list would be too large (more than {MAX_LIST} elements)", "cette liste serait trop grande (plus de {MAX_LIST} éléments)")
+    } else {
+        t!("this text would be too large (more than {MAX_TEXT} characters)", "ce texte serait trop grand (plus de {MAX_TEXT} caractères)")
+    };
+    Diagnostic::error("E023", msg)
+        .at(span)
+        .help(t!(
+            "does it grow in a function that calls itself? Check that the function always reaches a case where it stops",
+            "grandit-il dans une fonction qui s'appelle elle-même ? Vérifiez que la fonction atteint toujours un cas où elle s'arrête"
+        ))
+        .boxed()
+}
+
 /// How many bytes of stack the interpreter may use for nested calls. The
 /// `rythme` command runs on a thread with a large stack and raises it.
 static STACK_BUDGET: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(4 << 20);
@@ -373,6 +396,9 @@ impl Interp {
                             v => s.push_str(&v.display()),
                         },
                     }
+                    if s.len() > MAX_TEXT {
+                        return Err(too_big(false, e.span).into());
+                    }
                 }
                 Ok(Value::Text(Rc::from(s)))
             }
@@ -382,6 +408,7 @@ impl Interp {
                     match it {
                         ListItem::One(x) => v.push(self.eval(x, env)?),
                         ListItem::Spread(x) => match self.eval(x, env)? {
+                            Value::List(l) if v.len() + l.len() > MAX_LIST => return Err(too_big(true, e.span).into()),
                             Value::List(l) => v.extend(l.iter().cloned()),
                             other => return Err(spread_error(&other, x.span, true).into()),
                         },
@@ -1267,7 +1294,13 @@ pub fn binop(op: BinOp, l: &Value, r: &Value, span: Span) -> Fallible<Value> {
                     if b == 0.0 {
                         return Err(div_zero(span));
                     }
-                    a - b * (a / b).floor()
+                    // Exact, and with the sign of `b`: `-1.5 % 2.0` is 0.5, `5.0 % inf` is 5.0.
+                    let m = a % b;
+                    if m != 0.0 && (m < 0.0) != (b < 0.0) {
+                        m + b
+                    } else {
+                        m
+                    }
                 }
                 BinOp::Pow => {
                     if a == 0.0 && b < 0.0 {
@@ -1296,12 +1329,18 @@ pub fn binop(op: BinOp, l: &Value, r: &Value, span: Span) -> Fallible<Value> {
             }))
         }
         (Text(a), Text(b)) if op == BinOp::Add => {
+            if a.len() + b.len() > MAX_TEXT {
+                return Err(too_big(false, span));
+            }
             let mut s = String::with_capacity(a.len() + b.len());
             s.push_str(a);
             s.push_str(b);
             Ok(Text(Rc::from(s)))
         }
         (List(a), List(b)) if op == BinOp::Add => {
+            if a.len() + b.len() > MAX_LIST {
+                return Err(too_big(true, span));
+            }
             let mut v = Vec::with_capacity(a.len() + b.len());
             v.extend(a.iter().cloned());
             v.extend(b.iter().cloned());

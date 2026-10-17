@@ -7,7 +7,7 @@ use std::io::Write;
 use std::rc::Rc;
 
 use crate::diagnostic::{Diagnostic, Fallible};
-use crate::interp::{binop, overflow, resolve_index, Interp, Wrap};
+use crate::interp::{binop, overflow, resolve_index, too_big, Interp, Wrap, MAX_LIST, MAX_TEXT};
 use crate::source::{self, Span};
 use crate::value::*;
 
@@ -889,6 +889,9 @@ fn join(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "join", span)?;
     let sep = if a.len() == 2 { text(a, 1, "join", span)? } else { "" };
     let parts: Vec<String> = l.iter().map(|v| v.display()).collect();
+    if parts.iter().map(|p| p.len() + sep.len()).sum::<usize>() > MAX_TEXT {
+        return Err(too_big(false, span));
+    }
     Ok(text_value(parts.join(sep)))
 }
 
@@ -918,11 +921,18 @@ fn replace(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     if old.is_empty() {
         return Err(invalid(t!("`replace` cannot replace an empty text", "`replace` ne peut pas remplacer un texte vide"), span));
     }
+    if new.len() > old.len() && s.len() + s.matches(old).count() * (new.len() - old.len()) > MAX_TEXT {
+        return Err(too_big(false, span));
+    }
     Ok(text_value(s.replace(old, new)))
 }
 
 fn chars(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    Ok(Value::list(text(a, 0, "chars", span)?.chars().map(|c| text_value(c.to_string())).collect()))
+    let s = text(a, 0, "chars", span)?;
+    if s.len() > MAX_LIST && s.chars().count() > MAX_LIST {
+        return Err(too_big(true, span));
+    }
+    Ok(Value::list(s.chars().map(|c| text_value(c.to_string())).collect()))
 }
 
 fn lines(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -1321,6 +1331,7 @@ fn flatten(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let mut out = Vec::new();
     for x in l.iter() {
         match x {
+            Value::List(inner) if out.len() + inner.len() > MAX_LIST => return Err(too_big(true, span)),
             Value::List(inner) => out.extend(inner.iter().cloned()),
             other => {
                 return Err(invalid(
@@ -1343,6 +1354,7 @@ fn flat_map(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let mut out = Vec::new();
     for x in l.iter() {
         match it.call(f.clone(), vec![x.clone()], span)? {
+            Value::List(inner) if out.len() + inner.len() > MAX_LIST => return Err(too_big(true, span)),
             Value::List(inner) => out.extend(inner.iter().cloned()),
             other => {
                 return Err(invalid(

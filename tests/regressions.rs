@@ -154,6 +154,19 @@ fn input_stops_at_the_end_of_the_input_instead_of_asking_forever() {
 }
 
 #[test]
+fn texts_that_grow_without_end_stop_with_an_error_not_out_of_memory() {
+    for code in [
+        "fn grow(s) = grow(s + s)\nprint(grow(\"ab\"))",
+        "fn grow(s) = grow(\"{s}{s}\")\nprint(grow(\"ab\"))",
+        "print(len(join(repeat([repeat(\"x\", 60000000)], 2))))",
+        "print(len(replace(repeat(\"a\", 30000000), \"a\", \"abcd\")))",
+    ] {
+        let r = fails(code, "E023");
+        assert!(r.stderr.contains("this text would be too large"), "{}", r.stderr);
+    }
+}
+
+#[test]
 fn fail_with_an_empty_message_still_says_something() {
     let r = fails("fail(\"\")", "E021");
     assert!(r.stderr.contains("stopped with `fail`"), "{}", r.stderr);
@@ -175,6 +188,11 @@ fn powers_without_a_value_are_errors() {
     let r = fails("print((-8) ** (1 / 3))", "E023");
     assert!(r.stderr.contains("fractional power"), "{}", r.stderr);
     ok("print(2 ** -1, (-2.0) ** 3, (-8.0) ** 2.0)", "0.5 -8.0 64.0");
+}
+
+#[test]
+fn decimal_remainders_are_exact_and_follow_the_divisor() {
+    ok("print(5.0 % 1e400, -5.0 % 1e400, 1e20 % 3.0, -7.5 % 2.0, 7.5 % -2.0, 5 % 3.0)", "5.0 inf 1.0 0.5 -0.5 2.0");
 }
 
 #[test]
