@@ -483,34 +483,42 @@ true true false false
 
 `<`, `<=`, `>` and `>=` compare:
 
-- numbers, Int and Float mixed, by value;
+- numbers, Int and Float mixed, by their exact value;
 - texts, character by character by Unicode code point (so `"Z" < "a"`, and
   accented letters come after `z`: this is not dictionary order);
 - Bools (`false < true`), and `()` with itself;
 - lists, element by element, a shorter list coming first when it is a prefix
   of the other;
-- two variants of the **same type and the same constructor**, field by field.
+- two values of the **same type**: first by constructor, in the order of the
+  type's definition (`None < Some(x)`, `Ok(x) < Err(e)`, and for
+  `type Size = Small | Medium | Large`, `Small < Medium < Large`), then field
+  by field.
 
-Anything else (records, functions, two different constructors such as `None`
-and `Some(1)`, a number and a text...) is error E005. `sort`, `sort_by`, `min`
-and `max` use the same order and fail the same way.
+Anything else (records, functions, values of two different types, a number
+and a text...) is error E005. `sort`, `sort_by`, `min` and `max` use the same
+order and fail the same way.
 
 ```rythme
+type Size = Small | Medium | Large
 print(1 < 2.5, "Zebra" < "apple", "apple" < "banana", false < true)
 print([1, 2] < [1, 3], [1, 2] < [1, 2, 0], Some(1) < Some(2))
 print(sort(["pear", "Fig", "apple", "été"]))
-print(None < Some(1))
+print(None < Some(1), Ok(5) < Err(1), Small < Large)
+print(sort([Some(2), None, Some(1)]))
+print({a: 1} < {a: 2})
 ```
 
 ```text
 true true true true
 true true true
 ["Fig", "apple", "pear", "été"]
-error[E005]: cannot use `<` with Option and Option
- --> 14-ordering.ry:4:12
+true true true
+[None, Some(1), Some(2)]
+error[E005]: cannot use `<` with Record and Record
+ --> 14-ordering.ry:7:14
   |
-4 | print(None < Some(1))
-  |            ^ Option None < Option Some(1)
+7 | print({a: 1} < {a: 2})
+  |              ^ Record {a: 1} < Record {a: 2}
   |
   = more about this error: `rythme explain E005`
 ```
@@ -972,7 +980,7 @@ warning[W002]: this `match` does not handle every case
   |              ^^^^^^^
   |
   = note: not handled: `_`
-  = help: add the missing cases, like `_ -> ...`, or a last case `_ -> ...`
+  = help: add a last case `_ -> ...` for all the other values
 
 one
 error[E006]: no case of this `match` handles Int 3

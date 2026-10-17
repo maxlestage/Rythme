@@ -512,36 +512,43 @@ true true false false
 
 `<`, `<=`, `>` et `>=` comparent :
 
-- les nombres, Int et Float mélangés, selon leur valeur ;
+- les nombres, Int et Float mélangés, selon leur valeur exacte ;
 - les textes, caractère par caractère selon le point de code Unicode (donc
   `"Z" < "a"`, et les lettres accentuées viennent après `z` : ce n'est pas
   l'ordre du dictionnaire) ;
 - les Bool (`false < true`), et `()` avec lui-même ;
 - les listes, élément par élément, une liste plus courte venant d'abord quand
   elle est le début de l'autre ;
-- deux variantes **du même type et du même constructeur**, champ par champ.
+- deux valeurs **du même type** : d'abord selon le constructeur, dans l'ordre
+  de la définition du type (`None < Some(x)`, `Ok(x) < Err(e)`, et pour
+  `type Taille = Petit | Moyen | Grand`, `Petit < Moyen < Grand`), puis champ
+  par champ.
 
-Tout le reste (enregistrements, fonctions, deux constructeurs différents comme
-`None` et `Some(1)`, un nombre et un texte...) est l'erreur E005. `sort`,
-`sort_by`, `min` et `max` utilisent le même ordre et échouent de la même
-façon.
+Tout le reste (enregistrements, fonctions, valeurs de deux types différents,
+un nombre et un texte...) est l'erreur E005. `sort`, `sort_by`, `min` et `max`
+utilisent le même ordre et échouent de la même façon.
 
 ```rythme
+type Taille = Petit | Moyen | Grand
 print(1 < 2.5, "Zèbre" < "abeille", "abeille" < "banane", false < true)
 print([1, 2] < [1, 3], [1, 2] < [1, 2, 0], Some(1) < Some(2))
 print(sort(["poire", "Figue", "abricot", "été"]))
-print(None < Some(1))
+print(None < Some(1), Ok(5) < Err(1), Petit < Grand)
+print(sort([Some(2), None, Some(1)]))
+print({a: 1} < {a: 2})
 ```
 
 ```text
 true true true true
 true true true
 ["Figue", "abricot", "poire", "été"]
-erreur[E005]: impossible d'utiliser `<` avec Option et Option
- --> 14-ordre.ry:4:12
+true true true
+[None, Some(1), Some(2)]
+erreur[E005]: impossible d'utiliser `<` avec Record et Record
+ --> 14-ordre.ry:7:14
   |
-4 | print(None < Some(1))
-  |            ^ Option None < Option Some(1)
+7 | print({a: 1} < {a: 2})
+  |              ^ Record {a: 1} < Record {a: 2}
   |
   = en savoir plus : `rythme explain E005`
 ```
@@ -1013,7 +1020,7 @@ avertissement[W002]: ce `match` ne traite pas tous les cas
   |             ^^^^^^^
   |
   = note: non traité : `_`
-  = aide: ajoutez les cas manquants, comme `_ -> ...`, ou un dernier cas `_ -> ...`
+  = aide: ajoutez un dernier cas `_ -> ...` pour toutes les autres valeurs
 
 un
 erreur[E006]: aucun cas de ce `match` ne traite Int 3
