@@ -367,6 +367,9 @@ impl Parser {
         if self.pattern_before_eq() {
             // Read as a pattern, so that a definition accepts what `match` accepts.
             let pat = self.pattern().map_err(|mut d| {
+                if !d.helps.is_empty() {
+                    return d;
+                }
                 d.helps.push(t!(
                     "before `=` comes a name or a pattern, like `[first, ..rest]`, `{{name, ..}}` or `Some(x)`",
                     "avant `=` vient un nom ou un motif, comme `[premier, ..reste]`, `{{nom, ..}}` ou `Some(x)`"

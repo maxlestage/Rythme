@@ -16,6 +16,11 @@ The tests run the real `rythme` program. `tests/examples.rs` checks that every
 program in `examples/` prints exactly its `.out` file: when you add an
 example, add its expected output too.
 
+`tests/fuzz.rs` runs thousands of random programs: none may crash, hang, or
+give a message that points outside of the code. After a change to the
+lexer, the parser or the interpreter, run a longer session:
+`RYTHME_FUZZ_CASES=1000000 cargo test --release --test fuzz -- --ignored`.
+
 ## How the interpreter is organised
 
 ```
