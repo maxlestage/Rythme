@@ -495,9 +495,20 @@ fn f64_to_int(x: f64, span: Span) -> Fallible<Value> {
 // ----- Basics ------------------------------------------------------------
 
 fn print(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
-    let parts: Vec<String> = a.iter().map(|v| v.display()).collect();
-    out(&parts.join(" "));
+    out(&joined(a, " "));
     Ok(Value::Unit)
+}
+
+/// The values as `display` shows them, with `sep` between them.
+fn joined(values: &[Value], sep: &str) -> String {
+    let mut s = String::new();
+    for (i, v) in values.iter().enumerate() {
+        if i > 0 {
+            s.push_str(sep);
+        }
+        v.write_display(&mut s);
+    }
+    s
 }
 
 fn debug(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -834,10 +845,11 @@ fn split(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         s.split_whitespace().map(text_value).collect()
     } else {
         let sep = text(a, 1, "split", span)?;
-        if sep.is_empty() {
-            s.chars().map(|c| text_value(c.to_string())).collect()
-        } else {
-            s.split(sep).map(text_value).collect()
+        match single_char(sep) {
+            _ if sep.is_empty() => s.chars().map(|c| text_value(c.to_string())).collect(),
+            // Same result, found much faster.
+            Some(c) => s.split(c).map(text_value).collect(),
+            None => s.split(sep).map(text_value).collect(),
         }
     };
     Ok(Value::list(parts))
@@ -846,8 +858,7 @@ fn split(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 fn join(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "join", span)?;
     let sep = if a.len() == 2 { text(a, 1, "join", span)? } else { "" };
-    let parts: Vec<String> = l.iter().map(|v| v.display()).collect();
-    Ok(text_value(parts.join(sep)))
+    Ok(text_value(joined(l.as_slice(), sep)))
 }
 
 fn contains(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -876,7 +887,20 @@ fn replace(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     if old.is_empty() {
         return Err(invalid(t!("`replace` cannot replace an empty text", "`replace` ne peut pas remplacer un texte vide"), span));
     }
-    Ok(text_value(s.replace(old, new)))
+    Ok(text_value(match single_char(old) {
+        Some(c) => s.replace(c, new),
+        None => s.replace(old, new),
+    }))
+}
+
+/// The character, if the text is one character: searching for a character is
+/// much faster than searching for a text.
+fn single_char(s: &str) -> Option<char> {
+    let mut chars = s.chars();
+    match (chars.next(), chars.next()) {
+        (Some(c), None) => Some(c),
+        _ => None,
+    }
 }
 
 fn chars(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {

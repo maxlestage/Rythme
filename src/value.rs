@@ -2,6 +2,7 @@
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::fmt::Write;
 use std::rc::Rc;
 
 use crate::ast::FnDef;
@@ -241,6 +242,14 @@ impl Value {
         }
     }
 
+    /// Writes what `display` returns at the end of `out`.
+    pub fn write_display(&self, out: &mut String) {
+        match self {
+            Value::Text(s) => out.push_str(s),
+            _ => self.write_repr(out, usize::MAX),
+        }
+    }
+
     /// How the value is written in code: texts with quotes.
     pub fn repr(&self) -> String {
         let mut out = String::new();
@@ -274,7 +283,9 @@ impl Value {
                 Item::Value(v) => match v {
                     Value::Unit => out.push_str("()"),
                     Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
-                    Value::Int(n) => out.push_str(&n.to_string()),
+                    Value::Int(n) => {
+                        let _ = write!(out, "{n}");
+                    }
                     Value::Float(f) => out.push_str(&fmt_float(*f)),
                     Value::Text(s) => write_text_repr(s, out),
                     Value::List(l) => {

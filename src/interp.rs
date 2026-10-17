@@ -430,10 +430,7 @@ impl Interp {
                 for p in parts {
                     match p {
                         compile::Part::Lit(l) => s.push_str(l),
-                        compile::Part::Expr(x) => match self.eval(x, fr)? {
-                            Value::Text(t) => s.push_str(&t),
-                            v => s.push_str(&v.display()),
-                        },
+                        compile::Part::Expr(x) => self.eval(x, fr)?.write_display(&mut s),
                     }
                 }
                 Ok(Value::Text(Rc::from(s)))
