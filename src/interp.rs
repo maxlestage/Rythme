@@ -29,6 +29,12 @@ impl From<Box<Diagnostic>> for Flow {
 
 pub type Eval = Result<Value, Flow>;
 
+/// The definition chosen for a call, or the value a `?` in a guard returned.
+enum Entered {
+    Clause(usize, Env),
+    Return(Value),
+}
+
 /// Result of an expression in tail position: a value, or a call still to make.
 pub enum Tail {
     Done(Value),
@@ -439,6 +445,15 @@ impl Interp {
 
     fn eval_tail(&mut self, e: &Expr, env: &Env) -> Result<Tail, Flow> {
         match &e.kind {
+            // `a and f(x)`: when the right side is a call, it is a tail call.
+            ExprKind::Binary(op @ (BinOp::And | BinOp::Or), l, r, _) if matches!(r.kind, ExprKind::Call(..) | ExprKind::Method(..)) => {
+                let lv = self.eval(l, env)?;
+                let left = truth(&lv, l.span)?;
+                if (*op == BinOp::And) != left {
+                    return Ok(Tail::Done(Value::Bool(left)));
+                }
+                self.eval_tail(r, env)
+            }
             ExprKind::If(c, a, b) => {
                 let cv = self.eval(c, env)?;
                 if truth(&cv, c.span)? {
@@ -659,7 +674,11 @@ impl Interp {
             match f {
                 Value::Func(clo) => {
                     let def = clo.def.clone();
-                    let (ci, env) = self.enter(&clo, &def, args, span)?;
+                    let (ci, env) = match self.enter(&clo, &def, args, span)? {
+                        Entered::Clause(ci, env) => (ci, env),
+                        // A `?` in a guard ended the call.
+                        Entered::Return(v) => return Ok(v),
+                    };
                     drop(clo);
                     let body = &def.clauses[ci].body;
                     let r = match &body.kind {
@@ -698,7 +717,7 @@ impl Interp {
     }
 
     /// Picks the first definition (clause) of a function that accepts the arguments.
-    fn enter(&mut self, clo: &Rc<Closure>, def: &FnDef, args: Vec<Value>, span: Span) -> Fallible<(usize, Env)> {
+    fn enter(&mut self, clo: &Rc<Closure>, def: &FnDef, args: Vec<Value>, span: Span) -> Fallible<Entered> {
         if args.len() != def.arity {
             return Err(fn_arity_error(def, args.len(), span));
         }
@@ -715,7 +734,7 @@ impl Interp {
                         env = env.bind(s, a);
                     }
                 }
-                return Ok((0, env));
+                return Ok(Entered::Clause(0, env));
             }
         }
         let mut binds = std::mem::take(&mut self.scratch);
@@ -735,7 +754,7 @@ impl Interp {
                 let gv = match self.eval(g, &env) {
                     Ok(v) => v,
                     Err(Flow::Err(d)) => return Err(d),
-                    Err(Flow::Return(_)) => return Err(question_outside(g.span)),
+                    Err(Flow::Return(v)) => return Ok(Entered::Return(v)),
                 };
                 binds = std::mem::take(&mut self.scratch);
                 if !truth(&gv, g.span)? {
@@ -743,7 +762,7 @@ impl Interp {
                 }
             }
             self.scratch = binds;
-            return Ok((ci, env));
+            return Ok(Entered::Clause(ci, env));
         }
         self.scratch = binds;
         Err(no_clause(def, &args, span))
@@ -1041,13 +1060,13 @@ fn op_error(op: BinOp, l: &Value, r: &Value, span: Span) -> Box<Diagnostic> {
             "to add one element to a list, use `push(list, x)` or `[..list, x]`",
             "pour ajouter un élément à une liste, utilisez `push(liste, x)` ou `[..liste, x]`"
         ));
+    } else if op == BinOp::Mul && (is_text(l) || is_list(l)) && is_num(r) {
+        d = d.help(t!("to repeat a text or a list, use `repeat(x, n)`", "pour répéter un texte ou une liste, utilisez `repeat(x, n)`"));
     } else if (is_text(l) && is_num(r)) || (is_num(l) && is_text(r)) {
         d = d.help(t!(
             "convert the text to a number first, with `int(t)` or `float(t)`",
             "convertissez d'abord le texte en nombre, avec `int(t)` ou `float(t)`"
         ));
-    } else if op == BinOp::Mul && (is_text(l) || is_list(l)) {
-        d = d.help(t!("to repeat a text or a list, use `repeat(x, n)`", "pour répéter un texte ou une liste, utilisez `repeat(x, n)`"));
     }
     d.boxed()
 }
@@ -1109,13 +1128,23 @@ pub fn binop(op: BinOp, l: &Value, r: &Value, span: Span) -> Fallible<Value> {
                     if b == 0 {
                         return Err(div_zero(span));
                     }
+                    if b == -1 {
+                        // The remainder is always 0 (and i64::MIN % -1 would overflow).
+                        return Ok(Int(0));
+                    }
                     a.checked_rem(b).map(|m| if m != 0 && ((m < 0) != (b < 0)) { m + b } else { m })
                 }
                 BinOp::Pow => {
                     if b < 0 {
                         return Ok(Float((a as f64).powf(b as f64)));
                     }
-                    u32::try_from(b).ok().and_then(|b| a.checked_pow(b))
+                    match a {
+                        // These never grow, whatever the exponent.
+                        0 => Some(if b == 0 { 1 } else { 0 }),
+                        1 => Some(1),
+                        -1 => Some(if b % 2 == 0 { 1 } else { -1 }),
+                        _ => u32::try_from(b).ok().and_then(|b| a.checked_pow(b)),
+                    }
                 }
                 _ => unreachable!(),
             };

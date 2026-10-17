@@ -63,9 +63,9 @@ fn cli(mut args: Vec<String>) -> i32 {
         "repl" => repl::run(),
         "help" | "aide" | "--help" | "-h" => {
             match rest.first() {
-                None => print!("{}", help::overview()),
+                None => rythme::io::out(&help::overview()),
                 Some(name) => match help::topic(name) {
-                    Some(text) => println!("{}", text.trim_end()),
+                    Some(text) => rythme::io::out_line(text.trim_end()),
                     None => {
                         eprintln!("{}", help::unknown_topic(name));
                         return 2;
@@ -76,19 +76,16 @@ fn cli(mut args: Vec<String>) -> i32 {
         }
         "explain" | "expliquer" => match rest.first() {
             None => {
-                println!(
-                    "{}",
-                    t!(
-                        "usage: rythme explain CODE   (codes: {})",
-                        "utilisation : rythme explain CODE   (codes : {})",
-                        help::CODES.join(" ")
-                    )
-                );
+                rythme::io::out_line(&t!(
+                    "usage: rythme explain CODE   (codes: {})",
+                    "utilisation : rythme explain CODE   (codes : {})",
+                    help::CODES.join(" ")
+                ));
                 0
             }
             Some(code) => match help::explain(code) {
                 Some(text) => {
-                    println!("{text}");
+                    rythme::io::out_line(&text);
                     0
                 }
                 None => {
@@ -105,7 +102,7 @@ fn cli(mut args: Vec<String>) -> i32 {
             0
         }
         "version" | "--version" | "-V" => {
-            println!("rythme {}", rythme::VERSION);
+            rythme::io::out_line(&format!("rythme {}", rythme::VERSION));
             0
         }
         "run" | "lancer" => match rest.first() {
@@ -208,15 +205,15 @@ fn check_file(name: &str) -> i32 {
     let shown = path.display();
     if ok {
         if driver.warnings == 0 {
-            println!("{}", t!("✓ {shown}: no problems found", "✓ {shown} : aucun problème trouvé"));
+            rythme::io::out_line(&t!("✓ {shown}: no problems found", "✓ {shown} : aucun problème trouvé"));
         } else {
             let n = driver.warnings;
-            println!("{}", t!("✓ {shown}: no errors, {n} warning(s)", "✓ {shown} : aucune erreur, {n} avertissement(s)"));
+            rythme::io::out_line(&t!("✓ {shown}: no errors, {n} warning(s)", "✓ {shown} : aucune erreur, {n} avertissement(s)"));
         }
         0
     } else {
         let n = driver.errors;
-        println!("{}", t!("✗ {shown}: {n} error(s)", "✗ {shown} : {n} erreur(s)"));
+        rythme::io::out_line(&t!("✗ {shown}: {n} error(s)", "✗ {shown} : {n} erreur(s)"));
         1
     }
 }
@@ -228,7 +225,7 @@ fn eval_code(code: &str) -> i32 {
     match driver.execute(&module, Mode::Run) {
         Ok(Some(v)) => {
             if !matches!(v, Value::Unit) {
-                println!("{}", v.repr());
+                rythme::io::out_line(&v.repr());
             }
             0
         }

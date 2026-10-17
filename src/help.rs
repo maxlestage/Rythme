@@ -260,25 +260,22 @@ pub fn learn() {
     let order =
         ["start", "syntax", "functions", "lists", "text", "records", "types", "match", "errors", "functional", "tests", "modules", "repl"];
     for (i, name) in order.iter().enumerate() {
-        println!("── {}/{} ──\n", i + 1, order.len());
-        println!("{}", topic_text(name).trim_end());
+        crate::io::out_line(&format!("── {}/{} ──\n", i + 1, order.len()));
+        crate::io::out_line(topic_text(name).trim_end());
         if interactive && i + 1 < order.len() {
-            print!("\n{}", t!("[Enter] next   [q] quit > ", "[Entrée] suite   [q] quitter > "));
+            crate::io::out(&format!("\n{}", t!("[Enter] next   [q] quit > ", "[Entrée] suite   [q] quitter > ")));
             let _ = std::io::stdout().flush();
             let mut line = String::new();
             if std::io::stdin().lock().read_line(&mut line).unwrap_or(0) == 0 || line.trim().eq_ignore_ascii_case("q") {
                 break;
             }
         }
-        println!();
+        crate::io::out_line("");
     }
-    println!(
-        "{}",
-        t!(
-            "To practice, run `rythme` and type code. `rythme help builtins` lists every function.",
-            "Pour pratiquer, lancez `rythme` et tapez du code. `rythme help builtins` liste toutes les fonctions."
-        )
-    );
+    crate::io::out_line(&t!(
+        "To practice, run `rythme` and type code. `rythme help builtins` lists every function.",
+        "Pour pratiquer, lancez `rythme` et tapez du code. `rythme help builtins` liste toutes les fonctions."
+    ));
 }
 
 fn topic_text(name: &str) -> &'static str {
@@ -389,7 +386,7 @@ Choosing by shape
   match list
     [] -> "empty"
     [x] -> "one element: {x}"
-    [x, ..rest] -> "starts with {x}"
+    [x, ..rest] -> "{x}, then {len(rest)} more"
   end
 
 Several steps inside an expression
@@ -448,7 +445,7 @@ Choisir selon la forme
   match liste
     [] -> "vide"
     [x] -> "un élément : {x}"
-    [x, ..reste] -> "commence par {x}"
+    [x, ..reste] -> "{x}, puis {len(reste)} autres"
   end
 
 Plusieurs étapes dans une expression
@@ -934,7 +931,7 @@ Run them:
 
 While testing, top-level expressions such as print(...) are not run: the
 definitions are loaded, then each test runs. A test passes if it ends without
-error (and does not return false)."#;
+error, and its value is not false, Err(...) or None."#;
 
 const TESTS_FR: &str = r#"TESTS
 
@@ -953,7 +950,8 @@ Lancez-les :
 
 Pendant les tests, les expressions du premier niveau comme print(...) ne sont
 pas exécutées : les définitions sont chargées, puis chaque test est lancé. Un
-test réussit s'il se termine sans erreur (et ne renvoie pas false)."#;
+test réussit s'il se termine sans erreur, et que sa valeur n'est ni false, ni
+Err(...), ni None."#;
 
 const MODULES_EN: &str = r#"SEVERAL FILES
 
@@ -1461,6 +1459,33 @@ La fonction a reçu une valeur de la bonne sorte, mais en dehors de ce qu'elle
 accepte : un nombre négatif d'éléments, le minimum d'une liste vide, un
 intervalle trop grand... Le message explique la limite."#,
         ),
+        "E024" => (
+            r#"E024 — A value is lost
+
+A line computes a value, but nothing uses it: only the last line of a block
+gives its value, and values never change, so the result is simply lost.
+
+Wrong:   total = price
+         - discount              # a new line: this is a separate statement
+Right:   total = price -
+           discount              # end the line with the operator to continue
+Wrong:   x + 1                   # does not change x
+Right:   y = x + 1
+To show a value, print it:  print(x + 1)"#,
+            r#"E024 — Une valeur est perdue
+
+Une ligne calcule une valeur, mais rien ne l'utilise : seule la dernière
+ligne d'un bloc donne sa valeur, et les valeurs ne changent jamais, donc le
+résultat est simplement perdu.
+
+Faux :   total = prix
+         - remise                # une nouvelle ligne : c'est une instruction à part
+Juste :  total = prix -
+           remise                # finissez la ligne par l'opérateur pour continuer
+Faux :   x + 1                   # ne modifie pas x
+Juste :  y = x + 1
+Pour afficher une valeur, affichez-la :  print(x + 1)"#,
+        ),
         "W001" => (
             r#"W001 — Unused name
 
@@ -1480,8 +1505,9 @@ program will stop with E006.
 
   type Light = Red | Orange | Green
   fn next(Red) = Green
-  fn next(Green) = Orange          # W002: Orange is not handled
-  fn next(Orange) = Red            # fixed"#,
+  fn next(Green) = Orange
+  # W002: `next` does not handle `Orange`. Add the missing definition:
+  fn next(Orange) = Red"#,
             r#"W002 — Cas oublié
 
 Un `match` (ou une fonction à plusieurs définitions) ne traite pas toutes
@@ -1490,8 +1516,9 @@ arrive, le programme s'arrêtera avec E006.
 
   type Feu = Rouge | Orange | Vert
   fn suivant(Rouge) = Vert
-  fn suivant(Vert) = Orange        # W002 : Orange n'est pas traité
-  fn suivant(Orange) = Rouge       # corrigé"#,
+  fn suivant(Vert) = Orange
+  # W002 : `suivant` ne traite pas `Orange`. Ajoutez la définition manquante :
+  fn suivant(Orange) = Rouge"#,
         ),
         "W003" => (
             r#"W003 — Built-in function hidden
@@ -1516,6 +1543,24 @@ Les cas sont essayés dans l'ordre. Un cas qui accepte tout (`_`, ou un
 simple nom) attrape toutes les valeurs : les cas suivants ne peuvent jamais
 servir. Mettez-le en dernier."#,
         ),
+        "W005" => (
+            r#"W005 — Unknown function after a dot
+
+`value.name(args)` calls the function `name(value, args)`, or the field `name`
+of a record. No function has this name, and no record of the file has such a
+field: it is probably a typo.
+
+Wrong:   [1, 2].lenght()
+Right:   [1, 2].len()"#,
+            r#"W005 — Fonction inconnue après un point
+
+`valeur.nom(args)` appelle la fonction `nom(valeur, args)`, ou le champ `nom`
+d'un enregistrement. Aucune fonction ne porte ce nom, et aucun enregistrement
+du fichier n'a un tel champ : c'est sans doute une faute de frappe.
+
+Faux :   [1, 2].lenght()
+Juste :  [1, 2].len()"#,
+        ),
         _ => return None,
     };
     Some(pick_owned(en, fr))
@@ -1531,5 +1576,5 @@ fn pick_owned(en: &str, fr: &str) -> String {
 
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
-    "E018", "E019", "E020", "E021", "E022", "E023", "W001", "W002", "W003", "W004",
+    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "W001", "W002", "W003", "W004", "W005",
 ];
