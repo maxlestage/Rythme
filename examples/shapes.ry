@@ -1,0 +1,26 @@
+# Your own types: a shape is a circle, a rectangle or a triangle.
+
+type Shape =
+  | Circle(radius)
+  | Rect(width, height)
+  | Triangle(base, height)
+
+fn area(Circle(r)) = pi * r * r
+fn area(Rect(w, h)) = w * h
+fn area(Triangle(b, h)) = b * h / 2
+
+fn name(shape) = match shape
+  Circle(_) -> "circle"
+  Rect(w, h) if w == h -> "square"
+  Rect(_, _) -> "rectangle"
+  Triangle(_, _) -> "triangle"
+end
+
+shapes = [Circle(1.0), Rect(2, 3), Rect(4, 4), Triangle(3, 4)]
+
+shapes |> each(fn(s) = print("{name(s)}: {round(area(s), 2)}"))
+
+total = shapes |> map(area) |> sum
+print("total area: {round(total, 2)}")
+biggest = shapes |> sort_by(area) |> last |> unwrap
+print("biggest: {name(biggest)}")

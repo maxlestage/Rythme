@@ -1,0 +1,9 @@
+# A module: everything defined here can be used by files that `use` it.
+
+## Area of a rectangle.
+fn rectangle_area(width, height) = width * height
+
+## Distance between two points {x, y}.
+fn distance(a, b) = sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
+
+origin = {x: 0, y: 0}

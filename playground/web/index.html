@@ -1,0 +1,753 @@
+<title>Rythme Playground</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Try the Rythme programming language in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a two-voice score. The code on the left, its answer on the right,
+   the interpreter's own help underneath, like a coda. */
+:root {
+  --paper: #eef1f6;
+  --staff: #fafbfd;
+  --ink: #161b26;
+  --ink-soft: #505a6e;
+  --rule: #d4dae5;
+  --accent: #3245c2;
+  --accent-ink: #ffffff;
+  --accent-soft: #e1e5fa;
+  --err: #b4302a;
+  --warn: #8f5b07;
+  --ok: #1d7446;
+  --hint: #1b6a6f;
+  --tok-kw: #8a2e9a;
+  --tok-str: #1d7446;
+  --tok-num: #a1520a;
+  --tok-ctor: #1d6a8e;
+  --tok-com: #7a8396;
+  --tok-fn: #3245c2;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --code-size: 14px;
+  --code-line: 1.6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1118; --staff: #151a24; --ink: #e4e8f0; --ink-soft: #9ba4b6; --rule: #283043;
+    --accent: #8d9dff; --accent-ink: #0e1118; --accent-soft: #222a4b;
+    --err: #ff7b72; --warn: #e6b04c; --ok: #6fd49a; --hint: #6cc6ca;
+    --tok-kw: #d68cf0; --tok-str: #8fd6a8; --tok-num: #f0a65e; --tok-ctor: #7cc0e8; --tok-com: #6f788c; --tok-fn: #8d9dff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1118; --staff: #151a24; --ink: #e4e8f0; --ink-soft: #9ba4b6; --rule: #283043;
+  --accent: #8d9dff; --accent-ink: #0e1118; --accent-soft: #222a4b;
+  --err: #ff7b72; --warn: #e6b04c; --ok: #6fd49a; --hint: #6cc6ca;
+  --tok-kw: #d68cf0; --tok-str: #8fd6a8; --tok-num: #f0a65e; --tok-ctor: #7cc0e8; --tok-com: #6f788c; --tok-fn: #8d9dff;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+/* Show code exactly as it is typed: `|>` must not turn into a triangle. */
+code, pre, textarea, .kbd, .file, .topic, .search input, .gutter { font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font: 15px/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.page { max-width: 1240px; margin: 0 auto; display: grid; gap: 18px; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ----- header ----- */
+.masthead { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
+.brand { display: grid; gap: 4px; min-width: 0; }
+.wordmark {
+  font: 800 clamp(34px, 6vw, 52px)/0.95 var(--display);
+  letter-spacing: -0.02em; margin: 0; display: flex; align-items: baseline; gap: 14px;
+}
+.beats { display: inline-flex; gap: 6px; transform: translateY(-6px); }
+.beats i { width: 9px; height: 9px; border-radius: 50%; background: var(--rule); display: block; }
+.beats i:first-child { background: var(--accent); }
+body.running .beats i { animation: beat 0.8s infinite; }
+body.running .beats i:nth-child(2) { animation-delay: 0.2s; }
+body.running .beats i:nth-child(3) { animation-delay: 0.4s; }
+body.running .beats i:nth-child(4) { animation-delay: 0.6s; }
+@keyframes beat { 0%, 30% { background: var(--accent); } 31%, 100% { background: var(--rule); } }
+@media (prefers-reduced-motion: reduce) { body.running .beats i { animation: none; } }
+.tagline { margin: 0; color: var(--ink-soft); max-width: 62ch; text-wrap: balance; }
+.tagline code { font-family: var(--mono); font-size: 0.92em; color: var(--ink); }
+.masthead-tools { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.lang { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--staff); }
+.lang button { border: 0; background: transparent; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: 13px; letter-spacing: 0.04em; color: var(--ink-soft); }
+.lang button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.repo { color: var(--ink-soft); font-size: 14px; }
+.repo:hover { color: var(--accent); }
+
+/* ----- toolbar ----- */
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; }
+.toolbar label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-weight: 600; }
+.picker { display: flex; align-items: center; gap: 10px; }
+select {
+  border: 1px solid var(--rule); background: var(--staff); border-radius: 8px; padding: 7px 10px; min-width: 190px; max-width: 100%;
+}
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  border: 1px solid var(--rule); background: var(--staff); border-radius: 8px; padding: 7px 14px; cursor: pointer; font-weight: 500;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.stop { background: var(--err); border-color: var(--err); color: var(--staff); font-weight: 600; }
+.kbd { font: 500 11px var(--mono); opacity: 0.75; }
+
+/* ----- workspace ----- */
+.workspace { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 920px) { .workspace { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--staff); border: 1px solid var(--rule); border-radius: 10px; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 14px; border-bottom: 1px solid var(--rule); min-height: 40px; }
+.file { font: 600 13px var(--mono); }
+.file::before { content: "◆"; color: var(--accent); margin-right: 8px; font-size: 10px; vertical-align: 1px; }
+.status { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; text-align: right; }
+.status.bad { color: var(--err); }
+.status.good { color: var(--ok); }
+
+.editor { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); height: clamp(320px, 58vh, 560px); }
+.gutter {
+  font: var(--code-size)/var(--code-line) var(--mono); color: var(--tok-com); text-align: right; padding: 14px 10px 14px 14px;
+  user-select: none; overflow: hidden; border-right: 1px solid var(--rule); white-space: pre; font-variant-numeric: tabular-nums;
+}
+.code { position: relative; min-width: 0; }
+.code pre, .code textarea {
+  position: absolute; inset: 0; margin: 0; padding: 14px 16px; border: 0;
+  font: var(--code-size)/var(--code-line) var(--mono); tab-size: 2; white-space: pre; overflow: auto;
+  letter-spacing: 0; word-spacing: 0;
+}
+.code pre { pointer-events: none; color: var(--ink); }
+@media (max-width: 600px) { :root { --code-size: 16px; } }
+.code textarea { background: transparent; color: transparent; caret-color: var(--ink); resize: none; outline: none; }
+.code textarea::selection { background: var(--accent-soft); color: transparent; }
+.code textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-soft); }
+.t-kw { color: var(--tok-kw); font-weight: 600; }
+.t-str { color: var(--tok-str); }
+.t-num { color: var(--tok-num); }
+.t-ctor { color: var(--tok-ctor); }
+.t-com { color: var(--tok-com); font-style: italic; }
+.t-fn { color: var(--tok-fn); }
+.t-op { color: var(--ink-soft); }
+
+.output { margin: 0; padding: 14px 16px; font: 13.5px/1.55 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto; flex: 1; min-height: 200px; max-height: clamp(320px, 58vh, 560px); }
+.output .err { color: var(--err); font-weight: 600; }
+.output .warn { color: var(--warn); font-weight: 600; }
+.output .mark-err { color: var(--err); }
+.output .mark-warn { color: var(--warn); }
+.output .note { color: var(--ink-soft); }
+.output .help { color: var(--hint); }
+.output .src { color: var(--ink); }
+.output .pass { color: var(--ok); }
+.output .fail { color: var(--err); }
+.output .empty { color: var(--ink-soft); font-family: var(--body); font-size: 14px; }
+.explain { font: inherit; background: var(--accent-soft); color: var(--accent); border: 0; border-radius: 4px; padding: 0 5px; cursor: pointer; }
+.explain:hover { text-decoration: underline; }
+
+/* ----- help ----- */
+.help-section { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 760px) { .help-section { grid-template-columns: minmax(0, 1fr); } }
+.help-nav { display: grid; gap: 12px; align-content: start; }
+.help-nav h2 { font: 800 24px/1.1 var(--display); margin: 0; letter-spacing: -0.01em; }
+.help-nav p { margin: 0; color: var(--ink-soft); font-size: 14px; }
+.topics { display: flex; flex-wrap: wrap; gap: 6px; }
+.topic { border: 1px solid var(--rule); background: var(--staff); border-radius: 999px; padding: 3px 11px; cursor: pointer; font: 500 13px var(--mono); }
+.topic[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.search { display: flex; gap: 6px; }
+.search input { flex: 1; min-width: 0; border: 1px solid var(--rule); background: var(--staff); border-radius: 8px; padding: 7px 10px; font-family: var(--mono); font-size: 13px; }
+.help-text { margin: 0; background: var(--staff); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; font: 13.5px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto; max-height: 520px; min-width: 0; }
+
+.foot { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; color: var(--ink-soft); font-size: 13px; border-top: 1px solid var(--rule); padding-top: 14px; }
+.foot code { font-family: var(--mono); color: var(--ink); background: var(--staff); border: 1px solid var(--rule); border-radius: 6px; padding: 1px 6px; }
+.foot p { margin: 0; max-width: 70ch; }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="brand">
+      <h1 class="wordmark">Rythme <span class="beats" aria-hidden="true"><i></i><i></i><i></i><i></i></span></h1>
+      <p class="tagline" id="tagline"></p>
+    </div>
+    <div class="masthead-tools">
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" id="lang-en" aria-pressed="true">EN</button>
+        <button type="button" id="lang-fr" aria-pressed="false">FR</button>
+      </div>
+      <a class="repo" href="https://github.com/maxlestage/Rythme" target="_blank" rel="noopener">github.com/maxlestage/Rythme</a>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="picker">
+      <label for="example" id="example-label"></label>
+      <select id="example"></select>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn" id="check"></button>
+      <button type="button" class="btn" id="test"></button>
+      <button type="button" class="btn primary" id="run"></button>
+      <button type="button" class="btn stop" id="stop" hidden></button>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <section class="panel" aria-labelledby="file-name">
+      <div class="panel-head">
+        <span class="file" id="file-name">main.ry</span>
+        <span class="status" id="lines"></span>
+      </div>
+      <div class="editor">
+        <div class="gutter" id="gutter" aria-hidden="true">1</div>
+        <div class="code">
+          <pre id="highlight" aria-hidden="true"></pre>
+          <textarea id="source" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Rythme code"></textarea>
+        </div>
+      </div>
+    </section>
+    <section class="panel" aria-labelledby="output-title">
+      <div class="panel-head">
+        <span class="file" id="output-title"></span>
+        <span class="status" id="status" role="status"></span>
+      </div>
+      <pre class="output" id="output"></pre>
+    </section>
+  </div>
+
+  <section class="help-section" aria-labelledby="help-title">
+    <div class="help-nav">
+      <h2 id="help-title"></h2>
+      <p id="help-intro"></p>
+      <div class="topics" id="topics"></div>
+      <form class="search" id="search-form">
+        <input id="search" type="text" spellcheck="false" autocomplete="off">
+        <button type="submit" class="btn" id="search-go"></button>
+      </form>
+    </div>
+    <pre class="help-text" id="help-text" tabindex="0"></pre>
+  </section>
+
+  <footer class="foot">
+    <p id="install"></p>
+    <p id="limits"></p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ----- texts of the page, in both languages -----
+  const UI = {
+    en: {
+      tagline: "A simple, purely functional language where every error explains itself. Edit the code, press <code>Run</code>.",
+      example: "Example", run: "Run", check: "Check", test: "Test", stop: "Stop",
+      output: "Output", help: "Help",
+      helpIntro: "The same help as the rythme command, given by the interpreter itself.",
+      search: "a function or an error code", searchGo: "Show",
+      welcome: "Welcome", loading: "Loading the interpreter…", loadFailed: "The interpreter could not be loaded: ",
+      running: "running…", stopped: "Stopped.", ranIn: (ms) => `ran in ${ms} ms`, failedIn: (ms) => `stopped with an error after ${ms} ms`,
+      nothing: "The program printed nothing.",
+      tooDeep: "The browser ran out of stack: too many nested calls. Make the function tail-recursive, or use fold, map or filter. The installed rythme allows about 200,000 nested calls.",
+      lines: (n) => `${n} line${n === 1 ? "" : "s"}`,
+      install: "Install: <code>cargo install --git https://github.com/maxlestage/Rythme</code>, then <code>rythme hello.ry</code>.",
+      limits: "In the browser, files cannot be read, input() returns an empty text, and nested calls stop at 600 (tail calls have no limit).",
+      explain: "explain",
+    },
+    fr: {
+      tagline: "Un langage simple, purement fonctionnel, où chaque erreur s'explique d'elle-même. Modifiez le code, appuyez sur <code>Lancer</code>.",
+      example: "Exemple", run: "Lancer", check: "Vérifier", test: "Tester", stop: "Arrêter",
+      output: "Résultat", help: "Aide",
+      helpIntro: "La même aide que la commande rythme, donnée par l'interpréteur lui-même.",
+      search: "une fonction ou un code d'erreur", searchGo: "Afficher",
+      welcome: "Bienvenue", loading: "Chargement de l'interpréteur…", loadFailed: "L'interpréteur n'a pas pu être chargé : ",
+      running: "en cours…", stopped: "Arrêté.", ranIn: (ms) => `exécuté en ${ms} ms`, failedIn: (ms) => `arrêté par une erreur après ${ms} ms`,
+      nothing: "Le programme n'a rien affiché.",
+      tooDeep: "Le navigateur manque de pile : trop d'appels imbriqués. Rendez la fonction récursive terminale, ou utilisez fold, map ou filter. Le rythme installé permet environ 200 000 appels imbriqués.",
+      lines: (n) => `${n} ligne${n > 1 ? "s" : ""}`,
+      install: "Installer : <code>cargo install --git https://github.com/maxlestage/Rythme</code>, puis <code>rythme bonjour.ry</code>.",
+      limits: "Dans le navigateur, les fichiers ne peuvent pas être lus, input() renvoie un texte vide, et les appels imbriqués s'arrêtent à 600 (les appels terminaux n'ont pas de limite).",
+      explain: "expliquer",
+    },
+  };
+
+  const WELCOME = {
+    en: `# Welcome to Rythme! Press Run (Ctrl+Enter).
+# Values never change, everything is a function,
+# and every error explains itself.
+
+fn square(x) = x * x
+
+[1, 2, 3, 4, 5]
+  |> filter(is_odd)
+  |> map(square)
+  |> print
+
+type Shape = Circle(radius) | Rect(width, height)
+
+fn area(Circle(r)) = round(pi * r * r, 2)
+fn area(Rect(w, h)) = w * h
+
+print(map([Circle(1.0), Rect(2, 3)], area))
+
+fn safe_divide(a, b) =
+  if b == 0 then Err("cannot divide by zero") else Ok(a / b)
+
+print(safe_divide(10, 4), safe_divide(1, 0))
+
+# Make a mistake on purpose: change square to sqaure above, then Run.
+`,
+    fr: `# Bienvenue dans Rythme ! Appuyez sur Lancer (Ctrl+Entrée).
+# Les valeurs ne changent jamais, tout est fonction,
+# et chaque erreur s'explique d'elle-même.
+
+fn carre(x) = x * x
+
+[1, 2, 3, 4, 5]
+  |> filter(is_odd)
+  |> map(carre)
+  |> print
+
+type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+
+fn aire(Cercle(r)) = round(pi * r * r, 2)
+fn aire(Rect(l, h)) = l * h
+
+print(map([Cercle(1.0), Rect(2, 3)], aire))
+
+fn diviser(a, b) =
+  if b == 0 then Err("division par zéro impossible") else Ok(a / b)
+
+print(diviser(10, 4), diviser(1, 0))
+
+# Faites une erreur exprès : remplacez carre par caree plus haut, puis Lancer.
+`,
+  };
+
+  const TOPICS = ["start", "syntax", "functions", "lists", "text", "records", "types", "match", "errors", "functional", "tests", "builtins"];
+  const KEYWORDS = new Set(["fn", "if", "then", "else", "match", "end", "do", "type", "test", "use", "and", "or", "not", "true", "false"]);
+  const BUILTINS = new Set(("print debug text input type_of help assert assert_eq fail args exit time random abs min max sqrt pow floor ceil round int float sin cos tan log exp is_even is_odd len upper lower trim split join contains starts_with ends_with replace chars lines repeat parse_int parse_float map filter fold each sum product first last rest get push reverse sort sort_by unique slice take drop zip enumerate any all find count index_of flatten flat_map partition group_by is_empty keys values entries has put remove unwrap unwrap_or is_some is_none is_ok is_err read_file write_file file_exists pi").split(" "));
+
+  const $ = (id) => document.getElementById(id);
+  const source = $("source"), highlight = $("highlight"), gutter = $("gutter"), output = $("output");
+  const statusEl = $("status"), runBtn = $("run"), stopBtn = $("stop"), checkBtn = $("check"), testBtn = $("test");
+  const exampleSel = $("example"), helpText = $("help-text");
+
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch { /* storage may be blocked */ } },
+  };
+
+  let lang = store.get("rythme-lang") || ((navigator.language || "en").toLowerCase().startsWith("fr") ? "fr" : "en");
+  let examples = {};
+  let currentExample = "welcome";
+  let currentTopic = "start";
+  let wasmModule = null;
+  let worker = null;
+  let runId = 0;
+  let lastMode = 0;
+
+  // ----- editor: highlighting, line numbers -----
+  const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  function colorize(code) {
+    let out = "";
+    let i = 0;
+    const n = code.length;
+    const span = (cls, text) => `<span class="${cls}">${escapeHtml(text)}</span>`;
+    while (i < n) {
+      const c = code[i];
+      if (c === "#") {
+        let j = code.indexOf("\n", i);
+        if (j < 0) j = n;
+        out += span("t-com", code.slice(i, j));
+        i = j;
+      } else if (c === '"') {
+        let j = i + 1;
+        while (j < n && code[j] !== '"') j += code[j] === "\\" ? 2 : 1;
+        j = Math.min(j + 1, n);
+        out += span("t-str", code.slice(i, j));
+        i = j;
+      } else if (/[0-9]/.test(c)) {
+        let j = i + 1;
+        while (j < n && (/[0-9a-fA-FxX_]/.test(code[j]) || (code[j] === "." && /[0-9]/.test(code[j + 1] || "")))) j++;
+        out += span("t-num", code.slice(i, j));
+        i = j;
+      } else if (/[\p{L}_]/u.test(c)) {
+        let j = i + 1;
+        while (j < n && /[\p{L}\p{N}_]/u.test(code[j])) j++;
+        const word = code.slice(i, j);
+        if (KEYWORDS.has(word)) out += span("t-kw", word);
+        else if (/^\p{Lu}/u.test(word)) out += span("t-ctor", word);
+        else if (BUILTINS.has(word)) out += span("t-fn", word);
+        else out += escapeHtml(word);
+        i = j;
+      } else if (c === "|" && code[i + 1] === ">") {
+        out += span("t-op", "|>");
+        i += 2;
+      } else if (c === "-" && code[i + 1] === ">") {
+        out += span("t-op", "->");
+        i += 2;
+      } else {
+        out += escapeHtml(c);
+        i += 1;
+      }
+    }
+    // A final new line needs a character after it to be displayed.
+    return out + "\n";
+  }
+
+  function refreshEditor() {
+    const code = source.value;
+    highlight.innerHTML = colorize(code);
+    const count = code.split("\n").length;
+    let nums = "";
+    for (let k = 1; k <= count; k++) nums += k + "\n";
+    gutter.textContent = nums;
+    $("lines").textContent = UI[lang].lines(count);
+    syncScroll();
+  }
+
+  function syncScroll() {
+    highlight.scrollTop = source.scrollTop;
+    highlight.scrollLeft = source.scrollLeft;
+    gutter.scrollTop = source.scrollTop;
+  }
+
+  function insertText(text) {
+    const { selectionStart: s, selectionEnd: e, value } = source;
+    source.value = value.slice(0, s) + text + value.slice(e);
+    source.selectionStart = source.selectionEnd = s + text.length;
+    onEdit();
+  }
+
+  function onEdit() {
+    refreshEditor();
+    store.set("rythme-code", source.value);
+    currentExample = "custom";
+  }
+
+  source.addEventListener("input", onEdit);
+  source.addEventListener("scroll", syncScroll);
+  source.addEventListener("keydown", (ev) => {
+    if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") {
+      ev.preventDefault();
+      execute(ev.shiftKey ? 2 : 0);
+    } else if (ev.key === "Tab" && !ev.shiftKey) {
+      ev.preventDefault();
+      insertText("  ");
+    } else if (ev.key === "Enter" && !ev.ctrlKey && !ev.metaKey) {
+      // Keep the indentation, and indent after a line that opens a block.
+      const before = source.value.slice(0, source.selectionStart);
+      const line = before.slice(before.lastIndexOf("\n") + 1);
+      let indent = line.match(/^\s*/)[0];
+      if (/^\s*(fn\s+\S+\s*\(.*\)(\s+if\s+.*)?|test\s+".*")\s*$|\b(do|match\s+.+)\s*$|=\s*$/.test(line)) indent += "  ";
+      ev.preventDefault();
+      insertText("\n" + indent);
+    }
+  });
+
+  // ----- the interpreter, compiled to WebAssembly -----
+  function callInterpreter(instance, code, mode) {
+    const e = instance.exports;
+    const bytes = new TextEncoder().encode(code);
+    const ptr = e.rythme_alloc(bytes.length);
+    new Uint8Array(e.memory.buffer, ptr, bytes.length).set(bytes);
+    const at = e.rythme_run(ptr, bytes.length, mode, lang === "fr" ? 1 : 0);
+    return new TextDecoder().decode(new Uint8Array(e.memory.buffer, at, e.rythme_result_len()));
+  }
+  const imports = { env: { rythme_now: () => Date.now() } };
+
+  // Programs run in a worker, so that a program that never stops can be stopped.
+  const workerSource = `
+    let module = null;
+    const imports = { env: { rythme_now: () => Date.now() } };
+    ${callInterpreter.toString()}
+    let lang = "en";
+    onmessage = async (msg) => {
+      const d = msg.data;
+      if (d.module) { module = d.module; return; }
+      lang = d.lang;
+      const start = performance.now();
+      try {
+        const instance = await WebAssembly.instantiate(module, imports);
+        const text = callInterpreter(instance, d.code, d.mode);
+        postMessage({ id: d.id, text, ms: performance.now() - start });
+      } catch (err) {
+        postMessage({ id: d.id, trap: String(err), ms: performance.now() - start });
+      }
+    };`;
+
+  function newWorker() {
+    if (worker) worker.terminate();
+    worker = new Worker(URL.createObjectURL(new Blob([workerSource], { type: "text/javascript" })));
+    worker.postMessage({ module: wasmModule });
+    worker.onmessage = (msg) => finish(msg.data);
+  }
+
+  function setRunning(on) {
+    document.body.classList.toggle("running", on);
+    runBtn.hidden = on;
+    stopBtn.hidden = !on;
+    checkBtn.disabled = on;
+    testBtn.disabled = on;
+  }
+
+  function execute(mode) {
+    if (!wasmModule) return;
+    lastMode = mode;
+    runId += 1;
+    setRunning(true);
+    statusEl.className = "status";
+    statusEl.textContent = UI[lang].running;
+    worker.postMessage({ id: runId, code: source.value, mode, lang });
+  }
+
+  function finish(result) {
+    if (result.id !== runId) return;
+    setRunning(false);
+    const ms = Math.max(1, Math.round(result.ms));
+    if (result.trap) {
+      renderOutput("\u0001" + UI[lang].tooDeep + (/stack/i.test(result.trap) ? "" : "\n" + result.trap) + "\u0002");
+      statusEl.className = "status bad";
+      statusEl.textContent = UI[lang].failedIn(ms);
+      newWorker();
+      return;
+    }
+    renderOutput(result.text);
+    const failed = /\u0001(error|erreur)\[/.test(result.text) || /✗/.test(result.text);
+    statusEl.className = failed ? "status bad" : "status good";
+    statusEl.textContent = failed ? UI[lang].failedIn(ms) : UI[lang].ranIn(ms);
+  }
+
+  stopBtn.addEventListener("click", () => {
+    runId += 1;
+    newWorker();
+    setRunning(false);
+    statusEl.className = "status bad";
+    statusEl.textContent = UI[lang].stopped;
+  });
+  runBtn.addEventListener("click", () => execute(0));
+  checkBtn.addEventListener("click", () => execute(1));
+  testBtn.addEventListener("click", () => execute(2));
+
+  // ----- output: messages styled like in a terminal -----
+  function lineClass(line) {
+    if (/^(error|erreur)(\[|:)/.test(line)) return "err";
+    if (/^(warning|avertissement)(\[|:)/.test(line)) return "warn";
+    if (/^\s*=\s*(help|aide)/.test(line)) return "help";
+    if (/^\s*=\s*/.test(line)) return "note";
+    if (/^\s*-->/.test(line)) return "note";
+    return null;
+  }
+
+  function renderLine(line, inError, severity) {
+    const frag = document.createDocumentFragment();
+    let cls = inError ? lineClass(line) : null;
+    if (!inError && /^\s*✓/.test(line)) cls = "pass";
+    if (!inError && /^\s*✗/.test(line)) cls = "fail";
+    // Underline marks: `  |    ^^^^ label`
+    const marks = inError && line.match(/^(\s*\|\s*)([\s]*)([\^-]+)(.*)$/);
+    if (marks) {
+      frag.append(text(marks[1] + marks[2], "note"));
+      frag.append(text(marks[3] + marks[4], marks[3][0] === "^" ? (severity === "warn" ? "mark-warn" : "mark-err") : "note"));
+      return frag;
+    }
+    const explain = line.match(/^(.*`)(rythme explain )([EW]\d{3})(`.*)$/);
+    if (explain) {
+      frag.append(text(explain[1] + explain[2], "note"));
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "explain";
+      b.textContent = explain[3];
+      b.title = UI[lang].explain + " " + explain[3];
+      b.addEventListener("click", () => showHelp(explain[3], true));
+      frag.append(b, text(explain[4], "note"));
+      return frag;
+    }
+    frag.append(text(line, cls || (inError ? "src" : null)));
+    return frag;
+  }
+
+  function text(s, cls) {
+    if (!cls) return document.createTextNode(s);
+    const el = document.createElement("span");
+    el.className = cls;
+    el.textContent = s;
+    return el;
+  }
+
+  function renderOutput(raw) {
+    output.textContent = "";
+    if (!raw.replace(/[\u0001\u0002\s]/g, "")) {
+      output.append(text(UI[lang].nothing, "empty"));
+      return;
+    }
+    const parts = raw.split(/(\u0001[\s\S]*?\u0002)/);
+    for (const part of parts) {
+      if (!part) continue;
+      const inError = part.startsWith("\u0001");
+      const body = inError ? part.slice(1, -1) : part;
+      const severity = /^(warning|avertissement)/.test(body) ? "warn" : "err";
+      const lines = body.replace(/\n+$/, "").split("\n");
+      lines.forEach((line, k) => {
+        output.append(renderLine(line, inError, severity));
+        if (k < lines.length - 1 || inError) output.append("\n");
+      });
+      if (!inError && body.endsWith("\n")) output.append("\n");
+    }
+  }
+
+  // ----- help, from the interpreter itself -----
+  let helpInstance = null;
+  async function showHelp(name, scroll) {
+    if (!wasmModule) return;
+    currentTopic = name;
+    for (const b of document.querySelectorAll(".topic")) b.setAttribute("aria-pressed", String(b.dataset.topic === name));
+    try {
+      helpInstance = helpInstance || await WebAssembly.instantiate(wasmModule, imports);
+      const literal = '"' + name.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\{/g, "\\{").replace(/\n/g, " ") + '"';
+      const raw = callInterpreter(helpInstance, `help(${literal})`, 0);
+      helpText.textContent = raw.replace(/[\u0001\u0002]/g, "").trim();
+    } catch (err) {
+      helpInstance = null;
+      helpText.textContent = String(err);
+    }
+    if (scroll) helpText.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  const topicsEl = $("topics");
+  for (const t of TOPICS) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "topic";
+    b.dataset.topic = t;
+    b.textContent = t;
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", () => showHelp(t, false));
+    topicsEl.append(b);
+  }
+  $("search-form").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const q = $("search").value.trim();
+    if (q) showHelp(q, false);
+  });
+
+  // ----- examples -----
+  function fillExamples() {
+    const keep = exampleSel.value || currentExample;
+    exampleSel.textContent = "";
+    const add = (value, label) => {
+      const o = document.createElement("option");
+      o.value = value;
+      o.textContent = label;
+      exampleSel.append(o);
+    };
+    add("welcome", UI[lang].welcome);
+    for (const name of Object.keys(examples)) add(name, name + ".ry");
+    if (currentExample === "custom") add("custom", "main.ry");
+    exampleSel.value = [...exampleSel.options].some((o) => o.value === keep) ? keep : "welcome";
+  }
+
+  function loadExample(name) {
+    currentExample = name;
+    source.value = name === "welcome" ? WELCOME[lang] : examples[name] || "";
+    $("file-name").textContent = name === "welcome" ? "main.ry" : name + ".ry";
+    refreshEditor();
+    store.set("rythme-code", "");
+    execute(name === "testing" ? 2 : 0);
+  }
+
+  exampleSel.addEventListener("change", () => {
+    if (exampleSel.value !== "custom") loadExample(exampleSel.value);
+  });
+
+  // ----- language -----
+  function applyLanguage() {
+    const t = UI[lang];
+    document.documentElement.lang = lang;
+    $("lang-en").setAttribute("aria-pressed", String(lang === "en"));
+    $("lang-fr").setAttribute("aria-pressed", String(lang === "fr"));
+    $("tagline").innerHTML = t.tagline;
+    $("example-label").textContent = t.example;
+    const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+    runBtn.innerHTML = `${t.run} <span class="kbd">${mac ? "⌘" : "Ctrl+"}Enter</span>`;
+    checkBtn.textContent = t.check;
+    testBtn.textContent = t.test;
+    stopBtn.textContent = t.stop;
+    $("output-title").textContent = t.output;
+    $("help-title").textContent = t.help;
+    $("help-intro").textContent = t.helpIntro;
+    $("search").placeholder = t.search;
+    $("search").setAttribute("aria-label", t.search);
+    $("search-go").textContent = t.searchGo;
+    $("install").innerHTML = t.install;
+    $("limits").textContent = t.limits;
+    fillExamples();
+    refreshEditor();
+  }
+
+  function setLanguage(next) {
+    if (next === lang) return;
+    lang = next;
+    store.set("rythme-lang", lang);
+    applyLanguage();
+    if (currentExample === "welcome") loadExample("welcome");
+    else if (wasmModule) execute(lastMode);
+    showHelp(currentTopic, false);
+  }
+  $("lang-en").addEventListener("click", () => setLanguage("en"));
+  $("lang-fr").addEventListener("click", () => setLanguage("fr"));
+
+  // ----- start -----
+  async function start() {
+    applyLanguage();
+    const saved = store.get("rythme-code");
+    if (saved) {
+      currentExample = "custom";
+      source.value = saved;
+    } else {
+      source.value = WELCOME[lang];
+    }
+    fillExamples();
+    refreshEditor();
+    output.textContent = "";
+    output.append(text(UI[lang].loading, "empty"));
+    try {
+      const response = fetch("rythme.wasm");
+      try {
+        wasmModule = await WebAssembly.compileStreaming(response);
+      } catch {
+        wasmModule = await WebAssembly.compile(await (await fetch("rythme.wasm")).arrayBuffer());
+      }
+    } catch (err) {
+      output.textContent = "";
+      output.append(text(UI[lang].loadFailed + err, "err"));
+      return;
+    }
+    newWorker();
+    try {
+      examples = await (await fetch("examples.json")).json();
+      fillExamples();
+    } catch {
+      examples = {};
+    }
+    execute(0);
+    showHelp("start", false);
+  }
+
+  start();
+})();
+</script>

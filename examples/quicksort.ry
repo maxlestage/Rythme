@@ -1,0 +1,8 @@
+# Quicksort in four lines: patterns, filter and list spreading.
+
+fn quicksort([]) = []
+fn quicksort([pivot, ..rest]) =
+  quicksort(filter(rest, fn(x) = x < pivot)) + [pivot] + quicksort(filter(rest, fn(x) = x >= pivot))
+
+print(quicksort([33, 4, 15, 8, 42, 16, 23, 4]))
+print(quicksort(["pear", "apple", "fig"]))

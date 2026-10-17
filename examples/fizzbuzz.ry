@@ -1,0 +1,10 @@
+# FizzBuzz without any loop: a function per number, applied to a range.
+
+fn fizzbuzz(n) = match [n % 3, n % 5]
+  [0, 0] -> "FizzBuzz"
+  [0, _] -> "Fizz"
+  [_, 0] -> "Buzz"
+  _ -> text(n)
+end
+
+1..15 |> map(fizzbuzz) |> each(print)
