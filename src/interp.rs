@@ -222,7 +222,7 @@ impl Interp {
 
     pub fn define_fn(&mut self, def: &Rc<FnDef>) {
         if let Some(name) = def.name {
-            let clo = Closure { def: def.clone(), env: Env::empty(), bind_self: false };
+            let clo = Closure { def: def.clone(), env: Env::empty(), self_name: None };
             self.globals.insert(name, Value::Func(Rc::new(clo)));
         }
     }
@@ -368,7 +368,7 @@ impl Interp {
                 }
                 Ok(Value::Record(Rc::new(r)))
             }
-            ExprKind::Lambda(def) => Ok(Value::Func(Rc::new(Closure { def: def.clone(), env: env.clone(), bind_self: false }))),
+            ExprKind::Lambda(def) => Ok(Value::Func(Rc::new(Closure { def: def.clone(), env: env.clone(), self_name: None }))),
             ExprKind::Field(obj, name, nspan) => {
                 let v = self.eval(obj, env)?;
                 Ok(self.field(&v, name, *nspan)?)
@@ -498,7 +498,13 @@ impl Interp {
         for (i, s) in stmts.iter().enumerate() {
             match s {
                 Stmt::Let(p, x) => {
-                    let v = self.eval(x, &env)?;
+                    let v = match (&p.kind, &x.kind) {
+                        // `name = fn(...) = ...` can call itself by its name.
+                        (PatKind::Bind(name), ExprKind::Lambda(def)) => {
+                            Value::Func(Rc::new(Closure { def: def.clone(), env: env.clone(), self_name: Some(*name) }))
+                        }
+                        _ => self.eval(x, &env)?,
+                    };
                     let mut binds = Vec::new();
                     if !match_pattern(p, &v, &mut binds) {
                         return Err(pattern_mismatch(p, &v).into());
@@ -514,7 +520,7 @@ impl Interp {
                     self.eval(x, &env)?;
                 }
                 Stmt::Fn(def) => {
-                    let clo = Closure { def: def.clone(), env: env.clone(), bind_self: true };
+                    let clo = Closure { def: def.clone(), env: env.clone(), self_name: def.name };
                     if let Some(name) = def.name {
                         env = env.bind(name, Value::Func(Rc::new(clo)));
                     }
@@ -659,10 +665,8 @@ impl Interp {
             return Err(fn_arity_error(def, args.len(), span));
         }
         let mut base = clo.env.clone();
-        if clo.bind_self {
-            if let Some(n) = def.name {
-                base = base.bind(n, Value::Func(clo.clone()));
-            }
+        if let Some(n) = clo.self_name {
+            base = base.bind(n, Value::Func(clo.clone()));
         }
         let mut binds = Vec::new();
         'clauses: for (ci, clause) in def.clauses.iter().enumerate() {

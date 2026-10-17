@@ -511,8 +511,14 @@ impl<'a> Checker<'a> {
         for s in stmts {
             match s {
                 Stmt::Let(p, e) => {
-                    self.expr(e);
-                    self.bind_pattern(p, true);
+                    if let (PatKind::Bind(_), ExprKind::Lambda(_)) = (&p.kind, &e.kind) {
+                        // `name = fn(...)` sees its own name, so that it can be recursive.
+                        self.bind_pattern(p, true);
+                        self.expr(e);
+                    } else {
+                        self.expr(e);
+                        self.bind_pattern(p, true);
+                    }
                 }
                 Stmt::Expr(e) => self.expr(e),
                 Stmt::Fn(def) => {

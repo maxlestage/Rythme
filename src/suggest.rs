@@ -30,7 +30,9 @@ where
 {
     let len = word.chars().count();
     let max = match len {
-        0..=2 => 1,
+        // Every one-letter name is one edit away from any other.
+        0..=1 => return None,
+        2 => 1,
         3..=5 => 2,
         _ => 3,
     };
