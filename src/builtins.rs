@@ -2899,7 +2899,7 @@ fn sort_pairs(pairs: &mut [(Value, Value)], name: &str, span: Span) -> Fallible<
     });
     let bad = pairs.windows(2).find(|w| w[0].0.compare(&w[1].0).is_none()).map(|w| (w[0].0.clone(), w[1].0.clone()));
     if let Some((x, y)) = bad {
-        return Err(Diagnostic::error(
+        let mut d = Diagnostic::error(
             "E005",
             t!("`{name}` cannot compare {} and {}", "`{name}` ne peut pas comparer {} et {}", x.describe(), y.describe()),
         )
@@ -2907,8 +2907,11 @@ fn sort_pairs(pairs: &mut [(Value, Value)], name: &str, span: Span) -> Fallible<
         .help(t!(
             "all the elements must be of the same kind: all numbers, or all texts...",
             "tous les éléments doivent être de même nature : tous des nombres, ou tous des textes..."
-        ))
-        .boxed());
+        ));
+        if let Some(note) = x.homonym_types(&y) {
+            d = d.note(note);
+        }
+        return Err(d.boxed());
     }
     Ok(())
 }

@@ -135,6 +135,45 @@ behind `BASE_PATH`.
   opened file stay in `localStorage`; *Open* reads a `.ry` file, *Download* saves the
   program as one. Everything works offline.
 
+### Sharing links
+
+*Share*, in the playground, makes a link that opens the program: the program is in
+the fragment of the link itself (`#code=…`), which browsers never send to a server.
+Nothing is stored anywhere, so the links work on Heroku, on GitHub Pages and offline
+alike.
+
+- **Format.** `#code=1:` then the program compressed with deflate (raw, RFC 1951),
+  or `#code=0:` then the program as it is (UTF-8), both in URL-safe base64; *Share*
+  takes the shorter. `&mode=test` follows when Run runs the tests (`testing.ry`).
+  `#code=` followed by anything else is the program percent-encoded: the links of
+  *Learn* and of the home page, written by `pages::playground_link`, which stay
+  readable in the address bar.
+- **Compression.** The browser's `CompressionStream("deflate-raw")`; without it, the
+  plain form. To read a link, `DecompressionStream`, else a small inflate written in
+  `playground.js` (stored, fixed and dynamic blocks). No library, no inline script:
+  the Content-Security-Policy does not change.
+- **Copying.** The Clipboard API; when it says no, the link is shown selected in a
+  field to copy by hand (the field is always there, with *Copy* and *Close*;
+  Escape closes it). On a phone (`pointer: coarse`) with the Web Share API, the
+  share sheet of the system.
+- **Sizes.** A link holds at most 8,000 characters of program (packed): past that,
+  *Share* says so and suggests *Download*. A link longer than 32,000 characters, a
+  program over 200 KB once unpacked (checked while decompressing) or a damaged link
+  are refused with a notice, and the draft is shown.
+- **The draft.** A program opened from a link is shown and run without touching the
+  draft saved in this browser: a notice says so, with *Back to my draft*. The first
+  change makes it the draft (and takes the program out of the address); until then
+  it stays in the address, so a reload shows it again. A link pasted while the
+  playground is open (only the fragment changes) opens too. A text shared with the
+  installed app (`share_target`) becomes such a link.
+
+`tests/pwa/check.js` shares, opens the link in another page offline, compares the
+program and its output, checks the draft, the reload, *Back to my draft*, a change,
+the test mode, a long program, a damaged link, the share sheet of a phone and the
+browsers without compression streams (with links made by zlib: stored, fixed and
+dynamic blocks); `layout.js` checks the notice and the link in every language,
+theme and width.
+
 On GitHub Pages, `sw.js` comes with a cache of 10 minutes rather than `no-cache`:
 browsers check service workers past their HTTP cache (`updateViaCache: "none"`).
 

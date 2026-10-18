@@ -693,6 +693,11 @@ pub fn playground_ui(t: &Texts) -> String {
         ("formatted", t.pg_formatted),
         ("alreadyFormatted", t.pg_already_formatted),
         ("notFormatted", t.pg_not_formatted),
+        ("shareCopied", t.pg_share_copied),
+        ("shareShared", t.pg_share_shared),
+        ("shareSelect", t.pg_share_select),
+        ("shareTooLong", t.pg_share_too_long),
+        ("shareBroken", t.pg_share_broken),
     ];
     let pairs: Vec<String> = fields.iter().map(|(k, v)| format!("{}:{}", json_string(k), json_string(v))).collect();
     format!("{{{}}}", pairs.join(","))
@@ -773,6 +778,17 @@ pub fn playground(ctx: &Ctx) -> Page {
                                     .text(t.pg_save),
                             )
                             .child(
+                                button()
+                                    .class("btn btn--ghost btn--sm")
+                                    .attr("type", "button")
+                                    .id("share")
+                                    .attr("title", t.pg_share_title)
+                                    .attr("aria-controls", "share-box")
+                                    .attr("aria-expanded", "false")
+                                    .attr("hidden", "")
+                                    .text(t.pg_share),
+                            )
+                            .child(
                                 input()
                                     .attr("type", "file")
                                     .id("open-file")
@@ -846,12 +862,53 @@ pub fn playground(ctx: &Ctx) -> Page {
         .child(page_head(t.pg_title, t.pg_lead))
         .child(noscript().child(p().class("note note--box").text(t.pg_noscript)))
         .child(toolbar)
+        .child(shared_note(t))
+        .child(share_box(t))
         .child(workspace)
         .child(help)
         .child(p().class("note").text(t.pg_limits))
         .child(p().class("note").text(t.pg_offline));
     layout(ctx, &format!("{} — Rythme", t.pg_title), t.pg_lead, content)
         .head(format!(r#"<script src="{}" defer=""></script>"#, ctx.asset("/playground.js")))
+}
+
+/// Shown by `playground.js` when the program comes from a link (`#code=…`): the draft
+/// saved in this browser is kept until the program is changed; the button brings it
+/// back.
+fn shared_note(t: &Texts) -> Element {
+    div()
+        .class("note note--box shared")
+        .id("shared-note")
+        .attr("role", "status")
+        .attr("hidden", "")
+        .child(p().id("shared-text").text(t.pg_shared_note))
+        .child(button().class("btn btn--sm").attr("type", "button").id("shared-back").text(t.pg_shared_back))
+}
+
+/// The link made by Share (`playground.js`): what happened to it (copied, shared, to
+/// copy by hand, too long), and the link itself in a field, ready to select.
+fn share_box(t: &Texts) -> Element {
+    div()
+        .class("note note--box share")
+        .id("share-box")
+        .attr("hidden", "")
+        .child(p().class("share__msg").id("share-msg").attr("role", "status").attr("aria-live", "polite"))
+        .child(
+            div()
+                .class("share__row")
+                .id("share-row")
+                .child(label().class("share__label").attr("for", "share-link").text(t.pg_share_link))
+                .child(
+                    input()
+                        .id("share-link")
+                        .attr("type", "url")
+                        .attr("readonly", "")
+                        .attr("spellcheck", "false")
+                        .attr("autocomplete", "off"),
+                )
+                .child(button().class("btn btn--sm").attr("type", "button").id("share-copy").text(t.pg_share_copy)),
+        )
+        .child(button().class("btn btn--ghost btn--sm share__close").attr("type", "button").id("share-close").text(t.pg_share_close))
 }
 
 // ----- Teach ------------------------------------------------------------------------------
@@ -957,5 +1014,36 @@ mod tests {
     fn encodes_like_javascript() {
         assert_eq!(percent_encode("a b\n|>é"), "a%20b%0A%7C%3E%C3%A9");
         assert_eq!(percent_encode("f(x)*2"), "f(x)*2");
+    }
+
+    /// Every text given to `playground.js` (`data-ui`) is used by it, the texts of
+    /// sharing too; and the elements it looks for are in the page.
+    #[test]
+    fn the_playground_script_finds_its_texts_and_elements() {
+        let js = include_str!("../public/playground.js");
+        let ui = playground_ui(Lang::En.texts());
+        let keys: Vec<&str> =
+            ui.trim_matches(['{', '}']).split("\",\"").map(|pair| pair.trim_matches('"').split('"').next().unwrap()).collect();
+        assert!(keys.contains(&"shareTooLong") && keys.contains(&"shareBroken"), "{keys:?}");
+        for key in keys {
+            assert!(js.contains(&format!("UI.{key}")) || js.contains(&format!("TEXTS.{key}")), "playground.js does not use {key}");
+        }
+        let page =
+            playground(&Ctx { route: Route::new(Lang::En, PageKind::Playground), origin: String::new(), version: String::new() }).render();
+        for id in [
+            "share",
+            "share-box",
+            "share-msg",
+            "share-row",
+            "share-link",
+            "share-copy",
+            "share-close",
+            "shared-note",
+            "shared-text",
+            "shared-back",
+        ] {
+            assert!(js.contains(&format!("$(\"{id}\")")), "playground.js does not use #{id}");
+            assert!(page.contains(&format!("id=\"{id}\"")), "the playground has no #{id}");
+        }
     }
 }

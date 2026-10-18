@@ -203,7 +203,15 @@ impl Interp {
         let option = Sym::new("Option");
         let result = Sym::new("Result");
         let ctor = |t: Sym, n: &str, fields: &[&str], index: usize| {
-            Rc::new(CtorInfo { type_name: t, name: Sym::new(n), fields: fields.iter().map(|f| Sym::new(f)).collect(), index, doc: None })
+            Rc::new(CtorInfo {
+                type_name: t,
+                name: Sym::new(n),
+                id: Sym::new(n),
+                type_id: t,
+                fields: fields.iter().map(|f| Sym::new(f)).collect(),
+                index,
+                doc: None,
+            })
         };
         // In the order of `<`, as in Rust: `None < Some(x)`, `Ok(x) < Err(e)`.
         let some = ctor(option, "Some", &["value"], 1);
@@ -330,7 +338,15 @@ impl Interp {
     pub fn register_type(&mut self, t: &TypeDef) {
         let mut ctors = Vec::new();
         for (index, v) in t.variants.iter().enumerate() {
-            let info = Rc::new(CtorInfo { type_name: t.name, name: v.name, fields: v.fields.clone(), index, doc: t.doc.clone() });
+            let info = Rc::new(CtorInfo {
+                type_name: t.name,
+                name: v.name,
+                id: self.stored(v.name),
+                type_id: self.stored(t.name),
+                fields: v.fields.clone(),
+                index,
+                doc: t.doc.clone(),
+            });
             let value = if v.fields.is_empty() {
                 Value::Variant(Rc::new(Variant { ctor: info.clone(), fields: Vec::new() }))
             } else {
@@ -404,7 +420,7 @@ impl Interp {
     /// Gives the names of a top-level definition `pattern = value`.
     pub fn bind_global(&mut self, pat: &Pattern, v: Value) -> Fallible<()> {
         let mut binds = Vec::new();
-        if !match_pattern(pat, &v, &mut binds) {
+        if !match_pattern(pat, &v, &self.names, &mut binds) {
             return Err(pattern_mismatch(pat.span, &v));
         }
         for (s, v) in binds {
@@ -1312,7 +1328,7 @@ fn match_pat(p: &Pat, v: &Value, slots: &mut [Value], first: usize) -> bool {
             b.strip_prefix(&**a).is_some_and(|r| match_pat(rest, &Value::Text(r.into()), slots, first))
         }
         (Pat::Ctor(name, pats), Value::Variant(var)) => {
-            var.ctor.name == *name && pats.len() == var.fields.len() && match_each(pats, &var.fields, slots, first)
+            var.ctor.id == *name && pats.len() == var.fields.len() && match_each(pats, &var.fields, slots, first)
         }
         (Pat::List(pats, rest), Value::List(l)) => {
             let n = pats.len();
@@ -1343,7 +1359,7 @@ fn match_pat(p: &Pat, v: &Value, slots: &mut [Value], first: usize) -> bool {
 fn may_match(p: &Pat, v: &Value) -> bool {
     match (p, v) {
         (Pat::Int(a), Value::Int(b)) => a == b,
-        (Pat::Ctor(name, _), Value::Variant(var)) => var.ctor.name == *name,
+        (Pat::Ctor(name, _), Value::Variant(var)) => var.ctor.id == *name,
         _ => true,
     }
 }
@@ -1377,7 +1393,9 @@ pub(crate) fn field_of(v: &Value, name: &str) -> Option<Value> {
     }
 }
 
-pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> bool {
+/// Whether `v` matches `p`, giving the names it binds to `out`. `names` are
+/// the top-level names of the file of the pattern (see `compile::Names`).
+pub fn match_pattern(p: &Pattern, v: &Value, names: &SymMap<Sym>, out: &mut Vec<(Sym, Value)>) -> bool {
     match (&p.kind, v) {
         (PatKind::Wildcard, _) => true,
         (PatKind::Bind(s), _) => {
@@ -1396,12 +1414,12 @@ pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> boo
         (PatKind::Symbol(a), Value::Symbol(b)) => a == b,
         (PatKind::Range(lo, hi), _) => in_range(*lo, *hi, v),
         (PatKind::Prefix(a, rest), Value::Text(b)) => {
-            b.strip_prefix(&**a).is_some_and(|r| match_pattern(rest, &Value::Text(r.into()), out))
+            b.strip_prefix(&**a).is_some_and(|r| match_pattern(rest, &Value::Text(r.into()), names, out))
         }
         (PatKind::Ctor(name, pats), Value::Variant(var)) => {
-            var.ctor.name == name.own_name()
+            var.ctor.id == names.get(name).copied().unwrap_or(*name)
                 && pats.len() == var.fields.len()
-                && pats.iter().zip(&var.fields).all(|(p, f)| match_pattern(p, f, out))
+                && pats.iter().zip(&var.fields).all(|(p, f)| match_pattern(p, f, names, out))
         }
         (PatKind::List(pats, rest), Value::List(l)) => {
             let n = pats.len();
@@ -1412,7 +1430,7 @@ pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> boo
             if !len_ok {
                 return false;
             }
-            if !pats.iter().zip(l.iter()).all(|(p, x)| match_pattern(p, x, out)) {
+            if !pats.iter().zip(l.iter()).all(|(p, x)| match_pattern(p, x, names, out)) {
                 return false;
             }
             if let Some(Some((s, _))) = rest {
@@ -1420,11 +1438,13 @@ pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> boo
             }
             true
         }
-        (PatKind::Record(fields), Value::Record(r)) => fields.iter().all(|(k, p)| r.get(k).is_some_and(|x| match_pattern(p, x, out))),
+        (PatKind::Record(fields), Value::Record(r)) => {
+            fields.iter().all(|(k, p)| r.get(k).is_some_and(|x| match_pattern(p, x, names, out)))
+        }
         (PatKind::Or(alts), _) => {
             let mark = out.len();
             for a in alts {
-                if match_pattern(a, v, out) {
+                if match_pattern(a, v, names, out) {
                     return true;
                 }
                 out.truncate(mark);
@@ -1681,7 +1701,9 @@ fn op_error(op: BinOp, l: &Value, r: &Value, span: Span) -> Box<Diagnostic> {
     let is_list = |v: &Value| matches!(v, Value::List(_));
     let is_num = |v: &Value| matches!(v, Value::Int(_) | Value::Big(_) | Value::Float(_));
     let is_dict_or_set = |v: &Value| matches!(v, Value::Dict(_) | Value::Set(_));
-    if matches!(op, BinOp::Add | BinOp::Sub) && is_dict_or_set(l) && is_dict_or_set(r) {
+    if let Some(note) = l.homonym_types(r) {
+        d = d.note(note);
+    } else if matches!(op, BinOp::Add | BinOp::Sub) && is_dict_or_set(l) && is_dict_or_set(r) {
         d = d.help(t!(
             "to join two sets or two dicts, use `union(a, b)`; to take one away from the other, `difference(a, b)`",
             "pour réunir deux ensembles ou deux dictionnaires, utilisez `union(a, b)` ; pour retirer l'un de l'autre, `difference(a, b)`"

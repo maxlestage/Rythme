@@ -1,7 +1,7 @@
 name: Release
 
 # Builds ready-to-use programs for Linux, macOS and Windows when a version tag
-# (like v0.1.0) is pushed, and attaches them to the GitHub release with:
+# (like v1.0.0) is pushed, and attaches them to the GitHub release with:
 # - SHA256SUMS, the checksums that install.sh and install.ps1 verify;
 # - rythme.rb and winget/*.yaml, the Homebrew formula and the winget manifests
 #   of this version (packaging/render.sh fills in packaging/);

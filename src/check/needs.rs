@@ -396,7 +396,9 @@ impl Checker<'_> {
     /// `a[b]`.
     pub(super) fn need_index(&mut self, a: &Expr, ta: &Ty, b: &Expr, tb: &Ty) {
         self.need_operands(&[(Some(a), ta), (Some(b), tb)], |t| {
-            t[0].never(LIST | TEXT | RECORD) || (t[0].only(LIST | TEXT) && t[1].never(INT)) || (t[0].only(RECORD) && t[1].never(TEXT))
+            t[0].never(LIST | TEXT | RECORD | DICT)
+                || (t[0].only(LIST | TEXT) && t[1].never(INT))
+                || (t[0].only(RECORD) && t[1].never(TEXT))
         });
     }
 

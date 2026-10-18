@@ -228,6 +228,18 @@ fn errors_inside_a_property_show_the_value() {
     assert_eq!(r.code, 0, "{}{}", r.stdout, r.stderr);
 }
 
+/// A property that goes too deep stops at once with E014: simplifying the
+/// value would go as deep again, and again for each `check_all` around it.
+#[test]
+fn a_property_that_goes_too_deep_stops_at_once() {
+    let started = std::time::Instant::now();
+    let e = property("deep(1)\nfn deep(n) = if n > 50000000 then true else check_all(fn(x) = deep(n + 1), bools(), 1)", &[]);
+    assert!(e.contains("error[E014]: too many nested calls"), "{e}");
+    assert!(started.elapsed().as_secs() < 60, "{:?}", started.elapsed());
+    let e = property("check_all(fn(x) = deep(x + 100000000) > 0, ints())\nfn deep(n) = if n == 0 then 0 else 1 + deep(n - 1)", &[]);
+    assert!(e.contains("error[E014]: too many nested calls"), "{e}");
+}
+
 #[test]
 fn generators_are_checked() {
     ok("print(ints(1, 6), bools())", "{generator: \"ints\", min: 1, max: 6} {generator: \"bools\"}");

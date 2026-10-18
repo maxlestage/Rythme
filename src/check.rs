@@ -748,7 +748,10 @@ impl<'a> Checker<'a> {
         let t = self.func(def, None);
         self.note_type(def.span, &t);
         if let Some(name) = def.name {
-            if self.own.get(&name).is_some_and(|g| g.kind == GKind::Func) {
+            // In the REPL, a function defined again in the same input replaces
+            // the first definition: only the last one says what it is.
+            let kept = self.fn_defs.get(&name).is_none_or(|d| std::ptr::eq(&**d, def));
+            if kept && self.own.get(&name).is_some_and(|g| g.kind == GKind::Func) {
                 self.set_global(name, t);
                 self.narrow_top(name);
             }
@@ -1081,7 +1084,13 @@ impl<'a> Checker<'a> {
                 .at(span)
                 .label(t!("not in `{file}`", "absent de `{file}`"));
             let candidates: Vec<Rc<str>> = meta.names.iter().filter(|n| n.is_ctor() == x.is_ctor()).map(|n| n.name()).collect();
-            if let Some(best) = suggest::closest(&x.name(), candidates.iter().map(|n| &**n)) {
+            if meta.names.contains(&Sym::new(&format!("{x}?"))) {
+                // `m.adult?` without `(` right after it: `?` is the operator.
+                d = d.help(t!(
+                    "`{m}.{x}?` is a function of `{file}`, but without `(` right after it, `?` is the operator: call it, `{m}.{x}?(...)`, or give it as `fn(v) = {m}.{x}?(v)`",
+                    "`{m}.{x}?` est une fonction de `{file}`, mais sans `(` juste après, `?` est l'opérateur : appelez-la, `{m}.{x}?(...)`, ou donnez-la comme `fn(v) = {m}.{x}?(v)`"
+                ));
+            } else if let Some(best) = suggest::closest(&x.name(), candidates.iter().map(|n| &**n)) {
                 d = d.help(t!("did you mean `{m}.{best}`?", "vouliez-vous dire `{m}.{best}` ?"));
             } else if meta.names.is_empty() {
                 d = d.note(t!(
@@ -1118,10 +1127,12 @@ impl<'a> Checker<'a> {
             );
             return;
         }
+        // Defined further down in a block around it: say so first.
+        let later = self.block_defs.iter().rev().flatten().find(|(n, at, _)| *n == s && at.start > span.start).copied();
         // Defined by a file used with a name, or by another file of the folder.
         let mut modules: Vec<(&Sym, &ModuleMeta)> = self.know.modules.iter().filter(|(_, m)| m.names.contains(&s)).collect();
         modules.sort_by_key(|(n, _)| n.name());
-        if let Some((m, meta)) = modules.first() {
+        if let Some((m, meta)) = modules.first().filter(|_| later.is_none()) {
             let file = &meta.file;
             self.diags.push(
                 Diagnostic::error("E003", t!("unknown name `{name}`", "nom inconnu `{name}`"))
@@ -1134,7 +1145,7 @@ impl<'a> Checker<'a> {
             );
             return;
         }
-        if let Some((stem, file)) = self.know.nearby.get(&s) {
+        if let Some((stem, file)) = self.know.nearby.get(&s).filter(|_| later.is_none()) {
             self.diags.push(
                 Diagnostic::error("E003", t!("unknown name `{name}`", "nom inconnu `{name}`"))
                     .at(span)
@@ -1149,8 +1160,7 @@ impl<'a> Checker<'a> {
         let mut d =
             Diagnostic::error("E003", t!("unknown name `{name}`", "nom inconnu `{name}`")).at(span).label(t!("not defined", "non défini"));
         // Defined further down in a block around it: say so, not what other languages call it.
-        let later = self.block_defs.iter().rev().flatten().find(|(n, at, _)| *n == s && at.start > span.start);
-        if let Some(&(_, at, is_fn)) = later {
+        if let Some((_, at, is_fn)) = later {
             d = d.secondary(at, t!("defined here, further down", "défini ici, plus bas")).help(if is_fn {
                 t!(
                     "in a block, a function can be used only after it, unless they are written one after the other with nothing between them: move `{name}` up, next to the function that uses it",

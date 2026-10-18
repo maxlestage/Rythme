@@ -4,12 +4,12 @@
 # version publiée sur GitHub, après avoir vérifié sa somme SHA-256.
 #
 #   irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex
-#   .\install.ps1 -Dir C:\Tools\Rythme -Version v0.1.0 -NoModifyPath
+#   .\install.ps1 -Dir C:\Tools\Rythme -Version v1.0.0 -NoModifyPath
 #
 # Parameters (or environment variables / ou variables d'environnement):
 #   -Dir DIR        RYTHME_INSTALL_DIR      folder of the program
 #                                           (%LOCALAPPDATA%\Programs\Rythme\bin)
-#   -Version TAG    RYTHME_VERSION          a release like v0.1.0 (latest)
+#   -Version TAG    RYTHME_VERSION          a release like v1.0.0 (latest)
 #   -NoModifyPath   RYTHME_NO_MODIFY_PATH   leave the user's PATH unchanged
 #                   RYTHME_DOWNLOAD_URL     where releases are downloaded from
 #                   RYTHME_LANG             en or fr (otherwise the system's)
