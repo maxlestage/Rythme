@@ -31,7 +31,10 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
 ```
 
 - `driver.rs` loads files and the files they `use`, checks them, runs them,
-  and runs tests.
+  and runs tests. `modules.rs` turns `geometry.area` (for `use geometry`)
+  into the single name `geometry.area` right after parsing; each file used
+  with a name keeps its top-level names apart in the interpreter (see
+  `compile::Names`), and so do the private `_names` of used files.
 - `types.rs` holds what the checker knows for sure about values: their types,
   and what each built-in function accepts and gives back. `check.rs` infers
   the types of expressions to report operations that would fail every time

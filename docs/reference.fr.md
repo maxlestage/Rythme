@@ -135,7 +135,8 @@ and  do  else  end  false  fn  if  match  not  or  test  then  true  type  use
 
 Ils ne peuvent pas servir de noms. Ils peuvent servir de **noms de champs**,
 après un point ou devant `:` dans un enregistrement (`e.type`, `{type: 1}`),
-mais pas dans la forme courte `{type}`.
+mais pas dans la forme courte `{type}`. `as` n'est pas un mot-clé : il n'a
+de sens qu'après le chemin d'un `use` (`use geometrie as geo`).
 
 Les mots suivants, venus d'autres langages, sont **réservés** : en utiliser
 un comme nom est une erreur (E001) dont le message explique comment faire la
@@ -1331,8 +1332,9 @@ anonyme.
 - Un nom local peut masquer une fonction intégrée sans rien dire ; une
   définition du premier niveau qui masque une fonction intégrée donne
   l'avertissement W003.
-- Les noms des fichiers apportés par `use` comptent comme des noms du premier
-  niveau : en redéfinir un est E011.
+- Les noms apportés par `use "fichier.ry"` comptent comme des noms du
+  premier niveau : en redéfinir un est E011. Avec `use geometrie`, seul le
+  nom `geometrie` est pris (voir 4.9).
 
 ```rythme
 x = 1
@@ -1732,47 +1734,83 @@ Code de sortie : 1.
 ### 4.9 Modules : `use`
 
 ```text
-use "chemin/fichier.ry"
+use geometrie              # le fichier geometrie.ry, utilisé par son nom
+use formes/cercle          # le fichier formes/cercle.ry, utilisé comme `cercle`
+use geometrie as geo       # le même fichier, sous un autre nom
+use "geometrie.ry"         # ancienne forme : ses noms s'utilisent directement
 ```
 
-- `use` n'est permis qu'au premier niveau ; le chemin est un texte simple.
-- Le chemin est relatif au **dossier du fichier qui contient le `use`** (pour
-  `rythme -e` et le mode interactif : le dossier actuel). Quand il n'a pas
-  d'extension, `.ry` est ajouté. Ses parties sont séparées par `/` (ou `\`,
-  écrit `\\` dans un texte) sur tous les systèmes, et `..` remonte d'un
-  dossier : `use "../outils/calculs.ry"`.
-- Tout ce qui est défini au premier niveau du fichier utilisé (valeurs,
-  fonctions, types et constructeurs) devient visible dans le fichier qui
-  l'utilise, ainsi que tout ce que ce fichier utilise lui-même. Il n'y a ni
-  espaces de noms ni définitions privées : un nom défini dans deux fichiers
-  est E011.
+- **La forme recommandée est `use nom`**, sans guillemets et sans `.ry` :
+  ses définitions s'atteignent alors par ce nom, si bien que chaque nom dit
+  d'où il vient. `rythme fmt` écrit `use "geometrie.ry" as geo` sous la
+  forme `use geometrie as geo`.
+- `use` n'est permis qu'au premier niveau. Le chemin est relatif au
+  **dossier du fichier qui contient le `use`** (pour `rythme -e` et le mode
+  interactif : le dossier actuel). Ses parties sont des noms séparés par `/`
+  sur tous les systèmes, et `..` remonte d'un dossier : `use ../outils/calculs`.
+  Un fichier dont le nom n'est pas un nom Rythme (`Mes outils.ry`) s'écrit
+  comme un texte, avec un nom : `use "Mes outils.ry" as outils`.
+- Le nom est celui du fichier (`cercle` pour `formes/cercle`), ou celui écrit
+  après `as`. Alors `geometrie.aire_carre(4)` appelle une fonction,
+  `geometrie.origine` lit une valeur, `geometrie.Carre(5)` construit une
+  valeur d'un type du fichier, `geometrie.Carre(c)` la reconnaît dans un
+  `match`, et `x |> geometrie.aire_carre` marche comme d'habitude. Le
+  vérificateur les connaît tous : un nom que le fichier n'a pas est E003
+  (avec le plus proche), et le nombre d'arguments est vérifié (E004).
+- Un fichier donne ses définitions du premier niveau (valeurs, fonctions,
+  constructeurs), et celles des fichiers qu'il utilise avec des guillemets.
+  **Un nom qui commence par `_` est privé à son fichier** (`fn _verifie(x)`) :
+  les autres fichiers ne peuvent pas l'utiliser (E003). Le nom du fichier
+  n'est pas une valeur (`geometrie` seul est E003), et il ne peut rien nommer
+  d'autre dans le fichier (E011) ; deux fichiers ne peuvent pas recevoir le
+  même nom (E011).
+- Chaque fichier a ses propres noms : `geometrie.aire` et `cercle.aire` sont
+  deux fonctions différentes, et un fichier peut lui-même définir `aire`. Un
+  nom utilisé sans son fichier, mais défini par un autre fichier du dossier,
+  reçoit une aide qui nomme ce fichier et le `use` à ajouter (le serveur de
+  langage l'ajoute).
+- `use "chemin.ry"`, avec des guillemets et sans `as`, est l'ancienne forme :
+  les définitions du fichier (sauf les privées) deviennent visibles
+  directement, avec celles des fichiers qu'il utilise de cette façon ; un nom
+  défini à nouveau, ou défini par deux de ces fichiers, est E011, et le
+  message nomme les deux fichiers. `.ry` est ajouté quand le chemin n'a pas
+  d'extension.
 - Chaque fichier est chargé, vérifié et exécuté **une seule fois** par
   programme, avant le fichier qui l'utilise, où que le `use` soit écrit dans
   ce fichier. Ses expressions du premier niveau s'exécutent (un `print` dans
   un fichier utilisé affiche une fois).
-- Un fichier introuvable est E017 (avec une suggestion quand un nom proche
-  existe), un dossier aussi ; des fichiers qui s'utilisent en cercle sont
-  E017. Les messages montrent le chemin d'un fichier utilisé tel qu'on
-  l'atteint depuis le dossier actuel.
+- Un fichier introuvable est E017, avec une suggestion quand un nom proche
+  existe (ou la liste des fichiers Rythme du dossier), un dossier aussi ; des
+  fichiers qui s'utilisent en cercle sont E017, et le message nomme les deux.
+  Les messages montrent le chemin d'un fichier utilisé tel qu'on l'atteint
+  depuis le dossier actuel.
 
 ```rythme
 # geometrie.ry
 print("geometrie.ry ne s'exécute qu'une fois")
 fn aire_rectangle(l, h) = l * h
+fn aire_carre(cote) = aire_rectangle(cote, _verifie(cote))
+fn _verifie(x) = if x >= 0 then x else fail("côté négatif")
 origine = {x: 0, y: 0}
+type Forme = Rectangle(l, h) | Carre(cote)
 ```
 
 ```rythme
-# carres.ry
-use "geometrie.ry"
-fn aire_carre(cote) = aire_rectangle(cote, cote)
+# formes/cercle.ry
+fn aire(r) = pi * r ** 2
 ```
 
 ```rythme
 # principal.ry
-use "geometrie.ry"
-use "carres"               # `.ry` est ajouté quand le chemin n'a pas d'extension
-print(aire_rectangle(2, 3), aire_carre(4), origine)
+use geometrie
+use formes/cercle
+print(geometrie.aire_rectangle(2, 3), geometrie.aire_carre(4), geometrie.origine)
+print(round(cercle.aire(1), 2))
+fn aire(forme) = match forme
+  geometrie.Rectangle(l, h) -> l * h
+  geometrie.Carre(c) -> c * c
+end
+print(aire(geometrie.Carre(5)))
 ```
 
 `rythme principal.ry` :
@@ -1780,19 +1818,48 @@ print(aire_rectangle(2, 3), aire_carre(4), origine)
 ```text
 geometrie.ry ne s'exécute qu'une fois
 6 16 {x: 0, y: 0}
+3.14
+25
 ```
 
-Avec `ping.ry` qui contient `use "pong.ry"` et `pong.ry` qui contient
-`use "ping.ry"`, `rythme ping.ry` donne :
+Un fichier à côté de `geometrie.ry` qui oublie le `use`, `rythme oubli.ry` :
 
 ```text
-erreur[E017]: `ping.ry` s'utilise lui-même (directement ou via d'autres fichiers)
+erreur[E003]: nom inconnu `aire_rectangle`
+ --> oubli.ry:1:7
+  |
+1 | print(aire_rectangle(2, 3))
+  |       ^^^^^^^^^^^^^^ non défini ici
+  |
+  = aide: `aire_rectangle` est défini dans `geometrie.ry` : ajoutez `use geometrie` en haut du fichier, puis écrivez `geometrie.aire_rectangle`
+  = en savoir plus : `rythme explain E003`
+```
+
+Un nom privé, `rythme prive.ry` :
+
+```text
+erreur[E003]: `_verifie` est privé au fichier `geometrie.ry`
+ --> prive.ry:2:7
+  |
+2 | print(geometrie._verifie(2))
+  |       ^^^^^^^^^^^^^^^^^^ privé
+  |
+  = note: un nom qui commence par `_` ne s'utilise que dans son propre fichier
+  = aide: pour l'utiliser depuis d'autres fichiers, renommez-le sans `_` dans `geometrie.ry`
+  = en savoir plus : `rythme explain E003`
+```
+
+Avec `ping.ry` qui contient `use pong` et `pong.ry` qui contient `use ping`,
+`rythme ping.ry` donne :
+
+```text
+erreur[E017]: `pong.ry` et `ping.ry` s'utilisent l'un l'autre
  --> pong.ry:1:1
   |
-1 | use "ping.ry"
-  | ^^^^^^^^^^^^^
+1 | use ping
+  | ^^^^^^^^
   |
-  = aide: déplacez ce dont les deux fichiers ont besoin dans un troisième fichier, utilisé par les deux
+  = aide: des fichiers ne peuvent pas s'utiliser l'un l'autre : déplacez ce dont les deux ont besoin dans un troisième fichier, utilisé par les deux
   = en savoir plus : `rythme explain E017`
 ```
 
@@ -2103,7 +2170,7 @@ minuscules.
 |------|-----|-------|
 | E001 | Erreur de syntaxe | le code ne suit pas la grammaire : une parenthèse ou un `then` manquant, des accolades pour un bloc, un mot-clé d'un autre langage, des comparaisons enchaînées, `_` utilisé comme valeur, `{nom, ..autres}`, une expression trop longue ou imbriquée trop profondément... |
 | E002 | Texte jamais fermé | un `"` ou une `{` dans un texte n'est jamais fermé |
-| E003 | Nom inconnu | un nom ou un constructeur qui n'est pas défini à cet endroit, ou une valeur utilisée avant sa définition |
+| E003 | Nom inconnu | un nom ou un constructeur qui n'est pas défini à cet endroit, une valeur utilisée avant sa définition, ou un nom privé (`_nom`) d'un autre fichier |
 | E004 | Mauvais nombre d'arguments | un appel ou un motif de constructeur avec trop ou trop peu de valeurs ; des définitions d'une même fonction avec des nombres de paramètres différents |
 | E005 | Mauvaise sorte de valeur | une opération ou une fonction a reçu une sorte de valeur qu'elle n'accepte pas (`"a" + 1`, une condition qui n'est pas un Bool, des valeurs qu'on ne peut pas comparer...) |
 | E006 | Aucun cas ne correspond | aucun cas d'un `match`, aucune définition d'une fonction, ou le motif d'une définition n'accepte pas la valeur |

@@ -224,7 +224,7 @@ impl Indexer<'_> {
                 Item::Test(name, body, span) => {
                     self.add(Self::new_def(name.clone(), DefKind::Test, *span, span.to(body.span), true));
                 }
-                Item::Use(p, span) => self.out.uses.push((*span, p.clone())),
+                Item::Use(u) => self.out.uses.push((u.span, u.path.clone())),
                 Item::Stmt(Stmt::Expr(_)) => {}
             }
         }
@@ -341,9 +341,15 @@ impl Indexer<'_> {
         }
     }
 
-    fn reference(&mut self, s: Sym, span: Span, punned: bool, method: bool) {
+    fn reference(&mut self, s: Sym, mut span: Span, punned: bool, method: bool) {
         let target = self.resolve(s);
-        self.out.occs.push(Occ { span, name: s.name(), target, def: false, punned, method });
+        let mut name = s.name();
+        // `geometry.area`: the name is `area`, written at the end.
+        if let Some((_, own)) = s.split_module() {
+            name = own.name();
+            span.start = span.end.saturating_sub(name.len() as u32).max(span.start);
+        }
+        self.out.occs.push(Occ { span, name, target, def: false, punned, method });
     }
 
     // ----- walking -----------------------------------------------------

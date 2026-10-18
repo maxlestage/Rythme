@@ -124,7 +124,8 @@ and  do  else  end  false  fn  if  match  not  or  test  then  true  type  use
 
 They cannot be used as names. They can be used as **field names**, after a dot
 or before `:` in a record (`r.type`, `{type: 1}`), but not in the short form
-`{type}`.
+`{type}`. `as` is not a keyword: it means something only after the path of
+a `use` (`use geometry as geo`).
 
 The following words, taken from other languages, are **reserved**: using one
 as a name is an error (E001) whose message explains how to do the same thing
@@ -1279,8 +1280,9 @@ block; each `match` case; each anonymous function.
   may define a name that exists outside.
 - A local name may hide a built-in function silently; a top-level definition
   that hides a built-in function gives warning W003.
-- The names of the files brought in by `use` count as top-level names:
-  defining one of them again is E011.
+- The names brought in by `use "file.ry"` count as top-level names:
+  defining one of them again is E011. With `use geometry`, only the name
+  `geometry` is taken (see 4.9).
 
 ```rythme
 x = 1
@@ -1666,44 +1668,78 @@ Exit code: 1.
 ### 4.9 Modules: `use`
 
 ```text
-use "path/file.ry"
+use geometry               # the file geometry.ry, used through its name
+use shapes/circle          # the file shapes/circle.ry, used as `circle`
+use geometry as geo        # the same file, under another name
+use "geometry.ry"          # older form: its names are used directly
 ```
 
-- `use` is only allowed at the top level; the path is a plain text.
-- The path is relative to the **folder of the file that contains the `use`**
-  (for `rythme -e` and the REPL: the current folder). When it has no
-  extension, `.ry` is added. Its parts are separated by `/` (or `\`, written
-  `\\` in a text) on every system, and `..` goes up one folder:
-  `use "../lib/tools.ry"`.
-- Everything defined at the top level of the used file (values, functions,
-  types and constructors) becomes visible in the file that uses it, together
-  with everything that file itself uses. There are no namespaces and no
-  private definitions: a name defined in two files is E011.
+- **The recommended form is `use name`**, without quotes and without `.ry`:
+  its definitions are then reached through the name, so that every name
+  says where it comes from. `rythme fmt` writes `use "geometry.ry" as geo`
+  as `use geometry as geo`.
+- `use` is only allowed at the top level. The path is relative to the
+  **folder of the file that contains the `use`** (for `rythme -e` and the
+  REPL: the current folder). Its parts are names separated by `/` on every
+  system, and `..` goes up one folder: `use ../lib/tools`. A file whose
+  name is not a Rythme name (`My Tools.ry`) is written as a text, with a
+  name: `use "My Tools.ry" as tools`.
+- The name is the name of the file (`circle` for `shapes/circle`), or the
+  one written after `as`. Then `geometry.square_area(4)` calls a function,
+  `geometry.origin` reads a value, `geometry.Square(5)` builds a value of a
+  type of the file, `geometry.Square(s)` matches it in a `match`, and
+  `x |> geometry.square_area` works as usual. The checker knows them all:
+  a name that the file does not have is E003 (with the closest one), and
+  the number of arguments is checked (E004).
+- A file gives its top-level definitions (values, functions, constructors),
+  and those of the files it uses with quotes. **A name starting with `_`
+  is private to its file** (`fn _checked(x)`): other files cannot use it
+  (E003). The name of the file is not a value (`geometry` alone is E003),
+  and it cannot name anything else in the file (E011); two files cannot
+  get the same name (E011).
+- Each file has its own names: `geometry.area` and `circle.area` are two
+  different functions, and a file may define `area` itself. A name used
+  without its file, but defined by another file of the folder, gets a help
+  that names that file and the `use` to add (the language server adds it).
+- `use "path.ry"`, with quotes and without `as`, is the older form: the
+  definitions of the file (except the private ones) become visible
+  directly, with those of the files it uses that way; a name defined again,
+  or defined by two such files, is E011, and the message names both files.
+  `.ry` is added when the path has no extension.
 - Each file is loaded, checked and run **once** per program, before the file
   that uses it, wherever the `use` is written in that file. Its top-level
   expressions run (a `print` in a used file prints once).
-- A missing file is E017 (with a suggestion when a close name exists), and so
-  is a folder; files that use each other in a circle are E017. Messages show
-  the path of a used file as it is reached from the current folder.
+- A missing file is E017, with a suggestion when a close name exists (or the
+  list of the Rythme files of the folder), and so is a folder; files that
+  use each other in a circle are E017, and the message names both. Messages
+  show the path of a used file as it is reached from the current folder.
 
 ```rythme
 # geometry.ry
 print("geometry.ry runs once")
 fn rectangle_area(w, h) = w * h
+fn square_area(side) = rectangle_area(side, _checked(side))
+fn _checked(x) = if x >= 0 then x else fail("negative side")
 origin = {x: 0, y: 0}
+type Shape = Rectangle(w, h) | Square(side)
 ```
 
 ```rythme
-# squares.ry
-use "geometry.ry"
-fn square_area(side) = rectangle_area(side, side)
+# shapes/circle.ry
+fn area(r) = pi * r ** 2
 ```
 
 ```rythme
 # main.ry
-use "geometry.ry"
-use "squares"              # `.ry` is added when the path has no extension
-print(rectangle_area(2, 3), square_area(4), origin)
+use geometry
+use shapes/circle
+print(geometry.rectangle_area(2, 3), geometry.square_area(4), geometry.origin)
+print(round(circle.area(1), 2))
+fn area(shape) = match shape
+  geometry.Rectangle(w, h) -> w * h
+  geometry.Square(s) -> s * s
+end
+print(area(geometry.Square(5)))
 ```
 
 `rythme main.ry`:
@@ -1711,19 +1747,48 @@ print(rectangle_area(2, 3), square_area(4), origin)
 ```text
 geometry.ry runs once
 6 16 {x: 0, y: 0}
+3.14
+25
 ```
 
-With `ping.ry` containing `use "pong.ry"` and `pong.ry` containing
-`use "ping.ry"`, `rythme ping.ry` gives:
+A file next to `geometry.ry` that forgets the `use`, `rythme forgot.ry`:
 
 ```text
-error[E017]: `ping.ry` uses itself (directly or through other files)
+error[E003]: unknown name `rectangle_area`
+ --> forgot.ry:1:7
+  |
+1 | print(rectangle_area(2, 3))
+  |       ^^^^^^^^^^^^^^ not defined here
+  |
+  = help: `rectangle_area` is defined in `geometry.ry`: add `use geometry` at the top of the file, then write `geometry.rectangle_area`
+  = more about this error: `rythme explain E003`
+```
+
+A private name, `rythme private.ry`:
+
+```text
+error[E003]: `_checked` is private to the file `geometry.ry`
+ --> private.ry:2:7
+  |
+2 | print(geometry._checked(2))
+  |       ^^^^^^^^^^^^^^^^^ private
+  |
+  = note: a name starting with `_` can only be used in its own file
+  = help: to use it from other files, rename it without `_` in `geometry.ry`
+  = more about this error: `rythme explain E003`
+```
+
+With `ping.ry` containing `use pong` and `pong.ry` containing `use ping`,
+`rythme ping.ry` gives:
+
+```text
+error[E017]: `pong.ry` and `ping.ry` use each other
  --> pong.ry:1:1
   |
-1 | use "ping.ry"
-  | ^^^^^^^^^^^^^
+1 | use ping
+  | ^^^^^^^^
   |
-  = help: move what both files need into a third file, used by both
+  = help: files cannot use each other: move what both need into a third file, used by both
   = more about this error: `rythme explain E017`
 ```
 
@@ -2023,7 +2088,7 @@ with examples; the code may be written in lowercase.
 |------|------|------|
 | E001 | Syntax error | the code does not follow the grammar: a missing bracket or `then`, braces used for a block, a keyword from another language, chained comparisons, `_` used as a value, `{name, ..others}`, an expression too long or nested too deeply... |
 | E002 | Text never closed | a `"` or a `{` inside a text is never closed |
-| E003 | Unknown name | a name or constructor that is not defined at this place, or a value used before its definition |
+| E003 | Unknown name | a name or constructor that is not defined at this place, a value used before its definition, or a private name (`_name`) of another file |
 | E004 | Wrong number of arguments | a call or a constructor pattern with too many or too few values; definitions of one function with different numbers of parameters |
 | E005 | Wrong kind of value | an operation or a function received a kind of value it does not accept (`"a" + 1`, a condition that is not a Bool, values that cannot be compared...) |
 | E006 | No case matches | no `match` case, no definition of a function, or no definition pattern accepts the value |

@@ -199,8 +199,9 @@ end
 # Tests live next to the code: rythme test file.ry
 test "double works" = assert_eq(double(21), 42)
 
-# Other files
-use "geometry.ry"
+# Other files, used through their names
+use geometry                              # geometry.ry, next to this file
+print(geometry.area(2))
 ```
 
 More: the [reference manual](docs/reference.md), [`examples/`](examples),
@@ -223,7 +224,7 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 | [`tree.ry`](examples/tree.ry) | a recursive type: binary search tree |
 | [`primes.ry`](examples/primes.ry) | a recursive sieve, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | `test` blocks |
-| [`modules/`](examples/modules) | `use` to split a program in files |
+| [`modules/`](examples/modules) | `use geometry` then `geometry.area(2)`: a program in several files, private `_names` |
 | [`bonjour.ry`](examples/bonjour.ry) | names with accents |
 
 ## Editors
