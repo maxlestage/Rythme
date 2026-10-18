@@ -21,7 +21,7 @@ pub struct Reported;
 /// The folder `base` followed by the path written in `use`. Its parts,
 /// separated by `/` (or `\`), are added one by one, `..` going up a folder,
 /// so that the same program works on every system.
-fn join_use(base: &Path, p: &str) -> PathBuf {
+pub(crate) fn join_use(base: &Path, p: &str) -> PathBuf {
     if Path::new(p).is_absolute() {
         return PathBuf::from(p);
     }
@@ -505,6 +505,10 @@ pub fn find_use(u: &Use, base: &Path) -> Result<PathBuf, Box<Diagnostic>> {
     if path.is_file() {
         return Ok(path);
     }
+    // `use mathlib/vectors`: a file of a package of the project.
+    if let Some(found) = crate::project::resolve_use(p, base, u.path_span) {
+        return found;
+    }
     for dir in [&path, &join_use(base, p)] {
         if dir.is_dir() {
             return Err(folder_error(dir).at(span).boxed());
@@ -549,6 +553,11 @@ pub fn find_use(u: &Use, base: &Path) -> Result<PathBuf, Box<Diagnostic>> {
         "the path is relative to the folder of the file that contains `use`",
         "le chemin est relatif au dossier du fichier qui contient `use`"
     ));
+    match crate::project::use_hint(p, base) {
+        Some(Ok(help)) => d = d.help(help),
+        Some(Err(note)) => d = d.note(note),
+        None => {}
+    }
     Err(d.boxed())
 }
 

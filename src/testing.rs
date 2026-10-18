@@ -407,7 +407,8 @@ fn usage(msg: String) -> i32 {
     2
 }
 
-/// `rythme test PATH... [--filter NAME] [--seed N] [--watch] [-- ARGS...]`.
+/// `rythme test PATH... [--filter NAME] [--seed N] [--watch] [-- ARGS...]`;
+/// without a path, in a project, the files of the project that have tests.
 pub fn command(args: &[String]) -> i32 {
     let mut options = Options::default();
     let mut paths = Vec::new();
@@ -468,6 +469,14 @@ pub fn command(args: &[String]) -> i32 {
                 return usage(msg);
             }
             _ => paths.push(PathBuf::from(arg)),
+        }
+    }
+    if paths.is_empty() {
+        // At the root of a project (or in one of its folders): its files with tests.
+        match crate::project::targets(crate::project::Cmd::Test) {
+            Some(Ok(files)) => paths = files.into_iter().map(PathBuf::from).collect(),
+            Some(Err(())) => return 1,
+            None => {}
         }
     }
     if paths.is_empty() {
