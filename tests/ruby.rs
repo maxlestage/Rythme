@@ -4,7 +4,52 @@
 
 mod common;
 
-use common::{fails, ok, rythme, warns};
+use common::{fails, ok, rythme, rythme_lang, warns};
+
+#[test]
+fn the_ternary_operator_of_ruby_is_explained() {
+    for code in [
+        "x = 3\nprint(x > 2 ? \"big\" : \"small\")",
+        "ok = true\ny = ok ? 1 : 2",
+        "fn f(n) = n > 0 ? -1 : 1",
+        "fn even?(n) = n % 2 == 0\nprint(even?(2) ? [1] : [2])",
+        "ok = true\nputs ok ? :yes : :no",
+    ] {
+        let r = fails(code, "E001");
+        assert!(r.stderr.contains("Rythme has no `condition ? a : b`"), "{code}\n{}", r.stderr);
+        assert!(r.stderr.contains("if condition then a else b"), "{code}\n{}", r.stderr);
+    }
+    let r = fails("y = true ? 1 : 2", "E001");
+    assert!(r.stderr.contains("--> <code>:1:10"), "{}", r.stderr);
+    // The other meanings of `?` keep theirs, and other errors theirs.
+    ok(
+        "fn even?(n) = n % 2 == 0\nfn f(x) = Some(x? + 1)\nprint(even?(2), f(Some(1)), {a: even?(3), b: 2})",
+        "true Some(2) {a: false, b: 2}",
+    );
+    let r = fails("fn f(x) = x ? 2", "E001");
+    assert!(!r.stderr.contains("condition ? a : b"), "{}", r.stderr);
+    let r = rythme_lang("fr", &["-e", "y = true ? 1 : 2"]);
+    assert!(r.stderr.contains("Rythme n'a pas de `condition ? a : b`"), "{}", r.stderr);
+}
+
+/// `:even?` is a symbol, as in Ruby (it was `:even` then `?`, always refused:
+/// see the fuzz test `the_old_reading_of_a_symbol_with_a_question_mark_never_ran`).
+#[test]
+fn a_symbol_may_end_with_a_question_mark() {
+    ok(
+        "s = :even?\nfn f(:even?) = 1\nfn f(_) = 2\nprint(s, s == :even, [:a?, :b], {k: :c?}, f(:even?), f(:even), text(:x?), to_json(:x?))",
+        ":even? false [:a?, :b] {k: :c?} 1 2 :x? \"x?\"",
+    );
+    ok("print(match :ok? \n  :ok -> 1\n  :ok? -> 2\nend, \"{:a?}\", :a < :a?)", "2 :a? true");
+    // A record key stays a key; `x?` and `even?` keep their meaning.
+    ok("fn even?(n) = n % 2 == 0\nfn f(x) = Some({k:x?})\nprint(f(Some(1)), {a:even?(2)})", "Some({k: 1}) {a: true}");
+    // The old reading is still there with a space, and refused.
+    let r = fails("fn f(x) = :even ?", "E016");
+    assert!(r.stderr.contains("got Symbol :even"), "{}", r.stderr);
+    // The formatter keeps that space: without it, the meaning would change.
+    let fmt = |code: &str| rythme::format::format(code).unwrap_or_else(|d| panic!("{code}: {}", d[0].render(false)));
+    assert_eq!(fmt("x = :a?\nfn f(x) = :b  ?\n"), "x = :a?\nfn f(x) = :b ?\n");
+}
 
 #[test]
 fn blocks_are_the_last_argument_of_a_call() {
@@ -343,4 +388,65 @@ fn values_in_results_keep_their_meaning() {
     assert_eq!(fmt("match x\n  1 ->   puts 1 ,2\n  _ -> 0\nend\n"), "match x\n  1 -> puts 1, 2\n  _ -> 0\nend\n");
     let r = rythme(&["help", "ruby"]);
     assert!(r.stdout.contains("if ok then puts \"yes\" else puts \"no\""), "{}", r.stdout);
+}
+
+/// `show [1, 2]` is an index when the file gives `show` a value anywhere,
+/// even far away: the reading does not change (1.x keeps it), but where
+/// `show` is a function, W011 says why and asks for parentheses.
+#[test]
+fn a_name_given_a_value_elsewhere_is_not_called_without_parentheses() {
+    let r = fails("fn show(xs) = print(xs)\nfn twice(show) = show * 2\nshow [1]", "E005");
+    assert!(r.stderr.contains("warning[W011]: `show [...]` is read as an index, not as a call"), "{}", r.stderr);
+    assert!(r.stderr.contains("2 | fn twice(show) = show * 2\n  |          ---- because `show` is given a value here"), "{}", r.stderr);
+    assert!(r.stderr.contains("`show([...])`; for an index, write `show[...]` without a space"), "{}", r.stderr);
+    // In a result, with `-`, and for a function kept in a value.
+    let r = fails("fn neg(v) = -v\nfn g(neg) = neg * 2\nfn h(b) = if b then neg -5 else 0", "E005");
+    assert!(r.stderr.contains("warning[W011]: `neg -...` is read as a subtraction, not as a call"), "{}", r.stderr);
+    assert!(r.stderr.contains("`neg(-x)`; for a subtraction, write `neg - x`"), "{}", r.stderr);
+    let r = fails("fn show(xs) = print(xs)\nfn twice(show) = show * 2\nfn f() = show [1]", "E005");
+    assert!(r.stderr.contains("warning[W011]") && r.stderr.contains("`show` is a function here"), "{}", r.stderr);
+    // A value that holds a function is a value: its error says how to call it.
+    let r = fails("show = fn(xs) = print(xs)\nshow [1]", "E005");
+    assert!(!r.stderr.contains("W011"), "{}", r.stderr);
+    // A syntax error there says it too.
+    let r = fails("fn show(xs) = print(xs)\nfn twice(show) = show * 2\nshow [1, 2]", "E001");
+    assert!(r.stderr.contains("`show` is read as a value here, not called, because the code gives it a value (line 2)"), "{}", r.stderr);
+    // Where the name is a value, or has none in the file, nothing is said.
+    ok("xs = [7, 8]\nfn f(x) = x -1\nprint(xs [0], f(3))\nputs [1, 2]\nputs -1", "7 2\n[1, 2]\n-1");
+    let r = rythme(&["-e", "xs = [7, 8]\nfn first(xs) = xs [0]\nprint(first(xs))"]);
+    assert_eq!(r.stdout, "7\n");
+    assert!(!r.stderr.contains("W011"), "{}", r.stderr);
+    // The parentheses call it.
+    ok("fn show(xs) = print(xs)\nfn twice(show) = show * 2\nshow([1, 2])", "[1, 2]");
+    let r = rythme(&["explain", "W011"]);
+    assert!(r.stdout.contains("W011 — Index or subtraction instead of a call"), "{}", r.stdout);
+    let r = rythme_lang("fr", &["-e", "fn montre(xs) = print(xs)\nfn double(montre) = montre * 2\nmontre [1]"]);
+    assert!(r.stderr.contains("`montre [...]` est lu comme un indice, pas comme un appel"), "{}", r.stderr);
+}
+
+/// A case of `match` with its result on several indented lines, as in Ruby
+/// or Python, is not Rythme: the error says to write `do ... end`.
+#[test]
+fn a_case_on_several_lines_is_explained() {
+    let help = "for a result on several lines, write `do` after `->`, then the lines, then `end`";
+    for code in [
+        "fn f(r) = match r\n  Ok(x) ->\n    y = x + 1\n    y * 2\n  Err(_) -> 0\nend",
+        "fn f(r) = match r\n  Ok(x) ->\n    print(x)\n    x * 2\n  Err(_) -> 0\nend",
+        "fn f(r) = match r\n  Ok(x) -> print(x)\n    x * 2\n  Err(_) -> 0\nend",
+        "fn f(r)\n  match r\n    Ok(x) ->\n      y = x + 1\n      y\n    _ -> 0\n  end\nend",
+    ] {
+        let r = fails(code, "E001");
+        assert!(r.stderr.contains(help), "{code}\n{}", r.stderr);
+        assert!(!r.stderr.contains("use `==`"), "{code}\n{}", r.stderr);
+    }
+    // The ways that work keep working: `do ... end`, and the result on the next line.
+    ok("fn f(r) = match r\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\n  Err(_) -> 0\nend\nprint(f(Ok(1)), f(Err(1)))", "4 0");
+    ok("fn f(r) = match r\n  Ok(x) ->\n    x * 2\n  Err(_) ->\n    0\nend\nprint(f(Ok(1)), f(Err(1)))", "2 0");
+    // Other mistakes keep their messages.
+    let r = fails("x = match 1\n  1 -> 2 3\nend", "E001");
+    assert!(r.stderr.contains("put each case on its own line") && !r.stderr.contains(help), "{}", r.stderr);
+    let r = fails("x = match 1\n  1 2\nend", "E001");
+    assert!(r.stderr.contains("each case is written `pattern -> result`"), "{}", r.stderr);
+    let r = rythme_lang("fr", &["-e", "fn f(r) = match r\n  Ok(x) ->\n    y = x + 1\n    y\n  _ -> 0\nend"]);
+    assert!(r.stderr.contains("écrivez `do` après `->`"), "{}", r.stderr);
 }

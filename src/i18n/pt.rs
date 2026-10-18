@@ -386,6 +386,14 @@ transforme seu valor em um registro primeiro, como {{kind: "Circle", radius: r}}
         ("defined here", "definido aqui"),
         ("from how `{name}` uses `{p}`, it needs: `{sig}`", "pelo jeito como `{name}` usa `{p}`, ele precisa de: `{sig}`"),
         // src/check.rs
+        ("`{s} [...]` is read as an index, not as a call", "`{s} [...]` é lido como um índice, não como uma chamada"),
+        ("to call `{s}`, put its argument in parentheses: `{s}([...])`; for an index, write `{s}[...]` without a space", "para chamar `{s}`, coloque o argumento entre parênteses: `{s}([...])`; para um índice, escreva `{s}[...]` sem espaço"),
+        ("`{s} -...` is read as a subtraction, not as a call", "`{s} -...` é lido como uma subtração, não como uma chamada"),
+        ("to call `{s}`, put its argument in parentheses: `{s}(-x)`; for a subtraction, write `{s} - x`", "para chamar `{s}`, coloque o argumento entre parênteses: `{s}(-x)`; para uma subtração, escreva `{s} - x`"),
+        ("`{s}` is not a value here", "`{s}` não é um valor aqui"),
+        ("`{s}` is a function here", "`{s}` é uma função aqui"),
+        ("because `{s}` is given a value here", "porque `{s}` recebe um valor aqui"),
+        ("a call without parentheses, like `{s} [1, 2]` or `{s} -1`, is read so only when the file never gives `{s}` a value", "uma chamada sem parênteses, como `{s} [1, 2]` ou `{s} -1`, só é lida assim quando o arquivo nunca dá um valor a `{s}`"),
         ("the type `{name}` is part of Rythme", "o tipo `{name}` faz parte do Rythme"),
         ("give your type another name", "dê outro nome ao seu tipo"),
         ("the type `{}` is already defined", "o tipo `{}` já está definido"),
@@ -801,6 +809,7 @@ veja `rythme help fmt`"#,
 Commands
   rythme                    interactive mode (try code line by line)
   rythme file.ry            run a program
+  rythme run --seed 42 f.ry run it with the same draws of random every time
   rythme check file.ry      find problems without running the program
   rythme test file.ry       run the tests of a file (or of a folder)
   rythme fmt file.ry        give the code its official layout (--check: only check)
@@ -835,6 +844,8 @@ Topics (rythme help TOPIC)
   projects    projects and packages: rythme new, rythme.toml, rythme install
   dates       dates and times: now(), today(), calendar, ISO 8601
   regex       searching, cutting and replacing with regular expressions
+  csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
+  random      chance, and the same draws again with a seed
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
@@ -850,6 +861,7 @@ A specific function: rythme help map
 Comandos
   rythme                    modo interativo (testar código linha por linha)
   rythme arquivo.ry         executar um programa
+  rythme run --seed 42 f.ry executá-lo com os mesmos sorteios de random toda vez
   rythme check arquivo.ry   encontrar problemas sem executar o programa
   rythme test arquivo.ry    executar os testes de um arquivo (ou de uma pasta)
   rythme fmt arquivo.ry     dar ao código o seu layout oficial (--check: só verificar)
@@ -884,6 +896,8 @@ Temas (rythme help TEMA)
   projects    projetos e pacotes: rythme new, rythme.toml, rythme install
   dates       datas e horas: now(), today(), calendário, ISO 8601
   regex       buscar, cortar e substituir com expressões regulares
+  csv         as tabelas das planilhas: csv_parse, csv_records, csv_format
+  random      o acaso, e os mesmos sorteios de novo com uma semente
   repl        o modo interativo
   fmt         o layout oficial do código (rythme fmt)
   doc         documentação a partir dos comentários ## (rythme doc)
@@ -995,6 +1009,9 @@ Temas: start, syntax, functions, lists, text, records, types, match, errors, fun
         ("[Enter] next   [q] quit > ", "[Enter] seguinte   [q] sair > "),
         ("To practice, run `rythme` and type code, or do the exercises: `rythme exercise list`. `rythme help builtins` lists every function.", "Para praticar, execute `rythme` e digite código, ou faça os exercícios: `rythme exercise list`. `rythme help builtins` lista todas as funções."),
         // src/interp.rs
+        ("record", "record"),
+        ("`:{field}` is a symbol, not a text: write `{r}.{field}` or `{r}[\"{field}\"]`, or `get({r}, \"{field}\")` to receive an Option", "`:{field}` é um símbolo, não um texto: escreva `{r}.{field}` ou `{r}[\"{field}\"]`, ou `get({r}, \"{field}\")` para receber uma Option"),
+        ("the dict has the key {shown}, which is not the same key as {key}: write `[{shown}]`", "o dicionário tem a chave {shown}, que não é a mesma chave que {key}: escreva `[{shown}]`"),
         ("this list would be too large (more than {MAX_LIST} elements)", "esta lista ficaria grande demais (mais de {MAX_LIST} elementos)"),
         ("this text would be too large (more than {mb} MB)", "este texto ficaria grande demais (mais de {mb} MB)"),
         ("does it grow in a function that calls itself? Check that the function always reaches a case where it stops", "ele cresce em uma função que chama a si mesma? Verifique se a função sempre chega a um caso em que para"),
@@ -1221,6 +1238,9 @@ As definições dele são usadas pelo nome `{n}`: `{n}.name`"#,
         ("some names would then refer to something else", "alguns nomes passariam a se referir a outra coisa"),
         ("the code would not be valid", "o código não seria válido"),
         // src/manifest.rs
+        ("the section `[{name}]` is written twice", "a seção `[{name}]` está escrita duas vezes"),
+        ("put all the lines of `[{name}]` under one `[{name}]`", "coloque todas as linhas de `[{name}]` sob um único `[{name}]`"),
+        ("`{name}` is written both as `[{name}]` and as `[[{name}]]`", "`{name}` está escrito ao mesmo tempo como `[{name}]` e como `[[{name}]]`"),
         ("expected a name here", "esperava um nome aqui"),
         ("each line is `name = \"value\"`, like `version = \"0.1.0\"`", "cada linha é `name = \"value\"`, como `version = \"0.1.0\"`"),
         ("this text is not closed", "este texto não está fechado"),
@@ -1278,6 +1298,12 @@ As definições dele são usadas pelo nome `{n}`: `{n}.name`"#,
 "#,
         ),
         // src/parser.rs
+        ("a case of `match` gives one expression; for a result on several lines, write `do` after `->`, then the lines, then `end`:\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\nor move the lines into a function: `Ok(x) -> handle(x)`", "um caso de `match` dá uma única expressão; para um resultado em várias linhas, escreva `do` depois de `->`, depois as linhas, depois `end`:\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\nou coloque as linhas em uma função: `Ok(x) -> tratar(x)`"),
+        ("`{name}` is read as a value here, not called, because the code gives it a value (line {line}): to call it, put its argument in parentheses, like `{name}([1, 2])`", "`{name}` é lido aqui como um valor, não é chamado, porque o código lhe dá um valor (linha {line}): para chamá-lo, coloque o argumento entre parênteses, como `{name}([1, 2])`"),
+        ("Rythme has no `condition ? a : b`", "Rythme não tem `condição ? a : b`"),
+        ("`?` does not choose between two values", "`?` não escolhe entre dois valores"),
+        ("write `if condition then a else b`, like `if x > 2 then \"big\" else \"small\"`", "escreva `if condição then a else b`, como `if x > 2 then \"grande\" else \"pequeno\"`"),
+        ("after a value, `?` takes it out of `Some(x)` or `Ok(x)` and stops on `None` or `Err(e)`; at the end of a name, it is part of the name (`even?`)", "depois de um valor, `?` o tira de `Some(x)` ou `Ok(x)` e para em `None` ou `Err(e)`; no fim de um nome, faz parte do nome (`even?`)"),
         ("all the definitions of `{name}` must have the same number of parameters", "todas as definições de `{name}` devem ter o mesmo número de parâmetros"),
         ("{} parameter(s) here", "{} parâmetro(s) aqui"),
         ("expected {expected}, found {found}", "esperava {expected}, encontrou {found}"),
@@ -1608,6 +1634,7 @@ Thumbs.db
         ("src/greeting.ry", "src/saudacao.ry"),
         ("tests/greeting_test.ry", "tests/saudacao_test.ry"),
         // src/repl.rs
+        ("usage: :explain CODE, like :explain E003   (codes: {})", "uso: :explain CÓDIGO, como :explain E003   (códigos: {})"),
         (":help for help, :quit to leave", ":help para ajuda, :quit para sair"),
         ("(type :quit to leave)", "(digite :quit para sair)"),
         ("(cancelled)", "(cancelado)"),
@@ -1618,13 +1645,14 @@ Thumbs.db
         ("Everything was forgotten.", "Tudo foi esquecido."),
         ("Messages are now in English.", "As mensagens agora estão em português."),
         ("usage: :lang fr  (or another of {codes})", "uso: :lang pt  (ou outro de {codes})"),
-        ("unknown code; codes look like E003 or W001", "código desconhecido; os códigos são como E003 ou W001"),
         ("usage: :steps EXPRESSION, like :steps fib(4)", "uso: :steps EXPRESSÃO, como :steps fib(4)"),
         ("Nothing defined yet.", "Nada definido ainda."),
         ("unknown command `{other}`", "comando desconhecido `{other}`"),
         (" — did you mean `{best}`?", " — você quis dizer `{best}`?"),
         (":help lists the commands", ":help lista os comandos"),
         // src/steps.rs
+        ("unknown option `{flag}` for `rythme steps`", "opção desconhecida `{flag}` para `rythme steps`"),
+        ("\nthe options are: --max N, --width N (see `rythme help steps`)", "\nas opções são: --max N, --width N (veja `rythme help steps`)"),
         ("  ... (more steps, not shown: {n} are shown at most, change it with --max)", "  ... (mais etapas, não mostradas: no máximo {n} são mostradas, mude isso com --max)"),
         ("this calculation became too deep to be shown step by step (more than {MAX_DEPTH} operations inside each other)", "este cálculo ficou fundo demais para ser mostrado passo a passo (mais de {MAX_DEPTH} operações umas dentro das outras)"),
         ("try it with smaller values, or run the program normally: `rythme file.ry`", "tente com valores menores, ou execute o programa normalmente: `rythme arquivo.ry`"),
@@ -4291,6 +4319,36 @@ Certo:   0..17 -> "young"
          18..64 -> "adult"
 Para números decimais, que ficam entre 17 e 18, compare em vez disso:
   a if a < 18 -> "young""#,
+        ),
+        (
+            r#"W011 — Index or subtraction instead of a call
+
+At the start of a statement or of a result, `show [1, 2]` and `show -1`
+call `show` without parentheses, unless the file gives `show` a value
+somewhere: with `=`, as a parameter of a function or a block, or in a
+pattern. Then they are an index and a subtraction, everywhere in the file,
+even where `show` is a function. The value may be given far away, to a
+parameter of another function.
+
+Wrong:   fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011: an index of the function
+Right:   show([1, 2])
+Or give the parameter another name: fn twice(n) = n * 2"#,
+            r#"W011 — Índice ou subtração em vez de uma chamada
+
+No início de uma instrução ou de um resultado, `show [1, 2]` e `show -1`
+chamam `show` sem parênteses, a não ser que o arquivo dê um valor a `show`
+em algum lugar: com `=`, como parâmetro de uma função ou de um bloco, ou em
+um padrão. Então são um índice e uma subtração, em todo o arquivo, mesmo onde
+`show` é uma função. O valor pode ser dado longe, a um parâmetro de outra
+função.
+
+Errado:  fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011: um índice da função
+Certo:   show([1, 2])
+Ou dê outro nome ao parâmetro: fn twice(n) = n * 2"#,
         ),
         ("Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.", "Define uma função: `fn name(x) = expression`, ou com o corpo nas linhas seguintes, terminado por `end`. Sem nome, `fn(x) = x * 2` é uma função anônima."),
         ("Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.", "Escolhe entre dois valores: `if condition then value else other`. Todo `if` tem um `else`, porque um `if` sempre dá um valor."),
@@ -8091,5 +8149,159 @@ end
 # Seu teste:
 "#,
         ),
+        // ----- CSV and seeded random (src/builtins/csv.rs, src/builtins.rs, src/main.rs, src/help.rs)
+        // src/builtins/csv.rs
+        ("line {line}, column {column}: the quote that starts this field is never closed (a quote inside a field is written twice: \"\")", "linha {line}, coluna {column}: as aspas que abrem este campo nunca são fechadas (aspas dentro de um campo escrevem-se duas vezes: \"\")"),
+        ("line {line}, column {column}: a quote in the middle of a field: put the whole field between quotes, and write each quote inside it twice (\"5\"\" screen\")", "linha {line}, coluna {column}: aspas no meio de um campo: coloque o campo inteiro entre aspas, e escreva duas vezes cada aspa que ele contém (\"tela 5\"\"\")"),
+        ("line {line}, column {column}: after the quote that closes a field comes {sep} or the end of the line, not {c}", "linha {line}, coluna {column}: depois das aspas que fecham um campo vem {sep} ou o fim da linha, não {c}"),
+        ("line {line}: the header names the column \"{name}\" twice", "linha {line}: o cabeçalho nomeia duas vezes a coluna \"{name}\""),
+        ("line {line}: {got} field(s), but the header has {wanted} column(s)", "linha {line}: {got} campo(s), mas o cabeçalho tem {wanted} coluna(s)"),
+        ("line {line}: this table has too many rows or fields (more than {MAX_LIST})", "linha {line}: esta tabela tem linhas ou campos demais (mais de {MAX_LIST})"),
+        ("a tab", "uma tabulação"),
+        ("a space", "um espaço"),
+        ("`{f}` cannot use {c} as separator: it has another meaning in CSV", "`{f}` não pode usar {c} como separador: tem outro sentido em CSV"),
+        ("the separator of `{f}` is one character, not \"{s}\"", "o separador de `{f}` é um único caractere, não \"{s}\""),
+        ("the usual separators: \",\" (by default), \";\" (French spreadsheets), \"\\t\" (a tab)", "os separadores habituais: \",\" (por padrão), \";\" (planilhas em francês ou em português), \"\\t\" (uma tabulação)"),
+        ("`csv_format`: the field {column} of row {row} must be a text, a number or a Bool, but it is {got}", "`csv_format`: o campo {column} da linha {row} deve ser um texto, um número ou um Bool, mas é {got}"),
+        ("turn it into a text first, with `text(x)` or `unwrap_or(x, \"\")`", "transforme-o primeiro em texto, com `text(x)` ou `unwrap_or(x, \"\")`"),
+        ("`csv_format`: record {number} has the fields {{{these}}}, but the first one has {{{wanted}}}: every record must have the same fields", "`csv_format`: o registro {number} tem os campos {{{these}}}, mas o primeiro tem {{{wanted}}}: todos os registros devem ter os mesmos campos"),
+        ("a record, like the first row", "um registro, como a primeira linha"),
+        ("a list of fields", "uma lista de campos"),
+        ("`csv_format`: row {number} must be {wanted}, but it is {got}", "`csv_format`: a linha {number} deve ser {wanted}, mas é {got}"),
+        ("`csv_format` takes a list of rows: lists of fields ([[\"name\", \"age\"], [\"Ada\", 36]]) or records ([{{name: \"Ada\", age: 36}}])", "`csv_format` recebe uma lista de linhas: listas de campos ([[\"nome\", \"idade\"], [\"Ada\", 36]]) ou registros ([{{nome: \"Ada\", idade: 36}}])"),
+        // src/main.rs
+        ("the seed must be a whole number, like `rythme run --seed 42 game.ry`, not `{v}`", "a semente deve ser um número inteiro, como `rythme run --seed 42 jogo.ry`, não `{v}`"),
+        ("`--seed` needs a whole number, like `rythme run --seed 42 game.ry`", "`--seed` espera um número inteiro, como `rythme run --seed 42 jogo.ry`"),
+        // src/builtins.rs
+        ("Makes the draws of `random` and `shuffle` that follow the same on every run: the same seed (a whole number) gives the same draws, with the same version of Rythme. For tests and classes; `rythme run --seed N file.ry` does the same from the command line.", "Torna iguais a cada execução os sorteios de `random` e `shuffle` que vêm depois: a mesma semente (um número inteiro) dá os mesmos sorteios, com a mesma versão de Rythme. Para os testes e as aulas; `rythme run --seed N arquivo.ry` faz o mesmo pela linha de comando."),
+        ("Reads a CSV table (a spreadsheet saved as text): `Ok(list of rows)`, each row a list of texts, or `Err(message)` saying at which line and column the text is not valid CSV. A field between quotes may hold separators, line breaks and quotes (written twice). The separator is \",\" unless given: \";\" for French spreadsheets, \"\\t\" for tabs. See `rythme help csv`.", "Lê uma tabela CSV (uma planilha salva como texto): `Ok(lista de linhas)`, cada linha uma lista de textos, ou `Err(mensagem)` dizendo em que linha e coluna o texto não é CSV válido. Um campo entre aspas pode conter separadores, quebras de linha e aspas (escritas duas vezes). O separador é \",\" se nenhum for dado: \";\" para as planilhas em francês ou em português, \"\\t\" para as tabulações. Veja `rythme help csv`."),
+        ("Reads a CSV table whose first line names the columns: `Ok(list of records)`, one record for each other line, with one field for each column, in their order, holding a text. `Err(message)` when the text is not valid CSV, when a line does not have as many fields as the header, or when two columns have the same name. To get numbers, use `parse_int` or `parse_float` on the fields.", "Lê uma tabela CSV cuja primeira linha nomeia as colunas: `Ok(lista de registros)`, um registro para cada outra linha, com um campo para cada coluna, na sua ordem, contendo um texto. `Err(mensagem)` quando o texto não é CSV válido, quando uma linha não tem tantos campos quanto o cabeçalho, ou quando duas colunas têm o mesmo nome. Para obter números, use `parse_int` ou `parse_float` nos campos."),
+        ("Writes rows as a CSV text, each one on its line, ended by a line break. The rows are lists of fields, or records: then a first line names their fields. A field is a text, a number or a Bool, put between quotes only when it needs them (a separator, a quote or a line break inside). The separator is \",\" unless given.", "Escreve linhas como texto CSV, cada uma na sua linha, terminada por uma quebra de linha. As linhas são listas de campos, ou registros: então uma primeira linha nomeia os seus campos. Um campo é um texto, um número ou um Bool, posto entre aspas só quando precisa (um separador, aspas ou uma quebra de linha dentro). O separador é \",\" se nenhum for dado."),
+        // src/help.rs
+        (r#"CSV: THE TABLES OF SPREADSHEETS
+
+A CSV text is a table: one row per line, its fields separated by commas.
+Every spreadsheet (LibreOffice, Excel, Google Sheets...) opens and saves it.
+
+  csv_parse("name,age\nAda,36")              # Ok([["name", "age"], ["Ada", "36"]])
+  csv_records("name,age\nAda,36")            # Ok([{name: "Ada", age: "36"}])
+  csv_format([["name", "age"], ["Ada", 36]]) # "name,age\nAda,36\n"
+  csv_format([{name: "Ada", age: 36}])       # the same text: records give a header
+
+With files
+  match read_file("grades.csv").and_then(csv_records)
+    Ok(rows) -> print(len(rows), "students")
+    Err(e) -> print("Error: {e}")
+  end
+  write_file("copy.csv", csv_format(rows))
+
+The rules (RFC 4180)
+  A field between quotes may hold commas, line breaks and quotes, written
+  twice: "say ""hi""" is the field  say "hi"  ; csv_format adds the quotes
+  only where they are needed.
+  Lines end with \n or \r\n (Windows); the last one may have no line break.
+  Empty lines are skipped; spaces are kept as they are in the file.
+  Every field is a text: parse_int(r.age) or parse_float(r.price) give numbers.
+  csv_records: the first line names the columns, which become the fields of
+  the records (r.name; get(r, "first name") for a name with spaces); every
+  line must have as many fields as the header.
+
+Another separator: the last argument
+  ";" (spreadsheets in French, where the comma is the decimal point), "\t"
+  (tabs), "|"...
+  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
+  csv_format(rows, ";")
+
+A text that is not valid CSV gives Err, which says where (line and column):
+  csv_parse("a,b\"c")   # Err("line 1, column 4: a quote in the middle of a field: ...")"#, r#"CSV: AS TABELAS DAS PLANILHAS
+
+Um texto CSV é uma tabela: uma linha da tabela por linha de texto, os seus
+campos separados por vírgulas. Todas as planilhas (LibreOffice, Excel,
+Google Sheets...) o abrem e o salvam.
+
+  csv_parse("nome,idade\nAda,36")            # Ok([["nome", "idade"], ["Ada", "36"]])
+  csv_records("nome,idade\nAda,36")          # Ok([{nome: "Ada", idade: "36"}])
+  csv_format([["nome", "idade"], ["Ada", 36]])   # "nome,idade\nAda,36\n"
+  csv_format([{nome: "Ada", idade: 36}])     # o mesmo texto: os registros dão um cabeçalho
+
+Com arquivos
+  match read_file("notas.csv").and_then(csv_records)
+    Ok(linhas) -> print(len(linhas), "alunos")
+    Err(e) -> print("Erro: {e}")
+  end
+  write_file("copia.csv", csv_format(linhas))
+
+As regras (RFC 4180)
+  Um campo entre aspas pode conter vírgulas, quebras de linha e aspas,
+  escritas duas vezes: "diz ""olá""" é o campo  diz "olá"  ; csv_format põe
+  aspas só onde são necessárias.
+  As linhas terminam com \n ou \r\n (Windows); a última pode não ter quebra
+  de linha.
+  As linhas vazias são puladas; os espaços ficam como estão no arquivo.
+  Cada campo é um texto: parse_int(r.idade) ou parse_float(r.preco) dão números.
+  csv_records: a primeira linha nomeia as colunas, que se tornam os campos
+  dos registros (r.nome; get(r, "nome do meio") para um nome com espaços);
+  cada linha deve ter tantos campos quanto o cabeçalho.
+
+Outro separador: o último argumento
+  ";" (as planilhas em francês ou em português, onde a vírgula é a das
+  casas decimais), "\t" (as tabulações), "|"...
+  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
+  csv_format(linhas, ";")
+
+Um texto que não é CSV válido dá Err, que diz onde (linha e coluna):
+  csv_parse("a,b\"c")   # Err("linha 1, coluna 4: aspas no meio de um campo: ...")"#),
+        (r#"RANDOM: CHANCE, AND THE SAME CHANCE AGAIN
+
+  random()                   # a decimal number from 0 (included) to 1 (excluded)
+  random(1, 6)               # a whole number from 1 to 6, both included
+  random(["a", "b", "c"])    # one element of the list
+  shuffle([1, 2, 3])         # the list in a random order
+
+Every run draws other values. To get the same draws again (a test, a class
+where everyone sees the same game, a mistake to find again), give a seed:
+
+  random_seed(42)                  # in the program: the draws that follow
+  rythme run --seed 42 game.ry     # from the command line: the whole run
+
+The same seed gives the same draws, in the same order, with the same version
+of Rythme (another version may draw other values). Without a seed, nothing
+changes: every run is different.
+
+In a test, call random_seed at its start: its draws then do not depend on
+the tests before it.
+  test "a dice roll stays between 1 and 6"
+    random_seed(7)
+    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+  end
+
+The property tests (check_all, sample) have their own seed:
+rythme test --seed N (see rythme help tests)."#, r#"RANDOM: O ACASO, E O MESMO ACASO DE NOVO
+
+  random()                   # um número decimal de 0 (incluído) a 1 (excluído)
+  random(1, 6)               # um número inteiro de 1 a 6, ambos incluídos
+  random(["a", "b", "c"])    # um elemento da lista
+  shuffle([1, 2, 3])         # a lista numa ordem ao acaso
+
+Cada execução sorteia outros valores. Para obter de novo os mesmos sorteios
+(um teste, uma aula em que todos veem a mesma partida, um erro a reencontrar),
+dê uma semente:
+
+  random_seed(42)                  # no programa: os sorteios que vêm depois
+  rythme run --seed 42 jogo.ry     # pela linha de comando: a execução inteira
+
+A mesma semente dá os mesmos sorteios, na mesma ordem, com a mesma versão de
+Rythme (outra versão pode sortear outros valores). Sem semente, nada muda:
+cada execução é diferente.
+
+Num teste, chame random_seed no início: os seus sorteios deixam então de
+depender dos testes anteriores.
+  test "um lançamento de dado fica entre 1 e 6"
+    random_seed(7)
+    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+  end
+
+Os testes de propriedades (check_all, sample) têm a sua própria semente:
+rythme test --seed N (veja rythme help tests)."#),
     ],
 }

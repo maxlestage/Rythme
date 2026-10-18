@@ -321,6 +321,19 @@ fn messages_follow_the_editor_language() {
 }
 
 #[test]
+fn the_ternary_operator_of_ruby_is_explained_in_the_editor() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/ternary.ry";
+    let diags = lsp.open(u, "x = 3\ny = x > 2 ? 1 : 2\n");
+    assert_eq!(diags.len(), 1, "{diags:?}");
+    assert_eq!(diags[0].get("code").as_str(), Some("E001"));
+    assert_eq!(range(&diags[0]), (1, 10, 1, 11));
+    let msg = diags[0].get("message").as_str().unwrap();
+    assert!(msg.contains("condition ? a : b") && msg.contains("if condition then a else b"), "{msg}");
+    assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
 fn hover_shows_documentation() {
     let (mut lsp, _) = Lsp::start("en", INIT);
     let u = "file:///nowhere/hover.ry";
@@ -1236,4 +1249,31 @@ fn ruby_style_names_blocks_and_completion_after_a_dot() {
     let l = labels(&lsp.at("textDocument/completion", u, 0, 7));
     assert!(l.iter().any(|x| x == "sum") && l.iter().any(|x| x == "select") && !l.iter().any(|x| x == "upcase"), "{l:?}");
     assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
+fn csv_and_random_seed_in_the_editor() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/csv.ry";
+    lsp.open(u, "rows = csv_parse(\"a;b\", \nrandom_seed(1)\n");
+    let sig = lsp.at("textDocument/signatureHelp", u, 0, 24);
+    assert_eq!(sig.get("signatures").as_array()[0].get("label").as_str(), Some("csv_parse(text, separator)"));
+    assert_eq!(sig.get("activeParameter").as_u64(), Some(1));
+    let h = hover_text(&lsp.at("textDocument/hover", u, 1, 3));
+    assert!(h.contains("random_seed(n)") && h.contains("the same draws"), "{h}");
+    assert_eq!(lsp.stop(), 0);
+    // The documentation in the language of the editor.
+    for (lang, words) in [
+        ("fr", "Lit un tableau CSV"),
+        ("es", "Lee una tabla CSV"),
+        ("de", "Liest eine CSV-Tabelle"),
+        ("pt", "Lê uma tabela CSV"),
+        ("zh", "读取一个 CSV 表格"),
+    ] {
+        let (mut lsp, _) = Lsp::start(lang, INIT);
+        lsp.open(u, "x = csv_parse(\"a\")\n");
+        let h = hover_text(&lsp.at("textDocument/hover", u, 0, 6));
+        assert!(h.contains(words), "{lang}: {h}");
+        assert_eq!(lsp.stop(), 0);
+    }
 }

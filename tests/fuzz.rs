@@ -1428,3 +1428,39 @@ fn values_read_back_from_their_text_are_the_same() {
         assert!(back.equals(&v), "{code:?}");
     }
 }
+
+/// `:even?` is one symbol since 1.1; before, it was read as the symbol
+/// `:even` followed by the operator `?`. No program that ran changes meaning:
+/// that old reading, written `:even ?` now, is refused before running
+/// wherever it is put. Checked on the examples and the code of the tests,
+/// with it in place of names and numbers, as the checker of `rythme` and of
+/// the REPL see it.
+#[test]
+fn the_old_reading_of_a_symbol_with_a_question_mark_never_ran() {
+    let mut rng = Rng(0x0005_e1b0);
+    let (mut checked, mut e016) = (0, 0);
+    for seed in seeds() {
+        let Ok(lexed) = lexer::lex(seed, u32::MAX) else { continue };
+        let spots: Vec<(usize, usize)> = lexed
+            .tokens
+            .iter()
+            .filter(|t| matches!(t.tok, lexer::Tok::Ident(_) | lexer::Tok::Int(_)))
+            .map(|t| (t.span.start as usize, t.span.end as usize))
+            .collect();
+        for _ in 0..spots.len().min(6) {
+            let (a, b) = spots[rng.below(spots.len())];
+            let old = if rng.chance(50) { "(:even ?)" } else { ":even ?" };
+            let src = format!("{}{old}{}", &seed[..a], &seed[b..]);
+            let file = source::add("old.ry", &src);
+            let Ok(items) = lexer::lex(&src, file).and_then(parser::parse) else { continue };
+            checked += 1;
+            for repl in [false, true] {
+                let diags = check::check(&items, &Knowledge::from_interp(&sandboxed_interp()), repl);
+                assert!(diags.iter().any(Diagnostic::is_error), "the checker accepts {src:?}");
+                e016 += usize::from(diags.iter().any(|d| d.code == "E016"));
+            }
+        }
+    }
+    // Enough programs reach the checker, and it refuses them for the `?`.
+    assert!(checked >= 300 && e016 >= checked, "{checked} checked, {e016} with E016");
+}

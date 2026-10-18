@@ -2158,6 +2158,18 @@ pub fn command(args: &[String]) -> i32 {
                     return 2;
                 }
             }
+        } else if flag.starts_with("--") && flag[2..].starts_with(|c: char| c.is_ascii_alphabetic()) {
+            // `--5` is an expression; `--bogus` a mistaken option, not the name `bogus`.
+            let mut msg = t!("unknown option `{flag}` for `rythme steps`", "option inconnue `{flag}` pour `rythme etapes`");
+            if let Some(best) = crate::suggest::closest(flag, ["--max", "--width"]) {
+                msg.push_str(&t!("\ndid you mean `{best}`?", "\nvouliez-vous dire `{best}` ?"));
+            }
+            msg.push_str(&t!(
+                "\nthe options are: --max N, --width N (see `rythme help steps`)",
+                "\nles options sont : --max N, --width N (voir `rythme help steps`)"
+            ));
+            crate::io::err_line(&msg);
+            return 2;
         } else {
             rest.push(a);
         }
@@ -2196,8 +2208,11 @@ pub fn command(args: &[String]) -> i32 {
             };
             let base = path.parent().map(std::path::Path::to_path_buf).unwrap_or_default();
             let canon = path.canonicalize().ok();
-            let whole = format!("{}\n{code}\n", src.trim_end());
+            let src = src.trim_end();
+            let whole = format!("{src}\n{code}");
             let name = path.display().to_string();
+            // Messages show the expression as itself, not as more lines of the file.
+            driver.tail = Some((src.len() + 1, "<expression>".to_string()));
             match driver.load_source(&name, &whole, canon, &base) {
                 Some(m) => return if run_module(&mut driver, &m, opts, Some(items.max(1))).is_ok() { 0 } else { 1 },
                 None => return 1,

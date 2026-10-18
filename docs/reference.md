@@ -734,7 +734,7 @@ text 42 2.0 ["a", "b"] {name: "Ada", "full name": "Ada L."} None ()
 
 A **symbol** is a name used as a value, as in Ruby: `:ok`, `:error`,
 `:pending`. It is written `:` directly followed by a name, and shown the same
-way. Two symbols are equal when their names are; they are ordered by name;
+way; a `?` right after the name is part of it, as in Ruby (`:even?`). Two symbols are equal when their names are; they are ordered by name;
 they are never equal to a text (`:ok == "ok"` is false, and the checker warns,
 W006). They are used in `match` patterns, and `to_json` writes them as texts.
 
@@ -1227,7 +1227,9 @@ end
 The subject is written on the same line as `match`; each case starts on its
 own line (or after a `;`), and `end` closes the `match`. There must be at
 least one case, and no `|` before a case. The result may start on the line
-after `->`.
+after `->`. It is one expression: for a result on several lines, write
+`Ok(x) -> do`, the lines, then `end` (or call a function); indented lines
+under a case are not part of it, and the error says so.
 
 The cases are tried **in order**. The first case whose pattern matches the
 value, and whose guard (if any) is `true`, is chosen; the names bound by the
@@ -1618,7 +1620,11 @@ As in Ruby, a **statement** may call a function without parentheses:
   before `=` or `->` on their line count). Then `x -1` is `x - 1` and
   `xs [0]` is `xs[0]`, as they always were, in a result too. Without a space before
   (`x-1`, `xs[0]`), or with a space after the `-` (`x - 1`), it is never a
-  call.
+  call. The value may be given anywhere in the file, even to a parameter of
+  another function: when the name is a function where it is written
+  (`show [1, 2]` with `fn show(xs)` and, elsewhere, `fn other(show)`), the
+  checker warns (W011) and shows where the name gets its value; write the
+  parentheses, `show([1, 2])`, to call it.
 - `rythme fmt` keeps the choice of the author, with or without parentheses,
   and writes the other readings as what they are: `x - 1`, `xs[0]`.
 
@@ -2800,12 +2806,13 @@ with examples; the code may be written in lowercase.
 | W008 | Result lost | a line that only calls a function without effect, like `push(list, x)`: values never change |
 | W009 | Function shown | a function shown in a text or printed (`<fn name>`) instead of what it gives |
 | W010 | Ranges that overlap | a range pattern shares numbers with a range of a case or definition before it: they always go to the first one |
+| W011 | Index or subtraction instead of a call | `show [1, 2]` or `show -1` starts a statement where `show` is a function, but the file gives `show` a value elsewhere: it is an index or a subtraction ([3.15](#315-calls-without-parentheses)) |
 
 ---
 
 ## 6. Standard library
 
-The 174 built-in functions are always available, without `use`. Like the
+The 178 built-in functions are always available, without `use`. Like the
 keywords, their names are in English. `rythme help builtins` lists all of
 them by category, one line each; `rythme help NAME` (or `help(NAME)` in a
 program, or `:doc NAME` in the REPL) shows the documentation of one, with
@@ -2850,7 +2857,8 @@ after the file name on the command line), `options()` (the words of
 `args()` read as options, in a Result: see below), `env(name)` (an environment
 variable, as an Option), `exit(code)`, `time()` (seconds since 1970, a
 Float), `random()` (a Float in [0, 1)), `random(a, b)` (an Int from a to b,
-included), `random(list)` (an element).
+included), `random(list)` (an element), `random_seed(n)` (the same draws on
+every run: see *Chance and seeds* below).
 
 **Numbers.** `abs`, `min` and `max` (several values, or one list), `sqrt`,
 `pow(x, n)` (same as `**`), `floor`, `ceil` and `round(x)` (give an Int),
@@ -2861,7 +2869,8 @@ included), `random(list)` (an element).
 numbers), and the constant `pi`.
 
 **Text.** `len`, `upper`, `lower`, `capitalize` (the first character in
-uppercase), `trim`, `pad_left(x, width, fill)` and `pad_right` (to line up
+uppercase, or in titlecase where Unicode has one: `ǆ` gives `ǅ`, `ß` gives
+`Ss`), `trim`, `pad_left(x, width, fill)` and `pad_right` (to line up
 columns; `fill` is a space by default), `split(text)` (at white space) and
 `split(text, separator)` (an empty separator cuts into characters),
 `join(list, separator)`, `contains`, `starts_with`, `ends_with`,
@@ -2908,7 +2917,10 @@ ignore the case. The usual rules choose between several matches: the
 leftmost, then the first alternative, then the longest repetition. Searching
 takes a time proportional to the length of the text times the size of the
 regex, whatever they are: the engine follows every way at once instead of
-trying one after the other (no "catastrophic backtracking"); for a
+trying one after the other (no "catastrophic backtracking"), and the
+searches of `find_all`, `split_by` and `replace_all` skip the ways that an
+earlier one showed to lead nowhere, so that finding every match usually
+reads the text about once; for a
 repetition of a part that can match an empty text, like `(a*)*`, it may
 choose another end than other engines. In a Rythme text, a backslash is
 written twice and braces `\{` and `\}`: `"\\d\{4\}"` is the regex
@@ -3046,6 +3058,100 @@ date (an unknown or missing field, a number out of range, a 30 February)
 stops these functions with E023, which says what is wrong. An offset is a
 fixed number: there are no daylight saving rules, so one day after a moment
 is the same time on the next day.
+
+**CSV.** The tables of spreadsheets, as RFC 4180 describes them.
+`csv_parse(text, separator)` gives `Ok(rows)`, each row a list of texts;
+`csv_records(text, separator)` reads the first line as the names of the
+columns and gives `Ok(records)`, one record for each other line, with one
+field for each column, in their order; `csv_format(rows, separator)` writes
+rows (lists of fields, or records: then a first line names their fields) as
+a text, each row ended by `\n`. The separator is `","` unless given: `";"`
+for spreadsheets in French, `"\t"` for tabs; a separator that is not one
+character, or is a quote or a line break, is E023. Reading follows the RFC:
+a field between quotes may hold separators, line breaks and quotes written
+twice (`"say ""hi"""`); lines end with `\n` or `\r\n` (kept as they are
+inside quotes); the last line may have no line break; empty lines are
+skipped (a line with only `""` is a row of one empty field); spaces are
+kept; the mark some programs write at the start of a file (BOM) is skipped.
+`csv_parse` keeps rows of different lengths. Every field is a text:
+`parse_int` and `parse_float` give numbers. A text that is not valid CSV
+gives `Err(message)`, with the line and the column of the mistake: a quote
+that is never closed, a quote in the middle of a field that does not start
+with one, something else than a separator or the end of the line after a
+closing quote; `csv_records` also gives `Err` for two columns of the same
+name and for a line that does not have as many fields as the header.
+Writing puts a field between quotes only when it needs them (the separator,
+a quote or a line break inside, or a row of one empty field); a field is a
+text, a number or a Bool (written as `print` writes them; another value is
+E005); records must all have the fields of the first one (E023). So
+`csv_parse(csv_format(rows))` gives `Ok(rows)` back for rows of texts, and
+`csv_records(csv_format(records))` gives the records back.
+
+*Records rather than dictionaries:* the records of `csv_records` keep the
+order of the columns (a dictionary orders its keys), print like a line of
+the table, are read with `r.name` and work with `keys`, `values`, `get` and
+`csv_format`, like the objects of `parse_json`. A column whose name is not a
+Rythme name is read with `get(r, "first name")` (an Option);
+`dict(record)` makes a dictionary of a record when one is needed.
+
+```rythme
+grades = "name;grade;comment\nAda;18,5;\"very good; keep going\"\nAlan;17;\"says \"\"hi\"\"\"\n"
+rows = unwrap(csv_records(grades, ";"))
+print(rows[0])
+print(rows |> map(fn(r) = unwrap(parse_float(replace(r.grade, ",", ".")))))
+print(csv_parse("a,\"b\nc\",d\r\ne,f,g"))
+table = [["item", "price"], ["bread", 1.5], ["jam, homemade", 4]]
+print(write_file("prices.csv", csv_format(table)))
+print(read_file("prices.csv") |> and_then(csv_parse))
+print(read_file("prices.csv"))
+print(trim_end(csv_format([{x: 1, y: "a;b"}, {x: 2, y: "c"}], ";")))
+print(csv_parse("a,b\nc,d\"e"))
+print(csv_records("a,b\n1"))
+```
+
+```text
+{name: "Ada", grade: "18,5", comment: "very good; keep going"}
+[18.5, 17.0]
+Ok([["a", "b\nc", "d"], ["e", "f", "g"]])
+Ok(())
+Ok([["item", "price"], ["bread", "1.5"], ["jam, homemade", "4"]])
+Ok("item,price\nbread,1.5\n\"jam, homemade\",4\n")
+x;y
+1;"a;b"
+2;c
+Err("line 2, column 4: a quote in the middle of a field: put the whole field between quotes, and write each quote inside it twice (\"5\"\" screen\")")
+Err("line 2: 1 field(s), but the header has 2 column(s)")
+```
+
+In the playground, `csv_parse`, `csv_records` and `csv_format` work as
+everywhere; only the files are missing (`read_file` gives an `Err`).
+
+**Chance and seeds.** `random` and `shuffle` draw other values on every
+run. `random_seed(n)` (a whole number) makes the draws that follow depend
+only on `n`: after `random_seed(n)`, the same calls give the same values, in
+the same order, on every run and every system, with the same version of
+Rythme (another version may draw other values: the promise is for one
+version). `rythme run --seed N file.ry` does the same for the whole run, as
+if the program started with `random_seed(N)`; it is given before the file,
+since what follows the file is for the program. Without either, nothing
+changes: each run starts from the clock. In a test, call `random_seed` at
+its start, so that its draws do not depend on the tests before it. The
+generators of property tests (`check_all`, `sample`) have their own seed,
+`rythme test --seed N` (see [4.8](#48-tests)), and `random_seed` does not
+change it.
+
+```rythme
+random_seed(2024)
+dice = map(1..10, fn(_) = random(1, 6))
+print(dice)
+random_seed(2024)
+print(map(1..10, fn(_) = random(1, 6)) == dice, shuffle(["Ada", "Alan", "Grace"]), random(["heads", "tails"]))
+```
+
+```text
+[6, 4, 6, 1, 2, 1, 1, 4, 6, 1]
+true ["Ada", "Grace", "Alan"] tails
+```
 
 **Property tests.** `check_all(property, generator, cases)`, `sample(generator, n)`,
 and the generators `ints(min, max)`, `floats(min, max)`, `texts(max_length)`,
@@ -3340,7 +3446,7 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMAND] [ARGUMENTS...]
 | Command | Aliases | What it does |
 |---------|---------|--------------|
 | *(none)* | `repl` | the interactive mode (see [7.2](#72-the-interactive-mode-repl)) |
-| `FILE [ARGS...]` | `run FILE [ARGS...]`, `lancer` | checks then runs the program; `ARGS` are given to `args()`. Without a file, in a project: its program (see [7.7](#77-projects-and-packages)), and so for `test`, `check`, `fmt` and `doc` |
+| `FILE [ARGS...]` | `run [--seed N] FILE [ARGS...]`, `lancer` | checks then runs the program; `ARGS` are given to `args()`; with `--seed N` (a whole number, before the file), `random` and `shuffle` draw the same values on every run, as after `random_seed(N)`. Without a file, in a project: its program (see [7.7](#77-projects-and-packages)), and so for `test`, `check`, `fmt` and `doc` |
 | `check FILE...` | `verifier`, `vérifier` | checks each program without running it (see [5.5](#55-the-check-before-running)) |
 | `test PATH... [--filter TEXT] [--seed N] [--watch] [-- ARGS...]` | `tester` | runs the tests of files and folders (see [4.8](#48-tests)) |
 | `fmt [--check] FILE...` | `format`, `formater` | gives the code its official layout; also a folder, or `-` for the standard input (see [7.4](#74-the-formatter-rythme-fmt)) |
@@ -3396,7 +3502,7 @@ unknown action or exercise is exit code 2.
 
 **Help topics.** `rythme help TOPIC` accepts `start`, `syntax`, `functions`,
 `lists`, `text`, `records`, `types`, `match`, `errors`, `functional`,
-`tests`, `exercises`, `modules`, `system`, `projects`, `dates`, `repl`,
+`tests`, `exercises`, `modules`, `system`, `projects`, `dates`, `csv`, `random`, `repl`,
 `fmt`, `doc`, `steps`, `editors`, `ruby` and `builtins`, and French or
 alternative names: `syntaxe`, `fonctions`, `listes`, `texte`,
 `enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`,
@@ -4119,7 +4225,7 @@ list_patterns = ".." [ NAME ] [ "," ]
 field_pattern = KEY ":" pattern | NAME | ".." ;
 
 MEMBER       = NAME [ "?" ] | CTOR | keyword | reserved word ;
-SYMBOL       = ":" NAME ;
+SYMBOL       = ":" NAME [ "?" ] ;
 KEY          = MEMBER | PLAIN_TEXT ;
 ```
 
@@ -4143,7 +4249,8 @@ Notes:
 - `"unless"`: the word starts an `unless` only as described in
   [1.5](#15-keywords-and-reserved-words); elsewhere it is a NAME.
 - `SYMBOL`: `:` directly followed by a name, except the `:` that follows a
-  field name after `{` or `,` ([2.14](#214-symbol)).
+  field name after `{` or `,` ([2.14](#214-symbol)); a `?` that touches the
+  name is part of the symbol (`:even?`), never the `postfix` operator.
 - In `match`, the subject must end on the line of `match`, and the cases may
   be separated by blank lines; `end` may follow the last case on the same
   line. In blocks, `end` may follow the last statement on the same line.

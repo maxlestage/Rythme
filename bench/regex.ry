@@ -1,0 +1,15 @@
+# Regexes: find_all, split_by and replace_all on long texts, with regexes
+# that make each search read far ahead (`a*b|a` on a text of `a`s took half a
+# minute when every match read the text to its end).
+
+as = repeat("a", 200_000)
+line = 1..20_000 |> map(fn(i) = "word{i} {i * 7}, x{i % 13}") |> join("; ")
+
+found = len(find_all(as, "a*b|a"))
+parts = len(split_by(as, "a*c|aa"))
+replaced = len(replace_all(as, "(?:a|b)*z|a\{1,3\}", "b"))
+numbers = find_all(line, "[0-9]+") |> map(fn(n) = len(n)) |> sum
+pieces = len(split_by(line, "[;,] *"))
+names = len(replace_all(line, "word([0-9]+)", "w$1"))
+
+print(found, parts, replaced, numbers, pieces, names)

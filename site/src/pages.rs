@@ -95,6 +95,16 @@ pub fn playground_link(lang: Lang, code: &str, test: bool) -> String {
     href
 }
 
+/// A link that opens `code` in the playground on the steps of the calculation of
+/// `expr`, computed after the definitions of `code` (`#code=…&mode=steps&expr=…`).
+pub fn steps_link(lang: Lang, code: &str, expr: &str) -> String {
+    format!("{}&mode=steps&expr={}", playground_link(lang, code, false), percent_encode(expr))
+}
+
+/// The step of the tour (from 0) whose code also opens on the steps of a
+/// calculation, and that calculation.
+pub const TOUR_STEPS: (usize, &str) = (2, "fib(4)");
+
 /// The same as JavaScript's `encodeURIComponent`.
 pub fn percent_encode(s: &str) -> String {
     let mut out = String::with_capacity(s.len() * 3);
@@ -605,10 +615,16 @@ pub fn learn(ctx: &Ctx) -> Page {
                     .child(p().text(step.text)),
             )
             .child(
-                div()
-                    .class("tour__code")
-                    .child(code_block(step.code))
-                    .child(a().class("tour__try").href(playground_link(lang, step.code, test)).text(format!("▶ {}", t.learn_try))),
+                div().class("tour__code").child(code_block(step.code)).child(
+                    div()
+                        .class("tour__links")
+                        .child(a().class("tour__try").href(playground_link(lang, step.code, test)).text(format!("▶ {}", t.learn_try)))
+                        .children((n == TOUR_STEPS.0).then(|| {
+                            a().class("tour__try tour__try--steps")
+                                .href(steps_link(lang, step.code, TOUR_STEPS.1))
+                                .text(format!("→ {}: {}", t.learn_steps, TOUR_STEPS.1))
+                        })),
+                ),
             )
     });
     let next = t.learn_next.iter().enumerate().map(|(n, item)| {
@@ -698,9 +714,53 @@ pub fn playground_ui(t: &Texts) -> String {
         ("shareSelect", t.pg_share_select),
         ("shareTooLong", t.pg_share_too_long),
         ("shareBroken", t.pg_share_broken),
+        ("stepsOf", t.pg_steps_of),
+        ("stepsNone", t.pg_steps_none),
     ];
     let pairs: Vec<String> = fields.iter().map(|(k, v)| format!("{}:{}", json_string(k), json_string(v))).collect();
     format!("{{{}}}", pairs.join(","))
+}
+
+/// The steps of a calculation, shown one at a time in the place of the output (Steps,
+/// or a link with `&mode=steps`): the previous step and the next, a slider, the step
+/// before (faint) and the step itself, what it printed. `playground.js` fills it; a
+/// live region says each step.
+fn stepper(t: &Texts) -> Element {
+    let nav = div()
+        .class("stepper__nav")
+        .child(button().class("btn btn--sm").attr("type", "button").id("step-prev").text(format!("← {}", t.pg_steps_prev)))
+        .child(span().class("stepper__count").id("step-count"))
+        .child(button().class("btn btn--sm").attr("type", "button").id("step-next").text(format!("{} →", t.pg_steps_next)));
+    div()
+        .class("stepper output--live")
+        .id("stepper")
+        .attr("hidden", "")
+        .attr("tabindex", "-1")
+        .attr("aria-labelledby", "output-title")
+        .child(nav)
+        .child(
+            input()
+                .class("stepper__range")
+                .attr("type", "range")
+                .id("step-range")
+                .attr("min", "1")
+                .attr("max", "1")
+                .attr("value", "1")
+                .attr("aria-label", t.pg_steps_slider),
+        )
+        .child(p().class("stepper__keys").text(t.pg_steps_keys))
+        .child(pre().class("output stepper__from").id("step-from").attr("aria-hidden", "true"))
+        .child(pre().class("output stepper__now").id("step-now").attr("tabindex", "0"))
+        .child(
+            div()
+                .class("stepper__printed")
+                .id("step-printed")
+                .attr("hidden", "")
+                .child(span().class("score__label").text(t.pg_steps_printed))
+                .child(pre().class("output").id("step-print")),
+        )
+        .child(pre().class("output").id("step-error").attr("hidden", ""))
+        .child(p().class("sr-only").id("step-live").attr("aria-live", "polite").attr("aria-atomic", "true"))
 }
 
 pub fn playground(ctx: &Ctx) -> Page {
@@ -824,7 +884,8 @@ pub fn playground(ctx: &Ctx) -> Page {
                         .child(span().class("file").id("output-title").text(t.pg_output))
                         .child(span().class("status").id("status").attr("role", "status")),
                 )
-                .child(pre().class("output output--live").id("output").attr("tabindex", "0")),
+                .child(pre().class("output output--live").id("output").attr("tabindex", "0"))
+                .child(stepper(t)),
         );
     let help = section()
         .class("help")

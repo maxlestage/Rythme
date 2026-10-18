@@ -301,6 +301,62 @@ fn the_regex_engine_agrees_with_a_simple_reference() {
     assert!(exact >= cases * 3 && found >= cases * 6, "{exact} exact, {found} found");
 }
 
+/// `find_all` finds the same matches as searching again and again with
+/// `find_at` from the end of the previous match, although its searches skip
+/// the ways that an earlier search showed to lead nowhere.
+#[test]
+fn finding_every_match_agrees_with_searching_again_and_again() {
+    let cases: usize = std::env::var("RYTHME_REGEX_CASES").ok().and_then(|n| n.parse().ok()).unwrap_or(3000);
+    let mut rng = Rng(0x0dd_ba11_c0ff_ee42);
+    let mut found = 0;
+    for _ in 0..cases {
+        let mut g = Gen { rng: Rng(rng.next() | 1), groups: 1 };
+        let (pattern, _) = g.regex(4);
+        let re = Regex::new(&pattern).unwrap_or_else(|e| panic!("{pattern}: {}", e.message));
+        for _ in 0..4 {
+            let len = rng.below(40);
+            let text: String = (0..len).map(|_| if rng.below(20) == 0 { '\n' } else { ALPHABET[rng.below(4)] }).collect();
+            let mut expected = Vec::new();
+            let (mut pos, mut last_end) = (0, None);
+            while pos <= text.len() {
+                let Some(m) = re.find_at(&text, pos) else { break };
+                let (s, e) = m[0].unwrap();
+                if s == e && last_end == Some(e) {
+                    match text[pos..].chars().next() {
+                        Some(c) => pos += c.len_utf8(),
+                        None => break,
+                    }
+                    continue;
+                }
+                expected.push(m);
+                (pos, last_end) = (e, Some(e));
+            }
+            found += expected.len();
+            assert_eq!(re.find_all(&text, usize::MAX), Ok(expected), "find_all({text:?}, {pattern:?})");
+        }
+    }
+    assert!(found >= cases * 4, "only {found} matches");
+}
+
+/// Finding every match reads the text about once, not once per match: `a*b|a`
+/// on 40 000 `a`s follows `a*b` to the end only the first time (it took half
+/// a minute before). See bench/regex.ry.
+#[test]
+fn finding_every_match_is_not_quadratic() {
+    let text = "a".repeat(40_000);
+    let start = Instant::now();
+    for pattern in ["a*b|a", "(?:a|b)*c|a", "a+$x|a", "(a*)*b|a{1,3}?"] {
+        let re = Regex::new(pattern).unwrap();
+        assert!(re.find_all(&text, usize::MAX).unwrap().len() >= 13_334, "{pattern}");
+    }
+    // Generous: about 0.1 s in a release build, and 30 s per regex before.
+    assert!(start.elapsed() < Duration::from_secs(20), "took {:?}", start.elapsed());
+    ok(
+        "a = repeat(\"a\", 40000)\nprint(len(find_all(a, \"a*b|a\")), len(split_by(a, \"a*b|a\")), len(replace_all(a, \"a*b|a\", \"\")))",
+        "40000 40001 0",
+    );
+}
+
 /// A search takes a time proportional to the length of the text, even for
 /// the regexes that make engines that try one way after the other take
 /// forever.

@@ -1506,7 +1506,11 @@ impl<'a> Checker<'a> {
                     );
                     return Ty::Never;
                 }
-                self.resolve(*s, e.span).1
+                let (res, ty) = self.resolve(*s, e.span);
+                if let Some(at) = e.value_elsewhere {
+                    self.value_elsewhere(*s, e.span, &res, at);
+                }
+                ty
             }
             ExprKind::Ctor(s) => self.resolve(*s, e.span).1,
             ExprKind::List(items) => self.list(items),
@@ -1606,6 +1610,58 @@ impl<'a> Checker<'a> {
                 self.question(e, x, &t)
             }
         }
+    }
+
+    /// `show [1, 2]` or `show -1` at the start of a statement or a result,
+    /// read as an index or a subtraction because the code gives `show` a value
+    /// at `at` (see `parser::command_at`), while `show` is a function here
+    /// (or an unknown name), not a value. Parentheses say what is meant. (A
+    /// value that holds a function, `double = fn(v) = ...`, is a value here:
+    /// its error says how to call it.)
+    fn value_elsewhere(&mut self, s: Sym, span: Span, res: &Res, at: Span) {
+        let value_here = match res {
+            Res::Local(_, def) => def.is_none(),
+            Res::Global(g) => g.kind == GKind::Value,
+            Res::Unknown => false,
+        };
+        if value_here {
+            return;
+        }
+        let index = crate::source::get(span.file)
+            .and_then(|f| f.text.get(span.end as usize..).and_then(|rest| rest.trim_start().chars().next()))
+            .is_some_and(|c| c == '[');
+        let d = if index {
+            Diagnostic::warning(
+                "W011",
+                t!("`{s} [...]` is read as an index, not as a call", "`{s} [...]` est lu comme un indice, pas comme un appel"),
+            )
+            .help(t!(
+                "to call `{s}`, put its argument in parentheses: `{s}([...])`; for an index, write `{s}[...]` without a space",
+                "pour appeler `{s}`, mettez son argument entre parenthèses : `{s}([...])` ; pour un indice, écrivez `{s}[...]` sans espace"
+            ))
+        } else {
+            Diagnostic::warning(
+                "W011",
+                t!("`{s} -...` is read as a subtraction, not as a call", "`{s} -...` est lu comme une soustraction, pas comme un appel"),
+            )
+            .help(t!(
+                "to call `{s}`, put its argument in parentheses: `{s}(-x)`; for a subtraction, write `{s} - x`",
+                "pour appeler `{s}`, mettez son argument entre parenthèses : `{s}(-x)` ; pour une soustraction, écrivez `{s} - x`"
+            ))
+        };
+        let label = match res {
+            Res::Unknown => t!("`{s}` is not a value here", "`{s}` n'est pas une valeur ici"),
+            _ => t!("`{s}` is a function here", "`{s}` est une fonction ici"),
+        };
+        self.diags.push(
+            d.at(span)
+                .label(label)
+                .secondary(at, t!("because `{s}` is given a value here", "parce que `{s}` reçoit une valeur ici"))
+                .note(t!(
+                    "a call without parentheses, like `{s} [1, 2]` or `{s} -1`, is read so only when the file never gives `{s}` a value",
+                    "un appel sans parenthèses, comme `{s} [1, 2]` ou `{s} -1`, n'est lu ainsi que si le fichier ne donne jamais de valeur à `{s}`"
+                )),
+        );
     }
 
     /// `x?`: the value inside `Some(...)` or `Ok(...)`; `None` or `Err(...)`
@@ -2484,10 +2540,19 @@ impl<'a> Checker<'a> {
                     ),
                 )
                 .at(b.span)
-                .help(t!(
-                    "read a field with `record[\"name\"]` or `record.name`",
-                    "lisez un champ avec `enregistrement[\"nom\"]` ou `enregistrement.nom`"
-                )),
+                .help(match &b.kind {
+                    ExprKind::Symbol(s) => {
+                        let record = match &a.kind {
+                            ExprKind::Var(v) => Some(v.name()),
+                            _ => None,
+                        };
+                        crate::interp::symbol_field_help(&s.name(), record.as_deref())
+                    }
+                    _ => t!(
+                        "read a field with `record[\"name\"]` or `record.name`",
+                        "lisez un champ avec `enregistrement[\"nom\"]` ou `enregistrement.nom`"
+                    ),
+                }),
             );
             return Ty::Never;
         }

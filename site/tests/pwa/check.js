@@ -165,6 +165,127 @@ async function shareLinks(context, page, base) {
   await page.evaluate(() => { localStorage.removeItem("rythme-code"); });
 }
 
+// What the steps show: the count, the step before, the step, what it printed, the error,
+// the live region, the slider, and whether the output is hidden.
+const stepsOf = (page) => page.evaluate(() => {
+  const $ = (id) => document.getElementById(id);
+  return {
+    shown: !$("stepper").hidden && $("output").hidden,
+    count: $("step-count").textContent,
+    from: $("step-from").textContent.trim(),
+    now: $("step-now").textContent.trim(),
+    printed: $("step-printed").hidden ? null : $("step-print").textContent,
+    error: $("step-error").hidden ? null : $("step-error").textContent,
+    live: $("step-live").textContent,
+    range: [$("step-range").value, $("step-range").max],
+    prev: $("step-prev").disabled,
+    next: $("step-next").disabled,
+  };
+});
+
+// The steps of a calculation, offline: a link with `&mode=steps&step=3` opens on that
+// step; the buttons, the keys and the slider move; Share keeps the mode, the step and
+// the selected code; the selection, print, errors and a program without expression.
+async function stepsLinks(context, page, base) {
+  const FIB = 'fn fib(0) = 0\nfn fib(1) = 1\nfn fib(n) = fib(n - 1) + fib(n - 2)\n\nprint("before")\nfib(4)\n';
+  // `rythme steps` on FIB: fib(4) → fib(3) + fib(2) → ... → 3 (14 in all).
+  const STEPS = ["fib(4)", "fib(3) + fib(2)", "fib(2) + fib(1) + fib(2)", "fib(1) + fib(0) + fib(1) + fib(2)", "1 + fib(0) + fib(1) + fib(2)"];
+  const of = (n, total) => `Step ${n} of ${total}`;
+  await open(page, `${base}/en/playground/#code=${encodeURIComponent(FIB)}&mode=steps&step=3`);
+  let s = await stepsOf(page);
+  check(s.shown && s.count === of(3, 14) && s.now === STEPS[2] && s.from === STEPS[1] && s.range.join() === "3,14", "steps: a link with mode=steps&step=3 opens on step 3 of the last expression", s);
+  check(s.live.startsWith(of(3, 14)) && s.live.includes(STEPS[2]) && (await page.getAttribute("#step-live", "aria-live")) === "polite", "steps: the live region says the step", s.live);
+  check(s.printed === null && !(await page.textContent("#step-now")).includes("before"), "steps: only that expression, the others of the program are not run", s);
+  await page.click("#step-next");
+  s = await stepsOf(page);
+  check(s.count === of(4, 14) && s.now === STEPS[3], "steps: Next", s);
+  await page.click("#step-prev");
+  await page.click("#step-prev");
+  s = await stepsOf(page);
+  check(s.count === of(2, 14) && s.now === STEPS[1], "steps: Previous", s);
+  await page.focus("#step-now");
+  await page.keyboard.press("ArrowRight");
+  check((await stepsOf(page)).now === STEPS[2], "steps: the right arrow key");
+  await page.keyboard.press("ArrowLeft");
+  check((await stepsOf(page)).now === STEPS[1], "steps: the left arrow key");
+  await page.keyboard.press("End");
+  s = await stepsOf(page);
+  check(s.count === of(14, 14) && s.now === "3" && s.next && !s.prev, "steps: End shows the result, Next is disabled", s);
+  await page.keyboard.press("Home");
+  s = await stepsOf(page);
+  check(s.count === of(1, 14) && s.now === STEPS[0] && s.from === "" && s.prev, "steps: Home shows the expression, Previous is disabled", s);
+  await page.$eval("#step-range", (e) => { e.value = "5"; e.dispatchEvent(new Event("input", { bubbles: true })); });
+  check((await stepsOf(page)).now === STEPS[4], "steps: the slider");
+  await page.focus("#step-range");
+  await page.keyboard.press("ArrowRight");
+  check((await stepsOf(page)).count === of(6, 14), "steps: the slider with the keyboard");
+
+  // Share from the steps: the link keeps the mode and the step, and opens on it.
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: new URL(base).origin });
+  const link = await share(page);
+  check(link.includes("#code=") && link.endsWith("&mode=steps&step=6"), "steps: Share keeps the steps mode and the step", link);
+  await page.keyboard.press("Escape");
+  const other = await context.newPage();
+  await open(other, link);
+  s = await stepsOf(other);
+  check(s.shown && s.count === of(6, 14) && (await other.$eval("#source", (e) => e.value)) === FIB, "steps: the shared link opens on the same step", s);
+
+  // Run goes back to the output; Share then makes a link without the steps.
+  await runAndRead(other, "#run");
+  s = await stepsOf(other);
+  check(!s.shown && (await other.textContent("#output")).includes("before"), "steps: Run shows the output again", s);
+  check(!(await share(other)).includes("mode=steps"), "steps: Share from the output makes a link without the steps");
+
+  // The selected code: its steps, after the definitions (an error when it uses a name
+  // it cannot see); Share keeps it.
+  await setCode(other, FIB);
+  await other.$eval("#source", (e) => { const at = e.value.indexOf("fib(n - 2)"); e.focus(); e.setSelectionRange(at, at + 10); });
+  await runAndRead(other, "#steps");
+  s = await stepsOf(other);
+  check(s.shown && s.error && /error\[/.test(s.error) && (await other.isHidden(".stepper__nav")), "steps: the selected code, with an error said so", s);
+  await setCode(other, `${FIB}fib(5)
+`);
+  await other.$eval("#source", (e) => { const at = e.value.lastIndexOf("fib(4)"); e.focus(); e.setSelectionRange(at, at + 6); });
+  await runAndRead(other, "#steps");
+  s = await stepsOf(other);
+  check(s.count === of(1, 14) && s.now === "fib(4)", "steps: the selected expression rather than the last one", s);
+  await other.click("#step-next");
+  const selected = await share(other);
+  check(selected.endsWith("&mode=steps&expr=fib(4)&step=2"), "steps: Share keeps the selected code", selected);
+  await other.keyboard.press("Escape");
+  await open(other, selected.replace("/en/", "/fr/"));
+  s = await stepsOf(other);
+  check(s.count === "Étape 2 sur 14" && s.now === STEPS[1], "steps: the link of a selected code opens on its steps, in French too", s);
+
+  // What a step prints is shown with the step that follows; an error after the last step.
+  await setCode(other, 'fn twice(t) = t + t\nprint(twice("ab"))\n');
+  await runAndRead(other, "#steps");
+  await other.focus("#step-now");
+  await other.keyboard.press("End");
+  s = await stepsOf(other);
+  check(s.now === "()" && s.printed === "abab", "steps: what the program prints", s);
+  await setCode(other, "fn half(n) = 10 / n\nhalf(5 - 5)\n");
+  await runAndRead(other, "#steps");
+  await other.focus("#step-now");
+  await other.keyboard.press("End");
+  s = await stepsOf(other);
+  check(s.error && /erreur\[/.test(s.error) && (await other.getAttribute("#status", "class")).includes("bad"), "steps: an error is shown after the last step", s);
+  await setCode(other, "fn half(n) = n / 2\n");
+  await runAndRead(other, "#steps");
+  s = await stepsOf(other);
+  const none = await other.evaluate(() => JSON.parse(document.querySelector(".playground").dataset.ui).stepsNone);
+  check(s.shown && s.now === none && (await other.isHidden(".stepper__nav")), "steps: a program without expression says what to do", s);
+  await other.close();
+
+  // The tour of the language opens the playground on the steps of fib(4).
+  await page.goto(`${base}/en/learn/`);
+  await Promise.all([page.waitForURL(/mode=steps/), page.click(".tour__try--steps")]);
+  await ran(page);
+  s = await stepsOf(page);
+  check(s.shown && s.count === of(1, 14) && s.now === "fib(4)", "steps: the link of the tour", s);
+  await page.evaluate(() => { localStorage.removeItem("rythme-code"); });
+}
+
 async function verify(mode) {
   console.log(`\n== ${mode === "server" ? "the server, at the root" : "the static export, behind /Rythme"}`);
   const dir = workspace();
@@ -312,6 +433,7 @@ async function verify(mode) {
   await ran(page);
   check((await page.textContent("#output")).includes("partagé") && !page.url().includes("?"), "offline playground: a shared text opens in the playground");
   await shareLinks(context, page, base);
+  await stepsLinks(context, page, base);
   // The playground of every language: its texts, and the interpreter's messages in the
   // language of the page.
   for (const lang of LANGS) {

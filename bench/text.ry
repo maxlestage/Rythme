@@ -1,8 +1,8 @@
 # Building and processing text: interpolation, split, join, concatenation.
 
-words = ["alpha", "beta", "gamma", "delta", "epsilon"]
+names = ["alpha", "beta", "gamma", "delta", "epsilon"]
 
-fn line(i) = "line {i}: {words[i % 5]} and {words[(i * 7) % 3]} make {i * i}"
+fn line(i) = "line {i}: {names[i % 5]} and {names[(i * 7) % 3]} make {i * i}"
 
 big = 0..199_999 |> map(line) |> join("\n")
 parts = split(big, "\n")

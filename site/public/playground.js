@@ -4,6 +4,7 @@
 // stays in localStorage; a .ry file can be opened, from the button, from the system
 // (the installed app's file handler) or shared as text, and downloaded. Share puts
 // the program in a link (`#code=…`, in the link itself: nothing is sent anywhere).
+// Steps shows the calculation of one expression step by step, one step at a time.
 (() => {
   "use strict";
 
@@ -20,6 +21,7 @@
     ranIn: (ms) => TEXTS.ranIn.replace("{ms}", ms),
     failedIn: (ms) => TEXTS.failedIn.replace("{ms}", ms),
     lines: (n) => (n === 1 ? TEXTS.line : TEXTS.lines).replace("{n}", n),
+    stepsOf: (n, total) => TEXTS.stepsOf.replace("{n}", n).replace("{total}", total),
   };
   // The words that start the interpreter's messages, in every language
   // (rythme::lang::LANGUAGES; the tests of the site check that none is missing).
@@ -33,7 +35,7 @@
 
   const TOPICS = ["start", "syntax", "functions", "lists", "text", "records", "types", "match", "errors", "functional", "tests", "builtins"];
   const KEYWORDS = new Set(["fn", "if", "then", "else", "match", "end", "do", "type", "test", "use", "and", "or", "not", "true", "false", "unless"]);
-  const BUILTINS = new Set(("print debug text input input_lines type_of help assert assert_eq fail args options env exit time random abs min max sqrt pow floor ceil round int float sin cos tan asin acos atan log exp is_even is_odd gcd lcm len upper lower capitalize trim pad_left pad_right split join contains starts_with ends_with replace chars lines char_code char is_digit is_letter is_space repeat parse_int parse_float parse_json to_json trim_start trim_end words equals_ignore_case format_number matches find_first find_all captures captures_all named_captures split_by replace_all map filter fold scan each sum product first last rest get push set_at insert_at remove_at reverse sort sort_by unique shuffle slice take drop take_while drop_while step_by chunks windows zip enumerate any all find count reject each_with_index index_of min_by max_by flatten flat_map partition group_by is_empty keys values entries from_entries has put remove map_values dict set union intersection difference is_subset unwrap unwrap_or is_some is_none is_ok is_err and_then ok_or map_err read_file write_file append_file file_exists file_info list_folder create_folder delete_file join_path split_path now today parse_date format_date is_date add_days add_seconds days_between seconds_between day_of_week days_in_month is_leap_year check_all sample ints floats texts bools lists_of one_of records_of pi").split(" "));
+  const BUILTINS = new Set(("print debug text input input_lines type_of help assert assert_eq fail args options env exit time random random_seed abs min max sqrt pow floor ceil round int float sin cos tan asin acos atan log exp is_even is_odd gcd lcm len upper lower capitalize trim pad_left pad_right split join contains starts_with ends_with replace chars lines char_code char is_digit is_letter is_space repeat parse_int parse_float parse_json to_json trim_start trim_end words equals_ignore_case format_number matches find_first find_all captures captures_all named_captures split_by replace_all csv_parse csv_records csv_format map filter fold scan each sum product first last rest get push set_at insert_at remove_at reverse sort sort_by unique shuffle slice take drop take_while drop_while step_by chunks windows zip enumerate any all find count reject each_with_index index_of min_by max_by flatten flat_map partition group_by is_empty keys values entries from_entries has put remove map_values dict set union intersection difference is_subset unwrap unwrap_or is_some is_none is_ok is_err and_then ok_or map_err read_file write_file append_file file_exists file_info list_folder create_folder delete_file join_path split_path now today parse_date format_date is_date add_days add_seconds days_between seconds_between day_of_week days_in_month is_leap_year check_all sample ints floats texts bools lists_of one_of records_of pi").split(" "));
 
   const $ = (id) => document.getElementById(id);
   const source = $("source"), highlight = $("highlight"), gutter = $("gutter"), output = $("output");
@@ -61,6 +63,8 @@
   let runId = 0;
   // What Run does: run the program, or its tests (testing.ry, or a link with mode=test).
   let runMode = 0;
+  // What the interpreter is doing: one of the modes of `rythme_run` (5: steps).
+  let runningMode = 0;
 
   // ----- editor: highlighting, line numbers -----
   const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -274,16 +278,21 @@
   function execute(mode) {
     if (!wasmModule) return;
     runId += 1;
+    runningMode = mode;
     setRunning(true);
     statusEl.className = "status";
     statusEl.textContent = UI.running;
-    worker.postMessage({ id: runId, code: source.value, mode, lang });
+    // Steps: the program, U+0000, then the expression to compute ("": the last one).
+    const code = mode === 5 ? source.value + "\u0000" + stepsExpr : source.value;
+    worker.postMessage({ id: runId, code, mode, lang });
   }
 
   function finish(result) {
     if (result.id !== runId) return;
     setRunning(false);
     const ms = Math.max(1, Math.round(result.ms));
+    const stepping = runningMode === 5 && !result.trap;
+    showStepper(stepping);
     if (result.trap) {
       renderOutput("\u0001" + UI.tooDeep + (/stack/i.test(result.trap) ? "" : "\n" + result.trap) + "\u0002");
       statusEl.className = "status bad";
@@ -291,13 +300,12 @@
       newWorker();
       return;
     }
-    renderOutput(result.text);
-    const failed = FAILED.test(result.text) || /✗/.test(result.text);
+    const failed = stepping ? renderSteps(result.text) : (renderOutput(result.text), FAILED.test(result.text) || /✗/.test(result.text));
     statusEl.className = failed ? "status bad" : "status good";
     statusEl.textContent = failed ? UI.failedIn(ms) : UI.ranIn(ms);
     // On a phone the output is under the editor: bring it into view.
     if (window.matchMedia("(max-width: 959px)").matches && document.activeElement !== source) {
-      output.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      (stepping ? stepper : output).scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }
 
@@ -311,8 +319,11 @@
   runBtn.addEventListener("click", () => execute(runMode));
   checkBtn.addEventListener("click", () => execute(1));
   testBtn.addEventListener("click", () => execute(2));
-  // The calculation shown step by step, like `rythme steps`.
-  stepsBtn.addEventListener("click", () => execute(4));
+  // The calculation of the selected code, or of the last expression, step by step.
+  stepsBtn.addEventListener("click", () => {
+    const selected = source.value.slice(source.selectionStart, source.selectionEnd).trim();
+    showSteps(selected === source.value.trim() ? "" : selected, 1);
+  });
   formatBtn.addEventListener("click", formatCode);
 
   // ----- format: the layout of `rythme fmt`, done at once (it cannot loop) -----
@@ -403,10 +414,11 @@
     return frag;
   }
 
-  function renderOutput(raw) {
-    output.textContent = "";
+  function renderOutput(raw, into) {
+    const out = into || output;
+    out.textContent = "";
     if (!raw.replace(/[\u0001\u0002\s]/g, "")) {
-      output.append(text(UI.nothing, "empty"));
+      out.append(text(UI.nothing, "empty"));
       return;
     }
     for (const part of raw.split(/(\u0001[\s\S]*?\u0002)/)) {
@@ -416,12 +428,145 @@
       const severity = WARNING_LINE.test(body) ? "warn" : "err";
       const lines = body.replace(/\n+$/, "").split("\n");
       lines.forEach((line, k) => {
-        output.append(renderLine(line, inError, severity));
-        if (k < lines.length - 1 || inError) output.append("\n");
+        out.append(renderLine(line, inError, severity));
+        if (k < lines.length - 1 || inError) out.append("\n");
       });
-      if (!inError && body.endsWith("\n")) output.append("\n");
+      if (!inError && body.endsWith("\n")) out.append("\n");
     }
   }
+
+  // ----- steps: the calculation of one expression, one step at a time -----
+  // The interpreter writes the steps like `rythme steps`: the expression, then each
+  // step after "  → " (its other lines after four spaces). The other lines are what
+  // the program printed meanwhile, shown with the step that follows them, and
+  // "  ... (…)" when steps were left out. U+0005: no expression to show.
+  const stepper = $("stepper"), stepNav = stepper.querySelector(".stepper__nav"), stepKeys = stepper.querySelector(".stepper__keys");
+  const stepPrev = $("step-prev"), stepNext = $("step-next"), stepCount = $("step-count"), stepRange = $("step-range");
+  const stepFrom = $("step-from"), stepNow = $("step-now"), stepPrinted = $("step-printed"), stepPrint = $("step-print");
+  const stepError = $("step-error"), stepLive = $("step-live");
+  // The code whose steps are shown ("": the last expression of the program), the
+  // steps, the one shown (from 0), and the one to show first (from 1, from a link).
+  let stepsExpr = "";
+  let steps = [];
+  let stepAt = 0;
+  let firstStep = 1;
+  let stepsFailed = "";
+
+  function showSteps(expr, step) {
+    stepsExpr = expr;
+    firstStep = step;
+    execute(5);
+  }
+
+  function showStepper(on) {
+    stepper.hidden = !on;
+    output.hidden = on;
+  }
+
+  const stepsShown = () => !stepper.hidden && steps.length > 0;
+
+  function parseSteps(body) {
+    const list = [];
+    let pending = [];
+    if (!body.trim()) return list;
+    for (const line of body.replace(/\n+$/, "").split("\n")) {
+      const current = list[list.length - 1];
+      if (line.startsWith("  → ")) {
+        list.push({ lines: [line.slice(4)], printed: pending.filter((l) => !/^ {2}\.\.\. \(/.test(l)), gap: pending.some((l) => /^ {2}\.\.\. \(/.test(l)) });
+        pending = [];
+      } else if (!current) {
+        list.push({ lines: [line], printed: [], gap: false });
+      } else if (!pending.length && list.length > 1 && line.startsWith("    ")) {
+        current.lines.push(line.slice(4));
+      } else if (!pending.length && list.length === 1 && /^(\s|end\b)/.test(line) && !/^ {2}\.\.\. \(/.test(line)) {
+        current.lines.push(line);
+      } else {
+        pending.push(line);
+      }
+    }
+    if (pending.length && list.length) list[list.length - 1].printed.push(...pending.filter((l) => !/^ {2}\.\.\. \(/.test(l)));
+    return list;
+  }
+
+  // Returns whether the calculation stopped with an error.
+  function renderSteps(raw) {
+    let body = "";
+    stepsFailed = "";
+    for (const part of raw.split(/(\u0001[\s\S]*?\u0002)/)) {
+      if (part.startsWith("\u0001")) {
+        // The warnings are for Check; the errors are shown after the last step.
+        if (!WARNING_LINE.test(part.slice(1))) stepsFailed += part;
+      } else {
+        body += part;
+      }
+    }
+    const none = body.includes("\u0005");
+    steps = none ? [] : parseSteps(body);
+    for (const el of [stepNav, stepRange, stepKeys]) el.hidden = !steps.length;
+    if (steps.length) {
+      showStep(firstStep - 1);
+    } else {
+      stepFrom.textContent = "";
+      stepNow.textContent = "";
+      stepNow.append(text(none ? UI.stepsNone : UI.nothing, "empty"));
+      stepNow.hidden = !none && !!stepsFailed;
+      stepPrinted.hidden = true;
+      stepError.hidden = !stepsFailed;
+      if (stepsFailed) renderOutput(stepsFailed, stepError);
+      stepLive.textContent = "";
+    }
+    firstStep = 1;
+    return !!stepsFailed;
+  }
+
+  // A step, colored like the editor; each line wraps under its indentation.
+  function showTerm(el, lines) {
+    el.innerHTML = colorize(lines.join("\n"));
+    for (const line of el.children) {
+      line.className = "line";
+      const indent = line.textContent.match(/^ */)[0].length;
+      if (indent) line.style.setProperty("--indent", indent);
+    }
+  }
+
+  function showStep(i) {
+    const n = steps.length;
+    stepAt = Math.max(0, Math.min(Number.isFinite(i) ? i : 0, n - 1));
+    const step = steps[stepAt];
+    const count = UI.stepsOf(stepAt + 1, n);
+    stepCount.textContent = count;
+    stepRange.max = String(n);
+    stepRange.value = String(stepAt + 1);
+    stepRange.setAttribute("aria-valuetext", count);
+    // A button that gets disabled loses the focus: it goes to the slider.
+    const focused = document.activeElement;
+    stepPrev.disabled = stepAt === 0;
+    stepNext.disabled = stepAt === n - 1;
+    if (focused && focused.disabled) stepRange.focus();
+    if (stepAt === 0) stepFrom.textContent = "";
+    else if (step.gap) stepFrom.textContent = "…";
+    else showTerm(stepFrom, steps[stepAt - 1].lines);
+    stepNow.hidden = false;
+    showTerm(stepNow, step.lines);
+    stepPrinted.hidden = !step.printed.length;
+    stepPrint.textContent = step.printed.join("\n");
+    const last = stepAt === n - 1 && !!stepsFailed;
+    stepError.hidden = !last;
+    if (last) renderOutput(stepsFailed, stepError);
+    stepLive.textContent = `${count}: ${step.lines.join(" ").replace(/\s+/g, " ").trim().slice(0, 300)}`;
+  }
+
+  stepPrev.addEventListener("click", () => showStep(stepAt - 1));
+  stepNext.addEventListener("click", () => showStep(stepAt + 1));
+  stepRange.addEventListener("input", () => showStep(Number(stepRange.value) - 1));
+  // The keyboard, anywhere in the steps (the slider has these keys of its own).
+  stepper.addEventListener("keydown", (ev) => {
+    if (ev.target === stepRange || ev.ctrlKey || ev.metaKey || ev.altKey || !steps.length) return;
+    const to = { ArrowLeft: stepAt - 1, ArrowRight: stepAt + 1, Home: 0, End: steps.length - 1 }[ev.key];
+    if (to === undefined) return;
+    ev.preventDefault();
+    showStep(to);
+  });
 
   // ----- help, from the interpreter itself -----
   let helpInstance = null;
@@ -688,7 +833,9 @@
     return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   }
 
-  // `#example=fizzbuzz`, or `#code=…&mode=test`: links from the other pages and shared
+  // `#example=fizzbuzz`, `#code=…&mode=test`, or `#code=…&mode=steps&step=3` (with
+  // `&expr=…`, percent-encoded, for the steps of a piece of code rather than of the last
+  // expression): links from the other pages and shared
   // links; `?text=…&title=…&url=…`: a text shared with the installed app (its share
   // target), which becomes a `#code=` link. A program from a link stays in the address
   // until it is changed, so that a reload shows it again.
@@ -696,6 +843,9 @@
     const hash = location.hash.slice(1);
     const params = new URLSearchParams(hash);
     const found = { example: params.get("example"), code: null, mode: params.get("mode") === "test" ? 2 : 0, broken: false };
+    found.steps = params.get("mode") === "steps";
+    found.expr = (params.get("expr") || "").slice(0, LINK_MAX);
+    found.step = Math.max(1, Math.min(parseInt(params.get("step"), 10) || 1, 100000));
     const raw = (hash.match(/(?:^|&)code=([^&]*)/) || [])[1];
     if (raw !== undefined) {
       try {
@@ -810,7 +960,11 @@
       showShare(UI.shareTooLong.replace("{n}", n(packed.length)).replace("{max}", n(LINK_MAX)), true, null);
       return;
     }
-    const link = `${location.origin}${location.pathname}#code=${packed}${runMode === 2 ? "&mode=test" : ""}`;
+    // From the steps, the link opens on the same step (of the same piece of code).
+    const mode = stepsShown()
+      ? `&mode=steps${stepsExpr ? "&expr=" + encodeURIComponent(stepsExpr) : ""}&step=${stepAt + 1}`
+      : runMode === 2 ? "&mode=test" : "";
+    const link = `${location.origin}${location.pathname}#code=${packed}${mode}`;
     if (navigator.share && window.matchMedia("(pointer: coarse)").matches) {
       showShare("", false, link);
       try {
@@ -876,6 +1030,8 @@
     }
     if (example && (example === "welcome" || examples[example])) {
       loadExample(example);
+    } else if (asked.code !== null && asked.steps) {
+      showSteps(asked.expr, asked.step);
     } else {
       execute(runMode);
     }
@@ -891,7 +1047,8 @@
     if (asked.code !== null) {
       showLinked(asked);
       refreshEditor();
-      execute(runMode);
+      if (asked.steps) showSteps(asked.expr, asked.step);
+      else execute(runMode);
     } else if (asked.example && (asked.example === "welcome" || examples[asked.example])) {
       loadExample(asked.example);
     }
