@@ -321,6 +321,19 @@ fn messages_follow_the_editor_language() {
 }
 
 #[test]
+fn the_ternary_operator_of_ruby_is_explained_in_the_editor() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/ternary.ry";
+    let diags = lsp.open(u, "x = 3\ny = x > 2 ? 1 : 2\n");
+    assert_eq!(diags.len(), 1, "{diags:?}");
+    assert_eq!(diags[0].get("code").as_str(), Some("E001"));
+    assert_eq!(range(&diags[0]), (1, 10, 1, 11));
+    let msg = diags[0].get("message").as_str().unwrap();
+    assert!(msg.contains("condition ? a : b") && msg.contains("if condition then a else b"), "{msg}");
+    assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
 fn hover_shows_documentation() {
     let (mut lsp, _) = Lsp::start("en", INIT);
     let u = "file:///nowhere/hover.ry";
