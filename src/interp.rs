@@ -827,7 +827,15 @@ impl Interp {
                             Err(Flow::Err(d)) => return Err(d),
                         }
                     };
-                    match self.eval_tail(&code.clauses[ci].body, &fr) {
+                    let body = &code.clauses[ci].body;
+                    let r = match body.kind {
+                        Kind::Call(..) | Kind::Method(_) | Kind::If(..) | Kind::Match(..) | Kind::Block(..) | Kind::Logic(..) => {
+                            self.eval_tail(body, &fr)
+                        }
+                        // A body that cannot end with a call (`x * 2`).
+                        _ => self.eval(body, &fr).map(Tail::Done),
+                    };
+                    match r {
                         Ok(Tail::Done(v)) => return Ok(v),
                         Ok(Tail::Call(nf, nargc, nspan)) => {
                             let args = self.stack.len() - nargc;
