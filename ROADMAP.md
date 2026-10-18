@@ -67,7 +67,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 
 ## Tools
 
-- [ ] **`rythme doc`.** Documentation of a file or a folder from its `##`
+- [x] **`rythme doc`.** Documentation of a file or a folder from its `##`
   comments, types and signatures, as Markdown and HTML, linked to the
   built-ins' docs.
 - [ ] **Better `rythme test`.** A folder of files, a filter by name,
