@@ -38,6 +38,7 @@ impl ExprKind {
             | ExprKind::Float(_)
             | ExprKind::Text(_)
             | ExprKind::Var(_)
+            | ExprKind::Symbol(_)
             | ExprKind::Ctor(_) => 0,
             ExprKind::Template(parts) => deepest(parts.iter().filter_map(|p| match p {
                 TemplatePart::Expr(e) => Some(e),
@@ -76,6 +77,8 @@ pub enum ExprKind {
     Int(i64),
     Float(f64),
     Text(Rc<str>),
+    /// `:ok`: a symbol, a value that is only its name.
+    Symbol(Sym),
     /// A text with `{expressions}` inside.
     Template(Vec<TemplatePart>),
     Var(Sym),
@@ -237,6 +240,7 @@ pub enum PatKind {
     Int(i64),
     Float(f64),
     Text(Rc<str>),
+    Symbol(Sym),
     Ctor(Sym, Vec<Pattern>),
     /// Elements, then the rest: `None` = no rest, `Some(None)` = `..`, `Some(Some(name))` = `..name`.
     List(Vec<Pattern>, Option<Option<(Sym, Span)>>),

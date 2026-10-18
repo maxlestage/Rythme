@@ -286,14 +286,25 @@ impl Rng {
     }
 }
 
-/// The text between the tokens of a program: `(start, end)` of each gap.
-fn gaps(src: &str) -> Vec<(usize, usize)> {
+/// The text between the tokens of a program: `(start, end)` of each gap,
+/// and whether spaces may be added there when there are none.
+fn gaps(src: &str) -> Vec<(usize, usize, bool)> {
     let tokens = lexer::lex(src, 7).unwrap().tokens;
     let mut out = Vec::new();
     let mut end = if src.starts_with('\u{FEFF}') { 3 } else { 0 };
+    let mut before: [Option<&Tok>; 2] = [None, None];
     for t in tokens.iter().filter(|t| t.tok != Tok::Newline) {
-        out.push((end, t.span.start as usize));
+        // `even?` and `even?(4)` are names, `unless(x)` a call: these
+        // tokens are written next to each other on purpose.
+        let joined = match (before, &t.tok) {
+            ([_, Some(Tok::Ident(_))], Tok::Question) => true,
+            ([Some(Tok::Ident(_)), Some(Tok::Question)], Tok::LParen) => true,
+            ([_, Some(Tok::Ident(s))], Tok::LParen | Tok::LBracket) => &*s.name() == "unless",
+            _ => false,
+        };
+        out.push((end, t.span.start as usize, !joined));
         end = t.span.end as usize;
+        before = [before[1], Some(&t.tok)];
     }
     out
 }
@@ -303,7 +314,7 @@ fn gaps(src: &str) -> Vec<(usize, usize)> {
 fn respace(src: &str, rng: &mut Rng) -> String {
     let mut out = String::new();
     let mut last = 0;
-    for (start, end) in gaps(src) {
+    for (start, end, may_space) in gaps(src) {
         out.push_str(&src[last..start]);
         let gap = &src[start..end];
         let mut rest = gap;
@@ -330,7 +341,7 @@ fn respace(src: &str, rng: &mut Rng) -> String {
                 }
             }
         }
-        if gap.is_empty() && !first && end > 0 && rng.chance(30) {
+        if gap.is_empty() && may_space && !first && end > 0 && rng.chance(30) {
             out.push_str(&random_spaces(rng, 1));
         }
         last = end;
@@ -360,7 +371,7 @@ fn spaces_do_not_change_the_result() {
 /// mutation is kept only when the program still means the same thing.
 fn rebreak(src: &str, rng: &mut Rng) -> Option<String> {
     let gaps = gaps(src);
-    let (start, end) = gaps[1 + rng.below(gaps.len().checked_sub(1).filter(|&n| n > 0)?)];
+    let (start, end, _) = gaps[1 + rng.below(gaps.len().checked_sub(1).filter(|&n| n > 0)?)];
     let insert = match rng.below(6) {
         0 => "\n".to_string(),
         1 => "\n\n".to_string(),
@@ -449,7 +460,7 @@ impl Gen {
             return self.atom();
         }
         self.depth += 1;
-        let e = match self.rng.below(11) {
+        let e = match self.rng.below(14) {
             0 | 1 => self.atom(),
             2 => {
                 let op = self.pick(&["+", "-", "*", "==", "<", "and", "or", "..", "**", "//"]);
@@ -492,6 +503,28 @@ impl Gen {
             9 => {
                 let b = self.expr();
                 format!("each(xs, fn(v)\n  print(v)\n  {b}\nend)")
+            }
+            // Ruby style: blocks, `unless`, symbols, names ending with `?`, chains.
+            11 => {
+                let (a, b) = (self.expr(), self.expr());
+                match self.rng.below(4) {
+                    0 => format!("xs.map do |v| {a} end"),
+                    1 => format!("xs.each do |v, w|\n  print(v)\n  {b}\nend"),
+                    2 => format!("xs.select {{ |v| {a} }}.sum"),
+                    _ => format!("map(xs) do\n  {a}\nend"),
+                }
+            }
+            12 => {
+                let (c, a, b) = (self.expr(), self.expr(), self.expr());
+                let (s1, s2) = (self.sp(), self.sp());
+                format!("unless {c} then{s1}{a}{s2}else {b}")
+            }
+            13 => {
+                let sp = self.sp();
+                let chain = format!("xs\n  .select(even?){sp}.map {{ |v| v * 2 }}\n  .sum");
+                self.pick(&[":ok", "xs.sum", "x.even?", "even?(2)", "\"#{x} {y}\"", "x?", "[:a, :b]"]).to_string()
+                    + if self.rng.chance(30) { "" } else { " == x" }
+                    + &if self.rng.chance(20) { format!(" + {chain}") } else { String::new() }
             }
             _ => {
                 let (a, b) = (self.expr(), self.expr());

@@ -17,7 +17,7 @@ use crate::parser::immutable_help;
 use crate::source::Span;
 use crate::suggest;
 use crate::symbol::Sym;
-use crate::types::{self, Outcome, Ty, BOOL, DATA, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, TEXT, UNIT};
+use crate::types::{self, Outcome, Ty, BOOL, DATA, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, SYMBOL, TEXT, UNIT};
 use crate::value::{Record, Value};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -552,6 +552,8 @@ impl<'a> Checker<'a> {
             }
             if let Some(g) = self.know.globals.get(&s) {
                 match g.kind {
+                    // A Ruby name (`size`) may be given to something else.
+                    GKind::Builtin if crate::builtins::alias_of(&s.name()).is_some() => {}
                     GKind::Builtin => self.diags.push(
                         // `pi` is a value, not a function.
                         Diagnostic::warning("W003", match g.arity {
@@ -1320,6 +1322,7 @@ impl<'a> Checker<'a> {
             ExprKind::Int(_) => Ty::Int,
             ExprKind::Float(_) => Ty::Float,
             ExprKind::Text(_) => Ty::Text,
+            ExprKind::Symbol(_) => Ty::Symbol,
             ExprKind::Template(parts) => {
                 let mut stops = false;
                 for p in parts {
@@ -1360,6 +1363,17 @@ impl<'a> Checker<'a> {
                 // Only a field the record surely has can be read without error.
                 if !matches!(&t, Ty::Record(r) if r.get(name).is_some()) {
                     self.may_fail = true;
+                }
+                // `xs.sum`: without such a field, the function `sum`.
+                let has = self.has_field(&t, name);
+                if has != Some(true) && t != Ty::Never {
+                    let sym = Sym::new(name);
+                    if let Some((res, fty)) = self.lookup_method(sym).filter(|(_, fty)| !fty.never(FUNC)) {
+                        if has == Some(false) {
+                            return self.call_target(Some(sym), &res, fty, Some((obj, t)), &[], e.span);
+                        }
+                        return Ty::Any;
+                    }
                 }
                 self.field(obj, &t, name, *name_span)
             }
@@ -2091,20 +2105,50 @@ impl<'a> Checker<'a> {
                 let mut d = Diagnostic::error("E010", t!("{} has no fields", "{} n'a pas de champs", what(Some(obj), other)))
                     .at(span)
                     .label(t!("no field `{name}` here", "pas de champ `{name}` ici"));
-                let callable = self
+                // Neither a field nor a function: maybe a function with a close name.
+                let funcs: Vec<Rc<str>> = self
                     .own
-                    .get(&Sym::new(name))
-                    .or_else(|| self.know.globals.get(&Sym::new(name)))
-                    .is_some_and(|g| matches!(g.kind, GKind::Builtin | GKind::Func | GKind::Ctor));
-                if callable {
+                    .iter()
+                    .chain(self.know.globals.iter())
+                    .filter(|(s, g)| matches!(g.kind, GKind::Builtin | GKind::Func) && !s.is_stored())
+                    .map(|(s, _)| s.name())
+                    .collect();
+                if let Some(best) = suggest::closest(name, funcs.iter().map(|s| &**s)) {
                     d = d.help(t!(
-                        "to call `{name}` on this value, add parentheses: `.{name}()`",
-                        "pour appeler `{name}` sur cette valeur, ajoutez des parenthèses : `.{name}()`"
+                        "did you mean `.{best}`? (`value.{best}` calls `{best}(value)`)",
+                        "vouliez-vous dire `.{best}` ? (`valeur.{best}` appelle `{best}(valeur)`)"
                     ));
                 }
                 self.diags.push(d);
                 Ty::Never
             }
+        }
+    }
+
+    /// Does a value of type `t` have the field `name`? `None` when it may
+    /// or may not.
+    fn has_field(&self, t: &Ty, name: &str) -> Option<bool> {
+        match t {
+            Ty::Any | Ty::Never => None,
+            Ty::Record(r) => match r.get(name) {
+                Some(_) => Some(true),
+                None if r.exact => Some(false),
+                None => None,
+            },
+            Ty::Data(d) => {
+                let ctors: Vec<Sym> = match &d.ctors {
+                    Some(cs) => cs.iter().map(|(c, _)| *c).collect(),
+                    None if self.types_defined_again.contains(&d.name) => return None,
+                    None => self.types.get(&d.name)?.clone(),
+                };
+                let mut found = false;
+                for c in &ctors {
+                    found |= self.ctors.get(c)?.fields.iter().any(|f| &*f.name() == name);
+                }
+                // Some constructors have it: reading it is what is meant.
+                (!ctors.is_empty()).then_some(found)
+            }
+            _ => Some(false),
         }
     }
 
@@ -2752,6 +2796,7 @@ impl<'a> Checker<'a> {
             // `1` matches `1.0`, and `1.0` matches `1`.
             (PatKind::Int(_) | PatKind::Float(_), _) => !t.never(NUMBER),
             (PatKind::Text(_), _) => !t.never(TEXT),
+            (PatKind::Symbol(_), _) => !t.never(SYMBOL),
             (PatKind::Ctor(name, args), _) => {
                 // An unknown constructor, or a wrong number of fields, is already an error.
                 if self.ctors.get(name).is_none_or(|m| m.arity != args.len()) {
@@ -3012,7 +3057,7 @@ fn short(e: Option<&Expr>, t: &Ty) -> String {
 fn comparable(lt: &Ty, rt: &Ty) -> bool {
     let (lk, rk) = (lt.kinds(), rt.kinds());
     let both = |k| lk & k != 0 && rk & k != 0;
-    if both(NUMBER) || both(TEXT) || both(BOOL) || both(UNIT) || both(LIST) {
+    if both(NUMBER) || both(TEXT) || both(BOOL) || both(UNIT) || both(LIST) || both(SYMBOL) {
         return true;
     }
     let data = OPTION | RESULT | DATA;
@@ -3033,7 +3078,7 @@ fn may_be_equal(lt: &Ty, rt: &Ty) -> bool {
     if lk & NUMBER != 0 && rk & NUMBER != 0 {
         return true;
     }
-    if lk & rk & (UNIT | BOOL | TEXT | LIST | RECORD | FUNC) != 0 {
+    if lk & rk & (UNIT | BOOL | TEXT | LIST | RECORD | FUNC | SYMBOL) != 0 {
         return true;
     }
     match (lt, rt) {

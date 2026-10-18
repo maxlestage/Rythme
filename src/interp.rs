@@ -176,6 +176,12 @@ impl Interp {
         for b in BUILTINS {
             globals.insert(Sym::new(b.name), Value::Builtin(b));
         }
+        // The Ruby names: `upcase` is `upper`.
+        for a in crate::builtins::ALIASES {
+            if let Some(b) = crate::builtins::lookup(a.of) {
+                globals.insert(Sym::new(a.name), Value::Builtin(b));
+            }
+        }
         globals.insert(Sym::new("pi"), Value::Float(std::f64::consts::PI));
         globals.insert(some.name, Value::Ctor(some.clone()));
         globals.insert(none_info.name, none.clone());
@@ -493,10 +499,25 @@ impl Interp {
             Kind::Lambda(def, code) => Ok(self.closure(def, code, fr)),
             Kind::Sibling(i) => Ok(sibling(fr, *i)),
             // Local names and constants are read in place (see `Kind::Binary`).
-            Kind::Field(obj, name, nspan) if is_leaf(obj) => Ok(self.field(self.leaf(obj, fr), name, *nspan)?),
-            Kind::Field(obj, name, nspan) => {
+            Kind::Field(obj, name, nspan, func) => {
+                if is_leaf(obj) {
+                    if let Some(v) = field_of(self.leaf(obj, fr), name) {
+                        return Ok(v);
+                    }
+                }
                 let v = self.eval(obj, fr)?;
-                Ok(self.field(&v, name, *nspan)?)
+                if let Some(x) = field_of(&v, name) {
+                    return Ok(x);
+                }
+                // `xs.sum`: no field, so the function `sum`, if there is one.
+                let f = match &func.kind {
+                    Kind::Global(s, _) => self.globals.get(s).cloned(),
+                    _ => Some(self.eval(func, fr)?),
+                };
+                match f {
+                    Some(f) if f.is_callable() => Ok(self.call1(&f, v, e.span)?),
+                    _ => Ok(self.field(&v, name, *nspan)?),
+                }
             }
             Kind::Index(obj, idx) => self.index(obj, idx, e.span, fr),
             Kind::Unary(op, x) => {
@@ -907,10 +928,13 @@ impl Interp {
                 let mut d = Diagnostic::error("E010", t!("{} has no fields", "{} n'a pas de champs", other.describe()))
                     .at(span)
                     .label(t!("no field `{name}` here", "pas de champ `{name}` ici"));
-                if self.globals.get(&Sym::new(name)).is_some_and(|f| f.is_callable()) {
+                // Neither a field nor a function: maybe a function with a close name.
+                let funcs: Vec<Rc<str>> =
+                    self.globals.iter().filter(|(s, f)| f.is_callable() && !s.is_stored() && !s.is_ctor()).map(|(s, _)| s.name()).collect();
+                if let Some(best) = suggest::closest(name, funcs.iter().map(|s| &**s)) {
                     d = d.help(t!(
-                        "to call `{name}` on this value, add parentheses: `.{name}()`",
-                        "pour appeler `{name}` sur cette valeur, ajoutez des parenthèses : `.{name}()`"
+                        "did you mean `.{best}`? (`value.{best}` calls `{best}(value)`)",
+                        "vouliez-vous dire `.{best}` ? (`valeur.{best}` appelle `{best}(valeur)`)"
                     ));
                 }
                 Err(d.boxed())
@@ -1129,6 +1153,7 @@ fn match_pat(p: &Pat, v: &Value, slots: &mut [Value], first: usize) -> bool {
         (Pat::Float(a), Value::Float(b)) => a == b,
         (Pat::Float(a), Value::Int(b)) => cmp_int_float(*b, *a) == Some(std::cmp::Ordering::Equal),
         (Pat::Text(a), Value::Text(b)) => a == b,
+        (Pat::Symbol(a), Value::Symbol(b)) => a == b,
         (Pat::Ctor(name, pats), Value::Variant(var)) => {
             var.ctor.name == *name && pats.len() == var.fields.len() && match_each(pats, &var.fields, slots, first)
         }
@@ -1186,6 +1211,15 @@ fn match_each(pats: &[Pat], vals: &[Value], slots: &mut [Value], first: usize) -
     true
 }
 
+/// The field `name` of a record or of a value built with a constructor.
+fn field_of(v: &Value, name: &str) -> Option<Value> {
+    match v {
+        Value::Record(r) => r.get(name).cloned(),
+        Value::Variant(var) => var.ctor.fields.iter().position(|f| &*f.name() == name).map(|i| var.fields[i].clone()),
+        _ => None,
+    }
+}
+
 pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> bool {
     match (&p.kind, v) {
         (PatKind::Wildcard, _) => true,
@@ -1200,6 +1234,7 @@ pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> boo
         (PatKind::Float(a), Value::Float(b)) => a == b,
         (PatKind::Float(a), Value::Int(b)) => cmp_int_float(*b, *a) == Some(std::cmp::Ordering::Equal),
         (PatKind::Text(a), Value::Text(b)) => a == b,
+        (PatKind::Symbol(a), Value::Symbol(b)) => a == b,
         (PatKind::Ctor(name, pats), Value::Variant(var)) => {
             var.ctor.name == name.own_name()
                 && pats.len() == var.fields.len()

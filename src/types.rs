@@ -30,6 +30,8 @@ pub enum Ty {
     /// A number: an Int or a Float.
     Num,
     Text,
+    /// `:ok`, `:error`...
+    Symbol,
     /// A list whose elements all have this type.
     List(Rc<Ty>),
     Record(Rc<RecordTy>),
@@ -79,8 +81,9 @@ pub const RESULT: Kinds = 1 << 8;
 /// A value of a type defined with `type`.
 pub const DATA: Kinds = 1 << 9;
 pub const FUNC: Kinds = 1 << 10;
+pub const SYMBOL: Kinds = 1 << 11;
 pub const NUMBER: Kinds = INT | FLOAT;
-pub const ALL: Kinds = (1 << 11) - 1;
+pub const ALL: Kinds = (1 << 12) - 1;
 
 /// Types nested deeper than this are not followed (`Any` instead), so that
 /// inferring the types of recursive functions always ends.
@@ -124,6 +127,7 @@ impl Ty {
             Ty::Float => FLOAT,
             Ty::Num => NUMBER,
             Ty::Text => TEXT,
+            Ty::Symbol => SYMBOL,
             Ty::List(_) => LIST,
             Ty::Record(_) => RECORD,
             Ty::Data(d) => d.kind(),
@@ -253,6 +257,7 @@ impl Ty {
             Ty::Float => "Float".into(),
             Ty::Num => "Int/Float".into(),
             Ty::Text => "Text".into(),
+            Ty::Symbol => "Symbol".into(),
             Ty::List(_) => "List".into(),
             Ty::Record(_) => "Record".into(),
             Ty::Data(d) => d.name.to_string(),
@@ -273,6 +278,7 @@ impl Ty {
             Value::Int(_) => Ty::Int,
             Value::Float(_) => Ty::Float,
             Value::Text(_) => Ty::Text,
+            Value::Symbol(_) => Ty::Symbol,
             Value::List(l) => {
                 let mut t = Ty::Never;
                 for (i, x) in l.iter().enumerate() {
@@ -300,7 +306,7 @@ impl Ty {
         match (self, v) {
             (Ty::Any, _) => true,
             (Ty::Unit, Value::Unit) | (Ty::Bool, Value::Bool(_)) | (Ty::Int, Value::Int(_)) | (Ty::Float, Value::Float(_)) => true,
-            (Ty::Num, Value::Int(_) | Value::Float(_)) | (Ty::Text, Value::Text(_)) => true,
+            (Ty::Num, Value::Int(_) | Value::Float(_)) | (Ty::Text, Value::Text(_)) | (Ty::Symbol, Value::Symbol(_)) => true,
             (Ty::List(t), Value::List(l)) => l.iter().all(|x| t.contains(x)),
             (Ty::Record(r), Value::Record(rec)) => {
                 (!r.exact || r.fields.len() == rec.len()) && r.fields.iter().all(|(k, t)| rec.get(k).is_some_and(|x| t.contains(x)))
@@ -351,6 +357,7 @@ pub fn kind_of(v: &Value) -> Kinds {
         Value::Int(_) => INT,
         Value::Float(_) => FLOAT,
         Value::Text(_) => TEXT,
+        Value::Symbol(_) => SYMBOL,
         Value::List(_) => LIST,
         Value::Record(_) => RECORD,
         Value::Variant(var) => data_kind(var.ctor.type_name),
@@ -660,7 +667,7 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                     _ => Ty::Any,
                 }
             }
-            "filter" | "sort_by" => {
+            "filter" | "sort_by" | "reject" => {
                 need(a, 0, Expected::List)?;
                 need(a, 1, Expected::Function)?;
                 Ty::list(arg(0).elem())
@@ -675,7 +682,7 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 need(a, 2, Expected::Function)?;
                 Ty::list(arg(2).ret())
             }
-            "each" => {
+            "each" | "each_with_index" => {
                 need(a, 0, Expected::List)?;
                 need(a, 1, Expected::Function)?;
                 Ty::Unit
@@ -692,7 +699,9 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
             }
             "count" => {
                 need(a, 0, Expected::List)?;
-                need(a, 1, Expected::Function)?;
+                if n == 2 {
+                    need(a, 1, Expected::Function)?;
+                }
                 Ty::Int
             }
             "min_by" | "max_by" => {
@@ -721,6 +730,11 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                     Ty::Int | Ty::Never => Ty::Int,
                     _ => Ty::Num,
                 }
+            }
+            "first" | "last" if n == 2 => {
+                need(a, 0, Expected::ListOrText)?;
+                need(a, 1, Expected::Int)?;
+                same_list_or_text(&arg(0))
             }
             "first" | "last" => {
                 need(a, 0, Expected::ListOrText)?;
@@ -994,7 +1008,8 @@ pub fn callback(name: &str, index: usize, a: &[Ty]) -> Option<Callback> {
             };
             (vec![x], None)
         }
-        ("filter" | "any" | "all" | "find" | "count" | "partition", 1) => (vec![elem], Some(BOOL)),
+        ("filter" | "reject" | "any" | "all" | "find" | "count" | "partition", 1) => (vec![elem], Some(BOOL)),
+        ("each_with_index", 1) => (vec![elem, Ty::Int], None),
         // Each element of a list, or each character of a text.
         ("take_while" | "drop_while", 1) => (vec![piece(&first)], Some(BOOL)),
         ("flat_map", 1) => (vec![elem], Some(LIST)),

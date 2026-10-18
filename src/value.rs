@@ -17,6 +17,8 @@ pub enum Value {
     Int(i64),
     Float(f64),
     Text(Rc<str>),
+    /// `:ok`: a value that is only its name.
+    Symbol(Sym),
     List(List),
     Record(Rc<Record>),
     Variant(Rc<Variant>),
@@ -230,6 +232,7 @@ impl Value {
             Value::Int(_) => "Int".into(),
             Value::Float(_) => "Float".into(),
             Value::Text(_) => "Text".into(),
+            Value::Symbol(_) => "Symbol".into(),
             Value::List(_) => "List".into(),
             Value::Record(_) => "Record".into(),
             Value::Variant(v) => v.ctor.type_name.name().to_string(),
@@ -295,6 +298,10 @@ impl Value {
                     }
                     Value::Float(f) => out.push_str(&fmt_float(*f)),
                     Value::Text(s) => write_text_repr(s, out),
+                    Value::Symbol(s) => {
+                        out.push(':');
+                        out.push_str(&s.name());
+                    }
                     Value::List(l) => {
                         out.push('[');
                         todo.push(Item::Str("]"));
@@ -365,6 +372,7 @@ impl Value {
                 (Value::Int(x), Value::Float(y)) | (Value::Float(y), Value::Int(x)) => cmp_int_float(*x, *y) == Some(Ordering::Equal),
                 (Value::Float(x), Value::Float(y)) => x == y,
                 (Value::Text(x), Value::Text(y)) => x == y,
+                (Value::Symbol(x), Value::Symbol(y)) => x == y,
                 (Value::List(x), Value::List(y)) => {
                     if x.len() != y.len() {
                         return false;
@@ -411,6 +419,7 @@ impl Value {
             (Value::Float(a), Value::Int(b)) => cmp_int_float(*b, *a).map(Ordering::reverse),
             (Value::Float(a), Value::Float(b)) => a.partial_cmp(b),
             (Value::Text(a), Value::Text(b)) => Some(a.cmp(b)),
+            (Value::Symbol(a), Value::Symbol(b)) => Some(a.name().cmp(&b.name())),
             (Value::Bool(a), Value::Bool(b)) => Some(a.cmp(b)),
             (Value::Unit, Value::Unit) => Some(Ordering::Equal),
             (Value::List(a), Value::List(b)) => {
@@ -455,6 +464,7 @@ impl Value {
                 Value::Bool(_) => 1,
                 Value::Int(_) | Value::Float(_) => 2,
                 Value::Text(_) => 3,
+                Value::Symbol(_) => 8,
                 Value::List(_) => 4,
                 Value::Record(_) => 5,
                 Value::Variant(_) => 6,
@@ -491,6 +501,7 @@ impl Value {
             (Value::Int(a), Value::Float(b)) => int_float(*a, *b, exact),
             (Value::Float(a), Value::Int(b)) => int_float(*b, *a, exact).reverse(),
             (Value::Text(a), Value::Text(b)) => a.cmp(b),
+            (Value::Symbol(a), Value::Symbol(b)) => a.name().cmp(&b.name()),
             (Value::Bool(a), Value::Bool(b)) => a.cmp(b),
             (Value::List(a), Value::List(b)) => {
                 for (x, y) in a.iter().zip(b.iter()) {

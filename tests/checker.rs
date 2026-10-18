@@ -113,7 +113,7 @@ fn fields_that_records_and_constructors_do_not_have() {
         "E010",
         "no variant of `Shape` has a field `depth`",
     );
-    finds("print(\"abc\".upper)", "E010", "add parentheses: `.upper()`");
+    finds("print(\"abc\".uper)", "E010", "did you mean `.upper`?");
 }
 
 #[test]

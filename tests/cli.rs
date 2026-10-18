@@ -35,9 +35,21 @@ fn help_overview_and_topics() {
     }
     let r = rythme(&["help", "map"]);
     assert!(r.stdout.contains("map(list, f)") && r.stdout.contains("Example"));
-    let r = rythme(&["help", "reduce"]);
+    let r = rythme(&["help", "foldl"]);
     assert_eq!(r.code, 2);
     assert!(r.stderr.contains("`fold`"));
+    // A Ruby name is the built-in function it names.
+    let r = rythme(&["help", "reduce"]);
+    assert_eq!(r.code, 0);
+    assert!(r.stdout.contains("the Ruby name of `fold`") && r.stdout.contains("fold(list, start, f)"), "{}", r.stdout);
+    let r = rythme(&["help", "fold"]);
+    assert!(r.stdout.contains("Same as: `reduce`, `inject`"), "{}", r.stdout);
+    let r = rythme(&["help", "ruby"]);
+    assert!(r.stdout.starts_with("COMING FROM RUBY"), "{}", r.stdout);
+    let r = common::rythme_lang("fr", &["help", "ruby"]);
+    assert!(r.stdout.starts_with("VENIR DE RUBY"), "{}", r.stdout);
+    let r = rythme(&["help", "builtins"]);
+    assert!(r.stdout.contains("upcase (same as upper)"), "{}", r.stdout);
 }
 
 #[test]

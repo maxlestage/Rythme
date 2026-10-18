@@ -4,7 +4,7 @@
 use paquets::prelude::*;
 
 pub const KEYWORDS: &[&str] =
-    &["fn", "if", "then", "else", "match", "end", "do", "type", "test", "use", "and", "or", "not", "true", "false"];
+    &["fn", "if", "then", "else", "match", "end", "do", "type", "test", "use", "and", "or", "not", "true", "false", "unless"];
 
 pub const BUILTINS: &[&str] = &[
     "print",
@@ -102,6 +102,8 @@ pub const BUILTINS: &[&str] = &[
     "all",
     "find",
     "count",
+    "reject",
+    "each_with_index",
     "index_of",
     "min_by",
     "max_by",

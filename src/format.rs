@@ -13,6 +13,10 @@
 //!   first; a type written on several lines gets one variant per line, each
 //!   after `|`;
 //! - a list written on several lines ends with a comma; on one line, without;
+//! - a block given to a call (`do |x| ... end`, `{ |x| ... }`) written on one
+//!   line stays on one line, with one space around its parts
+//!   (`xs.map do |x| x * 2 end`, `xs.map { |x| x * 2 }`); on several lines,
+//!   its statements are one level deeper than the line of `do`;
 //! - statements separated by `;` go on their own lines, and `end` too;
 //! - a top-level definition written on several lines is separated from what
 //!   surrounds it by one blank line; one-line definitions may stay grouped;
@@ -293,6 +297,9 @@ enum Role {
     Comma,
     Dot,
     Question,
+    /// `x ?`: a `?` after a name that must stay apart from it, or it would be
+    /// read as a part of the name (`even?`).
+    SpacedQuestion,
     /// `-x`: a minus sign before a value.
     Minus,
     /// `..rest` in a list or a record.
@@ -308,6 +315,7 @@ fn space_between(a: Role, b: Role) -> bool {
         return true;
     }
     !matches!(b, Role::Close | Role::Comma | Role::Dot | Role::Question | Role::Call | Role::Range | Role::Colon)
+        && !(a == Role::SpacedQuestion && b == Role::Call)
         && !matches!(a, Role::Open | Role::Call | Role::Dot | Role::Minus | Role::Spread | Role::Range)
 }
 
@@ -360,6 +368,9 @@ struct Shape {
     lists: Vec<List>,
     /// The first and last pieces of each top-level item.
     items: Vec<(usize, usize)>,
+    /// The statements and the end of each block given to a call: written on
+    /// one line, they stay on it.
+    inline: Vec<(usize, usize)>,
 }
 
 /// Walks the tokens like the parser does (`parser.rs`), to learn the shape of
@@ -374,6 +385,8 @@ struct Shaper<'a> {
     /// The last piece read.
     last: usize,
     s: Shape,
+    /// The functions with a name ending with `?` (see `parser::predicates`).
+    preds: Vec<Sym>,
 }
 
 type Item<'a> = fn(&mut Shaper<'a>) -> Option<usize>;
@@ -393,8 +406,9 @@ impl<'a> Shaper<'a> {
             types: Vec::new(),
             lists: Vec::new(),
             items: Vec::new(),
+            inline: Vec::new(),
         };
-        Shaper { toks, piece_of, pos: 0, sig: vec![true], last: 0, s }
+        Shaper { toks, piece_of, pos: 0, sig: vec![true], last: 0, s, preds: parser::predicates(toks) }
     }
 
     // ----- tokens, as in the parser
@@ -550,14 +564,20 @@ impl<'a> Shaper<'a> {
 
     /// The statements of a block, up to `end`, one level deeper than the line of `anchor`.
     fn block(&mut self, anchor: usize) -> Option<()> {
+        self.block_until(anchor, &Tok::End).map(|_| ())
+    }
+
+    /// The statements of a block, up to `close` (`end`, or `}` for `{ |x| ... }`):
+    /// the first statement (or the end) and the end.
+    fn block_until(&mut self, anchor: usize, close: &Tok) -> Option<(usize, usize)> {
         self.with_sig(true, |p| {
-            let mut first = true;
+            let mut first = None;
             loop {
                 p.skip_newlines();
                 match p.raw() {
-                    Tok::End => {
-                        p.end(anchor)?;
-                        return Some(());
+                    t if t == close => {
+                        let e = p.end(anchor)?;
+                        return Some((first.unwrap_or(e), e));
                     }
                     Tok::Eof => return None,
                     _ => {}
@@ -566,15 +586,61 @@ impl<'a> Shaper<'a> {
                 p.set(s, Indent::Inner(anchor));
                 p.s.force[s] = true;
                 p.s.separate[s] = true;
-                p.s.body_start[s] = first;
-                first = false;
-                if !matches!(p.raw(), Tok::Newline | Tok::Eof | Tok::End) {
+                p.s.body_start[s] = first.is_none();
+                first.get_or_insert(s);
+                if !(matches!(p.raw(), Tok::Newline | Tok::Eof | Tok::End) || p.raw() == close) {
                     return None;
                 }
             }
         })
     }
 
+    /// A block given to a call: `do |x, y| ... end` or `{ |x| ... }`.
+    fn block_arg(&mut self) -> Option<()> {
+        let open = self.advance()?;
+        let close = if self.toks[self.pos - 1].tok == Tok::LBrace { Tok::RBrace } else { Tok::End };
+        match self.raw() {
+            Tok::BarBar => {
+                self.advance()?;
+            }
+            Tok::Bar => {
+                self.take(Role::Open)?;
+                self.with_sig(false, |p| {
+                    while *p.peek() != Tok::Bar {
+                        let param = p.pattern_atom()?;
+                        p.set(param, Indent::Inner(open));
+                        if *p.peek() == Tok::Comma {
+                            p.take(Role::Comma)?;
+                        } else if *p.peek() != Tok::Bar {
+                            return None;
+                        }
+                    }
+                    p.take(Role::Close)
+                })?;
+            }
+            _ => {}
+        }
+        let region = self.block_until(open, &close)?;
+        self.s.inline.push(region);
+        Some(())
+    }
+
+    /// Does a `?` at `pos` that follows a name (as the operator) need a
+    /// space before it, so that it is not read as a part of the name?
+    fn spaced_question(&self) -> bool {
+        let i = self.pos;
+        if i == 0 || !matches!(self.toks[i - 1].tok, Tok::Ident(_)) {
+            return false;
+        }
+        let mut toks = vec![self.toks[i - 1].clone(), self.toks[i].clone()];
+        // The same tokens, written next to each other, followed by `(`.
+        let end = toks[0].span.end as usize;
+        toks[1].span = crate::source::Span::new(toks[0].span.file, end, end + 1);
+        let next_paren = matches!(self.toks.get(i + 1).map(|t| &t.tok), Some(Tok::LParen));
+        next_paren || parser::predicate_at(&toks, 0, &self.preds).is_some()
+    }
+
+    /// The `end` (or `}`) of a block.
     fn end(&mut self, anchor: usize) -> Option<usize> {
         let e = self.advance()?;
         self.set(e, Indent::Same(anchor));
@@ -587,6 +653,10 @@ impl<'a> Shaper<'a> {
         let f = self.advance()?;
         if named {
             self.advance()?;
+            // `fn adult?(person)`.
+            if *self.raw() == Tok::Question {
+                self.take(Role::Question)?;
+            }
         }
         if *self.peek() != Tok::LParen {
             return None;
@@ -752,11 +822,11 @@ impl<'a> Shaper<'a> {
         let first = self.primary()?;
         while *self.raw() == Tok::Dot {
             self.take(Role::Dot)?;
-            self.advance()?;
+            self.member()?;
             if *self.raw() == Tok::LParen {
                 let open = self.take(Role::Call)?;
                 self.comma_list(open, &Tok::RParen, Self::expr)?;
-                self.postfix_ops(first)?;
+                self.postfix_ops(first, true)?;
                 return Some(first);
             }
         }
@@ -764,7 +834,7 @@ impl<'a> Shaper<'a> {
             let open = self.take(Role::Call)?;
             self.comma_list(open, &Tok::RParen, Self::expr)?;
         }
-        self.postfix_ops(first)?;
+        self.postfix_ops(first, true)?;
         Some(first)
     }
 
@@ -804,8 +874,10 @@ impl<'a> Shaper<'a> {
     }
 
     fn power(&mut self) -> Option<usize> {
+        // A name may be given a block: `print do ... end`.
+        let callable = matches!(self.peek(), Tok::Ident(_)) && !parser::unless_at(self.toks, self.pos);
         let base = self.primary()?;
-        self.postfix_ops(base)?;
+        self.postfix_ops(base, callable)?;
         if *self.peek_cont() == Tok::StarStar {
             let op = self.take_cont()?;
             self.set(op, Indent::Inner(base));
@@ -816,17 +888,41 @@ impl<'a> Shaper<'a> {
         Some(base)
     }
 
-    /// Calls, `[index]`, `?`, `.field` and `.method()` after an expression.
-    fn postfix_ops(&mut self, first: usize) -> Option<()> {
+    /// The name after a `.`, with its `?` if it is a part of it (`.even?`).
+    fn member(&mut self) -> Option<usize> {
+        let name = self.advance()?;
+        if parser::predicate_at(self.toks, self.pos - 1, &self.preds).is_some() {
+            self.take(Role::Question)?;
+        }
+        Some(name)
+    }
+
+    /// Calls, `[index]`, `?`, `.field`, `.method()` and blocks after an expression.
+    /// `callable`: the expression so far is a name, a call or a field, which
+    /// a block may follow.
+    fn postfix_ops(&mut self, first: usize, mut callable: bool) -> Option<()> {
         loop {
+            // A block given to the call, on its line (as the parser reads it).
+            let block = matches!(self.raw(), Tok::Do)
+                || (matches!(self.raw(), Tok::LBrace)
+                    && matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Bar | Tok::BarBar)));
+            if block {
+                if !callable {
+                    return Some(());
+                }
+                self.block_arg()?;
+                continue;
+            }
             self.skip_soft();
             match self.raw() {
                 Tok::LParen => {
                     let open = self.take(Role::Call)?;
                     self.set(open, Indent::Inner(first));
                     self.comma_list(open, &Tok::RParen, Self::expr)?;
+                    callable = true;
                 }
                 Tok::LBracket => {
+                    callable = false;
                     let open = self.take(Role::Call)?;
                     self.set(open, Indent::Inner(first));
                     self.with_sig(false, |p| {
@@ -840,7 +936,9 @@ impl<'a> Shaper<'a> {
                     })?;
                 }
                 Tok::Question => {
-                    self.take(Role::Question)?;
+                    let role = if self.spaced_question() { Role::SpacedQuestion } else { Role::Question };
+                    self.take(role)?;
+                    callable = false;
                 }
                 _ => {
                     if *self.peek_cont() != Tok::Dot {
@@ -849,11 +947,12 @@ impl<'a> Shaper<'a> {
                     let dot = self.take_cont()?;
                     self.s.role[dot] = Role::Dot;
                     self.set(dot, Indent::Inner(first));
-                    self.advance()?;
+                    self.member()?;
                     if *self.raw() == Tok::LParen {
                         let open = self.take(Role::Call)?;
                         self.comma_list(open, &Tok::RParen, Self::expr)?;
                     }
+                    callable = true;
                 }
             }
         }
@@ -891,7 +990,16 @@ impl<'a> Shaper<'a> {
 
     fn primary(&mut self) -> Option<usize> {
         match self.peek() {
-            Tok::Int(_) | Tok::Float(_) | Tok::True | Tok::False | Tok::Str(_) | Tok::Ident(_) | Tok::Ctor(_) => self.advance(),
+            Tok::Ident(_) if parser::unless_at(self.toks, self.pos) => self.if_expr(),
+            Tok::Ident(_) => {
+                let name = self.advance()?;
+                // `even?`: one name.
+                if parser::predicate_at(self.toks, self.pos - 1, &self.preds).is_some() {
+                    self.take(Role::Question)?;
+                }
+                Some(name)
+            }
+            Tok::Int(_) | Tok::Float(_) | Tok::True | Tok::False | Tok::Str(_) | Tok::Ctor(_) | Tok::Symbol(_) => self.advance(),
             Tok::LParen => {
                 let open = self.take(Role::Open)?;
                 self.with_sig(false, |p| {
@@ -1066,7 +1174,7 @@ impl<'a> Shaper<'a> {
                 }
                 Some(m)
             }
-            Tok::Ident(_) | Tok::Int(_) | Tok::Float(_) | Tok::True | Tok::False | Tok::Str(_) => self.advance(),
+            Tok::Ident(_) | Tok::Int(_) | Tok::Float(_) | Tok::True | Tok::False | Tok::Str(_) | Tok::Symbol(_) => self.advance(),
             Tok::Ctor(_) => {
                 let c = self.advance()?;
                 if *self.raw() == Tok::LParen {
@@ -1219,7 +1327,14 @@ fn fn_name(pieces: &[Piece], first: usize) -> Option<Sym> {
 fn normalize(pieces: &mut [Piece], shape: &Shape) -> Edits {
     let n = pieces.len();
     let mut e = Edits { skip: vec![false; n], comma_after: vec![false; n], bar_before: vec![false; n] };
-    for (p, force) in pieces.iter_mut().zip(&shape.force) {
+    // A block written on one line stays on one line.
+    let mut force = shape.force.clone();
+    for &(first, last) in &shape.inline {
+        if (first..=last).all(|i| !pieces[i].gap.broken) {
+            force[first..=last].iter_mut().for_each(|f| *f = false);
+        }
+    }
+    for (p, force) in pieces.iter_mut().zip(&force) {
         p.gap.broken |= *force;
     }
     // A pipeline written on several lines: one step per line.
