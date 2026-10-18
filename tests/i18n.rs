@@ -61,8 +61,9 @@ fn every_catalog_matches_the_texts_of_the_program() {
     let mut skeleton = String::new();
     for lang in Lang::all() {
         let language = lang.language();
+        let name = padded(language.name, 10);
         if lang == Lang::En || lang == Lang::Fr {
-            report.push(format!("  {}  {:<10} {}/{} (written in the sources)", language.code, language.name, wanted.len(), wanted.len()));
+            report.push(format!("  {}  {name} {}/{} (written in the sources)", language.code, wanted.len(), wanted.len()));
             continue;
         }
         let mut seen: HashMap<&str, usize> = HashMap::new();
@@ -88,9 +89,8 @@ fn every_catalog_matches_the_texts_of_the_program() {
         let missing: Vec<&&Text> = order.iter().filter(|t| lang::translation(lang, &t.en).is_none()).collect();
         let done = wanted.len() - missing.len();
         report.push(format!(
-            "  {}  {:<10} {done}/{} ({:.1} %), {} missing",
+            "  {}  {name} {done}/{} ({:.1} %), {} missing",
             language.code,
-            language.name,
             wanted.len(),
             100.0 * done as f64 / wanted.len() as f64,
             missing.len()
@@ -272,6 +272,9 @@ fn carets_stay_aligned_with_chinese_text() {
     assert!(r.stderr.contains(&format!("2 | print(名称)\n  | {}^^^^ 未定义\n", " ".repeat(6))), "{}", r.stderr);
     assert_eq!(rythme::diagnostic::display_width("日本 ab"), 7);
     assert_eq!(rythme::diagnostic::display_width("e\u{301}"), 1);
+    // The report of the catalogs lines up the names of the languages too.
+    assert_eq!(padded("简体中文", 10), "简体中文  ");
+    assert_eq!(padded("español", 10), "español   ");
 }
 
 /// The playground passes the position of a language in `LANGUAGES`: its lists
@@ -320,6 +323,13 @@ fn the_scanner_reads_rust_texts() {
     let found: Vec<String> = calls(source, "test").into_iter().map(|t| t.en).collect();
     assert_eq!(found, ["one {x}\n", "two \"quoted\""]);
     assert_eq!(placeholders("a {x} {{b}} {:>4} {y:?}"), [":>4", "x", "y:?"]);
+}
+
+/// `name` followed by spaces up to `width` columns of the terminal: `{:<10}`
+/// counts characters, but a Chinese character takes two columns.
+fn padded(name: &str, width: usize) -> String {
+    let pad = width.saturating_sub(rythme::diagnostic::display_width(name));
+    format!("{name}{}", " ".repeat(pad))
 }
 
 /// A Rust literal for `text`: a raw one when it has several lines.

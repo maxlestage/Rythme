@@ -1,0 +1,36 @@
+# Ejercicio 09 · Acumuladores y llamadas de cola  ★★☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn suma_desde(0, total) = total
+fn suma_desde(n, total) = suma_desde(n - 1, total + n)
+
+fn suma_grande(n) = suma_desde(n, 0)
+
+fn collatz_desde(1, pasos) = pasos
+fn collatz_desde(n, pasos) if is_even(n) = collatz_desde(n // 2, pasos + 1)
+fn collatz_desde(n, pasos) = collatz_desde(3 * n + 1, pasos + 1)
+
+fn pasos_collatz(n) = collatz_desde(n, 0)
+
+fn fib_desde(0, a, _) = a
+fn fib_desde(n, a, b) = fib_desde(n - 1, b, a + b)
+
+fn fib(n) = fib_desde(n, 0, 1)
+
+# --- Pruebas (no las cambies) ---
+
+test "suma grande"
+  assert_eq(suma_grande(10), 55)
+  assert_eq(suma_grande(1000000), 500000500000)
+end
+
+test "pasos de collatz"
+  assert_eq(pasos_collatz(1), 0)
+  assert_eq(pasos_collatz(6), 8)
+  assert_eq(pasos_collatz(27), 111)
+end
+
+test "fibonacci"
+  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
+  assert_eq(fib(90), 2880067194370816120)
+end

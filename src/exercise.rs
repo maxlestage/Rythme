@@ -1,16 +1,24 @@
 //! `rythme exercise`: the graded exercises of `docs/exercises/`, built into
 //! the program. `list` shows them, `start` copies one into the current
 //! folder, `check` runs its tests and explains what to do next.
+//!
+//! The files of `docs/exercises/` are in English and French; the other
+//! languages translate each file, and its name, in their catalog
+//! (`src/i18n/`), like the help pages: [`fixed_texts`] gives them to
+//! `tests/i18n.rs`. The reference solutions of every language are in
+//! `docs/exercises/.solutions/<code>/`.
 
 use std::path::{Path, PathBuf};
 
+use crate::diagnostic::display_width;
 use crate::driver::Driver;
 use crate::interp::Mode;
 use crate::io::{err_line, out_line};
-use crate::lang::is_fr;
+use crate::lang::{self, Lang};
 use crate::suggest;
 
-/// One exercise: its file name (without `.ry`) and its text, in each language.
+/// One exercise: its file name (without `.ry`) and its text, in English and
+/// French; the other languages find theirs in their catalog.
 pub struct Exercise {
     pub en: &'static str,
     pub fr: &'static str,
@@ -63,27 +71,57 @@ pub const EXERCISES: &[Exercise] = exercises![
     ("30-testing", "30-tests"),
 ];
 
-/// The line that starts the tests of an exercise, in each language.
+/// The line that starts the tests of an exercise, in English and French.
 pub const TESTS_MARKER_EN: &str = "# --- Tests (do not change them) ---";
 pub const TESTS_MARKER_FR: &str = "# --- Tests (ne les modifiez pas) ---";
+
+/// What the body of a function to write says: `fail("to do")`.
+pub const TO_DO_EN: &str = "to do";
+pub const TO_DO_FR: &str = "à faire";
+
+/// The line that starts the tests of an exercise, in a language.
+pub fn tests_marker(lang: Lang) -> &'static str {
+    lang::pick_in(lang, TESTS_MARKER_EN, TESTS_MARKER_FR)
+}
+
+/// The text of `fail("to do")` in the functions to write, in a language.
+pub fn to_do(lang: Lang) -> &'static str {
+    lang::pick_in(lang, TO_DO_EN, TO_DO_FR)
+}
+
+/// The English texts of the exercises that the catalogs translate: the
+/// tests marker, "to do", and the name and the file of each exercise.
+#[doc(hidden)]
+pub fn fixed_texts() -> Vec<&'static str> {
+    let mut texts = vec![TESTS_MARKER_EN, TO_DO_EN];
+    texts.extend(EXERCISES.iter().flat_map(|e| [e.en, e.en_text]));
+    texts
+}
 
 impl Exercise {
     /// The file name, in the language of the messages.
     pub fn name(&self) -> &'static str {
-        if is_fr() {
-            self.fr
-        } else {
-            self.en
-        }
+        self.name_in(lang::get())
+    }
+
+    /// The file name in a language: `07-recursion`, `07-recursivite`...
+    pub fn name_in(&self, lang: Lang) -> &'static str {
+        lang::pick_in(lang, self.en, self.fr)
     }
 
     /// The file, in the language of the messages.
     pub fn text(&self) -> &'static str {
-        if is_fr() {
-            self.fr_text
-        } else {
-            self.en_text
-        }
+        self.text_in(lang::get())
+    }
+
+    /// The file in a language.
+    pub fn text_in(&self, lang: Lang) -> &'static str {
+        lang::pick_in(lang, self.en_text, self.fr_text)
+    }
+
+    /// The file names in every language (a name may come back).
+    fn names(&self) -> impl Iterator<Item = &'static str> + '_ {
+        Lang::all().map(|l| self.name_in(l))
     }
 
     /// The number, as written in the file name: "07".
@@ -102,21 +140,23 @@ impl Exercise {
         }
     }
 
-    /// The tests of the exercise, as written in the file given to students.
-    fn tests_in(text: &str) -> Option<&str> {
-        let start = text.find(TESTS_MARKER_EN).or_else(|| text.find(TESTS_MARKER_FR))?;
+    /// The tests of the exercise in a language, as written in the file given
+    /// to students: from the tests marker to the end.
+    pub fn tests_in(&self, lang: Lang) -> Option<&'static str> {
+        let text = self.text_in(lang);
+        let start = text.find(tests_marker(lang))?;
         Some(text[start..].trim_end())
     }
 }
 
-/// The exercise named by a number (`7`, `07`), or by its file name in either
+/// The exercise named by a number (`7`, `07`), or by its file name in any
 /// language, with or without `.ry` and with or without its number.
 pub fn find(name: &str) -> Option<&'static Exercise> {
     let name = name.trim().trim_end_matches(".ry").to_lowercase();
     if let Ok(n) = name.parse::<usize>() {
         return n.checked_sub(1).and_then(|i| EXERCISES.get(i));
     }
-    EXERCISES.iter().find(|e| [e.en, e.fr].iter().any(|n| *n == name || n[3..] == name))
+    EXERCISES.iter().find(|e| e.names().any(|n| n == name || n[3..] == name))
 }
 
 /// `rythme exercise ...`.
@@ -167,10 +207,11 @@ fn list() {
         EXERCISES.len()
     ));
     out_line("");
-    let width = EXERCISES.iter().map(|e| e.title().0.chars().count()).max().unwrap_or(0);
+    // By display width: a Chinese character takes two columns.
+    let width = EXERCISES.iter().map(|e| display_width(e.title().0)).max().unwrap_or(0);
     for e in EXERCISES {
         let (title, level) = e.title();
-        let pad = " ".repeat(width - title.chars().count());
+        let pad = " ".repeat(width - display_width(title));
         out_line(&format!("  {}  {title}{pad}  {level}  {}.ry", e.number(), e.name()));
     }
     out_line("");
@@ -183,7 +224,7 @@ fn list() {
 
 fn unknown_exercise(name: &str) -> i32 {
     let mut msg = t!("there is no exercise `{name}`", "il n'y a pas d'exercice `{name}`");
-    let names = EXERCISES.iter().flat_map(|e| [e.en, e.fr, &e.en[3..], &e.fr[3..]]);
+    let names = EXERCISES.iter().flat_map(|e| e.names().flat_map(|n| [n, &n[3..]]));
     if let Some(best) = suggest::closest(name.trim_end_matches(".ry"), names) {
         msg.push_str(&t!("\ndid you mean `{best}`?", "\nvouliez-vous dire `{best}` ?"));
     }
@@ -226,7 +267,7 @@ fn find_file(name: &str) -> Option<PathBuf> {
         return Some(p);
     }
     let e = find(name)?;
-    [e.en, e.fr].iter().map(|n| PathBuf::from(format!("{n}.ry"))).find(|p| p.is_file())
+    e.names().map(|n| PathBuf::from(format!("{n}.ry"))).find(|p| p.is_file())
 }
 
 fn check(name: &str) -> i32 {
@@ -250,7 +291,7 @@ fn check(name: &str) -> i32 {
     };
     let source = std::fs::read_to_string(&path).unwrap_or_default();
     let stem = path.file_stem().map(|s| s.to_string_lossy().to_lowercase()).unwrap_or_default();
-    let position = EXERCISES.iter().position(|e| e.en == stem || e.fr == stem);
+    let position = EXERCISES.iter().position(|e| e.names().any(|n| n == stem));
     let exercise = position.map(|i| &EXERCISES[i]);
 
     let mut driver = Driver::new();
@@ -267,8 +308,7 @@ fn check(name: &str) -> i32 {
         return 1;
     };
     // The tests of the exercise must still be there, unchanged.
-    let changed =
-        exercise.is_some_and(|e| [e.en_text, e.fr_text].iter().filter_map(|t| Exercise::tests_in(t)).all(|t| !source.contains(t)));
+    let changed = exercise.is_some_and(|e| Lang::all().filter_map(|l| e.tests_in(l)).all(|t| !source.contains(t)));
     if total == 0 {
         out_line(&t!(
             "✗ This file has no tests. An exercise comes with its tests: is it the right file?",
@@ -309,7 +349,7 @@ fn check(name: &str) -> i32 {
         ));
     }
     if failed > 0 {
-        if source.contains("fail(\"to do\")") || source.contains("fail(\"à faire\")") {
+        if Lang::all().any(|l| source.contains(&format!("fail({:?})", to_do(l)))) {
             out_line(&t!(
                 "  - Some functions are still to do: replace each `fail(\"to do\")` with your code.",
                 "  - Des fonctions restent à faire : remplacez chaque `fail(\"à faire\")` par votre code."

@@ -1,0 +1,45 @@
+# Ejercicio 12 · Construir listas  ★★☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn cuenta_atras(0) = [0]
+fn cuenta_atras(n) = [n, ..cuenta_atras(n - 1)]
+
+fn repetir_valor(_, 0) = []
+fn repetir_valor(x, n) = [x, ..repetir_valor(x, n - 1)]
+
+fn duplicar_todos([]) = []
+fn duplicar_todos([x, ..resto]) = [x * 2, ..duplicar_todos(resto)]
+
+fn al_reves_sobre([], hecho) = hecho
+fn al_reves_sobre([x, ..resto], hecho) = al_reves_sobre(resto, [x, ..hecho])
+
+fn al_reves(lista) = al_reves_sobre(lista, [])
+
+# --- Pruebas (no las cambies) ---
+
+test "cuenta atrás"
+  assert_eq(cuenta_atras(0), [0])
+  assert_eq(cuenta_atras(3), [3, 2, 1, 0])
+end
+
+test "repetir un valor"
+  assert_eq(repetir_valor("a", 3), ["a", "a", "a"])
+  assert_eq(repetir_valor(1, 0), [])
+end
+
+test "duplicar todos"
+  assert_eq(duplicar_todos([1, 2, 3]), [2, 4, 6])
+  assert_eq(duplicar_todos([]), [])
+end
+
+test "al revés"
+  assert_eq(al_reves([1, 2, 3]), [3, 2, 1])
+  assert_eq(al_reves([]), [])
+  assert_eq(al_reves(["x"]), ["x"])
+end
+
+test "la lista original no cambia"
+  numeros = [1, 2, 3]
+  al_reves(numeros)
+  assert_eq(numeros, [1, 2, 3])
+end

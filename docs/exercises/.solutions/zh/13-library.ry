@@ -1,0 +1,36 @@
+# 练习 13 · 列表函数  ★★☆
+# 参考答案。请先自己做这个练习，再来看它！
+
+fn squares(n) = map(1..n, fn(x) = x * x)
+
+fn evens(list) = filter(list, is_even)
+
+fn sum_of_multiples(limit) = 1..(limit - 1) |> filter(fn(n) = n % 3 == 0 or n % 5 == 0) |> sum
+
+fn mean(list) = sum(list) / len(list)
+
+fn smallest_three(list) = list |> sort |> take(3)
+
+# --- 测试（请不要修改）---
+
+test "平方数"
+  assert_eq(squares(5), [1, 4, 9, 16, 25])
+  assert_eq(squares(0), [])
+end
+
+test "偶数" = assert_eq(evens([5, 2, 8, 1, 4]), [2, 8, 4])
+
+test "倍数之和"
+  assert_eq(sum_of_multiples(10), 23)
+  assert_eq(sum_of_multiples(1000), 233168)
+end
+
+test "平均值"
+  assert_eq(mean([1, 2, 3, 4]), 2.5)
+  assert_eq(mean([7]), 7)
+end
+
+test "最小的三个"
+  assert_eq(smallest_three([5, 1, 4, 2, 3]), [1, 2, 3])
+  assert_eq(smallest_three([9, 8]), [8, 9])
+end

@@ -1,0 +1,53 @@
+# Übung 23 · Auswählen mit `match`  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+type Licht = Gruen | Gelb | Rot
+
+fn naechstes_licht(licht) = match licht
+  Gruen -> Gelb
+  Gelb -> Rot
+  Rot -> Gruen
+end
+
+fn darf_fahren(licht) = match licht
+  Gruen -> true
+  _ -> false
+end
+
+fn beschreiben(liste) = match liste
+  [] -> "leer"
+  [x] -> "eins: {x}"
+  [a, b] -> "zwei: {a} und {b}"
+  [erstes, ..] -> "viele, ab {erstes}"
+end
+
+fn begruessung(person) = match person
+  {titel, nachname} -> "Hallo, {titel} {nachname}"
+  {name} -> "Hallo, {name}"
+end
+
+# --- Tests (nicht verändern) ---
+
+test "nächstes Licht"
+  assert_eq(naechstes_licht(Gruen), Gelb)
+  assert_eq(naechstes_licht(Gelb), Rot)
+  assert_eq(naechstes_licht(Rot), Gruen)
+end
+
+test "darf fahren"
+  assert_eq(darf_fahren(Gruen), true)
+  assert_eq(darf_fahren(Gelb), false)
+  assert_eq(darf_fahren(Rot), false)
+end
+
+test "beschreiben"
+  assert_eq(beschreiben([]), "leer")
+  assert_eq(beschreiben([7]), "eins: 7")
+  assert_eq(beschreiben([1, 2]), "zwei: 1 und 2")
+  assert_eq(beschreiben([5, 6, 7]), "viele, ab 5")
+end
+
+test "Begrüßung"
+  assert_eq(begruessung({titel: "Dr.", nachname: "Hopper", name: "Grace"}), "Hallo, Dr. Hopper")
+  assert_eq(begruessung({name: "Grace"}), "Hallo, Grace")
+end

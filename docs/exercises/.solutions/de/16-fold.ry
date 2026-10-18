@@ -1,0 +1,34 @@
+# Übung 16 · Eine Liste zu einem Wert falten  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn produkt_von(liste) = fold(liste, 1, fn(ergebnis, x) = ergebnis * x)
+
+fn laengstes_wort(woerter) = fold(woerter, "", fn(bestes, w) = if len(w) > len(bestes) then w else bestes)
+
+fn zu_zahl(ziffern) = fold(ziffern, 0, fn(n, z) = n * 10 + z)
+
+fn zaehlen_wenn(liste, f) = fold(liste, 0, fn(n, x) = if f(x) then n + 1 else n)
+
+# --- Tests (nicht verändern) ---
+
+test "Produkt"
+  assert_eq(produkt_von([2, 3, 4]), 24)
+  assert_eq(produkt_von([]), 1)
+end
+
+test "längstes Wort"
+  assert_eq(laengstes_wort(["ein", "Baum", "ist", "grün"]), "Baum")
+  assert_eq(laengstes_wort(["eins", "zwei"]), "eins")
+  assert_eq(laengstes_wort([]), "")
+end
+
+test "zu einer Zahl"
+  assert_eq(zu_zahl([1, 2, 3]), 123)
+  assert_eq(zu_zahl([0, 7]), 7)
+  assert_eq(zu_zahl([]), 0)
+end
+
+test "zählen wenn"
+  assert_eq(zaehlen_wenn([1, 2, 3, 4, 5], is_odd), 3)
+  assert_eq(zaehlen_wenn(["a", "bb"], fn(w) = len(w) > 5), 0)
+end

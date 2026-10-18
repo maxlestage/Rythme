@@ -72,8 +72,9 @@ valeurs attendue et obtenue.
 
 Trente exercices de ce genre sont prêts : [**les exercices**](exercises/README.fr.md),
 gradués de ★☆☆ à ★★★ et qui suivent le cours ci-dessus, chacun avec un
-énoncé, des indices et des tests, en français et en anglais, avec des
-solutions de référence pour les enseignants. Ils sont intégrés à `rythme` :
+énoncé, des indices et des tests, dans chaque langue des messages (français,
+anglais, espagnol, allemand, portugais, chinois), avec des solutions de
+référence pour les enseignants. Ils sont intégrés à `rythme` :
 
 ```sh
 rythme exercise list                       # les exercices

@@ -1,0 +1,57 @@
+# Übung 25 · Ein kleiner Taschenrechner  ★★★
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+type Ausdruck = Zahl(wert) | Plus(links, rechts) | Mal(links, rechts) | Minus(innen)
+
+fn auswerten(Zahl(n)) = n
+fn auswerten(Plus(a, b)) = auswerten(a) + auswerten(b)
+fn auswerten(Mal(a, b)) = auswerten(a) * auswerten(b)
+fn auswerten(Minus(e)) = -auswerten(e)
+
+fn anzeigen(Zahl(n)) = text(n)
+fn anzeigen(Plus(a, b)) = "({anzeigen(a)} + {anzeigen(b)})"
+fn anzeigen(Mal(a, b)) = "({anzeigen(a)} * {anzeigen(b)})"
+fn anzeigen(Minus(e)) = "-" + anzeigen(e)
+
+fn anzahl_zahlen(Zahl(_)) = 1
+fn anzahl_zahlen(Plus(a, b)) = anzahl_zahlen(a) + anzahl_zahlen(b)
+fn anzahl_zahlen(Mal(a, b)) = anzahl_zahlen(a) + anzahl_zahlen(b)
+fn anzahl_zahlen(Minus(e)) = anzahl_zahlen(e)
+
+fn vereinfachen(Plus(a, b)) = match [vereinfachen(a), vereinfachen(b)]
+  [e, Zahl(0)] -> e
+  [Zahl(0), e] -> e
+  [x, y] -> Plus(x, y)
+end
+fn vereinfachen(Mal(a, b)) = match [vereinfachen(a), vereinfachen(b)]
+  [e, Zahl(1)] -> e
+  [Zahl(1), e] -> e
+  [x, y] -> Mal(x, y)
+end
+fn vereinfachen(Minus(e)) = Minus(vereinfachen(e))
+fn vereinfachen(ausdr) = ausdr
+
+# --- Tests (nicht verändern) ---
+
+rechnung = Mal(Plus(Zahl(1), Zahl(2)), Zahl(3))
+
+test "auswerten"
+  assert_eq(auswerten(Zahl(4)), 4)
+  assert_eq(auswerten(rechnung), 9)
+  assert_eq(auswerten(Minus(rechnung)), -9)
+end
+
+test "anzeigen"
+  assert_eq(anzeigen(rechnung), "((1 + 2) * 3)")
+  assert_eq(anzeigen(Minus(Zahl(4))), "-4")
+  assert_eq(anzeigen(Minus(Plus(Zahl(1), Zahl(2)))), "-(1 + 2)")
+end
+
+test "Anzahl der Zahlen" = assert_eq(anzahl_zahlen(Plus(rechnung, Minus(Zahl(5)))), 4)
+
+test "vereinfachen"
+  assert_eq(vereinfachen(Plus(Zahl(7), Zahl(0))), Zahl(7))
+  assert_eq(vereinfachen(Mal(Zahl(1), Plus(Zahl(0), Zahl(2)))), Zahl(2))
+  assert_eq(vereinfachen(rechnung), rechnung)
+  assert_eq(vereinfachen(Minus(Mal(Zahl(3), Zahl(1)))), Minus(Zahl(3)))
+end

@@ -1,0 +1,53 @@
+# 练习 23 · 用 `match` 做选择  ★★☆
+# 参考答案。请先自己做这个练习，再来看它！
+
+type Light = Green | Orange | Red
+
+fn next_light(light) = match light
+  Green -> Orange
+  Orange -> Red
+  Red -> Green
+end
+
+fn can_go(light) = match light
+  Green -> true
+  _ -> false
+end
+
+fn describe(list) = match list
+  [] -> "空"
+  [x] -> "一个：{x}"
+  [a, b] -> "两个：{a} 和 {b}"
+  [first, ..] -> "多个，从 {first} 开始"
+end
+
+fn greeting(person) = match person
+  {title, last} -> "你好，{last} {title}"
+  {name} -> "你好，{name}"
+end
+
+# --- 测试（请不要修改）---
+
+test "下一个灯"
+  assert_eq(next_light(Green), Orange)
+  assert_eq(next_light(Orange), Red)
+  assert_eq(next_light(Red), Green)
+end
+
+test "可以通行"
+  assert_eq(can_go(Green), true)
+  assert_eq(can_go(Orange), false)
+  assert_eq(can_go(Red), false)
+end
+
+test "描述"
+  assert_eq(describe([]), "空")
+  assert_eq(describe([7]), "一个：7")
+  assert_eq(describe([1, 2]), "两个：1 和 2")
+  assert_eq(describe([5, 6, 7]), "多个，从 5 开始")
+end
+
+test "问候"
+  assert_eq(greeting({title: "博士", last: "Hopper", name: "Grace"}), "你好，Hopper 博士")
+  assert_eq(greeting({name: "Grace"}), "你好，Grace")
+end

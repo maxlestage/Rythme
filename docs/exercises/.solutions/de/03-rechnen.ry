@@ -1,0 +1,42 @@
+# Übung 03 · Rechnen  ★☆☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn quadrat(x) = x * x
+
+fn mittelwert(a, b) = (a + b) / 2
+
+fn fahrenheit(celsius) = celsius * 9 / 5 + 32
+
+fn hypotenuse(a, b) = sqrt(quadrat(a) + quadrat(b))
+
+fn minuten_und_sekunden(gesamt) = "{gesamt // 60} min {gesamt % 60} s"
+
+# --- Tests (nicht verändern) ---
+
+test "Quadrat"
+  assert_eq(quadrat(3), 9)
+  assert_eq(quadrat(-4), 16)
+  assert_eq(quadrat(1.5), 2.25)
+end
+
+test "Mittelwert"
+  assert_eq(mittelwert(2, 4), 3)
+  assert_eq(mittelwert(1, 2), 1.5)
+end
+
+test "Fahrenheit"
+  assert_eq(fahrenheit(0), 32)
+  assert_eq(fahrenheit(100), 212)
+  assert_eq(fahrenheit(-40), -40)
+end
+
+test "Hypotenuse"
+  assert_eq(hypotenuse(3, 4), 5)
+  assert_eq(hypotenuse(5, 12), 13)
+end
+
+test "Minuten und Sekunden"
+  assert_eq(minuten_und_sekunden(125), "2 min 5 s")
+  assert_eq(minuten_und_sekunden(59), "0 min 59 s")
+  assert_eq(minuten_und_sekunden(600), "10 min 0 s")
+end

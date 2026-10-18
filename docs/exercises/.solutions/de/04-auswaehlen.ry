@@ -1,0 +1,50 @@
+# Übung 04 · Auswählen mit `if`  ★☆☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn betrag(n) = if n < 0 then -n else n
+
+fn groessere(a, b) = if a > b then a else b
+
+fn note(punkte) =
+  if punkte >= 90 then "A"
+  else if punkte >= 80 then "B"
+  else if punkte >= 70 then "C"
+  else if punkte >= 60 then "D"
+  else "F"
+
+fn eintrittspreis(alter) =
+  if alter < 4 then 0
+  else if alter < 12 then 5
+  else if alter >= 65 then 12
+  else 10
+
+# --- Tests (nicht verändern) ---
+
+test "Betrag"
+  assert_eq(betrag(-5), 5)
+  assert_eq(betrag(7), 7)
+  assert_eq(betrag(0), 0)
+end
+
+test "die größere"
+  assert_eq(groessere(3, 8), 8)
+  assert_eq(groessere(8, 3), 8)
+  assert_eq(groessere(-1, -2), -1)
+end
+
+test "Note"
+  assert_eq(note(95), "A")
+  assert_eq(note(90), "A")
+  assert_eq(note(85), "B")
+  assert_eq(note(70), "C")
+  assert_eq(note(61), "D")
+  assert_eq(note(12), "F")
+end
+
+test "Eintrittspreis"
+  assert_eq(eintrittspreis(2), 0)
+  assert_eq(eintrittspreis(4), 5)
+  assert_eq(eintrittspreis(11), 5)
+  assert_eq(eintrittspreis(30), 10)
+  assert_eq(eintrittspreis(65), 12)
+end

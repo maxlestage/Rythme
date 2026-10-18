@@ -188,6 +188,17 @@ the files into `rythme exercise`) and a line in both index files.
 `tests/exercises.rs` checks that every exercise is well formed, checks without
 a warning, fails until it is solved, and that its solution passes its tests.
 
+The other languages translate each exercise in their catalog, like a help
+page: an entry for its file name (ASCII, `07-rekursion`; Chinese keeps the
+English names and identifiers) and one for the whole file, whose English text
+is the key, so changing an English exercise shows its translations as stale
+in `tests/i18n.rs`. Translate the statement, the hints, the names of the
+tests and `fail("to do")` (an entry of its own), and the names of the code
+the way the French file does; keep the numbers and the structure, so the
+same tests check the same things. Each language has its reference solutions
+in `docs/exercises/.solutions/<code>/`, and `tests/exercises.rs` runs every
+exercise in every language.
+
 ## Design rules
 
 - One way to do each thing. Before adding syntax, check whether a function

@@ -312,9 +312,9 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 [`docs/teaching.md`](docs/teaching.md) proposes a course outline built on
 Rythme, and explains why it fits a first programming course and a
 functional programming course alike.
-[`docs/exercises/`](docs/exercises/README.md) holds 30 graded exercises, in
-English and French, with statements, hints, tests and solutions, that
-`rythme exercise` hands out and checks.
+[`docs/exercises/`](docs/exercises/README.md) holds 30 graded exercises, with
+statements, hints, tests and solutions, that `rythme exercise` hands out and
+checks in every language of the messages.
 
 ## How it works
 

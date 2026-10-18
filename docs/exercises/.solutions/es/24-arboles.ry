@@ -1,0 +1,50 @@
+# Ejercicio 24 · Árboles  ★★★
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+type Arbol = Hoja | Nodo(izquierda, valor, derecha)
+
+fn tamano(Hoja) = 0
+fn tamano(Nodo(izquierda, _, derecha)) = tamano(izquierda) + 1 + tamano(derecha)
+
+fn total(Hoja) = 0
+fn total(Nodo(izquierda, valor, derecha)) = total(izquierda) + valor + total(derecha)
+
+fn profundidad(Hoja) = 0
+fn profundidad(Nodo(izquierda, _, derecha)) = 1 + max(profundidad(izquierda), profundidad(derecha))
+
+fn insertar(Hoja, x) = Nodo(Hoja, x, Hoja)
+fn insertar(Nodo(izquierda, valor, derecha), x) =
+  if x < valor then Nodo(insertar(izquierda, x), valor, derecha) else Nodo(izquierda, valor, insertar(derecha, x))
+
+fn a_lista(Hoja) = []
+fn a_lista(Nodo(izquierda, valor, derecha)) = a_lista(izquierda) + [valor] + a_lista(derecha)
+
+# --- Pruebas (no las cambies) ---
+
+#       5
+#      / \
+#     3   8
+#    /
+#   1
+pequeno = Nodo(Nodo(Nodo(Hoja, 1, Hoja), 3, Hoja), 5, Nodo(Hoja, 8, Hoja))
+
+test "tamaño"
+  assert_eq(tamano(Hoja), 0)
+  assert_eq(tamano(pequeno), 4)
+end
+
+test "total" = assert_eq(total(pequeno), 17)
+
+test "profundidad"
+  assert_eq(profundidad(Hoja), 0)
+  assert_eq(profundidad(pequeno), 3)
+end
+
+test "insertar"
+  assert_eq(insertar(Hoja, 4), Nodo(Hoja, 4, Hoja))
+  assert_eq(insertar(Nodo(Hoja, 4, Hoja), 2), Nodo(Nodo(Hoja, 2, Hoja), 4, Hoja))
+end
+
+test "a lista" = assert_eq(a_lista(pequeno), [1, 3, 5, 8])
+
+test "ordenar con un árbol" = assert_eq([7, 2, 9, 4, 1] |> fold(Hoja, insertar) |> a_lista, [1, 2, 4, 7, 9])

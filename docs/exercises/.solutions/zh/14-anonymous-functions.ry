@@ -1,0 +1,31 @@
+# 练习 14 · 匿名函数  ★★☆
+# 参考答案。请先自己做这个练习，再来看它！
+
+fn with_tax(prices, percent) = map(prices, fn(p) = p + p * percent / 100)
+
+fn long_words(words, n) = filter(words, fn(w) = len(w) > n)
+
+fn lengths(words) = map(words, len)
+
+fn all_positive(list) = all(list, fn(x) = x > 0)
+
+fn count_above(list, limit) = count(list, fn(x) = x > limit)
+
+# --- 测试（请不要修改）---
+
+test "含税"
+  assert_eq(with_tax([100, 50], 20), [120, 60])
+  assert_eq(with_tax([10], 0), [10])
+end
+
+test "长的词" = assert_eq(long_words(["我", "喜欢", "函数式", "编程"], 1), ["喜欢", "函数式", "编程"])
+
+test "长度" = assert_eq(lengths(["我", "喜欢", "函数式"]), [1, 2, 3])
+
+test "全是正数"
+  assert_eq(all_positive([1, 5, 3]), true)
+  assert_eq(all_positive([1, -5, 3]), false)
+  assert_eq(all_positive([]), true)
+end
+
+test "大于界限的个数" = assert_eq(count_above([3, 10, 7, 12], 5), 3)

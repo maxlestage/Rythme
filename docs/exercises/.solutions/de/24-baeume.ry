@@ -1,0 +1,50 @@
+# Übung 24 · Bäume  ★★★
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+type Baum = Blatt | Knoten(links, wert, rechts)
+
+fn groesse(Blatt) = 0
+fn groesse(Knoten(links, _, rechts)) = groesse(links) + 1 + groesse(rechts)
+
+fn summe(Blatt) = 0
+fn summe(Knoten(links, wert, rechts)) = summe(links) + wert + summe(rechts)
+
+fn tiefe(Blatt) = 0
+fn tiefe(Knoten(links, _, rechts)) = 1 + max(tiefe(links), tiefe(rechts))
+
+fn einfuegen(Blatt, x) = Knoten(Blatt, x, Blatt)
+fn einfuegen(Knoten(links, wert, rechts), x) =
+  if x < wert then Knoten(einfuegen(links, x), wert, rechts) else Knoten(links, wert, einfuegen(rechts, x))
+
+fn als_liste(Blatt) = []
+fn als_liste(Knoten(links, wert, rechts)) = als_liste(links) + [wert] + als_liste(rechts)
+
+# --- Tests (nicht verändern) ---
+
+#       5
+#      / \
+#     3   8
+#    /
+#   1
+klein = Knoten(Knoten(Knoten(Blatt, 1, Blatt), 3, Blatt), 5, Knoten(Blatt, 8, Blatt))
+
+test "Größe"
+  assert_eq(groesse(Blatt), 0)
+  assert_eq(groesse(klein), 4)
+end
+
+test "Summe" = assert_eq(summe(klein), 17)
+
+test "Tiefe"
+  assert_eq(tiefe(Blatt), 0)
+  assert_eq(tiefe(klein), 3)
+end
+
+test "einfügen"
+  assert_eq(einfuegen(Blatt, 4), Knoten(Blatt, 4, Blatt))
+  assert_eq(einfuegen(Knoten(Blatt, 4, Blatt), 2), Knoten(Knoten(Blatt, 2, Blatt), 4, Blatt))
+end
+
+test "als Liste" = assert_eq(als_liste(klein), [1, 3, 5, 8])
+
+test "sortieren mit einem Baum" = assert_eq([7, 2, 9, 4, 1] |> fold(Blatt, einfuegen) |> als_liste, [1, 2, 4, 7, 9])

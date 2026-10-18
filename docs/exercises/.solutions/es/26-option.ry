@@ -1,0 +1,49 @@
+# Ejercicio 26 · Un valor que puede faltar: Option  ★★☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn division_segura(_, 0) = None
+fn division_segura(a, b) = Some(a / b)
+
+fn buscar_edad(personas, nombre) = personas |> find(fn(p) = p.nombre == nombre) |> map(fn(p) = p.edad)
+
+fn edad_o_desconocida(personas, nombre) = match buscar_edad(personas, nombre)
+  Some(edad) -> text(edad)
+  None -> "desconocida"
+end
+
+fn primera_palabra_larga(palabras) = find(palabras, fn(p) = len(p) > 5)
+
+fn sumar_opciones(a, b) = match [a, b]
+  [Some(x), Some(y)] -> Some(x + y)
+  _ -> None
+end
+
+# --- Pruebas (no las cambies) ---
+
+personas = [{nombre: "Ada", edad: 36}, {nombre: "Alan", edad: 41}]
+
+test "división segura"
+  assert_eq(division_segura(10, 4), Some(2.5))
+  assert_eq(division_segura(1, 0), None)
+end
+
+test "buscar la edad"
+  assert_eq(buscar_edad(personas, "Alan"), Some(41))
+  assert_eq(buscar_edad(personas, "Grace"), None)
+end
+
+test "edad o desconocida"
+  assert_eq(edad_o_desconocida(personas, "Ada"), "36")
+  assert_eq(edad_o_desconocida(personas, "Grace"), "desconocida")
+end
+
+test "primera palabra larga"
+  assert_eq(primera_palabra_larga(["un", "lenguaje", "funcional"]), Some("lenguaje"))
+  assert_eq(primera_palabra_larga(["solo", "esto"]), None)
+end
+
+test "sumar opciones"
+  assert_eq(sumar_opciones(Some(2), Some(3)), Some(5))
+  assert_eq(sumar_opciones(Some(2), None), None)
+  assert_eq(sumar_opciones(None, None), None)
+end

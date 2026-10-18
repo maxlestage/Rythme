@@ -1,0 +1,45 @@
+# Übung 11 · Listen zerlegen  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn summe([]) = 0
+fn summe([x, ..rest]) = x + summe(rest)
+
+fn groesstes([]) = fail("die Liste ist leer")
+fn groesstes([x]) = x
+fn groesstes([x, ..rest])
+  andere = groesstes(rest)
+  if x > andere then x else andere
+end
+
+fn enthaelt_wert([], _) = false
+fn enthaelt_wert([erstes, ..rest], x) = erstes == x or enthaelt_wert(rest, x)
+
+fn letztes([]) = fail("die Liste ist leer")
+fn letztes([x]) = x
+fn letztes([_, ..rest]) = letztes(rest)
+
+# --- Tests (nicht verändern) ---
+
+test "Summe"
+  assert_eq(summe([]), 0)
+  assert_eq(summe([4]), 4)
+  assert_eq(summe([1, 2, 3, 4]), 10)
+end
+
+test "das größte"
+  assert_eq(groesstes([7]), 7)
+  assert_eq(groesstes([3, 9, 2]), 9)
+  assert_eq(groesstes([-3, -1, -2]), -1)
+end
+
+test "enthält den Wert"
+  assert_eq(enthaelt_wert([1, 2, 3], 2), true)
+  assert_eq(enthaelt_wert([1, 2, 3], 5), false)
+  assert_eq(enthaelt_wert([], 1), false)
+  assert_eq(enthaelt_wert(["a", "b"], "b"), true)
+end
+
+test "das letzte"
+  assert_eq(letztes([1, 2, 3]), 3)
+  assert_eq(letztes(["einzig"]), "einzig")
+end

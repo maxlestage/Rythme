@@ -114,7 +114,12 @@ pub fn translation(lang: Lang, en: &str) -> Option<&'static str> {
 /// Picks one of two fixed texts according to the current language; for the
 /// languages of `src/i18n/`, the translation of the English one.
 pub fn pick(en: &'static str, fr: &'static str) -> &'static str {
-    match get() {
+    pick_in(get(), en, fr)
+}
+
+/// Like [`pick`], in a given language instead of the current one.
+pub fn pick_in(lang: Lang, en: &'static str, fr: &'static str) -> &'static str {
+    match lang {
         Lang::En => en,
         Lang::Fr => fr,
         other => translation(other, en).unwrap_or(en),

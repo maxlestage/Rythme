@@ -1,0 +1,38 @@
+# 练习 06 · 每种情况一个定义  ★☆☆
+# 参考答案。请先自己做这个练习，再来看它！
+
+fn plural(1, word) = "1 {word}"
+fn plural(n, word) = "{n} {word}s"
+
+fn fizzbuzz(n) if n % 15 == 0 = "FizzBuzz"
+fn fizzbuzz(n) if n % 3 == 0 = "Fizz"
+fn fizzbuzz(n) if n % 5 == 0 = "Buzz"
+fn fizzbuzz(n) = text(n)
+
+fn day_kind("星期六") = "周末"
+fn day_kind("星期日") = "周末"
+fn day_kind(_) = "工作日"
+
+# --- 测试（请不要修改）---
+
+test "复数"
+  assert_eq(plural(1, "cat"), "1 cat")
+  assert_eq(plural(2, "cat"), "2 cats")
+  assert_eq(plural(0, "dog"), "0 dogs")
+end
+
+test "fizzbuzz"
+  assert_eq(fizzbuzz(1), "1")
+  assert_eq(fizzbuzz(3), "Fizz")
+  assert_eq(fizzbuzz(10), "Buzz")
+  assert_eq(fizzbuzz(30), "FizzBuzz")
+  assert_eq(fizzbuzz(31), "31")
+end
+
+test "前十五个" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+
+test "日子的种类"
+  assert_eq(day_kind("星期六"), "周末")
+  assert_eq(day_kind("星期日"), "周末")
+  assert_eq(day_kind("星期一"), "工作日")
+end

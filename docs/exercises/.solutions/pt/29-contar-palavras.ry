@@ -1,0 +1,34 @@
+# Exercício 29 · Um pequeno projeto: contar palavras  ★★★
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn palavras_de(texto) = [".", ",", "!", "?"] |> fold(texto, fn(t, sinal) = replace(t, sinal, " ")) |> lower |> split
+
+fn frequencias(texto) =
+  palavras_de(texto)
+    |> group_by(fn(p) = p)
+    |> entries
+    |> map(fn([palavra, lista]) = [palavra, len(lista)])
+    |> sort_by(fn([palavra, _]) = palavra)
+    |> sort_by(fn([_, n]) = -n)
+
+fn a_mais_frequente(texto) = frequencias(texto) |> first |> map(fn([palavra, _]) = palavra)
+
+fn relatorio(texto, n) = frequencias(texto) |> take(n) |> map(fn([palavra, quantidade]) = "{palavra}: {quantidade}") |> join("\n")
+
+# --- Testes (não os altere) ---
+
+poema = "O gato viu o cão. O cão viu o gato! E o gato? O gato dorme."
+
+test "palavras" = assert_eq(palavras_de("Olá, Mundo! Olá?"), ["olá", "mundo", "olá"])
+
+test "frequências"
+  assert_eq(frequencias("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
+  assert_eq(frequencias(poema) |> take(3), [["o", 6], ["gato", 4], ["cão", 2]])
+end
+
+test "a mais frequente"
+  assert_eq(a_mais_frequente(poema), Some("o"))
+  assert_eq(a_mais_frequente(" ... "), None)
+end
+
+test "relatório" = assert_eq(relatorio(poema, 3), "o: 6\ngato: 4\ncão: 2")

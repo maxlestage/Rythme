@@ -1,0 +1,32 @@
+# Übung 02 · Texte  ★☆☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+## Ein Gruß für `name`.
+fn gruessen(name) = "Hallo, {name}!"
+
+## Der Text in Großbuchstaben, gefolgt von "!".
+fn rufen(text) = upper(text) + "!"
+
+## Die Initialen einer Person, jeweils gefolgt von einem Punkt.
+fn initialen(vorname, nachname) = "{vorname[0]}.{nachname[0]}."
+
+## Ein Satz, der eine Person vorstellt.
+fn vorstellen(name, alter) = "{name} ist {alter} Jahre alt."
+
+# --- Tests (nicht verändern) ---
+
+test "grüßen" = assert_eq(gruessen("Ada"), "Hallo, Ada!")
+
+test "jemand anderen grüßen" = assert_eq(gruessen("Alan"), "Hallo, Alan!")
+
+test "rufen"
+  assert_eq(rufen("hallo"), "HALLO!")
+  assert_eq(rufen("Stopp"), "STOPP!")
+end
+
+test "Initialen"
+  assert_eq(initialen("Ada", "Lovelace"), "A.L.")
+  assert_eq(initialen("grace", "hopper"), "g.h.")
+end
+
+test "vorstellen" = assert_eq(vorstellen("Ada", 36), "Ada ist 36 Jahre alt.")

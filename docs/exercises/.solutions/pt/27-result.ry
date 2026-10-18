@@ -1,0 +1,49 @@
+# Exercício 27 · Uma operação que pode falhar: Result  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn divisao_verificada(_, 0) = Err("divisão por zero")
+fn divisao_verificada(a, b) = Ok(a / b)
+
+fn ler_idade(texto) = match parse_int(texto)
+  Err(_) -> Err("não é um número")
+  Ok(n) if n < 0 -> Err("uma idade não pode ser negativa")
+  Ok(n) if n > 150 -> Err("velho demais")
+  Ok(n) -> Ok(n)
+end
+
+fn descrever(resultado) = match resultado
+  Ok(valor) -> "ok: {valor}"
+  Err(mensagem) -> "erro: {mensagem}"
+end
+
+fn verificar_codigo(codigo) =
+  if len(codigo) < 8 then Err("curto demais")
+  else if not any(chars(codigo), is_digit) then Err("nenhum dígito")
+  else Ok(codigo)
+
+# --- Testes (não os altere) ---
+
+test "divisão verificada"
+  assert_eq(divisao_verificada(9, 3), Ok(3))
+  assert_eq(divisao_verificada(1, 0), Err("divisão por zero"))
+end
+
+test "ler a idade"
+  assert_eq(ler_idade("36"), Ok(36))
+  assert_eq(ler_idade(" 7 "), Ok(7))
+  assert_eq(ler_idade("sete"), Err("não é um número"))
+  assert_eq(ler_idade("-1"), Err("uma idade não pode ser negativa"))
+  assert_eq(ler_idade("200"), Err("velho demais"))
+end
+
+test "descrever"
+  assert_eq(descrever(Ok(42)), "ok: 42")
+  assert_eq(descrever(Err("velho demais")), "erro: velho demais")
+  assert_eq(descrever(ler_idade("-5")), "erro: uma idade não pode ser negativa")
+end
+
+test "verificar o código"
+  assert_eq(verificar_codigo("rythme2024"), Ok("rythme2024"))
+  assert_eq(verificar_codigo("abc1"), Err("curto demais"))
+  assert_eq(verificar_codigo("funcional"), Err("nenhum dígito"))
+end

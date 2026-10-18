@@ -1,0 +1,32 @@
+# Übung 08 · Die Ziffern einer Zahl  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn anzahl_ziffern(n) = if n < 10 then 1 else 1 + anzahl_ziffern(n // 10)
+
+fn quersumme(n) = if n < 10 then n else n % 10 + quersumme(n // 10)
+
+fn umdrehen_ab(0, gebaut) = gebaut
+fn umdrehen_ab(n, gebaut) = umdrehen_ab(n // 10, gebaut * 10 + n % 10)
+
+fn zahl_umdrehen(n) = umdrehen_ab(n, 0)
+
+# --- Tests (nicht verändern) ---
+
+test "Anzahl der Ziffern"
+  assert_eq(anzahl_ziffern(0), 1)
+  assert_eq(anzahl_ziffern(7), 1)
+  assert_eq(anzahl_ziffern(472), 3)
+  assert_eq(anzahl_ziffern(1000000), 7)
+end
+
+test "Quersumme"
+  assert_eq(quersumme(0), 0)
+  assert_eq(quersumme(472), 13)
+  assert_eq(quersumme(99999), 45)
+end
+
+test "Zahl umdrehen"
+  assert_eq(zahl_umdrehen(472), 274)
+  assert_eq(zahl_umdrehen(1230), 321)
+  assert_eq(zahl_umdrehen(5), 5)
+end
