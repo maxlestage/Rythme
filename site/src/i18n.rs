@@ -259,7 +259,7 @@ pub const FR: Texts = Texts {
     install_steps: [
         item(
             "Sans rien d'autre",
-            "Téléchargez l'archive de votre système sur la page Releases, extrayez rythme et placez-le dans un dossier de votre PATH.",
+            "Linux, macOS : curl -fsSL https://raw.githubusercontent.com/maxlestage/Rythme/master/install.sh | sh. Windows : irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex. Ou téléchargez l'archive de votre système sur la page Releases, extrayez rythme et placez-le dans un dossier de votre PATH.",
         ),
         item("Avec Rust", "cargo install --git https://github.com/maxlestage/Rythme"),
         item("Premier programme", "rythme bonjour.ry"),
@@ -430,7 +430,7 @@ pub const EN: Texts = Texts {
     install_steps: [
         item(
             "Nothing else needed",
-            "Download the archive for your system on the Releases page, extract rythme and put it in a folder of your PATH.",
+            "Linux, macOS: curl -fsSL https://raw.githubusercontent.com/maxlestage/Rythme/master/install.sh | sh. Windows: irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex. Or download the archive for your system on the Releases page, extract rythme and put it in a folder of your PATH.",
         ),
         item("With Rust", "cargo install --git https://github.com/maxlestage/Rythme"),
         item("First program", "rythme hello.ry"),
