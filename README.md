@@ -272,7 +272,8 @@ formatter, the language server and the commands, fuzzing included.
 ## Status and roadmap
 
 Rythme 0.1 is a complete, tested interpreter, usable today for learning and
-for small programs. Honest limits, and what comes next:
+for small programs. Honest limits, and what comes next (the complete list
+towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
 
 - **Speed.** It is a tree-walking interpreter: local names become numbered
   slots before running, and most calls allocate nothing. The programs of
