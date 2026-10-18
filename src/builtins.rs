@@ -6,17 +6,22 @@ use std::collections::HashSet;
 use std::io::Write;
 use std::rc::Rc;
 
+use crate::bigint::{self, BigInt};
 use crate::diagnostic::{Diagnostic, Fallible};
-use crate::interp::{binop, overflow, resolve_index, too_big, Interp, Wrap, MAX_LIST, MAX_TEXT};
+use crate::interp::{binop, resolve_index, too_big, Interp, Wrap, MAX_LIST, MAX_TEXT};
 use crate::source::{self, Span};
 use crate::types::{self, Kinds, BOOL, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, TEXT};
 use crate::value::*;
 
 pub(crate) mod date;
+pub mod property;
+pub(crate) mod system;
 use date::{
     add_days, add_seconds, day_of_week, days_between, days_in_month, format_date, is_date, is_leap_year, now, parse_date, seconds_between,
     today,
 };
+use property::{bools, check_all, floats, ints, lists_of, one_of, records_of, sample, texts};
+use system::{create_folder, delete_file, file_info, in_browser, input_lines, io_message, join_path, list_folder, options, split_path};
 
 pub type BuiltinFn = fn(&mut Interp, &[Value], Span) -> Fallible<Value>;
 
@@ -30,10 +35,11 @@ pub enum Category {
     Options,
     Files,
     Dates,
+    Tests,
 }
 
 impl Category {
-    pub const ALL: [Category; 8] = [
+    pub const ALL: [Category; 9] = [
         Category::Basics,
         Category::Numbers,
         Category::Text,
@@ -42,6 +48,7 @@ impl Category {
         Category::Options,
         Category::Files,
         Category::Dates,
+        Category::Tests,
     ];
 
     pub fn title(self) -> String {
@@ -54,6 +61,7 @@ impl Category {
             Category::Options => t!("Option and Result", "Option et Result"),
             Category::Files => t!("Files", "Fichiers"),
             Category::Dates => t!("Dates and times", "Dates et heures"),
+            Category::Tests => t!("Property tests", "Tests de propriétés"),
         }
     }
 }
@@ -84,8 +92,60 @@ macro_rules! b {
     };
 }
 
+/// The built-in function `name`, also under its Ruby name (`upcase` gives `upper`).
 pub fn lookup(name: &str) -> Option<&'static Builtin> {
+    let name = alias_of(name).unwrap_or(name);
     BUILTINS.iter().find(|b| b.name == name)
+}
+
+/// A second name of a built-in function: the name Ruby gives it.
+pub struct Alias {
+    pub name: &'static str,
+    /// The built-in function it names.
+    pub of: &'static str,
+}
+
+const fn alias(name: &'static str, of: &'static str) -> Alias {
+    Alias { name, of }
+}
+
+/// The Ruby names of built-in functions: `xs.select(is_even)`,
+/// `"hi".upcase`, `n.even?`. Each one is exactly the function it names.
+pub static ALIASES: &[Alias] = &[
+    alias("puts", "print"),
+    alias("to_s", "text"),
+    alias("to_i", "int"),
+    alias("to_f", "float"),
+    alias("even?", "is_even"),
+    alias("odd?", "is_odd"),
+    alias("length", "len"),
+    alias("size", "len"),
+    alias("upcase", "upper"),
+    alias("downcase", "lower"),
+    alias("strip", "trim"),
+    alias("include?", "contains"),
+    alias("start_with?", "starts_with"),
+    alias("end_with?", "ends_with"),
+    alias("select", "filter"),
+    alias("reduce", "fold"),
+    alias("inject", "fold"),
+    alias("uniq", "unique"),
+    alias("each_slice", "chunks"),
+    alias("each_cons", "windows"),
+    alias("any?", "any"),
+    alias("all?", "all"),
+    alias("empty?", "is_empty"),
+    alias("key?", "has"),
+];
+
+/// The function that `name` is a Ruby name of: `upper` for `upcase`.
+pub fn alias_of(name: &str) -> Option<&'static str> {
+    ALIASES.iter().find(|a| a.name == name).map(|a| a.of)
+}
+
+/// The Ruby names of the built-in function `name`.
+pub fn aliases(name: &str) -> impl Iterator<Item = &'static str> + '_ {
+    ALIASES.iter().filter(move |a| a.of == name).map(|a| a.name)
 }
 
 pub static BUILTINS: &[Builtin] = &[
@@ -106,9 +166,13 @@ pub static BUILTINS: &[Builtin] = &[
        "Shows the prompt, then reads a line typed on the keyboard and returns it as text.",
        "Affiche l'invite, puis lit une ligne tapée au clavier et la renvoie sous forme de texte.",
        "name = input(\"Your name? \")"),
+    b!("input_lines", "input_lines()", 0, 0, Basics, input_lines,
+       "Reads all the lines of the standard input, until its end: `Ok(list of texts)`, or `Err(message)` if it cannot be read. For `rythme count.ry < names.txt`, or text typed until Ctrl-D (Ctrl-Z then Enter on Windows).",
+       "Lit toutes les lignes de l'entrée standard, jusqu'à sa fin : `Ok(liste de textes)`, ou `Err(message)` si elle ne peut pas être lue. Pour `rythme compter.ry < noms.txt`, ou du texte tapé jusqu'à Ctrl-D (Ctrl-Z puis Entrée sous Windows).",
+       "match input_lines()\n  Ok(lines) -> print(len(lines), \"lines\")\n  Err(e) -> print(\"Error: {e}\")\nend"),
     b!("type_of", "type_of(value)", 1, 1, Basics, type_of,
-       "Returns the name of the type of a value: \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (for `()`), \"Option\", \"Result\", or the name of your own type.",
-       "Renvoie le nom du type d'une valeur : \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (pour `()`), \"Option\", \"Result\", ou le nom de votre propre type.",
+       "Returns the name of the type of a value: \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (for `()`), \"Symbol\" (for `:ok`), \"Option\", \"Result\", or the name of your own type.",
+       "Renvoie le nom du type d'une valeur : \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (pour `()`), \"Symbol\" (pour `:ok`), \"Option\", \"Result\", ou le nom de votre propre type.",
        "type_of([1, 2])            # \"List\""),
     b!("help", "help(value)", 0, 1, Basics, help,
        "Shows help: about a function (`help(map)`), a topic (`help(\"lists\")`), or what you can do with a value (`help([1, 2])`).",
@@ -130,13 +194,17 @@ pub static BUILTINS: &[Builtin] = &[
        "Returns the list of the words given after the file name on the command line.",
        "Renvoie la liste des mots donnés après le nom du fichier sur la ligne de commande.",
        "# rythme hello.ry Ada   ->   args() == [\"Ada\"]"),
+    b!("options", "options(words)", 0, 1, Basics, options,
+       "Reads the options of the command line (the words of `args()`, or the list given) into a record, in a Result: `--name=value` gives the text `value`, `--name` and `-n` give `true`, a `-` in a name becomes `_`, and the other words are in the field `args` (all of them after `--`). An option given twice, or a word like `-abc`, gives `Err(message)`. Use `get(opts, \"name\")` or `has(opts, \"name\")` for an option that may be missing.",
+       "Lit les options de la ligne de commande (les mots de `args()`, ou la liste donnée) dans un enregistrement, dans un Result : `--nom=valeur` donne le texte `valeur`, `--nom` et `-n` donnent `true`, un `-` dans un nom devient `_`, et les autres mots sont dans le champ `args` (tous ceux après `--`). Une option donnée deux fois, ou un mot comme `-abc`, donne `Err(message)`. Utilisez `get(opts, \"nom\")` ou `has(opts, \"nom\")` pour une option qui peut manquer.",
+       "options([\"--dry-run\", \"--name=Ada\", \"notes.txt\"])   # Ok({args: [\"notes.txt\"], dry_run: true, name: \"Ada\"})\noptions([\"-v\", \"--\", \"-v\"])   # Ok({args: [\"-v\"], v: true})\noptions([\"--n=1\", \"--n=2\"])   # Err(\"the option `n` is given twice\")"),
     b!("env", "env(name)", 1, 1, Basics, env,
        "The value of an environment variable of the system, as an Option: `Some(text)`, or `None` if it is not set.",
        "La valeur d'une variable d'environnement du système, sous forme d'Option : `Some(texte)`, ou `None` si elle n'est pas définie.",
        "env(\"HOME\")                # Some(\"/home/ada\")"),
     b!("exit", "exit(code)", 0, 1, Basics, exit,
-       "Stops the program immediately. The code (0 by default) tells the system if everything went well (0) or not.",
-       "Arrête immédiatement le programme. Le code (0 par défaut) indique au système si tout s'est bien passé (0) ou non.",
+       "Stops the program immediately. The code (0 by default) tells the system if everything went well (0) or not; Rythme itself exits with 1 after an error in the program (see `rythme help system`).",
+       "Arrête immédiatement le programme. Le code (0 par défaut) indique au système si tout s'est bien passé (0) ou non ; Rythme lui-même sort avec 1 après une erreur dans le programme (voir `rythme help system`).",
        "exit(1)"),
     b!("time", "time()", 0, 0, Basics, time,
        "Returns the current time in seconds (a Float), counted from 1 January 1970. Subtract two times to measure a duration.",
@@ -333,16 +401,19 @@ pub static BUILTINS: &[Builtin] = &[
        "Calls f on each element, for its effect (like printing). Returns ().",
        "Appelle f sur chaque élément, pour son effet (comme afficher). Renvoie ().",
        "1..3 |> each(fn(i) = print(i))"),
-    b!("sum", "sum(list)", 1, 1, Lists, sum, "The sum of the numbers of a list.", "La somme des nombres d'une liste.", "sum([1, 2, 3])             # 6"),
+    b!("sum", "sum(list, f)", 1, 2, Lists, sum,
+       "The sum of the numbers of a list; with f, the sum of f(x) for each element.",
+       "La somme des nombres d'une liste ; avec f, la somme de f(x) pour chaque élément.",
+       "sum([1, 2, 3])             # 6\nsum([\"ab\", \"c\"], len)     # 3"),
     b!("product", "product(list)", 1, 1, Lists, product, "The product of the numbers of a list.", "Le produit des nombres d'une liste.", "product([2, 3, 4])         # 24"),
-    b!("first", "first(list)", 1, 1, Lists, first,
-       "The first element of a list (or character of a text), as an Option: `Some(x)`, or `None` if there is none.",
-       "Le premier élément d'une liste (ou caractère d'un texte), sous forme d'Option : `Some(x)`, ou `None` s'il n'y en a pas.",
-       "first([7, 8])              # Some(7)"),
-    b!("last", "last(list)", 1, 1, Lists, last,
-       "The last element of a list (or character of a text), as an Option.",
-       "Le dernier élément d'une liste (ou caractère d'un texte), sous forme d'Option.",
-       "last([7, 8])               # Some(8)"),
+    b!("first", "first(list, n)", 1, 2, Lists, first,
+       "The first element of a list (or character of a text), as an Option: `Some(x)`, or `None` if there is none. With n, the first n elements (like `take`).",
+       "Le premier élément d'une liste (ou caractère d'un texte), sous forme d'Option : `Some(x)`, ou `None` s'il n'y en a pas. Avec n, les n premiers éléments (comme `take`).",
+       "first([7, 8])              # Some(7)\nfirst([7, 8, 9], 2)        # [7, 8]"),
+    b!("last", "last(list, n)", 1, 2, Lists, last,
+       "The last element of a list (or character of a text), as an Option. With n, the last n elements.",
+       "Le dernier élément d'une liste (ou caractère d'un texte), sous forme d'Option. Avec n, les n derniers éléments.",
+       "last([7, 8])               # Some(8)\nlast([7, 8, 9], 2)         # [8, 9]"),
     b!("rest", "rest(list)", 1, 1, Lists, rest,
        "The list (or text) without its first element.",
        "La liste (ou le texte) sans son premier élément.",
@@ -424,7 +495,18 @@ pub static BUILTINS: &[Builtin] = &[
        "The first element for which f is true, as an Option.",
        "Le premier élément pour lequel f est vraie, sous forme d'Option.",
        "find([1, 4, 6], is_even)   # Some(4)"),
-    b!("count", "count(list, f)", 2, 2, Lists, count, "How many elements make f true.", "Combien d'éléments rendent f vraie.", "count([1, 2, 4], is_even)  # 2"),
+    b!("count", "count(list, f)", 1, 2, Lists, count,
+       "How many elements make f true; without f, how many elements there are.",
+       "Combien d'éléments rendent f vraie ; sans f, combien il y a d'éléments.",
+       "count([1, 2, 4], is_even)  # 2\ncount([1, 2, 4])           # 3"),
+    b!("reject", "reject(list, f)", 2, 2, Lists, reject,
+       "The elements for which f is false: the opposite of `filter`.",
+       "Les éléments pour lesquels f est fausse : le contraire de `filter`.",
+       "reject([1, 2, 3, 4], is_even) # [1, 3]"),
+    b!("each_with_index", "each_with_index(list, f)", 2, 2, Lists, each_with_index,
+       "Calls f(element, position) for each element, in order (positions start at 0). For effects, like `print`.",
+       "Appelle f(élément, position) pour chaque élément, dans l'ordre (les positions commencent à 0). Pour des effets, comme `print`.",
+       "each_with_index([\"a\", \"b\"], fn(x, i) = print(i, x))"),
     b!("index_of", "index_of(x, item)", 2, 2, Lists, index_of,
        "The position of an element in a list (or of a piece of text in a text), as an Option.",
        "La position d'un élément dans une liste (ou d'un morceau de texte dans un texte), sous forme d'Option.",
@@ -510,7 +592,34 @@ pub static BUILTINS: &[Builtin] = &[
        "Adds a text at the end of a file, creating the file if needed: `Ok(())` or `Err(message)`.",
        "Ajoute un texte à la fin d'un fichier, en créant le fichier si besoin : `Ok(())` ou `Err(message)`.",
        "append_file(\"log.txt\", \"done\\n\")"),
-    b!("file_exists", "file_exists(path)", 1, 1, Files, file_exists, "Does this file exist?", "Ce fichier existe-t-il ?", "file_exists(\"notes.txt\")"),
+    b!("file_exists", "file_exists(path)", 1, 1, Files, file_exists,
+       "Does this file (or folder) exist? Always `false` in the browser.",
+       "Ce fichier (ou dossier) existe-t-il ? Toujours `false` dans le navigateur.",
+       "file_exists(\"notes.txt\")"),
+    b!("file_info", "file_info(path)", 1, 1, Files, file_info,
+       "What is known about a file or a folder: `Ok({is_folder, size})`, with its size in bytes (0 for a folder), or `Err(message)` if it does not exist or cannot be read.",
+       "Ce qu'on sait d'un fichier ou d'un dossier : `Ok({is_folder, size})`, avec sa taille en octets (0 pour un dossier), ou `Err(message)` s'il n'existe pas ou ne peut pas être lu.",
+       "file_info(\"notes.txt\")      # Ok({is_folder: false, size: 11})"),
+    b!("list_folder", "list_folder(path)", 1, 1, Files, list_folder,
+       "The names of the files and folders inside a folder, in alphabetical order: `Ok(list of texts)`, or `Err(message)`. `list_folder(\".\")` lists the current folder.",
+       "Les noms des fichiers et dossiers d'un dossier, dans l'ordre alphabétique : `Ok(liste de textes)`, ou `Err(message)`. `list_folder(\".\")` liste le dossier courant.",
+       "list_folder(\"photos\")       # Ok([\"cat.jpg\", \"dog.jpg\"])"),
+    b!("create_folder", "create_folder(path)", 1, 1, Files, create_folder,
+       "Creates a folder, and the folders around it that are missing: `Ok(())`, also when it already exists, or `Err(message)`.",
+       "Crée un dossier, et les dossiers autour qui manquent : `Ok(())`, aussi quand il existe déjà, ou `Err(message)`.",
+       "create_folder(\"backup/2024\")"),
+    b!("delete_file", "delete_file(path)", 1, 1, Files, delete_file,
+       "Deletes one file (never a folder: that is an error): `Ok(())` or `Err(message)`. A deleted file cannot be brought back.",
+       "Supprime un fichier (jamais un dossier : c'est une erreur) : `Ok(())` ou `Err(message)`. Un fichier supprimé ne peut pas être récupéré.",
+       "delete_file(\"old.txt\")"),
+    b!("join_path", "join_path(parts)", 1, 1, Files, join_path,
+       "Joins the parts of a path with `/`, which works on Linux, macOS and Windows (with `\\` if the parts already use only `\\`). Only the first part can start at a root (`/`, `C:`): a part like \"/etc\" after another one is an error.",
+       "Joint les parties d'un chemin avec `/`, qui marche sous Linux, macOS et Windows (avec `\\` si les parties utilisent déjà seulement `\\`). Seule la première partie peut partir d'une racine (`/`, `C:`) : une partie comme \"/etc\" après une autre est une erreur.",
+       "join_path([\"data\", \"2024\", \"notes.txt\"])   # \"data/2024/notes.txt\"\njoin_path([\"C:\\\\Users\", \"ada\"])   # \"C:\\\\Users\\\\ada\""),
+    b!("split_path", "split_path(path)", 1, 1, Files, split_path,
+       "The parts of a path, split at each `/` or `\\`; the first part of an absolute path is its root (`/`, `C:\\`...). `join_path` puts them back together.",
+       "Les parties d'un chemin, coupé à chaque `/` ou `\\` ; la première partie d'un chemin absolu est sa racine (`/`, `C:\\`...). `join_path` les remet ensemble.",
+       "split_path(\"/home/ada/notes.txt\")   # [\"/\", \"home\", \"ada\", \"notes.txt\"]\nsplit_path(\"C:\\\\Users\\\\ada\")   # [\"C:\\\\\", \"Users\", \"ada\"]\nsplit_path(\"photos/cat.jpg\") |> last   # Some(\"cat.jpg\")"),
     // ----- Dates and times -----
     b!("now", "now()", 0, 0, Dates, now,
        "The date and time now, where the program runs: a record {year, month, day, hour, minute, second, offset}, where `offset` is the number of minutes the local time is ahead of UTC (0 when the system does not tell).",
@@ -560,6 +669,44 @@ pub static BUILTINS: &[Builtin] = &[
        "Does the year have a 29 February? Every 4 years, except every 100 years, except every 400 years.",
        "L'année a-t-elle un 29 février ? Tous les 4 ans, sauf tous les 100 ans, sauf tous les 400 ans.",
        "is_leap_year(2024)         # true\nis_leap_year(1900)         # false"),
+    // ----- Property tests -----
+    b!("check_all", "check_all(property, generator, cases)", 2, 3, Tests, check_all,
+       "Checks that a property holds for many values made by a generator (100, or `cases`): the function is called with each value and must give `true` (or `()`, `Some(...)`, `Ok(...)`). When a value makes it false or stops it with an error, that value is simplified as much as possible (shrinking) and shown, with the seed that made it: the same values come back on every run. The property may also come last, as a block: `check_all(ints()) { |x| x + 0 == x }`.",
+       "Vérifie qu'une propriété est vraie pour beaucoup de valeurs fabriquées par un générateur (100, ou `cases`) : la fonction est appelée avec chaque valeur et doit donner `true` (ou `()`, `Some(...)`, `Ok(...)`). Quand une valeur la rend fausse ou l'arrête sur une erreur, cette valeur est simplifiée autant que possible et montrée, avec la graine qui l'a donnée : les mêmes valeurs reviennent à chaque lancement. La propriété peut aussi venir en dernier, comme un bloc : `check_all(ints()) { |x| x + 0 == x }`.",
+       "check_all(fn(x) = x + 0 == x, ints())   # ()\ncheck_all(fn(l) = reverse(reverse(l)) == l, lists_of(texts()))   # ()\ncheck_all(fn(x) = abs(x) >= 0, floats(-1, 1), 500)   # ()"),
+    b!("sample", "sample(generator, n)", 1, 2, Tests, sample,
+       "A list of `n` values (10 if not given) made by a generator, to see what `check_all` will try.",
+       "Une liste de `n` valeurs (10 sinon) fabriquées par un générateur, pour voir ce que `check_all` essaiera.",
+       "sample(ints(1, 6), 5)      # [...]"),
+    b!("ints", "ints(min, max)", 0, 2, Tests, ints,
+       "A generator of whole numbers from `min` to `max` (from -1000 to 1000 if not given), often near 0 and at the edges. A failing number is simplified towards 0.",
+       "Un générateur de nombres entiers de `min` à `max` (de -1000 à 1000 sinon), souvent près de 0 et aux bords. Un nombre qui échoue est simplifié vers 0.",
+       "ints(1, 6)                 # {generator: \"ints\", min: 1, max: 6}"),
+    b!("floats", "floats(min, max)", 0, 2, Tests, floats,
+       "A generator of decimal numbers from `min` to `max` (from -1000.0 to 1000.0 if not given).",
+       "Un générateur de nombres décimaux de `min` à `max` (de -1000.0 à 1000.0 sinon).",
+       "floats(0, 1)               # {generator: \"floats\", min: 0.0, max: 1.0}"),
+    b!("texts", "texts(max_length)", 0, 1, Tests, texts,
+       "A generator of texts of at most `max_length` characters (20 if not given): letters mostly, with digits, spaces, punctuation and accents. A failing text is made shorter and simpler.",
+       "Un générateur de textes d'au plus `max_length` caractères (20 sinon) : surtout des lettres, avec des chiffres, des espaces, de la ponctuation et des accents. Un texte qui échoue est raccourci et simplifié.",
+       "texts(5)                   # {generator: \"texts\", max_length: 5}"),
+    b!("bools", "bools()", 0, 0, Tests, bools,
+       "A generator of `true` and `false`.",
+       "Un générateur de `true` et `false`.",
+       "bools()                    # {generator: \"bools\"}"),
+    b!("lists_of", "lists_of(generator, max_length)", 1, 2, Tests, lists_of,
+       "A generator of lists of at most `max_length` elements (10 if not given), each made by `generator`. A failing list is made shorter, then its elements simpler.",
+       "Un générateur de listes d'au plus `max_length` éléments (10 sinon), chacun fabriqué par `generator`. Une liste qui échoue est raccourcie, puis ses éléments simplifiés.",
+       "lists_of(bools(), 3)       # {generator: \"lists_of\", of: {generator: \"bools\"}, max_length: 3}"),
+    b!("one_of", "one_of(values)", 1, 1, Tests, one_of,
+       "A generator that picks one of the values of a list. A failing value is replaced by one written before it.",
+       "Un générateur qui choisit une des valeurs d'une liste. Une valeur qui échoue est remplacée par une valeur écrite avant elle.",
+       "one_of([\"red\", \"green\"])   # {generator: \"one_of\", values: [\"red\", \"green\"]}"),
+    b!("records_of", "records_of(fields)", 1, 1, Tests, records_of,
+       "A generator of records, with a generator for each field: `records_of({name: texts(), age: ints(0, 120)})`. Handy to give several values to `check_all`.",
+       "Un générateur d'enregistrements, avec un générateur pour chaque champ : `records_of({name: texts(), age: ints(0, 120)})`. Pratique pour donner plusieurs valeurs à `check_all`.",
+       "records_of({x: bools()})   # {generator: \"records_of\", fields: {x: {generator: \"bools\"}}}"),
+
 ];
 
 // ----- argument helpers --------------------------------------------------
@@ -600,6 +747,8 @@ pub enum Expected {
     Result,
     /// A record `{year, month, day}`, with a time if needed.
     Date,
+    /// A generator of values for `check_all`: a record made by `ints()`...
+    Generator,
 }
 
 impl Expected {
@@ -621,7 +770,7 @@ impl Expected {
             Expected::OptionOrResult => OPTION | RESULT,
             Expected::Option => OPTION,
             Expected::Result => RESULT,
-            Expected::Date => RECORD,
+            Expected::Date | Expected::Generator => RECORD,
         }
     }
 }
@@ -647,6 +796,7 @@ impl std::fmt::Display for Expected {
             Expected::Option => t!("an Option", "une Option"),
             Expected::Result => t!("a Result", "un Result"),
             Expected::Date => t!("a date (a record {{year, month, day}})", "une date (un enregistrement {{year, month, day}})"),
+            Expected::Generator => t!("a generator (like `ints()`)", "un générateur (comme `ints()`)"),
         })
     }
 }
@@ -769,13 +919,34 @@ fn text<'a>(a: &'a [Value], i: usize, f: &str, span: Span) -> Fallible<&'a str> 
 fn int(a: &[Value], i: usize, f: &str, span: Span) -> Fallible<i64> {
     match &a[i] {
         Value::Int(n) => Ok(*n),
+        Value::Big(n) => {
+            Err(invalid(t!("the number {n} is too large for `{f}`", "le nombre {n} est trop grand pour `{f}`", n = short_number(n)), span))
+        }
         v => Err(wrong(f, i, Expected::Int, v, span)),
     }
+}
+
+/// A large number in a message: its first and last digits.
+fn short_number(n: &BigInt) -> String {
+    let s = n.to_string();
+    let digits = s.trim_start_matches('-').len();
+    if digits <= 40 {
+        return s;
+    }
+    let sign = n.is_negative() as usize;
+    let lots = t!("{digits} digits", "{digits} chiffres");
+    format!("{}...{} ({lots})", &s[..sign + 10], &s[s.len() - 10..])
+}
+
+/// A whole number of any size.
+fn whole<'a>(a: &'a [Value], i: usize, f: &str, span: Span) -> Fallible<std::borrow::Cow<'a, BigInt>> {
+    bigint::big(&a[i]).ok_or_else(|| wrong(f, i, Expected::Int, &a[i], span))
 }
 
 fn number(a: &[Value], i: usize, f: &str, span: Span) -> Fallible<f64> {
     match &a[i] {
         Value::Int(n) => Ok(*n as f64),
+        Value::Big(n) => Ok(n.to_f64()),
         Value::Float(x) => Ok(*x),
         v => Err(wrong(f, i, Expected::Number, v, span)),
     }
@@ -923,11 +1094,23 @@ fn f64_to_int(x: f64, span: Span) -> Fallible<Value> {
         ))
         .boxed());
     }
-    // i64 covers [-2^63, 2^63); infinities are outside of that range too.
-    if !(-9.223_372_036_854_776e18..9.223_372_036_854_776e18).contains(&x) {
-        return Err(overflow(span));
+    if x.is_infinite() {
+        return Err(Diagnostic::error(
+            "E022",
+            t!(
+                "`{}` (infinity) cannot be converted to a whole number",
+                "`{}` (l'infini) ne peut pas être converti en nombre entier",
+                fmt_float(x)
+            ),
+        )
+        .at(span)
+        .help(t!(
+            "an infinity comes from a calculation too large for decimal numbers, like `1e308 * 10.0`, or from a division by `0.0`",
+            "un infini vient d'un calcul trop grand pour les nombres décimaux, comme `1e308 * 10.0`, ou d'une division par `0.0`"
+        ))
+        .boxed());
     }
-    Ok(Value::Int(x as i64))
+    Ok(bigint::from_whole_f64(x))
 }
 
 // ----- Basics ------------------------------------------------------------
@@ -970,6 +1153,8 @@ fn to_text(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         return Ok(text_value(match &a[0] {
             Value::Int(n) if digits == 0 => n.to_string(),
             Value::Int(n) => format!("{n}.{}", "0".repeat(digits)),
+            Value::Big(n) if digits == 0 => n.to_string(),
+            Value::Big(n) => format!("{n}.{}", "0".repeat(digits)),
             Value::Float(x) => fixed(*x, digits),
             v => return Err(wrong("text", 0, Expected::Number, v, span)),
         }));
@@ -1051,10 +1236,126 @@ fn assert_eq(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     if a[0].equals(&a[1]) {
         return Ok(Value::Unit);
     }
-    Err(Diagnostic::error("E015", t!("assertion failed: the values are different", "assertion échouée : les valeurs sont différentes"))
-        .at(span)
-        .note(t!("got:      {}\nexpected: {}", "obtenu :  {}\nattendu : {}", a[0].repr(), a[1].repr()))
-        .boxed())
+    let (got, expected) = (a[0].repr(), a[1].repr());
+    let mut values = t!("got:      {got}\nexpected: {expected}", "obtenu :  {got}\nattendu : {expected}");
+    // Two short texts: a mark under the first character that differs.
+    if let (Value::Text(x), Value::Text(y)) = (&a[0], &a[1]) {
+        if got.chars().count() <= 100 && expected.chars().count() <= 100 {
+            let same: String = x.chars().zip(y.chars()).take_while(|(c, d)| c == d).map(|(c, _)| c).collect();
+            let column = Value::text(&same).repr().chars().count() - 1;
+            let at = same.chars().count() + 1;
+            values.push_str(&format!(
+                "\n          {}^ {}",
+                " ".repeat(column),
+                t!("first difference: character {at}", "première différence : caractère {at}")
+            ));
+        }
+    }
+    let mut d =
+        Diagnostic::error("E015", t!("assertion failed: the values are different", "assertion échouée : les valeurs sont différentes"))
+            .at(span)
+            .note(values);
+    for note in differences(&a[0], &a[1]) {
+        d = d.note(note);
+    }
+    Err(d.boxed())
+}
+
+/// Where two different values differ, for `assert_eq`: the first place
+/// inside lists and records where they are not the same, and what is there.
+fn differences(got: &Value, expected: &Value) -> Vec<String> {
+    let mut notes = Vec::new();
+    let (mut x, mut y) = (got, expected);
+    let mut path = String::new();
+    loop {
+        let at = if path.is_empty() { String::new() } else { t!(" at {path}", " en {path}") };
+        match (x, y) {
+            (Value::List(l), Value::List(m)) => {
+                if l.len() != m.len() {
+                    notes.push(t!(
+                        "the list{at} has {} element(s), {} expected",
+                        "la liste{at} a {} élément(s), {} attendu(s)",
+                        l.len(),
+                        m.len()
+                    ));
+                }
+                match l.iter().zip(m.iter()).position(|(a, b)| !a.equals(b)) {
+                    Some(i) => {
+                        path.push_str(&format!("[{i}]"));
+                        (x, y) = (&l.as_slice()[i], &m.as_slice()[i]);
+                    }
+                    None => {
+                        let (more, from, word) = if l.len() > m.len() {
+                            (l, m.len(), t!("in excess", "en trop"))
+                        } else {
+                            (m, l.len(), t!("missing", "manquant(s)"))
+                        };
+                        let items: Vec<String> = more.iter().skip(from).take(5).map(Value::repr).collect();
+                        let dots = if more.len() - from > 5 { ", ..." } else { "" };
+                        notes.push(t!("{word} from [{from}]: {}{dots}", "{word} à partir de [{from}] : {}{dots}", items.join(", ")));
+                        return notes;
+                    }
+                }
+            }
+            (Value::Record(r), Value::Record(s)) => {
+                let missing: Vec<&str> = s.keys().iter().filter(|k| r.get(k).is_none()).map(|k| &**k).collect();
+                let extra: Vec<&str> = r.keys().iter().filter(|k| s.get(k).is_none()).map(|k| &**k).collect();
+                if !missing.is_empty() {
+                    notes.push(t!("missing field(s){at}: {}", "champ(s) manquant(s){at} : {}", missing.join(", ")));
+                }
+                if !extra.is_empty() {
+                    notes.push(t!("field(s) not expected{at}: {}", "champ(s) inattendu(s){at} : {}", extra.join(", ")));
+                }
+                let Some((k, v, w)) = r.iter().find_map(|(k, v)| s.get(k).filter(|w| !v.equals(w)).map(|w| (k, v, w))) else {
+                    return notes;
+                };
+                path.push('.');
+                path.push_str(k);
+                (x, y) = (v, w);
+            }
+            _ => break,
+        }
+    }
+    let kinds = if x.type_name() == y.type_name() {
+        String::new()
+    } else {
+        t!(", which are of different types: {} and {}", ", qui sont de types différents : {} et {}", x.type_name(), y.type_name())
+    };
+    let path = path.strip_prefix('.').unwrap_or(&path);
+    if !path.is_empty() {
+        notes.insert(
+            0,
+            t!(
+                "first difference at {path}: got {}, expected {}{kinds}",
+                "première différence en {path} : obtenu {}, attendu {}{kinds}",
+                x.repr(),
+                y.repr()
+            ),
+        );
+    } else if !kinds.is_empty() {
+        notes.push(t!(
+            "the values are of different types: {} and {}",
+            "les valeurs sont de types différents : {} et {}",
+            x.type_name(),
+            y.type_name()
+        ));
+    }
+    // Texts of several lines: the first line that differs.
+    if let (Value::Text(s), Value::Text(t)) = (x, y) {
+        if s.contains('\n') || t.contains('\n') {
+            let (a, b): (Vec<&str>, Vec<&str>) = (s.split('\n').collect(), t.split('\n').collect());
+            let i = a.iter().zip(&b).position(|(p, q)| p != q).unwrap_or(a.len().min(b.len()));
+            let line = |l: Option<&&str>| l.map(|l| Value::text(l).repr()).unwrap_or_else(|| t!("(no line)", "(pas de ligne)"));
+            notes.push(t!(
+                "first different line: line {}\n  got:      {}\n  expected: {}",
+                "première ligne différente : ligne {}\n  obtenu :  {}\n  attendu : {}",
+                i + 1,
+                line(a.get(i)),
+                line(b.get(i))
+            ));
+        }
+    }
+    notes
 }
 
 fn fail(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -1132,7 +1433,8 @@ fn random(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn abs(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     match &a[0] {
-        Value::Int(n) => n.checked_abs().map(Value::Int).ok_or_else(|| overflow(span)),
+        Value::Int(n) => Ok(n.checked_abs().map_or_else(|| bigint::value(BigInt::from_i64(*n).abs()), Value::Int)),
+        Value::Big(n) => Ok(bigint::value(n.abs())),
         Value::Float(x) => Ok(Value::Float(x.abs())),
         v => Err(wrong("abs", 0, Expected::Number, v, span)),
     }
@@ -1202,7 +1504,7 @@ fn pow(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn rounding(a: &[Value], name: &str, span: Span, f: fn(f64) -> f64) -> Fallible<Value> {
     match &a[0] {
-        Value::Int(n) => Ok(Value::Int(*n)),
+        Value::Int(_) | Value::Big(_) => Ok(a[0].clone()),
         Value::Float(x) => f64_to_int(f(*x), span),
         v => Err(wrong(name, 0, Expected::Number, v, span)),
     }
@@ -1233,13 +1535,15 @@ fn round(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn to_int(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     match &a[0] {
-        Value::Int(n) => Ok(Value::Int(*n)),
+        Value::Int(_) | Value::Big(_) => Ok(a[0].clone()),
         Value::Float(x) => f64_to_int(x.trunc(), span),
         Value::Bool(b) => Ok(Value::Int(*b as i64)),
         Value::Text(s) => {
             let t = s.trim();
-            if let Ok(n) = t.replace('_', "").parse::<i64>() {
-                return Ok(Value::Int(n));
+            match read_whole(t) {
+                Some(Ok(n)) => return Ok(n),
+                Some(Err(())) => return Err(bigint::too_large(span)),
+                None => {}
             }
             if let Ok(x) = t.replace('_', "").parse::<f64>() {
                 return f64_to_int(x.trunc(), span);
@@ -1262,6 +1566,7 @@ fn to_int(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 fn to_float(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     match &a[0] {
         Value::Int(n) => Ok(Value::Float(*n as f64)),
+        Value::Big(n) => Ok(Value::Float(n.to_f64())),
         Value::Float(x) => Ok(Value::Float(*x)),
         Value::Text(s) => s.trim().replace('_', "").parse::<f64>().map(Value::Float).map_err(|_| {
             Diagnostic::error("E022", t!("cannot convert \"{s}\" to a decimal number", "impossible de convertir \"{s}\" en nombre décimal"))
@@ -1343,12 +1648,20 @@ fn log(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::Float(x.ln()))
 }
 
+fn even(a: &[Value], f: &str, span: Span) -> Fallible<bool> {
+    match &a[0] {
+        Value::Int(n) => Ok(n % 2 == 0),
+        Value::Big(n) => Ok(n.is_even()),
+        v => Err(wrong(f, 0, Expected::Int, v, span)),
+    }
+}
+
 fn is_even(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    Ok(Value::Bool(int(a, 0, "is_even", span)? % 2 == 0))
+    Ok(Value::Bool(even(a, "is_even", span)?))
 }
 
 fn is_odd(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    Ok(Value::Bool(int(a, 0, "is_odd", span)? % 2 != 0))
+    Ok(Value::Bool(!even(a, "is_odd", span)?))
 }
 
 /// Euclid's algorithm, on the absolute values (they always fit in a u64).
@@ -1360,18 +1673,31 @@ fn gcd_of(mut a: u64, mut b: u64) -> u64 {
 }
 
 fn gcd(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let (x, y) = (int(a, 0, "gcd", span)?, int(a, 1, "gcd", span)?);
-    let g = gcd_of(x.unsigned_abs(), y.unsigned_abs());
-    i64::try_from(g).map(Value::Int).map_err(|_| overflow(span))
+    if let (Value::Int(x), Value::Int(y)) = (&a[0], &a[1]) {
+        if let Ok(g) = i64::try_from(gcd_of(x.unsigned_abs(), y.unsigned_abs())) {
+            return Ok(Value::Int(g));
+        }
+    }
+    let (x, y) = (whole(a, 0, "gcd", span)?, whole(a, 1, "gcd", span)?);
+    Ok(bigint::value(x.gcd(&y)))
 }
 
 fn lcm(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let (x, y) = (int(a, 0, "lcm", span)?, int(a, 1, "lcm", span)?);
-    if x == 0 || y == 0 {
+    if let (Value::Int(x), Value::Int(y)) = (&a[0], &a[1]) {
+        if *x == 0 || *y == 0 {
+            return Ok(Value::Int(0));
+        }
+        let (x, y) = (x.unsigned_abs(), y.unsigned_abs());
+        if let Some(m) = (x / gcd_of(x, y)).checked_mul(y).and_then(|m| i64::try_from(m).ok()) {
+            return Ok(Value::Int(m));
+        }
+    }
+    let (x, y) = (whole(a, 0, "lcm", span)?, whole(a, 1, "lcm", span)?);
+    if x.is_zero() || y.is_zero() {
         return Ok(Value::Int(0));
     }
-    let (x, y) = (x.unsigned_abs(), y.unsigned_abs());
-    (x / gcd_of(x, y)).checked_mul(y).and_then(|m| i64::try_from(m).ok()).map(Value::Int).ok_or_else(|| overflow(span))
+    let (m, _) = x.abs().div_mod_floor(&x.gcd(&y));
+    binop(crate::ast::BinOp::Mul, &bigint::value(m), &bigint::value(y.abs()), span)
 }
 
 // ----- Text --------------------------------------------------------------
@@ -1589,10 +1915,22 @@ fn repeat(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn parse_int(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let s = text(a, 0, "parse_int", span)?;
-    Ok(match s.trim().replace('_', "").parse::<i64>() {
-        Ok(n) => it.ok(Value::Int(n)),
-        Err(_) => it.err(text_value(t!("\"{s}\" is not a whole number", "\"{s}\" n'est pas un nombre entier"))),
+    Ok(match read_whole(s.trim()) {
+        Some(Ok(n)) => it.ok(n),
+        Some(Err(())) => {
+            it.err(text_value(t!("this number has more than {} digits", "ce nombre a plus de {} chiffres", bigint::MAX_DIGITS)))
+        }
+        None => it.err(text_value(t!("\"{s}\" is not a whole number", "\"{s}\" n'est pas un nombre entier"))),
     })
+}
+
+/// A whole number written in a text (`-12`, `+7`, `1_000`), of any size:
+/// `Some(Err(()))` when it has too many digits.
+fn read_whole(t: &str) -> Option<Result<Value, ()>> {
+    if let Ok(n) = t.replace('_', "").parse::<i64>() {
+        return Some(Ok(Value::Int(n)));
+    }
+    BigInt::parse(&t.replace('_', ""), 10).map(|r| r.map(bigint::value))
 }
 
 fn parse_float(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -1794,8 +2132,11 @@ impl Json<'_> {
             if let Ok(n) = s.parse::<i64>() {
                 return Ok(Value::Int(n));
             }
+            if let Some(Ok(n)) = BigInt::parse(s, 10) {
+                return Ok(bigint::value(n));
+            }
         }
-        // Also whole numbers too large for an Int.
+        // Also whole numbers with too many digits.
         s.parse::<f64>().map(Value::Float).map_err(|_| bad(self))
     }
 
@@ -1960,8 +2301,11 @@ fn write_json(it: &Interp, v: &Value, indent: Option<usize>) -> Result<String, U
                 Value::Unit => out.push_str("null"),
                 Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
                 Value::Int(n) => out.push_str(&n.to_string()),
+                Value::Big(n) => out.push_str(&n.to_string()),
                 Value::Float(f) if f.is_finite() => out.push_str(&fmt_float(*f)),
                 Value::Text(s) => json_text(s, &mut out),
+                // `:ok` is written as its name, as Ruby does.
+                Value::Symbol(s) => json_text(&s.name(), &mut out),
                 Value::List(l) if l.is_empty() => out.push_str("[]"),
                 Value::Record(r) if r.is_empty() => out.push_str("{}"),
                 Value::List(l) => {
@@ -2083,6 +2427,27 @@ fn filter(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::list(out))
 }
 
+fn reject(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let l = list(a, 0, "reject", span)?;
+    let f = func(a, 1, "reject", span)?;
+    let mut out = Vec::new();
+    for x in l.iter() {
+        if !test(it, &f, x, "reject", span)? {
+            out.push(x.clone());
+        }
+    }
+    Ok(Value::list(out))
+}
+
+fn each_with_index(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let l = list(a, 0, "each_with_index", span)?;
+    let f = func(a, 1, "each_with_index", span)?;
+    for (i, x) in l.iter().enumerate() {
+        call_given2(it, "each_with_index", &f, x.clone(), Value::Int(i as i64), span)?;
+    }
+    Ok(Value::Unit)
+}
+
 fn fold(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "fold", span)?;
     let f = func(a, 2, "fold", span)?;
@@ -2114,11 +2479,19 @@ fn each(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::Unit)
 }
 
-fn sum(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let l = list(a, 0, "sum", span)?;
+fn sum(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let mut l = list(a, 0, "sum", span)?.clone();
+    if a.len() == 2 {
+        let f = func(a, 1, "sum", span)?;
+        let mut values = Vec::with_capacity(l.len());
+        for x in l.iter() {
+            values.push(call_given1(it, "sum", &f, x.clone(), span)?);
+        }
+        l = List::new(values);
+    }
     let mut acc = Value::Int(0);
     for x in l.iter() {
-        if !matches!(x, Value::Int(_) | Value::Float(_)) {
+        if !matches!(x, Value::Int(_) | Value::Big(_) | Value::Float(_)) {
             return Err(invalid(
                 t!(
                     "`sum` needs a list of numbers, but it contains {}",
@@ -2143,7 +2516,7 @@ fn product(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "product", span)?;
     let mut acc = Value::Int(1);
     for x in l.iter() {
-        if !matches!(x, Value::Int(_) | Value::Float(_)) {
+        if !matches!(x, Value::Int(_) | Value::Big(_) | Value::Float(_)) {
             return Err(invalid(
                 t!(
                     "`product` needs a list of numbers, but it contains {}",
@@ -2165,6 +2538,11 @@ fn product(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn first(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    if a.len() == 2 {
+        let len = length_of(&a[0], "first", span)?;
+        let n = count_arg(a, 1, "first", span)?;
+        return Ok(cut(&a[0], 0, n.min(len)));
+    }
     Ok(match &a[0] {
         Value::List(l) => it.option(l.get(0).cloned()),
         Value::Text(s) => it.option(s.chars().next().map(|c| text_value(c.to_string()))),
@@ -2173,6 +2551,11 @@ fn first(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn last(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    if a.len() == 2 {
+        let len = length_of(&a[0], "last", span)?;
+        let n = count_arg(a, 1, "last", span)?;
+        return Ok(cut(&a[0], len - n.min(len), len));
+    }
     Ok(match &a[0] {
         Value::List(l) => it.option(l.as_slice().last().cloned()),
         Value::Text(s) => it.option(s.chars().last().map(|c| text_value(c.to_string()))),
@@ -2299,6 +2682,7 @@ fn unique(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     #[derive(PartialEq, Eq, Hash)]
     enum Key {
         Int(i64),
+        Big(Rc<BigInt>),
         Float(u64),
         Text(Rc<str>),
         Bool(bool),
@@ -2307,8 +2691,14 @@ fn unique(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     fn key(v: &Value) -> Option<Key> {
         Some(match v {
             Value::Int(n) => Key::Int(*n),
+            Value::Big(n) => Key::Big(n.clone()),
             Value::Float(f) if f.is_nan() => return None,
-            Value::Float(f) if f.fract() == 0.0 && f.abs() < 9.0e18 => Key::Int(*f as i64),
+            // Whole decimal numbers have the key of the whole number they are worth.
+            Value::Float(f) if f.fract() == 0.0 => match bigint::from_whole_f64(*f) {
+                Value::Int(n) => Key::Int(n),
+                Value::Big(n) => Key::Big(n),
+                _ => unreachable!(),
+            },
             Value::Float(f) => Key::Float(f.to_bits()),
             Value::Text(s) => Key::Text(s.clone()),
             Value::Bool(b) => Key::Bool(*b),
@@ -2515,6 +2905,9 @@ fn find(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn count(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "count", span)?;
+    if a.len() == 1 {
+        return Ok(Value::Int(l.len() as i64));
+    }
     let f = func(a, 1, "count", span)?;
     let mut n = 0;
     for x in l.iter() {
@@ -2826,41 +3219,44 @@ fn map_err(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 // ----- Files -------------------------------------------------------------
 
-fn io_message(e: &std::io::Error, path: &str) -> String {
-    match e.kind() {
-        std::io::ErrorKind::NotFound => t!("file not found: {path}", "fichier introuvable : {path}"),
-        std::io::ErrorKind::PermissionDenied => t!("permission denied: {path}", "permission refusée : {path}"),
-        _ => t!("cannot access {path}: {e}", "impossible d'accéder à {path} : {e}"),
-    }
-}
-
 fn read_file(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let path = text(a, 0, "read_file", span)?;
+    if let Some(e) = in_browser(it, "read_file", false) {
+        return Ok(e);
+    }
     Ok(match std::fs::read_to_string(path) {
         Ok(s) => it.ok(text_value(s)),
-        Err(e) => it.err(text_value(io_message(&e, path))),
+        Err(e) => it.err(text_value(io_message(&e, path, false))),
     })
 }
 
 fn write_file(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let path = text(a, 0, "write_file", span)?;
+    if let Some(e) = in_browser(it, "write_file", false) {
+        return Ok(e);
+    }
     let content = a[1].display();
     Ok(match std::fs::write(path, content) {
         Ok(()) => it.ok(Value::Unit),
-        Err(e) => it.err(text_value(io_message(&e, path))),
+        Err(e) => it.err(text_value(io_message(&e, path, false))),
     })
 }
 
 fn append_file(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let path = text(a, 0, "append_file", span)?;
+    if let Some(e) = in_browser(it, "append_file", false) {
+        return Ok(e);
+    }
     let content = a[1].display();
     let written = std::fs::OpenOptions::new().append(true).create(true).open(path).and_then(|mut f| f.write_all(content.as_bytes()));
     Ok(match written {
         Ok(()) => it.ok(Value::Unit),
-        Err(e) => it.err(text_value(io_message(&e, path))),
+        Err(e) => it.err(text_value(io_message(&e, path, false))),
     })
 }
 
 fn file_exists(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    Ok(Value::Bool(std::path::Path::new(text(a, 0, "file_exists", span)?).exists()))
+    let path = text(a, 0, "file_exists", span)?;
+    // The browser has no files.
+    Ok(Value::Bool(!cfg!(target_arch = "wasm32") && std::path::Path::new(path).exists()))
 }

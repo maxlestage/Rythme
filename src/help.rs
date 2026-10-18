@@ -25,11 +25,35 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ("tests", &["test"]),
     ("exercises", &["exercices", "exercise", "exercice"]),
     ("modules", &["use", "files", "fichiers"]),
+    (
+        "system",
+        &["systeme", "système", "folders", "folder", "dossiers", "dossier", "paths", "path", "chemins", "chemin", "stdin", "exit-codes"],
+    ),
+    (
+        "projects",
+        &[
+            "project",
+            "projet",
+            "projets",
+            "packages",
+            "package",
+            "paquets",
+            "paquet",
+            "new",
+            "install",
+            "dependencies",
+            "dépendances",
+            "dependances",
+            "rythme.toml",
+        ],
+    ),
     ("dates", &["date", "heure", "heures", "temps", "calendar", "calendrier", "datetime"]),
     ("repl", &["interactive", "interactif"]),
     ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme"]),
     ("doc", &["documentation", "documenter", "docs"]),
+    ("steps", &["etapes", "étapes", "step", "etape", "étape", "stepper", "pas-a-pas", "pas-à-pas"]),
     ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide"]),
+    ("ruby", &["rb", "rubyist", "blocks", "blocs", "symbols", "symboles"]),
     ("builtins", &["functions-list", "fonctions-integrees", "library", "bibliotheque", "bibliothèque", "stdlib"]),
 ];
 
@@ -48,10 +72,13 @@ Commandes
   rythme                    mode interactif (essayer du code ligne par ligne)
   rythme fichier.ry         lancer un programme
   rythme check fichier.ry   trouver les problèmes sans lancer le programme
-  rythme test fichier.ry    lancer les tests d'un fichier
+  rythme test fichier.ry    lancer les tests d'un fichier (ou d'un dossier)
   rythme fmt fichier.ry     mettre le code en forme (--check : vérifier seulement)
   rythme doc fichier.ry     écrire sa documentation, en Markdown (--html : une page web)
+  rythme etapes fichier.ry  montrer le calcul étape par étape (fib(3) → fib(2) + fib(1) → ...)
   rythme exercise           exercices corrigés automatiquement (list, start, check)
+  rythme new NOM            créer un projet (rythme.toml, src/, tests/)
+  rythme install            télécharger les dépendances du projet
   rythme learn              visite guidée du langage, pas à pas
   rythme help SUJET         aide sur un sujet ou une fonction
   rythme explain E003       expliquer un code d'erreur
@@ -73,11 +100,15 @@ Sujets (rythme help SUJET)
   tests       écrire et lancer des tests
   exercises   des exercices pour apprendre, avec leurs tests
   modules     utiliser plusieurs fichiers
+  system      fichiers, dossiers, chemins, options, entrée, codes de sortie
+  projects    projets et paquets : rythme new, rythme.toml, rythme install
   dates       dates et heures : now(), today(), calendrier, ISO 8601
   repl        le mode interactif
   fmt         la mise en forme officielle du code (rythme fmt)
   doc         la documentation tirée des commentaires ## (rythme doc)
+  steps       le calcul montré étape par étape (rythme etapes)
   editors     Rythme dans votre éditeur (VS Code, Neovim, Helix...)
+  ruby        venir de Ruby : blocs, symboles, enchaînements de méthodes
   builtins    toutes les fonctions intégrées
 
 Une fonction précise : rythme help map
@@ -91,10 +122,13 @@ Commands
   rythme                    interactive mode (try code line by line)
   rythme file.ry            run a program
   rythme check file.ry      find problems without running the program
-  rythme test file.ry       run the tests of a file
+  rythme test file.ry       run the tests of a file (or of a folder)
   rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
+  rythme steps file.ry      show the calculation step by step (fib(3) → fib(2) + fib(1) → ...)
   rythme exercise           exercises checked automatically (list, start, check)
+  rythme new NAME           create a project (rythme.toml, src/, tests/)
+  rythme install            download the dependencies of the project
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
@@ -116,11 +150,15 @@ Topics (rythme help TOPIC)
   tests       writing and running tests
   exercises   exercises to learn, with their tests
   modules     using several files
+  system      files, folders, paths, options, input, exit codes
+  projects    projects and packages: rythme new, rythme.toml, rythme install
   dates       dates and times: now(), today(), calendar, ISO 8601
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
+  steps       the calculation shown step by step (rythme steps)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
+  ruby        coming from Ruby: blocks, symbols, method chains
   builtins    every built-in function
 
 A specific function: rythme help map
@@ -133,6 +171,15 @@ A specific function: rythme help map
 pub fn topic(name: &str) -> Option<String> {
     let builtin = builtins::lookup(name.trim());
     if let (Some(b), None) = (builtin, canonical_topic(name)) {
+        if builtins::alias_of(name.trim()).is_some() {
+            let alias = name.trim();
+            let of = b.name;
+            return Some(format!(
+                "{}\n{}",
+                t!("{alias}  (the Ruby name of `{of}`: the same function)", "{alias}  (le nom Ruby de `{of}` : la même fonction)"),
+                builtin_doc(b)
+            ));
+        }
         return Some(builtin_doc(b));
     }
     if let Some(text) = explain(name) {
@@ -162,6 +209,7 @@ pub fn topic(name: &str) -> Option<String> {
 pub fn unknown_topic(name: &str) -> String {
     let mut names: Vec<&str> = TOPICS.iter().map(|(t, _)| *t).collect();
     names.extend(BUILTINS.iter().map(|b| b.name));
+    names.extend(builtins::ALIASES.iter().map(|a| a.name));
     let mut out = t!("No help found for `{name}`.", "Aucune aide trouvée pour `{name}`.");
     if let Some(h) = suggest::alias_hint(name) {
         out.push_str(&format!("\n{h}"));
@@ -203,6 +251,13 @@ const KEYWORD_DOCS: &[(&str, &str, &str, &str, &str)] = &[
         "syntax",
     ),
     (
+        "unless",
+        "The opposite of `if`: `unless condition then a else b` gives `b` when the condition is true, `a` otherwise. Like `if`, it always has an `else`.",
+        "Le contraire de `if` : `unless condition then a else b` donne `b` quand la condition est vraie, `a` sinon. Comme `if`, il a toujours un `else`.",
+        "unless n < 0 then \"positive\" else \"negative\"",
+        "ruby",
+    ),
+    (
         "match",
         "Chooses according to the shape of a value: one case per line, `pattern -> result`, finished by `end`. Cases are tried in order, and `rythme check` warns about forgotten cases.",
         "Choisit selon la forme d'une valeur : un cas par ligne, `motif -> résultat`, terminé par `end`. Les cas sont essayés dans l'ordre, et `rythme check` signale les cas oubliés.",
@@ -218,9 +273,9 @@ const KEYWORD_DOCS: &[(&str, &str, &str, &str, &str)] = &[
     ),
     (
         "do",
-        "Groups several steps inside an expression, up to `end`. The last line gives the value.",
-        "Regroupe plusieurs étapes dans une expression, jusqu'à `end`. La dernière ligne donne la valeur.",
-        "total = do\n  a = 1\n  a + 1\nend",
+        "Groups several steps inside an expression, up to `end`. The last line gives the value. After a call, `do |x| ... end` is a block: a function given as the last argument.",
+        "Regroupe plusieurs étapes dans une expression, jusqu'à `end`. La dernière ligne donne la valeur. Après un appel, `do |x| ... end` est un bloc : une fonction donnée comme dernier argument.",
+        "total = do\n  a = 1\n  a + 1\nend\nnames.each do |name|\n  print(\"Hello, {name}!\")\nend",
         "syntax",
     ),
     (
@@ -282,6 +337,10 @@ pub fn keyword_help(word: &str) -> Option<String> {
 
 pub fn builtin_doc(b: &Builtin) -> String {
     let mut out = format!("{}\n  {}\n", b.sig, b.doc());
+    let ruby: Vec<String> = builtins::aliases(b.name).map(|a| format!("`{a}`")).collect();
+    if !ruby.is_empty() {
+        out.push_str(&t!("  Same as: {} (its Ruby names)\n", "  Pareil que : {} (ses noms Ruby)\n", ruby.join(", ")));
+    }
     out.push_str(&format!("  {}\n", t!("Example:", "Exemple :")));
     for line in b.example.lines() {
         out.push_str(&format!("    {line}\n"));
@@ -300,6 +359,26 @@ pub fn builtins_list() -> String {
         }
         if cat == Category::Numbers {
             out.push_str(&format!("  {:<28} {}\n", "pi", t!("the number π", "le nombre π")));
+        }
+        // The Ruby names of the functions of the category: `upcase` (same as `upper`).
+        let ruby: Vec<String> = builtins::ALIASES
+            .iter()
+            .filter(|a| builtins::lookup(a.of).is_some_and(|b| b.cat == cat))
+            .map(|a| t!("{} (same as {})", "{} (pareil que {})", a.name, a.of))
+            .collect();
+        if !ruby.is_empty() {
+            let mut line = t!("  Ruby names:", "  Noms Ruby :");
+            for (i, r) in ruby.iter().enumerate() {
+                let piece = if i + 1 < ruby.len() { format!(" {r},") } else { format!(" {r}") };
+                if line.chars().count() + piece.chars().count() > 96 {
+                    out.push_str(&line);
+                    out.push('\n');
+                    line = "   ".to_string();
+                }
+                line.push_str(&piece);
+            }
+            out.push_str(&line);
+            out.push('\n');
         }
         if cat == Category::Options {
             out.push_str(&format!(
@@ -371,7 +450,7 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
             let cat = match other {
                 Value::List(_) => Some(Category::Lists),
                 Value::Text(_) => Some(Category::Text),
-                Value::Int(_) | Value::Float(_) => Some(Category::Numbers),
+                Value::Int(_) | Value::Big(_) | Value::Float(_) => Some(Category::Numbers),
                 Value::Record(_) => Some(Category::Records),
                 Value::Variant(_) if it.wrap(other) != Wrap::Other => Some(Category::Options),
                 _ => None,
@@ -435,6 +514,119 @@ pub fn learn() {
     ));
 }
 
+const RUBY_EN: &str = r#"COMING FROM RUBY
+
+Rythme reads like Ruby, but its values never change: no mutation, no nil,
+no exceptions. What you know from Ruby mostly works:
+
+  names = ["Ada", "Grace", "Alan"]
+  names.each do |name|
+    puts("Hello, #{name}!")
+  end
+
+  [1, 2, 3, 4, 5, 6]
+    .select(even?)
+    .map { |x| x * x }
+    .sum                         # 56
+
+  fn adult?(person) = person.age >= 18
+  kind = unless adult?(ada) then :minor else :adult
+
+The same as in Ruby
+  blocks          xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+                  a block is a function: the same as fn(x) = x * 2
+  method calls    xs.sum   name.upcase   xs.first(2)   xs.include?(3)
+  names with ?    even?   empty?   include?(x)   fn adult?(p) = ...
+  symbols         :ok   :error (compared with ==, used in match)
+  texts           "Hello #{name}" (or "Hello {name}"); "\#{" writes #{
+  unless          unless cond then a else b
+  Ruby names      puts to_s to_i to_f length size upcase downcase strip
+                  select reject reduce inject uniq each_slice each_cons
+                  each_with_index include? empty? even? odd? any? all?
+                  start_with? end_with? key? (see rythme help builtins)
+
+What is different
+  parentheses     a call needs them: puts("hi"), not puts "hi"
+  no mutation     no x += 1: give the new value a new name, total2 = total + 1
+  no nil          a missing value is None, a present one Some(x)
+  no exceptions   errors are values, Ok(x) or Err(message), passed on with ?
+  if and unless   always have an else: they give a value; no `return`, the
+                  last line of a function is its result
+  no classes      records {name: "Ada"} and types: type Shape = Circle(r) | Square(s)
+  no loops        each, map, select, reduce, or a function that calls itself
+  case/when       match value ... end, one case per line: pattern -> result
+  hashes          records {name: "Ada", age: 36}; symbols are not keys yet
+
+How x.name works
+  x.name reads the field `name` of a record; when x has no such field, it
+  calls the function `name` with x: xs.sum is sum(xs), xs.first(2) is
+  first(xs, 2). A chain may go on over several lines, each starting with `.`.
+
+When ? is part of a name
+  even?(4), xs.include?(3), fn adult?(p): right after a name, before `(`.
+  even? without `(`: when such a function exists (built-in, or defined with
+  fn in the file). Otherwise value? is the ? that stops on None or Err, and
+  (value)? always is."#;
+
+const RUBY_FR: &str = r#"VENIR DE RUBY
+
+Rythme se lit comme Ruby, mais ses valeurs ne changent jamais : pas de
+mutation, pas de nil, pas d'exceptions. Ce que vous savez de Ruby marche
+presque toujours :
+
+  noms = ["Ada", "Grace", "Alan"]
+  noms.each do |nom|
+    puts("Bonjour, #{nom} !")
+  end
+
+  [1, 2, 3, 4, 5, 6]
+    .select(even?)
+    .map { |x| x * x }
+    .sum                         # 56
+
+  fn majeur?(personne) = personne.age >= 18
+  genre = unless majeur?(ada) then :mineur else :majeur
+
+Comme en Ruby
+  blocs           xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+                  un bloc est une fonction : comme fn(x) = x * 2
+  méthodes        xs.sum   nom.upcase   xs.first(2)   xs.include?(3)
+  noms avec ?     even?   empty?   include?(x)   fn majeur?(p) = ...
+  symboles        :ok   :erreur (comparés avec ==, utilisés dans match)
+  textes          "Bonjour #{nom}" (ou "Bonjour {nom}") ; "\#{" écrit #{
+  unless          unless condition then a else b
+  noms Ruby       puts to_s to_i to_f length size upcase downcase strip
+                  select reject reduce inject uniq each_slice each_cons
+                  each_with_index include? empty? even? odd? any? all?
+                  start_with? end_with? key? (voir rythme help builtins)
+
+Ce qui change
+  parenthèses     un appel en a besoin : puts("salut"), pas puts "salut"
+  pas de mutation pas de x += 1 : donnez un nouveau nom à la nouvelle valeur,
+                  total2 = total + 1
+  pas de nil      une valeur absente est None, une valeur présente Some(x)
+  pas d'exception les erreurs sont des valeurs, Ok(x) ou Err(message),
+                  transmises avec ?
+  if et unless    ont toujours un else : ils donnent une valeur ; pas de
+                  `return`, la dernière ligne d'une fonction est son résultat
+  pas de classes  enregistrements {nom: "Ada"} et types : type Forme = Cercle(r) | Carre(c)
+  pas de boucles  each, map, select, reduce, ou une fonction qui s'appelle
+  case/when       match valeur ... end, un cas par ligne : motif -> résultat
+  hashes          enregistrements {nom: "Ada", age: 36} ; les symboles ne
+                  sont pas encore des clés
+
+Comment marche x.nom
+  x.nom lit le champ `nom` d'un enregistrement ; quand x n'a pas ce champ,
+  il appelle la fonction `nom` avec x : xs.sum est sum(xs), xs.first(2) est
+  first(xs, 2). Un enchaînement peut continuer sur plusieurs lignes, chacune
+  commençant par `.`.
+
+Quand ? fait partie d'un nom
+  even?(4), xs.include?(3), fn majeur?(p) : juste après un nom, avant `(`.
+  even? sans `(` : quand une telle fonction existe (intégrée, ou définie
+  avec fn dans le fichier). Sinon valeur? est le ? qui s'arrête sur None ou
+  Err, et (valeur)? l'est toujours."#;
+
 fn topic_text(name: &str) -> &'static str {
     match name {
         "start" => pick(START_EN, START_FR),
@@ -450,11 +642,15 @@ fn topic_text(name: &str) -> &'static str {
         "tests" => pick(TESTS_EN, TESTS_FR),
         "exercises" => pick(EXERCISES_EN, EXERCISES_FR),
         "modules" => pick(MODULES_EN, MODULES_FR),
+        "system" => pick(SYSTEM_EN, SYSTEM_FR),
+        "projects" => pick(PROJECTS_EN, PROJECTS_FR),
         "dates" => pick(DATES_EN, DATES_FR),
         "repl" => pick(REPL_EN, REPL_FR),
         "fmt" => pick(FMT_EN, FMT_FR),
         "doc" => pick(DOC_EN, DOC_FR),
+        "steps" => pick(STEPS_EN, STEPS_FR),
         "editors" => pick(EDITORS_EN, EDITORS_FR),
+        "ruby" => pick(RUBY_EN, RUBY_FR),
         _ => "",
     }
 }
@@ -512,10 +708,11 @@ et comment la corriger. `rythme explain E003` explique un code d'erreur."#;
 const SYNTAX_EN: &str = r#"SYNTAX
 
 Values
-  42   -7   1_000_000            whole numbers (Int)
+  42   -7   1_000_000            whole numbers (Int), of any size
   3.14   2.0                     decimal numbers (Float)
-  "hello"   "total: {x}"         texts (Text); {...} inserts a value
+  "hello"   "total: {x}"         texts (Text); {...} (or #{...}) inserts a value
   true   false                   booleans (Bool)
+  :ok   :error                   symbols (Symbol): a name used as a value
   [1, 2, 3]                      lists
   {name: "Ada", age: 36}         records
   Some(3)   None                 a value that may be missing (Option)
@@ -532,6 +729,10 @@ Operators
   == != < <= > >=   and   or   not
   x |> f(y)                      same as f(x, y): steps from left to right
   x.f(y)                         also the same as f(x, y)
+  x.f                            the field f of x; if x has none, f(x): xs.sum
+  xs                             a chain may go on, each line starting with .
+    .select(even?)
+    .sum
 
 Functions
   fn double(x) = x * 2           on one line, with =
@@ -540,9 +741,18 @@ Functions
     print(message)               the last line gives the result
   end
   fn(x) = x + 1                  an anonymous function
+  fn adult?(p) = p.age >= 18     a name may end with ? (see rythme help ruby)
+
+Blocks: a function given as the last argument of a call
+  xs.map do |x| x * 2 end        same as map(xs, fn(x) = x * 2)
+  xs.each do |x|                 on several lines, finished by `end`
+    print(x)
+  end
+  xs.select { |x| x > 2 }        with braces
 
 Conditions (every if has an else)
   if x > 0 then "positive" else if x == 0 then "zero" else "negative"
+  unless x > 0 then "small" else "big"     the opposite of if
 
 Choosing by shape
   match list
@@ -571,10 +781,11 @@ Comments
 const SYNTAX_FR: &str = r#"SYNTAXE
 
 Valeurs
-  42   -7   1_000_000            nombres entiers (Int)
+  42   -7   1_000_000            nombres entiers (Int), de toute taille
   3.14   2.0                     nombres décimaux (Float)
-  "bonjour"   "total : {x}"      textes (Text) ; {...} insère une valeur
+  "bonjour"   "total : {x}"      textes (Text) ; {...} (ou #{...}) insère une valeur
   true   false                   booléens (Bool)
+  :ok   :erreur                  symboles (Symbol) : un nom utilisé comme valeur
   [1, 2, 3]                      listes
   {nom: "Ada", age: 36}          enregistrements
   Some(3)   None                 une valeur qui peut manquer (Option)
@@ -591,6 +802,10 @@ Opérateurs
   == != < <= > >=   and (et)   or (ou)   not (non)
   x |> f(y)                      comme f(x, y) : des étapes de gauche à droite
   x.f(y)                         aussi comme f(x, y)
+  x.f                            le champ f de x ; si x n'en a pas, f(x) : xs.sum
+  xs                             un enchaînement peut continuer, chaque ligne
+    .select(even?)               commençant par un point
+    .sum
 
 Fonctions
   fn double(x) = x * 2           sur une ligne, avec =
@@ -599,9 +814,18 @@ Fonctions
     print(message)               la dernière ligne donne le résultat
   end
   fn(x) = x + 1                  une fonction anonyme
+  fn majeur?(p) = p.age >= 18    un nom peut finir par ? (voir rythme help ruby)
+
+Blocs : une fonction donnée comme dernier argument d'un appel
+  xs.map do |x| x * 2 end        comme map(xs, fn(x) = x * 2)
+  xs.each do |x|                 sur plusieurs lignes, terminé par `end`
+    print(x)
+  end
+  xs.select { |x| x > 2 }        avec des accolades
 
 Conditions (chaque if a un else)
   if x > 0 then "positif" else if x == 0 then "zéro" else "négatif"
+  unless x > 0 then "petit" else "grand"   le contraire de if
 
 Choisir selon la forme
   match liste
@@ -906,6 +1130,88 @@ JSON, le format des données du web
   parse_json(texte)              # Ok(...) : les objets deviennent des enregistrements, les tableaux des listes
   to_json(valeur)                # le texte, prêt à enregistrer avec write_file"#;
 
+const SYSTEM_EN: &str = r#"FILES AND THE SYSTEM
+
+Every function that touches the system returns a Result: Ok(...), or
+Err(message) with a message that says what went wrong.
+
+Files and folders (relative paths start in the current folder)
+  read_file("notes.txt")         # Ok("...") or Err("file not found: notes.txt")
+  write_file("out.txt", "hi")    # Ok(()), replaces the content
+  append_file("log.txt", "done\n")
+  file_exists("notes.txt")       # true or false
+  file_info("notes.txt")         # Ok({is_folder: false, size: 11}), in bytes
+  list_folder(".")               # Ok(["notes.txt", "photos"]), in order
+  create_folder("backup/2024")   # Ok(()), with the missing folders around it
+  delete_file("old.txt")         # Ok(()); never a folder
+
+Paths that work on Linux, macOS and Windows
+  join_path(["data", "notes.txt"])       # "data/notes.txt"
+  split_path("/home/ada/notes.txt")      # ["/", "home", "ada", "notes.txt"]
+  split_path("C:\Users\ada")             # ["C:\", "Users", "ada"]
+
+The command line: rythme tool.ry --verbose --name=Ada notes.txt
+  args()                         # ["--verbose", "--name=Ada", "notes.txt"]
+  options()                      # Ok({args: ["notes.txt"], verbose: true, name: "Ada"})
+  opts = unwrap(options())
+  name = unwrap_or(get(opts, "name"), "World")   # an option that may be missing
+  env("HOME")                    # Some("/home/ada") or None
+
+The standard input: rythme count.ry < names.txt
+  input("Name? ")                # one line
+  input_lines()                  # Ok(["Ada", "Alan"]): every line until the end
+
+Exit codes, for the scripts that run your program
+  0    everything went well (also at the end of the program)
+  1    an error in the program: syntax, check, while running, failed test
+  2    a wrong use of the command (unknown command or option)
+  101  an internal error of Rythme (a bug, to report)
+  exit(code)                     # stops now with this code, from 0 to 255
+
+In the playground, in the browser, there are no files and no input: these
+functions give Err("... is not available in the browser ...")."#;
+
+const SYSTEM_FR: &str = r#"FICHIERS ET SYSTÈME
+
+Chaque fonction qui touche au système renvoie un Result : Ok(...), ou
+Err(message) avec un message qui dit ce qui ne va pas.
+
+Fichiers et dossiers (les chemins relatifs partent du dossier courant)
+  read_file("notes.txt")         # Ok("...") ou Err("fichier introuvable : notes.txt")
+  write_file("out.txt", "salut") # Ok(()), remplace le contenu
+  append_file("journal.txt", "fini\n")
+  file_exists("notes.txt")       # true ou false
+  file_info("notes.txt")         # Ok({is_folder: false, size: 11}), en octets
+  list_folder(".")               # Ok(["notes.txt", "photos"]), dans l'ordre
+  create_folder("sauvegarde/2024")   # Ok(()), avec les dossiers manquants autour
+  delete_file("ancien.txt")      # Ok(()) ; jamais un dossier
+
+Des chemins qui marchent sous Linux, macOS et Windows
+  join_path(["données", "notes.txt"])    # "données/notes.txt"
+  split_path("/home/ada/notes.txt")      # ["/", "home", "ada", "notes.txt"]
+  split_path("C:\Users\ada")             # ["C:\", "Users", "ada"]
+
+La ligne de commande : rythme outil.ry --verbose --name=Ada notes.txt
+  args()                         # ["--verbose", "--name=Ada", "notes.txt"]
+  options()                      # Ok({args: ["notes.txt"], verbose: true, name: "Ada"})
+  opts = unwrap(options())
+  nom = unwrap_or(get(opts, "name"), "le monde")   # une option qui peut manquer
+  env("HOME")                    # Some("/home/ada") ou None
+
+L'entrée standard : rythme compter.ry < noms.txt
+  input("Nom ? ")                # une ligne
+  input_lines()                  # Ok(["Ada", "Alan"]) : toutes les lignes jusqu'à la fin
+
+Codes de sortie, pour les scripts qui lancent votre programme
+  0    tout s'est bien passé (aussi à la fin du programme)
+  1    une erreur dans le programme : syntaxe, vérification, exécution, test échoué
+  2    une mauvaise utilisation de la commande (commande ou option inconnue)
+  101  une erreur interne de Rythme (un bug, à signaler)
+  exit(code)                     # s'arrête tout de suite avec ce code, de 0 à 255
+
+Dans le playground, dans le navigateur, il n'y a ni fichiers ni entrée : ces
+fonctions donnent Err("... n'est pas disponible dans le navigateur ...")."#;
+
 const DATES_EN: &str = r#"DATES AND TIMES
 
 A date is a record: {year, month, day}, with hour, minute and second for a
@@ -1205,11 +1511,28 @@ Write tests next to your code:
   end
 
 Run them:
-  rythme test my_file.ry
+  rythme test my_file.ry            the tests of one file
+  rythme test .                     of every .ry file of a folder (and below)
+  rythme test . --filter double     only the tests whose name contains "double"
+  rythme test . --watch             again each time a file changes (Ctrl+C stops)
+  rythme test my_file.ry -- a b     with `args()` giving ["a", "b"]
+  rythme test                       in a project: its files with tests
 
 While testing, top-level expressions such as print(...) are not run: the
 definitions are loaded, then each test runs. A test passes if it ends without
-error, and its value is not false, Err(...) or None."#;
+error, and its value is not false, Err(...) or None. The summary gives the
+counts and the time; the exit code is 0 when every test passes.
+
+Property tests: check that something holds for many values
+  test "reversing twice gives the list back" =
+    check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+
+Generators: ints(min, max), floats(min, max), texts(max_length), bools(),
+lists_of(generator, max_length), one_of(list), records_of({x: ints(), y: texts()}).
+`sample(generator)` shows what one gives. When a value makes the property
+false, it is simplified (shrinking) and shown with the seed that made it: the
+same values come back on every run, and `--seed N` tries others
+(`--seed random` picks one)."#;
 
 const TESTS_FR: &str = r#"TESTS
 
@@ -1224,12 +1547,29 @@ const TESTS_FR: &str = r#"TESTS
   end
 
 Lancez-les :
-  rythme test mon_fichier.ry
+  rythme test mon_fichier.ry        les tests d'un fichier
+  rythme test .                     de chaque fichier .ry d'un dossier (et en dessous)
+  rythme test . --filter double     seulement les tests dont le nom contient « double »
+  rythme test . --watch             à nouveau à chaque changement d'un fichier (Ctrl+C arrête)
+  rythme test mon_fichier.ry -- a b avec `args()` qui donne ["a", "b"]
+  rythme test                       dans un projet : ses fichiers avec des tests
 
 Pendant les tests, les expressions du premier niveau comme print(...) ne sont
 pas exécutées : les définitions sont chargées, puis chaque test est lancé. Un
 test réussit s'il se termine sans erreur, et que sa valeur n'est ni false, ni
-Err(...), ni None."#;
+Err(...), ni None. Le résumé donne les nombres et le temps ; le code de sortie
+est 0 quand tous les tests réussissent.
+
+Tests de propriétés : vérifier qu'une chose est vraie pour beaucoup de valeurs
+  test "inverser deux fois redonne la liste" =
+    check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+
+Générateurs : ints(min, max), floats(min, max), texts(max_length), bools(),
+lists_of(générateur, max_length), one_of(liste), records_of({x: ints(), y: texts()}).
+`sample(générateur)` montre ce qu'il donne. Quand une valeur rend la propriété
+fausse, elle est simplifiée et montrée avec la graine qui l'a donnée : les
+mêmes valeurs reviennent à chaque lancement, et `--seed N` en essaie d'autres
+(`--seed random` en choisit une)."#;
 
 const EXERCISES_EN: &str = r#"EXERCISES
 
@@ -1312,12 +1652,81 @@ vous avez oublié d'utiliser.
 Ancienne forme : `use "geometrie.ry"` (avec des guillemets) donne ses
 définitions directement, comme `aire(2, 3)` ; préférez `use geometrie`."#;
 
+const PROJECTS_EN: &str = r#"PROJECTS AND PACKAGES
+
+  rythme new hello        # a folder hello/ with a new project:
+                          #   rythme.toml, src/main.ry, src/greeting.ry,
+                          #   tests/greeting_test.ry, README.md, .gitignore
+  cd hello
+  rythme run              # runs the program: `entry` of rythme.toml
+  rythme test             # runs the files with tests of src/ and tests/
+  rythme check            # checks every file; also `rythme fmt`, `rythme doc`
+
+rythme.toml describes the project:
+
+  name = "hello"
+  version = "0.1.0"
+  entry = "src/main.ry"
+
+  [dependencies]
+  mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
+  tools = { path = "../tools" }
+
+A dependency comes from git, at a `tag` or a `commit`, or from a folder.
+`rythme install` downloads them (with git) and writes rythme.lock, the exact
+commit of each one: keep it with the project, so that everyone gets the
+same code. Then:
+
+  use mathlib/vectors       # the file src/vectors.ry of mathlib
+  use mathlib               # its program, the `entry` of its rythme.toml
+  use hello/greeting        # a file of the project itself, from tests/
+
+A file next to the one that contains `use` comes first. Packages from git
+are kept in ~/.rythme/packages (or RYTHME_HOME/packages)."#;
+
+const PROJECTS_FR: &str = r#"PROJETS ET PAQUETS
+
+  rythme new bonjour      # un dossier bonjour/ avec un nouveau projet :
+                          #   rythme.toml, src/main.ry, src/salutation.ry,
+                          #   tests/salutation_test.ry, README.md, .gitignore
+  cd bonjour
+  rythme run              # lance le programme : `entry` de rythme.toml
+  rythme test             # lance les fichiers avec des tests de src/ et tests/
+  rythme check            # vérifie chaque fichier ; aussi `rythme fmt`, `rythme doc`
+
+rythme.toml décrit le projet :
+
+  name = "bonjour"
+  version = "0.1.0"
+  entry = "src/main.ry"
+
+  [dependencies]
+  mathlib = { git = "https://github.com/quelqu-un/mathlib", tag = "v1.0.0" }
+  outils = { path = "../outils" }
+
+Une dépendance vient de git, à un `tag` ou à un `commit`, ou d'un dossier.
+`rythme install` les télécharge (avec git) et écrit rythme.lock, le commit
+exact de chacune : gardez-le avec le projet, pour que tout le monde ait le
+même code. Ensuite :
+
+  use mathlib/vecteurs      # le fichier src/vecteurs.ry de mathlib
+  use mathlib               # son programme, l'`entry` de son rythme.toml
+  use bonjour/salutation    # un fichier du projet lui-même, depuis tests/
+
+Un fichier à côté de celui qui contient `use` passe en premier. Les paquets
+venant de git sont gardés dans ~/.rythme/packages (ou RYTHME_HOME/packages)."#;
+
 const EDITORS_EN: &str = r#"RYTHME IN YOUR EDITOR
 
 Rythme helps inside the editor too: problems as you type, the documentation
-of a function under the mouse, completion, the parameters of a call, go to
-definition, references, rename, quick fixes for typos, formatting like
-`rythme fmt`. This is the language server, that the editor starts by itself:
+of a function under the mouse (with the signature inferred from its code,
+like `fn area(side: Int|Float) -> Int|Float`), completion, the parameters of
+a call, go to definition, references, rename, quick fixes for typos,
+formatting like `rythme fmt`, the types of the names when they are certain
+(and the signatures of the functions), colors that follow what each name is,
+"Run" and "Run test" above the code, the names of the whole workspace,
+folding. This is the language server, that the editor
+starts by itself:
   rythme lsp
 
 VS Code
@@ -1327,6 +1736,8 @@ VS Code
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   every editor that speaks the Language Server Protocol: tell it to start
   `rythme lsp` for .ry files. Ready-made configurations: editors/README.md
+  ("Run" and "Run test" name the commands rythme.runFile, rythme.testFile and
+  rythme.runTest, that the editor carries out: see editors/README.md)
 
 Zed
   the extension in editors/zed: colors and the language server.
@@ -1340,9 +1751,13 @@ RYTHME_LANG chooses it: rythme --lang fr lsp"#;
 const EDITORS_FR: &str = r#"RYTHME DANS VOTRE ÉDITEUR
 
 Rythme aide aussi dans l'éditeur : les problèmes pendant la frappe, la
-documentation d'une fonction sous la souris, la complétion, les paramètres
-d'un appel, aller à la définition, les références, renommer, les corrections
-rapides des fautes de frappe, la mise en forme comme `rythme fmt`. C'est le
+documentation d'une fonction sous la souris (avec la signature déduite de son
+code, comme `fn aire(cote: Int|Float) -> Int|Float`), la complétion, les
+paramètres d'un appel, aller à la définition, les références, renommer, les
+corrections rapides des fautes de frappe, la mise en forme comme `rythme fmt`,
+les types des noms quand ils sont certains (et les signatures des fonctions),
+des couleurs qui suivent ce qu'est chaque nom, « Lancer » et « Lancer le test »
+au-dessus du code, les noms de tout l'espace de travail, le pliage. C'est le
 serveur de langage, que l'éditeur lance tout seul :
   rythme lsp
 
@@ -1353,6 +1768,9 @@ VS Code
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   tout éditeur qui parle le Language Server Protocol : demandez-lui de lancer
   `rythme lsp` pour les fichiers .ry. Configurations prêtes : editors/README.fr.md
+  (« Lancer » et « Lancer le test » nomment les commandes rythme.runFile,
+  rythme.testFile et rythme.runTest, que l'éditeur exécute : voir
+  editors/README.fr.md)
 
 Zed
   l'extension dans editors/zed : couleurs et serveur de langage.
@@ -1376,6 +1794,7 @@ Commands
   :doc map        help on a name         :load f.ry     load a file
   :reset          forget everything      :lang fr|en    change the language
   :learn          guided tour            :explain E003  explain an error
+  :steps fib(4)   show the calculation step by step
 The Tab key completes names."#;
 
 const REPL_FR: &str = r#"LE MODE INTERACTIF
@@ -1392,7 +1811,71 @@ Commandes
   :doc map        aide sur un nom        :load f.ry     charger un fichier
   :reset          tout oublier           :lang fr|en    changer de langue
   :learn          visite guidée          :explain E003  expliquer une erreur
+  :etapes fib(4)  montrer le calcul étape par étape
 La touche Tab complète les noms."#;
+
+const STEPS_EN: &str = r#"STEP BY STEP: rythme steps
+
+`rythme steps` shows how a program computes its values, one step at a time:
+each call is replaced by the body of its function, with the values of the
+arguments in place, until only the result remains.
+
+  rythme steps fib.ry              each definition and expression of the file
+  rythme steps fib.ry "fib(4)"     an expression, after the definitions of the file
+  rythme steps fib.ry --max 50     show at most 50 steps of each expression
+  rythme steps fib.ry --width 80   cut the lines longer than 80 characters
+
+With  fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
+
+  fib(3)
+    → fib(2) + fib(1)
+    → fib(1) + fib(0) + fib(1)
+    → 1 + fib(0) + fib(1)
+    → 1 + 0 + fib(1)
+    → 1 + fib(1)
+    → 1 + 1
+    → 2
+
+A step is one call or one operation. The body of a called function is shown
+already simplified as far as it can be without calling another function.
+Built-in functions (and the functions of other files) give their result in
+one step. What the program prints appears between the steps. After the
+steps shown (200 by default), the rest is computed without being shown.
+
+In the interactive mode: :steps fib(4). In the playground: the Steps button.
+In French: rythme etapes."#;
+
+const STEPS_FR: &str = r#"ÉTAPE PAR ÉTAPE : rythme etapes
+
+`rythme etapes` montre comment un programme calcule ses valeurs, une étape à
+la fois : chaque appel est remplacé par le corps de sa fonction, avec les
+valeurs des arguments à leur place, jusqu'à ce qu'il ne reste que le résultat.
+
+  rythme etapes fib.ry              chaque définition et expression du fichier
+  rythme etapes fib.ry "fib(4)"     une expression, après les définitions du fichier
+  rythme etapes fib.ry --max 50     montrer au plus 50 étapes de chaque expression
+  rythme etapes fib.ry --width 80   couper les lignes de plus de 80 caractères
+
+Avec  fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
+
+  fib(3)
+    → fib(2) + fib(1)
+    → fib(1) + fib(0) + fib(1)
+    → 1 + fib(0) + fib(1)
+    → 1 + 0 + fib(1)
+    → 1 + fib(1)
+    → 1 + 1
+    → 2
+
+Une étape est un appel ou une opération. Le corps d'une fonction appelée est
+montré déjà simplifié autant que possible sans appeler une autre fonction.
+Les fonctions intégrées (et les fonctions d'autres fichiers) donnent leur
+résultat en une étape. Ce que le programme affiche apparaît entre les étapes.
+Après les étapes montrées (200 par défaut), le reste est calculé sans être
+montré.
+
+En mode interactif : :etapes fib(4). Dans le playground : le bouton Étapes.
+En anglais : rythme steps."#;
 
 const FMT_EN: &str = r#"FORMATTING: rythme fmt
 
@@ -1418,6 +1901,9 @@ The style
         | Circle(radius)
         | Rect(width, height)
   - a list written on several lines ends with a comma
+  - a block written on one line stays on one line:
+      xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+    on several lines, its statements go one level deeper than `do`
   - one statement per line (no `;`), and `end` on its own line
   - a blank line around a definition written on several lines; never two
     blank lines in a row
@@ -1454,6 +1940,9 @@ Le style
         | Cercle(rayon)
         | Rect(largeur, hauteur)
   - une liste écrite sur plusieurs lignes finit par une virgule
+  - un bloc écrit sur une ligne reste sur une ligne :
+      xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+    sur plusieurs lignes, ses instructions vont un niveau plus loin que `do`
   - une instruction par ligne (pas de `;`), et `end` sur sa propre ligne
   - une ligne vide autour d'une définition écrite sur plusieurs lignes ;
     jamais deux lignes vides de suite
@@ -1664,7 +2153,9 @@ Wrong:   if len(list) then ... else ...
 Right:   if len(list) > 0 then ... else ...
 
 When the kinds of the values are certain, `rythme check` finds this mistake
-before the program runs, even in code that does not run every time."#,
+before the program runs, even in code that does not run every time, and in
+the calls that give a function what it cannot use: `area("big")` when
+`area(side)` computes `side * side`."#,
             r#"E005 — Mauvaise sorte de valeur
 
 L'opération ne fonctionne pas avec cette sorte de valeur. Rythme ne convertit
@@ -1679,7 +2170,9 @@ Faux :   if len(liste) then ... else ...
 Juste :  if len(liste) > 0 then ... else ...
 
 Quand la nature des valeurs est certaine, `rythme check` trouve cette erreur
-avant l'exécution, même dans du code qui ne s'exécute pas à chaque fois."#,
+avant l'exécution, même dans du code qui ne s'exécute pas à chaque fois, et
+dans les appels qui donnent à une fonction ce qu'elle ne peut pas utiliser :
+`aire("grand")` quand `aire(cote)` calcule `cote * cote`."#,
         ),
         "E006" => (
             r#"E006 — No case matches
@@ -1827,22 +2320,27 @@ guillemets (`use "a.ry"`) ne peuvent pas définir le même nom : utilisez-les
 plutôt par leur nom (`use a`, puis `a.aire`)."#,
         ),
         "E012" => (
-            r#"E012 — Number too large
+            r#"E012 — Number too large (no longer given)
 
-Whole numbers (Int) go from -9223372036854775808 to 9223372036854775807.
-Rythme stops instead of giving a wrong result. For bigger values, use
-decimal numbers (Float), which are approximate:
+Whole numbers (Int) have no limit any more: they grow as needed, and stay
+exact. Earlier versions of Rythme stopped with this error beyond 64 bits.
 
-  2 ** 100        # error E012
-  2.0 ** 100      # 1.2676506002282294e30"#,
-            r#"E012 — Nombre trop grand
+  2 ** 100        # 1267650600228229401496703205376
+  2.0 ** 100      # 1.2676506002282294e30 (a Float is approximate)
 
-Les nombres entiers (Int) vont de -9223372036854775808 à 9223372036854775807.
-Rythme s'arrête plutôt que de donner un résultat faux. Pour des valeurs plus
-grandes, utilisez des nombres décimaux (Float), qui sont approchés :
+Only a whole number of more than 100000 digits stops the program, with
+E023: it is usually a calculation that grows without end."#,
+            r#"E012 — Nombre trop grand (plus donnée)
 
-  2 ** 100        # erreur E012
-  2.0 ** 100      # 1.2676506002282294e30"#,
+Les nombres entiers (Int) n'ont plus de limite : ils grandissent autant que
+nécessaire, et restent exacts. Les versions précédentes de Rythme
+s'arrêtaient avec cette erreur au-delà de 64 bits.
+
+  2 ** 100        # 1267650600228229401496703205376
+  2.0 ** 100      # 1.2676506002282294e30 (un Float est approché)
+
+Seul un nombre entier de plus de 100000 chiffres arrête le programme, avec
+E023 : c'est en général un calcul qui grandit sans fin."#,
         ),
         "E013" => (
             r#"E013 — unwrap found no value
@@ -1902,7 +2400,11 @@ values to compare.
 `rythme check` finds before running an `assert_eq` that can never pass,
 because its two values are of kinds that are never equal:
 Wrong:   assert_eq(parse_int("3"), 3)      # a Result is never an Int
-Right:   assert_eq(parse_int("3"), Ok(3))"#,
+Right:   assert_eq(parse_int("3"), Ok(3))
+
+`check_all(property, generator)` reports E015 too when a value makes the
+property false: it shows the simplest value found, and the seed that gave it
+(the same values come back on every run; `rythme test --seed N` tries others)."#,
             r#"E015 — Assertion échouée
 
 `assert(condition)` ou `assert_eq(obtenu, attendu)` a constaté que quelque
@@ -1912,7 +2414,12 @@ le message montre les valeurs à comparer.
 `rythme check` trouve avant l'exécution un `assert_eq` qui ne peut jamais
 réussir, parce que ses deux valeurs sont de natures jamais égales :
 Faux :   assert_eq(parse_int("3"), 3)      # un Result n'est jamais un Int
-Juste :  assert_eq(parse_int("3"), Ok(3))"#,
+Juste :  assert_eq(parse_int("3"), Ok(3))
+
+`check_all(propriété, générateur)` signale aussi E015 quand une valeur rend la
+propriété fausse : il montre la valeur la plus simple trouvée, et la graine qui
+l'a donnée (les mêmes valeurs reviennent à chaque lancement ;
+`rythme test --seed N` en essaie d'autres)."#,
         ),
         "E016" => (
             r#"E016 — Wrong use of ?
@@ -1960,6 +2467,45 @@ des éditeurs).
 `input()` s'arrête aussi avec cette erreur quand il n'y a plus rien à lire :
 la saisie au clavier a été fermée (Ctrl-D), ou le texte envoyé au programme
 (`rythme prog.ry < reponses.txt`) n'a plus de lignes."#,
+        ),
+        "E025" => (
+            r#"E025 — Project or package problem
+
+The `rythme.toml` of the project (or the `rythme.lock` written by
+`rythme install`) cannot be read, a dependency is not installed, or
+`rythme install` cannot download one. A `rythme.toml` looks like this:
+
+  name = "hello"                 # a Rythme name in lower case
+  version = "0.1.0"              # three numbers
+  entry = "src/main.ry"          # the program (this one by default)
+
+  [dependencies]
+  mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
+  tools = { path = "../tools" }
+
+Every value is a text, in quotes. A dependency from git needs a fixed
+version, a `tag` or a `commit`, and the program `git`
+(https://git-scm.com). After a change of `[dependencies]`, run
+`rythme install` in the folder of the project. More: `rythme help projects`."#,
+            r#"E025 — Problème de projet ou de paquet
+
+Le `rythme.toml` du projet (ou le `rythme.lock` écrit par `rythme install`)
+ne peut pas être lu, une dépendance n'est pas installée, ou
+`rythme install` ne peut pas en télécharger une. Un `rythme.toml`
+ressemble à ceci :
+
+  name = "bonjour"               # un nom Rythme en minuscules
+  version = "0.1.0"              # trois nombres
+  entry = "src/main.ry"          # le programme (celui-ci par défaut)
+
+  [dependencies]
+  mathlib = { git = "https://github.com/quelqu-un/mathlib", tag = "v1.0.0" }
+  outils = { path = "../outils" }
+
+Chaque valeur est un texte, entre guillemets. Une dépendance venant de git
+a besoin d'une version fixe, un `tag` ou un `commit`, et du programme `git`
+(https://git-scm.com). Après un changement de `[dependencies]`, lancez
+`rythme install` dans le dossier du projet. Plus : `rythme help projects`."#,
         ),
         "E018" => (
             r#"E018 — Unexpected character
@@ -2045,14 +2591,15 @@ d'un fichier, utilisez les versions sûres, qui donnent un Result :
 The function received a value of the right kind, but outside of what it
 accepts: a negative count, the minimum of an empty list, the square root of
 a negative number, a date that does not exist (30 February), a range, a
-list or a text too large... The message explains the limit."#,
+list or a text too large, a whole number of more than 100000 digits... The
+message explains the limit."#,
             r#"E023 — Valeur invalide
 
 La fonction a reçu une valeur de la bonne sorte, mais en dehors de ce qu'elle
 accepte : un nombre négatif d'éléments, le minimum d'une liste vide, la
 racine carrée d'un nombre négatif, une date qui n'existe pas (30 février),
-un intervalle, une liste ou un texte trop grand... Le message explique la
-limite."#,
+un intervalle, une liste ou un texte trop grand, un nombre entier de plus de
+100000 chiffres... Le message explique la limite."#,
         ),
         "E024" => (
             r#"E024 — A value is lost
@@ -2284,5 +2831,5 @@ fn pick_owned(en: &str, fr: &str) -> String {
 
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
-    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008", "W009",
+    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "E025", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008", "W009",
 ];

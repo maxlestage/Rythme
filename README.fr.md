@@ -1,6 +1,7 @@
 # Rythme
 
-**Un langage de programmation simple, purement fonctionnel, avec de l'aide partout.**
+**Plus simple que Python et Ruby, aussi agréable que Ruby : un langage de
+programmation purement fonctionnel, avec de l'aide partout.**
 Les programmes sont des fichiers qui finissent par `.ry`. L'interpréteur est écrit en Rust.
 
 *[English version →](README.md)*
@@ -20,12 +21,35 @@ fn carre(x) = x * x
   |> print                # 20
 ```
 
+La même chose, à la manière de Ruby (blocs, enchaînements de méthodes,
+noms en `?`) :
+
+```rythme
+noms = ["Ada", "Grace", "Alan"]
+noms.each do |nom|
+  puts("Bonjour, #{nom} !")
+end
+
+total = [1, 2, 3, 4]
+  .select(even?)
+  .map { |x| x * x }
+  .sum
+puts(total)                # 20
+```
+
 ## Pourquoi Rythme ?
 
 - **Plus simple que Python ou Ruby.** 15 mots-clés (Python en a 35). Une seule
   façon de faire chaque chose. Pas de classes, pas de `null`, pas
   d'exceptions, pas de boucles, pas de modification : moins de concepts à
   apprendre, moins de bugs à traquer.
+- **Aussi agréable que Ruby.** Des blocs (`xs.map do |x| x * 2 end`,
+  `xs.select { |x| x > 2 }`), des enchaînements de méthodes
+  (`xs.filter(is_even).sum`, une étape par ligne), des noms comme `even?` et
+  `empty?`, `unless`, des symboles (`:ok`), `"Bonjour #{nom}"`, et les noms
+  Ruby de la bibliothèque (`puts`, `upcase`, `select`, `reject`, `reduce`,
+  `each_with_index`...). `rythme help ruby` montre ce qui est pareil et ce
+  qui change.
 - **Purement fonctionnel.** Les valeurs sont immuables, les fonctions sont des
   valeurs, chaque `if` et chaque `match` est une expression. La récursion en
   position terminale n'épuise jamais la pile.
@@ -33,8 +57,8 @@ fn carre(x) = x * x
   `Option` (`Some(x)` ou `None`). Pas d'exceptions : une opération qui peut
   échouer renvoie un `Result` (`Ok(x)` ou `Err(e)`), et `?` transmet les
   erreurs. Types algébriques, filtrage par motifs, un vérificateur qui signale
-  les cas oubliés, aucune conversion silencieuse, aucun dépassement d'entier
-  silencieux.
+  les cas oubliés, aucune conversion silencieuse, des nombres entiers qui ne
+  débordent jamais.
 - **De l'aide partout, tout le temps.**
   - Chaque erreur dit *où* elle est, *pourquoi*, et *comment la corriger*,
     comme Rust, et propose le bon nom en cas de faute de frappe.
@@ -43,8 +67,9 @@ fn carre(x) = x * x
     Rythme.
   - Le programme est vérifié **avant** d'être exécuté : tous les noms
     inconnus, les mauvais nombres d'arguments, les opérations sur de mauvaises
-    sortes de valeurs (`"âge : " + 36`, `len(5)`, un champ mal écrit) et les
-    cas oubliés sont signalés d'un coup.
+    sortes de valeurs (`"âge : " + 36`, `len(5)`, un champ mal écrit), les
+    appels qui échouent à coup sûr (`aire("grand")` quand `aire` multiplie son
+    paramètre) et les cas oubliés sont signalés d'un coup.
   - `rythme explain E003` explique n'importe quel code d'erreur en détail,
     avec des exemples.
   - `rythme help`, `rythme help map`, `help(x)` dans le code, `:doc` dans le
@@ -164,14 +189,17 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme`                    | mode interactif : tapez du code, voyez le résultat  |
 | `rythme bonjour.ry`         | lancer un programme (`rythme run bonjour.ry` marche aussi) |
 | `rythme check bonjour.ry`   | trouver les problèmes sans lancer le programme      |
-| `rythme test bonjour.ry`    | lancer les tests écrits dans le fichier             |
+| `rythme test bonjour.ry`    | lancer les tests écrits dans le fichier (aussi un dossier : `rythme test .`, avec `--filter NOM`, `--watch`) |
 | `rythme fmt bonjour.ry`     | mettre le code en forme dans le style officiel (aussi un dossier : `rythme fmt .`) |
 | `rythme fmt --check .`      | lister les fichiers à mettre en forme, sans les changer (pour l'intégration continue) |
 | `rythme doc bonjour.ry`     | sa documentation tirée des commentaires `##`, en Markdown (`--html` : une page web) |
 | `rythme help [sujet]`       | aide sur un sujet ou une fonction                   |
 | `rythme explain E003`       | expliquer un code d'erreur                          |
 | `rythme learn`              | visite guidée du langage                            |
+| `rythme new bonjour`        | un nouveau projet : `rythme.toml`, `src/`, `tests/` ; puis `rythme run`, `rythme test`... sans fichier |
+| `rythme install`            | télécharger les dépendances de `rythme.toml` (git ou dossiers), et écrire `rythme.lock` |
 | `rythme exercise`           | [30 exercices gradués](docs/exercises/README.fr.md) : `list`, `start 1`, `check FICHIER` |
+| `rythme etapes fib.ry "fib(4)"` | le calcul étape par étape : `fib(4)` → `fib(3) + fib(2)` → ... |
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
 | `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
 
@@ -252,6 +280,7 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 | [`cipher.ry`](examples/cipher.ry) | le chiffre de César : `char_code`, `char`, compter les lettres |
 | [`results.ry`](examples/results.ry) | `Option`, `Result`, `?` |
 | [`students.ry`](examples/students.ry) | enregistrements, mise à jour, regroupements, moyennes |
+| [`library.ry`](examples/library.ry) | le style Ruby : blocs `do \|x\| ... end`, enchaînements de méthodes, noms en `?`, `unless`, symboles |
 | [`sales.ry`](examples/sales.ry) | un rapport : `scan`, colonnes alignées avec `pad_left`, `windows`, `chunks`, JSON |
 | [`calendar.ry`](examples/calendar.ry) | des dates : la page d'un mois, des textes ISO 8601, `days_between`, `add_days` |
 | [`tree.ry`](examples/tree.ry) | un type récursif : arbre binaire de recherche |
@@ -266,7 +295,8 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
   extraits de code, et le serveur de langage, pour les problèmes pendant la
   frappe, la documentation au survol, la complétion, les paramètres d'un
   appel, aller à la définition, les références, renommer, le plan du
-  fichier et la mise en forme, en français ou en anglais.
+  fichier, la mise en forme, les types des noms, *Lancer* et *Lancer le
+  test* au-dessus du code, en français ou en anglais.
 - **Neovim, Helix, Zed, Emacs, Sublime Text, Kate...** : tout éditeur qui
   parle le Language Server Protocol peut lancer `rythme lsp` ; quelques
   lignes de configuration pour chacun sont dans [`editors/README.fr.md`](editors/README.fr.md).
@@ -295,8 +325,9 @@ suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
 - **Types.** Les valeurs sont vérifiées à l'exécution (strictement : aucune
   conversion silencieuse), et `rythme check` infère leurs types quand ils
   sont certains, pour signaler avant l'exécution les opérations qui
-  échoueraient à coup sûr. Suite : les types des paramètres des fonctions,
-  pour trouver encore plus d'erreurs avant l'exécution.
+  échoueraient à coup sûr ; il déduit aussi ce que doivent être les
+  paramètres de chaque fonction, pour signaler les appels qui échouent à
+  coup sûr, et l'éditeur montre ces signatures au survol.
 - **Outils.** `rythme fmt` met le code en forme dans le style officiel (voir
   `rythme help fmt`), `rythme doc` écrit la documentation de fichiers et de
   dossiers à partir de leurs commentaires `##` (voir `rythme help doc`), et le
@@ -307,8 +338,9 @@ suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
 - **Langues.** Les messages existent en anglais et en français ; ajouter une
   langue consiste à traduire les textes de `src/`. Les contributions sont
   bienvenues.
-- Les nombres sont sur 64 bits : les entiers s'arrêtent avec une erreur
-  au-delà de ±9,2 × 10¹⁸ (utilisez les nombres décimaux au-delà).
+- **Nombres.** Les nombres entiers n'ont pas de limite de taille et restent
+  exacts (jusqu'à 100000 chiffres), les habituels sur 64 bits calculés le plus
+  vite ; les nombres décimaux sont sur 64 bits.
 
 ## Licence
 

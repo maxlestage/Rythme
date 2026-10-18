@@ -21,13 +21,22 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   `_` stay private to their file; the checker, the formatter, the language
   server (completion after `use ` and `geo.`, a quick fix adding a missing
   `use`) and the manual know it. Plain `use "x.ry"` keeps working.
+- [x] **Ruby style.** Blocks given to calls (`xs.map do |x| x * 2 end`,
+  `xs.select { |x| x > 2 }`), method chains without parentheses and over
+  several lines (`xs.select(even?).sum`; a field wins over a function),
+  names ending with `?` (`even?`, `fn adult?(p)`) with a precise rule
+  against the `?` operator, `unless ... then ... else`, symbols (`:ok`),
+  `"#{x}"` in texts, and the Ruby names of the library (`puts`, `upcase`,
+  `select`, `reduce`, `size`...) as real built-in names; known by the
+  checker, the formatter, the language server, the editors' grammars,
+  `rythme help ruby` and the manual. Every existing program keeps working.
 - [ ] **Patterns on ranges and texts.** `1..9 -> ...` in `match` (Int and
   Float bounds, exhaustiveness knows nothing new), and a text prefix pattern
   only if it stays simple; the checker reports overlapping or empty ranges.
-- [ ] **Whole numbers without limit.** Int grows beyond 64 bits instead of
+- [x] **Whole numbers without limit.** Int grows beyond 64 bits instead of
   E012 (the way Python does), with the small-number fast path kept; `pow`,
   `gcd`, `text`, `parse_int`, JSON and comparisons with Float are exact.
-- [ ] **Types of parameters, inferred.** `rythme check` infers what a
+- [x] **Types of parameters, inferred.** `rythme check` infers what a
   function's parameters must be from how it uses them, and reports a call
   that always fails (`area("big")` when `area` multiplies), with zero false
   positives; the language server shows the inferred signature on hover.
@@ -47,9 +56,12 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   or a small, well-explained regular expression subset), `format` of numbers
   (thousands separators, padding), `lines`/`words` helpers if missing,
   `trim_start`/`trim_end`, case-insensitive comparison.
-- [ ] **Files and the system.** Listing a folder, creating folders, reading
-  lines of stdin until the end, `exit` codes documented, command-line
-  options helpers (`args` parsed into a record), paths joined portably.
+- [x] **Files and the system.** Listing a folder (`list_folder`), creating
+  folders (`create_folder`), file information (`file_info`), deleting one
+  file and never a folder (`delete_file`), reading lines of stdin until the
+  end (`input_lines`), `exit` codes documented (`rythme help system`),
+  command-line options (`options()`: `args` parsed into a record), paths
+  joined and split portably (`join_path`, `split_path`).
 
 ## Help everywhere, for everyone
 
@@ -59,8 +71,9 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   `rythme learn` in Spanish (`--lang es`).
 - [ ] **Messages in German, Portuguese and Chinese** (one language per item
   if needed), with the website and the playground offering each language.
-- [ ] **Step-by-step evaluation for teaching.** `rythme explain-run file.ry`
-  (or a playground button) shows how an expression is reduced step by step
+- [x] **Step-by-step evaluation for teaching.** `rythme steps file.ry
+  ["expression"]` (`rythme etapes`), `:steps` in the REPL and the Steps
+  button of the playground show how an expression is reduced step by step
   (`fib(3)` → `fib(2) + fib(1)` → ...), bounded, in every language.
 - [x] **Exercises.** `docs/exercises/` with graded exercises for a first
   course (each with tests that `rythme test` runs and hints), and
@@ -71,14 +84,15 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 - [x] **`rythme doc`.** Documentation of a file or a folder from its `##`
   comments, types and signatures, as Markdown and HTML, linked to the
   built-ins' docs.
-- [ ] **Better `rythme test`.** A folder of files, a filter by name,
+- [x] **Better `rythme test`.** A folder of files, a filter by name,
   `--watch`, a summary with times, and property tests
   (`check_all(fn(x) = ..., generator)`) with shrinking of the failing case.
-- [ ] **Language server extras.** Inferred types as inlay hints, semantic
-  highlighting, code lenses to run a test or a file, workspace symbols.
+- [x] **Language server extras.** Inferred types as inlay hints, semantic
+  highlighting, code lenses to run a test or a file, workspace symbols
+  (and folding, selection ranges).
 - [x] **A Tree-sitter grammar** for Neovim, Helix and Zed highlighting, with
   its tests, and the Zed extension completed.
-- [ ] **Projects and packages.** `rythme new name`, a `rythme.toml` manifest,
+- [x] **Projects and packages.** `rythme new name`, a `rythme.toml` manifest,
   dependencies from git or a path with a lock file, `use "package/file.ry"`,
   `rythme run`/`test` at the project root.
 

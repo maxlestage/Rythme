@@ -1,14 +1,13 @@
 //! Loads files (and the files they `use`), checks them, runs them, runs tests.
 
 use std::collections::{HashMap, HashSet};
-use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use crate::ast::{FnDef, Item, Stmt, Use};
 use crate::check::{self, Knowledge};
 use crate::diagnostic::{Diagnostic, Severity};
-use crate::interp::{Interp, Mode, Wrap};
+use crate::interp::{Interp, Mode};
 use crate::io::out_line;
 use crate::source::Span;
 use crate::symbol::{Sym, SymMap};
@@ -22,7 +21,7 @@ pub struct Reported;
 /// The folder `base` followed by the path written in `use`. Its parts,
 /// separated by `/` (or `\`), are added one by one, `..` going up a folder,
 /// so that the same program works on every system.
-fn join_use(base: &Path, p: &str) -> PathBuf {
+pub(crate) fn join_use(base: &Path, p: &str) -> PathBuf {
     if Path::new(p).is_absolute() {
         return PathBuf::from(p);
     }
@@ -451,6 +450,19 @@ impl Driver {
 
     /// Runs a checked module, after the modules it uses.
     pub fn execute(&mut self, m: &Rc<Module>, mode: Mode) -> Result<Option<Value>, Reported> {
+        self.prepare(m, mode)?;
+        match self.interp.exec_items(&m.items, mode) {
+            Ok(v) => Ok(v),
+            Err(d) => {
+                self.report(&d);
+                Err(Reported)
+            }
+        }
+    }
+
+    /// Runs the modules that a checked module uses, and makes the interpreter
+    /// ready to run its own items (`execute` without the items themselves).
+    pub fn prepare(&mut self, m: &Rc<Module>, mode: Mode) -> Result<(), Reported> {
         for dep in m.deps.iter().chain(m.named.iter().map(|(_, k)| k)) {
             if self.executed.contains(dep) {
                 continue;
@@ -464,13 +476,7 @@ impl Driver {
             self.executed.insert((p.clone(), m.ns));
         }
         self.interp.names = self.names_of(m);
-        match self.interp.exec_items(&m.items, mode) {
-            Ok(v) => Ok(v),
-            Err(d) => {
-                self.report(&d);
-                Err(Reported)
-            }
-        }
+        Ok(())
     }
 
     /// Runs the collected tests and prints a summary. Returns true if all passed.
@@ -480,55 +486,18 @@ impl Driver {
     }
 
     /// Runs the collected tests and prints a summary. Returns the number of
-    /// tests and the number of failed ones.
+    /// tests and the number of failed ones (see [`crate::testing`]).
     pub fn run_tests_counted(&mut self) -> (usize, usize) {
-        let tests = std::mem::take(&mut self.interp.tests);
-        if tests.is_empty() {
-            out_line(&t!(
-                "No tests found. Write one like this:\n  test \"addition\" = assert_eq(1 + 1, 2)",
-                "Aucun test trouvé. Écrivez-en un comme ceci :\n  test \"addition\" = assert_eq(1 + 1, 2)"
-            ));
-            return (0, 0);
-        }
-        let color = std::io::stdout().is_terminal() && crate::diagnostic::terminal_supports_color();
-        let (green, red, reset) = if color { ("\x1b[32m", "\x1b[31m", "\x1b[0m") } else { ("", "", "") };
-        let n = tests.len();
-        out_line(&t!("Running {n} test(s)", "Exécution de {n} test(s)"));
-        let mut failed = 0;
-        for test in &tests {
-            let outcome = match self.interp.eval_test(test) {
-                Ok(Value::Bool(false)) => {
-                    Some(Diagnostic::error("E015", t!("the test returned `false`", "le test a renvoyé `false`")).at(test.span).help(t!(
-                        "use `assert_eq(actual, expected)` to see the values",
-                        "utilisez `assert_eq(obtenu, attendu)` pour voir les valeurs"
-                    )))
-                }
-                // `Err(...)` or `None`: a `?` stopped the test, or the test gave a failure value.
-                Ok(v) if matches!(self.interp.wrap(&v), Wrap::Err | Wrap::None) => Some(
-                    Diagnostic::error("E015", t!("the test ended with {}", "le test s'est terminé avec {}", v.repr())).at(test.span).help(
-                        t!(
-                            "a test passes when it ends without error, and its value is not `false`, `Err(...)` or `None`",
-                            "un test réussit s'il se termine sans erreur, et que sa valeur n'est ni `false`, ni `Err(...)`, ni `None`"
-                        ),
-                    ),
-                ),
-                Ok(_) => None,
-                Err(d) => Some(*d),
-            };
-            match outcome {
-                None => out_line(&format!("  {green}✓{reset} {}", test.name)),
-                Some(d) => {
-                    failed += 1;
-                    out_line(&format!("  {red}✗{reset} {}", test.name));
-                    self.report(&d);
-                }
-            }
-        }
-        let passed = n - failed;
-        let summary = t!("{n} test(s): {passed} passed, {failed} failed", "{n} test(s) : {passed} réussi(s), {failed} échoué(s)");
-        let color = if failed == 0 { green } else { red };
-        out_line(&format!("{color}{summary}{reset}"));
-        (n, failed)
+        let options = crate::testing::Options { seed: self.interp.property_seed, ..Default::default() };
+        crate::testing::run_and_summarize(self, &options)
+    }
+
+    /// The files loaded so far: the program and the files it uses.
+    pub fn loaded_files(&self) -> Vec<PathBuf> {
+        let mut files: Vec<PathBuf> = self.modules.keys().map(|(p, _)| p.clone()).collect();
+        files.sort();
+        files.dedup();
+        files
     }
 }
 
@@ -542,6 +511,10 @@ pub fn find_use(u: &Use, base: &Path) -> Result<PathBuf, Box<Diagnostic>> {
     }
     if path.is_file() {
         return Ok(path);
+    }
+    // `use mathlib/vectors`: a file of a package of the project.
+    if let Some(found) = crate::project::resolve_use(p, base, u.path_span) {
+        return found;
     }
     for dir in [&path, &join_use(base, p)] {
         if dir.is_dir() {
@@ -587,6 +560,11 @@ pub fn find_use(u: &Use, base: &Path) -> Result<PathBuf, Box<Diagnostic>> {
         "the path is relative to the folder of the file that contains `use`",
         "le chemin est relatif au dossier du fichier qui contient `use`"
     ));
+    match crate::project::use_hint(p, base) {
+        Some(Ok(help)) => d = d.help(help),
+        Some(Err(note)) => d = d.note(note),
+        None => {}
+    }
     Err(d.boxed())
 }
 

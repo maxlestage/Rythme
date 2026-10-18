@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::ast::*;
+use crate::bigint::{self, BigInt};
 use crate::builtins::BUILTINS;
 use crate::compile::{self, Capture, FnCode, Kind, Node, Pat, Scope, Sibling};
 use crate::diagnostic::{Diagnostic, Fallible};
@@ -130,6 +131,8 @@ pub struct Interp {
     pub types: HashMap<Sym, Vec<Rc<CtorInfo>>>,
     pub tests: Vec<TestCase>,
     pub script_args: Vec<String>,
+    /// Where the values of `check_all` and `sample` come from (`rythme test --seed N`).
+    pub property_seed: u64,
     /// How the top-level names of the file being run are stored (see
     /// `compile::Names`); set by the driver before running each file.
     pub names: compile::Names,
@@ -176,6 +179,12 @@ impl Interp {
         for b in BUILTINS {
             globals.insert(Sym::new(b.name), Value::Builtin(b));
         }
+        // The Ruby names: `upcase` is `upper`.
+        for a in crate::builtins::ALIASES {
+            if let Some(b) = crate::builtins::lookup(a.of) {
+                globals.insert(Sym::new(a.name), Value::Builtin(b));
+            }
+        }
         globals.insert(Sym::new("pi"), Value::Float(std::f64::consts::PI));
         globals.insert(some.name, Value::Ctor(some.clone()));
         globals.insert(none_info.name, none.clone());
@@ -193,6 +202,7 @@ impl Interp {
             types,
             tests: Vec::new(),
             script_args: Vec::new(),
+            property_seed: crate::builtins::property::DEFAULT_SEED,
             names: compile::Names::default(),
             depth: 0,
             stack_base: stack_position(),
@@ -263,6 +273,11 @@ impl Interp {
         self.steps_left = calls;
     }
 
+    /// The calls allowed by `set_step_limit` are all made.
+    pub fn out_of_steps(&self) -> bool {
+        self.steps_left == 0
+    }
+
     pub fn random_u64(&mut self) -> u64 {
         // xorshift64*
         let mut x = self.rng;
@@ -305,6 +320,32 @@ impl Interp {
 
     /// Runs the items of a module (its `use` dependencies must already have run).
     pub fn exec_items(&mut self, items: &[Item], mode: Mode) -> Fallible<Option<Value>> {
+        self.define_items(items);
+        let mut last = None;
+        for item in items {
+            last = None;
+            match item {
+                Item::Stmt(Stmt::Let(pat, e)) => {
+                    let v = self.eval_top(e)?;
+                    self.bind_global(pat, v)?;
+                }
+                Item::Stmt(Stmt::Expr(e)) => {
+                    if mode != Mode::Test {
+                        last = Some(self.eval_top(e)?);
+                    }
+                }
+                Item::Test(name, body, span) if mode == Mode::Test => {
+                    self.tests.push(TestCase { name: name.clone(), body: body.clone(), span: *span, names: self.names.clone() });
+                }
+                _ => {}
+            }
+        }
+        Ok(last)
+    }
+
+    /// Defines the types and functions of a module, and notes the names its
+    /// top-level definitions will give (for "not defined yet").
+    pub fn define_items(&mut self, items: &[Item]) {
         for item in items {
             match item {
                 Item::Type(t) => self.register_type(t),
@@ -321,34 +362,20 @@ impl Interp {
                 self.pending.extend(names.into_iter().filter(|(s, _)| !self.globals.contains_key(s)));
             }
         }
-        let mut last = None;
-        for item in items {
-            last = None;
-            match item {
-                Item::Stmt(Stmt::Let(pat, e)) => {
-                    let v = self.eval_top(e)?;
-                    let mut binds = Vec::new();
-                    if !match_pattern(pat, &v, &mut binds) {
-                        return Err(pattern_mismatch(pat.span, &v));
-                    }
-                    for (s, v) in binds {
-                        let s = self.stored(s);
-                        self.pending.remove(&s);
-                        self.globals.insert(s, v);
-                    }
-                }
-                Item::Stmt(Stmt::Expr(e)) => {
-                    if mode != Mode::Test {
-                        last = Some(self.eval_top(e)?);
-                    }
-                }
-                Item::Test(name, body, span) if mode == Mode::Test => {
-                    self.tests.push(TestCase { name: name.clone(), body: body.clone(), span: *span, names: self.names.clone() });
-                }
-                _ => {}
-            }
+    }
+
+    /// Gives the names of a top-level definition `pattern = value`.
+    pub fn bind_global(&mut self, pat: &Pattern, v: Value) -> Fallible<()> {
+        let mut binds = Vec::new();
+        if !match_pattern(pat, &v, &mut binds) {
+            return Err(pattern_mismatch(pat.span, &v));
         }
-        Ok(last)
+        for (s, v) in binds {
+            let s = self.stored(s);
+            self.pending.remove(&s);
+            self.globals.insert(s, v);
+        }
+        Ok(())
     }
 
     /// Evaluates an expression outside of any function.
@@ -493,10 +520,25 @@ impl Interp {
             Kind::Lambda(def, code) => Ok(self.closure(def, code, fr)),
             Kind::Sibling(i) => Ok(sibling(fr, *i)),
             // Local names and constants are read in place (see `Kind::Binary`).
-            Kind::Field(obj, name, nspan) if is_leaf(obj) => Ok(self.field(self.leaf(obj, fr), name, *nspan)?),
-            Kind::Field(obj, name, nspan) => {
+            Kind::Field(obj, name, nspan, func) => {
+                if is_leaf(obj) {
+                    if let Some(v) = field_of(self.leaf(obj, fr), name) {
+                        return Ok(v);
+                    }
+                }
                 let v = self.eval(obj, fr)?;
-                Ok(self.field(&v, name, *nspan)?)
+                if let Some(x) = field_of(&v, name) {
+                    return Ok(x);
+                }
+                // `xs.sum`: no field, so the function `sum`, if there is one.
+                let f = match &func.kind {
+                    Kind::Global(s, _) => self.globals.get(s).cloned(),
+                    _ => Some(self.eval(func, fr)?),
+                };
+                match f {
+                    Some(f) if f.is_callable() => Ok(self.call1(&f, v, e.span)?),
+                    _ => Ok(self.field(&v, name, *nspan)?),
+                }
             }
             Kind::Index(obj, idx) => self.index(obj, idx, e.span, fr),
             Kind::Unary(op, x) => {
@@ -860,7 +902,7 @@ impl Interp {
         d.boxed()
     }
 
-    fn field(&self, v: &Value, name: &str, span: Span) -> Fallible<Value> {
+    pub(crate) fn field(&self, v: &Value, name: &str, span: Span) -> Fallible<Value> {
         match v {
             Value::Record(r) => r.get(name).cloned().ok_or_else(|| {
                 let mut d =
@@ -907,10 +949,13 @@ impl Interp {
                 let mut d = Diagnostic::error("E010", t!("{} has no fields", "{} n'a pas de champs", other.describe()))
                     .at(span)
                     .label(t!("no field `{name}` here", "pas de champ `{name}` ici"));
-                if self.globals.get(&Sym::new(name)).is_some_and(|f| f.is_callable()) {
+                // Neither a field nor a function: maybe a function with a close name.
+                let funcs: Vec<Rc<str>> =
+                    self.globals.iter().filter(|(s, f)| f.is_callable() && !s.is_stored() && !s.is_ctor()).map(|(s, _)| s.name()).collect();
+                if let Some(best) = suggest::closest(name, funcs.iter().map(|s| &**s)) {
                     d = d.help(t!(
-                        "to call `{name}` on this value, add parentheses: `.{name}()`",
-                        "pour appeler `{name}` sur cette valeur, ajoutez des parenthèses : `.{name}()`"
+                        "did you mean `.{best}`? (`value.{best}` calls `{best}(value)`)",
+                        "vouliez-vous dire `.{best}` ? (`valeur.{best}` appelle `{best}(valeur)`)"
                     ));
                 }
                 Err(d.boxed())
@@ -1126,9 +1171,12 @@ fn match_pat(p: &Pat, v: &Value, slots: &mut [Value], first: usize) -> bool {
         (Pat::Bool(a), Value::Bool(b)) => a == b,
         (Pat::Int(a), Value::Int(b)) => a == b,
         (Pat::Int(a), Value::Float(b)) => cmp_int_float(*a, *b) == Some(std::cmp::Ordering::Equal),
+        (Pat::Big(a), Value::Big(b)) => a == b,
+        (Pat::Big(a), Value::Float(b)) => a.cmp_f64(*b) == Some(std::cmp::Ordering::Equal),
         (Pat::Float(a), Value::Float(b)) => a == b,
         (Pat::Float(a), Value::Int(b)) => cmp_int_float(*b, *a) == Some(std::cmp::Ordering::Equal),
         (Pat::Text(a), Value::Text(b)) => a == b,
+        (Pat::Symbol(a), Value::Symbol(b)) => a == b,
         (Pat::Ctor(name, pats), Value::Variant(var)) => {
             var.ctor.name == *name && pats.len() == var.fields.len() && match_each(pats, &var.fields, slots, first)
         }
@@ -1186,6 +1234,15 @@ fn match_each(pats: &[Pat], vals: &[Value], slots: &mut [Value], first: usize) -
     true
 }
 
+/// The field `name` of a record or of a value built with a constructor.
+pub(crate) fn field_of(v: &Value, name: &str) -> Option<Value> {
+    match v {
+        Value::Record(r) => r.get(name).cloned(),
+        Value::Variant(var) => var.ctor.fields.iter().position(|f| &*f.name() == name).map(|i| var.fields[i].clone()),
+        _ => None,
+    }
+}
+
 pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> bool {
     match (&p.kind, v) {
         (PatKind::Wildcard, _) => true,
@@ -1197,9 +1254,12 @@ pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> boo
         (PatKind::Bool(a), Value::Bool(b)) => a == b,
         (PatKind::Int(a), Value::Int(b)) => a == b,
         (PatKind::Int(a), Value::Float(b)) => cmp_int_float(*a, *b) == Some(std::cmp::Ordering::Equal),
+        (PatKind::Big(a), Value::Big(b)) => a == b,
+        (PatKind::Big(a), Value::Float(b)) => a.cmp_f64(*b) == Some(std::cmp::Ordering::Equal),
         (PatKind::Float(a), Value::Float(b)) => a == b,
         (PatKind::Float(a), Value::Int(b)) => cmp_int_float(*b, *a) == Some(std::cmp::Ordering::Equal),
         (PatKind::Text(a), Value::Text(b)) => a == b,
+        (PatKind::Symbol(a), Value::Symbol(b)) => a == b,
         (PatKind::Ctor(name, pats), Value::Variant(var)) => {
             var.ctor.name == name.own_name()
                 && pats.len() == var.fields.len()
@@ -1238,9 +1298,10 @@ pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> boo
 }
 
 #[inline(never)]
-fn unary(op: UnOp, v: &Value, span: Span, operand: Span) -> Fallible<Value> {
+pub(crate) fn unary(op: UnOp, v: &Value, span: Span, operand: Span) -> Fallible<Value> {
     match (op, v) {
-        (UnOp::Neg, Value::Int(n)) => n.checked_neg().map(Value::Int).ok_or_else(|| overflow(span)),
+        (UnOp::Neg, Value::Int(n)) => Ok(n.checked_neg().map_or_else(|| bigint::value(BigInt::from_i64(*n).neg()), Value::Int)),
+        (UnOp::Neg, Value::Big(n)) => Ok(bigint::value(n.neg())),
         (UnOp::Neg, Value::Float(f)) => Ok(Value::Float(-f)),
         (UnOp::Not, Value::Bool(b)) => Ok(Value::Bool(!b)),
         (UnOp::Neg, other) => {
@@ -1253,13 +1314,13 @@ fn unary(op: UnOp, v: &Value, span: Span, operand: Span) -> Fallible<Value> {
 }
 
 #[inline(never)]
-fn fn_arity_error(def: &FnDef, got: usize, span: Span) -> Box<Diagnostic> {
+pub(crate) fn fn_arity_error(def: &FnDef, got: usize, span: Span) -> Box<Diagnostic> {
     let name = def.name.map(|n| n.name().to_string()).unwrap_or_else(|| "fn".to_string());
     arity_error(&name, &def.signature(), def.arity, def.arity, got, span, Some(def.span))
 }
 
 #[inline(never)]
-fn no_clause(def: &FnDef, args: &[Value], span: Span) -> Box<Diagnostic> {
+pub(crate) fn no_clause(def: &FnDef, args: &[Value], span: Span) -> Box<Diagnostic> {
     let name = def.name.map(|n| n.name().to_string()).unwrap_or_else(|| "fn".to_string());
     let shown: Vec<String> = args.iter().map(|a| a.repr()).collect();
     let mut d = Diagnostic::error(
@@ -1312,7 +1373,7 @@ fn out_of_steps(span: Span) -> Box<Diagnostic> {
 }
 
 #[inline(never)]
-fn add_frame(d: &mut Diagnostic, def: &FnDef, span: Span) {
+pub(crate) fn add_frame(d: &mut Diagnostic, def: &FnDef, span: Span) {
     let name = def.name.map(|n| n.name().to_string()).unwrap_or_default();
     d.push_frame(name, span);
 }
@@ -1330,7 +1391,7 @@ fn ctor_arity_error(c: &CtorInfo, got: usize, span: Span) -> Box<Diagnostic> {
 }
 
 #[inline(never)]
-fn not_callable(v: &Value, span: Span) -> Box<Diagnostic> {
+pub(crate) fn not_callable(v: &Value, span: Span) -> Box<Diagnostic> {
     let mut d = Diagnostic::error("E009", t!("{} is not a function", "{} n'est pas une fonction", v.describe()))
         .at(span)
         .label(t!("cannot be called", "ne peut pas être appelé"));
@@ -1347,7 +1408,7 @@ fn not_callable(v: &Value, span: Span) -> Box<Diagnostic> {
 }
 
 #[inline(never)]
-fn no_case(v: &Value, span: Span) -> Box<Diagnostic> {
+pub(crate) fn no_case(v: &Value, span: Span) -> Box<Diagnostic> {
     Diagnostic::error("E006", t!("no case of this `match` handles {}", "aucun cas de ce `match` ne traite {}", v.describe()))
         .at(span)
         .label(t!("this value", "cette valeur"))
@@ -1359,7 +1420,7 @@ fn no_case(v: &Value, span: Span) -> Box<Diagnostic> {
 }
 
 #[inline(never)]
-fn try_error(v: &Value, span: Span) -> Box<Diagnostic> {
+pub(crate) fn try_error(v: &Value, span: Span) -> Box<Diagnostic> {
     Diagnostic::error(
         "E016",
         t!("`?` needs an Option or a Result, but got {}", "`?` a besoin d'une Option ou d'un Result, mais a reçu {}", v.describe()),
@@ -1372,7 +1433,7 @@ fn try_error(v: &Value, span: Span) -> Box<Diagnostic> {
     .boxed()
 }
 
-fn pattern_mismatch(span: Span, v: &Value) -> Box<Diagnostic> {
+pub(crate) fn pattern_mismatch(span: Span, v: &Value) -> Box<Diagnostic> {
     Diagnostic::error("E006", t!("the value {} does not match this pattern", "la valeur {} ne correspond pas à ce motif", v.describe()))
         .at(span)
         .help(t!(
@@ -1382,7 +1443,7 @@ fn pattern_mismatch(span: Span, v: &Value) -> Box<Diagnostic> {
         .boxed()
 }
 
-fn question_outside(span: Span) -> Box<Diagnostic> {
+pub(crate) fn question_outside(span: Span) -> Box<Diagnostic> {
     Diagnostic::error("E016", t!("`?` can only be used inside a function", "`?` ne peut être utilisé que dans une fonction"))
         .at(span)
         .help(t!(
@@ -1392,7 +1453,7 @@ fn question_outside(span: Span) -> Box<Diagnostic> {
         .boxed()
 }
 
-fn spread_error(v: &Value, span: Span, list: bool) -> Box<Diagnostic> {
+pub(crate) fn spread_error(v: &Value, span: Span, list: bool) -> Box<Diagnostic> {
     let what = if list { t!("a list", "une liste") } else { t!("a record", "un enregistrement") };
     Diagnostic::error("E005", t!("`..` expects {what} here, but got {}", "`..` attend {what} ici, mais a reçu {}", v.describe()))
         .at(span)
@@ -1406,7 +1467,7 @@ pub fn truth(v: &Value, span: Span) -> Fallible<bool> {
     }
 }
 
-fn condition_error(v: &Value, span: Span) -> Box<Diagnostic> {
+pub(crate) fn condition_error(v: &Value, span: Span) -> Box<Diagnostic> {
     let mut d = Diagnostic::error(
         "E005",
         t!(
@@ -1418,7 +1479,7 @@ fn condition_error(v: &Value, span: Span) -> Box<Diagnostic> {
     .at(span)
     .label(t!("not a Bool", "pas un Bool"));
     d = match v {
-        Value::Int(_) | Value::Float(_) => {
+        Value::Int(_) | Value::Big(_) | Value::Float(_) => {
             d.help(t!("compare it explicitly, for example `x != 0` or `x > 0`", "comparez explicitement, par exemple `x != 0` ou `x > 0`"))
         }
         Value::List(_) | Value::Text(_) | Value::Record(_) => d.help(t!(
@@ -1434,16 +1495,6 @@ fn condition_error(v: &Value, span: Span) -> Box<Diagnostic> {
     d.boxed()
 }
 
-pub fn overflow(span: Span) -> Box<Diagnostic> {
-    Diagnostic::error("E012", t!("the result is too large for a whole number (Int)", "le résultat est trop grand pour un nombre entier (Int)"))
-        .at(span)
-        .help(t!(
-            "whole numbers go from -9223372036854775808 to 9223372036854775807;\nfor bigger values, use decimal numbers (Float), like `2.0 ** 100`",
-            "les nombres entiers vont de -9223372036854775808 à 9223372036854775807 ;\npour des valeurs plus grandes, utilisez des nombres décimaux (Float), comme `2.0 ** 100`"
-        ))
-        .boxed()
-}
-
 pub fn div_zero(span: Span) -> Box<Diagnostic> {
     Diagnostic::error("E008", t!("division by zero", "division par zéro"))
         .at(span)
@@ -1454,7 +1505,7 @@ pub fn div_zero(span: Span) -> Box<Diagnostic> {
         .boxed()
 }
 
-fn zero_to_negative_power(span: Span) -> Box<Diagnostic> {
+pub fn zero_to_negative_power(span: Span) -> Box<Diagnostic> {
     let mut d = div_zero(span);
     d.notes.push(t!("`0 ** -n` is `1 / 0 ** n`", "`0 ** -n` vaut `1 / 0 ** n`"));
     d
@@ -1490,7 +1541,7 @@ fn op_error(op: BinOp, l: &Value, r: &Value, span: Span) -> Box<Diagnostic> {
         .label(format!("{} {sym} {}", l.describe(), r.describe()));
     let is_text = |v: &Value| matches!(v, Value::Text(_));
     let is_list = |v: &Value| matches!(v, Value::List(_));
-    let is_num = |v: &Value| matches!(v, Value::Int(_) | Value::Float(_));
+    let is_num = |v: &Value| matches!(v, Value::Int(_) | Value::Big(_) | Value::Float(_));
     if op == BinOp::Add && (is_text(l) || is_text(r)) {
         d = d.help(t!(
             "to build a text with a value inside, use braces: \"total: {{x}}\"\nor convert the value first: text(x)",
@@ -1558,6 +1609,7 @@ fn int_op(op: BinOp, a: i64, b: i64) -> Option<Value> {
 fn num(v: &Value) -> Option<f64> {
     match v {
         Value::Int(n) => Some(*n as f64),
+        Value::Big(n) => Some(n.to_f64()),
         Value::Float(f) => Some(*f),
         _ => None,
     }
@@ -1619,6 +1671,7 @@ pub fn binop(op: BinOp, l: &Value, r: &Value, span: Span) -> Fallible<Value> {
                     if b == 0 {
                         return Err(div_zero(span));
                     }
+                    // Only `i64::MIN // -1` does not fit.
                     a.checked_div(b).map(|q| if (a % b != 0) && ((a < 0) != (b < 0)) { q - 1 } else { q })
                 }
                 BinOp::Mod => {
@@ -1648,9 +1701,14 @@ pub fn binop(op: BinOp, l: &Value, r: &Value, span: Span) -> Fallible<Value> {
                 }
                 _ => unreachable!(),
             };
-            res.map(Int).ok_or_else(|| overflow(span))
+            match res {
+                Some(n) => Ok(Int(n)),
+                // Too large for 64 bits: computed with large numbers.
+                None => bigint::binop(op, l, r, span),
+            }
         }
-        (Int(_) | Float(_), Int(_) | Float(_)) => {
+        (Int(_) | Big(_), Int(_) | Big(_)) => bigint::binop(op, l, r, span),
+        (Int(_) | Big(_) | Float(_), Int(_) | Big(_) | Float(_)) => {
             let (a, b) = (num(l).unwrap(), num(r).unwrap());
             Ok(Float(match op {
                 BinOp::Add => a + b,
@@ -1728,29 +1786,45 @@ pub fn binop(op: BinOp, l: &Value, r: &Value, span: Span) -> Fallible<Value> {
     }
 }
 
-fn range(a: &Value, b: &Value, span: Span) -> Fallible<Value> {
-    match (a, b) {
-        (Value::Int(a), Value::Int(b)) => {
+pub(crate) fn range(a: &Value, b: &Value, span: Span) -> Fallible<Value> {
+    if let (Value::Int(a), Value::Int(b)) = (a, b) {
+        if b < a {
+            return Ok(Value::list(Vec::new()));
+        }
+        if b.saturating_sub(*a) < MAX_RANGE {
+            return Ok(Value::list((*a..=*b).map(Value::Int).collect()));
+        }
+    }
+    match (bigint::big(a), bigint::big(b)) {
+        (Some(a), Some(b)) => {
             if b < a {
                 return Ok(Value::list(Vec::new()));
             }
-            if b.saturating_sub(*a) >= MAX_RANGE {
-                return Err(Diagnostic::error(
+            let one = BigInt::from_i64(1);
+            let size = b.sub(&a).add(&one);
+            match size.to_i64() {
+                Some(n) if n <= MAX_RANGE => {
+                    // Large numbers, but not many of them.
+                    let mut n_items = Vec::with_capacity(n as usize);
+                    let mut x = a.into_owned();
+                    for _ in 0..n {
+                        let next = x.add(&one);
+                        n_items.push(bigint::value(x));
+                        x = next;
+                    }
+                    Ok(Value::list(n_items))
+                }
+                _ => Err(Diagnostic::error(
                     "E023",
-                    t!(
-                        "this range is too large ({} elements)",
-                        "cet intervalle est trop grand ({} éléments)",
-                        (*b as i128) - (*a as i128) + 1
-                    ),
+                    t!("this range is too large ({} elements)", "cet intervalle est trop grand ({} éléments)", size),
                 )
                 .at(span)
                 .help(t!(
                     "ranges are lists: keep them under {MAX_RANGE} elements",
                     "les intervalles sont des listes : gardez-les sous {MAX_RANGE} éléments"
                 ))
-                .boxed());
+                .boxed()),
             }
-            Ok(Value::list((*a..=*b).map(Value::Int).collect()))
         }
         _ => Err(Diagnostic::error(
             "E005",
@@ -1768,8 +1842,8 @@ fn range(a: &Value, b: &Value, span: Span) -> Fallible<Value> {
 }
 
 #[inline(never)]
-fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
-    let out_of_range = |n: i64, len: usize, what: String| {
+pub(crate) fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
+    let out_of_range = |n: &dyn std::fmt::Display, len: usize, what: String| {
         let mut d = Diagnostic::error("E007", t!("index {n} is out of range: {what}", "l'indice {n} est hors limites : {what}"))
             .at(idx_span)
             .label(t!("no element here", "aucun élément ici"));
@@ -1792,7 +1866,7 @@ fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
             match resolve_index(*n, len) {
                 Some(k) => Ok(l.as_slice()[k].clone()),
                 None => Err(out_of_range(
-                    *n,
+                    n,
                     len,
                     if len == 0 {
                         t!("the list is empty", "la liste est vide")
@@ -1807,7 +1881,7 @@ fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
             match resolve_index(*n, len) {
                 Some(k) => Ok(Value::text(&s.chars().nth(k).unwrap().to_string())),
                 None => Err(out_of_range(
-                    *n,
+                    n,
                     len,
                     if len == 0 {
                         t!("the text is empty", "le texte est vide")
@@ -1816,6 +1890,13 @@ fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
                     },
                 )),
             }
+        }
+        (Value::List(l), Value::Big(n)) => {
+            Err(out_of_range(n, l.len(), t!("the list has {} element(s)", "la liste a {} élément(s)", l.len())))
+        }
+        (Value::Text(s), Value::Big(n)) => {
+            let len = s.chars().count();
+            Err(out_of_range(n, len, t!("the text has {len} character(s)", "le texte a {len} caractère(s)")))
         }
         (Value::Record(r), Value::Text(k)) => r.get(k).cloned().ok_or_else(|| {
             Diagnostic::error("E010", t!("this record has no field `{k}`", "cet enregistrement n'a pas de champ `{k}`"))

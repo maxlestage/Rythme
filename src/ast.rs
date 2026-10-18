@@ -2,6 +2,7 @@
 
 use std::rc::Rc;
 
+use crate::bigint::BigInt;
 use crate::source::Span;
 use crate::symbol::Sym;
 
@@ -35,9 +36,11 @@ impl ExprKind {
             ExprKind::Unit
             | ExprKind::Bool(_)
             | ExprKind::Int(_)
+            | ExprKind::Big(_)
             | ExprKind::Float(_)
             | ExprKind::Text(_)
             | ExprKind::Var(_)
+            | ExprKind::Symbol(_)
             | ExprKind::Ctor(_) => 0,
             ExprKind::Template(parts) => deepest(parts.iter().filter_map(|p| match p {
                 TemplatePart::Expr(e) => Some(e),
@@ -74,8 +77,12 @@ pub enum ExprKind {
     Unit,
     Bool(bool),
     Int(i64),
+    /// A whole number too large for 64 bits.
+    Big(Rc<BigInt>),
     Float(f64),
     Text(Rc<str>),
+    /// `:ok`: a symbol, a value that is only its name.
+    Symbol(Sym),
     /// A text with `{expressions}` inside.
     Template(Vec<TemplatePart>),
     Var(Sym),
@@ -222,21 +229,24 @@ impl std::fmt::Debug for Use {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Pattern {
     pub kind: PatKind,
     pub span: Span,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum PatKind {
     Wildcard,
     Bind(Sym),
     Unit,
     Bool(bool),
     Int(i64),
+    /// A whole number too large for 64 bits.
+    Big(Rc<BigInt>),
     Float(f64),
     Text(Rc<str>),
+    Symbol(Sym),
     Ctor(Sym, Vec<Pattern>),
     /// Elements, then the rest: `None` = no rest, `Some(None)` = `..`, `Some(Some(name))` = `..name`.
     List(Vec<Pattern>, Option<Option<(Sym, Span)>>),

@@ -35,6 +35,11 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
   into the single name `geometry.area` right after parsing; each file used
   with a name keeps its top-level names apart in the interpreter (see
   `compile::Names`), and so do the private `_names` of used files.
+- `project.rs` is `rythme new`, `rythme install` (git through the `git`
+  program) and `use package/file`, reached from `driver::find_use`;
+  `manifest.rs` reads `rythme.toml` and `rythme.lock` (a small part of
+  TOML, by hand). `tests/projects.rs` tests them with git repositories
+  created in temporary folders.
 - `types.rs` holds what the checker knows for sure about values: their types,
   and what each built-in function accepts and gives back. `check.rs` infers
   the types of expressions to report operations that would fail every time
@@ -45,11 +50,20 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
   by a closure, so that running never searches for a local name. After a
   change to the interpreter, run `bench/run.sh` before and after: the
   programs of `bench/` print a checksum of their work and their best time.
+- `bigint.rs` holds the whole numbers beyond 64 bits (`Value::Big`), written
+  by hand. The interpreter computes the usual numbers (`Value::Int`) on the
+  spot and only goes there when a result does not fit, so keep it off the
+  fast paths: `tests/fuzz.rs` checks it against `i128` and against a simple
+  decimal multiplication.
 - `diagnostic.rs` prints messages in the style of Rust.
 - `format.rs` is `rythme fmt`, the formatter: run `cargo run -- fmt examples`
   after changing an example. Its tests (`tests/format.rs`) check on every
   piece of code of the repository that it never changes the meaning of a
   program nor loses a comment.
+- `testing.rs` is `rythme test`: folders, `--filter`, `--watch`, `--seed`
+  and the summary (`tests/testing.rs`); `run_paths` tests files and folders
+  for any tool. Property tests (`check_all` and its generators) live in
+  `builtins/property.rs`.
 - `doc.rs` is `rythme doc`: the documentation of files and folders, from
   their `##` comments, as Markdown or one HTML page (`tests/doc.rs`).
 - `builtins.rs` holds the standard library; `help.rs` the help topics and the

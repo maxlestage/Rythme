@@ -13,6 +13,7 @@ use crate::builtins::{self, Builtin, BUILTINS};
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::lexer::{KEYWORDS, RESERVED};
 use crate::source::{self, Span};
+use crate::types::Ty;
 use crate::{help, suggest};
 
 /// What the editor can show, learnt at start-up.
@@ -140,14 +141,71 @@ fn markup(cx: &Ctx, value: String) -> Json {
 }
 
 pub fn builtin_markdown(b: &Builtin) -> String {
+    let ruby: Vec<String> = builtins::aliases(b.name).map(|a| format!("`{a}`")).collect();
+    let same = if ruby.is_empty() {
+        String::new()
+    } else {
+        t!("\n\nSame as: {} (its Ruby names)", "\n\nPareil que : {} (ses noms Ruby)", ruby.join(", "))
+    };
     format!(
-        "{}\n\n{}\n\n**{}**\n{}\n\n`rythme help {}`",
+        "{}\n\n{}{same}\n\n**{}**\n{}\n\n`rythme help {}`",
         code_block(b.sig),
         b.doc(),
         t!("Example", "Exemple"),
         code_block(b.example),
         b.name
     )
+}
+
+/// `upcase` is the Ruby name of `upper`.
+fn alias_line(alias: &str, of: &str) -> String {
+    t!("**{alias}** — the Ruby name of `{of}`: the same function", "**{alias}** — le nom Ruby de `{of}` : la même fonction")
+}
+
+/// The kind of the value written just before `.`, when it is a literal:
+/// `"abc".`, `[1, 2].`, `42.`, `:ok.`, `{a: 1}.`.
+fn receiver_type(before_dot: &str) -> Option<Ty> {
+    let s = before_dot.trim_end();
+    let last = s.chars().last()?;
+    let opener = |open: char, close: char| {
+        let mut depth = 0usize;
+        for (i, c) in s.char_indices().rev() {
+            if c == close {
+                depth += 1;
+            } else if c == open {
+                depth -= 1;
+                if depth == 0 {
+                    // A literal, not an index (`xs[0]`) or a call.
+                    return !s[..i].trim_end().ends_with(|c: char| scan::is_name_char(c) || matches!(c, ')' | ']' | '}' | '?'));
+                }
+            }
+        }
+        false
+    };
+    match last {
+        '"' => Some(Ty::Text),
+        ']' if opener('[', ']') => Some(Ty::list(Ty::Any)),
+        '}' if opener('{', '}') => Some(Ty::record(Vec::new(), false)),
+        c if c.is_ascii_digit() => {
+            let word = &s[s.rfind(|c: char| !scan::is_name_char(c) && c != '.').map_or(0, |i| i + 1)..];
+            if word.starts_with(|c: char| c.is_ascii_digit()) {
+                Some(if word.contains('.') { Ty::Float } else { Ty::Int })
+            } else {
+                None
+            }
+        }
+        _ => {
+            let start = s.rfind(|c: char| !scan::is_name_char(c)).map_or(0, |i| i + 1);
+            (start > 0 && s[..start].ends_with(':') && !s[..start - 1].ends_with(':')).then_some(Ty::Symbol)
+        }
+    }
+}
+
+/// Can the built-in function `name` take a value of type `t` first?
+fn takes_first(name: &str, min: usize, t: &Ty) -> bool {
+    let mut args = vec![Ty::Any; min.max(1)];
+    args[0] = t.clone();
+    !matches!(crate::types::builtin_call(name, &args), Some(crate::types::Outcome::Wrong { index: 0, .. }))
 }
 
 fn prelude_markdown(name: &str) -> String {
@@ -210,6 +268,12 @@ fn heads(def: &Def) -> String {
     out
 }
 
+/// What the checker infers of a function: `fn area(side: Int|Float) -> Int|Float`.
+fn inferred(a: &Analysis, id: DefId, def: &Def) -> Option<String> {
+    let sig = a.module_of(id.file)?.signatures.get(&def.span)?;
+    sig.is_informative().then(|| format!("{}\n{}", t!("Inferred from its code:", "Déduit de son code :"), code_block(&sig.to_string())))
+}
+
 fn def_markdown(a: &Analysis, id: DefId, def: &Def) -> String {
     let mut parts = Vec::new();
     match def.kind {
@@ -254,6 +318,9 @@ fn def_markdown(a: &Analysis, id: DefId, def: &Def) -> String {
     if let Some(doc) = &def.doc {
         parts.push(doc.to_string());
     }
+    if def.kind == DefKind::Function {
+        parts.extend(inferred(a, id, def));
+    }
     if id.file != a.module.file {
         if let Some(uri) = a.uri_of(id.file) {
             let name = super::text::short_name(uri);
@@ -266,7 +333,13 @@ fn def_markdown(a: &Analysis, id: DefId, def: &Def) -> String {
 fn target_markdown(a: &Analysis, occ: &Occ) -> Option<String> {
     let mut text = match &occ.target {
         Target::Def(id) => def_markdown(a, *id, a.def(*id)?),
-        Target::Builtin(name) => builtin_markdown(builtins::lookup(name)?),
+        Target::Builtin(name) => {
+            let b = builtins::lookup(name)?;
+            match builtins::alias_of(&occ.name) {
+                Some(of) => format!("{}\n\n{}", alias_line(&occ.name, of), builtin_markdown(b)),
+                None => builtin_markdown(b),
+            }
+        }
         Target::Pi => format!("{}\n\n{}", code_block("pi = 3.141592653589793"), t!("The number π.", "Le nombre π.")),
         Target::Prelude(name) => prelude_markdown(name),
         Target::Unknown => return None,
@@ -274,8 +347,8 @@ fn target_markdown(a: &Analysis, occ: &Occ) -> Option<String> {
     if occ.method {
         let n = &occ.name;
         text.push_str(&t!(
-            "\n\n`value.{n}(...)` calls `{n}(value, ...)`, or the field `{n}` of a record",
-            "\n\n`valeur.{n}(...)` appelle `{n}(valeur, ...)`, ou le champ `{n}` d'un enregistrement"
+            "\n\n`value.{n}(...)` calls `{n}(value, ...)`, or the field `{n}` of a record; `value.{n}` reads the field `{n}`, or calls `{n}(value)`",
+            "\n\n`valeur.{n}(...)` appelle `{n}(valeur, ...)`, ou le champ `{n}` d'un enregistrement ; `valeur.{n}` lit le champ `{n}`, ou appelle `{n}(valeur)`"
         ));
     }
     Some(text)
@@ -402,6 +475,7 @@ mod kind {
     pub const FUNCTION: u32 = 3;
     pub const FIELD: u32 = 5;
     pub const VARIABLE: u32 = 6;
+    pub const MODULE: u32 = 9;
     pub const ENUM: u32 = 13;
     pub const KEYWORD: u32 = 14;
     pub const SNIPPET: u32 = 15;
@@ -479,6 +553,21 @@ fn snippets() -> Vec<(&'static str, &'static str, String, String)> {
         ),
         ("do … end", "do", "do\n\t$0\nend".to_string(), t!("several steps inside an expression", "plusieurs étapes dans une expression")),
         (
+            "do |x| … end",
+            "do",
+            "do |${1:x}|\n\t$0\nend".to_string(),
+            t!(
+                "a block: a function given as the last argument of a call",
+                "un bloc : une fonction donnée comme dernier argument d'un appel"
+            ),
+        ),
+        (
+            "unless … then … else",
+            "unless",
+            format!("unless ${{1:{condition}}} then ${{2:{value}}} else ${{0:{other}}}"),
+            t!("the opposite of `if`", "le contraire de `if`"),
+        ),
+        (
             "use …",
             "use",
             format!("use ${{1:{file}}}"),
@@ -547,9 +636,21 @@ pub fn completion(cx: &Ctx, a: &Analysis, offset: usize, trigger: Option<&str>) 
             items.push(def_item(cx, a, id, d, "2"));
         }
     }
+    // After `"abc".`, only the functions that take a text first.
+    let receiver = if after_dot { receiver_type(&before[..before.len() - 1]) } else { None };
+    let fits = |b: &Builtin| !after_dot || (b.max > 0 && receiver.as_ref().is_none_or(|t| takes_first(b.name, b.min, t)));
     for b in BUILTINS {
-        if (!after_dot || b.max > 0) && seen.insert(b.name.to_string()) {
+        if fits(b) && seen.insert(b.name.to_string()) {
             items.push(item(b.name, kind::FUNCTION, Some(b.sig.to_string()), Some(builtin_markdown(b)), "3", cx));
+        }
+    }
+    // The Ruby names: `upcase`, `select`, `empty?`...
+    for alias in builtins::ALIASES {
+        let Some(b) = builtins::lookup(alias.of) else { continue };
+        if fits(b) && seen.insert(alias.name.to_string()) {
+            let detail = t!("same as {}", "pareil que {}", b.sig);
+            let doc = format!("{}\n\n{}", alias_line(alias.name, alias.of), builtin_markdown(b));
+            items.push(item(alias.name, kind::FUNCTION, Some(detail), Some(doc), "4", cx));
         }
     }
     if after_dot {
@@ -568,7 +669,7 @@ pub fn completion(cx: &Ctx, a: &Analysis, offset: usize, trigger: Option<&str>) 
             items.push(item(p, kind::ENUM_MEMBER, None, Some(prelude_markdown(p)), "3", cx));
         }
     }
-    for k in KEYWORDS {
+    for k in KEYWORDS.iter().chain(&["unless"]) {
         items.push(item(k, kind::KEYWORD, Some(t!("keyword", "mot-clé")), keyword_markdown(k), "4", cx));
     }
     if cx.snippets {
@@ -600,7 +701,15 @@ fn short_use_completion(cx: &Ctx, a: &Analysis, offset: usize) -> Json {
     let Some(typed) = short_use_line(&a.text, offset) else { return Json::Arr(Vec::new()) };
     let (dir, _) = typed.rsplit_once('/').unwrap_or(("", typed));
     let replace_from = offset - typed.len() + if dir.is_empty() { 0 } else { dir.len() + 1 };
-    let folder = a.module.base.join(dir);
+    let mut folder = a.module.base.join(dir);
+    // `use mathlib/`: the files of a package of the project.
+    let packages = crate::project::packages(&a.module.base);
+    if !dir.is_empty() && !folder.is_dir() {
+        let (first, rest) = dir.split_once('/').unwrap_or((dir, ""));
+        if let Some((_, src)) = packages.iter().find(|(n, _)| n == first) {
+            folder = src.join(rest);
+        }
+    }
     let own = a.path.as_deref().and_then(Path::file_name).map(|f| f.to_string_lossy().to_string());
     let mut entries: Vec<(String, bool)> = std::fs::read_dir(&folder)
         .map(|rd| {
@@ -618,8 +727,23 @@ fn short_use_completion(cx: &Ctx, a: &Analysis, offset: usize) -> Json {
         })
         .unwrap_or_default();
     entries.sort();
+    let mut package_names = Vec::new();
+    if dir.is_empty() {
+        for (name, _) in packages {
+            if !entries.iter().any(|(n, is_dir)| *is_dir && *n == name) {
+                package_names.push(name);
+            }
+        }
+    }
     let range = range_in(&a.text, &a.lines, replace_from, offset, cx.enc);
     let mut items = Vec::new();
+    for name in package_names {
+        let shown = format!("{name}/");
+        let mut it = obj([("label", shown.clone().into()), ("kind", kind::MODULE.into())]);
+        it.set("detail", t!("package", "paquet").into());
+        it.set("textEdit", obj([("range", range.clone()), ("newText", shown.into())]));
+        items.push(it);
+    }
     for (name, is_dir) in entries.into_iter().take(500) {
         let shown = if is_dir { format!("{name}/") } else { name.clone() };
         let detail = if is_dir { t!("folder", "dossier") } else { format!("{name}.ry") };

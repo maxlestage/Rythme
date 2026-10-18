@@ -137,6 +137,9 @@ impl Date {
                     n[i] = *x;
                     present[i] = true;
                 }
+                Some(Value::Big(_)) => {
+                    return Err(t!("the field `{k}` is too large for a date", "le champ `{k}` est trop grand pour une date"))
+                }
                 Some(v) => {
                     return Err(t!(
                         "the field `{k}` must be a whole number, not {}",

@@ -115,6 +115,42 @@ print(prénom, item2, 日本, Yes, r.type, r["full name"])
 Ada 2 Japan Yes a keyword as a field name a text as a field name
 ```
 
+**Names ending with `?`.** The name of a function that answers a question
+may end with `?`, as in Ruby: `even?`, `empty?`, `fn adult?(person) = ...`.
+Since `?` is also the operator that stops on `None` or `Err`
+([5.2](#52-the--operator)), the rule is precise: a name directly followed by
+`?` (no space between them) is one name ending with `?`
+
+- after `fn` (`fn adult?(p)`), or when `(` directly follows the `?`
+  (`adult?(ada)`, `xs.include?(3)`);
+- otherwise, when a function of that name exists: a built-in one (`even?`,
+  `empty?`... see [6](#6-standard-library)), or one defined with `fn` in the
+  same file.
+
+In every other case, `?` is the operator: `value?`, `parse_int(t)?`,
+`x |> parse_int?`. To apply the operator to a value whose name is also the
+name of such a function, write `(value)?` or `value ?`. Only functions can
+have a name ending with `?` (E001 for `ok? = 1`), and `is_even` and the
+other names keep working.
+
+```rythme
+fn adult?(person) = person.age >= 18
+ada = {name: "Ada", age: 36}
+print(adult?(ada), ada.adult?, even?(4), [1, 2].include?(2), [].empty?)
+print([1, 2, 3, 4].select(even?))
+fn first_double(xs)
+  x = first(xs)?             # `first` is not followed by `(`: the operator
+  Some(x * 2)
+end
+print(first_double([5]), first_double([]))
+```
+
+```text
+true true true true true
+[2, 4]
+Some(10) None
+```
+
 ### 1.5 Keywords and reserved words
 
 Rythme has 15 keywords:
@@ -126,7 +162,11 @@ and  do  else  end  false  fn  if  match  not  or  test  then  true  type  use
 They cannot be used as names. They can be used as **field names**, after a dot
 or before `:` in a record (`r.type`, `{type: 1}`), but not in the short form
 `{type}`. `as` is not a keyword: it means something only after the path of
-a `use` (`use geometry as geo`).
+a `use` (`use geometry as geo`). `unless` is not a keyword either: it starts
+`unless condition then a else b` ([3.9](#39-if)) only when the start of a
+value follows it on the same line (a name, a number, a text, a symbol,
+`not`, `if`, `match`, `fn`, or a bracket after a space); `unless(x)` and
+`unless[0]`, without a space, use a value named `unless`.
 
 The following words, taken from other languages, are **reserved**: using one
 as a name is an error (E001) whose message explains how to do the same thing
@@ -142,12 +182,10 @@ elif  elsif  import  try  catch  except  raise  throw  null  nil  lambda  switch
 **Whole numbers (Int)** are written in decimal (`42`), in hexadecimal after
 `0x` (`0xFF`, digits in either case) or in binary after `0b` (`0b1010`). The
 prefixes are lowercase only; there is no octal notation. `_` may separate
-digits anywhere after the first one (`1_000_000`, `0xFF_FF`). A literal must
-fit in 64 bits: `9223372036854775807` (`0x7fffffffffffffff`) is the largest;
-`9223372036854775808` is accepted only in decimal, right after a minus sign
-(the smallest Int). A larger literal is error E012, in every base; a
-hexadecimal or binary literal with a wrong digit or no digit (`0b12`, `0x`)
-is error E018.
+digits anywhere after the first one (`1_000_000`, `0xFF_FF`). Whole numbers
+have no size limit (see 2.1): a literal of more than 100000 digits is error
+E023, in every base; a hexadecimal or binary literal with a wrong digit or no
+digit (`0b12`, `0x`) is error E018.
 
 **Decimal numbers (Float)** have digits on both sides of the point (`3.14`,
 `2.0`), an exponent (`1e3`, `1.5e-3`, `6.02E23`), or both. `.5` and `5.` are
@@ -160,13 +198,13 @@ There are no negative literals: `-7` is the operator `-` applied to `7`.
 ```rythme
 print(42, -7, 1_000_000, 0xFF, 0b1010)
 print(3.14, 2.0, 1e3, 1.5e-3, 6.02E23)
-print(9223372036854775807, -9223372036854775808)
+print(9223372036854775807, -9223372036854775808, 123456789012345678901234567890)
 ```
 
 ```text
 42 -7 1000000 255 10
 3.14 2.0 1000.0 0.0015 6.02e23
-9223372036854775807 -9223372036854775808
+9223372036854775807 -9223372036854775808 123456789012345678901234567890
 ```
 
 ### 1.7 Texts
@@ -187,6 +225,7 @@ Escape sequences:
 | `\\` | a backslash |
 | `\"` | a double quote |
 | `\{` and `\}` | braces |
+| `\#` | `#`; `\#{` gives `#{`, written as it is |
 | `\u{e9}` | the character with this hexadecimal code point (here é) |
 
 Any other `\` sequence is error E018.
@@ -196,7 +235,8 @@ expression, shown as `print` would show it (texts without quotes). Any
 expression is allowed, including records and other texts; braces inside it
 are matched, and new lines inside the braces are ignored. An empty `{}` is an
 error (E001). To write a literal `{`, use `\{`. A `}` that does not close an
-interpolation is an ordinary character (`\}` is also accepted).
+interpolation is an ordinary character (`\}` is also accepted). As in Ruby,
+`#{expression}` is the same as `{expression}`; `\#{` writes `#{` as it is.
 
 Texts used as a pattern, as the name of a test or as the path of `use` must
 be plain texts, without interpolation.
@@ -209,6 +249,7 @@ print("\u{e9}t\u{e9} \u{1F3B5}")
 print("a text can span
 several lines")
 print("{ {x: 1}.x } and {"nested {name}"}")
+print("Ruby style: #{name}, #{2 * 21}, \#{name}")
 ```
 
 ```text
@@ -218,6 +259,7 @@ tab:	| quote: " | backslash: \ | braces: { and }
 a text can span
 several lines
 1 and nested Ada
+Ruby style: Ada, 42, #{name}
 ```
 
 ### 1.8 Operators and punctuation
@@ -334,11 +376,12 @@ ever converting a value silently.
 
 | Type (`type_of`) | Values | Examples |
 |------------------|--------|----------|
-| `Int` | whole numbers, 64 bits | `42`, `-7`, `0xFF` |
+| `Int` | whole numbers, of any size | `42`, `-7`, `0xFF` |
 | `Float` | decimal numbers, 64 bits | `3.14`, `2.0`, `1e3` |
 | `Text` | texts | `"hello"`, `"total: {x}"` |
 | `Bool` | `true`, `false` | |
 | `Unit` | `()`, "no interesting value" | `()` |
+| `Symbol` | names used as values | `:ok`, `:error` |
 | `List` | ordered sequences | `[1, 2, 3]`, `1..5`, `[]` |
 | `Record` | named fields | `{name: "Ada", born: 1815}` |
 | `Function` | functions, built-ins, constructors with fields | `fn(x) = x + 1`, `print`, `Some` |
@@ -359,27 +402,51 @@ print(map(samples, type_of))
 
 ### 2.1 Int
 
-Signed 64-bit whole numbers, from −9223372036854775808 to
-9223372036854775807. An operation whose exact result does not fit is an
-error (E012): Rythme never wraps around silently.
+Whole numbers of any size, always exact: they grow as needed, like in Python
+or Ruby, and never wrap around. The usual numbers, from −9223372036854775808
+to 9223372036854775807 (64 bits), are computed fastest; beyond, the result is
+still an Int, with all its digits. `+`, `-`, `*`, `//`, `%`, `**`, the
+comparisons (with Floats too, see 2.11), `abs`, `gcd`, `lcm`, `is_even`,
+`text`, `int`, `parse_int`, `to_json` and `parse_json` work exactly on all
+of them; a function that needs a position or a count (`take`, `get`,
+`repeat`...) refuses a number beyond 64 bits (E023), and `[...]` says it is
+out of range (E007).
 
 ```rythme
 big = 9223372036854775807
-print(big)
-print(big + 1)
+print(big + 1, big * big)
+fn factorial(n) = if n == 0 then 1 else n * factorial(n - 1)
+print(factorial(25), 2 ** 100)
+print(-(2 ** 64) // 3, -(2 ** 64) % 3, (2 ** 64) / 3)
+print(type_of(2 ** 64), 2 ** 64 - 2 ** 64 + 1)
 ```
 
 ```text
-9223372036854775807
-error[E012]: the result is too large for a whole number (Int)
- --> 11-int.ry:3:11
+9223372036854775808 85070591730234615847396907784232501249
+15511210043330985984000000 1267650600228229401496703205376
+-6148914691236517206 2 6.148914691236517e18
+Int 1
+```
+
+A whole number has at most 100000 digits: beyond, the program stops with
+E023 rather than filling the memory (a number that large usually comes from
+a calculation that grows without end).
+
+```rythme
+print(len(text(10 ** 99999)))
+print(10 ** 100000)
+```
+
+```text
+100000
+error[E023]: this whole number would be too large (more than 100000 digits)
+ --> 11-int.ry:2:10
   |
-3 | print(big + 1)
-  |           ^
+2 | print(10 ** 100000)
+  |          ^^
   |
-  = help: whole numbers go from -9223372036854775808 to 9223372036854775807;
-      for bigger values, use decimal numbers (Float), like `2.0 ** 100`
-  = more about this error: `rythme explain E012`
+  = help: does it grow without end, in a function that calls itself? For an approximate value, use a decimal number (Float), like `2.0 ** 1000`
+  = more about this error: `rythme explain E023`
 ```
 
 Exit code: 1.
@@ -620,6 +687,7 @@ Apart from texts, both forms are the same:
 | variant | `None`, `Some(3)`, `Circle(2.0)` |
 | function | `<fn name>` for a named function or a built-in, `<fn>` for an anonymous one |
 | constructor with fields | `<constructor Circle>` (in French: `<constructeur Circle>`) |
+| Symbol | `:ok` |
 
 `print` writes its arguments separated by one space, then a new line, on the
 standard output. `debug(x)` writes `[debug file:line:column]` and the code form
@@ -641,6 +709,35 @@ text 42 2.0 ["a", "b"] {name: "Ada", "full name": "Ada L."} None ()
 [debug 15-print.ry:4:8] ["a", "b"]
 2
 [<fn print>, <fn>, <constructor Some>, None]
+```
+
+### 2.14 Symbol
+
+A **symbol** is a name used as a value, as in Ruby: `:ok`, `:error`,
+`:pending`. It is written `:` directly followed by a name, and shown the same
+way. Two symbols are equal when their names are; they are ordered by name;
+they are never equal to a text (`:ok == "ok"` is false, and the checker warns,
+W006). They are used in `match` patterns, and `to_json` writes them as texts.
+
+A `:` is the one of a record when it follows a field name that follows `{`
+or `,` (`{status:ok}` is the field `status` with the value of `ok`);
+everywhere else, `:name` is a symbol: `{status: :ok}`, `[:a, :b]`,
+`f(:ok)`.
+
+```rythme
+status = :pending
+fn label(s) = match s
+  :ok -> "done"
+  :pending -> "waiting"
+  _ -> "unknown"
+end
+print(status, label(status), type_of(:ok), :a < :b, :ok == :ok)
+print({status: :ok, count: 2}, to_json([:ok, 1]), text(:ok))
+```
+
+```text
+:pending waiting Symbol true true
+{status: :ok, count: 2} ["ok", 1] :ok
 ```
 
 ---
@@ -734,13 +831,13 @@ error[E001]: `+` cannot follow a `|>` step directly
 
 | Operation | Ints | With a Float | Other values |
 |-----------|------|--------------|--------------|
-| `a + b` | Int (E012 on overflow) | Float | two texts: joined; two lists: joined; otherwise E005 |
-| `a - b`, `a * b` | Int (E012 on overflow) | Float | E005 |
+| `a + b` | Int, exact at any size | Float | two texts: joined; two lists: joined; otherwise E005 |
+| `a - b`, `a * b` | Int, exact at any size | Float | E005 |
 | `a / b` | **always a Float** (`6 / 3` is `2.0`) | Float | E005 |
 | `a // b` | Int, rounded down (toward −∞) | Float, rounded down | E005 |
 | `a % b` | Int, with the sign of `b` | Float: the exact remainder, with the sign of `b` | E005 |
-| `a ** b` | Int if `b >= 0` (E012 on overflow), Float if `b < 0` (`0 ** -n` is E008) | Float (E023 for a negative number to a fractional power) | E005 |
-| `-a` | Int (E012 for the smallest Int) | Float | E005 |
+| `a ** b` | Int if `b >= 0`, exact at any size, Float if `b < 0` (`0 ** -n` is E008) | Float (E023 for a negative number to a fractional power) | E005 |
+| `-a` | Int | Float | E005 |
 
 `/`, `//` and `%` by zero are error E008, for Ints and Floats. Rythme never
 converts between texts and numbers: `"1" + 1` is E005 (write `"{x}"`,
@@ -861,9 +958,18 @@ name after the dot may be any name, a keyword or a reserved word.
   `(value, args...)`: `"hi".upper()` is `upper("hi")`, `10.max(20)` is
   `max(10, 20)`.
 
+`value.name` **without parentheses** reads the field `name` when the value
+has one (a record field, or a field of a variant); when it has none, it calls
+the function `name` with the value: `xs.sum` is `sum(xs)`, `"hi".upcase` is
+`upcase("hi")`, `shape.area` is `area(shape)` when `Circle` has no field
+`area`. The field always wins, so existing records keep their meaning. A
+name ending with `?` works the same way: `xs.empty?`, `n.even?`. When there
+is neither a field nor a function, it is error E010.
+
 The checker warns (W005) when no function and no record field of the file has
 this name. A line that starts with `.` continues the previous line, so method
-calls can be chained over several lines.
+calls can be chained over several lines, one step per line, the way Ruby
+programs are written (blank lines and comments may come between the steps).
 
 ```rythme
 type Shape = Circle(radius)
@@ -891,6 +997,27 @@ error[E007]: index 5 is out of range: the list has 3 element(s)
   = help: valid indices go from 0 to 2 (or -1 for the last element)
   = help: to get an Option instead of an error, use `get(x, 5)`
   = more about this error: `rythme explain E007`
+```
+
+Without parentheses, and over several lines:
+
+```rythme
+xs = [3, 1, 4, 1, 5, 9, 2, 6]
+print(xs.sum, xs.size, xs.sort.first, "rythme".upcase, xs.uniq.size)
+top = xs
+  .sort
+  .reverse
+  # the three largest
+  .first(3)
+print(top)
+point = {x: 1, sum: "a field"}
+print(point.sum)                        # the field wins over the function
+```
+
+```text
+31 8 Some(1) RYTHME 7
+[9, 6, 5]
+a field
 ```
 
 ### 3.9 `if`
@@ -943,6 +1070,21 @@ error[E019]: this `if` has no `else`
 
 When there is nothing to do in one case, give the unit value:
 `if x > 0 then print("positive") else ()`.
+
+**`unless`**, as in Ruby, is the opposite of `if`:
+`unless condition then a else b` gives `b` when the condition is true and `a`
+when it is false; it is exactly `if condition then b else a`. Like `if`, it
+always has an `else` (E019). See [1.5](#15-keywords-and-reserved-words) for
+when the word `unless` starts it.
+
+```rythme
+fn describe(stock) = unless stock > 0 then "sold out" else "{stock} left"
+print(describe(0), describe(3))
+```
+
+```text
+sold out 3 left
+```
 
 ### 3.10 `match` and patterns
 
@@ -1180,6 +1322,51 @@ print([0, ..xs, 3], xs + [9], 1..5, 5..1)
 {name: "Ada", born: 1816} {name: "Ada", born: 1815, city: "London"} {born: 1815, name: "Ada"}
 {name: "Grace", born: 1906}
 [0, 1, 2, 3] [1, 2, 9] [1, 2, 3, 4, 5] []
+```
+
+### 3.14 Blocks given to calls
+
+As in Ruby, a function can be given to a call as a **block**, written after
+the call: `do |parameters| ... end`, or `{ |parameters| ... }`. A block is
+the **last argument** of the call, and it is exactly an anonymous function:
+`xs.map do |x| x * 2 end` is `map(xs, fn(x) = x * 2)`.
+
+- It follows a call (`map(xs) do ... end`), a method call
+  (`xs.reduce(0) do |sum, x| ... end`), a `.name` without parentheses
+  (`xs.each do |x| ... end` is `xs.each(fn(x) = ...)`), or a name
+  (`run do ... end` is `run(fn() = ...)`).
+- `do` (or `{`) must be on the line of the call; the block can then go on over
+  several lines, up to `end` (or `}`), or stay on one line.
+- The parameters go between bars, separated by commas; they may be patterns
+  (`|[key, value]|`, `|{name, ..}|`, `|Some(x)|`); without parameters, write
+  `do ... end` or `{ || ... }`.
+- `{ |x| ... }` is never a record: a record never starts with `|`. A block
+  written alone, not after a call, is error E001.
+- The value of the block is its last line, as in a function. The rest of the
+  chain applies to the result of the call: `xs.map do |x| x end.sum`.
+
+```rythme
+names = ["Ada", "Grace", "Alan"]
+names.each do |name|
+  print("Hello, #{name}!")
+end
+print(names.map { |n| n.size })
+total = [1, 2, 3].reduce(0) do |sum, x|
+  sum + x
+end
+print(total, [[1, 2], [3, 4]].map do |[a, b]| a * b end)
+names.each_with_index do |name, i| print(i, name) end
+```
+
+```text
+Hello, Ada!
+Hello, Grace!
+Hello, Alan!
+[3, 5, 4]
+6 [2, 12]
+0 Ada
+1 Grace
+2 Alan
 ```
 
 ---
@@ -1661,10 +1848,103 @@ error[E015]: assertion failed: the values are different
        expected: 7
    = more about this error: `rythme explain E015`
 
-4 test(s): 3 passed, 1 failed
+4 test(s): 3 passed, 1 failed (1 ms)
 ```
 
-Exit code: 1.
+Exit code: 1. The time at the end of the summary is the time of the whole
+run; a test that takes half a second or more shows its own time too.
+
+**Several files, a filter.** `rythme test` takes files and folders: for a
+folder (`rythme test .`), it runs the tests of every `.ry` file inside it and
+in its subfolders that has tests, in alphabetical order (hidden folders,
+`target` and `node_modules` are skipped). Each file runs on its own, after a
+line that names it. A file with errors is reported, and counted in the
+summary. At the end, when several files ran or at least two tests failed,
+the failed tests are listed with their place. The options may come anywhere
+after `test`:
+
+| Option | What it does |
+|--------|--------------|
+| `--filter TEXT` (`-f`) | runs only the tests whose name contains `TEXT`, ignoring case; may be given several times. When no test is selected, the exit code is 1 |
+| `--seed N` | the seed of property tests (below); `--seed random` picks one and prints it |
+| `--watch` (`-w`) | runs the tests, then again each time a file changes: a file tested, a file it uses, or a `.ry` file of a folder given. The files are looked at twice a second; Ctrl+C stops |
+| `-- ARGS...` | the words after `--` are given to `args()` |
+
+**Property tests.** `check_all(property, generator)` calls the function
+`property` with 100 values made by `generator` (`check_all(property,
+generator, cases)` with another number, from 1 to 100 000). The property
+holds for a value when it gives `true`, `()`, `Some(...)` or `Ok(...)`; it
+fails when it gives `false`, `None` or `Err(...)`, or stops with an error
+(another value is E005). The first values are small, the next ones use more
+and more of the range, and the edges (0, the minimum and the maximum) come
+often. When a value makes the property fail, `check_all` **simplifies** it
+(shrinking): a number goes toward 0 (or the end of its range closest to 0),
+a text or a list gets shorter, then its elements simpler, as long as the
+property still fails. It then stops with E015 (or with the error of the
+property, its message starting with the value), showing the simplest value
+found, the value it came from and the **seed**. The values depend only on
+the seed and on the place of the call in its file, so every run, on every
+machine, tries the same values; `rythme test --seed N` tries others. The
+property may also be given last, as a block (see
+[3.14](#314-blocks-given-to-calls)): `check_all(ints(0, 9)) { |x| x * 0 == 0 }`.
+
+The generators are records, made by `ints(min, max)` (whole numbers, from
+-1000 to 1000 without arguments), `floats(min, max)` (decimal numbers),
+`texts(max_length)` (20 at most without argument: letters, digits, spaces,
+punctuation, accents), `bools()`, `lists_of(generator, max_length)` (10 at
+most without length), `one_of(list)` (one of the values; a failing value is
+replaced by one written before it) and `records_of({field: generator,
+...})`, to give several values. `sample(generator, n)` gives `n` values (10
+without `n`) to see what a generator makes.
+
+When `assert_eq` fails on lists or records, the message also says where the
+values first differ (`[2].name`), what is missing or in excess; on two short
+texts, a mark shows the first character that differs.
+
+```rythme
+fn my_max(list) = fold(list, 0, fn(best, x) = if x > best then x else best)
+
+test "reversing twice gives the list back" = check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+
+test "the largest is in the list" = check_all(fn(l) = is_empty(l) or contains(l, my_max(l)), lists_of(ints()))
+
+test "a record" = assert_eq({name: "Ada", langs: ["en", "fr"]}, {name: "Ada", langs: ["en", "de"]})
+```
+
+`rythme test 47-properties.ry`:
+
+```text
+Running 3 test(s)
+  ✓ reversing twice gives the list back
+  ✗ the largest is in the list
+error[E015]: the property is false for [-1]
+ --> 47-properties.ry:5:37
+  |
+5 | test "the largest is in the list" = check_all(fn(l) = is_empty(l) or contains(l, my_max(l)), lists_of(ints()))
+  |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ false for [-1]
+  |
+  = note: found on try 1 of 100, then simplified from [-3, -1] in 3 step(s)
+  = note: seed 42: every run tries the same values; `rythme test --seed N` tries others
+  = help: the function must hold for every value of the generator: fix the function, or give the generator a smaller range, like `ints(1, 100)`
+  = more about this error: `rythme explain E015`
+
+  ✗ a record
+error[E015]: assertion failed: the values are different
+ --> 47-properties.ry:7:19
+  |
+7 | test "a record" = assert_eq({name: "Ada", langs: ["en", "fr"]}, {name: "Ada", langs: ["en", "de"]})
+  |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: got:      {name: "Ada", langs: ["en", "fr"]}
+      expected: {name: "Ada", langs: ["en", "de"]}
+  = note: first difference at langs[1]: got "fr", expected "de"
+  = more about this error: `rythme explain E015`
+
+Failed tests:
+  ✗ the largest is in the list (47-properties.ry:5:1)
+  ✗ a record (47-properties.ry:7:1)
+3 test(s): 1 passed, 2 failed (2 ms)
+```
 
 ### 4.9 Modules: `use`
 
@@ -1803,8 +2083,9 @@ Rythme has no `null` and no exceptions. A value that may be missing is an
 `Option` (`Some(value)` or `None`); an operation that may fail returns a
 `Result` (`Ok(value)` or `Err(error)`). The library follows this rule:
 `first`, `last`, `get`, `find`, `index_of` and `env` return Options;
-`parse_int`, `parse_float`, `parse_json`, `read_file`, `write_file` and
-`append_file` return Results.
+`parse_int`, `parse_float`, `parse_json`, `options`, `input_lines` and every
+function of files and folders (`read_file`, `write_file`, `append_file`,
+`file_info`, `list_folder`, `create_folder`, `delete_file`) return Results.
 
 They are handled with `match`, with `?`, or with the functions `unwrap_or`,
 `unwrap`, `is_some`, `is_none`, `is_ok`, `is_err`, `map` (which applies a
@@ -1851,7 +2132,8 @@ Some(8) None
   E015 when the check fails; they are mostly used in tests.
 - `unwrap(x)` stops with E013 on `None` or `Err(...)`.
 - `exit(code)` stops immediately with this exit code (0 to 255, E023
-  otherwise; 0 when omitted).
+  otherwise; 0 when omitted). The codes Rythme itself exits with are in
+  [7.1](#71-the-command-line).
 
 ### 5.4 Errors while running
 
@@ -2023,7 +2305,7 @@ fn twice(x)
   x + x
 end
 len = 3
-print([1, 2].size())
+print([1, 2].strlen())
 ```
 
 `rythme check 53-warnings.ry`:
@@ -2065,19 +2347,81 @@ warning[W003]: `len` hides the built-in function `len`
    |
    = help: in this file, `len` will now mean your definition; choose another name to keep the built-in one
 
-warning[W005]: there is no function named `size`
+warning[W005]: there is no function named `strlen`
   --> 53-warnings.ry:13:14
    |
-13 | print([1, 2].size())
-   |              ^^^^ unknown
+13 | print([1, 2].strlen())
+   |              ^^^^^^ unknown
    |
-   = note: `value.size(...)` calls `size(value, ...)`, or the field `size` of a record
+   = note: `value.strlen(...)` calls `strlen(value, ...)`, or the field `strlen` of a record
    = help: in Rythme, this is called `len`
 
 ✓ 53-warnings.ry: no errors, 5 warning(s)
 ```
 
 Exit code: 0.
+
+The checker also infers what the **parameters of each function** must be,
+from how its code uses them: `side * side` needs numbers, `upper(t)` a
+text, `p.name` a record (or a value whose constructor has a field `name`),
+`if c` a Bool, a `match` the kinds of its patterns, a call to another
+function what that one needs. It follows every way through the function:
+the branches of an `if` or of a `match`, and the definitions of a function
+(one per case), add up their kinds; one operation after the other narrows
+them down; a `?`, or a call that may end the program (`exit`), keeps what is
+known at that point. A call with an argument of another kind fails every
+time it runs: the checker reports it, with the code, the message and the
+help of the error the function would stop with, where it stops in the
+function, and what the function needs. Nothing is reported when the call
+may work: a function that works on several kinds of values (`twice` below,
+on numbers, texts and lists), definitions chosen by their patterns or their
+guards, recursion, functions never called. What the functions of another
+file need is not inferred.
+
+```rythme
+fn area(side) = side * side
+fn shout(t) = upper(t) + "!"
+fn twice(x) = x + x
+print(area(3), shout("hi"), twice("ab"))
+print(area("big"))
+print(shout(5))
+```
+
+`rythme check 54-params.ry`:
+
+```text
+error[E005]: cannot use `*` with Text and Text
+ --> 54-params.ry:5:7
+  |
+5 | print(area("big"))
+  |       ^^^^^^^^^^^ `area` stops with this error, every time
+  |
+1 | fn area(side) = side * side
+  |                      - in `area`: Text "big" * Text "big"
+  |
+  = note: from how `area` uses `side`, it needs: `fn area(side: Int|Float) -> Int|Float`
+  = more about this error: `rythme explain E005`
+
+error[E005]: `upper` expects a text as argument 1, but got Int 5
+ --> 54-params.ry:6:7
+  |
+6 | print(shout(5))
+  |       ^^^^^^^^ `shout` stops with this error, every time
+  |
+2 | fn shout(t) = upper(t) + "!"
+  |                     - in `shout`: wrong kind of value
+  |
+  = note: from how `shout` uses `t`, it needs: `fn shout(t: Text) -> Text`
+  = help: usage: `upper(text)`
+  = more about this error: `rythme explain E005`
+
+✗ 54-params.ry: 2 error(s)
+```
+
+In an editor, the hover of a function shows what the checker infers, as a
+signature: `fn area(side: Int|Float) -> Int|Float`, the kinds each
+parameter must be (separated by `|`) and what a call gives back, when they
+are known (see [7.5](#75-editors-and-the-language-server)).
 
 ### 5.6 Error and warning codes
 
@@ -2098,7 +2442,7 @@ with examples; the code may be written in lowercase.
 | E009 | Not a function | a value that is not a function is called (`x(3)`, `None()`) |
 | E010 | Unknown field | the record or the variant has no field with this name |
 | E011 | Already defined | a name, type, constructor or field defined twice in the same place, or an attempt to change a value (`x += 1`) |
-| E012 | Number too large | a whole number outside the 64-bit range, in the code (in any base) or as a result (`-x` and `abs(x)` of the smallest Int included) |
+| E012 | Number too large | no longer given: whole numbers have no size limit (a number of more than 100000 digits is E023) |
 | E013 | `unwrap` found no value | `unwrap` on `None` or `Err(...)` |
 | E014 | Too many nested calls | calls nested deeper than the stack allows |
 | E015 | Assertion failed | `assert`, `assert_eq`, or a test that ended with `false`, `Err(...)` or `None` |
@@ -2109,8 +2453,9 @@ with examples; the code may be written in lowercase.
 | E020 | Missing `end` | a function, `test`, `match` or `do` block that is never closed |
 | E021 | Program stopped by `fail` | `fail(message)` was called |
 | E022 | Impossible conversion | `int(t)` or `float(t)` on a text that is not a number |
-| E023 | Invalid value | a value of the right kind but outside what is accepted (a negative count, `min` of an empty list, `sqrt(-1)`, a range, a list or a text too large, an exit code outside 0–255...) |
+| E023 | Invalid value | a value of the right kind but outside what is accepted (a negative count, `min` of an empty list, `sqrt(-1)`, a range, a list or a text too large, a whole number of more than 100000 digits, an exit code outside 0–255...) |
 | E024 | A value is lost | a line computes a value that nothing uses |
+| E025 | Project or package problem | a `rythme.toml` or `rythme.lock` that cannot be read, a dependency not installed, or `rythme install` that cannot get one (see [7.7](#77-projects-and-packages)) |
 | W001 | Unused name | a local name is defined but never used |
 | W002 | Forgotten case | a `match` or a one-parameter function does not handle every possible value |
 | W003 | Built-in function hidden | a top-level definition takes the name of a built-in function |
@@ -2125,7 +2470,7 @@ with examples; the code may be written in lowercase.
 
 ## 6. Standard library
 
-The 136 built-in functions are always available, without `use`. Like the
+The 155 built-in functions are always available, without `use`. Like the
 keywords, their names are in English. `rythme help builtins` lists all of
 them by category, one line each; `rythme help NAME` (or `help(NAME)` in a
 program, or `:doc NAME` in the REPL) shows the documentation of one, with
@@ -2163,9 +2508,11 @@ reference for the details of each function.
 `text(value)` (display form as a text) and `text(number, decimals)` (a number
 with exactly this many decimals, at most 100: `text(5, 2)` is `"5.00"`),
 `input(prompt)` (reads a line from the keyboard; at the end of the input,
-error E017), `type_of(value)`, `help(value)`, `assert(condition, message)`,
+error E017), `input_lines()` (every line of the standard input until its end,
+in a Result: for `rythme count.ry < names.txt`), `type_of(value)`, `help(value)`, `assert(condition, message)`,
 `assert_eq(actual, expected)`, `fail(message)`, `args()` (the words given
-after the file name on the command line), `env(name)` (an environment
+after the file name on the command line), `options()` (the words of
+`args()` read as options, in a Result: see below), `env(name)` (an environment
 variable, as an Option), `exit(code)`, `time()` (seconds since 1970, a
 Float), `random()` (a Float in [0, 1)), `random(a, b)` (an Int from a to b,
 included), `random(list)` (an element).
@@ -2192,15 +2539,19 @@ objects become records, arrays lists, `null` `None`; an error gives the line
 and the column) and `to_json(value, indent)` (the JSON text of a value, on
 one line, or one element per line shifted by `indent` spaces, at most 16).
 
-**Lists.** `map`, `filter`, `fold(list, start, f)`, `scan(list, start, f)`
-(every intermediate result of `fold`), `each`, `sum`, `product`, `first`,
-`last`, `rest`, `get(x, key)`, `push(list, x)`, `set_at(list, i, x)`,
+**Lists.** `map`, `filter`, `reject(list, f)` (the elements for which f is
+false), `fold(list, start, f)`, `scan(list, start, f)` (every intermediate
+result of `fold`), `each`, `each_with_index(list, f)` (calls `f(x, i)`),
+`sum` (and `sum(list, f)`, the sum of `f(x)`), `product`, `first` and `last`
+(an Option; `first(list, n)` and `last(list, n)` give the first or last n
+elements), `rest`, `get(x, key)`, `push(list, x)`, `set_at(list, i, x)`,
 `insert_at(list, i, x)` and `remove_at(list, i)` (negative positions count
 from the end), `reverse`, `sort`, `sort_by(list, key)` (stable), `unique`,
 `shuffle`, `slice(x, start, end)`, `take`, `drop`, `take_while(x, f)` and
 `drop_while(x, f)`, `step_by(x, n)` (one element out of n), `chunks(x, n)`
 (pieces of n elements) and `windows(x, n)` (every group of n neighbouring
-elements), `zip`, `enumerate`, `any`, `all`, `find`, `count`, `index_of`,
+elements), `zip`, `enumerate`, `any`, `all`, `find`, `count` (and
+`count(list)`, the number of elements), `index_of`,
 `min_by(list, key)` and `max_by(list, key)`, `flatten`, `flat_map`,
 `partition`, `group_by(list, key)` (a record whose field names are the keys
 as texts), `is_empty`. Many of them also accept texts (`first`, `last`,
@@ -2221,8 +2572,39 @@ Result, ready for `?`), `map_err(result, f)`, and the constructors `Some`,
 **Files.** `read_file(path)` (`Ok(text)` or `Err(message)`),
 `write_file(path, value)` (writes the display form, replacing the content:
 `Ok(())` or `Err(message)`), `append_file(path, value)` (adds at the end,
-creating the file if needed), `file_exists(path)`. Relative paths are
-relative to the current folder.
+creating the file if needed), `file_exists(path)` (a Bool, for a file or a
+folder), `file_info(path)` (`Ok({is_folder, size})`, the size in bytes, 0 for
+a folder), `list_folder(path)` (the names inside a folder, in alphabetical
+order), `create_folder(path)` (with the missing folders around it; `Ok(())`
+also when it already exists), `delete_file(path)` (one file, never a folder).
+Relative paths are relative to the current folder. Every error is an
+`Err(message)` that names the path: `"file not found: notes.txt"`,
+`"folder not found: photos"`, `"permission denied: ..."`, a file given
+instead of a folder or the reverse, an empty path.
+
+`join_path(parts)` joins a list of texts with `/`, which Linux, macOS and
+Windows all understand (with `\` when the parts use only `\`, as Windows
+paths do); a separator at the end of a part is not repeated, and empty parts
+are skipped. Only the first part may start at a root (`/`, `\`, or a drive
+like `C:`): a part like `"/etc"` after another one is E023, so that a path
+never leaves its folder by surprise. `split_path(path)` cuts a path at each
+`/` or `\`, whatever the system; the root of an absolute path (`/`, `C:\`,
+`\\` for a network path) is its first part, and `join_path` puts the parts
+back together.
+
+`options()` reads the words of `args()` (or `options(words)`, the list
+given) into a record, in a Result. `--name=value` gives the field `name`
+with the text `value`; `--name` and `-n` give `true`; a `-` in a name
+becomes `_` (`--dry-run` is `dry_run`); the other words, in order, are in
+the field `args`, and so are all the words after `--`. A negative number
+like `-5` is a word. An option given twice, a name that does not start with
+a letter, a word like `-abc` (several letters after one `-`) and `--args`
+give `Err(message)`. An option that may be missing is read with
+`get(opts, "name")` (an Option) or tested with `has(opts, "name")`.
+
+In the playground, every function of files and folders and `input_lines`
+give `Err("`read_file` is not available in the browser: ...")`, and
+`file_exists` is always `false`.
 
 **Dates and times.** A date is a record `{year, month, day}`, with `hour`,
 `minute` and `second` for a moment of the day (a missing one is 0), and
@@ -2245,6 +2627,53 @@ date (an unknown or missing field, a number out of range, a 30 February)
 stops these functions with E023, which says what is wrong. An offset is a
 fixed number: there are no daylight saving rules, so one day after a moment
 is the same time on the next day.
+
+**Property tests.** `check_all(property, generator, cases)`, `sample(generator, n)`,
+and the generators `ints(min, max)`, `floats(min, max)`, `texts(max_length)`,
+`bools()`, `lists_of(generator, max_length)`, `one_of(list)` and
+`records_of(fields)` (see [4.8](#48-tests)). A generator is a record like
+`{generator: "ints", min: 1, max: 6}`; one that is not well made stops
+`check_all` and `sample` with E023.
+
+**Ruby names.** Some functions have a second name, the one Ruby gives them.
+Each one is exactly the function it names (same arguments, same messages):
+`rythme help upcase` says so, and `rythme help builtins` lists them by
+category. A program may give one of these names to something of its own
+without a warning.
+
+| Ruby name | Same as | Ruby name | Same as |
+|-----------|---------|-----------|---------|
+| `puts` | `print` | `select` | `filter` |
+| `to_s` | `text` | `reduce`, `inject` | `fold` |
+| `to_i` | `int` | `uniq` | `unique` |
+| `to_f` | `float` | `each_slice` | `chunks` |
+| `length`, `size` | `len` | `each_cons` | `windows` |
+| `upcase` | `upper` | `include?` | `contains` |
+| `downcase` | `lower` | `empty?` | `is_empty` |
+| `strip` | `trim` | `even?`, `odd?` | `is_even`, `is_odd` |
+| `start_with?` | `starts_with` | `any?`, `all?` | `any`, `all` |
+| `end_with?` | `ends_with` | `key?` | `has` |
+
+`sort_by`, `min_by`, `max_by`, `group_by`, `zip`, `flatten`, `sum`, `count`,
+`first`, `last`, `find`, `map`, `each`, `reject` and `each_with_index` have the
+same name in both languages. With method calls and blocks
+([3.8](#38-fields-and-method-calls), [3.14](#314-blocks-given-to-calls)),
+Ruby code often works as it is:
+
+```rythme
+words = ["pear", "fig", "banana", "fig"]
+print(words.uniq.size, words.select { |w| w.size > 3 }, words.reject { |w| w.include?("a") })
+print(words.first(2), words.last(1), words.count, words.sum { |w| w.length })
+print(words.each_slice(3), "  Rythme ".strip.downcase, 42.to_s + "!", "7".to_i + 1)
+print([1, 2, 3].reduce(0) do |acc, x| acc + x end, [3, 1, 2].sort_by { |x| -x })
+```
+
+```text
+3 ["pear", "banana"] ["fig", "fig"]
+["pear", "fig"] ["fig"] 4 16
+[["pear", "fig", "banana"], ["fig"]] rythme 42! 8
+6 [3, 2, 1]
+```
 
 ```rythme
 numbers = [3, 1, 4, 1, 5, 9, 2, 6]
@@ -2354,6 +2783,31 @@ true ["Ada", "36"]
 ```
 
 ```rythme
+fn backup(name)
+  create_folder(join_path(["backup", "2024"]))?
+  write_file(join_path(["backup", "2024", name]), "saved")?
+  list_folder("backup/2024")
+end
+print(backup("notes.txt"))
+print(file_info("backup/2024/notes.txt"), file_info("backup"))
+print(delete_file("backup/2024/notes.txt"), delete_file("backup"))
+print(split_path("C:\\Users\\ada\\notes.txt"), split_path("/home/ada/") |> join_path)
+print(options(["--dry-run", "--name=Ada", "notes.txt"]))
+print(options(["-abc"]))
+print(input_lines())
+```
+
+```text
+Ok(["notes.txt"])
+Ok({is_folder: false, size: 5}) Ok({is_folder: true, size: 0})
+Ok(()) Err("backup is a folder: `delete_file` deletes only files, never folders")
+["C:\\", "Users", "ada", "notes.txt"] /home/ada
+Ok({args: ["notes.txt"], dry_run: true, name: "Ada"})
+Err("`-abc` is not an option that Rythme understands: write `--abc` for a long name, or `-a -b` for several one-letter options")
+Ok([])
+```
+
+```rythme
 launch = unwrap(parse_date("2024-02-28T22:30:00+01:00"))
 print(launch)
 print(add_days(launch, 1) |> format_date, add_seconds(launch, 5400) |> format_date)
@@ -2424,12 +2878,15 @@ rythme [--lang fr|en] [--no-color] [COMMAND] [ARGUMENTS...]
 | Command | Aliases | What it does |
 |---------|---------|--------------|
 | *(none)* | `repl` | the interactive mode (see [7.2](#72-the-interactive-mode-repl)) |
-| `FILE [ARGS...]` | `run FILE [ARGS...]`, `lancer` | checks then runs the program; `ARGS` are given to `args()` |
+| `FILE [ARGS...]` | `run FILE [ARGS...]`, `lancer` | checks then runs the program; `ARGS` are given to `args()`. Without a file, in a project: its program (see [7.7](#77-projects-and-packages)), and so for `test`, `check`, `fmt` and `doc` |
 | `check FILE...` | `verifier`, `vérifier` | checks each program without running it (see [5.5](#55-the-check-before-running)) |
-| `test FILE [ARGS...]` | `tester` | runs the tests (see [4.8](#48-tests)) |
+| `test PATH... [--filter TEXT] [--seed N] [--watch] [-- ARGS...]` | `tester` | runs the tests of files and folders (see [4.8](#48-tests)) |
 | `fmt [--check] FILE...` | `format`, `formater` | gives the code its official layout; also a folder, or `-` for the standard input (see [7.4](#74-the-formatter-rythme-fmt)) |
 | `doc [--html] [--out FILE] FILE...` | `documenter` | writes the documentation of files or folders, in Markdown or as a web page (see [7.6](#76-documentation-rythme-doc)) |
+| `new NAME` | `nouveau` | creates the folder of a new project (see [7.7](#77-projects-and-packages)) |
+| `install` | `installer` | downloads the dependencies of the project and writes `rythme.lock` (see [7.7](#77-projects-and-packages)) |
 | `exercise [list \| start NAME \| check FILE]` | `exercises`, `exercice`, `exercices` | the built-in exercises (see below) |
+| `steps FILE [EXPRESSION] [--max N] [--width N]` | `etapes`, `étapes` | shows the evaluation step by step (see [7.8](#78-step-by-step-rythme-steps)) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | runs the code given as an argument, and shows the value of its last expression unless it is `()`; `ARGS` are given to `args()` |
 | `lsp` | | the language server, started by an editor (see [7.5](#75-editors-and-the-language-server)) |
 | `help [NAME]` | `aide`, `--help`, `-h` | the list of topics, or the help of a topic, a built-in function or an error code |
@@ -2445,7 +2902,8 @@ message names files inside it) or a file that is not text in UTF-8. Anything
 else is an unknown command, with a suggestion.
 
 **Options.** `--lang` and `--no-color` must come **before** the command;
-anything after the file name goes to the program. `--lang` accepts any value
+anything after the file name goes to the program (for `rythme test`, what
+comes after `--`). `--lang` accepts any value
 that starts with `fr` or `en` (`--lang fr`, `--lang=en`, `--lang fr_CA`);
 another value, or `--lang` without a value, is reported, with exit code 2.
 
@@ -2462,11 +2920,13 @@ unknown action or exercise is exit code 2.
 
 **Help topics.** `rythme help TOPIC` accepts `start`, `syntax`, `functions`,
 `lists`, `text`, `records`, `types`, `match`, `errors`, `functional`,
-`tests`, `exercises`, `modules`, `repl`, `fmt`, `doc`, `editors` and
-`builtins`, and French or alternative names: `syntaxe`, `fonctions`,
-`listes`, `texte`, `enregistrements`, `motifs`, `erreurs`, `fonctionnel`,
-`boucles`, `exercices`, `fichiers`, `interactif`, `format`, `documentation`,
-`lsp`, `vscode`, `éditeurs`, `bibliothèque`...
+`tests`, `exercises`, `modules`, `system`, `projects`, `dates`, `repl`,
+`fmt`, `doc`, `steps`, `editors`, `ruby` and `builtins`, and French or
+alternative names: `syntaxe`, `fonctions`, `listes`, `texte`,
+`enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`,
+`exercices`, `fichiers`, `système`, `dossiers`, `chemins`, `projets`,
+`paquets`, `interactif`, `format`, `documentation`, `etapes`, `lsp`,
+`vscode`, `éditeurs`, `blocs`, `symboles`, `bibliothèque`...
 
 **Exit codes.**
 
@@ -2487,7 +2947,9 @@ unknown action or exercise is exit code 2.
 - `NO_COLOR`: when it is set (to any value), messages have no colors;
   `--no-color` does the same. Colors are used only when the error output is a
   terminal (on Windows, only in terminals known to support them).
-- `HOME` (`USERPROFILE` on Windows): where the REPL keeps its history.
+- `HOME` (`USERPROFILE` on Windows): where the REPL keeps its history, and
+  where `rythme install` keeps packages (`~/.rythme/packages`).
+- `RYTHME_HOME`: another folder for the packages (`RYTHME_HOME/packages`).
 
 **Outputs.** What the program prints (`print`, the prompt of `input`, the
 results of `check`, `test` and `fmt`) goes to the standard output; error and
@@ -2553,6 +3015,7 @@ the help of the REPL; `exit`, `quit` (or `quitter`) leaves.
 | `:learn` | `:apprendre` | the guided tour |
 | `:explain CODE` | `:expliquer` | explain an error code |
 | `:names` | `:noms` | the names defined so far |
+| `:steps EXPRESSION` | `:etapes`, `:étapes` | shows the evaluation of the expression step by step (see [7.8](#78-step-by-step-rythme-steps)) |
 
 A session (the inputs are shown after the prompts):
 
@@ -2609,7 +3072,9 @@ language, the same messages and the same help, without installing anything.
 It has buttons to run (also Ctrl+Enter), check and test (also
 Ctrl+Shift+Enter) the code, a **Format** button (also Shift+Alt+F) that gives
 the code the layout of `rythme fmt` (see [7.4](#74-the-formatter-rythme-fmt);
-code with an error is left as it is, and the error is shown), a button to
+code with an error is left as it is, and the error is shown), a **Steps**
+button that shows the evaluation step by step like `rythme steps` (see
+[7.8](#78-step-by-step-rythme-steps)), a button to
 stop a program that does not end, the choice between English and French, a
 menu of examples, and a help panel (topics, search, and the explanation of an
 error code by clicking on it).
@@ -2654,7 +3119,10 @@ on several lines one variant per line; a list or a record written on several
 lines ends with a comma; one statement per line, and `end` on its own line;
 a blank line around a definition written on several lines, and never two
 blank lines in a row; every comment is kept, and the comments at the end of
-consecutive lines are aligned. Where the language allows a choice, line
+consecutive lines are aligned; a block given to a call written on one line
+stays on one line, with a space around its parts (`xs.map do |x| x * 2 end`,
+`xs.map { |x| x * 2 }`), and on several lines its statements are one level
+deeper than the line of `do`. Where the language allows a choice, line
 breaks are kept, and long lines are kept as written.
 
 With `messy.ry`:
@@ -2713,10 +3181,16 @@ standard input and output): an editor starts it by itself and gets, for
 `.ry` files, the problems as you type (every error and warning of
 `rythme check`, those of the files given to `use` included), documentation
 on hover (built-in functions with an example, keywords, your functions and
-types with their `##` comments, the explanation of an error code),
+types with their `##` comments, the signature the checker infers for a
+function, like `fn area(side: Int|Float) -> Int|Float`, the explanation of
+an error code),
 completion, the parameters of a call, go to definition, references, rename,
-the outline of the file, quick fixes for typos, and formatting like
-`rythme fmt`. The messages are in the language of the editor, unless a
+the outline of the file, quick fixes for typos, formatting like
+`rythme fmt`, the types the checker is sure of next to the names (inlay
+hints such as `names: List(Text)` or `half(x: Int|Float)`), colors that follow what each name is
+(semantic tokens), *Run* and *Run test* above the code (code lenses), the
+names of every file of the workspace, folding and growing the selection.
+The messages are in the language of the editor, unless a
 setting of the editor, `--lang` (`rythme --lang fr lsp`) or `RYTHME_LANG`
 chooses it. Started by hand in a terminal, it says what it is for;
 `rythme lsp --help` shows the same text as `rythme help editors`.
@@ -2845,7 +3319,7 @@ How many sides a square has.
 len(x)
 ~~~
 
-Length of a text (in characters), a list or a record.
+Length of a text (in characters), a list or a record. Same as: `length`, `size` (its Ruby names).
 
 Example:
 
@@ -2857,6 +3331,232 @@ len([1, 2])                # 2
 
 `rythme doc --html . --out doc.html` writes the same for every file of the
 folder as one page, with a table of contents.
+
+### 7.7 Projects and packages
+
+A **project** is a folder with a `rythme.toml` file, its code in `src/` and
+its tests in `tests/`. A project can use other projects, its
+**dependencies**, from git or from a folder: they are **packages**.
+
+**Creating a project.** `rythme new NAME` creates the folder `NAME` with a
+small program that already works:
+
+```text
+$ rythme new hello
+Created the project `hello`:
+  hello/rythme.toml
+  hello/src/main.ry
+  hello/src/greeting.ry
+  hello/tests/greeting_test.ry
+  hello/README.md
+  hello/.gitignore
+Next: `cd hello`, then `rythme run` to run it and `rythme test` to test it (see `rythme help projects`)
+$ cd hello
+$ rythme run
+Hello, World!
+$ rythme test
+Running 1 test(s)
+  ✓ hello
+1 test(s): 1 passed, 0 failed
+```
+
+The name of a project is a Rythme name in lower case (letters, digits and
+`_`, not a keyword), because it is used in `use`: `rythme new my-app` is
+E025, with the help `try rythme new my_app` (exit code 2). A folder that
+already exists and is not empty is never touched (exit code 1). The files
+are written in the language of the messages (`src/salutation.ry` in
+French).
+
+**`rythme.toml`.** Every value is a text in quotes; `#` starts a comment.
+
+```toml
+name = "hello"            # required: the name of the package
+version = "0.1.0"         # required: three numbers, major.minor.patch
+entry = "src/main.ry"     # the program; this one when it is not given
+
+[dependencies]
+mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
+geometry = { git = "https://github.com/someone/geometry", commit = "4d868c2" }
+tools = { path = "../tools" }
+```
+
+A dependency from git gives its address and a fixed version: a `tag` or a
+`commit` (at least 4 hexadecimal digits). A dependency from a folder gives
+its `path`, relative to the project. The name before `=` is the name used in
+`use`. This is a small part of TOML, read by Rythme itself: texts with `"`
+(with `\"`, `\\`, `\n`, `\t`) or `'`, and tables on one line. Any other key,
+section (`[package]` included) or kind of value is E025, shown at its place
+in `rythme.toml`, with a suggestion when a close key exists:
+
+```text
+error[E025]: unknown key `tga`
+ --> rythme.toml:6:30
+  |
+6 | tools = { path = "../tools", tga = "x" }
+  |                              ^^^
+  |
+  = note: the keys here are `git`, `tag`, `commit`, `path`
+  = help: did you mean `tag`?
+  = more about this error: `rythme explain E025`
+```
+
+**`rythme install`.** In the folder of the project (or one of its folders),
+`rythme install` downloads each dependency from git, then the dependencies
+of each dependency, and writes `rythme.lock`:
+
+```text
+$ rythme install
+Installing the dependencies of `hello`
+  ✓ mathlib 1.0.0: tag v1.0.0, commit 4d868c2 (downloaded)
+  ✓ tools 0.2.0: folder ../tools
+2 package(s) ready
+```
+
+- Downloading uses the program `git` (`git clone`, then the commit of the
+  tag or of the commit). Without it, `rythme install` stops with E025 and
+  says where to get it; dependencies from a folder do not need it.
+- Each package from git is kept in its own folder under
+  `RYTHME_HOME/packages` (`~/.rythme/packages` by default), named after its
+  address and its version, and shared by every project of the computer. A
+  package already there is not downloaded again.
+- Every dependency must be a project itself, with its `rythme.toml`.
+- `rythme.lock` holds, for each package from git, its address, its tag (or
+  the commit asked), and the **exact commit** that was installed. Keep it
+  with the project: `rythme install` on another computer then installs the
+  same commits, even if a tag was moved. When `rythme.toml` asks for another
+  version, `rythme install` takes it and updates `rythme.lock`; to take the
+  new commit of a moved tag, delete `rythme.lock`.
+- A tag or a commit that does not exist, an address that git cannot reach,
+  a folder that does not exist: E025, with what git said, the line of
+  `rythme.toml`, and the closest tag when there is one.
+
+**Using a package.** `use NAME/FILE` is the file `src/FILE.ry` of the
+package `NAME`, and is used through the last part of the path, as any
+`use` (see [4.9](#49-modules-use)):
+
+```rythme
+# src/main.ry
+use mathlib/vectors       # the file src/vectors.ry of mathlib
+use mathlib               # the program of mathlib: the `entry` of its rythme.toml
+use hello/greeting        # a file of the project itself (`hello`), useful in tests/
+print(vectors.add({x: 1, y: 2}, {x: 3, y: 4}))
+```
+
+- The packages are found through the nearest `rythme.toml` above the file
+  that contains the `use`: inside a package, its own dependencies are used.
+- A file next to the one that contains the `use` comes first: `use
+  mathlib/vectors` is first `mathlib/vectors.ry` in the folder of the file.
+- The private names (`_name`) of a package stay private, and its files are
+  checked like the others.
+- A package that is not installed is E025, at the `use`, with the help to
+  run `rythme install`; a file that the package does not have is E017, with
+  the closest file. A `use` that names nothing in a project says which
+  packages it can reach.
+- The language server knows packages too: no false problem on `use
+  mathlib/vectors`, completion of the package names after `use `, and of
+  their files after `use mathlib/`.
+
+**Commands without a file.** In the folder of a project or in one of its
+folders, the commands take the files of the project when no file is given:
+
+| Command | Works on |
+|---------|----------|
+| `rythme run` | the program, `entry` of `rythme.toml` |
+| `rythme test` | every file of `src/` and `tests/` (and their folders) that has tests, one after the other, each one with its name, then one summary, as `rythme test FOLDER` does (`--filter`, `--seed`, `--watch` and `--` work the same); the program when none has |
+| `rythme check` | the program, then every file of `src/` and `tests/` |
+| `rythme fmt` | the folders `src/` and `tests/` (`rythme fmt --check` too) |
+| `rythme doc` | the folder `src/` (`--html`, `--out` work as usual) |
+
+Outside of a project, a missing file is still a usage error (exit code 2).
+A file given by name never needs `rythme.toml`, even in a project.
+
+### 7.8 Step by step: `rythme steps`
+
+```text
+rythme steps FILE [EXPRESSION] [--max N] [--width N]
+```
+
+`rythme steps` (in French `rythme etapes`) shows how a program computes its
+values, one step at a time, for learning and teaching. It uses the
+**substitution model**: a call is replaced by the body of its function, with
+the values of the arguments written in place of the parameters, until only
+the result remains.
+
+- Without `EXPRESSION`, every top-level definition (`name = ...`) and
+  expression of the file is shown, in order, after its functions and types
+  are defined, as when the file runs. With `EXPRESSION` (`rythme steps fib.ry
+  "fib(5)"`), the definitions of the file are made without being shown, its
+  expressions are skipped, and only the expression is shown.
+- The first line is the expression as written (pipes are shown as the calls
+  they make); each next line, after `→`, is the expression after one more
+  step, written like `rythme fmt` writes code.
+- A step is **one call or one operation**, in the order of evaluation of the
+  interpreter (see [3](#3-expressions)). The body of a called function is
+  shown already simplified as far as it can be without calling another
+  function: the operations on known values are done, the branch of `if` and
+  the case of `match` are chosen. A name of the program is replaced by its
+  value when it is needed. Built-in functions, and the functions of other
+  files, give their result in one step.
+- What the program prints appears between the steps, where it happens; an
+  error stops the evaluation with the same message as when the program runs.
+- `--max N` shows at most `N` steps of each expression (200 by default):
+  after them, `...` says that the rest is computed without being shown, and
+  the last line is the result. `--width N` cuts the lines longer than `N`
+  characters (100 by default, 20 at least) with `…`; a step is shown on 24
+  lines at most. A calculation that never ends is stopped after 10 000 000
+  steps, and one nested more than 10 000 levels deep (1 200 in the playground)
+  is stopped too, with a message.
+
+The same is available in the interactive mode with `:steps EXPRESSION`
+(see [7.2](#72-the-interactive-mode-repl)) and in the playground with the
+**Steps** button (see [7.3](#73-the-web-playground)). For example, with
+this program:
+
+```rythme
+fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
+fn total([]) = 0
+fn total([x, ..rest]) = x + total(rest)
+fn describe(n)
+  kind = if n % 2 == 0 then "even" else "odd"
+  "{n} is {kind}"
+end
+print(fib(3))
+t = total([10, 20, 30])
+describe(t // 4)
+[1, 2, 3] |> map(fn(x) = x * t)
+```
+
+`rythme steps` shows:
+
+```text
+print(fib(3))
+  → print(fib(2) + fib(1))
+  → print(fib(1) + fib(0) + fib(1))
+  → print(1 + fib(0) + fib(1))
+  → print(1 + 0 + fib(1))
+  → print(1 + fib(1))
+  → print(1 + 1)
+  → print(2)
+2
+  → ()
+
+t = total([10, 20, 30])
+  → 10 + total([20, 30])
+  → 10 + (20 + total([30]))
+  → 10 + (20 + (30 + total([])))
+  → 10 + (20 + (30 + 0))
+  → 10 + (20 + 30)
+  → 10 + 50
+  → 60
+
+describe(t // 4)
+  → describe(60 // 4)
+  → describe(15)
+  → "15 is odd"
+
+map([1, 2, 3], fn(x) = x * t)
+  → [60, 120, 180]
+```
 
 ---
 
@@ -2875,7 +3575,7 @@ item         = type_def | test_def | use_def | statement ;
 statement    = fn_def | binding | expression ;
 
 binding      = pattern_atom "=" expression ;
-fn_def       = "fn" NAME "(" [ patterns ] ")" [ "if" expression ] body ;
+fn_def       = "fn" NAME [ "?" ] "(" [ patterns ] ")" [ "if" expression ] body ;
 body         = "=" expression
              | NL block_end ;
 block_end    = { statement NL } [ statement ] "end" ;
@@ -2897,15 +3597,19 @@ product      = unary { ( "*" | "/" | "//" | "%" ) unary } ;
 unary        = "-" unary | power ;
 power        = primary { postfix } [ "**" unary ] ;
 postfix      = "(" [ arguments ] ")" | "[" expression "]" | "?"
-             | "." MEMBER [ "(" [ arguments ] ")" ] ;
+             | "." MEMBER [ "(" [ arguments ] ")" ] | block ;
+block        = "do" [ params ] block_end
+             | "{" params { statement NL } [ statement ] "}" ;
+params       = "|" [ pattern_atom { "," pattern_atom } ] "|" | "||" ;
 arguments    = expression { "," expression } ;
 
-primary      = INT | FLOAT | TEXT | "true" | "false" | NAME | CTOR
+primary      = INT | FLOAT | TEXT | SYMBOL | "true" | "false" | NAME | CTOR
              | "(" ")" | "(" expression ")"
              | "[" [ list_item { "," list_item } ] "]"
              | "{" [ record_item { "," record_item } ] "}"
              | "fn" "(" [ patterns ] ")" body
              | "if" expression "then" expression "else" expression
+             | "unless" expression "then" expression "else" expression
              | "match" expression NL case { NL case } NL "end"
              | "do" block_end ;
 list_item    = [ ".." ] expression ;
@@ -2916,7 +3620,7 @@ patterns     = pattern { "," pattern } ;
 pattern      = pattern_atom { "|" pattern_atom } ;
 pattern_atom = "_" | NAME
              | CTOR [ "(" [ patterns ] ")" ]
-             | [ "-" ] INT | [ "-" ] FLOAT | PLAIN_TEXT | "true" | "false"
+             | [ "-" ] INT | [ "-" ] FLOAT | PLAIN_TEXT | SYMBOL | "true" | "false"
              | "(" ")" | "(" pattern ")"
              | "[" [ list_patterns ] "]"
              | "{" [ field_pattern { "," field_pattern } ] "}" ;
@@ -2924,7 +3628,8 @@ list_patterns = ".." [ NAME ] [ "," ]
              | pattern [ "," [ list_patterns ] ] ;
 field_pattern = KEY ":" pattern | NAME | ".." ;
 
-MEMBER       = NAME | CTOR | keyword | reserved word ;
+MEMBER       = NAME [ "?" ] | CTOR | keyword | reserved word ;
+SYMBOL       = ":" NAME ;
 KEY          = MEMBER | PLAIN_TEXT ;
 ```
 
@@ -2938,6 +3643,17 @@ Notes:
   there (E001 otherwise, with a hint for `f(x) = ...`, `xs[0] = ...` and
   `r.x = ...`).
 - `field_pattern`: `..` followed by a name (`{name, ..others}`) is E001.
+- `NAME [ "?" ]`: one name only when the `?` touches the name and the rules
+  of [1.4](#14-names) say so; otherwise the `?` is the `postfix` operator.
+  A `NAME` followed by `?` that is a name (`even?`) is a `primary` too.
+- `block`: only after a call, a method call, a `.` MEMBER or a NAME, with
+  `do` or `{` on the same line ([3.14](#314-blocks-given-to-calls)); it is
+  the last argument of the call. `{` followed by `|` or `||` always starts a
+  block, never a record.
+- `"unless"`: the word starts an `unless` only as described in
+  [1.5](#15-keywords-and-reserved-words); elsewhere it is a NAME.
+- `SYMBOL`: `:` directly followed by a name, except the `:` that follows a
+  field name after `{` or `,` ([2.14](#214-symbol)).
 - In `match`, the subject must end on the line of `match`, and the cases may
   be separated by blank lines; `end` may follow the last case on the same
   line. In blocks, `end` may follow the last statement on the same line.
@@ -2954,13 +3670,14 @@ Notes:
 
 | Limit | Value | Error |
 |-------|-------|-------|
-| whole numbers (Int) | −2⁶³ to 2⁶³ − 1 | E012 |
+| digits of a whole number (Int), in the code, as a result or read by `int` | 100 000 | E023 |
 | elements of a list (built by a range, `+`, `..xs`, `repeat`, `flatten`, `flat_map`, `chars`) | 50 000 000 | E023 |
 | length of a text (built by `+`, `{...}`, `join`, `replace`, `repeat`, `pad_left`, `pad_right`) | 100 000 000 bytes in UTF-8 | E023 |
 | nesting of brackets, blocks and other constructs in the code | 256 levels | E001 |
 | depth of an expression: each operator, call, index or field is one level, so `1 + 1 + ...` holds at most 1000 numbers | 1000 levels | E001 |
 | texts nested in `{...}` of texts | 32 levels | E001 |
 | nested (non-tail) calls | depends on the function and on the stack: several hundred thousand with `rythme` (about 900 000 for a simple recursion), 600 in the playground | E014 |
+| steps of `rythme steps`: shown for each expression; in all; depth of an expression being evaluated | 200 (`--max`); 10 000 000; 10 000 levels, 1 200 in the playground | — |
 | digits of `round(x, digits)` | clamped to −15...15 | — |
 | decimals of `text(x, decimals)` | 0 to 100 | E023 |
 | indentation of `to_json(value, indent)` | 0 to 16 spaces | E023 |

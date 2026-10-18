@@ -12,6 +12,7 @@
   "then"
   "else"
   "match"
+  "unless"
 ] @keyword
 
 [
@@ -60,6 +61,16 @@
 (parameters
   (identifier) @variable.parameter)
 
+; `fn adult?(p)`, `even?(4)`, and the parameters of a block: `do |x| ... end`
+(function_definition
+  name: (predicate) @function)
+
+(call
+  function: (predicate) @function)
+
+(block_parameters
+  (identifier) @variable.parameter)
+
 ; Types and constructors
 
 (type_identifier) @type
@@ -86,6 +97,8 @@
 
 (float) @number
 
+(symbol) @string.special.symbol
+
 (boolean) @boolean
 
 (string
@@ -98,6 +111,7 @@
 (interpolation
   [
     "{"
+    "#{"
     "}"
   ] @punctuation.special)
 
@@ -149,6 +163,18 @@
     "{"
     "}"
   ] @punctuation.bracket)
+
+(brace_block
+  [
+    "{"
+    "}"
+  ] @punctuation.bracket)
+
+(block_parameters
+  [
+    "|"
+    "||"
+  ] @punctuation.special)
 
 [
   ","

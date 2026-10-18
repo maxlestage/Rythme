@@ -60,6 +60,7 @@ async fn the_pages_hold_their_content() {
         let playground = page(Page::Playground).await;
         assert!(playground.contains(r#"id="source""#));
         assert!(playground.contains(r#"id="format""#) && playground.contains(t.pg_format), "the Format button");
+        assert!(playground.contains(r#"id="steps""#) && playground.contains(t.pg_steps), "the Steps button");
         assert!(playground.contains("/playground.js?v="));
         assert!(playground.contains(r#"data-wasm="/rythme.wasm?v="#));
         let learn = page(Page::Learn).await;

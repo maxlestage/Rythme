@@ -6,6 +6,8 @@
   (source_file)
   (block)
   (lambda)
+  (do_block)
+  (brace_block)
   (match_arm)
   (test_definition)
 ] @local.scope
@@ -19,6 +21,9 @@
   name: (identifier) @local.definition.function)
 
 (parameters
+  (identifier) @local.definition.parameter)
+
+(block_parameters
   (identifier) @local.definition.parameter)
 
 (definition

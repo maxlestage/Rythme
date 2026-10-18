@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use rythme::diagnostic::Diagnostic;
 use rythme::driver::Driver;
 use rythme::interp::Mode;
+use rythme::project::Cmd;
 use rythme::value::Value;
 use rythme::{help, lang, repl, suggest, t};
 
@@ -124,21 +125,34 @@ fn cli(mut args: Vec<String>) -> i32 {
             0
         }
         "run" | "lancer" => match rest.first() {
-            Some(file) => run_file(file, rest[1..].to_vec(), false),
-            None => usage_error(t!("which file? Example: rythme run hello.ry", "quel fichier ? Exemple : rythme run bonjour.ry")),
+            Some(file) => run_file(file, rest[1..].to_vec()),
+            None => in_project(Cmd::Run, |files| run_file(&files[0], Vec::new())).unwrap_or_else(|| {
+                usage_error(t!("which file? Example: rythme run hello.ry", "quel fichier ? Exemple : rythme run bonjour.ry"))
+            }),
         },
-        "test" | "tester" => match rest.first() {
-            Some(file) => run_file(file, rest[1..].to_vec(), true),
-            None => usage_error(t!("which file? Example: rythme test my_tests.ry", "quel fichier ? Exemple : rythme test mes_tests.ry")),
-        },
+        // With no file, at the root of a project: the files of the project with tests.
+        "test" | "tester" => rythme::testing::command(&rest),
         "check" | "verifier" | "vérifier" => match rest.first() {
             // Every file is checked, even after one with errors.
             Some(_) => rest.iter().map(|file| check_file(file)).fold(0, i32::max),
-            None => usage_error(t!("which file? Example: rythme check hello.ry", "quel fichier ? Exemple : rythme check bonjour.ry")),
+            None => in_project(Cmd::Check, |files| files.iter().map(|file| check_file(file)).fold(0, i32::max)).unwrap_or_else(|| {
+                usage_error(t!("which file? Example: rythme check hello.ry", "quel fichier ? Exemple : rythme check bonjour.ry"))
+            }),
         },
+        "fmt" | "format" | "formater" if !has_target(&rest, &[]) => {
+            in_project(Cmd::Fmt, |files| rythme::format::command(&[rest.clone(), files.to_vec()].concat()))
+                .unwrap_or_else(|| rythme::format::command(&rest))
+        }
         "fmt" | "format" | "formater" => rythme::format::command(&rest),
+        "doc" | "documenter" if !has_target(&rest, &["-o", "--out", "--sortie"]) => {
+            in_project(Cmd::Doc, |files| rythme::doc::command(&[rest.clone(), files.to_vec()].concat()))
+                .unwrap_or_else(|| rythme::doc::command(&rest))
+        }
         "doc" | "documenter" => rythme::doc::command(&rest),
+        "new" | "nouveau" => rythme::project::new_command(&rest),
+        "install" | "installer" => rythme::project::install_command(&rest),
         "exercise" | "exercises" | "exercice" | "exercices" => rythme::exercise::command(&rest),
+        "steps" | "etapes" | "étapes" => rythme::steps::command(&rest),
         "lsp" => rythme::lsp::run(&rest, chosen),
         "-e" | "eval" => match rest.first() {
             Some(code) => eval_code(code, rest[1..].to_vec()),
@@ -146,9 +160,12 @@ fn cli(mut args: Vec<String>) -> i32 {
         },
         _ => {
             if cmd.ends_with(".ry") || Path::new(&cmd).exists() || Path::new(&format!("{cmd}.ry")).is_file() {
-                return run_file(&cmd, rest, false);
+                return run_file(&cmd, rest);
             }
-            let commands = ["run", "check", "test", "fmt", "doc", "help", "explain", "learn", "repl", "version", "lsp", "exercise"];
+            let commands = [
+                "run", "check", "test", "fmt", "doc", "help", "explain", "learn", "repl", "version", "lsp", "exercise", "new", "install",
+                "steps",
+            ];
             let mut msg = t!("unknown command or file `{cmd}`", "commande ou fichier inconnu `{cmd}`");
             if let Some(best) = suggest::closest(&cmd, commands.iter().copied()) {
                 msg.push_str(&t!("\ndid you mean `rythme {best}`?", "\nvouliez-vous dire `rythme {best}` ?"));
@@ -157,6 +174,32 @@ fn cli(mut args: Vec<String>) -> i32 {
             usage_error(msg)
         }
     }
+}
+
+/// Runs `f` on the files a command takes at the root of a project, when the
+/// current folder is in one (`rythme run` runs its program).
+fn in_project(cmd: Cmd, f: impl FnOnce(&[String]) -> i32) -> Option<i32> {
+    match rythme::project::targets(cmd)? {
+        Ok(files) => Some(f(&files)),
+        Err(()) => Some(1),
+    }
+}
+
+/// Is a file or a folder given to the command (not only options)? `valued`
+/// are the options followed by a value.
+fn has_target(args: &[String], valued: &[&str]) -> bool {
+    let mut skip = false;
+    for a in args {
+        if std::mem::take(&mut skip) {
+            continue;
+        }
+        if valued.contains(&a.as_str()) {
+            skip = true;
+        } else if a == "-" || !a.starts_with('-') {
+            return true;
+        }
+    }
+    false
 }
 
 fn usage_error(msg: String) -> i32 {
@@ -191,7 +234,7 @@ fn find_script(name: &str) -> Result<PathBuf, Box<Diagnostic>> {
     Err(d.boxed())
 }
 
-fn run_file(name: &str, script_args: Vec<String>, test: bool) -> i32 {
+fn run_file(name: &str, script_args: Vec<String>) -> i32 {
     let mut driver = Driver::new();
     let path = match find_script(name) {
         Ok(p) => p,
@@ -208,11 +251,7 @@ fn run_file(name: &str, script_args: Vec<String>, test: bool) -> i32 {
     }
     driver.interp.script_args = script_args;
     let Some(module) = driver.load_file(&path) else { return 1 };
-    let mode = if test { Mode::Test } else { Mode::Run };
-    if driver.execute(&module, mode).is_err() {
-        return 1;
-    }
-    if test && !driver.run_tests() {
+    if driver.execute(&module, Mode::Run).is_err() {
         return 1;
     }
     0

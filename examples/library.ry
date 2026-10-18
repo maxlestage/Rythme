@@ -1,0 +1,55 @@
+# A small library, written the Ruby way: blocks, method chains, names
+# ending with `?`, `unless` and symbols. Values still never change.
+
+books = [
+  {title: "Dune", author: "Herbert", year: 1965, pages: 412, status: :available},
+  {title: "Neuromancer", author: "Gibson", year: 1984, pages: 271, status: :borrowed},
+  {title: "Foundation", author: "Asimov", year: 1951, pages: 255, status: :available},
+  {title: "Hyperion", author: "Simmons", year: 1989, pages: 482, status: :lost},
+  {title: "I, Robot", author: "Asimov", year: 1950, pages: 253, status: :borrowed},
+]
+
+## Is the book on the shelf?
+fn available?(book) = book.status == :available
+
+## A long book has more than 400 pages.
+fn long?(book) = book.pages > 400
+
+fn label(status) = match status
+  :available -> "on the shelf"
+  :borrowed -> "borrowed"
+  :lost -> "lost"
+end
+
+puts("#{books.size} books, #{books.sum do |b| b.pages end} pages")
+
+books.each_with_index do |book, i|
+  mark = unless book.available? then "-" else "+"
+  puts("#{i + 1}. #{mark} #{book.title.upcase} (#{book.year}): #{label(book.status)}")
+end
+
+on_shelf = books
+  .select(available?)
+  .map { |b| b.title }
+
+puts("On the shelf: #{on_shelf.join(", ")}")
+
+short = books.reject(long?).count
+puts("Short books: #{short}")
+
+oldest = books.sort_by { |b| b.year }.first(2).map { |b| b.title }
+puts("The two oldest: #{oldest}")
+
+books
+  .group_by { |b| b.author }
+  .entries
+  .select { |[_, written]| written.size > 1 }
+  .each do |[author, written]|
+    puts("#{author} wrote #{written.size} of them")
+  end
+
+total = books.reduce(0) do |sum, b|
+  sum + b.pages
+end
+
+puts("Average: #{total // books.size} pages")

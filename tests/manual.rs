@@ -57,7 +57,9 @@ fn normalize(text: &str) -> String {
         .lines()
         .map(|line| {
             let counts_calls = ["calls in progress", "more calls", "appels en cours", "autres appels"].iter().any(|w| line.contains(w));
-            if !counts_calls {
+            // The time a test run took (`4 test(s): 4 passed, 0 failed (3 ms)`) changes from run to run.
+            let timed = line.ends_with(" ms)") || line.ends_with(" s)");
+            if !counts_calls && !timed {
                 return line.to_string();
             }
             let mut out = String::new();
@@ -124,6 +126,8 @@ fn check_manual(path: &str, lang: &str) {
             Some("check")
         } else if shown.before.contains("rythme doc") {
             Some("doc")
+        } else if shown.before.contains("rythme steps") || shown.before.contains("rythme etapes") {
+            Some("steps")
         } else {
             None
         };

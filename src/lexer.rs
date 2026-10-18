@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use crate::bigint::{self, BigInt};
 use crate::diagnostic::{Diagnostic, Fallible};
 use crate::source::Span;
 use crate::suggest;
@@ -10,8 +11,8 @@ use crate::symbol::Sym;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tok {
     Int(i64),
-    /// 9223372036854775808: only valid after `-` (the smallest whole number).
-    IntMinMagnitude,
+    /// A whole number too large for 64 bits.
+    Big(std::rc::Rc<BigInt>),
     Float(f64),
     Str(Vec<StrPart>),
     /// A lowercase name: `x`, `print`, `_`.
@@ -20,6 +21,8 @@ pub enum Tok {
     Ctor(Sym),
     /// A keyword from another language (`for`, `return`...), reserved to give better help.
     Reserved(Sym),
+    /// A symbol: `:ok`, `:error` (the name, without the `:`).
+    Symbol(Sym),
     // Keywords
     Fn,
     If,
@@ -286,6 +289,12 @@ impl<'a> Lexer<'a> {
                     Tok::RBrace
                 }
                 ',' => Tok::Comma,
+                ':' if self.peek().is_some_and(is_ident_start) && !key_before(&toks, interpolation) => {
+                    while self.peek().is_some_and(is_ident_continue) {
+                        self.bump();
+                    }
+                    Tok::Symbol(Sym::new(&self.src[start + 1..self.pos]))
+                }
                 ':' => Tok::Colon,
                 '?' => Tok::Question,
                 '%' => Tok::Percent,
@@ -495,15 +504,10 @@ impl<'a> Lexer<'a> {
             let digits: String = self.src[digits_start..self.pos].chars().filter(|&c| c != '_').collect();
             let text = &self.src[start..self.pos];
             if !digits.is_empty() && digits.chars().all(|c| c.is_digit(radix)) {
-                return i64::from_str_radix(&digits, radix).map(Tok::Int).map_err(|_| {
-                    Diagnostic::error("E012", t!("the number `{text}` is too large", "le nombre `{text}` est trop grand"))
-                        .at(self.span(start))
-                        .help(t!(
-                            "whole numbers go up to 9223372036854775807 (0x7fffffffffffffff)",
-                            "les nombres entiers vont jusqu'à 9223372036854775807 (0x7fffffffffffffff)"
-                        ))
-                        .boxed()
-                });
+                if let Ok(n) = i64::from_str_radix(&digits, radix) {
+                    return Ok(Tok::Int(n));
+                }
+                return big_literal(&digits, radix, self.span(start));
             }
             return Err(self
                 .error("E018", start, t!("invalid number `{text}`", "nombre invalide `{text}`"))
@@ -565,10 +569,10 @@ impl<'a> Lexer<'a> {
         let text: String = self.src[start..self.pos].chars().filter(|&c| c != '_').collect();
         if float {
             Ok(Tok::Float(text.parse().unwrap_or(f64::INFINITY)))
-        } else if text == "9223372036854775808" {
-            Ok(Tok::IntMinMagnitude)
+        } else if let Ok(n) = text.parse::<i64>() {
+            Ok(Tok::Int(n))
         } else {
-            text.parse::<i64>().map(Tok::Int).map_err(|_| too_large(&text, self.span(start)))
+            big_literal(&text, 10, self.span(start))
         }
     }
 
@@ -614,6 +618,14 @@ impl<'a> Lexer<'a> {
                         Some('"') => cur.push('"'),
                         Some('{') => cur.push('{'),
                         Some('}') => cur.push('}'),
+                        // `\#{x}` is written as it is, as in Ruby.
+                        Some('#') => {
+                            cur.push('#');
+                            if self.peek() == Some('{') {
+                                self.bump();
+                                cur.push('{');
+                            }
+                        }
                         Some('u') if self.peek() == Some('{') => {
                             self.bump();
                             let hex_start = self.pos;
@@ -636,14 +648,18 @@ impl<'a> Lexer<'a> {
                             return Err(self
                                 .error("E018", at, t!("unknown escape sequence in text", "séquence d'échappement inconnue dans le texte"))
                                 .help(t!(
-                                    "valid escapes: \\n (new line), \\t (tab), \\r (carriage return), \\0 (null character), \\\\ (backslash),\n\\\" (quote), \\{{ and \\}} (braces), \\u{{e9}} (a character by its Unicode number: é)",
-                                    "échappements valides : \\n (nouvelle ligne), \\t (tabulation), \\r (retour chariot), \\0 (caractère nul), \\\\ (barre oblique),\n\\\" (guillemet), \\{{ et \\}} (accolades), \\u{{e9}} (un caractère par son numéro Unicode : é)"
+                                    "valid escapes: \\n (new line), \\t (tab), \\r (carriage return), \\0 (null character), \\\\ (backslash),\n\\\" (quote), \\{{ and \\}} (braces), \\# (a `#` before a brace), \\u{{e9}} (a character by its Unicode number: é)",
+                                    "échappements valides : \\n (nouvelle ligne), \\t (tabulation), \\r (retour chariot), \\0 (caractère nul), \\\\ (barre oblique),\n\\\" (guillemet), \\{{ et \\}} (accolades), \\# (un `#` devant une accolade), \\u{{e9}} (un caractère par son numéro Unicode : é)"
                                 ))
                                 .boxed())
                         }
                     }
                 }
-                '{' => {
+                // `#{x}`, as in Ruby, is the same as `{x}`.
+                '{' | '#' if c == '{' || self.peek() == Some('{') => {
+                    if c == '#' {
+                        self.bump();
+                    }
                     if !cur.is_empty() {
                         parts.push(StrPart::Lit(std::mem::take(&mut cur)));
                     }
@@ -692,6 +708,21 @@ impl<'a> Lexer<'a> {
     }
 }
 
+/// Is a `:` read now the one between a field name and its value, as in
+/// `{name:value}`? It is when it follows a name (or a keyword, or a text)
+/// that itself follows `{` or `,`. Otherwise, `:name` is a symbol: `:ok`.
+fn key_before(toks: &[Token], interpolation: bool) -> bool {
+    let key = |t: &Tok| matches!(t, Tok::Ident(_) | Tok::Ctor(_) | Tok::Reserved(_) | Tok::Str(_)) || keyword_text(t).is_some();
+    // Records may be written on several lines.
+    let mut before = toks.iter().rev().filter(|t| t.tok != Tok::Newline).map(|t| &t.tok);
+    match (before.next(), before.next()) {
+        (Some(last), Some(before)) => key(last) && matches!(before, Tok::LBrace | Tok::Comma),
+        // `"{name:value}"`: the `{` of the text comes before.
+        (Some(last), None) => key(last) && interpolation,
+        _ => false,
+    }
+}
+
 /// For a mistake inside the `{...}` of a text: maybe the brace was meant literally.
 pub fn add_literal_brace_help(d: &mut Diagnostic) {
     let help = t!(
@@ -703,24 +734,23 @@ pub fn add_literal_brace_help(d: &mut Diagnostic) {
     }
 }
 
-pub fn too_large(text: &str, span: Span) -> Box<Diagnostic> {
-    Diagnostic::error("E012", t!("the number `{text}` is too large", "le nombre `{text}` est trop grand"))
-        .at(span)
-        .help(t!(
-            "whole numbers go from -9223372036854775808 to 9223372036854775807; use a decimal number like `{text}.0` for bigger values",
-            "les nombres entiers vont de -9223372036854775808 à 9223372036854775807 ; utilisez un nombre décimal comme `{text}.0` pour des valeurs plus grandes"
-        ))
-        .boxed()
+/// A whole number written in the code that does not fit in 64 bits.
+fn big_literal(digits: &str, radix: u32, span: Span) -> Fallible<Tok> {
+    match BigInt::parse(digits, radix) {
+        Some(Ok(n)) => Ok(Tok::Big(std::rc::Rc::new(n))),
+        _ => Err(bigint::too_large(span)),
+    }
 }
 
 /// Human description of a token for error messages.
 pub fn describe(tok: &Tok) -> String {
     match tok {
         Tok::Int(n) => t!("the number `{n}`", "le nombre `{n}`"),
-        Tok::IntMinMagnitude => t!("the number `9223372036854775808`", "le nombre `9223372036854775808`"),
+        Tok::Big(n) => t!("the number `{n}`", "le nombre `{n}`"),
         Tok::Float(f) => t!("the number `{f}`", "le nombre `{f}`"),
         Tok::Str(_) => t!("a text", "un texte"),
         Tok::Ident(s) | Tok::Ctor(s) | Tok::Reserved(s) => t!("the name `{s}`", "le nom `{s}`"),
+        Tok::Symbol(s) => t!("the symbol `:{s}`", "le symbole `:{s}`"),
         Tok::Newline => t!("the end of the line", "la fin de la ligne"),
         Tok::Eof => t!("the end of the code", "la fin du code"),
         other => {

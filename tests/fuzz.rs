@@ -24,7 +24,7 @@ use rythme::lang::{self, Lang};
 use rythme::source::{self, Span};
 use rythme::symbol::Sym;
 use rythme::value::{Record, Value};
-use rythme::{help, io, lexer, parser};
+use rythme::{help, io, lexer, parser, steps};
 
 /// Calls allowed to each program: enough to do real work, few enough to
 /// stop programs that never end in a fraction of a second.
@@ -115,6 +115,17 @@ const WORDS: &[&str] = &[
     "x_1",
     "_unused",
     "lenght",
+    // The Ruby style.
+    ":ok",
+    "even?",
+    "empty?",
+    "unless",
+    "puts",
+    "select",
+    "{ |v|",
+    "do |a, b|",
+    "||",
+    "\"#{x}\"",
 ];
 
 const NUMBERS: &[&str] = &[
@@ -261,7 +272,16 @@ impl Gen<'_> {
         match r.below(14) {
             0 => format!("{}", r.below(12) as i64 - 3),
             1 => r.pick(&["0.5", "-1.5", "1e300", "2.0", "0.0", "float(\"nan\")", "1e-320"]).into(),
-            2 => r.pick(&["9223372036854775807", "-9223372036854775808", "4611686018427387904"]).into(),
+            2 => r
+                .pick(&[
+                    "9223372036854775807",
+                    "-9223372036854775808",
+                    "4611686018427387904",
+                    "18446744073709551616",
+                    "-(10 ** 30)",
+                    "2 ** 200",
+                ])
+                .into(),
             3 => r.pick(&["\"\"", "\"a\"", "\"héllo\"", "\"👍🏽\"", "\"a,b,,c\"", "\"e\\u{301}\"", "\" x \"", "\"ß\""]).into(),
             4 => r.pick(&["true", "false", "()", "None", "[]", "{}"]).into(),
             5..=8 => r.pick(VALUES).into(),
@@ -280,7 +300,7 @@ impl Gen<'_> {
             return self.atom();
         }
         let d = depth - 1;
-        match self.rng.below(22) {
+        match self.rng.below(24) {
             0..=2 => {
                 let op = self.rng.pick(&["+", "-", "*", "/", "//", "%", "**", "==", "!=", "<", "<=", ">", ">=", "and", "or", "+"]);
                 format!("{} {op} {}", self.expr(d), self.expr(d))
@@ -337,6 +357,19 @@ impl Gen<'_> {
                 let v = self.name();
                 format!("do\n  {v} = {}\n  {}\nend", self.expr(d), self.rng.pick(&[v.as_str(), "print(1)", "x"]))
             }
+            // The Ruby style: blocks, method chains, `unless`, symbols, names ending with `?`.
+            20 => match self.rng.below(4) {
+                0 => format!("{}.map do |v| {} end", self.expr(d), self.expr(d)),
+                1 => format!("{}.select {{ |v| {} }}", self.expr(d), self.expr(d)),
+                2 => format!("each({}) do |v|\n  {}\nend", self.expr(d), self.expr(d)),
+                _ => format!("{}.reduce(0) do |a, b| {} end", self.expr(d), self.expr(d)),
+            },
+            21 => match self.rng.below(4) {
+                0 => format!("unless {} then {} else {}", self.expr(d), self.expr(d), self.expr(d)),
+                1 => format!("{}.{}", self.expr(d), self.rng.pick(&["sum", "size", "upcase", "first", "even?", "empty?", "uniq", "to_s"])),
+                2 => format!("\"#{{{}}}\"", self.expr(d)),
+                _ => self.rng.pick(&[":ok", ":error", "even?(2)", "[:a, :b]"]).into(),
+            },
             _ => self.atom(),
         }
     }
@@ -653,8 +686,9 @@ fn tame(src: String) -> String {
 // ----- running a case --------------------------------------------------------
 
 /// Built-in functions that touch the world outside of the program are
-/// replaced: no files, no keyboard, no `exit`, no output, no clock (`time`,
-/// `now` and `today` give fixed values), no environment variables.
+/// replaced: no files or folders, no keyboard, no `exit`, no output, no
+/// clock (`time`, `now` and `today` give fixed values), no environment
+/// variables, no command line (`args` and `options` see no words).
 fn sandbox() -> &'static Vec<&'static Builtin> {
     static SANDBOX: OnceLock<Vec<&'static Builtin>> = OnceLock::new();
     fn quiet(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
@@ -676,6 +710,9 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
     fn number(_: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
         Ok(Value::Int(4))
     }
+    fn no_lines(it: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
+        Ok(it.ok(Value::list(Vec::new())))
+    }
     fn no_variable(it: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
         Ok(it.none())
     }
@@ -693,10 +730,11 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
     fn fixed_today(_: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
         Ok(moment(&[("year", 2024), ("month", 2), ("day", 29)]))
     }
-    let fakes: [(&str, builtins::BuiltinFn); 13] = [
+    let fakes: [(&str, builtins::BuiltinFn); 18] = [
         ("print", quiet),
         ("debug", same),
         ("input", empty_text),
+        ("input_lines", no_lines),
         ("exit", quiet),
         ("time", number),
         ("random", number),
@@ -705,6 +743,10 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
         ("write_file", no_file),
         ("append_file", no_file),
         ("file_exists", number),
+        ("file_info", no_file),
+        ("list_folder", no_file),
+        ("create_folder", no_file),
+        ("delete_file", no_file),
         ("now", fixed_now),
         ("today", fixed_today),
     ];
@@ -793,15 +835,23 @@ fn pipeline(src: &str) -> Result<Stage, String> {
         return Ok(Stage::Checker);
     }
     let mut stage = Stage::Ran;
-    match interp.exec_items(&items, if repl { Mode::Repl } else { Mode::Run }) {
+    let _ = io::take_captured();
+    io::capture();
+    let ran = interp.exec_items(&items, if repl { Mode::Repl } else { Mode::Run });
+    let printed = io::take_captured();
+    io::capture();
+    match &ran {
         Ok(Some(v)) => {
             let _ = (v.repr(), v.describe());
         }
         Ok(None) => {}
         Err(d) => {
-            check_diag(&d, file, src)?;
+            check_diag(d, file, src)?;
             stage = Stage::RunError;
         }
+    }
+    if !repl {
+        same_as_the_stepper(&items, &printed, ran.as_ref().err().map(|d| &**d), file, src)?;
     }
     if items.iter().any(|it| matches!(it, Item::Test(..))) {
         let mut interp = sandboxed_interp();
@@ -817,6 +867,44 @@ fn pipeline(src: &str) -> Result<Stage, String> {
         }
     }
     Ok(stage)
+}
+
+/// `rythme steps` has an evaluator of its own: it must print the same and stop
+/// with the same error as the interpreter, unless one of them reached its
+/// limits (number of calls or steps, depth).
+fn same_as_the_stepper(items: &[Item], printed: &str, error: Option<&Diagnostic>, file: u32, src: &str) -> Result<(), String> {
+    let limited = |d: &Diagnostic| {
+        d.code == "E014"
+            || ["was stopped", "a été arrêté", "too deep to be shown", "trop profond pour être montré", "stopped after", "arrêtée après"]
+                .iter()
+                .any(|w| d.message.contains(w))
+    };
+    // What `help` prints is in the language of the messages, which the threads
+    // of a long session change while others run.
+    if error.is_some_and(limited) || src.contains("help") {
+        return Ok(());
+    }
+    let mut interp = sandboxed_interp();
+    let opts = steps::Options { show: false, limit: 100_000, ..steps::Options::default() };
+    let stepped = steps::run_items(&mut interp, items, opts, 0, false);
+    let stepped_printed = io::take_captured();
+    io::capture();
+    if let Err(d) = &stepped {
+        check_diag(d, file, src)?;
+        if limited(d) {
+            return Ok(());
+        }
+    }
+    // The code and the place: the language of the messages may change while the threads of a long session run.
+    let message = |e: Option<&Diagnostic>| e.map(|d| format!("[{}] {:?}", d.code, d.span));
+    if stepped_printed != printed || message(stepped.as_ref().err().map(|d| &**d)) != message(error) {
+        return Err(format!(
+            "the stepper differs from the interpreter: it printed {stepped_printed:?} and ended with {:?}, instead of {printed:?} and {:?}",
+            message(stepped.as_ref().err().map(|d| &**d)),
+            message(error)
+        ));
+    }
+    Ok(())
 }
 
 /// Runs one program; `Err` describes what went wrong.
@@ -1010,8 +1098,69 @@ fn some_float(rng: &mut Rng) -> f64 {
     }
 }
 
+/// A whole number of any size written in decimal, the lowest group of 9
+/// digits first: a simple, independent way to check large results.
+#[derive(Clone, Debug, PartialEq)]
+struct Decimal {
+    neg: bool,
+    groups: Vec<u64>,
+}
+
+impl Decimal {
+    fn new(n: i128) -> Decimal {
+        let mut u = n.unsigned_abs();
+        let mut groups = Vec::new();
+        while u > 0 {
+            groups.push((u % 1_000_000_000) as u64);
+            u /= 1_000_000_000;
+        }
+        Decimal { neg: n < 0, groups }
+    }
+
+    fn mul(&self, other: &Decimal) -> Decimal {
+        let mut out = vec![0u64; self.groups.len() + other.groups.len() + 1];
+        for (i, &x) in self.groups.iter().enumerate() {
+            let mut carry = 0;
+            for (j, &y) in other.groups.iter().enumerate() {
+                let t = out[i + j] + x * y + carry;
+                out[i + j] = t % 1_000_000_000;
+                carry = t / 1_000_000_000;
+            }
+            let mut k = i + other.groups.len();
+            while carry > 0 {
+                let t = out[k] + carry;
+                out[k] = t % 1_000_000_000;
+                carry = t / 1_000_000_000;
+                k += 1;
+            }
+        }
+        while out.last() == Some(&0) {
+            out.pop();
+        }
+        Decimal { neg: !out.is_empty() && self.neg != other.neg, groups: out }
+    }
+
+    fn pow(&self, n: u32) -> Decimal {
+        (0..n).fold(Decimal::new(1), |acc, _| acc.mul(self))
+    }
+
+    fn text(&self) -> String {
+        let Some(top) = self.groups.last() else { return "0".into() };
+        let mut s = if self.neg { format!("-{top}") } else { top.to_string() };
+        for g in self.groups.iter().rev().skip(1) {
+            s.push_str(&format!("{g:09}"));
+        }
+        s
+    }
+}
+
+/// The value of a whole number given by its digits.
+fn whole(digits: &str) -> Value {
+    rythme::bigint::value(rythme::bigint::BigInt::parse(digits, 10).unwrap().unwrap())
+}
+
 #[test]
-fn whole_number_arithmetic_is_exact_or_an_error() {
+fn whole_number_arithmetic_is_exact() {
     use rythme::ast::BinOp;
     let mut rng = Rng(11);
     let span = Span::default();
@@ -1032,20 +1181,80 @@ fn whole_number_arithmetic_is_exact_or_an_error() {
             let sym = op.symbol();
             match (expected, got) {
                 (None, Err(d)) => assert_eq!(d.code, "E008", "{a} {sym} {b}"),
-                (Some(e), Ok(Value::Int(r))) => assert_eq!(e, r as i128, "{a} {sym} {b}"),
-                (Some(e), Err(d)) => assert!(i64::try_from(e).is_err() && d.code == "E012", "{a} {sym} {b}: {}", d.message),
+                // Small results stay small numbers; others are exact too.
+                (Some(e), Ok(v)) => {
+                    assert_eq!(v.repr(), e.to_string(), "{a} {sym} {b}");
+                    assert_eq!(matches!(v, Value::Int(_)), i64::try_from(e).is_ok(), "{a} {sym} {b}");
+                }
                 (e, got) => panic!("{a} {sym} {b}: expected {e:?}, got {:?}", show(got)),
             }
         }
-        // Powers: exact, or an error when too large.
+        // Powers: exact, however large.
         let n = (rng.next() % 70) as u32;
-        match (a.checked_pow(n), rythme::interp::binop(BinOp::Pow, &Value::Int(a), &Value::Int(n as i64), span)) {
-            (Some(e), Ok(Value::Int(r))) => assert_eq!(e, r, "{a} ** {n}"),
-            (None, Err(d)) => assert_eq!(d.code, "E012", "{a} ** {n}"),
-            (e, got) => panic!("{a} ** {n}: expected {e:?}, got {:?}", show(got)),
-        }
+        let got = rythme::interp::binop(BinOp::Pow, &Value::Int(a), &Value::Int(n as i64), span);
+        assert_eq!(show(got), Ok(Decimal::new(a as i128).pow(n).text()), "{a} ** {n}");
         let lt = rythme::interp::binop(BinOp::Lt, &Value::Int(a), &Value::Int(b), span);
         assert_eq!(show(lt), Ok((a < b).to_string()), "{a} < {b}");
+    }
+}
+
+/// Whole numbers beyond 64 bits that fit in an i128, to check against it.
+fn some_wide(rng: &mut Rng) -> i128 {
+    match rng.below(4) {
+        0 => [i64::MIN as i128 - 1, i64::MAX as i128 + 1, 1 << 64, -(1 << 64), (1 << 64) - 1, i128::MAX >> 1, i128::MIN >> 1][rng.below(7)],
+        1 => (1i128 << rng.below(126)) + rng.below(3) as i128 - 1,
+        _ => some_int(rng) as i128 * (some_int(rng) as i128 >> rng.below(64)) + some_int(rng) as i128,
+    }
+}
+
+#[test]
+fn large_whole_number_arithmetic_is_exact() {
+    use rythme::ast::BinOp;
+    use std::cmp::Ordering;
+    let mut rng = Rng(14);
+    let span = Span::default();
+    for _ in 0..100_000 {
+        let (a, b) = (some_wide(&mut rng), if rng.below(3) == 0 { some_int(&mut rng) as i128 } else { some_wide(&mut rng) });
+        let (va, vb) = (whole(&a.to_string()), whole(&b.to_string()));
+        assert_eq!(va.repr(), a.to_string());
+        assert_eq!(matches!(va, Value::Int(_)), i64::try_from(a).is_ok(), "{a} is an Int only when it fits");
+        let quotient = (b != 0).then(|| a.checked_div(b).map(|q| if a % b != 0 && ((a < 0) != (b < 0)) { q - 1 } else { q })).flatten();
+        for (op, expected) in [
+            (BinOp::Add, a.checked_add(b)),
+            (BinOp::Sub, a.checked_sub(b)),
+            (BinOp::IntDiv, quotient),
+            (BinOp::Mod, quotient.and_then(|q| b.checked_mul(q)).and_then(|bq| a.checked_sub(bq))),
+        ] {
+            let Some(e) = expected else { continue };
+            let got = rythme::interp::binop(op, &va, &vb, span).map(|v| v.repr()).map_err(|d| d.message);
+            assert_eq!(got, Ok(e.to_string()), "{a} {} {b}", op.symbol());
+        }
+        let product = Decimal::new(a).mul(&Decimal::new(b)).text();
+        assert_eq!(rythme::interp::binop(BinOp::Mul, &va, &vb, span).map(|v| v.repr()).ok(), Some(product.clone()), "{a} * {b}");
+        // Back: the product divided by one of the numbers.
+        if b != 0 {
+            let back = rythme::interp::binop(BinOp::IntDiv, &whole(&product), &vb, span).unwrap();
+            assert_eq!(back.repr(), a.to_string(), "{product} // {b}");
+        }
+        assert_eq!(va.compare(&vb), Some(a.cmp(&b)), "{a} vs {b}");
+        assert_eq!(va.total_cmp(&vb), a.cmp(&b), "{a} vs {b}");
+        assert_eq!(va.equals(&vb), a == b, "{a} == {b}");
+        // Against decimal numbers: exactly, though `a as f64` is rounded.
+        let f = a as f64;
+        let exact = if f.abs() >= 2f64.powi(127) {
+            if f > 0.0 {
+                Ordering::Less
+            } else {
+                Ordering::Greater
+            }
+        } else {
+            a.cmp(&(f as i128))
+        };
+        assert_eq!(va.compare(&Value::Float(f)), Some(exact), "{a} vs {f:?}");
+        assert_eq!(va.equals(&Value::Float(f)), exact == Ordering::Equal, "{a} == {f:?}");
+        let to_float = builtins::lookup("float").unwrap();
+        let got = (to_float.func)(&mut Interp::new(), std::slice::from_ref(&va), span).map(|v| v.repr()).ok();
+        assert_eq!(got, Some(Value::Float(f).repr()), "float({a})");
     }
 }
 
@@ -1082,7 +1291,10 @@ fn sorting_uses_a_consistent_order() {
     for _ in 0..60 {
         pool.push(Value::Int(some_int(&mut rng)));
         pool.push(Value::Float(some_float(&mut rng)));
+        pool.push(whole(&some_wide(&mut rng).to_string()));
     }
+    pool.push(Value::Float(2f64.powi(64)));
+    pool.push(Value::Float(-(2f64.powi(100))));
     pool.extend([Value::text(""), Value::text("a"), Value::text("é"), Value::Unit, Value::Bool(true), it.none(), it.some(Value::Int(1))]);
     pool.push(Value::list(vec![Value::Int(1), Value::Float(f64::NAN)]));
     pool.push(Value::list(vec![Value::Float(1.0)]));

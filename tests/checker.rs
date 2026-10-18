@@ -113,7 +113,7 @@ fn fields_that_records_and_constructors_do_not_have() {
         "E010",
         "no variant of `Shape` has a field `depth`",
     );
-    finds("print(\"abc\".upper)", "E010", "add parentheses: `.upper()`");
+    finds("print(\"abc\".uper)", "E010", "did you mean `.upper`?");
 }
 
 #[test]
@@ -351,6 +351,89 @@ fn recursive_functions_get_their_types() {
     quiet("fn countdown(0, acc) = acc\nfn countdown(n, acc) = countdown(n - 1, acc + 1)\nprint(countdown(10, 0) + 1)");
     quiet("fn wrap(0) = []\nfn wrap(n) = [wrap(n - 1)]\nprint(wrap(3), len(wrap(2)))");
     finds("fn fact(0) = 1\nfn fact(n) = n * fact(n - 1)\nprint(fact(3) + \"!\")", "E005", "cannot use `+` with Int/Float and Text");
+}
+
+#[test]
+fn calls_that_always_fail_from_what_functions_do_with_their_parameters() {
+    let e = finds("fn area(side) = side * side\nprint(area(\"big\"))", "E005", "cannot use `*` with Text and Text");
+    assert!(
+        e.contains("`area` stops with this error, every time") && e.contains("it needs: `fn area(side: Int|Float) -> Int|Float`"),
+        "{e}"
+    );
+    finds("fn shout(t) = upper(t) + \"!\"\nprint(shout(5))", "E005", "`upper` expects a text as argument 1, but got Int 5");
+    finds("fn shout(t) = t.upper()\nprint(shout(5))", "E005", "`upper` expects a text as argument 1, but got Int 5");
+    finds("fn double(x) = x * 2\nfn quad(x) = double(double(x))\nprint(quad(\"a\"))", "E005", "cannot use `*` with Text and Int");
+    finds("fn name_of(p) = p.name\nprint(name_of(3))", "E010", "Int 3 has no fields");
+    // Ruby style: `t.upcase` calls `upcase(t)` (the Ruby name of `upper`) when `t` has no such field.
+    quiet("fn shout(t) = t.upcase + \"!\"\nprint(shout(\"hi\"), shout({upcase: \"HO\"}))");
+    finds("fn shout(t) = t.upcase\nprint(shout(3))", "E005", "`upper` expects a text as argument 1, but got Int 3");
+    finds("fn total(xs) = xs.sum { |x| x * 2 }\nprint(total(\"abc\"))", "E005", "`sum` expects a list as argument 1");
+    // Symbols in patterns: the parameter must be one.
+    finds("fn name(:ok) = \"fine\"\nfn name(:error) = \"bad\"\nprint(name(1))", "E006", "name(1)");
+    quiet("fn name(:ok) = \"fine\"\nfn name(_) = \"bad\"\nprint(name(:ok), name(1), [10 ** 20].sum { |x| x * 2 })");
+    finds("fn twice(f, x) = f(f(x))\nprint(twice(3, 4))", "E009", "`f` is not a function");
+    finds("fn count([]) = 0\nfn count([_, ..rest]) = 1 + count(rest)\nfn size(xs) = count(xs)\nprint(size(\"ab\"))", "E006", "count");
+    finds("fn sign(n) if n < 0 = -1\nfn sign(_) = 1\nprint(sign(\"a\"))", "E005", "cannot use `<` with Text and Int");
+    finds("fn main()\n  fn half(n) = n / 2\n  print(half(\"x\"))\nend\nmain()", "E005", "cannot use `/` with Text and Int");
+    finds(
+        "fn label(c) = if c then \"yes\" else \"no\"\nprint(label(0))",
+        "E005",
+        "a condition must be `true` or `false`, but this is Int 0",
+    );
+    finds("fn total(xs) = fold(xs, 0, fn(a, b) = a + b)\nprint(total(\"abc\"))", "E005", "`fold` expects a list");
+}
+
+#[test]
+fn calls_that_may_work_are_not_reported() {
+    // Polymorphic functions, and functions never called.
+    quiet("fn twice(x) = x + x\nfn area(side) = side * side\nprint(twice(1), twice(\"a\"), twice([1]))");
+    quiet("fn apply(f, x) = f(x)\nprint(apply(len, \"ab\"), apply(fn(v) = v * 2, 3), apply(Some, 1))");
+    // Recursion, and definitions by pattern.
+    quiet("fn size([]) = 0\nfn size([_, ..r]) = 1 + size(r)\nfn sum_to(0) = 0\nfn sum_to(n) = n + sum_to(n - 1)\nprint(size([1, 2]), sum_to(3))");
+    quiet("fn describe(0) = \"zero\"\nfn describe(\"\") = \"empty\"\nfn describe(x) = \"other\"\nprint(describe(true), describe([1]))");
+    quiet("fn first_or([x, ..], _) = x * 2\nfn first_or(_, d) = d\nprint(first_or(\"ab\", 0), first_or([1], 0))");
+    // Guards: a definition after a guard runs when the guard is false.
+    quiet("fn sign(n) if n < 0 = \"neg\"\nfn sign(n) if n > 0 = \"pos\"\nfn sign(_) = \"zero\"\nprint(sign(1), sign(0))");
+    quiet("fn f([x, ..]) if x > 0 = x\nfn f(_) = 0\nprint(f(\"text\"), f([2]))");
+    // A way that leaves early: `?`, `and`, `or`, `if`, `match`.
+    quiet("fn f(o, x)\n  v = o?\n  Some(v + x)\nend\nprint(f(None, \"a\"))");
+    quiet("fn f(ok, x) = ok and x > 0\nfn g(ok, x) = ok or len(x) > 0\nprint(f(false, \"a\"), g(true, 5))");
+    quiet("fn f(c, x) = if c then x * 2 else 0\nprint(f(false, \"a\"))");
+    quiet("fn f(v) = match v\n  [a, ..] -> a + 1\n  _ -> 0\nend\nprint(f(\"text\"), f([1]))");
+    // The program may end without an error before the operation.
+    quiet("fn finish(code, rest)\n  exit(code)\n  rest * 2\nend\nfinish(0, \"a\")");
+    quiet("fn bye() = exit(0)\nfn f(x)\n  bye()\n  x * 2\nend\nf(\"a\")");
+    quiet("fn f(x)\n  each([1], fn(v) = exit(0))\n  x * 2\nend\nf(\"a\")");
+    quiet("fn f(g, x)\n  g()\n  x * 2\nend\nf(fn() = exit(0), \"a\")");
+    // Fields: records, and values built with a constructor that has them.
+    quiet("type Circle = Circle(radius)\nfn r(c) = c.radius\nfn v(o) = o.value\nprint(r(Circle(2)), r({radius: 3}), v(Some(1)))");
+    quiet("fn call_it(r) = r.go(1)\nprint(call_it({go: fn(v) = v + 1}))");
+}
+
+/// The programs of the repository (examples, benchmarks, exercises and
+/// their solutions) all work: no call of theirs is said to always fail.
+#[test]
+fn no_call_of_the_programs_of_the_repository_is_said_to_always_fail() {
+    fn files(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+        for entry in std::fs::read_dir(dir).unwrap().flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                files(&path, out);
+            } else if path.extension().is_some_and(|e| e == "ry") {
+                out.push(path);
+            }
+        }
+    }
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let mut found = Vec::new();
+    for dir in ["examples", "bench", "docs/exercises"] {
+        files(&root.join(dir), &mut found);
+    }
+    assert!(found.len() > 100, "only {} files", found.len());
+    for path in found {
+        let r = rythme(&["check", path.to_str().unwrap()]);
+        assert!(!r.stderr.contains("every time"), "{}:\n{}", path.display(), r.stderr);
+    }
 }
 
 #[test]
