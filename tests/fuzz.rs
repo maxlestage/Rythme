@@ -425,17 +425,8 @@ impl Gen<'_> {
                         _ => format!("{name} {}", self.args(arity, 2)),
                     }
                 }
-                2 => format!(
-                    "puts -{}
-puts [{}]",
-                    self.atom(),
-                    self.expr(2)
-                ),
-                3 => format!(
-                    "x -1
-xs [0]
-puts x -1, xs [1]"
-                ),
+                2 => format!("puts -{}\nputs [{}]", self.atom(), self.expr(2)),
+                3 => "x -1\nxs [0]\nputs x -1, xs [1]".to_string(),
                 _ => format!("xs.each do |v| puts v, {} end", self.expr(2)),
             },
             6 => format!("{} = {}", self.name(), self.expr(3)),

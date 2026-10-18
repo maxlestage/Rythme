@@ -591,7 +591,7 @@ impl Gen {
                         1 => format!("puts -1\nputs [x, {a}]\nx -1\nxs [0]"),
                         2 => format!("xs.each do |v| puts v end\neach xs do |v|\n  print v, {a}\nend"),
                         3 => format!("assert_eq total, {b}{}", self.comment()),
-                        4 => format!("fn f(v) = v\nf -x\nf [1]\nf(-x)\nf\n  -1"),
+                        4 => "fn f(v) = v\nf -x\nf [1]\nf(-x)\nf\n  -1".to_string(),
                         _ => format!("test \"t\"\n  assert not {a}\n  even? 4\nend"),
                     }
                 }
