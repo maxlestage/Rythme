@@ -2908,7 +2908,10 @@ ignore the case. The usual rules choose between several matches: the
 leftmost, then the first alternative, then the longest repetition. Searching
 takes a time proportional to the length of the text times the size of the
 regex, whatever they are: the engine follows every way at once instead of
-trying one after the other (no "catastrophic backtracking"); for a
+trying one after the other (no "catastrophic backtracking"), and the
+searches of `find_all`, `split_by` and `replace_all` skip the ways that an
+earlier one showed to lead nowhere, so that finding every match usually
+reads the text about once; for a
 repetition of a part that can match an empty text, like `(a*)*`, it may
 choose another end than other engines. In a Rythme text, a backslash is
 written twice and braces `\{` and `\}`: `"\\d\{4\}"` is the regex

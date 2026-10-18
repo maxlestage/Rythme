@@ -12,6 +12,14 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Performance
+
+- **`find_all`, `split_by` and `replace_all` are no longer quadratic** on
+  regexes that read far ahead: their searches skip the ways that an earlier
+  search showed to lead nowhere, and share their memory. `a*b|a` on 40 000
+  `a`s took about 30 seconds and now takes a few milliseconds; the matches
+  are the same (`bench/regex.ry`).
+
 ### Messages
 
 - **`condition ? a : b`** (Ruby, C, JavaScript) is explained: the error
