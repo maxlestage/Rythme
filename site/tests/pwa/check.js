@@ -17,8 +17,14 @@ const { workspace, freePort, startServer, startExport, binary, checker } = requi
 const BIN = binary(process.argv[2]);
 const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
 const PAGES = ["", "learn/", "examples/", "playground/", "teach/"];
-const LANGS = ["fr", "en"];
-const OFFLINE_TITLE = { fr: "Vous êtes hors ligne", en: "You are offline" };
+// Every language of the site (src/i18n.rs), with the title of its offline page and the
+// word that starts the interpreter's error messages in it.
+const LANGS = ["fr", "en", "es", "de", "pt", "zh"];
+const OFFLINE_TITLE = {
+  fr: "Vous êtes hors ligne", en: "You are offline", es: "No tienes conexión",
+  de: "Du bist offline", pt: "Você está sem conexão", zh: "你已离线",
+};
+const ERROR_WORD = { fr: "erreur", en: "error", es: "error", de: "Fehler", pt: "erro", zh: "错误" };
 
 const checks = checker();
 const check = checks.check;
@@ -135,7 +141,8 @@ async function verify(mode) {
         wide: document.documentElement.scrollWidth > window.innerWidth,
         fonts: [...document.fonts].some((f) => f.family.includes("Plex") && f.status === "loaded"),
       }));
-      check(res && res.ok() && shown.lang === lang && shown.h1 && !shown.wide, `offline: ${url}`, shown);
+      // `pt-BR`, `zh-Hans`: the tag of the page starts with the code of its address.
+      check(res && res.ok() && shown.lang.split("-")[0] === lang && shown.h1 && !shown.wide, `offline: ${url}`, shown);
       if (p === "") check(shown.fonts, `offline: ${url} has its fonts`);
     }
   }
@@ -179,7 +186,26 @@ async function verify(mode) {
   await page.goto(`${base}/fr/playground/?title=x&text=${encodeURIComponent('print("partagé")')}`);
   await ran(page);
   check((await page.textContent("#output")).includes("partagé") && !page.url().includes("?"), "offline playground: a shared text opens in the playground");
-  // The language switch, the burger menu.
+  // The playground of every language: its texts, and the interpreter's messages in the
+  // language of the page.
+  for (const lang of LANGS) {
+    await page.goto(`${base}/${lang}/playground/`);
+    await ran(page);
+    await setCode(page, "fn double(x) = x * 2\nprint(doubel(2))\n");
+    const out = await runAndRead(page, "#check");
+    const shown = await page.evaluate(() => ({
+      status: document.getElementById("status").textContent,
+      failedIn: JSON.parse(document.querySelector(".playground").dataset.ui).failedIn.split("{ms}")[0],
+      err: (document.querySelector("#output .err") || {}).textContent || "",
+      lines: document.getElementById("lines").textContent,
+    }));
+    check(out.includes(`${ERROR_WORD[lang]}[E003]`) && shown.err.startsWith(`${ERROR_WORD[lang]}[E003]`), `offline playground: the messages in /${lang}/`, { out, shown });
+    check(shown.status.startsWith(shown.failedIn) && /\d/.test(shown.lines), `offline playground: the texts of /${lang}/`, shown);
+  }
+  // The language switch (a menu: its button, then a language), the burger menu.
+  await page.goto(`${base}/fr/playground/`);
+  await page.click(".lang--bar summary");
+  check((await page.locator(".lang--bar .lang__link").count()) === LANGS.length, "offline: the language menu lists every language");
   await page.click('.lang--bar a[hreflang="en"]');
   await page.waitForURL(`${base}/en/playground/`);
   check((await page.getAttribute("html", "lang")) === "en", "offline: the language switch");

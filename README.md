@@ -109,14 +109,14 @@ error[E001]: `for` is not used in Rythme
 
 The website <https://maxlestage.github.io/Rythme/> has a playground that runs
 the real interpreter, compiled to WebAssembly ([`playground/`](playground)):
-edit code, run it, check it, run tests, format it, read the help, in English
-or French, without installing anything. The website also installs as an app
+edit code, run it, check it, run tests, format it, read the help, in English,
+French, Spanish, German, Portuguese or Chinese, without installing anything. The website also installs as an app
 (a Progressive Web App) and works offline, playground included. Its menu offers color
 themes (Auto, Light, Dark, High contrast, Sepia, Tempo), and no page scrolls
 sideways, from a 320px phone to a wide screen.
 
 The [`site/`](site) folder is the website of Rythme (home, tour of the
-language, examples, playground and guide for teachers, in English and French),
+language, examples, playground and guide for teachers, in six languages),
 written in Rust with Paquets.
 
 ### Deploy the website on Heroku

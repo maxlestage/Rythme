@@ -1,6 +1,6 @@
 //! The guide for teachers: `docs/teaching.md` and `docs/enseigner.md`, built into the
 //! site and rendered to HTML, with the links between files turned into links of the
-//! site.
+//! site. The languages without a guide of their own show the English one.
 
 use paquets::prelude::Node;
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
@@ -12,8 +12,20 @@ use crate::routes::{Page, Route};
 
 const REPO: &str = "https://github.com/maxlestage/Rythme";
 
+/// The language of the guide shown on the page of `lang`: its own when it has one,
+/// else English (the page then says so, `Texts::teach_note`).
+pub fn guide_lang(lang: Lang) -> Lang {
+    match lang {
+        Lang::Fr => Lang::Fr,
+        _ => Lang::En,
+    }
+}
+
 pub fn source(lang: Lang) -> &'static str {
-    lang.pick([include_str!("../../docs/enseigner.md"), include_str!("../../docs/teaching.md")])
+    match guide_lang(lang) {
+        Lang::Fr => include_str!("../../docs/enseigner.md"),
+        _ => include_str!("../../docs/teaching.md"),
+    }
 }
 
 pub struct Rendered {
@@ -239,6 +251,15 @@ mod tests {
                 assert!(r.html.contains(&format!(r#"id="{id}""#)), "{id}");
             }
         }
+    }
+
+    #[test]
+    fn a_language_without_a_guide_says_so() {
+        for lang in Lang::ALL {
+            let own = guide_lang(lang) == lang;
+            assert_eq!(lang.texts().teach_note.is_none(), own, "{lang:?}");
+        }
+        assert_eq!(rewrite_link("../examples/hello.ry", Lang::Zh).0, "/zh/examples/#hello");
     }
 
     #[test]
