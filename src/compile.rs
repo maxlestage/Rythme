@@ -35,6 +35,9 @@ pub enum Kind {
     NewRecord(Rc<Shape>, Vec<Node>),
     Lambda(Rc<FnDef>, Rc<FnCode>),
     Call(Box<Node>, Vec<Node>),
+    /// A call of another function of the group of the running function (or
+    /// of itself): it runs with the same closure, without making one.
+    SiblingCall(u32, Vec<Node>),
     Method(Box<Method>),
     /// `value.name`: the field `name` of a record or a variant, or else the
     /// function `name` called with the value (the last node).
@@ -437,7 +440,7 @@ impl Compiler {
             ExprKind::Int(n) => Kind::Const(Value::Int(*n)),
             ExprKind::Big(n) => Kind::Const(Value::Big(n.clone())),
             ExprKind::Float(f) => Kind::Const(Value::Float(*f)),
-            ExprKind::Text(s) => Kind::Const(Value::Text(s.clone())),
+            ExprKind::Text(s) => Kind::Const(Value::Text(s.into())),
             ExprKind::Symbol(s) => Kind::Const(Value::Symbol(*s)),
             ExprKind::Template(parts) => Kind::Template(
                 parts
@@ -487,7 +490,13 @@ impl Compiler {
                 }
             }
             ExprKind::Lambda(def) => Kind::Lambda(def.clone(), Rc::new(self.func(def, None, Vec::new(), Vec::new()))),
-            ExprKind::Call(callee, args) => Kind::Call(self.boxed(callee), self.exprs(args)),
+            ExprKind::Call(callee, args) => {
+                let callee = self.boxed(callee);
+                match callee.kind {
+                    Kind::Sibling(i) => Kind::SiblingCall(i, self.exprs(args)),
+                    _ => Kind::Call(callee, self.exprs(args)),
+                }
+            }
             ExprKind::Method(recv, name, args, name_span) => {
                 let recv = self.expr(recv);
                 let func = Node { kind: self.name(*name), span: *name_span };
@@ -586,9 +595,10 @@ impl Compiler {
         // the positions of these values are the same in all of them.
         let mut captures = Vec::new();
         let mut codes = Vec::with_capacity(defs.len());
-        for (i, def) in defs.iter().enumerate() {
-            let others = names.iter().filter(|(_, j)| *j != i as u32).copied().collect();
-            let code = self.func(def, def.name, captures, others);
+        for def in defs {
+            // Each one sees itself as a function of the group too (behind its
+            // parameters): calling it then makes no new closure.
+            let code = self.func(def, None, captures, names.clone());
             captures = code.captures.clone();
             codes.push(code);
         }

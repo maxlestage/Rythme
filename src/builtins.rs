@@ -1074,7 +1074,7 @@ fn out(s: &str) {
     crate::io::out_line(s);
 }
 
-fn text_value(s: impl Into<Rc<str>>) -> Value {
+fn text_value(s: impl Into<Text>) -> Value {
     Value::Text(s.into())
 }
 
@@ -2587,10 +2587,11 @@ fn get(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn push(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "push", span)?;
-    let mut v = Vec::with_capacity(l.len() + 1);
-    v.extend(l.iter().cloned());
-    v.push(a[1].clone());
-    Ok(Value::list(v))
+    if l.len() >= MAX_LIST {
+        return Err(too_big(true, span));
+    }
+    // In the room after the list when it can: pushing again and again is fast.
+    Ok(Value::List(l.push(a[1].clone())))
 }
 
 fn set_at(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -2684,7 +2685,7 @@ fn unique(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         Int(i64),
         Big(Rc<BigInt>),
         Float(u64),
-        Text(Rc<str>),
+        Text(Text),
         Bool(bool),
         Unit,
     }
@@ -3053,7 +3054,7 @@ fn is_empty(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn keys(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let r = record(a, 0, "keys", span)?;
-    Ok(Value::list(r.keys().iter().map(|k| Value::Text(k.clone())).collect()))
+    Ok(Value::list(r.keys().iter().map(|k| Value::Text(k.into())).collect()))
 }
 
 fn values(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -3063,7 +3064,7 @@ fn values(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn entries(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let r = record(a, 0, "entries", span)?;
-    Ok(Value::list(r.iter().map(|(k, v)| Value::list(vec![Value::Text(k.clone()), v.clone()])).collect()))
+    Ok(Value::list(r.iter().map(|(k, v)| Value::list(vec![Value::Text(k.into()), v.clone()])).collect()))
 }
 
 fn from_entries(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -3073,7 +3074,7 @@ fn from_entries(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         match pair {
             Value::List(p) if p.len() == 2 && matches!(p.as_slice()[0], Value::Text(_)) => {
                 if let Value::Text(k) = &p.as_slice()[0] {
-                    r.set(k.clone(), p.as_slice()[1].clone());
+                    r.set(k.into(), p.as_slice()[1].clone());
                 }
             }
             other => {
