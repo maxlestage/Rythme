@@ -20,6 +20,8 @@ tokio = { version = "1", features = ["rt-multi-thread"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 # The tests run every piece of code of the site through the real interpreter.
 rythme = { path = ".." }
+# The tests parse the manifests of the installable app.
+serde_json = "1"
 
 [profile.release]
 lto = "thin"
