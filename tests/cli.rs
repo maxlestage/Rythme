@@ -23,6 +23,7 @@ fn help_overview_and_topics() {
         "tests",
         "modules",
         "repl",
+        "doc",
         "editors",
         "builtins",
     ] {

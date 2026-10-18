@@ -12,6 +12,7 @@ pub mod builtins;
 pub mod check;
 pub mod compile;
 pub mod diagnostic;
+pub mod doc;
 pub mod driver;
 pub mod format;
 pub mod help;

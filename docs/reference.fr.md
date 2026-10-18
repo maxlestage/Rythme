@@ -61,7 +61,8 @@ la définition les détache ; des lignes de commentaire ordinaire `#`, non. Un
 `##` placé après du code sur la même ligne est un commentaire ordinaire. Les
 commentaires de documentation écrits au-dessus d'un `type` documentent le
 type : `help` les affiche pour chacun de ses constructeurs (voir
-[4.7](#47-types)).
+[4.7](#47-types)). `rythme doc` en tire la documentation de fichiers entiers
+(voir [7.6](#76-la-documentation--rythme-doc)).
 
 ```rythme
 # Un commentaire ordinaire : de `#` jusqu'à la fin de la ligne.
@@ -2397,6 +2398,7 @@ rythme [--lang fr|en] [--no-color] [COMMANDE] [ARGUMENTS...]
 | `check FICHIER...` | `verifier`, `vérifier` | vérifie chaque programme sans l'exécuter (voir [5.5](#55-la-vérification-avant-lexécution)) |
 | `test FICHIER [ARGS...]` | `tester` | lance les tests (voir [4.8](#48-tests)) |
 | `fmt [--check] FICHIER...` | `format`, `formater` | donne au code sa mise en forme officielle ; aussi un dossier, ou `-` pour l'entrée standard (voir [7.4](#74-la-mise-en-forme--rythme-fmt)) |
+| `doc [--html] [--out FICHIER] FICHIER...` | `documenter` | écrit la documentation de fichiers ou de dossiers, en Markdown ou sous forme de page web (voir [7.6](#76-la-documentation--rythme-doc)) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | exécute le code donné en argument, et affiche la valeur de sa dernière expression sauf si c'est `()` ; `ARGS` est donné à `args()` |
 | `lsp` | | le serveur de langage, lancé par un éditeur (voir [7.5](#75-éditeurs-et-serveur-de-langage)) |
 | `help [NOM]` | `aide`, `--help`, `-h` | la liste des sujets, ou l'aide d'un sujet, d'une fonction intégrée ou d'un code d'erreur |
@@ -2421,11 +2423,11 @@ avec le code de sortie 2.
 
 **Sujets d'aide.** `rythme help SUJET` accepte `start`, `syntax`,
 `functions`, `lists`, `text`, `records`, `types`, `match`, `errors`,
-`functional`, `tests`, `modules`, `repl`, `fmt`, `editors` et `builtins`,
-ainsi que des noms français ou alternatifs : `syntaxe`, `fonctions`,
-`listes`, `texte`, `enregistrements`, `motifs`, `erreurs`, `fonctionnel`,
-`boucles`, `fichiers`, `interactif`, `formater`, `lsp`, `vscode`,
-`éditeurs`, `bibliothèque`...
+`functional`, `tests`, `modules`, `repl`, `fmt`, `doc`, `editors` et
+`builtins`, ainsi que des noms français ou alternatifs : `syntaxe`,
+`fonctions`, `listes`, `texte`, `enregistrements`, `motifs`, `erreurs`,
+`fonctionnel`, `boucles`, `fichiers`, `interactif`, `formater`,
+`documentation`, `lsp`, `vscode`, `éditeurs`, `bibliothèque`...
 
 **Codes de sortie.**
 
@@ -2699,6 +2701,136 @@ choisit. Lancé à la main dans un terminal, il dit à quoi il sert ;
   Kate...) : tout éditeur qui parle le Language Server Protocol peut lancer
   `rythme lsp` ; [`editors/README.fr.md`](../editors/README.fr.md) donne la
   configuration pour chacun.
+
+### 7.6 La documentation : `rythme doc`
+
+```text
+rythme doc [--html] [--out FICHIER] FICHIER_OU_DOSSIER...
+```
+
+`rythme doc` écrit la documentation de programmes à partir de leurs
+commentaires `##` (voir [1.2](#12-commentaires)), de leurs types et des
+définitions de leurs fonctions. Rien n'est exécuté.
+
+- `rythme doc geometrie.ry` écrit du Markdown sur la sortie standard
+  (`geometrie` suffit quand `geometrie.ry` existe). Un dossier représente
+  tous les fichiers `.ry` qu'il contient, ainsi que ceux de ses
+  sous-dossiers, les dossiers cachés mis à part ; on peut donner plusieurs
+  fichiers et dossiers.
+- Un fichier est documenté avec les fichiers qu'il utilise (`use`), chacun
+  une seule fois : la documentation d'un programme comprend celle de ses
+  modules.
+- `--html` écrit à la place une seule page web, avec l'allure du site,
+  claire ou sombre comme le système. Elle n'a besoin de rien d'autre (pas de
+  script, pas d'autre fichier) : on peut l'ouvrir depuis le disque ou la
+  mettre sur n'importe quel serveur web.
+- `--out FICHIER` (`-o`) écrit dans un fichier et le dit ; un nom qui finit
+  par `.html` donne la page web.
+- `documenter` est un autre nom de `doc` ; les titres (*Fonctions*,
+  *Valeurs*...) sont dans la langue des messages.
+- Un fichier illisible, ou qui a une erreur de syntaxe, est signalé et
+  laissé de côté ; les autres sont documentés, et le code de sortie est 1.
+
+Pour chaque fichier viennent : sa description, les lignes `##` du début du
+fichier quand une ligne vide les sépare de ce qui suit ; les fichiers qu'il
+utilise, sous forme de liens ; ses types ; ses fonctions, avec la première
+ligne de **chaque** définition (motifs et conditions `if` compris) ; ses
+valeurs (avec leur définition quand elle tient sur une ligne) ; et les noms
+de ses tests. Les noms qui commencent par `_` sont laissés de côté, comme
+des détails de leur fichier.
+
+Dans un commentaire, un nom entre accents graves, comme `` `aire` `` ou
+`` `len(liste)` ``, devient un lien vers sa documentation ; un constructeur
+mène à son type ; les fonctions intégrées citées ainsi sont expliquées à la
+fin. Une ligne `##` vide commence un nouveau paragraphe, et les lignes qui
+commencent par `- ` forment une liste. En Markdown, le code est dans des
+blocs `~~~rythme`, et les liens utilisent les ancres que GitHub donne aux
+titres.
+
+Avec `geometrie.ry` :
+
+```rythme
+## Des formes et leurs aires.
+
+## Une forme à dessiner.
+type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+
+## L'aire d'une forme : pour un `Cercle`, `pi` fois le carré
+## de son rayon. Pour compter des formes, utilisez `len`.
+fn aire(Cercle(r)) = pi * _carre(r)
+fn aire(Rect(l, h)) = l * h
+
+## Le nombre de côtés d'un carré.
+cotes = 4
+
+fn _carre(x) = x * x
+
+test "aire d'un carré" = aire(Rect(2, 2)) == 4
+```
+
+`rythme doc geometrie.ry` écrit :
+
+```text
+# geometrie.ry
+
+Des formes et leurs aires.
+
+## Types
+
+### Forme
+
+~~~rythme
+type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+~~~
+
+Une forme à dessiner.
+
+## Fonctions
+
+### aire
+
+~~~rythme
+fn aire(Cercle(r))
+fn aire(Rect(l, h))
+~~~
+
+L'aire d'une forme : pour un [`Cercle`](#forme), `pi` fois le carré
+de son rayon. Pour compter des formes, utilisez [`len`](#len).
+
+## Valeurs
+
+### cotes
+
+~~~rythme
+cotes = 4
+~~~
+
+Le nombre de côtés d'un carré.
+
+## Tests
+
+- aire d'un carré
+
+## Fonctions intégrées citées
+
+### len
+
+~~~rythme
+len(x)
+~~~
+
+Longueur d'un texte (en caractères), d'une liste ou d'un enregistrement.
+
+Exemple :
+
+~~~rythme
+len("été")                 # 3
+len([1, 2])                # 2
+~~~
+```
+
+`rythme doc --html . --out doc.html` écrit la même chose pour tous les
+fichiers du dossier, en une seule page, avec un sommaire.
 
 ---
 
