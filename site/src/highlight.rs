@@ -243,9 +243,51 @@ fn pieces(parts: Vec<(Option<&'static str>, String)>) -> Vec<Node> {
         .collect()
 }
 
+/// The lines of `parts`, each a `<span class="line">` that wraps under its own
+/// indentation (`--indent`, its leading spaces, read by `site.css`): code never scrolls
+/// sideways, and a wrapped line still shows where it belongs. Each line but the last
+/// ends with its `\n`, so that copying the code gives it back as written.
+fn lines(source: &str, parts: Vec<(Option<&'static str>, String)>) -> Vec<Node> {
+    let mut lines: Vec<Vec<Node>> = vec![Vec::new()];
+    for (class, text) in parts {
+        for (k, piece) in text.split('\n').enumerate() {
+            if k > 0 {
+                lines.push(Vec::new());
+            }
+            if piece.is_empty() {
+                continue;
+            }
+            let lines = lines.last_mut().expect("one line at least");
+            lines.push(match class {
+                Some(class) => span().class(class).text(piece.to_owned()).into(),
+                None => Node::from(piece.to_owned()),
+            });
+        }
+    }
+    let last = lines.len() - 1;
+    lines
+        .into_iter()
+        .zip(source.split('\n'))
+        .enumerate()
+        .map(|(n, (nodes, text))| {
+            let indent = text.chars().take_while(|c| *c == ' ').count();
+            let line = span().class("line").children(nodes);
+            let line = if indent > 0 { line.attr("style", format!("--indent: {indent}")) } else { line };
+            if n < last { line.text("\n").into() } else { line.into() }
+        })
+        .collect()
+}
+
 /// `<pre class="code-block"><code>…</code></pre>` with colored Rythme code.
 pub fn code_block(source: &str) -> Element {
-    pre().class("code-block").child(code().attr("translate", "no").children(pieces(tokenize(source.trim_end_matches('\n')))))
+    let source = source.trim_end_matches('\n');
+    pre().class("code-block").child(code().attr("translate", "no").children(lines(source, tokenize(source))))
+}
+
+/// The same block for code of another language (a shell…), without colors.
+pub fn plain_block(source: &str) -> Element {
+    let source = source.trim_end_matches('\n');
+    pre().class("code-block").child(code().attr("translate", "no").children(lines(source, vec![(None, source.to_owned())])))
 }
 
 /// `<code>` with colored Rythme code, inside a sentence or a table.
@@ -309,6 +351,18 @@ mod tests {
         assert_eq!(class_of("# done"), Some("t-com"));
         assert_eq!(class_of("\"a\""), Some("t-str"));
         assert_eq!(class_of("3.5"), Some("t-num"));
+    }
+
+    #[test]
+    fn blocks_wrap_line_by_line_under_their_indentation() {
+        let html = Node::from(code_block("fn f(x) =\n  \"a\nb\"\n\n    x # done\n")).render();
+        assert_eq!(html.matches(r#"<span class="line""#).count(), 5, "{html}");
+        assert!(html.contains(r#"<span class="line" style="--indent: 2">  <span class="t-str">&quot;a"#), "{html}");
+        assert!(html.contains(r#"<span class="line" style="--indent: 4">    x"#), "{html}");
+        assert!(html.contains("<span class=\"line\">\n</span>"), "an empty line: {html}");
+        assert!(html.ends_with("done</span></span></code></pre>"), "no new line after the last line: {html}");
+        let plain = Node::from(plain_block("cargo install\n  --path .")).render();
+        assert!(plain.contains(r#"<span class="line" style="--indent: 2">  --path .</span>"#), "{plain}");
     }
 
     #[test]

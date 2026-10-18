@@ -4,7 +4,8 @@ The website of Rythme, written in Rust with [Paquets](https://paquets-90dfc06b6f
 the server is a `paquets::App`, the pages are `paquets::Page`s built with active views,
 rendered on the server with their SEO tags and a strict Content-Security-Policy.
 French and English, mobile first. It installs as an app and works offline (see
-[The installable app](#the-installable-app)).
+[The installable app](#the-installable-app)), has color themes and never scrolls
+sideways (see [Themes and layout](#themes-and-layout)).
 
 | Path | Page |
 |---|---|
@@ -23,7 +24,8 @@ French and English, mobile first. It installs as an app and works offline (see
 | Texts in both languages | `src/i18n.rs` (a missing translation does not compile) |
 | Pages, header with the burger menu and the language switch | `src/pages.rs` |
 | Server and routes | `src/server.rs`, `src/routes.rs` |
-| Rythme code colors | `src/highlight.rs` |
+| Rythme code colors, code blocks that wrap line by line | `src/highlight.rs` |
+| Color themes: names, `theme-color`, the inline script of the head | `src/themes.rs` (colors in `public/site.css`) |
 | Styles (mobile first), menu, playground | `public/site.css`, `public/site.js`, `public/playground.js` |
 | Manifests, service worker | `src/pwa.rs`, `src/sw.js` |
 | Icons, `favicon.ico`, screenshots of the install dialog | `public/icons/`, `public/screenshots/`, made by `tests/pwa/images.js` |
@@ -98,11 +100,51 @@ browsers check service workers past their HTTP cache (`updateViaCache: "none"`).
 `cargo test` checks the manifests (served as `application/manifest+json`, parsed,
 URLs right at the root and behind `/Rythme`, every icon and screenshot present with
 its size), the service worker (`no-cache`, every URL it saves answers), the tags of
-every page and the offline pages. The rest needs a real browser: the scripts of
+every page and the offline pages, the theme picker and the hash of the inline script
+in the policy of every page. The rest needs a real browser: the scripts of
 [`tests/pwa/`](tests/pwa/README.md), with Playwright and Chromium, check that the app
 is installable, works offline (every page in both languages, the playground runs,
 checks, tests and formats), shows the offline page, and offers a new version, both
-with the server and with the static export.
+with the server and with the static export; and that no page scrolls sideways, in
+every theme, with the contrast of each (`layout.js`). The `browser` job of CI runs
+both.
+
+## Themes and layout
+
+**Themes.** The menu has a theme picker (in the burger panel on a phone, a button of
+the bar on a computer): **Auto** (follows the system's light or dark), **Light**,
+**Dark**, **High contrast** (white on black with a yellow accent, every text at 7:1
+or more, WCAG AAA), **Sepia** (warm paper for long reading) and **Tempo** (a pink
+beat on deep violet). Every color of the site is a custom property of `site.css`,
+redefined under `:root[data-theme="…"]` (Auto has no attribute and follows
+`prefers-color-scheme`): pages, code blocks and the playground's editor, tables,
+the offline page, the update and install banners. The picker is a `fieldset` of real
+radio buttons with their labels in both languages: Tab reaches the chosen one, the
+arrow keys choose, and on a computer Escape (or Enter) closes the panel and gives
+the focus back to its button (`aria-expanded`). The choice is kept in `localStorage`
+(`rythme-theme`, every access in `try`/`catch`) and applied before the first paint by
+a tiny inline script of the head (`themes::head_script`), which also sets the
+`theme-color` of the browser's bar; Paquets allows it in the Content-Security-Policy
+by its hash, the policy stays strict. Its tabs follow each other (`storage` event).
+
+| Theme | Text on paper | Lowest text pair |
+|---|---|---|
+| Light | 15.22:1 | 4.61:1 |
+| Dark | 15.38:1 | 5.01:1 |
+| High contrast | 21.00:1 | 7.61:1 |
+| Sepia | 13.13:1 | 5.17:1 |
+| Tempo | 16.46:1 | 5.64:1 |
+
+**No horizontal scrolling**, at any width from 320px, and no element wider than the
+screen: code blocks wrap line by line, each wrapped line two columns under its own
+indentation (`highlight.rs` writes one block per line with its `--indent`); the
+playground's editor wraps too (the field and its colors under it share the same
+width and reserved scrollbar gutter, and each line number takes the height of its
+line); the tables of the home page and of the guide become cards on phones, each
+cell with the title of its column (`data-label`); long words, addresses and commands
+break. Nothing is hidden with `overflow-x: hidden`.
+
+`tests/pwa/layout.js` checks all of it in Chromium (see [`tests/pwa/`](tests/pwa/README.md)).
 
 ## Heroku
 
