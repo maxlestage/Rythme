@@ -16,10 +16,10 @@ fn decrire(resultat) = match resultat
   Err(message) -> "erreur : {message}"
 end
 
-fn verifier_mot_de_passe(mdp) =
-  if len(mdp) < 8 then Err("trop court")
-  else if not any(chars(mdp), is_digit) then Err("aucun chiffre")
-  else Ok(mdp)
+fn verifier_code(code) =
+  if len(code) < 8 then Err("trop court")
+  else if not any(chars(code), is_digit) then Err("aucun chiffre")
+  else Ok(code)
 
 # --- Tests (ne les modifiez pas) ---
 
@@ -42,8 +42,8 @@ test "décrire"
   assert_eq(decrire(lire_age("-5")), "erreur : un âge ne peut pas être négatif")
 end
 
-test "vérifier le mot de passe"
-  assert_eq(verifier_mot_de_passe("rythme2024"), Ok("rythme2024"))
-  assert_eq(verifier_mot_de_passe("abc1"), Err("trop court"))
-  assert_eq(verifier_mot_de_passe("fonctionnel"), Err("aucun chiffre"))
+test "vérifier le code"
+  assert_eq(verifier_code("rythme2024"), Ok("rythme2024"))
+  assert_eq(verifier_code("abc1"), Err("trop court"))
+  assert_eq(verifier_code("fonctionnel"), Err("aucun chiffre"))
 end

@@ -16,10 +16,10 @@ fn describe(result) = match result
   Err(message) -> "error: {message}"
 end
 
-fn check_password(password) =
-  if len(password) < 8 then Err("too short")
-  else if not any(chars(password), is_digit) then Err("no digit")
-  else Ok(password)
+fn check_code(code) =
+  if len(code) < 8 then Err("too short")
+  else if not any(chars(code), is_digit) then Err("no digit")
+  else Ok(code)
 
 # --- Tests (do not change them) ---
 
@@ -42,8 +42,8 @@ test "describe"
   assert_eq(describe(parse_age("-5")), "error: an age cannot be negative")
 end
 
-test "check password"
-  assert_eq(check_password("rythme2024"), Ok("rythme2024"))
-  assert_eq(check_password("abc1"), Err("too short"))
-  assert_eq(check_password("functional"), Err("no digit"))
+test "check code"
+  assert_eq(check_code("rythme2024"), Ok("rythme2024"))
+  assert_eq(check_code("abc1"), Err("too short"))
+  assert_eq(check_code("functional"), Err("no digit"))
 end
