@@ -11,14 +11,17 @@ use crate::source;
 use crate::suggest;
 use crate::value::Value;
 
-/// Topic names, in the order of the guided tour, with their French and Spanish aliases.
+/// Topic names, in the order of the guided tour, with their aliases in the other languages.
 pub const TOPICS: &[(&str, &[&str])] = &[
-    ("start", &["intro", "debut", "début", "commencer", "inicio", "empezar"]),
-    ("syntax", &["syntaxe", "sintaxis"]),
-    ("functions", &["fonctions", "fn", "funciones"]),
-    ("lists", &["listes", "list", "liste", "listas"]),
-    ("text", &["texte", "texts", "textes", "string", "texto", "textos"]),
-    ("records", &["enregistrements", "record", "enregistrement", "registros", "registro"]),
+    ("start", &["intro", "debut", "début", "commencer", "inicio", "empezar", "einstieg", "anfang", "comecar", "começar", "开始", "入门"]),
+    ("syntax", &["syntaxe", "sintaxis", "sintaxe", "语法"]),
+    ("functions", &["fonctions", "fn", "funciones", "funktionen", "funcoes", "funções", "函数"]),
+    ("lists", &["listes", "list", "liste", "listas", "listen", "列表"]),
+    ("text", &["texte", "texts", "textes", "string", "texto", "textos", "文本"]),
+    (
+        "records",
+        &["enregistrements", "record", "enregistrement", "registros", "registro", "datensatz", "datensaetze", "datensätze", "记录"],
+    ),
     (
         "dicts",
         &[
@@ -37,15 +40,31 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "diccionario",
             "conjuntos",
             "conjunto",
+            "woerterbuch",
+            "wörterbuch",
+            "mengen",
+            "menge",
+            "dicionarios",
+            "dicionários",
+            "dicionario",
+            "dicionário",
+            "字典",
+            "集合",
         ],
     ),
-    ("types", &["type", "tipos"]),
-    ("match", &["patterns", "motifs", "patrones"]),
-    ("errors", &["erreurs", "option", "result", "?", "errores"]),
-    ("functional", &["fonctionnel", "loops", "boucles", "funcional", "bucles"]),
-    ("tests", &["test", "pruebas", "prueba"]),
-    ("exercises", &["exercices", "exercise", "exercice", "ejercicios", "ejercicio"]),
-    ("modules", &["use", "files", "fichiers", "modulos", "módulos", "archivos"]),
+    ("types", &["type", "tipos", "typen", "typ", "类型"]),
+    ("match", &["patterns", "motifs", "patrones", "muster", "padroes", "padrões", "模式", "匹配"]),
+    ("errors", &["erreurs", "option", "result", "?", "errores", "fehler", "erros", "错误"]),
+    (
+        "functional",
+        &["fonctionnel", "loops", "boucles", "funcional", "bucles", "funktional", "schleifen", "lacos", "laços", "函数式", "循环"],
+    ),
+    ("tests", &["test", "pruebas", "prueba", "testes", "teste", "测试"]),
+    (
+        "exercises",
+        &["exercices", "exercise", "exercice", "ejercicios", "ejercicio", "uebungen", "übungen", "exercicios", "exercícios", "练习"],
+    ),
+    ("modules", &["use", "files", "fichiers", "modulos", "módulos", "archivos", "module", "dateien", "arquivos", "模块", "文件"]),
     (
         "system",
         &[
@@ -64,6 +83,11 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "sistema",
             "carpetas",
             "rutas",
+            "ordner",
+            "pfade",
+            "pastas",
+            "caminhos",
+            "系统",
         ],
     ),
     (
@@ -85,18 +109,102 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "proyectos",
             "proyecto",
             "paquetes",
+            "projekte",
+            "projekt",
+            "pakete",
+            "projetos",
+            "projeto",
+            "pacotes",
+            "项目",
+            "包",
         ],
     ),
-    ("dates", &["date", "heure", "heures", "temps", "calendar", "calendrier", "datetime", "fechas", "fecha", "hora"]),
+    (
+        "dates",
+        &[
+            "date",
+            "heure",
+            "heures",
+            "temps",
+            "calendar",
+            "calendrier",
+            "datetime",
+            "fechas",
+            "fecha",
+            "hora",
+            "datum",
+            "zeit",
+            "kalender",
+            "datas",
+            "data",
+            "horas",
+            "日期",
+            "时间",
+        ],
+    ),
     (
         "regex",
-        &["regexp", "regexes", "regular-expressions", "expressions-regulieres", "expressions-régulières", "re", "expresiones-regulares"],
+        &[
+            "regexp",
+            "regexes",
+            "regular-expressions",
+            "expressions-regulieres",
+            "expressions-régulières",
+            "re",
+            "expresiones-regulares",
+            "regulaere-ausdruecke",
+            "reguläre-ausdrücke",
+            "expressoes-regulares",
+            "expressões-regulares",
+            "正则表达式",
+            "正则",
+        ],
     ),
-    ("repl", &["interactive", "interactif", "interactivo"]),
-    ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme", "formatear"]),
-    ("doc", &["documentation", "documenter", "docs", "documentacion", "documentación"]),
-    ("steps", &["etapes", "étapes", "step", "etape", "étape", "stepper", "pas-a-pas", "pas-à-pas", "pasos", "paso", "paso-a-paso"]),
-    ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide", "editores"]),
+    ("repl", &["interactive", "interactif", "interactivo", "interaktiv", "interativo", "交互"]),
+    (
+        "fmt",
+        &[
+            "format",
+            "formater",
+            "formatage",
+            "formatting",
+            "style",
+            "mise-en-forme",
+            "formatear",
+            "formatieren",
+            "formatar",
+            "formatacao",
+            "formatação",
+            "格式化",
+        ],
+    ),
+    (
+        "doc",
+        &["documentation", "documenter", "docs", "documentacion", "documentación", "dokumentation", "documentacao", "documentação", "文档"],
+    ),
+    (
+        "steps",
+        &[
+            "etapes",
+            "étapes",
+            "step",
+            "etape",
+            "étape",
+            "stepper",
+            "pas-a-pas",
+            "pas-à-pas",
+            "pasos",
+            "paso",
+            "paso-a-paso",
+            "schritte",
+            "schritt-fuer-schritt",
+            "schritt-für-schritt",
+            "passos",
+            "passo-a-passo",
+            "步骤",
+        ],
+    ),
+    ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide", "editores", "editoren", "编辑器"]),
     ("ruby", &["rb", "rubyist", "blocks", "blocs", "symbols", "symboles"]),
     (
         "builtins",
@@ -109,6 +217,11 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "stdlib",
             "biblioteca",
             "funciones-integradas",
+            "eingebaute-funktionen",
+            "bibliothek",
+            "funcoes-embutidas",
+            "funções-embutidas",
+            "内置函数",
         ],
     ),
 ];
@@ -139,7 +252,7 @@ Commands
   rythme explain E003       explain an error code
   rythme -e "code"          run a piece of code
   rythme lsp                language server, for editors (VS Code, Neovim...)
-  option --lang en|fr|es    language of the messages (or RYTHME_LANG)
+  option --lang CODE        language of the messages: en, fr, es, de, pt, zh (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
   start       the language in one minute
@@ -188,7 +301,7 @@ Commandes
   rythme explain E003       expliquer un code d'erreur
   rythme -e "code"          exécuter un morceau de code
   rythme lsp                serveur de langage, pour les éditeurs (VS Code, Neovim...)
-  option --lang en|fr|es    langue des messages (ou variable RYTHME_LANG)
+  option --lang CODE        langue des messages : en, fr, es, de, pt, zh (ou variable RYTHME_LANG)
 
 Sujets (rythme help SUJET)
   start       le langage en une minute
@@ -409,7 +522,8 @@ pub fn builtins_list() -> String {
         out.push_str(&format!("\n{}\n", cat.title()));
         for b in BUILTINS.iter().filter(|b| b.cat == cat) {
             let doc = b.doc();
-            let short = doc.split(". ").next().unwrap_or(doc).trim_end_matches('.');
+            // The first sentence, ended by ". " (or "。" in Chinese).
+            let short = doc.split(". ").next().unwrap_or(doc).split('。').next().unwrap_or(doc).trim_end_matches('.');
             out.push_str(&format!("  {:<28} {}\n", b.sig, short));
         }
         if cat == Category::Numbers {
@@ -425,7 +539,7 @@ pub fn builtins_list() -> String {
             let mut line = t!("  Ruby names:", "  Noms Ruby :");
             for (i, r) in ruby.iter().enumerate() {
                 let piece = if i + 1 < ruby.len() { format!(" {r},") } else { format!(" {r}") };
-                if line.chars().count() + piece.chars().count() > 96 {
+                if crate::diagnostic::display_width(&line) + crate::diagnostic::display_width(&piece) > 96 {
                     out.push_str(&line);
                     out.push('\n');
                     line = "   ".to_string();
@@ -2014,7 +2128,7 @@ starts by itself:
 
 VS Code
   the extension in editors/vscode: colors, snippets and the language server.
-  Settings: rythme.path (the program), rythme.language (en, fr, es or auto).
+  Settings: rythme.path (the program), rythme.language (en, fr, es, de, pt, zh or auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   every editor that speaks the Language Server Protocol: tell it to start
@@ -2028,7 +2142,7 @@ Zed
 Colors in Neovim, Helix and Zed
   the Tree-sitter grammar in editors/tree-sitter-rythme (see editors/README.md).
 
-The language of the messages follows the editor, unless `--lang en|fr|es` or
+The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh) or
 RYTHME_LANG chooses it: rythme --lang fr lsp"#;
 
 const EDITORS_FR: &str = r#"RYTHME DANS VOTRE ÉDITEUR
@@ -2046,7 +2160,7 @@ serveur de langage, que l'éditeur lance tout seul :
 
 VS Code
   l'extension dans editors/vscode : couleurs, extraits de code et serveur de
-  langage. Réglages : rythme.path (le programme), rythme.language (en, fr, es ou auto).
+  langage. Réglages : rythme.path (le programme), rythme.language (en, fr, es, de, pt, zh ou auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   tout éditeur qui parle le Language Server Protocol : demandez-lui de lancer
@@ -2061,7 +2175,7 @@ Zed
 Couleurs dans Neovim, Helix et Zed
   la grammaire Tree-sitter dans editors/tree-sitter-rythme (voir editors/README.fr.md).
 
-La langue des messages suit celle de l'éditeur, sauf si `--lang en|fr|es` ou
+La langue des messages suit celle de l'éditeur, sauf si `--lang` (en, fr, es, de, pt, zh) ou
 RYTHME_LANG la choisit : rythme --lang fr lsp"#;
 
 const REPL_EN: &str = r#"THE INTERACTIVE MODE
@@ -2075,7 +2189,7 @@ Definitions are kept from one line to the next. If a line is not finished
 Commands
   :help           this help              :quit          leave (or Ctrl-D)
   :doc map        help on a name         :load f.ry     load a file
-  :reset          forget everything      :lang en|fr|es change the language
+  :reset          forget everything      :lang fr       change the language (en, fr, es, de, pt, zh)
   :learn          guided tour            :explain E003  explain an error
   :steps fib(4)   show the calculation step by step
 The Tab key completes names."#;
@@ -2092,7 +2206,7 @@ suivante.
 Commandes
   :help           cette aide             :quit          quitter (ou Ctrl-D)
   :doc map        aide sur un nom        :load f.ry     charger un fichier
-  :reset          tout oublier           :lang en|fr|es changer de langue
+  :reset          tout oublier           :lang en       changer de langue (en, fr, es, de, pt, zh)
   :learn          visite guidée          :explain E003  expliquer une erreur
   :etapes fib(4)  montrer le calcul étape par étape
 La touche Tab complète les noms."#;
