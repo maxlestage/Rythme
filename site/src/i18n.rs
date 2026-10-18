@@ -215,6 +215,11 @@ pub struct Texts {
     pub offline_title: &'static str,
     pub offline_text: &'static str,
     pub offline_retry: &'static str,
+    // The color themes (`themes.rs`): the picker of the menu
+    pub theme_label: &'static str,
+    pub theme_title: &'static str,
+    /// In the order of `themes::THEMES`: Auto, Light, Dark, High contrast, Sepia, Tempo.
+    pub theme_names: [&'static str; 6],
 }
 
 pub const FR: Texts = Texts {
@@ -412,6 +417,9 @@ pub const FR: Texts = Texts {
     offline_title: "Vous êtes hors ligne",
     offline_text: "Cette page n'a pas été enregistrée pour être lue sans réseau. Le reste du site fonctionne hors ligne, playground compris.",
     offline_retry: "Réessayer",
+    theme_label: "Thème",
+    theme_title: "Choisir les couleurs du site",
+    theme_names: ["Auto (comme le système)", "Clair", "Sombre", "Contraste élevé", "Sépia", "Tempo"],
 };
 
 pub const EN: Texts = Texts {
@@ -606,4 +614,7 @@ pub const EN: Texts = Texts {
     offline_title: "You are offline",
     offline_text: "This page was not saved for reading without a network. The rest of the site works offline, the playground included.",
     offline_retry: "Try again",
+    theme_label: "Theme",
+    theme_title: "Choose the colors of the site",
+    theme_names: ["Auto (like the system)", "Light", "Dark", "High contrast", "Sepia", "Tempo"],
 };

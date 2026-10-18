@@ -70,7 +70,9 @@
     let out = "";
     let i = 0;
     const n = code.length;
-    const span = (cls, text) => `<span class="${cls}">${escapeHtml(text)}</span>`;
+    // A piece that spans lines (a text on several lines) is closed at each new line:
+    // every line of the result stands alone.
+    const span = (cls, text) => text.split("\n").map((part) => `<span class="${cls}">${escapeHtml(part)}</span>`).join("\n");
     while (i < n) {
       const c = code[i];
       if (c === "#") {
@@ -106,24 +108,45 @@
         i += 1;
       }
     }
-    // A final new line needs a character after it to be displayed.
-    return out + "\n";
+    // One block per line, which wraps like the same line in the field; its new line
+    // gives an empty line its height.
+    return out.split("\n").map((line) => `<span>${line}\n</span>`).join("");
+  }
+
+  // Each line number takes the height of its line, wrapped or not.
+  function numberLines() {
+    const lines = highlight.children;
+    const numbers = document.createDocumentFragment();
+    for (let k = 0; k < lines.length; k++) {
+      const number = document.createElement("div");
+      number.textContent = String(k + 1);
+      number.style.height = `${lines[k].getBoundingClientRect().height}px`;
+      numbers.append(number);
+    }
+    gutter.replaceChildren(numbers);
+    syncScroll();
   }
 
   function refreshEditor() {
     const code = source.value;
     highlight.innerHTML = colorize(code);
-    const count = code.split("\n").length;
-    let nums = "";
-    for (let k = 1; k <= count; k++) nums += k + "\n";
-    gutter.textContent = nums;
-    $("lines").textContent = UI.lines(count);
-    syncScroll();
+    $("lines").textContent = UI.lines(code.split("\n").length);
+    numberLines();
   }
+  // The lines wrap again when the editor changes width, or when its font arrives.
+  if ("ResizeObserver" in window) {
+    let width = 0;
+    new ResizeObserver(() => {
+      if (highlight.clientWidth !== width) {
+        width = highlight.clientWidth;
+        numberLines();
+      }
+    }).observe(highlight);
+  }
+  if (document.fonts) document.fonts.ready.then(numberLines);
 
   function syncScroll() {
     highlight.scrollTop = source.scrollTop;
-    highlight.scrollLeft = source.scrollLeft;
     gutter.scrollTop = source.scrollTop;
   }
 

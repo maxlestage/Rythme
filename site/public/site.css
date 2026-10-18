@@ -1,28 +1,103 @@
 /* The Rythme website. Mobile first: every rule is written for a phone, and the
    media queries at the end of each part add room for wider screens.
-   The look is a score: paper, ink, a blue accent, and four beats. */
+   The look is a score: paper, ink, a blue accent, and four beats.
+   Nothing scrolls sideways: code wraps, tables become cards on phones, long words
+   break. tests/pwa/layout.js checks it at every width, in every theme. */
 
-:root {
+/* ----- color themes --------------------------------------------------------------- */
+
+/* Every color of the site is one of these custom properties. The theme picker of the
+   menu sets `data-theme` on <html>, before the first paint (the inline script of the
+   head reads the choice kept in localStorage); without it, Auto follows the system's
+   light or dark. Text is at 4.5:1 or more on every background of its theme, 7:1 in
+   High contrast (WCAG AAA), checked by tests/pwa/layout.js. The paper of each theme
+   is also its `theme-color` (src/themes.rs). */
+:root, :root[data-theme="light"] {
   --paper: #eef1f6;
   --staff: #fafbfd;
   --ink: #161b26;
   --ink-soft: #505a6e;
-  --rule: #d4dae5;
+  --rule: #c9d0dd;
   --accent: #3245c2;
   --accent-ink: #ffffff;
   --accent-soft: #e1e5fa;
   --err: #b4302a;
-  --warn: #8f5b07;
+  --err-ink: #ffffff;
+  --warn: #8a5706;
   --ok: #1d7446;
   --hint: #1b6a6f;
   --tok-kw: #8a2e9a;
   --tok-str: #1d7446;
-  --tok-num: #a1520a;
+  --tok-num: #9a4e09;
   --tok-ctor: #1d6a8e;
-  --tok-com: #6b7487;
+  --tok-com: #566073;
   --tok-fn: #3245c2;
+  --notice-bg: #161b26;
+  --notice-ink: #eef1f6;
+  --cmd-bg: #161b26;
+  --cmd-ink: #eef1f6;
   --bar-bg: rgb(238 241 246 / 0.86);
   --shadow: 0 1px 2px rgb(22 27 38 / 0.06), 0 8px 24px rgb(22 27 38 / 0.06);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --paper: #0e1118; --staff: #151a24; --ink: #e4e8f0; --ink-soft: #9ba4b6; --rule: #2f3850;
+    --accent: #8d9dff; --accent-ink: #0e1118; --accent-soft: #222a4b;
+    --err: #ff7b72; --err-ink: #0e1118; --warn: #e6b04c; --ok: #6fd49a; --hint: #6cc6ca;
+    --tok-kw: #d68cf0; --tok-str: #8fd6a8; --tok-num: #f0a65e; --tok-ctor: #7cc0e8; --tok-com: #929bae; --tok-fn: #8d9dff;
+    --notice-bg: #e4e8f0; --notice-ink: #0e1118; --cmd-bg: #05070b; --cmd-ink: #e4e8f0;
+    --bar-bg: rgb(14 17 24 / 0.86);
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
+    color-scheme: dark;
+  }
+}
+/* The same as Auto in a dark system. */
+:root[data-theme="dark"] {
+  --paper: #0e1118; --staff: #151a24; --ink: #e4e8f0; --ink-soft: #9ba4b6; --rule: #2f3850;
+  --accent: #8d9dff; --accent-ink: #0e1118; --accent-soft: #222a4b;
+  --err: #ff7b72; --err-ink: #0e1118; --warn: #e6b04c; --ok: #6fd49a; --hint: #6cc6ca;
+  --tok-kw: #d68cf0; --tok-str: #8fd6a8; --tok-num: #f0a65e; --tok-ctor: #7cc0e8; --tok-com: #929bae; --tok-fn: #8d9dff;
+  --notice-bg: #e4e8f0; --notice-ink: #0e1118; --cmd-bg: #05070b; --cmd-ink: #e4e8f0;
+  --bar-bg: rgb(14 17 24 / 0.86);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
+  color-scheme: dark;
+}
+/* High contrast: white on black and a yellow accent, every text at 7:1 or more (WCAG
+   AAA), borders that stand out. */
+:root[data-theme="contrast"] {
+  --paper: #000000; --staff: #0b0b0b; --ink: #ffffff; --ink-soft: #e8e8e8; --rule: #9a9a9a;
+  --accent: #ffe14d; --accent-ink: #000000; --accent-soft: #2e2a00;
+  --err: #ffa3a3; --err-ink: #000000; --warn: #ffd27a; --ok: #7dffaa; --hint: #80f2f7;
+  --tok-kw: #ffb8ff; --tok-str: #9effbe; --tok-num: #ffc98a; --tok-ctor: #a6e6ff; --tok-com: #d9d9d9; --tok-fn: #ffe14d;
+  --notice-bg: #ffffff; --notice-ink: #000000; --cmd-bg: #000000; --cmd-ink: #ffffff;
+  --bar-bg: rgb(0 0 0 / 0.94);
+  --shadow: 0 0 0 1px #9a9a9a;
+  color-scheme: dark;
+}
+/* Sepia: warm paper and brown ink, for long reading. */
+:root[data-theme="sepia"] {
+  --paper: #f3ead6; --staff: #fbf5e7; --ink: #2c2117; --ink-soft: #5a4734; --rule: #d8c8a8;
+  --accent: #8a3a12; --accent-ink: #fff8ec; --accent-soft: #f0dcc4;
+  --err: #a12a1c; --err-ink: #fff8ec; --warn: #744b00; --ok: #2f6420; --hint: #245e5c;
+  --tok-kw: #7f2a6a; --tok-str: #3d6420; --tok-num: #8a4207; --tok-ctor: #245e7a; --tok-com: #615139; --tok-fn: #8a3a12;
+  --notice-bg: #2c2117; --notice-ink: #f3ead6; --cmd-bg: #2c2117; --cmd-ink: #f3ead6;
+  --bar-bg: rgb(243 234 214 / 0.88);
+  --shadow: 0 1px 2px rgb(44 33 23 / 0.08), 0 8px 24px rgb(44 33 23 / 0.08);
+  color-scheme: light;
+}
+/* Tempo: a concert at night, a pink beat on deep violet. */
+:root[data-theme="tempo"] {
+  --paper: #160f2e; --staff: #20173f; --ink: #f5f0ff; --ink-soft: #c3b6e8; --rule: #43376e;
+  --accent: #ff7ac0; --accent-ink: #160f2e; --accent-soft: #3e2350;
+  --err: #ff8a80; --err-ink: #160f2e; --warn: #ffd166; --ok: #5ef0b0; --hint: #5fd8ff;
+  --tok-kw: #ff7ac0; --tok-str: #9cf27a; --tok-num: #ffd166; --tok-ctor: #5fd8ff; --tok-com: #b3a6d9; --tok-fn: #c6a8ff;
+  --notice-bg: #f5f0ff; --notice-ink: #160f2e; --cmd-bg: #0b0718; --cmd-ink: #f5f0ff;
+  --bar-bg: rgb(22 15 46 / 0.88);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(8 4 24 / 0.4);
+  color-scheme: dark;
+}
+:root {
   --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -30,18 +105,6 @@
   --bar-h: 60px;
   --radius: 12px;
   --code-size: 13.5px;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #0e1118; --staff: #151a24; --ink: #e4e8f0; --ink-soft: #9ba4b6; --rule: #283043;
-    --accent: #8d9dff; --accent-ink: #0e1118; --accent-soft: #222a4b;
-    --err: #ff7b72; --warn: #e6b04c; --ok: #6fd49a; --hint: #6cc6ca;
-    --tok-kw: #d68cf0; --tok-str: #8fd6a8; --tok-num: #f0a65e; --tok-ctor: #7cc0e8; --tok-com: #7a8396; --tok-fn: #8d9dff;
-    --bar-bg: rgb(14 17 24 / 0.86);
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
-    color-scheme: dark;
-  }
 }
 
 /* ----- base ----------------------------------------------------------------------- */
@@ -55,8 +118,12 @@ body {
   background: var(--paper);
   color: var(--ink);
   font: 16px/1.6 var(--body);
-  overflow-x: hidden;
+  /* A word or an address longer than the line breaks rather than pushing the page. */
+  overflow-wrap: break-word;
 }
+/* In running text, a long word or address may break anywhere, even where the layout
+   measures its narrowest content (grid and flex items). */
+p, dd, td { overflow-wrap: anywhere; }
 /* Code exactly as typed: `|>` must not turn into a triangle. */
 code, pre, textarea, kbd, .file, .topic, .chip, .lang, .gutter, #search {
   font-variant-ligatures: none;
@@ -67,7 +134,7 @@ p { margin: 0; }
 a { color: var(--accent); text-underline-offset: 3px; }
 button, select, input, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
-code { font-family: var(--mono); font-size: 0.92em; }
+code { font-family: var(--mono); font-size: 0.92em; overflow-wrap: anywhere; }
 ul, ol { margin: 0; padding: 0; }
 
 .skip {
@@ -115,7 +182,7 @@ ul, ol { margin: 0; padding: 0; }
 .btn--primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .btn--primary:hover { filter: brightness(1.08); }
 .btn--ghost { background: transparent; }
-.btn--stop { background: var(--err); border-color: var(--err); color: var(--staff); }
+.btn--stop { background: var(--err); border-color: var(--err); color: var(--err-ink); }
 .btn--lg { min-height: 50px; padding: 10px 22px; font-size: 16px; }
 .btn--sm { min-height: 38px; padding: 6px 12px; font-size: 14px; }
 
@@ -164,6 +231,12 @@ ul, ol { margin: 0; padding: 0; }
 }
 .lang__link:hover { color: var(--ink); }
 .lang__link.is-active { background: var(--accent); color: var(--accent-ink); }
+/* The smallest phones (320px): the logo, the language switch and the burger on one line. */
+@media (max-width: 379px) {
+  .bar__inner { column-gap: 6px; }
+  .brand { gap: 6px; }
+  .lang__link { min-width: 34px; padding: 0 7px; }
+}
 
 .burger {
   display: inline-flex; align-items: center; justify-content: center;
@@ -257,17 +330,27 @@ ul, ol { margin: 0; padding: 0; }
   .cards--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* Tables reflow instead of scrolling: cards on phones (each cell with the title of its
+   column, `data-label`), a table with wrapping cells on wider screens. */
+.table-wrap { min-width: 0; }
 
 /* ----- code ------------------------------------------------------------------------- */
 
+/* Code wraps rather than scrolling sideways. Each line of a block (`highlight.rs`) is
+   a block of its own that wraps under its indentation, two columns further: a wrapped
+   line still shows where it belongs. */
 .code-block, .output {
-  margin: 0; padding: 16px; overflow-x: auto;
+  margin: 0; padding: 16px; min-width: 0;
   font: var(--code-size)/1.6 var(--mono); tab-size: 2;
+  white-space: pre-wrap; overflow-wrap: anywhere;
   background: var(--staff); color: var(--ink);
 }
 .code-block code, .output code { font-size: inherit; }
-.output { white-space: pre-wrap; overflow-wrap: anywhere; }
+.code-block code { display: block; }
+.code-block .line {
+  --hang: calc((var(--indent, 0) + 2) * 1ch);
+  display: block; padding-left: var(--hang); text-indent: calc(-1 * var(--hang));
+}
 .t-kw { color: var(--tok-kw); font-weight: 600; }
 .t-str { color: var(--tok-str); }
 .t-num { color: var(--tok-num); }
@@ -285,23 +368,22 @@ ul, ol { margin: 0; padding: 0; }
 .output .pass { color: var(--ok); }
 .output .fail { color: var(--err); }
 .output .empty { color: var(--ink-soft); font-family: var(--body); font-size: 14px; }
-.code-inline { white-space: nowrap; }
 
 .file { font: 600 13px/1.2 var(--mono); }
 .file::before { content: "◆"; color: var(--accent); margin-right: 8px; font-size: 10px; vertical-align: 1px; }
 
 .command {
   display: flex; align-items: center; gap: 8px; min-width: 0;
-  background: var(--ink); color: var(--paper); border-radius: 10px; padding: 6px 6px 6px 14px;
+  background: var(--cmd-bg); color: var(--cmd-ink); border: 1px solid var(--rule); border-radius: 10px; padding: 6px 6px 6px 14px;
 }
-@media (prefers-color-scheme: dark) { .command { background: #05070b; color: var(--ink); } }
-.command code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font-size: 13.5px; padding: 8px 0; }
+/* A long command wraps, broken anywhere: it is copied by its button anyway. */
+.command code { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; padding: 8px 0; }
 .command__prompt { opacity: 0.5; margin-right: 10px; user-select: none; }
 .command__copy {
-  flex: none; min-height: 36px; padding: 0 12px; border: 1px solid rgb(255 255 255 / 0.2); border-radius: 8px;
+  flex: none; min-height: 36px; padding: 0 12px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); border-radius: 8px;
   background: transparent; color: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
 }
-.command__copy:hover { background: rgb(255 255 255 / 0.1); }
+.command__copy:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
 
 /* ----- home: hero -------------------------------------------------------------------- */
 
@@ -349,7 +431,7 @@ ul, ol { margin: 0; padding: 0; }
 .terminal__head i { width: 10px; height: 10px; border-radius: 50%; background: var(--rule); }
 .terminal__head span { margin-left: 8px; font: 500 12px var(--mono); color: var(--ink-soft); }
 .terminal .code-block { border-bottom: 1px dashed var(--rule); }
-.output--diagnostic { font-size: 12.5px; white-space: pre; overflow-wrap: normal; }
+.output--diagnostic { font-size: 12.5px; }
 @media (min-width: 960px) {
   .section--split { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 56px; }
 }
@@ -366,7 +448,6 @@ ul, ol { margin: 0; padding: 0; }
 .habits td::before { content: attr(data-label); font: 600 11px/1.6 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); }
 .habits td:last-child { color: var(--ink-soft); font-size: 15px; }
 .habit__other { color: var(--ink-soft); text-decoration: line-through; text-decoration-color: var(--err); text-decoration-thickness: 1.5px; }
-.habits .code-inline { white-space: normal; }
 @media (min-width: 760px) {
   .habits thead { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
   .habits tr { display: table-row; background: none; border: 0; padding: 0; }
@@ -382,7 +463,7 @@ ul, ol { margin: 0; padding: 0; }
   position: relative; background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius);
   padding: 20px; display: grid; gap: 12px; align-content: start; min-width: 0;
 }
-.step > div { display: grid; gap: 12px; justify-items: start; min-width: 0; }
+.step > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; justify-items: start; min-width: 0; }
 .step > div .command { justify-self: stretch; }
 .step p { color: var(--ink-soft); font-size: 15px; }
 .step h3 { font-size: 20px; }
@@ -433,14 +514,13 @@ ul, ol { margin: 0; padding: 0; }
 
 /* ----- examples ------------------------------------------------------------------------- */
 
-.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin: 0 calc(-1 * var(--gutter)); padding-inline: var(--gutter); scrollbar-width: thin; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
   flex: none; display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px;
   border: 1px solid var(--rule); border-radius: 999px; background: var(--staff);
   font: 500 13px/1 var(--mono); color: var(--ink); text-decoration: none;
 }
 .chip:hover { border-color: var(--accent); color: var(--accent); }
-@media (min-width: 760px) { .chips { flex-wrap: wrap; overflow: visible; margin: 0; padding: 0; } }
 
 .examples { display: grid; gap: 22px; }
 .example { min-width: 0; background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; scroll-margin-top: calc(var(--bar-h) + 12px); }
@@ -449,10 +529,10 @@ ul, ol { margin: 0; padding: 0; }
 .example__head p { color: var(--ink-soft); font-size: 15px; margin-top: 6px; }
 .example__head .btn { flex: 1 1 100%; }
 .example__body { display: grid; min-width: 0; }
-.example__body .code-block { max-height: 480px; overflow: auto; }
+.example__body .code-block { max-height: 480px; overflow-y: auto; }
 .example__out { border-top: 1px dashed var(--rule); padding-top: 12px; background: var(--paper); min-width: 0; }
 .example__out .score__label { padding: 0 16px; }
-.example__out .output { background: transparent; max-height: 360px; overflow: auto; }
+.example__out .output { background: transparent; max-height: 360px; overflow-y: auto; }
 .example:target { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 @media (min-width: 560px) { .example__head .btn { flex: none; } }
 @media (min-width: 960px) {
@@ -492,22 +572,30 @@ select {
 
 /* 16px in the editor on phones: iOS does not zoom into a field with a smaller text. */
 .editor { --code-size: 16px; position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); height: clamp(300px, 55vh, 560px); }
+/* The editor wraps long lines: the field (transparent) and its colors under it wrap
+   the same way, at the same width (the same reserved scrollbar gutter); each line of
+   the colors is a block, and `playground.js` gives each line number the height of its
+   line, so that numbers stay level with wrapped lines. */
 .gutter {
   font: var(--code-size)/1.6 var(--mono); color: var(--tok-com); text-align: right; padding: 14px 8px 14px 10px;
   user-select: none; overflow: hidden; border-right: 1px solid var(--rule); white-space: pre; font-variant-numeric: tabular-nums;
 }
+.gutter > div { min-height: 1lh; }
 .editor__code { position: relative; min-width: 0; }
 .editor__code pre, .editor__code textarea {
   position: absolute; inset: 0; margin: 0; padding: 14px 14px; border: 0;
-  font: var(--code-size)/1.6 var(--mono); tab-size: 2; white-space: pre; overflow: auto;
+  font: var(--code-size)/1.6 var(--mono); tab-size: 2;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal;
+  overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable;
   letter-spacing: 0; word-spacing: 0;
 }
-.editor__code pre { pointer-events: none; color: var(--ink); }
+.editor__code pre { pointer-events: none; color: var(--ink); overflow-y: hidden; }
+.editor__code pre > span { display: block; }
 .editor__code textarea { background: transparent; color: transparent; caret-color: var(--ink); resize: none; outline: none; }
 .no-wasm .editor__code textarea { color: var(--ink); }
 .editor__code textarea::selection { background: var(--accent-soft); color: transparent; }
 .editor__code textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-soft); }
-.output--live { flex: 1; min-height: 180px; max-height: clamp(300px, 55vh, 560px); overflow: auto; }
+.output--live { flex: 1; min-height: 180px; max-height: clamp(300px, 55vh, 560px); overflow-y: auto; }
 .explain { font: inherit; background: var(--accent-soft); color: var(--accent); border: 0; border-radius: 4px; padding: 0 5px; cursor: pointer; }
 .explain:hover { text-decoration: underline; }
 @media (min-width: 700px) { .editor { --code-size: 14px; } }
@@ -527,7 +615,7 @@ select {
 .search input { flex: 1; min-width: 0; min-height: 44px; border: 1px solid var(--rule); background: var(--staff); border-radius: 10px; padding: 8px 12px; font-family: var(--mono); font-size: 16px; }
 .help__text {
   margin: 0; background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); padding: 16px;
-  font: 13px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto; max-height: 520px; min-width: 0; min-height: 120px;
+  font: 13px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; overflow-y: auto; max-height: 520px; min-width: 0; min-height: 120px;
 }
 @media (min-width: 800px) { .help { grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); } }
 
@@ -554,12 +642,25 @@ select {
 .prose strong { color: var(--ink); }
 .prose p, .prose li { color: var(--ink-soft); }
 .prose :not(pre) > code { background: var(--staff); border: 1px solid var(--rule); border-radius: 5px; padding: 1px 5px; color: var(--ink); font-size: 0.86em; }
-.prose pre { margin: 0; padding: 16px; background: var(--staff); border: 1px solid var(--rule); border-radius: 10px; overflow-x: auto; font: 13.5px/1.6 var(--mono); }
-.prose table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14.5px; }
-.prose th, .prose td { text-align: left; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
-.prose th { font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); }
-.prose td { color: var(--ink-soft); }
-.prose .table-wrap { margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); }
+.prose pre { margin: 0; padding: 16px; background: var(--staff); border: 1px solid var(--rule); border-radius: 10px; font: 13.5px/1.6 var(--mono); }
+/* The tables of the guide: cards on phones, one per row, each cell with the title of its
+   column (`data-label`, written by `teach.rs`); a table from 700px. */
+.prose table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+.prose thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.prose tr {
+  display: grid; gap: 4px; padding: 12px 14px; margin-bottom: 10px;
+  background: var(--staff); border: 1px solid var(--rule); border-radius: 10px;
+}
+.prose td { display: block; color: var(--ink-soft); overflow-wrap: anywhere; }
+.prose td::before { content: attr(data-label); display: block; font: 600 11px/1.6 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); }
+.prose td:empty { display: none; }
+@media (min-width: 700px) {
+  .prose thead { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  .prose tr { display: table-row; background: none; border: 0; padding: 0; }
+  .prose th, .prose td { display: table-cell; text-align: left; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  .prose th { font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); }
+  .prose td::before { content: none; }
+}
 
 /* ----- not found ------------------------------------------------------------------------ */
 
@@ -587,6 +688,48 @@ select {
   .foot__meta .lang { margin-left: auto; }
 }
 
+/* ----- color themes: the picker -------------------------------------------------------------- */
+
+/* In the menu of a phone the choices are listed; on a computer a button of the bar
+   opens them. Real radio buttons: the arrow keys choose, the focus ring follows. */
+.theme { position: relative; }
+.theme__toggle { display: none; border: 0; background: none; cursor: pointer; }
+.theme__panel { margin: 0; padding: 16px 0 8px; border: 0; min-width: 0; }
+.theme__legend {
+  float: left; width: 100%; padding: 0; margin-bottom: 10px;
+  font: 600 12px/1.2 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft);
+}
+.theme__options { clear: both; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)); gap: 8px; }
+.theme__option {
+  display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 12px; min-width: 0;
+  border: 1px solid var(--rule); border-radius: 10px; background: var(--staff); color: var(--ink);
+  font: 500 15px/1.25 var(--body); cursor: pointer;
+}
+.theme__option:hover { border-color: var(--accent); }
+.theme__option:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.theme__option:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme__option input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.theme__option input:focus-visible { outline: none; }
+.theme__name { min-width: 0; }
+/* Each swatch: the paper of the theme and its accent, as a beat. */
+.theme__swatch { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--rule); }
+.theme__swatch--auto { background: linear-gradient(135deg, #eef1f6 50%, #0e1118 50%); }
+.theme__swatch--light { background: radial-gradient(circle at 68% 32%, #3245c2 0 26%, #eef1f6 29%); }
+.theme__swatch--dark { background: radial-gradient(circle at 68% 32%, #8d9dff 0 26%, #0e1118 29%); }
+.theme__swatch--contrast { background: radial-gradient(circle at 68% 32%, #ffe14d 0 26%, #000000 29%); }
+.theme__swatch--sepia { background: radial-gradient(circle at 68% 32%, #8a3a12 0 26%, #f3ead6 29%); }
+.theme__swatch--tempo { background: radial-gradient(circle at 68% 32%, #ff7ac0 0 26%, #160f2e 29%); }
+@media (min-width: 860px) {
+  .theme__toggle { display: inline-flex; }
+  .theme__toggle-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .theme__panel {
+    position: absolute; right: 0; top: calc(100% + 8px); z-index: 70; width: 270px; padding: 14px;
+    background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .theme__options { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .nav__item--theme:not(.is-open) .theme__panel { display: none; }
+}
+
 /* ----- the installed app: new version, install on iOS ---------------------------------------- */
 
 .notices {
@@ -597,7 +740,7 @@ select {
 .notice {
   pointer-events: auto; width: 100%; max-width: 560px;
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
-  padding: 12px 14px; border-radius: 14px; background: var(--ink); color: var(--paper); box-shadow: var(--shadow);
+  padding: 12px 14px; border-radius: 14px; background: var(--notice-bg); color: var(--notice-ink); box-shadow: var(--shadow);
 }
 .notice__text { flex: 1 1 220px; font-size: 15px; }
 .notice__actions { display: flex; gap: 8px; }
