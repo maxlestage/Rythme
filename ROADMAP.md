@@ -52,7 +52,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   printing, differences and additions in days/seconds, day of the week;
   UTC plus the local offset when the system gives it; no dependency if
   possible.
-- [ ] **Dictionaries and sets.** Keys of any comparable value (not only
+- [x] **Dictionaries and sets.** Keys of any comparable value (not only
   texts): `dict(...)`, `get`, `put`, `has`, `keys`... on them, and sets
   (`set(list)`, `union`, `intersection`, `difference`), printed and compared
   like the other values, persistent (no mutation), with the checker's types.

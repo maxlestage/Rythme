@@ -384,6 +384,8 @@ ever converting a value silently.
 | `Symbol` | names used as values | `:ok`, `:error` |
 | `List` | ordered sequences | `[1, 2, 3]`, `1..5`, `[]` |
 | `Record` | named fields | `{name: "Ada", born: 1815}` |
+| `Dict` | dictionaries: a value for each key, keys of any kind | `dict([["Ada", 36]])`, `dict()` |
+| `Set` | sets: values without repetition | `set([1, 2, 3])`, `set()` |
 | `Function` | functions, built-ins, constructors with fields | `fn(x) = x + 1`, `print`, `Some` |
 | `Option` | `Some(value)`, `None` | `Some(3)` |
 | `Result` | `Ok(value)`, `Err(error)` | `Err("oops")` |
@@ -596,6 +598,8 @@ such a type prints as its constructor followed by its fields:
   whatever the order of the fields;
 - variants are equal when they have the same type, the same constructor and
   equal fields;
+- dicts are equal when they have the same keys with equal values, and sets
+  when they have the same elements;
 - functions are equal only to themselves (the same function value);
 - values of different kinds are never equal (`"1" == 1` is `false`);
 - `nan` is not equal to anything, not even itself.
@@ -624,7 +628,10 @@ true true false false
 - two values of the **same type**: first by constructor, in the order of the
   type's definition (`None < Some(x)`, `Ok(x) < Err(e)`, and for
   `type Size = Small | Medium | Large`, `Small < Medium < Large`), then field
-  by field.
+  by field;
+- sets, element by element in their order, like lists; and dicts the same
+  way, as the lists of their `[key, value]` pairs. This is not inclusion:
+  `set([1, 2]) < set([1, 3])` is `true` (use `is_subset` for inclusion).
 
 Anything else (records, functions, values of two different types, a number
 and a text...) is error E005. `sort`, `sort_by`, `min` and `max` use the same
@@ -685,6 +692,8 @@ Apart from texts, both forms are the same:
 | List | `[1, "a", 2.0]` |
 | Record | `{name: "Ada", "full name": "Ada L."}`: a field name is written as a text when it is not a plain name |
 | variant | `None`, `Some(3)`, `Circle(2.0)` |
+| Dict | `dict("Ada" => 36, [0, 0] => "start")`, `dict()`: the pairs in the order of the keys |
+| Set | `set(1, 2, 3)`, `set()`: the elements in order |
 | function | `<fn name>` for a named function or a built-in, `<fn>` for an anonymous one |
 | constructor with fields | `<constructor Circle>` (in French: `<constructeur Circle>`) |
 | Symbol | `:ok` |
@@ -738,6 +747,112 @@ print({status: :ok, count: 2}, to_json([:ok, 1]), text(:ok))
 ```text
 :pending waiting Symbol true true
 {status: :ok, count: 2} ["ok", 1] :ok
+```
+
+### 2.15 Dict and Set
+
+A **dict** (dictionary) gives a value for each of its keys; a **set** holds
+values without repetition. Like every value, they never change. They have no
+syntax of their own: they are built with the functions `dict` and `set`, and
+used with the functions of the [standard library](#6-standard-library).
+
+- `dict()` is the empty dict; `dict(pairs)` takes a list of `[key, value]`
+  pairs (when a key comes several times, its last value wins);
+  `dict(record)` takes the names of the fields as keys (texts).
+- `set()` is the empty set; `set(list)` keeps each element once.
+- Keys and elements may be any value but a function or `nan` (E023):
+  numbers (whole numbers of any size too), texts, symbols, Bools, `()`,
+  lists, records, variants, dicts and sets. Two
+  keys are the same key when they are equal (`==`, see [2.11](#211-equality)):
+  `1` and `1.0` are one key, and so are `{x: 1, y: 2}` and `{y: 2, x: 1}`;
+  the key that stays is the one put first.
+- They are kept **in the order of their keys**, whatever the order they were
+  built in: the order of [2.12](#212-order), extended to all of these values
+  (values of different kinds go in the order `()`, Bools, numbers, texts,
+  symbols, lists, records, variants, dicts, sets; symbols by their names;
+  records by their field names in
+  alphabetical order, then by their values). This order is used for
+  printing, by `keys`, `values`, `entries`, `filter`, `map_values` and
+  `to_json`.
+- `dict[key]` gives the value of a key, E010 if there is none (see
+  [3.7](#37-indexing)); `get(dict, key)` gives an Option.
+- They are persistent balanced trees: `get`, `has`, `[...]`, `put`, `push`
+  and `remove` take a time in O(log n), and a new dict or set shares almost
+  all of the old one instead of copying it.
+- They print as `dict(key => value, ...)` and `set(a, b, ...)`. These forms
+  only show what they hold: in code, write `dict([[key, value], ...])` and
+  `set([a, b, ...])`.
+
+```rythme
+ages = dict([["Bob", 25], ["Ada", 36]])
+print(ages, ages["Ada"], get(ages, "Eve"), len(ages))
+older = put(ages, "Bob", 26)
+print(older, ages)
+print(set([3, 1, 3, 2]), set([1, 1.0]), dict({x: 1, y: 2}))
+grid = dict([[[0, 0], "start"], [[2, 1], "goal"]])
+print(grid[[2, 1]], keys(grid))
+print(type_of(ages), type_of(set()), dict() == dict([]))
+```
+
+```text
+dict("Ada" => 36, "Bob" => 25) 36 None 2
+dict("Ada" => 36, "Bob" => 26) dict("Ada" => 36, "Bob" => 25)
+set(1, 2, 3) set(1) dict("x" => 1, "y" => 2)
+goal [[0, 0], [2, 1]]
+Dict Set true
+```
+
+```rythme
+type Color = Red | Green
+print(dict([[1, "a"]]) == dict([[1.0, "a"]]), set([[1, 2], [1]]) == set([[1], [1, 2]]))
+print(set([1, 2]) < set([1, 3]), sort([set([2]), set([1, 3]), set()]))
+print(set([Green, Red, 2, "x", [1], ()]))
+```
+
+```text
+true true
+true [set(), set(1, 3), set(2)]
+set((), 2, "x", [1], Red, Green)
+```
+
+In the Ruby style (see [3.14](#314-blocks-given-to-calls)), `each`, `select`
+and `reject` give a block the key and the value of each pair of a dict,
+`key?` and `include?` are `has` and `contains`, and `size` and `length` are
+`len`. Symbols and whole numbers of any size are keys like the others:
+
+```rythme
+ages = dict([[:ada, 36], [:alan, 41]])
+ages.each do |name, age|
+  print(name, age)
+end
+print(ages.key?(:ada), ages.size, ages.select { |_, age| age > 40 })
+seen = set([10 ** 20, 1, 10 ** 20])
+print(seen, seen.include?(1), seen.length, to_json(ages))
+```
+
+```text
+:ada 36
+:alan 41
+true 2 dict(:alan => 41)
+set(1, 100000000000000000000) true 2 {"ada": 36, "alan": 41}
+```
+
+A function cannot be a key (functions cannot be compared):
+
+```rythme
+fn double(x) = x * 2
+print(set([1, double]))
+```
+
+```text
+error[E023]: `set`: <fn double> cannot be a key of a dict, nor an element of a set
+ --> 16-set.ry:2:7
+  |
+2 | print(set([1, double]))
+  |       ^^^^^^^^^^^^^^^^
+  |
+  = help: keys and elements must be values that can be compared: anything but functions and `nan`
+  = more about this error: `rythme explain E023`
 ```
 
 ---
@@ -942,6 +1057,7 @@ Ok(5) Err("\"two\" is not a whole number")
 | `list[i]` | the element at position `i` (from 0); `-1` is the last, `-2` the one before... | E007 out of range, E005 if `i` is not an Int |
 | `text[i]` | the character at position `i`, as a text | E007, E005 |
 | `record["name"]` | the field with this name | E010 if there is none |
+| `dict[key]` | the value of this key | E010 if there is none |
 
 `get(x, i)` does the same but returns an Option instead of failing.
 
@@ -2560,6 +2676,7 @@ with examples; the code may be written in lowercase.
 ## 6. Standard library
 
 The 155 built-in functions are always available, without `use`. Like the
+The 142 built-in functions are always available, without `use`. Like the
 keywords, their names are in English. `rythme help builtins` lists all of
 them by category, one line each; `rythme help NAME` (or `help(NAME)` in a
 program, or `:doc NAME` in the REPL) shows the documentation of one, with
@@ -2651,6 +2768,47 @@ as texts), `is_empty`. Many of them also accept texts (`first`, `last`,
 **Records.** `keys`, `values`, `entries` (a list of `[name, value]`) and
 `from_entries` (the opposite), `has(record, name)`,
 `put(record, name, value)`, `remove(record, name)`, `map_values(record, f)`.
+
+**Dictionaries and sets.** `dict()`, `dict(pairs)` and `dict(record)`,
+`set()` and `set(list)` build them (see [2.15](#215-dict-and-set)). The
+functions of lists and records work on them too: `len`, `is_empty`,
+`get(dict, key)` (an Option), `has(x, key)` and `contains(x, key)` (a key of
+a dict, an element of a set), `put(dict, key, value)`, `push(set, x)`,
+`remove(x, key)` (a key of a dict, an element of a set), `keys(dict)`,
+`values(x)` (the values of a dict, or the elements of a set, as a list),
+`entries(dict)` (a list of `[key, value]`), `map_values(dict, f)`,
+`filter(dict, f)` and `reject(dict, f)` (f receives each key and its
+value), `filter(set, f)`, `reject(set, f)`, `each(dict, f)` (f receives each
+key and its value), `each(set, f)`, `map(set, f)` (the set of the
+results). Then `union(a, b)` (two sets, or two
+dicts: for a key in both, the value of `b` wins), `intersection(a, b)` and
+`difference(a, b)` (for dicts, the pairs of `a` whose key is, or is not, in
+`b`) and `is_subset(a, b)` (two sets). `to_json` writes a dict whose keys are
+all texts, or all symbols, as a JSON object, and a set as an array; `dict(parse_json(text)?)`
+reads an object as a dict. The other list functions do not take them:
+`values(x)` or `entries(x)` give a list first.
+
+```rythme
+a = set([1, 2, 3])
+b = set([2, 3, 4])
+print(union(a, b), intersection(a, b), difference(a, b), is_subset(set([2]), a))
+print(push(a, 0), remove(a, 2), has(a, 2), values(a), map(a, fn(x) = x % 2))
+prices = dict([["apple", 3], ["pear", 5], ["fig", 9]])
+print(filter(prices, fn(name, price) = price < 6), map_values(prices, fn(p) = p * 2))
+print(union(prices, dict([["fig", 1], ["kiwi", 4]])))
+counts = fold(split("a b a c b a"), dict(), fn(d, w) = put(d, w, unwrap_or(get(d, w), 0) + 1))
+print(counts, entries(counts))
+print(to_json(counts), to_json(set([1, 2])), dict(unwrap(parse_json("\{\"x\": 1}"))))
+```
+
+```text
+set(1, 2, 3, 4) set(2, 3) set(1) true
+set(0, 1, 2, 3) set(1, 3) true [1, 2, 3] set(0, 1)
+dict("apple" => 3, "pear" => 5) dict("apple" => 6, "fig" => 18, "pear" => 10)
+dict("apple" => 3, "fig" => 1, "kiwi" => 4, "pear" => 5)
+dict("a" => 3, "b" => 2, "c" => 1) [["a", 3], ["b", 2], ["c", 1]]
+{"a": 3, "b": 2, "c": 1} [1, 2] dict("x" => 1)
+```
 
 **Option and Result.** `unwrap`, `unwrap_or(x, default)`, `is_some`,
 `is_none`, `is_ok`, `is_err`, `and_then(x, f)` (one more step that may fail:
@@ -2841,7 +2999,7 @@ error[E003]: unknown name `ord`
   = help: in Rythme, this is called `char_code`
   = more about this error: `rythme explain E003`
 
-error[E005]: `map` expects a list, an Option or a Result as argument 1, but got a value of type Text
+error[E005]: `map` expects a list, a set, an Option or a Result as argument 1, but got a value of type Text
  --> 62-hints.ry:3:11
   |
 3 | print(map(word, upper))
@@ -3408,7 +3566,7 @@ How many sides a square has.
 len(x)
 ~~~
 
-Length of a text (in characters), a list or a record. Same as: `length`, `size` (its Ruby names).
+Length of a text (in characters), a list, a record, a dict or a set. Same as: `length`, `size` (its Ruby names).
 
 Example:
 
