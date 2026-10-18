@@ -191,8 +191,10 @@ The settings, in Zed's `settings.json` (all optional):
 ```
 
 The extension takes the grammar from this repository at the commit `rev` of
-its `extension.toml`: change it when the grammar changes (to try a grammar
-from a clone, `repository = "file:///path/to/Rythme"`).
+its `extension.toml`: change it when the grammar changes, and after merging a
+pull request that changed it (a squash merge gives new commits). Zed wants a
+commit SHA, not a branch. To try a grammar from a clone,
+`repository = "file:///path/to/Rythme"`.
 
 ## Any other editor
 
