@@ -126,7 +126,8 @@ pub struct FnCode {
 }
 
 pub struct ClauseCode {
-    pub params: Vec<Pat>,
+    /// The parameters that are not plain names: their position and pattern.
+    pub tests: Vec<(usize, Pat)>,
     pub guard: Option<Node>,
     pub body: Node,
 }
@@ -237,19 +238,19 @@ impl Compiler {
             if let (Some(name), Some(slot)) = (self_name, self_slot) {
                 self.bind(name, slot);
             }
-            let mut params = Vec::with_capacity(clause.params.len());
+            let mut tests = Vec::new();
             for (i, p) in clause.params.iter().enumerate() {
-                params.push(match &p.kind {
-                    PatKind::Bind(s) => {
-                        self.bind(*s, i as u32);
-                        Pat::Any
-                    }
-                    _ => self.pattern(p),
-                });
+                match &p.kind {
+                    PatKind::Bind(s) => self.bind(*s, i as u32),
+                    _ => match self.pattern(p) {
+                        Pat::Any => {}
+                        pat => tests.push((i, pat)),
+                    },
+                }
             }
             let guard = clause.guard.as_ref().map(|g| self.expr(g));
             let body = self.expr(&clause.body);
-            clauses.push(ClauseCode { params, guard, body });
+            clauses.push(ClauseCode { tests, guard, body });
         }
         let f = self.funcs.pop().unwrap();
         self.scope = outer;

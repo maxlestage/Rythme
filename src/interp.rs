@@ -31,12 +31,6 @@ impl From<Box<Diagnostic>> for Flow {
 
 pub type Eval = Result<Value, Flow>;
 
-/// The definition chosen for a call, or the value a `?` in a guard returned.
-enum Entered {
-    Clause(usize),
-    Return(Value),
-}
-
 /// Result of an expression in tail position: a value, or a call still to
 /// make, whose arguments are on top of the stack.
 enum Tail {
@@ -572,6 +566,9 @@ impl Interp {
     }
 
     /// The body of the first case of a `match` that accepts the value.
+    // In a browser, the stack is small: what is not part of every nested
+    // call stays out of the functions that are.
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
     fn choose_arm<'n>(&mut self, subject: &Node, arms: &'n [compile::Arm], fr: &Frame) -> Result<&'n Node, Flow> {
         let v = self.eval(subject, fr)?;
         for arm in arms {
@@ -589,6 +586,7 @@ impl Interp {
     }
 
     /// Runs the statements of a block (all but its last expression).
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
     fn exec_stmts(&mut self, stmts: &[compile::Stmt], fr: &Frame) -> Result<(), Flow> {
         for s in stmts {
             match s {
@@ -812,10 +810,11 @@ impl Interp {
                     let ci = if code.simple && code.self_slot.is_none() {
                         0
                     } else {
-                        match self.enter(&clo, &fr, span)? {
-                            Entered::Clause(ci) => ci,
+                        match self.enter(&clo, &fr, span) {
+                            Ok(ci) => ci,
                             // A `?` in a guard ended the call.
-                            Entered::Return(v) => return Ok(v),
+                            Err(Flow::Return(v)) => return Ok(*v),
+                            Err(Flow::Err(d)) => return Err(d),
                         }
                     };
                     match self.eval_tail(&code.clauses[ci].body, &fr) {
@@ -838,35 +837,47 @@ impl Interp {
                         }
                     }
                 }
-                Value::Builtin(b) => {
-                    if argc < b.min || argc > b.max {
-                        return Err(builtin_arity_error(b, argc, span));
-                    }
-                    // The builtin reads its arguments where they are, and the
-                    // functions it calls (`map`...) get a stack of their own.
-                    let spare = std::mem::take(&mut self.spare);
-                    let stack = std::mem::replace(&mut self.stack, spare);
-                    let r = (b.func)(self, &stack[base..], span);
-                    let mut spare = std::mem::replace(&mut self.stack, stack);
-                    spare.clear();
-                    self.spare = spare;
-                    return r;
-                }
-                Value::Ctor(c) => {
-                    if argc != c.fields.len() {
-                        return Err(ctor_arity_error(&c, argc, span));
-                    }
-                    let fields = self.stack.drain(base..).collect();
-                    return Ok(Value::Variant(Rc::new(Variant { ctor: c, fields })));
-                }
+                Value::Builtin(b) => return self.call_builtin(b, base, argc, span),
+                Value::Ctor(c) => return self.construct(c, base, argc, span),
                 other => return Err(not_callable(&other, span)),
             }
         }
     }
 
+    /// Calls a builtin with the `argc` values from `base` on as arguments.
+    /// (Kept out of `call_loop`, so that each nested call uses little stack.)
+    #[inline(never)]
+    fn call_builtin(&mut self, b: &'static crate::builtins::Builtin, base: usize, argc: usize, span: Span) -> Fallible<Value> {
+        if argc < b.min || argc > b.max {
+            return Err(builtin_arity_error(b, argc, span));
+        }
+        // The builtin reads its arguments where they are, and the
+        // functions it calls (`map`...) get a stack of their own.
+        let spare = std::mem::take(&mut self.spare);
+        let stack = std::mem::replace(&mut self.stack, spare);
+        let r = (b.func)(self, &stack[base..], span);
+        let mut spare = std::mem::replace(&mut self.stack, stack);
+        spare.clear();
+        self.spare = spare;
+        r
+    }
+
+    /// Builds a value of a type (`Some(x)`, `Circle(r)`) from the `argc`
+    /// values from `base` on.
+    #[inline(never)]
+    fn construct(&mut self, c: Rc<CtorInfo>, base: usize, argc: usize, span: Span) -> Fallible<Value> {
+        if argc != c.fields.len() {
+            return Err(ctor_arity_error(&c, argc, span));
+        }
+        let fields = self.stack.drain(base..).collect();
+        Ok(Value::Variant(Rc::new(Variant { ctor: c, fields })))
+    }
+
     /// Picks the first definition (clause) of a function that accepts the
-    /// arguments, which are in the first slots of the frame.
-    fn enter(&mut self, clo: &Rc<Closure>, fr: &Frame, span: Span) -> Fallible<Entered> {
+    /// arguments, which are in the first slots of the frame. `Flow::Return`:
+    /// a `?` in a guard ended the call.
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
+    fn enter(&mut self, clo: &Rc<Closure>, fr: &Frame, span: Span) -> Result<usize, Flow> {
         let code = &*clo.code;
         let base = fr.base;
         if let Some(slot) = code.self_slot {
@@ -874,32 +885,27 @@ impl Interp {
         }
         // Fast path: one definition whose parameters are plain names.
         if code.simple {
-            return Ok(Entered::Clause(0));
+            return Ok(0);
         }
         'clauses: for (ci, clause) in code.clauses.iter().enumerate() {
-            for (i, p) in clause.params.iter().enumerate() {
-                if let Pat::Any = p {
-                    continue;
-                }
-                // The parts of the argument go to the slots after the arguments.
+            if !clause.tests.is_empty() {
+                // The parts of the arguments go to the slots after the arguments.
                 let (args, rest) = self.stack[base..].split_at_mut(code.arity);
-                if !match_pat(p, &args[i], rest, code.arity) {
-                    continue 'clauses;
+                for (i, p) in &clause.tests {
+                    if !match_pat(p, &args[*i], rest, code.arity) {
+                        continue 'clauses;
+                    }
                 }
             }
             if let Some(g) = &clause.guard {
-                let gv = match self.eval(g, fr) {
-                    Ok(v) => v,
-                    Err(Flow::Err(d)) => return Err(d),
-                    Err(Flow::Return(v)) => return Ok(Entered::Return(*v)),
-                };
+                let gv = self.eval(g, fr)?;
                 if !truth(&gv, g.span)? {
                     continue;
                 }
             }
-            return Ok(Entered::Clause(ci));
+            return Ok(ci);
         }
-        Err(no_clause(&clo.def, &self.stack[base..base + code.arity], span))
+        Err(no_clause(&clo.def, &self.stack[base..base + code.arity], span).into())
     }
 }
 
