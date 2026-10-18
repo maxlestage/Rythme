@@ -2861,7 +2861,8 @@ included), `random(list)` (an element).
 numbers), and the constant `pi`.
 
 **Text.** `len`, `upper`, `lower`, `capitalize` (the first character in
-uppercase), `trim`, `pad_left(x, width, fill)` and `pad_right` (to line up
+uppercase, or in titlecase where Unicode has one: `ǆ` gives `ǅ`, `ß` gives
+`Ss`), `trim`, `pad_left(x, width, fill)` and `pad_right` (to line up
 columns; `fill` is a space by default), `split(text)` (at white space) and
 `split(text, separator)` (an empty separator cuts into characters),
 `join(list, separator)`, `contains`, `starts_with`, `ends_with`,

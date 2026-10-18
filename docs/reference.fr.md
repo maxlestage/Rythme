@@ -2984,7 +2984,8 @@ texte ; `true` vaut 1), `float(x)`, `sin`, `cos`, `tan`, `asin`, `acos`,
 PPCM de deux nombres entiers), et la constante `pi`.
 
 **Texte.** `len`, `upper`, `lower`, `capitalize` (le premier caractère en
-majuscule), `trim`, `pad_left(x, largeur, remplissage)` et `pad_right` (pour
+majuscule, ou en casse de titre quand Unicode en donne une : `ǆ` donne `ǅ`,
+`ß` donne `Ss`), `trim`, `pad_left(x, largeur, remplissage)` et `pad_right` (pour
 aligner des colonnes ; le remplissage est une espace par défaut),
 `split(texte)` (aux espaces) et `split(texte, separateur)` (un séparateur
 vide découpe en caractères), `join(liste, separateur)`, `contains`,
