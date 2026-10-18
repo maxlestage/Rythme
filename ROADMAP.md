@@ -85,8 +85,18 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   other language is a catalog `src/i18n/<code>.rs` checked by
   `tests/i18n.rs` (see CONTRIBUTING); the 30 exercises stay in English and
   French.
-- [ ] **Messages in German, Portuguese and Chinese** (one language per item
-  if needed), with the website and the playground offering each language.
+- [x] **Messages in German, Portuguese and Chinese.** `src/i18n/de.rs`,
+  `pt.rs` (Brazilian, "você") and `zh.rs` (simplified Chinese) translate all
+  the texts, checked complete by `tests/i18n.rs`; `--lang de|pt|zh`,
+  `LANG=de_*|pt_*|zh_*`, topic names in each language, the files of
+  `rythme new`, the VS Code setting and its texts, README.de.md, README.pt.md
+  and README.zh.md. The `^` under a mistake are placed by display width, so
+  Chinese lines stay aligned.
+- [ ] **The website and the playground in every language.** The playground's
+  interpreter already speaks every language (by its position in
+  `LANGUAGES`), but the pages of the site, and so the playground, exist in
+  English and French only: pages (or a choice of the language of the
+  messages) for Spanish, German, Portuguese and Chinese.
 - [x] **Step-by-step evaluation for teaching.** `rythme steps file.ry
   ["expression"]` (`rythme etapes`), `:steps` in the REPL and the Steps
   button of the playground show how an expression is reduced step by step

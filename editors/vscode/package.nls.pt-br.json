@@ -1,0 +1,19 @@
+{
+  "description": "A linguagem Rythme (.ry): cores, snippets e um servidor de linguagem que mostra problemas, documentação, autocompletar e mais enquanto você digita.",
+  "config.path": "O programa `rythme`. Por padrão, ele é procurado no `PATH`, depois em `~/.cargo/bin` (onde `cargo install` o coloca).",
+  "config.language": "Idioma das mensagens, da documentação e da ajuda.",
+  "config.language.auto": "O idioma do VS Code (ou a variável `RYTHME_LANG`).",
+  "config.language.en": "Inglês.",
+  "config.language.fr": "Francês.",
+  "config.language.es": "Espanhol.",
+  "config.language.de": "Alemão.",
+  "config.language.pt": "Português.",
+  "config.language.zh": "Chinês (simplificado).",
+  "config.trace": "Mostra as mensagens trocadas com o servidor de linguagem na saída *Rythme*, para investigar um problema.",
+  "command.restart": "Reiniciar o servidor de linguagem",
+  "command.run": "Executar este arquivo",
+  "command.test": "Executar os testes deste arquivo",
+  "command.runTest": "Executar um teste deste arquivo",
+  "command.explain": "Explicar um código de erro",
+  "command.help": "Ajuda sobre um tema ou uma função"
+}
