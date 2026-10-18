@@ -78,10 +78,13 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 
 ## Help everywhere, for everyone
 
-- [ ] **Messages in Spanish.** The translation system takes any number of
+- [x] **Messages in Spanish.** The translation system takes any number of
   languages (catalogs instead of two-argument `t!`), with tests that every
   message exists in every language; then every message, help topic and
-  `rythme learn` in Spanish (`--lang es`).
+  `rythme learn` in Spanish (`--lang es`). Done: `t!(en, fr)` stays, each
+  other language is a catalog `src/i18n/<code>.rs` checked by
+  `tests/i18n.rs` (see CONTRIBUTING); the 30 exercises stay in English and
+  French.
 - [ ] **Messages in German, Portuguese and Chinese** (one language per item
   if needed), with the website and the playground offering each language.
 - [x] **Step-by-step evaluation for teaching.** `rythme steps file.ry

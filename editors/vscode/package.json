@@ -47,8 +47,8 @@
         },
         "rythme.language": {
           "type": "string",
-          "enum": ["auto", "en", "fr"],
-          "enumDescriptions": ["%config.language.auto%", "%config.language.en%", "%config.language.fr%"],
+          "enum": ["auto", "en", "fr", "es"],
+          "enumDescriptions": ["%config.language.auto%", "%config.language.en%", "%config.language.fr%", "%config.language.es%"],
           "default": "auto",
           "markdownDescription": "%config.language%"
         },

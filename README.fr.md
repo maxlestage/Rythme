@@ -4,7 +4,7 @@
 programmation purement fonctionnel, avec de l'aide partout.**
 Les programmes sont des fichiers qui finissent par `.ry`. L'interpréteur est écrit en Rust.
 
-*[English version →](README.md)*
+*[English version →](README.md) · [En español →](README.es.md)*
 
 **Documentation :** le [manuel de référence](docs/reference.fr.md) (tout le
 langage, avec précision), le [guide pour les enseignants](docs/enseigner.md),
@@ -78,8 +78,9 @@ puts total                 # 20
   - Dans votre éditeur : les problèmes pendant la frappe, la documentation
     sous la souris, la complétion, aller à la définition, renommer
     (`rythme lsp`, le serveur de langage, pour VS Code, Neovim, Helix, Emacs...).
-  - Chaque message, chaque documentation existe en **français et en
-    anglais** (`--lang fr`, ou automatiquement selon la langue du système).
+  - Chaque message, chaque documentation existe en **français, en anglais et
+    en espagnol** (`--lang fr`, `--lang es`, ou automatiquement selon la langue
+    du système).
 
 Voici à quoi ressemble une erreur :
 
@@ -206,8 +207,8 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
 | `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
 
-Ajoutez `--lang fr` ou `--lang en` avant la commande pour choisir la langue
-des messages, ou définissez `RYTHME_LANG`.
+Ajoutez `--lang fr`, `--lang en` ou `--lang es` avant la commande pour
+choisir la langue des messages, ou définissez `RYTHME_LANG`.
 
 ## Le langage en deux minutes
 
@@ -346,9 +347,12 @@ suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
   erreurs et la documentation dans tous les éditeurs (voir
   `rythme help editors`). Le bac à sable en ligne fait tourner l'interpréteur
   compilé en WebAssembly. Suite : un gestionnaire de paquets.
-- **Langues.** Les messages existent en anglais et en français ; ajouter une
-  langue consiste à traduire les textes de `src/`. Les contributions sont
-  bienvenues.
+- **Langues.** Les messages existent en anglais, en français et en espagnol ;
+  ajouter une langue consiste à écrire un fichier de catalogue,
+  `src/i18n/<code>.rs`, qu'un test compare à tous les textes du programme
+  (voir [CONTRIBUTING](CONTRIBUTING.md#messages-in-every-language)).
+  L'allemand, le portugais et le chinois sont les prochains ; les
+  contributions sont bienvenues.
 - **Nombres.** Les nombres entiers n'ont pas de limite de taille et restent
   exacts (jusqu'à 100000 chiffres), les habituels sur 64 bits calculés le plus
   vite ; les nombres décimaux sont sur 64 bits.

@@ -83,18 +83,66 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
   (`tests/lsp.rs`) talk to it like an editor does. The VS Code extension
   (`editors/vscode`) is checked with `npm run check`.
 
-## Messages: always in two languages
+## Messages in every language
 
-Every text shown to users exists in English and French:
+Every text shown to users is written in English and French where it is used:
 
 ```rust
 t!("unknown name `{name}`", "nom inconnu `{name}`")
 ```
 
+The other languages (Spanish today) have a **catalog**, `src/i18n/<code>.rs`:
+each English text of the program with its translation, compiled into the
+program. Fixed texts that are not formatted (help pages, explanations of
+codes, documentation of functions) go through `lang::pick(en, fr)` instead of
+`t!`, and find their translation the same way.
+
+```rust
+// src/i18n/es.rs
+Language {
+    code: "es",
+    name: "español",
+    texts: &[
+        ("unknown name `{name}`", "nombre desconocido `{name}`"),
+        // ...
+    ],
+}
+```
+
+- **How it works.** `t!` is a small macro (the crate `macros/`, without
+  dependencies) that looks the English text up in every catalog while
+  compiling and adds a `format!` for each translation: the compiler checks
+  its `{names}` like those of the two texts of the call. A text missing from
+  a catalog is shown in English.
+- **The check.** `tests/i18n.rs` reads every `t!` and `pick` of the sources
+  (and the fixed texts given by `help::fixed_texts`), prints how many texts
+  each language translates, and fails when a complete language (`COMPLETE`
+  in that test) misses one, when a catalog keeps a text the program no
+  longer has (the English text changed: translate the new one), or when a
+  translation uses a `{name}` its English text does not have.
+- **Changing an English text** therefore means updating its entry in each
+  catalog: the test names it.
+- **Adding a language** (German, Portuguese, Chinese...): add a line to
+  `LANGUAGES` in `src/lang.rs` (`include!("i18n/de.rs")`), create
+  `src/i18n/de.rs` with `code`, `name` and an empty list, then run
+  `RYTHME_I18N_MISSING=missing.rs cargo test --test i18n`: `missing.rs` lists
+  every text to translate, in the order of the sources, with the French text
+  as a guide, as entries `("English", "")` ready to copy into the catalog. An
+  empty translation counts as missing, so the catalog can be filled little by
+  little; add the code to `COMPLETE` once it is done. The code picks the
+  language for `--lang de`, `RYTHME_LANG` and `LANG=de_DE.UTF-8`, and the
+  playground's language number is its position in `LANGUAGES`. Keywords,
+  built-in names and commands stay in English in every language.
+- **Writing translations.** Keep every `{name}`, `{}`, backtick and example of
+  code; translate the names and texts inside examples when the French text
+  does; keep the alignment of columns in help pages. Run
+  `rythme --lang es help`, `rythme --lang es explain E003` and a few
+  programs with errors to read the result.
+
 A good message says **where** (a span), **what** (the message), and **how to
 fix it** (a `help`, often with a small example). Errors have a code
 (`E001`...); a new code needs an explanation in `help::explain` and an entry
-in `help::CODES` (a test checks it).
+in `help::CODES` (a test checks it), and its translation in each catalog.
 
 ## Adding a built-in function
 
@@ -104,7 +152,8 @@ in `help::CODES` (a test checks it).
    they produce clear errors, with `wrong_argument` (and `wrong_return` for
    a function given to it), which the checker uses too.
 2. Add a line to `BUILTINS` with its signature, number of arguments,
-   category, documentation in English and French, and an example. Each
+   category, documentation in English and French (and its translation in
+   each catalog of `src/i18n/`), and an example. Each
    example line `code   # value` is run by `tests/stdlib.rs`: it must give
    exactly that value.
 3. Add its name to the VS Code grammar (`editors/vscode/syntaxes`), to

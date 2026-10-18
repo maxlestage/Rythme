@@ -23,7 +23,8 @@ teach, so that students spend their time on ideas rather than on syntax.
   their syntax or a type system to fight on the first day.
 - **Testing is built in.** `test "..." = assert_eq(actual, expected)` next to
   the code, `rythme test file.ry` to run. Exercises can ship with their tests.
-- **Bilingual.** Every message exists in English and French (`--lang`).
+- **In your students' language.** Every message exists in English, French and
+  Spanish (`--lang fr`, `--lang es`).
 - **Easy to install, free, open.** One program, no dependency, MIT license,
   runs on Linux, macOS and Windows.
 

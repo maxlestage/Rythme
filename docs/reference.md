@@ -3323,7 +3323,7 @@ error[E017]: `input` found the end of the input
 ### 7.1 The command line
 
 ```text
-rythme [--lang fr|en] [--no-color] [COMMAND] [ARGUMENTS...]
+rythme [--lang en|fr|es] [--no-color] [COMMAND] [ARGUMENTS...]
 ```
 
 | Command | Aliases | What it does |
@@ -3355,14 +3355,23 @@ else is an unknown command, with a suggestion.
 **Options.** `--lang` and `--no-color` must come **before** the command;
 anything after the file name goes to the program (for `rythme test`, what
 comes after `--`). `--lang` accepts any value
-that starts with `fr` or `en` (`--lang fr`, `--lang=en`, `--lang fr_CA`);
-another value, or `--lang` without a value, is reported, with exit code 2.
+that starts with the code of a language, `en`, `fr` or `es` (`--lang es`,
+`--lang=en`, `--lang fr_CA`); another value, or `--lang` without a value, is
+reported, with exit code 2.
+
+**Languages of the messages.** Every message, help topic, explanation of a
+code and page of `rythme learn` exists in English, French and Spanish
+(`--lang es`); the keywords, the names of the built-in functions and the
+commands stay the same in every language. The files written by `rythme new`
+follow the language too; the exercises exist in English and French, and are
+in English for the other languages. The texts of other languages are kept in
+catalogs (`src/i18n/`); CONTRIBUTING.md explains how to add one.
 
 **Exercises.** `rythme exercise` (or `rythme exercise list`) lists the 30
 graded exercises built into the program (the files of
 [`docs/exercises/`](exercises/README.md)). `start NAME` writes the exercise
 named by its number (`7`) or its file name (`07-recursion`, `recursion`) into
-the current folder, in the language of the messages; it never replaces an
+the current folder, in the language of the messages (English or French); it never replaces an
 existing file (exit code 1). `check FILE` runs the tests of the file like
 `rythme test`, then explains what to do next; `FILE` may also be the number
 of an exercise started in the current folder. Its exit code is 0 when every
@@ -3377,7 +3386,9 @@ alternative names: `syntaxe`, `fonctions`, `listes`, `texte`,
 `enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`,
 `exercices`, `fichiers`, `système`, `dossiers`, `chemins`, `projets`,
 `paquets`, `interactif`, `format`, `documentation`, `etapes`, `lsp`,
-`vscode`, `éditeurs`, `blocs`, `symboles`, `bibliothèque`...
+`vscode`, `éditeurs`, `blocs`, `symboles`, `bibliothèque`... and Spanish
+names: `sintaxis`, `funciones`, `listas`, `registros`, `tipos`, `patrones`,
+`errores`, `pruebas`, `ejercicios`, `proyectos`, `fechas`, `pasos`...
 
 **Exit codes.**
 
@@ -3391,9 +3402,10 @@ alternative names: `syntaxe`, `fonctions`, `listes`, `texte`,
 
 **Environment.**
 
-- `RYTHME_LANG`: the language of the messages (`fr...` or `en...`). Without it,
-  the first non-empty variable among `LC_ALL`, `LC_MESSAGES`, `LANG` and
-  `LANGUAGE` decides: French if it starts with `fr`, English otherwise.
+- `RYTHME_LANG`: the language of the messages (`en...`, `fr...` or `es...`).
+  Without it, the first non-empty variable among `LC_ALL`, `LC_MESSAGES`,
+  `LANG` and `LANGUAGE` decides: French if it starts with `fr`, Spanish if it
+  starts with `es` (`LANG=es_ES.UTF-8`), English otherwise.
   `--lang` takes precedence over all of them.
 - `NO_COLOR`: when it is set (to any value), messages have no colors;
   `--no-color` does the same. Colors are used only when the error output is a
@@ -3423,8 +3435,8 @@ $ rythme help lenght
 No help found for `lenght`.
 in Rythme, this is called `len`
 See the list of topics with `rythme help`.
-$ rythme --lang es hello.ry
-unknown language `es`: write `--lang fr` or `--lang en`, like `rythme --lang fr hello.ry`
+$ rythme --lang de hello.ry
+unknown language `de`: write `--lang` and one of en, fr, es, like `rythme --lang fr hello.ry`
 ```
 
 The last three exit with code 2 (the last one is written in the language of
@@ -3462,7 +3474,7 @@ the help of the REPL; `exit`, `quit` (or `quitter`) leaves.
 | `:doc NAME` | | the documentation of a defined name, a built-in function or a topic |
 | `:load FILE` | `:charger` | load (again) a file and run it (`.ry` is added if needed) |
 | `:reset` | | forget everything |
-| `:lang fr\|en` | `:langue` | change the language of the messages |
+| `:lang en\|fr\|es` | `:langue` | change the language of the messages |
 | `:learn` | `:apprendre` | the guided tour |
 | `:explain CODE` | `:expliquer` | explain an error code |
 | `:names` | `:noms` | the names defined so far |
@@ -3816,7 +3828,7 @@ The name of a project is a Rythme name in lower case (letters, digits and
 E025, with the help `try rythme new my_app` (exit code 2). A folder that
 already exists and is not empty is never touched (exit code 1). The files
 are written in the language of the messages (`src/salutation.ry` in
-French).
+French, `src/saludo.ry` in Spanish).
 
 **`rythme.toml`.** Every value is a text in quotes; `#` starts a comment.
 

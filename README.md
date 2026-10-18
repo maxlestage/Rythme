@@ -4,7 +4,7 @@
 programming language, with help everywhere.**
 Programs are files ending in `.ry`. The interpreter is written in Rust.
 
-*[Version française →](README.fr.md)*
+*[Version française →](README.fr.md) · [En español →](README.es.md)*
 
 **Documentation:** the [reference manual](docs/reference.md) (the whole
 language, precisely), the [guide for teachers](docs/teaching.md), and
@@ -73,8 +73,9 @@ puts total                 # 20
   - Inside your editor: the problems as you type, the documentation under
     the mouse, completion, go to definition, rename (`rythme lsp`, the
     language server, for VS Code, Neovim, Helix, Emacs...).
-  - Every message, every piece of documentation exists in **English and
-    French** (`--lang fr`, or automatically from your system language).
+  - Every message, every piece of documentation exists in **English, French
+    and Spanish** (`--lang fr`, `--lang es`, or automatically from your system
+    language).
 
 Here is what a mistake looks like:
 
@@ -210,8 +211,8 @@ cargo install --path .       # or install it in your PATH
 | `rythme -e 'print(1 + 2)'`  | run a piece of code                            |
 | `rythme lsp`                | language server, started by your editor ([editors](editors)) |
 
-Add `--lang fr` or `--lang en` before the command to choose the language of
-the messages, or set `RYTHME_LANG`.
+Add `--lang en`, `--lang fr` or `--lang es` before the command to choose the
+language of the messages, or set `RYTHME_LANG`.
 
 ## The language in two minutes
 
@@ -373,8 +374,11 @@ towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
   documentation inside every editor (see `rythme help editors`). The web
   playground runs the interpreter compiled to WebAssembly. Next: a package
   manager.
-- **Languages.** Messages exist in English and French; adding a language means
-  translating the texts of `src/`. Contributions are welcome.
+- **Languages.** Messages exist in English, French and Spanish; adding a
+  language means writing one catalog file, `src/i18n/<code>.rs`, which a test
+  checks against every text of the program (see
+  [CONTRIBUTING](CONTRIBUTING.md#messages-in-every-language)). German,
+  Portuguese and Chinese are next; contributions are welcome.
 - **Numbers.** Whole numbers have no size limit and stay exact (up to 100000
   digits), the usual 64-bit ones computed fastest; decimal numbers are 64-bit.
 
