@@ -30,7 +30,58 @@ pub fn parse(lexed: Lexed) -> Fallible<Vec<Item>> {
         no_do: false,
         commands: HashSet::new(),
     };
-    p.program()
+    p.program().map_err(|d| ternary(&p.toks, d))
+}
+
+/// Ruby's (and C's) `condition ? a : b`, written `if condition then a else b`
+/// in Rythme. It never parses: `?` after a value is the operator that stops on
+/// `None` or `Err`. A syntax error on a line where a `?` is followed by a
+/// value and then by a `:` becomes an error that says so, at the `?`. Only
+/// code that does not parse is concerned.
+fn ternary(toks: &[Token], d: Box<Diagnostic>) -> Box<Diagnostic> {
+    let Some(at) = d.span else { return d };
+    if d.code != "E001" || d.incomplete {
+        return d;
+    }
+    let Some(e) = toks.iter().position(|t| t.span.start >= at.start) else { return d };
+    let start = toks[..e].iter().rposition(|t| t.tok == Tok::Newline).map_or(0, |i| i + 1);
+    let end = toks[e..].iter().position(|t| matches!(t.tok, Tok::Newline | Tok::Eof)).map_or(toks.len(), |i| e + i);
+    let colon_after = |q: usize| {
+        let mut depth = 0i32;
+        for t in &toks[q + 1..end] {
+            match t.tok {
+                Tok::LParen | Tok::LBracket | Tok::LBrace => depth += 1,
+                Tok::RParen | Tok::RBracket | Tok::RBrace => {
+                    depth -= 1;
+                    if depth < 0 {
+                        return false;
+                    }
+                }
+                Tok::Colon if depth == 0 => return true,
+                _ => {}
+            }
+        }
+        false
+    };
+    let value_after = |t: &Tok| starts_expression(t) || matches!(t, Tok::Minus | Tok::Not | Tok::If | Tok::Match);
+    let found: Vec<usize> =
+        (start..e).filter(|&q| toks[q].tok == Tok::Question && q + 2 < end && value_after(&toks[q + 1].tok) && colon_after(q)).collect();
+    // `even?(x) ? a : b`: the `?` with a space after it, rather than the end of a name.
+    let Some(q) = found.iter().copied().find(|&q| toks[q + 1].span.start > toks[q].span.end).or(found.first().copied()) else {
+        return d;
+    };
+    Diagnostic::error("E001", t!("Rythme has no `condition ? a : b`", "Rythme n'a pas de `condition ? a : b`"))
+        .at(toks[q].span)
+        .label(t!("`?` does not choose between two values", "`?` ne choisit pas entre deux valeurs"))
+        .help(t!(
+            "write `if condition then a else b`, like `if x > 2 then \"big\" else \"small\"`",
+            "écrivez `if condition then a else b`, comme `if x > 2 then \"grand\" else \"petit\"`"
+        ))
+        .note(t!(
+            "after a value, `?` takes it out of `Some(x)` or `Ok(x)` and stops on `None` or `Err(e)`; at the end of a name, it is part of the name (`even?`)",
+            "après une valeur, `?` la sort de `Some(x)` ou `Ok(x)` et s'arrête sur `None` ou `Err(e)` ; à la fin d'un nom, il fait partie du nom (`even?`)"
+        ))
+        .boxed()
 }
 
 /// The names of the functions defined with a `?` at the end in this code:

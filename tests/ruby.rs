@@ -4,7 +4,33 @@
 
 mod common;
 
-use common::{fails, ok, rythme, warns};
+use common::{fails, ok, rythme, rythme_lang, warns};
+
+#[test]
+fn the_ternary_operator_of_ruby_is_explained() {
+    for code in [
+        "x = 3\nprint(x > 2 ? \"big\" : \"small\")",
+        "ok = true\ny = ok ? 1 : 2",
+        "fn f(n) = n > 0 ? -1 : 1",
+        "fn even?(n) = n % 2 == 0\nprint(even?(2) ? [1] : [2])",
+        "ok = true\nputs ok ? :yes : :no",
+    ] {
+        let r = fails(code, "E001");
+        assert!(r.stderr.contains("Rythme has no `condition ? a : b`"), "{code}\n{}", r.stderr);
+        assert!(r.stderr.contains("if condition then a else b"), "{code}\n{}", r.stderr);
+    }
+    let r = fails("y = true ? 1 : 2", "E001");
+    assert!(r.stderr.contains("--> <code>:1:10"), "{}", r.stderr);
+    // The other meanings of `?` keep theirs, and other errors theirs.
+    ok(
+        "fn even?(n) = n % 2 == 0\nfn f(x) = Some(x? + 1)\nprint(even?(2), f(Some(1)), {a: even?(3), b: 2})",
+        "true Some(2) {a: false, b: 2}",
+    );
+    let r = fails("fn f(x) = x ? 2", "E001");
+    assert!(!r.stderr.contains("condition ? a : b"), "{}", r.stderr);
+    let r = rythme_lang("fr", &["-e", "y = true ? 1 : 2"]);
+    assert!(r.stderr.contains("Rythme n'a pas de `condition ? a : b`"), "{}", r.stderr);
+}
 
 #[test]
 fn blocks_are_the_last_argument_of_a_call() {

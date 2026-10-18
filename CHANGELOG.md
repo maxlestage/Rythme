@@ -12,6 +12,12 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Messages
+
+- **`condition ? a : b`** (Ruby, C, JavaScript) is explained: the error
+  points at the `?` and says to write `if condition then a else b`, in the
+  terminal and in the editor. Only code that was already an error gets it.
+
 ### Website
 
 - **Sharing links in the playground**: *Share* makes a link that opens the
