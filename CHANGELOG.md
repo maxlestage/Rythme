@@ -12,6 +12,89 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Language
+
+- **A symbol may end with `?`**, as in Ruby: `:even?` is one symbol. It was
+  read as `:even` followed by the operator `?`, which the checker always
+  refuses (E016) before running, so no program that ran changes meaning (a
+  fuzz test puts the old reading in thousands of programs made from the
+  examples and the tests: every one is refused). `rythme fmt` keeps the space
+  in `:even ?`; the VS Code and Tree-sitter grammars know the new form.
+
+### Library
+
+- **CSV**: `csv_parse(text, separator)` (`Ok(rows)`, lists of texts),
+  `csv_records(text, separator)` (`Ok(records)`, one record per line with the
+  names of the header as fields, in the order of the columns) and
+  `csv_format(rows, separator)` (lists of fields or records; quotes only where
+  they are needed). RFC 4180: fields between quotes with separators, line
+  breaks and doubled quotes inside, `\n` or `\r\n`, an optional final line
+  break, empty lines skipped, a BOM skipped. The separator is `","` by default,
+  `";"` for French spreadsheets, `"\t"` for tabs. A text that is not valid CSV
+  is an `Err` with the line and the column of the mistake, in every language
+  of the messages; a header with two columns of the same name or a line
+  without as many fields as the header too. `rythme help csv`, the manual
+  (6, *CSV*) and `examples/grades.ry`.
+- **Draws that can be repeated**: `random_seed(n)` makes the draws of
+  `random` and `shuffle` that follow the same on every run, and
+  `rythme run --seed N file.ry` does it for the whole run. Same seed, same
+  version of Rythme: same draws. Without a seed nothing changes.
+  `rythme help random`, the manual (6, *Chance and seeds*, and 7.1).
+- 178 built-in functions. Names from other languages point to the new ones
+  (`parse_csv`, `DictReader`, `to_csv`, `srand`...). As the stability
+  promise says, a function of a program with one of these names stays its
+  own (W003).
+
+### Fixed
+
+- **`capitalize` uses the titlecase of Unicode** where it differs from the
+  uppercase: `capitalize("ǆungla")` gives `ǅungla` (not `Ǆungla`), and so do
+  `ǈ ǋ ǲ`; `ß` gives `Ss`, the ligatures `ﬁ ﬂ ﬀ...` give `Fi Fl Ff...`, the
+  Greek letters with iota subscript keep it (`ᾳ` gives `ᾼ`), Armenian `և`
+  gives `Եւ`, and Georgian letters stay as they are. A program that
+  capitalizes one of these characters prints another text: a bug fix.
+  `upper` does not change.
+
+### Performance
+
+- **`find_all`, `split_by` and `replace_all` are no longer quadratic** on
+  regexes that read far ahead: their searches skip the ways that an earlier
+  search showed to lead nowhere, and share their memory. `a*b|a` on 40 000
+  `a`s took about 30 seconds and now takes a few milliseconds; the matches
+  are the same (`bench/regex.ry`).
+
+### Messages
+
+- **A case of `match` on several indented lines** (`Ok(x) ->` then the
+  lines, as in Ruby or Python) is explained: the error says that a case
+  gives one expression and shows `Ok(x) -> do ... end`, instead of a hint
+  about `==` or "put each case on its own line".
+- **W011, index or subtraction instead of a call**: `show [1, 2]` and
+  `show -1` at the start of a statement are an index and a subtraction as
+  soon as the file gives `show` a value anywhere, even to a parameter of
+  another function. The reading does not change, but where `show` is a
+  function, `rythme check` (and the editor) now warns, shows where `show`
+  gets its value, and asks for parentheses: `show([1, 2])`. A syntax error
+  in such a line says it too. `rythme explain W011`, manual §3.15.
+- **`condition ? a : b`** (Ruby, C, JavaScript) is explained: the error
+  points at the `?` and says to write `if condition then a else b`, in the
+  terminal and in the editor. Only code that was already an error gets it.
+- **`record[:name]`** says that a symbol is not a text, and how to read the
+  field (`r.name`, `r["name"]`, `get(r, "name")`), before running and while
+  running (where it said "cannot use `[...]` on Record"). A dict missing the
+  key `:a` but holding `"a"` (or the reverse) says so.
+- **`:explain` alone** in the REPL shows how to use it and the known codes,
+  instead of "unknown code"; an unknown code is named, like with
+  `rythme explain`.
+- **`rythme steps`**: an unknown option (`--bogus`) is an error that names
+  it, with the closest option, like the other commands (it was read as the
+  expression `--bogus`); the mistakes in the expression given after the file
+  are shown in `<expression>:1:...`, not as one more line of the file.
+- **`rythme.toml` with a section written twice** (two `[dependencies]`, or
+  `[dependencies]` and `[[dependencies]]`, or a key and a section of the same
+  name) is an error E025 at the second one, with the first, as TOML wants
+  (keys written twice already were); it was read without a word.
+
 ### Website
 
 - **Sharing links in the playground**: *Share* makes a link that opens the
@@ -22,6 +105,14 @@ dit ce qu'une version 1.x peut changer ou non.*
   long for a link are refused with a message. Opening a link shows the program
   without replacing the saved draft until it is changed, with a notice and
   *Back to my draft*. In the six languages of the site.
+- **Steps in the playground, and links that open on them**: *Steps* shows the
+  calculation of the last expression (or of the selected code) one step at a
+  time, with *Previous* and *Next*, a slider and the keyboard, the step before,
+  what the program printed and the error if any, announced to screen readers.
+  *Share* from the steps makes a link that opens on the same step
+  (`&mode=steps&step=3`, with `&expr=` for a selected piece of code), and the
+  tour of *Learn* opens on the steps of `fib(4)`. Offline too, in the six
+  languages of the site.
 
 ## [1.0.0] - 2026-10-18
 

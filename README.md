@@ -196,7 +196,7 @@ cargo install --path .       # or install it in your PATH
 | Command                     | What it does                                   |
 |-----------------------------|------------------------------------------------|
 | `rythme`                    | interactive mode: type code, see the result    |
-| `rythme hello.ry`           | run a program (`rythme run hello.ry` also works) |
+| `rythme hello.ry`           | run a program (`rythme run hello.ry` also works; `rythme run --seed 42 hello.ry`: the same draws of `random` every time) |
 | `rythme check hello.ry`     | find problems without running the program      |
 | `rythme test hello.ry`      | run the tests written in the file (also a folder: `rythme test .`, with `--filter NAME`, `--watch`) |
 | `rythme fmt hello.ry`       | give the code its official layout (also a folder: `rythme fmt .`) |
@@ -290,6 +290,7 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 | [`sales.ry`](examples/sales.ry) | a report: `scan`, columns lined up with `pad_left`, `windows`, `chunks`, JSON |
 | [`calendar.ry`](examples/calendar.ry) | dates: the page of a month, ISO 8601 texts, `days_between`, `add_days` |
 | [`logs.ry`](examples/logs.ry) | reading a log with regexes: `named_captures`, `matches`, `find_all`, `replace_all`, `format_number` |
+| [`grades.ry`](examples/grades.ry) | grades from a spreadsheet: `csv_records` with `;`, `csv_format`, a repeatable draw with `random_seed` |
 | [`tree.ry`](examples/tree.ry) | a recursive type: binary search tree |
 | [`primes.ry`](examples/primes.ry) | a recursive sieve, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | `test` blocks |
@@ -332,8 +333,8 @@ mode) and is organised as a pipeline:
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
 | [`src/bigint.rs`](src/bigint.rs) | whole numbers beyond 64 bits, without a dependency |
 | [`src/dict.rs`](src/dict.rs) | the persistent ordered tree behind dictionaries and sets, and the order of their keys |
-| [`src/builtins.rs`](src/builtins.rs) | 174 built-in functions (and their Ruby names), documented in two languages, JSON included |
-| [`src/builtins/`](src/builtins) | dates, files and the system, dictionaries and sets, regexes and text tools, generators of property tests |
+| [`src/builtins.rs`](src/builtins.rs) | 178 built-in functions (and their Ruby names), documented in two languages, JSON and CSV included |
+| [`src/builtins/`](src/builtins) | dates, files and the system, dictionaries and sets, regexes and text tools, CSV, generators of property tests |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |

@@ -29,6 +29,10 @@ pub struct SourceFile {
     pub name: String,
     pub text: Rc<str>,
     line_starts: Vec<usize>,
+    /// The lines from this one on (0-based) come from somewhere else, named
+    /// so in messages: the expression of `rythme steps file.ry "fib(4)"`,
+    /// read after the definitions of the file.
+    tail: Option<(usize, String)>,
 }
 
 impl SourceFile {
@@ -57,6 +61,15 @@ impl SourceFile {
     pub fn line_count(&self) -> usize {
         self.line_starts.len()
     }
+
+    /// The name and the 1-based line shown for a 1-based line: the lines of
+    /// an appended tail are counted from its start, under its own name.
+    pub fn shown(&self, line: usize) -> (&str, usize) {
+        match &self.tail {
+            Some((first, name)) if line > *first => (name, line - first),
+            _ => (&self.name, line),
+        }
+    }
 }
 
 thread_local! {
@@ -70,7 +83,20 @@ fn new_file(name: &str, text: &str) -> SourceFile {
             line_starts.push(i + 1);
         }
     }
-    SourceFile { name: name.to_string(), text: Rc::from(text), line_starts }
+    SourceFile { name: name.to_string(), text: Rc::from(text), line_starts, tail: None }
+}
+
+/// Registers a source file whose text from byte `at` on (at the start of a
+/// line) comes from somewhere else, named `tail` in messages.
+pub fn add_with_tail(name: &str, text: &str, at: usize, tail: &str) -> u32 {
+    let mut file = new_file(name, text);
+    let first = file.line_starts.partition_point(|&s| s < at);
+    file.tail = Some((first, tail.to_string()));
+    FILES.with(|f| {
+        let mut f = f.borrow_mut();
+        f.push(Rc::new(file));
+        (f.len() - 1) as u32
+    })
 }
 
 /// Registers a source file and returns its id.
@@ -98,12 +124,20 @@ pub fn get(id: u32) -> Option<Rc<SourceFile>> {
     FILES.with(|f| f.borrow().get(id as usize).cloned())
 }
 
+/// The name of the file (or of its tail) where a span starts.
+pub fn name_at(span: Span) -> Option<String> {
+    let f = get(span.file)?;
+    let line = f.line_col(span.start as usize).0;
+    Some(f.shown(line).0.to_string())
+}
+
 /// `file.ry:3:7` for a span.
 pub fn location(span: Span) -> String {
     match get(span.file) {
         Some(f) => {
             let (l, c) = f.line_col(span.start as usize);
-            format!("{}:{}:{}", f.name, l, c)
+            let (name, l) = f.shown(l);
+            format!("{name}:{l}:{c}")
         }
         None => "?".to_string(),
     }

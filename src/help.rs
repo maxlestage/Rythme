@@ -160,6 +160,39 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "正则",
         ],
     ),
+    (
+        "csv",
+        &[
+            "tableur",
+            "tableurs",
+            "spreadsheet",
+            "spreadsheets",
+            "hoja-de-calculo",
+            "hojas-de-calculo",
+            "tabellenkalkulation",
+            "planilha",
+            "planilhas",
+            "表格",
+        ],
+    ),
+    (
+        "random",
+        &[
+            "seed",
+            "graine",
+            "hasard",
+            "aleatoire",
+            "aléatoire",
+            "azar",
+            "semilla",
+            "aleatorio",
+            "zufall",
+            "acaso",
+            "semente",
+            "随机",
+            "种子",
+        ],
+    ),
     ("repl", &["interactive", "interactif", "interactivo", "interaktiv", "interativo", "交互"]),
     (
         "fmt",
@@ -239,6 +272,7 @@ pub fn overview() -> String {
 Commands
   rythme                    interactive mode (try code line by line)
   rythme file.ry            run a program
+  rythme run --seed 42 f.ry run it with the same draws of random every time
   rythme check file.ry      find problems without running the program
   rythme test file.ry       run the tests of a file (or of a folder)
   rythme fmt file.ry        give the code its official layout (--check: only check)
@@ -273,6 +307,8 @@ Topics (rythme help TOPIC)
   projects    projects and packages: rythme new, rythme.toml, rythme install
   dates       dates and times: now(), today(), calendar, ISO 8601
   regex       searching, cutting and replacing with regular expressions
+  csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
+  random      chance, and the same draws again with a seed
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
@@ -288,6 +324,7 @@ A specific function: rythme help map
 Commandes
   rythme                    mode interactif (essayer du code ligne par ligne)
   rythme fichier.ry         lancer un programme
+  rythme run --seed 42 f.ry le lancer avec les mêmes tirages de random à chaque fois
   rythme check fichier.ry   trouver les problèmes sans lancer le programme
   rythme test fichier.ry    lancer les tests d'un fichier (ou d'un dossier)
   rythme fmt fichier.ry     mettre le code en forme (--check : vérifier seulement)
@@ -322,6 +359,8 @@ Sujets (rythme help SUJET)
   projects    projets et paquets : rythme new, rythme.toml, rythme install
   dates       dates et heures : now(), today(), calendrier, ISO 8601
   regex       chercher, découper et remplacer avec des expressions régulières
+  csv         les tableaux des tableurs : csv_parse, csv_records, csv_format
+  random      le hasard, et les mêmes tirages à nouveau avec une graine
   repl        le mode interactif
   fmt         la mise en forme officielle du code (rythme fmt)
   doc         la documentation tirée des commentaires ## (rythme doc)
@@ -882,6 +921,8 @@ fn topic_texts(name: &str) -> (&'static str, &'static str) {
         "projects" => (PROJECTS_EN, PROJECTS_FR),
         "dates" => (DATES_EN, DATES_FR),
         "regex" => (REGEX_EN, REGEX_FR),
+        "csv" => (CSV_EN, CSV_FR),
+        "random" => (RANDOM_EN, RANDOM_FR),
         "repl" => (REPL_EN, REPL_FR),
         "fmt" => (FMT_EN, FMT_FR),
         "doc" => (DOC_EN, DOC_FR),
@@ -1663,6 +1704,138 @@ Ce qu'une regex peut dire
 
 Une erreur dans une regex arrête le programme avec E026, qui montre où elle
 est ; quand la regex est écrite dans le code, `rythme check` la trouve avant."#;
+
+const CSV_EN: &str = r#"CSV: THE TABLES OF SPREADSHEETS
+
+A CSV text is a table: one row per line, its fields separated by commas.
+Every spreadsheet (LibreOffice, Excel, Google Sheets...) opens and saves it.
+
+  csv_parse("name,age\nAda,36")              # Ok([["name", "age"], ["Ada", "36"]])
+  csv_records("name,age\nAda,36")            # Ok([{name: "Ada", age: "36"}])
+  csv_format([["name", "age"], ["Ada", 36]]) # "name,age\nAda,36\n"
+  csv_format([{name: "Ada", age: 36}])       # the same text: records give a header
+
+With files
+  match read_file("grades.csv").and_then(csv_records)
+    Ok(rows) -> print(len(rows), "students")
+    Err(e) -> print("Error: {e}")
+  end
+  write_file("copy.csv", csv_format(rows))
+
+The rules (RFC 4180)
+  A field between quotes may hold commas, line breaks and quotes, written
+  twice: "say ""hi""" is the field  say "hi"  ; csv_format adds the quotes
+  only where they are needed.
+  Lines end with \n or \r\n (Windows); the last one may have no line break.
+  Empty lines are skipped; spaces are kept as they are in the file.
+  Every field is a text: parse_int(r.age) or parse_float(r.price) give numbers.
+  csv_records: the first line names the columns, which become the fields of
+  the records (r.name; get(r, "first name") for a name with spaces); every
+  line must have as many fields as the header.
+
+Another separator: the last argument
+  ";" (spreadsheets in French, where the comma is the decimal point), "\t"
+  (tabs), "|"...
+  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
+  csv_format(rows, ";")
+
+A text that is not valid CSV gives Err, which says where (line and column):
+  csv_parse("a,b\"c")   # Err("line 1, column 4: a quote in the middle of a field: ...")"#;
+
+const CSV_FR: &str = r#"CSV : LES TABLEAUX DES TABLEURS
+
+Un texte CSV est un tableau : une ligne du tableau par ligne de texte, ses
+champs séparés par des virgules. Tous les tableurs (LibreOffice, Excel,
+Google Sheets...) l'ouvrent et l'enregistrent.
+
+  csv_parse("nom,age\nAda,36")               # Ok([["nom", "age"], ["Ada", "36"]])
+  csv_records("nom,age\nAda,36")             # Ok([{nom: "Ada", age: "36"}])
+  csv_format([["nom", "age"], ["Ada", 36]])  # "nom,age\nAda,36\n"
+  csv_format([{nom: "Ada", age: 36}])        # le même texte : les enregistrements donnent un en-tête
+
+Avec des fichiers
+  match read_file("notes.csv").and_then(csv_records)
+    Ok(lignes) -> print(len(lignes), "élèves")
+    Err(e) -> print("Erreur : {e}")
+  end
+  write_file("copie.csv", csv_format(lignes))
+
+Les règles (RFC 4180)
+  Un champ entre guillemets peut contenir des virgules, des retours à la
+  ligne et des guillemets, écrits deux fois : "dit ""bonjour""" est le champ
+  dit "bonjour"  ; csv_format ajoute les guillemets là seulement où il en faut.
+  Les lignes finissent par \n ou \r\n (Windows) ; la dernière peut ne pas
+  avoir de retour à la ligne.
+  Les lignes vides sont sautées ; les espaces restent tels qu'ils sont dans le fichier.
+  Chaque champ est un texte : parse_int(r.age) ou parse_float(r.prix) donnent
+  des nombres.
+  csv_records : la première ligne nomme les colonnes, qui deviennent les
+  champs des enregistrements (r.nom ; get(r, "prénom usuel") pour un nom avec
+  des espaces) ; chaque ligne doit avoir autant de champs que l'en-tête.
+
+Un autre séparateur : le dernier argument
+  ";" (les tableurs en français, où la virgule est celle des décimales),
+  "\t" (les tabulations), "|"...
+  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
+  csv_format(lignes, ";")
+
+Un texte qui n'est pas du CSV valide donne Err, qui dit où (ligne et colonne) :
+  csv_parse("a,b\"c")   # Err("ligne 1, colonne 4 : un guillemet au milieu d'un champ : ...")"#;
+
+const RANDOM_EN: &str = r#"RANDOM: CHANCE, AND THE SAME CHANCE AGAIN
+
+  random()                   # a decimal number from 0 (included) to 1 (excluded)
+  random(1, 6)               # a whole number from 1 to 6, both included
+  random(["a", "b", "c"])    # one element of the list
+  shuffle([1, 2, 3])         # the list in a random order
+
+Every run draws other values. To get the same draws again (a test, a class
+where everyone sees the same game, a mistake to find again), give a seed:
+
+  random_seed(42)                  # in the program: the draws that follow
+  rythme run --seed 42 game.ry     # from the command line: the whole run
+
+The same seed gives the same draws, in the same order, with the same version
+of Rythme (another version may draw other values). Without a seed, nothing
+changes: every run is different.
+
+In a test, call random_seed at its start: its draws then do not depend on
+the tests before it.
+  test "a dice roll stays between 1 and 6"
+    random_seed(7)
+    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+  end
+
+The property tests (check_all, sample) have their own seed:
+rythme test --seed N (see rythme help tests)."#;
+
+const RANDOM_FR: &str = r#"RANDOM : LE HASARD, ET LE MÊME HASARD À NOUVEAU
+
+  random()                   # un nombre décimal de 0 (compris) à 1 (non compris)
+  random(1, 6)               # un nombre entier de 1 à 6, tous deux compris
+  random(["a", "b", "c"])    # un élément de la liste
+  shuffle([1, 2, 3])         # la liste dans un ordre au hasard
+
+Chaque lancement tire d'autres valeurs. Pour retrouver les mêmes tirages (un
+test, un cours où tout le monde voit la même partie, une erreur à retrouver),
+donnez une graine :
+
+  random_seed(42)                  # dans le programme : les tirages qui suivent
+  rythme run --seed 42 jeu.ry      # depuis la ligne de commande : tout le lancement
+
+La même graine donne les mêmes tirages, dans le même ordre, avec la même
+version de Rythme (une autre version peut tirer d'autres valeurs). Sans
+graine, rien ne change : chaque lancement est différent.
+
+Dans un test, appelez random_seed au début : ses tirages ne dépendent alors
+pas des tests d'avant.
+  test "un lancer de dé reste entre 1 et 6"
+    random_seed(7)
+    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+  end
+
+Les tests de propriétés (check_all, sample) ont leur propre graine :
+rythme test --seed N (voir rythme help tests)."#;
 
 const TYPES_EN: &str = r#"YOUR OWN TYPES
 
@@ -3297,6 +3470,37 @@ Juste :  0..17 -> "jeune"
 Pour des nombres décimaux, qui tombent entre 17 et 18, comparez plutôt :
   a if a < 18 -> "jeune""#,
         ),
+        "W011" => (
+            r#"W011 — Index or subtraction instead of a call
+
+At the start of a statement or of a result, `show [1, 2]` and `show -1`
+call `show` without parentheses, unless the file gives `show` a value
+somewhere: with `=`, as a parameter of a function or a block, or in a
+pattern. Then they are an index and a subtraction, everywhere in the file,
+even where `show` is a function. The value may be given far away, to a
+parameter of another function.
+
+Wrong:   fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011: an index of the function
+Right:   show([1, 2])
+Or give the parameter another name: fn twice(n) = n * 2"#,
+            r#"W011 — Indice ou soustraction au lieu d'un appel
+
+Au début d'une instruction ou d'un résultat, `montre [1, 2]` et
+`montre -1` appellent `montre` sans parenthèses, sauf si le fichier donne
+une valeur à `montre` quelque part : avec `=`, comme paramètre d'une
+fonction ou d'un bloc, ou dans un motif. Ce sont alors un indice et une
+soustraction, partout dans le fichier, même là où `montre` est une
+fonction. La valeur peut être donnée loin, à un paramètre d'une autre
+fonction.
+
+Faux :   fn montre(xs) = print(xs)
+         fn double(montre) = montre * 2
+         montre [1, 2]                # W011 : un indice de la fonction
+Juste :  montre([1, 2])
+Ou donnez un autre nom au paramètre : fn double(n) = n * 2"#,
+        ),
         _ => return None,
     })
 }
@@ -3318,5 +3522,5 @@ pub fn fixed_texts() -> Vec<&'static str> {
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
     "E018", "E019", "E020", "E021", "E022", "E023", "E024", "E025", "E026", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008",
-    "W009", "W010",
+    "W009", "W010", "W011",
 ];

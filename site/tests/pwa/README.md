@@ -32,7 +32,11 @@ run works on a copy of `public/` in a temporary folder and checks:
    *Back to my draft*; the test mode travels with it, a program too long is refused,
    a damaged link is said so, and without `CompressionStream` and
    `DecompressionStream` compressed links still open (made by Share and by zlib) and
-   Share makes plain ones; in every language the
+   Share makes plain ones; a link with `&mode=steps&step=3` opens on that step of
+   the calculation, which moves with the buttons, the arrow keys, Home, End and the
+   slider, says each step in its live region, and travels with *Share* (the step and
+   the selected code), with what is printed, an error, a program without expression
+   and the link of *Learn*; in every language the
    playground shows its texts and the interpreter's messages in that language; the
    language menu (it lists every language) and the burger menu; an unknown page
    shows the offline page of its language;
@@ -63,6 +67,10 @@ blocked. It checks:
 3. the notice of a program opened from a link and the box of the link made by
    *Share*, open together in every language, at 320 to 1280px in every theme: no
    horizontal scroll, every text at the contrast of the theme;
+   the steps of a calculation (long lines without spaces, a nested block, the step
+   before and what it printed), opened from a link in every language, at 320 to
+   1280px in every theme, on three steps: no horizontal scroll, every text at the
+   contrast of the theme;
 4. the playground's editor wraps a long line, a long word and a long address, and
    each line number stays level with its wrapped line;
 5. contrast: every pair of colors of each theme (text on paper, on cards and on the

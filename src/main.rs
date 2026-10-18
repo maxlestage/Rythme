@@ -125,12 +125,18 @@ fn cli(mut args: Vec<String>) -> i32 {
             rythme::io::out_line(&format!("rythme {}", rythme::VERSION));
             0
         }
-        "run" | "lancer" => match rest.first() {
-            Some(file) => run_file(file, rest[1..].to_vec()),
-            None => in_project(Cmd::Run, |files| run_file(&files[0], Vec::new())).unwrap_or_else(|| {
-                usage_error(t!("which file? Example: rythme run hello.ry", "quel fichier ? Exemple : rythme run bonjour.ry"))
-            }),
-        },
+        "run" | "lancer" => {
+            let (seed, rest) = match run_seed(&rest) {
+                Ok(found) => found,
+                Err(code) => return code,
+            };
+            match rest.first() {
+                Some(file) => run_file(file, rest[1..].to_vec(), seed),
+                None => in_project(Cmd::Run, |files| run_file(&files[0], Vec::new(), seed)).unwrap_or_else(|| {
+                    usage_error(t!("which file? Example: rythme run hello.ry", "quel fichier ? Exemple : rythme run bonjour.ry"))
+                }),
+            }
+        }
         // With no file, at the root of a project: the files of the project with tests.
         "test" | "tester" => rythme::testing::command(&rest),
         "check" | "verifier" | "vérifier" => match rest.first() {
@@ -161,7 +167,7 @@ fn cli(mut args: Vec<String>) -> i32 {
         },
         _ => {
             if cmd.ends_with(".ry") || Path::new(&cmd).exists() || Path::new(&format!("{cmd}.ry")).is_file() {
-                return run_file(&cmd, rest);
+                return run_file(&cmd, rest, None);
             }
             let commands = [
                 "run", "check", "test", "fmt", "doc", "help", "explain", "learn", "repl", "version", "lsp", "exercise", "new", "install",
@@ -235,8 +241,35 @@ fn find_script(name: &str) -> Result<PathBuf, Box<Diagnostic>> {
     Err(d.boxed())
 }
 
-fn run_file(name: &str, script_args: Vec<String>) -> i32 {
+/// `rythme run --seed N file.ry`: the seed of `random` and `shuffle`, given
+/// before the file (what follows the file is for the program), and the other words.
+fn run_seed(args: &[String]) -> Result<(Option<i64>, &[String]), i32> {
+    let (value, used) = match args.first().map(String::as_str) {
+        Some("--seed" | "--graine") => (args.get(1).map(String::as_str), 2),
+        Some(first) => match first.strip_prefix("--seed=").or_else(|| first.strip_prefix("--graine=")) {
+            Some(v) => (Some(v), 1),
+            None => return Ok((None, args)),
+        },
+        None => return Ok((None, args)),
+    };
+    match value.map(|v| (v, v.parse::<i64>())) {
+        Some((_, Ok(n))) => Ok((Some(n), &args[used.min(args.len())..])),
+        Some((v, Err(_))) => Err(usage_error(t!(
+            "the seed must be a whole number, like `rythme run --seed 42 game.ry`, not `{v}`",
+            "la graine doit être un nombre entier, comme `rythme run --seed 42 jeu.ry`, pas `{v}`"
+        ))),
+        None => Err(usage_error(t!(
+            "`--seed` needs a whole number, like `rythme run --seed 42 game.ry`",
+            "`--seed` attend un nombre entier, comme `rythme run --seed 42 jeu.ry`"
+        ))),
+    }
+}
+
+fn run_file(name: &str, script_args: Vec<String>, seed: Option<i64>) -> i32 {
     let mut driver = Driver::new();
+    if let Some(seed) = seed {
+        driver.interp.seed_random(seed);
+    }
     let path = match find_script(name) {
         Ok(p) => p,
         Err(d) => {

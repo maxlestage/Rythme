@@ -115,7 +115,7 @@ impl Diagnostic {
         let mut max_line = 1;
         for span in self.span.iter().chain(self.secondary.iter().map(|(s, _)| s)) {
             if let Some(f) = source::get(span.file) {
-                max_line = max_line.max(f.line_col(span.end as usize).0);
+                max_line = max_line.max(f.shown(f.line_col(span.end as usize).0).1);
             }
         }
         let width = max_line.to_string().len();
@@ -130,7 +130,7 @@ impl Diagnostic {
         }
         for (span, label) in &self.secondary {
             if source::get(span.file).is_some() {
-                if self.span.map(|s| s.file) != Some(span.file) {
+                if self.span.map(source::name_at) != Some(source::name_at(*span)) {
                     out.push_str(&format!("{pad}{}:::{} {}\n", c.blue, c.reset, source::location(*span)));
                 }
                 out.push_str(&format!("{pad} {}|{}\n", c.blue, c.reset));
@@ -267,7 +267,7 @@ fn snippet(out: &mut String, span: Span, mark: char, label: &str, color: &str, w
         text.push_str("...");
     }
     let len = cols(&chars[from.min(last)..to.min(last)]).max(1);
-    out.push_str(&format!("{}{:>width$} |{} {}\n", c.blue, line, c.reset, text));
+    out.push_str(&format!("{}{:>width$} |{} {}\n", c.blue, file.shown(line).1, c.reset, text));
     let marks: String = std::iter::repeat_n(mark, len).collect();
     let pad = " ".repeat(pad_cols);
     if label.is_empty() {

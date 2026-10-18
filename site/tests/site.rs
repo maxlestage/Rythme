@@ -8,6 +8,7 @@ use paquets::test::TestClient;
 use rythme_site::examples::EXAMPLES;
 use rythme_site::highlight::{ERROR_WORDS, HELP_WORDS, WARNING_WORDS};
 use rythme_site::i18n::Lang;
+use rythme_site::pages::{TOUR_STEPS, steps_link};
 use rythme_site::routes::{Page, Route};
 use rythme_site::server::{Site, app};
 
@@ -89,8 +90,33 @@ async fn the_pages_hold_their_content() {
         assert!(t.pg_share_too_long.contains("{n}") && t.pg_share_too_long.contains("{max}"), "{lang:?}");
         assert!(playground.contains("/playground.js?v="));
         assert!(playground.contains(r#"data-wasm="/rythme.wasm?v="#));
+        // The steps of a calculation, one at a time: hidden until Steps (or a link with
+        // `&mode=steps`), with its buttons, its labelled slider, its keys and a live
+        // region, in the language of the page.
+        assert!(playground.contains(r#"class="stepper output--live" id="stepper" hidden="""#), "{lang:?}");
+        assert!(playground.contains(&format!(r#"id="step-prev">← {}</button>"#, attr(t.pg_steps_prev))), "{lang:?}");
+        assert!(playground.contains(&format!(r#"id="step-next">{} →</button>"#, attr(t.pg_steps_next))), "{lang:?}");
+        assert!(
+            playground
+                .contains(&format!(r#"type="range" id="step-range" min="1" max="1" value="1" aria-label="{}""#, attr(t.pg_steps_slider))),
+            "{lang:?}"
+        );
+        assert!(playground.contains(&attr(t.pg_steps_keys)) && playground.contains(&attr(t.pg_steps_printed)), "{lang:?}");
+        assert!(playground.contains(r#"id="step-live" aria-live="polite" aria-atomic="true""#), "{lang:?}");
+        assert!(playground.contains(r#"id="step-now" tabindex="0""#) && playground.contains(r#"id="step-error" hidden="""#), "{lang:?}");
+        for text in [t.pg_steps_of, t.pg_steps_none] {
+            assert!(playground.contains(&attr(text).replace('"', "&quot;")), "{lang:?}: {text}");
+        }
+        assert!(t.pg_steps_of.contains("{n}") && t.pg_steps_of.contains("{total}"), "{lang:?}");
         let learn = page(Page::Learn).await;
         assert_eq!(learn.matches("class=\"tour__try\"").count(), t.tour.len());
+        // One step of the tour also opens on the steps of a calculation.
+        let (n, expr) = TOUR_STEPS;
+        let steps = steps_link(lang, t.tour[n].code, expr).replace('&', "&amp;");
+        assert!(steps.contains("#code=fn%20fib(") && steps.ends_with("&amp;mode=steps&amp;expr=fib(4)"), "{steps}");
+        assert!(learn.contains(&format!(r#"class="tour__try tour__try--steps" href="{steps}""#)), "{lang:?}: {steps}");
+        assert!(learn.contains(&format!("→ {}: {expr}", attr(t.learn_steps))), "{lang:?}");
+        assert_eq!(learn.matches("tour__try--steps").count(), 1);
         // The texts that playground.js writes, in the language of the page.
         assert!(playground.contains("data-ui=\""));
         assert!(playground.contains(&t.pg_loading.replace('\'', "&#x27;")), "{lang:?}");
@@ -312,5 +338,31 @@ async fn the_theme_picker_and_its_script() {
             assert!(html.contains(&format!(r#"value="{id}" id="theme-{id}" data-color="{}""#, theme.color)), "{path}: {id}");
             assert!(html.contains(&format!(r#"<span class="theme__name">{}</span>"#, theme.name(t))), "{path}: {id}");
         }
+    }
+}
+
+/// The calculation that a step of the tour opens on (`&mode=steps&expr=…`) is shown
+/// step by step, as the playground does it (`rythme_run`, mode 5): the expression
+/// computed after the definitions of the code of that step, alone.
+#[test]
+fn the_steps_of_the_tour_are_shown() {
+    use rythme::driver::Driver;
+    let (n, expr) = TOUR_STEPS;
+    for lang in Lang::ALL {
+        let t = lang.texts();
+        rythme::lang::set(interpreter_lang(lang));
+        rythme::io::capture();
+        let mut driver = Driver::new();
+        driver.color = false;
+        let whole = format!("{}\n{expr}\n", t.tour[n].code.trim_end());
+        let m = driver.load_source("main.ry", &whole, None, Path::new(".")).expect("the code of the step loads");
+        rythme::steps::run_module(&mut driver, &m, rythme::steps::Options::default(), Some(1)).expect("its steps");
+        let out = rythme::io::take_captured();
+        let lines: Vec<&str> = out.lines().collect();
+        assert_eq!(lines.first(), Some(&expr), "{lang:?}: {out}");
+        assert_eq!(lines.get(1), Some(&"  → fib(3) + fib(2)"), "{lang:?}: {out}");
+        assert_eq!(lines.last(), Some(&"  → 3"), "{lang:?}: {out}");
+        // Only that expression: the print of the code is not run.
+        assert!(!out.contains('[') && lines.len() > 4, "{lang:?}: {out}");
     }
 }

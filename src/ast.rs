@@ -6,7 +6,6 @@ use crate::bigint::BigInt;
 use crate::source::Span;
 use crate::symbol::Sym;
 
-#[derive(Debug)]
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
@@ -14,12 +13,26 @@ pub struct Expr {
     /// included (1 for a name or a number). The parser refuses code that is
     /// too deep, so that the passes that walk the tree never run out of stack.
     pub depth: u32,
+    /// A name read as a value in `show [1, 2]` or `show -1`, where a call
+    /// without parentheses may start, only because the code gives this name a
+    /// value at this other place (see `parser::command_at`): the checker
+    /// warns when the name is not a value here (W011).
+    pub value_elsewhere: Option<Span>,
+}
+
+/// Without `value_elsewhere`, a hint for the checker: `rythme fmt` compares
+/// the trees of a program before and after (written `xs[0]`, `xs [0]` is the
+/// same index).
+impl std::fmt::Debug for Expr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Expr").field("kind", &self.kind).field("span", &self.span).field("depth", &self.depth).finish()
+    }
 }
 
 impl Expr {
     pub fn new(kind: ExprKind, span: Span) -> Expr {
         let depth = kind.inner_depth().saturating_add(1);
-        Expr { kind, span, depth }
+        Expr { kind, span, depth, value_elsewhere: None }
     }
 }
 

@@ -100,7 +100,7 @@
       ]
     },
     "symbols": {
-      "match": "(?<![\\p{L}\\p{N}_)\\]}\"':])(:)([\\p{L}_][\\p{L}\\p{N}_]*)",
+      "match": "(?<![\\p{L}\\p{N}_)\\]}\"':])(:)([\\p{L}_][\\p{L}\\p{N}_]*\\??)",
       "name": "constant.other.symbol.rythme",
       "captures": { "1": { "name": "punctuation.definition.constant.rythme" } }
     },
@@ -126,7 +126,7 @@
       "patterns": [
         {
           "name": "support.function.builtin.rythme",
-          "match": "\\b(print|debug|text|input|input_lines|type_of|help|assert|assert_eq|fail|args|options|env|exit|time|random|abs|min|max|sqrt|pow|floor|ceil|round|int|float|sin|cos|tan|asin|acos|atan|log|exp|is_even|is_odd|gcd|lcm|len|upper|lower|capitalize|trim|pad_left|pad_right|split|join|contains|starts_with|ends_with|replace|chars|lines|char_code|char|is_digit|is_letter|is_space|repeat|parse_int|parse_float|parse_json|to_json|trim_start|trim_end|words|equals_ignore_case|format_number|matches|find_first|find_all|captures|captures_all|named_captures|split_by|replace_all|map|filter|fold|scan|each|sum|product|first|last|rest|get|push|set_at|insert_at|remove_at|reverse|sort|sort_by|unique|shuffle|slice|take|drop|take_while|drop_while|step_by|chunks|windows|zip|enumerate|any|all|find|count|reject|each_with_index|index_of|min_by|max_by|flatten|flat_map|partition|group_by|is_empty|keys|values|entries|from_entries|has|put|remove|map_values|dict|set|union|intersection|difference|is_subset|unwrap|unwrap_or|is_some|is_none|is_ok|is_err|and_then|ok_or|map_err|read_file|write_file|append_file|file_exists|file_info|list_folder|create_folder|delete_file|join_path|split_path|now|today|parse_date|format_date|is_date|add_days|add_seconds|days_between|seconds_between|day_of_week|days_in_month|is_leap_year|check_all|sample|ints|floats|texts|bools|lists_of|one_of|records_of)\\b(?=\\s*\\()"
+          "match": "\\b(print|debug|text|input|input_lines|type_of|help|assert|assert_eq|fail|args|options|env|exit|time|random|random_seed|abs|min|max|sqrt|pow|floor|ceil|round|int|float|sin|cos|tan|asin|acos|atan|log|exp|is_even|is_odd|gcd|lcm|len|upper|lower|capitalize|trim|pad_left|pad_right|split|join|contains|starts_with|ends_with|replace|chars|lines|char_code|char|is_digit|is_letter|is_space|repeat|parse_int|parse_float|parse_json|to_json|trim_start|trim_end|words|equals_ignore_case|format_number|matches|find_first|find_all|captures|captures_all|named_captures|split_by|replace_all|csv_parse|csv_records|csv_format|map|filter|fold|scan|each|sum|product|first|last|rest|get|push|set_at|insert_at|remove_at|reverse|sort|sort_by|unique|shuffle|slice|take|drop|take_while|drop_while|step_by|chunks|windows|zip|enumerate|any|all|find|count|reject|each_with_index|index_of|min_by|max_by|flatten|flat_map|partition|group_by|is_empty|keys|values|entries|from_entries|has|put|remove|map_values|dict|set|union|intersection|difference|is_subset|unwrap|unwrap_or|is_some|is_none|is_ok|is_err|and_then|ok_or|map_err|read_file|write_file|append_file|file_exists|file_info|list_folder|create_folder|delete_file|join_path|split_path|now|today|parse_date|format_date|is_date|add_days|add_seconds|days_between|seconds_between|day_of_week|days_in_month|is_leap_year|check_all|sample|ints|floats|texts|bools|lists_of|one_of|records_of)\\b(?=\\s*\\()"
         },
         {
           "name": "support.function.builtin.rythme",

@@ -386,6 +386,14 @@ mach deinen Wert zuerst zu einem Record, wie {{kind: "Circle", radius: r}}"#,
         ("defined here", "hier definiert"),
         ("from how `{name}` uses `{p}`, it needs: `{sig}`", "so wie `{name}` den Parameter `{p}` verwendet, braucht es: `{sig}`"),
         // src/check.rs
+        ("`{s} [...]` is read as an index, not as a call", "`{s} [...]` wird als Index gelesen, nicht als Aufruf"),
+        ("to call `{s}`, put its argument in parentheses: `{s}([...])`; for an index, write `{s}[...]` without a space", "um `{s}` aufzurufen, setz sein Argument in Klammern: `{s}([...])`; für einen Index schreib `{s}[...]` ohne Leerzeichen"),
+        ("`{s} -...` is read as a subtraction, not as a call", "`{s} -...` wird als Subtraktion gelesen, nicht als Aufruf"),
+        ("to call `{s}`, put its argument in parentheses: `{s}(-x)`; for a subtraction, write `{s} - x`", "um `{s}` aufzurufen, setz sein Argument in Klammern: `{s}(-x)`; für eine Subtraktion schreib `{s} - x`"),
+        ("`{s}` is not a value here", "`{s}` ist hier kein Wert"),
+        ("`{s}` is a function here", "`{s}` ist hier eine Funktion"),
+        ("because `{s}` is given a value here", "weil `{s}` hier einen Wert bekommt"),
+        ("a call without parentheses, like `{s} [1, 2]` or `{s} -1`, is read so only when the file never gives `{s}` a value", "ein Aufruf ohne Klammern, wie `{s} [1, 2]` oder `{s} -1`, wird nur so gelesen, wenn die Datei `{s}` nirgends einen Wert gibt"),
         ("the type `{name}` is part of Rythme", "der Typ `{name}` gehört zu Rythme"),
         ("give your type another name", "gib deinem Typ einen anderen Namen"),
         ("the type `{}` is already defined", "der Typ `{}` ist schon definiert"),
@@ -801,6 +809,7 @@ siehe `rythme help fmt`"#,
 Commands
   rythme                    interactive mode (try code line by line)
   rythme file.ry            run a program
+  rythme run --seed 42 f.ry run it with the same draws of random every time
   rythme check file.ry      find problems without running the program
   rythme test file.ry       run the tests of a file (or of a folder)
   rythme fmt file.ry        give the code its official layout (--check: only check)
@@ -835,6 +844,8 @@ Topics (rythme help TOPIC)
   projects    projects and packages: rythme new, rythme.toml, rythme install
   dates       dates and times: now(), today(), calendar, ISO 8601
   regex       searching, cutting and replacing with regular expressions
+  csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
+  random      chance, and the same draws again with a seed
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
@@ -850,6 +861,7 @@ A specific function: rythme help map
 Befehle
   rythme                    interaktiver Modus (Code Zeile für Zeile ausprobieren)
   rythme datei.ry           ein Programm ausführen
+  rythme run --seed 42 f.ry es jedes Mal mit denselben Zufallswerten von random ausführen
   rythme check datei.ry     Probleme finden, ohne das Programm auszuführen
   rythme test datei.ry      die Tests einer Datei (oder eines Ordners) ausführen
   rythme fmt datei.ry       dem Code sein offizielles Layout geben (--check: nur prüfen)
@@ -884,6 +896,8 @@ Themen (rythme help THEMA)
   projects    Projekte und Pakete: rythme new, rythme.toml, rythme install
   dates       Datum und Uhrzeit: now(), today(), Kalender, ISO 8601
   regex       mit regulären Ausdrücken suchen, zerlegen und ersetzen
+  csv         die Tabellen der Tabellenkalkulation: csv_parse, csv_records, csv_format
+  random      der Zufall, und dieselben Ziehungen erneut mit einem Startwert (seed)
   repl        der interaktive Modus
   fmt         das offizielle Layout des Codes (rythme fmt)
   doc         Dokumentation aus den ##-Kommentaren (rythme doc)
@@ -995,6 +1009,9 @@ Themen: start, syntax, functions, lists, text, records, types, match, errors, fu
         ("[Enter] next   [q] quit > ", "[Enter] weiter   [q] beenden > "),
         ("To practice, run `rythme` and type code, or do the exercises: `rythme exercise list`. `rythme help builtins` lists every function.", "Zum Üben starte `rythme` und tippe Code ein, oder mach die Übungen: `rythme exercise list`. `rythme help builtins` listet alle Funktionen auf."),
         // src/interp.rs
+        ("record", "record"),
+        ("`:{field}` is a symbol, not a text: write `{r}.{field}` or `{r}[\"{field}\"]`, or `get({r}, \"{field}\")` to receive an Option", "`:{field}` ist ein Symbol, kein Text: schreib `{r}.{field}` oder `{r}[\"{field}\"]`, oder `get({r}, \"{field}\")`, um eine Option zu bekommen"),
+        ("the dict has the key {shown}, which is not the same key as {key}: write `[{shown}]`", "das Dict hat den Schlüssel {shown}, der nicht derselbe Schlüssel wie {key} ist: schreib `[{shown}]`"),
         ("this list would be too large (more than {MAX_LIST} elements)", "diese Liste wäre zu groß (mehr als {MAX_LIST} Elemente)"),
         ("this text would be too large (more than {mb} MB)", "dieser Text wäre zu groß (mehr als {mb} MB)"),
         ("does it grow in a function that calls itself? Check that the function always reaches a case where it stops", "wächst er in einer Funktion, die sich selbst aufruft? Prüfe, ob die Funktion immer einen Fall erreicht, in dem sie aufhört"),
@@ -1221,6 +1238,9 @@ Ihre Definitionen werden über den Namen `{n}` verwendet: `{n}.name`"#,
         ("some names would then refer to something else", "einige Namen würden dann auf etwas anderes verweisen"),
         ("the code would not be valid", "der Code wäre nicht gültig"),
         // src/manifest.rs
+        ("the section `[{name}]` is written twice", "der Abschnitt `[{name}]` wird zweimal geschrieben"),
+        ("put all the lines of `[{name}]` under one `[{name}]`", "schreib alle Zeilen von `[{name}]` unter ein einziges `[{name}]`"),
+        ("`{name}` is written both as `[{name}]` and as `[[{name}]]`", "`{name}` wird sowohl als `[{name}]` als auch als `[[{name}]]` geschrieben"),
         ("expected a name here", "hier wird ein Name erwartet"),
         ("each line is `name = \"value\"`, like `version = \"0.1.0\"`", "jede Zeile ist `name = \"value\"`, wie `version = \"0.1.0\"`"),
         ("this text is not closed", "dieser Text wird nicht geschlossen"),
@@ -1278,6 +1298,12 @@ Ihre Definitionen werden über den Namen `{n}` verwendet: `{n}.name`"#,
 "#,
         ),
         // src/parser.rs
+        ("a case of `match` gives one expression; for a result on several lines, write `do` after `->`, then the lines, then `end`:\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\nor move the lines into a function: `Ok(x) -> handle(x)`", "ein Fall von `match` liefert einen einzigen Ausdruck; für ein Ergebnis über mehrere Zeilen schreib `do` nach `->`, dann die Zeilen, dann `end`:\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\noder verschieb die Zeilen in eine Funktion: `Ok(x) -> behandle(x)`"),
+        ("`{name}` is read as a value here, not called, because the code gives it a value (line {line}): to call it, put its argument in parentheses, like `{name}([1, 2])`", "`{name}` wird hier als Wert gelesen, nicht aufgerufen, weil der Code ihm einen Wert gibt (Zeile {line}): um es aufzurufen, setz sein Argument in Klammern, wie `{name}([1, 2])`"),
+        ("Rythme has no `condition ? a : b`", "Rythme hat kein `Bedingung ? a : b`"),
+        ("`?` does not choose between two values", "`?` wählt nicht zwischen zwei Werten"),
+        ("write `if condition then a else b`, like `if x > 2 then \"big\" else \"small\"`", "schreib `if Bedingung then a else b`, wie `if x > 2 then \"groß\" else \"klein\"`"),
+        ("after a value, `?` takes it out of `Some(x)` or `Ok(x)` and stops on `None` or `Err(e)`; at the end of a name, it is part of the name (`even?`)", "nach einem Wert holt `?` ihn aus `Some(x)` oder `Ok(x)` und hält bei `None` oder `Err(e)` an; am Ende eines Namens gehört es zum Namen (`even?`)"),
         ("all the definitions of `{name}` must have the same number of parameters", "alle Definitionen von `{name}` müssen gleich viele Parameter haben"),
         ("{} parameter(s) here", "hier {} Parameter"),
         ("expected {expected}, found {found}", "erwartet: {expected}, gefunden: {found}"),
@@ -1608,6 +1634,7 @@ Thumbs.db
         ("src/greeting.ry", "src/gruss.ry"),
         ("tests/greeting_test.ry", "tests/gruss_test.ry"),
         // src/repl.rs
+        ("usage: :explain CODE, like :explain E003   (codes: {})", "Verwendung: :explain CODE, wie :explain E003   (Codes: {})"),
         (":help for help, :quit to leave", ":help für Hilfe, :quit zum Beenden"),
         ("(type :quit to leave)", "(tippe :quit zum Beenden)"),
         ("(cancelled)", "(abgebrochen)"),
@@ -1618,13 +1645,14 @@ Thumbs.db
         ("Everything was forgotten.", "Alles wurde vergessen."),
         ("Messages are now in English.", "Die Meldungen sind jetzt auf Deutsch."),
         ("usage: :lang fr  (or another of {codes})", "Verwendung: :lang de  (oder ein anderer von {codes})"),
-        ("unknown code; codes look like E003 or W001", "unbekannter Code; Codes sehen aus wie E003 oder W001"),
         ("usage: :steps EXPRESSION, like :steps fib(4)", "Verwendung: :steps AUSDRUCK, wie :steps fib(4)"),
         ("Nothing defined yet.", "Noch nichts definiert."),
         ("unknown command `{other}`", "unbekannter Befehl `{other}`"),
         (" — did you mean `{best}`?", " — meintest du `{best}`?"),
         (":help lists the commands", ":help listet die Befehle auf"),
         // src/steps.rs
+        ("unknown option `{flag}` for `rythme steps`", "unbekannte Option `{flag}` für `rythme steps`"),
+        ("\nthe options are: --max N, --width N (see `rythme help steps`)", "\ndie Optionen sind: --max N, --width N (siehe `rythme help steps`)"),
         ("  ... (more steps, not shown: {n} are shown at most, change it with --max)", "  ... (weitere Schritte, nicht gezeigt: höchstens {n} werden gezeigt, ändere das mit --max)"),
         ("this calculation became too deep to be shown step by step (more than {MAX_DEPTH} operations inside each other)", "diese Rechnung wurde zu tief, um Schritt für Schritt gezeigt zu werden (mehr als {MAX_DEPTH} ineinander verschachtelte Operationen)"),
         ("try it with smaller values, or run the program normally: `rythme file.ry`", "versuch es mit kleineren Werten, oder führe das Programm normal aus: `rythme datei.ry`"),
@@ -4316,6 +4344,36 @@ Richtig: 0..17 -> "young"
          18..64 -> "adult"
 Für Dezimalzahlen, die zwischen 17 und 18 liegen, vergleiche stattdessen:
   a if a < 18 -> "young""#,
+        ),
+        (
+            r#"W011 — Index or subtraction instead of a call
+
+At the start of a statement or of a result, `show [1, 2]` and `show -1`
+call `show` without parentheses, unless the file gives `show` a value
+somewhere: with `=`, as a parameter of a function or a block, or in a
+pattern. Then they are an index and a subtraction, everywhere in the file,
+even where `show` is a function. The value may be given far away, to a
+parameter of another function.
+
+Wrong:   fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011: an index of the function
+Right:   show([1, 2])
+Or give the parameter another name: fn twice(n) = n * 2"#,
+            r#"W011 — Index oder Subtraktion statt eines Aufrufs
+
+Am Anfang einer Anweisung oder eines Ergebnisses rufen `show [1, 2]` und
+`show -1` die Funktion `show` ohne Klammern auf, außer die Datei gibt `show`
+irgendwo einen Wert: mit `=`, als Parameter einer Funktion oder eines Blocks,
+oder in einem Muster. Dann sind es ein Index und eine Subtraktion, überall in
+der Datei, auch dort, wo `show` eine Funktion ist. Der Wert kann weit weg
+gegeben werden, an einen Parameter einer anderen Funktion.
+
+Falsch:  fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011: ein Index der Funktion
+Richtig: show([1, 2])
+Oder gib dem Parameter einen anderen Namen: fn twice(n) = n * 2"#,
         ),
         ("Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.", "Definiert eine Funktion: `fn name(x) = expression`, oder mit ihrem Rumpf in den folgenden Zeilen, abgeschlossen mit `end`. Ohne Namen ist `fn(x) = x * 2` eine anonyme Funktion."),
         ("Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.", "Wählt zwischen zwei Werten: `if condition then value else other`. Jedes `if` hat ein `else`, weil ein `if` immer einen Wert liefert."),
@@ -8144,5 +8202,159 @@ end
 # Dein Test:
 "#,
         ),
+        // ----- CSV and seeded random (src/builtins/csv.rs, src/builtins.rs, src/main.rs, src/help.rs)
+        // src/builtins/csv.rs
+        ("line {line}, column {column}: the quote that starts this field is never closed (a quote inside a field is written twice: \"\")", "Zeile {line}, Spalte {column}: das Anführungszeichen, das dieses Feld beginnt, wird nie geschlossen (ein Anführungszeichen in einem Feld wird doppelt geschrieben: \"\")"),
+        ("line {line}, column {column}: a quote in the middle of a field: put the whole field between quotes, and write each quote inside it twice (\"5\"\" screen\")", "Zeile {line}, Spalte {column}: ein Anführungszeichen mitten in einem Feld: setze das ganze Feld in Anführungszeichen und schreibe jedes Anführungszeichen darin doppelt (\"5\"\" Bildschirm\")"),
+        ("line {line}, column {column}: after the quote that closes a field comes {sep} or the end of the line, not {c}", "Zeile {line}, Spalte {column}: nach dem Anführungszeichen, das ein Feld schließt, kommt {sep} oder das Ende der Zeile, nicht {c}"),
+        ("line {line}: the header names the column \"{name}\" twice", "Zeile {line}: die Kopfzeile nennt die Spalte \"{name}\" zweimal"),
+        ("line {line}: {got} field(s), but the header has {wanted} column(s)", "Zeile {line}: {got} Feld(er), aber die Kopfzeile hat {wanted} Spalte(n)"),
+        ("line {line}: this table has too many rows or fields (more than {MAX_LIST})", "Zeile {line}: diese Tabelle hat zu viele Zeilen oder Felder (mehr als {MAX_LIST})"),
+        ("a tab", "ein Tabulator"),
+        ("a space", "ein Leerzeichen"),
+        ("`{f}` cannot use {c} as separator: it has another meaning in CSV", "`{f}` kann {c} nicht als Trennzeichen nehmen: es hat in CSV eine andere Bedeutung"),
+        ("the separator of `{f}` is one character, not \"{s}\"", "das Trennzeichen von `{f}` ist ein einziges Zeichen, nicht \"{s}\""),
+        ("the usual separators: \",\" (by default), \";\" (French spreadsheets), \"\\t\" (a tab)", "die üblichen Trennzeichen: \",\" (Standard), \";\" (deutsche und französische Tabellenkalkulationen), \"\\t\" (ein Tabulator)"),
+        ("`csv_format`: the field {column} of row {row} must be a text, a number or a Bool, but it is {got}", "`csv_format`: das Feld {column} der Zeile {row} muss ein Text, eine Zahl oder ein Bool sein, ist aber {got}"),
+        ("turn it into a text first, with `text(x)` or `unwrap_or(x, \"\")`", "mache zuerst einen Text daraus, mit `text(x)` oder `unwrap_or(x, \"\")`"),
+        ("`csv_format`: record {number} has the fields {{{these}}}, but the first one has {{{wanted}}}: every record must have the same fields", "`csv_format`: der Datensatz {number} hat die Felder {{{these}}}, aber der erste hat {{{wanted}}}: alle Datensätze müssen dieselben Felder haben"),
+        ("a record, like the first row", "ein Datensatz, wie die erste Zeile"),
+        ("a list of fields", "eine Liste von Feldern"),
+        ("`csv_format`: row {number} must be {wanted}, but it is {got}", "`csv_format`: die Zeile {number} muss {wanted} sein, ist aber {got}"),
+        ("`csv_format` takes a list of rows: lists of fields ([[\"name\", \"age\"], [\"Ada\", 36]]) or records ([{{name: \"Ada\", age: 36}}])", "`csv_format` nimmt eine Liste von Zeilen: Listen von Feldern ([[\"name\", \"alter\"], [\"Ada\", 36]]) oder Datensätze ([{{name: \"Ada\", alter: 36}}])"),
+        // src/main.rs
+        ("the seed must be a whole number, like `rythme run --seed 42 game.ry`, not `{v}`", "der Startwert (seed) muss eine ganze Zahl sein, wie `rythme run --seed 42 spiel.ry`, nicht `{v}`"),
+        ("`--seed` needs a whole number, like `rythme run --seed 42 game.ry`", "`--seed` erwartet eine ganze Zahl, wie `rythme run --seed 42 spiel.ry`"),
+        // src/builtins.rs
+        ("Makes the draws of `random` and `shuffle` that follow the same on every run: the same seed (a whole number) gives the same draws, with the same version of Rythme. For tests and classes; `rythme run --seed N file.ry` does the same from the command line.", "Macht die folgenden Ziehungen von `random` und `shuffle` bei jedem Lauf gleich: derselbe Startwert (eine ganze Zahl) ergibt dieselben Ziehungen, mit derselben Version von Rythme. Für Tests und den Unterricht; `rythme run --seed N datei.ry` tut dasselbe von der Kommandozeile aus."),
+        ("Reads a CSV table (a spreadsheet saved as text): `Ok(list of rows)`, each row a list of texts, or `Err(message)` saying at which line and column the text is not valid CSV. A field between quotes may hold separators, line breaks and quotes (written twice). The separator is \",\" unless given: \";\" for French spreadsheets, \"\\t\" for tabs. See `rythme help csv`.", "Liest eine CSV-Tabelle (eine als Text gespeicherte Tabellenkalkulation): `Ok(Liste von Zeilen)`, jede Zeile eine Liste von Texten, oder `Err(Meldung)`, die sagt, in welcher Zeile und Spalte der Text kein gültiges CSV ist. Ein Feld in Anführungszeichen darf Trennzeichen, Zeilenumbrüche und Anführungszeichen (doppelt geschrieben) enthalten. Das Trennzeichen ist \",\", wenn keines angegeben ist: \";\" für deutsche und französische Tabellenkalkulationen, \"\\t\" für Tabulatoren. Siehe `rythme help csv`."),
+        ("Reads a CSV table whose first line names the columns: `Ok(list of records)`, one record for each other line, with one field for each column, in their order, holding a text. `Err(message)` when the text is not valid CSV, when a line does not have as many fields as the header, or when two columns have the same name. To get numbers, use `parse_int` or `parse_float` on the fields.", "Liest eine CSV-Tabelle, deren erste Zeile die Spalten benennt: `Ok(Liste von Datensätzen)`, ein Datensatz für jede andere Zeile, mit einem Feld für jede Spalte, in ihrer Reihenfolge, das einen Text enthält. `Err(Meldung)`, wenn der Text kein gültiges CSV ist, wenn eine Zeile nicht so viele Felder wie die Kopfzeile hat oder wenn zwei Spalten denselben Namen haben. Für Zahlen nimm `parse_int` oder `parse_float` auf den Feldern."),
+        ("Writes rows as a CSV text, each one on its line, ended by a line break. The rows are lists of fields, or records: then a first line names their fields. A field is a text, a number or a Bool, put between quotes only when it needs them (a separator, a quote or a line break inside). The separator is \",\" unless given.", "Schreibt Zeilen als CSV-Text, jede auf ihrer Zeile, mit einem Zeilenumbruch am Ende. Die Zeilen sind Listen von Feldern oder Datensätze: dann benennt eine erste Zeile ihre Felder. Ein Feld ist ein Text, eine Zahl oder ein Bool und kommt nur in Anführungszeichen, wenn es sie braucht (ein Trennzeichen, ein Anführungszeichen oder ein Zeilenumbruch darin). Das Trennzeichen ist \",\", wenn keines angegeben ist."),
+        // src/help.rs
+        (r#"CSV: THE TABLES OF SPREADSHEETS
+
+A CSV text is a table: one row per line, its fields separated by commas.
+Every spreadsheet (LibreOffice, Excel, Google Sheets...) opens and saves it.
+
+  csv_parse("name,age\nAda,36")              # Ok([["name", "age"], ["Ada", "36"]])
+  csv_records("name,age\nAda,36")            # Ok([{name: "Ada", age: "36"}])
+  csv_format([["name", "age"], ["Ada", 36]]) # "name,age\nAda,36\n"
+  csv_format([{name: "Ada", age: 36}])       # the same text: records give a header
+
+With files
+  match read_file("grades.csv").and_then(csv_records)
+    Ok(rows) -> print(len(rows), "students")
+    Err(e) -> print("Error: {e}")
+  end
+  write_file("copy.csv", csv_format(rows))
+
+The rules (RFC 4180)
+  A field between quotes may hold commas, line breaks and quotes, written
+  twice: "say ""hi""" is the field  say "hi"  ; csv_format adds the quotes
+  only where they are needed.
+  Lines end with \n or \r\n (Windows); the last one may have no line break.
+  Empty lines are skipped; spaces are kept as they are in the file.
+  Every field is a text: parse_int(r.age) or parse_float(r.price) give numbers.
+  csv_records: the first line names the columns, which become the fields of
+  the records (r.name; get(r, "first name") for a name with spaces); every
+  line must have as many fields as the header.
+
+Another separator: the last argument
+  ";" (spreadsheets in French, where the comma is the decimal point), "\t"
+  (tabs), "|"...
+  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
+  csv_format(rows, ";")
+
+A text that is not valid CSV gives Err, which says where (line and column):
+  csv_parse("a,b\"c")   # Err("line 1, column 4: a quote in the middle of a field: ...")"#, r#"CSV: DIE TABELLEN DER TABELLENKALKULATION
+
+Ein CSV-Text ist eine Tabelle: eine Zeile der Tabelle pro Textzeile, ihre
+Felder durch Kommas getrennt. Jede Tabellenkalkulation (LibreOffice, Excel,
+Google Sheets...) öffnet und speichert ihn.
+
+  csv_parse("name,alter\nAda,36")            # Ok([["name", "alter"], ["Ada", "36"]])
+  csv_records("name,alter\nAda,36")          # Ok([{name: "Ada", alter: "36"}])
+  csv_format([["name", "alter"], ["Ada", 36]])   # "name,alter\nAda,36\n"
+  csv_format([{name: "Ada", alter: 36}])     # derselbe Text: Datensätze ergeben eine Kopfzeile
+
+Mit Dateien
+  match read_file("noten.csv").and_then(csv_records)
+    Ok(zeilen) -> print(len(zeilen), "Schüler")
+    Err(e) -> print("Fehler: {e}")
+  end
+  write_file("kopie.csv", csv_format(zeilen))
+
+Die Regeln (RFC 4180)
+  Ein Feld in Anführungszeichen darf Kommas, Zeilenumbrüche und
+  Anführungszeichen enthalten, doppelt geschrieben: "sagt ""hallo""" ist das
+  Feld  sagt "hallo"  ; csv_format setzt Anführungszeichen nur, wo sie nötig sind.
+  Zeilen enden mit \n oder \r\n (Windows); die letzte darf ohne Zeilenumbruch sein.
+  Leere Zeilen werden übersprungen; Leerzeichen bleiben, wie sie in der Datei sind.
+  Jedes Feld ist ein Text: parse_int(r.alter) oder parse_float(r.preis)
+  ergeben Zahlen.
+  csv_records: die erste Zeile benennt die Spalten, die zu den Feldern der
+  Datensätze werden (r.name; get(r, "zweiter vorname") für einen Namen mit
+  Leerzeichen); jede Zeile muss so viele Felder haben wie die Kopfzeile.
+
+Ein anderes Trennzeichen: das letzte Argument
+  ";" (deutsche und französische Tabellenkalkulationen, wo das Komma das der
+  Dezimalzahlen ist), "\t" (Tabulatoren), "|"...
+  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
+  csv_format(zeilen, ";")
+
+Ein Text, der kein gültiges CSV ist, ergibt Err, das sagt, wo (Zeile und Spalte):
+  csv_parse("a,b\"c")   # Err("Zeile 1, Spalte 4: ein Anführungszeichen mitten in einem Feld: ...")"#),
+        (r#"RANDOM: CHANCE, AND THE SAME CHANCE AGAIN
+
+  random()                   # a decimal number from 0 (included) to 1 (excluded)
+  random(1, 6)               # a whole number from 1 to 6, both included
+  random(["a", "b", "c"])    # one element of the list
+  shuffle([1, 2, 3])         # the list in a random order
+
+Every run draws other values. To get the same draws again (a test, a class
+where everyone sees the same game, a mistake to find again), give a seed:
+
+  random_seed(42)                  # in the program: the draws that follow
+  rythme run --seed 42 game.ry     # from the command line: the whole run
+
+The same seed gives the same draws, in the same order, with the same version
+of Rythme (another version may draw other values). Without a seed, nothing
+changes: every run is different.
+
+In a test, call random_seed at its start: its draws then do not depend on
+the tests before it.
+  test "a dice roll stays between 1 and 6"
+    random_seed(7)
+    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+  end
+
+The property tests (check_all, sample) have their own seed:
+rythme test --seed N (see rythme help tests)."#, r#"RANDOM: DER ZUFALL, UND DERSELBE ZUFALL NOCH EINMAL
+
+  random()                   # eine Dezimalzahl von 0 (eingeschlossen) bis 1 (ausgeschlossen)
+  random(1, 6)               # eine ganze Zahl von 1 bis 6, beide eingeschlossen
+  random(["a", "b", "c"])    # ein Element der Liste
+  shuffle([1, 2, 3])         # die Liste in zufälliger Reihenfolge
+
+Jeder Lauf zieht andere Werte. Um dieselben Ziehungen wieder zu bekommen (ein
+Test, ein Kurs, in dem alle dasselbe Spiel sehen, ein Fehler, den man
+wiederfinden will), gib einen Startwert (seed) an:
+
+  random_seed(42)                  # im Programm: die folgenden Ziehungen
+  rythme run --seed 42 spiel.ry    # von der Kommandozeile: der ganze Lauf
+
+Derselbe Startwert ergibt dieselben Ziehungen, in derselben Reihenfolge, mit
+derselben Version von Rythme (eine andere Version kann andere Werte ziehen).
+Ohne Startwert ändert sich nichts: jeder Lauf ist anders.
+
+Rufe random_seed in einem Test an seinem Anfang auf: seine Ziehungen hängen
+dann nicht von den Tests davor ab.
+  test "ein Würfelwurf bleibt zwischen 1 und 6"
+    random_seed(7)
+    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+  end
+
+Die Eigenschaftstests (check_all, sample) haben ihren eigenen Startwert:
+rythme test --seed N (siehe rythme help tests)."#),
     ],
 }

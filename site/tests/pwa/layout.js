@@ -299,6 +299,48 @@ async function shareLayout(browser, base, mode) {
   await context.close();
 }
 
+// The steps of a calculation in every language: a link with `&mode=steps` opens on a
+// step whose lines are long (a text without spaces) and nested (a block), with the step
+// before and what it printed; no horizontal scroll at any width, in any theme (long
+// lines wrap), and the texts at the contrast of each theme.
+async function stepsLayout(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 320, height: 800 } });
+  const page = await context.newPage();
+  const failed = [];
+  const code = 'fn twice(t) = t + t\nfn grow(t)\n  doubled = twice(t)\n  print(len(doubled))\n  doubled + "!"\nend\n\ngrow(twice("a_long_word_without_spaces_that_goes_on_and_on_and_on_and_on_"))\n';
+  for (const lang of LANGS) {
+    await page.goto(`${base}/${lang}/playground/#code=${encodeURIComponent(code)}&mode=steps&step=4`);
+    await ran(page);
+    const shown = await page.evaluate(() => ({
+      stepper: !document.getElementById("stepper").hidden,
+      from: document.getElementById("step-from").textContent.includes("doubled"),
+      printed: !document.getElementById("step-printed").hidden,
+      count: document.getElementById("step-count").textContent,
+    }));
+    if (!shown.stepper || !shown.from || !/4/.test(shown.count)) failed.push(`/${lang}/: the steps are not shown on step 4: ${JSON.stringify(shown)}`);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      for (const width of [320, 360, 390, 768, 1280]) {
+        await page.setViewportSize({ width, height: 800 });
+        await settle(page);
+        for (const step of [3, 4, 5]) {
+          await page.$eval("#step-range", (e, n) => { e.value = String(n); e.dispatchEvent(new Event("input", { bubbles: true })); }, step);
+          const m = await page.evaluate(measure);
+          if (m.scrollWidth > m.clientWidth || m.wide.length || m.scrollers.length) failed.push(`/${lang}/ ${theme} ${width}px step ${step}: ${JSON.stringify(m)}`);
+        }
+        if (theme !== "auto" && (width === 320 || width === 1280)) {
+          await page.waitForTimeout(300);
+          const result = await page.evaluate(contrast, MIN_CONTRAST[theme] || 4.5);
+          if (result.bad.length) failed.push(`/${lang}/ ${theme} ${width}px: contrast ${result.bad.join("; ")}`);
+        }
+      }
+    }
+    await page.setViewportSize({ width: 320, height: 800 });
+  }
+  check(failed.length === 0, `${mode}: the steps fit and read well in every language, theme and width`, `\n    ${failed.slice(0, 20).join("\n    ")}`);
+  await context.close();
+}
+
 async function themes(browser, base, mode) {
   // The contrast of every theme: its palette, then the text as drawn on every page.
   const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 390, height: 800 } });
@@ -428,6 +470,7 @@ async function verify(mode) {
     await languageMenu(browser, base, mode);
     await editorWraps(browser, base);
     await shareLayout(browser, base, mode);
+    await stepsLayout(browser, base, mode);
     await themes(browser, base, mode);
   } finally {
     await browser.close();

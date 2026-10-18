@@ -740,6 +740,59 @@ enum Frame {
     Restore(usize, usize),
 }
 
+/// The lists and the scratch space of a search, kept from one search to the
+/// next by `find_all`.
+struct Vm {
+    clist: Threads,
+    nlist: Threads,
+    stack: Vec<Frame>,
+    scratch: Vec<usize>,
+}
+
+/// The largest table of [`Dead`] (bits): 8 MB.
+const MAX_DEAD_BITS: usize = 1 << 26;
+/// The most ways [`Dead`] remembers during one search before writing them down.
+const MAX_PENDING: usize = 1 << 21;
+
+/// The ways that cannot lead to a match: a step of the program at a place in
+/// the text from which no match can be reached, whatever came before. Found
+/// by one search of `find_all` and skipped by the next ones, so that finding
+/// every match reads the text about once instead of once per match: without
+/// it, `a*b|a` on a text of `a`s follows `a*b` to the end of the text for
+/// each `a` found. Dropping such a way changes no answer: it never matches,
+/// and the ways it would have stopped (the same step at the same place, after
+/// it) cannot match either.
+///
+/// After a search, the ways it followed after the last place where it
+/// reached a match (or all of them, when it found none) were followed to
+/// their end without reaching one: they are dead.
+struct Dead {
+    /// One bit per step of the program and place in the text.
+    bits: Vec<u64>,
+    steps: usize,
+    /// The ways followed since the last match of the current search: (place, step).
+    pending: Vec<(usize, usize)>,
+}
+
+impl Dead {
+    fn new(steps: usize, text: &str) -> Option<Dead> {
+        let n = steps.checked_mul(text.len() + 1)?;
+        (n <= MAX_DEAD_BITS).then(|| Dead { bits: vec![0; n.div_ceil(64)], steps, pending: Vec::new() })
+    }
+
+    fn has(&self, pc: usize, pos: usize) -> bool {
+        let i = pos * self.steps + pc;
+        self.bits[i / 64] & (1 << (i % 64)) != 0
+    }
+
+    fn write_down(&mut self) {
+        for (pos, pc) in self.pending.drain(..) {
+            let i = pos * self.steps + pc;
+            self.bits[i / 64] |= 1 << (i % 64);
+        }
+    }
+}
+
 impl Regex {
     pub fn new(pattern: &str) -> Result<Regex, RegexError> {
         let chars: Vec<char> = pattern.chars().collect();
@@ -794,23 +847,31 @@ impl Regex {
 
     /// Does the regex match the whole text? Then where its groups are.
     pub fn whole(&self, text: &str) -> Option<Captures> {
-        self.run(text, 0, Mode::Whole)
+        self.run(&mut self.vm(), text, 0, Mode::Whole, None)
     }
 
     /// The leftmost match starting at byte `start` or after.
     pub fn find_at(&self, text: &str, start: usize) -> Option<Captures> {
-        self.run(text, start, Mode::Search)
+        self.run(&mut self.vm(), text, start, Mode::Search, None)
+    }
+
+    fn vm(&self) -> Vm {
+        let (size, n) = (self.prog.len(), 2 * self.names.len());
+        Vm { clist: Threads::new(size, n), nlist: Threads::new(size, n), stack: Vec::new(), scratch: vec![NONE; n] }
     }
 
     /// Every match, from left to right, without overlapping. An empty match
     /// right where the previous match ended is skipped, as in Rust: `a*` finds
-    /// "" and "aaa" in "baaa".
+    /// "" and "aaa" in "baaa". The same matches as calling [`Regex::find_at`]
+    /// again and again, but the searches share what they learned (see [`Dead`]).
     pub fn find_all(&self, text: &str, max: usize) -> Result<Vec<Captures>, usize> {
         let mut out = Vec::new();
         let mut pos = 0;
         let mut last_end = None;
+        let mut vm = self.vm();
+        let mut dead = Dead::new(self.prog.len(), text);
         while pos <= text.len() {
-            let Some(m) = self.find_at(text, pos) else { break };
+            let Some(m) = self.run(&mut vm, text, pos, Mode::Search, dead.as_mut()) else { break };
             let (s, e) = m[0].unwrap_or((pos, pos));
             if s == e && last_end == Some(e) {
                 match text[pos..].chars().next() {
@@ -844,14 +905,23 @@ impl Regex {
     /// Adds the way that reaches step `pc` at `pos`, and every way that
     /// follows from it without reading a character, in order of preference.
     #[allow(clippy::too_many_arguments)]
-    fn add(&self, list: &mut Threads, stack: &mut Vec<Frame>, scratch: &mut [usize], pc: usize, text: &str, pos: usize) {
+    fn add(
+        &self,
+        list: &mut Threads,
+        stack: &mut Vec<Frame>,
+        scratch: &mut [usize],
+        pc: usize,
+        text: &str,
+        pos: usize,
+        dead: Option<&Dead>,
+    ) {
         let n = scratch.len();
         stack.push(Frame::Explore(pc));
         while let Some(frame) = stack.pop() {
             match frame {
                 Frame::Restore(slot, value) => scratch[slot] = value,
                 Frame::Explore(mut pc) => loop {
-                    if list.contains(pc) {
+                    if list.contains(pc) || dead.is_some_and(|d| d.has(pc, pos)) {
                         break;
                     }
                     list.insert(pc);
@@ -882,22 +952,24 @@ impl Regex {
         }
     }
 
-    fn run(&self, text: &str, start: usize, mode: Mode) -> Option<Captures> {
+    fn run(&self, vm: &mut Vm, text: &str, start: usize, mode: Mode, mut dead: Option<&mut Dead>) -> Option<Captures> {
         let n = 2 * self.names.len();
-        let size = self.prog.len();
-        let mut clist = Threads::new(size, n);
-        let mut nlist = Threads::new(size, n);
-        let mut stack = Vec::new();
-        let mut scratch = vec![NONE; n];
+        let Vm { clist, nlist, stack, scratch } = vm;
+        clist.len = 0;
+        nlist.len = 0;
         let mut matched: Option<Vec<usize>> = None;
         let mut pos = start;
         loop {
             if matched.is_none() && (pos == start || mode == Mode::Search) {
                 scratch.fill(NONE);
-                self.add(&mut clist, &mut stack, &mut scratch, 0, text, pos);
+                self.add(clist, stack, scratch, 0, text, pos, dead.as_deref());
             }
             if clist.len == 0 {
                 break;
+            }
+            if let Some(d) = dead.as_deref_mut() {
+                let room = MAX_PENDING.saturating_sub(d.pending.len());
+                d.pending.extend(clist.dense[..clist.len].iter().take(room).map(|&pc| (pos, pc)));
             }
             let c = text[pos..].chars().next();
             let next = pos + c.map_or(0, char::len_utf8);
@@ -913,21 +985,28 @@ impl Regex {
                         }
                         // The ways after this one are less preferred: they stop here.
                         matched = Some(clist.slots[pc * n..(pc + 1) * n].to_vec());
+                        // The ways followed so far are not known to be dead.
+                        if let Some(d) = dead.as_deref_mut() {
+                            d.pending.clear();
+                        }
                         break;
                     }
                     _ => false,
                 };
                 if reads {
                     scratch.copy_from_slice(&clist.slots[pc * n..(pc + 1) * n]);
-                    self.add(&mut nlist, &mut stack, &mut scratch, pc + 1, text, next);
+                    self.add(nlist, stack, scratch, pc + 1, text, next, dead.as_deref());
                 }
             }
-            std::mem::swap(&mut clist, &mut nlist);
+            std::mem::swap(clist, nlist);
             nlist.len = 0;
             if c.is_none() {
                 break;
             }
             pos = next;
+        }
+        if let Some(d) = dead {
+            d.write_down();
         }
         matched.map(|slots| slots.chunks(2).map(|g| if g[0] == NONE || g[1] == NONE { None } else { Some((g[0], g[1])) }).collect())
     }
