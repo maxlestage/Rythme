@@ -31,7 +31,10 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
 ```
 
 - `driver.rs` loads files and the files they `use`, checks them, runs them,
-  and runs tests.
+  and runs tests. `modules.rs` turns `geometry.area` (for `use geometry`)
+  into the single name `geometry.area` right after parsing; each file used
+  with a name keeps its top-level names apart in the interpreter (see
+  `compile::Names`), and so do the private `_names` of used files.
 - `types.rs` holds what the checker knows for sure about values: their types,
   and what each built-in function accepts and gives back. `check.rs` infers
   the types of expressions to report operations that would fail every time
@@ -47,6 +50,8 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
   after changing an example. Its tests (`tests/format.rs`) check on every
   piece of code of the repository that it never changes the meaning of a
   program nor loses a comment.
+- `doc.rs` is `rythme doc`: the documentation of files and folders, from
+  their `##` comments, as Markdown or one HTML page (`tests/doc.rs`).
 - `builtins.rs` holds the standard library; `help.rs` the help topics and the
   explanation of every error code; `suggest.rs` the "did you mean" logic and
   the hints for people coming from other languages.
@@ -93,6 +98,17 @@ in `help::CODES` (a test checks it).
    simply knows nothing about the function. `tests/types.rs` calls every
    described function with values of every kind and checks that the
    description is right.
+
+## Adding an exercise
+
+The exercises of [`docs/exercises/`](docs/exercises/README.md) exist in
+`en/` and `fr/`, with a reference solution of each in
+`docs/exercises/.solutions/`. A new exercise needs both files, both
+solutions (the code, then exactly the tests of the exercise, after the line
+`# --- Tests ... ---`), a line in `EXERCISES` (`src/exercise.rs`, which builds
+the files into `rythme exercise`) and a line in both index files.
+`tests/exercises.rs` checks that every exercise is well formed, checks without
+a warning, fails until it is solved, and that its solution passes its tests.
 
 ## Design rules
 

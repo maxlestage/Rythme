@@ -1,0 +1,64 @@
+# Exercice 04 · Choisir avec `if`  ★☆☆
+#
+# `if condition then valeur else autre_valeur` est une expression : elle
+# donne une valeur, donc `else` est toujours nécessaire. `else if` enchaîne
+# plusieurs conditions.
+#
+# Énoncé
+#   Sans utiliser les fonctions intégrées `abs`, `min` et `max` :
+#   - `valeur_absolue(n)` : n sans son signe (`valeur_absolue(-5)` vaut 5) ;
+#   - `plus_grand(a, b)` : le plus grand de deux nombres ;
+#   - `mention(note)` : pour une note de 0 à 20, "très bien" à partir de
+#     16, "bien" à partir de 14, "assez bien" à partir de 12, "passable" à
+#     partir de 10, et "insuffisant" en dessous de 10 ;
+#   - `prix_du_billet(age)` : 0 avant 4 ans, 5 avant 12 ans, 12 à partir de
+#     65 ans, et 10 sinon.
+#
+# Indices
+#   1. `if n < 0 then -n else n`
+#   2. Testez d'abord la meilleure mention :
+#      `if note >= 16 then "très bien" else if ...`.
+#   3. Un long `if` peut continuer sur les lignes suivantes, chacune
+#      commençant par `else if`.
+#
+# Vérifiez votre travail :  rythme exercise check 04-choisir.ry
+#                     ou :  rythme test 04-choisir.ry
+
+fn valeur_absolue(n) = fail("à faire")
+
+fn plus_grand(a, b) = fail("à faire")
+
+fn mention(note) = fail("à faire")
+
+fn prix_du_billet(age) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "valeur absolue"
+  assert_eq(valeur_absolue(-5), 5)
+  assert_eq(valeur_absolue(7), 7)
+  assert_eq(valeur_absolue(0), 0)
+end
+
+test "plus grand"
+  assert_eq(plus_grand(3, 8), 8)
+  assert_eq(plus_grand(8, 3), 8)
+  assert_eq(plus_grand(-1, -2), -1)
+end
+
+test "mention"
+  assert_eq(mention(18), "très bien")
+  assert_eq(mention(16), "très bien")
+  assert_eq(mention(15.5), "bien")
+  assert_eq(mention(12), "assez bien")
+  assert_eq(mention(10), "passable")
+  assert_eq(mention(4), "insuffisant")
+end
+
+test "prix du billet"
+  assert_eq(prix_du_billet(2), 0)
+  assert_eq(prix_du_billet(4), 5)
+  assert_eq(prix_du_billet(11), 5)
+  assert_eq(prix_du_billet(30), 10)
+  assert_eq(prix_du_billet(65), 12)
+end

@@ -1,0 +1,45 @@
+# Exercise 18 · Working with texts  ★★☆
+#
+# A text can be turned into the list of its characters with `chars`, and
+# the list functions do the rest. `lower`, `upper`, `replace`, `split`,
+# `join`, `contains`... are described by `rythme help text`.
+#
+# Statement
+#   - `is_palindrome(text)`: does the text read the same from both ends,
+#     ignoring uppercase and spaces? ("Never odd or even" does.)
+#   - `count_vowels(text)`: how many characters are vowels (a, e, i, o, u
+#     or y, in lowercase or uppercase)?
+#   - `title_case(text)`: each word starts with an uppercase letter, the
+#     rest in lowercase ("the LORD of the rings" gives
+#     "The Lord Of The Rings").
+#
+# Hints
+#   1. `replace(text, " ", "")` removes the spaces, and `reverse` works on
+#      texts too.
+#   2. `contains("aeiouy", c)` tells whether the character c is a vowel.
+#   3. `capitalize("lord")` is "Lord".
+#
+# Check your work:  rythme exercise check 18-text-processing.ry
+#              or:  rythme test 18-text-processing.ry
+
+fn is_palindrome(text) = fail("to do")
+
+fn count_vowels(text) = fail("to do")
+
+fn title_case(text) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "palindromes"
+  assert_eq(is_palindrome("kayak"), true)
+  assert_eq(is_palindrome("Never odd or even"), true)
+  assert_eq(is_palindrome("rythme"), false)
+end
+
+test "vowels"
+  assert_eq(count_vowels("Rythme"), 2)
+  assert_eq(count_vowels("AEIOU"), 5)
+  assert_eq(count_vowels("xkcd"), 0)
+end
+
+test "title case" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")

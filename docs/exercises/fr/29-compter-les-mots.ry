@@ -1,0 +1,56 @@
+# Exercice 29 · Un petit projet : compter les mots  ★★★
+#
+# Tout ensemble : textes, listes, enregistrements, tuyaux et Options, pour
+# un programme qui analyse un texte.
+#
+# Énoncé
+#   - `mots_de(texte)` : les mots du texte, en minuscules, sans la
+#     ponctuation `.`, `,`, `!` et `?` ;
+#   - `frequences(texte)` : une liste de paires `[mot, nombre]`, du mot le
+#     plus fréquent au moins fréquent, et dans l'ordre alphabétique pour les
+#     mots qui apparaissent le même nombre de fois ;
+#   - `le_plus_frequent(texte)` : le mot le plus fréquent, sous forme
+#     d'Option (`None` pour un texte sans mots) ;
+#   - `rapport(texte, n)` : les n mots les plus fréquents, un par ligne,
+#     chacun sous la forme "mot : nombre".
+#
+# Indices
+#   1. `replace` quatre fois (ou `fold` sur la liste [".", ",", "!", "?"]),
+#      puis `lower` et `split`.
+#   2. `group_by(mots, fn(m) = m)` donne un enregistrement
+#      `{mot: [mot, mot]}`, et `entries(enregistrement)` la liste de ses
+#      paires `[nom, valeur]`.
+#   3. `sort_by` est stable : triez d'abord par mot, puis par nombre (le
+#      plus grand d'abord, avec `fn([_, n]) = -n`).
+#   4. `first(liste)` donne une Option, et `map(option, f)` change la valeur
+#      contenue.
+#   5. `join(lignes, "\n")` met chaque élément sur sa propre ligne.
+#
+# Vérifiez votre travail :  rythme exercise check 29-compter-les-mots.ry
+#                     ou :  rythme test 29-compter-les-mots.ry
+
+fn mots_de(texte) = fail("à faire")
+
+fn frequences(texte) = fail("à faire")
+
+fn le_plus_frequent(texte) = fail("à faire")
+
+fn rapport(texte, n) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+poeme = "Le chat dort. Le chien dort ! Le chat voit-il le chien ?"
+
+test "mots" = assert_eq(mots_de("Bonjour, le Monde ! Bonjour ?"), ["bonjour", "le", "monde", "bonjour"])
+
+test "fréquences"
+  assert_eq(frequences("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
+  assert_eq(frequences(poeme) |> take(3), [["le", 4], ["chat", 2], ["chien", 2]])
+end
+
+test "le plus fréquent"
+  assert_eq(le_plus_frequent(poeme), Some("le"))
+  assert_eq(le_plus_frequent(" ... "), None)
+end
+
+test "rapport" = assert_eq(rapport(poeme, 3), "le : 4\nchat : 2\nchien : 2")

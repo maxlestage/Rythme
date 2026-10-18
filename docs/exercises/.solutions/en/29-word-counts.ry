@@ -1,0 +1,34 @@
+# Exercise 29 · A small project: counting words  ★★★
+# Reference solution. Try the exercise before reading it!
+
+fn words_of(text) = [".", ",", "!", "?"] |> fold(text, fn(t, mark) = replace(t, mark, " ")) |> lower |> split
+
+fn frequencies(text) =
+  words_of(text)
+    |> group_by(fn(w) = w)
+    |> entries
+    |> map(fn([word, list]) = [word, len(list)])
+    |> sort_by(fn([word, _]) = word)
+    |> sort_by(fn([_, n]) = -n)
+
+fn most_frequent(text) = frequencies(text) |> first |> map(fn([word, _]) = word)
+
+fn report(text, n) = frequencies(text) |> take(n) |> map(fn([word, count]) = "{word}: {count}") |> join("\n")
+
+# --- Tests (do not change them) ---
+
+poem = "The cat sat. The dog sat! Did the cat see the dog?"
+
+test "words" = assert_eq(words_of("Hello, World! Hello?"), ["hello", "world", "hello"])
+
+test "frequencies"
+  assert_eq(frequencies("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
+  assert_eq(frequencies(poem) |> take(3), [["the", 4], ["cat", 2], ["dog", 2]])
+end
+
+test "most frequent"
+  assert_eq(most_frequent(poem), Some("the"))
+  assert_eq(most_frequent(" ... "), None)
+end
+
+test "report" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")

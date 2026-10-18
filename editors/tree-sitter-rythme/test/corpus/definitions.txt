@@ -1,0 +1,229 @@
+================================================================================
+Use, type and test
+================================================================================
+
+use "geometry.ry"
+
+## A shape.
+type Shape = Circle(radius) | Rectangle(width, height)
+type Color =
+  | Red
+  | Green
+
+test "addition" = 1 + 1 == 2
+test "several lines"
+  x = 2
+  x * x == 4
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (use_declaration
+    (string
+      (string_content)))
+  (comment)
+  (type_definition
+    (type_identifier)
+    (variant
+      (constructor)
+      (variant_fields
+        (identifier)))
+    (variant
+      (constructor)
+      (variant_fields
+        (identifier)
+        (identifier))))
+  (type_definition
+    (type_identifier)
+    (variant
+      (constructor))
+    (variant
+      (constructor)))
+  (test_definition
+    (string
+      (string_content))
+    (binary_expression
+      (binary_expression
+        (integer)
+        (integer))
+      (integer)))
+  (test_definition
+    (string
+      (string_content))
+    (block
+      (definition
+        (identifier)
+        (integer))
+      (binary_expression
+        (binary_expression
+          (identifier)
+          (identifier))
+        (integer)))))
+
+================================================================================
+Functions
+================================================================================
+
+fn square(x) = x * x
+fn fact(0) = 1
+fn fact(n) if n > 0 = n * fact(n - 1)
+fn divide(a, b)
+  q = a // b
+  Ok(q)
+end
+fn nothing()
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    (identifier)
+    (parameters
+      (identifier))
+    (binary_expression
+      (identifier)
+      (identifier)))
+  (function_definition
+    (identifier)
+    (parameters
+      (integer))
+    (integer))
+  (function_definition
+    (identifier)
+    (parameters
+      (identifier))
+    (guard
+      (binary_expression
+        (identifier)
+        (integer)))
+    (binary_expression
+      (identifier)
+      (call
+        (identifier)
+        (arguments
+          (binary_expression
+            (identifier)
+            (integer))))))
+  (function_definition
+    (identifier)
+    (parameters
+      (identifier)
+      (identifier))
+    (block
+      (definition
+        (identifier)
+        (binary_expression
+          (identifier)
+          (identifier)))
+      (call
+        (constructor)
+        (arguments
+          (identifier)))))
+  (function_definition
+    (identifier)
+    (parameters)
+    (block)))
+
+================================================================================
+Lambdas and do blocks
+================================================================================
+
+double = fn(x) = x * 2
+show = fn(x)
+  text = "{x}"
+  text
+end
+v = do 1 end
+w = do
+  a = 1
+  a + 1
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (definition
+    (identifier)
+    (lambda
+      (parameters
+        (identifier))
+      (binary_expression
+        (identifier)
+        (integer))))
+  (definition
+    (identifier)
+    (lambda
+      (parameters
+        (identifier))
+      (block
+        (definition
+          (identifier)
+          (string
+            (interpolation
+              (identifier))))
+        (identifier))))
+  (definition
+    (identifier)
+    (do_expression
+      (block
+        (integer))))
+  (definition
+    (identifier)
+    (do_expression
+      (block
+        (definition
+          (identifier)
+          (integer))
+        (binary_expression
+          (identifier)
+          (integer))))))
+
+================================================================================
+Definitions with patterns
+================================================================================
+
+[first, ..rest] = xs
+[a, b, ..] = xs
+{name, age: years, ..} = person
+Some(value) = find(xs, f)
+(x) = 1
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (definition
+    (list_pattern
+      (identifier)
+      (rest_pattern
+        (identifier)))
+    (identifier))
+  (definition
+    (list_pattern
+      (identifier)
+      (identifier)
+      (rest_pattern))
+    (identifier))
+  (definition
+    (record_pattern
+      (field_pattern
+        (field_name))
+      (field_pattern
+        (field_name)
+        (identifier))
+      (rest_pattern))
+    (identifier))
+  (definition
+    (constructor_pattern
+      (constructor)
+      (identifier))
+    (call
+      (identifier)
+      (arguments
+        (identifier)
+        (identifier))))
+  (definition
+    (parenthesized_pattern
+      (identifier))
+    (integer)))

@@ -1,0 +1,4 @@
+# Written by Zed when it builds the extension, and by cargo.
+/target
+/grammars
+/extension.wasm

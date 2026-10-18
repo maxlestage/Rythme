@@ -1,0 +1,29 @@
+# Exercice 17 · Les tuyaux `|>`  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn somme_des_carres_impairs(n) = 1..n |> filter(is_odd) |> map(fn(x) = x * x) |> sum
+
+fn trois_meilleurs(notes) = notes |> sort |> reverse |> take(3)
+
+fn crier_les_mots(phrase) = phrase |> split |> map(upper) |> join(" ")
+
+fn sigle(phrase) = phrase |> split |> map(fn(m) = upper(m[0])) |> join("")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "somme des carrés impairs"
+  assert_eq(somme_des_carres_impairs(5), 35)
+  assert_eq(somme_des_carres_impairs(1), 1)
+end
+
+test "trois meilleurs"
+  assert_eq(trois_meilleurs([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(trois_meilleurs([4]), [4])
+end
+
+test "crier les mots" = assert_eq(crier_les_mots("bonjour  monde"), "BONJOUR MONDE")
+
+test "sigle"
+  assert_eq(sigle("société nationale des chemins de fer"), "SNDCDF")
+  assert_eq(sigle("Rythme"), "R")
+end

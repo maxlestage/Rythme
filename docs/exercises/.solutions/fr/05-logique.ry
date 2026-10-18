@@ -1,0 +1,40 @@
+# Exercice 05 · Vrai ou faux  ★☆☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn est_multiple(n, d) = n % d == 0
+
+fn est_entre(x, bas, haut) = x >= bas and x <= haut
+
+fn est_bissextile(annee) = est_multiple(annee, 4) and (not est_multiple(annee, 100) or est_multiple(annee, 400))
+
+fn ou_exclusif(a, b) = a != b
+
+# --- Tests (ne les modifiez pas) ---
+
+test "multiples"
+  assert(est_multiple(12, 3), "12 est un multiple de 3")
+  assert(not est_multiple(12, 5), "12 n'est pas un multiple de 5")
+  assert(est_multiple(0, 7), "0 est un multiple de tous les nombres")
+end
+
+test "entre"
+  assert(est_entre(5, 1, 10), "5 est entre 1 et 10")
+  assert(est_entre(1, 1, 10), "les bornes sont incluses")
+  assert(est_entre(10, 1, 10), "les bornes sont incluses")
+  assert(not est_entre(11, 1, 10), "11 est trop grand")
+  assert(not est_entre(0, 1, 10), "0 est trop petit")
+end
+
+test "années bissextiles"
+  assert_eq(est_bissextile(2024), true)
+  assert_eq(est_bissextile(2023), false)
+  assert_eq(est_bissextile(1900), false)
+  assert_eq(est_bissextile(2000), true)
+end
+
+test "ou exclusif"
+  assert_eq(ou_exclusif(true, false), true)
+  assert_eq(ou_exclusif(false, true), true)
+  assert_eq(ou_exclusif(true, true), false)
+  assert_eq(ou_exclusif(false, false), false)
+end

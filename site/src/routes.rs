@@ -39,12 +39,16 @@ pub enum Page {
     Examples,
     Playground,
     Teach,
+    /// Shown by the service worker for a page that was not saved, without network.
+    Offline,
     NotFound,
 }
 
 impl Page {
     /// Every page that has an address, in the order of the navigation.
     pub const ALL: [Page; 5] = [Page::Home, Page::Learn, Page::Examples, Page::Playground, Page::Teach];
+    /// The pages that have an address but are not in the navigation nor the sitemap.
+    pub const EXTRA: [Page; 1] = [Page::Offline];
 
     /// The part of the path after the language (`""` for the home page).
     pub fn slug(self) -> &'static str {
@@ -54,6 +58,7 @@ impl Page {
             Page::Examples => "examples",
             Page::Playground => "playground",
             Page::Teach => "teach",
+            Page::Offline => "offline",
             Page::NotFound => "404",
         }
     }
@@ -76,7 +81,7 @@ impl Route {
         let lang = Lang::parse(parts.first()?)?;
         let page = match parts[1..] {
             [] => Page::Home,
-            [slug] => Page::ALL.into_iter().find(|p| p.slug() == slug && *p != Page::Home).unwrap_or(Page::NotFound),
+            [slug] => Page::ALL.into_iter().chain(Page::EXTRA).find(|p| p.slug() == slug && *p != Page::Home).unwrap_or(Page::NotFound),
             _ => Page::NotFound,
         };
         Some(Route { lang, page })
@@ -115,6 +120,7 @@ mod tests {
         for route in Route::all() {
             assert_eq!(Route::parse(&route.path()), Some(route));
         }
+        assert_eq!(Route::parse("/en/offline/"), Some(Route::new(Lang::En, Page::Offline)));
     }
 
     #[test]

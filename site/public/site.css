@@ -48,7 +48,7 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html { -webkit-text-size-adjust: 100%; scroll-padding-top: calc(var(--bar-h) + 12px); }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: calc(var(--bar-h) + env(safe-area-inset-top) + 12px); }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 body {
   margin: 0;
@@ -121,7 +121,9 @@ ul, ol { margin: 0; padding: 0; }
 
 /* ----- header and burger menu -------------------------------------------------------- */
 
-.bar { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--rule); }
+/* Under the status bar of the installed app (`viewport-fit=cover`), the bar keeps its
+   content in the safe area. */
+.bar { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--rule); padding-top: env(safe-area-inset-top); }
 /* The blur sits on a layer of its own: on the bar itself it would become the
    containing block of the fixed menu panel and shrink it to the bar's height. */
 .bar::before {
@@ -184,7 +186,7 @@ ul, ol { margin: 0; padding: 0; }
 /* With JavaScript, on a phone: the links fold behind the burger, in a panel that
    covers the page under the bar. */
 .js .nav {
-  position: fixed; left: 0; right: 0; top: var(--bar-h); bottom: 0; width: auto;
+  position: fixed; left: 0; right: 0; top: calc(var(--bar-h) + env(safe-area-inset-top)); bottom: 0; width: auto;
   background: var(--paper);
   padding: 12px max(var(--gutter), env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
   overflow-y: auto; overscroll-behavior: contain;
@@ -202,6 +204,9 @@ ul, ol { margin: 0; padding: 0; }
 .js .nav__link:hover { background: transparent; color: var(--accent); }
 .js .nav__link.is-active { color: var(--accent); }
 .js .nav__link--github { font: 500 16px/1 var(--body); min-height: 56px; color: var(--ink-soft); }
+/* The install button, shown when the browser can install the site. */
+.nav__install { border: 0; background: none; cursor: pointer; text-align: left; }
+.nav__install, .js .nav__install { font: 600 16px/1 var(--body); min-height: 56px; color: var(--accent); }
 @media (prefers-reduced-motion: reduce) { .js .nav, .burger__line { transition: none !important; } }
 
 @media (min-width: 860px) {
@@ -211,11 +216,11 @@ ul, ol { margin: 0; padding: 0; }
   }
   .nav__list, .js .nav__list { flex-direction: row; flex-wrap: nowrap; gap: 2px; padding: 0; }
   .js .nav__list li { border: 0; }
-  .js .nav__link, .js .nav__link--github {
+  .js .nav__link, .js .nav__link--github, .js .nav__install {
     width: auto; min-height: 40px; padding: 0 12px; font: 500 15px/1 var(--body); color: var(--ink-soft); border-radius: 8px;
   }
   .js .nav__link:hover { color: var(--ink); background: var(--accent-soft); }
-  .js .nav__link.is-active { color: var(--accent); }
+  .js .nav__link.is-active, .js .nav__install { color: var(--accent); }
   .burger { display: none !important; }
   .js.menu-open body { overflow: auto; }
 }
@@ -477,6 +482,9 @@ select {
 }
 
 .workspace { display: grid; gap: 14px; }
+.panel__head { flex-wrap: wrap; }
+.panel__tools { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.panel__tools .btn--sm { min-height: 34px; padding: 4px 10px; font-size: 13px; }
 .panel { background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 .status { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; text-align: right; }
 .status.bad { color: var(--err); }
@@ -578,6 +586,30 @@ select {
   .foot__meta { grid-column: 1 / -1; border-top: 1px solid var(--rule); padding-top: 16px; }
   .foot__meta .lang { margin-left: auto; }
 }
+
+/* ----- the installed app: new version, install on iOS ---------------------------------------- */
+
+.notices {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; pointer-events: none;
+  display: grid; gap: 8px; justify-items: center;
+  padding: 0 max(var(--gutter), env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
+}
+.notice {
+  pointer-events: auto; width: 100%; max-width: 560px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+  padding: 12px 14px; border-radius: 14px; background: var(--ink); color: var(--paper); box-shadow: var(--shadow);
+}
+.notice__text { flex: 1 1 220px; font-size: 15px; }
+.notice__actions { display: flex; gap: 8px; }
+.notice .btn--ghost { color: inherit; border-color: color-mix(in srgb, currentColor 35%, transparent); }
+.notice__close {
+  flex: none; width: 44px; height: 44px; margin: -8px -8px -8px 0; border: 0; border-radius: 10px;
+  background: transparent; color: inherit; font-size: 24px; line-height: 1; cursor: pointer;
+}
+.notice__close:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
+.notice .icon { flex: none; }
+.notice--hint { flex-wrap: nowrap; }
+.notice--hint .notice__text { flex: 1 1 auto; min-width: 0; }
 
 /* Last, so that no `font` shorthand above turns ligatures back on: `|>` and `->`
    stay two characters, as typed. */

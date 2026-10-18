@@ -1,0 +1,49 @@
+# Exercise 27 · An operation that may fail: Result  ★★☆
+# Reference solution. Try the exercise before reading it!
+
+fn checked_divide(_, 0) = Err("division by zero")
+fn checked_divide(a, b) = Ok(a / b)
+
+fn parse_age(text) = match parse_int(text)
+  Err(_) -> Err("not a number")
+  Ok(n) if n < 0 -> Err("an age cannot be negative")
+  Ok(n) if n > 150 -> Err("too old")
+  Ok(n) -> Ok(n)
+end
+
+fn describe(result) = match result
+  Ok(value) -> "ok: {value}"
+  Err(message) -> "error: {message}"
+end
+
+fn check_code(code) =
+  if len(code) < 8 then Err("too short")
+  else if not any(chars(code), is_digit) then Err("no digit")
+  else Ok(code)
+
+# --- Tests (do not change them) ---
+
+test "checked divide"
+  assert_eq(checked_divide(9, 3), Ok(3))
+  assert_eq(checked_divide(1, 0), Err("division by zero"))
+end
+
+test "parse age"
+  assert_eq(parse_age("36"), Ok(36))
+  assert_eq(parse_age(" 7 "), Ok(7))
+  assert_eq(parse_age("seven"), Err("not a number"))
+  assert_eq(parse_age("-1"), Err("an age cannot be negative"))
+  assert_eq(parse_age("200"), Err("too old"))
+end
+
+test "describe"
+  assert_eq(describe(Ok(42)), "ok: 42")
+  assert_eq(describe(Err("too old")), "error: too old")
+  assert_eq(describe(parse_age("-5")), "error: an age cannot be negative")
+end
+
+test "check code"
+  assert_eq(check_code("rythme2024"), Ok("rythme2024"))
+  assert_eq(check_code("abc1"), Err("too short"))
+  assert_eq(check_code("functional"), Err("no digit"))
+end

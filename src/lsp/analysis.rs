@@ -19,7 +19,7 @@ use crate::check::{self, Knowledge};
 use crate::diagnostic::Diagnostic;
 use crate::source::{self, Span};
 use crate::symbol::Sym;
-use crate::{driver, lexer, parser};
+use crate::{driver, lexer, modules, parser};
 
 /// One source id per file, reused at each edit (see `source::replace`).
 #[derive(Default)]
@@ -57,8 +57,10 @@ pub struct Module {
     pub base: PathBuf,
     /// Each `use` that names an existing file, and that file.
     pub used: Vec<(Span, PathBuf)>,
-    /// The files it uses, found and loaded.
+    /// The files it uses without a name (`use "x.ry"`), found and loaded.
     pub deps: Vec<PathBuf>,
+    /// The files it uses with a name (`use geometry`), with that name.
+    pub named: Vec<(Sym, PathBuf)>,
     /// Its own problems.
     pub diags: Vec<Diagnostic>,
     /// On each `use` line, a summary of the errors found in the used file.
@@ -121,21 +123,25 @@ impl<'a> Loader<'a> {
             None => format!("{}{uri}", self.purpose),
         };
         let file = self.ids.register(&key, &short_name(uri), text);
-        let (items, parsed, mut diags) = match lexer::lex(text, file).and_then(parser::parse) {
+        let (mut items, parsed, mut diags) = match lexer::lex(text, file).and_then(parser::parse) {
             Ok(items) => (items, true, Vec::new()),
             Err(d) => (guard(|| recover(text, file)).flatten().unwrap_or_default(), false, vec![*d]),
         };
+        let names: HashSet<Sym> = modules::names(&items).into_iter().map(|(n, _)| n).collect();
+        modules::qualify(&mut items, &names);
         let base = path.and_then(Path::parent).map(Path::to_path_buf).unwrap_or_else(|| self.root.clone());
         if let Some(p) = path {
             self.loading.push(p.to_path_buf());
         }
         let mut deps = Vec::new();
+        let mut named: Vec<(Sym, PathBuf)> = Vec::new();
         let mut used = Vec::new();
         let mut use_diags = Vec::new();
         let mut complete = parsed;
         for item in &items {
-            let Item::Use(p, span) = item else { continue };
-            let dep = match driver::find_use(p, *span, &base) {
+            let Item::Use(u) = item else { continue };
+            let (p, span) = (&u.path, &u.span);
+            let dep = match driver::find_use(u, &base) {
                 // The same form of path as the open documents (see `text::canonical`).
                 Ok(dep) => canonical(&dep),
                 Err(d) => {
@@ -147,10 +153,11 @@ impl<'a> Loader<'a> {
                 }
             };
             used.push((*span, dep.clone()));
-            if self.loading.contains(&dep) {
+            if let Some(i) = self.loading.iter().position(|l| *l == dep) {
                 complete = false;
                 if parsed {
-                    diags.push(driver::use_cycle(p, *span));
+                    let chain: Vec<Rc<str>> = self.loading[i..].iter().map(|l| Rc::from(l.display().to_string())).collect();
+                    diags.push(driver::use_cycle(u, &chain));
                 }
                 continue;
             }
@@ -160,8 +167,13 @@ impl<'a> Loader<'a> {
             if parsed && !errors.is_empty() {
                 use_diags.push(summary(p, *span, &errors));
             }
-            if !deps.contains(&dep) {
-                deps.push(dep);
+            match u.name {
+                Some((n, _)) => {
+                    named.retain(|(m, _)| *m != n);
+                    named.push((n, dep));
+                }
+                None if !deps.contains(&dep) => deps.push(dep),
+                None => {}
             }
         }
         if path.is_some() {
@@ -172,16 +184,51 @@ impl<'a> Loader<'a> {
             // Like the driver: the built-ins, then what the used files define.
             let mut know = self.base.clone();
             for m in &order {
-                know.add_items(&m.items);
+                know.add_used_items(&m.items, &Rc::from(short_name(&m.uri)));
             }
-            if let Some(found) = guard(|| check::check(&items, &know, false)) {
+            for (n, dep) in &named {
+                let Some(m) = self.modules.get(dep) else { continue };
+                let mut inside = self.base.clone();
+                let inner = self.dep_order(&m.deps);
+                for d in &inner {
+                    inside.add_used_items(&d.items, &Rc::from(short_name(&d.uri)));
+                }
+                inside.add_items(&m.items);
+                let mut all: Vec<&[Item]> = vec![&m.items];
+                all.extend(inner.iter().map(|d| d.items.as_slice()));
+                know.add_module(*n, Rc::from(short_name(&m.uri)), &inside, &all);
+            }
+            if let Some(mut found) = guard(|| check::check(&items, &know, false)) {
+                if found.iter().any(|d| d.code == "E003") {
+                    // As the driver does: say which file of the folder defines an unknown name.
+                    let mut skip: Vec<PathBuf> = order.iter().filter_map(|m| m.path.clone()).collect();
+                    skip.extend(named.iter().map(|(_, p)| p.clone()));
+                    skip.extend(path.map(Path::to_path_buf));
+                    know.nearby = driver::nearby_names(&base, &skip);
+                    if !know.nearby.is_empty() {
+                        found = guard(|| check::check(&items, &know, false)).unwrap_or(found);
+                    }
+                }
                 diags.extend(found);
             }
         }
         let mut tops: HashMap<Sym, DefId> = HashMap::new();
         for m in &order {
             for (s, idx) in &m.index.tops {
-                tops.insert(*s, DefId { file: m.file, idx: *idx });
+                if !modules::is_private(*s) {
+                    tops.insert(*s, DefId { file: m.file, idx: *idx });
+                }
+            }
+        }
+        // `geometry.area` for the files used with a name, and the files they use without one.
+        for (n, dep) in &named {
+            let Some(m) = self.modules.get(dep) else { continue };
+            for d in self.dep_order(&m.deps).iter().chain([m]) {
+                for (s, idx) in &d.index.tops {
+                    if !modules::is_private(*s) {
+                        tops.insert(Sym::new(&format!("{n}.{s}")), DefId { file: d.file, idx: *idx });
+                    }
+                }
             }
         }
         let index = guard(|| index::build(&items, file, text, &tops)).unwrap_or_default();
@@ -195,6 +242,7 @@ impl<'a> Loader<'a> {
             base,
             used,
             deps,
+            named,
             diags,
             use_diags,
             dep_defs: tops,
@@ -225,6 +273,7 @@ impl<'a> Loader<'a> {
                     base: path.parent().map(Path::to_path_buf).unwrap_or_default(),
                     used: Vec::new(),
                     deps: Vec::new(),
+                    named: Vec::new(),
                     diags: vec![d],
                     use_diags: Vec::new(),
                     dep_defs: HashMap::new(),
@@ -248,7 +297,7 @@ impl<'a> Loader<'a> {
             }
             if let Some(m) = self.modules.get(&p) {
                 out.extend(m.diags.iter().filter(|d| d.is_error()).cloned());
-                todo.extend(m.deps.iter().rev().cloned());
+                todo.extend(m.deps.iter().chain(m.named.iter().map(|(_, p)| p)).rev().cloned());
             }
         }
         out
@@ -388,7 +437,8 @@ impl Analysis {
 
     /// The top-level definitions of the files this document uses.
     pub fn dep_tops(&self) -> Vec<(DefId, &Def)> {
-        let mut out: Vec<(DefId, &Def)> = self.module.dep_defs.values().filter_map(|id| Some((*id, self.def(*id)?))).collect();
+        let direct = self.module.dep_defs.iter().filter(|(s, _)| s.split_module().is_none());
+        let mut out: Vec<(DefId, &Def)> = direct.filter_map(|(_, id)| Some((*id, self.def(*id)?))).collect();
         out.sort_by(|a, b| a.1.name.cmp(&b.1.name));
         out
     }

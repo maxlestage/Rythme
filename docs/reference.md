@@ -57,7 +57,8 @@ in a program and `:doc f` in the REPL show it. A blank line between the `##`
 lines and the definition detaches them; ordinary `#` comment lines do not.
 A `##` that follows code on the same line is an ordinary comment. Doc comments
 written above a `type` document the type: `help` shows them for each of its
-constructors (see [4.7](#47-types)).
+constructors (see [4.7](#47-types)). `rythme doc` makes the documentation of
+whole files from them (see [7.6](#76-documentation-rythme-doc)).
 
 ```rythme
 # An ordinary comment: from `#` to the end of the line.
@@ -124,7 +125,8 @@ and  do  else  end  false  fn  if  match  not  or  test  then  true  type  use
 
 They cannot be used as names. They can be used as **field names**, after a dot
 or before `:` in a record (`r.type`, `{type: 1}`), but not in the short form
-`{type}`.
+`{type}`. `as` is not a keyword: it means something only after the path of
+a `use` (`use geometry as geo`).
 
 The following words, taken from other languages, are **reserved**: using one
 as a name is an error (E001) whose message explains how to do the same thing
@@ -1279,8 +1281,9 @@ block; each `match` case; each anonymous function.
   may define a name that exists outside.
 - A local name may hide a built-in function silently; a top-level definition
   that hides a built-in function gives warning W003.
-- The names of the files brought in by `use` count as top-level names:
-  defining one of them again is E011.
+- The names brought in by `use "file.ry"` count as top-level names:
+  defining one of them again is E011. With `use geometry`, only the name
+  `geometry` is taken (see 4.9).
 
 ```rythme
 x = 1
@@ -1666,44 +1669,78 @@ Exit code: 1.
 ### 4.9 Modules: `use`
 
 ```text
-use "path/file.ry"
+use geometry               # the file geometry.ry, used through its name
+use shapes/circle          # the file shapes/circle.ry, used as `circle`
+use geometry as geo        # the same file, under another name
+use "geometry.ry"          # older form: its names are used directly
 ```
 
-- `use` is only allowed at the top level; the path is a plain text.
-- The path is relative to the **folder of the file that contains the `use`**
-  (for `rythme -e` and the REPL: the current folder). When it has no
-  extension, `.ry` is added. Its parts are separated by `/` (or `\`, written
-  `\\` in a text) on every system, and `..` goes up one folder:
-  `use "../lib/tools.ry"`.
-- Everything defined at the top level of the used file (values, functions,
-  types and constructors) becomes visible in the file that uses it, together
-  with everything that file itself uses. There are no namespaces and no
-  private definitions: a name defined in two files is E011.
+- **The recommended form is `use name`**, without quotes and without `.ry`:
+  its definitions are then reached through the name, so that every name
+  says where it comes from. `rythme fmt` writes `use "geometry.ry" as geo`
+  as `use geometry as geo`.
+- `use` is only allowed at the top level. The path is relative to the
+  **folder of the file that contains the `use`** (for `rythme -e` and the
+  REPL: the current folder). Its parts are names separated by `/` on every
+  system, and `..` goes up one folder: `use ../lib/tools`. A file whose
+  name is not a Rythme name (`My Tools.ry`) is written as a text, with a
+  name: `use "My Tools.ry" as tools`.
+- The name is the name of the file (`circle` for `shapes/circle`), or the
+  one written after `as`. Then `geometry.square_area(4)` calls a function,
+  `geometry.origin` reads a value, `geometry.Square(5)` builds a value of a
+  type of the file, `geometry.Square(s)` matches it in a `match`, and
+  `x |> geometry.square_area` works as usual. The checker knows them all:
+  a name that the file does not have is E003 (with the closest one), and
+  the number of arguments is checked (E004).
+- A file gives its top-level definitions (values, functions, constructors),
+  and those of the files it uses with quotes. **A name starting with `_`
+  is private to its file** (`fn _checked(x)`): other files cannot use it
+  (E003). The name of the file is not a value (`geometry` alone is E003),
+  and it cannot name anything else in the file (E011); two files cannot
+  get the same name (E011).
+- Each file has its own names: `geometry.area` and `circle.area` are two
+  different functions, and a file may define `area` itself. A name used
+  without its file, but defined by another file of the folder, gets a help
+  that names that file and the `use` to add (the language server adds it).
+- `use "path.ry"`, with quotes and without `as`, is the older form: the
+  definitions of the file (except the private ones) become visible
+  directly, with those of the files it uses that way; a name defined again,
+  or defined by two such files, is E011, and the message names both files.
+  `.ry` is added when the path has no extension.
 - Each file is loaded, checked and run **once** per program, before the file
   that uses it, wherever the `use` is written in that file. Its top-level
   expressions run (a `print` in a used file prints once).
-- A missing file is E017 (with a suggestion when a close name exists), and so
-  is a folder; files that use each other in a circle are E017. Messages show
-  the path of a used file as it is reached from the current folder.
+- A missing file is E017, with a suggestion when a close name exists (or the
+  list of the Rythme files of the folder), and so is a folder; files that
+  use each other in a circle are E017, and the message names both. Messages
+  show the path of a used file as it is reached from the current folder.
 
 ```rythme
 # geometry.ry
 print("geometry.ry runs once")
 fn rectangle_area(w, h) = w * h
+fn square_area(side) = rectangle_area(side, _checked(side))
+fn _checked(x) = if x >= 0 then x else fail("negative side")
 origin = {x: 0, y: 0}
+type Shape = Rectangle(w, h) | Square(side)
 ```
 
 ```rythme
-# squares.ry
-use "geometry.ry"
-fn square_area(side) = rectangle_area(side, side)
+# shapes/circle.ry
+fn area(r) = pi * r ** 2
 ```
 
 ```rythme
 # main.ry
-use "geometry.ry"
-use "squares"              # `.ry` is added when the path has no extension
-print(rectangle_area(2, 3), square_area(4), origin)
+use geometry
+use shapes/circle
+print(geometry.rectangle_area(2, 3), geometry.square_area(4), geometry.origin)
+print(round(circle.area(1), 2))
+fn area(shape) = match shape
+  geometry.Rectangle(w, h) -> w * h
+  geometry.Square(s) -> s * s
+end
+print(area(geometry.Square(5)))
 ```
 
 `rythme main.ry`:
@@ -1711,19 +1748,48 @@ print(rectangle_area(2, 3), square_area(4), origin)
 ```text
 geometry.ry runs once
 6 16 {x: 0, y: 0}
+3.14
+25
 ```
 
-With `ping.ry` containing `use "pong.ry"` and `pong.ry` containing
-`use "ping.ry"`, `rythme ping.ry` gives:
+A file next to `geometry.ry` that forgets the `use`, `rythme forgot.ry`:
 
 ```text
-error[E017]: `ping.ry` uses itself (directly or through other files)
+error[E003]: unknown name `rectangle_area`
+ --> forgot.ry:1:7
+  |
+1 | print(rectangle_area(2, 3))
+  |       ^^^^^^^^^^^^^^ not defined here
+  |
+  = help: `rectangle_area` is defined in `geometry.ry`: add `use geometry` at the top of the file, then write `geometry.rectangle_area`
+  = more about this error: `rythme explain E003`
+```
+
+A private name, `rythme private.ry`:
+
+```text
+error[E003]: `_checked` is private to the file `geometry.ry`
+ --> private.ry:2:7
+  |
+2 | print(geometry._checked(2))
+  |       ^^^^^^^^^^^^^^^^^ private
+  |
+  = note: a name starting with `_` can only be used in its own file
+  = help: to use it from other files, rename it without `_` in `geometry.ry`
+  = more about this error: `rythme explain E003`
+```
+
+With `ping.ry` containing `use pong` and `pong.ry` containing `use ping`,
+`rythme ping.ry` gives:
+
+```text
+error[E017]: `pong.ry` and `ping.ry` use each other
  --> pong.ry:1:1
   |
-1 | use "ping.ry"
-  | ^^^^^^^^^^^^^
+1 | use ping
+  | ^^^^^^^^
   |
-  = help: move what both files need into a third file, used by both
+  = help: files cannot use each other: move what both need into a third file, used by both
   = more about this error: `rythme explain E017`
 ```
 
@@ -2023,7 +2089,7 @@ with examples; the code may be written in lowercase.
 |------|------|------|
 | E001 | Syntax error | the code does not follow the grammar: a missing bracket or `then`, braces used for a block, a keyword from another language, chained comparisons, `_` used as a value, `{name, ..others}`, an expression too long or nested too deeply... |
 | E002 | Text never closed | a `"` or a `{` inside a text is never closed |
-| E003 | Unknown name | a name or constructor that is not defined at this place, or a value used before its definition |
+| E003 | Unknown name | a name or constructor that is not defined at this place, a value used before its definition, or a private name (`_name`) of another file |
 | E004 | Wrong number of arguments | a call or a constructor pattern with too many or too few values; definitions of one function with different numbers of parameters |
 | E005 | Wrong kind of value | an operation or a function received a kind of value it does not accept (`"a" + 1`, a condition that is not a Bool, values that cannot be compared...) |
 | E006 | No case matches | no `match` case, no definition of a function, or no definition pattern accepts the value |
@@ -2059,7 +2125,7 @@ with examples; the code may be written in lowercase.
 
 ## 6. Standard library
 
-The 124 built-in functions are always available, without `use`. Like the
+The 136 built-in functions are always available, without `use`. Like the
 keywords, their names are in English. `rythme help builtins` lists all of
 them by category, one line each; `rythme help NAME` (or `help(NAME)` in a
 program, or `:doc NAME` in the REPL) shows the documentation of one, with
@@ -2157,6 +2223,28 @@ Result, ready for `?`), `map_err(result, f)`, and the constructors `Some`,
 `Ok(())` or `Err(message)`), `append_file(path, value)` (adds at the end,
 creating the file if needed), `file_exists(path)`. Relative paths are
 relative to the current folder.
+
+**Dates and times.** A date is a record `{year, month, day}`, with `hour`,
+`minute` and `second` for a moment of the day (a missing one is 0), and
+`offset`, the number of minutes the time is ahead of UTC, when it is known.
+Years go from 1 to 9999, in the Gregorian calendar (leap years every 4
+years, except every 100 years, except every 400 years). `now()` (the local
+date and time with its `offset`: from the time zone of the system on Linux
+and macOS, of the browser in the playground, 0 (UTC) elsewhere), `today()`
+(`{year, month, day}`), `parse_date(text)` (a Result; ISO 8601:
+`"2024-02-29"`, then optionally `T` or a space and a time `13:05` or
+`13:05:00`, a fraction of a second, ignored, and `Z` or an offset `+01:00`,
+`+0100` or `+01`), `format_date(date)` (back to ISO 8601, with the time and
+the offset when the date has them), `is_date(value)`, `add_days(date, n)`
+and `add_seconds(date, n)` (the time of day and the offset stay;
+`add_seconds` always gives a time), `days_between(a, b)` (whole days from a
+to b, rounded toward zero) and `seconds_between(a, b)` (offsets count),
+`day_of_week(date)` (1 for Monday to 7 for Sunday, as in ISO 8601),
+`days_in_month(year, month)`, `is_leap_year(year)`. A record that is not a
+date (an unknown or missing field, a number out of range, a 30 February)
+stops these functions with E023, which says what is wrong. An offset is a
+fixed number: there are no daylight saving rules, so one day after a moment
+is the same time on the next day.
 
 ```rythme
 numbers = [3, 1, 4, 1, 5, 9, 2, 6]
@@ -2265,6 +2353,41 @@ Err("file not found: missing.txt")
 true ["Ada", "36"]
 ```
 
+```rythme
+launch = unwrap(parse_date("2024-02-28T22:30:00+01:00"))
+print(launch)
+print(add_days(launch, 1) |> format_date, add_seconds(launch, 5400) |> format_date)
+print(days_between({year: 2024, month: 1, day: 1}, {year: 2025, month: 1, day: 1}), days_in_month(2023, 2), is_leap_year(1900))
+print(day_of_week({year: 2024, month: 2, day: 29}), seconds_between(launch, {year: 2024, month: 2, day: 28, hour: 21, minute: 30, offset: 0}))
+print(parse_date("2023-02-29"))
+```
+
+```text
+{year: 2024, month: 2, day: 28, hour: 22, minute: 30, second: 0, offset: 60}
+2024-02-29T22:30:00+01:00 2024-02-29T00:00:00+01:00
+366 28 false
+4 0
+Err("\"2023-02-29\" is not a valid date: the day must go from 1 to 28 in February 2023, not 29 (2023 is not a leap year)")
+```
+
+A date that does not exist is explained:
+
+```rythme
+deadline = {year: 2023, month: 2, day: 29}
+print(add_days(deadline, 7))
+```
+
+```text
+error[E023]: `add_days` needs a valid date: the day must go from 1 to 28 in February 2023, not 29 (2023 is not a leap year)
+ --> 65-dates.ry:2:7
+  |
+2 | print(add_days(deadline, 7))
+  |       ^^^^^^^^^^^^^^^^^^^^^ not a valid date
+  |
+  = help: a date is a record like `{year: 2024, month: 2, day: 29}`, with `hour`, `minute`, `second` and `offset` (minutes ahead of UTC) if needed
+  = more about this error: `rythme explain E023`
+```
+
 When there is nothing more to read (the keyboard input was closed with
 Ctrl-D, or the text sent to the program has ended; here, the input is
 empty), `input` stops the program with E017, so that a program that asks
@@ -2305,6 +2428,8 @@ rythme [--lang fr|en] [--no-color] [COMMAND] [ARGUMENTS...]
 | `check FILE...` | `verifier`, `vérifier` | checks each program without running it (see [5.5](#55-the-check-before-running)) |
 | `test FILE [ARGS...]` | `tester` | runs the tests (see [4.8](#48-tests)) |
 | `fmt [--check] FILE...` | `format`, `formater` | gives the code its official layout; also a folder, or `-` for the standard input (see [7.4](#74-the-formatter-rythme-fmt)) |
+| `doc [--html] [--out FILE] FILE...` | `documenter` | writes the documentation of files or folders, in Markdown or as a web page (see [7.6](#76-documentation-rythme-doc)) |
+| `exercise [list \| start NAME \| check FILE]` | `exercises`, `exercice`, `exercices` | the built-in exercises (see below) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | runs the code given as an argument, and shows the value of its last expression unless it is `()`; `ARGS` are given to `args()` |
 | `lsp` | | the language server, started by an editor (see [7.5](#75-editors-and-the-language-server)) |
 | `help [NAME]` | `aide`, `--help`, `-h` | the list of topics, or the help of a topic, a built-in function or an error code |
@@ -2324,13 +2449,24 @@ anything after the file name goes to the program. `--lang` accepts any value
 that starts with `fr` or `en` (`--lang fr`, `--lang=en`, `--lang fr_CA`);
 another value, or `--lang` without a value, is reported, with exit code 2.
 
+**Exercises.** `rythme exercise` (or `rythme exercise list`) lists the 30
+graded exercises built into the program (the files of
+[`docs/exercises/`](exercises/README.md)). `start NAME` writes the exercise
+named by its number (`7`) or its file name (`07-recursion`, `recursion`) into
+the current folder, in the language of the messages; it never replaces an
+existing file (exit code 1). `check FILE` runs the tests of the file like
+`rythme test`, then explains what to do next; `FILE` may also be the number
+of an exercise started in the current folder. Its exit code is 0 when every
+test passes and the tests of the exercise were not changed, 1 otherwise. An
+unknown action or exercise is exit code 2.
+
 **Help topics.** `rythme help TOPIC` accepts `start`, `syntax`, `functions`,
 `lists`, `text`, `records`, `types`, `match`, `errors`, `functional`,
-`tests`, `modules`, `repl`, `fmt`, `editors` and `builtins`, and French or
-alternative names: `syntaxe`, `fonctions`, `listes`, `texte`,
-`enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`,
-`fichiers`, `interactif`, `format`, `lsp`, `vscode`, `éditeurs`,
-`bibliothèque`...
+`tests`, `exercises`, `modules`, `repl`, `fmt`, `doc`, `editors` and
+`builtins`, and French or alternative names: `syntaxe`, `fonctions`,
+`listes`, `texte`, `enregistrements`, `motifs`, `erreurs`, `fonctionnel`,
+`boucles`, `exercices`, `fichiers`, `interactif`, `format`, `documentation`,
+`lsp`, `vscode`, `éditeurs`, `bibliothèque`...
 
 **Exit codes.**
 
@@ -2593,6 +2729,134 @@ chooses it. Started by hand in a terminal, it says what it is for;
   editor that speaks the Language Server Protocol can start `rythme lsp`;
   [`editors/README.md`](../editors/README.md) gives the configuration for
   each.
+
+### 7.6 Documentation: `rythme doc`
+
+```text
+rythme doc [--html] [--out FILE] FILE_OR_FOLDER...
+```
+
+`rythme doc` writes the documentation of programs from their `##` comments
+(see [1.2](#12-comments)), their types and the definitions of their
+functions. Nothing is run.
+
+- `rythme doc geometry.ry` writes Markdown on the standard output (`geometry`
+  is enough when `geometry.ry` exists). A folder stands for every `.ry` file
+  in it and in its subfolders, hidden folders aside; several files and
+  folders may be given.
+- A file is documented with the files it uses (`use geometry`, `use
+  shapes/circle as circle`, `use "geometry.ry"`), each one once: the
+  documentation of a program includes that of its modules.
+- `--html` writes one web page instead, with the look of the website, light
+  or dark like the system. It needs nothing else (no script, no other
+  file): it can be opened from the disk or put on any web server.
+- `--out FILE` (`-o`) writes to a file and says so; a name ending with
+  `.html` gives the web page.
+- `documenter` is an alias of `doc`; the titles (*Functions*, *Values*...)
+  are in the language of the messages.
+- A file that cannot be read, or that has a syntax error, is reported and
+  left out; the others are documented, and the exit code is 1.
+
+For each file come: its description, the `##` lines at its top when a blank
+line separates them from what follows; the files it uses, as links (with
+the name given by `as` when it is not the name of the file); its
+types; its functions, with the first line of **every** definition
+(patterns and `if` conditions included); its values (with their definition
+when it fits on one line); and the names of its tests. Names starting with
+`_` are left out, as details of their file.
+
+In a comment, a name between backticks, like `` `area` `` or
+`` `len(list)` ``, becomes a link to its documentation; a constructor leads
+to its type; in a file that has `use geometry`, `` `geometry.area` `` leads
+to `area` in `geometry.ry`; the built-in functions named this way are
+explained at the end. A blank `##` line starts a new paragraph, and lines starting with `- `
+make a list. In Markdown, code is in `~~~rythme` blocks, and the links use
+the anchors GitHub gives to titles.
+
+With `geometry.ry`:
+
+```rythme
+## Shapes and their areas.
+
+## A shape to draw.
+type Shape = Circle(radius) | Rect(width, height)
+
+## The area of a shape: for a `Circle`, `pi` times the square
+## of its radius. To count shapes, use `len`.
+fn area(Circle(r)) = pi * _square(r)
+fn area(Rect(w, h)) = w * h
+
+## How many sides a square has.
+sides = 4
+
+fn _square(x) = x * x
+
+test "area of a square" = area(Rect(2, 2)) == 4
+```
+
+`rythme doc geometry.ry` writes:
+
+```text
+# geometry.ry
+
+Shapes and their areas.
+
+## Types
+
+### Shape
+
+~~~rythme
+type Shape = Circle(radius) | Rect(width, height)
+~~~
+
+A shape to draw.
+
+## Functions
+
+### area
+
+~~~rythme
+fn area(Circle(r))
+fn area(Rect(w, h))
+~~~
+
+The area of a shape: for a [`Circle`](#shape), `pi` times the square
+of its radius. To count shapes, use [`len`](#len).
+
+## Values
+
+### sides
+
+~~~rythme
+sides = 4
+~~~
+
+How many sides a square has.
+
+## Tests
+
+- area of a square
+
+## Built-in functions mentioned
+
+### len
+
+~~~rythme
+len(x)
+~~~
+
+Length of a text (in characters), a list or a record.
+
+Example:
+
+~~~rythme
+len("été")                 # 3
+len([1, 2])                # 2
+~~~
+```
+
+`rythme doc --html . --out doc.html` writes the same for every file of the
+folder as one page, with a table of contents.
 
 ---
 

@@ -1,0 +1,45 @@
+# Exercice 11 · Démonter une liste  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn total([]) = 0
+fn total([x, ..reste]) = x + total(reste)
+
+fn le_plus_grand([]) = fail("la liste est vide")
+fn le_plus_grand([x]) = x
+fn le_plus_grand([x, ..reste])
+  autres = le_plus_grand(reste)
+  if x > autres then x else autres
+end
+
+fn contient([], _) = false
+fn contient([premier, ..reste], x) = premier == x or contient(reste, x)
+
+fn dernier([]) = fail("la liste est vide")
+fn dernier([x]) = x
+fn dernier([_, ..reste]) = dernier(reste)
+
+# --- Tests (ne les modifiez pas) ---
+
+test "total"
+  assert_eq(total([]), 0)
+  assert_eq(total([4]), 4)
+  assert_eq(total([1, 2, 3, 4]), 10)
+end
+
+test "le plus grand"
+  assert_eq(le_plus_grand([7]), 7)
+  assert_eq(le_plus_grand([3, 9, 2]), 9)
+  assert_eq(le_plus_grand([-3, -1, -2]), -1)
+end
+
+test "contient"
+  assert_eq(contient([1, 2, 3], 2), true)
+  assert_eq(contient([1, 2, 3], 5), false)
+  assert_eq(contient([], 1), false)
+  assert_eq(contient(["a", "b"], "b"), true)
+end
+
+test "dernier"
+  assert_eq(dernier([1, 2, 3]), 3)
+  assert_eq(dernier(["seul"]), "seul")
+end

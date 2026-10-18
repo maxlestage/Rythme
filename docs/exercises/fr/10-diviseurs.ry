@@ -1,0 +1,53 @@
+# Exercice 10 · Diviseurs et nombres premiers  ★★☆
+#
+# La récursivité peut aussi essayer chaque candidat, l'un après l'autre,
+# jusqu'à trouver une réponse.
+#
+# Énoncé
+#   - `mon_pgcd(a, b)` : le plus grand commun diviseur de deux nombres
+#     entiers ≥ 0, avec la méthode d'Euclide : le pgcd de a et 0 est a, et le
+#     pgcd de a et b est le pgcd de b et `a % b` (sans la fonction intégrée
+#     `gcd`) ;
+#   - `est_premier(n)` : n est-il un nombre premier (un nombre ≥ 2 dont les
+#     seuls diviseurs sont 1 et lui-même) ?
+#   - `premier_suivant(n)` : le plus petit nombre premier strictement plus
+#     grand que n.
+#
+# Indices
+#   1. La méthode d'Euclide est déjà écrite en deux cas : traduisez-la.
+#   2. Pour `est_premier`, écrivez une fonction auxiliaire
+#      `aucun_diviseur_depuis(n, d)` qui essaie d, puis d + 1... Elle peut
+#      s'arrêter dès que `d * d > n`.
+#   3. `premier_suivant(n)` essaie n + 1 : s'il est premier, c'est la
+#      réponse ; sinon, la réponse est `premier_suivant(n + 1)`.
+#
+# Vérifiez votre travail :  rythme exercise check 10-diviseurs.ry
+#                     ou :  rythme test 10-diviseurs.ry
+
+fn mon_pgcd(a, b) = fail("à faire")
+
+fn est_premier(n) = fail("à faire")
+
+fn premier_suivant(n) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "pgcd"
+  assert_eq(mon_pgcd(12, 18), 6)
+  assert_eq(mon_pgcd(17, 5), 1)
+  assert_eq(mon_pgcd(7, 0), 7)
+  assert_eq(mon_pgcd(0, 9), 9)
+end
+
+test "nombres premiers"
+  assert_eq(1..30 |> filter(est_premier), [2, 3, 5, 7, 11, 13, 17, 19, 23, 29])
+  assert_eq(est_premier(0), false)
+  assert_eq(est_premier(7919), true)
+  assert_eq(est_premier(7917), false)
+end
+
+test "premier suivant"
+  assert_eq(premier_suivant(1), 2)
+  assert_eq(premier_suivant(13), 17)
+  assert_eq(premier_suivant(100), 101)
+end

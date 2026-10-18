@@ -6,8 +6,22 @@ description = "Rythme: a simple, purely functional programming language with hel
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/maxlestage/Rythme"
-keywords = ["language", "interpreter", "functional", "education"]
-categories = ["compilers", "command-line-utilities"]
+homepage = "https://maxlestage.github.io/Rythme/"
+keywords = ["language", "interpreter", "functional", "education", "teaching"]
+categories = ["compilers", "command-line-utilities", "development-tools"]
+# What `cargo publish` sends to crates.io: the interpreter, its manual and its
+# examples. The website (site/), the playground, the editors, the benchmarks,
+# the installers and the tests stay in the repository.
+include = [
+    "/src/**",
+    "/docs/**",
+    "/examples/**",
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/README.md",
+    "/README.fr.md",
+    "/LICENSE",
+]
 
 [[bin]]
 name = "rythme"

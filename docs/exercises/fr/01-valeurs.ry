@@ -1,0 +1,38 @@
+# Exercice 01 · Premières valeurs  ★☆☆
+#
+# Un nom reçoit une valeur avec `=` et la garde pour toujours : en Rythme,
+# les valeurs ne changent jamais.
+#
+# Énoncé
+#   `secondes_par_minute` est donné. Remplacez chaque `0` (et le texte
+#   vide) ci-dessous par une expression qui utilise les noms définis avant :
+#   - `secondes_par_heure` : le nombre de secondes dans une heure ;
+#   - `secondes_par_jour` : le nombre de secondes dans un jour ;
+#   - `secondes_par_semaine` : le nombre de secondes dans une semaine ;
+#   - `resume` : le texte "Une semaine dure 604800 secondes.", où le nombre
+#     vient de `secondes_par_semaine` (ne l'écrivez pas vous-même).
+#
+# Indices
+#   1. Une heure a 60 minutes : `60 * secondes_par_minute`.
+#   2. Un jour a 24 heures, une semaine a 7 jours.
+#   3. Dans un texte, `{nom}` est remplacé par la valeur de `nom` :
+#      "J'ai {nombre} pommes".
+#
+# Vérifiez votre travail :  rythme exercise check 01-valeurs.ry
+#                     ou :  rythme test 01-valeurs.ry
+
+secondes_par_minute = 60
+secondes_par_heure = 0
+secondes_par_jour = 0
+secondes_par_semaine = 0
+resume = ""
+
+# --- Tests (ne les modifiez pas) ---
+
+test "secondes dans une heure" = assert_eq(secondes_par_heure, 3600)
+
+test "secondes dans un jour" = assert_eq(secondes_par_jour, 86400)
+
+test "secondes dans une semaine" = assert_eq(secondes_par_semaine, 604800)
+
+test "le résumé" = assert_eq(resume, "Une semaine dure 604800 secondes.")

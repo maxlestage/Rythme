@@ -3,14 +3,16 @@
 //! (`app.test()`), so both are identical.
 //!
 //! What a static host cannot do is replaced: `/` picks the language in the browser
-//! instead of a redirection, and `404.html` is the French "not found" page.
+//! instead of a redirection, and `404.html` is the French "not found" page. GitHub
+//! Pages serves `sw.js` with a short cache rather than `no-cache`: browsers check a
+//! service worker past their HTTP cache anyway.
 
 use std::io;
 use std::path::Path;
 use std::sync::Arc;
 
 use crate::i18n::Lang;
-use crate::routes::{Route, base, link, set_base};
+use crate::routes::{Page, Route, base, link, set_base};
 use crate::server::{LANG_COOKIE, Site, app, site_dir};
 
 /// Writes the site into `out`, links behind `base_path` (`""` or `/Rythme`), absolute
@@ -56,7 +58,15 @@ pub async fn export(out: &Path, base_path: &str, site_url: Option<String>) -> io
         write(&format!("{}index.html", route.path()), get(route.path(), 200).await?.as_bytes())?;
     }
     write("404.html", get("/fr/404/".into(), 404).await?.as_bytes())?;
-    for file in ["/examples.json", "/sitemap.xml", "/robots.txt"] {
+    // The installable app: the offline pages and the manifests of both languages, and
+    // the service worker at the root of the base path (its scope).
+    for lang in Lang::ALL {
+        let offline = Route::new(lang, Page::Offline).path();
+        write(&format!("{offline}index.html"), get(offline, 200).await?.as_bytes())?;
+        let manifest = crate::pwa::manifest_path(lang);
+        write(&manifest, get(manifest.clone(), 200).await?.as_bytes())?;
+    }
+    for file in ["/examples.json", "/sitemap.xml", "/robots.txt", "/sw.js"] {
         write(file, get(file.into(), 200).await?.as_bytes())?;
     }
     write("index.html", language_picker().as_bytes())?;

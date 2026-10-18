@@ -1,0 +1,32 @@
+# Exercice 21 · Listes d'enregistrements  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn noms_des_admis(eleves) = eleves |> filter(fn(e) = e.note >= 10) |> map(fn(e) = e.nom)
+
+fn note_moyenne(eleves) = eleves |> map(fn(e) = e.note) |> sum |> fn(total) = total / len(eleves)
+
+fn meilleur(eleves) = max_by(eleves, fn(e) = e.note).nom
+
+fn classement(eleves) = eleves |> sort_by(fn(e) = -e.note) |> map(fn(e) = e.nom)
+
+fn effectifs(eleves) = eleves |> group_by(fn(e) = e.groupe) |> map_values(len)
+
+# --- Tests (ne les modifiez pas) ---
+
+promotion = [
+  {nom: "Ada", note: 18, groupe: "A"},
+  {nom: "Alan", note: 8, groupe: "B"},
+  {nom: "Grace", note: 14, groupe: "A"},
+  {nom: "Edsger", note: 10, groupe: "B"},
+  {nom: "Barbara", note: 15, groupe: "A"},
+]
+
+test "admis" = assert_eq(noms_des_admis(promotion), ["Ada", "Grace", "Edsger", "Barbara"])
+
+test "moyenne" = assert_eq(note_moyenne(promotion), 13)
+
+test "meilleur" = assert_eq(meilleur(promotion), "Ada")
+
+test "classement" = assert_eq(classement(promotion), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+
+test "effectifs" = assert_eq(effectifs(promotion), {A: 3, B: 2})

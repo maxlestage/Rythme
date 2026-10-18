@@ -1,0 +1,63 @@
+# Exercise 03 · Arithmetic  ★☆☆
+#
+# Numbers are whole (Int: 3) or decimal (Float: 3.5). `/` always gives a
+# Float (`7 / 2` is 3.5); `//` divides and rounds down (`7 // 2` is 3) and
+# `%` gives the remainder (`7 % 2` is 1).
+#
+# Statement
+#   - `square(x)`: x times x;
+#   - `average(a, b)`: the average of two numbers;
+#   - `fahrenheit(celsius)`: the temperature in degrees Fahrenheit
+#     (multiply by 9, divide by 5, add 32);
+#   - `hypotenuse(a, b)`: the long side of a right triangle whose two other
+#     sides are a and b (the square root of a² + b²);
+#   - `minutes_and_seconds(total)`: for a number of seconds, a text like
+#     "2 min 5 s" (for 125).
+#
+# Hints
+#   1. `sqrt(16)` is 4.0.
+#   2. `125 // 60` is 2 and `125 % 60` is 5.
+#   3. `3 == 3.0` is true: an Int and a Float with the same value are equal.
+#
+# Check your work:  rythme exercise check 03-arithmetic.ry
+#              or:  rythme test 03-arithmetic.ry
+
+fn square(x) = fail("to do")
+
+fn average(a, b) = fail("to do")
+
+fn fahrenheit(celsius) = fail("to do")
+
+fn hypotenuse(a, b) = fail("to do")
+
+fn minutes_and_seconds(total) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "square"
+  assert_eq(square(3), 9)
+  assert_eq(square(-4), 16)
+  assert_eq(square(1.5), 2.25)
+end
+
+test "average"
+  assert_eq(average(2, 4), 3)
+  assert_eq(average(1, 2), 1.5)
+end
+
+test "fahrenheit"
+  assert_eq(fahrenheit(0), 32)
+  assert_eq(fahrenheit(100), 212)
+  assert_eq(fahrenheit(-40), -40)
+end
+
+test "hypotenuse"
+  assert_eq(hypotenuse(3, 4), 5)
+  assert_eq(hypotenuse(5, 12), 13)
+end
+
+test "minutes and seconds"
+  assert_eq(minutes_and_seconds(125), "2 min 5 s")
+  assert_eq(minutes_and_seconds(59), "0 min 59 s")
+  assert_eq(minutes_and_seconds(600), "10 min 0 s")
+end

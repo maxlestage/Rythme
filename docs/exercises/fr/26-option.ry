@@ -1,0 +1,71 @@
+# Exercice 26 · Une valeur qui peut manquer : Option  ★★☆
+#
+# Rythme n'a pas de `null`. Une fonction qui peut ne rien trouver rend une
+# Option : `Some(valeur)` quand il y a une valeur, `None` sinon. `match`
+# traite les deux cas, et `unwrap_or(option, defaut)` donne la valeur ou une
+# valeur par défaut.
+#   fn premier_de([]) = None
+#   fn premier_de([x, ..]) = Some(x)
+#
+# Énoncé
+#   - `division_sure(a, b)` : `Some(a / b)`, ou `None` quand b vaut 0 ;
+#   - `trouver_age(personnes, nom)` : l'âge de la personne qui a ce nom,
+#     sous forme d'Option (personnes est une liste d'enregistrements
+#     `{nom, age}`) ;
+#   - `age_ou_inconnu(personnes, nom)` : un texte, "36" pour une personne
+#     connue et "inconnu" sinon ;
+#   - `premier_mot_long(mots)` : le premier mot de plus de 5 caractères,
+#     sous forme d'Option ;
+#   - `additionner_options(a, b)` : `Some(x + y)` quand a vaut `Some(x)` et
+#     b vaut `Some(y)`, `None` sinon.
+#
+# Indices
+#   1. `find(liste, f)` donne le premier élément pour lequel f est vrai,
+#      sous forme d'Option ; `map(option, f)` applique f à la valeur
+#      contenue, s'il y en a une.
+#   2. `match trouver_age(personnes, nom)` avec les cas `Some(age)` et
+#      `None`.
+#   3. `match [a, b]` avec un cas `[Some(x), Some(y)]` et un cas `_`.
+#
+# Vérifiez votre travail :  rythme exercise check 26-option.ry
+#                     ou :  rythme test 26-option.ry
+
+fn division_sure(a, b) = fail("à faire")
+
+fn trouver_age(personnes, nom) = fail("à faire")
+
+fn age_ou_inconnu(personnes, nom) = fail("à faire")
+
+fn premier_mot_long(mots) = fail("à faire")
+
+fn additionner_options(a, b) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+personnes = [{nom: "Ada", age: 36}, {nom: "Alan", age: 41}]
+
+test "division sûre"
+  assert_eq(division_sure(10, 4), Some(2.5))
+  assert_eq(division_sure(1, 0), None)
+end
+
+test "trouver l'âge"
+  assert_eq(trouver_age(personnes, "Alan"), Some(41))
+  assert_eq(trouver_age(personnes, "Grace"), None)
+end
+
+test "âge ou inconnu"
+  assert_eq(age_ou_inconnu(personnes, "Ada"), "36")
+  assert_eq(age_ou_inconnu(personnes, "Grace"), "inconnu")
+end
+
+test "premier mot long"
+  assert_eq(premier_mot_long(["un", "langage", "fonctionnel"]), Some("langage"))
+  assert_eq(premier_mot_long(["mots", "brefs"]), None)
+end
+
+test "additionner des options"
+  assert_eq(additionner_options(Some(2), Some(3)), Some(5))
+  assert_eq(additionner_options(Some(2), None), None)
+  assert_eq(additionner_options(None, None), None)
+end

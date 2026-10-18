@@ -23,9 +23,12 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ("errors", &["erreurs", "option", "result", "?"]),
     ("functional", &["fonctionnel", "loops", "boucles"]),
     ("tests", &["test"]),
+    ("exercises", &["exercices", "exercise", "exercice"]),
     ("modules", &["use", "files", "fichiers"]),
+    ("dates", &["date", "heure", "heures", "temps", "calendar", "calendrier", "datetime"]),
     ("repl", &["interactive", "interactif"]),
     ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme"]),
+    ("doc", &["documentation", "documenter", "docs"]),
     ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide"]),
     ("builtins", &["functions-list", "fonctions-integrees", "library", "bibliotheque", "bibliothèque", "stdlib"]),
 ];
@@ -47,6 +50,8 @@ Commandes
   rythme check fichier.ry   trouver les problèmes sans lancer le programme
   rythme test fichier.ry    lancer les tests d'un fichier
   rythme fmt fichier.ry     mettre le code en forme (--check : vérifier seulement)
+  rythme doc fichier.ry     écrire sa documentation, en Markdown (--html : une page web)
+  rythme exercise           exercices corrigés automatiquement (list, start, check)
   rythme learn              visite guidée du langage, pas à pas
   rythme help SUJET         aide sur un sujet ou une fonction
   rythme explain E003       expliquer un code d'erreur
@@ -66,9 +71,12 @@ Sujets (rythme help SUJET)
   errors      Option, Result et ?
   functional  pas de boucles : comment faire à la place
   tests       écrire et lancer des tests
+  exercises   des exercices pour apprendre, avec leurs tests
   modules     utiliser plusieurs fichiers
+  dates       dates et heures : now(), today(), calendrier, ISO 8601
   repl        le mode interactif
   fmt         la mise en forme officielle du code (rythme fmt)
+  doc         la documentation tirée des commentaires ## (rythme doc)
   editors     Rythme dans votre éditeur (VS Code, Neovim, Helix...)
   builtins    toutes les fonctions intégrées
 
@@ -85,6 +93,8 @@ Commands
   rythme check file.ry      find problems without running the program
   rythme test file.ry       run the tests of a file
   rythme fmt file.ry        give the code its official layout (--check: only check)
+  rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
+  rythme exercise           exercises checked automatically (list, start, check)
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
@@ -104,9 +114,12 @@ Topics (rythme help TOPIC)
   errors      Option, Result and ?
   functional  no loops: what to do instead
   tests       writing and running tests
+  exercises   exercises to learn, with their tests
   modules     using several files
+  dates       dates and times: now(), today(), calendar, ISO 8601
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
+  doc         documentation from the ## comments (rythme doc)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
   builtins    every built-in function
 
@@ -226,9 +239,9 @@ const KEYWORD_DOCS: &[(&str, &str, &str, &str, &str)] = &[
     ),
     (
         "use",
-        "Uses the definitions of another file. The path is relative to the folder of the file that contains `use`.",
-        "Utilise les définitions d'un autre fichier. Le chemin est relatif au dossier du fichier qui contient `use`.",
-        "use \"geometry.ry\"",
+        "Uses another file through its name: `use geometry`, then `geometry.area(2)`. The path is relative to the folder of the file that contains `use`.",
+        "Utilise un autre fichier par son nom : `use geometrie`, puis `geometrie.aire(2)`. Le chemin est relatif au dossier du fichier qui contient `use`.",
+        "use geometry",
         "modules",
     ),
     (
@@ -373,6 +386,9 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
                 // Functions of other categories that work on this kind of value too.
                 let also = match cat {
                     Category::Lists => "len, contains, join, repeat, min, max, to_json",
+                    Category::Records if matches!(other, Value::Record(r) if builtins::date::is_date_record(r)) => {
+                        "len, get, contains, is_empty, to_json, format_date, add_days, add_seconds, days_between, seconds_between, day_of_week"
+                    }
                     Category::Records => "len, get, contains, is_empty, to_json",
                     Category::Options => "map",
                     _ => "",
@@ -414,8 +430,8 @@ pub fn learn() {
         crate::io::out_line("");
     }
     crate::io::out_line(&t!(
-        "To practice, run `rythme` and type code. `rythme help builtins` lists every function.",
-        "Pour pratiquer, lancez `rythme` et tapez du code. `rythme help builtins` liste toutes les fonctions."
+        "To practice, run `rythme` and type code, or do the exercises: `rythme exercise list`. `rythme help builtins` lists every function.",
+        "Pour pratiquer, lancez `rythme` et tapez du code, ou faites les exercices : `rythme exercise list`. `rythme help builtins` liste toutes les fonctions."
     ));
 }
 
@@ -432,9 +448,12 @@ fn topic_text(name: &str) -> &'static str {
         "errors" => pick(ERRORS_EN, ERRORS_FR),
         "functional" => pick(FUNCTIONAL_EN, FUNCTIONAL_FR),
         "tests" => pick(TESTS_EN, TESTS_FR),
+        "exercises" => pick(EXERCISES_EN, EXERCISES_FR),
         "modules" => pick(MODULES_EN, MODULES_FR),
+        "dates" => pick(DATES_EN, DATES_FR),
         "repl" => pick(REPL_EN, REPL_FR),
         "fmt" => pick(FMT_EN, FMT_FR),
+        "doc" => pick(DOC_EN, DOC_FR),
         "editors" => pick(EDITORS_EN, EDITORS_FR),
         _ => "",
     }
@@ -543,7 +562,7 @@ Your own types
 
 Tests and other files
   test "double works" = assert_eq(double(2), 4)
-  use "geometry.ry"
+  use geometry                   then geometry.area(2)
 
 Comments
   # an ordinary comment
@@ -602,7 +621,7 @@ Vos propres types
 
 Tests et autres fichiers
   test "double marche" = assert_eq(double(2), 4)
-  use "geometrie.ry"
+  use geometrie                  puis geometrie.aire(2)
 
 Commentaires
   # un commentaire ordinaire
@@ -887,6 +906,65 @@ JSON, le format des données du web
   parse_json(texte)              # Ok(...) : les objets deviennent des enregistrements, les tableaux des listes
   to_json(valeur)                # le texte, prêt à enregistrer avec write_file"#;
 
+const DATES_EN: &str = r#"DATES AND TIMES
+
+A date is a record: {year, month, day}, with hour, minute and second for a
+moment of the day, and offset (minutes ahead of UTC) when it is known.
+  today()                        # {year: 2026, month: 10, day: 18}
+  now()                          # {year: 2026, ..., hour: 14, minute: 5, second: 9, offset: 120}
+  birthday = {year: 1815, month: 12, day: 10}
+  birthday.year                  # 1815
+
+Text and back, in the ISO 8601 form
+  parse_date("2024-02-29")       # Ok({year: 2024, month: 2, day: 29})
+  parse_date("2024-02-30")       # Err("... February 2024 ...")
+  parse_date("2024-02-29T13:05:00+01:00")    # with a time and an offset
+  format_date({year: 2024, month: 2, day: 29, hour: 9})   # "2024-02-29T09:00:00"
+
+Calendar arithmetic (leap years and month lengths included)
+  add_days({year: 2024, month: 2, day: 28}, 1)     # {year: 2024, month: 2, day: 29}
+  add_seconds(now(), 3600)       # in one hour
+  days_between(today(), {year: 2027, month: 1, day: 1})   # days left
+  seconds_between(a, b)          # negative when b is before a
+  day_of_week(today())           # 1 = Monday ... 7 = Sunday
+  days_in_month(2023, 2)         # 28
+  is_leap_year(2000)             # true
+  is_date({year: 2023, month: 2, day: 29})   # false
+
+A date that does not exist stops the functions with E023, which says why.
+The local offset comes from the system (UTC when it does not tell); time()
+gives seconds since 1970 as a Float, to measure durations."#;
+
+const DATES_FR: &str = r#"DATES ET HEURES
+
+Une date est un enregistrement : {year, month, day}, avec hour, minute et
+second pour un moment de la journée, et offset (minutes d'avance sur UTC)
+quand il est connu.
+  today()                        # {year: 2026, month: 10, day: 18}
+  now()                          # {year: 2026, ..., hour: 14, minute: 5, second: 9, offset: 120}
+  anniversaire = {year: 1815, month: 12, day: 10}
+  anniversaire.year              # 1815
+
+Du texte et retour, sous la forme ISO 8601
+  parse_date("2024-02-29")       # Ok({year: 2024, month: 2, day: 29})
+  parse_date("2024-02-30")       # Err("... février 2024 ...")
+  parse_date("2024-02-29T13:05:00+01:00")    # avec une heure et un décalage
+  format_date({year: 2024, month: 2, day: 29, hour: 9})   # "2024-02-29T09:00:00"
+
+Calculs de calendrier (années bissextiles et longueurs des mois comprises)
+  add_days({year: 2024, month: 2, day: 28}, 1)     # {year: 2024, month: 2, day: 29}
+  add_seconds(now(), 3600)       # dans une heure
+  days_between(today(), {year: 2027, month: 1, day: 1})   # jours restants
+  seconds_between(a, b)          # négatif quand b est avant a
+  day_of_week(today())           # 1 = lundi ... 7 = dimanche
+  days_in_month(2023, 2)         # 28
+  is_leap_year(2000)             # true
+  is_date({year: 2023, month: 2, day: 29})   # false
+
+Une date qui n'existe pas arrête les fonctions avec E023, qui dit pourquoi.
+Le décalage local vient du système (UTC quand il ne le dit pas) ; time()
+donne les secondes depuis 1970 en Float, pour mesurer des durées."#;
+
 const TYPES_EN: &str = r#"YOUR OWN TYPES
 
 A type lists the possible shapes of a value:
@@ -1153,30 +1231,86 @@ pas exécutées : les définitions sont chargées, puis chaque test est lancé. 
 test réussit s'il se termine sans erreur, et que sa valeur n'est ni false, ni
 Err(...), ni None."#;
 
+const EXERCISES_EN: &str = r#"EXERCISES
+
+Rythme comes with 30 graded exercises for a first course, from the first
+values to recursion, lists, records, types, Option, Result and tests. Each one
+is a file with a statement, hints, the functions to write and their tests.
+
+  rythme exercise list              the exercises, from ★☆☆ (easy) to ★★★
+  rythme exercise start 7           copies exercise 7 into the current folder
+  rythme exercise check 07-recursion.ry
+                                    runs its tests, and says what to do next
+
+In the file, replace each fail("to do") with your code; do not change the
+tests. `rythme test file.ry` runs the tests too. The exercises are also in the
+folder docs/exercises of the repository of Rythme, in English and French."#;
+
+const EXERCISES_FR: &str = r#"EXERCICES
+
+Rythme est livré avec 30 exercices gradués pour un premier cours, des
+premières valeurs à la récursivité, aux listes, aux enregistrements, aux types,
+à Option, à Result et aux tests. Chacun est un fichier avec un énoncé, des
+indices, les fonctions à écrire et leurs tests.
+
+  rythme exercise list              les exercices, de ★☆☆ (facile) à ★★★
+  rythme exercise start 7           copie l'exercice 7 dans le dossier actuel
+  rythme exercise check 07-recursivite.ry
+                                    lance ses tests, et dit quoi faire ensuite
+
+Dans le fichier, remplacez chaque fail("à faire") par votre code ; ne modifiez
+pas les tests. `rythme test fichier.ry` lance aussi les tests. Les exercices
+sont aussi dans le dossier docs/exercises du dépôt de Rythme, en anglais et en
+français."#;
+
 const MODULES_EN: &str = r#"SEVERAL FILES
 
   # geometry.ry
+  ## Area of a rectangle.
   fn area(w, h) = w * h
+  fn _check(x) = x >= 0          # private: starts with `_`
 
   # main.ry
-  use "geometry.ry"
-  print(area(2, 3))
+  use geometry                    # the file geometry.ry, next to main.ry
+  print(geometry.area(2, 3))      # 6
 
-The path is relative to the file that contains `use`. Everything defined at
-the top level of the used file becomes available. Each file runs only once."#;
+`use geometry` gives the definitions of geometry.ry through its name:
+`geometry.area`, `geometry.Circle(1)`, and in a `match`, `geometry.Circle(r)`.
+So you always see where a name comes from. A file in a folder:
+`use shapes/circle`, then `circle.perimeter(1)`. Another name: `use
+geometry as geo`, then `geo.area(2, 3)`. Names starting with `_` stay
+private to their file.
+
+The path is relative to the folder of the file that contains `use`. Each file
+runs only once. Rythme says which file defines a name you forgot to use.
+
+Older form: `use "geometry.ry"` (with quotes) gives its definitions directly,
+as `area(2, 3)`; prefer `use geometry`."#;
 
 const MODULES_FR: &str = r#"PLUSIEURS FICHIERS
 
   # geometrie.ry
+  ## Aire d'un rectangle.
   fn aire(l, h) = l * h
+  fn _verifier(x) = x >= 0       # privée : commence par `_`
 
   # principal.ry
-  use "geometrie.ry"
-  print(aire(2, 3))
+  use geometrie                   # le fichier geometrie.ry, à côté de principal.ry
+  print(geometrie.aire(2, 3))     # 6
 
-Le chemin est relatif au fichier qui contient `use`. Tout ce qui est défini au
-premier niveau du fichier utilisé devient disponible. Chaque fichier n'est
-exécuté qu'une fois."#;
+`use geometrie` donne les définitions de geometrie.ry par son nom :
+`geometrie.aire`, `geometrie.Cercle(1)`, et dans un `match`,
+`geometrie.Cercle(r)`. On voit ainsi toujours d'où vient un nom. Un fichier
+dans un dossier : `use formes/cercle`, puis `cercle.perimetre(1)`. Un autre
+nom : `use geometrie as geo`, puis `geo.aire(2, 3)`. Les noms qui commencent
+par `_` restent privés à leur fichier.
+
+Le chemin est relatif au dossier du fichier qui contient `use`. Chaque
+fichier n'est exécuté qu'une fois. Rythme dit quel fichier définit un nom que
+vous avez oublié d'utiliser.
+
+Ancienne forme : `use "geometrie.ry"` (avec des guillemets) donne ses
+définitions directement, comme `aire(2, 3)` ; préférez `use geometrie`."#;
 
 const EDITORS_EN: &str = r#"RYTHME IN YOUR EDITOR
 
@@ -1193,6 +1327,12 @@ VS Code
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   every editor that speaks the Language Server Protocol: tell it to start
   `rythme lsp` for .ry files. Ready-made configurations: editors/README.md
+
+Zed
+  the extension in editors/zed: colors and the language server.
+
+Colors in Neovim, Helix and Zed
+  the Tree-sitter grammar in editors/tree-sitter-rythme (see editors/README.md).
 
 The language of the messages follows the editor, unless `--lang fr|en` or
 RYTHME_LANG chooses it: rythme --lang fr lsp"#;
@@ -1213,6 +1353,12 @@ VS Code
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   tout éditeur qui parle le Language Server Protocol : demandez-lui de lancer
   `rythme lsp` pour les fichiers .ry. Configurations prêtes : editors/README.fr.md
+
+Zed
+  l'extension dans editors/zed : couleurs et serveur de langage.
+
+Couleurs dans Neovim, Helix et Zed
+  la grammaire Tree-sitter dans editors/tree-sitter-rythme (voir editors/README.fr.md).
 
 La langue des messages suit celle de l'éditeur, sauf si `--lang fr|en` ou
 RYTHME_LANG la choisit : rythme --lang fr lsp"#;
@@ -1319,6 +1465,78 @@ lignes longues sont gardées telles quelles. La mise en forme ne change jamais
 ce que fait un programme : un fichier avec une erreur de syntaxe est laissé
 tel quel, et l'erreur est affichée."#;
 
+const DOC_EN: &str = r#"DOCUMENTATION: rythme doc
+
+`rythme doc` writes the documentation of your code from its `##` comments,
+its types and the definitions of its functions.
+
+  rythme doc geometry.ry         Markdown on the screen
+  rythme doc .                   every .ry file of a folder and its subfolders
+  rythme doc --html geometry.ry  one web page, which needs nothing else
+  rythme doc . --out doc.html    written to a file (.html gives the web page)
+
+Write a `##` comment just above what it documents:
+
+  ## Shapes and their areas.      <- at the top, followed by a blank line:
+                                     it describes the whole file
+  ## A shape to draw.
+  type Shape = Circle(radius) | Rect(width, height)
+
+  ## The area of a shape. See `len` and `area`.
+  fn area(Circle(r)) = pi * r * r
+  fn area(Rect(w, h)) = w * h
+
+What is written
+  - for each file: its description, the files it uses (documented too),
+    its types, its functions (the first line of every definition), its
+    values and the names of its tests
+  - names starting with `_` are left out: they stay inside their file
+  - a name between backticks in a comment, like `area` or `len(list)`,
+    becomes a link to its documentation; after `use geometry`,
+    `geometry.area` leads to `area` in geometry.ry; the built-in functions
+    named this way are explained at the end
+  - the titles are in the language of the messages (`--lang fr`)
+
+In a comment, a blank `##` line starts a new paragraph, and lines starting
+with `- ` make a list."#;
+
+const DOC_FR: &str = r#"DOCUMENTATION : rythme doc
+
+`rythme doc` écrit la documentation de votre code à partir de ses
+commentaires `##`, de ses types et des définitions de ses fonctions.
+
+  rythme doc geometrie.ry         du Markdown à l'écran
+  rythme doc .                    tous les fichiers .ry d'un dossier et de
+                                  ses sous-dossiers
+  rythme doc --html geometrie.ry  une page web, qui n'a besoin de rien d'autre
+  rythme doc . --out doc.html     écrit dans un fichier (.html donne la page web)
+
+Écrivez un commentaire `##` juste au-dessus de ce qu'il documente :
+
+  ## Des formes et leurs aires.   <- en haut, suivi d'une ligne vide :
+                                     il décrit tout le fichier
+  ## Une forme à dessiner.
+  type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+
+  ## L'aire d'une forme. Voir `len` et `aire`.
+  fn aire(Cercle(r)) = pi * r * r
+  fn aire(Rect(l, h)) = l * h
+
+Ce qui est écrit
+  - pour chaque fichier : sa description, les fichiers qu'il utilise
+    (documentés eux aussi), ses types, ses fonctions (la première ligne de
+    chaque définition), ses valeurs et les noms de ses tests
+  - les noms qui commencent par `_` sont laissés de côté : ils restent à
+    l'intérieur de leur fichier
+  - un nom entre accents graves dans un commentaire, comme `aire` ou
+    `len(liste)`, devient un lien vers sa documentation ; après `use
+    geometrie`, `geometrie.aire` mène à `aire` dans geometrie.ry ; les
+    fonctions intégrées citées ainsi sont expliquées à la fin
+  - les titres sont dans la langue des messages (`--lang fr`)
+
+Dans un commentaire, une ligne `##` vide commence un nouveau paragraphe, et
+les lignes qui commencent par `- ` forment une liste."#;
+
 // ----- error explanations -----------------------------------------------
 
 /// Long explanation of an error or warning code.
@@ -1379,7 +1597,13 @@ other; at the top level, all functions are visible everywhere.
 Wrong:   print(lenght([1, 2]))
 Right:   print(len([1, 2]))
 
-Rythme suggests the closest existing name when there is one."#,
+Rythme suggests the closest existing name when there is one, and the file
+that defines it when it is another file of the folder:
+
+  use geometry                   # then
+  print(geometry.area(2))        # not area(2)
+
+A name starting with `_` is private to its file: other files cannot use it."#,
             r#"E003 — Nom inconnu
 
 Ce nom n'est pas défini à cet endroit. Vérifiez l'orthographe (majuscules et
@@ -1392,7 +1616,14 @@ visibles partout.
 Faux :   print(lenght([1, 2]))
 Juste :  print(len([1, 2]))
 
-Rythme propose le nom existant le plus proche quand il y en a un."#,
+Rythme propose le nom existant le plus proche quand il y en a un, et le
+fichier qui le définit quand c'est un autre fichier du dossier :
+
+  use geometrie                  # puis
+  print(geometrie.aire(2))       # et non aire(2)
+
+Un nom qui commence par `_` est privé à son fichier : les autres fichiers ne
+peuvent pas l'utiliser."#,
         ),
         "E004" => (
             r#"E004 — Wrong number of arguments
@@ -1567,7 +1798,12 @@ For a function with several cases, write the definitions one right after the
 other:
   fn fib(0) = 0
   fn fib(1) = 1
-  fn fib(n) = fib(n - 1) + fib(n - 2)"#,
+  fn fib(n) = fib(n - 1) + fib(n - 2)
+
+The name given to a used file (`use geometry`, `use ... as geo`) cannot name
+anything else in the file; and two files used with quotes (`use "a.ry"`)
+cannot define the same name: use them by their names instead
+(`use a`, then `a.area`)."#,
             r#"E011 — Déjà défini
 
 En Rythme, un nom désigne toujours la même valeur : il ne peut pas être
@@ -1583,7 +1819,12 @@ Pour une fonction à plusieurs cas, écrivez les définitions les unes juste
 après les autres :
   fn fib(0) = 0
   fn fib(1) = 1
-  fn fib(n) = fib(n - 1) + fib(n - 2)"#,
+  fn fib(n) = fib(n - 1) + fib(n - 2)
+
+Le nom donné à un fichier utilisé (`use geometrie`, `use ... as geo`) ne peut
+rien nommer d'autre dans le fichier ; et deux fichiers utilisés avec des
+guillemets (`use "a.ry"`) ne peuvent pas définir le même nom : utilisez-les
+plutôt par leur nom (`use a`, puis `a.aire`)."#,
         ),
         "E012" => (
             r#"E012 — Number too large
@@ -1803,14 +2044,15 @@ d'un fichier, utilisez les versions sûres, qui donnent un Result :
 
 The function received a value of the right kind, but outside of what it
 accepts: a negative count, the minimum of an empty list, the square root of
-a negative number, a range, a list or a text too large... The message
-explains the limit."#,
+a negative number, a date that does not exist (30 February), a range, a
+list or a text too large... The message explains the limit."#,
             r#"E023 — Valeur invalide
 
 La fonction a reçu une valeur de la bonne sorte, mais en dehors de ce qu'elle
 accepte : un nombre négatif d'éléments, le minimum d'une liste vide, la
-racine carrée d'un nombre négatif, un intervalle, une liste ou un texte trop
-grand... Le message explique la limite."#,
+racine carrée d'un nombre négatif, une date qui n'existe pas (30 février),
+un intervalle, une liste ou un texte trop grand... Le message explique la
+limite."#,
         ),
         "E024" => (
             r#"E024 — A value is lost

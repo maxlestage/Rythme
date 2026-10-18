@@ -61,12 +61,48 @@ pub fn format(source: &str) -> Result<String, Vec<Diagnostic>> {
 /// `rythme` has.
 pub fn format_named(name: &str, source: &str) -> Result<String, Vec<Diagnostic>> {
     let Some(before) = syntax_tree(source) else { return Err(vec![syntax_error(name, source)]) };
-    let out = layout(source).filter(|out| syntax_tree(out).as_ref() == Some(&before) && comments(out) == comments(source));
+    let out = layout(&short_uses(source)).filter(|out| syntax_tree(out).as_ref() == Some(&before) && comments(out) == comments(source));
     match out {
         Some(out) if uses_crlf(source) => Ok(out.replace('\n', "\r\n")),
         Some(out) => Ok(out),
         None => Err(vec![bug(name)]),
     }
+}
+
+/// `use "geometry.ry" as geo` written in the recommended form, `use
+/// geometry as geo`, and `use geometry as geometry` as `use geometry`, when
+/// the path can be written without quotes. `use "x.ry"` (whose definitions
+/// are used without a name) stays as it is.
+fn short_uses(src: &str) -> String {
+    let Ok(items) = lexer::lex(src, UNSHOWN).and_then(parser::parse) else { return src.to_string() };
+    let mut out = src.to_string();
+    for item in items.iter().rev() {
+        let crate::ast::Item::Use(u) = item else { continue };
+        let Some((name, at)) = u.name else { continue };
+        let Some(short) = short_path(&u.path) else { continue };
+        let explicit = at.start >= u.path_span.end;
+        if u.short && !explicit {
+            continue;
+        }
+        let stem = short.rsplit('/').next().unwrap_or_default();
+        let new = if *name.name() == *stem { short.clone() } else { format!("{short} as {name}") };
+        let end = if explicit { at.end } else { u.path_span.end } as usize;
+        out.replace_range(u.path_span.start as usize..end, &new);
+    }
+    out
+}
+
+/// `shapes/circle` for `"shapes/circle.ry"`: the path written without
+/// quotes, when each part is a name (or `..`).
+fn short_path(path: &str) -> Option<String> {
+    let stem = path.strip_suffix(".ry")?;
+    let parts: Vec<&str> = stem.split('/').collect();
+    let name = |p: &str| {
+        p.chars().next().is_some_and(|c| c.is_lowercase() || c == '_')
+            && lexer::lex(p, UNSHOWN).is_ok_and(|l| matches!(l.tokens.as_slice(), [Token { tok: Tok::Ident(_), .. }, ..] if l.tokens.iter().filter(|t| !matches!(t.tok, Tok::Newline | Tok::Eof)).count() == 1))
+    };
+    let (last, dirs) = parts.split_last()?;
+    (name(last) && **last != *"_" && dirs.iter().all(|d| *d == ".." || name(d))).then(|| stem.to_string())
 }
 
 /// The syntax tree of a program, without the positions: two programs that mean
@@ -630,9 +666,18 @@ impl<'a> Shaper<'a> {
         Some(k)
     }
 
+    /// `use geometry`, `use shapes/circle as circle`, `use "x.ry"`.
     fn use_def(&mut self) -> Option<usize> {
         let k = self.advance()?;
         self.advance()?;
+        while *self.raw() == Tok::Slash {
+            self.take(Role::Dot)?;
+            self.advance()?;
+        }
+        if matches!(self.raw(), Tok::Ident(s) if &*s.name() == "as") {
+            self.advance()?;
+            self.advance()?;
+        }
         Some(k)
     }
 
@@ -1010,6 +1055,17 @@ impl<'a> Shaper<'a> {
 
     fn pattern_atom(&mut self) -> Option<usize> {
         match self.peek() {
+            // `geo.Circle(r)`: a constructor of a file used as `geo`.
+            Tok::Ident(_) if self.toks.get(self.pos + 1).is_some_and(|t| t.tok == Tok::Dot) => {
+                let m = self.advance()?;
+                self.take(Role::Dot)?;
+                self.advance()?;
+                if *self.raw() == Tok::LParen {
+                    let open = self.take(Role::Call)?;
+                    self.comma_list(open, &Tok::RParen, Self::pattern)?;
+                }
+                Some(m)
+            }
             Tok::Ident(_) | Tok::Int(_) | Tok::Float(_) | Tok::True | Tok::False | Tok::Str(_) => self.advance(),
             Tok::Ctor(_) => {
                 let c = self.advance()?;
@@ -1603,7 +1659,7 @@ impl Run {
 }
 
 /// The `.ry` files of a folder and of its subfolders (except hidden ones, like `.git`), sorted.
-fn ry_files(dir: &Path, found: &mut Vec<PathBuf>) {
+pub(crate) fn ry_files(dir: &Path, found: &mut Vec<PathBuf>) {
     let Ok(entries) = std::fs::read_dir(dir) else { return };
     let mut entries: Vec<_> = entries.flatten().collect();
     entries.sort_by_key(|e| e.file_name());
@@ -1618,7 +1674,7 @@ fn ry_files(dir: &Path, found: &mut Vec<PathBuf>) {
     }
 }
 
-fn not_found(path: &Path) -> Diagnostic {
+pub(crate) fn not_found(path: &Path) -> Diagnostic {
     let shown = path.display();
     let mut d = Diagnostic::error("E017", t!("file or folder `{shown}` not found", "fichier ou dossier `{shown}` introuvable"));
     let dir = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));

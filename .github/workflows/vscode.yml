@@ -1,0 +1,51 @@
+name: VS Code extension
+
+# Packages the VS Code extension (editors/vscode) when a version tag is pushed
+# (or by hand), keeps the .vsix as a build artifact, and publishes it on the
+# Visual Studio Marketplace when the VSCE_PAT secret exists. Without the
+# secret, the publishing step is skipped and the workflow still succeeds.
+# A version already on the Marketplace is skipped too (--skip-duplicate).
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Package and publish
+    runs-on: ubuntu-latest
+    env:
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+    defaults:
+      run:
+        working-directory: editors/vscode
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build rythme
+        working-directory: .
+        run: cargo build
+      - name: Check the extension
+        run: |
+          npm ci
+          npm run check
+      - name: Package
+        run: npx --yes @vscode/vsce@3 package --out rythme.vsix
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rythme-vscode
+          path: editors/vscode/rythme.vsix
+      - name: No VSCE_PAT secret
+        if: env.VSCE_PAT == ''
+        run: |
+          echo "::notice::No VSCE_PAT secret: the extension is packaged (artifact rythme-vscode) but not published."
+      - name: Publish on the Visual Studio Marketplace
+        if: env.VSCE_PAT != ''
+        run: npx --yes @vscode/vsce@3 publish --packagePath rythme.vsix --skip-duplicate

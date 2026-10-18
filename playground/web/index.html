@@ -343,7 +343,7 @@ print(diviser(10, 4), diviser(1, 0))
 
   const TOPICS = ["start", "syntax", "functions", "lists", "text", "records", "types", "match", "errors", "functional", "tests", "builtins"];
   const KEYWORDS = new Set(["fn", "if", "then", "else", "match", "end", "do", "type", "test", "use", "and", "or", "not", "true", "false"]);
-  const BUILTINS = new Set(("print debug text input type_of help assert assert_eq fail args env exit time random abs min max sqrt pow floor ceil round int float sin cos tan asin acos atan log exp is_even is_odd gcd lcm len upper lower capitalize trim pad_left pad_right split join contains starts_with ends_with replace chars lines char_code char is_digit is_letter is_space repeat parse_int parse_float parse_json to_json map filter fold scan each sum product first last rest get push set_at insert_at remove_at reverse sort sort_by unique shuffle slice take drop take_while drop_while step_by chunks windows zip enumerate any all find count index_of min_by max_by flatten flat_map partition group_by is_empty keys values entries from_entries has put remove map_values unwrap unwrap_or is_some is_none is_ok is_err and_then ok_or map_err read_file write_file append_file file_exists pi").split(" "));
+  const BUILTINS = new Set(("print debug text input type_of help assert assert_eq fail args env exit time random abs min max sqrt pow floor ceil round int float sin cos tan asin acos atan log exp is_even is_odd gcd lcm len upper lower capitalize trim pad_left pad_right split join contains starts_with ends_with replace chars lines char_code char is_digit is_letter is_space repeat parse_int parse_float parse_json to_json map filter fold scan each sum product first last rest get push set_at insert_at remove_at reverse sort sort_by unique shuffle slice take drop take_while drop_while step_by chunks windows zip enumerate any all find count index_of min_by max_by flatten flat_map partition group_by is_empty keys values entries from_entries has put remove map_values unwrap unwrap_or is_some is_none is_ok is_err and_then ok_or map_err read_file write_file append_file file_exists now today parse_date format_date is_date add_days add_seconds days_between seconds_between day_of_week days_in_month is_leap_year pi").split(" "));
 
   const $ = (id) => document.getElementById(id);
   const source = $("source"), highlight = $("highlight"), gutter = $("gutter"), output = $("output");
@@ -476,12 +476,12 @@ print(diviser(10, 4), diviser(1, 0))
     const at = e.rythme_run(ptr, bytes.length, mode, lang === "fr" ? 1 : 0);
     return new TextDecoder().decode(new Uint8Array(e.memory.buffer, at, e.rythme_result_len()));
   }
-  const imports = { env: { rythme_now: () => Date.now() } };
+  const imports = { env: { rythme_now: () => Date.now(), rythme_offset: (ms) => -new Date(ms).getTimezoneOffset() } };
 
   // Programs run in a worker, so that a program that never stops can be stopped.
   const workerSource = `
     let module = null;
-    const imports = { env: { rythme_now: () => Date.now() } };
+    const imports = { env: { rythme_now: () => Date.now(), rythme_offset: (ms) => -new Date(ms).getTimezoneOffset() } };
     ${callInterpreter.toString()}
     let lang = "en";
     onmessage = async (msg) => {

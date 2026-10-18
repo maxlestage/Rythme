@@ -765,3 +765,82 @@ fn help_when_started_by_hand() {
     let text = String::from_utf8_lossy(&out.stdout);
     assert!(text.contains("RYTHME DANS VOTRE ÉDITEUR") && text.contains("rythme lsp"), "{text}");
 }
+
+#[test]
+fn files_used_with_a_name() {
+    let dir = temp_dir("named");
+    std::fs::create_dir_all(dir.join("shapes")).unwrap();
+    std::fs::write(
+        dir.join("geometry.ry"),
+        "## Area of a square.\nfn area(side) = side * _square(side) // side\nfn _square(x) = x * x\ntype Shape = Circle(r) | Dot\n",
+    )
+    .unwrap();
+    std::fs::write(dir.join("shapes/circle.ry"), "fn perimeter(r) = 2 * pi * r\n").unwrap();
+    let main = dir.join("main.ry");
+    let main_text = "use geometry\nprint(geometry.area(2))\n";
+    std::fs::write(&main, main_text).unwrap();
+    let init = format!(r#"{{"processId":null,"rootUri":{},"capabilities":{{}}}}"#, s(&uri(&dir)));
+    let (mut lsp, _) = Lsp::start("en", &init);
+    let mu = uri(&main);
+    let gu = uri(&dir.join("geometry.ry"));
+    assert!(lsp.open(&mu, main_text).is_empty());
+    // Hover says which file the name comes from; definition jumps into it.
+    let h = hover_text(&lsp.at("textDocument/hover", &mu, 1, 16));
+    assert!(h.contains("Area of a square.") && h.contains("geometry.ry"), "{h}");
+    let d = lsp.at("textDocument/definition", &mu, 1, 16);
+    assert_eq!(d.get("uri").as_str(), Some(gu.as_str()));
+    assert_eq!(range(&d), (1, 3, 1, 7));
+    let h = hover_text(&lsp.at("textDocument/hover", &mu, 0, 6));
+    assert!(h.contains("geometry.area(side)") && !h.contains("_square"), "{h}");
+    let typed = |line: u32, character: u32, trigger: &str| {
+        format!(
+            r#"{{"textDocument":{{"uri":{}}},"position":{{"line":{line},"character":{character}}},"context":{{"triggerKind":2,"triggerCharacter":{}}}}}"#,
+            s(&mu),
+            s(trigger)
+        )
+    };
+    // After `geometry.`: what the file gives, not its private names.
+    lsp.change(&mu, 2, "use geometry\nprint(geometry.)\n");
+    let names = labels(&lsp.result("textDocument/completion", &typed(1, 15, ".")));
+    assert!(names.contains(&"area".to_string()) && names.contains(&"Circle".to_string()), "{names:?}");
+    assert!(!names.contains(&"_square".to_string()) && !names.contains(&"print".to_string()), "{names:?}");
+    // After `use `: the files and folders nearby, without `.ry`.
+    lsp.change(&mu, 3, "use \nprint(1)\n");
+    let names = labels(&lsp.result("textDocument/completion", &typed(0, 4, " ")));
+    assert_eq!(names, ["geometry", "shapes/"]);
+    lsp.change(&mu, 4, "use shapes/\nprint(1)\n");
+    let names = labels(&lsp.result("textDocument/completion", &typed(0, 11, "/")));
+    assert_eq!(names, ["circle"]);
+    // A name of another file, without `use`: a quick fix adds it.
+    let diags = lsp.change(&mu, 5, "print(area(2))\n");
+    assert_eq!(diags.len(), 1, "{diags:?}");
+    assert!(diags[0].get("message").as_str().unwrap().contains("add `use geometry`"), "{:?}", diags[0]);
+    let params = format!(
+        r#"{{"textDocument":{{"uri":{}}},"range":{{"start":{{"line":0,"character":7}},"end":{{"line":0,"character":7}}}},"context":{{"diagnostics":[]}}}}"#,
+        s(&mu)
+    );
+    let actions = lsp.result("textDocument/codeAction", &params);
+    let fix = &actions.as_array()[0];
+    assert_eq!(fix.get("title").as_str(), Some("Add `use geometry` and write `geometry.area`"));
+    let edits = fix.get_path(&["edit", "changes", &mu]).as_array();
+    assert_eq!(edits[0].get("newText").as_str(), Some("use geometry\n"));
+    assert_eq!(range(&edits[0]), (0, 0, 0, 0));
+    assert_eq!(edits[1].get("newText").as_str(), Some("geometry.area"));
+    assert_eq!(range(&edits[1]), (0, 6, 0, 10));
+    // A private name, and a name the file does not have.
+    let diags = lsp.change(&mu, 6, "use geometry\nprint(geometry._square(2), geometry.aera(1))\n");
+    let messages: Vec<&str> = diags.iter().filter_map(|d| d.get("message").as_str()).collect();
+    assert!(messages.iter().any(|m| m.contains("`_square` is private to the file `geometry.ry`")), "{messages:?}");
+    assert!(messages.iter().any(|m| m.contains("did you mean `geometry.area`?")), "{messages:?}");
+    // Rename from the file used: `geometry.area` follows.
+    lsp.change(&mu, 7, main_text);
+    let edit = lsp.result(
+        "textDocument/rename",
+        &format!(r#"{{"textDocument":{{"uri":{}}},"position":{{"line":1,"character":16}},"newName":"surface"}}"#, s(&mu)),
+    );
+    let main_edits = edit.get_path(&["changes", &mu]).as_array();
+    assert_eq!(main_edits.len(), 1);
+    assert_eq!(range(&main_edits[0]), (1, 15, 1, 19));
+    assert_eq!(lsp.stop(), 0);
+    let _ = std::fs::remove_dir_all(&dir);
+}

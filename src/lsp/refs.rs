@@ -96,7 +96,12 @@ fn uses_in(text: &str) -> Vec<String> {
             if !rest.starts_with([' ', '\t']) {
                 return None;
             }
-            rest.trim_start().strip_prefix('"')?.split('"').next().map(str::to_string)
+            let rest = rest.trim_start();
+            match rest.strip_prefix('"') {
+                Some(quoted) => quoted.split('"').next().map(str::to_string),
+                // `use geometry`, `use shapes/circle as circle`.
+                None => rest.split([' ', '\t', '#']).next().filter(|p| !p.is_empty()).map(str::to_string),
+            }
         })
         .collect()
 }

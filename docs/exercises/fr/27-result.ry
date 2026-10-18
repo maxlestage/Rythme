@@ -1,0 +1,62 @@
+# Exercice 27 · Une opération qui peut échouer : Result  ★★☆
+#
+# Rythme n'a pas d'exceptions. Une fonction qui peut échouer rend un
+# Result : `Ok(valeur)` quand elle a réussi, `Err(message)` sinon. L'appelant
+# doit regarder les deux cas : aucune erreur ne peut être oubliée.
+#   parse_int("42")       # Ok(42)
+#   parse_int("quarante") # Err("\"quarante\" n'est pas un nombre entier")
+#
+# Énoncé
+#   - `division_verifiee(a, b)` : `Ok(a / b)`, ou `Err("division par zéro")` ;
+#   - `lire_age(texte)` : l'âge écrit dans le texte, sous forme de Result :
+#     `Err("pas un nombre")` si le texte n'est pas un nombre entier,
+#     `Err("un âge ne peut pas être négatif")` en dessous de 0,
+#     `Err("trop vieux")` au-dessus de 150, et `Ok(age)` sinon ;
+#   - `decrire(resultat)` : "ok : 42" pour `Ok(42)` et
+#     "erreur : trop vieux" pour `Err("trop vieux")` ;
+#   - `verifier_code(code)` : `Ok(code)` s'il a au moins 8 caractères
+#     et contient un chiffre ; sinon un Err avec le premier problème
+#     trouvé : "trop court" ou "aucun chiffre".
+#
+# Indices
+#   1. `match parse_int(texte)` avec les cas `Err(_)`, `Ok(n) if n < 0`,
+#      `Ok(n) if n > 150` et `Ok(n)`.
+#   2. `any(chars(code), is_digit)` dit s'il y a un chiffre.
+#
+# Vérifiez votre travail :  rythme exercise check 27-result.ry
+#                     ou :  rythme test 27-result.ry
+
+fn division_verifiee(a, b) = fail("à faire")
+
+fn lire_age(texte) = fail("à faire")
+
+fn decrire(resultat) = fail("à faire")
+
+fn verifier_code(code) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "division vérifiée"
+  assert_eq(division_verifiee(9, 3), Ok(3))
+  assert_eq(division_verifiee(1, 0), Err("division par zéro"))
+end
+
+test "lire l'âge"
+  assert_eq(lire_age("36"), Ok(36))
+  assert_eq(lire_age(" 7 "), Ok(7))
+  assert_eq(lire_age("sept"), Err("pas un nombre"))
+  assert_eq(lire_age("-1"), Err("un âge ne peut pas être négatif"))
+  assert_eq(lire_age("200"), Err("trop vieux"))
+end
+
+test "décrire"
+  assert_eq(decrire(Ok(42)), "ok : 42")
+  assert_eq(decrire(Err("trop vieux")), "erreur : trop vieux")
+  assert_eq(decrire(lire_age("-5")), "erreur : un âge ne peut pas être négatif")
+end
+
+test "vérifier le code"
+  assert_eq(verifier_code("rythme2024"), Ok("rythme2024"))
+  assert_eq(verifier_code("abc1"), Err("trop court"))
+  assert_eq(verifier_code("fonctionnel"), Err("aucun chiffre"))
+end

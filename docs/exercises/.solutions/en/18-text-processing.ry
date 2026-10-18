@@ -1,0 +1,27 @@
+# Exercise 18 · Working with texts  ★★☆
+# Reference solution. Try the exercise before reading it!
+
+fn is_palindrome(text)
+  letters = text |> lower |> replace(" ", "")
+  letters == reverse(letters)
+end
+
+fn count_vowels(text) = text |> lower |> chars |> count(fn(c) = contains("aeiouy", c))
+
+fn title_case(text) = text |> split |> map(fn(w) = capitalize(lower(w))) |> join(" ")
+
+# --- Tests (do not change them) ---
+
+test "palindromes"
+  assert_eq(is_palindrome("kayak"), true)
+  assert_eq(is_palindrome("Never odd or even"), true)
+  assert_eq(is_palindrome("rythme"), false)
+end
+
+test "vowels"
+  assert_eq(count_vowels("Rythme"), 2)
+  assert_eq(count_vowels("AEIOU"), 5)
+  assert_eq(count_vowels("xkcd"), 0)
+end
+
+test "title case" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")

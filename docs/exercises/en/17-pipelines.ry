@@ -1,0 +1,53 @@
+# Exercise 17 · Pipelines  ★★☆
+#
+# `x |> f(a)` means `f(x, a)`: the value on the left becomes the first
+# argument. Steps are read from left to right, in the order they happen:
+#   [3, 1, 2] |> sort |> map(fn(x) = x * 10)        # [10, 20, 30]
+# A line that starts with `|>` continues the line before.
+#
+# Statement
+#   Write each function as one pipeline:
+#   - `sum_of_odd_squares(n)`: the sum of the squares of the odd numbers
+#     from 1 to n;
+#   - `top_three(scores)`: the three best scores, the best first;
+#   - `shout_words(sentence)`: each word in uppercase, separated by one
+#     space ("hello  world" gives "HELLO WORLD");
+#   - `initials_of(sentence)`: the first letter of each word, in uppercase
+#     ("portable network graphics" gives "PNG").
+#
+# Hints
+#   1. `filter`, then `map`, then `sum`.
+#   2. `sort`, `reverse`, `take(3)`.
+#   3. `split(text)` cuts a text at the spaces (several spaces count as
+#      one); `join(words, " ")` glues words back together.
+#   4. `word[0]` is the first character of `word`.
+#
+# Check your work:  rythme exercise check 17-pipelines.ry
+#              or:  rythme test 17-pipelines.ry
+
+fn sum_of_odd_squares(n) = fail("to do")
+
+fn top_three(scores) = fail("to do")
+
+fn shout_words(sentence) = fail("to do")
+
+fn initials_of(sentence) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "sum of odd squares"
+  assert_eq(sum_of_odd_squares(5), 35)
+  assert_eq(sum_of_odd_squares(1), 1)
+end
+
+test "top three"
+  assert_eq(top_three([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(top_three([4]), [4])
+end
+
+test "shout words" = assert_eq(shout_words("hello  world"), "HELLO WORLD")
+
+test "initials of"
+  assert_eq(initials_of("portable network graphics"), "PNG")
+  assert_eq(initials_of("Rythme"), "R")
+end

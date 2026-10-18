@@ -1,0 +1,62 @@
+# Exercise 27 · An operation that may fail: Result  ★★☆
+#
+# Rythme has no exceptions. A function that may fail returns a Result:
+# `Ok(value)` when it worked, `Err(message)` otherwise. The caller must
+# look at both cases: no error can be forgotten.
+#   parse_int("42")       # Ok(42)
+#   parse_int("forty")    # Err("\"forty\" is not a whole number")
+#
+# Statement
+#   - `checked_divide(a, b)`: `Ok(a / b)`, or `Err("division by zero")`;
+#   - `parse_age(text)`: the age written in the text, as a Result:
+#     `Err("not a number")` if the text is not a whole number,
+#     `Err("an age cannot be negative")` below 0,
+#     `Err("too old")` above 150, and `Ok(age)` otherwise;
+#   - `describe(result)`: "ok: 42" for `Ok(42)` and "error: too old" for
+#     `Err("too old")`;
+#   - `check_code(code)`: `Ok(code)` if it has at least 8
+#     characters and contains a digit; otherwise an Err with the first
+#     problem found: "too short" or "no digit".
+#
+# Hints
+#   1. `match parse_int(text)` with the cases `Err(_)`, `Ok(n) if n < 0`,
+#      `Ok(n) if n > 150` and `Ok(n)`.
+#   2. `any(chars(code), is_digit)` tells whether there is a digit.
+#
+# Check your work:  rythme exercise check 27-result.ry
+#              or:  rythme test 27-result.ry
+
+fn checked_divide(a, b) = fail("to do")
+
+fn parse_age(text) = fail("to do")
+
+fn describe(result) = fail("to do")
+
+fn check_code(code) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "checked divide"
+  assert_eq(checked_divide(9, 3), Ok(3))
+  assert_eq(checked_divide(1, 0), Err("division by zero"))
+end
+
+test "parse age"
+  assert_eq(parse_age("36"), Ok(36))
+  assert_eq(parse_age(" 7 "), Ok(7))
+  assert_eq(parse_age("seven"), Err("not a number"))
+  assert_eq(parse_age("-1"), Err("an age cannot be negative"))
+  assert_eq(parse_age("200"), Err("too old"))
+end
+
+test "describe"
+  assert_eq(describe(Ok(42)), "ok: 42")
+  assert_eq(describe(Err("too old")), "error: too old")
+  assert_eq(describe(parse_age("-5")), "error: an age cannot be negative")
+end
+
+test "check code"
+  assert_eq(check_code("rythme2024"), Ok("rythme2024"))
+  assert_eq(check_code("abc1"), Err("too short"))
+  assert_eq(check_code("functional"), Err("no digit"))
+end

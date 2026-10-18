@@ -1,0 +1,36 @@
+# Exercice 09 · Accumulateurs et appels terminaux  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn somme_depuis(0, total) = total
+fn somme_depuis(n, total) = somme_depuis(n - 1, total + n)
+
+fn grande_somme(n) = somme_depuis(n, 0)
+
+fn syracuse_depuis(1, etapes) = etapes
+fn syracuse_depuis(n, etapes) if is_even(n) = syracuse_depuis(n // 2, etapes + 1)
+fn syracuse_depuis(n, etapes) = syracuse_depuis(3 * n + 1, etapes + 1)
+
+fn etapes_de_syracuse(n) = syracuse_depuis(n, 0)
+
+fn fib_depuis(0, a, _) = a
+fn fib_depuis(n, a, b) = fib_depuis(n - 1, b, a + b)
+
+fn fib(n) = fib_depuis(n, 0, 1)
+
+# --- Tests (ne les modifiez pas) ---
+
+test "grande somme"
+  assert_eq(grande_somme(10), 55)
+  assert_eq(grande_somme(1000000), 500000500000)
+end
+
+test "étapes de Syracuse"
+  assert_eq(etapes_de_syracuse(1), 0)
+  assert_eq(etapes_de_syracuse(6), 8)
+  assert_eq(etapes_de_syracuse(27), 111)
+end
+
+test "fibonacci"
+  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
+  assert_eq(fib(90), 2880067194370816120)
+end

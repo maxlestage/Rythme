@@ -1,0 +1,55 @@
+# Exercise 21 · Lists of records  ★★☆
+#
+# Real data is often a list of records: a class of students, a list of
+# orders... `map`, `filter`, `sort_by`, `max_by`, `group_by` and `sum` work
+# on them like on any list.
+#
+# Statement
+#   A student is a record `{name, score, group}` (a score from 0 to 100).
+#   - `names_of_passed(students)`: the names of the students whose score is
+#     at least 50, in the same order;
+#   - `average_score(students)`: the average of the scores;
+#   - `best(students)`: the name of the student with the best score;
+#   - `ranking(students)`: the names, from the best score to the lowest;
+#   - `group_sizes(students)`: a record that gives, for each group, how
+#     many students are in it (`{A: 2, B: 1}`).
+#
+# Hints
+#   1. `filter` then `map(fn(s) = s.name)`.
+#   2. `max_by(list, key)` gives the element whose key is the largest.
+#   3. `sort_by(list, fn(s) = -s.score)` sorts from the best score.
+#   4. `group_by(list, key)` gives a record of lists, and
+#      `map_values(record, f)` applies f to each of its values.
+#
+# Check your work:  rythme exercise check 21-lists-of-records.ry
+#              or:  rythme test 21-lists-of-records.ry
+
+fn names_of_passed(students) = fail("to do")
+
+fn average_score(students) = fail("to do")
+
+fn best(students) = fail("to do")
+
+fn ranking(students) = fail("to do")
+
+fn group_sizes(students) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+classroom = [
+  {name: "Ada", score: 92, group: "A"},
+  {name: "Alan", score: 45, group: "B"},
+  {name: "Grace", score: 78, group: "A"},
+  {name: "Edsger", score: 50, group: "B"},
+  {name: "Barbara", score: 85, group: "A"},
+]
+
+test "passed" = assert_eq(names_of_passed(classroom), ["Ada", "Grace", "Edsger", "Barbara"])
+
+test "average" = assert_eq(average_score(classroom), 70)
+
+test "best" = assert_eq(best(classroom), "Ada")
+
+test "ranking" = assert_eq(ranking(classroom), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+
+test "group sizes" = assert_eq(group_sizes(classroom), {A: 3, B: 2})

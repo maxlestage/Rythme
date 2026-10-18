@@ -74,7 +74,9 @@ erreur[E005]: impossible d'utiliser `+` avec Text et Int
 Le site <https://maxlestage.github.io/Rythme/> a un playground qui fait
 tourner le vrai interpréteur, compilé en WebAssembly ([`playground/`](playground)) :
 modifier du code, le lancer, le vérifier, lancer des tests, le mettre en
-forme, lire l'aide, en français ou en anglais, sans rien installer.
+forme, lire l'aide, en français ou en anglais, sans rien installer. Le site
+s'installe aussi comme une application (une Progressive Web App) et fonctionne
+hors ligne, playground compris.
 
 Le dossier [`site/`](site) est le site web de Rythme (accueil, visite du
 langage, exemples, playground et guide pour les enseignants, en français et en
@@ -105,16 +107,47 @@ Détails dans [`site/README.md`](site/README.md#heroku).
 
 ## Installer
 
-**Sans rien installer d'autre :** chaque version publiée est accompagnée de
-programmes prêts à l'emploi pour Linux, macOS et Windows sur la
-[page des versions](https://github.com/maxlestage/Rythme/releases).
-Téléchargez l'archive de votre système, extrayez `rythme` (`rythme.exe` sous
-Windows) et placez-le dans un dossier de votre `PATH`.
+**Linux et macOS** (x86_64 et arm64) : le script télécharge le programme de
+la dernière version, vérifie sa somme SHA-256 et le place dans
+`~/.local/bin`.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/maxlestage/Rythme/master/install.sh | sh
+```
+
+Options après `sh -s --` : `--dir /usr/local/bin` (un autre dossier),
+`--version v0.1.0` (une autre version) ; `--help` les liste.
+
+**Windows** (PowerShell) : le programme va dans
+`%LOCALAPPDATA%\Programs\Rythme\bin`, ajouté à votre `PATH`.
+
+```powershell
+irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex
+```
+
+Définissez `RYTHME_INSTALL_DIR` ou `RYTHME_VERSION` avant, ou lancez le
+fichier téléchargé : `.\install.ps1 -Dir C:\Outils -Version v0.1.0 -NoModifyPath`.
+
+**À la main :** chaque version publiée est accompagnée de programmes prêts à
+l'emploi pour Linux, macOS et Windows sur la
+[page des versions](https://github.com/maxlestage/Rythme/releases), et de
+leurs sommes de contrôle dans `SHA256SUMS`. Téléchargez l'archive de votre
+système, extrayez `rythme` (`rythme.exe` sous Windows) et placez-le dans un
+dossier de votre `PATH`.
+
+**Homebrew** (macOS, Linux) et **winget** (Windows), une fois les paquets
+publiés ([`packaging/`](packaging/README.md)) :
+
+```sh
+brew install maxlestage/rythme/rythme
+winget install Rythme.Rythme
+```
 
 **Avec [Rust](https://rustup.rs)** (une version stable récente) :
 
 ```sh
-cargo install --git https://github.com/maxlestage/Rythme
+cargo install rythme                                    # depuis crates.io, une fois publié
+cargo install --git https://github.com/maxlestage/Rythme   # le code le plus récent
 ```
 
 Ou depuis une copie de ce dépôt :
@@ -134,9 +167,11 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme test bonjour.ry`    | lancer les tests écrits dans le fichier             |
 | `rythme fmt bonjour.ry`     | mettre le code en forme dans le style officiel (aussi un dossier : `rythme fmt .`) |
 | `rythme fmt --check .`      | lister les fichiers à mettre en forme, sans les changer (pour l'intégration continue) |
+| `rythme doc bonjour.ry`     | sa documentation tirée des commentaires `##`, en Markdown (`--html` : une page web) |
 | `rythme help [sujet]`       | aide sur un sujet ou une fonction                   |
 | `rythme explain E003`       | expliquer un code d'erreur                          |
 | `rythme learn`              | visite guidée du langage                            |
+| `rythme exercise`           | [30 exercices gradués](docs/exercises/README.fr.md) : `list`, `start 1`, `check FICHIER` |
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
 | `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
 
@@ -191,8 +226,9 @@ end
 # Les tests vivent à côté du code : rythme test fichier.ry
 test "double marche" = assert_eq(double(21), 42)
 
-# Autres fichiers
-use "geometrie.ry"
+# Autres fichiers, utilisés par leur nom
+use geometrie                             # geometrie.ry, à côté de ce fichier
+print(geometrie.aire(2))
 ```
 
 Les mots-clés et les fonctions intégrées sont en anglais, comme dans tous les
@@ -217,10 +253,11 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 | [`results.ry`](examples/results.ry) | `Option`, `Result`, `?` |
 | [`students.ry`](examples/students.ry) | enregistrements, mise à jour, regroupements, moyennes |
 | [`sales.ry`](examples/sales.ry) | un rapport : `scan`, colonnes alignées avec `pad_left`, `windows`, `chunks`, JSON |
+| [`calendar.ry`](examples/calendar.ry) | des dates : la page d'un mois, des textes ISO 8601, `days_between`, `add_days` |
 | [`tree.ry`](examples/tree.ry) | un type récursif : arbre binaire de recherche |
 | [`primes.ry`](examples/primes.ry) | un crible récursif, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | les blocs `test` |
-| [`modules/`](examples/modules) | `use` pour répartir un programme en plusieurs fichiers |
+| [`modules/`](examples/modules) | `use geometrie` puis `geometrie.aire(2)` : un programme en plusieurs fichiers, noms `_privés` |
 | [`bonjour.ry`](examples/bonjour.ry) | des noms avec des accents |
 
 ## Éditeurs
@@ -239,6 +276,9 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 [`docs/enseigner.md`](docs/enseigner.md) propose un plan de cours construit
 sur Rythme, et explique pourquoi il convient aussi bien à un premier cours de
 programmation qu'à un cours de programmation fonctionnelle.
+[`docs/exercises/`](docs/exercises/README.fr.md) contient 30 exercices
+gradués, en français et en anglais, avec énoncé, indices, tests et solutions,
+que `rythme exercise` distribue et vérifie.
 
 ## État et feuille de route
 
@@ -258,7 +298,9 @@ suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
   échoueraient à coup sûr. Suite : les types des paramètres des fonctions,
   pour trouver encore plus d'erreurs avant l'exécution.
 - **Outils.** `rythme fmt` met le code en forme dans le style officiel (voir
-  `rythme help fmt`), et le serveur de langage (`rythme lsp`) apporte les
+  `rythme help fmt`), `rythme doc` écrit la documentation de fichiers et de
+  dossiers à partir de leurs commentaires `##` (voir `rythme help doc`), et le
+  serveur de langage (`rythme lsp`) apporte les
   erreurs et la documentation dans tous les éditeurs (voir
   `rythme help editors`). Le bac à sable en ligne fait tourner l'interpréteur
   compilé en WebAssembly. Suite : un gestionnaire de paquets.

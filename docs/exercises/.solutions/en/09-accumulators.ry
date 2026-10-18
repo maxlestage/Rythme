@@ -1,0 +1,36 @@
+# Exercise 09 · Accumulators and tail calls  ★★☆
+# Reference solution. Try the exercise before reading it!
+
+fn sum_from(0, total) = total
+fn sum_from(n, total) = sum_from(n - 1, total + n)
+
+fn big_sum(n) = sum_from(n, 0)
+
+fn collatz_from(1, steps) = steps
+fn collatz_from(n, steps) if is_even(n) = collatz_from(n // 2, steps + 1)
+fn collatz_from(n, steps) = collatz_from(3 * n + 1, steps + 1)
+
+fn collatz_steps(n) = collatz_from(n, 0)
+
+fn fib_from(0, a, _) = a
+fn fib_from(n, a, b) = fib_from(n - 1, b, a + b)
+
+fn fib(n) = fib_from(n, 0, 1)
+
+# --- Tests (do not change them) ---
+
+test "big sum"
+  assert_eq(big_sum(10), 55)
+  assert_eq(big_sum(1000000), 500000500000)
+end
+
+test "collatz steps"
+  assert_eq(collatz_steps(1), 0)
+  assert_eq(collatz_steps(6), 8)
+  assert_eq(collatz_steps(27), 111)
+end
+
+test "fibonacci"
+  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
+  assert_eq(fib(90), 2880067194370816120)
+end
