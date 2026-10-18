@@ -6,7 +6,7 @@
 
 use std::rc::Rc;
 
-use crate::ast::{BinOp, Expr, ExprKind, FnDef, ListItem, PatKind, Pattern, RecordItem, Stmt as AstStmt, TemplatePart, UnOp};
+use crate::ast::{BinOp, Expr, ExprKind, FnDef, ListItem, Num, PatKind, Pattern, RecordItem, Stmt as AstStmt, TemplatePart, UnOp};
 use crate::source::Span;
 use crate::symbol::{Sym, SymMap};
 use crate::value::{Shape, Value};
@@ -120,6 +120,8 @@ pub enum Pat {
     Float(f64),
     Text(Rc<str>),
     Symbol(Sym),
+    Range(Num, Num),
+    Prefix(Rc<str>, Box<Pat>),
     Ctor(Sym, Vec<Pat>),
     /// Elements, then the rest: `None` = no rest, `Some(None)` = `..`, `Some(Some(slot))` = `..name`.
     List(Vec<Pat>, Option<Option<u32>>),
@@ -405,6 +407,8 @@ impl Compiler {
             PatKind::Float(f) => Pat::Float(*f),
             PatKind::Text(t) => Pat::Text(t.clone()),
             PatKind::Symbol(s) => Pat::Symbol(*s),
+            PatKind::Range(lo, hi) => Pat::Range(*lo, *hi),
+            PatKind::Prefix(t, rest) => Pat::Prefix(t.clone(), Box::new(self.pattern(rest))),
             PatKind::Ctor(name, ps) => Pat::Ctor(name.own_name(), ps.iter().map(|p| self.pattern(p)).collect()),
             PatKind::List(ps, rest) => {
                 let items = ps.iter().map(|p| self.pattern(p)).collect();

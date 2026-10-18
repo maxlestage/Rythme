@@ -84,6 +84,72 @@ fn patterns() {
 }
 
 #[test]
+fn patterns_on_ranges_and_texts() {
+    let grade = "fn grade(n) = match n\n  90..100 -> \"A\"\n  -10..-1 | 0.0..0.5 -> \"low\"\n  _ -> \"other\"\nend\n";
+    // Both ends are included; an Int range matches a Float between its ends, and the other way round.
+    ok(
+        &format!("{grade}print([90, 100, 95.5, 100.5, -10, -1, 0, 0.5, 0.6, -0.0, \"90\", [90]] |> map(grade))"),
+        "[\"A\", \"A\", \"A\", \"other\", \"low\", \"low\", \"low\", \"low\", \"other\", \"low\", \"other\", \"other\"]",
+    );
+    ok(
+        "fn digit(0..9) = true\nfn digit(_) = false\nprint(digit(0), digit(9), digit(10), digit(-1), digit(4.5))",
+        "true true false false true",
+    );
+    ok("print(match 9223372036854775807\n  -9223372036854775808..9223372036854775807 -> \"all\"\n  _ -> \"none\"\nend)", "all");
+    ok("print(match 1.0e300\n  0..9223372036854775807 -> \"in\"\n  _ -> \"out\"\nend)", "out");
+    ok("print(match [3, 50]\n  [1..9, 10..99] -> \"digit, then two digits\"\n  _ -> \"?\"\nend)", "digit, then two digits");
+    // The start of a text; the rest is given a name.
+    let polite = "fn polite(\"Mr \" + name) = \"Mister {name}\"\nfn polite(\"Mr\" + _) = \"Mr?\"\nfn polite(other) = other\n";
+    ok(
+        &format!("{polite}print(polite(\"Mr Smith\"), polite(\"Mr \"), polite(\"Mrs\"), polite(\"Ms Lee\"), polite(\"\"))"),
+        "Mister Smith Mister  Mr? Ms Lee",
+    );
+    ok("print(match \"éte\"\n  \"é\" + rest -> rest\n  _ -> \"?\"\nend)", "te");
+    ok("print(match \"x\"\n  \"\" + all -> all\nend)", "x");
+    ok("print(match 5\n  \"5\" + _ -> \"text\"\n  _ -> \"number\"\nend)", "number");
+    // In definitions.
+    ok("\"Dr \" + who = \"Dr Who\"\nprint(who)", "Who");
+    ok("1..9 = 5\nprint(\"ok\")", "ok");
+    let r = fails("\"Dr \" + who = \"Mr X\"\nprint(who)", "E006");
+    assert!(r.stderr.contains("Text \"Mr X\""), "{}", r.stderr);
+    fails("fn f(1..9) = 1\nprint(f(10))", "E006");
+}
+
+#[test]
+fn patterns_on_ranges_with_large_numbers_and_blocks() {
+    // A large whole number is beyond every Int end, and compared exactly with a Float end.
+    let size = "fn size(n) = match n\n  1..9 -> \"digit\"\n  0.0..1.0e40 -> \"in\"\n  _ -> \"out\"\nend\n";
+    ok(&format!("{size}print(size(10 ** 30), size(10 ** 50), size(-(10 ** 30)), size(5))"), "in out out digit");
+    ok("print(match 10 ** 30\n  -9223372036854775808..9223372036854775807 -> \"small\"\n  _ -> \"large\"\nend)", "large");
+    let r = fails("print(match 1\n  0..100000000000000000000 -> 1\n  _ -> 2\nend)", "E001");
+    assert!(r.stderr.contains("64 bits"), "{}", r.stderr);
+    // The parameters of blocks are patterns too.
+    ok("[[1, \"Mr A\"], [2, \"Mr B\"]].each do |[1..9, \"Mr \" + who]| print(who) end", "A\nB");
+    fails("[[20, \"Mr B\"]].each do |[1..9, \"Mr \" + who]| print(who) end", "E006");
+    ok("print([3, 30].map { |n| match n\n  1..9 -> \"one\"\n  _ -> \"more\"\nend })", "[\"one\", \"more\"]");
+}
+
+#[test]
+fn patterns_on_ranges_and_texts_badly_written() {
+    let r = fails("print(match 1\n  x..5 -> 1\n  _ -> 2\nend)", "E001");
+    assert!(r.stderr.contains("a range in a pattern goes from a number to a number"), "{}", r.stderr);
+    assert!(r.stderr.contains("use a guard"), "{}", r.stderr);
+    let r = fails("print(match 1\n  1.. -> 1\n  _ -> 2\nend)", "E001");
+    assert!(r.stderr.contains("expected a number after `..`"), "{}", r.stderr);
+    let r = fails("print(match \"a\"\n  1..\"z\" -> 1\n  _ -> 2\nend)", "E001");
+    assert!(r.stderr.contains("expected a number after `..`"), "{}", r.stderr);
+    let r = fails("print(match \"a\"\n  n + \"!\" -> 1\n  _ -> 2\nend)", "E001");
+    assert!(r.stderr.contains("only a text can come before `+` in a pattern"), "{}", r.stderr);
+    assert!(r.stderr.contains("ends_with"), "{}", r.stderr);
+    let r = fails("print(match \"a\"\n  \"a\" + Some(x) -> 1\n  _ -> 2\nend)", "E001");
+    assert!(r.stderr.contains("after `+`, a pattern takes a name or `_`"), "{}", r.stderr);
+    fails("print(match \"a\"\n  \"{1}\" + x -> 1\n  _ -> 2\nend)", "E001");
+    fails("fn f(\"a\" + x + y) = 1", "E001");
+    // Alternatives cannot give names.
+    fails("print(match \"a\"\n  \"a\" + x | \"b\" + x -> x\n  _ -> \"\"\nend)", "E001");
+}
+
+#[test]
 fn types() {
     ok(
         "type Shape = Circle(r) | Square(side) | Empty\nfn area(Circle(r)) = 3 * r * r\nfn area(Square(s)) = s * s\nfn area(Empty) = 0\nprint(map([Circle(1), Square(2), Empty], area))",

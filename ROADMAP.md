@@ -30,9 +30,13 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   `select`, `reduce`, `size`...) as real built-in names; known by the
   checker, the formatter, the language server, the editors' grammars,
   `rythme help ruby` and the manual. Every existing program keeps working.
-- [ ] **Patterns on ranges and texts.** `1..9 -> ...` in `match` (Int and
+- [x] **Patterns on ranges and texts.** `1..9 -> ...` in `match` (Int and
   Float bounds, exhaustiveness knows nothing new), and a text prefix pattern
   only if it stays simple; the checker reports overlapping or empty ranges.
+  Done as `1..9`, `-5..-1`, `0.0..0.5` (both ends included, Int or Float
+  values) and `"Mr " + name`, in `match`, function definitions and
+  definitions; W004 for empty ranges and ranges handled by the cases before,
+  W010 for ranges that overlap.
 - [x] **Whole numbers without limit.** Int grows beyond 64 bits instead of
   E012 (the way Python does), with the small-number fast path kept; `pow`,
   `gcd`, `text`, `parse_int`, JSON and comparisons with Float are exact.

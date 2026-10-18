@@ -592,6 +592,27 @@ fn cmp_whole(a: &Value, b: &Value) -> Ordering {
     }
 }
 
+/// Is `v` a number from `lo` to `hi`, both included? For the pattern `lo..hi`.
+/// A large whole number is beyond every `Int` bound and compared exactly
+/// with a `Float` bound.
+pub fn in_range(lo: crate::ast::Num, hi: crate::ast::Num, v: &Value) -> bool {
+    use crate::ast::Num;
+    let le = |a: Option<Ordering>| matches!(a, Some(Ordering::Less | Ordering::Equal));
+    match v {
+        Value::Int(i) => le(lo.compare(Num::Int(*i))) && le(Num::Int(*i).compare(hi)),
+        Value::Float(f) => le(lo.compare(Num::Float(*f))) && le(Num::Float(*f).compare(hi)),
+        Value::Big(b) => {
+            // The order of the large number `b` against a bound.
+            let cmp = |n: Num| match n {
+                Num::Int(_) => Some(if b.is_negative() { Ordering::Less } else { Ordering::Greater }),
+                Num::Float(f) => b.cmp_f64(f),
+            };
+            le(cmp(lo).map(Ordering::reverse)) && le(cmp(hi))
+        }
+        _ => false,
+    }
+}
+
 /// Values that may hold other values.
 fn is_container(v: &Value) -> bool {
     matches!(v, Value::List(_) | Value::Record(_) | Value::Variant(_))

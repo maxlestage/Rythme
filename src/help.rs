@@ -1335,6 +1335,8 @@ first one that fits:
 
 Patterns
   42   "text"   true             exactly this value
+  1..9   -5..-1   0.0..0.5       a number from the first to the second, both included
+  "Mr " + name                   a text that starts with "Mr "; name is the rest
   x                              anything, named x
   _                              anything, ignored
   Some(x)   Circle(r)            a constructor and what it contains
@@ -1362,6 +1364,8 @@ du premier qui correspond :
 
 Motifs
   42   "texte"   true            exactement cette valeur
+  1..9   -5..-1   0.0..0.5       un nombre du premier au second, inclus
+  "M. " + nom                    un texte qui commence par "M. " ; nom est la suite
   x                              n'importe quoi, nommé x
   _                              n'importe quoi, ignoré
   Some(x)   Cercle(r)            un constructeur et ce qu'il contient
@@ -2682,7 +2686,8 @@ case (or a definition of a function) can never be used when:
     one last;
   - a case before it already handles the same values: `1 -> ...` twice;
   - the value can never have this shape: a Text never matches a list
-    pattern like `[first, ..rest]`, a number never matches `Some(x)`.
+    pattern like `[first, ..rest]`, a number never matches `Some(x)`;
+  - a range is empty: `9..1` holds no number, write `1..9`.
 
   match name                     # `name` is a Text
     [first, ..] -> first         # W004: a Text is not a list
@@ -2699,7 +2704,8 @@ quand :
   - un cas avant lui traite déjà les mêmes valeurs : `1 -> ...` deux fois ;
   - la valeur ne peut jamais avoir cette forme : un Text ne correspond
     jamais à un motif de liste comme `[premier, ..reste]`, un nombre jamais
-    à `Some(x)`.
+    à `Some(x)` ;
+  - un intervalle est vide : `9..1` ne contient aucun nombre, écrivez `1..9`.
 
   match nom                      # `nom` est un Text
     [premier, ..] -> premier     # W004 : un Text n'est pas une liste
@@ -2816,6 +2822,40 @@ parenthèses, même quand elle ne prend pas d'argument.
 Faux :   print("{salut}")             # affiche <fn salut>
 Juste :  print("{salut()}")           # affiche bonjour"#,
         ),
+        "W010" => (
+            r#"W010 — Ranges that overlap
+
+A range pattern `a..b` matches the numbers from `a` to `b`, both included.
+When two ranges of a `match` (or of the definitions of a function) share
+numbers, these numbers always go to the first one: the second never sees
+them. It is often an end written twice.
+
+Wrong:   match age
+           0..18 -> "young"
+           18..65 -> "adult"         # W010: 18 goes to "young"
+           _ -> "senior"
+         end
+Right:   0..17 -> "young"
+         18..64 -> "adult"
+For decimal numbers, which fall between 17 and 18, compare instead:
+  a if a < 18 -> "young""#,
+            r#"W010 — Des intervalles qui se chevauchent
+
+Un motif d'intervalle `a..b` correspond aux nombres de `a` à `b`, les deux
+inclus. Quand deux intervalles d'un `match` (ou des définitions d'une
+fonction) ont des nombres en commun, ces nombres vont toujours au premier :
+le second ne les voit jamais. C'est souvent un bout écrit deux fois.
+
+Faux :   match age
+           0..18 -> "jeune"
+           18..65 -> "adulte"        # W010 : 18 va à "jeune"
+           _ -> "senior"
+         end
+Juste :  0..17 -> "jeune"
+         18..64 -> "adulte"
+Pour des nombres décimaux, qui tombent entre 17 et 18, comparez plutôt :
+  a if a < 18 -> "jeune""#,
+        ),
         _ => return None,
     };
     Some(pick_owned(en, fr))
@@ -2832,4 +2872,5 @@ fn pick_owned(en: &str, fr: &str) -> String {
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
     "E018", "E019", "E020", "E021", "E022", "E023", "E024", "E025", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008", "W009",
+    "W010",
 ];

@@ -335,8 +335,8 @@ impl Checker<'_> {
             PatKind::Unit => UNIT,
             PatKind::Bool(_) => BOOL,
             // `1` matches `1.0`.
-            PatKind::Int(_) | PatKind::Big(_) | PatKind::Float(_) => NUMBER,
-            PatKind::Text(_) => TEXT,
+            PatKind::Int(_) | PatKind::Big(_) | PatKind::Float(_) | PatKind::Range(..) => NUMBER,
+            PatKind::Text(_) | PatKind::Prefix(..) => TEXT,
             PatKind::Symbol(_) => SYMBOL,
             PatKind::List(..) => LIST,
             PatKind::Record(_) => RECORD,
