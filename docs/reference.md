@@ -1618,7 +1618,11 @@ As in Ruby, a **statement** may call a function without parentheses:
   before `=` or `->` on their line count). Then `x -1` is `x - 1` and
   `xs [0]` is `xs[0]`, as they always were, in a result too. Without a space before
   (`x-1`, `xs[0]`), or with a space after the `-` (`x - 1`), it is never a
-  call.
+  call. The value may be given anywhere in the file, even to a parameter of
+  another function: when the name is a function where it is written
+  (`show [1, 2]` with `fn show(xs)` and, elsewhere, `fn other(show)`), the
+  checker warns (W011) and shows where the name gets its value; write the
+  parentheses, `show([1, 2])`, to call it.
 - `rythme fmt` keeps the choice of the author, with or without parentheses,
   and writes the other readings as what they are: `x - 1`, `xs[0]`.
 
@@ -2800,6 +2804,7 @@ with examples; the code may be written in lowercase.
 | W008 | Result lost | a line that only calls a function without effect, like `push(list, x)`: values never change |
 | W009 | Function shown | a function shown in a text or printed (`<fn name>`) instead of what it gives |
 | W010 | Ranges that overlap | a range pattern shares numbers with a range of a case or definition before it: they always go to the first one |
+| W011 | Index or subtraction instead of a call | `show [1, 2]` or `show -1` starts a statement where `show` is a function, but the file gives `show` a value elsewhere: it is an index or a subtraction ([3.15](#315-calls-without-parentheses)) |
 
 ---
 

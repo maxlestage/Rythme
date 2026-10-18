@@ -386,6 +386,14 @@ transforme seu valor em um registro primeiro, como {{kind: "Circle", radius: r}}
         ("defined here", "definido aqui"),
         ("from how `{name}` uses `{p}`, it needs: `{sig}`", "pelo jeito como `{name}` usa `{p}`, ele precisa de: `{sig}`"),
         // src/check.rs
+        ("`{s} [...]` is read as an index, not as a call", "`{s} [...]` é lido como um índice, não como uma chamada"),
+        ("to call `{s}`, put its argument in parentheses: `{s}([...])`; for an index, write `{s}[...]` without a space", "para chamar `{s}`, coloque o argumento entre parênteses: `{s}([...])`; para um índice, escreva `{s}[...]` sem espaço"),
+        ("`{s} -...` is read as a subtraction, not as a call", "`{s} -...` é lido como uma subtração, não como uma chamada"),
+        ("to call `{s}`, put its argument in parentheses: `{s}(-x)`; for a subtraction, write `{s} - x`", "para chamar `{s}`, coloque o argumento entre parênteses: `{s}(-x)`; para uma subtração, escreva `{s} - x`"),
+        ("`{s}` is not a value here", "`{s}` não é um valor aqui"),
+        ("`{s}` is a function here", "`{s}` é uma função aqui"),
+        ("because `{s}` is given a value here", "porque `{s}` recebe um valor aqui"),
+        ("a call without parentheses, like `{s} [1, 2]` or `{s} -1`, is read so only when the file never gives `{s}` a value", "uma chamada sem parênteses, como `{s} [1, 2]` ou `{s} -1`, só é lida assim quando o arquivo nunca dá um valor a `{s}`"),
         ("the type `{name}` is part of Rythme", "o tipo `{name}` faz parte do Rythme"),
         ("give your type another name", "dê outro nome ao seu tipo"),
         ("the type `{}` is already defined", "o tipo `{}` já está definido"),
@@ -1284,6 +1292,7 @@ As definições dele são usadas pelo nome `{n}`: `{n}.name`"#,
 "#,
         ),
         // src/parser.rs
+        ("`{name}` is read as a value here, not called, because the code gives it a value (line {line}): to call it, put its argument in parentheses, like `{name}([1, 2])`", "`{name}` é lido aqui como um valor, não é chamado, porque o código lhe dá um valor (linha {line}): para chamá-lo, coloque o argumento entre parênteses, como `{name}([1, 2])`"),
         ("Rythme has no `condition ? a : b`", "Rythme não tem `condição ? a : b`"),
         ("`?` does not choose between two values", "`?` não escolhe entre dois valores"),
         ("write `if condition then a else b`, like `if x > 2 then \"big\" else \"small\"`", "escreva `if condição then a else b`, como `if x > 2 then \"grande\" else \"pequeno\"`"),
@@ -4303,6 +4312,36 @@ Certo:   0..17 -> "young"
          18..64 -> "adult"
 Para números decimais, que ficam entre 17 e 18, compare em vez disso:
   a if a < 18 -> "young""#,
+        ),
+        (
+            r#"W011 — Index or subtraction instead of a call
+
+At the start of a statement or of a result, `show [1, 2]` and `show -1`
+call `show` without parentheses, unless the file gives `show` a value
+somewhere: with `=`, as a parameter of a function or a block, or in a
+pattern. Then they are an index and a subtraction, everywhere in the file,
+even where `show` is a function. The value may be given far away, to a
+parameter of another function.
+
+Wrong:   fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011: an index of the function
+Right:   show([1, 2])
+Or give the parameter another name: fn twice(n) = n * 2"#,
+            r#"W011 — Índice ou subtração em vez de uma chamada
+
+No início de uma instrução ou de um resultado, `show [1, 2]` e `show -1`
+chamam `show` sem parênteses, a não ser que o arquivo dê um valor a `show`
+em algum lugar: com `=`, como parâmetro de uma função ou de um bloco, ou em
+um padrão. Então são um índice e uma subtração, em todo o arquivo, mesmo onde
+`show` é uma função. O valor pode ser dado longe, a um parâmetro de outra
+função.
+
+Errado:  fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011: um índice da função
+Certo:   show([1, 2])
+Ou dê outro nome ao parâmetro: fn twice(n) = n * 2"#,
         ),
         ("Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.", "Define uma função: `fn name(x) = expression`, ou com o corpo nas linhas seguintes, terminado por `end`. Sem nome, `fn(x) = x * 2` é uma função anônima."),
         ("Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.", "Escolhe entre dois valores: `if condition then value else other`. Todo `if` tem um `else`, porque um `if` sempre dá um valor."),

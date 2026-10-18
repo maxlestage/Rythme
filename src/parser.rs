@@ -16,7 +16,8 @@ use crate::value::Value;
 
 pub fn parse(lexed: Lexed) -> Fallible<Vec<Item>> {
     let preds = Rc::new(predicates(&lexed.tokens));
-    let values = Rc::new(value_names(&lexed.tokens));
+    let value_spans = Rc::new(value_places(&lexed.tokens));
+    let values = Rc::new(value_spans.keys().copied().collect());
     let mut p = Parser {
         toks: lexed.tokens,
         pos: 0,
@@ -27,10 +28,48 @@ pub fn parse(lexed: Lexed) -> Fallible<Vec<Item>> {
         in_text: false,
         preds,
         values,
+        value_spans,
         no_do: false,
         commands: HashSet::new(),
     };
     p.program().map_err(|d| ternary(&p.toks, d))
+}
+
+/// Marks the name that starts `e` with the place where the code gives it a
+/// value (see `Parser::value_elsewhere`), for the checker (W011).
+fn mark_value_elsewhere(e: &mut Expr, far: Option<(Sym, u32, Span)>) {
+    let Some((_, start, at)) = far else { return };
+    let mut e = e;
+    while e.span.start == start {
+        match &mut e.kind {
+            ExprKind::Var(_) => {
+                e.value_elsewhere = Some(at);
+                return;
+            }
+            ExprKind::Index(x, _)
+            | ExprKind::Binary(_, x, _, _)
+            | ExprKind::Field(x, ..)
+            | ExprKind::Method(x, ..)
+            | ExprKind::Call(x, _)
+            | ExprKind::Try(x) => e = x,
+            _ => return,
+        }
+    }
+}
+
+/// A syntax error in `show [1, 2]`, read as an index because the code gives
+/// `show` a value elsewhere (see `Parser::value_elsewhere`): says so.
+fn far_help(mut d: Box<Diagnostic>, far: Option<(Sym, u32, Span)>) -> Box<Diagnostic> {
+    let Some((name, _, at)) = far else { return d };
+    if d.code != "E001" || d.incomplete {
+        return d;
+    }
+    let line = crate::source::get(at.file).map_or(0, |f| f.line_col(at.start as usize).0);
+    d.helps.push(t!(
+        "`{name}` is read as a value here, not called, because the code gives it a value (line {line}): to call it, put its argument in parentheses, like `{name}([1, 2])`",
+        "`{name}` est lu ici comme une valeur, pas appelé, parce que le code lui donne une valeur (ligne {line}) : pour l'appeler, mettez son argument entre parenthèses, comme `{name}([1, 2])`"
+    ));
+    d
 }
 
 /// Ruby's (and C's) `condition ? a : b`, written `if condition then a else b`
@@ -148,12 +187,17 @@ pub(crate) fn unless_at(toks: &[Token], i: usize) -> bool {
 /// argument starts with `[` or `-` needs a name that is not among them (see
 /// [`command_at`]).
 pub(crate) fn value_names(toks: &[Token]) -> HashSet<Sym> {
-    let mut out = HashSet::new();
+    value_places(toks).into_keys().collect()
+}
+
+/// The names of [`value_names`], each with the first place where it is given a value.
+fn value_places(toks: &[Token]) -> HashMap<Sym, Span> {
+    let mut out = HashMap::new();
     names_of_values(toks, &mut out);
     out
 }
 
-fn names_of_values(toks: &[Token], out: &mut HashSet<Sym>) {
+fn names_of_values(toks: &[Token], out: &mut HashMap<Sym, Span>) {
     for (i, t) in toks.iter().enumerate() {
         match &t.tok {
             // `pattern = value` and `pattern -> body`: the names before it, on its line.
@@ -179,10 +223,11 @@ fn names_of_values(toks: &[Token], out: &mut HashSet<Sym>) {
                         _ => {}
                     }
                 }
-                out.extend(found.into_iter().filter_map(|k| match &toks[k].tok {
-                    Tok::Ident(s) => Some(*s),
-                    _ => None,
-                }));
+                for k in found.into_iter().rev() {
+                    if let Tok::Ident(s) = &toks[k].tok {
+                        out.entry(*s).or_insert(toks[k].span);
+                    }
+                }
             }
             // `fn name(params)` and `fn(params)`.
             Tok::Fn => {
@@ -204,7 +249,7 @@ fn names_of_values(toks: &[Token], out: &mut HashSet<Sym>) {
                             }
                         }
                         Tok::Ident(s) => {
-                            out.insert(*s);
+                            out.entry(*s).or_insert(t.span);
                         }
                         Tok::Eof => break,
                         _ => {}
@@ -216,7 +261,7 @@ fn names_of_values(toks: &[Token], out: &mut HashSet<Sym>) {
             Tok::Do | Tok::LBrace if matches!(toks.get(i + 1).map(|t| &t.tok), Some(Tok::Bar)) => {
                 for t in toks[i + 2..].iter().take_while(|t| !matches!(t.tok, Tok::Bar | Tok::Newline | Tok::Eof)) {
                     if let Tok::Ident(s) = &t.tok {
-                        out.insert(*s);
+                        out.entry(*s).or_insert(t.span);
                     }
                 }
             }
@@ -298,6 +343,8 @@ struct Parser {
     preds: Rc<Vec<Sym>>,
     /// The names given to values (see `value_names`).
     values: Rc<HashSet<Sym>>,
+    /// The same names, with the first place where each is given a value.
+    value_spans: Rc<HashMap<Sym, Span>>,
     /// Reading the arguments of a call without parentheses: a `do` block
     /// that follows is given to that call, not to its last argument.
     no_do: bool,
@@ -680,7 +727,9 @@ impl Parser {
             let value = self.expr()?;
             return Ok(Stmt::Let(pat, value));
         }
-        let e = self.expr()?;
+        let far = self.value_elsewhere();
+        let mut e = self.expr().map_err(|d| far_help(d, far))?;
+        mark_value_elsewhere(&mut e, far);
         match self.raw() {
             Tok::Eq => {
                 let eq = self.advance();
@@ -742,7 +791,21 @@ impl Parser {
         if let Some(first) = command_at(&self.toks, self.pos, &self.preds, &self.values) {
             return self.command(first);
         }
-        self.expr()
+        let far = self.value_elsewhere();
+        let mut e = self.expr().map_err(|d| far_help(d, far))?;
+        mark_value_elsewhere(&mut e, far);
+        Ok(e)
+    }
+
+    /// `show [1, 2]` or `show -1` where a call without parentheses may start,
+    /// read as an index or a subtraction only because the code gives the name
+    /// `show` a value somewhere (see [`command_at`]): where the name starts,
+    /// and that place.
+    fn value_elsewhere(&self) -> Option<(Sym, u32, Span)> {
+        command_at(&self.toks, self.pos, &self.preds, &HashSet::new())?;
+        let Tok::Ident(s) = &self.toks[self.pos].tok else { return None };
+        let name = predicate_at(&self.toks, self.pos, &self.preds).unwrap_or(*s);
+        self.value_spans.get(&name).map(|at| (name, self.toks[self.pos].span.start, *at))
     }
 
     /// `a, b, c`: the arguments of a call without parentheses, up to the end
@@ -1848,6 +1911,7 @@ impl Parser {
                         in_text: true,
                         preds: self.preds.clone(),
                         values: self.values.clone(),
+                        value_spans: self.value_spans.clone(),
                         no_do: false,
                         commands: HashSet::new(),
                     };
