@@ -535,7 +535,7 @@ no exceptions. What you know from Ruby mostly works:
 
   names = ["Ada", "Grace", "Alan"]
   names.each do |name|
-    puts("Hello, #{name}!")
+    puts "Hello, #{name}!"
   end
 
   [1, 2, 3, 4, 5, 6]
@@ -547,6 +547,8 @@ no exceptions. What you know from Ruby mostly works:
   kind = unless adult?(ada) then :minor else :adult
 
 The same as in Ruby
+  calls           puts "hi"   print x, y   assert_eq total, 42
+                  (at the start of a statement; see below)
   blocks          xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
                   a block is a function: the same as fn(x) = x * 2
   method calls    xs.sum   name.upcase   xs.first(2)   xs.include?(3)
@@ -561,7 +563,8 @@ The same as in Ruby
                   (see rythme help builtins)
 
 What is different
-  parentheses     a call needs them: puts("hi"), not puts "hi"
+  parentheses     a call inside an expression needs them: x = len(xs),
+                  not x = len xs
   no mutation     no x += 1: give the new value a new name, total2 = total + 1
   no nil          a missing value is None, a present one Some(x)
   no exceptions   errors are values, Ok(x) or Err(message), passed on with ?
@@ -570,7 +573,18 @@ What is different
   no classes      records {name: "Ada"} and types: type Shape = Circle(r) | Square(s)
   no loops        each, map, select, reduce, or a function that calls itself
   case/when       match value ... end, one case per line: pattern -> result
-  hashes          records {name: "Ada", age: 36}; symbols are not keys yet
+  hashes          dict([[:ada, 36]]) (keys of any kind, symbols too), or
+                  records {name: "Ada", age: 36}
+
+Calls without parentheses
+  A statement that starts with a name, followed on its line by the start of
+  a value (a number, a text, a symbol, a name, a constructor, not, if,
+  match, fn), is a call: print x, y is print(x, y). A do block after the
+  arguments is given to the call: each xs do |x| ... end. Like Ruby, a [ or
+  a - after a space, without a space after the -, starts the arguments too
+  (puts [1, 2], puts -1), except when the code gives the name a value (with
+  =, as a parameter or in a pattern): then x -1 is x - 1 and xs [0] is
+  xs[0], as before. `rythme fmt` writes those as x - 1 and xs[0].
 
 How x.name works
   x.name reads the field `name` of a record; when x has no such field, it
@@ -591,7 +605,7 @@ presque toujours :
 
   noms = ["Ada", "Grace", "Alan"]
   noms.each do |nom|
-    puts("Bonjour, #{nom} !")
+    puts "Bonjour, #{nom} !"
   end
 
   [1, 2, 3, 4, 5, 6]
@@ -603,6 +617,8 @@ presque toujours :
   genre = unless majeur?(ada) then :mineur else :majeur
 
 Comme en Ruby
+  appels          puts "salut"   print x, y   assert_eq total, 42
+                  (au début d'une instruction ; voir plus bas)
   blocs           xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
                   un bloc est une fonction : comme fn(x) = x * 2
   méthodes        xs.sum   nom.upcase   xs.first(2)   xs.include?(3)
@@ -617,7 +633,8 @@ Comme en Ruby
                   (voir rythme help builtins)
 
 Ce qui change
-  parenthèses     un appel en a besoin : puts("salut"), pas puts "salut"
+  parenthèses     un appel dans une expression en a besoin : x = len(xs),
+                  pas x = len xs
   pas de mutation pas de x += 1 : donnez un nouveau nom à la nouvelle valeur,
                   total2 = total + 1
   pas de nil      une valeur absente est None, une valeur présente Some(x)
@@ -628,8 +645,19 @@ Ce qui change
   pas de classes  enregistrements {nom: "Ada"} et types : type Forme = Cercle(r) | Carre(c)
   pas de boucles  each, map, select, reduce, ou une fonction qui s'appelle
   case/when       match valeur ... end, un cas par ligne : motif -> résultat
-  hashes          enregistrements {nom: "Ada", age: 36} ; les symboles ne
-                  sont pas encore des clés
+  hashes          dict([[:ada, 36]]) (des clés de toute sorte, symboles
+                  compris), ou enregistrements {nom: "Ada", age: 36}
+
+Appels sans parenthèses
+  Une instruction qui commence par un nom, suivi sur sa ligne du début
+  d'une valeur (un nombre, un texte, un symbole, un nom, un constructeur,
+  not, if, match, fn), est un appel : print x, y est print(x, y). Un bloc
+  do après les arguments est donné à l'appel : each xs do |x| ... end.
+  Comme en Ruby, un [ ou un - après une espace, sans espace après le -,
+  commence aussi les arguments (puts [1, 2], puts -1), sauf quand le code
+  donne une valeur à ce nom (avec =, comme paramètre ou dans un motif) :
+  alors x -1 est x - 1 et xs [0] est xs[0], comme avant. `rythme fmt` les
+  écrit x - 1 et xs[0].
 
 Comment marche x.nom
   x.nom lit le champ `nom` d'un enregistrement ; quand x n'a pas ce champ,

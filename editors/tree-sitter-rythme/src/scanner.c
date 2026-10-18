@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-enum TokenType { NEWLINE, STRING_CONTENT, ERROR_SENTINEL, PREDICATE, UNLESS };
+enum TokenType { NEWLINE, STRING_CONTENT, ERROR_SENTINEL, PREDICATE, UNLESS, COMMAND };
 
 void *tree_sitter_rythme_external_scanner_create(void) { return NULL; }
 
@@ -47,11 +47,70 @@ static bool is_word_char(int32_t c) {
 }
 
 /// The built-in functions whose name ends with `?` (their Ruby names), without the `?`.
-static const char *const PREDICATES[] = {"even", "odd", "include", "start_with", "end_with", "any", "all", "empty", "key"};
+static const char *const PREDICATES[] = {"even", "odd", "include", "start_with", "end_with", "any", "all", "empty", "key", "casecmp"};
+
+/// The keywords: never the name of a call without parentheses.
+static const char *const KEYWORDS[] = {"fn",  "if",  "then", "else", "match", "end",  "do",   "type",
+                                       "test", "use", "and",  "or",   "not",   "true", "false", "unless"};
+
+/// The words that cannot start the arguments of a call without parentheses.
+static const char *const NOT_VALUES[] = {"then", "else", "end", "do", "and", "or", "type", "test", "use"};
+
+static bool word_in(const char *word, const char *const *list, unsigned n) {
+  for (unsigned i = 0; i < n; i++) {
+    const char *p = list[i];
+    unsigned j = 0;
+    while (p[j] && p[j] == word[j]) {
+      j++;
+    }
+    if (!p[j] && !word[j]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// After the name of a statement (the token end is marked): a space, then,
+/// on the same line, the start of a value? Then the name is called without
+/// parentheses.
+static bool command_follows(TSLexer *lexer) {
+  if (lexer->lookahead != ' ' && lexer->lookahead != '\t') {
+    return false;
+  }
+  while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+    advance(lexer);
+  }
+  int32_t c = lexer->lookahead;
+  if (c == '"' || c == '[' || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z')) {
+    return true;
+  }
+  if (c == ':' || c == '-') {
+    advance(lexer);
+    int32_t n = lexer->lookahead;
+    return n == '_' || (n >= 'a' && n <= 'z') || (n >= 'A' && n <= 'Z') || n >= 0x80 || (c == '-' && n >= '0' && n <= '9');
+  }
+  if (!(c == '_' || (c >= 'a' && c <= 'z') || c >= 0x80)) {
+    return false;
+  }
+  char word[8];
+  unsigned len = 0;
+  while (is_word_char(lexer->lookahead)) {
+    if (len < sizeof word - 1) {
+      word[len] = lexer->lookahead < 0x80 ? (char)lexer->lookahead : '#';
+    }
+    len++;
+    advance(lexer);
+  }
+  if (len >= sizeof word) {
+    return true;
+  }
+  word[len] = 0;
+  return !word_in(word, NOT_VALUES, sizeof NOT_VALUES / sizeof NOT_VALUES[0]);
+}
 
 /// A name at the lexer's position: `even?` (a name directly followed by `?`,
 /// which is a part of it when `(` follows directly or when it is a built-in
-/// name), or the keyword `unless`.
+/// name), the keyword `unless`, or the name of a call without parentheses.
 static bool scan_name(TSLexer *lexer, const bool *valid_symbols) {
   char name[32];
   unsigned len = 0;
@@ -83,6 +142,33 @@ static bool scan_name(TSLexer *lexer, const bool *valid_symbols) {
       lexer->result_symbol = UNLESS;
     }
     return value;
+  }
+  if (valid_symbols[COMMAND] && len < sizeof name) {
+    name[len] = 0;
+    if (!word_in(name, KEYWORDS, sizeof KEYWORDS / sizeof KEYWORDS[0])) {
+      lexer->mark_end(lexer);
+      bool question = lexer->lookahead == '?';
+      if (question) {
+        // `even?(4)` stays a predicate; `even? 4` is called without parentheses.
+        advance(lexer);
+        lexer->mark_end(lexer);
+        if (lexer->lookahead == '(') {
+          lexer->result_symbol = PREDICATE;
+          return valid_symbols[PREDICATE];
+        }
+        if (!command_follows(lexer)) {
+          lexer->result_symbol = PREDICATE;
+          return valid_symbols[PREDICATE] && word_in(name, PREDICATES, sizeof PREDICATES / sizeof PREDICATES[0]);
+        }
+        lexer->result_symbol = COMMAND;
+        return true;
+      }
+      if (command_follows(lexer)) {
+        lexer->result_symbol = COMMAND;
+        return true;
+      }
+      return false;
+    }
   }
   if (!valid_symbols[PREDICATE] || lexer->lookahead != '?') {
     return false;
@@ -181,7 +267,7 @@ bool tree_sitter_rythme_external_scanner_scan(void *payload, TSLexer *lexer, con
     return any;
   }
 
-  if (valid_symbols[PREDICATE] || valid_symbols[UNLESS]) {
+  if (valid_symbols[PREDICATE] || valid_symbols[UNLESS] || valid_symbols[COMMAND]) {
     while (is_space(lexer->lookahead)) {
       skip(lexer);
     }

@@ -22,19 +22,19 @@ fn carre(x) = x * x
 ```
 
 La même chose, à la manière de Ruby (blocs, enchaînements de méthodes,
-noms en `?`) :
+noms en `?`, appels sans parenthèses) :
 
 ```rythme
 noms = ["Ada", "Grace", "Alan"]
 noms.each do |nom|
-  puts("Bonjour, #{nom} !")
+  puts "Bonjour, #{nom} !"
 end
 
 total = [1, 2, 3, 4]
   .select(even?)
   .map { |x| x * x }
   .sum
-puts(total)                # 20
+puts total                 # 20
 ```
 
 ## Pourquoi Rythme ?
@@ -45,7 +45,8 @@ puts(total)                # 20
   apprendre, moins de bugs à traquer.
 - **Aussi agréable que Ruby.** Des blocs (`xs.map do |x| x * 2 end`,
   `xs.select { |x| x > 2 }`), des enchaînements de méthodes
-  (`xs.filter(is_even).sum`, une étape par ligne), des noms comme `even?` et
+  (`xs.filter(is_even).sum`, une étape par ligne), des appels sans
+  parenthèses (`puts "salut"`, `print x, y`), des noms comme `even?` et
   `empty?`, `unless`, des symboles (`:ok`), `"Bonjour #{nom}"`, et les noms
   Ruby de la bibliothèque (`puts`, `upcase`, `select`, `reject`, `reduce`,
   `each_with_index`...). `rythme help ruby` montre ce qui est pareil et ce

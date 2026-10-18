@@ -188,7 +188,9 @@ fn helpful_errors() {
     let r = fails("for x in [1, 2]", "E001");
     assert!(r.stderr.contains("no loops"), "{}", r.stderr);
     fails("return 1", "E001");
-    let r = fails("print \"hi\"", "E001");
+    // `print "hi"` is a call without parentheses; a record after the name is not.
+    ok("print \"hi\"", "hi");
+    let r = fails("print {a: 1}", "E001");
     assert!(r.stderr.contains("print(...)"), "{}", r.stderr);
     fails("fn add(a, b) = a + b\nadd(1)", "E004");
     fails("len(1, 2)", "E004");

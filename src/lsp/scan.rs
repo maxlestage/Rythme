@@ -1,5 +1,6 @@
 //! What surrounds the cursor, read from the raw text: inside a comment, a
-//! text or code, and the calls whose parentheses are still open. Unlike the
+//! text or code, and the calls whose parentheses are still open, or whose
+//! line is, for a call without parentheses (`print x, `). Unlike the
 //! parser, this works on unfinished code (`print(map(xs, `).
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -10,7 +11,8 @@ pub enum Place {
     Text,
 }
 
-/// A call whose `(` is open before the cursor.
+/// A call whose `(` is open before the cursor, or a call without
+/// parentheses on the line of the cursor (`puts "a", `).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct OpenCall {
     pub name: String,
@@ -32,6 +34,8 @@ pub struct Scan {
 
 enum Frame {
     Paren(Option<OpenCall>),
+    /// A call without parentheses, up to the end of its line.
+    Command(OpenCall),
     Bracket,
     Brace,
     Text(usize),
@@ -57,6 +61,12 @@ pub fn scan(text: &str, offset: usize) -> Scan {
     let mut comment = false;
     // The last name read, if nothing but spaces follows it.
     let mut last: Option<OpenCall> = None;
+    // Nothing but spaces before, on this line (outside of brackets).
+    let mut line_start = true;
+    // A name that starts a line, followed by spaces: a call without
+    // parentheses if the start of a value follows.
+    let mut command: Option<OpenCall> = None;
+    let mut last_starts_line = false;
     let mut chars = src.char_indices().peekable();
     while let Some((i, c)) = chars.next() {
         if comment {
@@ -82,9 +92,33 @@ pub fn scan(text: &str, offset: usize) -> Scan {
             continue;
         }
         if c.is_whitespace() {
+            if c == '\n' {
+                if matches!(stack.last(), Some(Frame::Command(_))) {
+                    stack.pop();
+                }
+                line_start = !stack.iter().any(|f| matches!(f, Frame::Paren(_) | Frame::Bracket));
+                command = None;
+            } else if last_starts_line && command.is_none() {
+                // `puts ` at the start of a line.
+                command = last.clone();
+            }
             continue;
         }
+        let starts_line = std::mem::replace(&mut line_start, false);
+        last_starts_line = false;
         let name = last.take();
+        if let Some(call) = command.take() {
+            let next = src[i + c.len_utf8()..].chars().next();
+            let value = c == '"'
+                || c == '['
+                || c.is_ascii_digit()
+                || is_name_start(c)
+                || (c == ':' && next.is_some_and(is_name_start))
+                || (c == '-' && next.is_some_and(|n| !n.is_whitespace()));
+            if value {
+                stack.push(Frame::Command(call));
+            }
+        }
         match c {
             '#' => comment = true,
             '"' => stack.push(Frame::Text(i)),
@@ -109,11 +143,10 @@ pub fn scan(text: &str, offset: usize) -> Scan {
                     stack.pop();
                 }
             }
-            ',' => {
-                if let Some(Frame::Paren(Some(call))) = stack.last_mut() {
-                    call.commas += 1;
-                }
-            }
+            ',' => match stack.last_mut() {
+                Some(Frame::Paren(Some(call)) | Frame::Command(call)) => call.commas += 1,
+                _ => {}
+            },
             c if is_name_start(c) => {
                 let mut j = i + c.len_utf8();
                 while let Some(&(k, d)) = chars.peek() {
@@ -131,6 +164,15 @@ pub fn scan(text: &str, offset: usize) -> Scan {
                 let before = src[..i].trim_end();
                 let first_given = before.ends_with("|>") || (before.ends_with('.') && !before.ends_with(".."));
                 last = Some(OpenCall { name: src[i..j].to_string(), at: i, commas: 0, first_given });
+                // `even? 4`: the `?` of a name at the start of a line.
+                if starts_line && src[j..].starts_with("? ") {
+                    chars.next();
+                    if let Some(call) = last.as_mut() {
+                        call.name.push('?');
+                    }
+                }
+                // Only a name that starts a line may be called without parentheses.
+                last_starts_line = starts_line;
             }
             c if c.is_ascii_digit() => {
                 while chars.peek().is_some_and(|&(_, d)| is_name_char(d)) {
@@ -148,7 +190,18 @@ pub fn scan(text: &str, offset: usize) -> Scan {
         Place::Code
     };
     let text_start = stack.iter().rev().find_map(|f| if let Frame::Text(i) = f { Some(*i) } else { None });
-    let calls = stack.into_iter().filter_map(|f| if let Frame::Paren(call) = f { call } else { None }).collect();
+    // `puts ` with nothing after it yet.
+    if let Some(call) = command {
+        stack.push(Frame::Command(call));
+    }
+    let calls = stack
+        .into_iter()
+        .filter_map(|f| match f {
+            Frame::Paren(call) => call,
+            Frame::Command(call) => Some(call),
+            _ => None,
+        })
+        .collect();
     Scan { place, text_start, calls }
 }
 
@@ -180,6 +233,18 @@ mod tests {
         assert_eq!(s.calls[0].commas, 1);
         let s = scan("print(\"a, {g(1, ", 16);
         assert_eq!(s.calls.last().map(|c| (c.name.as_str(), c.commas)), Some(("g", 1)));
+    }
+
+    #[test]
+    fn calls_without_parentheses() {
+        let names = |s: &Scan| s.calls.iter().map(|c| (c.name.clone(), c.commas)).collect::<Vec<_>>();
+        assert_eq!(names(&scan("print x, ", 9)), [("print".to_string(), 1)]);
+        assert_eq!(names(&scan("puts ", 5)), [("puts".to_string(), 0)]);
+        assert_eq!(names(&scan("x = puts ", 9)), []);
+        assert_eq!(names(&scan("print x\ny", 9)), []);
+        assert_eq!(names(&scan("even? 4, ", 9)), [("even?".to_string(), 1)]);
+        assert_eq!(names(&scan("puts f(1, ", 10)), [("puts".to_string(), 0), ("f".to_string(), 1)]);
+        assert_eq!(names(&scan("puts (1, ", 9)), [("puts".to_string(), 1)]);
     }
 
     #[test]

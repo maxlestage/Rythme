@@ -307,6 +307,10 @@
           "named": true
         },
         {
+          "type": "command_call",
+          "named": true
+        },
+        {
           "type": "definition",
           "named": true
         },
@@ -381,6 +385,10 @@
           "named": true
         },
         {
+          "type": "command_call",
+          "named": true
+        },
+        {
           "type": "definition",
           "named": true
         },
@@ -425,6 +433,57 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "command_arguments",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "command_call",
+    "named": true,
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "command_arguments",
+            "named": true
+          }
+        ]
+      },
+      "block": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "do_block",
+            "named": true
+          }
+        ]
+      },
+      "function": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
             "named": true
           }
         ]
@@ -1295,6 +1354,10 @@
       "types": [
         {
           "type": "_expression",
+          "named": true
+        },
+        {
+          "type": "command_call",
           "named": true
         },
         {

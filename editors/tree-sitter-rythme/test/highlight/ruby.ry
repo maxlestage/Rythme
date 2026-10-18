@@ -16,3 +16,8 @@ kind = unless adult?(ada) then :minor else :adult
 
 squares = xs.select { |x| x.even? }
 #                      ^ variable.parameter
+
+puts "Hello, #{name}!"
+# <- function.call
+print x, y
+# <- function.call

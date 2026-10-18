@@ -479,7 +479,11 @@ impl Server {
             ("completionProvider", obj([("triggerCharacters", Json::Arr(vec![".".into(), "\"".into(), "/".into()]))])),
             (
                 "signatureHelpProvider",
-                obj([("triggerCharacters", Json::Arr(vec!["(".into(), ",".into()])), ("retriggerCharacters", Json::Arr(vec![",".into()]))]),
+                // A space: the arguments of a call without parentheses (`puts `).
+                obj([
+                    ("triggerCharacters", Json::Arr(vec!["(".into(), ",".into(), " ".into()])),
+                    ("retriggerCharacters", Json::Arr(vec![",".into()])),
+                ]),
             ),
             ("definitionProvider", true.into()),
             ("referencesProvider", true.into()),

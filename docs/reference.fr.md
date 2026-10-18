@@ -1042,7 +1042,8 @@ nombre de paramètres (E004 ; certaines fonctions intégrées acceptent un
 nombre variable d'arguments). Appeler une valeur qui n'est pas une fonction
 est l'erreur E009, et `None()` aussi : un constructeur sans champs est une
 valeur, pas une fonction. Il n'y a ni arguments nommés, ni valeurs par
-défaut, ni application partielle.
+défaut, ni application partielle. Une instruction peut aussi appeler une
+fonction sans parenthèses : `print x, y` (voir [3.15](#315-appels-sans-parenthèses)).
 
 ### 3.6 Enchaînements `|>`
 
@@ -1635,6 +1636,83 @@ Bonjour, Alan !
 0 Ada
 1 Grace
 2 Alan
+```
+
+### 3.15 Appels sans parenthèses
+
+Comme en Ruby, une **instruction** peut appeler une fonction sans
+parenthèses : `puts "Bonjour"` est `puts("Bonjour")`, et `print x, y` est
+`print(x, y)`.
+
+- L'instruction commence par un nom (`even?` aussi), suivi sur la même
+  ligne du début de son premier argument : un nombre, un texte, un symbole,
+  un nom, un constructeur, `true`, `false`, `not`, `if`, `match` ou `fn`.
+  Les arguments sont des expressions séparées par des virgules, jusqu'à la
+  fin de la ligne ; un retour à la ligne peut suivre une virgule.
+- Seule une instruction commence ainsi : une ligne du premier niveau, ou
+  d'une fonction, d'un bloc ou d'un test. Dans une expression, les
+  parenthèses restent : `x = len(xs)`, `print(len(xs))`.
+- Un bloc `do` écrit après les arguments est donné à l'appel lui-même,
+  comme dernier argument : `each xs do |x| ... end`. Un bloc `{ |x| ... }`
+  appartient à l'expression juste avant lui, comme partout.
+- `(` garde son sens : `puts (1 + 2) * 3` est `puts(1 + 2) * 3`.
+- `[` et `-` peuvent se lire de deux façons. Comme en Ruby, un `[` après une
+  espace (`puts [1, 2]`), et un `-` après une espace mais juste avant un
+  nombre ou un nom (`puts -1`), commencent les arguments, **sauf si le code
+  donne une valeur à ce nom** : avec `=` (`x = 5`, `f = fn(v) = v`,
+  `[a, b] = xs`), comme paramètre d'une fonction ou d'un bloc, ou dans un
+  motif de `match` (les noms avant `=` ou `->` sur leur ligne comptent).
+  Alors `x -1` est `x - 1` et `xs [0]` est `xs[0]`, comme toujours. Sans
+  espace avant (`x-1`, `xs[0]`), ou avec une espace après le `-` (`x - 1`),
+  ce n'est jamais un appel.
+- `rythme fmt` garde le choix de l'auteur, avec ou sans parenthèses, et
+  écrit les autres lectures comme ce qu'elles sont : `x - 1`, `xs[0]`.
+
+```rythme
+fn saluer(nom, salut) = print("#{salut}, #{nom} !")
+saluer "Ada", "Bonjour"
+puts "somme :", [1, 2, 3].sum
+puts -1
+puts [1, 2]
+x = 10
+xs = [7, 8]
+puts x -1, xs [0]
+[1, 2].each do |n| puts n * 10 end
+each ["a", "b"] do |s|
+  print s.upcase, s.size
+end
+```
+
+```text
+Bonjour, Ada !
+somme : 6
+-1
+[1, 2]
+9 7
+10
+20
+A 1
+B 1
+```
+
+Un nom qui reçoit une valeur avec `=` est une valeur, même quand il contient
+une fonction :
+
+```rythme
+double = fn(v) = v * 2
+print double(4)
+double -3
+```
+
+```text
+erreur[E005]: impossible d'utiliser `-` avec Function et Int
+ --> sample.ry:3:8
+  |
+3 | double -3
+  |        ^ Function - Int 3
+  |
+  = aide: `double -x` soustrait ici ; pour appeler `double`, écrivez `double(-x)` (un appel sans parenthèses commence une instruction, et son nom ne reçoit pas de valeur avec `=` ni comme paramètre)
+  = en savoir plus : `rythme explain E005`
 ```
 
 ---
@@ -4070,7 +4148,9 @@ virgule finale est permise dans toute liste séparée par des virgules.
 ```text
 program      = { NL } { item ( NL | EOF ) } ;
 item         = type_def | test_def | use_def | statement ;
-statement    = fn_def | binding | expression ;
+statement    = fn_def | binding | command | expression ;
+command      = NAME [ "?" ] expression { "," { NL } expression }
+               [ "do" [ params ] block_end ] ;     (* 3.15 *)
 
 binding      = pattern_atom "=" expression ;
 fn_def       = "fn" NAME [ "?" ] "(" [ patterns ] ")" [ "if" expression ] body ;

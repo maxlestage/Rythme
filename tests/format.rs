@@ -299,7 +299,11 @@ fn gaps(src: &str) -> Vec<(usize, usize, bool)> {
         let joined = match (before, &t.tok) {
             ([_, Some(Tok::Ident(_))], Tok::Question) => true,
             ([Some(Tok::Ident(_)), Some(Tok::Question)], Tok::LParen) => true,
-            ([_, Some(Tok::Ident(s))], Tok::LParen | Tok::LBracket) => &*s.name() == "unless",
+            ([_, Some(Tok::Ident(s))], Tok::LParen | Tok::LBracket) if &*s.name() == "unless" => true,
+            // A space before `[` or `-` after a name, and none after that `-`,
+            // may make a call without parentheses: `puts [1]`, `puts -1`.
+            ([_, Some(Tok::Ident(_) | Tok::Question)], Tok::LBracket | Tok::Minus) => true,
+            ([Some(Tok::Ident(_) | Tok::Question), Some(Tok::Minus)], _) => true,
             _ => false,
         };
         out.push((end, t.span.start as usize, !joined));
@@ -546,7 +550,7 @@ impl Gen {
     fn program(&mut self) -> String {
         let mut out = String::new();
         for _ in 0..1 + self.rng.below(5) {
-            let item = match self.rng.below(11) {
+            let item = match self.rng.below(12) {
                 0 => {
                     let (e, c) = (self.expr(), self.comment());
                     format!("fn g(x, y) = {e}{c}")
@@ -578,6 +582,18 @@ impl Gen {
                 7 => {
                     let (a, b) = (self.expr(), self.expr());
                     format!("use \"other.ry\"\nz = [\n  {a},\n  # comment\n  {b}\n]")
+                }
+                // Calls without parentheses, and names followed by `-` or `[` that are not calls.
+                8 => {
+                    let (a, b, sp) = (self.expr(), self.expr(), self.sp());
+                    match self.rng.below(6) {
+                        0 => format!("print x,{sp}{b}\nputs {a}"),
+                        1 => format!("puts -1\nputs [x, {a}]\nx -1\nxs [0]"),
+                        2 => format!("xs.each do |v| puts v end\neach xs do |v|\n  print v, {a}\nend"),
+                        3 => format!("assert_eq total, {b}{}", self.comment()),
+                        4 => format!("fn f(v) = v\nf -x\nf [1]\nf(-x)\nf\n  -1"),
+                        _ => format!("test \"t\"\n  assert not {a}\n  even? 4\nend"),
+                    }
                 }
                 _ => {
                     let (e, c) = (self.expr(), self.comment());
