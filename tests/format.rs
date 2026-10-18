@@ -264,6 +264,15 @@ fn the_examples_are_formatted() {
     }
 }
 
+/// A list on several lines ends with a comma, except after a call without
+/// parentheses, which would take the comma as the start of one more argument.
+#[test]
+fn no_trailing_comma_after_a_call_without_parentheses() {
+    assert_eq!(check("xs.each(\nfn(v) = puts v\n)\n", "test"), "xs.each(\n  fn(v) = puts v\n)\n");
+    assert_eq!(check("f(\n1, if ok then puts 2 else puts 3\n)\n", "test"), "f(\n  1, if ok then puts 2 else puts 3\n)\n");
+    assert_eq!(check("f(\nfn(v) = print(v)\n)\n", "test"), "f(\n  fn(v) = print(v),\n)\n");
+}
+
 // ----- mutations --------------------------------------------------------------
 
 /// A small deterministic random number generator.
