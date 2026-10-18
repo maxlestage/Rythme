@@ -459,6 +459,8 @@ fn calls_that_may_work_are_not_reported() {
     // Fields: records, and values built with a constructor that has them.
     quiet("type Circle = Circle(radius)\nfn r(c) = c.radius\nfn v(o) = o.value\nprint(r(Circle(2)), r({radius: 3}), v(Some(1)))");
     quiet("fn call_it(r) = r.go(1)\nprint(call_it({go: fn(v) = v + 1}))");
+    // `[...]` on a dict, with a key of any kind.
+    quiet("fn by_name(d) = d[\"k\"]\nfn by_number(d) = d[1]\nfn by_symbol(d) = d[:a]\nprint(by_name({k: 1}), by_name(dict([[\"k\", 2]])), by_number(dict([[1, 3]])), by_symbol(dict([[:a, 4]])))");
 }
 
 /// The programs of the repository (examples, benchmarks, exercises and
