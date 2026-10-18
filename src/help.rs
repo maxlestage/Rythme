@@ -24,6 +24,7 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ("functional", &["fonctionnel", "loops", "boucles"]),
     ("tests", &["test"]),
     ("modules", &["use", "files", "fichiers"]),
+    ("dates", &["date", "heure", "heures", "temps", "calendar", "calendrier", "datetime"]),
     ("repl", &["interactive", "interactif"]),
     ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme"]),
     ("doc", &["documentation", "documenter", "docs"]),
@@ -69,6 +70,7 @@ Sujets (rythme help SUJET)
   functional  pas de boucles : comment faire à la place
   tests       écrire et lancer des tests
   modules     utiliser plusieurs fichiers
+  dates       dates et heures : now(), today(), calendrier, ISO 8601
   repl        le mode interactif
   fmt         la mise en forme officielle du code (rythme fmt)
   doc         la documentation tirée des commentaires ## (rythme doc)
@@ -109,6 +111,7 @@ Topics (rythme help TOPIC)
   functional  no loops: what to do instead
   tests       writing and running tests
   modules     using several files
+  dates       dates and times: now(), today(), calendar, ISO 8601
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
@@ -378,6 +381,9 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
                 // Functions of other categories that work on this kind of value too.
                 let also = match cat {
                     Category::Lists => "len, contains, join, repeat, min, max, to_json",
+                    Category::Records if matches!(other, Value::Record(r) if builtins::date::is_date_record(r)) => {
+                        "len, get, contains, is_empty, to_json, format_date, add_days, add_seconds, days_between, seconds_between, day_of_week"
+                    }
                     Category::Records => "len, get, contains, is_empty, to_json",
                     Category::Options => "map",
                     _ => "",
@@ -438,6 +444,7 @@ fn topic_text(name: &str) -> &'static str {
         "functional" => pick(FUNCTIONAL_EN, FUNCTIONAL_FR),
         "tests" => pick(TESTS_EN, TESTS_FR),
         "modules" => pick(MODULES_EN, MODULES_FR),
+        "dates" => pick(DATES_EN, DATES_FR),
         "repl" => pick(REPL_EN, REPL_FR),
         "fmt" => pick(FMT_EN, FMT_FR),
         "doc" => pick(DOC_EN, DOC_FR),
@@ -892,6 +899,65 @@ Les enregistrements comme dictionnaires
 JSON, le format des données du web
   parse_json(texte)              # Ok(...) : les objets deviennent des enregistrements, les tableaux des listes
   to_json(valeur)                # le texte, prêt à enregistrer avec write_file"#;
+
+const DATES_EN: &str = r#"DATES AND TIMES
+
+A date is a record: {year, month, day}, with hour, minute and second for a
+moment of the day, and offset (minutes ahead of UTC) when it is known.
+  today()                        # {year: 2026, month: 10, day: 18}
+  now()                          # {year: 2026, ..., hour: 14, minute: 5, second: 9, offset: 120}
+  birthday = {year: 1815, month: 12, day: 10}
+  birthday.year                  # 1815
+
+Text and back, in the ISO 8601 form
+  parse_date("2024-02-29")       # Ok({year: 2024, month: 2, day: 29})
+  parse_date("2024-02-30")       # Err("... February 2024 ...")
+  parse_date("2024-02-29T13:05:00+01:00")    # with a time and an offset
+  format_date({year: 2024, month: 2, day: 29, hour: 9})   # "2024-02-29T09:00:00"
+
+Calendar arithmetic (leap years and month lengths included)
+  add_days({year: 2024, month: 2, day: 28}, 1)     # {year: 2024, month: 2, day: 29}
+  add_seconds(now(), 3600)       # in one hour
+  days_between(today(), {year: 2027, month: 1, day: 1})   # days left
+  seconds_between(a, b)          # negative when b is before a
+  day_of_week(today())           # 1 = Monday ... 7 = Sunday
+  days_in_month(2023, 2)         # 28
+  is_leap_year(2000)             # true
+  is_date({year: 2023, month: 2, day: 29})   # false
+
+A date that does not exist stops the functions with E023, which says why.
+The local offset comes from the system (UTC when it does not tell); time()
+gives seconds since 1970 as a Float, to measure durations."#;
+
+const DATES_FR: &str = r#"DATES ET HEURES
+
+Une date est un enregistrement : {year, month, day}, avec hour, minute et
+second pour un moment de la journée, et offset (minutes d'avance sur UTC)
+quand il est connu.
+  today()                        # {year: 2026, month: 10, day: 18}
+  now()                          # {year: 2026, ..., hour: 14, minute: 5, second: 9, offset: 120}
+  anniversaire = {year: 1815, month: 12, day: 10}
+  anniversaire.year              # 1815
+
+Du texte et retour, sous la forme ISO 8601
+  parse_date("2024-02-29")       # Ok({year: 2024, month: 2, day: 29})
+  parse_date("2024-02-30")       # Err("... février 2024 ...")
+  parse_date("2024-02-29T13:05:00+01:00")    # avec une heure et un décalage
+  format_date({year: 2024, month: 2, day: 29, hour: 9})   # "2024-02-29T09:00:00"
+
+Calculs de calendrier (années bissextiles et longueurs des mois comprises)
+  add_days({year: 2024, month: 2, day: 28}, 1)     # {year: 2024, month: 2, day: 29}
+  add_seconds(now(), 3600)       # dans une heure
+  days_between(today(), {year: 2027, month: 1, day: 1})   # jours restants
+  seconds_between(a, b)          # négatif quand b est avant a
+  day_of_week(today())           # 1 = lundi ... 7 = dimanche
+  days_in_month(2023, 2)         # 28
+  is_leap_year(2000)             # true
+  is_date({year: 2023, month: 2, day: 29})   # false
+
+Une date qui n'existe pas arrête les fonctions avec E023, qui dit pourquoi.
+Le décalage local vient du système (UTC quand il ne le dit pas) ; time()
+donne les secondes depuis 1970 en Float, pour mesurer des durées."#;
 
 const TYPES_EN: &str = r#"YOUR OWN TYPES
 
@@ -1879,14 +1945,15 @@ d'un fichier, utilisez les versions sûres, qui donnent un Result :
 
 The function received a value of the right kind, but outside of what it
 accepts: a negative count, the minimum of an empty list, the square root of
-a negative number, a range, a list or a text too large... The message
-explains the limit."#,
+a negative number, a date that does not exist (30 February), a range, a
+list or a text too large... The message explains the limit."#,
             r#"E023 — Valeur invalide
 
 La fonction a reçu une valeur de la bonne sorte, mais en dehors de ce qu'elle
 accepte : un nombre négatif d'éléments, le minimum d'une liste vide, la
-racine carrée d'un nombre négatif, un intervalle, une liste ou un texte trop
-grand... Le message explique la limite."#,
+racine carrée d'un nombre négatif, une date qui n'existe pas (30 février),
+un intervalle, une liste ou un texte trop grand... Le message explique la
+limite."#,
         ),
         "E024" => (
             r#"E024 — A value is lost

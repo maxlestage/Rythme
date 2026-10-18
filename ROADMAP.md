@@ -33,7 +33,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 
 ## Library
 
-- [ ] **Dates and times.** `now()`, `today()`, dates as records
+- [x] **Dates and times.** `now()`, `today()`, dates as records
   (`{year, month, day, hour, minute, second}`), ISO 8601 parsing and
   printing, differences and additions in days/seconds, day of the week;
   UTC plus the local offset when the system gives it; no dependency if

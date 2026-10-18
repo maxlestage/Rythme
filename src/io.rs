@@ -96,3 +96,58 @@ pub fn now() -> f64 {
     // SAFETY: the playground page provides this function; it takes no argument.
     unsafe { rythme_now() / 1000.0 }
 }
+
+/// How many minutes the local time is ahead of UTC at the moment `secs`
+/// (seconds since 1970), if the system tells: on Unix, from its time zone
+/// settings (`TZ`, `/etc/localtime`).
+#[cfg(all(unix, target_pointer_width = "64"))]
+pub fn local_offset(secs: i64) -> Option<i64> {
+    use std::os::raw::{c_int, c_long};
+    /// The `struct tm` of C: its first nine fields are the same everywhere;
+    /// `rest` leaves room for the fields that some systems add after them.
+    #[repr(C)]
+    struct Tm {
+        sec: c_int,
+        min: c_int,
+        hour: c_int,
+        mday: c_int,
+        mon: c_int,
+        year: c_int,
+        wday: c_int,
+        yday: c_int,
+        isdst: c_int,
+        rest: [u64; 8],
+    }
+    extern "C" {
+        // On 64-bit Unix systems, `time_t` is a `long`.
+        fn localtime_r(t: *const c_long, tm: *mut Tm) -> *mut Tm;
+    }
+    let t: c_long = secs;
+    let mut tm = Tm { sec: 0, min: 0, hour: 0, mday: 0, mon: 0, year: 0, wday: 0, yday: 0, isdst: 0, rest: [0; 8] };
+    // SAFETY: both pointers point to valid values of the right size, and
+    // `localtime_r` writes only into `tm`.
+    if unsafe { localtime_r(&t, &mut tm) }.is_null() {
+        return None;
+    }
+    let days = crate::builtins::date::days_from_civil(i64::from(tm.year) + 1900, i64::from(tm.mon) + 1, i64::from(tm.mday));
+    let local = days * 86_400 + i64::from(tm.hour) * 3600 + i64::from(tm.min) * 60 + i64::from(tm.sec);
+    Some((local - secs).div_euclid(60))
+}
+
+/// How many minutes the local time is ahead of UTC, given by the web page.
+#[cfg(target_arch = "wasm32")]
+pub fn local_offset(secs: i64) -> Option<i64> {
+    #[link(wasm_import_module = "env")]
+    extern "C" {
+        fn rythme_offset(ms: f64) -> f64;
+    }
+    // SAFETY: the playground page provides this function; it takes a number.
+    let minutes = unsafe { rythme_offset(secs as f64 * 1000.0) };
+    minutes.is_finite().then(|| minutes.round() as i64)
+}
+
+/// Elsewhere, the local offset is not known: dates are in UTC.
+#[cfg(not(any(all(unix, target_pointer_width = "64"), target_arch = "wasm32")))]
+pub fn local_offset(_secs: i64) -> Option<i64> {
+    None
+}

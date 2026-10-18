@@ -27,6 +27,8 @@ const EFFECTS: &[&str] = &[
     "write_file",
     "append_file",
     "file_exists",
+    "now",
+    "today",
 ];
 
 /// Runs a program inside this process and returns what it printed, or the error.
