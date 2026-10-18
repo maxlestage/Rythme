@@ -457,6 +457,30 @@ fn signature_help_counts_the_arguments() {
 }
 
 #[test]
+fn signature_help_for_calls_without_parentheses() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/command.ry";
+    lsp.open(
+        u,
+        "fn add(a, b) = a + b
+add 1, 
+assert_eq 
+x = 1
+",
+    );
+    let sig = lsp.at("textDocument/signatureHelp", u, 1, 7);
+    assert_eq!(sig.get("signatures").as_array()[0].get("label").as_str(), Some("add(a, b)"));
+    assert_eq!(sig.get("activeParameter").as_u64(), Some(1));
+    // Right after the space that follows the name.
+    let sig = lsp.at("textDocument/signatureHelp", u, 2, 10);
+    assert_eq!(sig.get("signatures").as_array()[0].get("label").as_str(), Some("assert_eq(actual, expected)"));
+    assert_eq!(sig.get("activeParameter").as_u64(), Some(0));
+    // A definition is not a call.
+    assert!(lsp.at("textDocument/signatureHelp", u, 3, 4).is_null());
+    assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
 fn definition_symbols_and_highlights() {
     let init = r#"{"processId":null,"capabilities":{"textDocument":{"documentSymbol":{"hierarchicalDocumentSymbolSupport":true}}}}"#;
     let (mut lsp, _) = Lsp::start("en", init);

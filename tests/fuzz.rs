@@ -410,7 +410,34 @@ impl Gen<'_> {
                     format!("fn {name}({}) = {body}", params.join(", "))
                 }
             }
-            3..=5 => format!("print({})", self.expr(3)),
+            3 | 4 => format!("print({})", self.expr(3)),
+            // Calls without parentheses, and what looks like them: `x -1`
+            // and `xs [0]` use values, `puts -1` and `puts [1]` call.
+            5 => match self.rng.below(5) {
+                0 => {
+                    let n = self.rng.below(3);
+                    format!("print {}, {}", self.rng.pick(VALUES), self.args(n + 1, 2))
+                }
+                1 if !self.fns.is_empty() => {
+                    let (name, arity) = self.fns[self.rng.below(self.fns.len())].clone();
+                    match arity {
+                        0 => format!("{name}()"),
+                        _ => format!("{name} {}", self.args(arity, 2)),
+                    }
+                }
+                2 => format!(
+                    "puts -{}
+puts [{}]",
+                    self.atom(),
+                    self.expr(2)
+                ),
+                3 => format!(
+                    "x -1
+xs [0]
+puts x -1, xs [1]"
+                ),
+                _ => format!("xs.each do |v| puts v, {} end", self.expr(2)),
+            },
             6 => format!("{} = {}", self.name(), self.expr(3)),
             7 => {
                 let name = self.name();

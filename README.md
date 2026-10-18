@@ -21,19 +21,20 @@ fn square(x) = x * x
   |> print                # 20
 ```
 
-The same, the Ruby way (blocks, method chains, names ending with `?`):
+The same, the Ruby way (blocks, method chains, names ending with `?`, calls
+without parentheses):
 
 ```rythme
 names = ["Ada", "Grace", "Alan"]
 names.each do |name|
-  puts("Hello, #{name}!")
+  puts "Hello, #{name}!"
 end
 
 total = [1, 2, 3, 4]
   .select(even?)
   .map { |x| x * x }
   .sum
-puts(total)                # 20
+puts total                 # 20
 ```
 
 ## Why Rythme?
@@ -43,7 +44,8 @@ puts(total)                # 20
   fewer concepts to learn, fewer bugs to chase.
 - **As pleasant as Ruby.** Blocks (`xs.map do |x| x * 2 end`,
   `xs.select { |x| x > 2 }`), method chains (`xs.filter(is_even).sum`, one
-  step per line), names like `even?` and `empty?`, `unless`, symbols (`:ok`),
+  step per line), calls without parentheses (`puts "hi"`, `print x, y`),
+  names like `even?` and `empty?`, `unless`, symbols (`:ok`),
   `"Hello #{name}"`, and the Ruby names of the library (`puts`, `upcase`,
   `select`, `reject`, `reduce`, `each_with_index`...). `rythme help ruby`
   shows what is the same and what is different.

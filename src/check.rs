@@ -2700,7 +2700,19 @@ impl<'a> Checker<'a> {
         let list = |t: &Ty| matches!(t, Ty::List(_));
         let num = |t: &Ty| matches!(t, Ty::Int | Ty::Float | Ty::Num);
         let dict_or_set = |t: &Ty| matches!(t, Ty::Dict(..) | Ty::Set(_));
-        if matches!(op, BinOp::Add | BinOp::Sub) && dict_or_set(lt) && dict_or_set(rt) {
+        // `double -3`, where `double` is a value of the code: a subtraction (see `parser::command_at`).
+        let spaced_minus = match (l, r) {
+            (Some(Expr { kind: ExprKind::Var(name), span: ls, .. }), Some(re)) if op == BinOp::Sub && matches!(lt, Ty::Func(_)) => {
+                (at.start > ls.end && at.end == re.span.start).then_some(*name)
+            }
+            _ => None,
+        };
+        if let Some(name) = spaced_minus {
+            d = d.help(t!(
+                "`{name} -x` subtracts here; to call `{name}`, write `{name}(-x)` (a call without parentheses starts a statement, and its name is not given a value with `=` or as a parameter)",
+                "`{name} -x` soustrait ici ; pour appeler `{name}`, écrivez `{name}(-x)` (un appel sans parenthèses commence une instruction, et son nom ne reçoit pas de valeur avec `=` ni comme paramètre)"
+            ));
+        } else if matches!(op, BinOp::Add | BinOp::Sub) && dict_or_set(lt) && dict_or_set(rt) {
             d = d.help(t!(
                 "to join two sets or two dicts, use `union(a, b)`; to take one away from the other, `difference(a, b)`",
                 "pour réunir deux ensembles ou deux dictionnaires, utilisez `union(a, b)` ; pour retirer l'un de l'autre, `difference(a, b)`"

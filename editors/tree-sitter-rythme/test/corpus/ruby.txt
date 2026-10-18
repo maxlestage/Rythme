@@ -239,3 +239,68 @@ xs
             (identifier)
             (identifier)))))
     (field_name)))
+
+================================================================================
+Calls without parentheses
+================================================================================
+
+puts "Hello"
+print x, -1
+each xs do |v|
+  puts v
+end
+even? 4
+even?(4)
+x = 1
+[1].each do |v| puts v end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (command_call
+    (identifier)
+    (command_arguments
+      (string
+        (string_content))))
+  (command_call
+    (identifier)
+    (command_arguments
+      (identifier)
+      (unary_expression
+        (integer))))
+  (command_call
+    (identifier)
+    (command_arguments
+      (call
+        (identifier)
+        (do_block
+          (block_parameters
+            (identifier))
+          (block
+            (command_call
+              (identifier)
+              (command_arguments
+                (identifier))))))))
+  (command_call
+    (identifier)
+    (command_arguments
+      (integer)))
+  (call
+    (predicate)
+    (arguments
+      (integer)))
+  (definition
+    (identifier)
+    (integer))
+  (method_call
+    (list
+      (integer))
+    (field_name)
+    (do_block
+      (block_parameters
+        (identifier))
+      (block
+        (command_call
+          (identifier)
+          (command_arguments
+            (identifier)))))))

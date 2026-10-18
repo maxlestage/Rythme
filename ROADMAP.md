@@ -30,6 +30,13 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   `select`, `reduce`, `size`...) as real built-in names; known by the
   checker, the formatter, the language server, the editors' grammars,
   `rythme help ruby` and the manual. Every existing program keeps working.
+  - [x] **Calls without parentheses.** `puts "Hello"`, `print x, y`,
+    `assert_eq total, 42`, `each xs do |x| ... end` at the start of a
+    statement; `puts [1]` and `puts -1` call too, but `x [0]` and `x -1` stay
+    an index and a subtraction when the code gives `x` a value (as in Ruby),
+    and `rythme fmt` writes those `x[0]` and `x - 1`. Interpreter, checker,
+    formatter, language server (signature help), Tree-sitter and VS Code
+    grammars, `rythme steps`, `rythme help ruby` and the manual (3.15).
 - [x] **Patterns on ranges and texts.** `1..9 -> ...` in `match` (Int and
   Float bounds, exhaustiveness knows nothing new), and a text prefix pattern
   only if it stays simple; the checker reports overlapping or empty ranges.

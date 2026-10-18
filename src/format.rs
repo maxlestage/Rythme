@@ -17,6 +17,9 @@
 //!   line stays on one line, with one space around its parts
 //!   (`xs.map do |x| x * 2 end`, `xs.map { |x| x * 2 }`); on several lines,
 //!   its statements are one level deeper than the line of `do`;
+//! - a call without parentheses keeps them out, with one space after its
+//!   name (`puts "Hello"`, `print x, y`); a name followed by `[` or `-` that
+//!   is not such a call is written as what it is (`xs[0]`, `x - 1`);
 //! - statements separated by `;` go on their own lines, and `end` too;
 //! - a top-level definition written on several lines is separated from what
 //!   surrounds it by one blank line; one-line definitions may stay grouped;
@@ -387,6 +390,10 @@ struct Shaper<'a> {
     s: Shape,
     /// The functions with a name ending with `?` (see `parser::predicates`).
     preds: Vec<Sym>,
+    /// The names given to values (see `parser::value_names`).
+    values: std::collections::HashSet<Sym>,
+    /// In the arguments of a call without parentheses (as in the parser).
+    no_do: bool,
 }
 
 type Item<'a> = fn(&mut Shaper<'a>) -> Option<usize>;
@@ -408,7 +415,17 @@ impl<'a> Shaper<'a> {
             items: Vec::new(),
             inline: Vec::new(),
         };
-        Shaper { toks, piece_of, pos: 0, sig: vec![true], last: 0, s, preds: parser::predicates(toks) }
+        Shaper {
+            toks,
+            piece_of,
+            pos: 0,
+            sig: vec![true],
+            last: 0,
+            s,
+            preds: parser::predicates(toks),
+            values: parser::value_names(toks),
+            no_do: false,
+        }
     }
 
     // ----- tokens, as in the parser
@@ -485,7 +502,9 @@ impl<'a> Shaper<'a> {
 
     fn with_sig<T>(&mut self, sig: bool, f: impl FnOnce(&mut Self) -> Option<T>) -> Option<T> {
         self.sig.push(sig);
+        let no_do = std::mem::replace(&mut self.no_do, false);
         let r = f(self);
+        self.no_do = no_do;
         self.sig.pop();
         r
     }
@@ -522,6 +541,9 @@ impl<'a> Shaper<'a> {
         if *self.raw() == Tok::Fn && matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Ident(_))) {
             return self.fn_def(true);
         }
+        if parser::command_at(self.toks, self.pos, &self.preds, &self.values).is_some() {
+            return self.command();
+        }
         // Like the parser: `[first, ..] = list`, `{name, ..} = person`, `Some(x) = value`.
         let first = if self.pattern_before_eq() { self.pattern()? } else { self.expr()? };
         if *self.raw() == Tok::Eq {
@@ -532,6 +554,32 @@ impl<'a> Shaper<'a> {
             self.set(value, Indent::Inner(eq));
         }
         Some(first)
+    }
+
+    /// A call without parentheses: `print x, y`, and a `do` block given to it.
+    fn command(&mut self) -> Option<usize> {
+        let name = self.primary()?;
+        let no_do = std::mem::replace(&mut self.no_do, true);
+        let args = self.command_args(name);
+        self.no_do = no_do;
+        args?;
+        if *self.raw() == Tok::Do {
+            self.block_arg()?;
+        }
+        Some(name)
+    }
+
+    fn command_args(&mut self, name: usize) -> Option<()> {
+        loop {
+            let arg = self.expr()?;
+            self.set(arg, Indent::Inner(name));
+            if *self.raw() != Tok::Comma {
+                return Some(());
+            }
+            let comma = self.take(Role::Comma)?;
+            self.set(comma, Indent::Inner(name));
+            self.skip_newlines();
+        }
     }
 
     /// Does a definition with a bracketed pattern start here? The same test as the
@@ -899,7 +947,7 @@ impl<'a> Shaper<'a> {
     fn postfix_ops(&mut self, first: usize, mut callable: bool) -> Option<()> {
         loop {
             // A block given to the call, on its line (as the parser reads it).
-            let block = matches!(self.raw(), Tok::Do)
+            let block = (matches!(self.raw(), Tok::Do) && !self.no_do)
                 || (matches!(self.raw(), Tok::LBrace)
                     && matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Bar | Tok::BarBar)));
             if block {
@@ -1864,6 +1912,19 @@ mod tests {
             "students = [\n  {name: \"Ada\"},\n    {name: \"Alan\"}\n  ]\n",
             "students = [\n  {name: \"Ada\"},\n  {name: \"Alan\"},\n]\n",
         );
+    }
+
+    #[test]
+    fn calls_without_parentheses() {
+        same("puts \"Hello\"\nprint x, y\nassert_eq total, 42\nputs -1\nputs [1, 2]\n");
+        same("xs.each do |x| puts x end\n");
+        gives("puts\"a\"\nprint  x ,y\n", "puts \"a\"\nprint x, y\n");
+        // The author's choice stays: with or without parentheses.
+        same("puts(\"a\")\nputs \"a\"\n");
+        // Values: an index and a subtraction, written as such.
+        gives("xs = [1]\nputs xs [0]\nxs [0]\n", "xs = [1]\nputs xs[0]\nxs[0]\n");
+        gives("x = 1\nx -1\n", "x = 1\nx - 1\n");
+        gives("each xs do |v|\nprint v\n  end\n", "each xs do |v|\n  print v\nend\n");
     }
 
     #[test]

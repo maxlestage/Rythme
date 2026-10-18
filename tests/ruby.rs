@@ -224,3 +224,69 @@ fn a_call_without_parentheses_may_be_a_statement() {
     // A field read for nothing still is.
     fails("r = {a: 1}\nr.a\nprint(r)", "E024");
 }
+
+#[test]
+fn calls_without_parentheses() {
+    ok("puts \"Hello\"\nprint 1, \"a\", :ok", "Hello\n1 a :ok");
+    ok("x = 3\ny = 4\nprint x, y\ntotal = x + y\nassert_eq total, 7\nputs total", "3 4\n7");
+    ok("[1, 2].each do |x| puts x end\n[3].each { |x| puts x * 2 }", "1\n2\n6");
+    // The arguments are whole expressions; a new line may follow a comma.
+    ok("xs = [1, 2]\nprint xs.map { |x| x * 10 }, xs |> sum, if true then \"y\" else \"n\"\nprint 1,\n  2", "[10, 20] 3 y\n1 2");
+    ok("puts not false\nputs Some(1)\nputs fn(x) = x\nputs match 2\n  2 -> \"two\"\n  _ -> \"?\"\nend", "true\nSome(1)\n<fn>\ntwo");
+    ok("fn twice(f, x) = f(f(x))\nputs twice(fn(x) = x * 3, 2)\nfn show(a, b) = print(a, b)\nshow \"sum\", 1 + 2", "18\nsum 3");
+    // Names ending with `?` and Ruby names.
+    ok("fn small?(n) = n < 10\nprint small?(3)\nputs \"x\".upcase\nassert even?(4)\neven? 4\nputs :done", "true\nX\n:done");
+    // A `do` block after the arguments is given to the call itself.
+    ok("fn each_twice(xs, f) = xs.each do |x|\n  f(x)\n  f(x)\nend\neach_twice [1, 2] do |v|\n  puts v * 10\nend", "10\n10\n20\n20");
+    ok("each [1, 2].map { |x| x + 1 } do |v| puts v end", "2\n3");
+    // Statements only: inside blocks and functions too.
+    ok("fn main()\n  puts \"in\"\n  1\nend\nprint main()\ntest \"t\"\n  assert_eq 1, 1\nend", "in\n1");
+    // The parentheses stay the same call.
+    ok("puts(\"a\")\nputs (\"b\")", "a\nb");
+}
+
+#[test]
+fn calls_without_parentheses_and_values_that_look_like_them() {
+    // `-` after a space and right before a number or a name, and `[` after a
+    // space: a call when the name is not a value of the code...
+    ok("puts -1\nputs [1, 2]\nfn show(v) = print(v)\nshow -5\nshow [0]", "-1\n[1, 2]\n-5\n[0]");
+    // Not inside an argument: there, a name and `-` subtract.
+    let r = fails("fn neg(v) = -v\nputs neg -5", "E005");
+    assert!(r.stderr.contains("to call `neg`, write `neg(-x)`"), "{}", r.stderr);
+    // ...but a subtraction or an index when it is, as before.
+    ok("fn dec(n) = do\n  n -1\nend\nfn first(xs) = do\n  xs [0]\nend\nprint dec(5), first([4, 5])", "4 4");
+    ok("x = 10\nxs = [7]\nputs x -1, xs [0]\nputs x - 1, x-1", "9 7\n9 9");
+    // Parameters, block parameters, names of patterns and `=` all make values.
+    ok("fn f(g) = do\n  g -1\nend\nprint f(5)", "4");
+    ok("[5].each do |v| print(do\n  v -1\nend) end", "4");
+    ok("print(match 5\n  v -> do\n    v -1\n  end\nend)", "4");
+    // A function defined with `=` is a value too: `double -3` subtracts.
+    let r = fails("double = fn(x) = x * 2\ndouble -3", "E005");
+    assert!(r.stderr.contains("to call `double`, write `double(-x)`"), "{}", r.stderr);
+    // Without a space before, or with one after, never a call.
+    fails("puts-1", "E005");
+    fails("puts - 1", "E005");
+    fails("puts[0]", "E005");
+    // `(` keeps its meaning: the usual call, then the rest of the expression.
+    fails("puts (1 + 2) * 3", "E005");
+}
+
+#[test]
+fn calls_without_parentheses_are_checked_and_explained() {
+    let r = fails("fn add(a, b) = a + b\nadd 1", "E004");
+    assert!(r.stderr.contains("add 1"), "{}", r.stderr);
+    fails("upper 5", "E005");
+    let r = fails("x = 1\nprint x x", "E001");
+    assert!(r.stderr.contains("separated by commas: `print a, b`"), "{}", r.stderr);
+    // Only at the start of a statement.
+    fails("x = len \"abc\"", "E001");
+    fails("print(len \"abc\")", "E001");
+    // The formatter keeps them as they are written.
+    let fmt = |code: &str| rythme::format::format(code).unwrap_or_else(|d| panic!("{code}: {}", d[0].render(false)));
+    assert_eq!(fmt("puts  \"a\"\nprint(1)\nprint 1 ,2\n"), "puts \"a\"\nprint(1)\nprint 1, 2\n");
+    assert_eq!(fmt("x = 1\nputs x -1\nxs = [x]\nputs xs [0]\n"), "x = 1\nputs x - 1\nxs = [x]\nputs xs[0]\n");
+    let r = rythme(&["help", "ruby"]);
+    assert!(r.stdout.contains("puts \"hi\"   print x, y") && r.stdout.contains("Calls without parentheses"), "{}", r.stdout);
+    let r = common::rythme_lang("fr", &["help", "ruby"]);
+    assert!(r.stdout.contains("Appels sans parenthèses"), "{}", r.stdout);
+}

@@ -995,7 +995,8 @@ parentheses are ignored. The number of arguments must be exactly the number
 of parameters (E004; some built-ins accept a range of counts). Calling a value
 that is not a function is error E009, and so is `None()`: a constructor
 without fields is a value, not a function. There are no named arguments,
-default values or partial application.
+default values or partial application. A statement may also call a
+function without parentheses: `print x, y` (see [3.15](#315-calls-without-parentheses)).
 
 ### 3.6 Pipes `|>`
 
@@ -1570,6 +1571,81 @@ Hello, Alan!
 0 Ada
 1 Grace
 2 Alan
+```
+
+### 3.15 Calls without parentheses
+
+As in Ruby, a **statement** may call a function without parentheses:
+`puts "Hello"` is `puts("Hello")`, and `print x, y` is `print(x, y)`.
+
+- The statement starts with a name (`even?` too), followed on the same line
+  by the start of its first argument: a number, a text, a symbol, a name, a
+  constructor, `true`, `false`, `not`, `if`, `match` or `fn`. The arguments
+  are expressions separated by commas, up to the end of the line; a new line
+  may follow a comma.
+- Only a statement starts this way: a line at the top level, or in a
+  function, a block or a test. Inside an expression, the parentheses stay:
+  `x = len(xs)`, `print(len(xs))`.
+- A `do` block written after the arguments is given to the call itself, as
+  its last argument: `each xs do |x| ... end`. A `{ |x| ... }` block belongs
+  to the expression right before it, as everywhere.
+- `(` keeps its meaning: `puts (1 + 2) * 3` is `puts(1 + 2) * 3`.
+- `[` and `-` can be read in two ways. As in Ruby, a `[` after a space
+  (`puts [1, 2]`), and a `-` after a space but right before a number or a
+  name (`puts -1`), start the arguments, **unless the code gives this name a
+  value**: with `=` (`x = 5`, `f = fn(v) = v`, `[a, b] = xs`), as a
+  parameter of a function or a block, or in a pattern of `match` (the names
+  before `=` or `->` on their line count). Then `x -1` is `x - 1` and
+  `xs [0]` is `xs[0]`, as they always were. Without a space before
+  (`x-1`, `xs[0]`), or with a space after the `-` (`x - 1`), it is never a
+  call.
+- `rythme fmt` keeps the choice of the author, with or without parentheses,
+  and writes the other readings as what they are: `x - 1`, `xs[0]`.
+
+```rythme
+fn greet(name, greeting) = print("#{greeting}, #{name}!")
+greet "Ada", "Hello"
+puts "sum:", [1, 2, 3].sum
+puts -1
+puts [1, 2]
+x = 10
+xs = [7, 8]
+puts x -1, xs [0]
+[1, 2].each do |n| puts n * 10 end
+each ["a", "b"] do |s|
+  print s.upcase, s.size
+end
+```
+
+```text
+Hello, Ada!
+sum: 6
+-1
+[1, 2]
+9 7
+10
+20
+A 1
+B 1
+```
+
+A name given a value with `=` is a value, even when it holds a function:
+
+```rythme
+double = fn(v) = v * 2
+print double(4)
+double -3
+```
+
+```text
+error[E005]: cannot use `-` with Function and Int
+ --> sample.ry:3:8
+  |
+3 | double -3
+  |        ^ Function - Int 3
+  |
+  = help: `double -x` subtracts here; to call `double`, write `double(-x)` (a call without parentheses starts a statement, and its name is not given a value with `=` or as a parameter)
+  = more about this error: `rythme explain E005`
 ```
 
 ---
@@ -3905,7 +3981,9 @@ allowed in every comma-separated list.
 ```text
 program      = { NL } { item ( NL | EOF ) } ;
 item         = type_def | test_def | use_def | statement ;
-statement    = fn_def | binding | expression ;
+statement    = fn_def | binding | command | expression ;
+command      = NAME [ "?" ] expression { "," { NL } expression }
+               [ "do" [ params ] block_end ] ;     (* 3.15 *)
 
 binding      = pattern_atom "=" expression ;
 fn_def       = "fn" NAME [ "?" ] "(" [ patterns ] ")" [ "if" expression ] body ;

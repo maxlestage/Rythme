@@ -14,6 +14,13 @@
  * (`even?(4)`, `fn adult?(p)`) or when it is a built-in one (`xs.empty?`);
  * otherwise the `?` is the operator (`value?`). (Rythme also knows the
  * functions defined with `?` in the file; this grammar does not.)
+ *
+ * And it reads the name of a call without parentheses (`puts "hi"`,
+ * `print x, y`): a name that starts a statement, followed on its line by a
+ * space and the start of a value. Rythme reads `x -1` and `xs [0]` as a
+ * subtraction and an index when the code gives `x` and `xs` values; this
+ * grammar always reads them as calls (`rythme fmt` writes the others
+ * `x - 1` and `xs[0]`).
  */
 
 /// <reference types="tree-sitter-cli/dsl" />
@@ -57,7 +64,7 @@ function lines($, rule) {
 module.exports = grammar({
   name: 'rythme',
 
-  externals: $ => [$._newline, $.string_content, $._error_sentinel, $.predicate, $._unless],
+  externals: $ => [$._newline, $.string_content, $._error_sentinel, $.predicate, $._unless, $._command_name],
 
   extras: $ => [/[ \t\r\n\f﻿]/, ';', $.comment],
 
@@ -84,7 +91,19 @@ module.exports = grammar({
 
     _item: $ => choice($.use_declaration, $.type_definition, $.test_definition, $._statement),
 
-    _statement: $ => choice($.function_definition, $.definition, $._expression),
+    _statement: $ => choice($.function_definition, $.definition, $.command_call, $._expression),
+
+    /** `print x, y`: a call without parentheses, then a `do` block given to it. */
+    command_call: $ =>
+      prec.right(
+        seq(
+          field('function', alias($._command_name, $.identifier)),
+          field('arguments', $.command_arguments),
+          optional(field('block', $.do_block)),
+        ),
+      ),
+
+    command_arguments: $ => prec.right(seq($._expression, repeat(seq(',', $._expression)))),
 
     comment: _ => token(seq('#', /[^\n]*/)),
 
