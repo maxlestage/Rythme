@@ -313,6 +313,11 @@ impl BigInt {
         BigInt::new(n < 0, from_u64(n.unsigned_abs()))
     }
 
+    /// The number made of these base 2^32 digits, the least significant first.
+    pub fn from_digits(neg: bool, digits: Vec<u32>) -> BigInt {
+        BigInt::new(neg, digits)
+    }
+
     pub fn from_i128(n: i128) -> BigInt {
         let u = n.unsigned_abs();
         BigInt::new(n < 0, vec![u as u32, (u >> 32) as u32, (u >> 64) as u32, (u >> 96) as u32])

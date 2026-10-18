@@ -1,14 +1,13 @@
 //! Loads files (and the files they `use`), checks them, runs them, runs tests.
 
 use std::collections::{HashMap, HashSet};
-use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use crate::ast::{FnDef, Item, Stmt, Use};
 use crate::check::{self, Knowledge};
 use crate::diagnostic::{Diagnostic, Severity};
-use crate::interp::{Interp, Mode, Wrap};
+use crate::interp::{Interp, Mode};
 use crate::io::out_line;
 use crate::source::Span;
 use crate::symbol::{Sym, SymMap};
@@ -480,55 +479,18 @@ impl Driver {
     }
 
     /// Runs the collected tests and prints a summary. Returns the number of
-    /// tests and the number of failed ones.
+    /// tests and the number of failed ones (see [`crate::testing`]).
     pub fn run_tests_counted(&mut self) -> (usize, usize) {
-        let tests = std::mem::take(&mut self.interp.tests);
-        if tests.is_empty() {
-            out_line(&t!(
-                "No tests found. Write one like this:\n  test \"addition\" = assert_eq(1 + 1, 2)",
-                "Aucun test trouvé. Écrivez-en un comme ceci :\n  test \"addition\" = assert_eq(1 + 1, 2)"
-            ));
-            return (0, 0);
-        }
-        let color = std::io::stdout().is_terminal() && crate::diagnostic::terminal_supports_color();
-        let (green, red, reset) = if color { ("\x1b[32m", "\x1b[31m", "\x1b[0m") } else { ("", "", "") };
-        let n = tests.len();
-        out_line(&t!("Running {n} test(s)", "Exécution de {n} test(s)"));
-        let mut failed = 0;
-        for test in &tests {
-            let outcome = match self.interp.eval_test(test) {
-                Ok(Value::Bool(false)) => {
-                    Some(Diagnostic::error("E015", t!("the test returned `false`", "le test a renvoyé `false`")).at(test.span).help(t!(
-                        "use `assert_eq(actual, expected)` to see the values",
-                        "utilisez `assert_eq(obtenu, attendu)` pour voir les valeurs"
-                    )))
-                }
-                // `Err(...)` or `None`: a `?` stopped the test, or the test gave a failure value.
-                Ok(v) if matches!(self.interp.wrap(&v), Wrap::Err | Wrap::None) => Some(
-                    Diagnostic::error("E015", t!("the test ended with {}", "le test s'est terminé avec {}", v.repr())).at(test.span).help(
-                        t!(
-                            "a test passes when it ends without error, and its value is not `false`, `Err(...)` or `None`",
-                            "un test réussit s'il se termine sans erreur, et que sa valeur n'est ni `false`, ni `Err(...)`, ni `None`"
-                        ),
-                    ),
-                ),
-                Ok(_) => None,
-                Err(d) => Some(*d),
-            };
-            match outcome {
-                None => out_line(&format!("  {green}✓{reset} {}", test.name)),
-                Some(d) => {
-                    failed += 1;
-                    out_line(&format!("  {red}✗{reset} {}", test.name));
-                    self.report(&d);
-                }
-            }
-        }
-        let passed = n - failed;
-        let summary = t!("{n} test(s): {passed} passed, {failed} failed", "{n} test(s) : {passed} réussi(s), {failed} échoué(s)");
-        let color = if failed == 0 { green } else { red };
-        out_line(&format!("{color}{summary}{reset}"));
-        (n, failed)
+        let options = crate::testing::Options { seed: self.interp.property_seed, ..Default::default() };
+        crate::testing::run_and_summarize(self, &options)
+    }
+
+    /// The files loaded so far: the program and the files it uses.
+    pub fn loaded_files(&self) -> Vec<PathBuf> {
+        let mut files: Vec<PathBuf> = self.modules.keys().map(|(p, _)| p.clone()).collect();
+        files.sort();
+        files.dedup();
+        files
     }
 }
 

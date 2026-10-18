@@ -170,7 +170,7 @@ cargo install --path .       # or install it in your PATH
 | `rythme`                    | interactive mode: type code, see the result    |
 | `rythme hello.ry`           | run a program (`rythme run hello.ry` also works) |
 | `rythme check hello.ry`     | find problems without running the program      |
-| `rythme test hello.ry`      | run the tests written in the file              |
+| `rythme test hello.ry`      | run the tests written in the file (also a folder: `rythme test .`, with `--filter NAME`, `--watch`) |
 | `rythme fmt hello.ry`       | give the code its official layout (also a folder: `rythme fmt .`) |
 | `rythme fmt --check .`      | list the files to format, without changing them (for CI) |
 | `rythme doc hello.ry`       | its documentation from the `##` comments, in Markdown (`--html`: one web page) |
