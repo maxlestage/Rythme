@@ -1835,6 +1835,12 @@ impl Printer<'_> {
             PatKind::Big(n) => self.push(&n.to_string()),
             PatKind::Float(f) => self.push(&fmt_float(*f)),
             PatKind::Text(s) => write_text_repr(s, &mut self.out),
+            PatKind::Range(lo, hi) => self.push(&format!("{lo}..{hi}")),
+            PatKind::Prefix(s, rest) => {
+                write_text_repr(s, &mut self.out);
+                self.push(" + ");
+                self.pattern(rest);
+            }
             PatKind::Symbol(s) => {
                 self.push(":");
                 self.push(&s.name());

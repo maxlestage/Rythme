@@ -908,6 +908,8 @@ décide pas du résultat (`false and ...` vaut `false` sans évaluer `...`).
 
 `a..b` construit la liste `[a, a + 1, ..., b]`, voir [2.6](#26-list). Les
 deux côtés sont des expressions de calcul : `1..n + 1` vaut `1..(n + 1)`.
+Dans un motif, `1..9` n'est pas une liste mais n'importe quel nombre de 1 à 9
+(voir [3.10](#310-match-et-motifs)).
 
 ### 3.5 Appels
 
@@ -1152,14 +1154,18 @@ correspond à la valeur, et dont la garde (s'il y en a une) vaut `true`, est
 choisi ; les noms donnés par le motif sont visibles dans sa garde et dans son
 résultat. Si aucun cas ne correspond, le programme s'arrête avec l'erreur
 E006. Avant l'exécution, le vérificateur signale les cas oubliés qu'il peut
-prouver (W002) et les cas placés après un cas qui accepte tout (W004).
+prouver (W002), les cas placés après un cas qui accepte tout ou les mêmes
+valeurs, et les intervalles vides (W004), et les intervalles qui se
+chevauchent (W010).
 
 | Motif | Correspond à |
 |-------|--------------|
 | `_` | n'importe quoi ; ne donne aucun nom |
 | `nom` | n'importe quoi ; le nomme `nom` |
 | `42`, `-1`, `2.5`, `-0.5` | un nombre égal à celui-ci (un motif Int correspond à un Float égal, et inversement : `0` correspond à `0.0`) |
+| `1..9`, `-5..-1`, `0.0..0.5` | un nombre du premier au second, les deux inclus : un Int ou un Float (`89.5` correspond à `0..100` mais ni à `0..89` ni à `90..100`). Les bornes sont des nombres écrits dans le code |
 | `"texte"` | exactement ce texte (pas de `{...}` dans un motif) |
+| `"M. " + nom`, `"#" + _` | un texte qui commence par ce texte ; `nom` désigne la suite du texte (après `+` vient un nom ou `_`) |
 | `true`, `false` | ce Bool |
 | `()` | la valeur unité |
 | `Feuille`, `None` | ce constructeur sans champs |
@@ -1257,6 +1263,91 @@ erreur[E006]: aucun cas de ce `match` ne traite Int 3
       dans `nom` appelée en 27b-aucun-cas.ry:6:7
   = en savoir plus : `rythme explain E006`
 ```
+
+Les intervalles et le début d'un texte :
+
+```rythme
+fn note(points) = match points
+  90..100 -> "A"
+  70..89 -> "B"
+  0..69 -> "C"
+  _ -> "pas une note"
+end
+
+fn piece(0.0..0.5) = "pile"
+fn piece(_) = "face"
+
+fn poli("M. " + nom) = "Cher Monsieur {nom}"
+fn poli("Mme " + nom) = "Chère Madame {nom}"
+fn poli(nom) = "Bonjour {nom}"
+
+print([95, 70, 100.0, 89.5, -3] |> map(note))
+print(piece(0.25), piece(0.75), piece(-2))
+print(poli("M. Martin"), "/", poli("Mme Leroy"), "/", poli("Ada"))
+```
+
+```text
+["A", "B", "A", "pas une note", "pas une note"]
+pile face face
+Cher Monsieur Martin / Chère Madame Leroy / Bonjour Ada
+```
+
+Un intervalle ne couvre jamais tous les nombres : un `match` sur des nombres
+a donc toujours besoin d'un dernier cas `_` (W002). Le vérificateur signale,
+avant l'exécution, un intervalle qui a des nombres en commun avec un
+intervalle placé avant lui (W010 : ces nombres vont toujours au premier), un
+cas dont tous les nombres sont déjà traités par les cas placés avant lui,
+même par plusieurs ensemble (W004), et un intervalle vide comme `99..65`
+(W004) :
+
+```rythme
+fn tranche(age) = match age
+  0..18 -> "jeune"
+  18..64 -> "adulte"
+  20..30 -> "vingtaine"
+  99..65 -> "senior"
+  _ -> "plus âgé"
+end
+print(tranche(18))
+```
+
+```text
+avertissement[W010]: ces intervalles se chevauchent
+ --> 54-intervalles.ry:3:3
+  |
+3 |   18..64 -> "adulte"
+  |   ^^^^^^ 18 est aussi ici
+  |
+2 |   0..18 -> "jeune"
+  |   ----- 18 va ici, au premier qui convient
+  |
+  = aide: les deux bouts d'un intervalle sont inclus : faites se suivre les intervalles sans qu'ils se chevauchent, comme `0..9` puis `10..19`
+
+avertissement[W004]: ce cas ne peut jamais être atteint
+ --> 54-intervalles.ry:4:3
+  |
+4 |   20..30 -> "vingtaine"
+  |   ^^^^^^
+  |
+3 |   18..64 -> "adulte"
+  |   ------ ce cas traite déjà ces valeurs
+  |
+  = aide: une valeur va au premier cas qui lui convient : supprimez ce cas, ou modifiez-le
+
+avertissement[W004]: cet intervalle ne correspond jamais
+ --> 54-intervalles.ry:5:3
+  |
+5 |   99..65 -> "senior"
+  |   ^^^^^^ aucun nombre ne va de 99 jusqu'à 65
+  |
+  = aide: un intervalle va du plus petit nombre au plus grand : `65..99`
+
+jeune
+```
+
+Seul le début d'un texte peut servir de motif : pour sa fin, ou pour des
+bornes qui sont des noms, utilisez une garde (`t if ends_with(t, "!") -> ...`,
+`n if n >= bas -> ...`).
 
 Les motifs servent aussi dans les définitions (`[a, b] = liste`, voir
 [4.1](#41-noms)) et dans les paramètres des fonctions (voir
@@ -2297,8 +2388,9 @@ Le vérificateur trouve :
   les possibilités de motifs qui donnent des noms (E001) ;
 - les noms locaux inutilisés (W001), les cas oubliés (W002), les fonctions
   intégrées masquées par une définition du premier niveau (W003), les cas qui
-  ne peuvent jamais être atteints (W004), les fonctions inconnues après un
-  point (W005).
+  ne peuvent jamais être atteints et les intervalles vides (W004), les
+  fonctions inconnues après un point (W005), les intervalles qui se
+  chevauchent (W010).
 
 Le vérificateur connaît aussi la nature des valeurs quand elle est certaine :
 les valeurs écrites dans le code, et ce que donnent à coup sûr les
@@ -2559,12 +2651,13 @@ minuscules.
 | W001 | Nom inutilisé | un nom local est défini mais jamais utilisé |
 | W002 | Cas oublié | un `match` ou une fonction à un paramètre ne traite pas toutes les valeurs possibles |
 | W003 | Fonction intégrée masquée | une définition du premier niveau prend le nom d'une fonction intégrée |
-| W004 | Cas jamais atteint | un cas ou une définition vient après un autre qui accepte tout ou les mêmes valeurs, ou ne peut jamais correspondre à la valeur |
+| W004 | Cas jamais atteint | un cas ou une définition vient après un autre qui accepte tout ou les mêmes valeurs (ou après des intervalles qui contiennent ensemble tous ses nombres), ne peut jamais correspondre à la valeur, ou est un intervalle vide (`9..1`) |
 | W005 | Fonction inconnue après un point | `valeur.nom(...)` alors qu'aucune fonction ni aucun champ d'enregistrement ne porte ce nom |
 | W006 | Comparaison toujours fausse | `==` ou `!=` entre des valeurs de natures qui ne sont jamais égales (`nombre == "3"`) |
 | W007 | Test qui ne peut jamais échouer | un test qui ne fait que calculer ou afficher une valeur, sans jamais la comparer à ce qui est attendu |
 | W008 | Résultat perdu | une ligne qui ne fait qu'appeler une fonction sans effet, comme `push(liste, x)` : les valeurs ne changent jamais |
 | W009 | Fonction affichée | une fonction affichée dans un texte ou par `print` (`<fn nom>`) au lieu de ce qu'elle donne |
+| W010 | Intervalles qui se chevauchent | un motif d'intervalle a des nombres en commun avec un intervalle d'un cas ou d'une définition placé avant lui : ils vont toujours au premier |
 
 ---
 

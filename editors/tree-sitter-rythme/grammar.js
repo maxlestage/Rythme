@@ -71,6 +71,8 @@ module.exports = grammar({
     [$.unit, $.unit_pattern],
     [$._expression, $.constructor_pattern],
     [$._expression, $.negative_number],
+    [$._expression, $._number_pattern],
+    [$._expression, $.prefix_pattern],
     [$._expression, $.rest_pattern],
     [$._expression, $.qualified_constructor],
   ],
@@ -315,6 +317,8 @@ module.exports = grammar({
         $.list_pattern,
         $.record_pattern,
         $.or_pattern,
+        $.range_pattern,
+        $.prefix_pattern,
       ),
 
     constructor_pattern: $ =>
@@ -343,6 +347,14 @@ module.exports = grammar({
       ),
 
     or_pattern: $ => prec.left(seq($._pattern, '|', $._pattern)),
+
+    /** `1..9`, `-0.5..0.5`: a number from the first to the second. */
+    range_pattern: $ => seq(field('start', $._number_pattern), '..', field('end', $._number_pattern)),
+
+    _number_pattern: $ => choice($.integer, $.float, $.negative_number),
+
+    /** `"Mr " + name`: a text that starts with this text, and the rest. */
+    prefix_pattern: $ => seq(field('prefix', $.string), '+', field('rest', $.identifier)),
 
     // ----- tokens ---------------------------------------------------------
 

@@ -1177,6 +1177,10 @@ fn match_pat(p: &Pat, v: &Value, slots: &mut [Value], first: usize) -> bool {
         (Pat::Float(a), Value::Int(b)) => cmp_int_float(*b, *a) == Some(std::cmp::Ordering::Equal),
         (Pat::Text(a), Value::Text(b)) => a == b,
         (Pat::Symbol(a), Value::Symbol(b)) => a == b,
+        (Pat::Range(lo, hi), _) => in_range(*lo, *hi, v),
+        (Pat::Prefix(a, rest), Value::Text(b)) => {
+            b.strip_prefix(&**a).is_some_and(|r| match_pat(rest, &Value::Text(Rc::from(r)), slots, first))
+        }
         (Pat::Ctor(name, pats), Value::Variant(var)) => {
             var.ctor.name == *name && pats.len() == var.fields.len() && match_each(pats, &var.fields, slots, first)
         }
@@ -1260,6 +1264,10 @@ pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> boo
         (PatKind::Float(a), Value::Int(b)) => cmp_int_float(*b, *a) == Some(std::cmp::Ordering::Equal),
         (PatKind::Text(a), Value::Text(b)) => a == b,
         (PatKind::Symbol(a), Value::Symbol(b)) => a == b,
+        (PatKind::Range(lo, hi), _) => in_range(*lo, *hi, v),
+        (PatKind::Prefix(a, rest), Value::Text(b)) => {
+            b.strip_prefix(&**a).is_some_and(|r| match_pattern(rest, &Value::Text(Rc::from(r)), out))
+        }
         (PatKind::Ctor(name, pats), Value::Variant(var)) => {
             var.ctor.name == name.own_name()
                 && pats.len() == var.fields.len()
