@@ -130,6 +130,7 @@ impl Qualify<'_> {
             | ExprKind::Int(_)
             | ExprKind::Float(_)
             | ExprKind::Text(_)
+            | ExprKind::Symbol(_)
             | ExprKind::Var(_)
             | ExprKind::Ctor(_) => {}
             ExprKind::Template(parts) => {

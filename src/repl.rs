@@ -326,7 +326,8 @@ fn command(driver: &mut Driver, input: &str) -> Next {
             )),
         },
         ":names" | ":noms" => {
-            let builtin: std::collections::HashSet<&str> = BUILTINS.iter().map(|b| b.name).collect();
+            let builtin: std::collections::HashSet<&str> =
+                BUILTINS.iter().map(|b| b.name).chain(crate::builtins::ALIASES.iter().map(|a| a.name)).collect();
             let mut own: Vec<String> = driver
                 .interp
                 .globals
