@@ -115,6 +115,17 @@ const WORDS: &[&str] = &[
     "x_1",
     "_unused",
     "lenght",
+    // The Ruby style.
+    ":ok",
+    "even?",
+    "empty?",
+    "unless",
+    "puts",
+    "select",
+    "{ |v|",
+    "do |a, b|",
+    "||",
+    "\"#{x}\"",
 ];
 
 const NUMBERS: &[&str] = &[
@@ -280,7 +291,7 @@ impl Gen<'_> {
             return self.atom();
         }
         let d = depth - 1;
-        match self.rng.below(22) {
+        match self.rng.below(24) {
             0..=2 => {
                 let op = self.rng.pick(&["+", "-", "*", "/", "//", "%", "**", "==", "!=", "<", "<=", ">", ">=", "and", "or", "+"]);
                 format!("{} {op} {}", self.expr(d), self.expr(d))
@@ -337,6 +348,19 @@ impl Gen<'_> {
                 let v = self.name();
                 format!("do\n  {v} = {}\n  {}\nend", self.expr(d), self.rng.pick(&[v.as_str(), "print(1)", "x"]))
             }
+            // The Ruby style: blocks, method chains, `unless`, symbols, names ending with `?`.
+            20 => match self.rng.below(4) {
+                0 => format!("{}.map do |v| {} end", self.expr(d), self.expr(d)),
+                1 => format!("{}.select {{ |v| {} }}", self.expr(d), self.expr(d)),
+                2 => format!("each({}) do |v|\n  {}\nend", self.expr(d), self.expr(d)),
+                _ => format!("{}.reduce(0) do |a, b| {} end", self.expr(d), self.expr(d)),
+            },
+            21 => match self.rng.below(4) {
+                0 => format!("unless {} then {} else {}", self.expr(d), self.expr(d), self.expr(d)),
+                1 => format!("{}.{}", self.expr(d), self.rng.pick(&["sum", "size", "upcase", "first", "even?", "empty?", "uniq", "to_s"])),
+                2 => format!("\"#{{{}}}\"", self.expr(d)),
+                _ => self.rng.pick(&[":ok", ":error", "even?(2)", "[:a, :b]"]).into(),
+            },
             _ => self.atom(),
         }
     }

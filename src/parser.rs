@@ -520,6 +520,21 @@ impl Parser {
         let span = e.span;
         let kind = match e.kind {
             ExprKind::Var(s) if &*s.name() == "_" => PatKind::Wildcard,
+            // `ok? = 1`: the `?` is read as the operator, unless a function `ok?` exists.
+            ExprKind::Try(x) if matches!(x.kind, ExprKind::Var(_)) && x.span.end + 1 == span.end => {
+                let ExprKind::Var(s) = x.kind else { unreachable!() };
+                let s = format!("{s}?");
+                return Err(Diagnostic::error(
+                    "E001",
+                    t!("only a function can have a name that ends with `?`", "seule une fonction peut avoir un nom qui finit par `?`"),
+                )
+                .at(span)
+                .help(t!(
+                    "define it with `fn`: `fn {s}(x) = ...`; for a value, use a name without `?`",
+                    "définissez-la avec `fn` : `fn {s}(x) = ...` ; pour une valeur, utilisez un nom sans `?`"
+                ))
+                .boxed());
+            }
             ExprKind::Var(s) if s.name().ends_with('?') => {
                 return Err(Diagnostic::error(
                     "E001",
