@@ -169,3 +169,47 @@ fn every_piece_of_code_runs() {
         assert_eq!(shown, real, "{lang:?}");
     }
 }
+
+/// The theme picker of every page, and the inline script that applies the theme before
+/// the first paint, allowed by its hash in the Content-Security-Policy.
+#[tokio::test]
+async fn the_theme_picker_and_its_script() {
+    use paquets::securite::headers::ContentSecurityPolicy;
+    use rythme_site::themes::{self, THEMES};
+
+    let client = client().await;
+    let script = format!("<script>{}</script>", themes::head_script());
+    let hash = ContentSecurityPolicy::hashes_for_inline_scripts(&script).pop().expect("a hash");
+    let routes = Route::all().chain(Lang::ALL.map(|l| Route::new(l, Page::Offline)));
+    for (path, lang) in routes.map(|r| (r.path(), r.lang)).chain([("/en/nothing/".to_owned(), Lang::En)]) {
+        let res = client.get(&path).await;
+        let html = res.text();
+        let t = lang.texts();
+        // The script runs in the head, after the theme-color tags it updates.
+        let at = html.find(&script).unwrap_or_else(|| panic!("{path}: the theme script"));
+        assert!(at < html.find("<body").unwrap(), "{path}");
+        assert!(html.find(r#"<meta name="theme-color""#).unwrap() < at, "{path}");
+        assert_eq!(html.matches("<script>").count(), 1, "{path}: one inline script");
+        let csp = res.header("content-security-policy").unwrap_or_default();
+        assert!(csp.contains(&hash), "{path}: {csp}");
+        for inline in ContentSecurityPolicy::hashes_for_inline_scripts(&html) {
+            assert!(csp.contains(&inline), "{path}: {inline}");
+        }
+        // The picker: hidden without JavaScript, a button for computers, a fieldset of
+        // radio buttons with their labels in the language of the page.
+        assert!(html.contains(r#"<li class="nav__item--theme" hidden="">"#), "{path}");
+        assert!(html.contains(r#"id="theme-toggle" aria-expanded="false" aria-controls="theme-panel""#), "{path}");
+        assert!(html.contains(&format!(r#"title="{}""#, t.theme_title)), "{path}");
+        let legend = format!(r#"<fieldset class="theme__panel" id="theme-panel"><legend class="theme__legend">{}</legend>"#, t.theme_label);
+        assert!(html.contains(&legend), "{path}");
+        assert_eq!(html.matches(r#"type="radio" name="theme""#).count(), THEMES.len(), "{path}");
+        assert_eq!(html.matches(" checked=\"\"").count(), 1, "{path}: Auto is chosen by default");
+        assert!(html.contains(r##"value="auto" id="theme-auto" data-color="#eef1f6" checked="" data-dark="#0e1118""##), "{path}");
+        for theme in THEMES {
+            let id = theme.id;
+            assert!(html.contains(&format!(r#"<label class="theme__option" for="theme-{id}">"#)), "{path}: {id}");
+            assert!(html.contains(&format!(r#"value="{id}" id="theme-{id}" data-color="{}""#, theme.color)), "{path}: {id}");
+            assert!(html.contains(&format!(r#"<span class="theme__name">{}</span>"#, theme.name(t))), "{path}: {id}");
+        }
+    }
+}

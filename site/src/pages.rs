@@ -8,6 +8,7 @@ use crate::highlight::{code_block, code_inline, diagnostic};
 use crate::i18n::{Lang, Texts};
 use crate::pwa;
 use crate::routes::{Page as PageKind, Route, link};
+use crate::themes::{self, AUTO, THEMES};
 
 pub const REPO: &str = "https://github.com/maxlestage/Rythme";
 const RELEASES: &str = "https://github.com/maxlestage/Rythme/releases";
@@ -173,6 +174,61 @@ fn share_icon() -> Element {
     )
 }
 
+/// A circle, half ink and half paper: the theme picker.
+fn theme_icon() -> Element {
+    svg()
+        .attr("class", "icon")
+        .attr("viewBox", "0 0 16 16")
+        .attr("width", "18")
+        .attr("height", "18")
+        .attr("aria-hidden", "true")
+        .child(path().attr("fill", "currentColor").attr("d", "M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 1.5v11a5.5 5.5 0 0 1 0-11Z"))
+}
+
+/// The color themes (`themes.rs`), shown by `site.js`: real radio buttons in a
+/// `fieldset`, so the arrow keys choose and screen readers announce "Theme, 3 of 6".
+/// In the menu of a phone the choices are listed; on a computer they open from a button
+/// of the bar.
+fn theme_picker(t: &Texts) -> Element {
+    let options = THEMES.map(|theme| {
+        let radio = input()
+            .attr("type", "radio")
+            .attr("name", "theme")
+            .attr("value", theme.id)
+            .id(format!("theme-{}", theme.id))
+            .attr("data-color", theme.color);
+        let radio = if theme.id == AUTO { radio.attr("checked", "").attr("data-dark", themes::DARK) } else { radio };
+        label()
+            .class("theme__option")
+            .attr("for", format!("theme-{}", theme.id))
+            .child(radio)
+            .child(span().class("theme__swatch").class(format!("theme__swatch--{}", theme.id)).attr("aria-hidden", "true"))
+            .child(span().class("theme__name").text(theme.name(t)))
+    });
+    li().class("nav__item--theme").attr("hidden", "").child(
+        div()
+            .class("theme")
+            .child(
+                button()
+                    .class("nav__link theme__toggle")
+                    .attr("type", "button")
+                    .id("theme-toggle")
+                    .attr("aria-expanded", "false")
+                    .attr("aria-controls", "theme-panel")
+                    .attr("title", t.theme_title)
+                    .child(theme_icon())
+                    .child(span().class("theme__toggle-text").text(t.theme_label)),
+            )
+            .child(
+                fieldset()
+                    .class("theme__panel")
+                    .id("theme-panel")
+                    .child(legend().class("theme__legend").text(t.theme_label))
+                    .child(div().class("theme__options").children(options)),
+            ),
+    )
+}
+
 /// The banners of the installed app, shown by `site.js`: a new version is ready, and on
 /// iPhone and iPad how to install the site.
 fn notices(t: &Texts) -> Element {
@@ -241,7 +297,8 @@ fn site_header(ctx: &Ctx) -> Element {
                                     .child(install_icon())
                                     .child(span().text(t.app_install)),
                             ),
-                        ),
+                        )
+                        .child(theme_picker(t)),
                 ),
             )
             .child(lang_switch(ctx, "lang--bar"))
@@ -307,8 +364,9 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
         }
         seo = seo.alternate("x-default", route.with_lang(Lang::Fr).path());
     }
-    // `js` on <html> before the first paint: the menu folds behind the burger only
-    // when the script that opens it can run.
+    // Before the first paint (`themes::head_script`): `js` on <html>, the menu folds
+    // behind the burger only when the script that opens it can run; and the theme
+    // chosen, with its color for the browser's bar.
     let head = format!(
         concat!(
             r#"<meta name="color-scheme" content="light dark"/>"#,
@@ -325,10 +383,11 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
             r#"<meta name="apple-mobile-web-app-status-bar-style" content="default"/>"#,
             r#"<link rel="preconnect" href="https://fonts.googleapis.com"/>"#,
             r#"<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>"#,
-            r#"<script>document.documentElement.classList.add("js")</script>"#,
+            r#"<script>{theme}</script>"#,
             r#"<script src="{js}" defer=""></script>"#,
         ),
         js = ctx.asset("/site.js"),
+        theme = themes::head_script(),
         icon = link(pwa::LOGO),
         favicon = link(pwa::FAVICON),
         light = pwa::LIGHT,

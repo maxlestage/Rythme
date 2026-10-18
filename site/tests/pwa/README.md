@@ -33,6 +33,36 @@ run works on a copy of `public/` in a temporary folder and checks:
 
 The exit code is the number of failed checks.
 
+## `layout.js`: no horizontal scroll, the themes and their contrast
+
+```sh
+NODE_PATH=/path/to/node_modules node tests/pwa/layout.js target/release/rythme-site
+```
+
+The same two deployments (`server` or `export` to run one), with service workers
+blocked. It checks:
+
+1. no horizontal scrolling: every page in both languages (home, learn, examples,
+   playground, teach, offline, 404), at 320, 360, 375, 390, 414, 600, 768, 1024,
+   1280, 1440 and 1920px, in each of the six themes: the document is no wider than
+   the window, no element sticks out of it, none scrolls sideways, and the bar keeps
+   one line;
+2. the playground's editor wraps a long line, a long word and a long address, and
+   each line number stays level with its wrapped line;
+3. contrast: every pair of colors of each theme (text on paper, on cards and on the
+   soft accent; buttons, banners and commands on their background) at 4.5:1, 7:1 in
+   High contrast; then every visible text of every page, against the background it
+   is drawn on, at 390 and 1280px;
+4. the picker with the keyboard only, in the menu of a phone and in the bar of a
+   computer: the focus on the chosen theme, the arrow keys choose, Escape closes and
+   gives the focus back; the page and its `theme-color` follow; every option has its
+   label in French; the choice is kept from page to page;
+5. no flash: the stored theme (and its `theme-color`) is on `<html>` as soon as
+   `<body>` exists, before any deferred script, on every kind of page; Auto follows
+   the system; an unknown stored value falls back to Auto.
+
+`serve.js` starts the site for both scripts.
+
 ## `images.js`: icons and screenshots
 
 ```sh

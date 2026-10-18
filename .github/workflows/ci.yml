@@ -124,6 +124,42 @@ jobs:
           done
           curl -fsS -o /dev/null -w '%{content_type}\n' localhost:5000/rythme.wasm | grep application/wasm
 
+  browser:
+    name: Website in Chromium (layout, themes, offline app)
+    runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT: playwright@1.56.1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Access to the git dependencies of Paquets
+        env:
+          REPOS_TOKEN: ${{ secrets.REPOS_TOKEN }}
+        run: |
+          if [ -n "$REPOS_TOKEN" ]; then
+            echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> "$GITHUB_ENV"
+            git config --global credential.https://github.com.helper \
+              '!f() { test "$1" = get && echo username=x-access-token && echo "password=$REPOS_TOKEN"; }; f'
+          fi
+      - name: Build the site and its playground
+        run: ./heroku-build.sh
+      - name: Install Playwright and its Chromium
+        run: |
+          npm install --prefix "$RUNNER_TEMP/playwright" --no-save "$PLAYWRIGHT"
+          "$RUNNER_TEMP/playwright/node_modules/.bin/playwright" install --with-deps chromium
+          echo "NODE_PATH=$RUNNER_TEMP/playwright/node_modules" >> "$GITHUB_ENV"
+      - name: No horizontal scroll, the themes and their contrast (tests/pwa/layout.js)
+        working-directory: site
+        run: node tests/pwa/layout.js target/release/rythme-site
+      - name: The installable app, offline and updated (tests/pwa/check.js)
+        working-directory: site
+        run: node tests/pwa/check.js target/release/rythme-site
+
   docker:
     name: Website (Docker image)
     runs-on: ubuntu-latest
