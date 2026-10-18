@@ -459,6 +459,8 @@ fn calls_that_may_work_are_not_reported() {
     // Fields: records, and values built with a constructor that has them.
     quiet("type Circle = Circle(radius)\nfn r(c) = c.radius\nfn v(o) = o.value\nprint(r(Circle(2)), r({radius: 3}), v(Some(1)))");
     quiet("fn call_it(r) = r.go(1)\nprint(call_it({go: fn(v) = v + 1}))");
+    // `[...]` on a dict, with a key of any kind.
+    quiet("fn by_name(d) = d[\"k\"]\nfn by_number(d) = d[1]\nfn by_symbol(d) = d[:a]\nprint(by_name({k: 1}), by_name(dict([[\"k\", 2]])), by_number(dict([[1, 3]])), by_symbol(dict([[:a, 4]])))");
 }
 
 /// The programs of the repository (examples, benchmarks, exercises and
@@ -559,4 +561,29 @@ fn the_interactive_mode_knows_values_can_be_defined_again() {
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert!(stdout.contains("6\nab\n"), "{stdout}{stderr}");
     assert_eq!((stdout.matches("error[").count(), stderr.matches("error[").count()), (0, 1), "{stdout}{stderr}");
+}
+
+/// In one input of the REPL (or a file given to `:load`), a function defined
+/// again replaces the first definition: what the first one needs says nothing.
+#[test]
+fn the_interactive_mode_checks_the_last_definition_of_a_function() {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+    let mut child = Command::new(env!("CARGO_BIN_EXE_rythme"))
+        .env("RYTHME_LANG", "en")
+        .env("NO_COLOR", "1")
+        .env("HOME", std::env::temp_dir())
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let file = temp_file("again.ry", "fn k(\"a\") = 1\nx = 2\nfn k(_) = 0\nprint(k(5), k(\"a\"))\n");
+    let input = format!(":load {}\nfn m(\"a\") = 1; y = 2; fn m(_) = 0; m(7)\n:quit\n", file.display());
+    child.stdin.take().unwrap().write_all(input.as_bytes()).unwrap();
+    let out = child.wait_with_output().unwrap();
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stdout.contains("0 0\n") && stdout.contains("loaded\n0\n"), "{stdout}{stderr}");
+    assert!(!stdout.contains("error[") && !stderr.contains("error["), "{stdout}{stderr}");
 }
