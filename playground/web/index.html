@@ -198,6 +198,7 @@ select {
     <div class="actions">
       <button type="button" class="btn" id="check"></button>
       <button type="button" class="btn" id="test"></button>
+      <button type="button" class="btn" id="steps"></button>
       <button type="button" class="btn" id="format"></button>
       <button type="button" class="btn primary" id="run"></button>
       <button type="button" class="btn stop" id="stop" hidden></button>
@@ -255,6 +256,7 @@ select {
     en: {
       tagline: "A simple, purely functional language where every error explains itself. Edit the code, press <code>Run</code>.",
       example: "Example", run: "Run", check: "Check", test: "Test", stop: "Stop",
+      steps: "Steps", stepsTitle: "Show the calculation step by step, like rythme steps: fib(3) → fib(2) + fib(1) → ...",
       format: "Format", formatTitle: "Give the code the layout of rythme fmt (Shift+Alt+F)",
       formatted: "formatted like rythme fmt", alreadyFormatted: "already formatted", notFormatted: "not formatted: the code has an error",
       output: "Output", help: "Help",
@@ -272,6 +274,7 @@ select {
     fr: {
       tagline: "Un langage simple, purement fonctionnel, où chaque erreur s'explique d'elle-même. Modifiez le code, appuyez sur <code>Lancer</code>.",
       example: "Exemple", run: "Lancer", check: "Vérifier", test: "Tester", stop: "Arrêter",
+      steps: "Étapes", stepsTitle: "Montrer le calcul étape par étape, comme rythme etapes : fib(3) → fib(2) + fib(1) → ...",
       format: "Formater", formatTitle: "Mettre le code en forme comme rythme fmt (Maj+Alt+F)",
       formatted: "mis en forme comme rythme fmt", alreadyFormatted: "déjà en forme", notFormatted: "pas mis en forme : le code a une erreur",
       output: "Résultat", help: "Aide",
@@ -348,6 +351,7 @@ print(diviser(10, 4), diviser(1, 0))
   const $ = (id) => document.getElementById(id);
   const source = $("source"), highlight = $("highlight"), gutter = $("gutter"), output = $("output");
   const statusEl = $("status"), runBtn = $("run"), stopBtn = $("stop"), checkBtn = $("check"), testBtn = $("test"), formatBtn = $("format");
+  const stepsBtn = $("steps");
   const exampleSel = $("example"), helpText = $("help-text");
 
   const store = {
@@ -511,6 +515,7 @@ print(diviser(10, 4), diviser(1, 0))
     stopBtn.hidden = !on;
     checkBtn.disabled = on;
     testBtn.disabled = on;
+    stepsBtn.disabled = on;
   }
 
   function execute(mode) {
@@ -550,6 +555,7 @@ print(diviser(10, 4), diviser(1, 0))
   runBtn.addEventListener("click", () => execute(0));
   checkBtn.addEventListener("click", () => execute(1));
   testBtn.addEventListener("click", () => execute(2));
+  stepsBtn.addEventListener("click", () => execute(4));
   formatBtn.addEventListener("click", formatCode);
 
   // ----- format: the layout of `rythme fmt`, done at once (it cannot loop) -----
@@ -738,6 +744,8 @@ print(diviser(10, 4), diviser(1, 0))
     runBtn.innerHTML = `${t.run} <span class="kbd">${mac ? "⌘" : "Ctrl+"}Enter</span>`;
     checkBtn.textContent = t.check;
     testBtn.textContent = t.test;
+    stepsBtn.textContent = t.steps;
+    stepsBtn.title = t.stepsTitle;
     formatBtn.textContent = t.format;
     formatBtn.title = t.formatTitle;
     stopBtn.textContent = t.stop;

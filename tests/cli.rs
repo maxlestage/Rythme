@@ -27,7 +27,9 @@ fn help_overview_and_topics() {
         "projects",
         "dates",
         "repl",
+        "fmt",
         "doc",
+        "steps",
         "editors",
         "builtins",
     ] {

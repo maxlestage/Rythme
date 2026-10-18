@@ -27,8 +27,9 @@ pub extern "C" fn rythme_alloc(len: usize) -> *mut u8 {
 }
 
 /// Runs the code. `mode`: 0 = run, 1 = check, 2 = test, 3 = format (the
-/// result is the formatted code, or error messages). `language`: 0 = English,
-/// 1 = French.
+/// result is the formatted code, or error messages), 4 = steps (the
+/// calculation shown step by step, like `rythme steps`). `language`: 0 =
+/// English, 1 = French.
 ///
 /// # Safety
 /// `ptr` must come from `rythme_alloc(len)` and hold `len` bytes of UTF-8.
@@ -84,6 +85,9 @@ fn run(code: &str, mode: u32) -> String {
             if driver.execute(&m, Mode::Test).is_ok() {
                 driver.run_tests();
             }
+        }
+        (Some(m), 4) => {
+            let _ = rythme::steps::run_module(&mut driver, &m, rythme::steps::Options::default(), None);
         }
         (Some(m), _) => {
             if let Ok(Some(v)) = driver.execute(&m, Mode::Run) {

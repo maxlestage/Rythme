@@ -450,6 +450,19 @@ impl Driver {
 
     /// Runs a checked module, after the modules it uses.
     pub fn execute(&mut self, m: &Rc<Module>, mode: Mode) -> Result<Option<Value>, Reported> {
+        self.prepare(m, mode)?;
+        match self.interp.exec_items(&m.items, mode) {
+            Ok(v) => Ok(v),
+            Err(d) => {
+                self.report(&d);
+                Err(Reported)
+            }
+        }
+    }
+
+    /// Runs the modules that a checked module uses, and makes the interpreter
+    /// ready to run its own items (`execute` without the items themselves).
+    pub fn prepare(&mut self, m: &Rc<Module>, mode: Mode) -> Result<(), Reported> {
         for dep in m.deps.iter().chain(m.named.iter().map(|(_, k)| k)) {
             if self.executed.contains(dep) {
                 continue;
@@ -463,13 +476,7 @@ impl Driver {
             self.executed.insert((p.clone(), m.ns));
         }
         self.interp.names = self.names_of(m);
-        match self.interp.exec_items(&m.items, mode) {
-            Ok(v) => Ok(v),
-            Err(d) => {
-                self.report(&d);
-                Err(Reported)
-            }
-        }
+        Ok(())
     }
 
     /// Runs the collected tests and prints a summary. Returns true if all passed.

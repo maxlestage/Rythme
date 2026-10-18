@@ -62,8 +62,9 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   `rythme learn` in Spanish (`--lang es`).
 - [ ] **Messages in German, Portuguese and Chinese** (one language per item
   if needed), with the website and the playground offering each language.
-- [ ] **Step-by-step evaluation for teaching.** `rythme explain-run file.ry`
-  (or a playground button) shows how an expression is reduced step by step
+- [x] **Step-by-step evaluation for teaching.** `rythme steps file.ry
+  ["expression"]` (`rythme etapes`), `:steps` in the REPL and the Steps
+  button of the playground show how an expression is reduced step by step
   (`fib(3)` → `fib(2) + fib(1)` → ...), bounded, in every language.
 - [x] **Exercises.** `docs/exercises/` with graded exercises for a first
   course (each with tests that `rythme test` runs and hints), and
