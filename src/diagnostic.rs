@@ -210,7 +210,7 @@ pub fn display_width(text: &str) -> usize {
 
 /// Columns taken by a character in a terminal: none for combining accents,
 /// two for Chinese, Japanese, Korean and most emoji, one otherwise.
-fn char_width(c: char) -> usize {
+pub fn char_width(c: char) -> usize {
     match c as u32 {
         0x0300..=0x036F
         | 0x1AB0..=0x1AFF

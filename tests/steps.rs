@@ -270,6 +270,12 @@ fn steps_are_bounded() {
     assert_eq!(r.code, 0, "{}", r.stderr);
     assert!(r.stdout.lines().all(|l| l.chars().count() <= 30), "{}", r.stdout);
     assert!(r.stdout.contains("\n  → [1, 2, 3, 4, 5, 6, 7, 8, …\n"), "{}", r.stdout);
+    // In columns of the terminal: Chinese characters take two.
+    let path = program("wide-chars", "fn twice(t) = t + t\ntwice(\"日本語のテキスト\")\n");
+    let r = rythme(&["steps", path.to_str().unwrap(), "--width", "20"]);
+    assert_eq!(r.code, 0, "{}", r.stderr);
+    assert!(r.stdout.lines().all(|l| rythme::diagnostic::display_width(l) <= 20), "{}", r.stdout);
+    assert!(r.stdout.starts_with("twice(\"日本語のテキ…\n"), "{}", r.stdout);
     // A program that never ends is stopped.
     let path = program("forever", "fn forever(n) = forever(n + 1)\nforever(0)\n");
     let r = rythme(&["steps", path.to_str().unwrap(), "--max", "2"]);
