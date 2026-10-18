@@ -78,7 +78,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   highlighting, code lenses to run a test or a file, workspace symbols.
 - [x] **A Tree-sitter grammar** for Neovim, Helix and Zed highlighting, with
   its tests, and the Zed extension completed.
-- [ ] **Projects and packages.** `rythme new name`, a `rythme.toml` manifest,
+- [x] **Projects and packages.** `rythme new name`, a `rythme.toml` manifest,
   dependencies from git or a path with a lock file, `use "package/file.ry"`,
   `rythme run`/`test` at the project root.
 

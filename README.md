@@ -173,6 +173,8 @@ cargo install --path .       # or install it in your PATH
 | `rythme fmt hello.ry`       | give the code its official layout (also a folder: `rythme fmt .`) |
 | `rythme fmt --check .`      | list the files to format, without changing them (for CI) |
 | `rythme doc hello.ry`       | its documentation from the `##` comments, in Markdown (`--html`: one web page) |
+| `rythme new hello`          | a new project: `rythme.toml`, `src/`, `tests/`; then `rythme run`, `rythme test`... without a file |
+| `rythme install`            | download the dependencies of `rythme.toml` (git or folders), and write `rythme.lock` |
 | `rythme help [topic]`       | help on a topic or a function                  |
 | `rythme explain E003`       | explain an error code                          |
 | `rythme learn`              | guided tour of the language                    |
@@ -297,6 +299,7 @@ mode) and is organised as a pipeline:
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |
+| [`src/project.rs`](src/project.rs), [`src/manifest.rs`](src/manifest.rs) | projects and packages: `rythme new`, `rythme install`, `rythme.toml`, `use package/file` |
 | [`src/format.rs`](src/format.rs) | `rythme fmt`: the official layout, which never changes the meaning |
 | [`src/lsp/`](src/lsp) | the language server (`rythme lsp`): help inside editors |
 

@@ -20,11 +20,13 @@ pub mod help;
 pub mod interp;
 pub mod io;
 pub mod lexer;
+pub mod manifest;
 // The language server talks on the standard input and output; the web playground has none.
 #[cfg(not(target_arch = "wasm32"))]
 pub mod lsp;
 pub mod modules;
 pub mod parser;
+pub mod project;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod repl;
 pub mod source;

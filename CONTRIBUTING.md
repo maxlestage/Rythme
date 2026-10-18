@@ -35,6 +35,11 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
   into the single name `geometry.area` right after parsing; each file used
   with a name keeps its top-level names apart in the interpreter (see
   `compile::Names`), and so do the private `_names` of used files.
+- `project.rs` is `rythme new`, `rythme install` (git through the `git`
+  program) and `use package/file`, reached from `driver::find_use`;
+  `manifest.rs` reads `rythme.toml` and `rythme.lock` (a small part of
+  TOML, by hand). `tests/projects.rs` tests them with git repositories
+  created in temporary folders.
 - `types.rs` holds what the checker knows for sure about values: their types,
   and what each built-in function accepts and gives back. `check.rs` infers
   the types of expressions to report operations that would fail every time
