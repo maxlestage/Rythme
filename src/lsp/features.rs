@@ -402,6 +402,7 @@ mod kind {
     pub const FUNCTION: u32 = 3;
     pub const FIELD: u32 = 5;
     pub const VARIABLE: u32 = 6;
+    pub const MODULE: u32 = 9;
     pub const ENUM: u32 = 13;
     pub const KEYWORD: u32 = 14;
     pub const SNIPPET: u32 = 15;
@@ -600,7 +601,15 @@ fn short_use_completion(cx: &Ctx, a: &Analysis, offset: usize) -> Json {
     let Some(typed) = short_use_line(&a.text, offset) else { return Json::Arr(Vec::new()) };
     let (dir, _) = typed.rsplit_once('/').unwrap_or(("", typed));
     let replace_from = offset - typed.len() + if dir.is_empty() { 0 } else { dir.len() + 1 };
-    let folder = a.module.base.join(dir);
+    let mut folder = a.module.base.join(dir);
+    // `use mathlib/`: the files of a package of the project.
+    let packages = crate::project::packages(&a.module.base);
+    if !dir.is_empty() && !folder.is_dir() {
+        let (first, rest) = dir.split_once('/').unwrap_or((dir, ""));
+        if let Some((_, src)) = packages.iter().find(|(n, _)| n == first) {
+            folder = src.join(rest);
+        }
+    }
     let own = a.path.as_deref().and_then(Path::file_name).map(|f| f.to_string_lossy().to_string());
     let mut entries: Vec<(String, bool)> = std::fs::read_dir(&folder)
         .map(|rd| {
@@ -618,8 +627,23 @@ fn short_use_completion(cx: &Ctx, a: &Analysis, offset: usize) -> Json {
         })
         .unwrap_or_default();
     entries.sort();
+    let mut package_names = Vec::new();
+    if dir.is_empty() {
+        for (name, _) in packages {
+            if !entries.iter().any(|(n, is_dir)| *is_dir && *n == name) {
+                package_names.push(name);
+            }
+        }
+    }
     let range = range_in(&a.text, &a.lines, replace_from, offset, cx.enc);
     let mut items = Vec::new();
+    for name in package_names {
+        let shown = format!("{name}/");
+        let mut it = obj([("label", shown.clone().into()), ("kind", kind::MODULE.into())]);
+        it.set("detail", t!("package", "paquet").into());
+        it.set("textEdit", obj([("range", range.clone()), ("newText", shown.into())]));
+        items.push(it);
+    }
     for (name, is_dir) in entries.into_iter().take(500) {
         let shown = if is_dir { format!("{name}/") } else { name.clone() };
         let detail = if is_dir { t!("folder", "dossier") } else { format!("{name}.ry") };

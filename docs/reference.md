@@ -2111,6 +2111,7 @@ with examples; the code may be written in lowercase.
 | E022 | Impossible conversion | `int(t)` or `float(t)` on a text that is not a number |
 | E023 | Invalid value | a value of the right kind but outside what is accepted (a negative count, `min` of an empty list, `sqrt(-1)`, a range, a list or a text too large, an exit code outside 0–255...) |
 | E024 | A value is lost | a line computes a value that nothing uses |
+| E025 | Project or package problem | a `rythme.toml` or `rythme.lock` that cannot be read, a dependency not installed, or `rythme install` that cannot get one (see [7.7](#77-projects-and-packages)) |
 | W001 | Unused name | a local name is defined but never used |
 | W002 | Forgotten case | a `match` or a one-parameter function does not handle every possible value |
 | W003 | Built-in function hidden | a top-level definition takes the name of a built-in function |
@@ -2424,11 +2425,13 @@ rythme [--lang fr|en] [--no-color] [COMMAND] [ARGUMENTS...]
 | Command | Aliases | What it does |
 |---------|---------|--------------|
 | *(none)* | `repl` | the interactive mode (see [7.2](#72-the-interactive-mode-repl)) |
-| `FILE [ARGS...]` | `run FILE [ARGS...]`, `lancer` | checks then runs the program; `ARGS` are given to `args()` |
+| `FILE [ARGS...]` | `run FILE [ARGS...]`, `lancer` | checks then runs the program; `ARGS` are given to `args()`. Without a file, in a project: its program (see [7.7](#77-projects-and-packages)), and so for `test`, `check`, `fmt` and `doc` |
 | `check FILE...` | `verifier`, `vérifier` | checks each program without running it (see [5.5](#55-the-check-before-running)) |
 | `test FILE [ARGS...]` | `tester` | runs the tests (see [4.8](#48-tests)) |
 | `fmt [--check] FILE...` | `format`, `formater` | gives the code its official layout; also a folder, or `-` for the standard input (see [7.4](#74-the-formatter-rythme-fmt)) |
 | `doc [--html] [--out FILE] FILE...` | `documenter` | writes the documentation of files or folders, in Markdown or as a web page (see [7.6](#76-documentation-rythme-doc)) |
+| `new NAME` | `nouveau` | creates the folder of a new project (see [7.7](#77-projects-and-packages)) |
+| `install` | `installer` | downloads the dependencies of the project and writes `rythme.lock` (see [7.7](#77-projects-and-packages)) |
 | `exercise [list \| start NAME \| check FILE]` | `exercises`, `exercice`, `exercices` | the built-in exercises (see below) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | runs the code given as an argument, and shows the value of its last expression unless it is `()`; `ARGS` are given to `args()` |
 | `lsp` | | the language server, started by an editor (see [7.5](#75-editors-and-the-language-server)) |
@@ -2462,10 +2465,10 @@ unknown action or exercise is exit code 2.
 
 **Help topics.** `rythme help TOPIC` accepts `start`, `syntax`, `functions`,
 `lists`, `text`, `records`, `types`, `match`, `errors`, `functional`,
-`tests`, `exercises`, `modules`, `repl`, `fmt`, `doc`, `editors` and
+`tests`, `exercises`, `modules`, `projects`, `repl`, `fmt`, `doc`, `editors` and
 `builtins`, and French or alternative names: `syntaxe`, `fonctions`,
 `listes`, `texte`, `enregistrements`, `motifs`, `erreurs`, `fonctionnel`,
-`boucles`, `exercices`, `fichiers`, `interactif`, `format`, `documentation`,
+`boucles`, `exercices`, `fichiers`, `projets`, `paquets`, `interactif`, `format`, `documentation`,
 `lsp`, `vscode`, `éditeurs`, `bibliothèque`...
 
 **Exit codes.**
@@ -2487,7 +2490,9 @@ unknown action or exercise is exit code 2.
 - `NO_COLOR`: when it is set (to any value), messages have no colors;
   `--no-color` does the same. Colors are used only when the error output is a
   terminal (on Windows, only in terminals known to support them).
-- `HOME` (`USERPROFILE` on Windows): where the REPL keeps its history.
+- `HOME` (`USERPROFILE` on Windows): where the REPL keeps its history, and
+  where `rythme install` keeps packages (`~/.rythme/packages`).
+- `RYTHME_HOME`: another folder for the packages (`RYTHME_HOME/packages`).
 
 **Outputs.** What the program prints (`print`, the prompt of `input`, the
 results of `check`, `test` and `fmt`) goes to the standard output; error and
@@ -2857,6 +2862,144 @@ len([1, 2])                # 2
 
 `rythme doc --html . --out doc.html` writes the same for every file of the
 folder as one page, with a table of contents.
+
+### 7.7 Projects and packages
+
+A **project** is a folder with a `rythme.toml` file, its code in `src/` and
+its tests in `tests/`. A project can use other projects, its
+**dependencies**, from git or from a folder: they are **packages**.
+
+**Creating a project.** `rythme new NAME` creates the folder `NAME` with a
+small program that already works:
+
+```text
+$ rythme new hello
+Created the project `hello`:
+  hello/rythme.toml
+  hello/src/main.ry
+  hello/src/greeting.ry
+  hello/tests/greeting_test.ry
+  hello/README.md
+  hello/.gitignore
+Next: `cd hello`, then `rythme run` to run it and `rythme test` to test it (see `rythme help projects`)
+$ cd hello
+$ rythme run
+Hello, World!
+$ rythme test
+Running 1 test(s)
+  ✓ hello
+1 test(s): 1 passed, 0 failed
+```
+
+The name of a project is a Rythme name in lower case (letters, digits and
+`_`, not a keyword), because it is used in `use`: `rythme new my-app` is
+E025, with the help `try rythme new my_app` (exit code 2). A folder that
+already exists and is not empty is never touched (exit code 1). The files
+are written in the language of the messages (`src/salutation.ry` in
+French).
+
+**`rythme.toml`.** Every value is a text in quotes; `#` starts a comment.
+
+```toml
+name = "hello"            # required: the name of the package
+version = "0.1.0"         # required: three numbers, major.minor.patch
+entry = "src/main.ry"     # the program; this one when it is not given
+
+[dependencies]
+mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
+geometry = { git = "https://github.com/someone/geometry", commit = "4d868c2" }
+tools = { path = "../tools" }
+```
+
+A dependency from git gives its address and a fixed version: a `tag` or a
+`commit` (at least 4 hexadecimal digits). A dependency from a folder gives
+its `path`, relative to the project. The name before `=` is the name used in
+`use`. This is a small part of TOML, read by Rythme itself: texts with `"`
+(with `\"`, `\\`, `\n`, `\t`) or `'`, and tables on one line. Any other key,
+section (`[package]` included) or kind of value is E025, shown at its place
+in `rythme.toml`, with a suggestion when a close key exists:
+
+```text
+error[E025]: unknown key `tga`
+ --> rythme.toml:6:30
+  |
+6 | tools = { path = "../tools", tga = "x" }
+  |                              ^^^
+  |
+  = note: the keys here are `git`, `tag`, `commit`, `path`
+  = help: did you mean `tag`?
+  = more about this error: `rythme explain E025`
+```
+
+**`rythme install`.** In the folder of the project (or one of its folders),
+`rythme install` downloads each dependency from git, then the dependencies
+of each dependency, and writes `rythme.lock`:
+
+```text
+$ rythme install
+Installing the dependencies of `hello`
+  ✓ mathlib 1.0.0: tag v1.0.0, commit 4d868c2 (downloaded)
+  ✓ tools 0.2.0: folder ../tools
+2 package(s) ready
+```
+
+- Downloading uses the program `git` (`git clone`, then the commit of the
+  tag or of the commit). Without it, `rythme install` stops with E025 and
+  says where to get it; dependencies from a folder do not need it.
+- Each package from git is kept in its own folder under
+  `RYTHME_HOME/packages` (`~/.rythme/packages` by default), named after its
+  address and its version, and shared by every project of the computer. A
+  package already there is not downloaded again.
+- Every dependency must be a project itself, with its `rythme.toml`.
+- `rythme.lock` holds, for each package from git, its address, its tag (or
+  the commit asked), and the **exact commit** that was installed. Keep it
+  with the project: `rythme install` on another computer then installs the
+  same commits, even if a tag was moved. When `rythme.toml` asks for another
+  version, `rythme install` takes it and updates `rythme.lock`; to take the
+  new commit of a moved tag, delete `rythme.lock`.
+- A tag or a commit that does not exist, an address that git cannot reach,
+  a folder that does not exist: E025, with what git said, the line of
+  `rythme.toml`, and the closest tag when there is one.
+
+**Using a package.** `use NAME/FILE` is the file `src/FILE.ry` of the
+package `NAME`, and is used through the last part of the path, as any
+`use` (see [4.9](#49-modules-use)):
+
+```rythme
+# src/main.ry
+use mathlib/vectors       # the file src/vectors.ry of mathlib
+use mathlib               # the program of mathlib: the `entry` of its rythme.toml
+use hello/greeting        # a file of the project itself (`hello`), useful in tests/
+print(vectors.add({x: 1, y: 2}, {x: 3, y: 4}))
+```
+
+- The packages are found through the nearest `rythme.toml` above the file
+  that contains the `use`: inside a package, its own dependencies are used.
+- A file next to the one that contains the `use` comes first: `use
+  mathlib/vectors` is first `mathlib/vectors.ry` in the folder of the file.
+- The private names (`_name`) of a package stay private, and its files are
+  checked like the others.
+- A package that is not installed is E025, at the `use`, with the help to
+  run `rythme install`; a file that the package does not have is E017, with
+  the closest file. A `use` that names nothing in a project says which
+  packages it can reach.
+- The language server knows packages too: no false problem on `use
+  mathlib/vectors`, completion of the package names after `use `, and of
+  their files after `use mathlib/`.
+
+**Commands without a file.** In the folder of a project or in one of its
+folders, the commands take the files of the project when no file is given:
+
+| Command | Works on |
+|---------|----------|
+| `rythme run` | the program, `entry` of `rythme.toml` |
+| `rythme test` | every file of `src/` and `tests/` (and their folders) that has tests, one after the other, each one with its name; the program when none has |
+| `rythme check` | the program, then every file of `src/` and `tests/` |
+| `rythme fmt` | the folders `src/` and `tests/` (`rythme fmt --check` too) |
+| `rythme doc` | the folder `src/` (`--html`, `--out` work as usual) |
+
+Outside of a project, a missing file is still a usage error (exit code 2).
+A file given by name never needs `rythme.toml`, even in a project.
 
 ---
 
