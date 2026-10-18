@@ -34,6 +34,6 @@ in the repository settings (Settings → Pages → Source: GitHub Actions).
   the error messages); the Format button and Shift+Alt+F use mode 3.
 - Programs run in a Web Worker: a program that never stops can be stopped.
 - The browser's call stack is small, so nested (non-tail) calls are limited
-  to 600 here; tail calls have no limit. The installed `rythme` allows about
-  200,000 nested calls.
+  to 600 here; tail calls have no limit. The installed `rythme` allows several
+  hundred thousand nested calls.
 - Files cannot be read in the browser, and `input()` returns an empty text.
