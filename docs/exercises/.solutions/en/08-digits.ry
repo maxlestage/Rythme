@@ -1,0 +1,32 @@
+# Exercise 08 · The digits of a number  ★★☆
+# Reference solution. Try the exercise before reading it!
+
+fn digit_count(n) = if n < 10 then 1 else 1 + digit_count(n // 10)
+
+fn digit_sum(n) = if n < 10 then n else n % 10 + digit_sum(n // 10)
+
+fn reverse_from(0, built) = built
+fn reverse_from(n, built) = reverse_from(n // 10, built * 10 + n % 10)
+
+fn reverse_number(n) = reverse_from(n, 0)
+
+# --- Tests (do not change them) ---
+
+test "digit count"
+  assert_eq(digit_count(0), 1)
+  assert_eq(digit_count(7), 1)
+  assert_eq(digit_count(472), 3)
+  assert_eq(digit_count(1000000), 7)
+end
+
+test "digit sum"
+  assert_eq(digit_sum(0), 0)
+  assert_eq(digit_sum(472), 13)
+  assert_eq(digit_sum(99999), 45)
+end
+
+test "reverse number"
+  assert_eq(reverse_number(472), 274)
+  assert_eq(reverse_number(1230), 321)
+  assert_eq(reverse_number(5), 5)
+end

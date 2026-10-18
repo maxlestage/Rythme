@@ -1,0 +1,35 @@
+# Exercice 30 · Les tests trouvent les bugs  ★★★
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn borner(x, bas, haut) = max(bas, min(x, haut))
+
+fn mediane(liste)
+  triee = sort(liste)
+  milieu = len(triee) // 2
+  if is_even(len(triee)) then (triee[milieu - 1] + triee[milieu]) / 2 else triee[milieu]
+end
+
+fn nombre_de_mots(texte) = len(split(texte))
+
+# --- Tests (ne les modifiez pas) ---
+
+test "borner"
+  assert_eq(borner(15, 0, 10), 10)
+  assert_eq(borner(-5, 0, 10), 0)
+  assert_eq(borner(5, 0, 10), 5)
+end
+
+test "médiane d'un nombre impair de valeurs"
+  assert_eq(mediane([1, 2, 3]), 2)
+  assert_eq(mediane([3, 1, 2]), 2)
+end
+
+test "médiane d'un nombre pair de valeurs" = assert_eq(mediane([4, 1, 3, 2]), 2.5)
+
+test "nombre de mots"
+  assert_eq(nombre_de_mots("un deux trois"), 3)
+  assert_eq(nombre_de_mots("  un   deux "), 2)
+end
+
+# Votre test :
+test "borner à une seule valeur" = assert_eq(borner(5, 5, 5), 5)

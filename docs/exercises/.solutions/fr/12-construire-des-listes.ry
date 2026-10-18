@@ -1,0 +1,45 @@
+# Exercice 12 · Construire des listes  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn a_rebours(0) = [0]
+fn a_rebours(n) = [n, ..a_rebours(n - 1)]
+
+fn repeter(_, 0) = []
+fn repeter(x, n) = [x, ..repeter(x, n - 1)]
+
+fn doubler_tout([]) = []
+fn doubler_tout([x, ..reste]) = [x * 2, ..doubler_tout(reste)]
+
+fn inverser_sur([], fait) = fait
+fn inverser_sur([x, ..reste], fait) = inverser_sur(reste, [x, ..fait])
+
+fn inverser(liste) = inverser_sur(liste, [])
+
+# --- Tests (ne les modifiez pas) ---
+
+test "à rebours"
+  assert_eq(a_rebours(0), [0])
+  assert_eq(a_rebours(3), [3, 2, 1, 0])
+end
+
+test "répéter"
+  assert_eq(repeter("a", 3), ["a", "a", "a"])
+  assert_eq(repeter(1, 0), [])
+end
+
+test "doubler tout"
+  assert_eq(doubler_tout([1, 2, 3]), [2, 4, 6])
+  assert_eq(doubler_tout([]), [])
+end
+
+test "inverser"
+  assert_eq(inverser([1, 2, 3]), [3, 2, 1])
+  assert_eq(inverser([]), [])
+  assert_eq(inverser(["x"]), ["x"])
+end
+
+test "la liste de départ ne change pas"
+  nombres = [1, 2, 3]
+  inverser(nombres)
+  assert_eq(nombres, [1, 2, 3])
+end

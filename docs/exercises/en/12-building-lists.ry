@@ -1,0 +1,61 @@
+# Exercise 12 · Building lists  ★★☆
+#
+# `[x, ..rest]` also builds a list: x followed by the elements of rest.
+# Lists never change: a function gives back a new list.
+#   fn zeros(0) = []
+#   fn zeros(n) = [0, ..zeros(n - 1)]
+#
+# Statement
+#   With recursion, and without `map`, `reverse` or ranges (`1..n`):
+#   - `countdown(n)`: the list [n, n - 1, ..., 1, 0];
+#   - `repeat_value(x, n)`: a list with n times the value x;
+#   - `double_all(list)`: each number of the list doubled;
+#   - `reversed(list)`: the elements in the opposite order.
+#
+# Hints
+#   1. `countdown(0)` is `[0]`.
+#   2. `double_all([x, ..rest])` starts with `x * 2`.
+#   3. For `reversed`, use an accumulator: `reversed_onto(list, done)` moves
+#      the first element of list to the front of done, until list is empty.
+#      `reversed_onto([1, 2], [])` → `reversed_onto([2], [1])` →
+#      `reversed_onto([], [2, 1])`.
+#
+# Check your work:  rythme exercise check 12-building-lists.ry
+#              or:  rythme test 12-building-lists.ry
+
+fn countdown(n) = fail("to do")
+
+fn repeat_value(x, n) = fail("to do")
+
+fn double_all(list) = fail("to do")
+
+fn reversed(list) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "countdown"
+  assert_eq(countdown(0), [0])
+  assert_eq(countdown(3), [3, 2, 1, 0])
+end
+
+test "repeat value"
+  assert_eq(repeat_value("a", 3), ["a", "a", "a"])
+  assert_eq(repeat_value(1, 0), [])
+end
+
+test "double all"
+  assert_eq(double_all([1, 2, 3]), [2, 4, 6])
+  assert_eq(double_all([]), [])
+end
+
+test "reversed"
+  assert_eq(reversed([1, 2, 3]), [3, 2, 1])
+  assert_eq(reversed([]), [])
+  assert_eq(reversed(["x"]), ["x"])
+end
+
+test "the original list does not change"
+  numbers = [1, 2, 3]
+  reversed(numbers)
+  assert_eq(numbers, [1, 2, 3])
+end

@@ -1,0 +1,56 @@
+# Exercice 06 · Une définition par cas  ★☆☆
+#
+# Une fonction peut s'écrire en plusieurs définitions, essayées dans
+# l'ordre. Un paramètre peut être une valeur (`fn f(0) = ...`), et une garde
+# (`if ...` avant le `=`) ajoute une condition :
+#   fn decrire(0) = "zéro"
+#   fn decrire(n) if n < 0 = "négatif"
+#   fn decrire(_) = "positif"
+#
+# Énoncé
+#   - `pluriel(n, mot)` : "1 chat" pour 1, mais "0 chats", "2 chats"...
+#   - `fizzbuzz(n)` : "FizzBuzz" si n est un multiple de 3 et de 5, "Fizz"
+#     pour les autres multiples de 3, "Buzz" pour les autres multiples de 5,
+#     et le nombre sous forme de texte sinon ;
+#   - `type_de_jour(jour)` : "week-end" pour "samedi" et "dimanche",
+#     "semaine" pour tout autre texte.
+#
+# Indices
+#   1. Commencez par le cas particulier : `fn pluriel(1, mot) = ...`, puis
+#      le cas général sur la ligne suivante.
+#   2. L'ordre compte : testez "FizzBuzz" avant "Fizz" et "Buzz".
+#   3. `text(15)` vaut "15".
+#   4. `_` accepte tout, et c'est en général le dernier cas.
+#
+# Vérifiez votre travail :  rythme exercise check 06-cas.ry
+#                     ou :  rythme test 06-cas.ry
+
+fn pluriel(n, mot) = fail("à faire")
+
+fn fizzbuzz(n) = fail("à faire")
+
+fn type_de_jour(jour) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "pluriel"
+  assert_eq(pluriel(1, "chat"), "1 chat")
+  assert_eq(pluriel(2, "chat"), "2 chats")
+  assert_eq(pluriel(0, "chien"), "0 chiens")
+end
+
+test "fizzbuzz"
+  assert_eq(fizzbuzz(1), "1")
+  assert_eq(fizzbuzz(3), "Fizz")
+  assert_eq(fizzbuzz(10), "Buzz")
+  assert_eq(fizzbuzz(30), "FizzBuzz")
+  assert_eq(fizzbuzz(31), "31")
+end
+
+test "les quinze premiers" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+
+test "type de jour"
+  assert_eq(type_de_jour("samedi"), "week-end")
+  assert_eq(type_de_jour("dimanche"), "week-end")
+  assert_eq(type_de_jour("lundi"), "semaine")
+end

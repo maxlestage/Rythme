@@ -1,0 +1,57 @@
+# Exercice 21 · Listes d'enregistrements  ★★☆
+#
+# Les vraies données sont souvent une liste d'enregistrements : une classe
+# d'élèves, une liste de commandes... `map`, `filter`, `sort_by`, `max_by`,
+# `group_by` et `sum` s'en servent comme de n'importe quelle liste.
+#
+# Énoncé
+#   Un élève est un enregistrement `{nom, note, groupe}` (une note de 0 à
+#   20).
+#   - `noms_des_admis(eleves)` : les noms des élèves dont la note est d'au
+#     moins 10, dans le même ordre ;
+#   - `note_moyenne(eleves)` : la moyenne des notes ;
+#   - `meilleur(eleves)` : le nom de l'élève qui a la meilleure note ;
+#   - `classement(eleves)` : les noms, de la meilleure note à la plus
+#     basse ;
+#   - `effectifs(eleves)` : un enregistrement qui donne, pour chaque groupe,
+#     combien d'élèves il compte (`{A: 2, B: 1}`).
+#
+# Indices
+#   1. `filter` puis `map(fn(e) = e.nom)`.
+#   2. `max_by(liste, cle)` donne l'élément dont la clé est la plus grande.
+#   3. `sort_by(liste, fn(e) = -e.note)` trie à partir de la meilleure note.
+#   4. `group_by(liste, cle)` donne un enregistrement de listes, et
+#      `map_values(enregistrement, f)` applique f à chacune de ses valeurs.
+#
+# Vérifiez votre travail :  rythme exercise check 21-listes-d-enregistrements.ry
+#                     ou :  rythme test 21-listes-d-enregistrements.ry
+
+fn noms_des_admis(eleves) = fail("à faire")
+
+fn note_moyenne(eleves) = fail("à faire")
+
+fn meilleur(eleves) = fail("à faire")
+
+fn classement(eleves) = fail("à faire")
+
+fn effectifs(eleves) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+promotion = [
+  {nom: "Ada", note: 18, groupe: "A"},
+  {nom: "Alan", note: 8, groupe: "B"},
+  {nom: "Grace", note: 14, groupe: "A"},
+  {nom: "Edsger", note: 10, groupe: "B"},
+  {nom: "Barbara", note: 15, groupe: "A"},
+]
+
+test "admis" = assert_eq(noms_des_admis(promotion), ["Ada", "Grace", "Edsger", "Barbara"])
+
+test "moyenne" = assert_eq(note_moyenne(promotion), 13)
+
+test "meilleur" = assert_eq(meilleur(promotion), "Ada")
+
+test "classement" = assert_eq(classement(promotion), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+
+test "effectifs" = assert_eq(effectifs(promotion), {A: 3, B: 2})

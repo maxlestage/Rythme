@@ -1,0 +1,51 @@
+# Exercice 02 · Textes  ★☆☆
+#
+# Une fonction reçoit des valeurs et rend une nouvelle valeur :
+#   fn double(x) = x * 2
+#
+# Énoncé
+#   Écrivez les quatre fonctions ci-dessous pour que leurs tests passent :
+#   - `saluer(nom)` donne "Bonjour, Ada !" pour "Ada" ;
+#   - `crier(texte)` donne le texte en majuscules suivi de " !" ;
+#   - `initiales(prenom, nom)` donne "A.L." pour "Ada" et "Lovelace" ;
+#   - `presenter(nom, age)` donne "Ada a 36 ans.".
+#
+# Indices
+#   1. "Bonjour, {nom} !" insère la valeur de `nom` dans le texte.
+#   2. `upper("salut")` vaut "SALUT", et `+` colle deux textes :
+#      "SALUT" + " !".
+#   3. `mot[0]` est le premier caractère de `mot` ; il peut aussi aller
+#      entre accolades : "{mot[0]}.".
+#
+# Vérifiez votre travail :  rythme exercise check 02-textes.ry
+#                     ou :  rythme test 02-textes.ry
+
+## Une salutation pour `nom`.
+fn saluer(nom) = fail("à faire")
+
+## Le texte en majuscules, suivi de " !".
+fn crier(texte) = fail("à faire")
+
+## Les initiales d'une personne, chacune suivie d'un point.
+fn initiales(prenom, nom) = fail("à faire")
+
+## Une phrase qui présente une personne.
+fn presenter(nom, age) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "saluer" = assert_eq(saluer("Ada"), "Bonjour, Ada !")
+
+test "saluer quelqu'un d'autre" = assert_eq(saluer("Alan"), "Bonjour, Alan !")
+
+test "crier"
+  assert_eq(crier("bonjour"), "BONJOUR !")
+  assert_eq(crier("Stop"), "STOP !")
+end
+
+test "initiales"
+  assert_eq(initiales("Ada", "Lovelace"), "A.L.")
+  assert_eq(initiales("grace", "hopper"), "g.h.")
+end
+
+test "présenter" = assert_eq(presenter("Ada", 36), "Ada a 36 ans.")

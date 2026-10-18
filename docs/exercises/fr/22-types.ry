@@ -1,0 +1,52 @@
+# Exercice 22 · Vos propres types  ★★☆
+#
+# `type` définit une nouvelle sorte de valeur, avec un constructeur pour
+# chaque forme possible :
+#   type Animal = Chien(nom) | Chat(nom, vies) | Poisson
+# Une fonction peut avoir une définition par constructeur :
+#   fn cri(Chien(_)) = "ouaf"
+#
+# Énoncé
+#   Le type `Forme` ci-dessous a trois formes.
+#   - `aire(forme)` : l'aire de la forme ;
+#   - `perimetre(forme)` : la longueur de son bord ;
+#   - `nom_de(forme)` : "cercle", "rectangle" ou "carré" ;
+#   - `aire_totale(formes)` : la somme des aires d'une liste de formes.
+#
+# Indices
+#   1. `fn aire(Cercle(r)) = pi * r * r`, puis une définition pour chaque
+#      autre constructeur.
+#   2. Le périmètre d'un cercle vaut 2 × π × r.
+#   3. Si vous oubliez un constructeur, `rythme check` vous dit lequel
+#      (avertissement W002).
+#
+# Vérifiez votre travail :  rythme exercise check 22-types.ry
+#                     ou :  rythme test 22-types.ry
+
+type Forme = Cercle(rayon) | Rectangle(largeur, hauteur) | Carre(cote)
+
+fn aire(forme) = fail("à faire")
+
+fn perimetre(forme) = fail("à faire")
+
+fn nom_de(forme) = fail("à faire")
+
+fn aire_totale(formes) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "aire"
+  assert_eq(aire(Rectangle(2, 3)), 6)
+  assert_eq(aire(Carre(4)), 16)
+  assert_eq(round(aire(Cercle(1)), 2), 3.14)
+end
+
+test "périmètre"
+  assert_eq(perimetre(Rectangle(2, 3)), 10)
+  assert_eq(perimetre(Carre(4)), 16)
+  assert_eq(round(perimetre(Cercle(1)), 2), 6.28)
+end
+
+test "nom" = assert_eq([Cercle(1), Rectangle(1, 2), Carre(3)] |> map(nom_de), ["cercle", "rectangle", "carré"])
+
+test "aire totale" = assert_eq(aire_totale([Rectangle(2, 3), Carre(2), Rectangle(1, 1)]), 11)

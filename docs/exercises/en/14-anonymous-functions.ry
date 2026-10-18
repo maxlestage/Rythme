@@ -1,0 +1,50 @@
+# Exercise 14 · Anonymous functions  ★★☆
+#
+# `fn(x) = x * 2` is a function without a name, written right where it is
+# needed. It can use the names around it:
+#   fn add_to_all(list, n) = map(list, fn(x) = x + n)
+#
+# Statement
+#   - `with_tax(prices, percent)`: each price increased by `percent` %;
+#   - `long_words(words, n)`: the words that have more than n characters;
+#   - `lengths(words)`: the length of each word;
+#   - `all_positive(list)`: are all the numbers greater than 0?
+#   - `count_above(list, limit)`: how many numbers are greater than limit.
+#
+# Hints
+#   1. A price p increased by 20 % is `p + p * 20 / 100`.
+#   2. `len("word")` is 4.
+#   3. `all(list, f)` is true when f gives true for every element, and
+#      `count(list, f)` counts the elements for which f gives true.
+#
+# Check your work:  rythme exercise check 14-anonymous-functions.ry
+#              or:  rythme test 14-anonymous-functions.ry
+
+fn with_tax(prices, percent) = fail("to do")
+
+fn long_words(words, n) = fail("to do")
+
+fn lengths(words) = fail("to do")
+
+fn all_positive(list) = fail("to do")
+
+fn count_above(list, limit) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "with tax"
+  assert_eq(with_tax([100, 50], 20), [120, 60])
+  assert_eq(with_tax([10], 0), [10])
+end
+
+test "long words" = assert_eq(long_words(["a", "tree", "is", "green"], 3), ["tree", "green"])
+
+test "lengths" = assert_eq(lengths(["a", "tree", "is"]), [1, 4, 2])
+
+test "all positive"
+  assert_eq(all_positive([1, 5, 3]), true)
+  assert_eq(all_positive([1, -5, 3]), false)
+  assert_eq(all_positive([]), true)
+end
+
+test "count above" = assert_eq(count_above([3, 10, 7, 12], 5), 3)

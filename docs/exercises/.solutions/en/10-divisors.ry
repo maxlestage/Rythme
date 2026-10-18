@@ -1,0 +1,35 @@
+# Exercise 10 · Divisors and prime numbers  ★★☆
+# Reference solution. Try the exercise before reading it!
+
+fn my_gcd(a, 0) = a
+fn my_gcd(a, b) = my_gcd(b, a % b)
+
+fn no_divisor_from(n, d) if d * d > n = true
+fn no_divisor_from(n, d) if n % d == 0 = false
+fn no_divisor_from(n, d) = no_divisor_from(n, d + 1)
+
+fn is_prime(n) = n >= 2 and no_divisor_from(n, 2)
+
+fn next_prime(n) = if is_prime(n + 1) then n + 1 else next_prime(n + 1)
+
+# --- Tests (do not change them) ---
+
+test "gcd"
+  assert_eq(my_gcd(12, 18), 6)
+  assert_eq(my_gcd(17, 5), 1)
+  assert_eq(my_gcd(7, 0), 7)
+  assert_eq(my_gcd(0, 9), 9)
+end
+
+test "prime numbers"
+  assert_eq(1..30 |> filter(is_prime), [2, 3, 5, 7, 11, 13, 17, 19, 23, 29])
+  assert_eq(is_prime(0), false)
+  assert_eq(is_prime(7919), true)
+  assert_eq(is_prime(7917), false)
+end
+
+test "next prime"
+  assert_eq(next_prime(1), 2)
+  assert_eq(next_prime(13), 17)
+  assert_eq(next_prime(100), 101)
+end

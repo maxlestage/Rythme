@@ -1,0 +1,36 @@
+# Exercice 22 · Vos propres types  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+type Forme = Cercle(rayon) | Rectangle(largeur, hauteur) | Carre(cote)
+
+fn aire(Cercle(r)) = pi * r * r
+fn aire(Rectangle(l, h)) = l * h
+fn aire(Carre(c)) = c * c
+
+fn perimetre(Cercle(r)) = 2 * pi * r
+fn perimetre(Rectangle(l, h)) = 2 * (l + h)
+fn perimetre(Carre(c)) = 4 * c
+
+fn nom_de(Cercle(_)) = "cercle"
+fn nom_de(Rectangle(_, _)) = "rectangle"
+fn nom_de(Carre(_)) = "carré"
+
+fn aire_totale(formes) = formes |> map(aire) |> sum
+
+# --- Tests (ne les modifiez pas) ---
+
+test "aire"
+  assert_eq(aire(Rectangle(2, 3)), 6)
+  assert_eq(aire(Carre(4)), 16)
+  assert_eq(round(aire(Cercle(1)), 2), 3.14)
+end
+
+test "périmètre"
+  assert_eq(perimetre(Rectangle(2, 3)), 10)
+  assert_eq(perimetre(Carre(4)), 16)
+  assert_eq(round(perimetre(Cercle(1)), 2), 6.28)
+end
+
+test "nom" = assert_eq([Cercle(1), Rectangle(1, 2), Carre(3)] |> map(nom_de), ["cercle", "rectangle", "carré"])
+
+test "aire totale" = assert_eq(aire_totale([Rectangle(2, 3), Carre(2), Rectangle(1, 1)]), 11)

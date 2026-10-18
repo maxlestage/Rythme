@@ -64,6 +64,17 @@ test "negative" = assert_eq(largest([-3, -1, -2]), -1)
 `rythme test exercise.ry` reports what passes and, for each failure, the
 expected and obtained values.
 
+Thirty such exercises are ready: [**the exercises**](exercises/README.md),
+graded from ★☆☆ to ★★★ and following the course above, each with a
+statement, hints and tests, in English and French, with reference solutions
+for teachers. They are built into `rythme`:
+
+```sh
+rythme exercise list                     # the exercises
+rythme exercise start 7                  # copies 07-recursion.ry into the current folder
+rythme exercise check 07-recursion.ry    # runs its tests, with advice, and proposes the next one
+```
+
 ## Practical tips
 
 - Start with the interactive mode (`rythme`): every line shows its value.

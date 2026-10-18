@@ -21,6 +21,7 @@ fn help_overview_and_topics() {
         "errors",
         "functional",
         "tests",
+        "exercises",
         "modules",
         "repl",
         "editors",

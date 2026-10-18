@@ -1,0 +1,50 @@
+# Exercice 24 · Arbres  ★★★
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+type Arbre = Feuille | Noeud(gauche, valeur, droite)
+
+fn taille(Feuille) = 0
+fn taille(Noeud(gauche, _, droite)) = taille(gauche) + 1 + taille(droite)
+
+fn total(Feuille) = 0
+fn total(Noeud(gauche, valeur, droite)) = total(gauche) + valeur + total(droite)
+
+fn profondeur(Feuille) = 0
+fn profondeur(Noeud(gauche, _, droite)) = 1 + max(profondeur(gauche), profondeur(droite))
+
+fn inserer(Feuille, x) = Noeud(Feuille, x, Feuille)
+fn inserer(Noeud(gauche, valeur, droite), x) =
+  if x < valeur then Noeud(inserer(gauche, x), valeur, droite) else Noeud(gauche, valeur, inserer(droite, x))
+
+fn en_liste(Feuille) = []
+fn en_liste(Noeud(gauche, valeur, droite)) = en_liste(gauche) + [valeur] + en_liste(droite)
+
+# --- Tests (ne les modifiez pas) ---
+
+#       5
+#      / \
+#     3   8
+#    /
+#   1
+petit = Noeud(Noeud(Noeud(Feuille, 1, Feuille), 3, Feuille), 5, Noeud(Feuille, 8, Feuille))
+
+test "taille"
+  assert_eq(taille(Feuille), 0)
+  assert_eq(taille(petit), 4)
+end
+
+test "total" = assert_eq(total(petit), 17)
+
+test "profondeur"
+  assert_eq(profondeur(Feuille), 0)
+  assert_eq(profondeur(petit), 3)
+end
+
+test "insérer"
+  assert_eq(inserer(Feuille, 4), Noeud(Feuille, 4, Feuille))
+  assert_eq(inserer(Noeud(Feuille, 4, Feuille), 2), Noeud(Noeud(Feuille, 2, Feuille), 4, Feuille))
+end
+
+test "en liste" = assert_eq(en_liste(petit), [1, 3, 5, 8])
+
+test "trier avec un arbre" = assert_eq([7, 2, 9, 4, 1] |> fold(Feuille, inserer) |> en_liste, [1, 2, 4, 7, 9])

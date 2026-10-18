@@ -1,0 +1,57 @@
+# Exercise 25 · A small calculator  ★★★
+# Reference solution. Try the exercise before reading it!
+
+type Expr = Num(value) | Add(left, right) | Mul(left, right) | Neg(inner)
+
+fn evaluate(Num(n)) = n
+fn evaluate(Add(a, b)) = evaluate(a) + evaluate(b)
+fn evaluate(Mul(a, b)) = evaluate(a) * evaluate(b)
+fn evaluate(Neg(e)) = -evaluate(e)
+
+fn show(Num(n)) = text(n)
+fn show(Add(a, b)) = "({show(a)} + {show(b)})"
+fn show(Mul(a, b)) = "({show(a)} * {show(b)})"
+fn show(Neg(e)) = "-" + show(e)
+
+fn count_numbers(Num(_)) = 1
+fn count_numbers(Add(a, b)) = count_numbers(a) + count_numbers(b)
+fn count_numbers(Mul(a, b)) = count_numbers(a) + count_numbers(b)
+fn count_numbers(Neg(e)) = count_numbers(e)
+
+fn simplify(Add(a, b)) = match [simplify(a), simplify(b)]
+  [e, Num(0)] -> e
+  [Num(0), e] -> e
+  [x, y] -> Add(x, y)
+end
+fn simplify(Mul(a, b)) = match [simplify(a), simplify(b)]
+  [e, Num(1)] -> e
+  [Num(1), e] -> e
+  [x, y] -> Mul(x, y)
+end
+fn simplify(Neg(e)) = Neg(simplify(e))
+fn simplify(expr) = expr
+
+# --- Tests (do not change them) ---
+
+calculation = Mul(Add(Num(1), Num(2)), Num(3))
+
+test "evaluate"
+  assert_eq(evaluate(Num(4)), 4)
+  assert_eq(evaluate(calculation), 9)
+  assert_eq(evaluate(Neg(calculation)), -9)
+end
+
+test "show"
+  assert_eq(show(calculation), "((1 + 2) * 3)")
+  assert_eq(show(Neg(Num(4))), "-4")
+  assert_eq(show(Neg(Add(Num(1), Num(2)))), "-(1 + 2)")
+end
+
+test "count numbers" = assert_eq(count_numbers(Add(calculation, Neg(Num(5)))), 4)
+
+test "simplify"
+  assert_eq(simplify(Add(Num(7), Num(0))), Num(7))
+  assert_eq(simplify(Mul(Num(1), Add(Num(0), Num(2)))), Num(2))
+  assert_eq(simplify(calculation), calculation)
+  assert_eq(simplify(Neg(Mul(Num(3), Num(1)))), Neg(Num(3)))
+end
