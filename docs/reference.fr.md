@@ -2139,7 +2139,7 @@ minuscules.
 
 ## 6. Bibliothèque standard
 
-Les 124 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
+Les 136 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
 mots-clés, leurs noms sont en anglais. `rythme help builtins` les liste
 toutes par catégorie, une ligne chacune ; `rythme help NOM` (ou `help(NOM)`
 dans un programme, ou `:doc NOM` dans le mode interactif) affiche la
@@ -2250,6 +2250,29 @@ contenu : `Ok(())` ou `Err(message)`), `append_file(chemin, valeur)` (ajoute
 à la fin, en créant le fichier si besoin), `file_exists(chemin)`. Les
 chemins relatifs partent du dossier actuel.
 
+**Dates et heures.** Une date est un enregistrement `{year, month, day}`,
+avec `hour`, `minute` et `second` pour un moment de la journée (un champ
+absent vaut 0), et `offset`, le nombre de minutes d'avance de l'heure sur
+UTC, quand il est connu. Les années vont de 1 à 9999, dans le calendrier
+grégorien (une année bissextile tous les 4 ans, sauf tous les 100 ans, sauf
+tous les 400 ans). `now()` (la date et l'heure locales avec leur `offset` :
+d'après le fuseau horaire du système sous Linux et macOS, du navigateur dans
+le bac à sable, 0 (UTC) ailleurs), `today()` (`{year, month, day}`),
+`parse_date(texte)` (un Result ; ISO 8601 : `"2024-02-29"`, puis si besoin
+`T` ou une espace et une heure `13:05` ou `13:05:00`, une fraction de
+seconde, ignorée, et `Z` ou un décalage `+01:00`, `+0100` ou `+01`),
+`format_date(date)` (le retour en ISO 8601, avec l'heure et le décalage
+quand la date en a), `is_date(valeur)`, `add_days(date, n)` et
+`add_seconds(date, n)` (l'heure et le décalage restent ; `add_seconds` donne
+toujours une heure), `days_between(a, b)` (les jours entiers de a à b,
+arrondis vers zéro) et `seconds_between(a, b)` (les décalages comptent),
+`day_of_week(date)` (de 1 pour lundi à 7 pour dimanche, comme en ISO 8601),
+`days_in_month(annee, mois)`, `is_leap_year(annee)`. Un enregistrement qui
+n'est pas une date (un champ inconnu ou absent, un nombre hors limites, un
+30 février) arrête ces fonctions avec E023, qui dit ce qui ne va pas. Un
+décalage est un nombre fixe : il n'y a pas de règles d'heure d'été, donc un
+jour après un moment, c'est la même heure le lendemain.
+
 ```rythme
 nombres = [3, 1, 4, 1, 5, 9, 2, 6]
 print(map(nombres, fn(x) = x * 2))
@@ -2355,6 +2378,41 @@ print(file_exists("notes.txt"), args())
 Ok(["ligne 1", "ligne 2"])
 Err("fichier introuvable : absent.txt")
 true ["Ada", "36"]
+```
+
+```rythme
+depart = unwrap(parse_date("2024-02-28T22:30:00+01:00"))
+print(depart)
+print(add_days(depart, 1) |> format_date, add_seconds(depart, 5400) |> format_date)
+print(days_between({year: 2024, month: 1, day: 1}, {year: 2025, month: 1, day: 1}), days_in_month(2023, 2), is_leap_year(1900))
+print(day_of_week({year: 2024, month: 2, day: 29}), seconds_between(depart, {year: 2024, month: 2, day: 28, hour: 21, minute: 30, offset: 0}))
+print(parse_date("2023-02-29"))
+```
+
+```text
+{year: 2024, month: 2, day: 28, hour: 22, minute: 30, second: 0, offset: 60}
+2024-02-29T22:30:00+01:00 2024-02-29T00:00:00+01:00
+366 28 false
+4 0
+Err("\"2023-02-29\" n'est pas une date valide : le jour doit aller de 1 à 28 en février 2023, pas 29 (2023 n'est pas une année bissextile)")
+```
+
+Une date qui n'existe pas est expliquée :
+
+```rythme
+echeance = {year: 2023, month: 2, day: 29}
+print(add_days(echeance, 7))
+```
+
+```text
+erreur[E023]: `add_days` a besoin d'une date valide : le jour doit aller de 1 à 28 en février 2023, pas 29 (2023 n'est pas une année bissextile)
+ --> 65-dates.ry:2:7
+  |
+2 | print(add_days(echeance, 7))
+  |       ^^^^^^^^^^^^^^^^^^^^^ pas une date valide
+  |
+  = aide: une date est un enregistrement comme `{year: 2024, month: 2, day: 29}`, avec `hour`, `minute`, `second` et `offset` (minutes d'avance sur UTC) si besoin
+  = en savoir plus : `rythme explain E023`
 ```
 
 Quand il n'y a plus rien à lire (la saisie au clavier a été fermée par

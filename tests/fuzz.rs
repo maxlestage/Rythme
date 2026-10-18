@@ -12,6 +12,7 @@
 
 use std::panic::AssertUnwindSafe;
 use std::path::Path;
+use std::rc::Rc;
 use std::sync::OnceLock;
 
 use rythme::ast::Item;
@@ -22,7 +23,7 @@ use rythme::interp::{Interp, Mode};
 use rythme::lang::{self, Lang};
 use rythme::source::{self, Span};
 use rythme::symbol::Sym;
-use rythme::value::Value;
+use rythme::value::{Record, Value};
 use rythme::{help, io, lexer, parser};
 
 /// Calls allowed to each program: enough to do real work, few enough to
@@ -454,6 +455,9 @@ const EDGES: &[&str] = &[
     "{}",
     "{a: 1}",
     "{\"my key\": [1]}",
+    "{year: 2024, month: 2, day: 29}",
+    "{year: 9999, month: 12, day: 31, hour: 23, minute: 59, second: 59, offset: -60}",
+    "\"2024-02-29T12:00:00+01:00\"",
     "r",
     "None",
     "Some(0)",
@@ -649,8 +653,8 @@ fn tame(src: String) -> String {
 // ----- running a case --------------------------------------------------------
 
 /// Built-in functions that touch the world outside of the program are
-/// replaced: no files, no keyboard, no `exit`, no output, no clock, no
-/// environment variables.
+/// replaced: no files, no keyboard, no `exit`, no output, no clock (`time`,
+/// `now` and `today` give fixed values), no environment variables.
 fn sandbox() -> &'static Vec<&'static Builtin> {
     static SANDBOX: OnceLock<Vec<&'static Builtin>> = OnceLock::new();
     fn quiet(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
@@ -675,7 +679,21 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
     fn no_variable(it: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
         Ok(it.none())
     }
-    let fakes: [(&str, builtins::BuiltinFn); 11] = [
+    /// The clock always says 29 February 2024, 12:34:56, one hour ahead of UTC.
+    fn moment(fields: &[(&str, i64)]) -> Value {
+        let mut r = Record::new();
+        for &(k, v) in fields {
+            r.set(Rc::from(k), Value::Int(v));
+        }
+        Value::Record(Rc::new(r))
+    }
+    fn fixed_now(_: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
+        Ok(moment(&[("year", 2024), ("month", 2), ("day", 29), ("hour", 12), ("minute", 34), ("second", 56), ("offset", 60)]))
+    }
+    fn fixed_today(_: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
+        Ok(moment(&[("year", 2024), ("month", 2), ("day", 29)]))
+    }
+    let fakes: [(&str, builtins::BuiltinFn); 13] = [
         ("print", quiet),
         ("debug", same),
         ("input", empty_text),
@@ -687,6 +705,8 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
         ("write_file", no_file),
         ("append_file", no_file),
         ("file_exists", number),
+        ("now", fixed_now),
+        ("today", fixed_today),
     ];
     SANDBOX.get_or_init(|| {
         fakes

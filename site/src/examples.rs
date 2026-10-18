@@ -54,6 +54,11 @@ pub const EXAMPLES: &[Example] = &[
         "un rapport : scan, colonnes alignées avec pad_left, windows, chunks, JSON",
         "a report: scan, columns lined up with pad_left, windows, chunks, JSON"
     ),
+    example!(
+        "calendar",
+        "des dates : la page d'un mois, des textes ISO 8601, days_between, add_days",
+        "dates: the page of a month, ISO 8601 texts, days_between, add_days"
+    ),
     example!("tree", "un type récursif : arbre binaire de recherche", "a recursive type: binary search tree"),
     example!("primes", "un crible récursif, all, and", "a recursive sieve, all, and"),
     example!("testing", "les blocs test", "test blocks"),

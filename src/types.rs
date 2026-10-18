@@ -461,6 +461,18 @@ fn chained(d: &DataTy, ret: &Ty) -> Ty {
     d.failure().join(&given)
 }
 
+/// A date: `{year, month, day}`, with `hour`, `minute` and `second` when
+/// `timed`; `exact` for `now()` and `today()`, which have no other field
+/// (`now()` also has `offset`).
+fn date_ty(timed: bool, exact: bool) -> Ty {
+    let names: &[&str] = match (timed, exact) {
+        (true, true) => &["year", "month", "day", "hour", "minute", "second", "offset"],
+        (true, false) => &["year", "month", "day", "hour", "minute", "second"],
+        _ => &["year", "month", "day"],
+    };
+    Ty::record(names.iter().map(|n| (Rc::from(*n), Ty::Int)).collect(), exact)
+}
+
 /// What a call to the built-in function `name` gives, with arguments of
 /// these types. `None` for a function the checker knows nothing about: new
 /// built-in functions work without being described here.
@@ -912,6 +924,41 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
             }
             "file_exists" => {
                 need(a, 0, Expected::Text)?;
+                Ty::Bool
+            }
+            // A date always has these fields; `now()` exactly these and its time.
+            "now" => date_ty(true, true),
+            "today" => date_ty(false, true),
+            "parse_date" => {
+                need(a, 0, Expected::Text)?;
+                Ty::result(date_ty(false, false), Ty::Text)
+            }
+            "format_date" => {
+                need(a, 0, Expected::Date)?;
+                Ty::Text
+            }
+            "is_date" => Ty::Bool,
+            "add_days" | "add_seconds" => {
+                need(a, 0, Expected::Date)?;
+                need(a, 1, Expected::Int)?;
+                date_ty(name == "add_seconds", false)
+            }
+            "days_between" | "seconds_between" => {
+                need(a, 0, Expected::Date)?;
+                need(a, 1, Expected::Date)?;
+                Ty::Int
+            }
+            "day_of_week" => {
+                need(a, 0, Expected::Date)?;
+                Ty::Int
+            }
+            "days_in_month" => {
+                need(a, 0, Expected::Int)?;
+                need(a, 1, Expected::Int)?;
+                Ty::Int
+            }
+            "is_leap_year" => {
+                need(a, 0, Expected::Int)?;
                 Ty::Bool
             }
             _ => return Err(Outcome::Gives(Ty::Any)),

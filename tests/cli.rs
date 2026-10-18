@@ -22,6 +22,7 @@ fn help_overview_and_topics() {
         "functional",
         "tests",
         "modules",
+        "dates",
         "repl",
         "editors",
         "builtins",
