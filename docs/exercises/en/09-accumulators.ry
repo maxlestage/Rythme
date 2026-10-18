@@ -1,0 +1,52 @@
+# Exercise 09 · Accumulators and tail calls  ★★☆
+#
+# In `n + sum_to(n - 1)`, the addition waits for the call to finish: a
+# million nested calls stop with error E014 ("too many nested calls"). When
+# the recursive call is the very last thing the function does (a tail
+# call), nothing waits, and there is no limit. An extra parameter, the
+# accumulator, carries the result built so far:
+#   fn sum_from(0, total) = total
+#   fn sum_from(n, total) = sum_from(n - 1, total + n)
+#
+# Statement
+#   - `big_sum(n)`: 1 + 2 + ... + n, which must work for n = 1000000;
+#   - `collatz_steps(n)`: for n ≥ 1, the number of steps to reach 1, where
+#     a step divides an even number by 2 and turns an odd number into
+#     3 × n + 1 (6 → 3 → 10 → 5 → 16 → 8 → 4 → 2 → 1 takes 8 steps);
+#   - `fib(n)`: the n-th Fibonacci number (0, 1, 1, 2, 3, 5, 8...: each
+#     one is the sum of the two before), fast even for n = 90.
+#
+# Hints
+#   1. `big_sum(n)` can simply call a helper: `sum_from(n, 0)`.
+#   2. `collatz_from(n, steps)`: when n is 1, the answer is `steps`.
+#   3. `fib(n) = fib(n - 1) + fib(n - 2)` is correct but very slow, because
+#      it computes the same numbers again and again. Carry the two last
+#      numbers instead: `fib_from(n, a, b)`, where a and b are two
+#      neighbouring Fibonacci numbers, starting with `fib_from(n, 0, 1)`.
+#
+# Check your work:  rythme exercise check 09-accumulators.ry
+#              or:  rythme test 09-accumulators.ry
+
+fn big_sum(n) = fail("to do")
+
+fn collatz_steps(n) = fail("to do")
+
+fn fib(n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "big sum"
+  assert_eq(big_sum(10), 55)
+  assert_eq(big_sum(1000000), 500000500000)
+end
+
+test "collatz steps"
+  assert_eq(collatz_steps(1), 0)
+  assert_eq(collatz_steps(6), 8)
+  assert_eq(collatz_steps(27), 111)
+end
+
+test "fibonacci"
+  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
+  assert_eq(fib(90), 2880067194370816120)
+end

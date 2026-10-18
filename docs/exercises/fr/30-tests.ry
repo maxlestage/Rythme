@@ -1,0 +1,60 @@
+# Exercice 30 · Les tests trouvent les bugs  ★★★
+#
+# Un test vérifie un morceau de code : `test "nom" = assert_eq(obtenu,
+# attendu)`. Quand il échoue, `rythme test` montre les deux valeurs : le bug
+# se trouve quelque part entre elles.
+#
+# Énoncé
+#   Les fonctions ci-dessous sont déjà écrites, mais chacune a un bug.
+#   1. Lancez les tests et lisez ce qui échoue.
+#   2. Corrigez les fonctions (pas les tests !) jusqu'à ce que tous les
+#      tests passent.
+#   3. Écrivez ensuite votre propre test pour `borner`, à la fin du
+#      fichier : que doit donner `borner(5, 5, 5)` ?
+#
+#   - `borner(x, bas, haut)` : x ramené entre bas et haut ;
+#   - `mediane(liste)` : la valeur du milieu de la liste triée, ou la
+#     moyenne des deux valeurs du milieu quand la liste a une longueur
+#     paire ;
+#   - `nombre_de_mots(texte)` : combien de mots a le texte.
+#
+# Indices
+#   1. Lisez les lignes `obtenu :` et `attendu :` du premier échec, et
+#      calculez à la main ce que fait la fonction avec ces arguments.
+#   2. `debug(valeur)` montre une valeur pendant que le programme tourne, et
+#      la rend sans la changer : `debug(triee)`.
+#   3. Que fait `split` sans séparateur avec plusieurs espaces ?
+#
+# Vérifiez votre travail :  rythme exercise check 30-tests.ry
+#                     ou :  rythme test 30-tests.ry
+
+fn borner(x, bas, haut) = max(haut, min(x, bas))
+
+fn mediane(liste)
+  milieu = len(liste) // 2
+  if is_even(len(liste)) then (liste[milieu - 1] + liste[milieu]) / 2 else liste[milieu]
+end
+
+fn nombre_de_mots(texte) = len(split(texte, " "))
+
+# --- Tests (ne les modifiez pas) ---
+
+test "borner"
+  assert_eq(borner(15, 0, 10), 10)
+  assert_eq(borner(-5, 0, 10), 0)
+  assert_eq(borner(5, 0, 10), 5)
+end
+
+test "médiane d'un nombre impair de valeurs"
+  assert_eq(mediane([1, 2, 3]), 2)
+  assert_eq(mediane([3, 1, 2]), 2)
+end
+
+test "médiane d'un nombre pair de valeurs" = assert_eq(mediane([4, 1, 3, 2]), 2.5)
+
+test "nombre de mots"
+  assert_eq(nombre_de_mots("un deux trois"), 3)
+  assert_eq(nombre_de_mots("  un   deux "), 2)
+end
+
+# Votre test :

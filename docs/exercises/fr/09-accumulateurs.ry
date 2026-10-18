@@ -1,0 +1,57 @@
+# Exercice 09 · Accumulateurs et appels terminaux  ★★☆
+#
+# Dans `n + somme_jusqua(n - 1)`, l'addition attend la fin de l'appel : un
+# million d'appels imbriqués s'arrêtent avec l'erreur E014 (« trop d'appels
+# imbriqués »). Quand l'appel récursif est la toute dernière chose que fait
+# la fonction (un appel terminal), rien n'attend, et il n'y a pas de limite.
+# Un paramètre de plus, l'accumulateur, porte le résultat construit
+# jusque-là :
+#   fn somme_depuis(0, total) = total
+#   fn somme_depuis(n, total) = somme_depuis(n - 1, total + n)
+#
+# Énoncé
+#   - `grande_somme(n)` : 1 + 2 + ... + n, qui doit marcher pour
+#     n = 1000000 ;
+#   - `etapes_de_syracuse(n)` : pour n ≥ 1, le nombre d'étapes pour
+#     arriver à 1, où une étape divise un nombre pair par 2 et transforme
+#     un nombre impair en 3 × n + 1 (6 → 3 → 10 → 5 → 16 → 8 → 4 → 2 → 1
+#     prend 8 étapes) ;
+#   - `fib(n)` : le n-ième nombre de Fibonacci (0, 1, 1, 2, 3, 5, 8... :
+#     chacun est la somme des deux précédents), rapide même pour n = 90.
+#
+# Indices
+#   1. `grande_somme(n)` peut simplement appeler une fonction auxiliaire :
+#      `somme_depuis(n, 0)`.
+#   2. `syracuse_depuis(n, etapes)` : quand n vaut 1, la réponse est
+#      `etapes`.
+#   3. `fib(n) = fib(n - 1) + fib(n - 2)` est juste mais très lent, car il
+#      recalcule sans cesse les mêmes nombres. Portez plutôt les deux
+#      derniers nombres : `fib_depuis(n, a, b)`, où a et b sont deux nombres
+#      de Fibonacci voisins, en commençant par `fib_depuis(n, 0, 1)`.
+#
+# Vérifiez votre travail :  rythme exercise check 09-accumulateurs.ry
+#                     ou :  rythme test 09-accumulateurs.ry
+
+fn grande_somme(n) = fail("à faire")
+
+fn etapes_de_syracuse(n) = fail("à faire")
+
+fn fib(n) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "grande somme"
+  assert_eq(grande_somme(10), 55)
+  assert_eq(grande_somme(1000000), 500000500000)
+end
+
+test "étapes de Syracuse"
+  assert_eq(etapes_de_syracuse(1), 0)
+  assert_eq(etapes_de_syracuse(6), 8)
+  assert_eq(etapes_de_syracuse(27), 111)
+end
+
+test "fibonacci"
+  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
+  assert_eq(fib(90), 2880067194370816120)
+end

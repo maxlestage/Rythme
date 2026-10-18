@@ -1,0 +1,32 @@
+# Exercise 21 · Lists of records  ★★☆
+# Reference solution. Try the exercise before reading it!
+
+fn names_of_passed(students) = students |> filter(fn(s) = s.score >= 50) |> map(fn(s) = s.name)
+
+fn average_score(students) = students |> map(fn(s) = s.score) |> sum |> fn(total) = total / len(students)
+
+fn best(students) = max_by(students, fn(s) = s.score).name
+
+fn ranking(students) = students |> sort_by(fn(s) = -s.score) |> map(fn(s) = s.name)
+
+fn group_sizes(students) = students |> group_by(fn(s) = s.group) |> map_values(len)
+
+# --- Tests (do not change them) ---
+
+classroom = [
+  {name: "Ada", score: 92, group: "A"},
+  {name: "Alan", score: 45, group: "B"},
+  {name: "Grace", score: 78, group: "A"},
+  {name: "Edsger", score: 50, group: "B"},
+  {name: "Barbara", score: 85, group: "A"},
+]
+
+test "passed" = assert_eq(names_of_passed(classroom), ["Ada", "Grace", "Edsger", "Barbara"])
+
+test "average" = assert_eq(average_score(classroom), 70)
+
+test "best" = assert_eq(best(classroom), "Ada")
+
+test "ranking" = assert_eq(ranking(classroom), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+
+test "group sizes" = assert_eq(group_sizes(classroom), {A: 3, B: 2})

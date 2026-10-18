@@ -1,0 +1,53 @@
+# Exercice 23 · Choisir avec `match`  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+type Feu = Vert | Orange | Rouge
+
+fn feu_suivant(feu) = match feu
+  Vert -> Orange
+  Orange -> Rouge
+  Rouge -> Vert
+end
+
+fn peut_passer(feu) = match feu
+  Vert -> true
+  _ -> false
+end
+
+fn decrire(liste) = match liste
+  [] -> "vide"
+  [x] -> "un : {x}"
+  [a, b] -> "deux : {a} et {b}"
+  [premier, ..] -> "plusieurs, à partir de {premier}"
+end
+
+fn salutation(personne) = match personne
+  {titre, famille} -> "Bonjour, {titre} {famille}"
+  {nom} -> "Bonjour, {nom}"
+end
+
+# --- Tests (ne les modifiez pas) ---
+
+test "feu suivant"
+  assert_eq(feu_suivant(Vert), Orange)
+  assert_eq(feu_suivant(Orange), Rouge)
+  assert_eq(feu_suivant(Rouge), Vert)
+end
+
+test "peut passer"
+  assert_eq(peut_passer(Vert), true)
+  assert_eq(peut_passer(Orange), false)
+  assert_eq(peut_passer(Rouge), false)
+end
+
+test "décrire"
+  assert_eq(decrire([]), "vide")
+  assert_eq(decrire([7]), "un : 7")
+  assert_eq(decrire([1, 2]), "deux : 1 et 2")
+  assert_eq(decrire([5, 6, 7]), "plusieurs, à partir de 5")
+end
+
+test "salutation"
+  assert_eq(salutation({titre: "Dr", famille: "Hopper", nom: "Grace"}), "Bonjour, Dr Hopper")
+  assert_eq(salutation({nom: "Grace"}), "Bonjour, Grace")
+end

@@ -1,0 +1,60 @@
+# Exercice 25 · Une petite calculatrice  ★★★
+#
+# Un calcul comme (1 + 2) × 3 est un arbre : la multiplication a deux
+# parties, l'addition et 3. Avec un type, un programme peut contenir des
+# calculs, les effectuer et les afficher.
+#
+# Énoncé
+#   - `evaluer(expr)` : la valeur du calcul ;
+#   - `afficher(expr)` : le calcul sous forme de texte, avec des parenthèses
+#     autour de chaque addition et multiplication : "((1 + 2) * 3)", et une
+#     négation écrite "-x" ("-4", "-(1 + 2)") ;
+#   - `nombre_de_nombres(expr)` : combien de nombres le calcul contient ;
+#   - `simplifier(expr)` : le même calcul, où `Somme(e, Nombre(0))` et
+#     `Produit(e, Nombre(1))` (et la même chose avec le nombre à gauche)
+#     sont remplacés par e, à tous les niveaux.
+#
+# Indices
+#   1. Un cas par constructeur : `fn evaluer(Nombre(n)) = n`,
+#      `fn evaluer(Somme(a, b)) = evaluer(a) + evaluer(b)`...
+#   2. `afficher(Oppose(e))` est "-" suivi de `afficher(e)`.
+#   3. Dans `simplifier`, simplifiez d'abord les deux parties, puis regardez
+#      le résultat avec un `match`.
+#
+# Vérifiez votre travail :  rythme exercise check 25-expressions.ry
+#                     ou :  rythme test 25-expressions.ry
+
+type Expr = Nombre(valeur) | Somme(gauche, droite) | Produit(gauche, droite) | Oppose(interieur)
+
+fn evaluer(expr) = fail("à faire")
+
+fn afficher(expr) = fail("à faire")
+
+fn nombre_de_nombres(expr) = fail("à faire")
+
+fn simplifier(expr) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+calcul = Produit(Somme(Nombre(1), Nombre(2)), Nombre(3))
+
+test "évaluer"
+  assert_eq(evaluer(Nombre(4)), 4)
+  assert_eq(evaluer(calcul), 9)
+  assert_eq(evaluer(Oppose(calcul)), -9)
+end
+
+test "afficher"
+  assert_eq(afficher(calcul), "((1 + 2) * 3)")
+  assert_eq(afficher(Oppose(Nombre(4))), "-4")
+  assert_eq(afficher(Oppose(Somme(Nombre(1), Nombre(2)))), "-(1 + 2)")
+end
+
+test "nombre de nombres" = assert_eq(nombre_de_nombres(Somme(calcul, Oppose(Nombre(5)))), 4)
+
+test "simplifier"
+  assert_eq(simplifier(Somme(Nombre(7), Nombre(0))), Nombre(7))
+  assert_eq(simplifier(Produit(Nombre(1), Somme(Nombre(0), Nombre(2)))), Nombre(2))
+  assert_eq(simplifier(calcul), calcul)
+  assert_eq(simplifier(Oppose(Produit(Nombre(3), Nombre(1)))), Oppose(Nombre(3)))
+end

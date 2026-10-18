@@ -1,0 +1,61 @@
+# Exercise 04 · Choosing with `if`  ★☆☆
+#
+# `if condition then value else other_value` is an expression: it gives a
+# value, so `else` is always needed. `else if` chains several conditions.
+#
+# Statement
+#   Without using the built-in functions `abs`, `min` and `max`:
+#   - `absolute(n)`: n without its sign (`absolute(-5)` is 5);
+#   - `larger(a, b)`: the larger of two numbers;
+#   - `grade(score)`: for a score from 0 to 100, "A" from 90, "B" from 80,
+#     "C" from 70, "D" from 60, and "F" below 60;
+#   - `ticket_price(age)`: 0 under 4 years, 5 under 12, 12 from 65, and 10
+#     otherwise.
+#
+# Hints
+#   1. `if n < 0 then -n else n`
+#   2. Test the highest grade first: `if score >= 90 then "A" else if ...`.
+#   3. A long `if` can continue on the next lines, each starting with
+#      `else if`.
+#
+# Check your work:  rythme exercise check 04-choosing.ry
+#              or:  rythme test 04-choosing.ry
+
+fn absolute(n) = fail("to do")
+
+fn larger(a, b) = fail("to do")
+
+fn grade(score) = fail("to do")
+
+fn ticket_price(age) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "absolute"
+  assert_eq(absolute(-5), 5)
+  assert_eq(absolute(7), 7)
+  assert_eq(absolute(0), 0)
+end
+
+test "larger"
+  assert_eq(larger(3, 8), 8)
+  assert_eq(larger(8, 3), 8)
+  assert_eq(larger(-1, -2), -1)
+end
+
+test "grade"
+  assert_eq(grade(95), "A")
+  assert_eq(grade(90), "A")
+  assert_eq(grade(85), "B")
+  assert_eq(grade(70), "C")
+  assert_eq(grade(61), "D")
+  assert_eq(grade(12), "F")
+end
+
+test "ticket price"
+  assert_eq(ticket_price(2), 0)
+  assert_eq(ticket_price(4), 5)
+  assert_eq(ticket_price(11), 5)
+  assert_eq(ticket_price(30), 10)
+  assert_eq(ticket_price(65), 12)
+end

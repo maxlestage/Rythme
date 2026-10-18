@@ -1,0 +1,52 @@
+# Exercice 08 · Les chiffres d'un nombre  ★★☆
+#
+# `n % 10` est le dernier chiffre de n, et `n // 10` est n sans son dernier
+# chiffre : pour 472, ce sont 2 et 47.
+#
+# Énoncé
+#   Pour des nombres entiers n ≥ 0, avec la récursivité (sans transformer
+#   le nombre en texte) :
+#   - `nombre_de_chiffres(n)` : combien de chiffres a n (0 a un chiffre) ;
+#   - `somme_des_chiffres(n)` : la somme des chiffres de n ;
+#   - `nombre_inverse(n)` : les chiffres dans l'ordre inverse (1230 donne
+#     321).
+#
+# Indices
+#   1. Un nombre inférieur à 10 n'a qu'un chiffre : c'est le cas de base.
+#   2. `somme_des_chiffres(472)` vaut `2 + somme_des_chiffres(47)`.
+#   3. Pour `nombre_inverse`, écrivez une fonction auxiliaire avec un
+#      paramètre de plus, le nombre construit jusque-là :
+#      `inverser_depuis(n, construit)`, avec
+#      `inverser_depuis(0, construit) = construit`. Chaque étape déplace le
+#      dernier chiffre de n à la fin de `construit` :
+#      `construit * 10 + n % 10`.
+#
+# Vérifiez votre travail :  rythme exercise check 08-chiffres.ry
+#                     ou :  rythme test 08-chiffres.ry
+
+fn nombre_de_chiffres(n) = fail("à faire")
+
+fn somme_des_chiffres(n) = fail("à faire")
+
+fn nombre_inverse(n) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "nombre de chiffres"
+  assert_eq(nombre_de_chiffres(0), 1)
+  assert_eq(nombre_de_chiffres(7), 1)
+  assert_eq(nombre_de_chiffres(472), 3)
+  assert_eq(nombre_de_chiffres(1000000), 7)
+end
+
+test "somme des chiffres"
+  assert_eq(somme_des_chiffres(0), 0)
+  assert_eq(somme_des_chiffres(472), 13)
+  assert_eq(somme_des_chiffres(99999), 45)
+end
+
+test "nombre inversé"
+  assert_eq(nombre_inverse(472), 274)
+  assert_eq(nombre_inverse(1230), 321)
+  assert_eq(nombre_inverse(5), 5)
+end

@@ -1,0 +1,32 @@
+# Exercise 02 · Texts  ★☆☆
+# Reference solution. Try the exercise before reading it!
+
+## A greeting for `name`.
+fn greet(name) = "Hello, {name}!"
+
+## The text in uppercase, followed by "!".
+fn shout(text) = upper(text) + "!"
+
+## The initials of a person, each followed by a dot.
+fn initials(first, last) = "{first[0]}.{last[0]}."
+
+## A sentence that introduces a person.
+fn introduce(name, age) = "{name} is {age} years old."
+
+# --- Tests (do not change them) ---
+
+test "greet" = assert_eq(greet("Ada"), "Hello, Ada!")
+
+test "greet someone else" = assert_eq(greet("Alan"), "Hello, Alan!")
+
+test "shout"
+  assert_eq(shout("hello"), "HELLO!")
+  assert_eq(shout("Stop"), "STOP!")
+end
+
+test "initials"
+  assert_eq(initials("Ada", "Lovelace"), "A.L.")
+  assert_eq(initials("grace", "hopper"), "g.h.")
+end
+
+test "introduce" = assert_eq(introduce("Ada", 36), "Ada is 36 years old.")

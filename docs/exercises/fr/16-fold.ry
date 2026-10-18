@@ -1,0 +1,59 @@
+# Exercice 16 · Réduire une liste à une valeur  ★★☆
+#
+# `fold(liste, depart, f)` combine tous les éléments en une valeur : il
+# commence par `depart`, puis calcule `f(resultat, element)` pour chaque
+# élément.
+#   fold([1, 2, 3], 0, fn(total, x) = total + x)     # 6
+#
+# Énoncé
+#   Avec `fold`, et sans récursivité :
+#   - `produit_de(liste)` : le produit des nombres (1 pour une liste vide) ;
+#   - `mot_le_plus_long(mots)` : le mot le plus long (le premier si
+#     plusieurs ont la même longueur ; "" pour une liste vide) ;
+#   - `en_nombre(chiffres)` : le nombre écrit avec ces chiffres ([1, 2, 3]
+#     donne 123) ;
+#   - `compter_si(liste, f)` : combien d'éléments donnent true avec f (sans
+#     `count` ni `filter`).
+#
+# Indices
+#   1. Choisissez bien `depart` : c'est la réponse pour la liste vide.
+#   2. Pour `mot_le_plus_long`, le résultat jusque-là est le mot le plus long
+#      vu jusque-là : gardez-le, ou prenez le nouveau mot s'il est
+#      strictement plus long.
+#   3. `en_nombre` : avec 12 jusque-là et le chiffre 3, le nouveau résultat
+#      est 12 * 10 + 3.
+#
+# Vérifiez votre travail :  rythme exercise check 16-fold.ry
+#                     ou :  rythme test 16-fold.ry
+
+fn produit_de(liste) = fail("à faire")
+
+fn mot_le_plus_long(mots) = fail("à faire")
+
+fn en_nombre(chiffres) = fail("à faire")
+
+fn compter_si(liste, f) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "produit"
+  assert_eq(produit_de([2, 3, 4]), 24)
+  assert_eq(produit_de([]), 1)
+end
+
+test "mot le plus long"
+  assert_eq(mot_le_plus_long(["un", "arbre", "est", "vert"]), "arbre")
+  assert_eq(mot_le_plus_long(["une", "pie"]), "une")
+  assert_eq(mot_le_plus_long([]), "")
+end
+
+test "en nombre"
+  assert_eq(en_nombre([1, 2, 3]), 123)
+  assert_eq(en_nombre([0, 7]), 7)
+  assert_eq(en_nombre([]), 0)
+end
+
+test "compter si"
+  assert_eq(compter_si([1, 2, 3, 4, 5], is_odd), 3)
+  assert_eq(compter_si(["a", "bb"], fn(m) = len(m) > 5), 0)
+end

@@ -1,0 +1,31 @@
+# Exercise 14 · Anonymous functions  ★★☆
+# Reference solution. Try the exercise before reading it!
+
+fn with_tax(prices, percent) = map(prices, fn(p) = p + p * percent / 100)
+
+fn long_words(words, n) = filter(words, fn(w) = len(w) > n)
+
+fn lengths(words) = map(words, len)
+
+fn all_positive(list) = all(list, fn(x) = x > 0)
+
+fn count_above(list, limit) = count(list, fn(x) = x > limit)
+
+# --- Tests (do not change them) ---
+
+test "with tax"
+  assert_eq(with_tax([100, 50], 20), [120, 60])
+  assert_eq(with_tax([10], 0), [10])
+end
+
+test "long words" = assert_eq(long_words(["a", "tree", "is", "green"], 3), ["tree", "green"])
+
+test "lengths" = assert_eq(lengths(["a", "tree", "is"]), [1, 4, 2])
+
+test "all positive"
+  assert_eq(all_positive([1, 5, 3]), true)
+  assert_eq(all_positive([1, -5, 3]), false)
+  assert_eq(all_positive([]), true)
+end
+
+test "count above" = assert_eq(count_above([3, 10, 7, 12], 5), 3)

@@ -1,0 +1,69 @@
+# Exercice 28 · Transmettre les erreurs avec `?`  ★★★
+#
+# Écrire un `match` après chaque étape qui peut échouer, c'est long. `?`
+# après un Result (ou une Option) sort la valeur de `Ok(...)` (ou de
+# `Some(...)`), ou arrête aussitôt la fonction et rend le `Err(...)` (ou
+# `None`) :
+#   fn doubler_texte(t)
+#     n = parse_int(t)?          # s'arrête ici si t n'est pas un nombre
+#     Ok(n * 2)
+#   end
+#
+# Énoncé
+#   - `additionner_textes(a, b)` : la somme des deux nombres écrits dans a
+#     et b, sous la forme `Ok(somme)`, ou l'erreur de `parse_int` ;
+#   - `lire_point(texte)` : pour "3,4", `Ok({x: 3, y: 4})` ; l'erreur
+#     `Err("attendu : x,y")` si le texte n'a pas exactement deux parties
+#     séparées par une virgule, ou l'erreur de `parse_int` pour une partie
+#     qui n'est pas un nombre ;
+#   - `somme_des_textes(textes)` : la somme des nombres écrits dans une
+#     liste de textes, ou la première erreur ;
+#   - `rapport_des_textes(a, b)` : a / b pour deux nombres écrits dans des
+#     textes, ou la première erreur, avec `Err("division par zéro")` quand b
+#     vaut 0.
+#
+# Indices
+#   1. `Ok(parse_int(a)? + parse_int(b)?)`
+#   2. `match split(texte, ",")` avec les cas `[x, y]` et `_`.
+#   3. Pour une liste, utilisez la récursivité : `somme_des_textes([])`
+#      vaut `Ok(0)` ; pour `[t, ..reste]`, prenez le nombre de t et la somme
+#      de reste, les deux avec `?`.
+#   4. `?` s'utilise sur toute fonction qui rend un Result, les vôtres
+#      aussi.
+#
+# Vérifiez votre travail :  rythme exercise check 28-point-d-interrogation.ry
+#                     ou :  rythme test 28-point-d-interrogation.ry
+
+fn additionner_textes(a, b) = fail("à faire")
+
+fn lire_point(texte) = fail("à faire")
+
+fn somme_des_textes(textes) = fail("à faire")
+
+fn rapport_des_textes(a, b) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "additionner des textes"
+  assert_eq(additionner_textes("2", "40"), Ok(42))
+  assert(is_err(additionner_textes("2", "quarante")), "quarante n'est pas un nombre")
+end
+
+test "lire un point"
+  assert_eq(lire_point("3,4"), Ok({x: 3, y: 4}))
+  assert_eq(lire_point("3"), Err("attendu : x,y"))
+  assert_eq(lire_point("1,2,3"), Err("attendu : x,y"))
+  assert(is_err(lire_point("3,quatre")), "quatre n'est pas un nombre")
+end
+
+test "somme des textes"
+  assert_eq(somme_des_textes(["1", "2", "3"]), Ok(6))
+  assert_eq(somme_des_textes([]), Ok(0))
+  assert_eq(somme_des_textes(["1", "x", "y"]), parse_int("x"))
+end
+
+test "rapport des textes"
+  assert_eq(rapport_des_textes("9", "2"), Ok(4.5))
+  assert_eq(rapport_des_textes("9", "0"), Err("division par zéro"))
+  assert(is_err(rapport_des_textes("neuf", "0")), "neuf n'est pas un nombre")
+end

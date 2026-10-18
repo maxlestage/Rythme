@@ -1,0 +1,52 @@
+# Exercice 14 · Fonctions anonymes  ★★☆
+#
+# `fn(x) = x * 2` est une fonction sans nom, écrite là où on en a besoin.
+# Elle peut utiliser les noms qui l'entourent :
+#   fn ajouter_a_tous(liste, n) = map(liste, fn(x) = x + n)
+#
+# Énoncé
+#   - `avec_taxe(prix, pourcentage)` : chaque prix augmenté de
+#     `pourcentage` % ;
+#   - `mots_longs(mots, n)` : les mots qui ont plus de n caractères ;
+#   - `longueurs(mots)` : la longueur de chaque mot ;
+#   - `tous_positifs(liste)` : tous les nombres sont-ils plus grands que 0 ?
+#   - `combien_au_dessus(liste, limite)` : combien de nombres sont plus
+#     grands que limite.
+#
+# Indices
+#   1. Un prix p augmenté de 20 % vaut `p + p * 20 / 100`.
+#   2. `len("mot")` vaut 3.
+#   3. `all(liste, f)` vaut true quand f donne true pour chaque élément, et
+#      `count(liste, f)` compte les éléments pour lesquels f donne true.
+#
+# Vérifiez votre travail :  rythme exercise check 14-fonctions-anonymes.ry
+#                     ou :  rythme test 14-fonctions-anonymes.ry
+
+fn avec_taxe(prix, pourcentage) = fail("à faire")
+
+fn mots_longs(mots, n) = fail("à faire")
+
+fn longueurs(mots) = fail("à faire")
+
+fn tous_positifs(liste) = fail("à faire")
+
+fn combien_au_dessus(liste, limite) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "avec taxe"
+  assert_eq(avec_taxe([100, 50], 20), [120, 60])
+  assert_eq(avec_taxe([10], 0), [10])
+end
+
+test "mots longs" = assert_eq(mots_longs(["un", "arbre", "est", "vert"], 3), ["arbre", "vert"])
+
+test "longueurs" = assert_eq(longueurs(["un", "arbre", "a"]), [2, 5, 1])
+
+test "tous positifs"
+  assert_eq(tous_positifs([1, 5, 3]), true)
+  assert_eq(tous_positifs([1, -5, 3]), false)
+  assert_eq(tous_positifs([]), true)
+end
+
+test "combien au-dessus" = assert_eq(combien_au_dessus([3, 10, 7, 12], 5), 3)

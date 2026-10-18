@@ -1,0 +1,52 @@
+# Exercise 22 · Your own types  ★★☆
+#
+# `type` defines a new kind of value, with one constructor for each
+# possible form:
+#   type Pet = Dog(name) | Cat(name, lives) | Fish
+# A function can have one definition per constructor:
+#   fn sound(Dog(_)) = "woof"
+#
+# Statement
+#   The type `Shape` below has three forms.
+#   - `area(shape)`: the area of the shape;
+#   - `perimeter(shape)`: the length of its border;
+#   - `name_of(shape)`: "circle", "rectangle" or "square";
+#   - `total_area(shapes)`: the sum of the areas of a list of shapes.
+#
+# Hints
+#   1. `fn area(Circle(r)) = pi * r * r`, then one definition for each
+#      other constructor.
+#   2. The perimeter of a circle is 2 × π × r.
+#   3. If you forget a constructor, `rythme check` tells you which one
+#      (warning W002).
+#
+# Check your work:  rythme exercise check 22-own-types.ry
+#              or:  rythme test 22-own-types.ry
+
+type Shape = Circle(radius) | Rect(width, height) | Square(side)
+
+fn area(shape) = fail("to do")
+
+fn perimeter(shape) = fail("to do")
+
+fn name_of(shape) = fail("to do")
+
+fn total_area(shapes) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "area"
+  assert_eq(area(Rect(2, 3)), 6)
+  assert_eq(area(Square(4)), 16)
+  assert_eq(round(area(Circle(1)), 2), 3.14)
+end
+
+test "perimeter"
+  assert_eq(perimeter(Rect(2, 3)), 10)
+  assert_eq(perimeter(Square(4)), 16)
+  assert_eq(round(perimeter(Circle(1)), 2), 6.28)
+end
+
+test "name" = assert_eq([Circle(1), Rect(1, 2), Square(3)] |> map(name_of), ["circle", "rectangle", "square"])
+
+test "total area" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 11)

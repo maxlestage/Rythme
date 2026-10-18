@@ -1,0 +1,63 @@
+# Exercice 15 · Les fonctions sont des valeurs  ★★☆
+#
+# Une fonction peut être donnée à une autre fonction, et une fonction peut
+# rendre une nouvelle fonction :
+#   fn deux_fois(f) = fn(x) = f(f(x))
+#   ajouter_deux = deux_fois(fn(x) = x + 1)      # ajouter_deux(5) vaut 7
+#
+# Énoncé
+#   - `appliquer_deux_fois(f, x)` : f appliquée à x, puis f appliquée au
+#     résultat ;
+#   - `composer(f, g)` : une nouvelle fonction qui applique g, puis f ;
+#   - `additionneur(n)` : une nouvelle fonction qui ajoute n à son
+#     argument ;
+#   - `mon_map(liste, f)` et `mon_filter(liste, f)` : vos propres versions
+#     de `map` et `filter`, avec la récursivité.
+#
+# Indices
+#   1. `composer(f, g)` rend `fn(x) = ...`.
+#   2. `mon_map([x, ..reste], f)` commence par `f(x)`.
+#   3. `mon_filter([x, ..reste], f)` : gardez x seulement si `f(x)` est
+#      vrai, puis continuez avec reste.
+#
+# Vérifiez votre travail :  rythme exercise check 15-fonctions-valeurs.ry
+#                     ou :  rythme test 15-fonctions-valeurs.ry
+
+fn appliquer_deux_fois(f, x) = fail("à faire")
+
+fn composer(f, g) = fail("à faire")
+
+fn additionneur(n) = fail("à faire")
+
+fn mon_map(liste, f) = fail("à faire")
+
+fn mon_filter(liste, f) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "appliquer deux fois"
+  assert_eq(appliquer_deux_fois(fn(x) = x * 3, 2), 18)
+  assert_eq(appliquer_deux_fois(upper, "salut"), "SALUT")
+end
+
+test "composer"
+  plus_un_puis_double = composer(fn(x) = x * 2, fn(x) = x + 1)
+  assert_eq(plus_un_puis_double(4), 10)
+  assert_eq(composer(len, trim)("  abc  "), 3)
+end
+
+test "additionneur"
+  ajouter10 = additionneur(10)
+  assert_eq(ajouter10(5), 15)
+  assert_eq(map([1, 2, 3], additionneur(100)), [101, 102, 103])
+end
+
+test "mon map"
+  assert_eq(mon_map([1, 2, 3], fn(x) = x * x), [1, 4, 9])
+  assert_eq(mon_map([], fn(x) = x), [])
+end
+
+test "mon filter"
+  assert_eq(mon_filter([1, 2, 3, 4, 5, 6], is_even), [2, 4, 6])
+  assert_eq(mon_filter(["a", "bb", "ccc"], fn(m) = len(m) > 1), ["bb", "ccc"])
+end

@@ -1,0 +1,55 @@
+# Exercise 29 · A small project: counting words  ★★★
+#
+# Everything together: texts, lists, records, pipelines and Options, for a
+# program that analyses a text.
+#
+# Statement
+#   - `words_of(text)`: the words of the text, in lowercase, without the
+#     punctuation `.`, `,`, `!` and `?`;
+#   - `frequencies(text)`: a list of `[word, count]` pairs, from the most
+#     frequent word to the least frequent, and in alphabetical order for
+#     words that appear the same number of times;
+#   - `most_frequent(text)`: the most frequent word, as an Option (`None`
+#     for a text without words);
+#   - `report(text, n)`: the n most frequent words, one per line, each as
+#     "word: count".
+#
+# Hints
+#   1. `replace` four times (or `fold` over the list [".", ",", "!", "?"]),
+#      then `lower` and `split`.
+#   2. `group_by(words, fn(w) = w)` gives a record `{word: [word, word]}`,
+#      and `entries(record)` the list of its `[name, value]` pairs.
+#   3. `sort_by` is stable: sort by word first, then by count (the largest
+#      first, with `fn([_, n]) = -n`).
+#   4. `first(list)` gives an Option, and `map(option, f)` changes the value
+#      inside.
+#   5. `join(lines, "\n")` puts each element on its own line.
+#
+# Check your work:  rythme exercise check 29-word-counts.ry
+#              or:  rythme test 29-word-counts.ry
+
+fn words_of(text) = fail("to do")
+
+fn frequencies(text) = fail("to do")
+
+fn most_frequent(text) = fail("to do")
+
+fn report(text, n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+poem = "The cat sat. The dog sat! Did the cat see the dog?"
+
+test "words" = assert_eq(words_of("Hello, World! Hello?"), ["hello", "world", "hello"])
+
+test "frequencies"
+  assert_eq(frequencies("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
+  assert_eq(frequencies(poem) |> take(3), [["the", 4], ["cat", 2], ["dog", 2]])
+end
+
+test "most frequent"
+  assert_eq(most_frequent(poem), Some("the"))
+  assert_eq(most_frequent(" ... "), None)
+end
+
+test "report" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")

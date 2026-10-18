@@ -1,0 +1,52 @@
+# Exercice 07 · Récursivité  ★★☆
+#
+# Rythme n'a pas de boucles : pour répéter, une fonction s'appelle
+# elle-même. Toute fonction récursive a besoin d'un cas de base, qui
+# s'arrête, et d'un cas récursif, qui rapproche le problème du cas de base :
+#   fn compte_a_rebours(0) = "décollage !"
+#   fn compte_a_rebours(n) = "{n} " + compte_a_rebours(n - 1)
+#
+# Énoncé
+#   - `factorielle(n)` : 1 × 2 × ... × n, et `factorielle(0)` vaut 1 ;
+#   - `somme_jusqua(n)` : 1 + 2 + ... + n, et `somme_jusqua(0)` vaut 0 ;
+#   - `puissance(x, n)` : x à la puissance n, pour n ≥ 0, sans `**` ni
+#     `pow`.
+#
+# Indices
+#   1. `factorielle(5)` vaut `5 * factorielle(4)`.
+#   2. Combien vaut `puissance(x, 0)` ? Et `puissance(x, n)` par rapport à
+#      `puissance(x, n - 1)` ?
+#   3. Une fonction qui n'atteint jamais son cas de base s'arrête avec
+#      l'erreur E014 : vérifiez que n diminue à chaque appel.
+#
+# Vérifiez votre travail :  rythme exercise check 07-recursivite.ry
+#                     ou :  rythme test 07-recursivite.ry
+
+fn factorielle(n) = fail("à faire")
+
+fn somme_jusqua(n) = fail("à faire")
+
+fn puissance(x, n) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "factorielle"
+  assert_eq(factorielle(0), 1)
+  assert_eq(factorielle(1), 1)
+  assert_eq(factorielle(5), 120)
+  assert_eq(factorielle(10), 3628800)
+end
+
+test "somme jusqu'à"
+  assert_eq(somme_jusqua(0), 0)
+  assert_eq(somme_jusqua(1), 1)
+  assert_eq(somme_jusqua(10), 55)
+  assert_eq(somme_jusqua(100), 5050)
+end
+
+test "puissance"
+  assert_eq(puissance(2, 0), 1)
+  assert_eq(puissance(2, 10), 1024)
+  assert_eq(puissance(3, 4), 81)
+  assert_eq(puissance(1.5, 2), 2.25)
+end

@@ -1,0 +1,64 @@
+# Exercise 11 · Taking lists apart  ★★☆
+#
+# A list is either empty, `[]`, or a first element followed by the rest of
+# the list, `[first, ..rest]`. A function on lists usually has one
+# definition for each of these two cases:
+#   fn count_items([]) = 0
+#   fn count_items([_, ..rest]) = 1 + count_items(rest)
+#
+# Statement
+#   With recursion, and without the built-in functions `len`, `sum`, `max`
+#   and `contains`:
+#   - `total(list)`: the sum of the numbers of the list;
+#   - `largest(list)`: the largest element of a list that is not empty;
+#   - `has_value(list, x)`: is x an element of the list?
+#   - `last_one(list)`: the last element of a list that is not empty.
+#
+# Hints
+#   1. The total of an empty list is 0.
+#   2. A list of one element, `[x]`, is a good base case for `largest` and
+#      `last_one`.
+#   3. The largest of `[x, ..rest]` is the larger of x and of the largest of
+#      rest.
+#   4. `has_value`: an empty list contains nothing; otherwise, either the
+#      first element is x, or x is in the rest (`or`).
+#   5. `rythme check` warns (W002) about a forgotten case, here the empty
+#      list. It has no largest element: say so with
+#      `fn largest([]) = fail("the list is empty")`.
+#
+# Check your work:  rythme exercise check 11-list-patterns.ry
+#              or:  rythme test 11-list-patterns.ry
+
+fn total(list) = fail("to do")
+
+fn largest(list) = fail("to do")
+
+fn has_value(list, x) = fail("to do")
+
+fn last_one(list) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "total"
+  assert_eq(total([]), 0)
+  assert_eq(total([4]), 4)
+  assert_eq(total([1, 2, 3, 4]), 10)
+end
+
+test "largest"
+  assert_eq(largest([7]), 7)
+  assert_eq(largest([3, 9, 2]), 9)
+  assert_eq(largest([-3, -1, -2]), -1)
+end
+
+test "has value"
+  assert_eq(has_value([1, 2, 3], 2), true)
+  assert_eq(has_value([1, 2, 3], 5), false)
+  assert_eq(has_value([], 1), false)
+  assert_eq(has_value(["a", "b"], "b"), true)
+end
+
+test "last one"
+  assert_eq(last_one([1, 2, 3]), 3)
+  assert_eq(last_one(["only"]), "only")
+end

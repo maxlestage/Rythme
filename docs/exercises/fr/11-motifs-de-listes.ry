@@ -1,0 +1,64 @@
+# Exercice 11 · Démonter une liste  ★★☆
+#
+# Une liste est soit vide, `[]`, soit un premier élément suivi du reste de
+# la liste, `[premier, ..reste]`. Une fonction sur les listes a en général
+# une définition pour chacun de ces deux cas :
+#   fn compter([]) = 0
+#   fn compter([_, ..reste]) = 1 + compter(reste)
+#
+# Énoncé
+#   Avec la récursivité, et sans les fonctions intégrées `len`, `sum`,
+#   `max` et `contains` :
+#   - `total(liste)` : la somme des nombres de la liste ;
+#   - `le_plus_grand(liste)` : le plus grand élément d'une liste non vide ;
+#   - `contient(liste, x)` : x est-il un élément de la liste ?
+#   - `dernier(liste)` : le dernier élément d'une liste non vide.
+#
+# Indices
+#   1. Le total d'une liste vide est 0.
+#   2. Une liste d'un élément, `[x]`, est un bon cas de base pour
+#      `le_plus_grand` et `dernier`.
+#   3. Le plus grand de `[x, ..reste]` est le plus grand entre x et le plus
+#      grand de reste.
+#   4. `contient` : une liste vide ne contient rien ; sinon, soit le premier
+#      élément est x, soit x est dans le reste (`or`).
+#   5. `rythme check` signale (W002) un cas oublié, ici la liste vide. Elle
+#      n'a pas de plus grand élément : dites-le avec
+#      `fn le_plus_grand([]) = fail("la liste est vide")`.
+#
+# Vérifiez votre travail :  rythme exercise check 11-motifs-de-listes.ry
+#                     ou :  rythme test 11-motifs-de-listes.ry
+
+fn total(liste) = fail("à faire")
+
+fn le_plus_grand(liste) = fail("à faire")
+
+fn contient(liste, x) = fail("à faire")
+
+fn dernier(liste) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "total"
+  assert_eq(total([]), 0)
+  assert_eq(total([4]), 4)
+  assert_eq(total([1, 2, 3, 4]), 10)
+end
+
+test "le plus grand"
+  assert_eq(le_plus_grand([7]), 7)
+  assert_eq(le_plus_grand([3, 9, 2]), 9)
+  assert_eq(le_plus_grand([-3, -1, -2]), -1)
+end
+
+test "contient"
+  assert_eq(contient([1, 2, 3], 2), true)
+  assert_eq(contient([1, 2, 3], 5), false)
+  assert_eq(contient([], 1), false)
+  assert_eq(contient(["a", "b"], "b"), true)
+end
+
+test "dernier"
+  assert_eq(dernier([1, 2, 3]), 3)
+  assert_eq(dernier(["seul"]), "seul")
+end

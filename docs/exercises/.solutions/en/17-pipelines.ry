@@ -1,0 +1,29 @@
+# Exercise 17 · Pipelines  ★★☆
+# Reference solution. Try the exercise before reading it!
+
+fn sum_of_odd_squares(n) = 1..n |> filter(is_odd) |> map(fn(x) = x * x) |> sum
+
+fn top_three(scores) = scores |> sort |> reverse |> take(3)
+
+fn shout_words(sentence) = sentence |> split |> map(upper) |> join(" ")
+
+fn initials_of(sentence) = sentence |> split |> map(fn(w) = upper(w[0])) |> join("")
+
+# --- Tests (do not change them) ---
+
+test "sum of odd squares"
+  assert_eq(sum_of_odd_squares(5), 35)
+  assert_eq(sum_of_odd_squares(1), 1)
+end
+
+test "top three"
+  assert_eq(top_three([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(top_three([4]), [4])
+end
+
+test "shout words" = assert_eq(shout_words("hello  world"), "HELLO WORLD")
+
+test "initials of"
+  assert_eq(initials_of("portable network graphics"), "PNG")
+  assert_eq(initials_of("Rythme"), "R")
+end
