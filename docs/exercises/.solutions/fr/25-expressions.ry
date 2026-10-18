@@ -1,0 +1,57 @@
+# Exercice 25 · Une petite calculatrice  ★★★
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+type Expr = Nombre(valeur) | Somme(gauche, droite) | Produit(gauche, droite) | Oppose(interieur)
+
+fn evaluer(Nombre(n)) = n
+fn evaluer(Somme(a, b)) = evaluer(a) + evaluer(b)
+fn evaluer(Produit(a, b)) = evaluer(a) * evaluer(b)
+fn evaluer(Oppose(e)) = -evaluer(e)
+
+fn afficher(Nombre(n)) = text(n)
+fn afficher(Somme(a, b)) = "({afficher(a)} + {afficher(b)})"
+fn afficher(Produit(a, b)) = "({afficher(a)} * {afficher(b)})"
+fn afficher(Oppose(e)) = "-" + afficher(e)
+
+fn nombre_de_nombres(Nombre(_)) = 1
+fn nombre_de_nombres(Somme(a, b)) = nombre_de_nombres(a) + nombre_de_nombres(b)
+fn nombre_de_nombres(Produit(a, b)) = nombre_de_nombres(a) + nombre_de_nombres(b)
+fn nombre_de_nombres(Oppose(e)) = nombre_de_nombres(e)
+
+fn simplifier(Somme(a, b)) = match [simplifier(a), simplifier(b)]
+  [e, Nombre(0)] -> e
+  [Nombre(0), e] -> e
+  [x, y] -> Somme(x, y)
+end
+fn simplifier(Produit(a, b)) = match [simplifier(a), simplifier(b)]
+  [e, Nombre(1)] -> e
+  [Nombre(1), e] -> e
+  [x, y] -> Produit(x, y)
+end
+fn simplifier(Oppose(e)) = Oppose(simplifier(e))
+fn simplifier(expr) = expr
+
+# --- Tests (ne les modifiez pas) ---
+
+calcul = Produit(Somme(Nombre(1), Nombre(2)), Nombre(3))
+
+test "évaluer"
+  assert_eq(evaluer(Nombre(4)), 4)
+  assert_eq(evaluer(calcul), 9)
+  assert_eq(evaluer(Oppose(calcul)), -9)
+end
+
+test "afficher"
+  assert_eq(afficher(calcul), "((1 + 2) * 3)")
+  assert_eq(afficher(Oppose(Nombre(4))), "-4")
+  assert_eq(afficher(Oppose(Somme(Nombre(1), Nombre(2)))), "-(1 + 2)")
+end
+
+test "nombre de nombres" = assert_eq(nombre_de_nombres(Somme(calcul, Oppose(Nombre(5)))), 4)
+
+test "simplifier"
+  assert_eq(simplifier(Somme(Nombre(7), Nombre(0))), Nombre(7))
+  assert_eq(simplifier(Produit(Nombre(1), Somme(Nombre(0), Nombre(2)))), Nombre(2))
+  assert_eq(simplifier(calcul), calcul)
+  assert_eq(simplifier(Oppose(Produit(Nombre(3), Nombre(1)))), Oppose(Nombre(3)))
+end

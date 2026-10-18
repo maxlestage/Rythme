@@ -23,6 +23,7 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ("errors", &["erreurs", "option", "result", "?"]),
     ("functional", &["fonctionnel", "loops", "boucles"]),
     ("tests", &["test"]),
+    ("exercises", &["exercices", "exercise", "exercice"]),
     ("modules", &["use", "files", "fichiers"]),
     ("repl", &["interactive", "interactif"]),
     ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme"]),
@@ -47,6 +48,7 @@ Commandes
   rythme check fichier.ry   trouver les problèmes sans lancer le programme
   rythme test fichier.ry    lancer les tests d'un fichier
   rythme fmt fichier.ry     mettre le code en forme (--check : vérifier seulement)
+  rythme exercise           exercices corrigés automatiquement (list, start, check)
   rythme learn              visite guidée du langage, pas à pas
   rythme help SUJET         aide sur un sujet ou une fonction
   rythme explain E003       expliquer un code d'erreur
@@ -66,6 +68,7 @@ Sujets (rythme help SUJET)
   errors      Option, Result et ?
   functional  pas de boucles : comment faire à la place
   tests       écrire et lancer des tests
+  exercises   des exercices pour apprendre, avec leurs tests
   modules     utiliser plusieurs fichiers
   repl        le mode interactif
   fmt         la mise en forme officielle du code (rythme fmt)
@@ -85,6 +88,7 @@ Commands
   rythme check file.ry      find problems without running the program
   rythme test file.ry       run the tests of a file
   rythme fmt file.ry        give the code its official layout (--check: only check)
+  rythme exercise           exercises checked automatically (list, start, check)
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
@@ -104,6 +108,7 @@ Topics (rythme help TOPIC)
   errors      Option, Result and ?
   functional  no loops: what to do instead
   tests       writing and running tests
+  exercises   exercises to learn, with their tests
   modules     using several files
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
@@ -414,8 +419,8 @@ pub fn learn() {
         crate::io::out_line("");
     }
     crate::io::out_line(&t!(
-        "To practice, run `rythme` and type code. `rythme help builtins` lists every function.",
-        "Pour pratiquer, lancez `rythme` et tapez du code. `rythme help builtins` liste toutes les fonctions."
+        "To practice, run `rythme` and type code, or do the exercises: `rythme exercise list`. `rythme help builtins` lists every function.",
+        "Pour pratiquer, lancez `rythme` et tapez du code, ou faites les exercices : `rythme exercise list`. `rythme help builtins` liste toutes les fonctions."
     ));
 }
 
@@ -432,6 +437,7 @@ fn topic_text(name: &str) -> &'static str {
         "errors" => pick(ERRORS_EN, ERRORS_FR),
         "functional" => pick(FUNCTIONAL_EN, FUNCTIONAL_FR),
         "tests" => pick(TESTS_EN, TESTS_FR),
+        "exercises" => pick(EXERCISES_EN, EXERCISES_FR),
         "modules" => pick(MODULES_EN, MODULES_FR),
         "repl" => pick(REPL_EN, REPL_FR),
         "fmt" => pick(FMT_EN, FMT_FR),
@@ -1152,6 +1158,38 @@ Pendant les tests, les expressions du premier niveau comme print(...) ne sont
 pas exécutées : les définitions sont chargées, puis chaque test est lancé. Un
 test réussit s'il se termine sans erreur, et que sa valeur n'est ni false, ni
 Err(...), ni None."#;
+
+const EXERCISES_EN: &str = r#"EXERCISES
+
+Rythme comes with 30 graded exercises for a first course, from the first
+values to recursion, lists, records, types, Option, Result and tests. Each one
+is a file with a statement, hints, the functions to write and their tests.
+
+  rythme exercise list              the exercises, from ★☆☆ (easy) to ★★★
+  rythme exercise start 7           copies exercise 7 into the current folder
+  rythme exercise check 07-recursion.ry
+                                    runs its tests, and says what to do next
+
+In the file, replace each fail("to do") with your code; do not change the
+tests. `rythme test file.ry` runs the tests too. The exercises are also in the
+folder docs/exercises of the repository of Rythme, in English and French."#;
+
+const EXERCISES_FR: &str = r#"EXERCICES
+
+Rythme est livré avec 30 exercices gradués pour un premier cours, des
+premières valeurs à la récursivité, aux listes, aux enregistrements, aux types,
+à Option, à Result et aux tests. Chacun est un fichier avec un énoncé, des
+indices, les fonctions à écrire et leurs tests.
+
+  rythme exercise list              les exercices, de ★☆☆ (facile) à ★★★
+  rythme exercise start 7           copie l'exercice 7 dans le dossier actuel
+  rythme exercise check 07-recursivite.ry
+                                    lance ses tests, et dit quoi faire ensuite
+
+Dans le fichier, remplacez chaque fail("à faire") par votre code ; ne modifiez
+pas les tests. `rythme test fichier.ry` lance aussi les tests. Les exercices
+sont aussi dans le dossier docs/exercises du dépôt de Rythme, en anglais et en
+français."#;
 
 const MODULES_EN: &str = r#"SEVERAL FILES
 

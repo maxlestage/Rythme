@@ -1,0 +1,65 @@
+# Exercise 23 · Choosing with `match`  ★★☆
+#
+# `match` compares a value with patterns, in order, and gives the result of
+# the first one that fits:
+#   fn describe(n) = match n
+#     0 -> "zero"
+#     n if n < 0 -> "negative"
+#     _ -> "positive"
+#   end
+# Patterns can be numbers, texts, constructors, lists (`[]`, `[x]`,
+# `[x, ..rest]`) or records (`{name}`).
+#
+# Statement
+#   - `next_light(light)`: the light that comes after: Green, then Orange,
+#     then Red, then Green again;
+#   - `can_go(light)`: true only for Green;
+#   - `describe(list)`: "empty" for [], "one: 7" for [7], "two: 1 and 2"
+#     for [1, 2], and "many, starting with 5" for longer lists;
+#   - `greeting(person)`: for a record with a `title` field,
+#     "Hello, Dr Hopper"; otherwise, with only `name`, "Hello, Grace".
+#
+# Hints
+#   1. Each of the three lights is one case of the `match`.
+#   2. `[a, b]` matches lists of exactly two elements, `[first, ..]` lists
+#      of at least one element: put the most precise patterns first.
+#   3. `{title, last}` matches records that have at least these fields.
+#
+# Check your work:  rythme exercise check 23-match.ry
+#              or:  rythme test 23-match.ry
+
+type Light = Green | Orange | Red
+
+fn next_light(light) = fail("to do")
+
+fn can_go(light) = fail("to do")
+
+fn describe(list) = fail("to do")
+
+fn greeting(person) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "next light"
+  assert_eq(next_light(Green), Orange)
+  assert_eq(next_light(Orange), Red)
+  assert_eq(next_light(Red), Green)
+end
+
+test "can go"
+  assert_eq(can_go(Green), true)
+  assert_eq(can_go(Orange), false)
+  assert_eq(can_go(Red), false)
+end
+
+test "describe"
+  assert_eq(describe([]), "empty")
+  assert_eq(describe([7]), "one: 7")
+  assert_eq(describe([1, 2]), "two: 1 and 2")
+  assert_eq(describe([5, 6, 7]), "many, starting with 5")
+end
+
+test "greeting"
+  assert_eq(greeting({title: "Dr", last: "Hopper", name: "Grace"}), "Hello, Dr Hopper")
+  assert_eq(greeting({name: "Grace"}), "Hello, Grace")
+end

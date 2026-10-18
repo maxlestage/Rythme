@@ -1,0 +1,56 @@
+# Exercise 20 · Records  ★★☆
+#
+# A record groups named values: `{name: "Ada", born: 1815}`. `ada.name`
+# reads a field. A record never changes: `{..ada, born: 1816}` is a new
+# record, a copy of ada with another `born`. A parameter can take a record
+# apart: `fn hello({name}) = "Hello, {name}"`.
+#
+# Statement
+#   A person is a record `{name, born}`; a point is a record `{x, y}`.
+#   - `age_in(person, year)`: the age of the person at the end of the year;
+#   - `label(person)`: a text like "Ada (1815)";
+#   - `renamed(person, name)`: the same person with another name;
+#   - `moved(point, dx, dy)`: the point moved by dx horizontally and dy
+#     vertically;
+#   - `distance(a, b)`: the distance between two points.
+#
+# Hints
+#   1. `person.born`, or a parameter `{born}`.
+#   2. `{..person, name: name}`, which can be written `{..person, name}`.
+#   3. The distance is the square root of (xb - xa)² + (yb - ya)².
+#
+# Check your work:  rythme exercise check 20-records.ry
+#              or:  rythme test 20-records.ry
+
+fn age_in(person, year) = fail("to do")
+
+fn label(person) = fail("to do")
+
+fn renamed(person, name) = fail("to do")
+
+fn moved(point, dx, dy) = fail("to do")
+
+fn distance(a, b) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+ada = {name: "Ada", born: 1815}
+
+test "age" = assert_eq(age_in(ada, 1852), 37)
+
+test "label" = assert_eq(label(ada), "Ada (1815)")
+
+test "renamed"
+  assert_eq(renamed(ada, "Augusta"), {name: "Augusta", born: 1815})
+  assert_eq(ada.name, "Ada")
+end
+
+test "moved"
+  assert_eq(moved({x: 1, y: 2}, 3, -1), {x: 4, y: 1})
+  assert_eq(moved({x: 0, y: 0}, 0, 0), {x: 0, y: 0})
+end
+
+test "distance"
+  assert_eq(distance({x: 0, y: 0}, {x: 3, y: 4}), 5)
+  assert_eq(distance({x: 1, y: 1}, {x: 1, y: 1}), 0)
+end

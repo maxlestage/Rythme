@@ -1,0 +1,43 @@
+# Exercise 15 · Functions are values  ★★☆
+# Reference solution. Try the exercise before reading it!
+
+fn apply_twice(f, x) = f(f(x))
+
+fn compose(f, g) = fn(x) = f(g(x))
+
+fn adder(n) = fn(x) = x + n
+
+fn my_map([], _) = []
+fn my_map([x, ..rest], f) = [f(x), ..my_map(rest, f)]
+
+fn my_filter([], _) = []
+fn my_filter([x, ..rest], f) = if f(x) then [x, ..my_filter(rest, f)] else my_filter(rest, f)
+
+# --- Tests (do not change them) ---
+
+test "apply twice"
+  assert_eq(apply_twice(fn(x) = x * 3, 2), 18)
+  assert_eq(apply_twice(upper, "hi"), "HI")
+end
+
+test "compose"
+  plus_one_then_double = compose(fn(x) = x * 2, fn(x) = x + 1)
+  assert_eq(plus_one_then_double(4), 10)
+  assert_eq(compose(len, trim)("  abc  "), 3)
+end
+
+test "adder"
+  add10 = adder(10)
+  assert_eq(add10(5), 15)
+  assert_eq(map([1, 2, 3], adder(100)), [101, 102, 103])
+end
+
+test "my map"
+  assert_eq(my_map([1, 2, 3], fn(x) = x * x), [1, 4, 9])
+  assert_eq(my_map([], fn(x) = x), [])
+end
+
+test "my filter"
+  assert_eq(my_filter([1, 2, 3, 4, 5, 6], is_even), [2, 4, 6])
+  assert_eq(my_filter(["a", "bb", "ccc"], fn(w) = len(w) > 1), ["bb", "ccc"])
+end

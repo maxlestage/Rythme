@@ -1,0 +1,67 @@
+# Exercise 28 · Passing errors on with `?`  ★★★
+#
+# Writing a `match` after each step that may fail is long. `?` after a
+# Result (or an Option) takes the value out of `Ok(...)` (or `Some(...)`),
+# or stops the function at once and returns the `Err(...)` (or `None`):
+#   fn double_text(t)
+#     n = parse_int(t)?          # stops here if t is not a number
+#     Ok(n * 2)
+#   end
+#
+# Statement
+#   - `add_texts(a, b)`: the sum of the two numbers written in a and b,
+#     as `Ok(sum)`, or the error of `parse_int`;
+#   - `parse_point(text)`: for "3,4", `Ok({x: 3, y: 4})`; the error
+#     `Err("expected x,y")` if the text does not have exactly two parts
+#     separated by a comma, or the error of `parse_int` for a part that is
+#     not a number;
+#   - `sum_of_texts(texts)`: the sum of the numbers written in a list of
+#     texts, or the first error;
+#   - `ratio_of_texts(a, b)`: a / b for two numbers written in texts, or the
+#     first error, with `Err("division by zero")` when b is 0.
+#
+# Hints
+#   1. `Ok(parse_int(a)? + parse_int(b)?)`
+#   2. `match split(text, ",")` with the cases `[x, y]` and `_`.
+#   3. For a list, use recursion: `sum_of_texts([])` is `Ok(0)`; for
+#      `[t, ..rest]`, take the number of t and the sum of rest, both with
+#      `?`.
+#   4. `?` can be used on any function that gives a Result, your own ones
+#      too.
+#
+# Check your work:  rythme exercise check 28-question-mark.ry
+#              or:  rythme test 28-question-mark.ry
+
+fn add_texts(a, b) = fail("to do")
+
+fn parse_point(text) = fail("to do")
+
+fn sum_of_texts(texts) = fail("to do")
+
+fn ratio_of_texts(a, b) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "add texts"
+  assert_eq(add_texts("2", "40"), Ok(42))
+  assert(is_err(add_texts("2", "forty")), "forty is not a number")
+end
+
+test "parse point"
+  assert_eq(parse_point("3,4"), Ok({x: 3, y: 4}))
+  assert_eq(parse_point("3"), Err("expected x,y"))
+  assert_eq(parse_point("1,2,3"), Err("expected x,y"))
+  assert(is_err(parse_point("3,four")), "four is not a number")
+end
+
+test "sum of texts"
+  assert_eq(sum_of_texts(["1", "2", "3"]), Ok(6))
+  assert_eq(sum_of_texts([]), Ok(0))
+  assert_eq(sum_of_texts(["1", "x", "y"]), parse_int("x"))
+end
+
+test "ratio of texts"
+  assert_eq(ratio_of_texts("9", "2"), Ok(4.5))
+  assert_eq(ratio_of_texts("9", "0"), Err("division by zero"))
+  assert(is_err(ratio_of_texts("nine", "0")), "nine is not a number")
+end

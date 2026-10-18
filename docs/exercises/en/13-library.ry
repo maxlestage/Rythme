@@ -1,0 +1,58 @@
+# Exercise 13 · The list functions  ★★☆
+#
+# Most work on lists needs no recursion: the built-in functions do it.
+# `1..5` is the list [1, 2, 3, 4, 5]; `map(list, f)` applies f to each
+# element; `filter(list, f)` keeps the elements for which f gives true;
+# `sum`, `len`, `sort`, `reverse`, `take`... `rythme help lists` shows them.
+#
+# Statement
+#   - `squares(n)`: the list [1, 4, 9, ..., n × n];
+#   - `evens(list)`: the even numbers of the list, in the same order;
+#   - `sum_of_multiples(limit)`: the sum of the numbers from 1 to limit - 1
+#     that are multiples of 3 or of 5;
+#   - `mean(list)`: the average of the numbers of a list that is not empty;
+#   - `smallest_three(list)`: the three smallest numbers, from the smallest.
+#
+# Hints
+#   1. `map(1..n, square)` with a function `square` written by you, or
+#      `map(1..n, fn(x) = x * x)` (an anonymous function, see exercise 14).
+#   2. `is_even` is a built-in function: `filter(list, is_even)`.
+#   3. `1..0` is the empty list `[]`.
+#   4. `sort` then `take`.
+#
+# Check your work:  rythme exercise check 13-library.ry
+#              or:  rythme test 13-library.ry
+
+fn squares(n) = fail("to do")
+
+fn evens(list) = fail("to do")
+
+fn sum_of_multiples(limit) = fail("to do")
+
+fn mean(list) = fail("to do")
+
+fn smallest_three(list) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "squares"
+  assert_eq(squares(5), [1, 4, 9, 16, 25])
+  assert_eq(squares(0), [])
+end
+
+test "evens" = assert_eq(evens([5, 2, 8, 1, 4]), [2, 8, 4])
+
+test "sum of multiples"
+  assert_eq(sum_of_multiples(10), 23)
+  assert_eq(sum_of_multiples(1000), 233168)
+end
+
+test "mean"
+  assert_eq(mean([1, 2, 3, 4]), 2.5)
+  assert_eq(mean([7]), 7)
+end
+
+test "smallest three"
+  assert_eq(smallest_three([5, 1, 4, 2, 3]), [1, 2, 3])
+  assert_eq(smallest_three([9, 8]), [8, 9])
+end

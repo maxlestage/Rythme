@@ -1,0 +1,49 @@
+# Exercice 26 · Une valeur qui peut manquer : Option  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn division_sure(_, 0) = None
+fn division_sure(a, b) = Some(a / b)
+
+fn trouver_age(personnes, nom) = personnes |> find(fn(p) = p.nom == nom) |> map(fn(p) = p.age)
+
+fn age_ou_inconnu(personnes, nom) = match trouver_age(personnes, nom)
+  Some(age) -> text(age)
+  None -> "inconnu"
+end
+
+fn premier_mot_long(mots) = find(mots, fn(m) = len(m) > 5)
+
+fn additionner_options(a, b) = match [a, b]
+  [Some(x), Some(y)] -> Some(x + y)
+  _ -> None
+end
+
+# --- Tests (ne les modifiez pas) ---
+
+personnes = [{nom: "Ada", age: 36}, {nom: "Alan", age: 41}]
+
+test "division sûre"
+  assert_eq(division_sure(10, 4), Some(2.5))
+  assert_eq(division_sure(1, 0), None)
+end
+
+test "trouver l'âge"
+  assert_eq(trouver_age(personnes, "Alan"), Some(41))
+  assert_eq(trouver_age(personnes, "Grace"), None)
+end
+
+test "âge ou inconnu"
+  assert_eq(age_ou_inconnu(personnes, "Ada"), "36")
+  assert_eq(age_ou_inconnu(personnes, "Grace"), "inconnu")
+end
+
+test "premier mot long"
+  assert_eq(premier_mot_long(["un", "langage", "fonctionnel"]), Some("langage"))
+  assert_eq(premier_mot_long(["mots", "brefs"]), None)
+end
+
+test "additionner des options"
+  assert_eq(additionner_options(Some(2), Some(3)), Some(5))
+  assert_eq(additionner_options(Some(2), None), None)
+  assert_eq(additionner_options(None, None), None)
+end

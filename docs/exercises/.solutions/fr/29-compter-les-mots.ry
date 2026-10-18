@@ -1,0 +1,34 @@
+# Exercice 29 · Un petit projet : compter les mots  ★★★
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn mots_de(texte) = [".", ",", "!", "?"] |> fold(texte, fn(t, signe) = replace(t, signe, " ")) |> lower |> split
+
+fn frequences(texte) =
+  mots_de(texte)
+    |> group_by(fn(m) = m)
+    |> entries
+    |> map(fn([mot, liste]) = [mot, len(liste)])
+    |> sort_by(fn([mot, _]) = mot)
+    |> sort_by(fn([_, n]) = -n)
+
+fn le_plus_frequent(texte) = frequences(texte) |> first |> map(fn([mot, _]) = mot)
+
+fn rapport(texte, n) = frequences(texte) |> take(n) |> map(fn([mot, nombre]) = "{mot} : {nombre}") |> join("\n")
+
+# --- Tests (ne les modifiez pas) ---
+
+poeme = "Le chat dort. Le chien dort ! Le chat voit-il le chien ?"
+
+test "mots" = assert_eq(mots_de("Bonjour, le Monde ! Bonjour ?"), ["bonjour", "le", "monde", "bonjour"])
+
+test "fréquences"
+  assert_eq(frequences("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
+  assert_eq(frequences(poeme) |> take(3), [["le", 4], ["chat", 2], ["chien", 2]])
+end
+
+test "le plus fréquent"
+  assert_eq(le_plus_frequent(poeme), Some("le"))
+  assert_eq(le_plus_frequent(" ... "), None)
+end
+
+test "rapport" = assert_eq(rapport(poeme, 3), "le : 4\nchat : 2\nchien : 2")

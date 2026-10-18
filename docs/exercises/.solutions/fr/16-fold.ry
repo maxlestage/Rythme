@@ -1,0 +1,34 @@
+# Exercice 16 · Réduire une liste à une valeur  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn produit_de(liste) = fold(liste, 1, fn(resultat, x) = resultat * x)
+
+fn mot_le_plus_long(mots) = fold(mots, "", fn(meilleur, m) = if len(m) > len(meilleur) then m else meilleur)
+
+fn en_nombre(chiffres) = fold(chiffres, 0, fn(n, c) = n * 10 + c)
+
+fn compter_si(liste, f) = fold(liste, 0, fn(n, x) = if f(x) then n + 1 else n)
+
+# --- Tests (ne les modifiez pas) ---
+
+test "produit"
+  assert_eq(produit_de([2, 3, 4]), 24)
+  assert_eq(produit_de([]), 1)
+end
+
+test "mot le plus long"
+  assert_eq(mot_le_plus_long(["un", "arbre", "est", "vert"]), "arbre")
+  assert_eq(mot_le_plus_long(["une", "pie"]), "une")
+  assert_eq(mot_le_plus_long([]), "")
+end
+
+test "en nombre"
+  assert_eq(en_nombre([1, 2, 3]), 123)
+  assert_eq(en_nombre([0, 7]), 7)
+  assert_eq(en_nombre([]), 0)
+end
+
+test "compter si"
+  assert_eq(compter_si([1, 2, 3, 4, 5], is_odd), 3)
+  assert_eq(compter_si(["a", "bb"], fn(m) = len(m) > 5), 0)
+end
