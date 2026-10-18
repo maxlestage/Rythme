@@ -1,5 +1,6 @@
 //! The server: a `paquets::App` with the pages in two languages, the examples for the
-//! playground, the sitemap and `robots.txt`. Static files (styles, scripts, the
+//! playground, the sitemap and `robots.txt`, the manifests and the service worker of
+//! the installable app (`pwa.rs`). Static files (styles, scripts, the
 //! interpreter compiled to WebAssembly) come from `public/`, found by Paquets in the
 //! current directory.
 
@@ -13,6 +14,9 @@ use crate::i18n::{Lang, pick_lang};
 use crate::pages::{self, Ctx};
 use crate::routes::{Page as PageKind, Route, base, link};
 
+/// The styles, scripts and interpreter of `public/`, linked with `?v=` and their version.
+pub const ASSETS: [&str; 5] = ["/site.css", "/site.js", "/playground.js", "/playground-worker.js", "/rythme.wasm"];
+
 /// The cookie that remembers the language chosen with the switch (set by `site.js`).
 pub const LANG_COOKIE: &str = "rythme-lang";
 
@@ -22,6 +26,8 @@ pub struct Site {
     pub site_url: Option<String>,
     /// Short hash of the styles and scripts, for `?v=` in their links.
     pub version: String,
+    /// The service worker, with the version of everything it saves.
+    pub worker: String,
 }
 
 /// The `site/` folder: `SITE_DIR`, the current directory when it has `public/`, else
@@ -49,10 +55,13 @@ impl Site {
     pub fn load(site_url: Option<String>) -> Site {
         let public = site_dir().join("public");
         let mut bytes = Vec::new();
-        for file in ["site.css", "site.js", "playground.js", "playground-worker.js", "rythme.wasm"] {
-            bytes.extend(std::fs::read(public.join(file)).unwrap_or_default());
+        for file in ASSETS {
+            bytes.extend(std::fs::read(public.join(file.trim_start_matches('/'))).unwrap_or_default());
         }
-        Site { site_url: site_url.map(|u| u.trim().trim_end_matches('/').to_owned()).filter(|u| !u.is_empty()), version: version(&bytes) }
+        let site_url = site_url.map(|u| u.trim().trim_end_matches('/').to_owned()).filter(|u| !u.is_empty());
+        let mut site = Site { site_url, version: version(&bytes), worker: String::new() };
+        site.worker = crate::pwa::worker(&site);
+        site
     }
 
     /// The public address of the site.
@@ -98,13 +107,39 @@ fn page(site: &Site, req: &Request) -> Response {
         let query = req.uri().query().map(|q| format!("?{q}")).unwrap_or_default();
         return Redirect::permanent(format!("{}/{query}", link(path))).into_response();
     }
-    pages::render(&site.ctx(req, route)).into_response().header("cache-control", "no-cache")
+    let ctx = site.ctx(req, route);
+    pages::respond(|| pages::render(&ctx)).header("cache-control", "no-cache")
 }
 
 /// The "not found" page, in the language of the address or of the visitor.
 fn not_found(site: &Site, req: &Request) -> Response {
     let lang = Route::parse(req.path()).map_or_else(|| visitor_lang(req), |r| r.lang);
-    pages::not_found(&site.ctx(req, Route::new(lang, PageKind::NotFound))).into_response()
+    let ctx = site.ctx(req, Route::new(lang, PageKind::NotFound));
+    pages::respond(|| pages::not_found(&ctx))
+}
+
+/// `/{lang}/manifest.webmanifest`: the manifest of the app in that language.
+fn manifest(site: &Site, req: &Request) -> Response {
+    match req.param("lang").and_then(Lang::parse) {
+        Some(lang) => Response::new()
+            .header("content-type", "application/manifest+json")
+            .header("cache-control", "no-cache")
+            .send(crate::pwa::manifest(lang)),
+        None => not_found(site, req),
+    }
+}
+
+/// `/sw.js`: the service worker, checked by the browser at each visit. Its own policy
+/// lets it fetch the Google Fonts the pages use, to keep them offline.
+fn service_worker(site: &Site, _req: &Request) -> Response {
+    Response::new()
+        .header("content-type", "text/javascript; charset=utf-8")
+        .header("cache-control", "no-cache")
+        .header(
+            "content-security-policy",
+            "default-src 'self'; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; object-src 'none'",
+        )
+        .send(site.worker.clone())
 }
 
 /// `/examples.json`: the programs of the playground's menu.
@@ -157,6 +192,8 @@ pub fn app(site: Arc<Site>) -> App {
     route(&mut app, "/examples.json", &site, examples_json);
     route(&mut app, "/sitemap.xml", &site, sitemap);
     route(&mut app, "/robots.txt", &site, robots);
+    route(&mut app, "/sw.js", &site, service_worker);
+    route(&mut app, "/:lang/manifest.webmanifest", &site, manifest);
     for path in ["/:lang", "/:lang/:page"] {
         route(&mut app, path, &site, page);
     }

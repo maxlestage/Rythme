@@ -1,6 +1,8 @@
 // The playground: the real Rythme interpreter, compiled to WebAssembly
 // (public/rythme.wasm, built by ./build.sh). The page itself comes from the server,
-// in the language of its address; this script makes it work.
+// in the language of its address; this script makes it work. The code being edited
+// stays in localStorage; a .ry file can be opened, from the button, from the system
+// (the installed app's file handler) or shared as text, and downloaded.
 (() => {
   "use strict";
 
@@ -46,7 +48,13 @@
     set(k, v) { try { localStorage.setItem(k, v); } catch { /* storage may be blocked */ } },
   };
 
+  // Keys of localStorage: the code being edited ("" for an example as it is), the
+  // example shown, and the name of the opened file.
+  const SAVED = { code: "rythme-code", example: "rythme-example", file: "rythme-file" };
+
   let examples = {};
+  // The name of the edited code: main.ry, or the name of the opened file.
+  let fileName = "main.ry";
   let currentTopic = "start";
   let wasmModule = null;
   let worker = null;
@@ -133,14 +141,56 @@
       exampleSel.append(o);
     }
     exampleSel.value = "custom";
-    $("file-name").textContent = "main.ry";
+    $("file-name").textContent = fileName;
   }
 
   function onEdit() {
     refreshEditor();
-    store.set("rythme-code", source.value);
+    store.set(SAVED.code, source.value);
     setCustom();
   }
+
+  // ----- .ry files: open, download -----
+  function openText(code, name) {
+    source.value = code;
+    fileName = /^[^/\\]{1,80}\.ry$/i.test(name || "") ? name : "main.ry";
+    store.set(SAVED.file, fileName);
+    onEdit();
+    runMode = 0;
+    execute(runMode);
+  }
+
+  async function openFile(file) {
+    try {
+      openText(await file.text(), file.name);
+    } catch (err) {
+      renderOutput("\u0001" + err + "\u0002");
+    }
+  }
+
+  const openBtn = $("open"), saveBtn = $("save"), fileInput = $("open-file");
+  openBtn.hidden = false;
+  saveBtn.hidden = false;
+  openBtn.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files[0]) openFile(fileInput.files[0]);
+    fileInput.value = "";
+  });
+  saveBtn.addEventListener("click", () => {
+    const name = ($("file-name").textContent || "main.ry").replace(/[^\w.-]+/g, "_");
+    const url = URL.createObjectURL(new Blob([source.value], { type: "text/plain;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = /\.ry$/.test(name) ? name : "main.ry";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+  // The last keystrokes, if the app is closed before the storage was written.
+  window.addEventListener("pagehide", () => {
+    if (exampleSel.value === "custom") store.set(SAVED.code, source.value);
+  });
 
   source.addEventListener("input", onEdit);
   source.addEventListener("scroll", syncScroll);
@@ -381,8 +431,11 @@
     source.value = name === "welcome" ? WELCOME : examples[name] || "";
     exampleSel.value = name;
     $("file-name").textContent = name === "welcome" ? "main.ry" : name + ".ry";
+    fileName = "main.ry";
     refreshEditor();
-    store.set("rythme-code", "");
+    store.set(SAVED.code, "");
+    store.set(SAVED.example, name);
+    store.set(SAVED.file, fileName);
     runMode = name === "testing" ? 2 : 0;
     execute(runMode);
   }
@@ -391,27 +444,39 @@
     if (exampleSel.value !== "custom") loadExample(exampleSel.value);
   });
 
-  // `#example=fizzbuzz`, or `#code=…&mode=test`: links from the other pages.
+  // `#example=fizzbuzz`, or `#code=…&mode=test`: links from the other pages;
+  // `?text=…&title=…&url=…`: a text shared with the installed app (its share target).
   function fromAddress() {
     const params = new URLSearchParams(location.hash.slice(1));
     const found = { example: params.get("example"), code: params.get("code"), mode: params.get("mode") === "test" ? 2 : 0 };
-    if (found.example || found.code !== null) history.replaceState(null, "", location.pathname + location.search);
+    const query = new URLSearchParams(location.search);
+    if (["text", "title", "url"].some((k) => query.has(k))) {
+      const text = query.get("text") || query.get("title") || "";
+      const url = query.get("url");
+      found.code = url && !text.includes(url) ? `${text ? text + "\n" : ""}# ${url}\n` : text;
+      found.example = null;
+    }
+    if (found.example || found.code !== null) history.replaceState(null, "", location.pathname);
     return found;
   }
 
   // ----- start -----
   async function start() {
     const asked = fromAddress();
-    const saved = store.get("rythme-code");
+    const saved = store.get(SAVED.code);
     if (asked.code !== null) {
       source.value = asked.code;
       runMode = asked.mode;
-      store.set("rythme-code", asked.code);
+      store.set(SAVED.code, asked.code);
+      store.set(SAVED.file, fileName);
       setCustom();
     } else if (saved && !asked.example) {
+      fileName = store.get(SAVED.file) || fileName;
       source.value = saved;
       setCustom();
     }
+    // The example that was open, when nothing else is asked.
+    const example = asked.example || (asked.code === null && !saved ? store.get(SAVED.example) : null);
     refreshEditor();
     output.textContent = "";
     output.append(text(UI.loading, "empty"));
@@ -437,8 +502,8 @@
     } catch {
       examples = {};
     }
-    if (asked.example && (asked.example === "welcome" || examples[asked.example])) {
-      loadExample(asked.example);
+    if (example && (example === "welcome" || examples[example])) {
+      loadExample(example);
     } else {
       execute(runMode);
     }
@@ -446,4 +511,12 @@
   }
 
   start();
+
+  // A .ry file opened from the system with the installed app (file_handlers of the
+  // manifest; Chrome and Edge on computers).
+  if ("launchQueue" in window) {
+    window.launchQueue.setConsumer(async (params) => {
+      if (params.files && params.files.length) openFile(await params.files[0].getFile());
+    });
+  }
 })();
