@@ -22,6 +22,14 @@ dit ce qu'une version 1.x peut changer ou non.*
   long for a link are refused with a message. Opening a link shows the program
   without replacing the saved draft until it is changed, with a notice and
   *Back to my draft*. In the six languages of the site.
+- **Steps in the playground, and links that open on them**: *Steps* shows the
+  calculation of the last expression (or of the selected code) one step at a
+  time, with *Previous* and *Next*, a slider and the keyboard, the step before,
+  what the program printed and the error if any, announced to screen readers.
+  *Share* from the steps makes a link that opens on the same step
+  (`&mode=steps&step=3`, with `&expr=` for a selected piece of code), and the
+  tour of *Learn* opens on the steps of `fib(4)`. Offline too, in the six
+  languages of the site.
 
 ## [1.0.0] - 2026-10-18
 
