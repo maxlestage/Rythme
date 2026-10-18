@@ -163,6 +163,10 @@ async function verify(mode) {
   check(true, "offline playground: the help topics");
   // A .ry file opened, the program downloaded, the code kept after closing.
   await page.setInputFiles("#open-file", { name: "hello.ry", mimeType: "text/plain", buffer: Buffer.from('print("hello from a file")\n') });
+  // The status still shows the previous run until the file is read: wait for its output.
+  await page
+    .waitForFunction(() => document.getElementById("output").textContent.includes("hello from a file"), null, { timeout: 20000 })
+    .catch(() => {});
   await ran(page);
   check((await page.textContent("#file-name")) === "hello.ry" && (await page.textContent("#output")).includes("hello from a file"), "offline playground: Open a .ry file");
   const [download] = await Promise.all([page.waitForEvent("download"), page.click("#save")]);
