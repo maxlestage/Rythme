@@ -125,6 +125,7 @@ pub enum Pat {
     Symbol(Sym),
     Range(Num, Num),
     Prefix(Rc<str>, Box<Pat>),
+    /// The constructor as the interpreter stores it (`CtorInfo::id`).
     Ctor(Sym, Vec<Pat>),
     /// Elements, then the rest: `None` = no rest, `Some(None)` = `..`, `Some(Some(slot))` = `..name`.
     List(Vec<Pat>, Option<Option<u32>>),
@@ -412,7 +413,9 @@ impl Compiler {
             PatKind::Symbol(s) => Pat::Symbol(*s),
             PatKind::Range(lo, hi) => Pat::Range(*lo, *hi),
             PatKind::Prefix(t, rest) => Pat::Prefix(t.clone(), Box::new(self.pattern(rest))),
-            PatKind::Ctor(name, ps) => Pat::Ctor(name.own_name(), ps.iter().map(|p| self.pattern(p)).collect()),
+            PatKind::Ctor(name, ps) => {
+                Pat::Ctor(self.names.get(name).copied().unwrap_or(*name), ps.iter().map(|p| self.pattern(p)).collect())
+            }
             PatKind::List(ps, rest) => {
                 let items = ps.iter().map(|p| self.pattern(p)).collect();
                 let rest = rest.map(|r| {
