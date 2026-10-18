@@ -1,6 +1,6 @@
 //! The website of Rythme, written with Paquets: the home page, the tour of the
 //! language, the examples, the playground (the interpreter compiled to WebAssembly)
-//! and the guide for teachers, in French and English; installable, and offline once
+//! and the guide for teachers, in six languages; installable, and offline once
 //! visited.
 
 pub mod examples;

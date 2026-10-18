@@ -3,7 +3,7 @@
 //
 //   node layout.js <rythme-site binary> [server|export]
 //
-// No horizontal scrolling: every page in both languages, at every width, in every
+// No horizontal scrolling: every page in every language, at every width, in every
 // theme. The themes: contrast, the picker with the keyboard, the choice kept and
 // applied before the first paint. The exit code is the number of failed checks.
 "use strict";
@@ -14,7 +14,8 @@ const { workspace, freePort, startServer, startExport, binary, checker } = requi
 
 const BIN = binary(process.argv[2]);
 const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
-const LANGS = ["fr", "en"];
+// Every language of the site (src/i18n.rs).
+const LANGS = ["fr", "en", "es", "de", "pt", "zh"];
 const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "offline/", "nothing-here/"];
 const WIDTHS = [320, 360, 375, 390, 414, 600, 768, 1024, 1280, 1440, 1920];
 // The color themes, as `site.css` defines them; `auto` follows the system.
@@ -182,6 +183,50 @@ async function noHorizontalScroll(browser, base, mode) {
   await context.close();
 }
 
+// The language menu of the bar: open, it stays inside the screen at every width and
+// lists every language; with the keyboard, Enter opens it, Escape closes it and gives
+// the focus back to its button.
+async function languageMenu(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 320, height: 800 } });
+  const page = await context.newPage();
+  for (const lang of LANGS) {
+    await page.goto(`${base}/${lang}/learn/`);
+    for (const width of [320, 375, 768, 1280]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.evaluate(() => { document.querySelector(".lang--bar").open = true; });
+      await settle(page);
+      const m = await page.evaluate(measure);
+      const menu = await page.evaluate(() => {
+        const links = [...document.querySelectorAll(".lang--bar .lang__link")];
+        const vw = document.documentElement.clientWidth;
+        return {
+          count: links.length,
+          inside: links.every((a) => { const r = a.getBoundingClientRect(); return r.left >= 0 && r.right <= vw && r.width > 0; }),
+          current: (document.querySelector('.lang--bar .lang__link[aria-current="true"]') || {}).hreflang,
+        };
+      });
+      check(m.scrollWidth <= m.clientWidth && !m.wide.length && !m.scrollers.length && menu.count === LANGS.length && menu.inside && menu.current.split("-")[0] === lang,
+        `${mode}: /${lang}/ the open language menu fits at ${width}px`, { m, menu });
+      await page.evaluate(() => { document.querySelector(".lang--bar").open = false; });
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto(`${base}/de/`);
+  await page.focus(".lang--bar summary");
+  await page.keyboard.press("Enter");
+  const opened = await page.evaluate(() => document.querySelector(".lang--bar").open);
+  await page.keyboard.press("Tab");
+  const focused = await page.evaluate(() => document.activeElement.classList.contains("lang__link"));
+  await page.keyboard.press("Escape");
+  const closed = await page.evaluate(() => ({ open: document.querySelector(".lang--bar").open, focus: document.activeElement.tagName }));
+  check(opened && focused && !closed.open && closed.focus === "SUMMARY", `${mode}: the language menu with the keyboard`, { opened, focused, closed });
+  await page.click(".lang--bar summary");
+  // On the left of the page, away from the menu, which hangs on the right.
+  await page.mouse.click(8, 600);
+  check(!(await page.evaluate(() => document.querySelector(".lang--bar").open)), `${mode}: a click elsewhere closes the language menu`);
+  await context.close();
+}
+
 // The editor wraps long lines; each line number stays level with its line.
 async function editorWraps(browser, base) {
   const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 320, height: 800 } });
@@ -345,6 +390,7 @@ async function verify(mode) {
   const browser = await launch();
   try {
     await noHorizontalScroll(browser, base, mode);
+    await languageMenu(browser, base, mode);
     await editorWraps(browser, base);
     await themes(browser, base, mode);
   } finally {

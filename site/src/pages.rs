@@ -3,7 +3,7 @@
 
 use paquets::prelude::*;
 
-use crate::examples::EXAMPLES;
+use crate::examples::{EXAMPLES, json_string};
 use crate::highlight::{code_block, code_inline, diagnostic};
 use crate::i18n::{Lang, Texts};
 use crate::pwa;
@@ -110,20 +110,44 @@ pub fn percent_encode(s: &str) -> String {
 
 // ----- Layout ---------------------------------------------------------------------------
 
-/// FR / EN: the same page in the other language.
-fn lang_switch(ctx: &Ctx, class: &str) -> Element {
-    div().class("lang").class(class.to_owned()).attr("role", "group").attr("aria-label", ctx.t().lang_aria).children(Lang::ALL.map(|l| {
+/// The links to the same page in every language, each named in its own language.
+fn lang_links(ctx: &Ctx) -> [Element; crate::i18n::COUNT] {
+    Lang::ALL.map(|l| {
         let route = if ctx.route.page == PageKind::NotFound { Route::new(l, PageKind::Home) } else { ctx.route.with_lang(l) };
         let link = a()
             .class("lang__link")
             .href(route.href())
-            .attr("hreflang", l.code())
-            .attr("lang", l.code())
-            .attr("title", l.name())
+            .attr("hreflang", l.tag())
+            .attr("lang", l.tag())
             .attr("data-lang", l.code())
-            .text(l.code().to_uppercase());
-        if l == ctx.lang() { link.class("is-active").attr("aria-current", "true") } else { link }
-    }))
+            .child(span().class("lang__name").text(l.name()))
+            .child(span().class("lang__code").attr("aria-hidden", "true").text(l.code().to_uppercase()));
+        let link = if l == ctx.lang() { link.class("is-active").attr("aria-current", "true") } else { link };
+        li().child(link)
+    })
+}
+
+/// The language switch of the bar: a compact menu (`details`, which opens without
+/// JavaScript; `site.js` closes it with Escape or a click elsewhere) whose button shows
+/// the code of the language.
+fn lang_menu(ctx: &Ctx) -> Element {
+    let t = ctx.t();
+    details()
+        .class("lang lang--bar")
+        .child(
+            summary()
+                .class("lang__toggle")
+                .attr("aria-label", format!("{} — {}", t.lang_aria, ctx.lang().name()))
+                .attr("title", t.lang_aria)
+                .child(globe_icon())
+                .child(span().class("lang__current").text(ctx.lang().code().to_uppercase())),
+        )
+        .child(ul().class("lang__menu").children(lang_links(ctx)))
+}
+
+/// The language switch of the footer: every language, in a line that wraps.
+fn lang_list(ctx: &Ctx) -> Element {
+    nav().class("lang lang--foot").attr("aria-label", ctx.t().lang_aria).child(ul().class("lang__list").children(lang_links(ctx)))
 }
 
 /// The pages of the navigation, with their names.
@@ -171,6 +195,17 @@ fn share_icon() -> Element {
             .attr("stroke-linecap", "round")
             .attr("stroke-linejoin", "round")
             .attr("d", "M8 1.5v8.5M5.5 4 8 1.5 10.5 4M5 6.5H3.5v8h9v-8H11"),
+    )
+}
+
+/// A globe: the language switch.
+fn globe_icon() -> Element {
+    svg().attr("class", "icon").attr("viewBox", "0 0 16 16").attr("width", "16").attr("height", "16").attr("aria-hidden", "true").child(
+        path()
+            .attr("fill", "none")
+            .attr("stroke", "currentColor")
+            .attr("stroke-width", "1.3")
+            .attr("d", "M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm-6.5 6.5h13M8 1.5c1.8 1.8 2.6 4 2.6 6.5S9.8 12.7 8 14.5C6.2 12.7 5.4 10.5 5.4 8S6.2 3.3 8 1.5Z"),
     )
 }
 
@@ -301,7 +336,7 @@ fn site_header(ctx: &Ctx) -> Element {
                         .child(theme_picker(t)),
                 ),
             )
-            .child(lang_switch(ctx, "lang--bar"))
+            .child(lang_menu(ctx))
             .child(
                 button()
                     .class("burger")
@@ -344,7 +379,7 @@ fn site_footer(ctx: &Ctx) -> Element {
                     .child(external(a().href(REPO).text(t.footer_source)))
                     .child(external(a().href(format!("{REPO}/blob/master/LICENSE")).text(t.footer_license)))
                     .child(external(a().href(PAQUETS).text(t.footer_made)))
-                    .child(lang_switch(ctx, "lang--foot")),
+                    .child(lang_list(ctx)),
             ),
     )
 }
@@ -360,7 +395,7 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
     } else {
         seo = seo.canonical(route.path());
         for l in Lang::ALL {
-            seo = seo.alternate(l.code(), route.with_lang(l).path());
+            seo = seo.alternate(l.tag(), route.with_lang(l).path());
         }
         seo = seo.alternate("x-default", route.with_lang(Lang::Fr).path());
     }
@@ -406,7 +441,7 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
         .child(site_footer(ctx))
         .child(notices(ctx.t()));
     Page::new(title)
-        .lang(lang.code())
+        .lang(lang.tag())
         .description(description)
         .seo(seo)
         .plain()
@@ -640,6 +675,29 @@ pub fn examples(ctx: &Ctx) -> Page {
 
 // ----- Playground -------------------------------------------------------------------------
 
+/// The texts that `playground.js` writes while it runs, as a JSON object (`data-ui`).
+pub fn playground_ui(t: &Texts) -> String {
+    let fields = [
+        ("loading", t.pg_loading),
+        ("loadFailed", t.pg_load_failed),
+        ("running", t.pg_running),
+        ("stopped", t.pg_stopped),
+        ("ranIn", t.pg_ran_in),
+        ("failedIn", t.pg_failed_in),
+        ("nothing", t.pg_nothing),
+        ("tooDeep", t.pg_too_deep),
+        ("line", t.pg_lines[0]),
+        ("lines", t.pg_lines[1]),
+        ("explain", t.pg_explain),
+        ("custom", t.pg_custom),
+        ("formatted", t.pg_formatted),
+        ("alreadyFormatted", t.pg_already_formatted),
+        ("notFormatted", t.pg_not_formatted),
+    ];
+    let pairs: Vec<String> = fields.iter().map(|(k, v)| format!("{}:{}", json_string(k), json_string(v))).collect();
+    format!("{{{}}}", pairs.join(","))
+}
+
 pub fn playground(ctx: &Ctx) -> Page {
     let t = ctx.t();
     let toolbar = div()
@@ -781,6 +839,7 @@ pub fn playground(ctx: &Ctx) -> Page {
     let content = main()
         .class("page page--wide playground")
         .attr("data-lang", ctx.lang().code())
+        .attr("data-ui", playground_ui(t))
         .attr("data-wasm", ctx.asset("/rythme.wasm"))
         .attr("data-worker", ctx.asset("/playground-worker.js"))
         .attr("data-examples", link("/examples.json"))
@@ -800,15 +859,23 @@ pub fn playground(ctx: &Ctx) -> Page {
 pub fn teach(ctx: &Ctx) -> Page {
     let t = ctx.t();
     let guide = crate::teach::render(ctx.lang());
+    // A language without a guide of its own: the English one, marked as English, under
+    // a note in the language of the page.
+    let guide_lang = crate::teach::guide_lang(ctx.lang());
+    let mark = |el: Element| if guide_lang == ctx.lang() { el } else { el.attr("lang", guide_lang.tag()) };
+    let sections = ol().children(guide.sections.iter().map(|(id, text)| li().child(a().href(format!("#{id}")).text(text.clone()))));
     let toc = nav()
         .class("toc")
         .attr("aria-labelledby", "toc-title")
         .child(p().class("toc__title").id("toc-title").text(t.teach_toc))
-        .child(ol().children(guide.sections.iter().map(|(id, text)| li().child(a().href(format!("#{id}")).text(text.clone())))));
-    let content = main()
-        .class("page")
-        .child(page_head(&guide.title, t.teach_lead))
-        .child(div().class("doc").child(toc).child(article().class("prose").html(guide.html.clone())));
+        .child(mark(sections));
+    let article = mark(article().class("prose").html(guide.html.clone()));
+    let head = header().class("page-head").child(mark(h1().text(guide.title.clone()))).child(p().class("lead").text(t.teach_lead));
+    let head = match t.teach_note {
+        Some(note) => head.child(p().class("note note--box").id("teach-note").text(note)),
+        None => head,
+    };
+    let content = main().class("page").child(head).child(div().class("doc").child(toc).child(article));
     layout(ctx, &format!("{} — Rythme", guide.title), t.teach_lead, content)
 }
 
