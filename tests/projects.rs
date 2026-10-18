@@ -57,11 +57,16 @@ impl Temp {
             .env("RYTHME_HOME", self.home())
             .output()
             .expect("run rythme");
-        Run {
-            stdout: String::from_utf8_lossy(&out.stdout).replace("\r\n", "\n"),
-            stderr: String::from_utf8_lossy(&out.stderr).replace("\r\n", "\n"),
-            code: out.status.code().unwrap_or(-1),
-        }
+        // Paths are shown with `\` on Windows; the tests compare them with `/`.
+        let text = |bytes: &[u8]| {
+            let s = String::from_utf8_lossy(bytes).replace("\r\n", "\n");
+            if cfg!(windows) {
+                s.replace('\\', "/")
+            } else {
+                s
+            }
+        };
+        Run { stdout: text(&out.stdout), stderr: text(&out.stderr), code: out.status.code().unwrap_or(-1) }
     }
 
     /// A git repository in `dir` with these files, committed.

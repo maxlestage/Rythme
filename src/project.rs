@@ -92,7 +92,7 @@ fn git_address(url: &str, base: &Path) -> String {
     let local = base.join(url);
     if !url.contains("://") && Path::new(url).is_relative() && local.is_dir() {
         if let Ok(full) = local.canonicalize() {
-            return full.display().to_string();
+            return plain(&full.display().to_string());
         }
     }
     url.to_string()
@@ -293,10 +293,23 @@ enum GitError {
     Failed(String),
 }
 
+/// A path git accepts: on Windows, a canonical path starts with `\\?\` (or
+/// `//?/` once written with slashes), which git cannot use.
+fn plain(s: &str) -> String {
+    for (verbatim, keep) in [(r"\\?\UNC\", r"\\"), ("//?/UNC/", "//"), (r"\\?\", ""), ("//?/", "")] {
+        if let Some(rest) = s.strip_prefix(verbatim) {
+            return format!("{keep}{rest}");
+        }
+    }
+    s.to_string()
+}
+
 fn git(args: &[&str], dir: &Path) -> Result<String, GitError> {
+    let args: Vec<String> = args.iter().map(|a| plain(a)).collect();
+    let dir = PathBuf::from(plain(&dir.to_string_lossy()));
     let out = Command::new("git")
-        .args(args)
-        .current_dir(if dir.as_os_str().is_empty() { Path::new(".") } else { dir })
+        .args(&args)
+        .current_dir(if dir.as_os_str().is_empty() { Path::new(".") } else { &dir })
         .env("GIT_TERMINAL_PROMPT", "0")
         .stdin(Stdio::null())
         .output()
@@ -795,4 +808,18 @@ pub fn targets(cmd: Cmd) -> Option<Result<Vec<String>, ()>> {
         }
     };
     Some(Ok(list))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::plain;
+
+    #[test]
+    fn git_gets_paths_without_the_windows_verbatim_prefix() {
+        assert_eq!(plain(r"\\?\C:\Users\a"), r"C:\Users\a");
+        assert_eq!(plain("//?/C:/Users/a"), "C:/Users/a");
+        assert_eq!(plain(r"\\?\UNC\server\share"), r"\\server\share");
+        assert_eq!(plain("/home/a"), "/home/a");
+        assert_eq!(plain("https://example.com/x.git"), "https://example.com/x.git");
+    }
 }
