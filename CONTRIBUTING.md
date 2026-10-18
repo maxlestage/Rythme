@@ -31,6 +31,11 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ interp.rs
 
 - `driver.rs` loads files and the files they `use`, checks them, runs them,
   and runs tests.
+- `types.rs` holds what the checker knows for sure about values: their types,
+  and what each built-in function accepts and gives back. `check.rs` infers
+  the types of expressions to report operations that would fail every time
+  they run. A type only says what is certain: when the checker is not sure,
+  it says nothing, because a correct program must never be rejected.
 - `diagnostic.rs` prints messages in the style of Rust.
 - `format.rs` is `rythme fmt`, the formatter: run `cargo run -- fmt examples`
   after changing an example. Its tests (`tests/format.rs`) check on every
@@ -62,7 +67,8 @@ in `help::CODES` (a test checks it).
 1. Write the function in `builtins.rs`:
    `fn name(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value>`.
    Use the helpers (`list`, `text`, `int`, `func`...) to check the arguments:
-   they produce clear errors.
+   they produce clear errors, with `wrong_argument` (and `wrong_return` for
+   a function given to it), which the checker uses too.
 2. Add a line to `BUILTINS` with its signature, number of arguments,
    category, documentation in English and French, and an example. Each
    example line `code   # value` is run by `tests/stdlib.rs`: it must give
@@ -74,6 +80,13 @@ in `help::CODES` (a test checks it).
 4. If other languages call it differently (`padStart`, `rjust`...), add the
    names to `suggest::alias_hint`, and test the edge cases (empty values,
    negative positions, accents) in `tests/stdlib.rs`.
+5. Optionally, describe it in `types::builtin_call` (what kinds of values it
+   accepts, with the `Expected` of its errors and in the order it checks
+   them, and what it gives back), so that `rythme check` finds mistakes like
+   `len(5)` before running, with the same message. Without it, the checker
+   simply knows nothing about the function. `tests/types.rs` calls every
+   described function with values of every kind and checks that the
+   description is right.
 
 ## Design rules
 

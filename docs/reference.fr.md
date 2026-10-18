@@ -535,7 +535,6 @@ print([1, 2] < [1, 3], [1, 2] < [1, 2, 0], Some(1) < Some(2))
 print(sort(["poire", "Figue", "abricot", "été"]))
 print(None < Some(1), Ok(5) < Err(1), Petit < Grand)
 print(sort([Some(2), None, Some(1)]))
-print({a: 1} < {a: 2})
 ```
 
 ```text
@@ -544,10 +543,21 @@ true true true
 ["Figue", "abricot", "poire", "été"]
 true true true
 [None, Some(1), Some(2)]
+```
+
+Quand la nature des valeurs est certaine, comme ici, l'erreur est trouvée
+avant que le programme ne s'exécute (voir
+[5.5](#55-la-vérification-avant-lexécution)) :
+
+```rythme
+print({a: 1} < {a: 2})
+```
+
+```text
 erreur[E005]: impossible d'utiliser `<` avec Record et Record
- --> 14-ordre.ry:7:14
+ --> 14b-ordre.ry:1:14
   |
-7 | print({a: 1} < {a: 2})
+1 | print({a: 1} < {a: 2})
   |              ^ Record {a: 1} < Record {a: 2}
   |
   = en savoir plus : `rythme explain E005`
@@ -1523,11 +1533,22 @@ help(Cercle)
 ```
 
 ```text
+avertissement[W009]: ceci affiche une fonction, pas une valeur
+  --> sample.ry:12:42
+   |
+12 | print(Rect(2, 3).largeur, type_of(Vide), Cercle, map([1, 2], Cercle))
+   |                                          ^^^^^^ un constructeur, affiché comme `<constructeur ...>`
+   |
+   = aide: pour afficher ce qu'elle donne, appelez-la : `Cercle(...)`
+
 [3.141592653589793, 6, 0]
 2 Forme <constructeur Cercle> [Cercle(1), Cercle(2)]
 Cercle(rayon)
   Un constructeur du type `Forme`.
 ```
+
+(Le vérificateur prévient que `Cercle` seul est affiché comme une fonction :
+ici, c'est voulu.)
 
 ### 4.8 Tests
 
@@ -1798,9 +1819,25 @@ Le vérificateur trouve :
   ne peuvent jamais être atteints (W004), les fonctions inconnues après un
   point (W005).
 
-Tout ce qui dépend des valeurs elles-mêmes (mauvaises sortes de valeurs,
-champs absents, indices hors limites, division par zéro, motifs qui ne
-correspondent pas...) est trouvé pendant l'exécution.
+Le vérificateur connaît aussi la nature des valeurs quand elle est certaine :
+les valeurs écrites dans le code, et ce que donnent à coup sûr les
+opérateurs, les fonctions intégrées et les fonctions du programme. Il
+signale, avant l'exécution, les opérations qui échoueraient à chaque fois
+qu'elles s'exécutent, avec le code, le message et l'aide de l'erreur sur
+laquelle le programme s'arrêterait : une mauvaise sorte de valeur pour un
+opérateur, une condition, un intervalle, un indice ou une fonction intégrée
+(E005), un champ qu'un enregistrement ou un constructeur n'a pas (E010), un
+motif qui ne correspond jamais à la valeur (E006), `?` sur une valeur qui
+n'est ni une Option ni un Result (E016), une valeur appelée comme une
+fonction (E009), un `assert_eq` qui ne peut jamais réussir (E015), une
+fonction donnée à une fonction intégrée avec un mauvais nombre de paramètres
+(E004). Il prévient aussi des comparaisons toujours fausses ou toujours
+vraies (W006), des tests qui ne peuvent jamais échouer (W007), des résultats
+perdus de fonctions sans effet, comme `push(liste, x)` seul sur sa ligne
+(W008), et des fonctions affichées au lieu de leur valeur, comme `print(f)`
+(W009). Quand il n'est pas sûr, il ne dit rien : le reste (valeurs dont la
+nature varie, indices hors limites, division par zéro...) est trouvé pendant
+l'exécution.
 
 ```rythme
 fn aire(largeur, hauteur) = largeur * hauteru
@@ -1975,8 +2012,12 @@ minuscules.
 | W001 | Nom inutilisé | un nom local est défini mais jamais utilisé |
 | W002 | Cas oublié | un `match` ou une fonction à un paramètre ne traite pas toutes les valeurs possibles |
 | W003 | Fonction intégrée masquée | une définition du premier niveau prend le nom d'une fonction intégrée |
-| W004 | Cas jamais atteint | un cas ou une définition vient après un autre qui accepte tout |
+| W004 | Cas jamais atteint | un cas ou une définition vient après un autre qui accepte tout ou les mêmes valeurs, ou ne peut jamais correspondre à la valeur |
 | W005 | Fonction inconnue après un point | `valeur.nom(...)` alors qu'aucune fonction ni aucun champ d'enregistrement ne porte ce nom |
+| W006 | Comparaison toujours fausse | `==` ou `!=` entre des valeurs de natures qui ne sont jamais égales (`nombre == "3"`) |
+| W007 | Test qui ne peut jamais échouer | un test qui ne fait que calculer ou afficher une valeur, sans jamais la comparer à ce qui est attendu |
+| W008 | Résultat perdu | une ligne qui ne fait qu'appeler une fonction sans effet, comme `push(liste, x)` : les valeurs ne changent jamais |
+| W009 | Fonction affichée | une fonction affichée dans un texte ou par `print` (`<fn nom>`) au lieu de ce qu'elle donne |
 
 ---
 

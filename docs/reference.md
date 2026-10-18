@@ -505,7 +505,6 @@ print([1, 2] < [1, 3], [1, 2] < [1, 2, 0], Some(1) < Some(2))
 print(sort(["pear", "Fig", "apple", "été"]))
 print(None < Some(1), Ok(5) < Err(1), Small < Large)
 print(sort([Some(2), None, Some(1)]))
-print({a: 1} < {a: 2})
 ```
 
 ```text
@@ -514,10 +513,20 @@ true true true
 ["Fig", "apple", "pear", "été"]
 true true true
 [None, Some(1), Some(2)]
+```
+
+When the kinds of the values are certain, as here, the error is found before
+the program runs (see [5.5](#55-the-check-before-running)):
+
+```rythme
+print({a: 1} < {a: 2})
+```
+
+```text
 error[E005]: cannot use `<` with Record and Record
- --> 14-ordering.ry:7:14
+ --> 14b-ordering.ry:1:14
   |
-7 | print({a: 1} < {a: 2})
+1 | print({a: 1} < {a: 2})
   |              ^ Record {a: 1} < Record {a: 2}
   |
   = more about this error: `rythme explain E005`
@@ -1461,11 +1470,22 @@ help(Circle)
 ```
 
 ```text
+warning[W009]: this shows a function, not a value
+  --> sample.ry:12:41
+   |
+12 | print(Rect(2, 3).width, type_of(Empty), Circle, map([1, 2], Circle))
+   |                                         ^^^^^^ a constructor, shown as `<constructor ...>`
+   |
+   = help: to show what it gives, call it: `Circle(...)`
+
 [3.141592653589793, 6, 0]
 2 Shape <constructor Circle> [Circle(1), Circle(2)]
 Circle(radius)
   A constructor of the type `Shape`.
 ```
+
+(The checker warns that `Circle` alone is shown as a function: here, it is on
+purpose.)
 
 ### 4.8 Tests
 
@@ -1722,9 +1742,23 @@ The checker finds:
   hidden by a top-level definition (W003), cases that can never be reached
   (W004), unknown functions after a dot (W005).
 
-Everything that depends on the values themselves (wrong kinds of values,
-missing fields, indexes out of range, division by zero, patterns that do not
-match...) is found while running.
+The checker also knows the kinds of values when they are certain: the values
+written in the code, and what operators, built-in functions and the
+functions of the program surely give. It reports, before running, the
+operations that would fail every time they run, with the code, the message
+and the help of the error the program would stop with: a wrong kind of value
+for an operator, a condition, a range, an index or a built-in function
+(E005), a field that a record or a constructor does not have (E010), a
+pattern that never matches the value (E006), `?` on a value that is neither
+an Option nor a Result (E016), a value called as a function (E009), an
+`assert_eq` that can never pass (E015), a function given to a built-in
+function with the wrong number of parameters (E004). It also warns about
+comparisons that are always false or always true (W006), tests that can never
+fail (W007), results of functions without effect that are lost, like
+`push(list, x)` alone on its line (W008), and functions shown instead of
+their value, like `print(f)` (W009). When it is not sure, it says nothing:
+the rest (values whose kind varies, indexes out of range, division by
+zero...) is found while running.
 
 ```rythme
 fn area(width, height) = width * heigth
@@ -1898,8 +1932,12 @@ with examples; the code may be written in lowercase.
 | W001 | Unused name | a local name is defined but never used |
 | W002 | Forgotten case | a `match` or a one-parameter function does not handle every possible value |
 | W003 | Built-in function hidden | a top-level definition takes the name of a built-in function |
-| W004 | Case never reached | a case or definition comes after one that accepts everything |
+| W004 | Case never reached | a case or definition comes after one that accepts everything or the same values, or can never match the value |
 | W005 | Unknown function after a dot | `value.name(...)` where no function and no record field has this name |
+| W006 | Comparison always false | `==` or `!=` between values of kinds that are never equal (`count == "3"`) |
+| W007 | Test that can never fail | a test that only computes or shows a value, and never compares it with what is expected |
+| W008 | Result lost | a line that only calls a function without effect, like `push(list, x)`: values never change |
+| W009 | Function shown | a function shown in a text or printed (`<fn name>`) instead of what it gives |
 
 ---
 

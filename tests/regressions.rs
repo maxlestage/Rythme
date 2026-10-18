@@ -327,7 +327,12 @@ fn record_and_unit_patterns_do_not_match_everything() {
     let r = rythme(&["-e", "fn d({name}) = name\nfn d(_) = \"anonymous\"\nprint(d({id: 3}), d(42), d({name: \"Ada\"}))"]);
     assert_eq!(r.stdout.trim(), "anonymous anonymous Ada");
     assert!(r.stderr.is_empty(), "{}", r.stderr);
-    let r = rythme(&["-e", "print(match ()\n  () -> 0\n  _ -> 1\nend)"]);
+    let r = rythme(&["-e", "fn f(x) = match x\n  () -> 0\n  _ -> 1\nend\nprint(f(()), f(1))"]);
+    assert_eq!(r.stdout.trim(), "0 1");
+    assert!(r.stderr.is_empty(), "{}", r.stderr);
+    // A single-constructor pattern only accepts everything when the value is of its type.
+    let r = rythme(&["-e", "type P = P(a, b)\nfn f(P(a, b)) = a + b\nfn f(_) = 0\nprint(f(P(1, 2)), f(5))"]);
+    assert_eq!(r.stdout.trim(), "3 0");
     assert!(r.stderr.is_empty(), "{}", r.stderr);
 }
 

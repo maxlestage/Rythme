@@ -470,29 +470,42 @@ const EDGES: &[&str] = &[
     "s",
 ];
 
-fn edge_expr(rng: &mut Rng, depth: usize) -> String {
+/// An expression on edge cases. The checker knows the kinds of the values
+/// written in the code, and stops most wrong calls with them before running.
+/// When `hidden`, every value goes through `hide`, whose result the checker
+/// does not know: these mistakes are found while running.
+fn edge_expr(rng: &mut Rng, depth: usize, hidden: bool) -> String {
     if depth == 0 || rng.chance(35) {
-        return rng.pick(EDGES).to_string();
+        let edge = rng.pick(EDGES);
+        return if hidden { format!("hide({edge})") } else { edge.to_string() };
     }
     let d = depth - 1;
-    match rng.below(10) {
+    let value = match rng.below(10) {
         0..=5 => {
             let b = &builtins::BUILTINS[rng.below(builtins::BUILTINS.len())];
             let n = if rng.chance(90) { b.min + rng.below(b.max.min(b.min + 2) - b.min + 1) } else { rng.below(4) };
-            let args: Vec<String> = (0..n).map(|_| edge_expr(rng, d)).collect();
+            let args: Vec<String> = (0..n).map(|_| edge_expr(rng, d, hidden)).collect();
             format!("{}({})", b.name, args.join(", "))
         }
         6 | 7 => {
             let op = rng.pick(&["+", "-", "*", "/", "//", "%", "**", "==", "!=", "<", "<=", ">", ">=", ".."]);
-            format!("({} {op} {})", edge_expr(rng, d), edge_expr(rng, d))
+            format!("({} {op} {})", edge_expr(rng, d, hidden), edge_expr(rng, d, hidden))
         }
-        8 => format!("-({})", edge_expr(rng, d)),
-        _ => format!("{}[{}]", edge_expr(rng, d), edge_expr(rng, d)),
+        8 => format!("-({})", edge_expr(rng, d, hidden)),
+        _ => format!("{}[{}]", edge_expr(rng, d, hidden), edge_expr(rng, d, hidden)),
+    };
+    if hidden {
+        format!("hide({value})")
+    } else {
+        value
     }
 }
 
+/// Half of these programs are checked with their values in plain sight, the
+/// other half run with their values hidden from the checker.
 fn edge_program(rng: &mut Rng) -> String {
-    format!("{PREAMBLE}print({})\n", edge_expr(rng, 3))
+    let hidden = rng.chance(50);
+    format!("{PREAMBLE}fn hide(v) = v\nprint({})\n", edge_expr(rng, 3, hidden))
 }
 
 // ----- mutations of existing code -------------------------------------------
@@ -636,7 +649,8 @@ fn tame(src: String) -> String {
 // ----- running a case --------------------------------------------------------
 
 /// Built-in functions that touch the world outside of the program are
-/// replaced: no files, no keyboard, no `exit`, no output, no clock.
+/// replaced: no files, no keyboard, no `exit`, no output, no clock, no
+/// environment variables.
 fn sandbox() -> &'static Vec<&'static Builtin> {
     static SANDBOX: OnceLock<Vec<&'static Builtin>> = OnceLock::new();
     fn quiet(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
@@ -658,15 +672,20 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
     fn number(_: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
         Ok(Value::Int(4))
     }
-    let fakes: [(&str, builtins::BuiltinFn); 9] = [
+    fn no_variable(it: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
+        Ok(it.none())
+    }
+    let fakes: [(&str, builtins::BuiltinFn); 11] = [
         ("print", quiet),
         ("debug", same),
         ("input", empty_text),
         ("exit", quiet),
         ("time", number),
         ("random", number),
+        ("env", no_variable),
         ("read_file", no_file),
         ("write_file", no_file),
+        ("append_file", no_file),
         ("file_exists", number),
     ];
     SANDBOX.get_or_init(|| {

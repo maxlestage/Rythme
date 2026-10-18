@@ -1427,7 +1427,10 @@ Right:   "age: " + text(36)       (convert it first)
 
 Conditions must be true or false:
 Wrong:   if len(list) then ... else ...
-Right:   if len(list) > 0 then ... else ..."#,
+Right:   if len(list) > 0 then ... else ...
+
+When the kinds of the values are certain, `rythme check` finds this mistake
+before the program runs, even in code that does not run every time."#,
             r#"E005 — Mauvaise sorte de valeur
 
 L'opération ne fonctionne pas avec cette sorte de valeur. Rythme ne convertit
@@ -1439,7 +1442,10 @@ Juste :  "âge : " + text(36)      (la convertir d'abord)
 
 Les conditions doivent être true ou false :
 Faux :   if len(liste) then ... else ...
-Juste :  if len(liste) > 0 then ... else ..."#,
+Juste :  if len(liste) > 0 then ... else ...
+
+Quand la nature des valeurs est certaine, `rythme check` trouve cette erreur
+avant l'exécution, même dans du code qui ne s'exécute pas à chaque fois."#,
         ),
         "E006" => (
             r#"E006 — No case matches
@@ -1452,7 +1458,9 @@ Wrong:   fn name(1) = "one"
 Right:   fn name(1) = "one"
          fn name(_) = "another number"
 
-`rythme check` warns about forgotten cases before running (W002)."#,
+`rythme check` warns about forgotten cases before running (W002). When the
+kind of the value is certain, it also reports, before running, a case that
+can never fit it: `[first, ..rest]` for a Text, `Circle(r)` for a number."#,
             r#"E006 — Aucun cas ne correspond
 
 Aucun des cas d'un `match` (ou des définitions d'une fonction) n'accepte
@@ -1463,7 +1471,10 @@ Faux :   fn nom(1) = "un"
 Juste :  fn nom(1) = "un"
          fn nom(_) = "un autre nombre"
 
-`rythme check` prévient des cas oubliés avant l'exécution (W002)."#,
+`rythme check` prévient des cas oubliés avant l'exécution (W002). Quand la
+nature de la valeur est certaine, il signale aussi, avant l'exécution, un cas
+qui ne peut jamais lui convenir : `[premier, ..reste]` pour un Text,
+`Cercle(r)` pour un nombre."#,
         ),
         "E007" => (
             r#"E007 — Index out of range
@@ -1523,14 +1534,20 @@ The record (or the constructor) has no field with this name.
 
 Wrong:   {name: "Ada"}.nmae
 Right:   {name: "Ada"}.name
-Safe:    get(record, "name")     # an Option, never an error"#,
+Safe:    get(record, "name")     # an Option, never an error
+
+When the fields of the record are certain, `rythme check` finds this mistake
+before the program runs, and suggests the closest field."#,
             r#"E010 — Champ inconnu
 
 L'enregistrement (ou le constructeur) n'a pas de champ de ce nom.
 
 Faux :   {nom: "Ada"}.nmo
 Juste :  {nom: "Ada"}.nom
-Sûr :    get(enregistrement, "nom")   # une Option, jamais d'erreur"#,
+Sûr :    get(enregistrement, "nom")   # une Option, jamais d'erreur
+
+Quand les champs de l'enregistrement sont certains, `rythme check` trouve
+cette erreur avant l'exécution, et propose le champ le plus proche."#,
         ),
         "E011" => (
             r#"E011 — Already defined
@@ -1636,12 +1653,22 @@ Plus simple : sum(liste)  ou  fold(liste, 0, fn(a, x) = a + x)"#,
 
 `assert(condition)` or `assert_eq(actual, expected)` found that something is
 not as expected. In a test, this means the test fails: the message shows the
-values to compare."#,
+values to compare.
+
+`rythme check` finds before running an `assert_eq` that can never pass,
+because its two values are of kinds that are never equal:
+Wrong:   assert_eq(parse_int("3"), 3)      # a Result is never an Int
+Right:   assert_eq(parse_int("3"), Ok(3))"#,
             r#"E015 — Assertion échouée
 
 `assert(condition)` ou `assert_eq(obtenu, attendu)` a constaté que quelque
 chose n'est pas comme prévu. Dans un test, cela veut dire que le test échoue :
-le message montre les valeurs à comparer."#,
+le message montre les valeurs à comparer.
+
+`rythme check` trouve avant l'exécution un `assert_eq` qui ne peut jamais
+réussir, parce que ses deux valeurs sont de natures jamais égales :
+Faux :   assert_eq(parse_int("3"), 3)      # un Result n'est jamais un Int
+Juste :  assert_eq(parse_int("3"), Ok(3))"#,
         ),
         "E016" => (
             r#"E016 — Wrong use of ?
@@ -1855,14 +1882,36 @@ autre nom pour garder les deux."#,
         "W004" => (
             r#"W004 — Case never reached
 
-Cases are tried in order. A case that accepts everything (`_`, or a plain
-name) catches every value, so the cases after it can never be used. Put it
-last."#,
+Cases are tried in order, and a value goes to the first one that fits. A
+case (or a definition of a function) can never be used when:
+  - a case before it accepts everything (`_`, or a plain name): put that
+    one last;
+  - a case before it already handles the same values: `1 -> ...` twice;
+  - the value can never have this shape: a Text never matches a list
+    pattern like `[first, ..rest]`, a number never matches `Some(x)`.
+
+  match name                     # `name` is a Text
+    [first, ..] -> first         # W004: a Text is not a list
+    _ -> "?"
+  end
+To look at the characters of a text, use `chars(name)`."#,
             r#"W004 — Cas jamais atteint
 
-Les cas sont essayés dans l'ordre. Un cas qui accepte tout (`_`, ou un
-simple nom) attrape toutes les valeurs : les cas suivants ne peuvent jamais
-servir. Mettez-le en dernier."#,
+Les cas sont essayés dans l'ordre, et une valeur va au premier qui lui
+convient. Un cas (ou une définition d'une fonction) ne peut jamais servir
+quand :
+  - un cas avant lui accepte tout (`_`, ou un simple nom) : mettez celui-ci
+    en dernier ;
+  - un cas avant lui traite déjà les mêmes valeurs : `1 -> ...` deux fois ;
+  - la valeur ne peut jamais avoir cette forme : un Text ne correspond
+    jamais à un motif de liste comme `[premier, ..reste]`, un nombre jamais
+    à `Some(x)`.
+
+  match nom                      # `nom` est un Text
+    [premier, ..] -> premier     # W004 : un Text n'est pas une liste
+    _ -> "?"
+  end
+Pour parcourir les caractères d'un texte, utilisez `chars(nom)`."#,
         ),
         "W005" => (
             r#"W005 — Unknown function after a dot
@@ -1882,6 +1931,97 @@ du fichier n'a un tel champ : c'est sans doute une faute de frappe.
 Faux :   [1, 2].lenght()
 Juste :  [1, 2].len()"#,
         ),
+        "W006" => (
+            r#"W006 — Comparison always false
+
+Values of different kinds are never equal: Rythme never converts them
+silently. When `x` is a number, `x == "1"` is always false and `x != "1"`
+always true. It is often a forgotten conversion, or a value inside an Option
+compared as if it were outside.
+
+Wrong:   if count == "3" then ...            (a number and a text)
+Right:   if count == 3 then ...
+Wrong:   get(scores, "ada") == 19            (an Option and a number)
+Right:   get(scores, "ada") == Some(19)
+Right:   unwrap_or(get(scores, "ada"), 0) == 19"#,
+            r#"W006 — Comparaison toujours fausse
+
+Des valeurs de natures différentes ne sont jamais égales : Rythme ne les
+convertit jamais en silence. Quand `x` est un nombre, `x == "1"` est
+toujours faux et `x != "1"` toujours vrai. C'est souvent une conversion
+oubliée, ou une valeur dans une Option comparée comme si elle était dehors.
+
+Faux :   if nombre == "3" then ...           (un nombre et un texte)
+Juste :  if nombre == 3 then ...
+Faux :   get(notes, "ada") == 19             (une Option et un nombre)
+Juste :  get(notes, "ada") == Some(19)
+Juste :  unwrap_or(get(notes, "ada"), 0) == 19"#,
+        ),
+        "W007" => (
+            r#"W007 — Test that can never fail
+
+A test fails only when it stops with an error, or when it ends with `false`,
+`None` or `Err(...)`. A test that only computes or prints a value with
+functions that never stop, and never compares it with what is expected,
+can never fail: it checks nothing.
+
+Wrong:   test "length" = len([1, 2])
+Wrong:   test "length" = print(len([1, 2]))
+Right:   test "length" = assert_eq(len([1, 2]), 2)
+Right:   test "length" = len([1, 2]) == 2"#,
+            r#"W007 — Test qui ne peut jamais échouer
+
+Un test n'échoue que s'il s'arrête sur une erreur, ou s'il finit par
+`false`, `None` ou `Err(...)`. Un test qui ne fait que calculer ou afficher
+une valeur avec des fonctions qui ne s'arrêtent jamais, sans la comparer à
+ce qui est attendu, ne peut jamais échouer : il ne vérifie rien.
+
+Faux :   test "longueur" = len([1, 2])
+Faux :   test "longueur" = print(len([1, 2]))
+Juste :  test "longueur" = assert_eq(len([1, 2]), 2)
+Juste :  test "longueur" = len([1, 2]) == 2"#,
+        ),
+        "W008" => (
+            r#"W008 — Result lost
+
+Values never change in Rythme: `push(list, 4)` does not add 4 to `list`, it
+gives a new list. A line that only calls such a function, and does nothing
+with what it gives, does nothing at all.
+
+Wrong:   push(numbers, 4)               # `numbers` is unchanged
+Right:   more = push(numbers, 4)
+Wrong:   name.upper()
+Right:   print(name.upper())"#,
+            r#"W008 — Résultat perdu
+
+Les valeurs ne changent jamais en Rythme : `push(liste, 4)` n'ajoute pas 4
+à `liste`, il donne une nouvelle liste. Une ligne qui ne fait qu'appeler une
+telle fonction, sans rien faire de ce qu'elle donne, ne fait rien du tout.
+
+Faux :   push(nombres, 4)               # `nombres` ne change pas
+Juste :  plus = push(nombres, 4)
+Faux :   nom.upper()
+Juste :  print(nom.upper())"#,
+        ),
+        "W009" => (
+            r#"W009 — A function shown instead of its value
+
+A function shown in a text or printed appears as `<fn name>`. To show what
+it gives, call it, with parentheses, even when it takes no argument.
+
+  fn greeting() = "hello"
+Wrong:   print("{greeting}")          # shows <fn greeting>
+Right:   print("{greeting()}")        # shows hello"#,
+            r#"W009 — Une fonction affichée au lieu de sa valeur
+
+Une fonction affichée dans un texte ou par `print` apparaît comme
+`<fn nom>`. Pour afficher ce qu'elle donne, appelez-la, avec des
+parenthèses, même quand elle ne prend pas d'argument.
+
+  fn salut() = "bonjour"
+Faux :   print("{salut}")             # affiche <fn salut>
+Juste :  print("{salut()}")           # affiche bonjour"#,
+        ),
         _ => return None,
     };
     Some(pick_owned(en, fr))
@@ -1897,5 +2037,5 @@ fn pick_owned(en: &str, fr: &str) -> String {
 
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
-    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "W001", "W002", "W003", "W004", "W005",
+    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008", "W009",
 ];

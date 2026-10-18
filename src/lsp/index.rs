@@ -402,7 +402,7 @@ impl Indexer<'_> {
     }
 
     fn stmts(&mut self, stmts: &[Stmt], end: u32) {
-        for s in stmts {
+        for (i, s) in stmts.iter().enumerate() {
             match s {
                 Stmt::Let(p, e) => {
                     if let (PatKind::Bind(name), ExprKind::Lambda(lambda)) = (&p.kind, &e.kind) {
@@ -418,10 +418,15 @@ impl Indexer<'_> {
                 }
                 Stmt::Expr(e) => self.expr(e),
                 Stmt::Fn(def) => {
-                    if let Some(name) = def.name {
+                    // Functions written one after the other see each other.
+                    if i == 0 || !matches!(stmts[i - 1], Stmt::Fn(_)) {
                         let start = def.clauses.first().map_or(def.span.start, |c| c.span.start);
-                        let idx = self.function(def, false, (start, end));
-                        self.push_local(name, idx);
+                        for d in stmts[i..].iter().map_while(|s| if let Stmt::Fn(d) = s { Some(d) } else { None }) {
+                            if let Some(name) = d.name {
+                                let idx = self.function(d, false, (start, end));
+                                self.push_local(name, idx);
+                            }
+                        }
                     }
                     self.func(def);
                 }

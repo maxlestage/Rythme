@@ -9,6 +9,7 @@ use std::rc::Rc;
 use crate::diagnostic::{Diagnostic, Fallible};
 use crate::interp::{binop, overflow, resolve_index, too_big, Interp, Wrap, MAX_LIST, MAX_TEXT};
 use crate::source::{self, Span};
+use crate::types::{self, Kinds, BOOL, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, TEXT};
 use crate::value::*;
 
 pub type BuiltinFn = fn(&mut Interp, &[Value], Span) -> Fallible<Value>;
@@ -505,78 +506,195 @@ fn usage(f: &str) -> String {
     }
 }
 
-fn wrong(f: &str, i: usize, expected: String, got: &Value, span: Span) -> Box<Diagnostic> {
+/// What a built-in function expects as one of its arguments: the kinds of
+/// values it accepts, and how messages name them. The checker uses the same
+/// descriptions (see [`crate::types`]) to report a wrong argument before
+/// running, with the message of [`wrong_argument`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Expected {
+    List,
+    Text,
+    Int,
+    Number,
+    Function,
+    Record,
+    Bool,
+    ListOrText,
+    TextOrList,
+    TextListOrRecord,
+    ListTextOrRecord,
+    /// `min(list)`, or several values.
+    ListOrValues,
+    /// What `int` converts: a number, a text, or `true` and `false`.
+    ToInt,
+    /// What `float` converts: a number or a text.
+    ToFloat,
+    ListOptionOrResult,
+    OptionOrResult,
+    Option,
+    Result,
+}
+
+impl Expected {
+    /// The kinds of values accepted.
+    pub fn kinds(self) -> Kinds {
+        match self {
+            Expected::List | Expected::ListOrValues => LIST,
+            Expected::Text => TEXT,
+            Expected::Int => INT,
+            Expected::Number => NUMBER,
+            Expected::Function => FUNC,
+            Expected::Record => RECORD,
+            Expected::Bool => BOOL,
+            Expected::ListOrText | Expected::TextOrList => LIST | TEXT,
+            Expected::TextListOrRecord | Expected::ListTextOrRecord => TEXT | LIST | RECORD,
+            Expected::ToInt => NUMBER | TEXT | BOOL,
+            Expected::ToFloat => NUMBER | TEXT,
+            Expected::ListOptionOrResult => LIST | OPTION | RESULT,
+            Expected::OptionOrResult => OPTION | RESULT,
+            Expected::Option => OPTION,
+            Expected::Result => RESULT,
+        }
+    }
+}
+
+impl std::fmt::Display for Expected {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&match self {
+            Expected::List => t!("a list", "une liste"),
+            Expected::Text => t!("a text", "un texte"),
+            Expected::Int => t!("a whole number (Int)", "un nombre entier (Int)"),
+            Expected::Number => t!("a number", "un nombre"),
+            Expected::Function => t!("a function", "une fonction"),
+            Expected::Record => t!("a record", "un enregistrement"),
+            Expected::Bool => t!("true or false", "true ou false"),
+            Expected::ListOrText => t!("a list or a text", "une liste ou un texte"),
+            Expected::TextOrList => t!("a text or a list", "un texte ou une liste"),
+            Expected::TextListOrRecord => t!("a text, a list or a record", "un texte, une liste ou un enregistrement"),
+            Expected::ListTextOrRecord => t!("a list, a text or a record", "une liste, un texte ou un enregistrement"),
+            Expected::ListOrValues => t!("a list (or several values)", "une liste (ou plusieurs valeurs)"),
+            Expected::ToInt | Expected::ToFloat => t!("a number or a text", "un nombre ou un texte"),
+            Expected::ListOptionOrResult => t!("a list, an Option or a Result", "une liste, une Option ou un Result"),
+            Expected::OptionOrResult => t!("an Option or a Result", "une Option ou un Result"),
+            Expected::Option => t!("an Option", "une Option"),
+            Expected::Result => t!("a Result", "un Result"),
+        })
+    }
+}
+
+/// The error for argument `i` of `f`, of a kind it does not accept. `got`
+/// shows the value (`Int 5`), and `kinds` is what it surely is: the hints
+/// for the usual mistakes depend on it. The run time and the checker both
+/// make this error with this function, so that it is the same before running.
+pub fn wrong_argument(f: &str, i: usize, expected: Expected, got: &str, kinds: Kinds, span: Span) -> Box<Diagnostic> {
     let pos = i + 1;
-    Diagnostic::error(
+    let mut d = Diagnostic::error(
         "E005",
-        t!(
-            "`{f}` expects {expected} as argument {pos}, but got {}",
-            "`{f}` attend {expected} comme argument {pos}, mais a reçu {}",
-            got.describe()
-        ),
+        t!("`{f}` expects {expected} as argument {pos}, but got {got}", "`{f}` attend {expected} comme argument {pos}, mais a reçu {got}"),
     )
     .at(span)
     .label(t!("wrong kind of value", "mauvaise sorte de valeur"))
-    .help(usage(f))
-    .boxed()
-}
-
-fn a_list() -> String {
-    t!("a list", "une liste")
-}
-fn a_text() -> String {
-    t!("a text", "un texte")
-}
-fn an_int() -> String {
-    t!("a whole number (Int)", "un nombre entier (Int)")
-}
-fn a_number() -> String {
-    t!("a number", "un nombre")
-}
-fn a_function() -> String {
-    t!("a function", "une fonction")
-}
-fn a_record() -> String {
-    t!("a record", "un enregistrement")
-}
-fn a_list_or_text() -> String {
-    t!("a list or a text", "une liste ou un texte")
-}
-
-/// Adds how to get a list out of a text or a record, the usual mistake.
-fn list_hint(mut d: Box<Diagnostic>, v: &Value) -> Box<Diagnostic> {
-    match v {
-        Value::Text(_) => d.helps.push(t!(
-            "a text is not a list: `chars(text)` gives the list of its characters",
-            "un texte n'est pas une liste : `chars(texte)` donne la liste de ses caractères"
-        )),
-        Value::Record(_) => d.helps.push(t!(
-            "a record is not a list: `entries(record)`, `keys(record)` or `values(record)` give one",
-            "un enregistrement n'est pas une liste : `entries(enreg)`, `keys(enreg)` ou `values(enreg)` en donnent une"
-        )),
-        _ => {}
+    .help(usage(f));
+    let is = |k: Kinds| kinds != 0 && kinds & !k == 0;
+    // How to get a list out of a text or a record.
+    if matches!(expected, Expected::List | Expected::ListOptionOrResult) {
+        if is(TEXT) {
+            d = d.help(t!(
+                "a text is not a list: `chars(text)` gives the list of its characters",
+                "un texte n'est pas une liste : `chars(texte)` donne la liste de ses caractères"
+            ));
+        } else if is(RECORD) {
+            d = d.help(t!(
+                "a record is not a list: `entries(record)`, `keys(record)` or `values(record)` give one",
+                "un enregistrement n'est pas une liste : `entries(enreg)`, `keys(enreg)` ou `values(enreg)` en donnent une"
+            ));
+        }
     }
-    d
+    // The record functions that have a cousin for lists.
+    if expected == Expected::Record && is(LIST) {
+        let cousin = match f {
+            "put" => "set_at(list, i, x)",
+            "remove" => "remove_at(list, i)",
+            "has" => "contains(list, x)",
+            _ => "",
+        };
+        if !cousin.is_empty() {
+            d = d.help(t!("for a list, use `{cousin}`", "pour une liste, utilisez `{cousin}`"));
+        }
+    }
+    if f == "flat_map" && i == 0 && is(OPTION | RESULT) {
+        d = d.help(t!("for an Option or a Result, use `and_then(x, f)`", "pour une Option ou un Result, utilisez `and_then(x, f)`"));
+    }
+    d.boxed()
+}
+
+fn wrong(f: &str, i: usize, expected: Expected, got: &Value, span: Span) -> Box<Diagnostic> {
+    wrong_argument(f, i, expected, &got.describe(), types::kind_of(got), span)
+}
+
+/// The error for a function given to `f` that gives back a value of the
+/// wrong kind: `wanted` is what `f` needs (`BOOL`, `LIST`, `OPTION` or
+/// `RESULT`), `got` shows what it gave. Made the same way by the checker.
+pub fn wrong_return(f: &str, wanted: Kinds, got: &str, span: Span) -> Box<Diagnostic> {
+    match wanted {
+        LIST => invalid(
+            t!(
+                "the function given to `{f}` must return a list, but it returned {got}",
+                "la fonction donnée à `{f}` doit renvoyer une liste, mais elle a renvoyé {got}"
+            ),
+            span,
+        ),
+        OPTION | RESULT => {
+            let expected = if wanted == OPTION {
+                t!("an Option (Some or None)", "une Option (Some ou None)")
+            } else {
+                t!("a Result (Ok or Err)", "un Result (Ok ou Err)")
+            };
+            Diagnostic::error(
+                "E005",
+                t!(
+                    "the function given to `{f}` must return {expected}, but it returned {got}",
+                    "la fonction donnée à `{f}` doit renvoyer {expected}, mais elle a renvoyé {got}"
+                ),
+            )
+            .at(span)
+            .help(t!(
+                "to change the value inside without another check, use `map(x, f)`",
+                "pour changer la valeur à l'intérieur sans autre vérification, utilisez `map(x, f)`"
+            ))
+            .boxed()
+        }
+        _ => Diagnostic::error(
+            "E005",
+            t!(
+                "the function given to `{f}` must return true or false, but it returned {got}",
+                "la fonction donnée à `{f}` doit renvoyer true ou false, mais elle a renvoyé {got}"
+            ),
+        )
+        .at(span)
+        .help(usage(f))
+        .boxed(),
+    }
 }
 
 fn list<'a>(a: &'a [Value], i: usize, f: &str, span: Span) -> Fallible<&'a List> {
     match &a[i] {
         Value::List(l) => Ok(l),
-        v => Err(list_hint(wrong(f, i, a_list(), v, span), v)),
+        v => Err(wrong(f, i, Expected::List, v, span)),
     }
 }
 
 fn text<'a>(a: &'a [Value], i: usize, f: &str, span: Span) -> Fallible<&'a str> {
     match &a[i] {
         Value::Text(s) => Ok(s),
-        v => Err(wrong(f, i, a_text(), v, span)),
+        v => Err(wrong(f, i, Expected::Text, v, span)),
     }
 }
 
 fn int(a: &[Value], i: usize, f: &str, span: Span) -> Fallible<i64> {
     match &a[i] {
         Value::Int(n) => Ok(*n),
-        v => Err(wrong(f, i, an_int(), v, span)),
+        v => Err(wrong(f, i, Expected::Int, v, span)),
     }
 }
 
@@ -584,7 +702,7 @@ fn number(a: &[Value], i: usize, f: &str, span: Span) -> Fallible<f64> {
     match &a[i] {
         Value::Int(n) => Ok(*n as f64),
         Value::Float(x) => Ok(*x),
-        v => Err(wrong(f, i, a_number(), v, span)),
+        v => Err(wrong(f, i, Expected::Number, v, span)),
     }
 }
 
@@ -592,29 +710,14 @@ fn func(a: &[Value], i: usize, f: &str, span: Span) -> Fallible<Value> {
     if a[i].is_callable() {
         Ok(a[i].clone())
     } else {
-        Err(wrong(f, i, a_function(), &a[i], span))
+        Err(wrong(f, i, Expected::Function, &a[i], span))
     }
 }
 
 fn record<'a>(a: &'a [Value], i: usize, f: &str, span: Span) -> Fallible<&'a Rc<Record>> {
     match &a[i] {
         Value::Record(r) => Ok(r),
-        v => {
-            let mut d = wrong(f, i, a_record(), v, span);
-            if let Value::List(_) = v {
-                // The record functions that have a cousin for lists.
-                let cousin = match f {
-                    "put" => "set_at(list, i, x)",
-                    "remove" => "remove_at(list, i)",
-                    "has" => "contains(list, x)",
-                    _ => "",
-                };
-                if !cousin.is_empty() {
-                    d.helps.push(t!("for a list, use `{cousin}`", "pour une liste, utilisez `{cousin}`"));
-                }
-            }
-            Err(d)
-        }
+        v => Err(wrong(f, i, Expected::Record, v, span)),
     }
 }
 
@@ -662,21 +765,50 @@ fn invalid(msg: String, span: Span) -> Box<Diagnostic> {
     Diagnostic::error("E023", msg).at(span).boxed()
 }
 
+/// The error for a function given to `f` that does not take the `given`
+/// arguments that `f` gives it: it takes `min` to `max`. Made the same way by
+/// the checker.
+pub fn wrong_arity(f: &str, given: usize, min: usize, max: usize, span: Span) -> Box<Diagnostic> {
+    let expected = if min == max {
+        min.to_string()
+    } else if max == MANY {
+        t!("at least {min}", "au moins {min}")
+    } else {
+        t!("{min} to {max}", "de {min} à {max}")
+    };
+    Diagnostic::error(
+        "E004",
+        t!(
+            "`{f}` gives {given} argument(s) to this function, but it takes {expected}",
+            "`{f}` donne {given} argument(s) à cette fonction, mais elle en attend {expected}"
+        ),
+    )
+    .at(span)
+    .label(t!("takes {expected} argument(s)", "attend {expected} argument(s)"))
+    .help(usage(f))
+    .boxed()
+}
+
+/// Calls the function `g` given to `f`: if it takes another number of
+/// arguments, the mistake is in the call to `f`.
+fn call_given(it: &mut Interp, f: &str, g: &Value, args: Vec<Value>, span: Span) -> Fallible<Value> {
+    let (min, max) = match g {
+        Value::Func(c) => (c.def.arity, c.def.arity),
+        Value::Builtin(b) => (b.min, b.max),
+        Value::Ctor(c) => (c.fields.len(), c.fields.len()),
+        _ => (0, MANY),
+    };
+    if args.len() < min || args.len() > max {
+        return Err(wrong_arity(f, args.len(), min, max, span));
+    }
+    it.call(g.clone(), args, span)
+}
+
 /// Calls a function that must answer true or false.
 fn test(it: &mut Interp, f: &Value, x: &Value, name: &str, span: Span) -> Fallible<bool> {
-    match it.call(f.clone(), vec![x.clone()], span)? {
+    match call_given(it, name, f, vec![x.clone()], span)? {
         Value::Bool(b) => Ok(b),
-        other => Err(Diagnostic::error(
-            "E005",
-            t!(
-                "the function given to `{name}` must return true or false, but it returned {}",
-                "la fonction donnée à `{name}` doit renvoyer true ou false, mais elle a renvoyé {}",
-                other.describe()
-            ),
-        )
-        .at(span)
-        .help(usage(name))
-        .boxed()),
+        other => Err(wrong_return(name, BOOL, &other.describe(), span)),
     }
 }
 
@@ -737,7 +869,7 @@ fn to_text(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
             Value::Int(n) if digits == 0 => n.to_string(),
             Value::Int(n) => format!("{n}.{}", "0".repeat(digits)),
             Value::Float(x) => fixed(*x, digits),
-            v => return Err(wrong("text", 0, a_number(), v, span)),
+            v => return Err(wrong("text", 0, Expected::Number, v, span)),
         }));
     }
     Ok(match &a[0] {
@@ -809,7 +941,7 @@ fn assert(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
             };
             Err(Diagnostic::error("E015", msg).at(span).label(t!("this condition is false", "cette condition est fausse")).boxed())
         }
-        v => Err(wrong("assert", 0, t!("true or false", "true ou false"), v, span)),
+        v => Err(wrong("assert", 0, Expected::Bool, v, span)),
     }
 }
 
@@ -900,7 +1032,7 @@ fn abs(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     match &a[0] {
         Value::Int(n) => n.checked_abs().map(Value::Int).ok_or_else(|| overflow(span)),
         Value::Float(x) => Ok(Value::Float(x.abs())),
-        v => Err(wrong("abs", 0, a_number(), v, span)),
+        v => Err(wrong("abs", 0, Expected::Number, v, span)),
     }
 }
 
@@ -908,7 +1040,7 @@ fn extreme(a: &[Value], name: &str, want: Ordering, span: Span) -> Fallible<Valu
     let items: Vec<Value> = if a.len() == 1 {
         match &a[0] {
             Value::List(l) => l.iter().cloned().collect(),
-            v => return Err(wrong(name, 0, t!("a list (or several values)", "une liste (ou plusieurs valeurs)"), v, span)),
+            v => return Err(wrong(name, 0, Expected::ListOrValues, v, span)),
         }
     } else {
         a.to_vec()
@@ -970,7 +1102,7 @@ fn rounding(a: &[Value], name: &str, span: Span, f: fn(f64) -> f64) -> Fallible<
     match &a[0] {
         Value::Int(n) => Ok(Value::Int(*n)),
         Value::Float(x) => f64_to_int(f(*x), span),
-        v => Err(wrong(name, 0, a_number(), v, span)),
+        v => Err(wrong(name, 0, Expected::Number, v, span)),
     }
 }
 
@@ -1021,7 +1153,7 @@ fn to_int(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
             ))
             .boxed())
         }
-        v => Err(wrong("int", 0, t!("a number or a text", "un nombre ou un texte"), v, span)),
+        v => Err(wrong("int", 0, Expected::ToInt, v, span)),
     }
 }
 
@@ -1038,7 +1170,7 @@ fn to_float(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
                 ))
                 .boxed()
         }),
-        v => Err(wrong("float", 0, t!("a number or a text", "un nombre ou un texte"), v, span)),
+        v => Err(wrong("float", 0, Expected::ToFloat, v, span)),
     }
 }
 
@@ -1147,7 +1279,7 @@ fn len(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         Value::Text(s) => s.chars().count() as i64,
         Value::List(l) => l.len() as i64,
         Value::Record(r) => r.len() as i64,
-        v => return Err(wrong("len", 0, t!("a text, a list or a record", "un texte, une liste ou un enregistrement"), v, span)),
+        v => return Err(wrong("len", 0, Expected::TextListOrRecord, v, span)),
     }))
 }
 
@@ -1240,11 +1372,11 @@ fn join(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 fn contains(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::Bool(match (&a[0], &a[1]) {
         (Value::Text(s), Value::Text(sub)) => s.contains(&**sub),
-        (Value::Text(_), v) => return Err(wrong("contains", 1, a_text(), v, span)),
+        (Value::Text(_), v) => return Err(wrong("contains", 1, Expected::Text, v, span)),
         (Value::List(l), x) => l.iter().any(|v| v.equals(x)),
         (Value::Record(r), Value::Text(k)) => r.get(k).is_some(),
-        (Value::Record(_), v) => return Err(wrong("contains", 1, a_text(), v, span)),
-        (v, _) => return Err(wrong("contains", 0, t!("a text, a list or a record", "un texte, une liste ou un enregistrement"), v, span)),
+        (Value::Record(_), v) => return Err(wrong("contains", 1, Expected::Text, v, span)),
+        (v, _) => return Err(wrong("contains", 0, Expected::TextListOrRecord, v, span)),
     }))
 }
 
@@ -1339,7 +1471,7 @@ fn repeat(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
             }
             Ok(Value::list(v))
         }
-        v => Err(wrong("repeat", 0, t!("a text or a list", "un texte ou une liste"), v, span)),
+        v => Err(wrong("repeat", 0, Expected::TextOrList, v, span)),
     }
 }
 
@@ -1808,23 +1940,21 @@ fn map(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         Value::List(l) => {
             let mut out = Vec::with_capacity(l.len());
             for x in l.iter() {
-                out.push(it.call(f.clone(), vec![x.clone()], span)?);
+                out.push(call_given(it, "map", &f, vec![x.clone()], span)?);
             }
             Ok(Value::list(out))
         }
         v => match it.wrap(v) {
             Wrap::Some => {
-                let r = it.call(f, vec![Interp::payload(v)], span)?;
+                let r = call_given(it, "map", &f, vec![Interp::payload(v)], span)?;
                 Ok(it.some(r))
             }
             Wrap::Ok => {
-                let r = it.call(f, vec![Interp::payload(v)], span)?;
+                let r = call_given(it, "map", &f, vec![Interp::payload(v)], span)?;
                 Ok(it.ok(r))
             }
             Wrap::None | Wrap::Err => Ok(v.clone()),
-            Wrap::Other => {
-                Err(list_hint(wrong("map", 0, t!("a list, an Option or a Result", "une liste, une Option ou un Result"), v, span), v))
-            }
+            Wrap::Other => Err(wrong("map", 0, Expected::ListOptionOrResult, v, span)),
         },
     }
 }
@@ -1846,7 +1976,7 @@ fn fold(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let f = func(a, 2, "fold", span)?;
     let mut acc = a[1].clone();
     for x in l.iter() {
-        acc = it.call(f.clone(), vec![acc, x.clone()], span)?;
+        acc = call_given(it, "fold", &f, vec![acc, x.clone()], span)?;
     }
     Ok(acc)
 }
@@ -1857,7 +1987,7 @@ fn scan(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let mut acc = a[1].clone();
     let mut out = Vec::with_capacity(l.len());
     for x in l.iter() {
-        acc = it.call(f.clone(), vec![acc, x.clone()], span)?;
+        acc = call_given(it, "scan", &f, vec![acc, x.clone()], span)?;
         out.push(acc.clone());
     }
     Ok(Value::list(out))
@@ -1867,7 +1997,7 @@ fn each(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "each", span)?;
     let f = func(a, 1, "each", span)?;
     for x in l.iter() {
-        it.call(f.clone(), vec![x.clone()], span)?;
+        call_given(it, "each", &f, vec![x.clone()], span)?;
     }
     Ok(Value::Unit)
 }
@@ -1914,7 +2044,7 @@ fn first(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(match &a[0] {
         Value::List(l) => it.option(l.get(0).cloned()),
         Value::Text(s) => it.option(s.chars().next().map(|c| text_value(c.to_string()))),
-        v => return Err(wrong("first", 0, t!("a list or a text", "une liste ou un texte"), v, span)),
+        v => return Err(wrong("first", 0, Expected::ListOrText, v, span)),
     })
 }
 
@@ -1922,7 +2052,7 @@ fn last(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(match &a[0] {
         Value::List(l) => it.option(l.as_slice().last().cloned()),
         Value::Text(s) => it.option(s.chars().last().map(|c| text_value(c.to_string()))),
-        v => return Err(wrong("last", 0, t!("a list or a text", "une liste ou un texte"), v, span)),
+        v => return Err(wrong("last", 0, Expected::ListOrText, v, span)),
     })
 }
 
@@ -1930,7 +2060,7 @@ fn rest(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(match &a[0] {
         Value::List(l) => Value::List(l.slice(1, l.len())),
         Value::Text(s) => text_value(s.chars().skip(1).collect::<String>()),
-        v => return Err(wrong("rest", 0, t!("a list or a text", "une liste ou un texte"), v, span)),
+        v => return Err(wrong("rest", 0, Expected::ListOrText, v, span)),
     })
 }
 
@@ -1942,9 +2072,9 @@ fn get(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
             it.option(resolve_index(*n, len).and_then(|i| s.chars().nth(i)).map(|c| text_value(c.to_string())))
         }
         (Value::Record(r), Value::Text(k)) => it.option(r.get(k).cloned()),
-        (Value::List(_) | Value::Text(_), v) => return Err(wrong("get", 1, an_int(), v, span)),
-        (Value::Record(_), v) => return Err(wrong("get", 1, a_text(), v, span)),
-        (v, _) => return Err(wrong("get", 0, t!("a list, a text or a record", "une liste, un texte ou un enregistrement"), v, span)),
+        (Value::List(_) | Value::Text(_), v) => return Err(wrong("get", 1, Expected::Int, v, span)),
+        (Value::Record(_), v) => return Err(wrong("get", 1, Expected::Text, v, span)),
+        (v, _) => return Err(wrong("get", 0, Expected::ListTextOrRecord, v, span)),
     })
 }
 
@@ -1988,7 +2118,7 @@ fn reverse(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(match &a[0] {
         Value::List(l) => Value::list(l.iter().rev().cloned().collect()),
         Value::Text(s) => text_value(s.chars().rev().collect::<String>()),
-        v => return Err(wrong("reverse", 0, t!("a list or a text", "une liste ou un texte"), v, span)),
+        v => return Err(wrong("reverse", 0, Expected::ListOrText, v, span)),
     })
 }
 
@@ -2024,7 +2154,7 @@ fn sort_by(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let f = func(a, 1, "sort_by", span)?;
     let mut pairs = Vec::with_capacity(l.len());
     for x in l.iter() {
-        pairs.push((it.call(f.clone(), vec![x.clone()], span)?, x.clone()));
+        pairs.push((call_given(it, "sort_by", &f, vec![x.clone()], span)?, x.clone()));
     }
     sort_pairs(&mut pairs, "sort_by", span)?;
     Ok(Value::list(pairs.into_iter().map(|p| p.1).collect()))
@@ -2108,7 +2238,7 @@ fn length_of(v: &Value, name: &str, span: Span) -> Fallible<usize> {
     match v {
         Value::List(l) => Ok(l.len()),
         Value::Text(s) => Ok(s.chars().count()),
-        v => Err(wrong(name, 0, a_list_or_text(), v, span)),
+        v => Err(wrong(name, 0, Expected::ListOrText, v, span)),
     }
 }
 
@@ -2266,8 +2396,8 @@ fn index_of(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(match (&a[0], &a[1]) {
         (Value::List(l), x) => it.option(l.iter().position(|v| v.equals(x)).map(|i| Value::Int(i as i64))),
         (Value::Text(s), Value::Text(sub)) => it.option(s.find(&**sub).map(|byte| Value::Int(s[..byte].chars().count() as i64))),
-        (Value::Text(_), v) => return Err(wrong("index_of", 1, a_text(), v, span)),
-        (v, _) => return Err(wrong("index_of", 0, a_list_or_text(), v, span)),
+        (Value::Text(_), v) => return Err(wrong("index_of", 1, Expected::Text, v, span)),
+        (v, _) => return Err(wrong("index_of", 0, Expected::ListOrText, v, span)),
     })
 }
 
@@ -2278,7 +2408,7 @@ fn extreme_by(it: &mut Interp, a: &[Value], name: &str, want: Ordering, span: Sp
     let f = func(a, 1, name, span)?;
     let mut best: Option<(Value, &Value)> = None;
     for x in l.iter() {
-        let k = it.call(f.clone(), vec![x.clone()], span)?;
+        let k = call_given(it, name, &f, vec![x.clone()], span)?;
         match &best {
             None => best = Some((k, x)),
             Some((bk, _)) => match k.compare(bk) {
@@ -2336,28 +2466,14 @@ fn flatten(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn flat_map(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    if it.wrap(&a[0]) != Wrap::Other {
-        let mut d = wrong("flat_map", 0, a_list(), &a[0], span);
-        d.helps.push(t!("for an Option or a Result, use `and_then(x, f)`", "pour une Option ou un Result, utilisez `and_then(x, f)`"));
-        return Err(d);
-    }
     let l = list(a, 0, "flat_map", span)?;
     let f = func(a, 1, "flat_map", span)?;
     let mut out = Vec::new();
     for x in l.iter() {
-        match it.call(f.clone(), vec![x.clone()], span)? {
+        match call_given(it, "flat_map", &f, vec![x.clone()], span)? {
             Value::List(inner) if out.len() + inner.len() > MAX_LIST => return Err(too_big(true, span)),
             Value::List(inner) => out.extend(inner.iter().cloned()),
-            other => {
-                return Err(invalid(
-                    t!(
-                        "the function given to `flat_map` must return a list, but it returned {}",
-                        "la fonction donnée à `flat_map` doit renvoyer une liste, mais elle a renvoyé {}",
-                        other.describe()
-                    ),
-                    span,
-                ))
-            }
+            other => return Err(wrong_return("flat_map", LIST, &other.describe(), span)),
         }
     }
     Ok(Value::list(out))
@@ -2383,7 +2499,7 @@ fn group_by(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let mut keys: Vec<Rc<str>> = Vec::new();
     let mut groups: std::collections::HashMap<Rc<str>, Vec<Value>> = std::collections::HashMap::new();
     for x in l.iter() {
-        let k: Rc<str> = Rc::from(it.call(f.clone(), vec![x.clone()], span)?.display());
+        let k: Rc<str> = Rc::from(call_given(it, "group_by", &f, vec![x.clone()], span)?.display());
         groups.entry(k.clone()).or_insert_with(|| {
             keys.push(k.clone());
             Vec::new()
@@ -2403,7 +2519,7 @@ fn is_empty(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         Value::Text(s) => s.is_empty(),
         Value::List(l) => l.is_empty(),
         Value::Record(r) => r.is_empty(),
-        v => return Err(wrong("is_empty", 0, t!("a text, a list or a record", "un texte, une liste ou un enregistrement"), v, span)),
+        v => return Err(wrong("is_empty", 0, Expected::TextListOrRecord, v, span)),
     }))
 }
 
@@ -2479,7 +2595,7 @@ fn map_values(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let f = func(a, 1, "map_values", span)?;
     let mut out = Record::new();
     for (k, v) in r.iter() {
-        out.set(k.clone(), it.call(f.clone(), vec![v.clone()], span)?);
+        out.set(k.clone(), call_given(it, "map_values", &f, vec![v.clone()], span)?);
     }
     Ok(Value::Record(Rc::new(out)))
 }
@@ -2488,7 +2604,7 @@ fn map_values(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn option_or_result(it: &Interp, v: &Value, name: &str, span: Span) -> Fallible<Wrap> {
     match it.wrap(v) {
-        Wrap::Other => Err(wrong(name, 0, t!("an Option or a Result", "une Option ou un Result"), v, span)),
+        Wrap::Other => Err(wrong(name, 0, Expected::OptionOrResult, v, span)),
         w => Ok(w),
     }
 }
@@ -2548,30 +2664,10 @@ fn and_then(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     if matches!(kind, Wrap::None | Wrap::Err) {
         return Ok(a[0].clone());
     }
-    let r = it.call(f, vec![Interp::payload(&a[0])], span)?;
+    let r = call_given(it, "and_then", &f, vec![Interp::payload(&a[0])], span)?;
     match (kind, it.wrap(&r)) {
         (Wrap::Some, Wrap::Some | Wrap::None) | (Wrap::Ok, Wrap::Ok | Wrap::Err) => Ok(r),
-        _ => {
-            let expected = if kind == Wrap::Some {
-                t!("an Option (Some or None)", "une Option (Some ou None)")
-            } else {
-                t!("a Result (Ok or Err)", "un Result (Ok ou Err)")
-            };
-            Err(Diagnostic::error(
-                "E005",
-                t!(
-                    "the function given to `and_then` must return {expected}, but it returned {}",
-                    "la fonction donnée à `and_then` doit renvoyer {expected}, mais elle a renvoyé {}",
-                    r.describe()
-                ),
-            )
-            .at(span)
-            .help(t!(
-                "to change the value inside without another check, use `map(x, f)`",
-                "pour changer la valeur à l'intérieur sans autre vérification, utilisez `map(x, f)`"
-            ))
-            .boxed())
-        }
+        _ => Err(wrong_return("and_then", if kind == Wrap::Some { OPTION } else { RESULT }, &r.describe(), span)),
     }
 }
 
@@ -2579,7 +2675,7 @@ fn ok_or(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     match it.wrap(&a[0]) {
         Wrap::Some => Ok(it.ok(Interp::payload(&a[0]))),
         Wrap::None => Ok(it.err(a[1].clone())),
-        _ => Err(wrong("ok_or", 0, t!("an Option", "une Option"), &a[0], span)),
+        _ => Err(wrong("ok_or", 0, Expected::Option, &a[0], span)),
     }
 }
 
@@ -2588,10 +2684,10 @@ fn map_err(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     match it.wrap(&a[0]) {
         Wrap::Ok => Ok(a[0].clone()),
         Wrap::Err => {
-            let e = it.call(f, vec![Interp::payload(&a[0])], span)?;
+            let e = call_given(it, "map_err", &f, vec![Interp::payload(&a[0])], span)?;
             Ok(it.err(e))
         }
-        _ => Err(wrong("map_err", 0, t!("a Result", "un Result"), &a[0], span)),
+        _ => Err(wrong("map_err", 0, Expected::Result, &a[0], span)),
     }
 }
 

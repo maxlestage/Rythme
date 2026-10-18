@@ -152,11 +152,13 @@ fn every_piece_of_code_runs() {
         assert!(!failed, "{lang:?} hero: {out}");
         assert_eq!(out.trim(), "20", "{lang:?}: the hero shows 20 as its output");
         let (out, failed) = run(t.pg_welcome_code, lang, false);
-        assert!(!failed, "{lang:?} welcome: {out}");
+        assert!(!failed && !out.contains("warning[") && !out.contains("avertissement["), "{lang:?} welcome: {out}");
         for step in &t.tour {
             let test = step.code.contains("test \"");
             let (out, failed) = run(step.code, lang, test);
             assert!(!failed, "{lang:?} {}: {out}", step.title);
+            // The samples of the site are good examples: not even a warning.
+            assert!(!out.contains("warning[") && !out.contains("avertissement["), "{lang:?} {}: {out}", step.title);
         }
         // The error of the home page is the interpreter's own message.
         let (out, failed) = run(t.errors_code, lang, false);

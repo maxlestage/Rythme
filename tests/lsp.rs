@@ -465,6 +465,26 @@ fn definition_symbols_and_highlights() {
 }
 
 #[test]
+fn local_functions_and_mistakes_found_by_types() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/types.ry";
+    let text = "fn outer(n)\n  fn even(0) = true\n  fn even(k) = odd(k - 1)\n  fn odd(0) = false\n  fn odd(k) = even(k - 1)\n  even(n)\nend\nprint(outer(4))\n";
+    assert!(lsp.open(u, text).is_empty());
+    // Functions written one after the other see each other: `odd`, from `even`.
+    let d = lsp.at("textDocument/definition", u, 2, 15);
+    assert_eq!(range(&d), (3, 5, 3, 8));
+    // A mistake found before running, with the help the run time gives.
+    let diags = lsp.change(u, 2, "print(map(\"abc\", upper), None < Some(1))\n");
+    assert_eq!(diags.len(), 1, "{diags:?}");
+    assert_eq!(diags[0].get("code").as_str(), Some("E005"));
+    let message = diags[0].get("message").as_str().unwrap();
+    assert!(message.starts_with("`map` expects a list, an Option or a Result as argument 1, but got Text \"abc\""), "{message}");
+    assert!(message.contains("help: a text is not a list: `chars(text)`"), "{message}");
+    assert_eq!(range(&diags[0]), (0, 10, 0, 15));
+    assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
 fn several_files() {
     let dir = temp_dir("files");
     std::fs::write(dir.join("geometry.ry"), "## Area of a rectangle.\nfn area(w, h) = w * h\nfn square(s) = area(s, s)\n").unwrap();
