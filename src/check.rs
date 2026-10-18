@@ -748,7 +748,10 @@ impl<'a> Checker<'a> {
         let t = self.func(def, None);
         self.note_type(def.span, &t);
         if let Some(name) = def.name {
-            if self.own.get(&name).is_some_and(|g| g.kind == GKind::Func) {
+            // In the REPL, a function defined again in the same input replaces
+            // the first definition: only the last one says what it is.
+            let kept = self.fn_defs.get(&name).is_none_or(|d| std::ptr::eq(&**d, def));
+            if kept && self.own.get(&name).is_some_and(|g| g.kind == GKind::Func) {
                 self.set_global(name, t);
                 self.narrow_top(name);
             }

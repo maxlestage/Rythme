@@ -560,3 +560,28 @@ fn the_interactive_mode_knows_values_can_be_defined_again() {
     assert!(stdout.contains("6\nab\n"), "{stdout}{stderr}");
     assert_eq!((stdout.matches("error[").count(), stderr.matches("error[").count()), (0, 1), "{stdout}{stderr}");
 }
+
+/// In one input of the REPL (or a file given to `:load`), a function defined
+/// again replaces the first definition: what the first one needs says nothing.
+#[test]
+fn the_interactive_mode_checks_the_last_definition_of_a_function() {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+    let mut child = Command::new(env!("CARGO_BIN_EXE_rythme"))
+        .env("RYTHME_LANG", "en")
+        .env("NO_COLOR", "1")
+        .env("HOME", std::env::temp_dir())
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let file = temp_file("again.ry", "fn k(\"a\") = 1\nx = 2\nfn k(_) = 0\nprint(k(5), k(\"a\"))\n");
+    let input = format!(":load {}\nfn m(\"a\") = 1; y = 2; fn m(_) = 0; m(7)\n:quit\n", file.display());
+    child.stdin.take().unwrap().write_all(input.as_bytes()).unwrap();
+    let out = child.wait_with_output().unwrap();
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stdout.contains("0 0\n") && stdout.contains("loaded\n0\n"), "{stdout}{stderr}");
+    assert!(!stdout.contains("error[") && !stderr.contains("error["), "{stdout}{stderr}");
+}
