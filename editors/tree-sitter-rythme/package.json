@@ -1,0 +1,21 @@
+{
+  "name": "tree-sitter-rythme",
+  "version": "0.1.0",
+  "description": "Rythme grammar for Tree-sitter",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maxlestage/Rythme",
+    "directory": "editors/tree-sitter-rythme"
+  },
+  "keywords": ["tree-sitter", "parser", "rythme"],
+  "files": ["grammar.js", "tree-sitter.json", "src/**", "queries/*"],
+  "scripts": {
+    "generate": "tree-sitter generate --abi 14",
+    "test": "tree-sitter test && node test/samples.js"
+  },
+  "devDependencies": {
+    "tree-sitter-cli": "0.26.13"
+  }
+}

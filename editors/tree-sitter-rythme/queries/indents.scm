@@ -1,0 +1,31 @@
+; Indentation of Rythme (Neovim's capture names): two spaces inside a
+; function, a block, a `match`, brackets and the continuation lines of a
+; definition; `end` and closing brackets go back.
+
+[
+  (function_definition)
+  (lambda)
+  (test_definition)
+  (do_expression)
+  (match_expression)
+  (type_definition)
+  (definition)
+  (list)
+  (record)
+  (arguments)
+  (parameters)
+  (list_pattern)
+  (record_pattern)
+] @indent.begin
+
+"end" @indent.branch @indent.end
+
+[
+  ")"
+  "]"
+  "}"
+] @indent.branch @indent.end
+
+(string) @indent.auto
+
+(comment) @indent.auto

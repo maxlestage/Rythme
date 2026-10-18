@@ -1,0 +1,279 @@
+================================================================================
+A new line ends a statement
+================================================================================
+
+x = 1
+y = x
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (definition
+    (identifier)
+    (integer))
+  (definition
+    (identifier)
+    (identifier)))
+
+================================================================================
+A semicolon ends a statement
+================================================================================
+
+x = 1; y = 2
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (definition
+    (identifier)
+    (integer))
+  (definition
+    (identifier)
+    (integer)))
+
+================================================================================
+A new line inside brackets is a space
+================================================================================
+
+xs = [
+  1,
+  2,
+]
+f(a,
+  b)
+r = {
+  name: "Ada",
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (definition
+    (identifier)
+    (list
+      (integer)
+      (integer)))
+  (call
+    (identifier)
+    (arguments
+      (identifier)
+      (identifier)))
+  (definition
+    (identifier)
+    (record
+      (record_field
+        (field_name)
+        (string
+          (string_content))))))
+
+================================================================================
+A new line after an operator continues the expression
+================================================================================
+
+total = a +
+  b
+ok = a and
+  b
+x =
+  1
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (definition
+    (identifier)
+    (binary_expression
+      (identifier)
+      (identifier)))
+  (definition
+    (identifier)
+    (binary_expression
+      (identifier)
+      (identifier)))
+  (definition
+    (identifier)
+    (integer)))
+
+================================================================================
+A line starting with an operator continues the expression
+================================================================================
+
+report = students
+  |> map(f)
+  # a comment between the lines
+  |> sort
+n = a
+  + b
+  * c
+ok = a
+  and b
+  or c
+xs
+  .len()
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (definition
+    (identifier)
+    (pipe_expression
+      (pipe_expression
+        (identifier)
+        (call
+          (identifier)
+          (arguments
+            (identifier))))
+      (comment)
+      (identifier)))
+  (definition
+    (identifier)
+    (binary_expression
+      (identifier)
+      (binary_expression
+        (identifier)
+        (identifier))))
+  (definition
+    (identifier)
+    (binary_expression
+      (binary_expression
+        (identifier)
+        (identifier))
+      (identifier)))
+  (method_call
+    (identifier)
+    (field_name)
+    (arguments)))
+
+================================================================================
+A line starting with a minus starts a new statement
+================================================================================
+
+a
+-b
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (identifier)
+  (unary_expression
+    (identifier)))
+
+================================================================================
+A bracket on the next line starts a new statement
+================================================================================
+
+f
+(x)
+xs
+[0]
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (identifier)
+  (parenthesized_expression
+    (identifier))
+  (identifier)
+  (list
+    (integer)))
+
+================================================================================
+An if on several lines
+================================================================================
+
+z = if c
+  then a
+  else b
+w = if c then
+  a
+else
+  b
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (definition
+    (identifier)
+    (if_expression
+      (identifier)
+      (identifier)
+      (identifier)))
+  (definition
+    (identifier)
+    (if_expression
+      (identifier)
+      (identifier)
+      (identifier))))
+
+================================================================================
+Blocks inside brackets keep their new lines
+================================================================================
+
+each(xs, fn(x)
+  y = x * 2
+  print(y)
+end)
+f(match x
+  0 -> "zero"
+  _ -> "other"
+end)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (call
+    (identifier)
+    (arguments
+      (identifier)
+      (lambda
+        (parameters
+          (identifier))
+        (block
+          (definition
+            (identifier)
+            (binary_expression
+              (identifier)
+              (integer)))
+          (call
+            (identifier)
+            (arguments
+              (identifier)))))))
+  (call
+    (identifier)
+    (arguments
+      (match_expression
+        (identifier)
+        (match_arm
+          (integer)
+          (string
+            (string_content)))
+        (match_arm
+          (identifier)
+          (string
+            (string_content)))))))
+
+================================================================================
+Names that start like continuation words
+================================================================================
+
+x = 1
+order = 2
+elsewhere = 3
+and_then(x)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (definition
+    (identifier)
+    (integer))
+  (definition
+    (identifier)
+    (integer))
+  (definition
+    (identifier)
+    (integer))
+  (call
+    (identifier)
+    (arguments
+      (identifier))))
