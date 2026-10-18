@@ -985,9 +985,11 @@ fn fuzz(seed: u64, first: u64, cases: u64) -> (Vec<Failure>, [u64; 5]) {
             rythme::interp::set_stack_budget(768 << 20);
             let mut failures = Vec::new();
             let mut stages = [0; 5];
+            // Every language in turn: each one's messages must point inside the code.
+            let langs: Vec<Lang> = Lang::all().collect();
             for i in first..first + cases {
                 let src = case(seed, i);
-                lang::set(if i % 3 == 0 { Lang::Fr } else { Lang::En });
+                lang::set(langs[(i % langs.len() as u64) as usize]);
                 match run_case(&src) {
                     Ok(stage) => stages[stage as usize] += 1,
                     Err(e) => failures.push((i, src, e)),
@@ -1067,8 +1069,7 @@ fn survives(src: &str) {
             let src = src.to_string();
             move || {
                 rythme::interp::set_stack_budget(768 << 20);
-                [Lang::En, Lang::Fr]
-                    .into_iter()
+                Lang::all()
                     .filter_map(|l| {
                         lang::set(l);
                         run_case(&src).err()

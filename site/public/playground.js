@@ -246,7 +246,8 @@
     const bytes = new TextEncoder().encode(code);
     const ptr = e.rythme_alloc(bytes.length);
     new Uint8Array(e.memory.buffer, ptr, bytes.length).set(bytes);
-    const at = e.rythme_run(ptr, bytes.length, mode, lang === "fr" ? 1 : 0);
+    // The language of the messages: its position in rythme::lang::LANGUAGES.
+    const at = e.rythme_run(ptr, bytes.length, mode, Math.max(0, ["en", "fr", "es"].indexOf(lang)));
     return new TextDecoder().decode(new Uint8Array(e.memory.buffer, at, e.rythme_result_len()));
   }
 

@@ -653,12 +653,21 @@ pub fn new_command(args: &[String]) -> i32 {
 
 /// The files of a new project, in the language of the messages.
 pub fn new_files(name: &str) -> Vec<(&'static str, String)> {
-    let fr = crate::lang::is_fr();
-    let (module, func, greeting, who) =
-        if fr { ("salutation", "bonjour", "Bonjour", "le monde") } else { ("greeting", "hello", "Hello", "World") };
-    let toml = if fr {
-        format!(
-            r#"# Le projet : `rythme run`, `rythme test` et `rythme check` dans ce dossier.
+    use crate::lang::pick;
+    let (module, func) = (pick("greeting", "salutation"), pick("hello", "bonjour"));
+    let toml = t!(
+        r#"# The project: `rythme run`, `rythme test` and `rythme check` in this folder.
+name = "{name}"
+version = "0.1.0"
+entry = "src/main.ry"
+
+[dependencies]
+# From git, at a tag or a commit, then `rythme install`:
+# mathlib = {{ git = "https://github.com/someone/mathlib", tag = "v1.0.0" }}
+# From a folder:
+# tools = {{ path = "../tools" }}
+"#,
+        r#"# Le projet : `rythme run`, `rythme test` et `rythme check` dans ce dossier.
 name = "{name}"
 version = "0.1.0"
 entry = "src/main.ry"
@@ -669,54 +678,29 @@ entry = "src/main.ry"
 # Depuis un dossier :
 # outils = {{ path = "../outils" }}
 "#
-        )
-    } else {
-        format!(
-            r#"# The project: `rythme run`, `rythme test` and `rythme check` in this folder.
-name = "{name}"
-version = "0.1.0"
-entry = "src/main.ry"
-
-[dependencies]
-# From git, at a tag or a commit, then `rythme install`:
-# mathlib = {{ git = "https://github.com/someone/mathlib", tag = "v1.0.0" }}
-# From a folder:
-# tools = {{ path = "../tools" }}
-"#
-        )
-    };
-    let main = if fr {
-        format!("# Le programme : `rythme run` dans le dossier du projet.\nuse {module}\n\nprint({module}.{func}(\"{who}\"))\n")
-    } else {
-        format!("# The program: `rythme run` in the folder of the project.\nuse {module}\n\nprint({module}.{func}(\"{who}\"))\n")
-    };
-    let lib = if fr {
-        format!("## Une salutation pour `nom`.\nfn {func}(nom) = \"{greeting}, {{nom}} !\"\n")
-    } else {
-        format!("## A greeting for `name`.\nfn {func}(name) = \"{greeting}, {{name}}!\"\n")
-    };
-    let expected = if fr { format!("{greeting}, Ada !") } else { format!("{greeting}, Ada!") };
-    let test = if fr {
-        format!("# Les tests : `rythme test` dans le dossier du projet.\nuse {name}/{module}\n\ntest \"{func}\" = assert_eq({module}.{func}(\"Ada\"), \"{expected}\")\n")
-    } else {
-        format!("# The tests: `rythme test` in the folder of the project.\nuse {name}/{module}\n\ntest \"{func}\" = assert_eq({module}.{func}(\"Ada\"), \"{expected}\")\n")
-    };
-    let readme = if fr {
-        format!(
-            "# {name}\n\nUn projet [Rythme](https://github.com/maxlestage/Rythme).\n\n```sh\nrythme run        # lancer le programme (src/main.ry)\nrythme test       # lancer les tests (tests/)\nrythme check      # trouver les problèmes sans lancer\nrythme fmt        # mettre le code en forme\nrythme install    # télécharger les dépendances de rythme.toml\n```\n"
-        )
-    } else {
-        format!(
-            "# {name}\n\nA [Rythme](https://github.com/maxlestage/Rythme) project.\n\n```sh\nrythme run        # run the program (src/main.ry)\nrythme test       # run the tests (tests/)\nrythme check      # find problems without running\nrythme fmt        # give the code its official layout\nrythme install    # download the dependencies of rythme.toml\n```\n"
-        )
-    };
-    let ignore = if fr {
-        "# Les fichiers que git ne garde pas (gardez rythme.lock).\n.DS_Store\nThumbs.db\n*.swp\n*~\n".to_string()
-    } else {
-        "# Files that git does not keep (keep rythme.lock).\n.DS_Store\nThumbs.db\n*.swp\n*~\n".to_string()
-    };
-    let (lib_path, test_path) =
-        if fr { ("src/salutation.ry", "tests/salutation_test.ry") } else { ("src/greeting.ry", "tests/greeting_test.ry") };
+    );
+    let main = t!(
+        "# The program: `rythme run` in the folder of the project.\nuse {module}\n\nprint({module}.{func}(\"World\"))\n",
+        "# Le programme : `rythme run` dans le dossier du projet.\nuse {module}\n\nprint({module}.{func}(\"le monde\"))\n"
+    );
+    let lib = t!(
+        "## A greeting for `name`.\nfn {func}(name) = \"Hello, {{name}}!\"\n",
+        "## Une salutation pour `nom`.\nfn {func}(nom) = \"Bonjour, {{nom}} !\"\n"
+    );
+    let test = t!(
+        "# The tests: `rythme test` in the folder of the project.\nuse {name}/{module}\n\ntest \"{func}\" = assert_eq({module}.{func}(\"Ada\"), \"Hello, Ada!\")\n",
+        "# Les tests : `rythme test` dans le dossier du projet.\nuse {name}/{module}\n\ntest \"{func}\" = assert_eq({module}.{func}(\"Ada\"), \"Bonjour, Ada !\")\n"
+    );
+    let readme = t!(
+        "# {name}\n\nA [Rythme](https://github.com/maxlestage/Rythme) project.\n\n```sh\nrythme run        # run the program (src/main.ry)\nrythme test       # run the tests (tests/)\nrythme check      # find problems without running\nrythme fmt        # give the code its official layout\nrythme install    # download the dependencies of rythme.toml\n```\n",
+        "# {name}\n\nUn projet [Rythme](https://github.com/maxlestage/Rythme).\n\n```sh\nrythme run        # lancer le programme (src/main.ry)\nrythme test       # lancer les tests (tests/)\nrythme check      # trouver les problèmes sans lancer\nrythme fmt        # mettre le code en forme\nrythme install    # télécharger les dépendances de rythme.toml\n```\n"
+    );
+    let ignore = t!(
+        "# Files that git does not keep (keep rythme.lock).\n.DS_Store\nThumbs.db\n*.swp\n*~\n",
+        "# Les fichiers que git ne garde pas (gardez rythme.lock).\n.DS_Store\nThumbs.db\n*.swp\n*~\n"
+    );
+    let lib_path = pick("src/greeting.ry", "src/salutation.ry");
+    let test_path = pick("tests/greeting_test.ry", "tests/salutation_test.ry");
     vec![(MANIFEST, toml), ("src/main.ry", main), (lib_path, lib), (test_path, test), ("README.md", readme), (".gitignore", ignore)]
 }
 

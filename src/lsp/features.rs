@@ -508,12 +508,16 @@ fn def_item(cx: &Ctx, a: &Analysis, id: DefId, d: &Def, sort: &str) -> Json {
 }
 
 fn snippets() -> Vec<(&'static str, &'static str, String, String)> {
-    let fr = crate::lang::is_fr();
-    let (name, value, other, pattern, result, what, actual, expected, condition, file) = if fr {
-        ("nom", "valeur", "autre", "motif", "résultat", "ce qu'il vérifie", "obtenu", "attendu", "condition", "fichier")
-    } else {
-        ("name", "value", "other", "pattern", "result", "what it checks", "actual", "expected", "condition", "file")
-    };
+    // The placeholders of the snippets, in the language of the messages.
+    let (name, value, other, pattern, result) =
+        (t!("name", "nom"), t!("value", "valeur"), t!("other", "autre"), t!("pattern", "motif"), t!("result", "résultat"));
+    let (what, actual, expected, condition, file) = (
+        t!("what it checks", "ce qu'il vérifie"),
+        t!("actual", "obtenu"),
+        t!("expected", "attendu"),
+        t!("condition", "condition"),
+        t!("file", "fichier"),
+    );
     vec![
         (
             "fn … end",
@@ -544,11 +548,10 @@ fn snippets() -> Vec<(&'static str, &'static str, String, String)> {
         (
             "type … = …",
             "type",
-            if fr {
-                "type ${1:Nom} = ${2:Premier}(${3:champ}) | ${0:Second}".to_string()
-            } else {
-                "type ${1:Name} = ${2:First}(${3:field}) | ${0:Second}".to_string()
-            },
+            t!(
+                "type ${{1:Name}} = ${{2:First}}(${{3:field}}) | ${{0:Second}}",
+                "type ${{1:Nom}} = ${{2:Premier}}(${{3:champ}}) | ${{0:Second}}"
+            ),
             t!("your own type", "votre propre type"),
         ),
         ("do … end", "do", "do\n\t$0\nend".to_string(), t!("several steps inside an expression", "plusieurs étapes dans une expression")),

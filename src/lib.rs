@@ -2,8 +2,8 @@
 //! everywhere. This crate contains the whole interpreter.
 //!
 //! The pipeline: [`lexer`] → [`parser`] → [`check`] → [`compile`] →
-//! [`interp`], driven by [`driver`]. Every message exists in English and
-//! French ([`lang`]).
+//! [`interp`], driven by [`driver`]. Every message exists in English,
+//! French and the languages of `src/i18n/` ([`lang`]).
 
 #[macro_use]
 pub mod lang;

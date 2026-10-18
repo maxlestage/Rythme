@@ -6,12 +6,14 @@ let module = null;
 const imports = { env: { rythme_now: () => Date.now(), rythme_offset: (ms) => -new Date(ms).getTimezoneOffset() } };
 
 // mode: 0 = run, 1 = check, 2 = test, 4 = steps. Error messages come wrapped in U+0001 … U+0002.
+// The language of the messages is its position in rythme::lang::LANGUAGES.
+const LANGS = ["en", "fr", "es"];
 function callInterpreter(instance, code, mode, lang) {
   const e = instance.exports;
   const bytes = new TextEncoder().encode(code);
   const ptr = e.rythme_alloc(bytes.length);
   new Uint8Array(e.memory.buffer, ptr, bytes.length).set(bytes);
-  const at = e.rythme_run(ptr, bytes.length, mode, lang === "fr" ? 1 : 0);
+  const at = e.rythme_run(ptr, bytes.length, mode, Math.max(0, LANGS.indexOf(lang)));
   return new TextDecoder().decode(new Uint8Array(e.memory.buffer, at, e.rythme_result_len()));
 }
 
