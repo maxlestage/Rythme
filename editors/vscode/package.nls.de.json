@@ -1,0 +1,19 @@
+{
+  "description": "Die Sprache Rythme (.ry): Farben, Snippets und ein Sprachserver, der beim Tippen Probleme, Dokumentation, Vervollständigung und mehr anzeigt.",
+  "config.path": "Das Programm `rythme`. Standardmäßig wird es im `PATH` gesucht, dann in `~/.cargo/bin` (wo `cargo install` es ablegt).",
+  "config.language": "Sprache der Meldungen, der Dokumentation und der Hilfe.",
+  "config.language.auto": "Die Sprache von VS Code (oder die Variable `RYTHME_LANG`).",
+  "config.language.en": "Englisch.",
+  "config.language.fr": "Französisch.",
+  "config.language.es": "Spanisch.",
+  "config.language.de": "Deutsch.",
+  "config.language.pt": "Portugiesisch.",
+  "config.language.zh": "Chinesisch (vereinfacht).",
+  "config.trace": "Zeigt die mit dem Sprachserver ausgetauschten Nachrichten in der Ausgabe *Rythme*, um ein Problem zu suchen.",
+  "command.restart": "Sprachserver neu starten",
+  "command.run": "Diese Datei ausführen",
+  "command.test": "Die Tests dieser Datei ausführen",
+  "command.runTest": "Einen Test dieser Datei ausführen",
+  "command.explain": "Einen Fehlercode erklären",
+  "command.help": "Hilfe zu einem Thema oder einer Funktion"
+}
