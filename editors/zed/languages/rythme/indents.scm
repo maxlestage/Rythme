@@ -17,6 +17,10 @@
   body: (block
     "end" @end)) @indent
 
+(do_block
+  body: (block
+    "end" @end)) @indent
+
 (match_expression
   "end" @end) @indent
 

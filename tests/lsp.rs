@@ -844,3 +844,34 @@ fn files_used_with_a_name() {
     assert_eq!(lsp.stop(), 0);
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn ruby_style_names_blocks_and_completion_after_a_dot() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/ruby.ry";
+    let text = "xs = [1, 2, 3]\nprint(xs.sum, \"hi\".upcase, xs.select do |x| x.even? end)\nfn adult?(p) = p.age >= 18\nprint(adult?({age: 20}), :ok)\n";
+    let diags = lsp.open(u, text);
+    assert!(diags.is_empty(), "{diags:?}");
+    // `xs.sum` calls `sum`; `upcase` is the Ruby name of `upper`.
+    let h = hover_text(&lsp.at("textDocument/hover", u, 1, 10));
+    assert!(h.contains("sum(list)") && h.contains("`value.sum` reads the field `sum`, or calls `sum(value)`"), "{h}");
+    let h = hover_text(&lsp.at("textDocument/hover", u, 1, 22));
+    assert!(h.contains("the Ruby name of `upper`") && h.contains("upper(text)"), "{h}");
+    // `even?` is one name; `adult?` a function of the file.
+    let h = hover_text(&lsp.at("textDocument/hover", u, 1, 51));
+    assert!(h.contains("the Ruby name of `is_even`"), "{h}");
+    let h = hover_text(&lsp.at("textDocument/hover", u, 3, 8));
+    assert!(h.contains("fn adult?(p)"), "{h}");
+    // After `"text".`: the functions that take a text first, with their Ruby names.
+    lsp.change(u, 2, "\"abc\".");
+    let l = labels(&lsp.at("textDocument/completion", u, 0, 6));
+    for name in ["upper", "upcase", "split", "len", "size", "empty?"] {
+        assert!(l.iter().any(|x| x == name), "{name} missing in {l:?}");
+    }
+    assert!(!l.iter().any(|x| x == "sum" || x == "select"), "a text has no sum: {l:?}");
+    // After a list, the functions on lists.
+    lsp.change(u, 3, "[1, 2].");
+    let l = labels(&lsp.at("textDocument/completion", u, 0, 7));
+    assert!(l.iter().any(|x| x == "sum") && l.iter().any(|x| x == "select") && !l.iter().any(|x| x == "upcase"), "{l:?}");
+    assert_eq!(lsp.stop(), 0);
+}
