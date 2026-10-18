@@ -1895,9 +1895,67 @@ fn capitalize(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let s = text(a, 0, "capitalize", span)?;
     let mut cs = s.chars();
     Ok(match cs.next() {
-        Some(c) => text_value(c.to_uppercase().chain(cs).collect::<String>()),
+        Some(c) => text_value(titlecase(c) + cs.as_str()),
         None => a[0].clone(),
     })
+}
+
+/// A character written at the start of a word: its uppercase, except where
+/// Unicode gives a titlecase that differs (UnicodeData and SpecialCasing).
+/// The digraphs `ǆ ǉ ǌ ǳ` become `ǅ ǈ ǋ ǲ`, `ß` becomes `Ss`, `ﬁ` `Fi`, the
+/// Greek letters with iota subscript keep it (`ᾳ` gives `ᾼ`), and Georgian
+/// letters stay as they are (their uppercase is only for whole words).
+pub fn titlecase(c: char) -> String {
+    let special = match c {
+        '\u{10d0}'..='\u{10fa}' | '\u{10fd}'..='\u{10ff}' => return c.to_string(),
+        '\u{1f80}'..='\u{1faf}' => {
+            let title = if (c as u32) & 0xf < 8 { c as u32 + 8 } else { c as u32 };
+            return char::from_u32(title).map_or_else(|| c.to_string(), String::from);
+        }
+        '\u{df}' => "Ss",
+        '\u{1c4}' => "\u{1c5}",
+        '\u{1c5}' => "\u{1c5}",
+        '\u{1c6}' => "\u{1c5}",
+        '\u{1c7}' => "\u{1c8}",
+        '\u{1c8}' => "\u{1c8}",
+        '\u{1c9}' => "\u{1c8}",
+        '\u{1ca}' => "\u{1cb}",
+        '\u{1cb}' => "\u{1cb}",
+        '\u{1cc}' => "\u{1cb}",
+        '\u{1f1}' => "\u{1f2}",
+        '\u{1f2}' => "\u{1f2}",
+        '\u{1f3}' => "\u{1f2}",
+        '\u{587}' => "\u{535}\u{582}",
+        '\u{1fb2}' => "\u{1fba}\u{345}",
+        '\u{1fb3}' => "\u{1fbc}",
+        '\u{1fb4}' => "\u{386}\u{345}",
+        '\u{1fb7}' => "\u{391}\u{342}\u{345}",
+        '\u{1fbc}' => "\u{1fbc}",
+        '\u{1fc2}' => "\u{1fca}\u{345}",
+        '\u{1fc3}' => "\u{1fcc}",
+        '\u{1fc4}' => "\u{389}\u{345}",
+        '\u{1fc7}' => "\u{397}\u{342}\u{345}",
+        '\u{1fcc}' => "\u{1fcc}",
+        '\u{1ff2}' => "\u{1ffa}\u{345}",
+        '\u{1ff3}' => "\u{1ffc}",
+        '\u{1ff4}' => "\u{38f}\u{345}",
+        '\u{1ff7}' => "\u{3a9}\u{342}\u{345}",
+        '\u{1ffc}' => "\u{1ffc}",
+        '\u{fb00}' => "Ff",
+        '\u{fb01}' => "Fi",
+        '\u{fb02}' => "Fl",
+        '\u{fb03}' => "Ffi",
+        '\u{fb04}' => "Ffl",
+        '\u{fb05}' => "St",
+        '\u{fb06}' => "St",
+        '\u{fb13}' => "\u{544}\u{576}",
+        '\u{fb14}' => "\u{544}\u{565}",
+        '\u{fb15}' => "\u{544}\u{56b}",
+        '\u{fb16}' => "\u{54e}\u{576}",
+        '\u{fb17}' => "\u{544}\u{56d}",
+        _ => return c.to_uppercase().collect(),
+    };
+    special.to_string()
 }
 
 fn trim(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {

@@ -12,6 +12,16 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Fixed
+
+- **`capitalize` uses the titlecase of Unicode** where it differs from the
+  uppercase: `capitalize("ǆungla")` gives `ǅungla` (not `Ǆungla`), and so do
+  `ǈ ǋ ǲ`; `ß` gives `Ss`, the ligatures `ﬁ ﬂ ﬀ...` give `Fi Fl Ff...`, the
+  Greek letters with iota subscript keep it (`ᾳ` gives `ᾼ`), Armenian `և`
+  gives `Եւ`, and Georgian letters stay as they are. A program that
+  capitalizes one of these characters prints another text: a bug fix.
+  `upper` does not change.
+
 ### Performance
 
 - **`find_all`, `split_by` and `replace_all` are no longer quadratic** on
