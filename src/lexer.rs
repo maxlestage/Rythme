@@ -299,6 +299,11 @@ impl<'a> Lexer<'a> {
                     while self.peek().is_some_and(is_ident_continue) {
                         self.bump();
                     }
+                    // `:even?`, as in Ruby. Before 1.1 it was read `:even` then
+                    // the operator `?`, which a symbol always refuses (E016).
+                    if self.peek() == Some('?') {
+                        self.bump();
+                    }
                     Tok::Symbol(Sym::new(&self.src[start + 1..self.pos]))
                 }
                 ':' => Tok::Colon,

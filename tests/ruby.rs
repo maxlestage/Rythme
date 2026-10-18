@@ -32,6 +32,25 @@ fn the_ternary_operator_of_ruby_is_explained() {
     assert!(r.stderr.contains("Rythme n'a pas de `condition ? a : b`"), "{}", r.stderr);
 }
 
+/// `:even?` is a symbol, as in Ruby (it was `:even` then `?`, always refused:
+/// see the fuzz test `the_old_reading_of_a_symbol_with_a_question_mark_never_ran`).
+#[test]
+fn a_symbol_may_end_with_a_question_mark() {
+    ok(
+        "s = :even?\nfn f(:even?) = 1\nfn f(_) = 2\nprint(s, s == :even, [:a?, :b], {k: :c?}, f(:even?), f(:even), text(:x?), to_json(:x?))",
+        ":even? false [:a?, :b] {k: :c?} 1 2 :x? \"x?\"",
+    );
+    ok("print(match :ok? \n  :ok -> 1\n  :ok? -> 2\nend, \"{:a?}\", :a < :a?)", "2 :a? true");
+    // A record key stays a key; `x?` and `even?` keep their meaning.
+    ok("fn even?(n) = n % 2 == 0\nfn f(x) = Some({k:x?})\nprint(f(Some(1)), {a:even?(2)})", "Some({k: 1}) {a: true}");
+    // The old reading is still there with a space, and refused.
+    let r = fails("fn f(x) = :even ?", "E016");
+    assert!(r.stderr.contains("got Symbol :even"), "{}", r.stderr);
+    // The formatter keeps that space: without it, the meaning would change.
+    let fmt = |code: &str| rythme::format::format(code).unwrap_or_else(|d| panic!("{code}: {}", d[0].render(false)));
+    assert_eq!(fmt("x = :a?\nfn f(x) = :b  ?\n"), "x = :a?\nfn f(x) = :b ?\n");
+}
+
 #[test]
 fn blocks_are_the_last_argument_of_a_call() {
     ok("print([1, 2, 3].map do |x| x * 2 end)", "[2, 4, 6]");

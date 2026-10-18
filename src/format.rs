@@ -300,8 +300,8 @@ enum Role {
     Comma,
     Dot,
     Question,
-    /// `x ?`: a `?` after a name that must stay apart from it, or it would be
-    /// read as a part of the name (`even?`).
+    /// `x ?`: a `?` after a name or a symbol that must stay apart from it, or
+    /// it would be read as a part of the name (`even?`, `:even?`).
     SpacedQuestion,
     /// `-x`: a minus sign before a value.
     Minus,
@@ -693,6 +693,10 @@ impl<'a> Shaper<'a> {
     /// space before it, so that it is not read as a part of the name?
     fn spaced_question(&self) -> bool {
         let i = self.pos;
+        // `:ok ?`: written `:ok?`, it would be the symbol `:ok?`.
+        if i > 0 && matches!(self.toks[i - 1].tok, Tok::Symbol(_)) {
+            return true;
+        }
         if i == 0 || !matches!(self.toks[i - 1].tok, Tok::Ident(_)) {
             return false;
         }

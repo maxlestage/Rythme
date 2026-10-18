@@ -772,7 +772,8 @@ texte 42 2.0 ["a", "b"] {nom: "Ada", "nom complet": "Ada L."} None ()
 
 Un **symbole** est un nom utilisé comme valeur, comme en Ruby : `:ok`,
 `:erreur`, `:en_attente`. Il s'écrit `:` suivi directement d'un nom, et
-s'affiche de la même façon. Deux symboles sont égaux quand leurs noms le
+s'affiche de la même façon ; un `?` collé au nom en fait partie, comme en
+Ruby (`:pair?`). Deux symboles sont égaux quand leurs noms le
 sont ; ils sont ordonnés par nom ; ils ne sont jamais égaux à un texte
 (`:ok == "ok"` est faux, et le vérificateur avertit, W006). On les utilise
 dans les motifs de `match`, et `to_json` les écrit comme des textes.
@@ -4293,7 +4294,7 @@ list_patterns = ".." [ NAME ] [ "," ]
 field_pattern = KEY ":" pattern | NAME | ".." ;
 
 MEMBER       = NAME [ "?" ] | CTOR | mot-clé | mot réservé ;
-SYMBOL       = ":" NAME ;
+SYMBOL       = ":" NAME [ "?" ] ;
 KEY          = MEMBER | PLAIN_TEXT ;
 ```
 
@@ -4319,7 +4320,8 @@ Remarques :
 - `"unless"` : le mot commence un `unless` seulement comme décrit en
   [1.5](#15-mots-clés-et-mots-réservés) ; ailleurs c'est un NAME.
 - `SYMBOL` : `:` suivi directement d'un nom, sauf le `:` qui suit un nom de
-  champ après `{` ou `,` ([2.14](#214-symbol)).
+  champ après `{` ou `,` ([2.14](#214-symbol)) ; un `?` collé au nom fait
+  partie du symbole (`:pair?`), jamais l'opérateur `postfix`.
 - Dans `match`, la valeur examinée doit finir sur la ligne de `match`, et les
   cas peuvent être séparés par des lignes vides ; `end` peut suivre le dernier
   cas sur la même ligne. Dans les blocs, `end` peut suivre la dernière
