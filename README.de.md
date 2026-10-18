@@ -10,7 +10,8 @@ Diese README ist eine Zusammenfassung. Die Meldungen, die Hilfe und die
 Erklärungen von Rythme gibt es auf Deutsch (`--lang de`); die vollständige
 Dokumentation ist auf Englisch und Französisch: das
 [Referenzhandbuch](docs/reference.md) und der
-[Leitfaden für Lehrkräfte](docs/teaching.md).
+[Leitfaden für Lehrkräfte](docs/teaching.md). Die Website und ihr Playground
+gibt es auch auf Deutsch: <https://maxlestage.github.io/Rythme/de/>.
 
 ```rythme
 # Werte ändern sich nie. Alles ist eine Funktion. Es gibt keine Schleifen.

@@ -101,11 +101,23 @@
   --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  /* Chinese: the web fonts have no Chinese characters; each system's own font draws
+     them (macOS and iOS, Windows, Android and Linux), before the generic families. */
+  --cjk: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC", "WenQuanYi Micro Hei", "WenQuanYi Zen Hei";
   --gutter: 16px;
   --bar-h: 60px;
   --radius: 12px;
   --code-size: 13.5px;
 }
+/* Chinese pages: the Latin fonts first (code, names, numbers), then a Chinese one;
+   headings without the tight spacing made for Latin letters, text with more air. */
+:root:lang(zh) {
+  --display: "Bricolage Grotesque", var(--cjk), system-ui, sans-serif;
+  --body: "IBM Plex Sans", var(--cjk), system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, var(--cjk), monospace;
+}
+:root:lang(zh) h1, :root:lang(zh) h2, :root:lang(zh) h3 { letter-spacing: 0; line-height: 1.3; }
+:root:lang(zh) body { line-height: 1.75; }
 
 /* ----- base ----------------------------------------------------------------------- */
 
@@ -220,22 +232,46 @@ ul, ol { margin: 0; padding: 0; }
 .nav__link:hover { color: var(--ink); background: var(--accent-soft); }
 .nav__link.is-active { color: var(--accent); }
 
-.lang {
-  display: inline-flex; padding: 3px; gap: 2px;
-  border: 1px solid var(--rule); border-radius: 999px; background: var(--staff);
+/* The language switch of the bar: a button with the code of the language, which opens
+   the list of languages (a `details`: it works without JavaScript). The list hangs
+   under the button, aligned on its right edge, never wider than the screen. */
+.lang--bar { position: relative; }
+.lang__toggle {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px;
+  border: 1px solid var(--rule); border-radius: 999px; background: var(--staff); color: var(--ink);
+  font: 600 13px/1 var(--mono); letter-spacing: 0.04em; cursor: pointer; list-style: none; user-select: none;
 }
-.lang__link {
-  display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 34px; padding: 0 10px;
-  border-radius: 999px; color: var(--ink-soft); text-decoration: none;
-  font: 600 13px/1 var(--mono); letter-spacing: 0.04em;
+.lang__toggle::-webkit-details-marker { display: none; }
+.lang__toggle::marker { content: ""; }
+.lang__toggle::after {
+  content: ""; width: 6px; height: 6px; margin: -3px 0 0 2px;
+  border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg);
 }
-.lang__link:hover { color: var(--ink); }
-.lang__link.is-active { background: var(--accent); color: var(--accent-ink); }
+.lang__toggle:hover, .lang--bar[open] .lang__toggle { border-color: var(--accent); }
+.lang--bar[open] .lang__toggle::after { margin-top: 3px; transform: rotate(-135deg); }
+.lang__toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lang__menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 70;
+  width: max-content; min-width: 190px; max-width: calc(100vw - 2 * var(--gutter));
+  margin: 0; padding: 6px; list-style: none;
+  background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.lang__menu .lang__link {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; padding: 0 12px;
+  border-radius: 8px; color: var(--ink); text-decoration: none; font: 500 15px/1.2 var(--body);
+}
+.lang__menu .lang__link:hover { background: var(--accent-soft); }
+.lang__menu .lang__link.is-active { background: var(--accent); color: var(--accent-ink); }
+.lang__code { font: 600 12px/1 var(--mono); letter-spacing: 0.06em; color: inherit; }
+/* The footer lists every language. */
+.lang__list { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none; }
+.lang--foot .lang__code { display: none; }
+.foot__meta .lang--foot .lang__link.is-active { color: var(--ink); font-weight: 600; }
 /* The smallest phones (320px): the logo, the language switch and the burger on one line. */
 @media (max-width: 379px) {
   .bar__inner { column-gap: 6px; }
   .brand { gap: 6px; }
-  .lang__link { min-width: 34px; padding: 0 7px; }
+  .lang__toggle { padding: 0 9px; gap: 5px; }
 }
 
 .burger {

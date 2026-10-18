@@ -58,7 +58,7 @@ pub async fn export(out: &Path, base_path: &str, site_url: Option<String>) -> io
         write(&format!("{}index.html", route.path()), get(route.path(), 200).await?.as_bytes())?;
     }
     write("404.html", get("/fr/404/".into(), 404).await?.as_bytes())?;
-    // The installable app: the offline pages and the manifests of both languages, and
+    // The installable app: the offline pages and the manifests of every language, and
     // the service worker at the root of the base path (its scope).
     for lang in Lang::ALL {
         let offline = Route::new(lang, Page::Offline).path();
@@ -77,27 +77,30 @@ pub async fn export(out: &Path, base_path: &str, site_url: Option<String>) -> io
 }
 
 /// `/` on a static host: goes to the language chosen with the switch, else the
-/// browser's, else French; links both languages without JavaScript.
+/// browser's, else French; links every language without JavaScript.
 pub fn language_picker() -> String {
     let fr = link("/fr/");
     let links: Vec<String> = Lang::ALL
         .iter()
-        .map(|l| format!(r#"<a href="{}" hreflang="{}">{}</a>"#, link(&format!("/{}/", l.code())), l.code(), l.name()))
+        .map(|l| format!(r#"<a href="{}" hreflang="{}" lang="{}">{}</a>"#, link(&format!("/{}/", l.code())), l.tag(), l.tag(), l.name()))
         .collect();
+    let codes: Vec<&str> = Lang::ALL.iter().map(|l| l.code()).collect();
     format!(
         concat!(
             r#"<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>"#,
             r#"<meta name="viewport" content="width=device-width, initial-scale=1"/>"#,
             r#"<title>Rythme</title><link rel="canonical" href="{fr}"/>"#,
-            r#"<script>(function(){{var b="{base}",c=(document.cookie.match(/(?:^|; ){cookie}=(fr|en)(?:;|$)/)||[])[1];"#,
+            r#"<script>(function(){{var b="{base}",k=" {list} ",c=(document.cookie.match(/(?:^|; ){cookie}=({alt})(?:;|$)/)||[])[1];"#,
             r#"var l=navigator.languages||[navigator.language||""];"#,
-            r#"for(var i=0;i<l.length&&!c;i++){{var x=String(l[i]).slice(0,2).toLowerCase();if(x=="fr"||x=="en")c=x}}"#,
+            r#"for(var i=0;i<l.length&&!c;i++){{var x=String(l[i]).slice(0,2).toLowerCase();if(x.length==2&&k.indexOf(" "+x+" ")>=0)c=x}}"#,
             r#"location.replace(b+"/"+(c||"fr")+"/")}})()</script>"#,
             r#"<noscript><meta http-equiv="refresh" content="0; url={fr}"/></noscript>"#,
             r#"</head><body><p>{links}</p></body></html>"#,
         ),
         fr = fr,
         base = base(),
+        list = codes.join(" "),
+        alt = codes.join("|"),
         cookie = LANG_COOKIE,
         links = links.join(" · "),
     )

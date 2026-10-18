@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use paquets::test::TestClient;
 use rythme_site::examples::EXAMPLES;
+use rythme_site::highlight::{ERROR_WORDS, HELP_WORDS, WARNING_WORDS};
 use rythme_site::i18n::Lang;
 use rythme_site::routes::{Page, Route};
 use rythme_site::server::{Site, app};
@@ -22,14 +23,14 @@ async fn every_page_renders_in_both_languages() {
         let res = client.get(&path).header("host", "example.com").await;
         assert_eq!(res.status(), 200, "{path}");
         let html = res.text();
-        let code = route.lang.code();
+        let code = route.lang.tag();
         assert!(html.starts_with(&format!("<!DOCTYPE html><html lang=\"{code}\">")), "{path}");
         assert!(html.contains(&format!(r#"<link rel="canonical" href="http://example.com{path}"/>"#)), "{path}");
         for lang in Lang::ALL {
             let other = route.with_lang(lang).path();
             // The language switch, and the alternate link for search engines.
-            assert!(html.contains(&format!(r#"href="{other}" hreflang="{}""#, lang.code())), "{path}: {other}");
-            assert!(html.contains(&format!(r#"hreflang="{}" href="http://example.com{other}""#, lang.code())), "{path}");
+            assert!(html.contains(&format!(r#"href="{other}" hreflang="{}""#, lang.tag())), "{path}: {other}");
+            assert!(html.contains(&format!(r#"hreflang="{}" href="http://example.com{other}""#, lang.tag())), "{path}");
         }
         // The burger menu and the navigation.
         assert!(html.contains(r#"class="burger""#), "{path}");
@@ -65,8 +66,20 @@ async fn the_pages_hold_their_content() {
         assert!(playground.contains(r#"data-wasm="/rythme.wasm?v="#));
         let learn = page(Page::Learn).await;
         assert_eq!(learn.matches("class=\"tour__try\"").count(), t.tour.len());
+        // The texts that playground.js writes, in the language of the page.
+        assert!(playground.contains("data-ui=\""));
+        assert!(playground.contains(&t.pg_loading.replace('\'', "&#x27;")), "{lang:?}");
+        assert!(playground.contains(&format!(r#"data-lang="{}""#, lang.code())));
         let teach = page(Page::Teach).await;
         assert!(teach.contains("<table>"));
+        // Without a guide of its own: the English one, marked as English, and a note.
+        match t.teach_note {
+            Some(note) => {
+                assert!(teach.contains(&note.replace('\'', "&#x27;")), "{lang:?}");
+                assert!(teach.contains(r#"<article class="prose" lang="en">"#), "{lang:?}");
+            }
+            None => assert!(!teach.contains("teach-note") && teach.contains(r#"<article class="prose">"#), "{lang:?}"),
+        }
     }
 }
 
@@ -76,20 +89,35 @@ async fn redirects_and_not_found() {
     let res = client.get("/").header("accept-language", "en-US,en;q=0.9").await;
     assert_eq!(res.status(), 302);
     assert_eq!(res.header("location"), Some("/en/"));
-    let res = client.get("/").header("accept-language", "de").await;
-    assert_eq!(res.header("location"), Some("/fr/"));
+    // Every language of the site, from the browser's; French when none is known.
+    for (header, lang) in [
+        ("de", "de"),
+        ("es-MX,es;q=0.9,en;q=0.5", "es"),
+        ("pt-BR", "pt"),
+        ("zh-CN,zh;q=0.9", "zh"),
+        ("zh-Hant-TW", "zh"),
+        ("it, en;q=0.4", "en"),
+        ("it, ja", "fr"),
+        ("", "fr"),
+    ] {
+        let res = client.get("/").header("accept-language", header).await;
+        assert_eq!(res.header("location"), Some(format!("/{lang}/").as_str()), "{header}");
+    }
+    let res = client.get("/").header("accept-language", "en").header("cookie", "rythme-lang=zh").await;
+    assert_eq!(res.header("location"), Some("/zh/"));
     // The language chosen with the switch wins over the browser's.
     let res = client.get("/").header("accept-language", "fr").header("cookie", "rythme-lang=en").await;
     assert_eq!(res.header("location"), Some("/en/"));
     let res = client.get("/en/learn").await;
     assert_eq!(res.status(), 301);
     assert_eq!(res.header("location"), Some("/en/learn/"));
-    for path in ["/en/nothing/", "/fr/learn/more/", "/de/", "/nothing"] {
+    for path in ["/en/nothing/", "/fr/learn/more/", "/it/", "/nothing"] {
         let res = client.get(path).await;
         assert_eq!(res.status(), 404, "{path}");
         assert!(res.text().contains("noindex"), "{path}");
     }
     assert!(client.get("/en/nothing/").await.text().contains("<html lang=\"en\">"));
+    assert!(client.get("/zh/nothing/").await.text().contains("<html lang=\"zh-Hans\">"));
 }
 
 #[tokio::test]
@@ -128,10 +156,7 @@ fn every_example_is_listed() {
 fn run(code: &str, lang: Lang, test: bool) -> (String, bool) {
     use rythme::driver::Driver;
     use rythme::interp::Mode;
-    rythme::lang::set(match lang {
-        Lang::Fr => rythme::lang::Lang::Fr,
-        Lang::En => rythme::lang::Lang::En,
-    });
+    rythme::lang::set(interpreter_lang(lang));
     rythme::io::capture();
     let mut driver = Driver::new();
     driver.color = false;
@@ -141,8 +166,58 @@ fn run(code: &str, lang: Lang, test: bool) -> (String, bool) {
         ok = driver.execute(&m, mode).is_ok() && (!test || driver.run_tests());
     }
     let out = rythme::io::take_captured();
-    let failed = !ok || out.contains("error[") || out.contains("erreur[");
+    let failed = !ok || ERROR_WORDS.iter().any(|w| out.contains(&format!("{w}[")));
     (out, failed)
+}
+
+/// The interpreter's language that the playground of `lang` asks for (its position in
+/// `rythme::lang::LANGUAGES`).
+fn interpreter_lang(lang: Lang) -> rythme::lang::Lang {
+    rythme::lang::Lang::all().nth(lang.interpreter()).expect("a language of the interpreter")
+}
+
+/// A warning in the output, in any language.
+fn warns(out: &str) -> bool {
+    WARNING_WORDS.iter().any(|w| out.contains(&format!("{w}[")))
+}
+
+/// Each language of the site is the interpreter's language of the same code, at the
+/// position the playground gives it; the site has every language of the interpreter.
+#[test]
+fn the_languages_are_the_interpreters() {
+    for lang in Lang::ALL {
+        assert_eq!(interpreter_lang(lang).code(), lang.code(), "{lang:?}");
+    }
+    assert_eq!(rythme::lang::Lang::all().count(), Lang::ALL.len());
+    // `playground.js` and its worker pass the language by its position.
+    let codes: Vec<String> = rythme::lang::Lang::all().map(|l| format!("{:?}", l.code())).collect();
+    let list = format!("[{}]", codes.join(", "));
+    for file in ["public/playground.js", "public/playground-worker.js"] {
+        let js = std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(file)).unwrap();
+        assert!(js.contains(&list), "{file}: {list}");
+    }
+}
+
+/// The words that start the interpreter's messages, in every language: the site colors
+/// them (`highlight.rs`), the playground too (`playground.js`).
+#[test]
+fn every_word_of_the_messages_is_known() {
+    let js = std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("public/playground.js")).unwrap();
+    for lang in rythme::lang::Lang::all() {
+        for (en, fr, words) in
+            [("error", "erreur", &ERROR_WORDS[..]), ("warning", "avertissement", &WARNING_WORDS[..]), ("help", "aide", &HELP_WORDS[..])]
+        {
+            // Without `rythme::lang::set`: the other tests run at the same time.
+            let word = match lang {
+                rythme::lang::Lang::En => en,
+                rythme::lang::Lang::Fr => fr,
+                other => rythme::lang::translation(other, en).unwrap_or(en),
+            };
+            assert!(words.contains(&word), "{}: {word}", lang.code());
+            let list = words.join("|");
+            assert!(js.contains(&format!("\"{list}\"")), "playground.js: {list}");
+        }
+    }
 }
 
 #[test]
@@ -153,19 +228,20 @@ fn every_piece_of_code_runs() {
         assert!(!failed, "{lang:?} hero: {out}");
         assert_eq!(out.trim(), "20", "{lang:?}: the hero shows 20 as its output");
         let (out, failed) = run(t.pg_welcome_code, lang, false);
-        assert!(!failed && !out.contains("warning[") && !out.contains("avertissement["), "{lang:?} welcome: {out}");
+        assert!(!failed && !warns(&out), "{lang:?} welcome: {out}");
         for step in &t.tour {
             let test = step.code.contains("test \"");
             let (out, failed) = run(step.code, lang, test);
             assert!(!failed, "{lang:?} {}: {out}", step.title);
             // The samples of the site are good examples: not even a warning.
-            assert!(!out.contains("warning[") && !out.contains("avertissement["), "{lang:?} {}: {out}", step.title);
+            assert!(!warns(&out), "{lang:?} {}: {out}", step.title);
         }
-        // The error of the home page is the interpreter's own message.
+        // The error of the home page is the interpreter's own message, in the language
+        // of the page.
         let (out, failed) = run(t.errors_code, lang, false);
         assert!(failed);
-        let shown: Vec<&str> = t.errors_message.lines().skip(2).collect();
-        let real: Vec<&str> = out.trim_matches(['\u{1}', '\u{2}', '\n']).lines().skip(2).collect();
+        let shown: Vec<&str> = t.errors_message.lines().collect();
+        let real: Vec<&str> = out.trim_matches(['\u{1}', '\u{2}', '\n']).lines().collect();
         assert_eq!(shown, real, "{lang:?}");
     }
 }

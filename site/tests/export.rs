@@ -35,6 +35,11 @@ async fn exports_every_page_behind_the_base_path() {
     let root = std::fs::read_to_string(out.join("index.html")).unwrap();
     assert!(root.contains(r#"var b="/Rythme""#));
     assert!(root.contains(r#"url=/Rythme/fr/"#));
+    // `/` picks any language of the site, and links them all.
+    assert!(root.contains("=(fr|en|es|de|pt|zh)(?:;|$)") && root.contains(r#"k=" fr en es de pt zh ""#), "{root}");
+    for lang in Lang::ALL {
+        assert!(root.contains(&format!(r#"<a href="/Rythme/{}/" hreflang="{}""#, lang.code(), lang.tag())), "{lang:?}");
+    }
     for file in [
         "404.html",
         ".nojekyll",
@@ -48,7 +53,10 @@ async fn exports_every_page_behind_the_base_path() {
         "sw.js",
         "favicon.ico",
         "fr/offline/index.html",
+        "zh/offline/index.html",
+        "zh/teach/index.html",
         "en/manifest.webmanifest",
+        "pt/manifest.webmanifest",
     ] {
         assert!(out.join(file).is_file(), "{file}");
     }

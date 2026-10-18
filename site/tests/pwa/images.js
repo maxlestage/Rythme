@@ -1,6 +1,7 @@
 // Makes the images of the installable app, in public/ (see README.md):
 //   node images.js icons               the icons and favicon.ico, from assets/logo.svg
-//   node images.js screenshots <url>   the screenshots of the install dialog, taken on a
+//   node images.js screenshots <url> [lang...]   the screenshots of the install dialog,
+//                                      in every language (or those given), taken on a
 //                                      running site (e.g. http://localhost:3000)
 "use strict";
 
@@ -8,6 +9,8 @@ const fs = require("fs");
 const path = require("path");
 const { launch } = require("./browser");
 
+// The languages of the site (src/i18n.rs).
+const LANGS = ["fr", "en", "es", "de", "pt", "zh"];
 const PUBLIC = path.join(__dirname, "..", "..", "public");
 const LOGO = fs.readFileSync(path.join(PUBLIC, "assets", "logo.svg"), "utf8");
 const BLUE = LOGO.match(/fill="(#[0-9a-f]{6})"/i)[1];
@@ -65,11 +68,11 @@ async function icons(browser) {
   console.log("public/favicon.ico");
 }
 
-async function screenshots(browser, url) {
+async function screenshots(browser, url, langs) {
   const dir = path.join(PUBLIC, "screenshots");
   fs.mkdirSync(dir, { recursive: true });
   const forms = { narrow: { width: 412, height: 915 }, wide: { width: 1280, height: 800 } };
-  for (const lang of ["fr", "en"]) {
+  for (const lang of langs) {
     for (const [form, viewport] of Object.entries(forms)) {
       // Without a service worker: nothing but the page itself.
       const context = await browser.newContext({ viewport, colorScheme: "light", reducedMotion: "reduce", serviceWorkers: "block", locale: lang });
@@ -96,7 +99,7 @@ async function screenshots(browser, url) {
 }
 
 (async () => {
-  const [what, url] = process.argv.slice(2);
+  const [what, url, ...langs] = process.argv.slice(2);
   if (what !== "icons" && !(what === "screenshots" && url)) {
     console.error("usage: node images.js icons | screenshots <url of the site>");
     process.exit(2);
@@ -104,7 +107,7 @@ async function screenshots(browser, url) {
   const browser = await launch();
   try {
     if (what === "icons") await icons(browser);
-    else await screenshots(browser, url.replace(/\/$/, ""));
+    else await screenshots(browser, url.replace(/\/$/, ""), langs.length ? langs : LANGS);
   } finally {
     await browser.close();
   }

@@ -1,4 +1,4 @@
-//! The server: a `paquets::App` with the pages in two languages, the examples for the
+//! The server: a `paquets::App` with the pages in every language, the examples for the
 //! playground, the sitemap and `robots.txt`, the manifests and the service worker of
 //! the installable app (`pwa.rs`). Static files (styles, scripts, the
 //! interpreter compiled to WebAssembly) come from `public/`, found by Paquets in the
@@ -160,7 +160,7 @@ fn sitemap(site: &Site, req: &Request) -> Response {
         for lang in Lang::ALL {
             xml.push_str(&format!(
                 r#"<xhtml:link rel="alternate" hreflang="{}" href="{origin}{}"/>"#,
-                lang.code(),
+                lang.tag(),
                 route.with_lang(lang).path()
             ));
         }
