@@ -47,9 +47,12 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   or a small, well-explained regular expression subset), `format` of numbers
   (thousands separators, padding), `lines`/`words` helpers if missing,
   `trim_start`/`trim_end`, case-insensitive comparison.
-- [ ] **Files and the system.** Listing a folder, creating folders, reading
-  lines of stdin until the end, `exit` codes documented, command-line
-  options helpers (`args` parsed into a record), paths joined portably.
+- [x] **Files and the system.** Listing a folder (`list_folder`), creating
+  folders (`create_folder`), file information (`file_info`), deleting one
+  file and never a folder (`delete_file`), reading lines of stdin until the
+  end (`input_lines`), `exit` codes documented (`rythme help system`),
+  command-line options (`options()`: `args` parsed into a record), paths
+  joined and split portably (`join_path`, `split_path`).
 
 ## Help everywhere, for everyone
 
