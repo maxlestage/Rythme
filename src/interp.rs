@@ -530,8 +530,24 @@ impl Interp {
     }
 
     /// Evaluates a condition: `true` or `false`.
-    #[inline(always)]
+    #[inline(never)]
     fn condition(&mut self, c: &Node, fr: &Frame) -> Result<bool, Flow> {
+        // `n == 0`, `x < v`: whole numbers given by names or constants.
+        if let Kind::Binary(op, l, r, _) = &c.kind {
+            if is_leaf(l) && is_leaf(r) {
+                if let (Value::Int(a), Value::Int(b)) = (self.leaf(l, fr), self.leaf(r, fr)) {
+                    match op {
+                        BinOp::Eq => return Ok(a == b),
+                        BinOp::Ne => return Ok(a != b),
+                        BinOp::Lt => return Ok(a < b),
+                        BinOp::Le => return Ok(a <= b),
+                        BinOp::Gt => return Ok(a > b),
+                        BinOp::Ge => return Ok(a >= b),
+                        _ => {}
+                    }
+                }
+            }
+        }
         let v = self.eval(c, fr)?;
         match v {
             Value::Bool(b) => {
