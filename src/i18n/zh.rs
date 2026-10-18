@@ -995,6 +995,9 @@ Topics: start, syntax, functions, lists, text, records, types, match, errors, fu
         ("[Enter] next   [q] quit > ", "[Enter] 下一步   [q] 退出 > "),
         ("To practice, run `rythme` and type code, or do the exercises: `rythme exercise list`. `rythme help builtins` lists every function.", "要练习的话，运行 `rythme` 并输入代码，或者做练习：`rythme exercise list`。`rythme help builtins` 会列出所有函数。"),
         // src/interp.rs
+        ("record", "record"),
+        ("`:{field}` is a symbol, not a text: write `{r}.{field}` or `{r}[\"{field}\"]`, or `get({r}, \"{field}\")` to receive an Option", "`:{field}` 是符号，不是文本：请写 `{r}.{field}` 或 `{r}[\"{field}\"]`，或用 `get({r}, \"{field}\")` 得到 Option"),
+        ("the dict has the key {shown}, which is not the same key as {key}: write `[{shown}]`", "这个字典有键 {shown}，它和 {key} 不是同一个键：请写 `[{shown}]`"),
         ("this list would be too large (more than {MAX_LIST} elements)", "这个列表会太大（超过 {MAX_LIST} 个元素）"),
         ("this text would be too large (more than {mb} MB)", "这个文本会太大（超过 {mb} MB）"),
         ("does it grow in a function that calls itself? Check that the function always reaches a case where it stops", "它是不是在一个调用自身的函数里不断增长？请检查函数是否总能到达停止的情况"),

@@ -178,6 +178,12 @@ fn is_ident_continue(c: char) -> bool {
     c.is_alphanumeric() || c == '_'
 }
 
+/// Can `:` and this text be written as a symbol (`:name`)?
+pub fn is_symbol_name(s: &str) -> bool {
+    let mut chars = s.chars();
+    chars.next().is_some_and(is_ident_start) && chars.all(is_ident_continue)
+}
+
 impl<'a> Lexer<'a> {
     fn peek(&self) -> Option<char> {
         self.src[self.pos..].chars().next()
