@@ -27,8 +27,9 @@ idées plutôt que sur la syntaxe.
 - **Les tests sont intégrés.** `test "..." = assert_eq(obtenu, attendu)` à
   côté du code, `rythme test fichier.ry` pour les lancer. Les exercices
   peuvent être fournis avec leurs tests.
-- **Dans la langue des élèves.** Chaque message existe en français, en anglais
-  et en espagnol (`--lang fr`, `--lang es`).
+- **Dans la langue des élèves.** Chaque message existe en français, en anglais,
+  en espagnol, en allemand, en portugais et en chinois (`--lang fr`,
+  `--lang es`, `--lang de`, `--lang pt`, `--lang zh`).
 - **Facile à installer, gratuit, ouvert.** Un seul programme, aucune
   dépendance, licence MIT, fonctionne sous Linux, macOS et Windows.
 

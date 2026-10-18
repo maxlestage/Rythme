@@ -3323,7 +3323,7 @@ error[E017]: `input` found the end of the input
 ### 7.1 The command line
 
 ```text
-rythme [--lang en|fr|es] [--no-color] [COMMAND] [ARGUMENTS...]
+rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMAND] [ARGUMENTS...]
 ```
 
 | Command | Aliases | What it does |
@@ -3355,17 +3355,21 @@ else is an unknown command, with a suggestion.
 **Options.** `--lang` and `--no-color` must come **before** the command;
 anything after the file name goes to the program (for `rythme test`, what
 comes after `--`). `--lang` accepts any value
-that starts with the code of a language, `en`, `fr` or `es` (`--lang es`,
-`--lang=en`, `--lang fr_CA`); another value, or `--lang` without a value, is
-reported, with exit code 2.
+that starts with the code of a language, `en`, `fr`, `es`, `de`, `pt` or `zh`
+(`--lang es`, `--lang=en`, `--lang pt_BR`); another value, or `--lang` without
+a value, is reported, with exit code 2.
 
 **Languages of the messages.** Every message, help topic, explanation of a
-code and page of `rythme learn` exists in English, French and Spanish
-(`--lang es`); the keywords, the names of the built-in functions and the
+code and page of `rythme learn` exists in English, French, Spanish
+(`--lang es`), German (`--lang de`), Brazilian Portuguese (`--lang pt`) and
+simplified Chinese (`--lang zh`); the keywords, the names of the built-in functions and the
 commands stay the same in every language. The files written by `rythme new`
 follow the language too; the exercises exist in English and French, and are
 in English for the other languages. The texts of other languages are kept in
-catalogs (`src/i18n/`); CONTRIBUTING.md explains how to add one.
+catalogs (`src/i18n/`); CONTRIBUTING.md explains how to add one. In
+Chinese, the code in the help stays as written in English (only its comments
+are translated), and the `^` under a mistake stay aligned: Chinese characters
+take two columns of the terminal, in the code as in the messages.
 
 **Exercises.** `rythme exercise` (or `rythme exercise list`) lists the 30
 graded exercises built into the program (the files of
@@ -3386,9 +3390,14 @@ alternative names: `syntaxe`, `fonctions`, `listes`, `texte`,
 `enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`,
 `exercices`, `fichiers`, `système`, `dossiers`, `chemins`, `projets`,
 `paquets`, `interactif`, `format`, `documentation`, `etapes`, `lsp`,
-`vscode`, `éditeurs`, `blocs`, `symboles`, `bibliothèque`... and Spanish
+`vscode`, `éditeurs`, `blocs`, `symboles`, `bibliothèque`..., Spanish
 names: `sintaxis`, `funciones`, `listas`, `registros`, `tipos`, `patrones`,
-`errores`, `pruebas`, `ejercicios`, `proyectos`, `fechas`, `pasos`...
+`errores`, `pruebas`, `ejercicios`, `proyectos`, `fechas`, `pasos`..., German
+names: `funktionen`, `listen`, `typen`, `muster`, `fehler`, `übungen`,
+`projekte`, `datum`, `schritte`..., Portuguese names: `sintaxe`, `funções`,
+`listas`, `tipos`, `padrões`, `erros`, `testes`, `exercícios`, `projetos`,
+`datas`, `passos`..., and Chinese names: `语法`, `函数`, `列表`, `文本`,
+`记录`, `字典`, `类型`, `模式`, `错误`, `测试`, `练习`, `项目`, `日期`...
 
 **Exit codes.**
 
@@ -3402,10 +3411,11 @@ names: `sintaxis`, `funciones`, `listas`, `registros`, `tipos`, `patrones`,
 
 **Environment.**
 
-- `RYTHME_LANG`: the language of the messages (`en...`, `fr...` or `es...`).
-  Without it, the first non-empty variable among `LC_ALL`, `LC_MESSAGES`,
-  `LANG` and `LANGUAGE` decides: French if it starts with `fr`, Spanish if it
-  starts with `es` (`LANG=es_ES.UTF-8`), English otherwise.
+- `RYTHME_LANG`: the language of the messages (`en...`, `fr...`, `es...`,
+  `de...`, `pt...` or `zh...`). Without it, the first non-empty variable among
+  `LC_ALL`, `LC_MESSAGES`, `LANG` and `LANGUAGE` decides: the language whose
+  code starts it (`LANG=es_ES.UTF-8`, `LANG=de_DE.UTF-8`, `LANG=pt_BR.UTF-8`,
+  `LANG=zh_CN.UTF-8`), English otherwise.
   `--lang` takes precedence over all of them.
 - `NO_COLOR`: when it is set (to any value), messages have no colors;
   `--no-color` does the same. Colors are used only when the error output is a
@@ -3435,8 +3445,8 @@ $ rythme help lenght
 No help found for `lenght`.
 in Rythme, this is called `len`
 See the list of topics with `rythme help`.
-$ rythme --lang de hello.ry
-unknown language `de`: write `--lang` and one of en, fr, es, like `rythme --lang fr hello.ry`
+$ rythme --lang it hello.ry
+unknown language `it`: write `--lang` and one of en, fr, es, de, pt, zh, like `rythme --lang fr hello.ry`
 ```
 
 The last three exit with code 2 (the last one is written in the language of
@@ -3474,7 +3484,7 @@ the help of the REPL; `exit`, `quit` (or `quitter`) leaves.
 | `:doc NAME` | | the documentation of a defined name, a built-in function or a topic |
 | `:load FILE` | `:charger` | load (again) a file and run it (`.ry` is added if needed) |
 | `:reset` | | forget everything |
-| `:lang en\|fr\|es` | `:langue` | change the language of the messages |
+| `:lang en\|fr\|es\|de\|pt\|zh` | `:langue` | change the language of the messages |
 | `:learn` | `:apprendre` | the guided tour |
 | `:explain CODE` | `:expliquer` | explain an error code |
 | `:names` | `:noms` | the names defined so far |
@@ -3828,7 +3838,9 @@ The name of a project is a Rythme name in lower case (letters, digits and
 E025, with the help `try rythme new my_app` (exit code 2). A folder that
 already exists and is not empty is never touched (exit code 1). The files
 are written in the language of the messages (`src/salutation.ry` in
-French, `src/saludo.ry` in Spanish).
+French, `src/saludo.ry` in Spanish, `src/gruss.ry` in German,
+`src/saudacao.ry` in Portuguese; in Chinese the names stay those of English
+and the texts are in Chinese).
 
 **`rythme.toml`.** Every value is a text in quotes; `#` starts a comment.
 
