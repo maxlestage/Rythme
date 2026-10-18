@@ -143,10 +143,11 @@ pub fn scan(text: &str, offset: usize) -> Scan {
                     stack.pop();
                 }
             }
-            ',' => match stack.last_mut() {
-                Some(Frame::Paren(Some(call)) | Frame::Command(call)) => call.commas += 1,
-                _ => {}
-            },
+            ',' => {
+                if let Some(Frame::Paren(Some(call)) | Frame::Command(call)) = stack.last_mut() {
+                    call.commas += 1;
+                }
+            }
             c if is_name_start(c) => {
                 let mut j = i + c.len_utf8();
                 while let Some(&(k, d)) = chars.peek() {
