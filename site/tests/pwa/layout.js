@@ -264,6 +264,41 @@ async function editorWraps(browser, base) {
   await context.close();
 }
 
+// Sharing in the playground, in every language: the notice of a program opened from a
+// link and the box of the link made by Share, open together; no horizontal scroll at
+// any width, in any theme, and their texts at the contrast of each theme.
+async function shareLayout(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 320, height: 800 } });
+  const page = await context.newPage();
+  const failed = [];
+  for (const lang of LANGS) {
+    const code = encodeURIComponent(`print("${"x".repeat(200)}")\n`);
+    await page.goto(`${base}/${lang}/playground/#code=${code}`);
+    await ran(page);
+    await page.click("#share");
+    await page.waitForFunction(() => document.getElementById("share-msg").textContent !== "");
+    const open = await page.evaluate(() => !document.getElementById("shared-note").hidden && !document.getElementById("share-box").hidden && !!document.getElementById("share-link").value);
+    if (!open) failed.push(`/${lang}/: the notice and the box of the link are not both open`);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      for (const width of [320, 360, 390, 768, 1280]) {
+        await page.setViewportSize({ width, height: 800 });
+        await settle(page);
+        const m = await page.evaluate(measure);
+        if (m.scrollWidth > m.clientWidth || m.wide.length || m.scrollers.length) failed.push(`/${lang}/ ${theme} ${width}px: ${JSON.stringify(m)}`);
+        if (theme !== "auto" && (width === 320 || width === 1280)) {
+          await page.waitForTimeout(300);
+          const result = await page.evaluate(contrast, MIN_CONTRAST[theme] || 4.5);
+          if (result.bad.length) failed.push(`/${lang}/ ${theme} ${width}px: contrast ${result.bad.join("; ")}`);
+        }
+      }
+    }
+    await page.setViewportSize({ width: 320, height: 800 });
+  }
+  check(failed.length === 0, `${mode}: sharing (the notice and the link) fits and reads well in every language, theme and width`, `\n    ${failed.slice(0, 20).join("\n    ")}`);
+  await context.close();
+}
+
 async function themes(browser, base, mode) {
   // The contrast of every theme: its palette, then the text as drawn on every page.
   const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 390, height: 800 } });
@@ -392,6 +427,7 @@ async function verify(mode) {
     await noHorizontalScroll(browser, base, mode);
     await languageMenu(browser, base, mode);
     await editorWraps(browser, base);
+    await shareLayout(browser, base, mode);
     await themes(browser, base, mode);
   } finally {
     await browser.close();

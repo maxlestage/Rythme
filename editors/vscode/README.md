@@ -48,8 +48,8 @@ language (`.ry` files), in English and in French.
    ```sh
    cd editors/vscode
    npm install
-   npx @vscode/vsce package          # makes rythme-0.2.0.vsix
-   code --install-extension rythme-0.2.0.vsix
+   npx @vscode/vsce package          # makes rythme-1.0.0.vsix
+   code --install-extension rythme-1.0.0.vsix
    ```
 
    Or, to work on the extension: open `editors/vscode` in VS Code, run
@@ -147,8 +147,8 @@ et en anglais.
    ```sh
    cd editors/vscode
    npm install
-   npx @vscode/vsce package          # crée rythme-0.2.0.vsix
-   code --install-extension rythme-0.2.0.vsix
+   npx @vscode/vsce package          # crée rythme-1.0.0.vsix
+   code --install-extension rythme-1.0.0.vsix
    ```
 
    Ou, pour travailler sur l'extension : ouvrez `editors/vscode` dans VS

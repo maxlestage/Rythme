@@ -3,7 +3,7 @@
 *[English version →](reference.md)*
 
 Ce manuel décrit le langage Rythme et ses outils, tels que les réalise
-l'interpréteur `rythme`, version 0.1.0. Il se veut complet et précis :
+l'interpréteur `rythme`, version 1.0.0. Il se veut complet et précis :
 quelqu'un qui voudrait écrire une seconde implémentation de Rythme doit y
 trouver toutes les règles. Il se veut aussi lisible par des étudiants :
 chaque règle est accompagnée d'un petit programme et de ce qu'il affiche
@@ -18,6 +18,17 @@ fichier `.ry` et lancé avec `rythme --lang fr` ; le bloc qui le suit est ce
 qu'il affiche réellement, messages d'erreur compris, suivi du code de sortie
 quand il compte. Si une règle et l'interpréteur ne sont pas d'accord, c'est
 l'interpréteur qui a raison et ce manuel qui a un bug.
+
+**Stabilité.** Rythme 1.0 est la première version stable. Ce que décrit ce
+manuel (la syntaxe, les valeurs, les règles d'évaluation, les fonctions
+intégrées, les codes d'erreur et d'avertissement, `rythme.toml` et les
+commandes) vaut pour toutes les versions 1.x, comme le dit la [promesse de
+stabilité](../README.fr.md#promesse-de-stabilité) : les versions suivantes y
+ajoutent, et ce qui doit être retiré donne d'abord un avertissement pendant
+une version mineure entière. La formulation des messages montrés dans les
+exemples peut encore s'améliorer ; leurs codes restent. Ce qui a changé
+d'une version à l'autre est dans le [journal des
+modifications](../CHANGELOG.md).
 
 ## Sommaire
 
@@ -2295,7 +2306,8 @@ nombre va vers 0 (ou vers le bout de son intervalle le plus proche de 0), un
 texte ou une liste raccourcit, puis ses éléments se simplifient, tant que la
 propriété échoue encore. Il s'arrête alors avec E015 (ou avec l'erreur de la
 propriété, dont le message commence par la valeur), en montrant la valeur la
-plus simple trouvée, celle d'où elle vient et la **graine**. Les valeurs ne
+plus simple trouvée, celle d'où elle vient et la **graine**. Une propriété qui
+s'appelle trop profondément s'arrête aussitôt avec E014, sans simplifier. Les valeurs ne
 dépendent que de la graine et de la place de l'appel dans son fichier : chaque
 lancement, sur chaque machine, essaie les mêmes valeurs ;
 `rythme test --seed N` en essaie d'autres. La propriété peut aussi venir en
@@ -3483,7 +3495,7 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMANDE] [ARGUMENTS...]
 | `help [NOM]` | `aide`, `--help`, `-h` | la liste des sujets, ou l'aide d'un sujet, d'une fonction intégrée ou d'un code d'erreur |
 | `explain [CODE]` | `expliquer` | l'explication d'un code d'erreur ou d'avertissement ; sans code, la liste des codes |
 | `learn` | `apprendre`, `tutorial`, `tutoriel` | la visite guidée : les 13 sujets dans l'ordre, avec une pause après chacun quand elle tourne dans un terminal |
-| `version` | `--version`, `-V` | affiche `rythme 0.1.0` |
+| `version` | `--version`, `-V` | affiche `rythme 1.0.0` |
 
 **Trouver le fichier.** Un premier argument qui n'est pas une commande est
 pris pour un fichier quand il finit par `.ry` ou qu'il désigne un fichier
@@ -3576,7 +3588,7 @@ messages d'erreur et d'avertissement et `debug` vont sur la sortie d'erreur.
 
 ```text
 $ rythme version
-rythme 0.1.0
+rythme 1.0.0
 $ rythme -e '[1, 2, 3] |> map(fn(x) = x * x)'
 [1, 4, 9]
 $ rythme -e 'print("bonjour")'
@@ -3642,7 +3654,7 @@ quitter.
 Une session (les saisies apparaissent après les invites) :
 
 ```text
-Rythme 0.1.0 — :help pour l'aide, :quit pour quitter
+Rythme 1.0.0 — :help pour l'aide, :quit pour quitter
 ry> 1 + 2
 3
 ry> nom = "Ada"

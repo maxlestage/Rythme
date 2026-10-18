@@ -102,6 +102,15 @@ irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex
 （`LANG=zh_CN.UTF-8`），消息会自动使用简体中文。关键字、内置函数的名字和命令
 在所有语言中都一样。在交互模式中，`:lang zh` 可以切换语言。
 
+## 稳定性承诺
+
+Rythme 1.0 遵循[语义化版本](https://semver.org/lang/zh-CN/)。在所有 1.x
+版本中：能运行的程序会继续运行，输出相同（输入相同时），退出码也相同；错误和
+警告代码（`E003`、`W004`……）的含义不变；要移除的功能会先给出警告，至少持续
+一个完整的次版本，并且只会在 2.0 中移除。可能变化的是消息的措辞、性能，以及
+`rythme check` 的新警告。详情见[英文 README](README.md#stability-promise)，
+1.0 的内容见 [`CHANGELOG.md`](CHANGELOG.md)。
+
 ## 许可证
 
 [MIT](LICENSE).

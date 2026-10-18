@@ -637,6 +637,38 @@ fn generated_programs_keep_their_meaning() {
     assert!(valid > 1000, "only {valid} generated programs parse");
 }
 
+/// A longer session with other seeds; the seed and the number of programs
+/// come from the environment:
+/// `RYTHME_FMT_SEED=7 RYTHME_FMT_CASES=100000 cargo test --release --test format -- --ignored`
+#[test]
+#[ignore]
+fn long_formatting_session() {
+    let seed: u64 = std::env::var("RYTHME_FMT_SEED").ok().and_then(|s| s.parse().ok()).unwrap_or(1);
+    let cases: usize = std::env::var("RYTHME_FMT_CASES").ok().and_then(|s| s.parse().ok()).unwrap_or(20_000);
+    let mut g = Gen { rng: Rng(seed.wrapping_mul(0x9e37_79b9_7f4a_7c15) | 1), depth: 0 };
+    let mut rng = Rng(seed.wrapping_mul(0x2545_f491_4f6c_dd1d) | 1);
+    for i in 0..cases {
+        let src = g.program();
+        if tree(&src).is_some() {
+            let origin = format!("generated program {i} (seed {seed})");
+            let expected = check(&src, &origin);
+            assert_eq!(check(&respace(&src, &mut rng), &origin), expected, "{origin}: spaces changed the result");
+        }
+    }
+    for (origin, src) in corpus() {
+        let expected = check(&src, &origin);
+        let mutated = respace(&src, &mut rng);
+        assert_eq!(check(&mutated, &origin), expected, "{origin}: spaces changed the result, from:\n{mutated}");
+        let mut current = src.clone();
+        for _ in 0..12 {
+            if let Some(m) = rebreak(&current, &mut rng) {
+                check(&m, &origin);
+                current = m;
+            }
+        }
+    }
+}
+
 // ----- the command ----------------------------------------------------------------
 
 fn temp_dir(name: &str) -> PathBuf {

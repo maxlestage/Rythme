@@ -1,6 +1,6 @@
 {
   "name": "tree-sitter-rythme",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Rythme grammar for Tree-sitter",
   "license": "MIT",
   "private": true,
