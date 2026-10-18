@@ -21,3 +21,6 @@ puts "Hello, #{name}!"
 # <- function.call
 print x, y
 # <- function.call
+check = if ok then puts "yes" else puts "no"
+#                  ^ function.call
+#                                  ^ function.call

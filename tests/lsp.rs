@@ -477,6 +477,13 @@ x = 1
     assert_eq!(sig.get("activeParameter").as_u64(), Some(0));
     // A definition is not a call.
     assert!(lsp.at("textDocument/signatureHelp", u, 3, 4).is_null());
+    // In a result: a branch, a case, the body of a function, a block.
+    lsp.change(u, 2, "fn add(a, b) = a + b\ny = if x > 0 then add 1, 2 else add 3, \nfn f(v) = assert_eq \n");
+    let sig = lsp.at("textDocument/signatureHelp", u, 1, 39);
+    assert_eq!(sig.get("signatures").as_array()[0].get("label").as_str(), Some("add(a, b)"));
+    assert_eq!(sig.get("activeParameter").as_u64(), Some(1));
+    let sig = lsp.at("textDocument/signatureHelp", u, 2, 20);
+    assert_eq!(sig.get("signatures").as_array()[0].get("label").as_str(), Some("assert_eq(actual, expected)"));
     assert_eq!(lsp.stop(), 0);
 }
 

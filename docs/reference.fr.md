@@ -1042,8 +1042,8 @@ nombre de paramètres (E004 ; certaines fonctions intégrées acceptent un
 nombre variable d'arguments). Appeler une valeur qui n'est pas une fonction
 est l'erreur E009, et `None()` aussi : un constructeur sans champs est une
 valeur, pas une fonction. Il n'y a ni arguments nommés, ni valeurs par
-défaut, ni application partielle. Une instruction peut aussi appeler une
-fonction sans parenthèses : `print x, y` (voir [3.15](#315-appels-sans-parenthèses)).
+défaut, ni application partielle. Une instruction, ou un résultat comme une
+branche de `if`, peut aussi appeler une fonction sans parenthèses : `print x, y` (voir [3.15](#315-appels-sans-parenthèses)).
 
 ### 3.6 Enchaînements `|>`
 
@@ -1650,8 +1650,19 @@ parenthèses : `puts "Bonjour"` est `puts("Bonjour")`, et `print x, y` est
   Les arguments sont des expressions séparées par des virgules, jusqu'à la
   fin de la ligne ; un retour à la ligne peut suivre une virgule.
 - Seule une instruction commence ainsi : une ligne du premier niveau, ou
-  d'une fonction, d'un bloc ou d'un test. Dans une expression, les
-  parenthèses restent : `x = len(xs)`, `print(len(xs))`.
+  d'une fonction, d'un bloc ou d'un test ; ou un **résultat**, qui contient
+  une expression entière comme une instruction : une branche de `if` ou de
+  `unless` (`if ok then puts "oui" else puts "non"`), ce que donne un cas de
+  `match` (`"Dr " + nom -> puts nom`), et le corps après le `=` d'une
+  fonction ou d'un test (`fn saluer(n) = puts "Salut #{n}"`,
+  `fn(x) = puts x`, `test "somme" = assert_eq 1 + 1, 2`). Les arguments
+  d'un résultat s'arrêtent là où l'expression s'arrêterait : à `else`,
+  `end`, `}`, `)` ou à un retour à la ligne (donc au cas suivant d'un
+  `match`). Partout ailleurs dans une expression, les parenthèses restent :
+  `x = len(xs)`, `print(len(xs))`, `1 + f(x)`.
+- Une virgule après les arguments appartient à l'appel, entre parenthèses
+  aussi : `print(if ok then puts 1, 2 else 0)` donne `1, 2` à `puts`.
+  Écrivez `puts(1)` pour terminer l'appel avant la virgule.
 - Un bloc `do` écrit après les arguments est donné à l'appel lui-même,
   comme dernier argument : `each xs do |x| ... end`. Un bloc `{ |x| ... }`
   appartient à l'expression juste avant lui, comme partout.
@@ -1662,7 +1673,8 @@ parenthèses : `puts "Bonjour"` est `puts("Bonjour")`, et `print x, y` est
   donne une valeur à ce nom** : avec `=` (`x = 5`, `f = fn(v) = v`,
   `[a, b] = xs`), comme paramètre d'une fonction ou d'un bloc, ou dans un
   motif de `match` (les noms avant `=` ou `->` sur leur ligne comptent).
-  Alors `x -1` est `x - 1` et `xs [0]` est `xs[0]`, comme toujours. Sans
+  Alors `x -1` est `x - 1` et `xs [0]` est `xs[0]`, comme toujours, dans un
+  résultat aussi. Sans
   espace avant (`x-1`, `xs[0]`), ou avec une espace après le `-` (`x - 1`),
   ce n'est jamais un appel.
 - `rythme fmt` garde le choix de l'auteur, avec ou sans parenthèses, et
@@ -1695,6 +1707,38 @@ A 1
 B 1
 ```
 
+Dans des résultats :
+
+```rythme
+fn saluer(nom) = puts "Bonjour, #{nom} !"
+fn verifier(ok) = if ok then puts "oui" else puts "non"
+fn titre(nom) =
+  match nom
+    "Dr " + reste -> puts "docteur", reste
+    _ -> puts nom
+  end
+saluer "Ada"
+verifier 1 > 2
+titre "Dr Grace"
+titre "Alan"
+[1, 2].each { |n| puts n * 10 }
+montrer = fn(v) = puts "v :", v
+montrer(3)
+x = 10
+puts(if x > 5 then x -1 else 0)
+```
+
+```text
+Bonjour, Ada !
+non
+docteur Grace
+Alan
+10
+20
+v : 3
+9
+```
+
 Un nom qui reçoit une valeur avec `=` est une valeur, même quand il contient
 une fonction :
 
@@ -1711,7 +1755,7 @@ erreur[E005]: impossible d'utiliser `-` avec Function et Int
 3 | double -3
   |        ^ Function - Int 3
   |
-  = aide: `double -x` soustrait ici ; pour appeler `double`, écrivez `double(-x)` (un appel sans parenthèses commence une instruction, et son nom ne reçoit pas de valeur avec `=` ni comme paramètre)
+  = aide: `double -x` soustrait ici ; pour appeler `double`, écrivez `double(-x)` (un appel sans parenthèses commence une instruction ou un résultat, comme une branche de `if` ou le corps après le `=` d'une fonction, et son nom ne reçoit pas de valeur avec `=` ni comme paramètre)
   = en savoir plus : `rythme explain E005`
 ```
 
@@ -4154,8 +4198,9 @@ command      = NAME [ "?" ] expression { "," { NL } expression }
 
 binding      = pattern_atom "=" expression ;
 fn_def       = "fn" NAME [ "?" ] "(" [ patterns ] ")" [ "if" expression ] body ;
-body         = "=" expression
+body         = "=" result
              | NL block_end ;
+result       = command | expression ;              (* 3.15 *)
 block_end    = { statement NL } [ statement ] "end" ;
 type_def     = "type" CTOR "=" [ "|" ] variant { "|" variant } ;
 variant      = CTOR [ "(" [ NAME { "," NAME } ] ")" ] ;
@@ -4186,13 +4231,13 @@ primary      = INT | FLOAT | TEXT | SYMBOL | "true" | "false" | NAME | CTOR
              | "[" [ list_item { "," list_item } ] "]"
              | "{" [ record_item { "," record_item } ] "}"
              | "fn" "(" [ patterns ] ")" body
-             | "if" expression "then" expression "else" expression
-             | "unless" expression "then" expression "else" expression
+             | "if" expression "then" result "else" result
+             | "unless" expression "then" result "else" result
              | "match" expression NL case { NL case } NL "end"
              | "do" block_end ;
 list_item    = [ ".." ] expression ;
 record_item  = ".." expression | KEY ":" expression | NAME ;
-case         = pattern [ "if" expression ] "->" expression ;
+case         = pattern [ "if" expression ] "->" result ;
 
 patterns     = pattern { "," pattern } ;
 pattern      = pattern_atom { "|" pattern_atom } ;

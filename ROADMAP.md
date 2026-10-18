@@ -32,7 +32,9 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   `rythme help ruby` and the manual. Every existing program keeps working.
   - [x] **Calls without parentheses.** `puts "Hello"`, `print x, y`,
     `assert_eq total, 42`, `each xs do |x| ... end` at the start of a
-    statement; `puts [1]` and `puts -1` call too, but `x [0]` and `x -1` stay
+    statement or of a result (a branch of `if`/`unless`, a case of `match`,
+    the body after the `=` of a function, a lambda or a test:
+    `if ok then puts "yes" else puts "no"`); `puts [1]` and `puts -1` call too, but `x [0]` and `x -1` stay
     an index and a subtraction when the code gives `x` a value (as in Ruby),
     and `rythme fmt` writes those `x[0]` and `x - 1`. Interpreter, checker,
     formatter, language server (signature help), Tree-sitter and VS Code

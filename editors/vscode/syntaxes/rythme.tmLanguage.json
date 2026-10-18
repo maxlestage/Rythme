@@ -133,8 +133,8 @@
           "match": "\\b(even|odd|include|start_with|end_with|any|all|empty|key|casecmp)\\?(?=\\s*\\()"
         },
         {
-          "comment": "A call without parentheses: a name that starts a line, then a space and the start of a value (puts \"hi\", print x, y)",
-          "match": "^[ \\t]*(?!(?:fn|if|then|else|match|end|do|type|test|use|and|or|not|true|false|unless)\\b)([\\p{Ll}_][\\p{L}\\p{N}_]*\\??)(?=[ \\t]+(?!(?:then|else|end|do|and|or)\\b)[\\p{L}\\p{N}_\"\\[:]|[ \\t]+-[\\p{L}\\p{N}_])",
+          "comment": "A call without parentheses: a name that starts a line or a result (after then, else, ->, the = of a function or a test, the |x| of a block), then a space and the start of a value (puts \"hi\", print x, y)",
+          "match": "(?:^[ \\t]*|(?<=\\b(?:then|else) |-> |[)\"] = |\\| ))(?!(?:fn|if|then|else|match|end|do|type|test|use|and|or|not|true|false|unless)\\b)([\\p{Ll}_][\\p{L}\\p{N}_]*\\??)(?=[ \\t]+(?!(?:then|else|end|do|and|or)\\b)[\\p{L}\\p{N}_\"\\[:]|[ \\t]+-[\\p{L}\\p{N}_])",
           "captures": { "1": { "name": "entity.name.function.call.rythme" } }
         },
         {

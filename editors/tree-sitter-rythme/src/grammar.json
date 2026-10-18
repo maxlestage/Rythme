@@ -593,7 +593,7 @@
               "name": "body",
               "content": {
                 "type": "SYMBOL",
-                "name": "_expression"
+                "name": "_result"
               }
             }
           ]
@@ -614,6 +614,19 @@
               }
             }
           ]
+        }
+      ]
+    },
+    "_result": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "command_call"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_expression"
         }
       ]
     },
@@ -2114,7 +2127,7 @@
             "name": "consequence",
             "content": {
               "type": "SYMBOL",
-              "name": "_expression"
+              "name": "_result"
             }
           },
           {
@@ -2126,7 +2139,7 @@
             "name": "alternative",
             "content": {
               "type": "SYMBOL",
-              "name": "_expression"
+              "name": "_result"
             }
           }
         ]
@@ -2164,7 +2177,7 @@
             "name": "consequence",
             "content": {
               "type": "SYMBOL",
-              "name": "_expression"
+              "name": "_result"
             }
           },
           {
@@ -2176,7 +2189,7 @@
             "name": "alternative",
             "content": {
               "type": "SYMBOL",
-              "name": "_expression"
+              "name": "_result"
             }
           }
         ]
@@ -2298,7 +2311,7 @@
           "name": "body",
           "content": {
             "type": "SYMBOL",
-            "name": "_expression"
+            "name": "_result"
           }
         }
       ]
