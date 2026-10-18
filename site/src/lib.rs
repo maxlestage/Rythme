@@ -12,3 +12,4 @@ pub mod pwa;
 pub mod routes;
 pub mod server;
 pub mod teach;
+pub mod themes;

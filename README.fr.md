@@ -101,7 +101,9 @@ tourner le vrai interpréteur, compilé en WebAssembly ([`playground/`](playgrou
 modifier du code, le lancer, le vérifier, lancer des tests, le mettre en
 forme, lire l'aide, en français ou en anglais, sans rien installer. Le site
 s'installe aussi comme une application (une Progressive Web App) et fonctionne
-hors ligne, playground compris.
+hors ligne, playground compris. Son menu propose des thèmes de couleurs
+(Auto, Clair, Sombre, Contraste élevé, Sépia, Tempo), et aucune page ne défile
+de côté, d'un téléphone de 320 px à un grand écran.
 
 Le dossier [`site/`](site) est le site web de Rythme (accueil, visite du
 langage, exemples, playground et guide pour les enseignants, en français et en
