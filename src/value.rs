@@ -287,6 +287,12 @@ pub struct Closure {
 pub struct CtorInfo {
     pub type_name: Sym,
     pub name: Sym,
+    /// What tells the constructor and its type apart from those of the same
+    /// names in another file: their names as the interpreter stores them
+    /// (`#3.Circle` and `#3.Shape` for a file used with a name, see
+    /// `Sym::stored`), the names themselves otherwise.
+    pub id: Sym,
+    pub type_id: Sym,
     pub fields: Vec<Sym>,
     /// Position of the constructor in its type: `<` orders values by it.
     pub index: usize,
@@ -316,6 +322,21 @@ impl Value {
     /// A set of these values.
     pub fn set(items: Vec<Value>) -> Value {
         Value::Set(Map::from_pairs(items.into_iter().map(|x| (x, Value::Unit)).collect()))
+    }
+
+    /// When `self` and `other` are values of two different types of the same
+    /// name, defined in two files: a note that says so.
+    pub fn homonym_types(&self, other: &Value) -> Option<String> {
+        match (self, other) {
+            (Value::Variant(a), Value::Variant(b)) if a.ctor.type_name == b.ctor.type_name && a.ctor.type_id != b.ctor.type_id => {
+                let name = a.ctor.type_name;
+                Some(t!(
+                    "these are two different types named `{name}`, defined in two files: their values are never equal",
+                    "ce sont deux types différents nommés `{name}`, définis dans deux fichiers : leurs valeurs ne sont jamais égales"
+                ))
+            }
+            _ => None,
+        }
     }
 
     pub fn type_name(&self) -> String {
@@ -518,7 +539,7 @@ impl Value {
                     true
                 }
                 (Value::Variant(x), Value::Variant(y)) => {
-                    if x.ctor.name != y.ctor.name || x.ctor.type_name != y.ctor.type_name || x.fields.len() != y.fields.len() {
+                    if x.ctor.id != y.ctor.id || x.fields.len() != y.fields.len() {
                         return false;
                     }
                     todo.extend(x.fields.iter().zip(y.fields.iter()));
@@ -592,9 +613,9 @@ impl Value {
                 }
                 Some(a.len().cmp(&b.len()))
             }
-            (Value::Variant(a), Value::Variant(b)) if a.ctor.type_name == b.ctor.type_name => {
+            (Value::Variant(a), Value::Variant(b)) if a.ctor.type_id == b.ctor.type_id => {
                 // Constructors are ordered as the type lists them: `None < Some(x)`.
-                if a.ctor.name != b.ctor.name {
+                if a.ctor.id != b.ctor.id {
                     return (a.ctor.index != b.ctor.index).then(|| a.ctor.index.cmp(&b.ctor.index));
                 }
                 for (x, y) in a.fields.iter().zip(b.fields.iter()) {
@@ -700,8 +721,9 @@ impl Value {
                 a.len().cmp(&b.len())
             }
             (Value::Variant(a), Value::Variant(b)) => {
-                let by_ctor = a.ctor.type_name.name().cmp(&b.ctor.type_name.name()).then(a.ctor.index.cmp(&b.ctor.index));
-                let by_ctor = by_ctor.then_with(|| a.ctor.name.name().cmp(&b.ctor.name.name()));
+                let by_ctor =
+                    a.ctor.type_name.name().cmp(&b.ctor.type_name.name()).then_with(|| a.ctor.type_id.name().cmp(&b.ctor.type_id.name()));
+                let by_ctor = by_ctor.then(a.ctor.index.cmp(&b.ctor.index)).then_with(|| a.ctor.name.name().cmp(&b.ctor.name.name()));
                 if by_ctor != Ordering::Equal {
                     return by_ctor;
                 }
@@ -923,7 +945,15 @@ mod tests {
         assert_eq!((xs.len(), ys.len()), (3, 4));
         // `xs` no longer ends where its memory is used: copied.
         assert!(!Rc::ptr_eq(&xs.data, &xs.push(Value::Int(5)).data));
-        let ctor = Rc::new(CtorInfo { type_name: Sym::new("T"), name: Sym::new("A"), fields: vec![], index: 0, doc: None });
+        let ctor = Rc::new(CtorInfo {
+            type_name: Sym::new("T"),
+            name: Sym::new("A"),
+            id: Sym::new("A"),
+            type_id: Sym::new("T"),
+            fields: vec![],
+            index: 0,
+            doc: None,
+        });
         let with_itself = [
             Value::List(ys.clone()),
             Value::Variant(Rc::new(Variant { ctor, fields: vec![Value::list(vec![Value::Int(0), Value::List(ys.clone())])] })),

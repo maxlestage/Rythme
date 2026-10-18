@@ -506,6 +506,7 @@ pub fn key_cmp(a: &Value, b: &Value) -> Ordering {
             .type_name
             .name()
             .cmp(&y.ctor.type_name.name())
+            .then_with(|| x.ctor.type_id.name().cmp(&y.ctor.type_id.name()))
             .then(x.ctor.index.cmp(&y.ctor.index))
             .then_with(|| x.ctor.name.name().cmp(&y.ctor.name.name()))
             .then_with(|| seq_cmp(x.fields.iter(), y.fields.iter())),
