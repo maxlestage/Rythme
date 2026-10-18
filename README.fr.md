@@ -184,9 +184,11 @@ Rythme 0.1 est un interpréteur complet et testé, utilisable dès aujourd'hui
 pour apprendre et pour de petits programmes. Les limites, honnêtement, et la
 suite :
 
-- **Vitesse.** C'est un interpréteur qui parcourt l'arbre du programme :
-  à peu près aussi rapide que Python, loin de Rust compilé. Suite : une
-  machine virtuelle à bytecode.
+- **Vitesse.** C'est un interpréteur qui parcourt l'arbre du programme : les
+  noms locaux deviennent des cases numérotées avant l'exécution, et les appels
+  n'allouent rien. Les programmes de [`bench/`](bench) (`bench/run.sh`)
+  tournent 1,3 à 4,6 fois plus vite qu'avec Rythme 0.1 ; c'est de l'ordre de
+  Python, loin de Rust compilé. Suite : une machine virtuelle à bytecode.
 - **Types.** Les valeurs sont vérifiées à l'exécution (strictement : aucune
   conversion silencieuse). Suite : l'inférence de types dans `rythme check`,
   pour trouver plus d'erreurs avant l'exécution.

@@ -1,4 +1,5 @@
-//! The interpreter: evaluates the syntax tree.
+//! The interpreter: evaluates the syntax tree, once `compile` has turned its
+//! local names into numbered slots of the frames of the value stack.
 //!
 //! Calls in tail position (the last thing a function does) do not grow the
 //! stack, so recursive functions can loop millions of times.

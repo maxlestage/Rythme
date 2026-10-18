@@ -10,6 +10,7 @@ confused, a message should explain.
 cargo build                 # target/debug/rythme
 cargo test                  # examples, language, messages, commands
 cargo fmt && cargo clippy --all-targets -- -D warnings
+bench/run.sh                # speed: best time of each program of bench/
 ```
 
 The tests run the real `rythme` program. `tests/examples.rs` checks that every

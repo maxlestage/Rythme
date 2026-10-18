@@ -209,6 +209,7 @@ mode) and is organised as a pipeline:
 | [`src/lexer.rs`](src/lexer.rs) | text → tokens (with `{...}` inside texts) |
 | [`src/parser.rs`](src/parser.rs) | tokens → syntax tree, with hints for common mistakes |
 | [`src/check.rs`](src/check.rs) | finds errors before running: names, arguments, forgotten cases |
+| [`src/compile.rs`](src/compile.rs) | prepares functions: each local name becomes a numbered slot |
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
 | [`src/builtins.rs`](src/builtins.rs) | ~90 built-in functions, documented in two languages |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
@@ -223,8 +224,11 @@ and the commands.
 Rythme 0.1 is a complete, tested interpreter, usable today for learning and
 for small programs. Honest limits, and what comes next:
 
-- **Speed.** It is a tree-walking interpreter: about as fast as Python, far
-  from compiled Rust. Next: a bytecode virtual machine.
+- **Speed.** It is a tree-walking interpreter: local names become numbered
+  slots before running, and calls allocate nothing. The programs of
+  [`bench/`](bench) (`bench/run.sh`) run 1.3 to 4.6 times faster than with
+  Rythme 0.1; that is in the range of Python, far from compiled Rust. Next: a
+  bytecode virtual machine.
 - **Types.** Values are checked at run time (strongly: no silent
   conversions). Next: type inference in `rythme check`, so that more mistakes
   are found before running.
