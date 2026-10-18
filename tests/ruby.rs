@@ -423,3 +423,30 @@ fn a_name_given_a_value_elsewhere_is_not_called_without_parentheses() {
     let r = rythme_lang("fr", &["-e", "fn montre(xs) = print(xs)\nfn double(montre) = montre * 2\nmontre [1]"]);
     assert!(r.stderr.contains("`montre [...]` est lu comme un indice, pas comme un appel"), "{}", r.stderr);
 }
+
+/// A case of `match` with its result on several indented lines, as in Ruby
+/// or Python, is not Rythme: the error says to write `do ... end`.
+#[test]
+fn a_case_on_several_lines_is_explained() {
+    let help = "for a result on several lines, write `do` after `->`, then the lines, then `end`";
+    for code in [
+        "fn f(r) = match r\n  Ok(x) ->\n    y = x + 1\n    y * 2\n  Err(_) -> 0\nend",
+        "fn f(r) = match r\n  Ok(x) ->\n    print(x)\n    x * 2\n  Err(_) -> 0\nend",
+        "fn f(r) = match r\n  Ok(x) -> print(x)\n    x * 2\n  Err(_) -> 0\nend",
+        "fn f(r)\n  match r\n    Ok(x) ->\n      y = x + 1\n      y\n    _ -> 0\n  end\nend",
+    ] {
+        let r = fails(code, "E001");
+        assert!(r.stderr.contains(help), "{code}\n{}", r.stderr);
+        assert!(!r.stderr.contains("use `==`"), "{code}\n{}", r.stderr);
+    }
+    // The ways that work keep working: `do ... end`, and the result on the next line.
+    ok("fn f(r) = match r\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\n  Err(_) -> 0\nend\nprint(f(Ok(1)), f(Err(1)))", "4 0");
+    ok("fn f(r) = match r\n  Ok(x) ->\n    x * 2\n  Err(_) ->\n    0\nend\nprint(f(Ok(1)), f(Err(1)))", "2 0");
+    // Other mistakes keep their messages.
+    let r = fails("x = match 1\n  1 -> 2 3\nend", "E001");
+    assert!(r.stderr.contains("put each case on its own line") && !r.stderr.contains(help), "{}", r.stderr);
+    let r = fails("x = match 1\n  1 2\nend", "E001");
+    assert!(r.stderr.contains("each case is written `pattern -> result`"), "{}", r.stderr);
+    let r = rythme_lang("fr", &["-e", "fn f(r) = match r\n  Ok(x) ->\n    y = x + 1\n    y\n  _ -> 0\nend"]);
+    assert!(r.stderr.contains("écrivez `do` après `->`"), "{}", r.stderr);
+}

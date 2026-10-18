@@ -72,6 +72,29 @@ fn far_help(mut d: Box<Diagnostic>, far: Option<(Sym, u32, Span)>) -> Box<Diagno
     d
 }
 
+/// The 1-based line and column of the start of a span.
+fn line_of(span: Span) -> usize {
+    crate::source::get(span.file).map_or(0, |f| f.line_col(span.start as usize).0)
+}
+
+fn column_of(span: Span) -> usize {
+    crate::source::get(span.file).map_or(0, |f| f.line_col(span.start as usize).1)
+}
+
+/// A case of `match` whose result is written on several lines, as in Ruby
+/// or Python: a case gives one expression, and `do ... end` holds several lines.
+fn multi_line_case(mut d: Box<Diagnostic>) -> Box<Diagnostic> {
+    if d.code != "E001" || d.incomplete {
+        return d;
+    }
+    d.helps.clear();
+    d.helps.push(t!(
+        "a case of `match` gives one expression; for a result on several lines, write `do` after `->`, then the lines, then `end`:\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\nor move the lines into a function: `Ok(x) -> handle(x)`",
+        "un cas de `match` donne une seule expression ; pour un résultat sur plusieurs lignes, écrivez `do` après `->`, puis les lignes, puis `end` :\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\nou mettez les lignes dans une fonction : `Ok(x) -> traiter(x)`"
+    ));
+    d
+}
+
 /// Ruby's (and C's) `condition ? a : b`, written `if condition then a else b`
 /// in Rythme. It never parses: `?` after a value is the operator that stops on
 /// `None` or `Err`. A syntax error on a line where a `?` is followed by a
@@ -2025,6 +2048,9 @@ impl Parser {
         }
         let arms = self.nested(true, |p| {
             let mut arms = Vec::new();
+            // The column of the pattern of the previous case, and whether
+            // its result started on the line after `->`.
+            let mut previous: Option<(usize, bool)> = None;
             loop {
                 p.skip_newlines();
                 match p.raw() {
@@ -2045,22 +2071,36 @@ impl Parser {
                     }
                     _ => {}
                 }
-                let pat = p.pattern()?;
+                let column = column_of(p.toks[p.pos].span);
+                // A line indented under the previous case, read as a case: the
+                // second line of a result written on several lines.
+                let deeper = previous.is_some_and(|(c, _)| column > c);
+                let pat = p.pattern().map_err(|d| if deeper { multi_line_case(d) } else { d })?;
                 let guard = if p.eat(&Tok::If) { Some(p.expr()?) } else { None };
                 if !p.eat(&Tok::Arrow) {
                     let mut d = p.unexpected(t!("`->`", "`->`"));
+                    if deeper {
+                        return Err(multi_line_case(d));
+                    }
                     d.helps.push(t!("each case is written `pattern -> result`", "chaque cas s'écrit `motif -> résultat`"));
                     return Err(d);
                 }
+                let arrow_line = line_of(p.last);
                 p.skip_newlines();
+                let next_line = line_of(p.toks[p.pos].span) > arrow_line;
                 let body = p.result()?;
                 arms.push(Arm { pat, guard, body });
+                previous = Some((column, next_line));
                 match p.raw() {
                     Tok::Newline | Tok::End => {}
                     Tok::Eof => return Err(missing_end(p.toks[p.pos].span, kw.span, "match")),
                     _ => {
                         let comma = p.after_command();
-                        let mut d = p.unexpected(t!("a new line", "une nouvelle ligne"));
+                        let d = p.unexpected(t!("a new line", "une nouvelle ligne"));
+                        if next_line {
+                            return Err(multi_line_case(d));
+                        }
+                        let mut d = d;
                         if !comma {
                             d.helps.push(t!("put each case on its own line", "mettez chaque cas sur sa propre ligne"));
                         }

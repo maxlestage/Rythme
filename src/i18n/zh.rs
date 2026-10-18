@@ -1292,6 +1292,7 @@ Its definitions are used through the name `{n}`: `{n}.name`"#,
 "#,
         ),
         // src/parser.rs
+        ("a case of `match` gives one expression; for a result on several lines, write `do` after `->`, then the lines, then `end`:\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\nor move the lines into a function: `Ok(x) -> handle(x)`", "`match` 的一个分支只给出一个表达式；要让结果占多行，请在 `->` 后写 `do`，然后写这些行，最后写 `end`：\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\n或者把这些行放进一个函数：`Ok(x) -> handle(x)`"),
         ("`{name}` is read as a value here, not called, because the code gives it a value (line {line}): to call it, put its argument in parentheses, like `{name}([1, 2])`", "`{name}` 在这里被读作值而不是调用，因为代码给了它一个值（第 {line} 行）：要调用它，请把参数放进括号，例如 `{name}([1, 2])`"),
         ("Rythme has no `condition ? a : b`", "Rythme 没有 `条件 ? a : b`"),
         ("`?` does not choose between two values", "`?` 不会在两个值之间选择"),
