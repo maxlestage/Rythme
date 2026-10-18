@@ -267,7 +267,8 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
   extraits de code, et le serveur de langage, pour les problèmes pendant la
   frappe, la documentation au survol, la complétion, les paramètres d'un
   appel, aller à la définition, les références, renommer, le plan du
-  fichier et la mise en forme, en français ou en anglais.
+  fichier, la mise en forme, les types des noms, *Lancer* et *Lancer le
+  test* au-dessus du code, en français ou en anglais.
 - **Neovim, Helix, Zed, Emacs, Sublime Text, Kate...** : tout éditeur qui
   parle le Language Server Protocol peut lancer `rythme lsp` ; quelques
   lignes de configuration pour chacun sont dans [`editors/README.fr.md`](editors/README.fr.md).

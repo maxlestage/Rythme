@@ -3082,8 +3082,12 @@ exemple, les mots-clés, vos fonctions et vos types avec leurs commentaires
 `##`, la signature que le vérificateur déduit pour une fonction, comme
 `fn aire(cote: Int|Float) -> Int|Float`, l'explication d'un code d'erreur), la complétion, les paramètres d'un
 appel, aller à la définition, les références, renommer, le plan du fichier,
-les corrections rapides des fautes de frappe, et la mise en forme comme
-`rythme fmt`. Les messages sont dans la langue de l'éditeur, sauf si un
+les corrections rapides des fautes de frappe, la mise en forme comme
+`rythme fmt`, les types dont le vérificateur est sûr à côté des noms (comme
+`noms: List(Text)` ou `moitie(x: Int|Float)`), des couleurs qui suivent ce qu'est chaque nom (jetons
+sémantiques), *Lancer* et *Lancer le test* au-dessus du code (« code
+lenses »), les noms de tous les fichiers de l'espace de travail, le pliage et
+l'agrandissement de la sélection. Les messages sont dans la langue de l'éditeur, sauf si un
 réglage de l'éditeur, `--lang` (`rythme --lang fr lsp`) ou `RYTHME_LANG` la
 choisit. Lancé à la main dans un terminal, il dit à quoi il sert ;
 `rythme lsp --help` affiche le même texte que `rythme help editors`.

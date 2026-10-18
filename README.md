@@ -266,8 +266,8 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 - **VS Code**: the extension in [`editors/vscode`](editors/vscode): colors,
   snippets, and the language server, for the problems as you type, the
   documentation on hover, completion, the parameters of a call, go to
-  definition, references, rename, an outline and formatting, in English or
-  French.
+  definition, references, rename, an outline, formatting, the types of the
+  names, *Run* and *Run test* above the code, in English or French.
 - **Neovim, Helix, Zed, Emacs, Sublime Text, Kate...**: every editor that
   speaks the Language Server Protocol can start `rythme lsp`; a few lines of
   configuration for each are in [`editors/README.md`](editors/README.md).

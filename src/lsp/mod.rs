@@ -2,19 +2,23 @@
 //! start it and talk to it with the Language Server Protocol, on its standard
 //! input and output, to show help everywhere while code is being written:
 //! problems as they are typed, documentation on hover, completion, the
-//! parameters of a call, go to definition, references, renaming, an outline.
+//! parameters of a call, go to definition, references, renaming, an outline,
+//! the types of names, colors that follow what names are, "Run" and "Run
+//! test" above the code, the names of the whole workspace, folding.
 //!
 //! Messages are JSON, each preceded by a `Content-Length` header. The server
 //! answers requests in order; a bug while handling one becomes an error
 //! answer, never a dead server.
 
 mod analysis;
+mod extras;
 mod features;
 mod index;
 pub mod json;
 mod refs;
 mod scan;
 pub mod text;
+mod workspace;
 
 use std::collections::HashMap;
 use std::io::{BufRead, IsTerminal, Read, Write};
@@ -69,6 +73,8 @@ pub struct Doc {
     text: Rc<str>,
     version: Option<i64>,
     analysis: Option<Analysis>,
+    /// The last semantic tokens sent, and their id (for `full/delta`).
+    tokens: Option<(String, Vec<u32>)>,
 }
 
 pub struct Server {
@@ -85,6 +91,10 @@ pub struct Server {
     ids: FileIds,
     base: Knowledge,
     docs: HashMap<String, Doc>,
+    /// The names of the files of the workspace that are not open.
+    symbols: workspace::Cache,
+    /// Ids of the semantic tokens sent.
+    next_tokens: u64,
 }
 
 /// Runs the server on the standard input and output. `chosen` is the
@@ -193,6 +203,8 @@ impl Server {
             ids: FileIds::default(),
             base: Knowledge::from_interp(&Interp::new()),
             docs: HashMap::new(),
+            symbols: workspace::Cache::default(),
+            next_tokens: 0,
         }
     }
 
@@ -328,6 +340,43 @@ impl Server {
                 refs::rename(self, &uri, offset, new_name)
             }
             "textDocument/formatting" => self.formatting(params),
+            "textDocument/inlayHint" => {
+                let cx = self.cx;
+                let Some(a) = self.analysis(params) else { return Ok(Json::Null) };
+                let range = params.get("range");
+                let start = a.lines.offset(&a.text, pos_of(range.get("start")), cx.enc);
+                let end = a.lines.offset(&a.text, pos_of(range.get("end")), cx.enc);
+                Ok(extras::inlay_hints(&cx, a, start, end))
+            }
+            "textDocument/semanticTokens/full" => Ok(self.semantic_tokens(params, None)),
+            "textDocument/semanticTokens/full/delta" => {
+                let previous = params.get("previousResultId").as_str().map(str::to_string);
+                Ok(self.semantic_tokens(params, previous.as_deref()))
+            }
+            "textDocument/semanticTokens/range" => {
+                let cx = self.cx;
+                let Some(a) = self.analysis(params) else { return Ok(Json::Null) };
+                let range = params.get("range");
+                let data = extras::tokens_in_lines(
+                    &extras::semantic_tokens(&cx, a),
+                    uint(range.get_path(&["start", "line"])),
+                    uint(range.get_path(&["end", "line"])),
+                );
+                Ok(obj([("data", Json::Arr(data.into_iter().map(Json::from).collect()))]))
+            }
+            "textDocument/codeLens" => {
+                let cx = self.cx;
+                Ok(self.analysis(params).map_or(Json::Null, |a| extras::code_lenses(&cx, a)))
+            }
+            "textDocument/foldingRange" => Ok(self.analysis(params).map_or(Json::Null, extras::folding_ranges)),
+            "textDocument/selectionRange" => {
+                let cx = self.cx;
+                let Some(a) = self.analysis(params) else { return Ok(Json::Null) };
+                let offsets: Vec<usize> =
+                    params.get("positions").as_array().iter().map(|p| a.lines.offset(&a.text, pos_of(p), cx.enc)).collect();
+                Ok(extras::selection_ranges(&cx, a, &offsets))
+            }
+            "workspace/symbol" => Ok(self.workspace_symbols(params.get("query").as_str().unwrap_or(""))),
             _ => Err(RpcError::new(code::METHOD_NOT_FOUND, format!("unknown method `{method}`"))),
         }
     }
@@ -339,7 +388,7 @@ impl Server {
                 let Some(uri) = td.get("uri").as_str() else { return };
                 let text: Rc<str> = Rc::from(td.get("text").as_str().unwrap_or(""));
                 let path = uri_to_path(uri).map(|p| text::canonical(&p));
-                let doc = Doc { uri: uri.to_string(), path, text, version: td.get("version").as_i64(), analysis: None };
+                let doc = Doc { uri: uri.to_string(), path, text, version: td.get("version").as_i64(), analysis: None, tokens: None };
                 self.docs.insert(uri.to_string(), doc);
                 self.refresh(uri);
             }
@@ -439,6 +488,25 @@ impl Server {
             ("codeActionProvider", obj([("codeActionKinds", Json::Arr(vec!["quickfix".into()]))])),
             ("renameProvider", if self.prepare_rename { obj([("prepareProvider", true.into())]) } else { true.into() }),
             ("documentFormattingProvider", true.into()),
+            ("inlayHintProvider", true.into()),
+            (
+                "semanticTokensProvider",
+                obj([
+                    (
+                        "legend",
+                        obj([
+                            ("tokenTypes", Json::Arr(extras::TOKEN_TYPES.iter().map(|t| (*t).into()).collect())),
+                            ("tokenModifiers", Json::Arr(extras::TOKEN_MODIFIERS.iter().map(|t| (*t).into()).collect())),
+                        ]),
+                    ),
+                    ("full", obj([("delta", true.into())])),
+                    ("range", true.into()),
+                ]),
+            ),
+            ("codeLensProvider", obj([("resolveProvider", false.into())])),
+            ("foldingRangeProvider", true.into()),
+            ("selectionRangeProvider", true.into()),
+            ("workspaceSymbolProvider", true.into()),
         ]);
         Ok(obj([("capabilities", caps), ("serverInfo", obj([("name", "rythme".into()), ("version", crate::VERSION.into())]))]))
     }
@@ -563,6 +631,45 @@ impl Server {
                 Ok(Json::Arr(vec![obj([("range", range), ("newText", new.into())])]))
             }
         }
+    }
+}
+
+impl Server {
+    /// `semanticTokens/full`, or `full/delta` from the tokens of `previous`.
+    fn semantic_tokens(&mut self, params: &Json, previous: Option<&str>) -> Json {
+        let cx = self.cx;
+        let Some(uri) = params.get_path(&["textDocument", "uri"]).as_str() else { return Json::Null };
+        let Some(doc) = self.docs.get_mut(uri) else { return Json::Null };
+        let Some(a) = &doc.analysis else { return Json::Null };
+        let data = extras::semantic_tokens(&cx, a);
+        self.next_tokens += 1;
+        let id = self.next_tokens.to_string();
+        let old = doc.tokens.replace((id.clone(), data.clone()));
+        match (previous, old) {
+            (Some(p), Some((old_id, old_data))) if p == old_id => {
+                obj([("resultId", id.into()), ("edits", Json::Arr(extras::tokens_edit(&old_data, &data)))])
+            }
+            _ => obj([("resultId", id.into()), ("data", Json::Arr(data.into_iter().map(Json::from).collect()))]),
+        }
+    }
+
+    /// `workspace/symbol`: the names of the open documents and of the files of the workspace.
+    fn workspace_symbols(&mut self, query: &str) -> Json {
+        let enc = self.cx.enc;
+        let mut open = HashMap::new();
+        let mut others = Vec::new();
+        for d in self.docs.values() {
+            let Some(a) = &d.analysis else { continue };
+            let syms = workspace::symbols_of(a.index(), &d.uri, &d.text, enc);
+            match &d.path {
+                Some(p) => {
+                    open.insert(p.clone(), syms);
+                }
+                None => others.extend(syms),
+            }
+        }
+        let all = self.symbols.all(&mut self.ids, &self.roots, &open, others, enc);
+        workspace::search(all, query)
     }
 }
 
