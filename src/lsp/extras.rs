@@ -446,7 +446,7 @@ pub fn tokens_in_lines(data: &[u32], first: u32, last: u32) -> Vec<u32> {
     let mut out = Vec::new();
     let (mut line, mut character) = (0u32, 0u32);
     let mut kept_prev: Option<(u32, u32)> = None;
-    for t in data.chunks_exact(5) {
+    for t in data.as_chunks::<5>().0 {
         if t[0] > 0 {
             line += t[0];
             character = t[1];
