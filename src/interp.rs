@@ -1,4 +1,5 @@
-//! The interpreter: evaluates the syntax tree.
+//! The interpreter: evaluates the syntax tree, once `compile` has turned its
+//! local names into numbered slots of the frames of the value stack.
 //!
 //! Calls in tail position (the last thing a function does) do not grow the
 //! stack, so recursive functions can loop millions of times.
@@ -8,6 +9,7 @@ use std::rc::Rc;
 
 use crate::ast::*;
 use crate::builtins::BUILTINS;
+use crate::compile::{self, Capture, FnCode, Kind, Node, Pat, Scope, Sibling};
 use crate::diagnostic::{Diagnostic, Fallible};
 use crate::source::Span;
 use crate::suggest;
@@ -18,7 +20,8 @@ use crate::value::*;
 pub enum Flow {
     Err(Box<Diagnostic>),
     /// `?` found a `None` or an `Err`: the current function returns it.
-    Return(Value),
+    /// (Boxed: it is rare, and it keeps the results of evaluation small.)
+    Return(Box<Value>),
 }
 
 impl From<Box<Diagnostic>> for Flow {
@@ -29,18 +32,21 @@ impl From<Box<Diagnostic>> for Flow {
 
 pub type Eval = Result<Value, Flow>;
 
-/// The definition chosen for a call, or the value a `?` in a guard returned.
-enum Entered {
-    Clause(usize, Env),
-    Return(Value),
+/// Result of an expression in tail position: a value, or a call still to
+/// make, whose arguments are on top of the stack.
+enum Tail {
+    Done(Value),
+    Call(Value, usize, Span),
+    /// A call on the right of `and` / `or`: its result must be true or false.
+    Test(Value, usize, Span),
 }
 
-/// Result of an expression in tail position: a value, or a call still to make.
-pub enum Tail {
-    Done(Value),
-    Call(Value, Vec<Value>, Span),
-    /// A call on the right of `and` / `or`: its result must be true or false.
-    Test(Value, Vec<Value>, Span),
+/// The running function: where its slots start on the stack, the values its
+/// closure captured, and the functions of its group.
+struct Frame<'a> {
+    base: usize,
+    captured: &'a [Value],
+    siblings: Option<&'a Rc<[Sibling]>>,
 }
 
 #[derive(Clone)]
@@ -123,8 +129,11 @@ pub struct Interp {
     pub script_args: Vec<String>,
     depth: usize,
     stack_base: usize,
-    /// Reused buffer for the names bound by patterns (avoids an allocation per call).
-    scratch: Vec<(Sym, Value)>,
+    /// The frames of the running functions, one after the other: their
+    /// arguments and local names, then the arguments of the calls being prepared.
+    stack: Vec<Value>,
+    /// The stack of the functions that a builtin calls, kept between calls.
+    spare: Vec<Value>,
     /// Top-level names of the running file that are not defined yet.
     pending: SymMap<Span>,
     /// Calls that may still be made (see `set_step_limit`).
@@ -180,7 +189,8 @@ impl Interp {
             script_args: Vec::new(),
             depth: 0,
             stack_base: stack_position(),
-            scratch: Vec::new(),
+            stack: Vec::new(),
+            spare: Vec::new(),
             pending: SymMap::default(),
             steps_left: u64::MAX,
             rng: seed,
@@ -275,7 +285,7 @@ impl Interp {
 
     pub fn define_fn(&mut self, def: &Rc<FnDef>) {
         if let Some(name) = def.name {
-            let clo = Closure { def: def.clone(), env: Env::empty(), self_name: None, siblings: None };
+            let clo = Closure { def: def.clone(), code: Rc::new(compile::function(def)), captured: Vec::new(), siblings: None };
             self.globals.insert(name, Value::Func(Rc::new(clo)));
         }
     }
@@ -305,7 +315,7 @@ impl Interp {
                     let v = self.eval_top(e)?;
                     let mut binds = Vec::new();
                     if !match_pattern(pat, &v, &mut binds) {
-                        return Err(pattern_mismatch(pat, &v));
+                        return Err(pattern_mismatch(pat.span, &v));
                     }
                     for (s, v) in binds {
                         self.pending.remove(&s);
@@ -329,7 +339,11 @@ impl Interp {
     /// Evaluates an expression outside of any function.
     pub fn eval_top(&mut self, e: &Expr) -> Fallible<Value> {
         self.depth = 0;
-        match self.eval(e, &Env::empty()) {
+        let code = compile::top(e);
+        let base = self.push_frame(code.slots);
+        let r = self.eval(&code.node, &Frame { base, captured: &[], siblings: None });
+        self.end_top(base);
+        match r {
             Ok(v) => Ok(v),
             Err(Flow::Err(d)) => Err(d),
             Err(Flow::Return(_)) => Err(question_outside(e.span)),
@@ -339,292 +353,471 @@ impl Interp {
     /// Evaluates the body of a test (like a function body: `?` is allowed).
     pub fn eval_test(&mut self, e: &Expr) -> Fallible<Value> {
         self.depth = 0;
-        let r = match &e.kind {
-            ExprKind::Block(stmts) => self.exec_block(stmts, Env::empty()),
-            _ => self.eval_tail(e, &Env::empty()),
-        };
-        match r {
+        let code = compile::top(e);
+        let base = self.push_frame(code.slots);
+        let r = match self.eval_tail(&code.node, &Frame { base, captured: &[], siblings: None }) {
             Ok(Tail::Done(v)) => Ok(v),
-            Ok(Tail::Call(f, args, span)) => self.call(f, args, span),
-            Ok(Tail::Test(f, args, span)) => self.call(f, args, span).and_then(|v| truth(&v, span).map(Value::Bool)),
-            Err(Flow::Return(v)) => Ok(v),
+            Ok(Tail::Call(f, argc, span)) => self.call_value(f, argc, span),
+            Ok(Tail::Test(f, argc, span)) => self.call_value(f, argc, span).and_then(|v| truth(&v, span).map(Value::Bool)),
+            Err(Flow::Return(v)) => Ok(*v),
             Err(Flow::Err(d)) => Err(d),
+        };
+        self.end_top(base);
+        r
+    }
+
+    /// Removes the frame of a top-level expression. Back at the top level,
+    /// gives back the memory that a deep recursion used.
+    fn end_top(&mut self, base: usize) {
+        self.stack.truncate(base);
+        if base == 0 && self.stack.capacity() > 1 << 16 {
+            self.stack = Vec::new();
+            self.spare = Vec::new();
         }
+    }
+
+    /// Removes the values above `len` from the stack.
+    #[inline(always)]
+    fn pop_to(&mut self, len: usize) {
+        while self.stack.len() > len {
+            if let Some(v) = self.stack.pop() {
+                discard(v);
+            }
+        }
+    }
+
+    /// Adds a frame of `slots` local names on top of the stack.
+    fn push_frame(&mut self, slots: usize) -> usize {
+        let base = self.stack.len();
+        self.stack.resize_with(base + slots, || Value::Unit);
+        base
     }
 
     // ----- evaluation --------------------------------------------------
 
     /// Evaluates an expression. The common cases are kept here and the rare
     /// ones live in `eval_rest`, so that each nested call uses little stack.
-    pub fn eval(&mut self, e: &Expr, env: &Env) -> Eval {
+    fn eval(&mut self, e: &Node, fr: &Frame) -> Eval {
         match &e.kind {
-            ExprKind::Int(n) => Ok(Value::Int(*n)),
-            ExprKind::Var(s) | ExprKind::Ctor(s) => match env.lookup(*s).or_else(|| self.globals.get(s)) {
+            Kind::Local(slot) => Ok(self.stack[fr.base + *slot as usize].clone()),
+            Kind::Const(v) => Ok(v.clone()),
+            Kind::Captured(i) => Ok(fr.captured[*i as usize].clone()),
+            Kind::Global(s, scope) => match self.globals.get(s) {
                 Some(v) => Ok(v.clone()),
-                None => Err(self.unknown_name(*s, env, e.span).into()),
+                None => Err(self.unknown_name(*s, scope, e.span).into()),
             },
-            ExprKind::Call(..) | ExprKind::Method(..) | ExprKind::If(..) | ExprKind::Match(..) | ExprKind::Block(_) => {
-                match self.eval_tail(e, env)? {
-                    Tail::Done(v) => Ok(v),
-                    Tail::Call(f, args, span) => Ok(self.call(f, args, span)?),
-                    Tail::Test(f, args, span) => Ok(Value::Bool(truth(&self.call(f, args, span)?, span)?)),
+            Kind::Call(callee, args) => {
+                let f = self.operand(callee, fr)?;
+                self.push_args(args, fr)?;
+                Ok(self.call_value(f, args.len(), e.span)?)
+            }
+            Kind::Method(_) | Kind::If(..) | Kind::Match(..) | Kind::Block(..) => match self.eval_tail(e, fr)? {
+                Tail::Done(v) => Ok(v),
+                Tail::Call(f, argc, span) => Ok(self.call_value(f, argc, span)?),
+                Tail::Test(f, argc, span) => Ok(Value::Bool(truth(&self.call_value(f, argc, span)?, span)?)),
+            },
+            Kind::Binary(op, l, r, op_span) => {
+                // Local names and constants are read in place, without a copy:
+                // they cannot fail, so reading them last changes nothing.
+                let lv = if is_leaf(l) { None } else { Some(self.eval(l, fr)?) };
+                let rv = if is_leaf(r) { None } else { Some(self.eval(r, fr)?) };
+                let a = match &lv {
+                    Some(v) => v,
+                    None => self.leaf(l, fr),
+                };
+                let b = match &rv {
+                    Some(v) => v,
+                    None => self.leaf(r, fr),
+                };
+                if let (Value::Int(x), Value::Int(y)) = (a, b) {
+                    if let Some(v) = int_op(*op, *x, *y) {
+                        return Ok(v);
+                    }
                 }
+                Ok(binop(*op, a, b, *op_span)?)
             }
-            ExprKind::Binary(op, l, r, op_span) if !matches!(op, BinOp::And | BinOp::Or) => {
-                let lv = self.eval(l, env)?;
-                let rv = self.eval(r, env)?;
-                Ok(binop(*op, &lv, &rv, *op_span)?)
-            }
-            _ => self.eval_rest(e, env),
+            _ => self.eval_rest(e, fr),
+        }
+    }
+
+    /// The value of a local name or a constant (see `is_leaf`), in place.
+    #[inline(always)]
+    fn leaf<'a>(&'a self, e: &'a Node, fr: &'a Frame) -> &'a Value {
+        match &e.kind {
+            Kind::Local(slot) => &self.stack[fr.base + *slot as usize],
+            Kind::Captured(i) => &fr.captured[*i as usize],
+            Kind::Const(v) => v,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Evaluates an operand: names and constants without a nested call.
+    #[inline(always)]
+    fn operand(&mut self, e: &Node, fr: &Frame) -> Eval {
+        match &e.kind {
+            Kind::Local(slot) => Ok(self.stack[fr.base + *slot as usize].clone()),
+            Kind::Const(v) => Ok(v.clone()),
+            Kind::Global(s, _) => match self.globals.get(s) {
+                Some(v) => Ok(v.clone()),
+                None => self.eval(e, fr),
+            },
+            _ => self.eval(e, fr),
         }
     }
 
     #[inline(never)]
-    fn eval_rest(&mut self, e: &Expr, env: &Env) -> Eval {
+    fn eval_rest(&mut self, e: &Node, fr: &Frame) -> Eval {
         match &e.kind {
-            ExprKind::Unit => Ok(Value::Unit),
-            ExprKind::Bool(b) => Ok(Value::Bool(*b)),
-            ExprKind::Float(f) => Ok(Value::Float(*f)),
-            ExprKind::Text(s) => Ok(Value::Text(s.clone())),
-            ExprKind::Template(parts) => {
-                let mut s = String::new();
-                for p in parts {
-                    match p {
-                        TemplatePart::Lit(l) => s.push_str(l),
-                        TemplatePart::Expr(x) => match self.eval(x, env)? {
-                            Value::Text(t) => s.push_str(&t),
-                            v => s.push_str(&v.display()),
-                        },
-                    }
-                    if s.len() > MAX_TEXT {
-                        return Err(too_big(false, e.span).into());
-                    }
-                }
-                Ok(Value::Text(Rc::from(s)))
-            }
-            ExprKind::List(items) => {
-                let mut v = Vec::with_capacity(items.len());
-                for it in items {
-                    match it {
-                        ListItem::One(x) => v.push(self.eval(x, env)?),
-                        ListItem::Spread(x) => match self.eval(x, env)? {
-                            Value::List(l) if v.len() + l.len() > MAX_LIST => return Err(too_big(true, e.span).into()),
-                            Value::List(l) => v.extend(l.iter().cloned()),
-                            other => return Err(spread_error(&other, x.span, true).into()),
-                        },
-                    }
-                }
-                Ok(Value::list(v))
-            }
-            ExprKind::Record(items) => {
-                let mut r = Record::new();
-                for it in items {
-                    match it {
-                        RecordItem::Field(k, _, x) => {
-                            let v = self.eval(x, env)?;
-                            r.set(k.clone(), v);
-                        }
-                        RecordItem::Spread(x) => match self.eval(x, env)? {
-                            Value::Record(src) => {
-                                for (k, v) in src.iter() {
-                                    r.set(k.clone(), v.clone());
-                                }
-                            }
-                            other => return Err(spread_error(&other, x.span, false).into()),
-                        },
-                    }
-                }
-                Ok(Value::Record(Rc::new(r)))
-            }
-            ExprKind::Lambda(def) => {
-                Ok(Value::Func(Rc::new(Closure { def: def.clone(), env: env.clone(), self_name: None, siblings: None })))
-            }
-            ExprKind::Field(obj, name, nspan) => {
-                let v = self.eval(obj, env)?;
+            // Building values happens in functions of their own, so that
+            // each nested evaluation through here uses little stack.
+            Kind::Template(parts) => self.template(parts, e.span, fr),
+            Kind::List(items) => self.list(items, e.span, fr),
+            Kind::NewRecord(shape, values) => self.new_record(shape, values, fr),
+            Kind::Record(items) => self.record(items, fr),
+            Kind::Lambda(def, code) => Ok(self.closure(def, code, fr)),
+            Kind::Sibling(i) => Ok(sibling(fr, *i)),
+            // Local names and constants are read in place (see `Kind::Binary`).
+            Kind::Field(obj, name, nspan) if is_leaf(obj) => Ok(self.field(self.leaf(obj, fr), name, *nspan)?),
+            Kind::Field(obj, name, nspan) => {
+                let v = self.eval(obj, fr)?;
                 Ok(self.field(&v, name, *nspan)?)
             }
-            ExprKind::Index(obj, idx) => {
-                let o = self.eval(obj, env)?;
-                let i = self.eval(idx, env)?;
-                Ok(index(&o, &i, e.span, idx.span)?)
-            }
-            ExprKind::Unary(op, x) => {
-                let v = self.eval(x, env)?;
+            Kind::Index(obj, idx) => self.index(obj, idx, e.span, fr),
+            Kind::Unary(op, x) => {
+                let v = self.eval(x, fr)?;
                 Ok(unary(*op, &v, e.span, x.span)?)
             }
-            ExprKind::Binary(op, l, r, _) => {
+            Kind::Logic(op, l, r) => {
                 // `and` / `or`: the right side is only evaluated when needed.
-                let lv = self.eval(l, env)?;
-                let left = truth(&lv, l.span)?;
+                let left = self.condition(l, fr)?;
                 if (*op == BinOp::And) != left {
                     return Ok(Value::Bool(left));
                 }
-                let rv = self.eval(r, env)?;
-                Ok(Value::Bool(truth(&rv, r.span)?))
+                Ok(Value::Bool(self.condition(r, fr)?))
             }
-            ExprKind::Try(x) => {
-                let v = self.eval(x, env)?;
+            Kind::Try(x) => {
+                let v = self.eval(x, fr)?;
                 match self.wrap(&v) {
                     Wrap::Some | Wrap::Ok => Ok(Interp::payload(&v)),
-                    Wrap::None | Wrap::Err => Err(Flow::Return(v)),
+                    Wrap::None | Wrap::Err => Err(Flow::Return(Box::new(v))),
                     Wrap::Other => Err(try_error(&v, e.span).into()),
                 }
             }
-            ExprKind::Range(a, b) => {
-                let av = self.eval(a, env)?;
-                let bv = self.eval(b, env)?;
+            Kind::Range(a, b) => {
+                let av = self.eval(a, fr)?;
+                let bv = self.eval(b, fr)?;
                 Ok(range(&av, &bv, e.span)?)
             }
-            ExprKind::Int(_)
-            | ExprKind::Var(_)
-            | ExprKind::Ctor(_)
-            | ExprKind::Call(..)
-            | ExprKind::Method(..)
-            | ExprKind::If(..)
-            | ExprKind::Match(..)
-            | ExprKind::Block(_) => self.eval(e, env),
+            Kind::Const(_)
+            | Kind::Local(_)
+            | Kind::Captured(_)
+            | Kind::Global(..)
+            | Kind::Call(..)
+            | Kind::Method(_)
+            | Kind::Binary(..)
+            | Kind::If(..)
+            | Kind::Match(..)
+            | Kind::Block(..) => self.eval(e, fr),
         }
     }
 
-    fn eval_tail(&mut self, e: &Expr, env: &Env) -> Result<Tail, Flow> {
-        match &e.kind {
-            // `a and f(x)`: when the right side is a call, it is a tail call.
-            ExprKind::Binary(op @ (BinOp::And | BinOp::Or), l, r, _) if matches!(r.kind, ExprKind::Call(..) | ExprKind::Method(..)) => {
-                let lv = self.eval(l, env)?;
-                let left = truth(&lv, l.span)?;
-                if (*op == BinOp::And) != left {
-                    return Ok(Tail::Done(Value::Bool(left)));
-                }
-                // Still a tail call, but its result must be true or false.
-                match self.eval_tail(r, env)? {
-                    Tail::Call(f, args, span) | Tail::Test(f, args, span) => Ok(Tail::Test(f, args, span)),
-                    Tail::Done(v) => Ok(Tail::Done(Value::Bool(truth(&v, r.span)?))),
-                }
+    /// `"... {x} ..."`
+    #[inline(never)]
+    fn template(&mut self, parts: &[compile::Part], span: Span, fr: &Frame) -> Eval {
+        let mut s = String::new();
+        for p in parts {
+            match p {
+                compile::Part::Lit(l) => s.push_str(l),
+                compile::Part::Expr(x) if is_leaf(x) => self.leaf(x, fr).write_display(&mut s),
+                compile::Part::Expr(x) => self.eval(x, fr)?.write_display(&mut s),
             }
-            ExprKind::If(c, a, b) => {
-                let cv = self.eval(c, env)?;
-                if truth(&cv, c.span)? {
-                    self.eval_tail(a, env)
-                } else {
-                    self.eval_tail(b, env)
-                }
+            if s.len() > MAX_TEXT {
+                return Err(too_big(false, span).into());
             }
-            ExprKind::Match(subject, arms) => {
-                let v = self.eval(subject, env)?;
-                let mut binds = std::mem::take(&mut self.scratch);
-                for arm in arms {
-                    binds.clear();
-                    if !match_pattern(&arm.pat, &v, &mut binds) {
-                        continue;
-                    }
-                    let mut arm_env = env.clone();
-                    for (s, x) in binds.drain(..) {
-                        arm_env = arm_env.bind(s, x);
-                    }
-                    if let Some(g) = &arm.guard {
-                        self.scratch = binds;
-                        let gv = self.eval(g, &arm_env)?;
-                        binds = std::mem::take(&mut self.scratch);
-                        if !truth(&gv, g.span)? {
-                            continue;
+        }
+        Ok(Value::Text(Rc::from(s)))
+    }
+
+    /// `[a, ..xs, b]`
+    #[inline(never)]
+    fn list(&mut self, items: &[compile::Item], span: Span, fr: &Frame) -> Eval {
+        let mut v = Vec::with_capacity(items.len());
+        for it in items {
+            match it {
+                compile::Item::One(x) => v.push(self.eval(x, fr)?),
+                compile::Item::Spread(x) => match self.eval(x, fr)? {
+                    Value::List(l) if v.len() + l.len() > MAX_LIST => return Err(too_big(true, span).into()),
+                    Value::List(l) => v.extend(l.iter().cloned()),
+                    other => return Err(spread_error(&other, x.span, true).into()),
+                },
+            }
+        }
+        Ok(Value::list(v))
+    }
+
+    /// `{a: x, b: y}`: different names and no `..`.
+    #[inline(never)]
+    fn new_record(&mut self, shape: &Rc<Shape>, values: &[Node], fr: &Frame) -> Eval {
+        let mut vals = Vec::with_capacity(values.len());
+        for x in values {
+            vals.push(self.operand(x, fr)?);
+        }
+        Ok(Value::Record(Rc::new(Record::with_shape(shape.clone(), vals))))
+    }
+
+    /// `{..r, a: x}`, or names given twice.
+    #[inline(never)]
+    fn record(&mut self, items: &[compile::Field], fr: &Frame) -> Eval {
+        let mut r = Record::new();
+        for (i, it) in items.iter().enumerate() {
+            match it {
+                compile::Field::Field(k, x) => {
+                    let v = self.eval(x, fr)?;
+                    r.set(k.clone(), v);
+                }
+                compile::Field::Spread(x) => match self.eval(x, fr)? {
+                    // `{..r, ...}`: a copy of `r` to start with, which shares its names.
+                    Value::Record(src) if i == 0 => r = (*src).clone(),
+                    Value::Record(src) => {
+                        for (k, v) in src.iter() {
+                            r.set(k.clone(), v.clone());
                         }
                     }
-                    self.scratch = binds;
-                    return self.eval_tail(&arm.body, &arm_env);
-                }
-                self.scratch = binds;
-                Err(no_case(&v, subject.span).into())
+                    other => return Err(spread_error(&other, x.span, false).into()),
+                },
             }
-            ExprKind::Block(stmts) => self.exec_block(stmts, env.clone()),
-            ExprKind::Call(callee, args) => {
-                let f = self.eval(callee, env)?;
-                let mut argv = Vec::with_capacity(args.len());
-                for a in args {
-                    argv.push(self.eval(a, env)?);
-                }
-                Ok(Tail::Call(f, argv, e.span))
-            }
-            ExprKind::Method(recv, name, args, name_span) => self.method_call(e, recv, *name, args, *name_span, env),
-            _ => Ok(Tail::Done(self.eval(e, env)?)),
         }
+        Ok(Value::Record(Rc::new(r)))
+    }
+
+    /// `x[i]`
+    #[inline(never)]
+    fn index(&mut self, obj: &Node, idx: &Node, span: Span, fr: &Frame) -> Eval {
+        let o = if is_leaf(obj) { None } else { Some(self.eval(obj, fr)?) };
+        let i = if is_leaf(idx) { None } else { Some(self.eval(idx, fr)?) };
+        let o = match &o {
+            Some(v) => v,
+            None => self.leaf(obj, fr),
+        };
+        let i = match &i {
+            Some(v) => v,
+            None => self.leaf(idx, fr),
+        };
+        Ok(index(o, i, span, idx.span)?)
+    }
+
+    /// Evaluates an operation on names or constants (`x * 2`, the body of
+    /// many functions given to `map`), computed on the spot for whole numbers.
+    #[inline(never)]
+    fn leaf_operation(&mut self, e: &Node, fr: &Frame) -> Eval {
+        if let Kind::Binary(op, l, r, _) = &e.kind {
+            if is_leaf(l) && is_leaf(r) {
+                if let (Value::Int(x), Value::Int(y)) = (self.leaf(l, fr), self.leaf(r, fr)) {
+                    if let Some(v) = int_op(*op, *x, *y) {
+                        return Ok(v);
+                    }
+                }
+            }
+        }
+        self.eval(e, fr)
+    }
+
+    /// Evaluates a condition: `true` or `false`.
+    #[inline(never)]
+    fn condition(&mut self, c: &Node, fr: &Frame) -> Result<bool, Flow> {
+        // `n == 0`, `x < v`: whole numbers given by names or constants.
+        if let Kind::Binary(op, l, r, _) = &c.kind {
+            if is_leaf(l) && is_leaf(r) {
+                if let (Value::Int(a), Value::Int(b)) = (self.leaf(l, fr), self.leaf(r, fr)) {
+                    match op {
+                        BinOp::Eq => return Ok(a == b),
+                        BinOp::Ne => return Ok(a != b),
+                        BinOp::Lt => return Ok(a < b),
+                        BinOp::Le => return Ok(a <= b),
+                        BinOp::Gt => return Ok(a > b),
+                        BinOp::Ge => return Ok(a >= b),
+                        _ => {}
+                    }
+                }
+            }
+        }
+        let v = self.eval(c, fr)?;
+        match v {
+            Value::Bool(b) => {
+                discard(v);
+                Ok(b)
+            }
+            other => Err(condition_error(&other, c.span).into()),
+        }
+    }
+
+    /// Evaluates an expression in tail position: a call there is not made but
+    /// returned, with its arguments on top of the stack.
+    fn eval_tail(&mut self, mut e: &Node, fr: &Frame) -> Result<Tail, Flow> {
+        loop {
+            match &e.kind {
+                // `a and f(x)`: when the right side is a call, it is a tail call.
+                Kind::Logic(op, l, r) if matches!(r.kind, Kind::Call(..) | Kind::Method(_)) => {
+                    let left = self.condition(l, fr)?;
+                    if (*op == BinOp::And) != left {
+                        return Ok(Tail::Done(Value::Bool(left)));
+                    }
+                    // Still a tail call, but its result must be true or false.
+                    return match self.eval_tail(r, fr)? {
+                        Tail::Call(f, argc, span) | Tail::Test(f, argc, span) => Ok(Tail::Test(f, argc, span)),
+                        Tail::Done(v) => Ok(Tail::Done(Value::Bool(truth(&v, r.span)?))),
+                    };
+                }
+                Kind::If(c, a, b) => e = if self.condition(c, fr)? { a } else { b },
+                Kind::Match(subject, arms) => e = self.choose_arm(subject, arms, fr)?,
+                Kind::Block(stmts, last) => {
+                    self.exec_stmts(stmts, fr)?;
+                    match last {
+                        Some(x) => e = x,
+                        None => return Ok(Tail::Done(Value::Unit)),
+                    }
+                }
+                Kind::Call(callee, args) => {
+                    let f = self.operand(callee, fr)?;
+                    self.push_args(args, fr)?;
+                    return Ok(Tail::Call(f, args.len(), e.span));
+                }
+                Kind::Method(m) => return self.method_call(m, e.span, fr),
+                _ => return Ok(Tail::Done(self.eval(e, fr)?)),
+            }
+        }
+    }
+
+    /// The body of the first case of a `match` that accepts the value.
+    // In a browser, the stack is small: what is not part of every nested
+    // call stays out of the functions that are.
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
+    fn choose_arm<'n>(&mut self, subject: &Node, arms: &'n [compile::Arm], fr: &Frame) -> Result<&'n Node, Flow> {
+        let v = self.eval(subject, fr)?;
+        for arm in arms {
+            if !may_match(&arm.pat, &v) || !match_pat(&arm.pat, &v, &mut self.stack[fr.base..], 0) {
+                continue;
+            }
+            if let Some(g) = &arm.guard {
+                if !self.condition(g, fr)? {
+                    continue;
+                }
+            }
+            return Ok(&arm.body);
+        }
+        Err(no_case(&v, subject.span).into())
+    }
+
+    /// Runs the statements of a block (all but its last expression).
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
+    fn exec_stmts(&mut self, stmts: &[compile::Stmt], fr: &Frame) -> Result<(), Flow> {
+        for s in stmts {
+            match s {
+                compile::Stmt::Set(slot, x) => {
+                    let v = self.eval(x, fr)?;
+                    set(&mut self.stack[fr.base + *slot as usize], v);
+                }
+                compile::Stmt::Let(p, x, span) => {
+                    let v = self.eval(x, fr)?;
+                    if !match_pat(p, &v, &mut self.stack[fr.base..], 0) {
+                        return Err(pattern_mismatch(*span, &v).into());
+                    }
+                }
+                compile::Stmt::Expr(x) => {
+                    self.eval(x, fr)?;
+                }
+                compile::Stmt::Fn(slot, def, code) => {
+                    let f = self.closure(def, code, fr);
+                    set(&mut self.stack[fr.base + *slot as usize], f);
+                }
+                compile::Stmt::Group(slots, group) => {
+                    // They all capture the same values.
+                    let captured = self.captures(&group[0].code, fr);
+                    for &(slot, i) in slots {
+                        let Sibling { def, code } = &group[i as usize];
+                        let clo =
+                            Closure { def: def.clone(), code: code.clone(), captured: captured.clone(), siblings: Some(group.clone()) };
+                        set(&mut self.stack[fr.base + slot as usize], Value::Func(Rc::new(clo)));
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Evaluates the arguments of a call onto the stack.
+    fn push_args(&mut self, args: &[Node], fr: &Frame) -> Result<(), Flow> {
+        for a in args {
+            let v = match &a.kind {
+                // `n - 1`, `acc + x`: computed on the spot.
+                Kind::Binary(op, l, r, _) if is_leaf(l) && is_leaf(r) => match (self.leaf(l, fr), self.leaf(r, fr)) {
+                    (Value::Int(x), Value::Int(y)) => match int_op(*op, *x, *y) {
+                        Some(v) => v,
+                        None => self.eval(a, fr)?,
+                    },
+                    _ => self.eval(a, fr)?,
+                },
+                _ => self.operand(a, fr)?,
+            };
+            self.stack.push(v);
+        }
+        Ok(())
+    }
+
+    /// A new closure, with the values it captures from the current frame.
+    fn closure(&self, def: &Rc<FnDef>, code: &Rc<FnCode>, fr: &Frame) -> Value {
+        Value::Func(Rc::new(Closure { def: def.clone(), code: code.clone(), captured: self.captures(code, fr), siblings: None }))
+    }
+
+    /// The values a new closure of `code` captures from the current frame.
+    fn captures(&self, code: &FnCode, fr: &Frame) -> Vec<Value> {
+        code.captures
+            .iter()
+            .map(|c| match *c {
+                Capture::Local(slot) => self.stack[fr.base + slot as usize].clone(),
+                Capture::Captured(i) => fr.captured[i as usize].clone(),
+                Capture::Sibling(i) => sibling(fr, i),
+            })
+            .collect()
     }
 
     /// `value.name(args)`: a function stored in a record field, or `name(value, args)`.
     #[inline(never)]
-    fn method_call(&mut self, e: &Expr, recv: &Expr, name: Sym, args: &[Expr], name_span: Span, env: &Env) -> Result<Tail, Flow> {
-        let rv = self.eval(recv, env)?;
-        let mut argv = Vec::with_capacity(args.len() + 1);
+    fn method_call(&mut self, m: &compile::Method, span: Span, fr: &Frame) -> Result<Tail, Flow> {
+        let rv = self.eval(&m.recv, fr)?;
         let field = match &rv {
-            Value::Record(r) => r.get(&name.name()).cloned(),
+            Value::Record(r) => r.get(&m.key).cloned(),
             _ => None,
         };
-        let f = match field {
-            Some(f) => f,
+        let (f, argc) = match field {
+            Some(f) => (f, m.args.len()),
             None => {
-                let f = match env.lookup(name).or_else(|| self.globals.get(&name)) {
-                    Some(f) => f.clone(),
-                    None => {
-                        let mut d = *self.unknown_name(name, env, name_span);
-                        d.message = t!("no function named `{}`", "aucune fonction nommée `{}`", name);
-                        d.notes.push(t!("`value.{0}(...)` calls `{0}(value, ...)`", "`valeur.{0}(...)` appelle `{0}(valeur, ...)`", name));
-                        return Err(d.boxed().into());
-                    }
+                let f = match &m.func.kind {
+                    Kind::Global(name, scope) => match self.globals.get(name) {
+                        Some(f) => f.clone(),
+                        None => {
+                            let name = m.name;
+                            let mut d = *self.unknown_name(name, scope, m.name_span);
+                            d.message = t!("no function named `{}`", "aucune fonction nommée `{}`", name);
+                            d.notes.push(t!(
+                                "`value.{0}(...)` calls `{0}(value, ...)`",
+                                "`valeur.{0}(...)` appelle `{0}(valeur, ...)`",
+                                name
+                            ));
+                            return Err(d.boxed().into());
+                        }
+                    },
+                    _ => self.eval(&m.func, fr)?,
                 };
-                argv.push(rv);
-                f
+                self.stack.push(rv);
+                (f, m.args.len() + 1)
             }
         };
-        for a in args {
-            argv.push(self.eval(a, env)?);
-        }
-        Ok(Tail::Call(f, argv, e.span))
+        self.push_args(&m.args, fr)?;
+        Ok(Tail::Call(f, argc, span))
     }
 
-    fn exec_block(&mut self, stmts: &[Stmt], mut env: Env) -> Result<Tail, Flow> {
-        let n = stmts.len();
-        let mut siblings = None;
-        for (i, s) in stmts.iter().enumerate() {
-            match s {
-                Stmt::Let(p, x) => {
-                    let v = match (&p.kind, &x.kind) {
-                        // `name = fn(...) = ...` can call itself by its name.
-                        (PatKind::Bind(name), ExprKind::Lambda(def)) => {
-                            Value::Func(Rc::new(Closure { def: def.clone(), env: env.clone(), self_name: Some(*name), siblings: None }))
-                        }
-                        _ => self.eval(x, &env)?,
-                    };
-                    let mut binds = Vec::new();
-                    if !match_pattern(p, &v, &mut binds) {
-                        return Err(pattern_mismatch(p, &v).into());
-                    }
-                    for (s, v) in binds {
-                        env = env.bind(s, v);
-                    }
-                }
-                Stmt::Expr(x) => {
-                    if i + 1 == n {
-                        return self.eval_tail(x, &env);
-                    }
-                    self.eval(x, &env)?;
-                }
-                Stmt::Fn(def) => {
-                    // The first of several functions written one after the other.
-                    if i == 0 || !matches!(stmts[i - 1], Stmt::Fn(_)) {
-                        let group: Vec<Rc<FnDef>> =
-                            stmts[i..].iter().map_while(|s| if let Stmt::Fn(d) = s { Some(d.clone()) } else { None }).collect();
-                        siblings = (group.len() > 1).then(|| Rc::from(group));
-                    }
-                    let clo = Closure { def: def.clone(), env: env.clone(), self_name: def.name, siblings: siblings.clone() };
-                    if let Some(name) = def.name {
-                        env = env.bind(name, Value::Func(Rc::new(clo)));
-                    }
-                }
-            }
-        }
-        Ok(Tail::Done(Value::Unit))
-    }
-
-    pub fn unknown_name(&self, s: Sym, env: &Env, span: Span) -> Box<Diagnostic> {
+    pub fn unknown_name(&self, s: Sym, scope: &Scope, span: Span) -> Box<Diagnostic> {
         let name = s.name();
         if let Some(def) = self.pending.get(&s) {
             return Diagnostic::error("E003", t!("`{name}` is not defined yet", "`{name}` n'est pas encore défini"))
@@ -642,7 +835,7 @@ impl Interp {
         if let Some(h) = suggest::alias_hint(&name) {
             d = d.help(h);
         } else {
-            let names: Vec<Rc<str>> = env.names().into_iter().chain(self.globals.keys().copied()).map(|s| s.name()).collect();
+            let names: Vec<Rc<str>> = scope.names().into_iter().chain(self.globals.keys().copied()).map(|s| s.name()).collect();
             if let Some(best) = suggest::closest(&name, names.iter().map(|s| &**s)) {
                 d = d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?"));
             }
@@ -712,29 +905,49 @@ impl Interp {
 
     /// Calls a function value with arguments.
     pub fn call(&mut self, f: Value, args: Vec<Value>, span: Span) -> Fallible<Value> {
+        let argc = args.len();
+        self.stack.extend(args);
+        self.call_value(f, argc, span)
+    }
+
+    /// Calls a function value with one argument (like `call`, without a vector).
+    pub fn call1(&mut self, f: &Value, a: Value, span: Span) -> Fallible<Value> {
+        self.stack.push(a);
+        self.call_value(f.clone(), 1, span)
+    }
+
+    /// Calls a function value with two arguments (like `call`, without a vector).
+    pub fn call2(&mut self, f: &Value, a: Value, b: Value, span: Span) -> Fallible<Value> {
+        self.stack.push(a);
+        self.stack.push(b);
+        self.call_value(f.clone(), 2, span)
+    }
+
+    /// Calls a function value with the `argc` values on top of the stack as
+    /// arguments, and removes them.
+    fn call_value(&mut self, f: Value, argc: usize, span: Span) -> Fallible<Value> {
+        let base = self.stack.len() - argc;
         if stack_position().abs_diff(self.stack_base) > STACK_BUDGET.load(std::sync::atomic::Ordering::Relaxed)
             || self.depth >= MAX_DEPTH.load(std::sync::atomic::Ordering::Relaxed)
         {
+            self.stack.truncate(base);
             return Err(too_deep(self.depth, span));
         }
         self.depth += 1;
-        let r = self.call_loop(f, args, span);
-        self.depth -= 1;
-        r
-    }
-
-    fn call_loop(&mut self, f: Value, args: Vec<Value>, span: Span) -> Fallible<Value> {
         let mut test = None;
-        let v = self.call_chain(f, args, span, &mut test)?;
+        let r = self.call_loop(f, base, argc, span, &mut test);
+        self.depth -= 1;
+        self.pop_to(base);
         match test {
-            Some(at) => Ok(Value::Bool(truth(&v, at)?)),
-            None => Ok(v),
+            Some(at) => r.and_then(|v| truth(&v, at).map(Value::Bool)),
+            None => r,
         }
     }
 
-    /// Calls `f`, then the calls it makes in tail position, one after the
-    /// other. `test` is set when the result must be true or false.
-    fn call_chain(&mut self, mut f: Value, mut args: Vec<Value>, mut span: Span, test: &mut Option<Span>) -> Fallible<Value> {
+    /// Runs a call whose frame starts at `base`, with the arguments in its
+    /// first slots. A call in tail position reuses the frame. `test` is set
+    /// when the result must be true or false.
+    fn call_loop(&mut self, mut f: Value, base: usize, mut argc: usize, mut span: Span, test: &mut Option<Span>) -> Fallible<Value> {
         loop {
             if self.steps_left == 0 {
                 return Err(out_of_steps(span));
@@ -742,117 +955,219 @@ impl Interp {
             self.steps_left -= 1;
             match f {
                 Value::Func(clo) => {
-                    let def = clo.def.clone();
-                    let (ci, env) = match self.enter(&clo, &def, args, span)? {
-                        Entered::Clause(ci, env) => (ci, env),
-                        // A `?` in a guard ended the call.
-                        Entered::Return(v) => return Ok(v),
+                    let code = &*clo.code;
+                    if argc != code.arity {
+                        return Err(fn_arity_error(&clo.def, argc, span));
+                    }
+                    if code.slots > argc {
+                        self.stack.resize_with(base + code.slots, || Value::Unit);
+                    }
+                    let fr = Frame { base, captured: &clo.captured, siblings: clo.siblings.as_ref() };
+                    let ci = if code.simple && code.self_slot.is_none() {
+                        0
+                    } else {
+                        match self.enter(&clo, &fr, span) {
+                            Ok(ci) => ci,
+                            // A `?` in a guard ended the call.
+                            Err(Flow::Return(v)) => return Ok(*v),
+                            Err(Flow::Err(d)) => return Err(d),
+                        }
                     };
-                    drop(clo);
-                    let body = &def.clauses[ci].body;
-                    let r = match &body.kind {
-                        ExprKind::Block(stmts) => self.exec_block(stmts, env),
-                        _ => self.eval_tail(body, &env),
+                    let body = &code.clauses[ci].body;
+                    let r = match body.kind {
+                        Kind::Call(..) | Kind::Method(_) | Kind::If(..) | Kind::Match(..) | Kind::Block(..) | Kind::Logic(..) => {
+                            self.eval_tail(body, &fr)
+                        }
+                        // A body that cannot end with a call (`x * 2`).
+                        Kind::Binary(_, ref l, ref r, _) if is_leaf(l) && is_leaf(r) => self.leaf_operation(body, &fr).map(Tail::Done),
+                        _ => self.eval(body, &fr).map(Tail::Done),
                     };
-                    match r {
+                    let (nf, nargc, nspan) = match r {
                         Ok(Tail::Done(v)) => return Ok(v),
-                        Ok(Tail::Call(nf, nargs, nspan)) => {
-                            f = nf;
-                            args = nargs;
-                            span = nspan;
-                        }
-                        Ok(Tail::Test(nf, nargs, nspan)) => {
+                        Ok(Tail::Call(nf, nargc, nspan)) => (nf, nargc, nspan),
+                        Ok(Tail::Test(nf, nargc, nspan)) => {
                             *test = Some(nspan);
-                            f = nf;
-                            args = nargs;
-                            span = nspan;
+                            (nf, nargc, nspan)
                         }
-                        Err(Flow::Return(v)) => return Ok(v),
+                        Err(Flow::Return(v)) => return Ok(*v),
                         Err(Flow::Err(mut d)) => {
-                            add_frame(&mut d, &def, span);
+                            add_frame(&mut d, &clo.def, span);
                             return Err(d);
                         }
+                    };
+                    let args = self.stack.len() - nargc;
+                    // A value built last (`Node(l, v, r)`) takes its
+                    // fields where they are; `call_value` drops the frame.
+                    if let Value::Ctor(c) = &nf {
+                        if c.fields.len() == nargc {
+                            let fields = self.stack.split_off(args);
+                            return Ok(Value::Variant(Rc::new(Variant { ctor: c.clone(), fields })));
+                        }
                     }
-                }
-                Value::Builtin(b) => {
-                    if args.len() < b.min || args.len() > b.max {
-                        return Err(builtin_arity_error(b, args.len(), span));
+                    // The arguments of the next call replace this frame.
+                    for i in 0..nargc {
+                        self.stack.swap(base + i, args + i);
                     }
-                    return (b.func)(self, &args, span);
+                    self.pop_to(base + nargc);
+                    f = nf;
+                    argc = nargc;
+                    span = nspan;
                 }
-                Value::Ctor(c) => {
-                    if args.len() != c.fields.len() {
-                        return Err(ctor_arity_error(&c, args.len(), span));
-                    }
-                    return Ok(Value::Variant(Rc::new(Variant { ctor: c, fields: args })));
-                }
+                Value::Builtin(b) => return self.call_builtin(b, base, argc, span),
+                Value::Ctor(c) => return self.construct(c, base, argc, span),
                 other => return Err(not_callable(&other, span)),
             }
         }
     }
 
-    /// Picks the first definition (clause) of a function that accepts the arguments.
-    fn enter(&mut self, clo: &Rc<Closure>, def: &FnDef, args: Vec<Value>, span: Span) -> Fallible<Entered> {
-        if args.len() != def.arity {
-            return Err(fn_arity_error(def, args.len(), span));
+    /// Calls a builtin with the `argc` values from `base` on as arguments.
+    /// (Kept out of `call_loop`, so that each nested call uses little stack.)
+    #[inline(never)]
+    fn call_builtin(&mut self, b: &'static crate::builtins::Builtin, base: usize, argc: usize, span: Span) -> Fallible<Value> {
+        if argc < b.min || argc > b.max {
+            return Err(builtin_arity_error(b, argc, span));
         }
-        let mut base = clo.env.clone();
-        if let Some(group) = &clo.siblings {
-            for d in group.iter().filter(|d| !Rc::ptr_eq(d, &clo.def)) {
-                if let Some(n) = d.name {
-                    let sibling = Closure { def: d.clone(), env: clo.env.clone(), self_name: d.name, siblings: Some(group.clone()) };
-                    base = base.bind(n, Value::Func(Rc::new(sibling)));
-                }
-            }
+        // The builtin reads its arguments where they are, and the
+        // functions it calls (`map`...) get a stack of their own.
+        let spare = std::mem::take(&mut self.spare);
+        let stack = std::mem::replace(&mut self.stack, spare);
+        let r = (b.func)(self, &stack[base..], span);
+        let mut spare = std::mem::replace(&mut self.stack, stack);
+        spare.clear();
+        self.spare = spare;
+        r
+    }
+
+    /// Builds a value of a type (`Some(x)`, `Circle(r)`) from the `argc`
+    /// values from `base` on.
+    #[inline(never)]
+    fn construct(&mut self, c: Rc<CtorInfo>, base: usize, argc: usize, span: Span) -> Fallible<Value> {
+        if argc != c.fields.len() {
+            return Err(ctor_arity_error(&c, argc, span));
         }
-        if let Some(n) = clo.self_name {
-            base = base.bind(n, Value::Func(clo.clone()));
+        let fields = self.stack.split_off(base);
+        Ok(Value::Variant(Rc::new(Variant { ctor: c, fields })))
+    }
+
+    /// Picks the first definition (clause) of a function that accepts the
+    /// arguments, which are in the first slots of the frame. `Flow::Return`:
+    /// a `?` in a guard ended the call.
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
+    fn enter(&mut self, clo: &Rc<Closure>, fr: &Frame, span: Span) -> Result<usize, Flow> {
+        let code = &*clo.code;
+        let base = fr.base;
+        if let Some(slot) = code.self_slot {
+            set(&mut self.stack[base + slot as usize], Value::Func(clo.clone()));
         }
         // Fast path: one definition whose parameters are plain names.
-        if let [clause] = def.clauses.as_slice() {
-            if clause.guard.is_none() && clause.params.iter().all(|p| matches!(p.kind, PatKind::Bind(_) | PatKind::Wildcard)) {
-                let mut env = base;
-                for (p, a) in clause.params.iter().zip(args) {
-                    if let PatKind::Bind(s) = p.kind {
-                        env = env.bind(s, a);
+        if code.simple {
+            return Ok(0);
+        }
+        'clauses: for (ci, clause) in code.clauses.iter().enumerate() {
+            if !clause.tests.is_empty() {
+                // The parts of the arguments go to the slots after the arguments.
+                let (args, rest) = self.stack[base..].split_at_mut(code.arity);
+                for (i, p) in &clause.tests {
+                    if !may_match(p, &args[*i]) || !match_pat(p, &args[*i], rest, code.arity) {
+                        continue 'clauses;
                     }
                 }
-                return Ok(Entered::Clause(0, env));
-            }
-        }
-        let mut binds = std::mem::take(&mut self.scratch);
-        'clauses: for (ci, clause) in def.clauses.iter().enumerate() {
-            binds.clear();
-            for (p, a) in clause.params.iter().zip(&args) {
-                if !match_pattern(p, a, &mut binds) {
-                    continue 'clauses;
-                }
-            }
-            let mut env = base.clone();
-            for (s, v) in binds.drain(..) {
-                env = env.bind(s, v);
             }
             if let Some(g) = &clause.guard {
-                self.scratch = binds;
-                let gv = match self.eval(g, &env) {
-                    Ok(v) => v,
-                    Err(Flow::Err(d)) => return Err(d),
-                    Err(Flow::Return(v)) => return Ok(Entered::Return(v)),
-                };
-                binds = std::mem::take(&mut self.scratch);
+                let gv = self.eval(g, fr)?;
                 if !truth(&gv, g.span)? {
                     continue;
                 }
             }
-            self.scratch = binds;
-            return Ok(Entered::Clause(ci, env));
+            return Ok(ci);
         }
-        self.scratch = binds;
-        Err(no_clause(def, &args, span))
+        Err(no_clause(&clo.def, &self.stack[base..base + code.arity], span).into())
     }
 }
 
 // ----- helpers ----------------------------------------------------------
+
+/// The function number `i` of the group of the running function, which
+/// captures the same values.
+#[inline(never)]
+fn sibling(fr: &Frame, i: u32) -> Value {
+    let group = fr.siblings.expect("a function of a group");
+    let Sibling { def, code } = &group[i as usize];
+    Value::Func(Rc::new(Closure { def: def.clone(), code: code.clone(), captured: fr.captured.to_vec(), siblings: Some(group.clone()) }))
+}
+
+/// Like `match_pattern`, for a prepared pattern: the names go to their slots,
+/// `slots` holding the slots of the frame from number `first` on.
+fn match_pat(p: &Pat, v: &Value, slots: &mut [Value], first: usize) -> bool {
+    match (p, v) {
+        (Pat::Any, _) => true,
+        (Pat::Bind(slot), _) => {
+            set(&mut slots[*slot as usize - first], v.clone());
+            true
+        }
+        (Pat::Unit, Value::Unit) => true,
+        (Pat::Bool(a), Value::Bool(b)) => a == b,
+        (Pat::Int(a), Value::Int(b)) => a == b,
+        (Pat::Int(a), Value::Float(b)) => cmp_int_float(*a, *b) == Some(std::cmp::Ordering::Equal),
+        (Pat::Float(a), Value::Float(b)) => a == b,
+        (Pat::Float(a), Value::Int(b)) => cmp_int_float(*b, *a) == Some(std::cmp::Ordering::Equal),
+        (Pat::Text(a), Value::Text(b)) => a == b,
+        (Pat::Ctor(name, pats), Value::Variant(var)) => {
+            var.ctor.name == *name && pats.len() == var.fields.len() && match_each(pats, &var.fields, slots, first)
+        }
+        (Pat::List(pats, rest), Value::List(l)) => {
+            let n = pats.len();
+            let len_ok = match rest {
+                None => l.len() == n,
+                Some(_) => l.len() >= n,
+            };
+            if !len_ok {
+                return false;
+            }
+            if !match_each(pats, l.as_slice(), slots, first) {
+                return false;
+            }
+            if let Some(Some(slot)) = rest {
+                set(&mut slots[*slot as usize - first], Value::List(l.slice(n, l.len())));
+            }
+            true
+        }
+        (Pat::Record(fields), Value::Record(r)) => fields.iter().all(|(k, p)| r.get(k).is_some_and(|x| match_pat(p, x, slots, first))),
+        (Pat::Or(alts), _) => alts.iter().any(|a| match_pat(a, v, slots, first)),
+        _ => false,
+    }
+}
+
+/// Whether `p` may match `v`: `false` when an obvious difference (another
+/// whole number, another constructor) rules it out, without a call.
+#[inline(always)]
+fn may_match(p: &Pat, v: &Value) -> bool {
+    match (p, v) {
+        (Pat::Int(a), Value::Int(b)) => a == b,
+        (Pat::Ctor(name, _), Value::Variant(var)) => var.ctor.name == *name,
+        _ => true,
+    }
+}
+
+/// `match_pat` on each value with the pattern at the same place; names and
+/// `_`, the most common parts, without a nested call.
+#[inline(always)]
+fn match_each(pats: &[Pat], vals: &[Value], slots: &mut [Value], first: usize) -> bool {
+    for (p, v) in pats.iter().zip(vals) {
+        let ok = match p {
+            Pat::Any => true,
+            Pat::Bind(slot) => {
+                set(&mut slots[*slot as usize - first], v.clone());
+                true
+            }
+            _ => match_pat(p, v, slots, first),
+        };
+        if !ok {
+            return false;
+        }
+    }
+    true
+}
 
 pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> bool {
     match (&p.kind, v) {
@@ -903,6 +1218,7 @@ pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> boo
     }
 }
 
+#[inline(never)]
 fn unary(op: UnOp, v: &Value, span: Span, operand: Span) -> Fallible<Value> {
     match (op, v) {
         (UnOp::Neg, Value::Int(n)) => n.checked_neg().map(Value::Int).ok_or_else(|| overflow(span)),
@@ -1037,9 +1353,9 @@ fn try_error(v: &Value, span: Span) -> Box<Diagnostic> {
     .boxed()
 }
 
-fn pattern_mismatch(p: &Pattern, v: &Value) -> Box<Diagnostic> {
+fn pattern_mismatch(span: Span, v: &Value) -> Box<Diagnostic> {
     Diagnostic::error("E006", t!("the value {} does not match this pattern", "la valeur {} ne correspond pas à ce motif", v.describe()))
-        .at(p.span)
+        .at(span)
         .help(t!(
             "use `match` to handle the different possible shapes of a value",
             "utilisez `match` pour traiter les différentes formes possibles d'une valeur"
@@ -1175,6 +1491,49 @@ fn op_error(op: BinOp, l: &Value, r: &Value, span: Span) -> Box<Diagnostic> {
         ));
     }
     d.boxed()
+}
+
+/// Drops a value. Most values hold no memory: they need no call to the
+/// general (and large) code that frees values.
+#[inline(always)]
+fn discard(v: Value) {
+    match v {
+        Value::Unit | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::Builtin(_) => std::mem::forget(v),
+        v => drop(v),
+    }
+}
+
+/// Puts a value in a slot, dropping the one it replaces.
+#[inline(always)]
+fn set(slot: &mut Value, v: Value) {
+    discard(std::mem::replace(slot, v));
+}
+
+/// Local names and constants: their value is always there.
+#[inline(always)]
+fn is_leaf(e: &Node) -> bool {
+    matches!(e.kind, Kind::Local(_) | Kind::Captured(_) | Kind::Const(_))
+}
+
+/// `binop` on two whole numbers, for the common operators; `None` leaves the
+/// other cases and the errors to `binop`.
+#[inline(always)]
+fn int_op(op: BinOp, a: i64, b: i64) -> Option<Value> {
+    Some(match op {
+        BinOp::Add => Value::Int(a.checked_add(b)?),
+        BinOp::Sub => Value::Int(a.checked_sub(b)?),
+        BinOp::Mul => Value::Int(a.checked_mul(b)?),
+        // Rounded down, and the remainder has the sign of the divisor.
+        BinOp::IntDiv if b > 0 => Value::Int(a.div_euclid(b)),
+        BinOp::Mod if b > 0 => Value::Int(a.rem_euclid(b)),
+        BinOp::Eq => Value::Bool(a == b),
+        BinOp::Ne => Value::Bool(a != b),
+        BinOp::Lt => Value::Bool(a < b),
+        BinOp::Le => Value::Bool(a <= b),
+        BinOp::Gt => Value::Bool(a > b),
+        BinOp::Ge => Value::Bool(a >= b),
+        _ => return None,
+    })
 }
 
 fn num(v: &Value) -> Option<f64> {
@@ -1389,6 +1748,7 @@ fn range(a: &Value, b: &Value, span: Span) -> Fallible<Value> {
     }
 }
 
+#[inline(never)]
 fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
     let out_of_range = |n: i64, len: usize, what: String| {
         let mut d = Diagnostic::error("E007", t!("index {n} is out of range: {what}", "l'indice {n} est hors limites : {what}"))

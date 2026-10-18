@@ -218,6 +218,7 @@ fn corpus() -> Vec<(String, String)> {
     let mut out = Vec::new();
     let mut ry = Vec::new();
     files(&root().join("examples"), "ry", &mut ry);
+    files(&root().join("bench"), "ry", &mut ry);
     for p in ry {
         out.push((p.display().to_string(), std::fs::read_to_string(&p).unwrap()));
     }

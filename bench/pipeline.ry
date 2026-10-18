@@ -1,0 +1,12 @@
+# List pipelines over a million elements.
+
+numbers = 1..1_000_000
+
+evens = numbers
+  |> map(fn(x) = x * 3)
+  |> filter(fn(x) = x % 2 == 0)
+  |> map(fn(x) = x // 2)
+
+squares = numbers |> fold(0, fn(acc, x) = (acc + x * x) % 1_000_000_007)
+
+print(len(evens), sum(evens), squares, numbers |> filter(is_odd) |> sum)

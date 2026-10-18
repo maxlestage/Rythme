@@ -789,24 +789,36 @@ pub fn wrong_arity(f: &str, given: usize, min: usize, max: usize, span: Span) ->
     .boxed()
 }
 
-/// Calls the function `g` given to `f`: if it takes another number of
-/// arguments, the mistake is in the call to `f`.
-fn call_given(it: &mut Interp, f: &str, g: &Value, args: Vec<Value>, span: Span) -> Fallible<Value> {
+/// Checks that the function `g` given to `f` takes the `given` arguments
+/// that `f` gives it: otherwise, the mistake is in the call to `f`.
+fn given_arity(f: &str, g: &Value, given: usize, span: Span) -> Fallible<()> {
     let (min, max) = match g {
         Value::Func(c) => (c.def.arity, c.def.arity),
         Value::Builtin(b) => (b.min, b.max),
         Value::Ctor(c) => (c.fields.len(), c.fields.len()),
         _ => (0, MANY),
     };
-    if args.len() < min || args.len() > max {
-        return Err(wrong_arity(f, args.len(), min, max, span));
+    if given < min || given > max {
+        return Err(wrong_arity(f, given, min, max, span));
     }
-    it.call(g.clone(), args, span)
+    Ok(())
+}
+
+/// Calls the function `g` given to `f` with one argument (see `given_arity`).
+fn call_given1(it: &mut Interp, f: &str, g: &Value, x: Value, span: Span) -> Fallible<Value> {
+    given_arity(f, g, 1, span)?;
+    it.call1(g, x, span)
+}
+
+/// Calls the function `g` given to `f` with two arguments (see `given_arity`).
+fn call_given2(it: &mut Interp, f: &str, g: &Value, x: Value, y: Value, span: Span) -> Fallible<Value> {
+    given_arity(f, g, 2, span)?;
+    it.call2(g, x, y, span)
 }
 
 /// Calls a function that must answer true or false.
 fn test(it: &mut Interp, f: &Value, x: &Value, name: &str, span: Span) -> Fallible<bool> {
-    match call_given(it, name, f, vec![x.clone()], span)? {
+    match call_given1(it, name, f, x.clone(), span)? {
         Value::Bool(b) => Ok(b),
         other => Err(wrong_return(name, BOOL, &other.describe(), span)),
     }
@@ -846,9 +858,24 @@ fn f64_to_int(x: f64, span: Span) -> Fallible<Value> {
 // ----- Basics ------------------------------------------------------------
 
 fn print(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
-    let parts: Vec<String> = a.iter().map(|v| v.display()).collect();
-    out(&parts.join(" "));
+    out(&joined(a, " ", usize::MAX).unwrap_or_default());
     Ok(Value::Unit)
+}
+
+/// The values as `display` shows them, with `sep` between them; `None` as
+/// soon as they take more than `max` bytes, counting a `sep` after each one.
+fn joined(values: &[Value], sep: &str, max: usize) -> Option<String> {
+    let mut s = String::new();
+    for (i, v) in values.iter().enumerate() {
+        if i > 0 {
+            s.push_str(sep);
+        }
+        v.write_display(&mut s);
+        if s.len() + sep.len() > max {
+            return None;
+        }
+    }
+    Some(s)
 }
 
 fn debug(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -1350,10 +1377,11 @@ fn split(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         s.split_whitespace().map(text_value).collect()
     } else {
         let sep = text(a, 1, "split", span)?;
-        if sep.is_empty() {
-            s.chars().map(|c| text_value(c.to_string())).collect()
-        } else {
-            s.split(sep).map(text_value).collect()
+        match single_char(sep) {
+            _ if sep.is_empty() => s.chars().map(|c| text_value(c.to_string())).collect(),
+            // Same result, found much faster.
+            Some(c) => s.split(c).map(text_value).collect(),
+            None => s.split(sep).map(text_value).collect(),
         }
     };
     Ok(Value::list(parts))
@@ -1362,11 +1390,7 @@ fn split(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 fn join(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "join", span)?;
     let sep = if a.len() == 2 { text(a, 1, "join", span)? } else { "" };
-    let parts: Vec<String> = l.iter().map(|v| v.display()).collect();
-    if parts.iter().map(|p| p.len() + sep.len()).sum::<usize>() > MAX_TEXT {
-        return Err(too_big(false, span));
-    }
-    Ok(text_value(parts.join(sep)))
+    joined(l.as_slice(), sep, MAX_TEXT).map(text_value).ok_or_else(|| too_big(false, span))
 }
 
 fn contains(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -1398,7 +1422,20 @@ fn replace(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     if new.len() > old.len() && s.len() + s.matches(old).count() * (new.len() - old.len()) > MAX_TEXT {
         return Err(too_big(false, span));
     }
-    Ok(text_value(s.replace(old, new)))
+    Ok(text_value(match single_char(old) {
+        Some(c) => s.replace(c, new),
+        None => s.replace(old, new),
+    }))
+}
+
+/// The character, if the text is one character: searching for a character is
+/// much faster than searching for a text.
+fn single_char(s: &str) -> Option<char> {
+    let mut chars = s.chars();
+    match (chars.next(), chars.next()) {
+        (Some(c), None) => Some(c),
+        _ => None,
+    }
 }
 
 fn chars(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -1940,17 +1977,17 @@ fn map(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         Value::List(l) => {
             let mut out = Vec::with_capacity(l.len());
             for x in l.iter() {
-                out.push(call_given(it, "map", &f, vec![x.clone()], span)?);
+                out.push(call_given1(it, "map", &f, x.clone(), span)?);
             }
             Ok(Value::list(out))
         }
         v => match it.wrap(v) {
             Wrap::Some => {
-                let r = call_given(it, "map", &f, vec![Interp::payload(v)], span)?;
+                let r = call_given1(it, "map", &f, Interp::payload(v), span)?;
                 Ok(it.some(r))
             }
             Wrap::Ok => {
-                let r = call_given(it, "map", &f, vec![Interp::payload(v)], span)?;
+                let r = call_given1(it, "map", &f, Interp::payload(v), span)?;
                 Ok(it.ok(r))
             }
             Wrap::None | Wrap::Err => Ok(v.clone()),
@@ -1976,7 +2013,7 @@ fn fold(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let f = func(a, 2, "fold", span)?;
     let mut acc = a[1].clone();
     for x in l.iter() {
-        acc = call_given(it, "fold", &f, vec![acc, x.clone()], span)?;
+        acc = call_given2(it, "fold", &f, acc, x.clone(), span)?;
     }
     Ok(acc)
 }
@@ -1987,7 +2024,7 @@ fn scan(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let mut acc = a[1].clone();
     let mut out = Vec::with_capacity(l.len());
     for x in l.iter() {
-        acc = call_given(it, "scan", &f, vec![acc, x.clone()], span)?;
+        acc = call_given2(it, "scan", &f, acc, x.clone(), span)?;
         out.push(acc.clone());
     }
     Ok(Value::list(out))
@@ -1997,7 +2034,7 @@ fn each(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "each", span)?;
     let f = func(a, 1, "each", span)?;
     for x in l.iter() {
-        call_given(it, "each", &f, vec![x.clone()], span)?;
+        call_given1(it, "each", &f, x.clone(), span)?;
     }
     Ok(Value::Unit)
 }
@@ -2015,6 +2052,12 @@ fn sum(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
                 ),
                 span,
             ));
+        }
+        if let (Value::Int(total), Value::Int(n)) = (&acc, x) {
+            if let Some(t) = total.checked_add(*n) {
+                acc = Value::Int(t);
+                continue;
+            }
         }
         acc = binop(crate::ast::BinOp::Add, &acc, x, span)?;
     }
@@ -2034,6 +2077,12 @@ fn product(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
                 ),
                 span,
             ));
+        }
+        if let (Value::Int(total), Value::Int(n)) = (&acc, x) {
+            if let Some(t) = total.checked_mul(*n) {
+                acc = Value::Int(t);
+                continue;
+            }
         }
         acc = binop(crate::ast::BinOp::Mul, &acc, x, span)?;
     }
@@ -2125,7 +2174,10 @@ fn reverse(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 fn sort_pairs(pairs: &mut [(Value, Value)], name: &str, span: Span) -> Fallible<()> {
     // Sort with a total order (it never fails), then check that neighbours
     // can really be compared: mixed kinds or NaN end up side by side.
-    pairs.sort_by(|x, y| x.0.total_cmp(&y.0));
+    pairs.sort_by(|x, y| match (&x.0, &y.0) {
+        (Value::Int(a), Value::Int(b)) => a.cmp(b),
+        (a, b) => a.total_cmp(b),
+    });
     let bad = pairs.windows(2).find(|w| w[0].0.compare(&w[1].0).is_none()).map(|w| (w[0].0.clone(), w[1].0.clone()));
     if let Some((x, y)) = bad {
         return Err(Diagnostic::error(
@@ -2144,6 +2196,12 @@ fn sort_pairs(pairs: &mut [(Value, Value)], name: &str, span: Span) -> Fallible<
 
 fn sort(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "sort", span)?;
+    // Whole numbers alone: sorted as such, much faster (equal ones cannot be told apart).
+    if l.iter().all(|v| matches!(v, Value::Int(_))) {
+        let mut ints: Vec<i64> = l.iter().map(|v| if let Value::Int(n) = v { *n } else { 0 }).collect();
+        ints.sort_unstable();
+        return Ok(Value::list(ints.into_iter().map(Value::Int).collect()));
+    }
     let mut pairs: Vec<(Value, Value)> = l.iter().map(|v| (v.clone(), Value::Unit)).collect();
     sort_pairs(&mut pairs, "sort", span)?;
     Ok(Value::list(pairs.into_iter().map(|p| p.0).collect()))
@@ -2154,7 +2212,7 @@ fn sort_by(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let f = func(a, 1, "sort_by", span)?;
     let mut pairs = Vec::with_capacity(l.len());
     for x in l.iter() {
-        pairs.push((call_given(it, "sort_by", &f, vec![x.clone()], span)?, x.clone()));
+        pairs.push((call_given1(it, "sort_by", &f, x.clone(), span)?, x.clone()));
     }
     sort_pairs(&mut pairs, "sort_by", span)?;
     Ok(Value::list(pairs.into_iter().map(|p| p.1).collect()))
@@ -2408,7 +2466,7 @@ fn extreme_by(it: &mut Interp, a: &[Value], name: &str, want: Ordering, span: Sp
     let f = func(a, 1, name, span)?;
     let mut best: Option<(Value, &Value)> = None;
     for x in l.iter() {
-        let k = call_given(it, name, &f, vec![x.clone()], span)?;
+        let k = call_given1(it, name, &f, x.clone(), span)?;
         match &best {
             None => best = Some((k, x)),
             Some((bk, _)) => match k.compare(bk) {
@@ -2470,7 +2528,7 @@ fn flat_map(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let f = func(a, 1, "flat_map", span)?;
     let mut out = Vec::new();
     for x in l.iter() {
-        match call_given(it, "flat_map", &f, vec![x.clone()], span)? {
+        match call_given1(it, "flat_map", &f, x.clone(), span)? {
             Value::List(inner) if out.len() + inner.len() > MAX_LIST => return Err(too_big(true, span)),
             Value::List(inner) => out.extend(inner.iter().cloned()),
             other => return Err(wrong_return("flat_map", LIST, &other.describe(), span)),
@@ -2499,7 +2557,7 @@ fn group_by(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let mut keys: Vec<Rc<str>> = Vec::new();
     let mut groups: std::collections::HashMap<Rc<str>, Vec<Value>> = std::collections::HashMap::new();
     for x in l.iter() {
-        let k: Rc<str> = Rc::from(call_given(it, "group_by", &f, vec![x.clone()], span)?.display());
+        let k: Rc<str> = Rc::from(call_given1(it, "group_by", &f, x.clone(), span)?.display());
         groups.entry(k.clone()).or_insert_with(|| {
             keys.push(k.clone());
             Vec::new()
@@ -2595,7 +2653,7 @@ fn map_values(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let f = func(a, 1, "map_values", span)?;
     let mut out = Record::new();
     for (k, v) in r.iter() {
-        out.set(k.clone(), call_given(it, "map_values", &f, vec![v.clone()], span)?);
+        out.set(k.clone(), call_given1(it, "map_values", &f, v.clone(), span)?);
     }
     Ok(Value::Record(Rc::new(out)))
 }
@@ -2664,7 +2722,7 @@ fn and_then(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     if matches!(kind, Wrap::None | Wrap::Err) {
         return Ok(a[0].clone());
     }
-    let r = call_given(it, "and_then", &f, vec![Interp::payload(&a[0])], span)?;
+    let r = call_given1(it, "and_then", &f, Interp::payload(&a[0]), span)?;
     match (kind, it.wrap(&r)) {
         (Wrap::Some, Wrap::Some | Wrap::None) | (Wrap::Ok, Wrap::Ok | Wrap::Err) => Ok(r),
         _ => Err(wrong_return("and_then", if kind == Wrap::Some { OPTION } else { RESULT }, &r.describe(), span)),
@@ -2684,7 +2742,7 @@ fn map_err(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     match it.wrap(&a[0]) {
         Wrap::Ok => Ok(a[0].clone()),
         Wrap::Err => {
-            let e = call_given(it, "map_err", &f, vec![Interp::payload(&a[0])], span)?;
+            let e = call_given1(it, "map_err", &f, Interp::payload(&a[0]), span)?;
             Ok(it.err(e))
         }
         _ => Err(wrong("map_err", 0, Expected::Result, &a[0], span)),

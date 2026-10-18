@@ -2,10 +2,12 @@
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::fmt::Write;
 use std::rc::Rc;
 
 use crate::ast::FnDef;
 use crate::builtins::Builtin;
+use crate::compile::{FnCode, Sibling};
 use crate::symbol::Sym;
 
 #[derive(Clone)]
@@ -28,22 +30,24 @@ pub enum Value {
 #[derive(Clone)]
 pub struct List {
     data: Rc<Vec<Value>>,
-    start: usize,
-    end: usize,
+    // 32-bit positions keep every value small (a list of 4 billion
+    // elements would not fit in memory anyway).
+    start: u32,
+    end: u32,
 }
 
 impl List {
     pub fn new(v: Vec<Value>) -> List {
-        let end = v.len();
+        let end = u32::try_from(v.len()).expect("a list of more than 4 billion elements");
         List { data: Rc::new(v), start: 0, end }
     }
 
     pub fn as_slice(&self) -> &[Value] {
-        &self.data[self.start..self.end]
+        &self.data[self.start as usize..self.end as usize]
     }
 
     pub fn len(&self) -> usize {
-        self.end - self.start
+        (self.end - self.start) as usize
     }
 
     pub fn is_empty(&self) -> bool {
@@ -58,7 +62,7 @@ impl List {
     pub fn slice(&self, from: usize, to: usize) -> List {
         let to = to.min(self.len());
         let from = from.min(to);
-        List { data: self.data.clone(), start: self.start + from, end: self.start + to }
+        List { data: self.data.clone(), start: self.start + from as u32, end: self.start + to as u32 }
     }
 
     pub fn get(&self, i: usize) -> Option<&Value> {
@@ -69,9 +73,67 @@ impl List {
 /// A record: named fields, kept in the order they were written.
 #[derive(Clone, Default)]
 pub struct Record {
-    keys: Vec<Rc<str>>,
+    /// The names of the fields, shared by the records made from one another
+    /// (`{..r, x: 1}`) and by the records made by the same `{...}` in the code.
+    shape: Rc<Shape>,
     vals: Vec<Value>,
-    index: HashMap<Rc<str>, usize>,
+}
+
+/// The names of the fields of records, in order.
+#[derive(Clone, Default)]
+pub struct Shape {
+    keys: Vec<Rc<str>>,
+    /// Where each name is, for records with many fields: small ones are
+    /// searched in order, which is faster.
+    index: Option<HashMap<Rc<str>, usize>>,
+}
+
+/// Records with more fields than this find them with an index.
+const INDEXED: usize = 12;
+
+impl Shape {
+    /// The fields of a record, all different.
+    pub fn new(keys: Vec<Rc<str>>) -> Shape {
+        let mut shape = Shape { keys, index: None };
+        shape.add_index();
+        shape
+    }
+
+    pub fn len(&self) -> usize {
+        self.keys.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.keys.is_empty()
+    }
+
+    fn add_index(&mut self) {
+        if self.index.is_none() && self.keys.len() > INDEXED {
+            self.index = Some(self.keys.iter().enumerate().map(|(i, k)| (k.clone(), i)).collect());
+        }
+    }
+
+    fn position(&self, key: &str) -> Option<usize> {
+        match &self.index {
+            Some(index) => index.get(key).copied(),
+            None => self.keys.iter().position(|k| same_key(k, key)),
+        }
+    }
+
+    fn push(&mut self, key: Rc<str>) {
+        if let Some(index) = &mut self.index {
+            index.insert(key.clone(), self.keys.len());
+        }
+        self.keys.push(key);
+        self.add_index();
+    }
+}
+
+/// Names written in the code are shared: comparing their addresses is
+/// often enough, and they are short.
+#[inline]
+fn same_key(a: &str, b: &str) -> bool {
+    a.len() == b.len() && (std::ptr::eq(a.as_ptr(), b.as_ptr()) || a.bytes().zip(b.bytes()).all(|(x, y)| x == y))
 }
 
 impl Record {
@@ -79,16 +141,21 @@ impl Record {
         Record::default()
     }
 
+    /// A record with the fields of `shape`, in order.
+    pub fn with_shape(shape: Rc<Shape>, vals: Vec<Value>) -> Record {
+        debug_assert_eq!(shape.len(), vals.len());
+        Record { shape, vals }
+    }
+
     pub fn get(&self, key: &str) -> Option<&Value> {
-        self.index.get(key).map(|&i| &self.vals[i])
+        self.shape.position(key).map(|i| &self.vals[i])
     }
 
     pub fn set(&mut self, key: Rc<str>, val: Value) {
-        match self.index.get(&key) {
-            Some(&i) => self.vals[i] = val,
+        match self.shape.position(&key) {
+            Some(i) => self.vals[i] = val,
             None => {
-                self.index.insert(key.clone(), self.keys.len());
-                self.keys.push(key);
+                Rc::make_mut(&mut self.shape).push(key);
                 self.vals.push(val);
             }
         }
@@ -105,73 +172,31 @@ impl Record {
     }
 
     pub fn len(&self) -> usize {
-        self.keys.len()
+        self.vals.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.keys.is_empty()
+        self.vals.is_empty()
     }
 
     pub fn keys(&self) -> &[Rc<str>] {
-        &self.keys
+        &self.shape.keys
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (&Rc<str>, &Value)> {
-        self.keys.iter().zip(self.vals.iter())
-    }
-}
-
-/// The environment of local names. It is persistent: adding a name creates a
-/// new environment and leaves the old one untouched.
-#[derive(Clone, Default)]
-pub struct Env(Option<Rc<EnvNode>>);
-
-pub struct EnvNode {
-    sym: Sym,
-    val: Value,
-    next: Env,
-}
-
-impl Env {
-    pub fn empty() -> Env {
-        Env(None)
-    }
-
-    pub fn bind(&self, sym: Sym, val: Value) -> Env {
-        Env(Some(Rc::new(EnvNode { sym, val, next: self.clone() })))
-    }
-
-    pub fn lookup(&self, sym: Sym) -> Option<&Value> {
-        let mut cur = &self.0;
-        while let Some(node) = cur {
-            if node.sym == sym {
-                return Some(&node.val);
-            }
-            cur = &node.next.0;
-        }
-        None
-    }
-
-    pub fn names(&self) -> Vec<Sym> {
-        let mut out = Vec::new();
-        let mut cur = &self.0;
-        while let Some(node) = cur {
-            out.push(node.sym);
-            cur = &node.next.0;
-        }
-        out
+        self.shape.keys.iter().zip(self.vals.iter())
     }
 }
 
 pub struct Closure {
     pub def: Rc<FnDef>,
-    pub env: Env,
-    /// The name under which a local function sees itself (for recursion):
-    /// `fn name(...)` or `name = fn(...)` inside a block.
-    pub self_name: Option<Sym>,
+    pub code: Rc<FnCode>,
+    /// The local names of enclosing functions that the function uses, in the
+    /// order of `code.captures`.
+    pub captured: Vec<Value>,
     /// Local functions defined one after the other in a block see each other,
-    /// as functions do at the top level of a file.
-    pub siblings: Option<Rc<[Rc<FnDef>]>>,
+    /// as functions do at the top level of a file: the functions of its group.
+    pub siblings: Option<Rc<[Sibling]>>,
 }
 
 pub struct CtorInfo {
@@ -224,6 +249,14 @@ impl Value {
         }
     }
 
+    /// Writes what `display` returns at the end of `out`.
+    pub fn write_display(&self, out: &mut String) {
+        match self {
+            Value::Text(s) => out.push_str(s),
+            _ => self.write_repr(out, usize::MAX),
+        }
+    }
+
     /// How the value is written in code: texts with quotes.
     pub fn repr(&self) -> String {
         let mut out = String::new();
@@ -257,7 +290,9 @@ impl Value {
                 Item::Value(v) => match v {
                     Value::Unit => out.push_str("()"),
                     Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
-                    Value::Int(n) => out.push_str(&n.to_string()),
+                    Value::Int(n) => {
+                        let _ = write!(out, "{n}");
+                    }
                     Value::Float(f) => out.push_str(&fmt_float(*f)),
                     Value::Text(s) => write_text_repr(s, out),
                     Value::List(l) => {
@@ -275,7 +310,7 @@ impl Value {
                         todo.push(Item::Str("}"));
                         for i in (0..r.len()).rev() {
                             todo.push(Item::Value(&r.vals[i]));
-                            todo.push(Item::Key(&r.keys[i]));
+                            todo.push(Item::Key(&r.shape.keys[i]));
                             if i > 0 {
                                 todo.push(Item::Str(", "));
                             }
@@ -511,24 +546,50 @@ fn is_container(v: &Value) -> bool {
     matches!(v, Value::List(_) | Value::Record(_) | Value::Variant(_))
 }
 
-/// Frees nested values one by one instead of recursively, so that a structure
-/// nested millions of levels deep does not overflow the stack when it is freed.
+thread_local! {
+    /// How many values are being freed one inside the other.
+    static FREEING: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Frees the parts of a value. A few levels are freed recursively, which is
+/// faster; deeper ones one by one, so that a structure nested millions of
+/// levels deep does not overflow the stack when it is freed.
+fn free_parts(parts: &mut Vec<Value>) {
+    const RECURSIVE: usize = 32;
+    let depth = FREEING.with(|d| d.get());
+    if depth < RECURSIVE {
+        FREEING.with(|d| d.set(depth + 1));
+        parts.clear();
+        FREEING.with(|d| d.set(depth));
+    } else {
+        drop_iteratively(std::mem::take(parts));
+    }
+}
+
+/// Frees nested values one by one instead of recursively.
 fn drop_iteratively(mut todo: Vec<Value>) {
     while let Some(v) = todo.pop() {
         match v {
+            // A value whose parts hold no other values is freed directly.
             Value::Variant(mut rc) => {
                 if let Some(var) = Rc::get_mut(&mut rc) {
-                    todo.append(&mut var.fields);
+                    if var.fields.iter().any(is_container) {
+                        todo.append(&mut var.fields);
+                    }
                 }
             }
             Value::List(mut l) => {
                 if let Some(items) = Rc::get_mut(&mut l.data) {
-                    todo.append(items);
+                    if items.iter().any(is_container) {
+                        todo.append(items);
+                    }
                 }
             }
             Value::Record(mut rc) => {
                 if let Some(r) = Rc::get_mut(&mut rc) {
-                    todo.append(&mut r.vals);
+                    if r.vals.iter().any(is_container) {
+                        todo.append(&mut r.vals);
+                    }
                 }
             }
             _ => {}
@@ -539,7 +600,7 @@ fn drop_iteratively(mut todo: Vec<Value>) {
 impl Drop for Variant {
     fn drop(&mut self) {
         if self.fields.iter().any(is_container) {
-            drop_iteratively(std::mem::take(&mut self.fields));
+            free_parts(&mut self.fields);
         }
     }
 }
@@ -548,7 +609,7 @@ impl Drop for List {
     fn drop(&mut self) {
         if let Some(items) = Rc::get_mut(&mut self.data) {
             if items.iter().any(is_container) {
-                drop_iteratively(std::mem::take(items));
+                free_parts(items);
             }
         }
     }
@@ -557,7 +618,7 @@ impl Drop for List {
 impl Drop for Record {
     fn drop(&mut self) {
         if self.vals.iter().any(is_container) {
-            drop_iteratively(std::mem::take(&mut self.vals));
+            free_parts(&mut self.vals);
         }
     }
 }

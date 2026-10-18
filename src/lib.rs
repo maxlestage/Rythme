@@ -1,14 +1,16 @@
 //! Rythme: a simple, purely functional programming language, with help
 //! everywhere. This crate contains the whole interpreter.
 //!
-//! The pipeline: [`lexer`] → [`parser`] → [`check`] → [`interp`], driven by
-//! [`driver`]. Every message exists in English and French ([`lang`]).
+//! The pipeline: [`lexer`] → [`parser`] → [`check`] → [`compile`] →
+//! [`interp`], driven by [`driver`]. Every message exists in English and
+//! French ([`lang`]).
 
 #[macro_use]
 pub mod lang;
 pub mod ast;
 pub mod builtins;
 pub mod check;
+pub mod compile;
 pub mod diagnostic;
 pub mod driver;
 pub mod format;

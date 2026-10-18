@@ -1,0 +1,9 @@
+# Records created, read and updated in a recursion.
+
+fn step(0, state) = state
+fn step(n, state) =
+  step(n - 1, {..state, count: state.count + 1, total: state.total + n % 7, last: {at: n, twice: n * 2}})
+
+final = step(1_000_000, {name: "counter", count: 0, total: 0, last: {at: 0, twice: 0}})
+
+print(final.count, final.total, final.last.at, final.last.twice)

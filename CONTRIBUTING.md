@@ -10,6 +10,7 @@ confused, a message should explain.
 cargo build                 # target/debug/rythme
 cargo test                  # examples, language, messages, commands
 cargo fmt && cargo clippy --all-targets -- -D warnings
+bench/run.sh                # speed: best time of each program of bench/
 ```
 
 The tests run the real `rythme` program. `tests/examples.rs` checks that every
@@ -24,8 +25,8 @@ lexer, the parser or the interpreter, run a longer session:
 ## How the interpreter is organised
 
 ```
-source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ interp.rs
-               tokens       syntax tree   errors        values
+source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs ─▶ interp.rs
+               tokens       syntax tree   errors        slots         values
                                           before running
 ```
 
@@ -36,6 +37,11 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ interp.rs
   the types of expressions to report operations that would fail every time
   they run. A type only says what is certain: when the checker is not sure,
   it says nothing, because a correct program must never be rejected.
+- `compile.rs` prepares the syntax tree for `interp.rs`: each local name
+  becomes a numbered slot of the frame of its function, or a value captured
+  by a closure, so that running never searches for a local name. After a
+  change to the interpreter, run `bench/run.sh` before and after: the
+  programs of `bench/` print a checksum of their work and their best time.
 - `diagnostic.rs` prints messages in the style of Rust.
 - `format.rs` is `rythme fmt`, the formatter: run `cargo run -- fmt examples`
   after changing an example. Its tests (`tests/format.rs`) check on every
