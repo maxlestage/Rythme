@@ -861,7 +861,7 @@ Comandos
   rythme explain E003       explicar un código de error
   rythme -e "código"        ejecutar un trozo de código
   rythme lsp                servidor de lenguaje, para los editores (VS Code, Neovim...)
-  option --lang en|fr|es    idioma de los mensajes (o variable RYTHME_LANG)
+  opción --lang en|fr|es    idioma de los mensajes (o variable RYTHME_LANG)
 
 Temas (rythme help TEMA)
   start       el lenguaje en un minuto
