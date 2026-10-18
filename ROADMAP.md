@@ -30,9 +30,22 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   `select`, `reduce`, `size`...) as real built-in names; known by the
   checker, the formatter, the language server, the editors' grammars,
   `rythme help ruby` and the manual. Every existing program keeps working.
-- [ ] **Patterns on ranges and texts.** `1..9 -> ...` in `match` (Int and
+  - [x] **Calls without parentheses.** `puts "Hello"`, `print x, y`,
+    `assert_eq total, 42`, `each xs do |x| ... end` at the start of a
+    statement or of a result (a branch of `if`/`unless`, a case of `match`,
+    the body after the `=` of a function, a lambda or a test:
+    `if ok then puts "yes" else puts "no"`); `puts [1]` and `puts -1` call too, but `x [0]` and `x -1` stay
+    an index and a subtraction when the code gives `x` a value (as in Ruby),
+    and `rythme fmt` writes those `x[0]` and `x - 1`. Interpreter, checker,
+    formatter, language server (signature help), Tree-sitter and VS Code
+    grammars, `rythme steps`, `rythme help ruby` and the manual (3.15).
+- [x] **Patterns on ranges and texts.** `1..9 -> ...` in `match` (Int and
   Float bounds, exhaustiveness knows nothing new), and a text prefix pattern
   only if it stays simple; the checker reports overlapping or empty ranges.
+  Done as `1..9`, `-5..-1`, `0.0..0.5` (both ends included, Int or Float
+  values) and `"Mr " + name`, in `match`, function definitions and
+  definitions; W004 for empty ranges and ranges handled by the cases before,
+  W010 for ranges that overlap.
 - [x] **Whole numbers without limit.** Int grows beyond 64 bits instead of
   E012 (the way Python does), with the small-number fast path kept; `pow`,
   `gcd`, `text`, `parse_int`, JSON and comparisons with Float are exact.
@@ -48,11 +61,11 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   printing, differences and additions in days/seconds, day of the week;
   UTC plus the local offset when the system gives it; no dependency if
   possible.
-- [ ] **Dictionaries and sets.** Keys of any comparable value (not only
+- [x] **Dictionaries and sets.** Keys of any comparable value (not only
   texts): `dict(...)`, `get`, `put`, `has`, `keys`... on them, and sets
   (`set(list)`, `union`, `intersection`, `difference`), printed and compared
   like the other values, persistent (no mutation), with the checker's types.
-- [ ] **Text tools.** Searching and splitting with simple patterns (wildcards
+- [x] **Text tools.** Searching and splitting with simple patterns (wildcards
   or a small, well-explained regular expression subset), `format` of numbers
   (thousands separators, padding), `lines`/`words` helpers if missing,
   `trim_start`/`trim_end`, case-insensitive comparison.
@@ -65,10 +78,13 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 
 ## Help everywhere, for everyone
 
-- [ ] **Messages in Spanish.** The translation system takes any number of
+- [x] **Messages in Spanish.** The translation system takes any number of
   languages (catalogs instead of two-argument `t!`), with tests that every
   message exists in every language; then every message, help topic and
-  `rythme learn` in Spanish (`--lang es`).
+  `rythme learn` in Spanish (`--lang es`). Done: `t!(en, fr)` stays, each
+  other language is a catalog `src/i18n/<code>.rs` checked by
+  `tests/i18n.rs` (see CONTRIBUTING); the 30 exercises stay in English and
+  French.
 - [ ] **Messages in German, Portuguese and Chinese** (one language per item
   if needed), with the website and the playground offering each language.
 - [x] **Step-by-step evaluation for teaching.** `rythme steps file.ry
@@ -98,7 +114,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 
 ## Speed and release
 
-- [ ] **Faster where it still hurts.** Building texts with `+` and adding to
+- [x] **Faster where it still hurts.** Building texts with `+` and adding to
   lists in constant amortized time, cheaper calls between local functions;
   measured with `bench/`, no behavior change.
 - [x] **Installers.** A `curl | sh` / PowerShell install script using the

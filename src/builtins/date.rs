@@ -67,13 +67,15 @@ fn civil_from_days(days: i64) -> (i64, i64, i64) {
     (year, month, day)
 }
 
+/// The months in English, translated by [`crate::lang::pick`].
+pub(crate) const MONTHS_EN: [&str; 12] =
+    ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 fn month_name(month: i64) -> &'static str {
-    const EN: [&str; 12] =
-        ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const FR: [&str; 12] =
         ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
     let i = (month - 1).clamp(0, 11) as usize;
-    crate::lang::pick(EN[i], FR[i])
+    crate::lang::pick(MONTHS_EN[i], FR[i])
 }
 
 impl Date {

@@ -116,7 +116,8 @@ pub fn duration(seconds: f64) -> String {
         format!("{} ms", (seconds * 1000.0).round() as u64)
     } else {
         let s = format!("{seconds:.2}");
-        let s = if crate::lang::is_fr() { s.replace('.', ",") } else { s };
+        // The decimal separator of the language.
+        let s = s.replace('.', crate::lang::pick(".", ","));
         format!("{s} s")
     }
 }

@@ -699,7 +699,7 @@ fn gap(text: &str) -> String {
 }
 
 fn html(plan: &Plan, title: &str) -> String {
-    let lang = if crate::lang::is_fr() { "fr" } else { "en" };
+    let lang = crate::lang::code();
     let comment = |text: &str| link_comment(text, &plan.targets, Format::Html);
     let code = |code: &str| format!("<pre><code>{}</code></pre>\n", highlight(code));
     let mut nav = String::new();

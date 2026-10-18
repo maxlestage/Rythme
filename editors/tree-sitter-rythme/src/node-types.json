@@ -158,7 +158,15 @@
         "named": true
       },
       {
+        "type": "prefix_pattern",
+        "named": true
+      },
+      {
         "type": "qualified_constructor",
+        "named": true
+      },
+      {
+        "type": "range_pattern",
         "named": true
       },
       {
@@ -299,6 +307,10 @@
           "named": true
         },
         {
+          "type": "command_call",
+          "named": true
+        },
+        {
           "type": "definition",
           "named": true
         },
@@ -373,6 +385,10 @@
           "named": true
         },
         {
+          "type": "command_call",
+          "named": true
+        },
+        {
           "type": "definition",
           "named": true
         },
@@ -417,6 +433,57 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "command_arguments",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "command_call",
+    "named": true,
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "command_arguments",
+            "named": true
+          }
+        ]
+      },
+      "block": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "do_block",
+            "named": true
+          }
+        ]
+      },
+      "function": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
             "named": true
           }
         ]
@@ -592,6 +659,10 @@
           {
             "type": "block",
             "named": true
+          },
+          {
+            "type": "command_call",
+            "named": true
           }
         ]
       },
@@ -657,6 +728,10 @@
           {
             "type": "_expression",
             "named": true
+          },
+          {
+            "type": "command_call",
+            "named": true
           }
         ]
       },
@@ -676,6 +751,10 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "command_call",
             "named": true
           }
         ]
@@ -737,6 +816,10 @@
           },
           {
             "type": "block",
+            "named": true
+          },
+          {
+            "type": "command_call",
             "named": true
           }
         ]
@@ -801,6 +884,10 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "command_call",
             "named": true
           }
         ]
@@ -1054,6 +1141,32 @@
     }
   },
   {
+    "type": "prefix_pattern",
+    "named": true,
+    "fields": {
+      "prefix": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "string",
+            "named": true
+          }
+        ]
+      },
+      "rest": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "qualified_constructor",
     "named": true,
     "fields": {
@@ -1099,6 +1212,48 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "range_pattern",
+    "named": true,
+    "fields": {
+      "end": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "float",
+            "named": true
+          },
+          {
+            "type": "integer",
+            "named": true
+          },
+          {
+            "type": "negative_number",
+            "named": true
+          }
+        ]
+      },
+      "start": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "float",
+            "named": true
+          },
+          {
+            "type": "integer",
+            "named": true
+          },
+          {
+            "type": "negative_number",
             "named": true
           }
         ]
@@ -1222,6 +1377,10 @@
           "named": true
         },
         {
+          "type": "command_call",
+          "named": true
+        },
+        {
           "type": "definition",
           "named": true
         },
@@ -1296,6 +1455,10 @@
           },
           {
             "type": "block",
+            "named": true
+          },
+          {
+            "type": "command_call",
             "named": true
           }
         ]
@@ -1400,6 +1563,10 @@
           {
             "type": "_expression",
             "named": true
+          },
+          {
+            "type": "command_call",
+            "named": true
           }
         ]
       },
@@ -1419,6 +1586,10 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "command_call",
             "named": true
           }
         ]

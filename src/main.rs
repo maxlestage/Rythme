@@ -61,9 +61,10 @@ fn cli(mut args: Vec<String>) -> i32 {
                         Some(v) => t!("unknown language `{v}`", "langue inconnue `{v}`"),
                         None => t!("`--lang` needs a language", "`--lang` attend une langue"),
                     };
+                    let codes = lang::codes();
                     return usage_error(t!(
-                        "{what}: write `--lang fr` or `--lang en`, like `rythme --lang fr hello.ry`",
-                        "{what} : écrivez `--lang fr` ou `--lang en`, comme `rythme --lang fr bonjour.ry`"
+                        "{what}: write `--lang` and one of {codes}, like `rythme --lang fr hello.ry`",
+                        "{what} : écrivez `--lang` et l'une de {codes}, comme `rythme --lang fr bonjour.ry`"
                     ));
                 }
             }

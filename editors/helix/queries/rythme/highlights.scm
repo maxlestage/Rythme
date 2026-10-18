@@ -55,6 +55,10 @@
 (pipe_expression
   right: (identifier) @function)
 
+; `puts "hi"`: a call without parentheses
+(command_call
+  function: (identifier) @function)
+
 (method_call
   method: (field_name) @function.method)
 

@@ -679,7 +679,12 @@ name = "rythme"
 version = "0.1.0"
 dependencies = [
  "rustyline",
+ "rythme-macros",
 ]
+
+[[package]]
+name = "rythme-macros"
+version = "0.1.0"
 
 [[package]]
 name = "rythme-site"

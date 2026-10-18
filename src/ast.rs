@@ -247,6 +247,11 @@ pub enum PatKind {
     Float(f64),
     Text(Rc<str>),
     Symbol(Sym),
+    /// `1..9`, `0.0..0.5`: a number from the first to the second, both included.
+    Range(Num, Num),
+    /// `"Mr " + name`: a text that starts with this text; the rest matches
+    /// the pattern, a name or `_`.
+    Prefix(Rc<str>, Box<Pattern>),
     Ctor(Sym, Vec<Pattern>),
     /// Elements, then the rest: `None` = no rest, `Some(None)` = `..`, `Some(Some(name))` = `..name`.
     List(Vec<Pattern>, Option<Option<(Sym, Span)>>),
@@ -260,6 +265,7 @@ impl Pattern {
         match &self.kind {
             PatKind::Bind(s) => out.push((*s, self.span)),
             PatKind::Ctor(_, ps) => ps.iter().for_each(|p| p.bindings(out)),
+            PatKind::Prefix(_, rest) => rest.bindings(out),
             PatKind::List(ps, rest) => {
                 ps.iter().for_each(|p| p.bindings(out));
                 if let Some(Some((s, sp))) = rest {
@@ -270,6 +276,36 @@ impl Pattern {
             // Alternatives may not bind names; looking at the first one avoids repeated errors.
             PatKind::Or(ps) => ps.iter().take(1).for_each(|p| p.bindings(out)),
             _ => {}
+        }
+    }
+}
+
+/// A bound of a range pattern.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Num {
+    Int(i64),
+    Float(f64),
+}
+
+impl Num {
+    /// Compares two numbers exactly, an Int with a Float too.
+    pub fn compare(self, other: Num) -> Option<std::cmp::Ordering> {
+        use crate::value::cmp_int_float;
+        match (self, other) {
+            (Num::Int(a), Num::Int(b)) => Some(a.cmp(&b)),
+            (Num::Float(a), Num::Float(b)) => a.partial_cmp(&b),
+            (Num::Int(a), Num::Float(b)) => cmp_int_float(a, b),
+            (Num::Float(a), Num::Int(b)) => cmp_int_float(b, a).map(std::cmp::Ordering::reverse),
+        }
+    }
+}
+
+/// As written in the code: `5`, `-2.5`.
+impl std::fmt::Display for Num {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Num::Int(n) => write!(f, "{n}"),
+            Num::Float(x) => f.write_str(&crate::value::fmt_float(*x)),
         }
     }
 }

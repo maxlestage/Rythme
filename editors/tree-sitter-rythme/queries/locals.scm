@@ -44,6 +44,9 @@
 (or_pattern
   (identifier) @local.definition.var)
 
+(prefix_pattern
+  rest: (identifier) @local.definition.var)
+
 (parenthesized_pattern
   (identifier) @local.definition.var)
 

@@ -10,18 +10,24 @@ use crate::bigint::{self, BigInt};
 use crate::diagnostic::{Diagnostic, Fallible};
 use crate::interp::{binop, resolve_index, too_big, Interp, Wrap, MAX_LIST, MAX_TEXT};
 use crate::source::{self, Span};
-use crate::types::{self, Kinds, BOOL, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, TEXT};
+use crate::types::{self, Kinds, BOOL, DICT, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, SET, TEXT};
 use crate::value::*;
 
 pub(crate) mod date;
+mod dicts;
 pub mod property;
 pub(crate) mod system;
 use date::{
     add_days, add_seconds, day_of_week, days_between, days_in_month, format_date, is_date, is_leap_year, now, parse_date, seconds_between,
     today,
 };
+use dicts::{dict, difference, intersection, is_subset, set, union};
 use property::{bools, check_all, floats, ints, lists_of, one_of, records_of, sample, texts};
 use system::{create_folder, delete_file, file_info, in_browser, input_lines, io_message, join_path, list_folder, options, split_path};
+pub mod regex;
+use regex::{captures, captures_all, find_all, find_first, matches, named_captures, replace_all, split_by};
+mod text_tools;
+use text_tools::{equals_ignore_case, format_number, trim_end, trim_start, words};
 
 pub type BuiltinFn = fn(&mut Interp, &[Value], Span) -> Fallible<Value>;
 
@@ -32,6 +38,7 @@ pub enum Category {
     Text,
     Lists,
     Records,
+    Dicts,
     Options,
     Files,
     Dates,
@@ -39,12 +46,13 @@ pub enum Category {
 }
 
 impl Category {
-    pub const ALL: [Category; 9] = [
+    pub const ALL: [Category; 10] = [
         Category::Basics,
         Category::Numbers,
         Category::Text,
         Category::Lists,
         Category::Records,
+        Category::Dicts,
         Category::Options,
         Category::Files,
         Category::Dates,
@@ -58,6 +66,7 @@ impl Category {
             Category::Text => t!("Text", "Texte"),
             Category::Lists => t!("Lists", "Listes"),
             Category::Records => t!("Records", "Enregistrements"),
+            Category::Dicts => t!("Dictionaries and sets", "Dictionnaires et ensembles"),
             Category::Options => t!("Option and Result", "Option et Result"),
             Category::Files => t!("Files", "Fichiers"),
             Category::Dates => t!("Dates and times", "Dates et heures"),
@@ -136,6 +145,9 @@ pub static ALIASES: &[Alias] = &[
     alias("all?", "all"),
     alias("empty?", "is_empty"),
     alias("key?", "has"),
+    alias("lstrip", "trim_start"),
+    alias("rstrip", "trim_end"),
+    alias("casecmp?", "equals_ignore_case"),
 ];
 
 /// The function that `name` is a Ruby name of: `upper` for `upcase`.
@@ -287,8 +299,8 @@ pub static BUILTINS: &[Builtin] = &[
        "lcm(4, 6)                  # 12"),
     // ----- Text -----
     b!("len", "len(x)", 1, 1, Text, len,
-       "Length of a text (in characters), a list or a record.",
-       "Longueur d'un texte (en caractères), d'une liste ou d'un enregistrement.",
+       "Length of a text (in characters), a list, a record, a dict or a set.",
+       "Longueur d'un texte (en caractères), d'une liste, d'un enregistrement, d'un dictionnaire ou d'un ensemble.",
        "len(\"été\")                 # 3\nlen([1, 2])                # 2"),
     b!("upper", "upper(text)", 1, 1, Text, upper, "The text in uppercase.", "Le texte en majuscules.", "upper(\"abc\")               # \"ABC\""),
     b!("lower", "lower(text)", 1, 1, Text, lower, "The text in lowercase.", "Le texte en minuscules.", "lower(\"ABC\")               # \"abc\""),
@@ -317,8 +329,8 @@ pub static BUILTINS: &[Builtin] = &[
        "Colle les éléments d'une liste en un seul texte, avec le séparateur entre eux.",
        "join([\"a\", \"b\"], \"-\")      # \"a-b\""),
     b!("contains", "contains(x, item)", 2, 2, Text, contains,
-       "Does the text contain this piece of text? Does the list contain this element? Does the record have this field?",
-       "Le texte contient-il ce morceau de texte ? La liste contient-elle cet élément ? L'enregistrement a-t-il ce champ ?",
+       "Does the text contain this piece of text? Does the list (or the set) contain this element? Does the record have this field, or the dict this key?",
+       "Le texte contient-il ce morceau de texte ? La liste (ou l'ensemble) contient-elle cet élément ? L'enregistrement a-t-il ce champ, ou le dictionnaire cette clé ?",
        "contains(\"hello\", \"ell\")   # true\ncontains([1, 2], 3)        # false"),
     b!("starts_with", "starts_with(text, start)", 2, 2, Text, starts_with,
        "Does the text start with this piece of text?",
@@ -380,15 +392,67 @@ pub static BUILTINS: &[Builtin] = &[
        "Writes a value as JSON text: records become objects, lists arrays, and `None` null. With `indent`, one element per line, shifted by that many spaces.",
        "Écrit une valeur en texte JSON : les enregistrements deviennent des objets, les listes des tableaux, et `None` null. Avec `indent`, un élément par ligne, décalé de ce nombre d'espaces.",
        "to_json([1.5, None, true])  # \"[1.5, null, true]\""),
+    b!("trim_start", "trim_start(text)", 1, 1, Text, trim_start,
+       "The text without spaces and line breaks at the start.",
+       "Le texte sans espaces ni retours à la ligne au début.",
+       "trim_start(\"  hi  \")       # \"hi  \""),
+    b!("trim_end", "trim_end(text)", 1, 1, Text, trim_end,
+       "The text without spaces and line breaks at the end.",
+       "Le texte sans espaces ni retours à la ligne à la fin.",
+       "trim_end(\"  hi  \")         # \"  hi\""),
+    b!("words", "words(text)", 1, 1, Text, words,
+       "The list of the words of a text: letters and digits, accents included, with `'` or `-` inside a word. Punctuation and spaces separate them.",
+       "La liste des mots d'un texte : lettres et chiffres, accents compris, avec `'` ou `-` à l'intérieur d'un mot. La ponctuation et les espaces les séparent.",
+       "words(\"Hello, world! It's me.\")   # [\"Hello\", \"world\", \"It's\", \"me\"]"),
+    b!("equals_ignore_case", "equals_ignore_case(a, b)", 2, 2, Text, equals_ignore_case,
+       "Are the two texts the same when uppercase and lowercase letters count as equal?",
+       "Les deux textes sont-ils pareils quand majuscules et minuscules comptent comme égales ?",
+       "equals_ignore_case(\"Été\", \"éTÉ\")   # true"),
+    b!("format_number", "format_number(x, decimals, language)", 1, 3, Text, format_number,
+       "Writes a number for people: thousands separated, with exactly `decimals` decimals if given, in the style of a language: \"en\" (1,234.5, by default), \"fr\" (1 234,5), \"de\", \"es\", \"it\", \"nl\" or \"pt\" (1.234,5). To line it up in a column, use `pad_left`.",
+       "Écrit un nombre pour les humains : milliers séparés, avec exactement `decimals` décimales si elles sont données, dans le style d'une langue : \"en\" (1,234.5, par défaut), \"fr\" (1 234,5), \"de\", \"es\", \"it\", \"nl\" ou \"pt\" (1.234,5). Pour l'aligner dans une colonne, utilisez `pad_left`.",
+       "format_number(1234567)     # \"1,234,567\"\nformat_number(1234.5, 2)   # \"1,234.50\"\nformat_number(-1234.5, 2, \"fr\")   # \"-1 234,50\""),
+    b!("matches", "matches(text, regex)", 2, 2, Text, matches,
+       "Does the whole text match the regex (a regular expression: see `rythme help regex`)? To look for the regex anywhere in the text, use `find_first`.",
+       "Le texte entier correspond-il à la regex (une expression régulière : voir `rythme help regex`) ? Pour chercher la regex n'importe où dans le texte, utilisez `find_first`.",
+       "matches(\"2024\", \"[0-9]+\")      # true\nmatches(\"2024!\", \"[0-9]+\")     # false"),
+    b!("find_first", "find_first(text, regex)", 2, 2, Text, find_first,
+       "The first piece of the text that matches the regex, as an Option: `Some(piece)`, or `None` if there is none.",
+       "Le premier morceau du texte qui correspond à la regex, sous forme d'Option : `Some(morceau)`, ou `None` s'il n'y en a pas.",
+       "find_first(\"tel: 06 12\", \"[0-9]+\")   # Some(\"06\")"),
+    b!("find_all", "find_all(text, regex)", 2, 2, Text, find_all,
+       "Every piece of the text that matches the regex, from left to right.",
+       "Tous les morceaux du texte qui correspondent à la regex, de gauche à droite.",
+       "find_all(\"3 cats, 12 dogs\", \"[0-9]+\")   # [\"3\", \"12\"]"),
+    b!("captures", "captures(text, regex)", 2, 2, Text, captures,
+       "The first match of the regex, as an Option of a list: the whole piece, then the text of each group `(...)`, in order (\"\" for a group that matched nothing).",
+       "La première correspondance de la regex, sous forme d'Option d'une liste : le morceau entier, puis le texte de chaque groupe `(...)`, dans l'ordre (\"\" pour un groupe qui n'a rien trouvé).",
+       "captures(\"2024-02-29\", \"([0-9]+)-([0-9]+)\")   # Some([\"2024-02\", \"2024\", \"02\"])"),
+    b!("captures_all", "captures_all(text, regex)", 2, 2, Text, captures_all,
+       "Like `captures`, for every match: a list of lists.",
+       "Comme `captures`, pour chaque correspondance : une liste de listes.",
+       "captures_all(\"a=1, b=2\", \"(\\\\w)=(\\\\d)\")   # [[\"a=1\", \"a\", \"1\"], [\"b=2\", \"b\", \"2\"]]"),
+    b!("named_captures", "named_captures(text, regex)", 2, 2, Text, named_captures,
+       "The first match of a regex with named groups `(?<name>...)`, as an Option of a record: one field for each name.",
+       "La première correspondance d'une regex avec des groupes nommés `(?<nom>...)`, sous forme d'Option d'un enregistrement : un champ par nom.",
+       "named_captures(\"2024-02\", \"(?<year>[0-9]+)-(?<month>[0-9]+)\")   # Some({year: \"2024\", month: \"02\"})"),
+    b!("split_by", "split_by(text, regex)", 2, 2, Text, split_by,
+       "Cuts a text at every piece that matches the regex.",
+       "Découpe un texte à chaque morceau qui correspond à la regex.",
+       "split_by(\"a, b;c\", \"[,;] *\")   # [\"a\", \"b\", \"c\"]"),
+    b!("replace_all", "replace_all(text, regex, new)", 3, 3, Text, replace_all,
+       "Replaces every piece that matches the regex. `new` is a text, where `$1` stands for the text of group 1 (`$<name>` for a named group, `$0` for the whole piece, `$$` for a `$`), or a function that receives each piece and gives its replacement.",
+       "Remplace chaque morceau qui correspond à la regex. `new` est un texte, où `$1` tient lieu du texte du groupe 1 (`$<nom>` pour un groupe nommé, `$0` pour le morceau entier, `$$` pour un `$`), ou une fonction qui reçoit chaque morceau et donne son remplacement.",
+       "replace_all(\"29/02/2024\", \"(\\\\d+)/(\\\\d+)/(\\\\d+)\", \"$3-$2-$1\")   # \"2024-02-29\"\nreplace_all(\"a cat\", \"\\\\b\\\\w\", upper)   # \"A Cat\""),
     // ----- Lists -----
     b!("map", "map(list, f)", 2, 2, Lists, map,
-       "Applies the function f to each element and returns the list of the results. Also works on Option and Result.",
-       "Applique la fonction f à chaque élément et renvoie la liste des résultats. Fonctionne aussi sur Option et Result.",
+       "Applies the function f to each element and returns the list of the results. Also works on Option and Result, and on a set (giving the set of the results).",
+       "Applique la fonction f à chaque élément et renvoie la liste des résultats. Fonctionne aussi sur Option et Result, et sur un ensemble (en donnant l'ensemble des résultats).",
        "[1, 2, 3] |> map(fn(x) = x * 2)   # [2, 4, 6]"),
     b!("filter", "filter(list, f)", 2, 2, Lists, filter,
-       "Keeps only the elements for which f returns true.",
-       "Ne garde que les éléments pour lesquels f renvoie true.",
-       "[1, 2, 3, 4] |> filter(is_even)   # [2, 4]"),
+       "Keeps only the elements for which f returns true. Also works on a set, and on a dict, where f receives each key and its value.",
+       "Ne garde que les éléments pour lesquels f renvoie true. Fonctionne aussi sur un ensemble, et sur un dictionnaire, où f reçoit chaque clé et sa valeur.",
+       "[1, 2, 3, 4] |> filter(is_even)   # [2, 4]\ndict([[1, \"a\"], [2, \"b\"]]) |> filter(fn(k, v) = k > 1)   # dict(2 => \"b\")"),
     b!("fold", "fold(list, start, f)", 3, 3, Lists, fold,
        "Combines all the elements into one value: starts with `start`, then computes f(result, element) for each element.",
        "Combine tous les éléments en une seule valeur : part de `start`, puis calcule f(résultat, élément) pour chaque élément.",
@@ -398,9 +462,9 @@ pub static BUILTINS: &[Builtin] = &[
        "Comme fold, mais donne la liste de tous les résultats intermédiaires : des totaux cumulés, par exemple.",
        "scan([1, 2, 3], 0, fn(total, x) = total + x)   # [1, 3, 6]"),
     b!("each", "each(list, f)", 2, 2, Lists, each,
-       "Calls f on each element, for its effect (like printing). Returns ().",
-       "Appelle f sur chaque élément, pour son effet (comme afficher). Renvoie ().",
-       "1..3 |> each(fn(i) = print(i))"),
+       "Calls f on each element, for its effect (like printing). Returns (). Also works on a set, and on a dict, where f receives each key and its value.",
+       "Appelle f sur chaque élément, pour son effet (comme afficher). Renvoie (). Fonctionne aussi sur un ensemble, et sur un dictionnaire, où f reçoit chaque clé et sa valeur.",
+       "1..3 |> each(fn(i) = print(i))\ndict([[\"a\", 1]]).each do |k, v| print(k, v) end   # a 1"),
     b!("sum", "sum(list, f)", 1, 2, Lists, sum,
        "The sum of the numbers of a list; with f, the sum of f(x) for each element.",
        "La somme des nombres d'une liste ; avec f, la somme de f(x) pour chaque élément.",
@@ -419,12 +483,12 @@ pub static BUILTINS: &[Builtin] = &[
        "La liste (ou le texte) sans son premier élément.",
        "rest([7, 8, 9])            # [8, 9]"),
     b!("get", "get(x, key)", 2, 2, Lists, get,
-       "The element at a position of a list or text, or the field of a record, as an Option (never an error). Negative positions count from the end.",
-       "L'élément à une position d'une liste ou d'un texte, ou le champ d'un enregistrement, sous forme d'Option (jamais d'erreur). Les positions négatives comptent depuis la fin.",
-       "get([7, 8], 5)             # None\nget({a: 1}, \"a\")           # Some(1)"),
+       "The element at a position of a list or text, the field of a record, or the value of a key of a dict, as an Option (never an error). Negative positions count from the end.",
+       "L'élément à une position d'une liste ou d'un texte, le champ d'un enregistrement, ou la valeur d'une clé d'un dictionnaire, sous forme d'Option (jamais d'erreur). Les positions négatives comptent depuis la fin.",
+       "get([7, 8], 5)             # None\nget({a: 1}, \"a\")           # Some(1)\nget(dict([[1, \"one\"]]), 1)   # Some(\"one\")"),
     b!("push", "push(list, x)", 2, 2, Lists, push,
-       "A new list with x added at the end.",
-       "Une nouvelle liste avec x ajouté à la fin.",
+       "A new list with x added at the end; or a new set with x added.",
+       "Une nouvelle liste avec x ajouté à la fin ; ou un nouvel ensemble avec x ajouté.",
        "push([1, 2], 3)            # [1, 2, 3]"),
     b!("set_at", "set_at(list, i, x)", 3, 3, Lists, set_at,
        "A new list where the element at position i is replaced by x. Negative positions count from the end.",
@@ -500,8 +564,8 @@ pub static BUILTINS: &[Builtin] = &[
        "Combien d'éléments rendent f vraie ; sans f, combien il y a d'éléments.",
        "count([1, 2, 4], is_even)  # 2\ncount([1, 2, 4])           # 3"),
     b!("reject", "reject(list, f)", 2, 2, Lists, reject,
-       "The elements for which f is false: the opposite of `filter`.",
-       "Les éléments pour lesquels f est fausse : le contraire de `filter`.",
+       "The elements for which f is false: the opposite of `filter`. Also works on a set and on a dict, like `filter`.",
+       "Les éléments pour lesquels f est fausse : le contraire de `filter`. Fonctionne aussi sur un ensemble et sur un dictionnaire, comme `filter`.",
        "reject([1, 2, 3, 4], is_even) # [1, 3]"),
     b!("each_with_index", "each_with_index(list, f)", 2, 2, Lists, each_with_index,
        "Calls f(element, position) for each element, in order (positions start at 0). For effects, like `print`.",
@@ -532,28 +596,68 @@ pub static BUILTINS: &[Builtin] = &[
        "Groups the elements in a record: the key is the text of what `key` returns, the value the list of matching elements.",
        "Regroupe les éléments dans un enregistrement : la clé est le texte de ce que renvoie `key`, la valeur la liste des éléments correspondants.",
        "group_by([1, 2, 3], is_odd)    # {true: [1, 3], false: [2]}"),
-    b!("is_empty", "is_empty(x)", 1, 1, Lists, is_empty, "Is the list, text or record empty?", "La liste, le texte ou l'enregistrement est-il vide ?", "is_empty([])               # true"),
+    b!("is_empty", "is_empty(x)", 1, 1, Lists, is_empty,
+       "Is the list, text, record, dict or set empty?",
+       "La liste, le texte, l'enregistrement, le dictionnaire ou l'ensemble est-il vide ?",
+       "is_empty([])               # true\nis_empty(set())            # true"),
     // ----- Records -----
-    b!("keys", "keys(record)", 1, 1, Records, keys, "The list of the field names of a record.", "La liste des noms des champs d'un enregistrement.", "keys({a: 1, b: 2})         # [\"a\", \"b\"]"),
-    b!("values", "values(record)", 1, 1, Records, values, "The list of the values of a record.", "La liste des valeurs d'un enregistrement.", "values({a: 1, b: 2})       # [1, 2]"),
+    b!("keys", "keys(record)", 1, 1, Records, keys,
+       "The list of the field names of a record, or of the keys of a dict (in order).",
+       "La liste des noms des champs d'un enregistrement, ou des clés d'un dictionnaire (dans l'ordre).",
+       "keys({a: 1, b: 2})         # [\"a\", \"b\"]\nkeys(dict([[2, \"b\"], [1, \"a\"]]))   # [1, 2]"),
+    b!("values", "values(record)", 1, 1, Records, values,
+       "The list of the values of a record or of a dict (in the order of its keys), or of the elements of a set (in order).",
+       "La liste des valeurs d'un enregistrement ou d'un dictionnaire (dans l'ordre de ses clés), ou des éléments d'un ensemble (dans l'ordre).",
+       "values({a: 1, b: 2})       # [1, 2]\nvalues(set([3, 1, 3]))     # [1, 3]"),
     b!("entries", "entries(record)", 1, 1, Records, entries,
-       "The list of the [name, value] pairs of a record.",
-       "La liste des paires [nom, valeur] d'un enregistrement.",
+       "The list of the [name, value] pairs of a record, or of the [key, value] pairs of a dict.",
+       "La liste des paires [nom, valeur] d'un enregistrement, ou des paires [clé, valeur] d'un dictionnaire.",
        "entries({a: 1})            # [[\"a\", 1]]"),
     b!("from_entries", "from_entries(list)", 1, 1, Records, from_entries,
        "Builds a record from a list of [name, value] pairs: the opposite of `entries`.",
        "Construit un enregistrement à partir d'une liste de paires [nom, valeur] : l'inverse de `entries`.",
        "from_entries([[\"a\", 1], [\"b\", 2]])   # {a: 1, b: 2}"),
-    b!("has", "has(record, name)", 2, 2, Records, has, "Does the record have this field?", "L'enregistrement a-t-il ce champ ?", "has({a: 1}, \"a\")           # true"),
+    b!("has", "has(record, name)", 2, 2, Records, has,
+       "Does the record have this field? Does the dict have this key, or the set this element?",
+       "L'enregistrement a-t-il ce champ ? Le dictionnaire a-t-il cette clé, ou l'ensemble cet élément ?",
+       "has({a: 1}, \"a\")           # true\nhas(set([1, 2]), 3)        # false"),
     b!("put", "put(record, name, value)", 3, 3, Records, put,
-       "A new record with the field set to the value (added or replaced).",
-       "Un nouvel enregistrement avec le champ fixé à la valeur (ajouté ou remplacé).",
-       "put({a: 1}, \"b\", 2)        # {a: 1, b: 2}"),
-    b!("remove", "remove(record, name)", 2, 2, Records, remove, "A new record without this field.", "Un nouvel enregistrement sans ce champ.", "remove({a: 1, b: 2}, \"a\")  # {b: 2}"),
+       "A new record with the field set to the value (added or replaced); or a new dict with the key set to the value.",
+       "Un nouvel enregistrement avec le champ fixé à la valeur (ajouté ou remplacé) ; ou un nouveau dictionnaire avec la clé fixée à la valeur.",
+       "put({a: 1}, \"b\", 2)        # {a: 1, b: 2}\nput(dict(), 1, \"one\")      # dict(1 => \"one\")"),
+    b!("remove", "remove(record, name)", 2, 2, Records, remove,
+       "A new record without this field; or a new dict without this key, or a new set without this element.",
+       "Un nouvel enregistrement sans ce champ ; ou un nouveau dictionnaire sans cette clé, ou un nouvel ensemble sans cet élément.",
+       "remove({a: 1, b: 2}, \"a\")  # {b: 2}\nremove(set([1, 2]), 1)     # set(2)"),
     b!("map_values", "map_values(record, f)", 2, 2, Records, map_values,
-       "A new record where f is applied to every value; the names stay the same.",
-       "Un nouvel enregistrement où f est appliquée à chaque valeur ; les noms restent les mêmes.",
+       "A new record (or dict) where f is applied to every value; the names (or keys) stay the same.",
+       "Un nouvel enregistrement (ou dictionnaire) où f est appliquée à chaque valeur ; les noms (ou les clés) restent les mêmes.",
        "map_values({a: 1, b: 2}, fn(x) = x * 10)   # {a: 10, b: 20}"),
+    // ----- Dictionaries and sets -----
+    b!("dict", "dict(pairs)", 0, 1, Dicts, dict,
+       "A dictionary: keys of any kind (but functions), each with a value, kept in the order of the keys. Made from a list of [key, value] pairs (the last value of a key wins), from a record, or empty with `dict()`. Use it with get, put, has, remove, keys, values, entries, len, map_values, filter, union...",
+       "Un dictionnaire : des clés de n'importe quelle sorte (sauf les fonctions), chacune avec une valeur, gardées dans l'ordre des clés. Fait d'une liste de paires [clé, valeur] (la dernière valeur d'une clé l'emporte), d'un enregistrement, ou vide avec `dict()`. S'utilise avec get, put, has, remove, keys, values, entries, len, map_values, filter, union...",
+       "dict([[2, \"b\"], [1, \"a\"]])   # dict(1 => \"a\", 2 => \"b\")\ndict({x: 1})               # dict(\"x\" => 1)\nget(dict([[[0, 0], \"origin\"]]), [0, 0])   # Some(\"origin\")"),
+    b!("set", "set(list)", 0, 1, Dicts, set,
+       "A set: values (but functions) without repetition, kept in order. Made from a list, or empty with `set()`. Use it with has, push, remove, len, values, filter, map, union, intersection, difference, is_subset.",
+       "Un ensemble : des valeurs (sauf les fonctions) sans répétition, gardées dans l'ordre. Fait d'une liste, ou vide avec `set()`. S'utilise avec has, push, remove, len, values, filter, map, union, intersection, difference, is_subset.",
+       "set([3, 1, 3, 2])          # set(1, 2, 3)\npush(set([1]), 5)          # set(1, 5)"),
+    b!("union", "union(a, b)", 2, 2, Dicts, union,
+       "The elements of two sets together; or the pairs of two dicts, where the value of b wins for a key in both.",
+       "Les éléments de deux ensembles réunis ; ou les paires de deux dictionnaires, où la valeur de b l'emporte pour une clé présente dans les deux.",
+       "union(set([1, 2]), set([2, 3]))   # set(1, 2, 3)\nunion(dict({a: 1, b: 2}), dict({b: 20}))   # dict(\"a\" => 1, \"b\" => 20)"),
+    b!("intersection", "intersection(a, b)", 2, 2, Dicts, intersection,
+       "The elements of the set a that are also in b; or the pairs of the dict a whose key is in b.",
+       "Les éléments de l'ensemble a qui sont aussi dans b ; ou les paires du dictionnaire a dont la clé est dans b.",
+       "intersection(set([1, 2, 3]), set([2, 3, 4]))   # set(2, 3)"),
+    b!("difference", "difference(a, b)", 2, 2, Dicts, difference,
+       "The elements of the set a that are not in b; or the pairs of the dict a whose key is not in b.",
+       "Les éléments de l'ensemble a qui ne sont pas dans b ; ou les paires du dictionnaire a dont la clé n'est pas dans b.",
+       "difference(set([1, 2, 3]), set([2]))   # set(1, 3)"),
+    b!("is_subset", "is_subset(a, b)", 2, 2, Dicts, is_subset,
+       "Is every element of the set a also in the set b?",
+       "Chaque élément de l'ensemble a est-il aussi dans l'ensemble b ?",
+       "is_subset(set([1, 2]), set([1, 2, 3]))   # true"),
     // ----- Option and Result -----
     b!("unwrap", "unwrap(x)", 1, 1, Options, unwrap,
        "The value inside `Some(x)` or `Ok(x)`. Stops the program with an error for `None` or `Err(e)`.",
@@ -733,8 +837,19 @@ pub enum Expected {
     Bool,
     ListOrText,
     TextOrList,
-    TextListOrRecord,
-    ListTextOrRecord,
+    /// What has a length: a text, a list, a record, a dictionary or a set.
+    Collection,
+    /// What `get` looks into: a list, a text, a record or a dictionary.
+    Indexable,
+    RecordOrDict,
+    RecordDictOrSet,
+    ListDictOrSet,
+    ListOrSet,
+    DictOrSet,
+    Dict,
+    Set,
+    /// What `dict` is made from: `[key, value]` pairs, or a record.
+    Pairs,
     /// `min(list)`, or several values.
     ListOrValues,
     /// What `int` converts: a number, a text, or `true` and `false`.
@@ -749,6 +864,8 @@ pub enum Expected {
     Date,
     /// A generator of values for `check_all`: a record made by `ints()`...
     Generator,
+    /// The replacement of `replace_all`.
+    TextOrFunction,
 }
 
 impl Expected {
@@ -763,14 +880,24 @@ impl Expected {
             Expected::Record => RECORD,
             Expected::Bool => BOOL,
             Expected::ListOrText | Expected::TextOrList => LIST | TEXT,
-            Expected::TextListOrRecord | Expected::ListTextOrRecord => TEXT | LIST | RECORD,
+            Expected::Collection => TEXT | LIST | RECORD | DICT | SET,
+            Expected::Indexable => TEXT | LIST | RECORD | DICT,
+            Expected::RecordOrDict => RECORD | DICT,
+            Expected::RecordDictOrSet => RECORD | DICT | SET,
+            Expected::ListDictOrSet => LIST | DICT | SET,
+            Expected::ListOrSet => LIST | SET,
+            Expected::DictOrSet => DICT | SET,
+            Expected::Dict => DICT,
+            Expected::Set => SET,
+            Expected::Pairs => LIST | RECORD | DICT,
             Expected::ToInt => NUMBER | TEXT | BOOL,
             Expected::ToFloat => NUMBER | TEXT,
-            Expected::ListOptionOrResult => LIST | OPTION | RESULT,
+            Expected::ListOptionOrResult => LIST | SET | OPTION | RESULT,
             Expected::OptionOrResult => OPTION | RESULT,
             Expected::Option => OPTION,
             Expected::Result => RESULT,
             Expected::Date | Expected::Generator => RECORD,
+            Expected::TextOrFunction => TEXT | FUNC,
         }
     }
 }
@@ -787,16 +914,27 @@ impl std::fmt::Display for Expected {
             Expected::Bool => t!("true or false", "true ou false"),
             Expected::ListOrText => t!("a list or a text", "une liste ou un texte"),
             Expected::TextOrList => t!("a text or a list", "un texte ou une liste"),
-            Expected::TextListOrRecord => t!("a text, a list or a record", "un texte, une liste ou un enregistrement"),
-            Expected::ListTextOrRecord => t!("a list, a text or a record", "une liste, un texte ou un enregistrement"),
+            Expected::Collection => {
+                t!("a text, a list, a record, a dict or a set", "un texte, une liste, un enregistrement, un dictionnaire ou un ensemble")
+            }
+            Expected::Indexable => t!("a list, a text, a record or a dict", "une liste, un texte, un enregistrement ou un dictionnaire"),
+            Expected::RecordOrDict => t!("a record or a dict", "un enregistrement ou un dictionnaire"),
+            Expected::RecordDictOrSet => t!("a record, a dict or a set", "un enregistrement, un dictionnaire ou un ensemble"),
+            Expected::ListDictOrSet => t!("a list, a dict or a set", "une liste, un dictionnaire ou un ensemble"),
+            Expected::ListOrSet => t!("a list or a set", "une liste ou un ensemble"),
+            Expected::DictOrSet => t!("a dict or a set", "un dictionnaire ou un ensemble"),
+            Expected::Dict => t!("a dict", "un dictionnaire"),
+            Expected::Set => t!("a set", "un ensemble"),
+            Expected::Pairs => t!("a list of [key, value] pairs (or a record)", "une liste de paires [clé, valeur] (ou un enregistrement)"),
             Expected::ListOrValues => t!("a list (or several values)", "une liste (ou plusieurs valeurs)"),
             Expected::ToInt | Expected::ToFloat => t!("a number or a text", "un nombre ou un texte"),
-            Expected::ListOptionOrResult => t!("a list, an Option or a Result", "une liste, une Option ou un Result"),
+            Expected::ListOptionOrResult => t!("a list, a set, an Option or a Result", "une liste, un ensemble, une Option ou un Result"),
             Expected::OptionOrResult => t!("an Option or a Result", "une Option ou un Result"),
             Expected::Option => t!("an Option", "une Option"),
             Expected::Result => t!("a Result", "un Result"),
             Expected::Date => t!("a date (a record {{year, month, day}})", "une date (un enregistrement {{year, month, day}})"),
             Expected::Generator => t!("a generator (like `ints()`)", "un générateur (comme `ints()`)"),
+            Expected::TextOrFunction => t!("a text or a function", "un texte ou une fonction"),
         })
     }
 }
@@ -816,7 +954,7 @@ pub fn wrong_argument(f: &str, i: usize, expected: Expected, got: &str, kinds: K
     .help(usage(f));
     let is = |k: Kinds| kinds != 0 && kinds & !k == 0;
     // How to get a list out of a text or a record.
-    if matches!(expected, Expected::List | Expected::ListOptionOrResult) {
+    if matches!(expected, Expected::List | Expected::ListOptionOrResult | Expected::ListDictOrSet | Expected::ListOrSet) {
         if is(TEXT) {
             d = d.help(t!(
                 "a text is not a list: `chars(text)` gives the list of its characters",
@@ -829,8 +967,28 @@ pub fn wrong_argument(f: &str, i: usize, expected: Expected, got: &str, kinds: K
             ));
         }
     }
+    // How to get a list out of a dictionary or a set.
+    if expected.kinds() & LIST != 0 && expected.kinds() & (DICT | SET) == 0 {
+        if is(DICT) {
+            d = d.help(t!(
+                "a dict is not a list: `entries(dict)`, `keys(dict)` or `values(dict)` give one",
+                "un dictionnaire n'est pas une liste : `entries(dico)`, `keys(dico)` ou `values(dico)` en donnent une"
+            ));
+        } else if is(SET) {
+            d = d.help(t!(
+                "a set is not a list: `values(set)` gives the list of its elements, in order",
+                "un ensemble n'est pas une liste : `values(ensemble)` donne la liste de ses éléments, dans l'ordre"
+            ));
+        }
+    }
+    if f == "map" && i == 0 && is(DICT) {
+        d = d.help(t!(
+            "to change the values of a dict, use `map_values(dict, f)`",
+            "pour changer les valeurs d'un dictionnaire, utilisez `map_values(dico, f)`"
+        ));
+    }
     // The record functions that have a cousin for lists.
-    if expected == Expected::Record && is(LIST) {
+    if matches!(expected, Expected::Record | Expected::RecordOrDict | Expected::RecordDictOrSet) && is(LIST) {
         let cousin = match f {
             "put" => "set_at(list, i, x)",
             "remove" => "remove_at(list, i)",
@@ -846,6 +1004,9 @@ pub fn wrong_argument(f: &str, i: usize, expected: Expected, got: &str, kinds: K
             "to read a date from a text like \"2024-02-29\", use `parse_date(text)`",
             "pour lire une date dans un texte comme \"2024-02-29\", utilisez `parse_date(texte)`"
         ));
+    }
+    if f == "find_first" && i == 0 && is(LIST) {
+        d = d.help(t!("for a list, use `find(list, f)`", "pour une liste, utilisez `find(liste, f)`"));
     }
     if f == "flat_map" && i == 0 && is(OPTION | RESULT) {
         d = d.help(t!("for an Option or a Result, use `and_then(x, f)`", "pour une Option ou un Result, utilisez `and_then(x, f)`"));
@@ -869,6 +1030,16 @@ pub fn wrong_return(f: &str, wanted: Kinds, got: &str, span: Span) -> Box<Diagno
             ),
             span,
         ),
+        TEXT => Diagnostic::error(
+            "E005",
+            t!(
+                "the function given to `{f}` must return a text, but it returned {got}",
+                "la fonction donnée à `{f}` doit renvoyer un texte, mais elle a renvoyé {got}"
+            ),
+        )
+        .at(span)
+        .help(t!("to make a text of any value, use `text(x)`", "pour faire un texte de n'importe quelle valeur, utilisez `text(x)`"))
+        .boxed(),
         OPTION | RESULT => {
             let expected = if wanted == OPTION {
                 t!("an Option (Some or None)", "une Option (Some ou None)")
@@ -1074,7 +1245,7 @@ fn out(s: &str) {
     crate::io::out_line(s);
 }
 
-fn text_value(s: impl Into<Rc<str>>) -> Value {
+fn text_value(s: impl Into<Text>) -> Value {
     Value::Text(s.into())
 }
 
@@ -1707,7 +1878,8 @@ fn len(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         Value::Text(s) => s.chars().count() as i64,
         Value::List(l) => l.len() as i64,
         Value::Record(r) => r.len() as i64,
-        v => return Err(wrong("len", 0, Expected::TextListOrRecord, v, span)),
+        Value::Dict(m) | Value::Set(m) => m.len() as i64,
+        v => return Err(wrong("len", 0, Expected::Collection, v, span)),
     }))
 }
 
@@ -1801,7 +1973,8 @@ fn contains(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         (Value::List(l), x) => l.iter().any(|v| v.equals(x)),
         (Value::Record(r), Value::Text(k)) => r.get(k).is_some(),
         (Value::Record(_), v) => return Err(wrong("contains", 1, Expected::Text, v, span)),
-        (v, _) => return Err(wrong("contains", 0, Expected::TextListOrRecord, v, span)),
+        (Value::Dict(m) | Value::Set(m), x) => dicts::has(m, x),
+        (v, _) => return Err(wrong("contains", 0, Expected::Collection, v, span)),
     }))
 }
 
@@ -2273,7 +2446,7 @@ enum Unwritable {
 fn write_json(it: &Interp, v: &Value, indent: Option<usize>) -> Result<String, Unwritable> {
     enum Item<'a> {
         Value(&'a Value, usize),
-        Key(&'a str),
+        Key(Rc<str>),
         Raw(&'static str),
         /// A new line, indented for this depth (nothing on a single line).
         Line(usize),
@@ -2285,7 +2458,7 @@ fn write_json(it: &Interp, v: &Value, indent: Option<usize>) -> Result<String, U
         match item {
             Item::Raw(s) => out.push_str(s),
             Item::Key(k) => {
-                json_text(k, &mut out);
+                json_text(&k, &mut out);
                 out.push_str(": ");
             }
             Item::Line(depth) => {
@@ -2308,6 +2481,46 @@ fn write_json(it: &Interp, v: &Value, indent: Option<usize>) -> Result<String, U
                 Value::Symbol(s) => json_text(&s.name(), &mut out),
                 Value::List(l) if l.is_empty() => out.push_str("[]"),
                 Value::Record(r) if r.is_empty() => out.push_str("{}"),
+                Value::Dict(m) if m.is_empty() => out.push_str("{}"),
+                Value::Set(m) if m.is_empty() => out.push_str("[]"),
+                // A set is written as the list of its elements, in order.
+                Value::Set(m) => {
+                    out.push('[');
+                    todo.push(Item::Raw("]"));
+                    todo.push(Item::Line(depth));
+                    for (i, x) in m.keys().collect::<Vec<_>>().into_iter().enumerate().rev() {
+                        todo.push(Item::Value(x, depth + 1));
+                        todo.push(Item::Line(depth + 1));
+                        if i > 0 {
+                            todo.push(Item::Raw(comma));
+                        }
+                    }
+                }
+                // A dictionary whose keys are all texts is written as an object.
+                Value::Dict(m) => {
+                    // Or whose keys are all symbols, written as their names.
+                    let all = |text: bool| {
+                        m.keys().all(|k| matches!(k, Value::Text(_)) == text && matches!(k, Value::Text(_) | Value::Symbol(_)))
+                    };
+                    if !all(true) && !all(false) {
+                        return Err(Unwritable::Value(v.clone()));
+                    }
+                    out.push('{');
+                    todo.push(Item::Raw("}"));
+                    todo.push(Item::Line(depth));
+                    for (i, (k, x)) in m.iter().collect::<Vec<_>>().into_iter().enumerate().rev() {
+                        todo.push(Item::Value(x, depth + 1));
+                        match k {
+                            Value::Text(k) => todo.push(Item::Key(Rc::from(&**k))),
+                            Value::Symbol(k) => todo.push(Item::Key(k.name())),
+                            _ => {}
+                        }
+                        todo.push(Item::Line(depth + 1));
+                        if i > 0 {
+                            todo.push(Item::Raw(comma));
+                        }
+                    }
+                }
                 Value::List(l) => {
                     out.push('[');
                     todo.push(Item::Raw("]"));
@@ -2327,7 +2540,7 @@ fn write_json(it: &Interp, v: &Value, indent: Option<usize>) -> Result<String, U
                     let fields: Vec<(&Rc<str>, &Value)> = r.iter().collect();
                     for (i, (k, x)) in fields.into_iter().enumerate().rev() {
                         todo.push(Item::Value(x, depth + 1));
-                        todo.push(Item::Key(k));
+                        todo.push(Item::Key(k.clone()));
                         todo.push(Item::Line(depth + 1));
                         if i > 0 {
                             todo.push(Item::Raw(comma));
@@ -2378,6 +2591,14 @@ fn to_json(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
                 t!("`to_json` cannot write {} in JSON", "`to_json` ne peut pas écrire {} en JSON", bad.describe()),
             )
             .help(t!("JSON has no infinite numbers and no NaN", "JSON n'a ni nombres infinis ni NaN")),
+            Value::Dict(_) => Diagnostic::error(
+                "E023",
+                t!("`to_json` cannot write {} in JSON", "`to_json` ne peut pas écrire {} en JSON", bad.describe()),
+            )
+            .help(t!(
+                "a dict is written as a JSON object only when its keys are all texts, or all symbols:\nturn the keys into texts first, or write `entries(dict)`",
+                "un dictionnaire s'écrit comme un objet JSON seulement quand ses clés sont toutes des textes, ou toutes des symboles :\ntransformez d'abord les clés en textes, ou écrivez `entries(dico)`"
+            )),
             _ => Diagnostic::error("E005", t!("`to_json` cannot write {} in JSON", "`to_json` ne peut pas écrire {} en JSON", bad.describe()))
                 .help(t!(
                     "JSON only holds numbers, texts, true and false, lists, records and null (`None`):\nturn your value into a record first, like {{kind: \"Circle\", radius: r}}",
@@ -2400,6 +2621,7 @@ fn map(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
             }
             Ok(Value::list(out))
         }
+        Value::Set(m) => dicts::map_set(it, m, &f, span),
         v => match it.wrap(v) {
             Wrap::Some => {
                 let r = call_given1(it, "map", &f, Interp::payload(v), span)?;
@@ -2416,7 +2638,18 @@ fn map(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn filter(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let l = list(a, 0, "filter", span)?;
+    let l = match &a[0] {
+        Value::List(l) => l,
+        Value::Dict(m) => {
+            let f = func(a, 1, "filter", span)?;
+            return dicts::filter_dict(it, "filter", true, m, &f, span);
+        }
+        Value::Set(m) => {
+            let f = func(a, 1, "filter", span)?;
+            return dicts::filter_set(it, "filter", true, m, &f, span);
+        }
+        v => return Err(wrong("filter", 0, Expected::ListDictOrSet, v, span)),
+    };
     let f = func(a, 1, "filter", span)?;
     let mut out = Vec::new();
     for x in l.iter() {
@@ -2428,7 +2661,18 @@ fn filter(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn reject(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let l = list(a, 0, "reject", span)?;
+    let l = match &a[0] {
+        Value::List(l) => l,
+        Value::Dict(m) => {
+            let f = func(a, 1, "reject", span)?;
+            return dicts::filter_dict(it, "reject", false, m, &f, span);
+        }
+        Value::Set(m) => {
+            let f = func(a, 1, "reject", span)?;
+            return dicts::filter_set(it, "reject", false, m, &f, span);
+        }
+        v => return Err(wrong("reject", 0, Expected::ListDictOrSet, v, span)),
+    };
     let f = func(a, 1, "reject", span)?;
     let mut out = Vec::new();
     for x in l.iter() {
@@ -2471,7 +2715,18 @@ fn scan(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn each(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let l = list(a, 0, "each", span)?;
+    let l = match &a[0] {
+        Value::List(l) => l,
+        Value::Dict(m) => {
+            let f = func(a, 1, "each", span)?;
+            return dicts::each_dict(it, m, &f, span);
+        }
+        Value::Set(m) => {
+            let f = func(a, 1, "each", span)?;
+            return dicts::each_set(it, m, &f, span);
+        }
+        v => return Err(wrong("each", 0, Expected::ListDictOrSet, v, span)),
+    };
     let f = func(a, 1, "each", span)?;
     for x in l.iter() {
         call_given1(it, "each", &f, x.clone(), span)?;
@@ -2579,18 +2834,24 @@ fn get(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
             it.option(resolve_index(*n, len).and_then(|i| s.chars().nth(i)).map(|c| text_value(c.to_string())))
         }
         (Value::Record(r), Value::Text(k)) => it.option(r.get(k).cloned()),
+        (Value::Dict(m), k) => dicts::get(it, m, k),
         (Value::List(_) | Value::Text(_), v) => return Err(wrong("get", 1, Expected::Int, v, span)),
         (Value::Record(_), v) => return Err(wrong("get", 1, Expected::Text, v, span)),
-        (v, _) => return Err(wrong("get", 0, Expected::ListTextOrRecord, v, span)),
+        (v, _) => return Err(wrong("get", 0, Expected::Indexable, v, span)),
     })
 }
 
 fn push(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let l = list(a, 0, "push", span)?;
-    let mut v = Vec::with_capacity(l.len() + 1);
-    v.extend(l.iter().cloned());
-    v.push(a[1].clone());
-    Ok(Value::list(v))
+    let l = match &a[0] {
+        Value::List(l) => l,
+        Value::Set(m) => return dicts::push(m, &a[1], span),
+        v => return Err(wrong("push", 0, Expected::ListOrSet, v, span)),
+    };
+    if l.len() >= MAX_LIST {
+        return Err(too_big(true, span));
+    }
+    // In the room after the list when it can: pushing again and again is fast.
+    Ok(Value::List(l.push(a[1].clone())))
 }
 
 fn set_at(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -2684,7 +2945,7 @@ fn unique(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         Int(i64),
         Big(Rc<BigInt>),
         Float(u64),
-        Text(Rc<str>),
+        Text(Text),
         Bool(bool),
         Unit,
     }
@@ -3045,25 +3306,36 @@ fn is_empty(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         Value::Text(s) => s.is_empty(),
         Value::List(l) => l.is_empty(),
         Value::Record(r) => r.is_empty(),
-        v => return Err(wrong("is_empty", 0, Expected::TextListOrRecord, v, span)),
+        Value::Dict(m) | Value::Set(m) => m.is_empty(),
+        v => return Err(wrong("is_empty", 0, Expected::Collection, v, span)),
     }))
 }
 
 // ----- Records -----------------------------------------------------------
 
 fn keys(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let r = record(a, 0, "keys", span)?;
-    Ok(Value::list(r.keys().iter().map(|k| Value::Text(k.clone())).collect()))
+    match &a[0] {
+        Value::Record(r) => Ok(Value::list(r.keys().iter().map(|k| Value::Text(k.into())).collect())),
+        Value::Dict(m) => Ok(Value::list(m.keys().cloned().collect())),
+        v => Err(wrong("keys", 0, Expected::RecordOrDict, v, span)),
+    }
 }
 
 fn values(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let r = record(a, 0, "values", span)?;
-    Ok(Value::list(r.iter().map(|(_, v)| v.clone()).collect()))
+    match &a[0] {
+        Value::Record(r) => Ok(Value::list(r.iter().map(|(_, v)| v.clone()).collect())),
+        Value::Dict(m) => Ok(Value::list(m.iter().map(|(_, v)| v.clone()).collect())),
+        Value::Set(m) => Ok(Value::list(m.keys().cloned().collect())),
+        v => Err(wrong("values", 0, Expected::RecordDictOrSet, v, span)),
+    }
 }
 
 fn entries(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let r = record(a, 0, "entries", span)?;
-    Ok(Value::list(r.iter().map(|(k, v)| Value::list(vec![Value::Text(k.clone()), v.clone()])).collect()))
+    match &a[0] {
+        Value::Record(r) => Ok(Value::list(r.iter().map(|(k, v)| Value::list(vec![Value::Text(k.into()), v.clone()])).collect())),
+        Value::Dict(m) => Ok(dicts::entries(m)),
+        v => Err(wrong("entries", 0, Expected::RecordOrDict, v, span)),
+    }
 }
 
 fn from_entries(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -3073,7 +3345,7 @@ fn from_entries(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         match pair {
             Value::List(p) if p.len() == 2 && matches!(p.as_slice()[0], Value::Text(_)) => {
                 if let Value::Text(k) = &p.as_slice()[0] {
-                    r.set(k.clone(), p.as_slice()[1].clone());
+                    r.set(k.into(), p.as_slice()[1].clone());
                 }
             }
             other => {
@@ -3098,12 +3370,20 @@ fn from_entries(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn has(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let r = record(a, 0, "has", span)?;
+    let r = match &a[0] {
+        Value::Record(r) => r,
+        Value::Dict(m) | Value::Set(m) => return Ok(Value::Bool(dicts::has(m, &a[1]))),
+        v => return Err(wrong("has", 0, Expected::RecordDictOrSet, v, span)),
+    };
     Ok(Value::Bool(r.get(text(a, 1, "has", span)?).is_some()))
 }
 
 fn put(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let r = record(a, 0, "put", span)?;
+    let r = match &a[0] {
+        Value::Record(r) => r,
+        Value::Dict(m) => return dicts::put(m, &a[1], &a[2], span),
+        v => return Err(wrong("put", 0, Expected::RecordOrDict, v, span)),
+    };
     let k = text(a, 1, "put", span)?;
     let mut new = (**r).clone();
     new.set(Rc::from(k), a[2].clone());
@@ -3111,13 +3391,25 @@ fn put(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn remove(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let r = record(a, 0, "remove", span)?;
+    let r = match &a[0] {
+        Value::Record(r) => r,
+        Value::Dict(m) => return Ok(Value::Dict(dicts::remove(m, &a[1]))),
+        Value::Set(m) => return Ok(Value::Set(dicts::remove(m, &a[1]))),
+        v => return Err(wrong("remove", 0, Expected::RecordDictOrSet, v, span)),
+    };
     let k = text(a, 1, "remove", span)?;
     Ok(Value::Record(Rc::new(r.without(k))))
 }
 
 fn map_values(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let r = record(a, 0, "map_values", span)?;
+    let r = match &a[0] {
+        Value::Record(r) => r,
+        Value::Dict(m) => {
+            let f = func(a, 1, "map_values", span)?;
+            return dicts::map_values(it, m, &f, span);
+        }
+        v => return Err(wrong("map_values", 0, Expected::RecordOrDict, v, span)),
+    };
     let f = func(a, 1, "map_values", span)?;
     let mut out = Record::new();
     for (k, v) in r.iter() {

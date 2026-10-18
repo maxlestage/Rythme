@@ -17,7 +17,7 @@ use crate::parser::immutable_help;
 use crate::source::Span;
 use crate::suggest;
 use crate::symbol::Sym;
-use crate::types::{self, Outcome, Ty, BOOL, DATA, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, SYMBOL, TEXT, UNIT};
+use crate::types::{self, Outcome, Ty, BOOL, DATA, DICT, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, SET, SYMBOL, TEXT, UNIT};
 use crate::value::{Record, Value};
 
 mod needs;
@@ -88,7 +88,8 @@ pub struct ModuleMeta {
 /// Does this type speak of a type defined with `type` (not Option or Result)?
 fn has_own_data(t: &Ty) -> bool {
     match t {
-        Ty::List(t) => has_own_data(t),
+        Ty::List(t) | Ty::Set(t) => has_own_data(t),
+        Ty::Dict(k, v) => has_own_data(k) || has_own_data(v),
         Ty::Record(r) => r.fields.iter().any(|(_, t)| has_own_data(t)),
         Ty::Data(d) => {
             !matches!(&*d.name.name(), "Option" | "Result")
@@ -1225,6 +1226,19 @@ impl<'a> Checker<'a> {
                 let earlier = def.clauses[..ci]
                     .iter()
                     .find(|c| c.guard.is_none() && c.params.iter().zip(&clause.params).all(|(q, p)| self.covers(q, p)));
+                // Ranges, for a function of one parameter.
+                let ranges = || -> Option<Diagnostic> {
+                    let [p] = clause.params.as_slice() else { return None };
+                    let before: Vec<&Pattern> = def.clauses[..ci]
+                        .iter()
+                        .filter(|c| c.guard.is_none())
+                        .filter_map(|c| match c.params.as_slice() {
+                            [q] => Some(q),
+                            _ => None,
+                        })
+                        .collect();
+                    range_warning(&before, p, Some(&name))
+                };
                 if let Some(prev) = earlier {
                     self.diags.push(
                         Diagnostic::warning(
@@ -1244,6 +1258,8 @@ impl<'a> Checker<'a> {
                             "les définitions sont essayées dans l'ordre : supprimez celle-ci, ou changez ses motifs"
                         )),
                     );
+                } else if let Some(d) = ranges() {
+                    self.diags.push(d);
                 }
             }
             if clause.guard.is_none()
@@ -1888,7 +1904,11 @@ impl<'a> Checker<'a> {
         let Some(b) = builtin else { return tys };
         for i in later {
             let ExprKind::Lambda(def) = &exprs[i].kind else { continue };
-            let Some(cb) = types::callback(b, i, &tys) else { continue };
+            let Some(cb) = types::callback(b, i, &tys) else {
+                // What the function receives depends on what it is given (`filter`).
+                tys[i] = self.func(def, None);
+                continue;
+            };
             tys[i] = if def.arity != cb.params.len() {
                 self.func(def, None)
             } else if matches!(b, "fold" | "scan") {
@@ -1974,6 +1994,9 @@ impl<'a> Checker<'a> {
         match types::builtin_call(name, tys) {
             None => Ty::Any,
             Some(Outcome::Gives(t)) => {
+                if let Some(t) = self.regex_call(name, exprs) {
+                    return t;
+                }
                 // `get(record, "field")`: the type of the field.
                 if let (Some(Ty::Record(r)), Some(ExprKind::Text(k))) = (tys.first(), exprs.get(1).map(|e| &e.kind)) {
                     if name == "get" {
@@ -1993,6 +2016,47 @@ impl<'a> Checker<'a> {
                 Ty::Never
             }
         }
+    }
+
+    /// A regex written in the code is read before running: a mistake in it
+    /// (or in the replacement of `replace_all`) is shown at its place, and
+    /// `named_captures` gives a record with the names of its groups.
+    fn regex_call(&mut self, name: &str, exprs: &[&Expr]) -> Option<Ty> {
+        use crate::builtins::regex::{regex_error, replacement, span_in_text, Regex};
+        const TAKE_A_REGEX: &[&str] =
+            &["matches", "find_first", "find_all", "captures", "captures_all", "named_captures", "split_by", "replace_all"];
+        if !TAKE_A_REGEX.contains(&name) {
+            return None;
+        }
+        let at_place = |e: &Expr, source: &str, err, in_replacement| {
+            let err: &crate::builtins::regex::RegexError = err;
+            match span_in_text(e.span, err.at, err.len) {
+                Some(span) => regex_error(err, source, in_replacement, span, true),
+                None => regex_error(err, source, in_replacement, e.span, false),
+            }
+        };
+        let e = exprs.get(1)?;
+        let ExprKind::Text(pattern) = &e.kind else { return None };
+        let re = match Regex::new(pattern) {
+            Ok(re) => re,
+            Err(err) => {
+                self.diags.push(*at_place(e, pattern, &err, false));
+                return Some(Ty::Never);
+            }
+        };
+        if name == "replace_all" {
+            if let Some(Expr { kind: ExprKind::Text(new), .. }) = exprs.get(2).copied() {
+                if let Err(err) = replacement(new, &re) {
+                    self.diags.push(*at_place(exprs[2], new, &err, true));
+                    return Some(Ty::Never);
+                }
+            }
+        }
+        if name == "named_captures" && re.names().iter().any(Option::is_some) {
+            let fields = re.names().iter().flatten().map(|n| (n.clone(), Ty::Text)).collect();
+            return Some(Ty::option(Ty::record(fields, true)));
+        }
+        None
     }
 
     /// `assert_eq(actual, expected)` with values of kinds that are never equal.
@@ -2374,13 +2438,13 @@ impl<'a> Checker<'a> {
         if *ta == Ty::Never || *tb == Ty::Never {
             return Ty::Never;
         }
-        if ta.never(LIST | TEXT | RECORD) {
+        if ta.never(LIST | TEXT | RECORD | DICT) {
             self.diags.push(
                 Diagnostic::error("E005", t!("cannot use `[...]` on {}", "impossible d'utiliser `[...]` sur {}", what(Some(a), ta)))
                     .at(e.span)
                     .help(t!(
-                        "`[...]` works on lists, texts and records",
-                        "`[...]` fonctionne sur les listes, les textes et les enregistrements"
+                        "`[...]` works on lists, texts, records and dicts",
+                        "`[...]` fonctionne sur les listes, les textes, les enregistrements et les dictionnaires"
                     )),
             );
             return Ty::Never;
@@ -2419,6 +2483,7 @@ impl<'a> Checker<'a> {
         }
         match ta {
             Ty::List(t) => (**t).clone(),
+            Ty::Dict(_, v) => (**v).clone(),
             Ty::Text => Ty::Text,
             Ty::Record(r) => {
                 let ExprKind::Text(k) = &b.kind else { return Ty::Any };
@@ -2521,7 +2586,7 @@ impl<'a> Checker<'a> {
                 "compare it explicitly, for example `x != 0` or `x > 0`",
                 "comparez explicitement, par exemple `x != 0` ou `x > 0`"
             ));
-        } else if t.only(LIST | TEXT | RECORD) {
+        } else if t.only(LIST | TEXT | RECORD | DICT | SET) {
             d = d.help(t!(
                 "to test if it is empty, use `is_empty(x)` or `not is_empty(x)`",
                 "pour tester si c'est vide, utilisez `is_empty(x)` ou `not is_empty(x)`"
@@ -2634,7 +2699,25 @@ impl<'a> Checker<'a> {
         let text = |t: &Ty| *t == Ty::Text;
         let list = |t: &Ty| matches!(t, Ty::List(_));
         let num = |t: &Ty| matches!(t, Ty::Int | Ty::Float | Ty::Num);
-        if op == BinOp::Add && (text(lt) || text(rt)) {
+        let dict_or_set = |t: &Ty| matches!(t, Ty::Dict(..) | Ty::Set(_));
+        // `double -3`, where `double` is a value of the code: a subtraction (see `parser::command_at`).
+        let spaced_minus = match (l, r) {
+            (Some(Expr { kind: ExprKind::Var(name), span: ls, .. }), Some(re)) if op == BinOp::Sub && matches!(lt, Ty::Func(_)) => {
+                (at.start > ls.end && at.end == re.span.start).then_some(*name)
+            }
+            _ => None,
+        };
+        if let Some(name) = spaced_minus {
+            d = d.help(t!(
+                "`{name} -x` subtracts here; to call `{name}`, write `{name}(-x)` (a call without parentheses starts a statement or a result, such as a branch of `if` or the body after the `=` of a function, and its name is not given a value with `=` or as a parameter)",
+                "`{name} -x` soustrait ici ; pour appeler `{name}`, écrivez `{name}(-x)` (un appel sans parenthèses commence une instruction ou un résultat, comme une branche de `if` ou le corps après le `=` d'une fonction, et son nom ne reçoit pas de valeur avec `=` ni comme paramètre)"
+            ));
+        } else if matches!(op, BinOp::Add | BinOp::Sub) && dict_or_set(lt) && dict_or_set(rt) {
+            d = d.help(t!(
+                "to join two sets or two dicts, use `union(a, b)`; to take one away from the other, `difference(a, b)`",
+                "pour réunir deux ensembles ou deux dictionnaires, utilisez `union(a, b)` ; pour retirer l'un de l'autre, `difference(a, b)`"
+            ));
+        } else if op == BinOp::Add && (text(lt) || text(rt)) {
             d = d.help(t!(
                 "to build a text with a value inside, use braces: \"total: {{x}}\"\nor convert the value first: text(x)",
                 "pour construire un texte contenant une valeur, utilisez des accolades : \"total : {{x}}\"\nou convertissez d'abord la valeur : text(x)"
@@ -2732,6 +2815,10 @@ impl<'a> Checker<'a> {
                                 "une valeur va au premier cas qui lui convient : supprimez ce cas, ou modifiez-le"
                             )),
                     );
+                } else if let Some(d) =
+                    range_warning(&arms[..i].iter().filter(|a| a.guard.is_none()).map(|a| &a.pat).collect::<Vec<_>>(), &arm.pat, None)
+                {
+                    self.diags.push(d);
                 } else if !self.can_match(&arm.pat, &st, false) {
                     dead.push(
                         Diagnostic::warning("W004", t!("this case can never be reached", "ce cas ne peut jamais être atteint"))
@@ -2871,6 +2958,17 @@ impl<'a> Checker<'a> {
                     self.pattern(a);
                 }
             }
+            PatKind::Range(lo, hi) if is_empty(*lo, *hi) => {
+                self.diags.push(
+                    Diagnostic::warning("W004", t!("this range never matches", "cet intervalle ne correspond jamais"))
+                        .at(p.span)
+                        .label(t!("no number goes from {lo} up to {hi}", "aucun nombre ne va de {lo} jusqu'à {hi}"))
+                        .help(t!(
+                            "a range goes from the smaller number to the larger one: `{hi}..{lo}`",
+                            "un intervalle va du plus petit nombre au plus grand : `{hi}..{lo}`"
+                        )),
+                );
+            }
             PatKind::List(ps, _) => ps.iter().for_each(|x| self.pattern(x)),
             PatKind::Record(fs) => {
                 for (k, x) in fs {
@@ -2947,6 +3045,10 @@ impl<'a> Checker<'a> {
                     self.binding_types(q, &ft, out);
                 }
             }
+            PatKind::Prefix(_, rest) => {
+                let rt = if t.never(TEXT) || *t == Ty::Never { Ty::Never } else { Ty::Text };
+                self.binding_types(rest, &rt, out);
+            }
             // Alternatives may not bind names; like `Pattern::bindings`, look at the first one.
             PatKind::Or(ps) => ps.iter().take(1).for_each(|q| self.binding_types(q, t, out)),
             _ => {}
@@ -2987,8 +3089,8 @@ impl<'a> Checker<'a> {
             (PatKind::Unit, _) => !t.never(UNIT),
             (PatKind::Bool(_), _) => !t.never(BOOL),
             // `1` matches `1.0`, and `1.0` matches `1`.
-            (PatKind::Int(_) | PatKind::Big(_) | PatKind::Float(_), _) => !t.never(NUMBER),
-            (PatKind::Text(_), _) => !t.never(TEXT),
+            (PatKind::Int(_) | PatKind::Big(_) | PatKind::Float(_) | PatKind::Range(..), _) => !t.never(NUMBER),
+            (PatKind::Text(_) | PatKind::Prefix(..), _) => !t.never(TEXT),
             (PatKind::Symbol(_), _) => !t.never(SYMBOL),
             (PatKind::Ctor(name, args), _) => {
                 // An unknown constructor, or a wrong number of fields, is already an error.
@@ -3056,6 +3158,14 @@ impl<'a> Checker<'a> {
             (PatKind::Big(a), PatKind::Big(b)) => a == b,
             (PatKind::Float(a), PatKind::Float(b)) => a == b,
             (PatKind::Text(a), PatKind::Text(b)) => a == b,
+            // The rest after a prefix is a name or `_`.
+            (PatKind::Prefix(a, _), PatKind::Text(b) | PatKind::Prefix(b, _)) => b.starts_with(&**a),
+            (PatKind::Int(_) | PatKind::Float(_) | PatKind::Range(..), PatKind::Range(..)) => {
+                let (Some((ql, qh)), Some((pl, ph))) = (interval(q), interval(p)) else { return false };
+                // An empty range is reported on its own.
+                !is_empty(pl, ph) && le(ql, pl) && le(ph, qh)
+            }
+            (PatKind::Range(lo, hi), PatKind::Int(_) | PatKind::Float(_)) => interval(p).is_some_and(|(n, _)| le(*lo, n) && le(n, *hi)),
             (PatKind::Ctor(a, qs), PatKind::Ctor(b, ps)) => {
                 a == b && qs.len() == ps.len() && qs.iter().zip(ps).all(|(x, y)| self.covers(x, y))
             }
@@ -3180,9 +3290,128 @@ impl<'a> Checker<'a> {
                     missing
                 }
             }
-            PatKind::Int(_) | PatKind::Big(_) | PatKind::Float(_) | PatKind::Text(_) => vec!["_".to_string()],
+            PatKind::Int(_) | PatKind::Big(_) | PatKind::Float(_) | PatKind::Range(..) | PatKind::Text(_) | PatKind::Prefix(..) => {
+                vec!["_".to_string()]
+            }
             _ => Vec::new(),
         }
+    }
+}
+
+/// The numbers a number pattern or a range pattern matches, from the first to the second.
+fn interval(p: &Pattern) -> Option<(Num, Num)> {
+    match p.kind {
+        PatKind::Int(n) => Some((Num::Int(n), Num::Int(n))),
+        PatKind::Float(f) => Some((Num::Float(f), Num::Float(f))),
+        PatKind::Range(lo, hi) => Some((lo, hi)),
+        _ => None,
+    }
+}
+
+/// `a <= b`, for numbers written in the code.
+fn le(a: Num, b: Num) -> bool {
+    matches!(a.compare(b), Some(std::cmp::Ordering::Less | std::cmp::Ordering::Equal))
+}
+
+/// Does the range `lo..hi` match no number at all?
+fn is_empty(lo: Num, hi: Num) -> bool {
+    !le(lo, hi)
+}
+
+/// A warning about the range `p` (or the ranges among its alternatives)
+/// after the patterns `earlier` of the cases or the definitions before it: the numbers of the range are all handled already by
+/// several of them (W004: one alone is found by `covers`), or some of them
+/// are (W010). `function`: the name of the function whose definitions these
+/// are, `None` for the cases of a `match`.
+fn range_warning(earlier: &[&Pattern], p: &Pattern, function: Option<&str>) -> Option<Diagnostic> {
+    use std::cmp::Ordering;
+    /// The numbers each alternative matches, and whether it is a range.
+    fn parts(p: &Pattern) -> Vec<(Num, Num, Span, bool)> {
+        let alts = match &p.kind {
+            PatKind::Or(alts) => alts.iter().collect(),
+            _ => vec![p],
+        };
+        alts.into_iter()
+            .filter_map(|a| {
+                let (l, h) = interval(a).filter(|(l, h)| !is_empty(*l, *h))?;
+                Some((l, h, a.span, matches!(a.kind, PatKind::Range(..))))
+            })
+            .collect()
+    }
+    let before: Vec<(Num, Num, Span, bool)> = earlier.iter().flat_map(|q| parts(q)).collect();
+    // Every number of `p`, a single range, in the union of the earlier ones.
+    if let PatKind::Range(lo, hi) = p.kind {
+        let mut cur = lo;
+        let mut used: Vec<Span> = Vec::new();
+        let covered = !is_empty(lo, hi)
+            && loop {
+                // The earlier part that holds `cur` and goes the farthest.
+                let Some(best) = before
+                    .iter()
+                    .filter(|(a, b, ..)| le(*a, cur) && le(cur, *b))
+                    .max_by(|x, y| x.1.compare(y.1).unwrap_or(Ordering::Equal))
+                else {
+                    break false;
+                };
+                if !used.contains(&best.2) {
+                    used.push(best.2);
+                }
+                if le(hi, best.1) {
+                    break true;
+                }
+                if !le(cur, best.1) || best.1 == cur {
+                    break false;
+                }
+                cur = best.1;
+            };
+        if covered {
+            let d = match function {
+                None => Diagnostic::warning("W004", t!("this case can never be reached", "ce cas ne peut jamais être atteint")),
+                Some(name) => Diagnostic::warning(
+                    "W004",
+                    t!("this definition of `{name}` can never be used", "cette définition de `{name}` ne peut jamais être utilisée"),
+                ),
+            };
+            let d = used
+                .into_iter()
+                .fold(d.at(p.span), |d, sp| d.secondary(sp, t!("handles some of these numbers", "traite une partie de ces nombres")));
+            return Some(d.help(t!(
+                "together, the cases before it already handle all its numbers: remove it, or change it",
+                "ensemble, les cas placés avant lui traitent déjà tous ses nombres : supprimez-le, ou modifiez-le"
+            )));
+        }
+    }
+    // Some numbers of a range of `p` already go to an earlier range. A number
+    // before a range that holds it (`5 -> ...` then `1..9 -> ...`) is a
+    // special case handled first, on purpose.
+    for (lo, hi, sp, _) in parts(p).into_iter().filter(|x| x.3) {
+        for (a, b, prev, _) in before.iter().filter(|x| x.3) {
+            let from = if le(*a, lo) { lo } else { *a };
+            let to = if le(hi, *b) { hi } else { *b };
+            if le(from, to) {
+                let both = show_interval(from, to);
+                return Some(
+                    Diagnostic::warning("W010", t!("these ranges overlap", "ces intervalles se chevauchent"))
+                        .at(sp)
+                        .label(t!("{both} is also here", "{both} est aussi ici"))
+                        .secondary(*prev, t!("{both} goes here, the first that fits", "{both} va ici, au premier qui convient"))
+                        .help(t!(
+                            "both ends of a range are included: make the ranges follow each other without overlapping, like `0..9` then `10..19`",
+                            "les deux bouts d'un intervalle sont inclus : faites se suivre les intervalles sans qu'ils se chevauchent, comme `0..9` puis `10..19`"
+                        )),
+                );
+            }
+        }
+    }
+    None
+}
+
+/// `5`, or `5..9`: the numbers both ranges match, for a message.
+fn show_interval(lo: Num, hi: Num) -> String {
+    if lo.compare(hi) == Some(std::cmp::Ordering::Equal) {
+        lo.to_string()
+    } else {
+        format!("{lo}..{hi}")
     }
 }
 
@@ -3208,7 +3437,7 @@ fn literal(e: &Expr) -> Option<Value> {
         ExprKind::Int(n) => Value::Int(*n),
         ExprKind::Big(n) => Value::Big(n.clone()),
         ExprKind::Float(f) => Value::Float(*f),
-        ExprKind::Text(s) => Value::Text(s.clone()),
+        ExprKind::Text(s) => Value::Text(s.into()),
         ExprKind::Bool(b) => Value::Bool(*b),
         ExprKind::Symbol(s) => Value::Symbol(*s),
         ExprKind::Unit => Value::Unit,
@@ -3255,7 +3484,7 @@ fn short(e: Option<&Expr>, t: &Ty) -> String {
 fn comparable(lt: &Ty, rt: &Ty) -> bool {
     let (lk, rk) = (lt.kinds(), rt.kinds());
     let both = |k| lk & k != 0 && rk & k != 0;
-    if both(NUMBER) || both(TEXT) || both(BOOL) || both(UNIT) || both(LIST) || both(SYMBOL) {
+    if both(NUMBER) || both(TEXT) || both(BOOL) || both(UNIT) || both(LIST) || both(SYMBOL) || both(DICT) || both(SET) {
         return true;
     }
     let data = OPTION | RESULT | DATA;
@@ -3276,7 +3505,7 @@ fn may_be_equal(lt: &Ty, rt: &Ty) -> bool {
     if lk & NUMBER != 0 && rk & NUMBER != 0 {
         return true;
     }
-    if lk & rk & (UNIT | BOOL | TEXT | LIST | RECORD | FUNC | SYMBOL) != 0 {
+    if lk & rk & (UNIT | BOOL | TEXT | LIST | RECORD | DICT | SET | FUNC | SYMBOL) != 0 {
         return true;
     }
     match (lt, rt) {

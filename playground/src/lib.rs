@@ -28,8 +28,9 @@ pub extern "C" fn rythme_alloc(len: usize) -> *mut u8 {
 
 /// Runs the code. `mode`: 0 = run, 1 = check, 2 = test, 3 = format (the
 /// result is the formatted code, or error messages), 4 = steps (the
-/// calculation shown step by step, like `rythme steps`). `language`: 0 =
-/// English, 1 = French.
+/// calculation shown step by step, like `rythme steps`). `language`: the
+/// position of the language of the messages in `rythme::lang::LANGUAGES`
+/// (0 = English, 1 = French, 2 = Spanish); English if there is none.
 ///
 /// # Safety
 /// `ptr` must come from `rythme_alloc(len)` and hold `len` bytes of UTF-8.
@@ -38,7 +39,7 @@ pub unsafe extern "C" fn rythme_run(ptr: *mut u8, len: usize, mode: u32, languag
     // SAFETY: the page allocated this buffer with `rythme_alloc(len)` and filled `len` bytes.
     let bytes = unsafe { Vec::from_raw_parts(ptr, len, len.max(1)) };
     let code = String::from_utf8_lossy(&bytes).into_owned();
-    lang::set(if language == 1 { Lang::Fr } else { Lang::En });
+    lang::set(Lang::all().nth(language as usize).unwrap_or(Lang::En));
     let output = run(&code, mode);
     RESULT.with(|r| {
         *r.borrow_mut() = output.into_bytes();

@@ -25,11 +25,13 @@ use crate::ast::*;
 use crate::diagnostic::Diagnostic;
 use crate::source::Span;
 use crate::symbol::Sym;
-use crate::types::{self, Kinds, Outcome, Ty, ALL, BOOL, DATA, FLOAT, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, SYMBOL, TEXT, UNIT};
+use crate::types::{
+    self, Kinds, Outcome, Ty, ALL, BOOL, DATA, DICT, FLOAT, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, SET, SYMBOL, TEXT, UNIT,
+};
 use crate::value::Value;
 
 /// Each kind of value, alone.
-const EACH: [Kinds; 12] = [UNIT, BOOL, INT, FLOAT, TEXT, SYMBOL, LIST, RECORD, OPTION, RESULT, DATA, FUNC];
+const EACH: [Kinds; 14] = [UNIT, BOOL, INT, FLOAT, TEXT, SYMBOL, LIST, RECORD, DICT, SET, OPTION, RESULT, DATA, FUNC];
 
 /// The name given to "a value of any type of the program" when trying the
 /// kinds one by one: [`comparable`] and [`may_be_equal`] take it as the same
@@ -49,6 +51,8 @@ fn sample(k: Kinds) -> Ty {
         SYMBOL => Ty::Symbol,
         LIST => Ty::list(Ty::Any),
         RECORD => Ty::record(Vec::new(), false),
+        DICT => Ty::dict(Ty::Any, Ty::Any),
+        SET => Ty::set(Ty::Any),
         OPTION => Ty::data(Sym::new("Option"), None),
         RESULT => Ty::data(Sym::new("Result"), None),
         DATA => Ty::data(any_data(), None),
@@ -335,8 +339,8 @@ impl Checker<'_> {
             PatKind::Unit => UNIT,
             PatKind::Bool(_) => BOOL,
             // `1` matches `1.0`.
-            PatKind::Int(_) | PatKind::Big(_) | PatKind::Float(_) => NUMBER,
-            PatKind::Text(_) => TEXT,
+            PatKind::Int(_) | PatKind::Big(_) | PatKind::Float(_) | PatKind::Range(..) => NUMBER,
+            PatKind::Text(_) | PatKind::Prefix(..) => TEXT,
             PatKind::Symbol(_) => SYMBOL,
             PatKind::List(..) => LIST,
             PatKind::Record(_) => RECORD,

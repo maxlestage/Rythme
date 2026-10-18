@@ -233,7 +233,7 @@ fn convert(e: &Expr, sub: &mut Sub) -> Term {
         ExprKind::Int(n) => K::Val(Value::Int(*n)),
         ExprKind::Big(n) => K::Val(Value::Big(n.clone())),
         ExprKind::Float(f) => K::Val(Value::Float(*f)),
-        ExprKind::Text(s) => K::Val(Value::Text(s.clone())),
+        ExprKind::Text(s) => K::Val(Value::Text(s.into())),
         ExprKind::Symbol(s) => K::Val(Value::Symbol(*s)),
         ExprKind::Template(parts) => K::Template(
             parts
@@ -1320,7 +1320,7 @@ fn template(parts: &[Part], span: Span) -> Fallible<Value> {
             return Err(too_big(false, span));
         }
     }
-    Ok(Value::Text(Rc::from(s)))
+    Ok(Value::Text(s.into()))
 }
 
 fn list(items: &[Elem], span: Span) -> Fallible<Value> {
@@ -1782,6 +1782,34 @@ impl Printer<'_> {
                 }
                 self.push("]");
             }
+            Value::Dict(m) => {
+                self.push("dict(");
+                for (i, (k, x)) in m.iter().enumerate() {
+                    if self.full() {
+                        break;
+                    }
+                    if i > 0 {
+                        self.push(", ");
+                    }
+                    self.value(k);
+                    self.push(" => ");
+                    self.value(x);
+                }
+                self.push(")");
+            }
+            Value::Set(m) => {
+                self.push("set(");
+                for (i, x) in m.keys().enumerate() {
+                    if self.full() {
+                        break;
+                    }
+                    if i > 0 {
+                        self.push(", ");
+                    }
+                    self.value(x);
+                }
+                self.push(")");
+            }
             Value::Record(r) => {
                 self.push("{");
                 for (i, (k, x)) in r.iter().enumerate() {
@@ -1835,6 +1863,12 @@ impl Printer<'_> {
             PatKind::Big(n) => self.push(&n.to_string()),
             PatKind::Float(f) => self.push(&fmt_float(*f)),
             PatKind::Text(s) => write_text_repr(s, &mut self.out),
+            PatKind::Range(lo, hi) => self.push(&format!("{lo}..{hi}")),
+            PatKind::Prefix(s, rest) => {
+                write_text_repr(s, &mut self.out);
+                self.push(" + ");
+                self.pattern(rest);
+            }
             PatKind::Symbol(s) => {
                 self.push(":");
                 self.push(&s.name());
