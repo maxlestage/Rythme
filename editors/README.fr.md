@@ -75,6 +75,34 @@ vim.api.nvim_create_autocmd("FileType", {
 `K` montre la documentation, `<C-x><C-o>` complète, `gd` (ou
 `vim.lsp.buf.definition()`) va à la définition, `vim.lsp.buf.rename()` renomme.
 
+### Couleurs (Tree-sitter)
+
+La [grammaire Tree-sitter](tree-sitter-rythme) donne à Neovim (0.9 ou plus
+récent) les couleurs, et l'indentation avec nvim-treesitter. Depuis la racine
+d'un clone de ce dépôt (un compilateur C suffit), compilez l'analyseur et
+copiez les requêtes :
+
+```sh
+mkdir -p ~/.local/share/nvim/site/parser ~/.local/share/nvim/site/queries/rythme
+cc -shared -fPIC -O2 -I editors/tree-sitter-rythme/src \
+  editors/tree-sitter-rythme/src/parser.c editors/tree-sitter-rythme/src/scanner.c \
+  -o ~/.local/share/nvim/site/parser/rythme.so
+cp editors/tree-sitter-rythme/queries/*.scm ~/.local/share/nvim/site/queries/rythme/
+```
+
+puis, dans `init.lua` :
+
+```lua
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "rythme",
+  callback = function()
+    vim.treesitter.start()
+    -- avec nvim-treesitter, l'indentation aussi :
+    -- vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+  end,
+})
+```
+
 ## Helix
 
 Dans `~/.config/helix/languages.toml` :
@@ -93,9 +121,26 @@ roots = []
 comment-token = "#"
 indent = { tab-width = 2, unit = "  " }
 language-servers = ["rythme"]
+grammar = "rythme"
+
+[[grammar]]
+name = "rythme"
+source = { git = "https://github.com/maxlestage/Rythme", rev = "COMMIT", subpath = "editors/tree-sitter-rythme" }
 ```
 
-`hx --health rythme` vérifie que le programme est trouvé.
+La grammaire donne les couleurs et l'indentation : remplacez `COMMIT` par un
+commit du dépôt (`git ls-remote https://github.com/maxlestage/Rythme main`
+montre le dernier), ou utilisez un clone avec
+`source = { path = "/chemin/vers/Rythme/editors/tree-sitter-rythme" }`. Puis
+compilez-la et copiez ses requêtes, depuis la racine d'un clone :
+
+```sh
+hx --grammar fetch && hx --grammar build
+mkdir -p ~/.config/helix/runtime/queries
+cp -r editors/helix/queries/rythme ~/.config/helix/runtime/queries/
+```
+
+`hx --health rythme` vérifie que le programme, la grammaire et les requêtes sont trouvés.
 
 ## Emacs
 
@@ -131,26 +176,28 @@ Avec lsp-mode plutôt qu'Eglot :
 
 ## Zed
 
-Zed ajoute les langages par des extensions, et un langage y a besoin d'une
-grammaire Tree-sitter, que Rythme n'a pas encore. La partie serveur de langage
-d'une telle extension est courte : dans son `extension.toml`,
+L'extension dans [`zed/`](zed) donne les couleurs, l'indentation, le plan et
+les paires de crochets avec la grammaire Tree-sitter, et lance `rythme lsp`.
+Pour l'installer depuis un clone de ce dépôt : dans Zed, lancez la commande
+*zed: install dev extension* et choisissez le dossier `editors/zed` (Zed la
+compile avec Rust, installé avec rustup).
 
-```toml
-[language_servers.rythme]
-name = "Rythme"
-languages = ["Rythme"]
-```
+Les réglages, dans le `settings.json` de Zed (tous facultatifs) :
 
-et dans son `src/lib.rs` (avec la bibliothèque `zed_extension_api`) :
-
-```rust
-impl zed::Extension for RythmeExtension {
-    fn language_server_command(&mut self, _: &zed::LanguageServerId, worktree: &zed::Worktree) -> zed::Result<zed::Command> {
-        let command = worktree.which("rythme").ok_or("installez Rythme : `rythme` n'est pas dans le PATH")?;
-        Ok(zed::Command { command, args: vec!["--lang".into(), "fr".into(), "lsp".into()], env: Default::default() })
+```json
+{
+  "lsp": {
+    "rythme": {
+      "binary": { "path": "/home/moi/.cargo/bin/rythme", "arguments": ["lsp"] },
+      "initialization_options": { "language": "fr" }
     }
+  }
 }
 ```
+
+L'extension prend la grammaire dans ce dépôt au commit `rev` de son
+`extension.toml` : changez-le quand la grammaire change (pour essayer la
+grammaire d'un clone, `repository = "file:///chemin/vers/Rythme"`).
 
 ## Tout autre éditeur
 
@@ -162,3 +209,4 @@ impl zed::Extension for RythmeExtension {
 | commentaires                    | `#` (`##` pour la documentation)                           |
 | options d'initialisation        | `{"language": "fr"}`, `"en"` ou `"auto"` (facultatif)      |
 | réglages                        | `{"rythme": {"language": "fr"}}` change la langue          |
+| grammaire Tree-sitter           | [`tree-sitter-rythme/`](tree-sitter-rythme), avec les requêtes des couleurs, de l'indentation et des portées |
