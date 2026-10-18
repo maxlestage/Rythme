@@ -321,12 +321,20 @@ fn command(driver: &mut Driver, input: &str) -> Next {
             }
         },
         ":learn" | ":apprendre" => help::learn(),
-        ":explain" | ":expliquer" => match help::explain(arg.split_whitespace().next().unwrap_or("")) {
-            Some(text) => crate::io::out_line(&text),
+        ":explain" | ":expliquer" => match arg.split_whitespace().next() {
             None => crate::io::out_line(&t!(
-                "unknown code; codes look like E003 or W001",
-                "code inconnu ; les codes ressemblent à E003 ou W001"
+                "usage: :explain CODE, like :explain E003   (codes: {})",
+                "utilisation : :expliquer CODE, comme :expliquer E003   (codes : {})",
+                help::CODES.join(" ")
             )),
+            Some(code) => match help::explain(code) {
+                Some(text) => crate::io::out_line(&text),
+                None => crate::io::out_line(&t!(
+                    "unknown code `{code}`. Known codes: {}",
+                    "code inconnu `{code}`. Codes connus : {}",
+                    help::CODES.join(" ")
+                )),
+            },
         },
         ":steps" | ":etapes" | ":étapes" => {
             if arg.is_empty() {

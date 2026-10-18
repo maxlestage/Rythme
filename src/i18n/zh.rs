@@ -1615,6 +1615,7 @@ Thumbs.db
         ("src/greeting.ry", "src/greeting.ry"),
         ("tests/greeting_test.ry", "tests/greeting_test.ry"),
         // src/repl.rs
+        ("usage: :explain CODE, like :explain E003   (codes: {})", "用法：:explain 代码，例如 :explain E003   （代码：{}）"),
         (":help for help, :quit to leave", "输入 :help 查看帮助，:quit 退出"),
         ("(type :quit to leave)", "（输入 :quit 退出）"),
         ("(cancelled)", "（已取消）"),
@@ -1625,7 +1626,6 @@ Thumbs.db
         ("Everything was forgotten.", "所有内容都已清除。"),
         ("Messages are now in English.", "消息现在使用简体中文。"),
         ("usage: :lang fr  (or another of {codes})", "用法：:lang zh  （或 {codes} 中的另一个）"),
-        ("unknown code; codes look like E003 or W001", "未知代码；代码的样子是 E003 或 W001"),
         ("usage: :steps EXPRESSION, like :steps fib(4)", "用法：:steps 表达式，例如 :steps fib(4)"),
         ("Nothing defined yet.", "还没有定义任何东西。"),
         ("unknown command `{other}`", "未知命令 `{other}`"),

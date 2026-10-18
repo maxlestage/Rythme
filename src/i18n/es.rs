@@ -1615,6 +1615,7 @@ Thumbs.db
         ("src/greeting.ry", "src/saludo.ry"),
         ("tests/greeting_test.ry", "tests/saludo_test.ry"),
         // src/repl.rs
+        ("usage: :explain CODE, like :explain E003   (codes: {})", "uso: :explain CÓDIGO, como :explain E003   (códigos: {})"),
         (":help for help, :quit to leave", ":help para la ayuda, :quit para salir"),
         ("(type :quit to leave)", "(escribe :quit para salir)"),
         ("(cancelled)", "(cancelado)"),
@@ -1625,7 +1626,6 @@ Thumbs.db
         ("Everything was forgotten.", "Todo se ha olvidado."),
         ("Messages are now in English.", "Los mensajes ahora están en español."),
         ("usage: :lang fr  (or another of {codes})", "uso: :lang es  (u otro de {codes})"),
-        ("unknown code; codes look like E003 or W001", "código desconocido; los códigos son como E003 o W001"),
         ("usage: :steps EXPRESSION, like :steps fib(4)", "uso: :steps EXPRESIÓN, como :steps fib(4)"),
         ("Nothing defined yet.", "Aún no hay nada definido."),
         ("unknown command `{other}`", "comando desconocido `{other}`"),

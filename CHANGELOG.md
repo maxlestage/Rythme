@@ -29,6 +29,9 @@ dit ce qu'une version 1.x peut changer ou non.*
   field (`r.name`, `r["name"]`, `get(r, "name")`), before running and while
   running (where it said "cannot use `[...]` on Record"). A dict missing the
   key `:a` but holding `"a"` (or the reverse) says so.
+- **`:explain` alone** in the REPL shows how to use it and the known codes,
+  instead of "unknown code"; an unknown code is named, like with
+  `rythme explain`.
 
 ### Website
 
