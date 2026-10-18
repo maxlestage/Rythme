@@ -18,6 +18,10 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ("lists", &["listes", "list", "liste"]),
     ("text", &["texte", "texts", "textes", "string"]),
     ("records", &["enregistrements", "record", "enregistrement"]),
+    (
+        "dicts",
+        &["dict", "dictionaries", "dictionary", "set", "sets", "dictionnaires", "dictionnaire", "ensembles", "ensemble", "hash", "hashmap"],
+    ),
     ("types", &["type"]),
     ("match", &["patterns", "motifs"]),
     ("errors", &["erreurs", "option", "result", "?"]),
@@ -66,6 +70,7 @@ Sujets (rythme help SUJET)
   lists       listes et leurs fonctions
   text        textes
   records     enregistrements {{nom: valeur}}
+  dicts       dictionnaires et ensembles : dict(...), set(...)
   types       vos propres types
   match       choisir selon la forme d'une valeur
   errors      Option, Result et ?
@@ -109,6 +114,7 @@ Topics (rythme help TOPIC)
   lists       lists and their functions
   text        texts
   records     records {{name: value}}
+  dicts       dictionaries and sets: dict(...), set(...)
   types       your own types
   match       choosing according to the shape of a value
   errors      Option, Result and ?
@@ -373,6 +379,7 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
                 Value::Text(_) => Some(Category::Text),
                 Value::Int(_) | Value::Float(_) => Some(Category::Numbers),
                 Value::Record(_) => Some(Category::Records),
+                Value::Dict(_) | Value::Set(_) => Some(Category::Dicts),
                 Value::Variant(_) if it.wrap(other) != Wrap::Other => Some(Category::Options),
                 _ => None,
             };
@@ -390,6 +397,10 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
                         "len, get, contains, is_empty, to_json, format_date, add_days, add_seconds, days_between, seconds_between, day_of_week"
                     }
                     Category::Records => "len, get, contains, is_empty, to_json",
+                    Category::Dicts if matches!(other, Value::Set(_)) => {
+                        "has, push, remove, len, is_empty, values, filter, map, to_json"
+                    }
+                    Category::Dicts => "get, put, has, remove, keys, values, entries, len, is_empty, map_values, filter, to_json",
                     Category::Options => "map",
                     _ => "",
                 };
@@ -443,6 +454,7 @@ fn topic_text(name: &str) -> &'static str {
         "lists" => pick(LISTS_EN, LISTS_FR),
         "text" => pick(TEXT_EN, TEXT_FR),
         "records" => pick(RECORDS_EN, RECORDS_FR),
+        "dicts" => pick(DICTS_EN, DICTS_FR),
         "types" => pick(TYPES_EN, TYPES_FR),
         "match" => pick(MATCH_EN, MATCH_FR),
         "errors" => pick(ERRORS_EN, ERRORS_FR),
@@ -872,6 +884,7 @@ Records as dictionaries
   put(counts, "pear", 5)         # {apple: 2, pear: 5}
   map_values(counts, fn(n) = n * 10)      # {apple: 20}
   group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+  For keys that are not names (numbers, lists...), use a dict: rythme help dicts
 
 JSON, the format of data on the web
   parse_json(text)               # Ok(...): objects become records, arrays lists
@@ -901,10 +914,73 @@ Les enregistrements comme dictionnaires
   put(compte, "poire", 5)        # {pomme: 2, poire: 5}
   map_values(compte, fn(n) = n * 10)      # {pomme: 20}
   group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+  Pour des clés qui ne sont pas des noms (nombres, listes...), utilisez un
+  dictionnaire : rythme help dicts
 
 JSON, le format des données du web
   parse_json(texte)              # Ok(...) : les objets deviennent des enregistrements, les tableaux des listes
   to_json(valeur)                # le texte, prêt à enregistrer avec write_file"#;
+
+const DICTS_EN: &str = r#"DICTIONARIES AND SETS
+
+A dict (dictionary) gives a value for each key. Keys can be any value but
+functions: numbers, texts, lists, records... They are kept in order.
+  ages = dict([["Ada", 36], ["Alan", 41]])
+  ages                           # dict("Ada" => 36, "Alan" => 41)
+  ages["Ada"]                    # 36 (an error if the key is missing)
+  get(ages, "Bob")               # None: an Option, never an error
+  grid = dict([[[0, 0], "start"]])   # a list as a key
+  dict({x: 1})                   # from a record: dict("x" => 1)
+
+Dicts never change: functions give a new one, quickly (in O(log n))
+  put(ages, "Bob", 20)           # added (or replaced)
+  remove(ages, "Ada")            # without this key
+  has(ages, "Ada")   len(ages)   keys(ages)   values(ages)   entries(ages)
+  map_values(ages, fn(n) = n + 1)
+  filter(ages, fn(name, age) = age > 40)   # f receives the key and the value
+  union(a, b)                    # both; for a key in both, b's value wins
+
+A set holds values without repetition, in order.
+  s = set([3, 1, 3])             # set(1, 3)
+  has(s, 3)   push(s, 5)   remove(s, 1)   len(s)   values(s)   # values: a list
+  union(a, b)   intersection(a, b)   difference(a, b)   is_subset(a, b)
+  filter(s, is_odd)   map(s, fn(x) = x * 10)
+
+Dicts and sets compare with == and <, and print as dict(k => v, ...) and
+set(a, b, ...). `to_json` writes a dict whose keys are all texts as an
+object, a set as an array; `dict(parse_json(text)?)` reads an object back."#;
+
+const DICTS_FR: &str = r#"DICTIONNAIRES ET ENSEMBLES
+
+Un dict (dictionnaire) donne une valeur pour chaque clé. Les clés peuvent
+être n'importe quelle valeur sauf les fonctions : nombres, textes, listes,
+enregistrements... Elles sont gardées dans l'ordre.
+  ages = dict([["Ada", 36], ["Alan", 41]])
+  ages                           # dict("Ada" => 36, "Alan" => 41)
+  ages["Ada"]                    # 36 (une erreur si la clé manque)
+  get(ages, "Bob")               # None : une Option, jamais d'erreur
+  grille = dict([[[0, 0], "départ"]])   # une liste comme clé
+  dict({x: 1})                   # depuis un enregistrement : dict("x" => 1)
+
+Les dictionnaires ne changent jamais : les fonctions en donnent un nouveau,
+rapidement (en O(log n))
+  put(ages, "Bob", 20)           # ajoutée (ou remplacée)
+  remove(ages, "Ada")            # sans cette clé
+  has(ages, "Ada")   len(ages)   keys(ages)   values(ages)   entries(ages)
+  map_values(ages, fn(n) = n + 1)
+  filter(ages, fn(nom, age) = age > 40)   # f reçoit la clé et la valeur
+  union(a, b)                    # les deux ; pour une clé des deux, la valeur de b l'emporte
+
+Un ensemble (set) contient des valeurs sans répétition, dans l'ordre.
+  e = set([3, 1, 3])             # set(1, 3)
+  has(e, 3)   push(e, 5)   remove(e, 1)   len(e)   values(e)   # values : une liste
+  union(a, b)   intersection(a, b)   difference(a, b)   is_subset(a, b)
+  filter(e, is_odd)   map(e, fn(x) = x * 10)
+
+Dictionnaires et ensembles se comparent avec == et <, et s'affichent comme
+dict(k => v, ...) et set(a, b, ...). `to_json` écrit un dictionnaire dont
+toutes les clés sont des textes comme un objet, un ensemble comme un
+tableau ; `dict(parse_json(texte)?)` relit un objet."#;
 
 const DATES_EN: &str = r#"DATES AND TIMES
 
@@ -1764,21 +1840,25 @@ Pour multiplier, écrivez-le :  2 * (x + 1)"#,
         "E010" => (
             r#"E010 — Unknown field
 
-The record (or the constructor) has no field with this name.
+The record (or the constructor) has no field with this name; or the dict
+has no such key (`dict[key]`).
 
 Wrong:   {name: "Ada"}.nmae
 Right:   {name: "Ada"}.name
 Safe:    get(record, "name")     # an Option, never an error
+         get(dict, key)          # the same for a dict
 
 When the fields of the record are certain, `rythme check` finds this mistake
 before the program runs, and suggests the closest field."#,
             r#"E010 — Champ inconnu
 
-L'enregistrement (ou le constructeur) n'a pas de champ de ce nom.
+L'enregistrement (ou le constructeur) n'a pas de champ de ce nom ; ou le
+dictionnaire n'a pas cette clé (`dico[clé]`).
 
 Faux :   {nom: "Ada"}.nmo
 Juste :  {nom: "Ada"}.nom
 Sûr :    get(enregistrement, "nom")   # une Option, jamais d'erreur
+         get(dico, clé)               # de même pour un dictionnaire
 
 Quand les champs de l'enregistrement sont certains, `rythme check` trouve
 cette erreur avant l'exécution, et propose le champ le plus proche."#,

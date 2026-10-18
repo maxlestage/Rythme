@@ -33,6 +33,10 @@ pub enum Ty {
     /// A list whose elements all have this type.
     List(Rc<Ty>),
     Record(Rc<RecordTy>),
+    /// A dictionary whose keys all have the first type, and values the second.
+    Dict(Rc<Ty>, Rc<Ty>),
+    /// A set whose elements all have this type.
+    Set(Rc<Ty>),
     /// A value of a type defined with `type`, or an Option, or a Result.
     Data(Rc<DataTy>),
     Func(Rc<FuncTy>),
@@ -79,8 +83,10 @@ pub const RESULT: Kinds = 1 << 8;
 /// A value of a type defined with `type`.
 pub const DATA: Kinds = 1 << 9;
 pub const FUNC: Kinds = 1 << 10;
+pub const DICT: Kinds = 1 << 11;
+pub const SET: Kinds = 1 << 12;
 pub const NUMBER: Kinds = INT | FLOAT;
-pub const ALL: Kinds = (1 << 11) - 1;
+pub const ALL: Kinds = (1 << 13) - 1;
 
 /// Types nested deeper than this are not followed (`Any` instead), so that
 /// inferring the types of recursive functions always ends.
@@ -89,6 +95,14 @@ const MAX_DEPTH: usize = 5;
 impl Ty {
     pub fn list(t: Ty) -> Ty {
         Ty::List(Rc::new(t))
+    }
+
+    pub fn dict(k: Ty, v: Ty) -> Ty {
+        Ty::Dict(Rc::new(k), Rc::new(v))
+    }
+
+    pub fn set(t: Ty) -> Ty {
+        Ty::Set(Rc::new(t))
     }
 
     pub fn func(arity: Option<(usize, usize)>, ret: Ty, sig: Option<Rc<str>>) -> Ty {
@@ -126,6 +140,8 @@ impl Ty {
             Ty::Text => TEXT,
             Ty::List(_) => LIST,
             Ty::Record(_) => RECORD,
+            Ty::Dict(..) => DICT,
+            Ty::Set(_) => SET,
             Ty::Data(d) => d.kind(),
             Ty::Func(_) => FUNC,
         }
@@ -155,6 +171,8 @@ impl Ty {
             (a, b) if a == b => a.clone(),
             (Ty::Int | Ty::Float | Ty::Num, Ty::Int | Ty::Float | Ty::Num) => Ty::Num,
             (Ty::List(a), Ty::List(b)) => Ty::list(a.join(b)),
+            (Ty::Dict(k, v), Ty::Dict(l, w)) => Ty::dict(k.join(l), v.join(w)),
+            (Ty::Set(a), Ty::Set(b)) => Ty::set(a.join(b)),
             (Ty::Record(a), Ty::Record(b)) => {
                 let fields: Vec<(Rc<str>, Ty)> = a.fields.iter().filter_map(|(k, t)| b.get(k).map(|u| (k.clone(), t.join(u)))).collect();
                 let exact = a.exact && b.exact && fields.len() == a.fields.len() && fields.len() == b.fields.len();
@@ -197,8 +215,10 @@ impl Ty {
 
     fn limit_at(&self, depth: usize) -> Ty {
         match self {
-            Ty::List(_) | Ty::Record(_) | Ty::Data(_) | Ty::Func(_) if depth == 0 => Ty::Any,
+            Ty::List(_) | Ty::Record(_) | Ty::Dict(..) | Ty::Set(_) | Ty::Data(_) | Ty::Func(_) if depth == 0 => Ty::Any,
             Ty::List(t) => Ty::list(t.limit_at(depth - 1)),
+            Ty::Dict(k, v) => Ty::dict(k.limit_at(depth - 1), v.limit_at(depth - 1)),
+            Ty::Set(t) => Ty::set(t.limit_at(depth - 1)),
             Ty::Record(r) => Ty::record(r.fields.iter().map(|(k, t)| (k.clone(), t.limit_at(depth - 1))).collect(), r.exact),
             Ty::Data(d) => Ty::data(
                 d.name,
@@ -216,6 +236,8 @@ impl Ty {
         match self {
             Ty::Func(f) => Ty::func(f.arity, Ty::Any, f.sig.clone()),
             Ty::List(t) => Ty::list(t.without_results()),
+            Ty::Dict(k, v) => Ty::dict(k.without_results(), v.without_results()),
+            Ty::Set(t) => Ty::set(t.without_results()),
             Ty::Record(r) => Ty::record(r.fields.iter().map(|(k, t)| (k.clone(), t.without_results())).collect(), r.exact),
             Ty::Data(d) => Ty::data(
                 d.name,
@@ -255,6 +277,8 @@ impl Ty {
             Ty::Text => "Text".into(),
             Ty::List(_) => "List".into(),
             Ty::Record(_) => "Record".into(),
+            Ty::Dict(..) => "Dict".into(),
+            Ty::Set(_) => "Set".into(),
             Ty::Data(d) => d.name.to_string(),
             Ty::Func(_) => "Function".into(),
         }
@@ -284,6 +308,27 @@ impl Ty {
                 Ty::list(t)
             }
             Value::Record(r) => Ty::record(r.iter().map(|(k, x)| (k.clone(), inner(x))).collect(), true),
+            Value::Dict(m) => {
+                let (mut k, mut t) = (Ty::Never, Ty::Never);
+                for (i, (x, y)) in m.iter().enumerate() {
+                    if i > 10_000 {
+                        return Ty::dict(Ty::Any, Ty::Any);
+                    }
+                    k = k.join(&inner(x));
+                    t = t.join(&inner(y));
+                }
+                Ty::dict(k, t)
+            }
+            Value::Set(m) => {
+                let mut t = Ty::Never;
+                for (i, x) in m.keys().enumerate() {
+                    if t == Ty::Any || i > 10_000 {
+                        return Ty::set(Ty::Any);
+                    }
+                    t = t.join(&inner(x));
+                }
+                Ty::set(t)
+            }
             Value::Variant(var) => Ty::data(var.ctor.type_name, Some(vec![(var.ctor.name, var.fields.iter().map(inner).collect())])),
             Value::Func(c) => Ty::func(Some((c.def.arity, c.def.arity)), Ty::Any, None),
             Value::Builtin(b) => Ty::func(Some((b.min, b.max)), Ty::Any, Some(Rc::from(b.sig))),
@@ -302,6 +347,8 @@ impl Ty {
             (Ty::Unit, Value::Unit) | (Ty::Bool, Value::Bool(_)) | (Ty::Int, Value::Int(_)) | (Ty::Float, Value::Float(_)) => true,
             (Ty::Num, Value::Int(_) | Value::Float(_)) | (Ty::Text, Value::Text(_)) => true,
             (Ty::List(t), Value::List(l)) => l.iter().all(|x| t.contains(x)),
+            (Ty::Dict(k, t), Value::Dict(m)) => m.iter().all(|(x, y)| k.contains(x) && t.contains(y)),
+            (Ty::Set(t), Value::Set(m)) => m.keys().all(|x| t.contains(x)),
             (Ty::Record(r), Value::Record(rec)) => {
                 (!r.exact || r.fields.len() == rec.len()) && r.fields.iter().all(|(k, t)| rec.get(k).is_some_and(|x| t.contains(x)))
             }
@@ -353,6 +400,8 @@ pub fn kind_of(v: &Value) -> Kinds {
         Value::Text(_) => TEXT,
         Value::List(_) => LIST,
         Value::Record(_) => RECORD,
+        Value::Dict(_) => DICT,
+        Value::Set(_) => SET,
         Value::Variant(var) => data_kind(var.ctor.type_name),
         Value::Func(_) | Value::Builtin(_) | Value::Ctor(_) => FUNC,
     }
@@ -570,7 +619,7 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 Ty::Int
             }
             "len" => {
-                need(a, 0, Expected::TextListOrRecord)?;
+                need(a, 0, Expected::Collection)?;
                 Ty::Int
             }
             "upper" | "lower" | "capitalize" | "trim" => {
@@ -594,7 +643,7 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 Ty::Text
             }
             "contains" => {
-                need(a, 0, Expected::TextListOrRecord)?;
+                need(a, 0, Expected::Collection)?;
                 // In a text or a record, what is looked for is a text.
                 if arg(0).only(TEXT | RECORD) {
                     need(a, 1, Expected::Text)?;
@@ -655,12 +704,21 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 let r = arg(1).ret();
                 match arg(0) {
                     Ty::List(_) => Ty::list(r),
+                    Ty::Set(_) => Ty::set(r),
                     Ty::Data(d) if d.kind() == OPTION => Ty::option(r),
                     Ty::Data(d) if d.kind() == RESULT => Ty::result(r, error_of(&d)),
                     _ => Ty::Any,
                 }
             }
-            "filter" | "sort_by" => {
+            "filter" => {
+                need(a, 0, Expected::ListDictOrSet)?;
+                need(a, 1, Expected::Function)?;
+                match arg(0) {
+                    t @ (Ty::List(_) | Ty::Dict(..) | Ty::Set(_)) => t,
+                    _ => Ty::Any,
+                }
+            }
+            "sort_by" => {
                 need(a, 0, Expected::List)?;
                 need(a, 1, Expected::Function)?;
                 Ty::list(arg(0).elem())
@@ -731,7 +789,7 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 same_list_or_text(&arg(0))
             }
             "get" => {
-                need(a, 0, Expected::ListTextOrRecord)?;
+                need(a, 0, Expected::Indexable)?;
                 if arg(0).only(LIST | TEXT) {
                     need(a, 1, Expected::Int)?;
                 }
@@ -740,12 +798,17 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 }
                 Ty::option(match arg(0) {
                     Ty::Record(_) => Ty::Any,
+                    Ty::Dict(_, v) => (*v).clone(),
                     t => piece(&t),
                 })
             }
             "push" => {
-                need(a, 0, Expected::List)?;
-                Ty::list(arg(0).elem().join(&arg(1)))
+                need(a, 0, Expected::ListOrSet)?;
+                match arg(0) {
+                    Ty::Set(t) => Ty::set(t.join(&arg(1))),
+                    t if t.only(LIST) => Ty::list(t.elem().join(&arg(1))),
+                    _ => Ty::Any,
+                }
             }
             "set_at" | "insert_at" => {
                 need(a, 0, Expected::List)?;
@@ -803,60 +866,124 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 Ty::list(arg(0).elem().elem())
             }
             "is_empty" => {
-                need(a, 0, Expected::TextListOrRecord)?;
+                need(a, 0, Expected::Collection)?;
                 Ty::Bool
             }
             "keys" => {
-                need(a, 0, Expected::Record)?;
-                Ty::list(Ty::Text)
+                need(a, 0, Expected::RecordOrDict)?;
+                Ty::list(match arg(0) {
+                    Ty::Dict(k, _) => (*k).clone(),
+                    t if t.only(RECORD) => Ty::Text,
+                    _ => Ty::Any,
+                })
             }
             "values" => {
-                need(a, 0, Expected::Record)?;
+                need(a, 0, Expected::RecordDictOrSet)?;
                 Ty::list(match arg(0) {
                     Ty::Record(r) if r.exact => r.fields.iter().fold(Ty::Never, |acc, (_, t)| acc.join(t)),
+                    Ty::Dict(_, t) | Ty::Set(t) => (*t).clone(),
                     _ => Ty::Any,
                 })
             }
             "entries" => {
-                need(a, 0, Expected::Record)?;
-                Ty::list(Ty::list(Ty::Any))
+                need(a, 0, Expected::RecordOrDict)?;
+                Ty::list(Ty::list(match arg(0) {
+                    Ty::Dict(k, v) => k.join(&v),
+                    _ => Ty::Any,
+                }))
             }
             "from_entries" => {
                 need(a, 0, Expected::List)?;
                 Ty::record(Vec::new(), false)
             }
             "has" => {
-                need(a, 0, Expected::Record)?;
-                need(a, 1, Expected::Text)?;
+                need(a, 0, Expected::RecordDictOrSet)?;
+                if arg(0).only(RECORD) {
+                    need(a, 1, Expected::Text)?;
+                }
                 Ty::Bool
             }
             "put" => {
-                need(a, 0, Expected::Record)?;
-                need(a, 1, Expected::Text)?;
+                need(a, 0, Expected::RecordOrDict)?;
+                if arg(0).only(RECORD) {
+                    need(a, 1, Expected::Text)?;
+                }
                 // The record keeps its fields, but any of them may be the one replaced.
                 let v = arg(2);
-                Ty::record(
-                    match arg(0) {
-                        Ty::Record(r) => r.fields.iter().map(|(k, t)| (k.clone(), t.join(&v))).collect(),
-                        _ => Vec::new(),
-                    },
-                    false,
-                )
+                match arg(0) {
+                    Ty::Record(r) => Ty::record(r.fields.iter().map(|(k, t)| (k.clone(), t.join(&v))).collect(), false),
+                    Ty::Dict(k, t) => Ty::dict(k.join(&arg(1)), t.join(&v)),
+                    t if t.only(RECORD) => Ty::record(Vec::new(), false),
+                    _ => Ty::Any,
+                }
             }
             "remove" => {
-                need(a, 0, Expected::Record)?;
-                need(a, 1, Expected::Text)?;
-                Ty::record(Vec::new(), false)
+                need(a, 0, Expected::RecordDictOrSet)?;
+                if arg(0).only(RECORD) {
+                    need(a, 1, Expected::Text)?;
+                }
+                match arg(0) {
+                    t @ (Ty::Dict(..) | Ty::Set(_)) => t,
+                    t if t.only(RECORD) => Ty::record(Vec::new(), false),
+                    _ => Ty::Any,
+                }
             }
             "map_values" => {
-                need(a, 0, Expected::Record)?;
+                need(a, 0, Expected::RecordOrDict)?;
                 need(a, 1, Expected::Function)?;
                 // The same names, each with what the function gives.
                 let r = arg(1).ret();
                 match arg(0) {
                     Ty::Record(rec) => Ty::record(rec.fields.iter().map(|(k, _)| (k.clone(), r.clone())).collect(), rec.exact),
-                    _ => Ty::record(Vec::new(), false),
+                    Ty::Dict(k, _) => Ty::dict((*k).clone(), r),
+                    t if t.only(RECORD) => Ty::record(Vec::new(), false),
+                    _ => Ty::Any,
                 }
+            }
+            // ----- dictionaries and sets -----
+            "dict" if n == 0 => Ty::dict(Ty::Never, Ty::Never),
+            "dict" => {
+                need(a, 0, Expected::Pairs)?;
+                match arg(0) {
+                    // A list of `[key, value]` pairs.
+                    Ty::List(p) => {
+                        let x = p.elem();
+                        Ty::dict(x.clone(), x)
+                    }
+                    Ty::Record(r) if r.exact => Ty::dict(Ty::Text, r.fields.iter().fold(Ty::Never, |acc, (_, t)| acc.join(t))),
+                    Ty::Record(_) => Ty::dict(Ty::Text, Ty::Any),
+                    t @ Ty::Dict(..) => t,
+                    _ => Ty::dict(Ty::Any, Ty::Any),
+                }
+            }
+            "set" if n == 0 => Ty::set(Ty::Never),
+            "set" => {
+                need(a, 0, Expected::ListOrSet)?;
+                match arg(0) {
+                    Ty::List(t) => Ty::Set(t),
+                    t @ Ty::Set(_) => t,
+                    _ => Ty::set(Ty::Any),
+                }
+            }
+            "union" | "intersection" | "difference" => {
+                need(a, 0, Expected::DictOrSet)?;
+                if arg(0).only(SET) {
+                    need(a, 1, Expected::Set)?;
+                }
+                if arg(0).only(DICT) {
+                    need(a, 1, Expected::Dict)?;
+                }
+                match (arg(0), arg(1)) {
+                    (Ty::Set(x), Ty::Set(y)) if name == "union" => Ty::set(x.join(&y)),
+                    (Ty::Dict(k, v), Ty::Dict(l, w)) if name == "union" => Ty::dict(k.join(&l), v.join(&w)),
+                    (t @ (Ty::Set(_) | Ty::Dict(..)), _) if name != "union" => t,
+                    _ => Ty::Any,
+                }
+            }
+            "is_subset" => {
+                need(a, 0, Expected::Set)?;
+                need(a, 1, Expected::Set)?;
+                Ty::Bool
             }
             "unwrap" => {
                 need(a, 0, Expected::OptionOrResult)?;
@@ -988,13 +1115,24 @@ pub fn callback(name: &str, index: usize, a: &[Ty]) -> Option<Callback> {
     let (params, returns) = match (name, index) {
         ("map", 1) => {
             let x = match &first {
-                Ty::List(t) => (**t).clone(),
+                Ty::List(t) | Ty::Set(t) => (**t).clone(),
                 Ty::Data(d) if matches!(d.kind(), OPTION | RESULT) => d.payload(),
                 _ => Ty::Any,
             };
             (vec![x], None)
         }
-        ("filter" | "any" | "all" | "find" | "count" | "partition", 1) => (vec![elem], Some(BOOL)),
+        // Each pair of a dictionary is given as two values, its key and its value.
+        ("filter", 1) => match &first {
+            Ty::Set(t) => (vec![(**t).clone()], Some(BOOL)),
+            Ty::Dict(k, v) => (vec![(**k).clone(), (**v).clone()], Some(BOOL)),
+            Ty::List(_) => (vec![elem], Some(BOOL)),
+            // Before the arguments are known (`a` is empty), the function
+            // waits for them; with a value of unknown kind, how many
+            // arguments it receives is unknown.
+            _ if a.is_empty() => (vec![Ty::Any], Some(BOOL)),
+            _ => return None,
+        },
+        ("any" | "all" | "find" | "count" | "partition", 1) => (vec![elem], Some(BOOL)),
         // Each element of a list, or each character of a text.
         ("take_while" | "drop_while", 1) => (vec![piece(&first)], Some(BOOL)),
         ("flat_map", 1) => (vec![elem], Some(LIST)),
@@ -1005,6 +1143,7 @@ pub fn callback(name: &str, index: usize, a: &[Ty]) -> Option<Callback> {
         ("map_values", 1) => {
             let x = match &first {
                 Ty::Record(r) if r.exact => r.fields.iter().fold(Ty::Never, |acc, (_, t)| acc.join(t)),
+                Ty::Dict(_, v) => (**v).clone(),
                 _ => Ty::Any,
             };
             (vec![x], None)

@@ -79,9 +79,9 @@ fn conditions_that_are_not_true_or_false() {
 
 #[test]
 fn built_in_functions_given_the_wrong_kind_of_value() {
-    finds("print(len(5))", "E005", "`len` expects a text, a list or a record as argument 1, but got Int 5");
+    finds("print(len(5))", "E005", "`len` expects a text, a list, a record, a dict or a set as argument 1, but got Int 5");
     finds("print(upper(3))", "E005", "`upper` expects a text as argument 1");
-    finds("print(map(5, fn(x) = x))", "E005", "`map` expects a list, an Option or a Result as argument 1");
+    finds("print(map(5, fn(x) = x))", "E005", "`map` expects a list, a set, an Option or a Result as argument 1");
     finds("print(map([1], 5))", "E005", "`map` expects a function as argument 2");
     finds("print(\"a,b\".split(1))", "E005", "`split` expects a text as argument 2");
     finds("n = 3\nprint(n |> upper)", "E005", "`upper` expects a text as argument 1, but got a value of type Int");

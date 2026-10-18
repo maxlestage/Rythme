@@ -82,7 +82,12 @@ pub fn alias_hint(name: &str) -> Option<String> {
         "includes" | "include" | "contient" => "contains",
         "has_key" | "haskey" | "hasOwnProperty" | "has_field" => "has",
         "items" | "pairs" => "entries",
-        "fromEntries" | "from_pairs" | "fromPairs" | "to_h" | "dict" | "to_record" => "from_entries",
+        "fromEntries" | "from_pairs" | "fromPairs" | "to_h" | "to_record" => "from_entries",
+        "hashmap" | "hash_map" | "to_dict" | "dictionary" | "dictionnaire" => "dict",
+        "hashset" | "hash_set" | "to_set" | "frozenset" | "ensemble" => "set",
+        "intersect" | "inter" => "intersection",
+        "diff" | "subtract" | "minus" => "difference",
+        "issubset" | "is_subset_of" | "subset" | "subset_of" | "includes_all" => "is_subset",
         "mapValues" | "map_vals" | "transform_values" | "valmap" => "map_values",
         "reduce" | "foldl" | "fold_left" | "inject" | "aggregate" => "fold",
         "accumulate" | "scanl" | "running_fold" | "runningFold" | "cumsum" => "scan",
@@ -199,8 +204,8 @@ pub fn alias_hint(name: &str) -> Option<String> {
             "lisez tout le fichier avec `read_file(chemin)`, puis découpez-le avec `lines(texte)`"
         ),
         "merge" | "assign" | "update" => t!(
-            "to merge two records, write `{{..a, ..b}}`: the fields of `b` replace those of `a`",
-            "pour fusionner deux enregistrements, écrivez `{{..a, ..b}}` : les champs de `b` remplacent ceux de `a`"
+            "to merge two records, write `{{..a, ..b}}`: the fields of `b` replace those of `a`; for two dicts or two sets, `union(a, b)`",
+            "pour fusionner deux enregistrements, écrivez `{{..a, ..b}}` : les champs de `b` remplacent ceux de `a` ; pour deux dictionnaires ou deux ensembles, `union(a, b)`"
         ),
         "get_or" | "getOrDefault" | "get_or_default" | "fetch" => t!(
             "write `unwrap_or(get(x, key), default)`: the value, or the default if it is missing",

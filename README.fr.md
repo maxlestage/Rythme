@@ -201,10 +201,12 @@ fn fib(n) = fib(n - 1) + fib(n - 2)
 # Les conditions sont des expressions : chaque if a un else
 fn signe(n) = if n < 0 then "négatif" else if n == 0 then "zéro" else "positif"
 
-# Listes, intervalles, enregistrements
+# Listes, intervalles, enregistrements, dictionnaires et ensembles
 nombres = 1..10                           # [1, 2, ..., 10]
 ada = {nom: "Ada", naissance: 1815}
 autre = {..ada, naissance: 1816}          # un nouvel enregistrement ; ada ne change pas
+ages = dict([["Ada", 36], ["Alan", 41]])  # un dictionnaire : des clés de toute sorte
+vus = set([1, 2, 2])                      # un ensemble : set(1, 2)
 
 # Vos propres types, et match
 type Forme = Cercle(rayon) | Rect(largeur, hauteur)

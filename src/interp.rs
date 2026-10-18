@@ -1421,7 +1421,7 @@ fn condition_error(v: &Value, span: Span) -> Box<Diagnostic> {
         Value::Int(_) | Value::Float(_) => {
             d.help(t!("compare it explicitly, for example `x != 0` or `x > 0`", "comparez explicitement, par exemple `x != 0` ou `x > 0`"))
         }
-        Value::List(_) | Value::Text(_) | Value::Record(_) => d.help(t!(
+        Value::List(_) | Value::Text(_) | Value::Record(_) | Value::Dict(_) | Value::Set(_) => d.help(t!(
             "to test if it is empty, use `is_empty(x)` or `not is_empty(x)`",
             "pour tester si c'est vide, utilisez `is_empty(x)` ou `not is_empty(x)`"
         )),
@@ -1491,7 +1491,13 @@ fn op_error(op: BinOp, l: &Value, r: &Value, span: Span) -> Box<Diagnostic> {
     let is_text = |v: &Value| matches!(v, Value::Text(_));
     let is_list = |v: &Value| matches!(v, Value::List(_));
     let is_num = |v: &Value| matches!(v, Value::Int(_) | Value::Float(_));
-    if op == BinOp::Add && (is_text(l) || is_text(r)) {
+    let is_dict_or_set = |v: &Value| matches!(v, Value::Dict(_) | Value::Set(_));
+    if matches!(op, BinOp::Add | BinOp::Sub) && is_dict_or_set(l) && is_dict_or_set(r) {
+        d = d.help(t!(
+            "to join two sets or two dicts, use `union(a, b)`; to take one away from the other, `difference(a, b)`",
+            "pour réunir deux ensembles ou deux dictionnaires, utilisez `union(a, b)` ; pour retirer l'un de l'autre, `difference(a, b)`"
+        ));
+    } else if op == BinOp::Add && (is_text(l) || is_text(r)) {
         d = d.help(t!(
             "to build a text with a value inside, use braces: \"total: {{x}}\"\nor convert the value first: text(x)",
             "pour construire un texte contenant une valeur, utilisez des accolades : \"total : {{x}}\"\nou convertissez d'abord la valeur : text(x)"
@@ -1826,6 +1832,18 @@ fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
                 ))
                 .boxed()
         }),
+        (Value::Dict(m), k) => {
+            let found = if crate::dict::bad_key(k).is_none() { m.get(k) } else { None };
+            found.cloned().ok_or_else(|| {
+                Diagnostic::error("E010", t!("this dict has no key {}", "ce dictionnaire n'a pas de clé {}", k.repr()))
+                    .at(idx_span)
+                    .help(t!(
+                        "use `get(dict, key)` to receive an Option instead, or `has(dict, key)` to check first",
+                        "utilisez `get(dico, clé)` pour obtenir une Option à la place, ou `has(dico, clé)` pour vérifier d'abord"
+                    ))
+                    .boxed()
+            })
+        }
         (Value::List(_) | Value::Text(_), other) => Err(Diagnostic::error(
             "E005",
             t!(
@@ -1840,8 +1858,8 @@ fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
             Err(Diagnostic::error("E005", t!("cannot use `[...]` on {}", "impossible d'utiliser `[...]` sur {}", other.describe()))
                 .at(span)
                 .help(t!(
-                    "`[...]` works on lists, texts and records",
-                    "`[...]` fonctionne sur les listes, les textes et les enregistrements"
+                    "`[...]` works on lists, texts, records and dicts",
+                    "`[...]` fonctionne sur les listes, les textes, les enregistrements et les dictionnaires"
                 ))
                 .boxed())
         }
