@@ -374,6 +374,9 @@ struct Shape {
     /// The statements and the end of each block given to a call: written on
     /// one line, they stay on it.
     inline: Vec<(usize, usize)>,
+    /// Ends a call without parentheses: a comma after it would give the call
+    /// one more argument (`puts v,`).
+    command_end: Vec<bool>,
 }
 
 /// Walks the tokens like the parser does (`parser.rs`), to learn the shape of
@@ -414,6 +417,7 @@ impl<'a> Shaper<'a> {
             lists: Vec::new(),
             items: Vec::new(),
             inline: Vec::new(),
+            command_end: vec![false; pieces],
         };
         Shaper {
             toks,
@@ -566,6 +570,7 @@ impl<'a> Shaper<'a> {
         if *self.raw() == Tok::Do {
             self.block_arg()?;
         }
+        self.s.command_end[self.last] = true;
         Some(name)
     }
 
@@ -1431,7 +1436,8 @@ fn normalize(pieces: &mut [Piece], shape: &Shape) -> Edits {
             }
         }
     }
-    // A list on several lines ends with a comma; on one line, without.
+    // A list on several lines ends with a comma (unless its last element ends
+    // with a call without parentheses, which would take it); on one line, without.
     for list in &shape.lists {
         let last = list.close - 1;
         let comma = pieces[last].tok == Tok::Comma;
@@ -1439,7 +1445,7 @@ fn normalize(pieces: &mut [Piece], shape: &Shape) -> Edits {
             continue;
         }
         if pieces[list.close].gap.broken {
-            e.comma_after[last] = !comma;
+            e.comma_after[last] = !comma && !shape.command_end[last];
         } else if comma && !pieces[last].gap.broken {
             e.skip[last] = true;
         }
