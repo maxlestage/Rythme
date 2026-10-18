@@ -413,7 +413,7 @@ impl Gen<'_> {
             3 | 4 => format!("print({})", self.expr(3)),
             // Calls without parentheses, and what looks like them: `x -1`
             // and `xs [0]` use values, `puts -1` and `puts [1]` call.
-            5 => match self.rng.below(5) {
+            5 => match self.rng.below(8) {
                 0 => {
                     let n = self.rng.below(3);
                     format!("print {}, {}", self.rng.pick(VALUES), self.args(n + 1, 2))
@@ -427,6 +427,18 @@ impl Gen<'_> {
                 }
                 2 => format!("puts -{}\nputs [{}]", self.atom(), self.expr(2)),
                 3 => "x -1\nxs [0]\nputs x -1, xs [1]".to_string(),
+                // In results: branches, cases, the body after `=`.
+                5 => format!("print(if {} then puts {} else print {}, x)", self.expr(2), self.expr(2), self.expr(2)),
+                6 => format!(
+                    "{} = fn(v) = puts v, {}\nmatch {}\n  [a, ..] -> puts a -1\n  v -> print v, xs [0]\nend",
+                    self.name(),
+                    self.expr(2),
+                    self.expr(2)
+                ),
+                7 => {
+                    let h = self.name();
+                    format!("fn {h}(p) = if p == x then puts p -1 else print p, {}\n{h} {}", self.expr(2), self.expr(2))
+                }
                 _ => format!("xs.each do |v| puts v, {} end", self.expr(2)),
             },
             6 => format!("{} = {}", self.name(), self.expr(3)),

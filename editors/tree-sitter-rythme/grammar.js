@@ -16,8 +16,9 @@
  * functions defined with `?` in the file; this grammar does not.)
  *
  * And it reads the name of a call without parentheses (`puts "hi"`,
- * `print x, y`): a name that starts a statement, followed on its line by a
- * space and the start of a value. Rythme reads `x -1` and `xs [0]` as a
+ * `print x, y`): a name that starts a statement or a result (a branch of
+ * `if`, a case of `match`, the body after the `=` of a function), followed
+ * on its line by a space and the start of a value. Rythme reads `x -1` and `xs [0]` as a
  * subtraction and an index when the code gives `x` and `xs` values; this
  * grammar always reads them as calls (`rythme fmt` writes the others
  * `x - 1` and `xs[0]`).
@@ -147,7 +148,15 @@ module.exports = grammar({
 
     guard: $ => seq('if', $._expression),
 
-    _body: $ => choice(seq('=', field('body', $._expression)), seq($._newline, field('body', $.block))),
+    _body: $ => choice(seq('=', field('body', $._result)), seq($._newline, field('body', $.block))),
+
+    /**
+     * A result: a branch of `if`, a case of `match`, the body after the `=`
+     * of a function or a test. A call without parentheses may be written
+     * there, as at the start of a statement: `if ok then puts "yes" else
+     * puts "no"`.
+     */
+    _result: $ => choice($.command_call, $._expression),
 
     block: $ => seq(lines($, $._statement), 'end'),
 
@@ -286,9 +295,9 @@ module.exports = grammar({
           'if',
           field('condition', $._expression),
           'then',
-          field('consequence', $._expression),
+          field('consequence', $._result),
           'else',
-          field('alternative', $._expression),
+          field('alternative', $._result),
         ),
       ),
 
@@ -300,9 +309,9 @@ module.exports = grammar({
           alias($._unless, 'unless'),
           field('condition', $._expression),
           'then',
-          field('consequence', $._expression),
+          field('consequence', $._result),
           'else',
-          field('alternative', $._expression),
+          field('alternative', $._result),
         ),
       ),
 
@@ -310,7 +319,7 @@ module.exports = grammar({
       seq('match', field('subject', $._expression), $._newline, lines($, $.match_arm), 'end'),
 
     match_arm: $ =>
-      seq(field('pattern', $._pattern), optional(field('guard', $.guard)), '->', field('body', $._expression)),
+      seq(field('pattern', $._pattern), optional(field('guard', $.guard)), '->', field('body', $._result)),
 
     do_expression: $ => seq('do', field('body', $.block)),
 

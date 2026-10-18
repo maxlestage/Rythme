@@ -586,12 +586,16 @@ impl Gen {
                 // Calls without parentheses, and names followed by `-` or `[` that are not calls.
                 8 => {
                     let (a, b, sp) = (self.expr(), self.expr(), self.sp());
-                    match self.rng.below(6) {
+                    match self.rng.below(9) {
                         0 => format!("print x,{sp}{b}\nputs {a}"),
                         1 => format!("puts -1\nputs [x, {a}]\nx -1\nxs [0]"),
                         2 => format!("xs.each do |v| puts v end\neach xs do |v|\n  print v, {a}\nend"),
                         3 => format!("assert_eq total, {b}{}", self.comment()),
                         4 => "fn f(v) = v\nf -x\nf [1]\nf(-x)\nf\n  -1".to_string(),
+                        // In results: branches, cases, the body after `=`.
+                        6 => format!("fn h(v) = if v then puts {a} else print x,{sp}{b}"),
+                        7 => format!("match x\n  1 -> puts {a}\n  v -> v -1\nend\nf = fn(v) = puts v [0]"),
+                        8 => format!("xs.map {{ |v| puts v, {a} }}\ntest \"t\" = assert_eq x, {b}"),
                         _ => format!("test \"t\"\n  assert not {a}\n  even? 4\nend"),
                     }
                 }

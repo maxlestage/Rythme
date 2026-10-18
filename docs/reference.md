@@ -995,8 +995,8 @@ parentheses are ignored. The number of arguments must be exactly the number
 of parameters (E004; some built-ins accept a range of counts). Calling a value
 that is not a function is error E009, and so is `None()`: a constructor
 without fields is a value, not a function. There are no named arguments,
-default values or partial application. A statement may also call a
-function without parentheses: `print x, y` (see [3.15](#315-calls-without-parentheses)).
+default values or partial application. A statement, or a result such as a
+branch of `if`, may also call a function without parentheses: `print x, y` (see [3.15](#315-calls-without-parentheses)).
 
 ### 3.6 Pipes `|>`
 
@@ -1584,8 +1584,18 @@ As in Ruby, a **statement** may call a function without parentheses:
   are expressions separated by commas, up to the end of the line; a new line
   may follow a comma.
 - Only a statement starts this way: a line at the top level, or in a
-  function, a block or a test. Inside an expression, the parentheses stay:
-  `x = len(xs)`, `print(len(xs))`.
+  function, a block or a test; or a **result**, which holds a whole
+  expression the way a statement does: a branch of `if` or `unless`
+  (`if ok then puts "yes" else puts "no"`), what a case of `match` gives
+  (`"Dr " + name -> puts name`), and the body after the `=` of a function
+  or a test (`fn greet(n) = puts "Hi #{n}"`, `fn(x) = puts x`,
+  `test "sum" = assert_eq 1 + 1, 2`). The arguments of a result end where
+  the expression would: at `else`, `end`, `}`, `)` or a new line (so at the
+  next case of `match`). Anywhere else in an expression, the parentheses
+  stay: `x = len(xs)`, `print(len(xs))`, `1 + f(x)`.
+- A comma after the arguments belongs to the call, inside brackets too:
+  `print(if ok then puts 1, 2 else 0)` gives `1, 2` to `puts`. Write
+  `puts(1)` to end the call before the comma.
 - A `do` block written after the arguments is given to the call itself, as
   its last argument: `each xs do |x| ... end`. A `{ |x| ... }` block belongs
   to the expression right before it, as everywhere.
@@ -1596,7 +1606,7 @@ As in Ruby, a **statement** may call a function without parentheses:
   value**: with `=` (`x = 5`, `f = fn(v) = v`, `[a, b] = xs`), as a
   parameter of a function or a block, or in a pattern of `match` (the names
   before `=` or `->` on their line count). Then `x -1` is `x - 1` and
-  `xs [0]` is `xs[0]`, as they always were. Without a space before
+  `xs [0]` is `xs[0]`, as they always were, in a result too. Without a space before
   (`x-1`, `xs[0]`), or with a space after the `-` (`x - 1`), it is never a
   call.
 - `rythme fmt` keeps the choice of the author, with or without parentheses,
@@ -1629,6 +1639,38 @@ A 1
 B 1
 ```
 
+In results:
+
+```rythme
+fn greet(name) = puts "Hello, #{name}!"
+fn check(ok) = if ok then puts "yes" else puts "no"
+fn title(name) =
+  match name
+    "Dr " + rest -> puts "doctor", rest
+    _ -> puts name
+  end
+greet "Ada"
+check 1 > 2
+title "Dr Grace"
+title "Alan"
+[1, 2].each { |n| puts n * 10 }
+show = fn(v) = puts "v:", v
+show(3)
+x = 10
+puts(if x > 5 then x -1 else 0)
+```
+
+```text
+Hello, Ada!
+no
+doctor Grace
+Alan
+10
+20
+v: 3
+9
+```
+
 A name given a value with `=` is a value, even when it holds a function:
 
 ```rythme
@@ -1644,7 +1686,7 @@ error[E005]: cannot use `-` with Function and Int
 3 | double -3
   |        ^ Function - Int 3
   |
-  = help: `double -x` subtracts here; to call `double`, write `double(-x)` (a call without parentheses starts a statement, and its name is not given a value with `=` or as a parameter)
+  = help: `double -x` subtracts here; to call `double`, write `double(-x)` (a call without parentheses starts a statement or a result, such as a branch of `if` or the body after the `=` of a function, and its name is not given a value with `=` or as a parameter)
   = more about this error: `rythme explain E005`
 ```
 
@@ -3987,8 +4029,9 @@ command      = NAME [ "?" ] expression { "," { NL } expression }
 
 binding      = pattern_atom "=" expression ;
 fn_def       = "fn" NAME [ "?" ] "(" [ patterns ] ")" [ "if" expression ] body ;
-body         = "=" expression
+body         = "=" result
              | NL block_end ;
+result       = command | expression ;              (* 3.15 *)
 block_end    = { statement NL } [ statement ] "end" ;
 type_def     = "type" CTOR "=" [ "|" ] variant { "|" variant } ;
 variant      = CTOR [ "(" [ NAME { "," NAME } ] ")" ] ;
@@ -4019,13 +4062,13 @@ primary      = INT | FLOAT | TEXT | SYMBOL | "true" | "false" | NAME | CTOR
              | "[" [ list_item { "," list_item } ] "]"
              | "{" [ record_item { "," record_item } ] "}"
              | "fn" "(" [ patterns ] ")" body
-             | "if" expression "then" expression "else" expression
-             | "unless" expression "then" expression "else" expression
+             | "if" expression "then" result "else" result
+             | "unless" expression "then" result "else" result
              | "match" expression NL case { NL case } NL "end"
              | "do" block_end ;
 list_item    = [ ".." ] expression ;
 record_item  = ".." expression | KEY ":" expression | NAME ;
-case         = pattern [ "if" expression ] "->" expression ;
+case         = pattern [ "if" expression ] "->" result ;
 
 patterns     = pattern { "," pattern } ;
 pattern      = pattern_atom { "|" pattern_atom } ;
