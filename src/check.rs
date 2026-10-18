@@ -3013,6 +3013,7 @@ fn literal(e: &Expr) -> Option<Value> {
         ExprKind::Float(f) => Value::Float(*f),
         ExprKind::Text(s) => Value::Text(s.clone()),
         ExprKind::Bool(b) => Value::Bool(*b),
+        ExprKind::Symbol(s) => Value::Symbol(*s),
         ExprKind::Unit => Value::Unit,
         ExprKind::List(items) => Value::list(
             items

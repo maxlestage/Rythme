@@ -68,7 +68,10 @@ pub fn scan(text: &str, offset: usize) -> Scan {
         if let Some(Frame::Text(_)) = stack.last() {
             match c {
                 '\\' => {
-                    chars.next();
+                    // `\#{` is written as it is.
+                    if chars.next().is_some_and(|(_, e)| e == '#') && chars.peek().is_some_and(|&(_, b)| b == '{') {
+                        chars.next();
+                    }
                 }
                 '"' => {
                     stack.pop();
@@ -119,6 +122,11 @@ pub fn scan(text: &str, offset: usize) -> Scan {
                     }
                     j = k + d.len_utf8();
                     chars.next();
+                }
+                // `even?(`: the `?` is a part of the name.
+                if src[j..].starts_with("?(") {
+                    chars.next();
+                    j += 1;
                 }
                 let before = src[..i].trim_end();
                 let first_given = before.ends_with("|>") || (before.ends_with('.') && !before.ends_with(".."));

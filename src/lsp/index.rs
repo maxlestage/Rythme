@@ -491,9 +491,14 @@ impl Indexer<'_> {
                 }
                 self.reference(*name, *name_span, false, true);
             }
-            ExprKind::Field(obj, name, _) => {
+            ExprKind::Field(obj, name, name_span) => {
                 self.out.fields.insert(name.clone());
                 self.expr(obj);
+                // `xs.sum` calls `sum` when `xs` has no field `sum`.
+                let s = Sym::new(name);
+                if !matches!(self.resolve(s), Target::Unknown) {
+                    self.reference(s, *name_span, false, true);
+                }
             }
             ExprKind::Index(a, b) | ExprKind::Binary(_, a, b, _) | ExprKind::Range(a, b) => {
                 self.expr(a);

@@ -76,6 +76,10 @@
         "named": true
       },
       {
+        "type": "predicate",
+        "named": true
+      },
+      {
         "type": "range_expression",
         "named": true
       },
@@ -88,6 +92,10 @@
         "named": true
       },
       {
+        "type": "symbol",
+        "named": true
+      },
+      {
         "type": "try_expression",
         "named": true
       },
@@ -97,6 +105,10 @@
       },
       {
         "type": "unit",
+        "named": true
+      },
+      {
+        "type": "unless_expression",
         "named": true
       }
     ]
@@ -155,6 +167,10 @@
       },
       {
         "type": "string",
+        "named": true
+      },
+      {
+        "type": "symbol",
         "named": true
       },
       {
@@ -294,9 +310,78 @@
     }
   },
   {
+    "type": "block_parameters",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "constructor_pattern",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "list_pattern",
+          "named": true
+        },
+        {
+          "type": "parenthesized_pattern",
+          "named": true
+        },
+        {
+          "type": "record_pattern",
+          "named": true
+        },
+        {
+          "type": "unit_pattern",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "boolean",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "brace_block",
+    "named": true,
+    "fields": {
+      "parameters": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "block_parameters",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "_expression",
+          "named": true
+        },
+        {
+          "type": "definition",
+          "named": true
+        },
+        {
+          "type": "function_definition",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "call",
@@ -304,10 +389,24 @@
     "fields": {
       "arguments": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "arguments",
+            "named": true
+          }
+        ]
+      },
+      "block": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "brace_block",
+            "named": true
+          },
+          {
+            "type": "do_block",
             "named": true
           }
         ]
@@ -374,6 +473,32 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "do_block",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "block",
+            "named": true
+          }
+        ]
+      },
+      "parameters": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "block_parameters",
             "named": true
           }
         ]
@@ -486,6 +611,10 @@
         "types": [
           {
             "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "predicate",
             "named": true
           }
         ]
@@ -730,10 +859,24 @@
     "fields": {
       "arguments": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "arguments",
+            "named": true
+          }
+        ]
+      },
+      "block": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "brace_block",
+            "named": true
+          },
+          {
+            "type": "do_block",
             "named": true
           }
         ]
@@ -1247,6 +1390,42 @@
     "fields": {}
   },
   {
+    "type": "unless_expression",
+    "named": true,
+    "fields": {
+      "alternative": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      },
+      "consequence": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "use_declaration",
     "named": true,
     "fields": {
@@ -1323,6 +1502,10 @@
   },
   {
     "type": "\"",
+    "named": false
+  },
+  {
+    "type": "#{",
     "named": false
   },
   {
@@ -1499,7 +1682,15 @@
     "named": true
   },
   {
+    "type": "predicate",
+    "named": true
+  },
+  {
     "type": "string_content",
+    "named": true
+  },
+  {
+    "type": "symbol",
     "named": true
   },
   {
@@ -1523,6 +1714,10 @@
     "named": true
   },
   {
+    "type": "unless",
+    "named": false
+  },
+  {
     "type": "use",
     "named": false
   },
@@ -1536,6 +1731,10 @@
   },
   {
     "type": "|>",
+    "named": false
+  },
+  {
+    "type": "||",
     "named": false
   },
   {

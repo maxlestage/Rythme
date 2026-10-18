@@ -159,8 +159,8 @@ pub static BUILTINS: &[Builtin] = &[
        "Affiche l'invite, puis lit une ligne tapée au clavier et la renvoie sous forme de texte.",
        "name = input(\"Your name? \")"),
     b!("type_of", "type_of(value)", 1, 1, Basics, type_of,
-       "Returns the name of the type of a value: \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (for `()`), \"Option\", \"Result\", or the name of your own type.",
-       "Renvoie le nom du type d'une valeur : \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (pour `()`), \"Option\", \"Result\", ou le nom de votre propre type.",
+       "Returns the name of the type of a value: \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (for `()`), \"Symbol\" (for `:ok`), \"Option\", \"Result\", or the name of your own type.",
+       "Renvoie le nom du type d'une valeur : \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (pour `()`), \"Symbol\" (pour `:ok`), \"Option\", \"Result\", ou le nom de votre propre type.",
        "type_of([1, 2])            # \"List\""),
     b!("help", "help(value)", 0, 1, Basics, help,
        "Shows help: about a function (`help(map)`), a topic (`help(\"lists\")`), or what you can do with a value (`help([1, 2])`).",
@@ -2025,6 +2025,8 @@ fn write_json(it: &Interp, v: &Value, indent: Option<usize>) -> Result<String, U
                 Value::Int(n) => out.push_str(&n.to_string()),
                 Value::Float(f) if f.is_finite() => out.push_str(&fmt_float(*f)),
                 Value::Text(s) => json_text(s, &mut out),
+                // `:ok` is written as its name, as Ruby does.
+                Value::Symbol(s) => json_text(&s.name(), &mut out),
                 Value::List(l) if l.is_empty() => out.push_str("[]"),
                 Value::Record(r) if r.is_empty() => out.push_str("{}"),
                 Value::List(l) => {
