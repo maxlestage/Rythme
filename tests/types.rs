@@ -60,8 +60,9 @@ fn samples(it: &Interp) -> Vec<Value> {
     ]
 }
 
-/// Built-in functions that read the keyboard, stop the program or write files.
-const NOT_CALLED: &[&str] = &["input", "exit", "write_file", "append_file", "help", "print", "debug"];
+/// Built-in functions that read the keyboard, stop the program or change files.
+const NOT_CALLED: &[&str] =
+    &["input", "input_lines", "exit", "write_file", "append_file", "create_folder", "delete_file", "help", "print", "debug"];
 
 fn combinations(n: usize, k: usize) -> Vec<Vec<usize>> {
     let mut out = vec![Vec::new()];

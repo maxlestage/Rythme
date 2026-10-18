@@ -1874,8 +1874,10 @@ Rythme n'a ni `null` ni exceptions. Une valeur qui peut manquer est une
 `Option` (`Some(valeur)` ou `None`) ; une opération qui peut échouer renvoie
 un `Result` (`Ok(valeur)` ou `Err(erreur)`). La bibliothèque suit cette
 règle : `first`, `last`, `get`, `find`, `index_of` et `env` renvoient des
-Options ; `parse_int`, `parse_float`, `parse_json`, `read_file`, `write_file`
-et `append_file` renvoient des Results.
+Options ; `parse_int`, `parse_float`, `parse_json`, `options`, `input_lines`
+et toutes les fonctions des fichiers et dossiers (`read_file`, `write_file`,
+`append_file`, `file_info`, `list_folder`, `create_folder`, `delete_file`)
+renvoient des Results.
 
 On les traite avec `match`, avec `?`, ou avec les fonctions `unwrap_or`,
 `unwrap`, `is_some`, `is_none`, `is_ok`, `is_err`, `map` (qui applique une
@@ -1923,7 +1925,8 @@ Some(8) None
   E015 quand la vérification échoue ; on s'en sert surtout dans les tests.
 - `unwrap(x)` arrête avec E013 sur `None` ou `Err(...)`.
 - `exit(code)` arrête immédiatement avec ce code de sortie (de 0 à 255, E023
-  sinon ; 0 s'il est omis).
+  sinon ; 0 s'il est omis). Les codes avec lesquels Rythme lui-même s'arrête
+  sont en [7.1](#71-la-ligne-de-commande).
 
 ### 5.4 Erreurs pendant l'exécution
 
@@ -2207,7 +2210,7 @@ minuscules.
 
 ## 6. Bibliothèque standard
 
-Les 136 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
+Les 144 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
 mots-clés, leurs noms sont en anglais. `rythme help builtins` les liste
 toutes par catégorie, une ligne chacune ; `rythme help NOM` (ou `help(NOM)`
 dans un programme, ou `:doc NOM` dans le mode interactif) affiche la
@@ -2252,9 +2255,11 @@ détail de chaque fonction.
 forme de texte) et `text(nombre, decimales)` (un nombre avec exactement ce
 nombre de décimales, au plus 100 : `text(5, 2)` vaut `"5.00"`),
 `input(invite)` (lit une ligne au clavier ; à la fin de l'entrée, l'erreur
-E017), `type_of(valeur)`, `help(valeur)`, `assert(condition, message)`,
+E017), `input_lines()` (toutes les lignes de l'entrée standard jusqu'à sa
+fin, dans un Result : pour `rythme compter.ry < noms.txt`), `type_of(valeur)`, `help(valeur)`, `assert(condition, message)`,
 `assert_eq(obtenu, attendu)`, `fail(message)`, `args()` (les mots donnés
-après le nom du fichier sur la ligne de commande), `env(nom)` (une variable
+après le nom du fichier sur la ligne de commande), `options()` (les mots de
+`args()` lus comme des options, dans un Result : voir plus bas), `env(nom)` (une variable
 d'environnement, sous forme d'Option), `exit(code)`, `time()` (les secondes
 depuis 1970, un Float), `random()` (un Float dans [0, 1[), `random(a, b)`
 (un Int de a à b, inclus), `random(liste)` (un élément).
@@ -2315,8 +2320,41 @@ constructeurs `Some`, `None`, `Ok`, `Err`.
 **Fichiers.** `read_file(chemin)` (`Ok(texte)` ou `Err(message)`),
 `write_file(chemin, valeur)` (écrit la forme affichée en remplaçant le
 contenu : `Ok(())` ou `Err(message)`), `append_file(chemin, valeur)` (ajoute
-à la fin, en créant le fichier si besoin), `file_exists(chemin)`. Les
-chemins relatifs partent du dossier actuel.
+à la fin, en créant le fichier si besoin), `file_exists(chemin)` (un Bool,
+pour un fichier ou un dossier), `file_info(chemin)` (`Ok({is_folder, size})`,
+la taille en octets, 0 pour un dossier), `list_folder(chemin)` (les noms
+contenus dans un dossier, dans l'ordre alphabétique), `create_folder(chemin)`
+(avec les dossiers manquants autour ; `Ok(())` aussi quand il existe déjà),
+`delete_file(chemin)` (un fichier, jamais un dossier). Les chemins relatifs
+partent du dossier actuel. Chaque erreur est un `Err(message)` qui nomme le
+chemin : `"fichier introuvable : notes.txt"`, `"dossier introuvable :
+photos"`, `"permission refusée : ..."`, un fichier donné à la place d'un
+dossier ou l'inverse, un chemin vide.
+
+`join_path(parties)` joint une liste de textes avec `/`, que Linux, macOS et
+Windows comprennent tous (avec `\` quand les parties utilisent seulement
+`\`, comme les chemins Windows) ; un séparateur à la fin d'une partie n'est
+pas répété, et les parties vides sont ignorées. Seule la première partie
+peut partir d'une racine (`/`, `\`, ou un lecteur comme `C:`) : une partie
+comme `"/etc"` après une autre est l'erreur E023, pour qu'un chemin ne sorte
+jamais de son dossier par surprise. `split_path(chemin)` coupe un chemin à
+chaque `/` ou `\`, quel que soit le système ; la racine d'un chemin absolu
+(`/`, `C:\`, `\\` pour un chemin réseau) est sa première partie, et
+`join_path` remet les parties ensemble.
+
+`options()` lit les mots de `args()` (ou `options(mots)`, la liste donnée)
+dans un enregistrement, dans un Result. `--nom=valeur` donne le champ `nom`
+avec le texte `valeur` ; `--nom` et `-n` donnent `true` ; un `-` dans un nom
+devient `_` (`--dry-run` donne `dry_run`) ; les autres mots, dans l'ordre,
+sont dans le champ `args`, comme tous les mots après `--`. Un nombre négatif
+comme `-5` est un mot. Une option donnée deux fois, un nom qui ne commence
+pas par une lettre, un mot comme `-abc` (plusieurs lettres après un seul
+`-`) et `--args` donnent `Err(message)`. Une option qui peut manquer se lit
+avec `get(opts, "nom")` (une Option) ou se teste avec `has(opts, "nom")`.
+
+Dans le playground, toutes les fonctions des fichiers et dossiers et
+`input_lines` donnent `Err("`read_file` n'est pas disponible dans le
+navigateur : ...")`, et `file_exists` vaut toujours `false`.
 
 **Dates et heures.** Une date est un enregistrement `{year, month, day}`,
 avec `hour`, `minute` et `second` pour un moment de la journée (un champ
@@ -2449,6 +2487,31 @@ true ["Ada", "36"]
 ```
 
 ```rythme
+fn sauvegarder(nom)
+  create_folder(join_path(["sauvegarde", "2024"]))?
+  write_file(join_path(["sauvegarde", "2024", nom]), "gardé")?
+  list_folder("sauvegarde/2024")
+end
+print(sauvegarder("notes.txt"))
+print(file_info("sauvegarde/2024/notes.txt"), file_info("sauvegarde"))
+print(delete_file("sauvegarde/2024/notes.txt"), delete_file("sauvegarde"))
+print(split_path("C:\\Users\\ada\\notes.txt"), split_path("/home/ada/") |> join_path)
+print(options(["--dry-run", "--nom=Ada", "notes.txt"]))
+print(options(["-abc"]))
+print(input_lines())
+```
+
+```text
+Ok(["notes.txt"])
+Ok({is_folder: false, size: 6}) Ok({is_folder: true, size: 0})
+Ok(()) Err("sauvegarde est un dossier : `delete_file` supprime seulement des fichiers, jamais des dossiers")
+["C:\\", "Users", "ada", "notes.txt"] /home/ada
+Ok({args: ["notes.txt"], dry_run: true, nom: "Ada"})
+Err("`-abc` n'est pas une option que Rythme comprend : écrivez `--abc` pour un nom long, ou `-a -b` pour plusieurs options d'une lettre")
+Ok([])
+```
+
+```rythme
 depart = unwrap(parse_date("2024-02-28T22:30:00+01:00"))
 print(depart)
 print(add_days(depart, 1) |> format_date, add_seconds(depart, 5400) |> format_date)
@@ -2561,10 +2624,11 @@ inconnu donne le code de sortie 2.
 
 **Sujets d'aide.** `rythme help SUJET` accepte `start`, `syntax`,
 `functions`, `lists`, `text`, `records`, `types`, `match`, `errors`,
-`functional`, `tests`, `exercises`, `modules`, `repl`, `fmt`, `doc`,
-`editors` et `builtins`, ainsi que des noms français ou alternatifs :
-`syntaxe`, `fonctions`, `listes`, `texte`, `enregistrements`, `motifs`,
-`erreurs`, `fonctionnel`, `boucles`, `exercices`, `fichiers`, `interactif`,
+`functional`, `tests`, `exercises`, `modules`, `system`, `dates`, `repl`,
+`fmt`, `doc`, `editors` et `builtins`, ainsi que des noms français ou
+alternatifs : `syntaxe`, `fonctions`, `listes`, `texte`, `enregistrements`,
+`motifs`, `erreurs`, `fonctionnel`, `boucles`, `exercices`, `fichiers`,
+`système`, `dossiers`, `chemins`, `interactif`,
 `formater`, `documentation`, `lsp`, `vscode`, `éditeurs`, `bibliothèque`...
 
 **Codes de sortie.**

@@ -13,10 +13,12 @@ use crate::types::{self, Kinds, BOOL, FUNC, INT, LIST, NUMBER, OPTION, RECORD, R
 use crate::value::*;
 
 pub(crate) mod date;
+pub(crate) mod system;
 use date::{
     add_days, add_seconds, day_of_week, days_between, days_in_month, format_date, is_date, is_leap_year, now, parse_date, seconds_between,
     today,
 };
+use system::{create_folder, delete_file, file_info, in_browser, input_lines, io_message, join_path, list_folder, options, split_path};
 
 pub type BuiltinFn = fn(&mut Interp, &[Value], Span) -> Fallible<Value>;
 
@@ -106,6 +108,10 @@ pub static BUILTINS: &[Builtin] = &[
        "Shows the prompt, then reads a line typed on the keyboard and returns it as text.",
        "Affiche l'invite, puis lit une ligne tapée au clavier et la renvoie sous forme de texte.",
        "name = input(\"Your name? \")"),
+    b!("input_lines", "input_lines()", 0, 0, Basics, input_lines,
+       "Reads all the lines of the standard input, until its end: `Ok(list of texts)`, or `Err(message)` if it cannot be read. For `rythme count.ry < names.txt`, or text typed until Ctrl-D (Ctrl-Z then Enter on Windows).",
+       "Lit toutes les lignes de l'entrée standard, jusqu'à sa fin : `Ok(liste de textes)`, ou `Err(message)` si elle ne peut pas être lue. Pour `rythme compter.ry < noms.txt`, ou du texte tapé jusqu'à Ctrl-D (Ctrl-Z puis Entrée sous Windows).",
+       "match input_lines()\n  Ok(lines) -> print(len(lines), \"lines\")\n  Err(e) -> print(\"Error: {e}\")\nend"),
     b!("type_of", "type_of(value)", 1, 1, Basics, type_of,
        "Returns the name of the type of a value: \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (for `()`), \"Option\", \"Result\", or the name of your own type.",
        "Renvoie le nom du type d'une valeur : \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (pour `()`), \"Option\", \"Result\", ou le nom de votre propre type.",
@@ -130,13 +136,17 @@ pub static BUILTINS: &[Builtin] = &[
        "Returns the list of the words given after the file name on the command line.",
        "Renvoie la liste des mots donnés après le nom du fichier sur la ligne de commande.",
        "# rythme hello.ry Ada   ->   args() == [\"Ada\"]"),
+    b!("options", "options(words)", 0, 1, Basics, options,
+       "Reads the options of the command line (the words of `args()`, or the list given) into a record, in a Result: `--name=value` gives the text `value`, `--name` and `-n` give `true`, a `-` in a name becomes `_`, and the other words are in the field `args` (all of them after `--`). An option given twice, or a word like `-abc`, gives `Err(message)`. Use `get(opts, \"name\")` or `has(opts, \"name\")` for an option that may be missing.",
+       "Lit les options de la ligne de commande (les mots de `args()`, ou la liste donnée) dans un enregistrement, dans un Result : `--nom=valeur` donne le texte `valeur`, `--nom` et `-n` donnent `true`, un `-` dans un nom devient `_`, et les autres mots sont dans le champ `args` (tous ceux après `--`). Une option donnée deux fois, ou un mot comme `-abc`, donne `Err(message)`. Utilisez `get(opts, \"nom\")` ou `has(opts, \"nom\")` pour une option qui peut manquer.",
+       "options([\"--dry-run\", \"--name=Ada\", \"notes.txt\"])   # Ok({args: [\"notes.txt\"], dry_run: true, name: \"Ada\"})\noptions([\"-v\", \"--\", \"-v\"])   # Ok({args: [\"-v\"], v: true})\noptions([\"--n=1\", \"--n=2\"])   # Err(\"the option `n` is given twice\")"),
     b!("env", "env(name)", 1, 1, Basics, env,
        "The value of an environment variable of the system, as an Option: `Some(text)`, or `None` if it is not set.",
        "La valeur d'une variable d'environnement du système, sous forme d'Option : `Some(texte)`, ou `None` si elle n'est pas définie.",
        "env(\"HOME\")                # Some(\"/home/ada\")"),
     b!("exit", "exit(code)", 0, 1, Basics, exit,
-       "Stops the program immediately. The code (0 by default) tells the system if everything went well (0) or not.",
-       "Arrête immédiatement le programme. Le code (0 par défaut) indique au système si tout s'est bien passé (0) ou non.",
+       "Stops the program immediately. The code (0 by default) tells the system if everything went well (0) or not; Rythme itself exits with 1 after an error in the program (see `rythme help system`).",
+       "Arrête immédiatement le programme. Le code (0 par défaut) indique au système si tout s'est bien passé (0) ou non ; Rythme lui-même sort avec 1 après une erreur dans le programme (voir `rythme help system`).",
        "exit(1)"),
     b!("time", "time()", 0, 0, Basics, time,
        "Returns the current time in seconds (a Float), counted from 1 January 1970. Subtract two times to measure a duration.",
@@ -510,7 +520,34 @@ pub static BUILTINS: &[Builtin] = &[
        "Adds a text at the end of a file, creating the file if needed: `Ok(())` or `Err(message)`.",
        "Ajoute un texte à la fin d'un fichier, en créant le fichier si besoin : `Ok(())` ou `Err(message)`.",
        "append_file(\"log.txt\", \"done\\n\")"),
-    b!("file_exists", "file_exists(path)", 1, 1, Files, file_exists, "Does this file exist?", "Ce fichier existe-t-il ?", "file_exists(\"notes.txt\")"),
+    b!("file_exists", "file_exists(path)", 1, 1, Files, file_exists,
+       "Does this file (or folder) exist? Always `false` in the browser.",
+       "Ce fichier (ou dossier) existe-t-il ? Toujours `false` dans le navigateur.",
+       "file_exists(\"notes.txt\")"),
+    b!("file_info", "file_info(path)", 1, 1, Files, file_info,
+       "What is known about a file or a folder: `Ok({is_folder, size})`, with its size in bytes (0 for a folder), or `Err(message)` if it does not exist or cannot be read.",
+       "Ce qu'on sait d'un fichier ou d'un dossier : `Ok({is_folder, size})`, avec sa taille en octets (0 pour un dossier), ou `Err(message)` s'il n'existe pas ou ne peut pas être lu.",
+       "file_info(\"notes.txt\")      # Ok({is_folder: false, size: 11})"),
+    b!("list_folder", "list_folder(path)", 1, 1, Files, list_folder,
+       "The names of the files and folders inside a folder, in alphabetical order: `Ok(list of texts)`, or `Err(message)`. `list_folder(\".\")` lists the current folder.",
+       "Les noms des fichiers et dossiers d'un dossier, dans l'ordre alphabétique : `Ok(liste de textes)`, ou `Err(message)`. `list_folder(\".\")` liste le dossier courant.",
+       "list_folder(\"photos\")       # Ok([\"cat.jpg\", \"dog.jpg\"])"),
+    b!("create_folder", "create_folder(path)", 1, 1, Files, create_folder,
+       "Creates a folder, and the folders around it that are missing: `Ok(())`, also when it already exists, or `Err(message)`.",
+       "Crée un dossier, et les dossiers autour qui manquent : `Ok(())`, aussi quand il existe déjà, ou `Err(message)`.",
+       "create_folder(\"backup/2024\")"),
+    b!("delete_file", "delete_file(path)", 1, 1, Files, delete_file,
+       "Deletes one file (never a folder: that is an error): `Ok(())` or `Err(message)`. A deleted file cannot be brought back.",
+       "Supprime un fichier (jamais un dossier : c'est une erreur) : `Ok(())` ou `Err(message)`. Un fichier supprimé ne peut pas être récupéré.",
+       "delete_file(\"old.txt\")"),
+    b!("join_path", "join_path(parts)", 1, 1, Files, join_path,
+       "Joins the parts of a path with `/`, which works on Linux, macOS and Windows (with `\\` if the parts already use only `\\`). Only the first part can start at a root (`/`, `C:`): a part like \"/etc\" after another one is an error.",
+       "Joint les parties d'un chemin avec `/`, qui marche sous Linux, macOS et Windows (avec `\\` si les parties utilisent déjà seulement `\\`). Seule la première partie peut partir d'une racine (`/`, `C:`) : une partie comme \"/etc\" après une autre est une erreur.",
+       "join_path([\"data\", \"2024\", \"notes.txt\"])   # \"data/2024/notes.txt\"\njoin_path([\"C:\\\\Users\", \"ada\"])   # \"C:\\\\Users\\\\ada\""),
+    b!("split_path", "split_path(path)", 1, 1, Files, split_path,
+       "The parts of a path, split at each `/` or `\\`; the first part of an absolute path is its root (`/`, `C:\\`...). `join_path` puts them back together.",
+       "Les parties d'un chemin, coupé à chaque `/` ou `\\` ; la première partie d'un chemin absolu est sa racine (`/`, `C:\\`...). `join_path` les remet ensemble.",
+       "split_path(\"/home/ada/notes.txt\")   # [\"/\", \"home\", \"ada\", \"notes.txt\"]\nsplit_path(\"C:\\\\Users\\\\ada\")   # [\"C:\\\\\", \"Users\", \"ada\"]\nsplit_path(\"photos/cat.jpg\") |> last   # Some(\"cat.jpg\")"),
     // ----- Dates and times -----
     b!("now", "now()", 0, 0, Dates, now,
        "The date and time now, where the program runs: a record {year, month, day, hour, minute, second, offset}, where `offset` is the number of minutes the local time is ahead of UTC (0 when the system does not tell).",
@@ -2826,41 +2863,44 @@ fn map_err(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 // ----- Files -------------------------------------------------------------
 
-fn io_message(e: &std::io::Error, path: &str) -> String {
-    match e.kind() {
-        std::io::ErrorKind::NotFound => t!("file not found: {path}", "fichier introuvable : {path}"),
-        std::io::ErrorKind::PermissionDenied => t!("permission denied: {path}", "permission refusée : {path}"),
-        _ => t!("cannot access {path}: {e}", "impossible d'accéder à {path} : {e}"),
-    }
-}
-
 fn read_file(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let path = text(a, 0, "read_file", span)?;
+    if let Some(e) = in_browser(it, "read_file", false) {
+        return Ok(e);
+    }
     Ok(match std::fs::read_to_string(path) {
         Ok(s) => it.ok(text_value(s)),
-        Err(e) => it.err(text_value(io_message(&e, path))),
+        Err(e) => it.err(text_value(io_message(&e, path, false))),
     })
 }
 
 fn write_file(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let path = text(a, 0, "write_file", span)?;
+    if let Some(e) = in_browser(it, "write_file", false) {
+        return Ok(e);
+    }
     let content = a[1].display();
     Ok(match std::fs::write(path, content) {
         Ok(()) => it.ok(Value::Unit),
-        Err(e) => it.err(text_value(io_message(&e, path))),
+        Err(e) => it.err(text_value(io_message(&e, path, false))),
     })
 }
 
 fn append_file(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let path = text(a, 0, "append_file", span)?;
+    if let Some(e) = in_browser(it, "append_file", false) {
+        return Ok(e);
+    }
     let content = a[1].display();
     let written = std::fs::OpenOptions::new().append(true).create(true).open(path).and_then(|mut f| f.write_all(content.as_bytes()));
     Ok(match written {
         Ok(()) => it.ok(Value::Unit),
-        Err(e) => it.err(text_value(io_message(&e, path))),
+        Err(e) => it.err(text_value(io_message(&e, path, false))),
     })
 }
 
 fn file_exists(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    Ok(Value::Bool(std::path::Path::new(text(a, 0, "file_exists", span)?).exists()))
+    let path = text(a, 0, "file_exists", span)?;
+    // The browser has no files.
+    Ok(Value::Bool(!cfg!(target_arch = "wasm32") && std::path::Path::new(path).exists()))
 }

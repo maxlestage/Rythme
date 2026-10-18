@@ -1803,8 +1803,9 @@ Rythme has no `null` and no exceptions. A value that may be missing is an
 `Option` (`Some(value)` or `None`); an operation that may fail returns a
 `Result` (`Ok(value)` or `Err(error)`). The library follows this rule:
 `first`, `last`, `get`, `find`, `index_of` and `env` return Options;
-`parse_int`, `parse_float`, `parse_json`, `read_file`, `write_file` and
-`append_file` return Results.
+`parse_int`, `parse_float`, `parse_json`, `options`, `input_lines` and every
+function of files and folders (`read_file`, `write_file`, `append_file`,
+`file_info`, `list_folder`, `create_folder`, `delete_file`) return Results.
 
 They are handled with `match`, with `?`, or with the functions `unwrap_or`,
 `unwrap`, `is_some`, `is_none`, `is_ok`, `is_err`, `map` (which applies a
@@ -1851,7 +1852,8 @@ Some(8) None
   E015 when the check fails; they are mostly used in tests.
 - `unwrap(x)` stops with E013 on `None` or `Err(...)`.
 - `exit(code)` stops immediately with this exit code (0 to 255, E023
-  otherwise; 0 when omitted).
+  otherwise; 0 when omitted). The codes Rythme itself exits with are in
+  [7.1](#71-the-command-line).
 
 ### 5.4 Errors while running
 
@@ -2125,7 +2127,7 @@ with examples; the code may be written in lowercase.
 
 ## 6. Standard library
 
-The 136 built-in functions are always available, without `use`. Like the
+The 144 built-in functions are always available, without `use`. Like the
 keywords, their names are in English. `rythme help builtins` lists all of
 them by category, one line each; `rythme help NAME` (or `help(NAME)` in a
 program, or `:doc NAME` in the REPL) shows the documentation of one, with
@@ -2163,9 +2165,11 @@ reference for the details of each function.
 `text(value)` (display form as a text) and `text(number, decimals)` (a number
 with exactly this many decimals, at most 100: `text(5, 2)` is `"5.00"`),
 `input(prompt)` (reads a line from the keyboard; at the end of the input,
-error E017), `type_of(value)`, `help(value)`, `assert(condition, message)`,
+error E017), `input_lines()` (every line of the standard input until its end,
+in a Result: for `rythme count.ry < names.txt`), `type_of(value)`, `help(value)`, `assert(condition, message)`,
 `assert_eq(actual, expected)`, `fail(message)`, `args()` (the words given
-after the file name on the command line), `env(name)` (an environment
+after the file name on the command line), `options()` (the words of
+`args()` read as options, in a Result: see below), `env(name)` (an environment
 variable, as an Option), `exit(code)`, `time()` (seconds since 1970, a
 Float), `random()` (a Float in [0, 1)), `random(a, b)` (an Int from a to b,
 included), `random(list)` (an element).
@@ -2221,8 +2225,39 @@ Result, ready for `?`), `map_err(result, f)`, and the constructors `Some`,
 **Files.** `read_file(path)` (`Ok(text)` or `Err(message)`),
 `write_file(path, value)` (writes the display form, replacing the content:
 `Ok(())` or `Err(message)`), `append_file(path, value)` (adds at the end,
-creating the file if needed), `file_exists(path)`. Relative paths are
-relative to the current folder.
+creating the file if needed), `file_exists(path)` (a Bool, for a file or a
+folder), `file_info(path)` (`Ok({is_folder, size})`, the size in bytes, 0 for
+a folder), `list_folder(path)` (the names inside a folder, in alphabetical
+order), `create_folder(path)` (with the missing folders around it; `Ok(())`
+also when it already exists), `delete_file(path)` (one file, never a folder).
+Relative paths are relative to the current folder. Every error is an
+`Err(message)` that names the path: `"file not found: notes.txt"`,
+`"folder not found: photos"`, `"permission denied: ..."`, a file given
+instead of a folder or the reverse, an empty path.
+
+`join_path(parts)` joins a list of texts with `/`, which Linux, macOS and
+Windows all understand (with `\` when the parts use only `\`, as Windows
+paths do); a separator at the end of a part is not repeated, and empty parts
+are skipped. Only the first part may start at a root (`/`, `\`, or a drive
+like `C:`): a part like `"/etc"` after another one is E023, so that a path
+never leaves its folder by surprise. `split_path(path)` cuts a path at each
+`/` or `\`, whatever the system; the root of an absolute path (`/`, `C:\`,
+`\\` for a network path) is its first part, and `join_path` puts the parts
+back together.
+
+`options()` reads the words of `args()` (or `options(words)`, the list
+given) into a record, in a Result. `--name=value` gives the field `name`
+with the text `value`; `--name` and `-n` give `true`; a `-` in a name
+becomes `_` (`--dry-run` is `dry_run`); the other words, in order, are in
+the field `args`, and so are all the words after `--`. A negative number
+like `-5` is a word. An option given twice, a name that does not start with
+a letter, a word like `-abc` (several letters after one `-`) and `--args`
+give `Err(message)`. An option that may be missing is read with
+`get(opts, "name")` (an Option) or tested with `has(opts, "name")`.
+
+In the playground, every function of files and folders and `input_lines`
+give `Err("`read_file` is not available in the browser: ...")`, and
+`file_exists` is always `false`.
 
 **Dates and times.** A date is a record `{year, month, day}`, with `hour`,
 `minute` and `second` for a moment of the day (a missing one is 0), and
@@ -2354,6 +2389,31 @@ true ["Ada", "36"]
 ```
 
 ```rythme
+fn backup(name)
+  create_folder(join_path(["backup", "2024"]))?
+  write_file(join_path(["backup", "2024", name]), "saved")?
+  list_folder("backup/2024")
+end
+print(backup("notes.txt"))
+print(file_info("backup/2024/notes.txt"), file_info("backup"))
+print(delete_file("backup/2024/notes.txt"), delete_file("backup"))
+print(split_path("C:\\Users\\ada\\notes.txt"), split_path("/home/ada/") |> join_path)
+print(options(["--dry-run", "--name=Ada", "notes.txt"]))
+print(options(["-abc"]))
+print(input_lines())
+```
+
+```text
+Ok(["notes.txt"])
+Ok({is_folder: false, size: 5}) Ok({is_folder: true, size: 0})
+Ok(()) Err("backup is a folder: `delete_file` deletes only files, never folders")
+["C:\\", "Users", "ada", "notes.txt"] /home/ada
+Ok({args: ["notes.txt"], dry_run: true, name: "Ada"})
+Err("`-abc` is not an option that Rythme understands: write `--abc` for a long name, or `-a -b` for several one-letter options")
+Ok([])
+```
+
+```rythme
 launch = unwrap(parse_date("2024-02-28T22:30:00+01:00"))
 print(launch)
 print(add_days(launch, 1) |> format_date, add_seconds(launch, 5400) |> format_date)
@@ -2462,10 +2522,11 @@ unknown action or exercise is exit code 2.
 
 **Help topics.** `rythme help TOPIC` accepts `start`, `syntax`, `functions`,
 `lists`, `text`, `records`, `types`, `match`, `errors`, `functional`,
-`tests`, `exercises`, `modules`, `repl`, `fmt`, `doc`, `editors` and
-`builtins`, and French or alternative names: `syntaxe`, `fonctions`,
-`listes`, `texte`, `enregistrements`, `motifs`, `erreurs`, `fonctionnel`,
-`boucles`, `exercices`, `fichiers`, `interactif`, `format`, `documentation`,
+`tests`, `exercises`, `modules`, `system`, `dates`, `repl`, `fmt`, `doc`,
+`editors` and `builtins`, and French or alternative names: `syntaxe`,
+`fonctions`, `listes`, `texte`, `enregistrements`, `motifs`, `erreurs`,
+`fonctionnel`, `boucles`, `exercices`, `fichiers`, `système`, `dossiers`,
+`chemins`, `interactif`, `format`, `documentation`,
 `lsp`, `vscode`, `éditeurs`, `bibliothèque`...
 
 **Exit codes.**
