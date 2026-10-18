@@ -110,8 +110,8 @@ pub(super) fn file_info(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Va
     let info = std::fs::metadata(path).map_err(|e| io_message(&e, path, false)).map(|m| {
         let mut r = Record::new();
         r.set(Rc::from("is_folder"), Value::Bool(m.is_dir()));
-        let size = if m.is_dir() { 0 } else { i64::try_from(m.len()).unwrap_or(i64::MAX) };
-        r.set(Rc::from("size"), Value::Int(size));
+        let size = if m.is_dir() { 0 } else { m.len() };
+        r.set(Rc::from("size"), bigint::value(BigInt::from_i128(i128::from(size))));
         Value::Record(Rc::new(r))
     });
     Ok(done(it, info))
