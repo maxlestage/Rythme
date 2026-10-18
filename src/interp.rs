@@ -830,8 +830,16 @@ impl Interp {
                     match self.eval_tail(&code.clauses[ci].body, &fr) {
                         Ok(Tail::Done(v)) => return Ok(v),
                         Ok(Tail::Call(nf, nargc, nspan)) => {
-                            // The arguments of the next call replace this frame.
                             let args = self.stack.len() - nargc;
+                            // A value built last (`Node(l, v, r)`) takes its
+                            // fields where they are; `call_value` drops the frame.
+                            if let Value::Ctor(c) = &nf {
+                                if c.fields.len() == nargc {
+                                    let fields = self.stack.split_off(args);
+                                    return Ok(Value::Variant(Rc::new(Variant { ctor: c.clone(), fields })));
+                                }
+                            }
+                            // The arguments of the next call replace this frame.
                             for i in 0..nargc {
                                 self.stack.swap(base + i, args + i);
                             }
