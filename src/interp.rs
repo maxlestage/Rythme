@@ -879,7 +879,7 @@ impl Interp {
         if argc != c.fields.len() {
             return Err(ctor_arity_error(&c, argc, span));
         }
-        let fields = self.stack.drain(base..).collect();
+        let fields = self.stack.split_off(base);
         Ok(Value::Variant(Rc::new(Variant { ctor: c, fields })))
     }
 
