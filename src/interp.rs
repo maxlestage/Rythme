@@ -305,7 +305,7 @@ impl Interp {
         let code = compile::top(e);
         let base = self.push_frame(code.slots);
         let r = self.eval(&code.node, &Frame { base, captured: &[] });
-        self.stack.truncate(base);
+        self.end_top(base);
         match r {
             Ok(v) => Ok(v),
             Err(Flow::Err(d)) => Err(d),
@@ -324,8 +324,18 @@ impl Interp {
             Err(Flow::Return(v)) => Ok(*v),
             Err(Flow::Err(d)) => Err(d),
         };
-        self.stack.truncate(base);
+        self.end_top(base);
         r
+    }
+
+    /// Removes the frame of a top-level expression. Back at the top level,
+    /// gives back the memory that a deep recursion used.
+    fn end_top(&mut self, base: usize) {
+        self.stack.truncate(base);
+        if base == 0 && self.stack.capacity() > 1 << 16 {
+            self.stack = Vec::new();
+            self.spare = Vec::new();
+        }
     }
 
     /// Removes the values above `len` from the stack.
