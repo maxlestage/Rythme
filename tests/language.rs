@@ -134,7 +134,7 @@ fn helpful_errors() {
     fails("1 / 0", "E008");
     fails("None()", "E009");
     fails("{a: 1}.b", "E010");
-    fails("9223372036854775807 + 1", "E012");
+    fails("10 ** 100000", "E023");
     fails("assert_eq(1, 2)", "E015");
     fails("print(\"oops)", "E002");
     fails("x = if true then 1", "E019");

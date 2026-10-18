@@ -33,8 +33,8 @@ fn carre(x) = x * x
   `Option` (`Some(x)` ou `None`). Pas d'exceptions : une opération qui peut
   échouer renvoie un `Result` (`Ok(x)` ou `Err(e)`), et `?` transmet les
   erreurs. Types algébriques, filtrage par motifs, un vérificateur qui signale
-  les cas oubliés, aucune conversion silencieuse, aucun dépassement d'entier
-  silencieux.
+  les cas oubliés, aucune conversion silencieuse, des nombres entiers qui ne
+  débordent jamais.
 - **De l'aide partout, tout le temps.**
   - Chaque erreur dit *où* elle est, *pourquoi*, et *comment la corriger*,
     comme Rust, et propose le bon nom en cas de faute de frappe.
@@ -307,8 +307,9 @@ suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
 - **Langues.** Les messages existent en anglais et en français ; ajouter une
   langue consiste à traduire les textes de `src/`. Les contributions sont
   bienvenues.
-- Les nombres sont sur 64 bits : les entiers s'arrêtent avec une erreur
-  au-delà de ±9,2 × 10¹⁸ (utilisez les nombres décimaux au-delà).
+- **Nombres.** Les nombres entiers n'ont pas de limite de taille et restent
+  exacts (jusqu'à 100000 chiffres), les habituels sur 64 bits calculés le plus
+  vite ; les nombres décimaux sont sur 64 bits.
 
 ## Licence
 

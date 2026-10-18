@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use crate::bigint::{self, BigInt};
 use crate::diagnostic::{Diagnostic, Fallible};
 use crate::source::Span;
 use crate::suggest;
@@ -10,8 +11,8 @@ use crate::symbol::Sym;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tok {
     Int(i64),
-    /// 9223372036854775808: only valid after `-` (the smallest whole number).
-    IntMinMagnitude,
+    /// A whole number too large for 64 bits.
+    Big(std::rc::Rc<BigInt>),
     Float(f64),
     Str(Vec<StrPart>),
     /// A lowercase name: `x`, `print`, `_`.
@@ -495,15 +496,10 @@ impl<'a> Lexer<'a> {
             let digits: String = self.src[digits_start..self.pos].chars().filter(|&c| c != '_').collect();
             let text = &self.src[start..self.pos];
             if !digits.is_empty() && digits.chars().all(|c| c.is_digit(radix)) {
-                return i64::from_str_radix(&digits, radix).map(Tok::Int).map_err(|_| {
-                    Diagnostic::error("E012", t!("the number `{text}` is too large", "le nombre `{text}` est trop grand"))
-                        .at(self.span(start))
-                        .help(t!(
-                            "whole numbers go up to 9223372036854775807 (0x7fffffffffffffff)",
-                            "les nombres entiers vont jusqu'à 9223372036854775807 (0x7fffffffffffffff)"
-                        ))
-                        .boxed()
-                });
+                if let Ok(n) = i64::from_str_radix(&digits, radix) {
+                    return Ok(Tok::Int(n));
+                }
+                return big_literal(&digits, radix, self.span(start));
             }
             return Err(self
                 .error("E018", start, t!("invalid number `{text}`", "nombre invalide `{text}`"))
@@ -565,10 +561,10 @@ impl<'a> Lexer<'a> {
         let text: String = self.src[start..self.pos].chars().filter(|&c| c != '_').collect();
         if float {
             Ok(Tok::Float(text.parse().unwrap_or(f64::INFINITY)))
-        } else if text == "9223372036854775808" {
-            Ok(Tok::IntMinMagnitude)
+        } else if let Ok(n) = text.parse::<i64>() {
+            Ok(Tok::Int(n))
         } else {
-            text.parse::<i64>().map(Tok::Int).map_err(|_| too_large(&text, self.span(start)))
+            big_literal(&text, 10, self.span(start))
         }
     }
 
@@ -703,21 +699,19 @@ pub fn add_literal_brace_help(d: &mut Diagnostic) {
     }
 }
 
-pub fn too_large(text: &str, span: Span) -> Box<Diagnostic> {
-    Diagnostic::error("E012", t!("the number `{text}` is too large", "le nombre `{text}` est trop grand"))
-        .at(span)
-        .help(t!(
-            "whole numbers go from -9223372036854775808 to 9223372036854775807; use a decimal number like `{text}.0` for bigger values",
-            "les nombres entiers vont de -9223372036854775808 à 9223372036854775807 ; utilisez un nombre décimal comme `{text}.0` pour des valeurs plus grandes"
-        ))
-        .boxed()
+/// A whole number written in the code that does not fit in 64 bits.
+fn big_literal(digits: &str, radix: u32, span: Span) -> Fallible<Tok> {
+    match BigInt::parse(digits, radix) {
+        Some(Ok(n)) => Ok(Tok::Big(std::rc::Rc::new(n))),
+        _ => Err(bigint::too_large(span)),
+    }
 }
 
 /// Human description of a token for error messages.
 pub fn describe(tok: &Tok) -> String {
     match tok {
         Tok::Int(n) => t!("the number `{n}`", "le nombre `{n}`"),
-        Tok::IntMinMagnitude => t!("the number `9223372036854775808`", "le nombre `9223372036854775808`"),
+        Tok::Big(n) => t!("the number `{n}`", "le nombre `{n}`"),
         Tok::Float(f) => t!("the number `{f}`", "le nombre `{f}`"),
         Tok::Str(_) => t!("a text", "un texte"),
         Tok::Ident(s) | Tok::Ctor(s) | Tok::Reserved(s) => t!("the name `{s}`", "le nom `{s}`"),

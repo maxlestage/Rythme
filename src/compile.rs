@@ -114,6 +114,7 @@ pub enum Pat {
     Unit,
     Bool(bool),
     Int(i64),
+    Big(Rc<crate::bigint::BigInt>),
     Float(f64),
     Text(Rc<str>),
     Ctor(Sym, Vec<Pat>),
@@ -397,6 +398,7 @@ impl Compiler {
             PatKind::Unit => Pat::Unit,
             PatKind::Bool(b) => Pat::Bool(*b),
             PatKind::Int(n) => Pat::Int(*n),
+            PatKind::Big(n) => Pat::Big(n.clone()),
             PatKind::Float(f) => Pat::Float(*f),
             PatKind::Text(t) => Pat::Text(t.clone()),
             PatKind::Ctor(name, ps) => Pat::Ctor(name.own_name(), ps.iter().map(|p| self.pattern(p)).collect()),
@@ -429,6 +431,7 @@ impl Compiler {
             ExprKind::Unit => Kind::Const(Value::Unit),
             ExprKind::Bool(b) => Kind::Const(Value::Bool(*b)),
             ExprKind::Int(n) => Kind::Const(Value::Int(*n)),
+            ExprKind::Big(n) => Kind::Const(Value::Big(n.clone())),
             ExprKind::Float(f) => Kind::Const(Value::Float(*f)),
             ExprKind::Text(s) => Kind::Const(Value::Text(s.clone())),
             ExprKind::Template(parts) => Kind::Template(
