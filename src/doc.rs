@@ -2,11 +2,13 @@
 //! `##` comments, its types and the definitions of its functions, as Markdown
 //! or as one HTML page that needs nothing else.
 //!
-//! A file is documented with the files it uses (`use "x.ry"`), each one once.
+//! A file is documented with the files it uses (`use geometry`, `use
+//! "x.ry"`), each one once.
 //! Names starting with `_` are left out: they are details of their file. A
 //! name written between backticks in a `##` comment (`area`, `len(list)`)
 //! becomes a link to its definition, or to the documentation of the built-in
-//! function, which is added at the end.
+//! function, which is added at the end; in a file that has `use geometry`,
+//! `geometry.area` is a link to `area` in `geometry.ry`.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -22,8 +24,9 @@ struct FileDoc {
     shown: String,
     /// The `##` comment at the top of the file, separated from what follows by a blank line.
     summary: Option<String>,
-    /// The files it uses, as shown (each one is documented too).
-    uses: Vec<String>,
+    /// The files it uses, as shown (each one is documented too), with the
+    /// name given to each one (`use geometry` gives `geometry`).
+    uses: Vec<(String, Option<String>)>,
     types: Vec<Entry>,
     functions: Vec<Entry>,
     values: Vec<Entry>,
@@ -252,11 +255,11 @@ impl Docs {
                     doc.values.push(Entry { name, code, doc: comment });
                 }
                 Item::Test(name, _, _) => doc.tests.push(name.to_string()),
-                Item::Use(p, span) => {
+                Item::Use(u) => {
                     let base = path.parent().unwrap_or(Path::new(""));
-                    match driver::find_use(p, *span, base) {
+                    match driver::find_use(u, base) {
                         Ok(found) => {
-                            doc.uses.push(found.display().to_string());
+                            doc.uses.push((found.display().to_string(), u.name.map(|(n, _)| n.name().to_string())));
                             used.push(found);
                         }
                         Err(d) => self.report(&d),
@@ -366,6 +369,8 @@ fn plan<'a>(files: &'a [FileDoc], title: &str) -> Plan<'a> {
     }
     let mut targets = HashMap::new();
     let mut planned = Vec::new();
+    // The anchors of the names each file defines, for `geometry.area`.
+    let mut defined: HashMap<&str, Vec<(String, String)>> = HashMap::new();
     for f in files {
         let anchor = anchors.make(&f.shown);
         let mut sections = Vec::new();
@@ -378,6 +383,7 @@ fn plan<'a>(files: &'a [FileDoc], title: &str) -> Plan<'a> {
             for e in entries {
                 let a = anchors.make(&e.name);
                 targets.entry(e.name.clone()).or_insert_with(|| a.clone());
+                defined.entry(&f.shown).or_default().push((e.name.clone(), a.clone()));
                 list.push((e, a));
             }
             sections.push((label(key), section, list));
@@ -388,12 +394,22 @@ fn plan<'a>(files: &'a [FileDoc], title: &str) -> Plan<'a> {
             for ctor in t.code.split(['=', '|']).skip(1) {
                 let name: String = ctor.trim().chars().take_while(|c| c.is_alphanumeric() || *c == '_').collect();
                 if !name.is_empty() {
+                    defined.entry(&f.shown).or_default().push((name.clone(), a.clone()));
                     targets.entry(name).or_insert_with(|| a.clone());
                 }
             }
         }
         let tests_anchor = (!f.tests.is_empty()).then(|| anchors.make(&label("tests")));
         planned.push(PlannedFile { doc: f, anchor, sections, tests_anchor });
+    }
+    // `geometry.area`, in a file that has `use geometry`.
+    for f in files {
+        for (used, name) in &f.uses {
+            let (Some(name), Some(names)) = (name, defined.get(used.as_str())) else { continue };
+            for (n, a) in names {
+                targets.entry(format!("{name}.{n}")).or_insert_with(|| a.clone());
+            }
+        }
     }
     // Built-in functions named in the comments, in the order they are first named.
     let mut builtins = Vec::new();
@@ -432,9 +448,10 @@ fn code_spans(text: &str) -> Vec<(&str, (usize, usize))> {
     out
 }
 
-/// `len` for `len(list)`: the name a code span is about, when it starts with one.
+/// `len` for `len(list)`, `geometry.area` for `geometry.area(2)`: the name
+/// a code span is about, when it starts with one.
 fn leading_name(code: &str) -> &str {
-    let end = code.find(|c: char| !(c.is_alphanumeric() || c == '_')).unwrap_or(code.len());
+    let end = code.find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '.')).unwrap_or(code.len());
     let (name, after) = code.split_at(end);
     if after.is_empty() || after.starts_with('(') {
         name
@@ -471,7 +488,12 @@ fn markdown(plan: &Plan, title: &str) -> String {
             out.push_str(&format!("{}\n\n", md_comment(s)));
         }
         if !f.doc.uses.is_empty() {
-            let links: Vec<String> = f.doc.uses.iter().map(|u| format!("[`{u}`](#{})", file_anchor(plan, u))).collect();
+            let links: Vec<String> = f
+                .doc
+                .uses
+                .iter()
+                .map(|(u, n)| format!("[`{u}`](#{}){}", file_anchor(plan, u), used_as(u, n.as_deref(), "`", "`")))
+                .collect();
             out.push_str(&format!("{}{}{}\n\n", label("uses"), sep(), links.join(", ")));
         }
         if f.sections.is_empty() && f.tests_anchor.is_none() {
@@ -505,6 +527,16 @@ fn markdown(plan: &Plan, title: &str) -> String {
         }
     }
     format!("{}\n", out.trim_end())
+}
+
+/// ` as `geo`` after a file used under another name than its own
+/// (`use geometry as geo`); nothing for `use geometry` or `use "geometry.ry"`.
+fn used_as(path: &str, name: Option<&str>, open: &str, close: &str) -> String {
+    let stem = Path::new(path).file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+    match name {
+        Some(n) if n != stem => t!(" as {open}{n}{close}", " sous le nom {open}{n}{close}"),
+        _ => String::new(),
+    }
 }
 
 fn file_anchor(plan: &Plan, shown: &str) -> String {
@@ -658,8 +690,19 @@ fn html(plan: &Plan, title: &str) -> String {
             main.push_str(&format!("<div class=\"summary\">{}</div>\n", comment(s)));
         }
         if !f.doc.uses.is_empty() {
-            let links: Vec<String> =
-                f.doc.uses.iter().map(|u| format!("<a href=\"#{}\"><code>{}</code></a>", file_anchor(plan, u), escape(u))).collect();
+            let links: Vec<String> = f
+                .doc
+                .uses
+                .iter()
+                .map(|(u, n)| {
+                    format!(
+                        "<a href=\"#{}\"><code>{}</code></a>{}",
+                        file_anchor(plan, u),
+                        escape(u),
+                        used_as(u, n.as_deref().map(escape).as_deref(), "<code>", "</code>")
+                    )
+                })
+                .collect();
             main.push_str(&format!("<p class=\"uses\">{}{}{}</p>\n", escape(&label("uses")), sep(), links.join(", ")));
         }
         if f.sections.is_empty() && f.tests_anchor.is_none() {

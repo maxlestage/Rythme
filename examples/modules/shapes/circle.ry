@@ -1,0 +1,7 @@
+# A module in a folder: `use shapes/circle`, then `circle.perimeter(1)`.
+
+## Perimeter of a circle.
+fn perimeter(radius) = 2 * pi * radius
+
+## Area of a circle.
+fn area(radius) = pi * radius ** 2

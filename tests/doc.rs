@@ -159,3 +159,30 @@ fn doc_has_a_help_topic() {
     }
     assert!(rythme(&["help"]).stdout.contains("rythme doc file.ry"));
 }
+
+#[test]
+fn doc_follows_named_modules() {
+    let dir = temp_dir("modules");
+    std::fs::create_dir_all(dir.join("shapes")).unwrap();
+    std::fs::write(dir.join("geometry.ry"), GEOMETRY).unwrap();
+    std::fs::write(dir.join("shapes/circle.ry"), "## Perimeter of a circle.\nfn perimeter(r) = 2 * pi * r\nfn _half(x) = x / 2\n").unwrap();
+    std::fs::write(
+        dir.join("main.ry"),
+        "use geometry\nuse shapes/circle as round\n\n## The `geometry.area` of a shape plus the `round.perimeter(1)`.\nfn both(s) = geometry.area(s) + round.perimeter(1)\n",
+    )
+    .unwrap();
+    let r = rythme(&["doc", dir.join("main.ry").to_str().unwrap()]);
+    assert_eq!(r.code, 0, "{}", r.stderr);
+    let md = &r.stdout;
+    // Both used files are documented, each with its own name.
+    assert!(md.contains("Shapes and their areas.") && md.contains("Perimeter of a circle."), "{md}");
+    assert!(md.contains("geometry.ry`](#") && md.contains("circle.ry`](#") && md.contains(") as `round`"), "{md}");
+    assert!(!md.contains("as `geometry`"), "{md}");
+    // `geometry.area` leads to `area` in geometry.ry.
+    assert!(md.contains("[`geometry.area`](#area)") && md.contains("[`round.perimeter(1)`](#perimeter)"), "{md}");
+    assert!(!md.contains("_half"), "{md}");
+    let r = rythme_lang("fr", &["doc", "--html", dir.join("main.ry").to_str().unwrap()]);
+    assert_eq!(r.code, 0, "{}", r.stderr);
+    assert!(r.stdout.contains("</a> sous le nom <code>round</code>"), "{}", r.stdout);
+    std::fs::remove_dir_all(&dir).ok();
+}

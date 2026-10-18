@@ -736,17 +736,82 @@ impl Parser {
     fn use_def(&mut self) -> Fallible<Item> {
         let kw = self.advance();
         let t = self.advance();
-        match t.tok {
+        let (path, path_span, short) = match t.tok {
             Tok::Str(parts) if parts.iter().all(|p| matches!(p, StrPart::Lit(_))) => {
                 let path: String = parts.into_iter().map(|p| if let StrPart::Lit(s) = p { s } else { String::new() }).collect();
-                Ok(Item::Use(Rc::from(path), kw.span.to(t.span)))
+                (path, t.span, false)
             }
-            _ => {
-                let mut d = self.unexpected_token(&t, t!("a file name, as a text", "un nom de fichier, sous forme de texte"));
-                d.helps.push(t!("example: `use \"geometry.ry\"`", "exemple : `use \"geometrie.ry\"`"));
-                Err(d)
+            // `use geometry`, `use shapes/circle`, `use ../common/tools`.
+            Tok::Ident(_) | Tok::DotDot => {
+                let mut path = String::new();
+                let mut last = t.clone();
+                loop {
+                    match &last.tok {
+                        Tok::Ident(s) => path.push_str(&s.name()),
+                        Tok::DotDot => path.push_str(".."),
+                        _ => return Err(self.use_path_error(&last)),
+                    }
+                    if !matches!(self.raw(), Tok::Slash) {
+                        break;
+                    }
+                    self.advance();
+                    path.push('/');
+                    last = self.advance();
+                }
+                if !matches!(last.tok, Tok::Ident(_)) {
+                    return Err(self.use_path_error(&last));
+                }
+                if matches!(self.raw(), Tok::Dot) {
+                    let dot = self.toks[self.pos].span;
+                    return Err(Diagnostic::error(
+                        "E001",
+                        t!("write the name of the file without `.ry`", "écrivez le nom du fichier sans `.ry`"),
+                    )
+                    .at(dot)
+                    .help(t!("example: `use {path}`", "exemple : `use {path}`"))
+                    .boxed());
+                }
+                path.push_str(".ry");
+                (path, t.span.to(last.span), true)
             }
+            _ => return Err(self.use_path_error(&t)),
+        };
+        let mut name = None;
+        if matches!(self.raw(), Tok::Ident(s) if &*s.name() == "as") {
+            self.advance();
+            let n = self.advance();
+            match n.tok {
+                Tok::Ident(s) if &*s.name() != "_" => name = Some((s, n.span)),
+                _ => {
+                    let mut d = self.unexpected_token(&n, t!("a name for the file, in lowercase", "un nom pour le fichier, en minuscules"));
+                    d.helps.push(t!(
+                        "example: `use geometry as geo`, then `geo.area(2)`",
+                        "exemple : `use geometrie as geo`, puis `geo.aire(2)`"
+                    ));
+                    return Err(d);
+                }
+            }
+        } else if short {
+            // `use shapes/circle`: the name of the file, `circle`.
+            let stem = path.trim_end_matches(".ry").rsplit('/').next().unwrap_or_default().to_string();
+            name = Some((Sym::new(&stem), self.last));
         }
+        Ok(Item::Use(Use { path: Rc::from(path), span: kw.span.to(path_span), path_span, name, short }))
+    }
+
+    fn use_path_error(&self, t: &Token) -> Box<Diagnostic> {
+        let mut d = self.unexpected_token(t, t!("the name of a file", "le nom d'un fichier"));
+        d.helps.push(t!(
+            "example: `use geometry` for the file `geometry.ry`, then `geometry.area(2)`",
+            "exemple : `use geometrie` pour le fichier `geometrie.ry`, puis `geometrie.aire(2)`"
+        ));
+        if matches!(t.tok, Tok::Ctor(_)) {
+            d.helps.push(t!(
+                "for a file whose name starts with an uppercase letter, write its path as a text: `use \"Shapes.ry\" as shapes`",
+                "pour un fichier dont le nom commence par une majuscule, écrivez son chemin comme un texte : `use \"Formes.ry\" as formes`"
+            ));
+        }
+        d
     }
 
     // ----- expressions -------------------------------------------------
@@ -1440,6 +1505,23 @@ impl Parser {
         let tok = self.peek_token();
         let span = tok.span;
         let kind = match tok.tok {
+            // `geo.Circle(r)`: a constructor of the file used as `geo`.
+            Tok::Ident(m)
+                if matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Dot))
+                    && matches!(self.toks.get(self.pos + 2).map(|t| &t.tok), Some(Tok::Ctor(_))) =>
+            {
+                self.advance();
+                self.advance();
+                let c = self.advance();
+                let Tok::Ctor(c) = c.tok else { unreachable!() };
+                let s = Sym::new(&format!("{m}.{c}"));
+                if matches!(self.raw(), Tok::LParen) {
+                    self.advance();
+                    let args = self.comma_list(&Tok::RParen, |p| p.pattern())?;
+                    return Ok(Pattern { kind: PatKind::Ctor(s, args), span: span.to(self.last) });
+                }
+                return Ok(Pattern { kind: PatKind::Ctor(s, Vec::new()), span: span.to(self.last) });
+            }
             Tok::Ident(s) => {
                 self.advance();
                 if &*s.name() == "_" {

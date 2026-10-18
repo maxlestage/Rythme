@@ -59,6 +59,16 @@
           "captures": { "1": { "name": "keyword.other.test.rythme" } }
         },
         {
+          "match": "^\\s*(use)\\s+(?:(\"[^\"]*\")|([\\w./]+))(?:\\s+(as)\\s+(\\w+))?",
+          "captures": {
+            "1": { "name": "keyword.control.import.rythme" },
+            "2": { "name": "string.quoted.double.rythme" },
+            "3": { "name": "entity.name.namespace.rythme" },
+            "4": { "name": "keyword.control.import.rythme" },
+            "5": { "name": "entity.name.namespace.rythme" }
+          }
+        },
+        {
           "match": "\\b(use)\\b",
           "captures": { "1": { "name": "keyword.control.import.rythme" } }
         }

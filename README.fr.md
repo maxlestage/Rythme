@@ -226,8 +226,9 @@ end
 # Les tests vivent à côté du code : rythme test fichier.ry
 test "double marche" = assert_eq(double(21), 42)
 
-# Autres fichiers
-use "geometrie.ry"
+# Autres fichiers, utilisés par leur nom
+use geometrie                             # geometrie.ry, à côté de ce fichier
+print(geometrie.aire(2))
 ```
 
 Les mots-clés et les fonctions intégrées sont en anglais, comme dans tous les
@@ -256,7 +257,7 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 | [`tree.ry`](examples/tree.ry) | un type récursif : arbre binaire de recherche |
 | [`primes.ry`](examples/primes.ry) | un crible récursif, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | les blocs `test` |
-| [`modules/`](examples/modules) | `use` pour répartir un programme en plusieurs fichiers |
+| [`modules/`](examples/modules) | `use geometrie` puis `geometrie.aire(2)` : un programme en plusieurs fichiers, noms `_privés` |
 | [`bonjour.ry`](examples/bonjour.ry) | des noms avec des accents |
 
 ## Éditeurs
