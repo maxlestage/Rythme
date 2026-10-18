@@ -3057,7 +3057,7 @@ How many sides a square has.
 len(x)
 ~~~
 
-Length of a text (in characters), a list or a record.
+Length of a text (in characters), a list or a record. Same as: `length`, `size` (its Ruby names).
 
 Example:
 

@@ -496,7 +496,16 @@ impl Indexer<'_> {
                 self.expr(obj);
                 // `xs.sum` calls `sum` when `xs` has no field `sum`.
                 let s = Sym::new(name);
-                if !matches!(self.resolve(s), Target::Unknown) {
+                let function = match self.resolve(s) {
+                    Target::Builtin(_) => true,
+                    // A function of this file (not a value that only has the name of the field).
+                    Target::Def(id) if id.file == self.file => {
+                        self.out.defs.get(id.idx as usize).is_some_and(|d| d.kind == DefKind::Function || d.sig.is_some())
+                    }
+                    Target::Def(_) => true,
+                    _ => false,
+                };
+                if function {
                     self.reference(s, *name_span, false, true);
                 }
             }

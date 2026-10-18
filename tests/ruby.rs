@@ -200,3 +200,27 @@ fn help_knows_the_ruby_style() {
     let r = common::rythme_lang("fr", &["help", "upcase"]);
     assert!(r.stdout.contains("le nom Ruby de `upper`"), "{}", r.stdout);
 }
+
+#[test]
+fn rythme_doc_knows_names_ending_with_a_question_mark_and_ruby_names() {
+    let dir = std::env::temp_dir().join(format!("rythme-ruby-doc-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("people.ry");
+    std::fs::write(&file, "## Is the person an adult? Uses `upcase` nowhere.\nfn adult?(person) = person.age >= 18\n").unwrap();
+    let r = rythme(&["doc", file.to_str().unwrap()]);
+    assert_eq!(r.code, 0, "{}", r.stderr);
+    assert!(r.stdout.contains("### adult?") && r.stdout.contains("fn adult?(person)"), "{}", r.stdout);
+    assert!(r.stdout.contains("[`upcase`](#upper)") && r.stdout.contains("Same as: `upcase` (its Ruby names)."), "{}", r.stdout);
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn a_call_without_parentheses_may_be_a_statement() {
+    // `"Ada".greet` calls `greet`: its value is not lost for nothing (no E024).
+    ok(
+        "fn greet(n) = print(\"Hello, {n}!\")\n\"Ada\".greet\nfn main()\n  \"Bob\".greet\n  1\nend\nprint(main())",
+        "Hello, Ada!\nHello, Bob!\n1",
+    );
+    // A field read for nothing still is.
+    fails("r = {a: 1}\nr.a\nprint(r)", "E024");
+}
