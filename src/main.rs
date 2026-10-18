@@ -124,13 +124,10 @@ fn cli(mut args: Vec<String>) -> i32 {
             0
         }
         "run" | "lancer" => match rest.first() {
-            Some(file) => run_file(file, rest[1..].to_vec(), false),
+            Some(file) => run_file(file, rest[1..].to_vec()),
             None => usage_error(t!("which file? Example: rythme run hello.ry", "quel fichier ? Exemple : rythme run bonjour.ry")),
         },
-        "test" | "tester" => match rest.first() {
-            Some(file) => run_file(file, rest[1..].to_vec(), true),
-            None => usage_error(t!("which file? Example: rythme test my_tests.ry", "quel fichier ? Exemple : rythme test mes_tests.ry")),
-        },
+        "test" | "tester" => rythme::testing::command(&rest),
         "check" | "verifier" | "vérifier" => match rest.first() {
             // Every file is checked, even after one with errors.
             Some(_) => rest.iter().map(|file| check_file(file)).fold(0, i32::max),
@@ -146,7 +143,7 @@ fn cli(mut args: Vec<String>) -> i32 {
         },
         _ => {
             if cmd.ends_with(".ry") || Path::new(&cmd).exists() || Path::new(&format!("{cmd}.ry")).is_file() {
-                return run_file(&cmd, rest, false);
+                return run_file(&cmd, rest);
             }
             let commands = ["run", "check", "test", "fmt", "doc", "help", "explain", "learn", "repl", "version", "lsp", "exercise"];
             let mut msg = t!("unknown command or file `{cmd}`", "commande ou fichier inconnu `{cmd}`");
@@ -191,7 +188,7 @@ fn find_script(name: &str) -> Result<PathBuf, Box<Diagnostic>> {
     Err(d.boxed())
 }
 
-fn run_file(name: &str, script_args: Vec<String>, test: bool) -> i32 {
+fn run_file(name: &str, script_args: Vec<String>) -> i32 {
     let mut driver = Driver::new();
     let path = match find_script(name) {
         Ok(p) => p,
@@ -208,11 +205,7 @@ fn run_file(name: &str, script_args: Vec<String>, test: bool) -> i32 {
     }
     driver.interp.script_args = script_args;
     let Some(module) = driver.load_file(&path) else { return 1 };
-    let mode = if test { Mode::Test } else { Mode::Run };
-    if driver.execute(&module, mode).is_err() {
-        return 1;
-    }
-    if test && !driver.run_tests() {
+    if driver.execute(&module, Mode::Run).is_err() {
         return 1;
     }
     0

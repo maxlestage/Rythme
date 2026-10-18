@@ -164,7 +164,7 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme`                    | mode interactif : tapez du code, voyez le résultat  |
 | `rythme bonjour.ry`         | lancer un programme (`rythme run bonjour.ry` marche aussi) |
 | `rythme check bonjour.ry`   | trouver les problèmes sans lancer le programme      |
-| `rythme test bonjour.ry`    | lancer les tests écrits dans le fichier             |
+| `rythme test bonjour.ry`    | lancer les tests écrits dans le fichier (aussi un dossier : `rythme test .`, avec `--filter NOM`, `--watch`) |
 | `rythme fmt bonjour.ry`     | mettre le code en forme dans le style officiel (aussi un dossier : `rythme fmt .`) |
 | `rythme fmt --check .`      | lister les fichiers à mettre en forme, sans les changer (pour l'intégration continue) |
 | `rythme doc bonjour.ry`     | sa documentation tirée des commentaires `##`, en Markdown (`--html` : une page web) |

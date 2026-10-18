@@ -50,6 +50,10 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
   after changing an example. Its tests (`tests/format.rs`) check on every
   piece of code of the repository that it never changes the meaning of a
   program nor loses a comment.
+- `testing.rs` is `rythme test`: folders, `--filter`, `--watch`, `--seed`
+  and the summary (`tests/testing.rs`); `run_paths` tests files and folders
+  for any tool. Property tests (`check_all` and its generators) live in
+  `builtins/property.rs`.
 - `doc.rs` is `rythme doc`: the documentation of files and folders, from
   their `##` comments, as Markdown or one HTML page (`tests/doc.rs`).
 - `builtins.rs` holds the standard library; `help.rs` the help topics and the

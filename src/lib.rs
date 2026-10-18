@@ -30,6 +30,7 @@ pub mod repl;
 pub mod source;
 pub mod suggest;
 pub mod symbol;
+pub mod testing;
 pub mod types;
 pub mod value;
 
