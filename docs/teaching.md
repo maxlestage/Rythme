@@ -87,6 +87,10 @@ rythme exercise check 07-recursion.ry    # runs its tests, with advice, and prop
   ([`editors/README.md`](../editors/README.md)).
 - `rythme fmt` gives every file the same layout: students can run it (or
   `rythme fmt --check .`) before handing in their work.
+- `rythme steps fib.ry "fib(4)"` shows a calculation step by step, in the
+  substitution model (`fib(4)` → `fib(3) + fib(2)` → ...): recursion,
+  accumulators and tail calls become visible. `:steps` does it in the
+  interactive mode, and the **Steps** button in the playground.
 - Nothing to install on the students' computers? The playground of the
   [website](https://maxlestage.github.io/Rythme/) runs the real interpreter
   in the browser.

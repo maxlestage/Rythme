@@ -28,6 +28,7 @@ pub mod parser;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod repl;
 pub mod source;
+pub mod steps;
 pub mod suggest;
 pub mod symbol;
 pub mod types;

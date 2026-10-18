@@ -39,6 +39,7 @@
   const $ = (id) => document.getElementById(id);
   const source = $("source"), highlight = $("highlight"), gutter = $("gutter"), output = $("output");
   const statusEl = $("status"), runBtn = $("run"), stopBtn = $("stop"), checkBtn = $("check"), testBtn = $("test"), formatBtn = $("format");
+  const stepsBtn = $("steps");
   const exampleSel = $("example"), helpText = $("help-text");
   // The welcome program, written in the page by the server.
   const WELCOME = source.value;
@@ -239,6 +240,7 @@
     stopBtn.hidden = !on;
     checkBtn.disabled = on;
     testBtn.disabled = on;
+    stepsBtn.disabled = on;
   }
 
   function execute(mode) {
@@ -281,6 +283,8 @@
   runBtn.addEventListener("click", () => execute(runMode));
   checkBtn.addEventListener("click", () => execute(1));
   testBtn.addEventListener("click", () => execute(2));
+  // The calculation shown step by step, like `rythme steps`.
+  stepsBtn.addEventListener("click", () => execute(4));
   formatBtn.addEventListener("click", formatCode);
 
   // ----- format: the layout of `rythme fmt`, done at once (it cannot loop) -----
@@ -495,7 +499,7 @@
       output.append(text(UI.loadFailed + err, "err"));
       return;
     }
-    for (const b of [runBtn, checkBtn, testBtn, formatBtn]) b.disabled = false;
+    for (const b of [runBtn, checkBtn, testBtn, stepsBtn, formatBtn]) b.disabled = false;
     newWorker();
     try {
       examples = await (await fetch(page.dataset.examples)).json();

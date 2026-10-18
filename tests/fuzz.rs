@@ -24,7 +24,7 @@ use rythme::lang::{self, Lang};
 use rythme::source::{self, Span};
 use rythme::symbol::Sym;
 use rythme::value::{Record, Value};
-use rythme::{help, io, lexer, parser};
+use rythme::{help, io, lexer, parser, steps};
 
 /// Calls allowed to each program: enough to do real work, few enough to
 /// stop programs that never end in a fraction of a second.
@@ -793,15 +793,23 @@ fn pipeline(src: &str) -> Result<Stage, String> {
         return Ok(Stage::Checker);
     }
     let mut stage = Stage::Ran;
-    match interp.exec_items(&items, if repl { Mode::Repl } else { Mode::Run }) {
+    let _ = io::take_captured();
+    io::capture();
+    let ran = interp.exec_items(&items, if repl { Mode::Repl } else { Mode::Run });
+    let printed = io::take_captured();
+    io::capture();
+    match &ran {
         Ok(Some(v)) => {
             let _ = (v.repr(), v.describe());
         }
         Ok(None) => {}
         Err(d) => {
-            check_diag(&d, file, src)?;
+            check_diag(d, file, src)?;
             stage = Stage::RunError;
         }
+    }
+    if !repl {
+        same_as_the_stepper(&items, &printed, ran.as_ref().err().map(|d| &**d), file, src)?;
     }
     if items.iter().any(|it| matches!(it, Item::Test(..))) {
         let mut interp = sandboxed_interp();
@@ -817,6 +825,44 @@ fn pipeline(src: &str) -> Result<Stage, String> {
         }
     }
     Ok(stage)
+}
+
+/// `rythme steps` has an evaluator of its own: it must print the same and stop
+/// with the same error as the interpreter, unless one of them reached its
+/// limits (number of calls or steps, depth).
+fn same_as_the_stepper(items: &[Item], printed: &str, error: Option<&Diagnostic>, file: u32, src: &str) -> Result<(), String> {
+    let limited = |d: &Diagnostic| {
+        d.code == "E014"
+            || ["was stopped", "a été arrêté", "too deep to be shown", "trop profond pour être montré", "stopped after", "arrêtée après"]
+                .iter()
+                .any(|w| d.message.contains(w))
+    };
+    // What `help` prints is in the language of the messages, which the threads
+    // of a long session change while others run.
+    if error.is_some_and(limited) || src.contains("help") {
+        return Ok(());
+    }
+    let mut interp = sandboxed_interp();
+    let opts = steps::Options { show: false, limit: 100_000, ..steps::Options::default() };
+    let stepped = steps::run_items(&mut interp, items, opts, 0, false);
+    let stepped_printed = io::take_captured();
+    io::capture();
+    if let Err(d) = &stepped {
+        check_diag(d, file, src)?;
+        if limited(d) {
+            return Ok(());
+        }
+    }
+    // The code and the place: the language of the messages may change while the threads of a long session run.
+    let message = |e: Option<&Diagnostic>| e.map(|d| format!("[{}] {:?}", d.code, d.span));
+    if stepped_printed != printed || message(stepped.as_ref().err().map(|d| &**d)) != message(error) {
+        return Err(format!(
+            "the stepper differs from the interpreter: it printed {stepped_printed:?} and ended with {:?}, instead of {printed:?} and {:?}",
+            message(stepped.as_ref().err().map(|d| &**d)),
+            message(error)
+        ));
+    }
+    Ok(())
 }
 
 /// Runs one program; `Err` describes what went wrong.

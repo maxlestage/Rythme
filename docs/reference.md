@@ -2430,6 +2430,7 @@ rythme [--lang fr|en] [--no-color] [COMMAND] [ARGUMENTS...]
 | `fmt [--check] FILE...` | `format`, `formater` | gives the code its official layout; also a folder, or `-` for the standard input (see [7.4](#74-the-formatter-rythme-fmt)) |
 | `doc [--html] [--out FILE] FILE...` | `documenter` | writes the documentation of files or folders, in Markdown or as a web page (see [7.6](#76-documentation-rythme-doc)) |
 | `exercise [list \| start NAME \| check FILE]` | `exercises`, `exercice`, `exercices` | the built-in exercises (see below) |
+| `steps FILE [EXPRESSION] [--max N] [--width N]` | `etapes`, `étapes` | shows the evaluation step by step (see [7.7](#77-step-by-step-rythme-steps)) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | runs the code given as an argument, and shows the value of its last expression unless it is `()`; `ARGS` are given to `args()` |
 | `lsp` | | the language server, started by an editor (see [7.5](#75-editors-and-the-language-server)) |
 | `help [NAME]` | `aide`, `--help`, `-h` | the list of topics, or the help of a topic, a built-in function or an error code |
@@ -2462,11 +2463,11 @@ unknown action or exercise is exit code 2.
 
 **Help topics.** `rythme help TOPIC` accepts `start`, `syntax`, `functions`,
 `lists`, `text`, `records`, `types`, `match`, `errors`, `functional`,
-`tests`, `exercises`, `modules`, `repl`, `fmt`, `doc`, `editors` and
-`builtins`, and French or alternative names: `syntaxe`, `fonctions`,
+`tests`, `exercises`, `modules`, `repl`, `fmt`, `doc`, `steps`, `editors`
+and `builtins`, and French or alternative names: `syntaxe`, `fonctions`,
 `listes`, `texte`, `enregistrements`, `motifs`, `erreurs`, `fonctionnel`,
 `boucles`, `exercices`, `fichiers`, `interactif`, `format`, `documentation`,
-`lsp`, `vscode`, `éditeurs`, `bibliothèque`...
+`etapes`, `lsp`, `vscode`, `éditeurs`, `bibliothèque`...
 
 **Exit codes.**
 
@@ -2553,6 +2554,7 @@ the help of the REPL; `exit`, `quit` (or `quitter`) leaves.
 | `:learn` | `:apprendre` | the guided tour |
 | `:explain CODE` | `:expliquer` | explain an error code |
 | `:names` | `:noms` | the names defined so far |
+| `:steps EXPRESSION` | `:etapes`, `:étapes` | shows the evaluation of the expression step by step (see [7.7](#77-step-by-step-rythme-steps)) |
 
 A session (the inputs are shown after the prompts):
 
@@ -2609,7 +2611,9 @@ language, the same messages and the same help, without installing anything.
 It has buttons to run (also Ctrl+Enter), check and test (also
 Ctrl+Shift+Enter) the code, a **Format** button (also Shift+Alt+F) that gives
 the code the layout of `rythme fmt` (see [7.4](#74-the-formatter-rythme-fmt);
-code with an error is left as it is, and the error is shown), a button to
+code with an error is left as it is, and the error is shown), a **Steps**
+button that shows the evaluation step by step like `rythme steps` (see
+[7.7](#77-step-by-step-rythme-steps)), a button to
 stop a program that does not end, the choice between English and French, a
 menu of examples, and a help panel (topics, search, and the explanation of an
 error code by clicking on it).
@@ -2858,6 +2862,94 @@ len([1, 2])                # 2
 `rythme doc --html . --out doc.html` writes the same for every file of the
 folder as one page, with a table of contents.
 
+### 7.7 Step by step: `rythme steps`
+
+```text
+rythme steps FILE [EXPRESSION] [--max N] [--width N]
+```
+
+`rythme steps` (in French `rythme etapes`) shows how a program computes its
+values, one step at a time, for learning and teaching. It uses the
+**substitution model**: a call is replaced by the body of its function, with
+the values of the arguments written in place of the parameters, until only
+the result remains.
+
+- Without `EXPRESSION`, every top-level definition (`name = ...`) and
+  expression of the file is shown, in order, after its functions and types
+  are defined, as when the file runs. With `EXPRESSION` (`rythme steps fib.ry
+  "fib(5)"`), the definitions of the file are made without being shown, its
+  expressions are skipped, and only the expression is shown.
+- The first line is the expression as written (pipes are shown as the calls
+  they make); each next line, after `→`, is the expression after one more
+  step, written like `rythme fmt` writes code.
+- A step is **one call or one operation**, in the order of evaluation of the
+  interpreter (see [3](#3-expressions)). The body of a called function is
+  shown already simplified as far as it can be without calling another
+  function: the operations on known values are done, the branch of `if` and
+  the case of `match` are chosen. A name of the program is replaced by its
+  value when it is needed. Built-in functions, and the functions of other
+  files, give their result in one step.
+- What the program prints appears between the steps, where it happens; an
+  error stops the evaluation with the same message as when the program runs.
+- `--max N` shows at most `N` steps of each expression (200 by default):
+  after them, `...` says that the rest is computed without being shown, and
+  the last line is the result. `--width N` cuts the lines longer than `N`
+  characters (100 by default, 20 at least) with `…`; a step is shown on 24
+  lines at most. A calculation that never ends is stopped after 10 000 000
+  steps, and one nested more than 10 000 levels deep (1 200 in the playground)
+  is stopped too, with a message.
+
+The same is available in the interactive mode with `:steps EXPRESSION`
+(see [7.2](#72-the-interactive-mode-repl)) and in the playground with the
+**Steps** button (see [7.3](#73-the-web-playground)). For example, with
+this program:
+
+```rythme
+fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
+fn total([]) = 0
+fn total([x, ..rest]) = x + total(rest)
+fn describe(n)
+  kind = if n % 2 == 0 then "even" else "odd"
+  "{n} is {kind}"
+end
+print(fib(3))
+t = total([10, 20, 30])
+describe(t // 4)
+[1, 2, 3] |> map(fn(x) = x * t)
+```
+
+`rythme steps` shows:
+
+```text
+print(fib(3))
+  → print(fib(2) + fib(1))
+  → print(fib(1) + fib(0) + fib(1))
+  → print(1 + fib(0) + fib(1))
+  → print(1 + 0 + fib(1))
+  → print(1 + fib(1))
+  → print(1 + 1)
+  → print(2)
+2
+  → ()
+
+t = total([10, 20, 30])
+  → 10 + total([20, 30])
+  → 10 + (20 + total([30]))
+  → 10 + (20 + (30 + total([])))
+  → 10 + (20 + (30 + 0))
+  → 10 + (20 + 30)
+  → 10 + 50
+  → 60
+
+describe(t // 4)
+  → describe(60 // 4)
+  → describe(15)
+  → "15 is odd"
+
+map([1, 2, 3], fn(x) = x * t)
+  → [60, 120, 180]
+```
+
 ---
 
 ## Appendix A. Grammar
@@ -2961,6 +3053,7 @@ Notes:
 | depth of an expression: each operator, call, index or field is one level, so `1 + 1 + ...` holds at most 1000 numbers | 1000 levels | E001 |
 | texts nested in `{...}` of texts | 32 levels | E001 |
 | nested (non-tail) calls | depends on the function and on the stack: several hundred thousand with `rythme` (about 900 000 for a simple recursion), 600 in the playground | E014 |
+| steps of `rythme steps`: shown for each expression; in all; depth of an expression being evaluated | 200 (`--max`); 10 000 000; 10 000 levels, 1 200 in the playground | — |
 | digits of `round(x, digits)` | clamped to −15...15 | — |
 | decimals of `text(x, decimals)` | 0 to 100 | E023 |
 | indentation of `to_json(value, indent)` | 0 to 16 spaces | E023 |

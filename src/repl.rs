@@ -19,7 +19,7 @@ use crate::symbol::Sym;
 use crate::value::Value;
 use crate::{help, lang, lexer, parser, source, suggest};
 
-const COMMANDS: &[&str] = &[":help", ":quit", ":doc", ":load", ":reset", ":lang", ":learn", ":explain", ":names"];
+const COMMANDS: &[&str] = &[":help", ":quit", ":doc", ":load", ":reset", ":lang", ":learn", ":explain", ":names", ":steps"];
 
 struct RyHelper {
     names: Vec<String>,
@@ -325,6 +325,19 @@ fn command(driver: &mut Driver, input: &str) -> Next {
                 "code inconnu ; les codes ressemblent à E003 ou W001"
             )),
         },
+        ":steps" | ":etapes" | ":étapes" => {
+            if arg.is_empty() {
+                crate::io::out_line(&t!(
+                    "usage: :steps EXPRESSION, like :steps fib(4)",
+                    "utilisation : :etapes EXPRESSION, comme :etapes fib(4)"
+                ));
+            } else {
+                let cwd = std::env::current_dir().unwrap_or_default();
+                if let Some(m) = driver.load_source("<repl>", arg, None, &cwd) {
+                    let _ = crate::steps::run_module(driver, &m, crate::steps::Options::default(), None);
+                }
+            }
+        }
         ":names" | ":noms" => {
             let builtin: std::collections::HashSet<&str> = BUILTINS.iter().map(|b| b.name).collect();
             let mut own: Vec<String> = driver

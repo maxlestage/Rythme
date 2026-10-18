@@ -124,6 +124,8 @@ fn check_manual(path: &str, lang: &str) {
             Some("check")
         } else if shown.before.contains("rythme doc") {
             Some("doc")
+        } else if shown.before.contains("rythme steps") || shown.before.contains("rythme etapes") {
+            Some("steps")
         } else {
             None
         };
