@@ -47,6 +47,8 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
   after changing an example. Its tests (`tests/format.rs`) check on every
   piece of code of the repository that it never changes the meaning of a
   program nor loses a comment.
+- `doc.rs` is `rythme doc`: the documentation of files and folders, from
+  their `##` comments, as Markdown or one HTML page (`tests/doc.rs`).
 - `builtins.rs` holds the standard library; `help.rs` the help topics and the
   explanation of every error code; `suggest.rs` the "did you mean" logic and
   the hints for people coming from other languages.

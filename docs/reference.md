@@ -57,7 +57,8 @@ in a program and `:doc f` in the REPL show it. A blank line between the `##`
 lines and the definition detaches them; ordinary `#` comment lines do not.
 A `##` that follows code on the same line is an ordinary comment. Doc comments
 written above a `type` document the type: `help` shows them for each of its
-constructors (see [4.7](#47-types)).
+constructors (see [4.7](#47-types)). `rythme doc` makes the documentation of
+whole files from them (see [7.6](#76-documentation-rythme-doc)).
 
 ```rythme
 # An ordinary comment: from `#` to the end of the line.
@@ -2305,6 +2306,7 @@ rythme [--lang fr|en] [--no-color] [COMMAND] [ARGUMENTS...]
 | `check FILE...` | `verifier`, `vérifier` | checks each program without running it (see [5.5](#55-the-check-before-running)) |
 | `test FILE [ARGS...]` | `tester` | runs the tests (see [4.8](#48-tests)) |
 | `fmt [--check] FILE...` | `format`, `formater` | gives the code its official layout; also a folder, or `-` for the standard input (see [7.4](#74-the-formatter-rythme-fmt)) |
+| `doc [--html] [--out FILE] FILE...` | `documenter` | writes the documentation of files or folders, in Markdown or as a web page (see [7.6](#76-documentation-rythme-doc)) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | runs the code given as an argument, and shows the value of its last expression unless it is `()`; `ARGS` are given to `args()` |
 | `lsp` | | the language server, started by an editor (see [7.5](#75-editors-and-the-language-server)) |
 | `help [NAME]` | `aide`, `--help`, `-h` | the list of topics, or the help of a topic, a built-in function or an error code |
@@ -2326,11 +2328,11 @@ another value, or `--lang` without a value, is reported, with exit code 2.
 
 **Help topics.** `rythme help TOPIC` accepts `start`, `syntax`, `functions`,
 `lists`, `text`, `records`, `types`, `match`, `errors`, `functional`,
-`tests`, `modules`, `repl`, `fmt`, `editors` and `builtins`, and French or
-alternative names: `syntaxe`, `fonctions`, `listes`, `texte`,
+`tests`, `modules`, `repl`, `fmt`, `doc`, `editors` and `builtins`, and
+French or alternative names: `syntaxe`, `fonctions`, `listes`, `texte`,
 `enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`,
-`fichiers`, `interactif`, `format`, `lsp`, `vscode`, `éditeurs`,
-`bibliothèque`...
+`fichiers`, `interactif`, `format`, `documentation`, `lsp`, `vscode`,
+`éditeurs`, `bibliothèque`...
 
 **Exit codes.**
 
@@ -2593,6 +2595,131 @@ chooses it. Started by hand in a terminal, it says what it is for;
   editor that speaks the Language Server Protocol can start `rythme lsp`;
   [`editors/README.md`](../editors/README.md) gives the configuration for
   each.
+
+### 7.6 Documentation: `rythme doc`
+
+```text
+rythme doc [--html] [--out FILE] FILE_OR_FOLDER...
+```
+
+`rythme doc` writes the documentation of programs from their `##` comments
+(see [1.2](#12-comments)), their types and the definitions of their
+functions. Nothing is run.
+
+- `rythme doc geometry.ry` writes Markdown on the standard output (`geometry`
+  is enough when `geometry.ry` exists). A folder stands for every `.ry` file
+  in it and in its subfolders, hidden folders aside; several files and
+  folders may be given.
+- A file is documented with the files it uses (`use`), each one once: the
+  documentation of a program includes that of its modules.
+- `--html` writes one web page instead, with the look of the website, light
+  or dark like the system. It needs nothing else (no script, no other
+  file): it can be opened from the disk or put on any web server.
+- `--out FILE` (`-o`) writes to a file and says so; a name ending with
+  `.html` gives the web page.
+- `documenter` is an alias of `doc`; the titles (*Functions*, *Values*...)
+  are in the language of the messages.
+- A file that cannot be read, or that has a syntax error, is reported and
+  left out; the others are documented, and the exit code is 1.
+
+For each file come: its description, the `##` lines at its top when a blank
+line separates them from what follows; the files it uses, as links; its
+types; its functions, with the first line of **every** definition
+(patterns and `if` conditions included); its values (with their definition
+when it fits on one line); and the names of its tests. Names starting with
+`_` are left out, as details of their file.
+
+In a comment, a name between backticks, like `` `area` `` or
+`` `len(list)` ``, becomes a link to its documentation; a constructor leads
+to its type; the built-in functions named this way are explained at the
+end. A blank `##` line starts a new paragraph, and lines starting with `- `
+make a list. In Markdown, code is in `~~~rythme` blocks, and the links use
+the anchors GitHub gives to titles.
+
+With `geometry.ry`:
+
+```rythme
+## Shapes and their areas.
+
+## A shape to draw.
+type Shape = Circle(radius) | Rect(width, height)
+
+## The area of a shape: for a `Circle`, `pi` times the square
+## of its radius. To count shapes, use `len`.
+fn area(Circle(r)) = pi * _square(r)
+fn area(Rect(w, h)) = w * h
+
+## How many sides a square has.
+sides = 4
+
+fn _square(x) = x * x
+
+test "area of a square" = area(Rect(2, 2)) == 4
+```
+
+`rythme doc geometry.ry` writes:
+
+```text
+# geometry.ry
+
+Shapes and their areas.
+
+## Types
+
+### Shape
+
+~~~rythme
+type Shape = Circle(radius) | Rect(width, height)
+~~~
+
+A shape to draw.
+
+## Functions
+
+### area
+
+~~~rythme
+fn area(Circle(r))
+fn area(Rect(w, h))
+~~~
+
+The area of a shape: for a [`Circle`](#shape), `pi` times the square
+of its radius. To count shapes, use [`len`](#len).
+
+## Values
+
+### sides
+
+~~~rythme
+sides = 4
+~~~
+
+How many sides a square has.
+
+## Tests
+
+- area of a square
+
+## Built-in functions mentioned
+
+### len
+
+~~~rythme
+len(x)
+~~~
+
+Length of a text (in characters), a list or a record.
+
+Example:
+
+~~~rythme
+len("été")                 # 3
+len([1, 2])                # 2
+~~~
+```
+
+`rythme doc --html . --out doc.html` writes the same for every file of the
+folder as one page, with a table of contents.
 
 ---
 

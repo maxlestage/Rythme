@@ -142,6 +142,7 @@ cargo install --path .       # or install it in your PATH
 | `rythme test hello.ry`      | run the tests written in the file              |
 | `rythme fmt hello.ry`       | give the code its official layout (also a folder: `rythme fmt .`) |
 | `rythme fmt --check .`      | list the files to format, without changing them (for CI) |
+| `rythme doc hello.ry`       | its documentation from the `##` comments, in Markdown (`--html`: one web page) |
 | `rythme help [topic]`       | help on a topic or a function                  |
 | `rythme explain E003`       | explain an error code                          |
 | `rythme learn`              | guided tour of the language                    |
@@ -286,7 +287,8 @@ towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
   types of the parameters of functions, so that even more mistakes are found
   before running.
 - **Tooling.** `rythme fmt` formats the code in the official style (see
-  `rythme help fmt`), and the language server (`rythme lsp`) brings errors and
+  `rythme help fmt`), `rythme doc` writes the documentation of files and
+  folders from their `##` comments (see `rythme help doc`), and the language server (`rythme lsp`) brings errors and
   documentation inside every editor (see `rythme help editors`). The web
   playground runs the interpreter compiled to WebAssembly. Next: a package
   manager.
