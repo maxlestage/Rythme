@@ -415,9 +415,24 @@ fn generated_programs() {
             code.push_str(&format!("fn h2(0) = []\nfn h2(p) = [{body}, ..h2(p - 1)]\n"));
             g.fns = vec![("h0".into(), 2), ("h1".into(), 1), ("h2".into(), 1)];
         }
+        // Functions whose whole body runs every time they are called: the
+        // lines where each one is.
+        let mut bodies: Vec<(String, std::ops::RangeInclusive<usize>)> = Vec::new();
+        if g.straight {
+            let first = code.lines().count() + 1;
+            let body = g.expr(2, &["p", "q"]);
+            code.push_str(&format!("fn s0(p, q) = {body}\n"));
+            bodies.push(("s0(".into(), first..=code.lines().count()));
+            let first = code.lines().count() + 1;
+            let (a, b) = (g.expr(2, &["p"]), g.expr(2, &["p", "w"]));
+            code.push_str(&format!("fn s1(p)\n  w = {a}\n  {b}\nend\n"));
+            bodies.push(("s1(".into(), first..=code.lines().count()));
+            g.fns = vec![("s0".into(), 2), ("s1".into(), 1)];
+        }
         // Each definition is kept if the program still runs to its end, so
         // that most of them run; the last one may fail.
         let mut names = Vec::new();
+        let mut texts = Vec::new();
         // The line where each definition starts.
         let mut starts = Vec::new();
         for i in 0..8 {
@@ -434,6 +449,7 @@ fn generated_programs() {
                     starts.push(code.lines().count() + 1);
                     code = candidate;
                     names.push(name.clone());
+                    texts.push(line);
                     g.vars.push(name);
                     break;
                 }
@@ -463,6 +479,13 @@ fn generated_programs() {
                 let line = source::get(span.file).unwrap().line_col(span.start as usize).0;
                 // The header has no mistakes.
                 assert!(line > header_lines, "program {seed}: error in the header: {}\n{code}", d.message);
+                // In a function whose whole body ran: called by a line that ran.
+                if let Some((call, _)) = bodies.iter().find(|(_, lines)| lines.contains(&line)) {
+                    let called = texts[..ran].iter().any(|t| t.contains(call.as_str()));
+                    assert!(!called, "program {seed}: line {line} runs, but the checker reports: {}\n{code}", d.message);
+                    found += 1;
+                    continue;
+                }
                 let index = starts.iter().rposition(|&s| s <= line).unwrap_or(0);
                 assert!(index >= ran, "program {seed}: line {line} runs, but the checker reports: {}\n{code}", d.message);
                 found += 1;
