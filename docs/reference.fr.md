@@ -363,6 +363,8 @@ en silence.
 | `Unit` | `()`, « pas de valeur intéressante » | `()` |
 | `List` | suites ordonnées | `[1, 2, 3]`, `1..5`, `[]` |
 | `Record` | enregistrements : des champs nommés | `{nom: "Ada", naissance: 1815}` |
+| `Dict` | dictionnaires : une valeur pour chaque clé, des clés de toute sorte | `dict([["Ada", 36]])`, `dict()` |
+| `Set` | ensembles : des valeurs sans répétition | `set([1, 2, 3])`, `set()` |
 | `Function` | fonctions, fonctions intégrées, constructeurs avec champs | `fn(x) = x + 1`, `print`, `Some` |
 | `Option` | `Some(valeur)`, `None` | `Some(3)` |
 | `Result` | `Ok(valeur)`, `Err(erreur)` | `Err("oups")` |
@@ -557,6 +559,8 @@ valeur d'un tel type s'affiche comme son constructeur suivi de ses champs :
   des valeurs égales, quel que soit l'ordre des champs ;
 - deux variantes sont égales quand elles ont le même type, le même
   constructeur et des champs égaux ;
+- deux dictionnaires sont égaux quand ils ont les mêmes clés avec des valeurs
+  égales, et deux ensembles quand ils ont les mêmes éléments ;
 - une fonction n'est égale qu'à elle-même (la même valeur de fonction) ;
 - des valeurs de sortes différentes ne sont jamais égales (`"1" == 1` vaut
   `false`) ;
@@ -587,7 +591,11 @@ true true false false
 - deux valeurs **du même type** : d'abord selon le constructeur, dans l'ordre
   de la définition du type (`None < Some(x)`, `Ok(x) < Err(e)`, et pour
   `type Taille = Petit | Moyen | Grand`, `Petit < Moyen < Grand`), puis champ
-  par champ.
+  par champ ;
+- les ensembles, élément par élément dans leur ordre, comme des listes ; et
+  les dictionnaires de même, comme les listes de leurs paires
+  `[clé, valeur]`. Ce n'est pas l'inclusion : `set([1, 2]) < set([1, 3])`
+  vaut `true` (utilisez `is_subset` pour l'inclusion).
 
 Tout le reste (enregistrements, fonctions, valeurs de deux types différents,
 un nombre et un texte...) est l'erreur E005. `sort`, `sort_by`, `min` et `max`
@@ -651,6 +659,8 @@ En dehors des textes, les deux formes sont identiques :
 | List | `[1, "a", 2.0]` |
 | Record | `{nom: "Ada", "nom complet": "Ada L."}` : un nom de champ s'écrit comme un texte quand ce n'est pas un nom simple |
 | variante | `None`, `Some(3)`, `Cercle(2.0)` |
+| Dict | `dict("Ada" => 36, [0, 0] => "départ")`, `dict()` : les paires dans l'ordre des clés |
+| Set | `set(1, 2, 3)`, `set()` : les éléments dans l'ordre |
 | fonction | `<fn nom>` pour une fonction nommée ou intégrée, `<fn>` pour une fonction anonyme |
 | constructeur avec champs | `<constructeur Cercle>` (en anglais : `<constructor Cercle>`) |
 
@@ -674,6 +684,93 @@ texte 42 2.0 ["a", "b"] {nom: "Ada", "nom complet": "Ada L."} None ()
 [debug 15-affichage.ry:4:10] ["a", "b"]
 2
 [<fn print>, <fn>, <constructeur Some>, None]
+```
+
+### 2.14 Dict et Set
+
+Un **dict** (dictionnaire) donne une valeur pour chacune de ses clés ; un
+**set** (ensemble) contient des valeurs sans répétition. Comme toutes les
+valeurs, ils ne changent jamais. Ils n'ont pas de syntaxe propre : ils se
+construisent avec les fonctions `dict` et `set`, et s'utilisent avec les
+fonctions de la [bibliothèque standard](#6-bibliothèque-standard).
+
+- `dict()` est le dictionnaire vide ; `dict(paires)` prend une liste de
+  paires `[clé, valeur]` (quand une clé revient plusieurs fois, sa dernière
+  valeur l'emporte) ; `dict(enregistrement)` prend les noms des champs comme
+  clés (des textes).
+- `set()` est l'ensemble vide ; `set(liste)` garde chaque élément une fois.
+- Les clés et les éléments peuvent être n'importe quelle valeur sauf une
+  fonction ou `nan` (E023) : nombres, textes, Bool, `()`, listes,
+  enregistrements, variantes, dictionnaires et ensembles. Deux clés sont la
+  même clé quand elles sont égales (`==`, voir [2.11](#211-égalité)) : `1` et
+  `1.0` sont une seule clé, tout comme `{x: 1, y: 2}` et `{y: 2, x: 1}` ; la
+  clé qui reste est celle mise en premier.
+- Ils sont gardés **dans l'ordre de leurs clés**, quel que soit l'ordre dans
+  lequel ils ont été construits : l'ordre de [2.12](#212-ordre), étendu à
+  toutes ces valeurs (des valeurs de sortes différentes vont dans l'ordre
+  `()`, Bool, nombres, textes, listes, enregistrements, variantes,
+  dictionnaires, ensembles ; les enregistrements selon leurs noms de champs
+  dans l'ordre alphabétique, puis selon leurs valeurs). Cet ordre sert à
+  l'affichage, à `keys`, `values`, `entries`, `filter`, `map_values` et
+  `to_json`.
+- `dico[clé]` donne la valeur d'une clé, E010 s'il n'y en a pas (voir
+  [3.7](#37-indices)) ; `get(dico, clé)` donne une Option.
+- Ce sont des arbres équilibrés persistants : `get`, `has`, `[...]`, `put`,
+  `push` et `remove` prennent un temps en O(log n), et un nouveau
+  dictionnaire ou ensemble partage presque tout l'ancien au lieu de le
+  copier.
+- Ils s'affichent comme `dict(clé => valeur, ...)` et `set(a, b, ...)`. Ces
+  formes montrent seulement ce qu'ils contiennent : dans le code, écrivez
+  `dict([[clé, valeur], ...])` et `set([a, b, ...])`.
+
+```rythme
+ages = dict([["Bob", 25], ["Ada", 36]])
+print(ages, ages["Ada"], get(ages, "Eve"), len(ages))
+plus_vieux = put(ages, "Bob", 26)
+print(plus_vieux, ages)
+print(set([3, 1, 3, 2]), set([1, 1.0]), dict({x: 1, y: 2}))
+grille = dict([[[0, 0], "départ"], [[2, 1], "arrivée"]])
+print(grille[[2, 1]], keys(grille))
+print(type_of(ages), type_of(set()), dict() == dict([]))
+```
+
+```text
+dict("Ada" => 36, "Bob" => 25) 36 None 2
+dict("Ada" => 36, "Bob" => 26) dict("Ada" => 36, "Bob" => 25)
+set(1, 2, 3) set(1) dict("x" => 1, "y" => 2)
+arrivée [[0, 0], [2, 1]]
+Dict Set true
+```
+
+```rythme
+type Couleur = Rouge | Vert
+print(dict([[1, "a"]]) == dict([[1.0, "a"]]), set([[1, 2], [1]]) == set([[1], [1, 2]]))
+print(set([1, 2]) < set([1, 3]), sort([set([2]), set([1, 3]), set()]))
+print(set([Vert, Rouge, 2, "x", [1], ()]))
+```
+
+```text
+true true
+true [set(), set(1, 3), set(2)]
+set((), 2, "x", [1], Rouge, Vert)
+```
+
+Une fonction ne peut pas être une clé (les fonctions ne se comparent pas) :
+
+```rythme
+fn double(x) = x * 2
+print(set([1, double]))
+```
+
+```text
+erreur[E023]: `set` : <fn double> ne peut pas être une clé de dictionnaire, ni un élément d'ensemble
+ --> 16-ensemble.ry:2:7
+  |
+2 | print(set([1, double]))
+  |       ^^^^^^^^^^^^^^^^
+  |
+  = aide: les clés et les éléments doivent être des valeurs comparables : tout sauf les fonctions et `nan`
+  = en savoir plus : `rythme explain E023`
 ```
 
 ---
@@ -880,6 +977,7 @@ Ok(5) Err("\"deux\" n'est pas un nombre entier")
 | `liste[i]` | l'élément à la position `i` (à partir de 0) ; `-1` est le dernier, `-2` l'avant-dernier... | E007 hors limites, E005 si `i` n'est pas un Int |
 | `texte[i]` | le caractère à la position `i`, sous forme de texte | E007, E005 |
 | `enregistrement["nom"]` | le champ qui a ce nom | E010 s'il n'existe pas |
+| `dico[clé]` | la valeur de cette clé | E010 si elle n'existe pas |
 
 `get(x, i)` fait la même chose, mais renvoie une Option au lieu d'échouer.
 
@@ -2207,7 +2305,7 @@ minuscules.
 
 ## 6. Bibliothèque standard
 
-Les 136 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
+Les 142 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
 mots-clés, leurs noms sont en anglais. `rythme help builtins` les liste
 toutes par catégorie, une ligne chacune ; `rythme help NOM` (ou `help(NOM)`
 dans un programme, ou `:doc NOM` dans le mode interactif) affiche la
@@ -2305,6 +2403,48 @@ Results (`map`).
 `[nom, valeur]`) et `from_entries` (l'inverse), `has(enregistrement, nom)`,
 `put(enregistrement, nom, valeur)`, `remove(enregistrement, nom)`,
 `map_values(enregistrement, f)`.
+
+**Dictionnaires et ensembles.** `dict()`, `dict(paires)` et
+`dict(enregistrement)`, `set()` et `set(liste)` les construisent (voir
+[2.14](#214-dict-et-set)). Les fonctions des listes et des enregistrements
+marchent aussi sur eux : `len`, `is_empty`, `get(dico, clé)` (une Option),
+`has(x, clé)` et `contains(x, clé)` (une clé d'un dictionnaire, un élément
+d'un ensemble), `put(dico, clé, valeur)`, `push(ensemble, x)`,
+`remove(x, clé)` (une clé d'un dictionnaire, un élément d'un ensemble),
+`keys(dico)`, `values(x)` (les valeurs d'un dictionnaire, ou les éléments
+d'un ensemble, sous forme de liste), `entries(dico)` (une liste de
+`[clé, valeur]`), `map_values(dico, f)`, `filter(dico, f)` (f reçoit chaque
+clé et sa valeur), `filter(ensemble, f)`, `map(ensemble, f)` (l'ensemble des
+résultats). Puis `union(a, b)` (deux ensembles, ou deux dictionnaires : pour
+une clé des deux, la valeur de `b` l'emporte), `intersection(a, b)` et
+`difference(a, b)` (pour des dictionnaires, les paires de `a` dont la clé
+est, ou n'est pas, dans `b`) et `is_subset(a, b)` (deux ensembles).
+`to_json` écrit un dictionnaire dont toutes les clés sont des textes comme
+un objet JSON, et un ensemble comme un tableau ; `dict(parse_json(texte)?)`
+lit un objet comme un dictionnaire. Les autres fonctions des listes ne les
+prennent pas : `values(x)` ou `entries(x)` donnent d'abord une liste.
+
+```rythme
+a = set([1, 2, 3])
+b = set([2, 3, 4])
+print(union(a, b), intersection(a, b), difference(a, b), is_subset(set([2]), a))
+print(push(a, 0), remove(a, 2), has(a, 2), values(a), map(a, fn(x) = x % 2))
+prix = dict([["pomme", 3], ["poire", 5], ["figue", 9]])
+print(filter(prix, fn(nom, p) = p < 6), map_values(prix, fn(p) = p * 2))
+print(union(prix, dict([["figue", 1], ["kiwi", 4]])))
+compte = fold(split("a b a c b a"), dict(), fn(d, m) = put(d, m, unwrap_or(get(d, m), 0) + 1))
+print(compte, entries(compte))
+print(to_json(compte), to_json(set([1, 2])), dict(unwrap(parse_json("\{\"x\": 1}"))))
+```
+
+```text
+set(1, 2, 3, 4) set(2, 3) set(1) true
+set(0, 1, 2, 3) set(1, 3) true [1, 2, 3] set(0, 1)
+dict("poire" => 5, "pomme" => 3) dict("figue" => 18, "poire" => 10, "pomme" => 6)
+dict("figue" => 1, "kiwi" => 4, "poire" => 5, "pomme" => 3)
+dict("a" => 3, "b" => 2, "c" => 1) [["a", 3], ["b", 2], ["c", 1]]
+{"a": 3, "b": 2, "c": 1} [1, 2] dict("x" => 1)
+```
 
 **Option et Result.** `unwrap`, `unwrap_or(x, defaut)`, `is_some`,
 `is_none`, `is_ok`, `is_err`, `and_then(x, f)` (une étape de plus qui peut
@@ -2418,7 +2558,7 @@ erreur[E003]: nom inconnu `ord`
   = aide: en Rythme, cela s'appelle `char_code`
   = en savoir plus : `rythme explain E003`
 
-erreur[E005]: `map` attend une liste, une Option ou un Result comme argument 1, mais a reçu une valeur de type Text
+erreur[E005]: `map` attend une liste, un ensemble, une Option ou un Result comme argument 1, mais a reçu une valeur de type Text
  --> 62-indices.ry:3:11
   |
 3 | print(map(mot, upper))
@@ -2959,7 +3099,7 @@ Le nombre de côtés d'un carré.
 len(x)
 ~~~
 
-Longueur d'un texte (en caractères), d'une liste ou d'un enregistrement.
+Longueur d'un texte (en caractères), d'une liste, d'un enregistrement, d'un dictionnaire ou d'un ensemble.
 
 Exemple :
 

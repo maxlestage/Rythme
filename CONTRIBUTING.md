@@ -46,6 +46,10 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
   change to the interpreter, run `bench/run.sh` before and after: the
   programs of `bench/` print a checksum of their work and their best time.
 - `diagnostic.rs` prints messages in the style of Rust.
+- `dict.rs` is the persistent ordered map (a weight-balanced tree) behind
+  dictionaries and sets, and `key_cmp`, the order of their keys; their
+  built-in functions are in `builtins/dicts.rs`, and `tests/dicts.rs` checks
+  the tree against a simple model.
 - `format.rs` is `rythme fmt`, the formatter: run `cargo run -- fmt examples`
   after changing an example. Its tests (`tests/format.rs`) check on every
   piece of code of the repository that it never changes the meaning of a

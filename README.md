@@ -206,10 +206,12 @@ fn fib(n) = fib(n - 1) + fib(n - 2)
 # Conditions are expressions: every if has an else
 fn sign(n) = if n < 0 then "negative" else if n == 0 then "zero" else "positive"
 
-# Lists, ranges, records
+# Lists, ranges, records, dicts and sets
 numbers = 1..10                           # [1, 2, ..., 10]
 ada = {name: "Ada", born: 1815}
 older = {..ada, born: 1816}               # a new record; ada is unchanged
+ages = dict([["Ada", 36], ["Alan", 41]])  # a dictionary: keys of any kind
+seen = set([1, 2, 2])                     # a set: set(1, 2)
 
 # Your own types, and match
 type Shape = Circle(radius) | Rect(width, height)
@@ -293,7 +295,7 @@ mode) and is organised as a pipeline:
 | [`src/types.rs`](src/types.rs) | what the checker knows for sure about values: their types |
 | [`src/compile.rs`](src/compile.rs) | prepares functions: each local name becomes a numbered slot |
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
-| [`src/builtins.rs`](src/builtins.rs) | 136 built-in functions, documented in two languages, JSON included |
+| [`src/builtins.rs`](src/builtins.rs) | 142 built-in functions, documented in two languages, JSON included |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |

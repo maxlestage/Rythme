@@ -17,7 +17,7 @@ use crate::parser::immutable_help;
 use crate::source::Span;
 use crate::suggest;
 use crate::symbol::Sym;
-use crate::types::{self, Outcome, Ty, BOOL, DATA, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, TEXT, UNIT};
+use crate::types::{self, Outcome, Ty, BOOL, DATA, DICT, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, SET, TEXT, UNIT};
 use crate::value::{Record, Value};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -85,7 +85,8 @@ pub struct ModuleMeta {
 /// Does this type speak of a type defined with `type` (not Option or Result)?
 fn has_own_data(t: &Ty) -> bool {
     match t {
-        Ty::List(t) => has_own_data(t),
+        Ty::List(t) | Ty::Set(t) => has_own_data(t),
+        Ty::Dict(k, v) => has_own_data(k) || has_own_data(v),
         Ty::Record(r) => r.fields.iter().any(|(_, t)| has_own_data(t)),
         Ty::Data(d) => {
             !matches!(&*d.name.name(), "Option" | "Result")
@@ -1712,7 +1713,11 @@ impl<'a> Checker<'a> {
         let Some(b) = builtin else { return tys };
         for i in later {
             let ExprKind::Lambda(def) = &exprs[i].kind else { continue };
-            let Some(cb) = types::callback(b, i, &tys) else { continue };
+            let Some(cb) = types::callback(b, i, &tys) else {
+                // What the function receives depends on what it is given (`filter`).
+                tys[i] = self.func(def, None);
+                continue;
+            };
             tys[i] = if def.arity != cb.params.len() {
                 self.func(def, None)
             } else if matches!(b, "fold" | "scan") {
@@ -2166,13 +2171,13 @@ impl<'a> Checker<'a> {
         if *ta == Ty::Never || *tb == Ty::Never {
             return Ty::Never;
         }
-        if ta.never(LIST | TEXT | RECORD) {
+        if ta.never(LIST | TEXT | RECORD | DICT) {
             self.diags.push(
                 Diagnostic::error("E005", t!("cannot use `[...]` on {}", "impossible d'utiliser `[...]` sur {}", what(Some(a), ta)))
                     .at(e.span)
                     .help(t!(
-                        "`[...]` works on lists, texts and records",
-                        "`[...]` fonctionne sur les listes, les textes et les enregistrements"
+                        "`[...]` works on lists, texts, records and dicts",
+                        "`[...]` fonctionne sur les listes, les textes, les enregistrements et les dictionnaires"
                     )),
             );
             return Ty::Never;
@@ -2211,6 +2216,7 @@ impl<'a> Checker<'a> {
         }
         match ta {
             Ty::List(t) => (**t).clone(),
+            Ty::Dict(_, v) => (**v).clone(),
             Ty::Text => Ty::Text,
             Ty::Record(r) => {
                 let ExprKind::Text(k) = &b.kind else { return Ty::Any };
@@ -2312,7 +2318,7 @@ impl<'a> Checker<'a> {
                 "compare it explicitly, for example `x != 0` or `x > 0`",
                 "comparez explicitement, par exemple `x != 0` ou `x > 0`"
             ));
-        } else if t.only(LIST | TEXT | RECORD) {
+        } else if t.only(LIST | TEXT | RECORD | DICT | SET) {
             d = d.help(t!(
                 "to test if it is empty, use `is_empty(x)` or `not is_empty(x)`",
                 "pour tester si c'est vide, utilisez `is_empty(x)` ou `not is_empty(x)`"
@@ -2416,7 +2422,13 @@ impl<'a> Checker<'a> {
         let text = |t: &Ty| *t == Ty::Text;
         let list = |t: &Ty| matches!(t, Ty::List(_));
         let num = |t: &Ty| matches!(t, Ty::Int | Ty::Float | Ty::Num);
-        if op == BinOp::Add && (text(lt) || text(rt)) {
+        let dict_or_set = |t: &Ty| matches!(t, Ty::Dict(..) | Ty::Set(_));
+        if matches!(op, BinOp::Add | BinOp::Sub) && dict_or_set(lt) && dict_or_set(rt) {
+            d = d.help(t!(
+                "to join two sets or two dicts, use `union(a, b)`; to take one away from the other, `difference(a, b)`",
+                "pour réunir deux ensembles ou deux dictionnaires, utilisez `union(a, b)` ; pour retirer l'un de l'autre, `difference(a, b)`"
+            ));
+        } else if op == BinOp::Add && (text(lt) || text(rt)) {
             d = d.help(t!(
                 "to build a text with a value inside, use braces: \"total: {{x}}\"\nor convert the value first: text(x)",
                 "pour construire un texte contenant une valeur, utilisez des accolades : \"total : {{x}}\"\nou convertissez d'abord la valeur : text(x)"
@@ -3012,7 +3024,7 @@ fn short(e: Option<&Expr>, t: &Ty) -> String {
 fn comparable(lt: &Ty, rt: &Ty) -> bool {
     let (lk, rk) = (lt.kinds(), rt.kinds());
     let both = |k| lk & k != 0 && rk & k != 0;
-    if both(NUMBER) || both(TEXT) || both(BOOL) || both(UNIT) || both(LIST) {
+    if both(NUMBER) || both(TEXT) || both(BOOL) || both(UNIT) || both(LIST) || both(DICT) || both(SET) {
         return true;
     }
     let data = OPTION | RESULT | DATA;
@@ -3033,7 +3045,7 @@ fn may_be_equal(lt: &Ty, rt: &Ty) -> bool {
     if lk & NUMBER != 0 && rk & NUMBER != 0 {
         return true;
     }
-    if lk & rk & (UNIT | BOOL | TEXT | LIST | RECORD | FUNC) != 0 {
+    if lk & rk & (UNIT | BOOL | TEXT | LIST | RECORD | DICT | SET | FUNC) != 0 {
         return true;
     }
     match (lt, rt) {
