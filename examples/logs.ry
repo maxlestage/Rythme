@@ -1,0 +1,28 @@
+# Reading a server log with regexes: the fields of each line, the errors,
+# the bytes sent written for people, and the addresses hidden.
+
+server_log = "2024-02-29 08:12:01 GET /index.html 200 15320 ada@example.org
+2024-02-29 08:12:07 GET /photo.png 200 1048576 alan@example.org
+2024-02-29 08:13:44 POST /login 401 512 grace@example.org
+2024-02-29 08:15:02 GET /missing 404 0 ada@example.org
+2024-02-29 08:16:30 GET /video.mp4 200 73400320 linus@example.org"
+
+line_shape = "(?<time>\\d\\d:\\d\\d):\\d\\d (?<method>[A-Z]+) (?<path>\\S+) (?<status>\\d\{3\}) (?<bytes>\\d+)"
+
+## The fields of a line of the log, if it has the shape of one.
+fn fields(line) = named_captures(line, line_shape)
+
+requests = lines(server_log) |> map(fields) |> filter(is_some) |> map(unwrap)
+
+errors = filter(requests, fn(r) = matches(r.status, "[45]\\d\\d"))
+print("{len(errors)} errors out of {len(requests)} requests:")
+errors |> each(fn(r) = print("  {r.time} {r.status} {r.path}"))
+
+total = requests |> map(fn(r) = int(r.bytes)) |> sum
+print("Bytes sent: {format_number(total)} ({format_number(total / 1048576, 1, "fr")} Mio)")
+
+pages = find_all(server_log, "/\\w+[.]html")
+print("Pages: {pages}")
+
+hidden = replace_all(server_log, "(\\w)\\w*@", "$1***@")
+print(lines(hidden) |> take(2) |> map(fn(l) = last(split(l)) |> unwrap))

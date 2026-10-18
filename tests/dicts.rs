@@ -130,7 +130,10 @@ fn wrong_keys_and_wrong_values_are_explained() {
 
 /// Runs `rythme check` on a program.
 fn check(code: &str) -> common::Run {
-    let dir = std::env::temp_dir().join(format!("rythme-dicts-{}-{}", std::process::id(), code.len()));
+    // A folder of its own: the tests run at the same time.
+    static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let dir = std::env::temp_dir().join(format!("rythme-dicts-{}-{n}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let file = dir.join("check.ry");
     std::fs::write(&file, code).unwrap();

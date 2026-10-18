@@ -2660,6 +2660,7 @@ with examples; the code may be written in lowercase.
 | E023 | Invalid value | a value of the right kind but outside what is accepted (a negative count, `min` of an empty list, `sqrt(-1)`, a range, a list or a text too large, a whole number of more than 100000 digits, an exit code outside 0–255...) |
 | E024 | A value is lost | a line computes a value that nothing uses |
 | E025 | Project or package problem | a `rythme.toml` or `rythme.lock` that cannot be read, a dependency not installed, or `rythme install` that cannot get one (see [7.7](#77-projects-and-packages)) |
+| E026 | Invalid regex | a regex that breaks a rule (a `(` never closed, `*` with nothing to repeat, an unknown `\q`...), or a replacement of `replace_all` with a group that does not exist |
 | W001 | Unused name | a local name is defined but never used |
 | W002 | Forgotten case | a `match` or a one-parameter function does not handle every possible value |
 | W003 | Built-in function hidden | a top-level definition takes the name of a built-in function |
@@ -2675,8 +2676,7 @@ with examples; the code may be written in lowercase.
 
 ## 6. Standard library
 
-The 155 built-in functions are always available, without `use`. Like the
-The 142 built-in functions are always available, without `use`. Like the
+The 174 built-in functions are always available, without `use`. Like the
 keywords, their names are in English. `rythme help builtins` lists all of
 them by category, one line each; `rythme help NAME` (or `help(NAME)` in a
 program, or `:doc NAME` in the REPL) shows the documentation of one, with
@@ -2743,7 +2743,50 @@ characters?), `parse_int(text)` and `parse_float(text)` (Results; spaces
 around the number and `_` are accepted), `parse_json(text)` (a Result: JSON
 objects become records, arrays lists, `null` `None`; an error gives the line
 and the column) and `to_json(value, indent)` (the JSON text of a value, on
-one line, or one element per line shifted by `indent` spaces, at most 16).
+one line, or one element per line shifted by `indent` spaces, at most 16),
+`trim_start` and `trim_end` (spaces and line breaks of one side only),
+`words(text)` (letters and digits, with `'`, `’` or `-` inside a word:
+`"it's"`, `"well-known"`), `equals_ignore_case(a, b)` (uppercase and
+lowercase count as equal, `ß` as `SS`), and
+`format_number(x, decimals, language)` (thousands separated, `decimals`
+decimals if given, at most 100, rounded like `round`; `language` is `"en"`
+by default: `1,234.5`; `"fr"`: `1 234,5`, with a plain space; `"de"`,
+`"es"`, `"it"`, `"nl"`, `"pt"`: `1.234,5`; `"fr-CA"` counts as `"fr"`).
+
+**Regexes.** A regex (regular expression) is a text that describes pieces
+of text. `matches(text, regex)` (does the *whole* text match?),
+`find_first(text, regex)` (an Option), `find_all(text, regex)` (every
+match, left to right, never overlapping; an empty match right after the
+previous one is skipped), `captures(text, regex)` (an Option of a list: the
+whole match, then the text of each group, `""` for a group that took no
+part), `captures_all`, `named_captures(text, regex)` (an Option of a record,
+one field per group `(?<name>...)`; E023 without named groups),
+`split_by(text, regex)` (an empty match never cuts) and
+`replace_all(text, regex, new)` (`new` is a text where `$1`, `$<name>`, `$0`
+and `$$` stand for a group, a named group, the whole match and a `$`, or a
+function given each match, which must return a text). A regex is made of
+characters, `.` (any character but `\n`), classes `[abc]`, `[a-z]`,
+`[^...]` (a `]` right after `[` or `[^` and a `-` at an end are themselves),
+`\d` (0 to 9), `\w` (a letter, accents included, a digit or `_`), `\s` (a
+space, a tab or a line break), their opposites `\D`, `\W`, `\S`, `\b` and
+`\B` (at the edge of a word, or not), `^` and `$` (the start and the end of
+the text), `\n`, `\t`, `\r`, a backslash before a sign for the sign itself
+(`\.`), alternatives `a|b`, groups `(...)`, `(?:...)` (without capture) and
+`(?<name>...)` (or `(?P<name>...)`), the repetitions `*`, `+`, `?`, `{n}`,
+`{n,}` and `{n,m}` (n and m up to 1000), which take as much as they can,
+or as little with a `?` after them (`*?`), and `(?i)` at the start, to
+ignore the case. The usual rules choose between several matches: the
+leftmost, then the first alternative, then the longest repetition. Searching
+takes a time proportional to the length of the text times the size of the
+regex, whatever they are: the engine follows every way at once instead of
+trying one after the other (no "catastrophic backtracking"); for a
+repetition of a part that can match an empty text, like `(a*)*`, it may
+choose another end than other engines. In a Rythme text, a backslash is
+written twice and braces `\{` and `\}`: `"\\d\{4\}"` is the regex
+`\d{4}`; a sign in brackets needs no backslash: `"[.]"`, `"[(]"`. A
+mistake in a regex stops the program with E026, which points to it in the
+regex; when the regex is written in the call, it is found before running,
+at its place in the code.
 
 **Lists.** `map`, `filter`, `reject(list, f)` (the elements for which f is
 false), `fold(list, start, f)`, `scan(list, start, f)` (every intermediate
@@ -2900,6 +2943,7 @@ without a warning.
 | `strip` | `trim` | `even?`, `odd?` | `is_even`, `is_odd` |
 | `start_with?` | `starts_with` | `any?`, `all?` | `any`, `all` |
 | `end_with?` | `ends_with` | `key?` | `has` |
+| `lstrip`, `rstrip` | `trim_start`, `trim_end` | `casecmp?` | `equals_ignore_case` |
 
 `sort_by`, `min_by`, `max_by`, `group_by`, `zip`, `flatten`, `sum`, `count`,
 `first`, `last`, `find`, `map`, `each`, `reject` and `each_with_index` have the
@@ -2908,10 +2952,10 @@ same name in both languages. With method calls and blocks
 Ruby code often works as it is:
 
 ```rythme
-words = ["pear", "fig", "banana", "fig"]
-print(words.uniq.size, words.select { |w| w.size > 3 }, words.reject { |w| w.include?("a") })
-print(words.first(2), words.last(1), words.count, words.sum { |w| w.length })
-print(words.each_slice(3), "  Rythme ".strip.downcase, 42.to_s + "!", "7".to_i + 1)
+fruits = ["pear", "fig", "banana", "fig"]
+print(fruits.uniq.size, fruits.select { |w| w.size > 3 }, fruits.reject { |w| w.include?("a") })
+print(fruits.first(2), fruits.last(1), fruits.count, fruits.sum { |w| w.length })
+print(fruits.each_slice(3), "  Rythme ".strip.downcase, 42.to_s + "!", "7".to_i + 1)
 print([1, 2, 3].reduce(0) do |acc, x| acc + x end, [3, 1, 2].sort_by { |x| -x })
 ```
 
@@ -3087,6 +3131,48 @@ error[E023]: `add_days` needs a valid date: the day must go from 1 to 28 in Febr
   |
   = help: a date is a record like `{year: 2024, month: 2, day: 29}`, with `hour`, `minute`, `second` and `offset` (minutes ahead of UTC) if needed
   = more about this error: `rythme explain E023`
+```
+
+Searching and cutting with regexes, and numbers written for people:
+
+```rythme
+journal = "2024-02-29 ERROR disk full\n2024-03-01 INFO ok\n2024-03-02 ERROR fan"
+errors = lines(journal) |> filter(fn(line) = matches(line, ".* ERROR .*"))
+print(errors |> map(fn(line) = unwrap(find_first(line, "[0-9-]+"))))
+print(find_all("3 cats, 12 dogs and 1 fish", "\\d+"), split_by("a, b;c", "[,;] *"))
+print(captures("v2.14", "v(\\d+)\\.(\\d+)"), named_captures("2024-02", "(?<year>\\d+)-(?<month>\\d+)"))
+print(replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1"), replace_all("hello world", "\\b\\w", upper))
+print(matches("AB-12", "[A-Z]\{2\}-[0-9]+"), matches("ab-12", "(?i)[A-Z]\{2\}-[0-9]+"), find_all("x<b>y</b>", "<.+?>"))
+print(format_number(1234567.891, 2), format_number(1234567.891, 2, "fr"), format_number(-42000), pad_left(format_number(3.5, 2), 8))
+print(words("Hello, world! It's well-known."), trim_start("  hi  "), trim_end("  hi  "), equals_ignore_case("Été", "ÉTÉ"))
+```
+
+```text
+["2024-02-29", "2024-03-02"]
+["3", "12", "1"] ["a", "b", "c"]
+Some(["v2.14", "2", "14"]) Some({year: "2024", month: "02"})
+2024-02-29 Hello World
+true true ["<b>", "</b>"]
+1,234,567.89 1 234 567,89 -42,000     3.50
+["Hello", "world", "It's", "well-known"] hi     hi true
+```
+
+A mistake in a regex written in the code is shown before running:
+
+```rythme
+code = "AB-12"
+print(matches(code, "[A-Z]+-([0-9]+"))
+```
+
+```text
+error[E026]: invalid regex: this `(` is never closed
+ --> 67-regex.ry:2:29
+  |
+2 | print(matches(code, "[A-Z]+-([0-9]+"))
+  |                             ^ opened here
+  |
+  = help: add a `)` where the group ends; for the sign `(` itself, write `[(]`
+  = more about this error: `rythme explain E026`
 ```
 
 When there is nothing more to read (the keyboard input was closed with
