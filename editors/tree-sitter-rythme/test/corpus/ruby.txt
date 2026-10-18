@@ -304,3 +304,101 @@ x = 1
           (identifier)
           (command_arguments
             (identifier)))))))
+
+================================================================================
+Calls without parentheses in results
+================================================================================
+
+if ok then puts "yes" else puts "no"
+unless ok then puts x else print x, y
+match name
+  "Dr " + n -> puts n
+  _ -> puts "?"
+end
+f = fn(x) = puts x
+fn greet(n) = puts "Hi"
+test "sum" = assert_eq 1 + 1, 2
+xs.each { |x| puts x }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (if_expression
+    (identifier)
+    (command_call
+      (identifier)
+      (command_arguments
+        (string
+          (string_content))))
+    (command_call
+      (identifier)
+      (command_arguments
+        (string
+          (string_content)))))
+  (unless_expression
+    (identifier)
+    (command_call
+      (identifier)
+      (command_arguments
+        (identifier)))
+    (command_call
+      (identifier)
+      (command_arguments
+        (identifier)
+        (identifier))))
+  (match_expression
+    (identifier)
+    (match_arm
+      (prefix_pattern
+        (string
+          (string_content))
+        (identifier))
+      (command_call
+        (identifier)
+        (command_arguments
+          (identifier))))
+    (match_arm
+      (identifier)
+      (command_call
+        (identifier)
+        (command_arguments
+          (string
+            (string_content))))))
+  (definition
+    (identifier)
+    (lambda
+      (parameters
+        (identifier))
+      (command_call
+        (identifier)
+        (command_arguments
+          (identifier)))))
+  (function_definition
+    (identifier)
+    (parameters
+      (identifier))
+    (command_call
+      (identifier)
+      (command_arguments
+        (string
+          (string_content)))))
+  (test_definition
+    (string
+      (string_content))
+    (command_call
+      (identifier)
+      (command_arguments
+        (binary_expression
+          (integer)
+          (integer))
+        (integer))))
+  (method_call
+    (identifier)
+    (field_name)
+    (brace_block
+      (block_parameters
+        (identifier))
+      (command_call
+        (identifier)
+        (command_arguments
+          (identifier))))))

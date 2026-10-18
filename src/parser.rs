@@ -182,7 +182,8 @@ fn names_of_values(toks: &[Token], out: &mut HashSet<Sym>) {
 }
 
 /// A call without parentheses, as in Ruby: `puts "Hello"`, `print x, y`,
-/// `assert_eq total, 42`. It starts a statement: a name (`even?` too), then,
+/// `assert_eq total, 42`. It starts a statement or a result (see
+/// `Parser::result`): a name (`even?` too), then,
 /// on the same line, the start of a value: a number, a text, a symbol, a
 /// name, a constructor, `true`, `false`, `not`, `if`, `match` or `fn`. A `[` after a space
 /// (`puts [1, 2]`) or a `-` after a space and right before a number or a
@@ -457,8 +458,13 @@ impl Parser {
     // ----- errors -------------------------------------------------------
 
     fn unexpected(&mut self, expected: String) -> Box<Diagnostic> {
+        let comma = self.after_command();
         let tok = self.peek_token();
-        self.unexpected_token(&tok, expected)
+        let mut d = self.unexpected_token(&tok, expected);
+        if comma && d.helps.is_empty() {
+            d.helps.push(commas_help());
+        }
+        d
     }
 
     fn unexpected_token(&self, tok: &Token, expected: String) -> Box<Diagnostic> {
@@ -545,14 +551,8 @@ impl Parser {
             Some(Stmt::Expr(Expr { kind: ExprKind::Var(s), .. })) => Some(s.name().to_string()),
             _ => None,
         };
-        let command = matches!(stmt, Some(Stmt::Expr(e)) if self.commands.contains(&e.span));
         match (&callee, &tok.tok) {
-            (None, t) if command && starts_expression(t) => {
-                d = d.help(t!(
-                    "the arguments of a call without parentheses are separated by commas: `print a, b`",
-                    "les arguments d'un appel sans parenthèses sont séparés par des virgules : `print a, b`"
-                ));
-            }
+            (None, _) if self.after_command() => d = d.help(commas_help()),
             (Some(name), t) if starts_expression(t) => {
                 d = d.help(t!(
                     "to call a function, use parentheses: `{name}(...)`",
@@ -672,6 +672,26 @@ impl Parser {
             p.commands.insert(e.span);
             Ok(e)
         })
+    }
+
+    /// Did a call without parentheses just end, before the start of a value
+    /// (a forgotten comma: `print a b`)?
+    fn after_command(&self) -> bool {
+        starts_expression(self.raw()) && self.commands.iter().any(|s| s.end == self.last.end)
+    }
+
+    /// A result: a branch of `if` or `unless`, the body of a case of `match`,
+    /// or what follows the `=` of a function or a test (`fn greet(n) = puts
+    /// n`, `fn(x) = puts x`). As at the start of a statement, a call without
+    /// parentheses may be written there (see [`command_at`]): `if ok then
+    /// puts "yes" else puts "no"`. Its arguments end where an expression
+    /// would: at `else`, `end`, `}`, `)`, a new line...
+    fn result(&mut self) -> Fallible<Expr> {
+        self.skip_soft();
+        if let Some(first) = command_at(&self.toks, self.pos, &self.preds, &self.values) {
+            return self.command(first);
+        }
+        self.expr()
     }
 
     /// `a, b, c`: the arguments of a call without parentheses, up to the end
@@ -919,7 +939,7 @@ impl Parser {
             Tok::Eq => {
                 self.advance();
                 self.skip_newlines();
-                self.expr()?
+                self.result()?
             }
             Tok::Newline => {
                 let stmts = self.block(fn_tok.span, "fn")?;
@@ -1042,7 +1062,7 @@ impl Parser {
             Tok::Eq => {
                 self.advance();
                 self.skip_newlines();
-                self.expr()?
+                self.result()?
             }
             Tok::Newline => {
                 let stmts = self.block(kw.span, "test")?;
@@ -1822,11 +1842,12 @@ impl Parser {
             return Err(d);
         }
         self.skip_newlines();
-        let then_branch = self.expr()?;
+        let then_branch = self.result()?;
         if matches!(self.past_newlines(), Tok::Else) {
             self.skip_newlines();
         }
         if !self.eat(&Tok::Else) {
+            let comma = self.after_command();
             let next = self.past_newlines().clone();
             let at = {
                 let mut i = self.pos;
@@ -1857,7 +1878,9 @@ impl Parser {
                     "en Rythme, `if` donne toujours une valeur, il lui faut donc les deux cas :\n  if age >= 18 then \"majeur\" else \"mineur\""
                 )
             });
-            if !matches!(next, Tok::Eof | Tok::End | Tok::RParen) {
+            if comma {
+                d = d.help(commas_help());
+            } else if !matches!(next, Tok::Eof | Tok::End | Tok::RParen) {
                 d = d.help(t!(
                     "a branch holds a single expression; for several lines, use `do ... end`",
                     "une branche contient une seule expression ; pour plusieurs lignes, utilisez `do ... end`"
@@ -1866,7 +1889,7 @@ impl Parser {
             return Err(d.boxed());
         }
         self.skip_newlines();
-        let else_branch = self.expr()?;
+        let else_branch = self.result()?;
         let span = kw.span.to(else_branch.span);
         let (yes, no) = if unless { (else_branch, then_branch) } else { (then_branch, else_branch) };
         Ok(Expr::new(ExprKind::If(Box::new(cond), Box::new(yes), Box::new(no)), span))
@@ -1915,14 +1938,17 @@ impl Parser {
                     return Err(d);
                 }
                 p.skip_newlines();
-                let body = p.expr()?;
+                let body = p.result()?;
                 arms.push(Arm { pat, guard, body });
                 match p.raw() {
                     Tok::Newline | Tok::End => {}
                     Tok::Eof => return Err(missing_end(p.toks[p.pos].span, kw.span, "match")),
                     _ => {
+                        let comma = p.after_command();
                         let mut d = p.unexpected(t!("a new line", "une nouvelle ligne"));
-                        d.helps.push(t!("put each case on its own line", "mettez chaque cas sur sa propre ligne"));
+                        if !comma {
+                            d.helps.push(t!("put each case on its own line", "mettez chaque cas sur sa propre ligne"));
+                        }
                         return Err(d);
                     }
                 }
@@ -2281,6 +2307,13 @@ fn range_bound(p: &Pattern) -> Fallible<Num> {
         .help(range_help())
         .boxed()),
     }
+}
+
+fn commas_help() -> String {
+    t!(
+        "the arguments of a call without parentheses are separated by commas: `print a, b`",
+        "les arguments d'un appel sans parenthèses sont séparés par des virgules : `print a, b`"
+    )
 }
 
 fn range_help() -> String {

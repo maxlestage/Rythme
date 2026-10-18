@@ -659,6 +659,10 @@
           {
             "type": "block",
             "named": true
+          },
+          {
+            "type": "command_call",
+            "named": true
           }
         ]
       },
@@ -724,6 +728,10 @@
           {
             "type": "_expression",
             "named": true
+          },
+          {
+            "type": "command_call",
+            "named": true
           }
         ]
       },
@@ -743,6 +751,10 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "command_call",
             "named": true
           }
         ]
@@ -804,6 +816,10 @@
           },
           {
             "type": "block",
+            "named": true
+          },
+          {
+            "type": "command_call",
             "named": true
           }
         ]
@@ -868,6 +884,10 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "command_call",
             "named": true
           }
         ]
@@ -1436,6 +1456,10 @@
           {
             "type": "block",
             "named": true
+          },
+          {
+            "type": "command_call",
+            "named": true
           }
         ]
       },
@@ -1539,6 +1563,10 @@
           {
             "type": "_expression",
             "named": true
+          },
+          {
+            "type": "command_call",
+            "named": true
           }
         ]
       },
@@ -1558,6 +1586,10 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "command_call",
             "named": true
           }
         ]

@@ -290,3 +290,57 @@ fn calls_without_parentheses_are_checked_and_explained() {
     let r = common::rythme_lang("fr", &["help", "ruby"]);
     assert!(r.stdout.contains("Appels sans parenthèses"), "{}", r.stdout);
 }
+
+#[test]
+fn calls_without_parentheses_in_results() {
+    // The branches of `if` and `unless`: the arguments end at `else`.
+    ok("if 1 < 2 then puts \"yes\" else puts \"no\"", "yes");
+    ok("unless 1 < 2 then puts \"a\", 1 else print \"b\", 2", "b 2");
+    ok("x = 3\nif x > 2\nthen puts x, x * 2\nelse puts 0", "3 6");
+    ok("fn f(n) = if n > 0 then puts \"pos\" else if n < 0 then puts \"neg\" else puts \"zero\"\nf(1)\nf(-1)\nf(0)", "pos\nneg\nzero");
+    // The cases of `match`: the arguments end at the new line.
+    ok(
+        "fn title(name) = match name\n  \"Dr \" + rest -> puts \"doctor\", rest\n  _ -> puts name\nend\ntitle \"Dr Who\"\ntitle \"Ada\"",
+        "doctor Who\nAda",
+    );
+    // After the `=` of a function, a lambda or a test, and in one-line blocks.
+    ok("fn greet(n) = puts \"Hi #{n}\"\ngreet \"Ada\"", "Hi Ada");
+    ok("show = fn(x) = puts \"x:\", x\nshow(1)\n[2].each(fn(v) = puts v)", "x: 1\n2");
+    ok("[1, 2].each { |x| puts x }\n[3].each do |x| puts x * 2 end", "1\n2\n6");
+    // A `do` block after the arguments goes to the call of the branch.
+    ok("fn f(xs) = if xs == [] then puts \"empty\" else each xs do |x| puts x end\nf([1, 2])\nf([])", "1\n2\nempty");
+    // Inside brackets: `)` and `}` end the arguments, a comma does not.
+    ok("print(if true then puts 1 else 0)", "1\n()");
+    ok("print(if true then puts 1, 2 else 0)", "1 2\n()");
+    ok("r = {a: if true then text 1 else \"\"}\nprint(r.a)", "1");
+}
+
+#[test]
+fn values_in_results_keep_their_meaning() {
+    // `-` and `[` after a value: a subtraction and an index, as before.
+    ok("x = 10\nxs = [7]\nprint(if x > 5 then x -1 else xs [0])", "9");
+    ok("fn f(n) = n -1\nprint f(5)", "4");
+    ok("fn f(xs) = match xs\n  [_, ..] -> xs [0]\n  _ -> 0\nend\nprint f([4])", "4");
+    ok("print([5].map { |v| v -1 }, [[6]].map(fn(v) = v [0]))", "[4] [6]");
+    let r = fails("double = fn(v) = v * 2\nf = fn(v) = double -3", "E005");
+    assert!(r.stderr.contains("to call `double`, write `double(-x)`"), "{}", r.stderr);
+    // A name that is not a value: a call, as at the start of a statement.
+    ok("fn neg(v) = -v\nfn f(b) = if b then neg -5 else neg [1].sum\nprint f(true), f(false)", "5 -1");
+    // Elsewhere in an expression, the parentheses stay.
+    fails("fn f(x) = 1 + len \"ab\"", "E001");
+    fails("x = if true then 1 + len \"ab\" else 0", "E019");
+    fails("x = len \"abc\"", "E001");
+    // A forgotten comma is explained in a result too.
+    for code in ["if true then puts 1 2 else 0", "match 1\n  _ -> puts 1 2\nend", "fn f() = puts 1 2", "print(fn(x) = puts x x)"] {
+        let r = fails(code, if code.starts_with("if") { "E019" } else { "E001" });
+        assert!(r.stderr.contains("separated by commas: `print a, b`"), "{code}\n{}", r.stderr);
+    }
+    // The formatter keeps the choice of the author.
+    let fmt = |code: &str| rythme::format::format(code).unwrap_or_else(|d| panic!("{code}: {}", d[0].render(false)));
+    let code = "fn check(ok) = if ok then puts \"yes\" else puts(\"no\")\nf = fn(x) = puts x, 1\n";
+    assert_eq!(fmt(code), code);
+    assert_eq!(fmt("fn f(x) = if  x then puts\"a\"  else x -1\n"), "fn f(x) = if x then puts \"a\" else x - 1\n");
+    assert_eq!(fmt("match x\n  1 ->   puts 1 ,2\n  _ -> 0\nend\n"), "match x\n  1 -> puts 1, 2\n  _ -> 0\nend\n");
+    let r = rythme(&["help", "ruby"]);
+    assert!(r.stdout.contains("if ok then puts \"yes\" else puts \"no\""), "{}", r.stdout);
+}
