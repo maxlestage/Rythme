@@ -772,7 +772,8 @@ not decide the result (`false and ...` is `false` without evaluating `...`).
 ### 3.4 Ranges
 
 `a..b` builds the list `[a, a + 1, ..., b]`, see [2.6](#26-list). Both sides
-are arithmetic expressions: `1..n + 1` is `1..(n + 1)`.
+are arithmetic expressions: `1..n + 1` is `1..(n + 1)`. In a pattern, `1..9`
+is not a list but any number from 1 to 9 (see [3.10](#310-match-and-patterns)).
 
 ### 3.5 Calls
 
@@ -963,15 +964,18 @@ The cases are tried **in order**. The first case whose pattern matches the
 value, and whose guard (if any) is `true`, is chosen; the names bound by the
 pattern are visible in its guard and its result. If no case matches, the
 program stops with error E006. Before running, the checker warns about
-forgotten cases it can prove (W002) and about cases placed after a case that
-accepts everything (W004).
+forgotten cases it can prove (W002), about cases placed after a case that
+accepts everything or the same values, and empty ranges (W004), and about
+ranges that overlap (W010).
 
 | Pattern | Matches |
 |---------|---------|
 | `_` | anything; binds nothing |
 | `name` | anything; binds it to `name` |
 | `42`, `-1`, `2.5`, `-0.5` | a number equal to this one (an Int pattern matches an equal Float, and the other way round: `0` matches `0.0`) |
+| `1..9`, `-5..-1`, `0.0..0.5` | a number from the first to the second, both included: an Int or a Float (`89.5` matches `0..100` but neither `0..89` nor `90..100`). The bounds are numbers written in the code |
 | `"text"` | exactly this text (no `{...}` in a pattern) |
+| `"Mr " + name`, `"#" + _` | a text that starts with this text; `name` is bound to the rest of the text (after `+` comes a name or `_`) |
 | `true`, `false` | this Bool |
 | `()` | the unit value |
 | `Leaf`, `None` | this constructor without fields |
@@ -1068,6 +1072,89 @@ error[E006]: no case of this `match` handles Int 3
       in `name` called at 27b-nomatch.ry:6:7
   = more about this error: `rythme explain E006`
 ```
+
+Ranges and the start of a text:
+
+```rythme
+fn grade(score) = match score
+  90..100 -> "A"
+  70..89 -> "B"
+  0..69 -> "C"
+  _ -> "not a score"
+end
+
+fn coin(0.0..0.5) = "heads"
+fn coin(_) = "tails"
+
+fn polite("Mr " + name) = "Dear Mister {name}"
+fn polite("Ms " + name) = "Dear Madam {name}"
+fn polite(name) = "Dear {name}"
+
+print([95, 70, 100.0, 89.5, -3] |> map(grade))
+print(coin(0.25), coin(0.75), coin(-2))
+print(polite("Mr Smith"), "/", polite("Ms Lee"), "/", polite("Ada"))
+```
+
+```text
+["A", "B", "A", "not a score", "not a score"]
+heads tails tails
+Dear Mister Smith / Dear Madam Lee / Dear Ada
+```
+
+A range never covers every number, so a `match` on numbers still needs a last
+case `_` (W002). The checker reports, before running, a range that shares
+numbers with a range before it (W010: these numbers always go to the first
+one), a case whose numbers are all handled by the cases before it, even by
+several of them together (W004), and an empty range like `99..65` (W004):
+
+```rythme
+fn age_group(age) = match age
+  0..18 -> "young"
+  18..64 -> "adult"
+  20..30 -> "twenties"
+  99..65 -> "senior"
+  _ -> "older"
+end
+print(age_group(18))
+```
+
+```text
+warning[W010]: these ranges overlap
+ --> 54-ranges.ry:3:3
+  |
+3 |   18..64 -> "adult"
+  |   ^^^^^^ 18 is also here
+  |
+2 |   0..18 -> "young"
+  |   ----- 18 goes here, the first that fits
+  |
+  = help: both ends of a range are included: make the ranges follow each other without overlapping, like `0..9` then `10..19`
+
+warning[W004]: this case can never be reached
+ --> 54-ranges.ry:4:3
+  |
+4 |   20..30 -> "twenties"
+  |   ^^^^^^
+  |
+3 |   18..64 -> "adult"
+  |   ------ this case already handles these values
+  |
+  = help: a value goes to the first case that fits: remove this case, or change it
+
+warning[W004]: this range never matches
+ --> 54-ranges.ry:5:3
+  |
+5 |   99..65 -> "senior"
+  |   ^^^^^^ no number goes from 99 up to 65
+  |
+  = help: a range goes from the smaller number to the larger one: `65..99`
+
+young
+```
+
+Only the start of a text can be matched: for its end, or for bounds that are
+names, use a guard (`s if ends_with(s, "!") -> ...`,
+`n if n >= low -> ...`).
 
 Patterns are also used in definitions (`[a, b] = list`, see
 [4.1](#41-names)) and in function parameters (see [4.5](#45-functions)).
@@ -1922,7 +2009,8 @@ The checker finds:
   bind names (E001);
 - unused local names (W001), forgotten cases (W002), built-in functions
   hidden by a top-level definition (W003), cases that can never be reached
-  (W004), unknown functions after a dot (W005).
+  and empty ranges (W004), unknown functions after a dot (W005), ranges
+  that overlap (W010).
 
 The checker also knows the kinds of values when they are certain: the values
 written in the code, and what operators, built-in functions and the
@@ -2114,12 +2202,13 @@ with examples; the code may be written in lowercase.
 | W001 | Unused name | a local name is defined but never used |
 | W002 | Forgotten case | a `match` or a one-parameter function does not handle every possible value |
 | W003 | Built-in function hidden | a top-level definition takes the name of a built-in function |
-| W004 | Case never reached | a case or definition comes after one that accepts everything or the same values, or can never match the value |
+| W004 | Case never reached | a case or definition comes after one that accepts everything or the same values (or after ranges that together hold all its numbers), can never match the value, or is an empty range (`9..1`) |
 | W005 | Unknown function after a dot | `value.name(...)` where no function and no record field has this name |
 | W006 | Comparison always false | `==` or `!=` between values of kinds that are never equal (`count == "3"`) |
 | W007 | Test that can never fail | a test that only computes or shows a value, and never compares it with what is expected |
 | W008 | Result lost | a line that only calls a function without effect, like `push(list, x)`: values never change |
 | W009 | Function shown | a function shown in a text or printed (`<fn name>`) instead of what it gives |
+| W010 | Ranges that overlap | a range pattern shares numbers with a range of a case or definition before it: they always go to the first one |
 
 ---
 

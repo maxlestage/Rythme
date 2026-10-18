@@ -541,6 +541,17 @@ pub fn cmp_int_float(i: i64, f: f64) -> Option<Ordering> {
     }
 }
 
+/// Is `v` a number from `lo` to `hi`, both included? For the pattern `lo..hi`.
+pub fn in_range(lo: crate::ast::Num, hi: crate::ast::Num, v: &Value) -> bool {
+    use crate::ast::Num;
+    let n = match v {
+        Value::Int(i) => Num::Int(*i),
+        Value::Float(f) => Num::Float(*f),
+        _ => return false,
+    };
+    matches!(lo.compare(n), Some(Ordering::Less | Ordering::Equal)) && matches!(n.compare(hi), Some(Ordering::Less | Ordering::Equal))
+}
+
 /// Values that may hold other values.
 fn is_container(v: &Value) -> bool {
     matches!(v, Value::List(_) | Value::Record(_) | Value::Variant(_))

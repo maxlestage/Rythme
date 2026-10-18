@@ -342,7 +342,7 @@ impl Gen<'_> {
     }
 
     fn pattern(&mut self, depth: usize) -> String {
-        let leaf = ["_", "p", "0", "-1", "1.5", "\"a\"", "true", "()", "None", "A", "-9223372036854775808"];
+        let leaf = ["_", "p", "0", "-1", "1.5", "\"a\"", "true", "()", "None", "A", "-9223372036854775808", "1..9", "-2.5..0", "\"a\" + _"];
         if depth == 0 {
             return self.rng.pick(&leaf).into();
         }

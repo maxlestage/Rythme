@@ -501,6 +501,13 @@ impl Parser {
                 }
                 PatKind::Record(fields)
             }
+            ExprKind::Range(lo, hi) if expr_num(&lo).is_some() && expr_num(&hi).is_some() => {
+                PatKind::Range(expr_num(&lo).unwrap(), expr_num(&hi).unwrap())
+            }
+            ExprKind::Binary(BinOp::Add, l, r, _) if matches!(l.kind, ExprKind::Text(_)) && matches!(r.kind, ExprKind::Var(_)) => {
+                let ExprKind::Text(start) = l.kind else { unreachable!() };
+                PatKind::Prefix(start, Box::new(self.expr_to_pattern(*r, eq)?))
+            }
             ExprKind::Int(n) => PatKind::Int(n),
             ExprKind::Float(f) => PatKind::Float(f),
             ExprKind::Text(t) => PatKind::Text(t),
@@ -1487,18 +1494,69 @@ impl Parser {
     }
 
     fn pattern_inner(&mut self) -> Fallible<Pattern> {
-        let first = self.pattern_atom()?;
+        let first = self.pattern_part()?;
         if !matches!(self.peek(), Tok::Bar) {
             return Ok(first);
         }
         let mut span = first.span;
         let mut alts = vec![first];
         while self.eat(&Tok::Bar) {
-            let p = self.pattern_atom()?;
+            let p = self.pattern_part()?;
             span = span.to(p.span);
             alts.push(p);
         }
         Ok(Pattern { kind: PatKind::Or(alts), span })
+    }
+
+    /// A pattern, a range of numbers `1..9`, or a text that starts with a
+    /// text, `"Mr " + name`.
+    fn pattern_part(&mut self) -> Fallible<Pattern> {
+        let first = self.pattern_atom()?;
+        match self.peek() {
+            Tok::DotDot => {
+                self.advance();
+                let lo = range_bound(&first)?;
+                let second = match self.peek() {
+                    Tok::Int(_) | Tok::Float(_) | Tok::Minus => self.pattern_atom()?,
+                    _ => {
+                        let mut d = self.unexpected(t!("a number after `..`", "un nombre après `..`"));
+                        d.helps.push(range_help());
+                        return Err(d);
+                    }
+                };
+                let hi = range_bound(&second)?;
+                Ok(Pattern { kind: PatKind::Range(lo, hi), span: first.span.to(second.span) })
+            }
+            Tok::Plus => {
+                let plus = self.advance();
+                let PatKind::Text(start) = first.kind else {
+                    return Err(Diagnostic::error(
+                        "E001",
+                        t!("only a text can come before `+` in a pattern", "seul un texte peut venir avant `+` dans un motif"),
+                    )
+                    .at(first.span.to(plus.span))
+                    .help(prefix_help())
+                    .help(t!(
+                        "to look at the end of a text, use a guard: `s if ends_with(s, \"!\") -> ...`",
+                        "pour regarder la fin d'un texte, utilisez une condition : `s if ends_with(s, \"!\") -> ...`"
+                    ))
+                    .boxed());
+                };
+                let rest = self.pattern_atom()?;
+                if !matches!(rest.kind, PatKind::Bind(_) | PatKind::Wildcard) {
+                    return Err(Diagnostic::error(
+                        "E001",
+                        t!("after `+`, a pattern takes a name or `_`", "après `+`, un motif prend un nom ou `_`"),
+                    )
+                    .at(rest.span)
+                    .help(prefix_help())
+                    .boxed());
+                }
+                let span = first.span.to(rest.span);
+                Ok(Pattern { kind: PatKind::Prefix(start, Box::new(rest)), span })
+            }
+            _ => Ok(first),
+        }
     }
 
     fn pattern_atom(&mut self) -> Fallible<Pattern> {
@@ -1684,6 +1742,45 @@ fn field_key(tok: &Tok) -> Option<Rc<str>> {
         }
         other => lexer::keyword_text(other).map(Rc::from),
     }
+}
+
+/// A number written in the code, `5` or `-2.5` (the parser folds the sign), as the bound of a range.
+fn expr_num(e: &Expr) -> Option<Num> {
+    match &e.kind {
+        ExprKind::Int(n) => Some(Num::Int(*n)),
+        ExprKind::Float(f) => Some(Num::Float(*f)),
+        _ => None,
+    }
+}
+
+/// A bound of a range pattern: a number written in the code.
+fn range_bound(p: &Pattern) -> Fallible<Num> {
+    match p.kind {
+        PatKind::Int(n) => Ok(Num::Int(n)),
+        PatKind::Float(f) => Ok(Num::Float(f)),
+        _ => Err(Diagnostic::error(
+            "E001",
+            t!("a range in a pattern goes from a number to a number", "un intervalle dans un motif va d'un nombre à un nombre"),
+        )
+        .at(p.span)
+        .label(t!("not a number", "pas un nombre"))
+        .help(range_help())
+        .boxed()),
+    }
+}
+
+fn range_help() -> String {
+    t!(
+        "write the numbers themselves, like `1..9` or `0.0..0.5`; to compare with names, use a guard: `n if n >= low and n <= high -> ...`",
+        "écrivez les nombres eux-mêmes, comme `1..9` ou `0.0..0.5` ; pour comparer avec des noms, utilisez une condition : `n if n >= bas and n <= haut -> ...`"
+    )
+}
+
+fn prefix_help() -> String {
+    t!(
+        "a text that starts with a text is written `\"Mr \" + name`: `name` is the rest of the text",
+        "un texte qui commence par un texte s'écrit `\"M. \" + nom` : `nom` est le reste du texte"
+    )
 }
 
 fn binary(op: BinOp, l: Expr, r: Expr, op_span: Span) -> Expr {

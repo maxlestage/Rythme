@@ -146,7 +146,15 @@
         "named": true
       },
       {
+        "type": "prefix_pattern",
+        "named": true
+      },
+      {
         "type": "qualified_constructor",
+        "named": true
+      },
+      {
+        "type": "range_pattern",
         "named": true
       },
       {
@@ -911,6 +919,32 @@
     }
   },
   {
+    "type": "prefix_pattern",
+    "named": true,
+    "fields": {
+      "prefix": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "string",
+            "named": true
+          }
+        ]
+      },
+      "rest": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "qualified_constructor",
     "named": true,
     "fields": {
@@ -956,6 +990,48 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "range_pattern",
+    "named": true,
+    "fields": {
+      "end": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "float",
+            "named": true
+          },
+          {
+            "type": "integer",
+            "named": true
+          },
+          {
+            "type": "negative_number",
+            "named": true
+          }
+        ]
+      },
+      "start": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "float",
+            "named": true
+          },
+          {
+            "type": "integer",
+            "named": true
+          },
+          {
+            "type": "negative_number",
             "named": true
           }
         ]
