@@ -244,7 +244,7 @@ programmation qu'à un cours de programmation fonctionnelle.
 
 Rythme 0.1 est un interpréteur complet et testé, utilisable dès aujourd'hui
 pour apprendre et pour de petits programmes. Les limites, honnêtement, et la
-suite :
+suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
 
 - **Vitesse.** C'est un interpréteur qui parcourt l'arbre du programme : les
   noms locaux deviennent des cases numérotées avant l'exécution, et la
