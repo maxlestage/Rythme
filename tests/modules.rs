@@ -199,6 +199,22 @@ fn unknown_names_say_which_file_defines_them() {
         let e = refused(main, &["defined here, further down", "move `"]);
         assert!(!e.contains("is defined in `geometry.ry`"), "{e}");
     }
+    // `people.adult?` without `(`: the help does not suggest what was written.
+    let f = Folder::new(
+        "question",
+        &[
+            ("people.ry", "fn adult?(p) = p.age >= 18\n"),
+            ("main.ry", "use people\nfn adults(list) = list.select(people.adult?)\nprint(people.adult?({age: 3}), adults([{age: 30}]))\n"),
+        ],
+    );
+    let r = rythme(&[&f.path("main.ry")]);
+    assert!(
+        r.stderr.contains("`people.adult?` is a function of `")
+            && r.stderr.contains("people.ry`, but without `(` right after it, `?` is the operator")
+            && !r.stderr.contains("did you mean"),
+        "{}",
+        r.stderr
+    );
 }
 
 #[test]
