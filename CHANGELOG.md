@@ -12,6 +12,17 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Website
+
+- **Sharing links in the playground**: *Share* makes a link that opens the
+  program (and its test mode). The program travels in the fragment of the link
+  (`#code=`, compressed with deflate, URL-safe), never sent to any server, so
+  the links work on GitHub Pages and offline. The link is copied (or handed to
+  the share sheet of a phone) and shown in a field to copy by hand; programs too
+  long for a link are refused with a message. Opening a link shows the program
+  without replacing the saved draft until it is changed, with a notice and
+  *Back to my draft*. In the six languages of the site.
+
 ## [1.0.0] - 2026-10-18
 
 The first stable version: every item of the [roadmap](ROADMAP.md) is done.

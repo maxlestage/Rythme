@@ -173,4 +173,6 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
 - **More of the library**: CSV, HTTP requests, `random` with a seed that a
   program can repeat, with the same care for errors as values.
 - **Sharing in the playground**: a link to a program with its steps and its
-  tests, for classrooms.
+  tests, for classrooms. *Done:* the Share button of the playground, a link that
+  holds the program and its test mode (see [site/README.md](site/README.md#sharing-links)).
+  *Still open:* a link that opens on the steps of the calculation.

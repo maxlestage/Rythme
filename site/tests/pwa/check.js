@@ -47,6 +47,124 @@ async function runAndRead(page, button) {
   return page.$eval("#output", (e) => e.textContent);
 }
 
+// Share, then read the link it made (copied, or shown in its field).
+async function share(page) {
+  await page.evaluate(() => { document.getElementById("share-msg").textContent = ""; });
+  await page.click("#share");
+  await page.waitForFunction(() => document.getElementById("share-msg").textContent !== "");
+  return page.$eval("#share-link", (e) => e.value);
+}
+
+// A new document at `url` (not only a new fragment), once the playground has run.
+async function open(page, url) {
+  await page.goto("about:blank");
+  await page.goto(url);
+  await ran(page);
+}
+
+const draftOf = (page) => page.evaluate(() => localStorage.getItem("rythme-code"));
+const noteShown = (page) => page.isVisible("#shared-note");
+
+// Sharing links, offline: the program travels in the fragment of the link; opening it
+// shows and runs the same program, keeps the draft until the program is changed, and
+// gives the draft back on demand. Long programs are refused; damaged links are said so;
+// browsers without CompressionStream make plain links and read compressed ones.
+async function shareLinks(context, page, base) {
+  const SHARED = 'fn triple(x) = x * 3\nprint(map([1, 2, 3], triple))\nprint("été, 中文")\n';
+  const DRAFT = 'print("my own draft")\n';
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: new URL(base).origin });
+  await page.goto(`${base}/fr/playground/`);
+  await ran(page);
+  check(await page.isVisible("#share") && (await page.getAttribute("#share", "aria-expanded")) === "false", "share: the Share button is shown");
+  await setCode(page, SHARED);
+  const link = await share(page);
+  const shown = await page.evaluate(async () => ({
+    msg: document.getElementById("share-msg").textContent,
+    copied: await navigator.clipboard.readText().catch(() => null),
+    expanded: document.getElementById("share").getAttribute("aria-expanded"),
+    ui: JSON.parse(document.querySelector(".playground").dataset.ui).shareCopied,
+  }));
+  check(link.startsWith(`${base}/fr/playground/#code=1:`) && /^[\w:/.#=-]+$/.test(link), "share: the link holds the program, compressed and URL-safe", link);
+  check(shown.copied === link && shown.msg === shown.ui && shown.expanded === "true", "share: the link is copied, and said so", shown);
+  await page.keyboard.press("Escape");
+  check(!(await page.isVisible("#share-box")) && (await page.evaluate(() => document.activeElement.id)) === "share", "share: Escape closes the box and gives the focus back");
+  await setCode(page, DRAFT);
+  check((await draftOf(page)) === DRAFT, "share: a draft is saved");
+
+  // The link, in a new page (offline, from the service worker).
+  const other = await context.newPage();
+  await open(other, link);
+  const opened = await other.evaluate(() => ({ code: document.getElementById("source").value, out: document.getElementById("output").textContent }));
+  check(opened.code === SHARED && opened.out.includes("[3, 6, 9]") && opened.out.includes("été, 中文"), "share: the link opens the same program, which runs", opened);
+  check((await noteShown(other)) && (await draftOf(other)) === DRAFT, "share: the draft is kept, and a notice says so");
+  await other.reload();
+  await ran(other);
+  check((await other.$eval("#source", (e) => e.value)) === SHARED && (await draftOf(other)) === DRAFT, "share: after a reload, still the program of the link and the draft kept");
+  await other.click("#shared-back");
+  await ran(other);
+  check((await other.$eval("#source", (e) => e.value)) === DRAFT && !(await noteShown(other)) && !other.url().includes("#"), "share: Back to my draft", other.url());
+  // A link pasted in the address bar of the open playground: only the fragment changes.
+  await other.evaluate((url) => { location.hash = new URL(url).hash; }, link);
+  await other.waitForFunction((code) => document.getElementById("source").value === code, SHARED);
+  await ran(other);
+  check(await noteShown(other), "share: a link pasted in the open playground opens its program");
+  await other.focus("#source");
+  await other.keyboard.type("# changed\n");
+  const edited = await draftOf(other);
+  check(edited.includes("triple") && edited.includes("# changed") && !(await noteShown(other)) && !other.url().includes("#"), "share: once changed, the program of the link becomes the draft");
+  await setCode(other, DRAFT);
+
+  // The test mode travels with the link.
+  await page.selectOption("#example", "testing");
+  await ran(page);
+  const testLink = await share(page);
+  await open(other, testLink);
+  check(testLink.endsWith("&mode=test") && /✓/.test(await other.textContent("#output")), "share: the test mode travels with the link", testLink);
+
+  // Too long for a link: refused, with a clear message, and no link.
+  let x = 2463534242;
+  const random = Array.from({ length: 14000 }, () => {
+    x ^= x << 13; x ^= x >>> 17; x ^= x << 5;
+    return "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[(x >>> 0) % 62];
+  }).join("");
+  await setCode(page, `# ${random}\nprint(1)\n`);
+  await share(page);
+  const refused = await page.evaluate(() => ({
+    msg: document.getElementById("share-msg").textContent,
+    bad: document.getElementById("share-msg").classList.contains("bad"),
+    row: document.getElementById("share-row").hidden,
+  }));
+  check(refused.bad && refused.row && /8\s?000/.test(refused.msg), "share: a program too long for a link is refused, said so", refused);
+
+  // A damaged link: said so, the draft is shown.
+  await open(other, `${base}/fr/playground/#code=1:AAAA`);
+  const broken = await other.evaluate(() => ({
+    note: document.getElementById("shared-text").textContent,
+    back: document.getElementById("shared-back").hidden,
+    draft: document.getElementById("source").value === localStorage.getItem("rythme-code"),
+    ui: JSON.parse(document.querySelector(".playground").dataset.ui).shareBroken,
+  }));
+  check(broken.note === broken.ui && broken.back && broken.draft, "share: a damaged link is said so, and the draft is shown", broken);
+  await other.close();
+
+  // Without CompressionStream and DecompressionStream: the hand-written inflate reads
+  // compressed links (stored, fixed and dynamic blocks, made here by zlib), and Share
+  // makes plain links.
+  const old = await context.newPage();
+  await old.addInitScript(() => { delete window.CompressionStream; delete window.DecompressionStream; });
+  const zlib = require("zlib");
+  const long = `${SHARED}${"print(triple(4))\n".repeat(40)}`;
+  for (const [what, code, level] of [["the link of Share", SHARED, null], ["stored", SHARED, 0], ["fixed", SHARED, 1], ["dynamic", long, 9]]) {
+    const url = level === null ? link : `${base}/fr/playground/#code=1:${zlib.deflateRawSync(Buffer.from(code), { level }).toString("base64url")}`;
+    await open(old, url);
+    check((await old.$eval("#source", (e) => e.value)) === code && (await old.textContent("#output")).includes("[3, 6, 9]"), `share: without DecompressionStream, a compressed link opens (${what})`);
+  }
+  const plain = await share(old);
+  check(plain.includes("#code=0:") && Buffer.from(plain.split("#code=0:")[1], "base64url").toString() === long, "share: without CompressionStream, Share makes a plain link", plain);
+  await old.close();
+  await page.evaluate(() => { localStorage.removeItem("rythme-code"); });
+}
+
 async function verify(mode) {
   console.log(`\n== ${mode === "server" ? "the server, at the root" : "the static export, behind /Rythme"}`);
   const dir = workspace();
@@ -72,6 +190,13 @@ async function verify(mode) {
   await ios.click("#ios-hint-close");
   await ios.reload();
   check(!(await ios.isVisible("#ios-hint")), "iOS: once closed, the hint stays closed");
+  // On a phone, Share hands the link to the share sheet (Web Share API, made by hand:
+  // headless Chromium has none).
+  await ios.addInitScript(() => { navigator.share = async (data) => { window.sharedData = data; }; });
+  await ios.goto(`${base}/fr/playground/`);
+  const sheet = await share(ios);
+  const handed = await ios.evaluate(() => ({ data: window.sharedData, msg: document.getElementById("share-msg").textContent, ui: JSON.parse(document.querySelector(".playground").dataset.ui).shareShared }));
+  check(handed.data && handed.data.url === sheet && sheet.includes("#code=") && handed.msg === handed.ui, "iOS: Share opens the share sheet with the link", handed);
   await iphone.close();
 
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "fr-FR", acceptDownloads: true });
@@ -186,6 +311,7 @@ async function verify(mode) {
   await page.goto(`${base}/fr/playground/?title=x&text=${encodeURIComponent('print("partagé")')}`);
   await ran(page);
   check((await page.textContent("#output")).includes("partagé") && !page.url().includes("?"), "offline playground: a shared text opens in the playground");
+  await shareLinks(context, page, base);
   // The playground of every language: its texts, and the interpreter's messages in the
   // language of the page.
   for (const lang of LANGS) {

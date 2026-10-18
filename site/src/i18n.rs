@@ -214,6 +214,15 @@ pub struct Texts {
     pub pg_save: &'static str,
     pub pg_save_title: &'static str,
     pub pg_offline: &'static str,
+    /// The Share button, its tooltip, the label of the field that holds the link, the
+    /// buttons of that box; the notice of a program opened from a link, its button.
+    pub pg_share: &'static str,
+    pub pg_share_title: &'static str,
+    pub pg_share_link: &'static str,
+    pub pg_share_copy: &'static str,
+    pub pg_share_close: &'static str,
+    pub pg_shared_note: &'static str,
+    pub pg_shared_back: &'static str,
     // Playground: what `playground.js` writes while it runs (`{ms}` and `{n}` are
     // replaced)
     pub pg_loading: &'static str,
@@ -231,6 +240,13 @@ pub struct Texts {
     pub pg_formatted: &'static str,
     pub pg_already_formatted: &'static str,
     pub pg_not_formatted: &'static str,
+    /// Sharing: the link copied, shared, to copy by hand, too long (`{n}`, `{max}`),
+    /// and a link that cannot be read.
+    pub pg_share_copied: &'static str,
+    pub pg_share_shared: &'static str,
+    pub pg_share_select: &'static str,
+    pub pg_share_too_long: &'static str,
+    pub pg_share_broken: &'static str,
     // Examples
     pub ex_title: &'static str,
     pub ex_lead: &'static str,
