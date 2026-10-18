@@ -29,6 +29,24 @@ pub const TOPICS: &[(&str, &[&str])] = &[
         "system",
         &["systeme", "système", "folders", "folder", "dossiers", "dossier", "paths", "path", "chemins", "chemin", "stdin", "exit-codes"],
     ),
+    (
+        "projects",
+        &[
+            "project",
+            "projet",
+            "projets",
+            "packages",
+            "package",
+            "paquets",
+            "paquet",
+            "new",
+            "install",
+            "dependencies",
+            "dépendances",
+            "dependances",
+            "rythme.toml",
+        ],
+    ),
     ("dates", &["date", "heure", "heures", "temps", "calendar", "calendrier", "datetime"]),
     ("repl", &["interactive", "interactif"]),
     ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme"]),
@@ -56,6 +74,8 @@ Commandes
   rythme fmt fichier.ry     mettre le code en forme (--check : vérifier seulement)
   rythme doc fichier.ry     écrire sa documentation, en Markdown (--html : une page web)
   rythme exercise           exercices corrigés automatiquement (list, start, check)
+  rythme new NOM            créer un projet (rythme.toml, src/, tests/)
+  rythme install            télécharger les dépendances du projet
   rythme learn              visite guidée du langage, pas à pas
   rythme help SUJET         aide sur un sujet ou une fonction
   rythme explain E003       expliquer un code d'erreur
@@ -78,6 +98,7 @@ Sujets (rythme help SUJET)
   exercises   des exercices pour apprendre, avec leurs tests
   modules     utiliser plusieurs fichiers
   system      fichiers, dossiers, chemins, options, entrée, codes de sortie
+  projects    projets et paquets : rythme new, rythme.toml, rythme install
   dates       dates et heures : now(), today(), calendrier, ISO 8601
   repl        le mode interactif
   fmt         la mise en forme officielle du code (rythme fmt)
@@ -100,6 +121,8 @@ Commands
   rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
   rythme exercise           exercises checked automatically (list, start, check)
+  rythme new NAME           create a project (rythme.toml, src/, tests/)
+  rythme install            download the dependencies of the project
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
@@ -122,6 +145,7 @@ Topics (rythme help TOPIC)
   exercises   exercises to learn, with their tests
   modules     using several files
   system      files, folders, paths, options, input, exit codes
+  projects    projects and packages: rythme new, rythme.toml, rythme install
   dates       dates and times: now(), today(), calendar, ISO 8601
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
@@ -457,6 +481,7 @@ fn topic_text(name: &str) -> &'static str {
         "exercises" => pick(EXERCISES_EN, EXERCISES_FR),
         "modules" => pick(MODULES_EN, MODULES_FR),
         "system" => pick(SYSTEM_EN, SYSTEM_FR),
+        "projects" => pick(PROJECTS_EN, PROJECTS_FR),
         "dates" => pick(DATES_EN, DATES_FR),
         "repl" => pick(REPL_EN, REPL_FR),
         "fmt" => pick(FMT_EN, FMT_FR),
@@ -1299,6 +1324,7 @@ Run them:
   rythme test . --filter double     only the tests whose name contains "double"
   rythme test . --watch             again each time a file changes (Ctrl+C stops)
   rythme test my_file.ry -- a b     with `args()` giving ["a", "b"]
+  rythme test                       in a project: its files with tests
 
 While testing, top-level expressions such as print(...) are not run: the
 definitions are loaded, then each test runs. A test passes if it ends without
@@ -1334,6 +1360,7 @@ Lancez-les :
   rythme test . --filter double     seulement les tests dont le nom contient « double »
   rythme test . --watch             à nouveau à chaque changement d'un fichier (Ctrl+C arrête)
   rythme test mon_fichier.ry -- a b avec `args()` qui donne ["a", "b"]
+  rythme test                       dans un projet : ses fichiers avec des tests
 
 Pendant les tests, les expressions du premier niveau comme print(...) ne sont
 pas exécutées : les définitions sont chargées, puis chaque test est lancé. Un
@@ -1432,6 +1459,70 @@ vous avez oublié d'utiliser.
 
 Ancienne forme : `use "geometrie.ry"` (avec des guillemets) donne ses
 définitions directement, comme `aire(2, 3)` ; préférez `use geometrie`."#;
+
+const PROJECTS_EN: &str = r#"PROJECTS AND PACKAGES
+
+  rythme new hello        # a folder hello/ with a new project:
+                          #   rythme.toml, src/main.ry, src/greeting.ry,
+                          #   tests/greeting_test.ry, README.md, .gitignore
+  cd hello
+  rythme run              # runs the program: `entry` of rythme.toml
+  rythme test             # runs the files with tests of src/ and tests/
+  rythme check            # checks every file; also `rythme fmt`, `rythme doc`
+
+rythme.toml describes the project:
+
+  name = "hello"
+  version = "0.1.0"
+  entry = "src/main.ry"
+
+  [dependencies]
+  mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
+  tools = { path = "../tools" }
+
+A dependency comes from git, at a `tag` or a `commit`, or from a folder.
+`rythme install` downloads them (with git) and writes rythme.lock, the exact
+commit of each one: keep it with the project, so that everyone gets the
+same code. Then:
+
+  use mathlib/vectors       # the file src/vectors.ry of mathlib
+  use mathlib               # its program, the `entry` of its rythme.toml
+  use hello/greeting        # a file of the project itself, from tests/
+
+A file next to the one that contains `use` comes first. Packages from git
+are kept in ~/.rythme/packages (or RYTHME_HOME/packages)."#;
+
+const PROJECTS_FR: &str = r#"PROJETS ET PAQUETS
+
+  rythme new bonjour      # un dossier bonjour/ avec un nouveau projet :
+                          #   rythme.toml, src/main.ry, src/salutation.ry,
+                          #   tests/salutation_test.ry, README.md, .gitignore
+  cd bonjour
+  rythme run              # lance le programme : `entry` de rythme.toml
+  rythme test             # lance les fichiers avec des tests de src/ et tests/
+  rythme check            # vérifie chaque fichier ; aussi `rythme fmt`, `rythme doc`
+
+rythme.toml décrit le projet :
+
+  name = "bonjour"
+  version = "0.1.0"
+  entry = "src/main.ry"
+
+  [dependencies]
+  mathlib = { git = "https://github.com/quelqu-un/mathlib", tag = "v1.0.0" }
+  outils = { path = "../outils" }
+
+Une dépendance vient de git, à un `tag` ou à un `commit`, ou d'un dossier.
+`rythme install` les télécharge (avec git) et écrit rythme.lock, le commit
+exact de chacune : gardez-le avec le projet, pour que tout le monde ait le
+même code. Ensuite :
+
+  use mathlib/vecteurs      # le fichier src/vecteurs.ry de mathlib
+  use mathlib               # son programme, l'`entry` de son rythme.toml
+  use bonjour/salutation    # un fichier du projet lui-même, depuis tests/
+
+Un fichier à côté de celui qui contient `use` passe en premier. Les paquets
+venant de git sont gardés dans ~/.rythme/packages (ou RYTHME_HOME/packages)."#;
 
 const EDITORS_EN: &str = r#"RYTHME IN YOUR EDITOR
 
@@ -2114,6 +2205,45 @@ des éditeurs).
 la saisie au clavier a été fermée (Ctrl-D), ou le texte envoyé au programme
 (`rythme prog.ry < reponses.txt`) n'a plus de lignes."#,
         ),
+        "E025" => (
+            r#"E025 — Project or package problem
+
+The `rythme.toml` of the project (or the `rythme.lock` written by
+`rythme install`) cannot be read, a dependency is not installed, or
+`rythme install` cannot download one. A `rythme.toml` looks like this:
+
+  name = "hello"                 # a Rythme name in lower case
+  version = "0.1.0"              # three numbers
+  entry = "src/main.ry"          # the program (this one by default)
+
+  [dependencies]
+  mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
+  tools = { path = "../tools" }
+
+Every value is a text, in quotes. A dependency from git needs a fixed
+version, a `tag` or a `commit`, and the program `git`
+(https://git-scm.com). After a change of `[dependencies]`, run
+`rythme install` in the folder of the project. More: `rythme help projects`."#,
+            r#"E025 — Problème de projet ou de paquet
+
+Le `rythme.toml` du projet (ou le `rythme.lock` écrit par `rythme install`)
+ne peut pas être lu, une dépendance n'est pas installée, ou
+`rythme install` ne peut pas en télécharger une. Un `rythme.toml`
+ressemble à ceci :
+
+  name = "bonjour"               # un nom Rythme en minuscules
+  version = "0.1.0"              # trois nombres
+  entry = "src/main.ry"          # le programme (celui-ci par défaut)
+
+  [dependencies]
+  mathlib = { git = "https://github.com/quelqu-un/mathlib", tag = "v1.0.0" }
+  outils = { path = "../outils" }
+
+Chaque valeur est un texte, entre guillemets. Une dépendance venant de git
+a besoin d'une version fixe, un `tag` ou un `commit`, et du programme `git`
+(https://git-scm.com). Après un changement de `[dependencies]`, lancez
+`rythme install` dans le dossier du projet. Plus : `rythme help projects`."#,
+        ),
         "E018" => (
             r#"E018 — Unexpected character
 
@@ -2438,5 +2568,5 @@ fn pick_owned(en: &str, fr: &str) -> String {
 
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
-    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008", "W009",
+    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "E025", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008", "W009",
 ];

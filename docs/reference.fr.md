@@ -2380,6 +2380,7 @@ minuscules.
 | E022 | Conversion impossible | `int(t)` ou `float(t)` sur un texte qui n'est pas un nombre |
 | E023 | Valeur invalide | une valeur de la bonne sorte mais hors de ce qui est accepté (un nombre négatif d'éléments, `min` d'une liste vide, `sqrt(-1)`, un intervalle, une liste ou un texte trop grand, un nombre entier de plus de 100000 chiffres, un code de sortie hors de 0–255...) |
 | E024 | Une valeur est perdue | une ligne calcule une valeur dont rien ne se sert |
+| E025 | Problème de projet ou de paquet | un `rythme.toml` ou un `rythme.lock` illisible, une dépendance non installée, ou `rythme install` qui ne peut pas en obtenir une (voir [7.7](#77-projets-et-paquets)) |
 | W001 | Nom inutilisé | un nom local est défini mais jamais utilisé |
 | W002 | Cas oublié | un `match` ou une fonction à un paramètre ne traite pas toutes les valeurs possibles |
 | W003 | Fonction intégrée masquée | une définition du premier niveau prend le nom d'une fonction intégrée |
@@ -2774,11 +2775,13 @@ rythme [--lang fr|en] [--no-color] [COMMANDE] [ARGUMENTS...]
 | Commande | Autres noms | Ce qu'elle fait |
 |----------|-------------|-----------------|
 | *(aucune)* | `repl` | le mode interactif (voir [7.2](#72-le-mode-interactif-repl)) |
-| `FICHIER [ARGS...]` | `run FICHIER [ARGS...]`, `lancer` | vérifie puis exécute le programme ; `ARGS` est donné à `args()` |
+| `FICHIER [ARGS...]` | `run FICHIER [ARGS...]`, `lancer` | vérifie puis exécute le programme ; `ARGS` est donné à `args()`. Sans fichier, dans un projet : son programme (voir [7.7](#77-projets-et-paquets)), et de même pour `test`, `check`, `fmt` et `doc` |
 | `check FICHIER...` | `verifier`, `vérifier` | vérifie chaque programme sans l'exécuter (voir [5.5](#55-la-vérification-avant-lexécution)) |
 | `test CHEMIN... [--filter TEXTE] [--seed N] [--watch] [-- ARGS...]` | `tester` | lance les tests de fichiers et de dossiers (voir [4.8](#48-tests)) |
 | `fmt [--check] FICHIER...` | `format`, `formater` | donne au code sa mise en forme officielle ; aussi un dossier, ou `-` pour l'entrée standard (voir [7.4](#74-la-mise-en-forme--rythme-fmt)) |
 | `doc [--html] [--out FICHIER] FICHIER...` | `documenter` | écrit la documentation de fichiers ou de dossiers, en Markdown ou sous forme de page web (voir [7.6](#76-la-documentation--rythme-doc)) |
+| `new NOM` | `nouveau` | crée le dossier d'un nouveau projet (voir [7.7](#77-projets-et-paquets)) |
+| `install` | `installer` | télécharge les dépendances du projet et écrit `rythme.lock` (voir [7.7](#77-projets-et-paquets)) |
 | `exercise [list \| start NOM \| check FICHIER]` | `exercises`, `exercice`, `exercices` | les exercices intégrés (voir plus bas) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | exécute le code donné en argument, et affiche la valeur de sa dernière expression sauf si c'est `()` ; `ARGS` est donné à `args()` |
 | `lsp` | | le serveur de langage, lancé par un éditeur (voir [7.5](#75-éditeurs-et-serveur-de-langage)) |
@@ -2817,11 +2820,11 @@ inconnu donne le code de sortie 2.
 
 **Sujets d'aide.** `rythme help SUJET` accepte `start`, `syntax`,
 `functions`, `lists`, `text`, `records`, `types`, `match`, `errors`,
-`functional`, `tests`, `exercises`, `modules`, `system`, `dates`, `repl`,
-`fmt`, `doc`, `editors` et `builtins`, ainsi que des noms français ou
+`functional`, `tests`, `exercises`, `modules`, `system`, `projects`, `dates`,
+`repl`, `fmt`, `doc`, `editors` et `builtins`, ainsi que des noms français ou
 alternatifs : `syntaxe`, `fonctions`, `listes`, `texte`, `enregistrements`,
 `motifs`, `erreurs`, `fonctionnel`, `boucles`, `exercices`, `fichiers`,
-`système`, `dossiers`, `chemins`, `interactif`,
+`système`, `dossiers`, `chemins`, `projets`, `paquets`, `interactif`,
 `formater`, `documentation`, `lsp`, `vscode`, `éditeurs`, `bibliothèque`...
 
 **Codes de sortie.**
@@ -2845,7 +2848,8 @@ alternatifs : `syntaxe`, `fonctions`, `listes`, `texte`, `enregistrements`,
   sont utilisées que quand la sortie d'erreur est un terminal (sous Windows,
   seulement dans les terminaux connus pour les accepter).
 - `HOME` (`USERPROFILE` sous Windows) : là où le mode interactif garde son
-  historique.
+  historique, et où `rythme install` garde les paquets (`~/.rythme/packages`).
+- `RYTHME_HOME` : un autre dossier pour les paquets (`RYTHME_HOME/packages`).
 
 **Sorties.** Ce que le programme affiche (`print`, l'invite de `input`, les
 résultats de `check`, de `test` et de `fmt`) va sur la sortie standard ; les
@@ -3233,6 +3237,152 @@ len([1, 2])                # 2
 
 `rythme doc --html . --out doc.html` écrit la même chose pour tous les
 fichiers du dossier, en une seule page, avec un sommaire.
+
+### 7.7 Projets et paquets
+
+Un **projet** est un dossier avec un fichier `rythme.toml`, son code dans
+`src/` et ses tests dans `tests/`. Un projet peut utiliser d'autres projets,
+ses **dépendances**, depuis git ou depuis un dossier : ce sont des
+**paquets**.
+
+**Créer un projet.** `rythme new NOM` crée le dossier `NOM` avec un petit
+programme qui marche déjà :
+
+```text
+$ rythme new bonjour
+Projet `bonjour` créé :
+  bonjour/rythme.toml
+  bonjour/src/main.ry
+  bonjour/src/salutation.ry
+  bonjour/tests/salutation_test.ry
+  bonjour/README.md
+  bonjour/.gitignore
+Ensuite : `cd bonjour`, puis `rythme run` pour le lancer et `rythme test` pour le tester (voir `rythme help projects`)
+$ cd bonjour
+$ rythme run
+Bonjour, le monde !
+$ rythme test
+Exécution de 1 test(s)
+  ✓ bonjour
+1 test(s) : 1 réussi(s), 0 échoué(s)
+```
+
+Le nom d'un projet est un nom Rythme en minuscules (lettres, chiffres et
+`_`, pas un mot-clé), car il sert dans `use` : `rythme new mon-app` est
+E025, avec l'aide `essayez rythme new mon_app` (code de sortie 2). Un
+dossier qui existe déjà et n'est pas vide n'est jamais touché (code de
+sortie 1). Les fichiers sont écrits dans la langue des messages
+(`src/greeting.ry` en anglais).
+
+**`rythme.toml`.** Chaque valeur est un texte entre guillemets ; `#`
+commence un commentaire.
+
+```toml
+name = "bonjour"          # obligatoire : le nom du paquet
+version = "0.1.0"         # obligatoire : trois nombres, majeure.mineure.correctif
+entry = "src/main.ry"     # le programme ; celui-ci quand il n'est pas donné
+
+[dependencies]
+mathlib = { git = "https://github.com/quelqu-un/mathlib", tag = "v1.0.0" }
+geometrie = { git = "https://github.com/quelqu-un/geometrie", commit = "4d868c2" }
+outils = { path = "../outils" }
+```
+
+Une dépendance venant de git donne son adresse et une version fixe : un
+`tag` ou un `commit` (au moins 4 chiffres hexadécimaux). Une dépendance
+venant d'un dossier donne son `path`, relatif au projet. Le nom avant `=`
+est le nom utilisé dans `use`. C'est une petite partie de TOML, lue par
+Rythme lui-même : des textes avec `"` (avec `\"`, `\\`, `\n`, `\t`) ou `'`,
+et des tables sur une ligne. Toute autre clé, section (`[package]` compris)
+ou sorte de valeur est E025, montrée à sa place dans `rythme.toml`, avec une
+suggestion quand une clé proche existe :
+
+```text
+erreur[E025]: clé inconnue `tga`
+ --> rythme.toml:6:32
+  |
+6 | outils = { path = "../outils", tga = "x" }
+  |                                ^^^
+  |
+  = note: les clés ici sont `git`, `tag`, `commit`, `path`
+  = aide: vouliez-vous dire `tag` ?
+  = en savoir plus : `rythme explain E025`
+```
+
+**`rythme install`.** Dans le dossier du projet (ou l'un de ses dossiers),
+`rythme install` télécharge chaque dépendance venant de git, puis les
+dépendances de chaque dépendance, et écrit `rythme.lock` :
+
+```text
+$ rythme install
+Installation des dépendances de `bonjour`
+  ✓ mathlib 1.0.0 : tag v1.0.0, commit 4d868c2 (téléchargé)
+  ✓ outils 0.2.0 : dossier ../outils
+2 paquet(s) prêt(s)
+```
+
+- Le téléchargement utilise le programme `git` (`git clone`, puis le commit
+  du tag ou du commit). Sans lui, `rythme install` s'arrête avec E025 et dit
+  où le trouver ; les dépendances venant d'un dossier n'en ont pas besoin.
+- Chaque paquet venant de git est gardé dans son propre dossier sous
+  `RYTHME_HOME/packages` (`~/.rythme/packages` par défaut), nommé d'après
+  son adresse et sa version, et partagé par tous les projets de
+  l'ordinateur. Un paquet déjà là n'est pas téléchargé à nouveau.
+- Chaque dépendance doit elle-même être un projet, avec son `rythme.toml`.
+- `rythme.lock` garde, pour chaque paquet venant de git, son adresse, son
+  tag (ou le commit demandé), et le **commit exact** installé. Gardez-le
+  avec le projet : `rythme install` sur un autre ordinateur installe alors
+  les mêmes commits, même si un tag a été déplacé. Quand `rythme.toml`
+  demande une autre version, `rythme install` la prend et met `rythme.lock`
+  à jour ; pour prendre le nouveau commit d'un tag déplacé, supprimez
+  `rythme.lock`.
+- Un tag ou un commit qui n'existe pas, une adresse que git ne peut pas
+  atteindre, un dossier qui n'existe pas : E025, avec ce que git a dit, la
+  ligne de `rythme.toml`, et le tag le plus proche quand il y en a un.
+
+**Utiliser un paquet.** `use NOM/FICHIER` est le fichier `src/FICHIER.ry`
+du paquet `NOM`, et s'utilise par la dernière partie du chemin, comme tout
+`use` (voir [4.9](#49-modules--use)) :
+
+```rythme
+# src/main.ry
+use mathlib/vecteurs      # le fichier src/vecteurs.ry de mathlib
+use mathlib               # le programme de mathlib : l'`entry` de son rythme.toml
+use bonjour/salutation    # un fichier du projet lui-même (`bonjour`), utile dans tests/
+print(vecteurs.ajouter({x: 1, y: 2}, {x: 3, y: 4}))
+```
+
+- Les paquets sont trouvés par le `rythme.toml` le plus proche au-dessus du
+  fichier qui contient le `use` : dans un paquet, ce sont ses propres
+  dépendances qui servent.
+- Un fichier à côté de celui qui contient le `use` passe en premier : `use
+  mathlib/vecteurs` est d'abord `mathlib/vecteurs.ry` dans le dossier du
+  fichier.
+- Les noms privés (`_nom`) d'un paquet restent privés, et ses fichiers sont
+  vérifiés comme les autres.
+- Un paquet qui n'est pas installé est E025, sur le `use`, avec l'aide de
+  lancer `rythme install` ; un fichier que le paquet n'a pas est E017, avec
+  le fichier le plus proche. Un `use` qui ne désigne rien dans un projet dit
+  quels paquets il peut atteindre.
+- Le serveur de langage connaît aussi les paquets : pas de faux problème sur
+  `use mathlib/vecteurs`, complétion des noms de paquets après `use `, et de
+  leurs fichiers après `use mathlib/`.
+
+**Les commandes sans fichier.** Dans le dossier d'un projet ou dans l'un de
+ses dossiers, les commandes prennent les fichiers du projet quand aucun
+fichier n'est donné :
+
+| Commande | Travaille sur |
+|----------|---------------|
+| `rythme run` | le programme, `entry` de `rythme.toml` |
+| `rythme test` | chaque fichier de `src/` et de `tests/` (et de leurs dossiers) qui a des tests, l'un après l'autre, chacun avec son nom, puis un bilan, comme `rythme test DOSSIER` (`--filter`, `--seed`, `--watch` et `--` marchent de même) ; le programme quand aucun n'en a |
+| `rythme check` | le programme, puis chaque fichier de `src/` et de `tests/` |
+| `rythme fmt` | les dossiers `src/` et `tests/` (`rythme fmt --check` aussi) |
+| `rythme doc` | le dossier `src/` (`--html`, `--out` marchent comme d'habitude) |
+
+Hors d'un projet, un fichier manquant reste une erreur d'utilisation (code
+de sortie 2). Un fichier donné par son nom n'a jamais besoin de
+`rythme.toml`, même dans un projet.
 
 ---
 

@@ -172,6 +172,8 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme help [sujet]`       | aide sur un sujet ou une fonction                   |
 | `rythme explain E003`       | expliquer un code d'erreur                          |
 | `rythme learn`              | visite guidée du langage                            |
+| `rythme new bonjour`        | un nouveau projet : `rythme.toml`, `src/`, `tests/` ; puis `rythme run`, `rythme test`... sans fichier |
+| `rythme install`            | télécharger les dépendances de `rythme.toml` (git ou dossiers), et écrire `rythme.lock` |
 | `rythme exercise`           | [30 exercices gradués](docs/exercises/README.fr.md) : `list`, `start 1`, `check FICHIER` |
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
 | `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
