@@ -590,6 +590,10 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                     Ty::Int
                 }
             },
+            "random_seed" => {
+                need(a, 0, Expected::Int)?;
+                Ty::Unit
+            }
             "abs" => {
                 need(a, 0, Expected::Number)?;
                 numeric(&arg(0))
@@ -716,6 +720,18 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
             }
             "to_json" => {
                 need(a, 1, Expected::Int)?;
+                Ty::Text
+            }
+            // The separator is a text of one character, checked while running.
+            "csv_parse" | "csv_records" => {
+                need(a, 0, Expected::Text)?;
+                need(a, 1, Expected::Text)?;
+                let row = if name == "csv_parse" { Ty::list(Ty::Text) } else { Ty::record(Vec::new(), false) };
+                Ty::result(Ty::list(row), Ty::Text)
+            }
+            "csv_format" => {
+                need(a, 0, Expected::List)?;
+                need(a, 1, Expected::Text)?;
                 Ty::Text
             }
             "trim_start" | "trim_end" => {

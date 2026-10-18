@@ -12,6 +12,30 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Library
+
+- **CSV**: `csv_parse(text, separator)` (`Ok(rows)`, lists of texts),
+  `csv_records(text, separator)` (`Ok(records)`, one record per line with the
+  names of the header as fields, in the order of the columns) and
+  `csv_format(rows, separator)` (lists of fields or records; quotes only where
+  they are needed). RFC 4180: fields between quotes with separators, line
+  breaks and doubled quotes inside, `\n` or `\r\n`, an optional final line
+  break, empty lines skipped, a BOM skipped. The separator is `","` by default,
+  `";"` for French spreadsheets, `"\t"` for tabs. A text that is not valid CSV
+  is an `Err` with the line and the column of the mistake, in every language
+  of the messages; a header with two columns of the same name or a line
+  without as many fields as the header too. `rythme help csv`, the manual
+  (6, *CSV*) and `examples/grades.ry`.
+- **Draws that can be repeated**: `random_seed(n)` makes the draws of
+  `random` and `shuffle` that follow the same on every run, and
+  `rythme run --seed N file.ry` does it for the whole run. Same seed, same
+  version of Rythme: same draws. Without a seed nothing changes.
+  `rythme help random`, the manual (6, *Chance and seeds*, and 7.1).
+- 178 built-in functions. Names from other languages point to the new ones
+  (`parse_csv`, `DictReader`, `to_csv`, `srand`...). As the stability
+  promise says, a function of a program with one of these names stays its
+  own (W003).
+
 ### Website
 
 - **Sharing links in the playground**: *Share* makes a link that opens the
