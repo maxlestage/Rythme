@@ -283,6 +283,7 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 | [`library.ry`](examples/library.ry) | the Ruby style: `do \|x\| ... end` blocks, method chains, names ending with `?`, `unless`, symbols |
 | [`sales.ry`](examples/sales.ry) | a report: `scan`, columns lined up with `pad_left`, `windows`, `chunks`, JSON |
 | [`calendar.ry`](examples/calendar.ry) | dates: the page of a month, ISO 8601 texts, `days_between`, `add_days` |
+| [`logs.ry`](examples/logs.ry) | reading a log with regexes: `named_captures`, `matches`, `find_all`, `replace_all`, `format_number` |
 | [`tree.ry`](examples/tree.ry) | a recursive type: binary search tree |
 | [`primes.ry`](examples/primes.ry) | a recursive sieve, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | `test` blocks |
@@ -325,8 +326,8 @@ mode) and is organised as a pipeline:
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
 | [`src/bigint.rs`](src/bigint.rs) | whole numbers beyond 64 bits, without a dependency |
 | [`src/dict.rs`](src/dict.rs) | the persistent ordered tree behind dictionaries and sets, and the order of their keys |
-| [`src/builtins.rs`](src/builtins.rs) | 161 built-in functions (and their Ruby names), documented in two languages, JSON included |
-| [`src/builtins/`](src/builtins) | dates, files and the system, dictionaries and sets, generators of property tests |
+| [`src/builtins.rs`](src/builtins.rs) | 174 built-in functions (and their Ruby names), documented in two languages, JSON included |
+| [`src/builtins/`](src/builtins) | dates, files and the system, dictionaries and sets, regexes and text tools, generators of property tests |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |

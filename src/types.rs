@@ -718,6 +718,42 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 need(a, 1, Expected::Int)?;
                 Ty::Text
             }
+            "trim_start" | "trim_end" => {
+                need(a, 0, Expected::Text)?;
+                Ty::Text
+            }
+            "words" => {
+                need(a, 0, Expected::Text)?;
+                Ty::list(Ty::Text)
+            }
+            "equals_ignore_case" | "matches" => {
+                need(a, 0, Expected::Text)?;
+                need(a, 1, Expected::Text)?;
+                Ty::Bool
+            }
+            "format_number" => {
+                need(a, 0, Expected::Number)?;
+                need(a, 1, Expected::Int)?;
+                need(a, 2, Expected::Text)?;
+                Ty::Text
+            }
+            "find_first" | "find_all" | "captures" | "captures_all" | "named_captures" | "split_by" => {
+                need(a, 0, Expected::Text)?;
+                need(a, 1, Expected::Text)?;
+                match name {
+                    "find_first" => Ty::option(Ty::Text),
+                    "captures" => Ty::option(Ty::list(Ty::Text)),
+                    "captures_all" => Ty::list(Ty::list(Ty::Text)),
+                    "named_captures" => Ty::option(Ty::record(Vec::new(), false)),
+                    _ => Ty::list(Ty::Text),
+                }
+            }
+            "replace_all" => {
+                need(a, 0, Expected::Text)?;
+                need(a, 1, Expected::Text)?;
+                need(a, 2, Expected::TextOrFunction)?;
+                Ty::Text
+            }
             "map" => {
                 need(a, 1, Expected::Function)?;
                 need(a, 0, Expected::ListOptionOrResult)?;
@@ -1284,6 +1320,8 @@ pub fn callback(name: &str, index: usize, a: &[Ty]) -> Option<Callback> {
         // A property: it may give true or false, `()`, an Option or a Result.
         // First, or last when given as a block.
         ("check_all", _) => (vec![Ty::Any], None),
+        // Each piece found, which it replaces with a text.
+        ("replace_all", 2) => (vec![Ty::Text], Some(TEXT)),
         ("map_err", 1) => match &first {
             Ty::Data(d) if d.kind() == RESULT => (vec![error_of(d)], None),
             _ => (vec![Ty::Any], None),

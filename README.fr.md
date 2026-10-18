@@ -285,6 +285,7 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 | [`library.ry`](examples/library.ry) | le style Ruby : blocs `do \|x\| ... end`, enchaînements de méthodes, noms en `?`, `unless`, symboles |
 | [`sales.ry`](examples/sales.ry) | un rapport : `scan`, colonnes alignées avec `pad_left`, `windows`, `chunks`, JSON |
 | [`calendar.ry`](examples/calendar.ry) | des dates : la page d'un mois, des textes ISO 8601, `days_between`, `add_days` |
+| [`logs.ry`](examples/logs.ry) | lire un journal avec des regex : `named_captures`, `matches`, `find_all`, `replace_all`, `format_number` |
 | [`tree.ry`](examples/tree.ry) | un type récursif : arbre binaire de recherche |
 | [`primes.ry`](examples/primes.ry) | un crible récursif, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | les blocs `test` |

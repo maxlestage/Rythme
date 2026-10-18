@@ -56,7 +56,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   texts): `dict(...)`, `get`, `put`, `has`, `keys`... on them, and sets
   (`set(list)`, `union`, `intersection`, `difference`), printed and compared
   like the other values, persistent (no mutation), with the checker's types.
-- [ ] **Text tools.** Searching and splitting with simple patterns (wildcards
+- [x] **Text tools.** Searching and splitting with simple patterns (wildcards
   or a small, well-explained regular expression subset), `format` of numbers
   (thousands separators, padding), `lines`/`words` helpers if missing,
   `trim_start`/`trim_end`, case-insensitive comparison.

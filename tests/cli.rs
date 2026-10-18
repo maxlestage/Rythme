@@ -26,6 +26,7 @@ fn help_overview_and_topics() {
         "system",
         "projects",
         "dates",
+        "regex",
         "repl",
         "fmt",
         "doc",

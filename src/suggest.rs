@@ -69,7 +69,7 @@ pub fn alias_hint(name: &str) -> Option<String> {
         "padEnd" | "pad_end" | "padRight" | "ljust" | "rpad" => "pad_right",
         "startsWith" | "startswith" | "hasPrefix" | "has_prefix" => "starts_with",
         "endsWith" | "endswith" | "hasSuffix" | "has_suffix" => "ends_with",
-        "replaceAll" | "replace_all" | "gsub" => "replace",
+        "replaceAll" | "gsub" => "replace",
         "implode" => "join",
         "explode" => "split",
         "ord" | "charCodeAt" | "codePointAt" | "char_code_at" | "code_point" | "codepoint" => "char_code",
@@ -103,7 +103,7 @@ pub fn alias_hint(name: &str) -> Option<String> {
         "distinct" | "dedup" | "nub" => "unique",
         "shuffled" | "melanger" | "mélanger" => "shuffle",
         "where" | "filtrer" => "filter",
-        "detect" | "find_first" | "chercher" => "find",
+        "detect" | "chercher" => "find",
         "collect" | "transformer" => "map",
         "flatMap" | "flatmap" | "concatMap" | "concat_map" => "flat_map",
         "takeWhile" | "takewhile" => "take_while",
@@ -161,6 +161,18 @@ pub fn alias_hint(name: &str) -> Option<String> {
         "addDays" | "plusDays" | "plus_days" => "add_days",
         "addSeconds" | "plusSeconds" | "plus_seconds" => "add_seconds",
         "taille" | "longueur" => "len",
+        "trimStart" | "trim_left" | "trimLeft" | "ltrim" => "trim_start",
+        "trimEnd" | "trim_right" | "trimRight" | "rtrim" => "trim_end",
+        "split_words" | "word_list" | "mots" => "words",
+        "equalsIgnoreCase" | "eq_ignore_case" | "eq_ignore_ascii_case" | "iequals" | "strcasecmp" | "same_text" => "equals_ignore_case",
+        "number_format" | "toLocaleString" | "intcomma" | "format_num" => "format_number",
+        "fullmatch" | "is_match" | "isMatch" | "regex_match" => "matches",
+        "search" | "re_search" | "find_match" | "first_match" => "find_first",
+        "findall" | "findAll" | "matchAll" | "match_all" | "find_iter" | "all_matches" => "find_all",
+        "groups" | "submatch" | "find_submatch" => "captures",
+        "groupdict" | "named_groups" => "named_captures",
+        "re_split" | "regex_split" | "split_regex" => "split_by",
+        "re_sub" | "regex_replace" | "replace_regex" | "subn" => "replace_all",
         _ => "",
     };
     if !rythme.is_empty() {
@@ -200,13 +212,9 @@ pub fn alias_hint(name: &str) -> Option<String> {
             "use the operators `//` and `%`: `7 // 2` is 3 and `7 % 2` is 1",
             "utilisez les opérateurs `//` et `%` : `7 // 2` vaut 3 et `7 % 2` vaut 1"
         ),
-        "format" | "sprintf" | "toFixed" | "to_fixed" | "format_number" | "number_format" => t!(
+        "format" | "sprintf" | "toFixed" | "to_fixed" => t!(
             "to put values in a text, use braces: \"total: {{x}}\"; to write a number with 2 decimals: `text(x, 2)`",
             "pour mettre des valeurs dans un texte, utilisez des accolades : \"total : {{x}}\" ; pour écrire un nombre avec 2 décimales : `text(x, 2)`"
-        ),
-        "words" => t!(
-            "to cut a text into words, use `split(text)`: without a separator, it cuts at spaces",
-            "pour découper un texte en mots, utilisez `split(texte)` : sans séparateur, il découpe aux espaces"
         ),
         "read_lines" | "readlines" | "readLines" => t!(
             "read the whole file with `read_file(path)`, then cut it with `lines(text)`; the lines of the standard input are `input_lines()`",
