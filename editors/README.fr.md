@@ -20,7 +20,18 @@ le lance et obtient, pour les fichiers `.ry` :
   (aussi dans d'autres fichiers), les références, renommer (refusé si cela
   changeait le sens du code), le plan du fichier, les corrections rapides des
   fautes de frappe ;
-- la mise en forme du document dans le style de `rythme fmt`.
+- la mise en forme du document dans le style de `rythme fmt` ;
+- les types dont le vérificateur est sûr, à côté des noms (indications
+  « inlay » : `noms: List(Text)`, `fn aire(r) → Float`) ; rien n'est montré
+  quand un type n'est pas certain ;
+- des couleurs qui suivent ce qu'est chaque nom (jetons sémantiques) : vos
+  fonctions, valeurs, paramètres, types et constructeurs, et ceux de Rythme ;
+- *Lancer* au-dessus de la première ligne qui fait quelque chose et *Lancer
+  le test* au-dessus de chaque test (« code lenses », voir
+  [les commandes](#les-commandes-des-code-lenses)) ;
+- les noms de tous les fichiers `.ry` de l'espace de travail, le pliage des
+  fonctions, types, tests, blocs et commentaires, et l'agrandissement de la
+  sélection (d'un nom à l'expression, la ligne, la fonction...).
 
 Installez d'abord Rythme lui-même (voir le [README principal](../README.fr.md#installer))
 et vérifiez que `rythme version` marche dans un terminal. Si votre éditeur ne
@@ -74,6 +85,34 @@ vim.api.nvim_create_autocmd("FileType", {
 
 `K` montre la documentation, `<C-x><C-o>` complète, `gd` (ou
 `vim.lsp.buf.definition()`) va à la définition, `vim.lsp.buf.rename()` renomme.
+
+Les types des noms et les *Lancer* des « code lenses » (Neovim 0.10 ou plus récent) :
+
+```lua
+vim.api.nvim_create_autocmd("LspAttach", {
+  callback = function(args)
+    local client = vim.lsp.get_client_by_id(args.data.client_id)
+    if client and client.name == "rythme" then
+      vim.lsp.inlay_hint.enable(true, { bufnr = args.buf })
+      vim.lsp.codelens.refresh({ bufnr = args.buf })
+      vim.api.nvim_create_autocmd({ "BufEnter", "InsertLeave", "BufWritePost" }, {
+        buffer = args.buf,
+        callback = function() vim.lsp.codelens.refresh({ bufnr = args.buf }) end,
+      })
+    end
+  end,
+})
+-- Ce que lancent les « lenses » (`:lua vim.lsp.codelens.run()` sur leur ligne).
+local function rythme(args)
+  vim.cmd("write")
+  vim.cmd("split | terminal rythme " .. table.concat(vim.tbl_map(vim.fn.shellescape, args), " "))
+end
+vim.lsp.commands["rythme.runFile"] = function(c) rythme({ vim.uri_to_fname(c.arguments[1]) }) end
+vim.lsp.commands["rythme.testFile"] = function(c) rythme({ "test", vim.uri_to_fname(c.arguments[1]) }) end
+vim.lsp.commands["rythme.runTest"] = function(c)
+  rythme({ "test", vim.uri_to_fname(c.arguments[1]), "--filter", c.arguments[2] })
+end
+```
 
 ### Couleurs (Tree-sitter)
 
@@ -212,3 +251,17 @@ essayer la grammaire d'un clone, `repository = "file:///chemin/vers/Rythme"`.
 | options d'initialisation        | `{"language": "fr"}`, `"en"` ou `"auto"` (facultatif)      |
 | réglages                        | `{"rythme": {"language": "fr"}}` change la langue          |
 | grammaire Tree-sitter           | [`tree-sitter-rythme/`](tree-sitter-rythme), avec les requêtes des couleurs, de l'indentation et des portées |
+| jetons sémantiques              | types `function`, `variable`, `parameter`, `type`, `enumMember` ; modificateurs `declaration`, `defaultLibrary` (complets, delta et par plage) |
+| commandes des « code lenses »   | exécutées par l'éditeur, voir ci-dessous                   |
+
+### Les commandes des code lenses
+
+Le serveur ne lance pas de programmes : ses « code lenses » nomment des
+commandes que l'éditeur exécute (l'extension VS Code le fait dans un
+terminal). Chacune reçoit d'abord l'adresse (URI) du fichier.
+
+| Commande          | Arguments              | Lance                                      |
+|-------------------|------------------------|--------------------------------------------|
+| `rythme.runFile`  | fichier                | `rythme fichier.ry`                        |
+| `rythme.testFile` | fichier                | `rythme test fichier.ry`                   |
+| `rythme.runTest`  | fichier, nom d'un test | `rythme test fichier.ry --filter "nom"`    |

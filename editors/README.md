@@ -16,7 +16,17 @@ starts it and gets, for `.ry` files:
 - the parameters of a call while you type it, go to definition (into other
   files too), references, rename (refused when it would change the meaning
   of the code), the outline of the file, quick fixes for typos;
-- formatting the document in the style of `rythme fmt`.
+- formatting the document in the style of `rythme fmt`;
+- the types the checker is sure of, next to the names (inlay hints:
+  `names: List(Text)`, `fn area(r) → Float`); nothing is shown when a type
+  is not certain;
+- colors that follow what each name is (semantic tokens): your functions,
+  values, parameters, types and constructors, and those of Rythme itself;
+- *Run* above the first line that does something and *Run test* above each
+  test (code lenses, see [the commands](#the-commands-of-the-code-lenses));
+- the names of every `.ry` file of the workspace (workspace symbols), folding
+  of functions, types, tests, blocks and comments, and growing the selection
+  (from a name to the expression, the line, the function...).
 
 First install Rythme itself (see the [main README](../README.md#install)) and
 check that `rythme version` works in a terminal. If your editor does not find
@@ -69,6 +79,34 @@ vim.api.nvim_create_autocmd("FileType", {
 
 `K` shows the documentation, `<C-x><C-o>` completes, `gd` (or
 `vim.lsp.buf.definition()`) goes to the definition, `vim.lsp.buf.rename()` renames.
+
+The types of the names and the *Run* lenses (Neovim 0.10 or later):
+
+```lua
+vim.api.nvim_create_autocmd("LspAttach", {
+  callback = function(args)
+    local client = vim.lsp.get_client_by_id(args.data.client_id)
+    if client and client.name == "rythme" then
+      vim.lsp.inlay_hint.enable(true, { bufnr = args.buf })
+      vim.lsp.codelens.refresh({ bufnr = args.buf })
+      vim.api.nvim_create_autocmd({ "BufEnter", "InsertLeave", "BufWritePost" }, {
+        buffer = args.buf,
+        callback = function() vim.lsp.codelens.refresh({ bufnr = args.buf }) end,
+      })
+    end
+  end,
+})
+-- What the lenses run (`:lua vim.lsp.codelens.run()` on their line).
+local function rythme(args)
+  vim.cmd("write")
+  vim.cmd("split | terminal rythme " .. table.concat(vim.tbl_map(vim.fn.shellescape, args), " "))
+end
+vim.lsp.commands["rythme.runFile"] = function(c) rythme({ vim.uri_to_fname(c.arguments[1]) }) end
+vim.lsp.commands["rythme.testFile"] = function(c) rythme({ "test", vim.uri_to_fname(c.arguments[1]) }) end
+vim.lsp.commands["rythme.runTest"] = function(c)
+  rythme({ "test", vim.uri_to_fname(c.arguments[1]), "--filter", c.arguments[2] })
+end
+```
 
 ### Colors (Tree-sitter)
 
@@ -207,3 +245,17 @@ commit SHA, not a branch. To try a grammar from a clone,
 | initialization options     | `{"language": "en"}`, `"fr"` or `"auto"` (optional)       |
 | settings                   | `{"rythme": {"language": "fr"}}` changes the language    |
 | Tree-sitter grammar        | [`tree-sitter-rythme/`](tree-sitter-rythme), with queries for the colors, the indentation and the scopes |
+| semantic tokens            | types `function`, `variable`, `parameter`, `type`, `enumMember`; modifiers `declaration`, `defaultLibrary` (full, delta and range) |
+| commands of the code lenses | carried out by the editor, see below                     |
+
+### The commands of the code lenses
+
+The server does not run programs: its code lenses name commands that the
+editor carries out (the VS Code extension does it in a terminal). Each one
+receives the address (URI) of the file first.
+
+| Command           | Arguments            | Runs                                       |
+|-------------------|----------------------|--------------------------------------------|
+| `rythme.runFile`  | file                 | `rythme file.ry`                           |
+| `rythme.testFile` | file                 | `rythme test file.ry`                      |
+| `rythme.runTest`  | file, name of a test | `rythme test file.ry --filter "name"`      |

@@ -19,6 +19,7 @@ use crate::check::{self, Knowledge};
 use crate::diagnostic::Diagnostic;
 use crate::source::{self, Span};
 use crate::symbol::Sym;
+use crate::types::Ty;
 use crate::{driver, lexer, modules, parser};
 
 /// One source id per file, reused at each edit (see `source::replace`).
@@ -68,6 +69,9 @@ pub struct Module {
     /// The top-level names of the used files, as the checker sees them.
     pub dep_defs: HashMap<Sym, DefId>,
     pub index: Index,
+    /// The types the checker inferred for the names defined, by place
+    /// (empty when the checker could not run).
+    pub types: HashMap<Span, Ty>,
 }
 
 /// Where texts come from: the editor's version of a file when it is open
@@ -180,6 +184,7 @@ impl<'a> Loader<'a> {
             self.loading.pop();
         }
         let order = self.dep_order(&deps);
+        let mut types = HashMap::new();
         if complete {
             // Like the driver: the built-ins, then what the used files define.
             let mut know = self.base.clone();
@@ -198,7 +203,8 @@ impl<'a> Loader<'a> {
                 all.extend(inner.iter().map(|d| d.items.as_slice()));
                 know.add_module(*n, Rc::from(short_name(&m.uri)), &inside, &all);
             }
-            if let Some(mut found) = guard(|| check::check(&items, &know, false)) {
+            if let Some((mut found, inferred)) = guard(|| check::check_with_types(&items, &know, false)) {
+                types = inferred;
                 if found.iter().any(|d| d.code == "E003") {
                     // As the driver does: say which file of the folder defines an unknown name.
                     let mut skip: Vec<PathBuf> = order.iter().filter_map(|m| m.path.clone()).collect();
@@ -247,6 +253,7 @@ impl<'a> Loader<'a> {
             use_diags,
             dep_defs: tops,
             index,
+            types,
         }
     }
 
@@ -278,6 +285,7 @@ impl<'a> Loader<'a> {
                     use_diags: Vec::new(),
                     dep_defs: HashMap::new(),
                     index: Index { file, ..Index::default() },
+                    types: HashMap::new(),
                 }
             }
         };
