@@ -663,12 +663,12 @@ impl Drop for Record {
     }
 }
 
-fn is_plain_key(k: &str) -> bool {
+pub fn is_plain_key(k: &str) -> bool {
     let mut chars = k.chars();
     matches!(chars.next(), Some(c) if c.is_alphabetic() || c == '_') && chars.all(|c| c.is_alphanumeric() || c == '_')
 }
 
-fn write_text_repr(s: &str, out: &mut String) {
+pub fn write_text_repr(s: &str, out: &mut String) {
     out.push('"');
     for c in s.chars() {
         match c {
