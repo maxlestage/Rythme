@@ -233,7 +233,7 @@ fn convert(e: &Expr, sub: &mut Sub) -> Term {
         ExprKind::Int(n) => K::Val(Value::Int(*n)),
         ExprKind::Big(n) => K::Val(Value::Big(n.clone())),
         ExprKind::Float(f) => K::Val(Value::Float(*f)),
-        ExprKind::Text(s) => K::Val(Value::Text(s.clone())),
+        ExprKind::Text(s) => K::Val(Value::Text(s.into())),
         ExprKind::Symbol(s) => K::Val(Value::Symbol(*s)),
         ExprKind::Template(parts) => K::Template(
             parts
@@ -1320,7 +1320,7 @@ fn template(parts: &[Part], span: Span) -> Fallible<Value> {
             return Err(too_big(false, span));
         }
     }
-    Ok(Value::Text(Rc::from(s)))
+    Ok(Value::Text(s.into()))
 }
 
 fn list(items: &[Elem], span: Span) -> Fallible<Value> {

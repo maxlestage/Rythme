@@ -9,6 +9,7 @@
 pub mod lang;
 pub mod ast;
 pub mod bigint;
+pub mod buffer;
 pub mod builtins;
 pub mod check;
 pub mod compile;

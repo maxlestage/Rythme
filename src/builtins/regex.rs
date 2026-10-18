@@ -1173,7 +1173,7 @@ fn regex_arg(a: &[Value], i: usize, f: &str, span: Span) -> Fallible<Rc<Regex>> 
         if c.len() >= CACHED {
             c.remove(0);
         }
-        c.push((pattern.clone(), re.clone()));
+        c.push((Rc::from(&**pattern), re.clone()));
     });
     Ok(re)
 }
