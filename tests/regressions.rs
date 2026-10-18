@@ -633,3 +633,24 @@ fn repl_pipelines_can_be_pasted_line_by_line() {
     let out = repl("[1, 2, 3, 4]\n  |> filter(is_even)\n  |> map(fn(x) = x * x)\n:quit\n");
     assert!(out.contains("[4, 16]") && !out.contains("error"), "{out}");
 }
+
+#[test]
+fn a_name_defined_further_down_in_a_block_is_explained() {
+    // Not "in Rythme, this is called `is_odd`": `odd` is the program's own function.
+    let r = fails("fn parity(n) = do\n  fn even(0) = true\n  fn even(k) = odd(k - 1)\n  limit = 10\n  fn odd(0) = false\n  fn odd(k) = even(k - 1)\n  even(n + limit)\nend\nprint(parity(4))", "E003");
+    assert!(
+        !r.stderr.contains("is_odd") && r.stderr.contains("defined here, further down") && r.stderr.contains("move `odd` up"),
+        "{}",
+        r.stderr
+    );
+    let r = fails("fn f() = do\n  print(y)\n  y = 1\n  y\nend\nf()", "E003");
+    assert!(r.stderr.contains("move `y = ...` up"), "{}", r.stderr);
+}
+
+#[test]
+fn padding_counts_the_size_of_the_text_like_every_text() {
+    // `é` takes 2 bytes: 99 999 999 of them are more than 100 MB.
+    let r = fails("print(len(pad_left(\"a\", 99999999, \"é\")))", "E023");
+    assert!(r.stderr.contains("more than 100 MB"), "{}", r.stderr);
+    ok("print(len(pad_left(\"a\", 3, \"é\")))", "3");
+}

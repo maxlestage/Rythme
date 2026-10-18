@@ -426,10 +426,11 @@ error[E008]: division by zero
 A text is a sequence of Unicode characters (code points). `len`, indexes and
 `slice` count characters, not bytes: `len("été")` is 3.
 
-A text holds at most 100 000 000 bytes in UTF-8 (1 byte for a letter without
-accent, a digit or a space, 2 for `é`, 4 for an emoji): for a text without
-accents, 100 000 000 characters, as the message says. Building a longer
-one, with `+`, `{...}`, `join`, `replace` or `repeat`, is error E023. This
+A text holds at most 100 MB (100 000 000 bytes) in UTF-8: 1 byte for a
+letter without accent, a digit or a space, 2 for `é`, 4 for an emoji, so
+100 000 000 characters for a text without accents. Building a longer one,
+with `+`, `{...}`, `join`, `replace`, `repeat`, `pad_left` or `pad_right`,
+is error E023. This
 limit, like the limit of the length of lists (see [2.6](#26-list)), stops a
 value that grows without end before the memory of the computer runs out:
 
@@ -439,7 +440,7 @@ double_text("ab")
 ```
 
 ```text
-error[E023]: this text would be too large (more than 100000000 characters)
+error[E023]: this text would be too large (more than 100 MB)
  --> 13-too-large.ry:1:35
   |
 1 | fn double_text(t) = double_text(t + t)   # never stops
@@ -2691,8 +2692,7 @@ Notes:
 |-------|-------|-------|
 | whole numbers (Int) | −2⁶³ to 2⁶³ − 1 | E012 |
 | elements of a list (built by a range, `+`, `..xs`, `repeat`, `flatten`, `flat_map`, `chars`) | 50 000 000 | E023 |
-| length of a text (built by `+`, `{...}`, `join`, `replace`, `repeat`) | 100 000 000 bytes in UTF-8 | E023 |
-| width given to `pad_left` and `pad_right` | 100 000 000 characters | E023 |
+| length of a text (built by `+`, `{...}`, `join`, `replace`, `repeat`, `pad_left`, `pad_right`) | 100 000 000 bytes in UTF-8 | E023 |
 | nesting of brackets, blocks and other constructs in the code | 256 levels | E001 |
 | depth of an expression: each operator, call, index or field is one level, so `1 + 1 + ...` holds at most 1000 numbers | 1000 levels | E001 |
 | texts nested in `{...}` of texts | 32 levels | E001 |

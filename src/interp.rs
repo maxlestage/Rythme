@@ -88,7 +88,8 @@ pub fn too_big(list: bool, span: Span) -> Box<Diagnostic> {
     let msg = if list {
         t!("this list would be too large (more than {MAX_LIST} elements)", "cette liste serait trop grande (plus de {MAX_LIST} éléments)")
     } else {
-        t!("this text would be too large (more than {MAX_TEXT} characters)", "ce texte serait trop grand (plus de {MAX_TEXT} caractères)")
+        let mb = MAX_TEXT / 1_000_000;
+        t!("this text would be too large (more than {mb} MB)", "ce texte serait trop grand (plus de {mb} Mo)")
     };
     Diagnostic::error("E023", msg)
         .at(span)

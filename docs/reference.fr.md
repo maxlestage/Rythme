@@ -450,11 +450,11 @@ Un texte est une suite de caractères Unicode (des points de code). `len`, les
 indices et `slice` comptent des caractères, pas des octets : `len("été")`
 vaut 3.
 
-Un texte contient au plus 100 000 000 octets en UTF-8 (1 octet pour une
-lettre sans accent, un chiffre ou une espace, 2 pour `é`, 4 pour un émoji) :
-pour un texte sans accents, 100 000 000 caractères, comme le dit le message.
-En construire un plus long, avec `+`, `{...}`, `join`, `replace` ou
-`repeat`, est l'erreur E023. Cette limite, comme celle de la longueur
+Un texte contient au plus 100 Mo (100 000 000 octets) en UTF-8 : 1 octet
+pour une lettre sans accent, un chiffre ou une espace, 2 pour `é`, 4 pour un
+émoji, donc 100 000 000 caractères pour un texte sans accents. En construire
+un plus long, avec `+`, `{...}`, `join`, `replace`, `repeat`, `pad_left` ou
+`pad_right`, est l'erreur E023. Cette limite, comme celle de la longueur
 des listes (voir [2.6](#26-list)), arrête une valeur qui grandit sans fin
 avant que la mémoire de l'ordinateur ne soit épuisée :
 
@@ -464,7 +464,7 @@ doubler_texte("ab")
 ```
 
 ```text
-erreur[E023]: ce texte serait trop grand (plus de 100000000 caractères)
+erreur[E023]: ce texte serait trop grand (plus de 100 Mo)
  --> 13-trop-grand.ry:1:39
   |
 1 | fn doubler_texte(t) = doubler_texte(t + t)   # ne s'arrête jamais
@@ -2802,8 +2802,7 @@ Remarques :
 |--------|--------|--------|
 | nombres entiers (Int) | de −2⁶³ à 2⁶³ − 1 | E012 |
 | éléments d'une liste (construite par un intervalle, `+`, `..xs`, `repeat`, `flatten`, `flat_map`, `chars`) | 50 000 000 | E023 |
-| longueur d'un texte (construit par `+`, `{...}`, `join`, `replace`, `repeat`) | 100 000 000 octets en UTF-8 | E023 |
-| largeur donnée à `pad_left` et `pad_right` | 100 000 000 caractères | E023 |
+| longueur d'un texte (construit par `+`, `{...}`, `join`, `replace`, `repeat`, `pad_left`, `pad_right`) | 100 000 000 octets en UTF-8 | E023 |
 | imbrication des parenthèses, crochets, blocs et autres constructions dans le code | 256 niveaux | E001 |
 | profondeur d'une expression : chaque opérateur, appel, indice ou champ compte pour un niveau, donc `1 + 1 + ...` contient au plus 1000 nombres | 1000 niveaux | E001 |
 | textes imbriqués dans des `{...}` de textes | 32 niveaux | E001 |

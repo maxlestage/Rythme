@@ -235,6 +235,9 @@ struct Checker<'a> {
     fn_defs: HashMap<Sym, Rc<FnDef>>,
     /// For each function being checked, what its `?` may return early.
     early: Vec<Ty>,
+    /// For each block being checked, the functions and names it defines, to
+    /// explain a name used before the line that defines it.
+    block_defs: Vec<Vec<(Sym, Span, bool)>>,
     /// May the code just checked stop with an error (`assert`, `?`, an
     /// index, a function of the program...)? For tests.
     may_fail: bool,
@@ -321,6 +324,7 @@ impl<'a> Checker<'a> {
             gtypes: HashMap::new(),
             fn_defs: HashMap::new(),
             early: Vec::new(),
+            block_defs: Vec::new(),
             may_fail: false,
             folds: 0,
             pure_call: None,
@@ -829,7 +833,21 @@ impl<'a> Checker<'a> {
         let name = s.name();
         let mut d =
             Diagnostic::error("E003", t!("unknown name `{name}`", "nom inconnu `{name}`")).at(span).label(t!("not defined", "non défini"));
-        if let Some(h) = suggest::alias_hint(&name) {
+        // Defined further down in a block around it: say so, not what other languages call it.
+        let later = self.block_defs.iter().rev().flatten().find(|(n, at, _)| *n == s && at.start > span.start);
+        if let Some(&(_, at, is_fn)) = later {
+            d = d.secondary(at, t!("defined here, further down", "défini ici, plus bas")).help(if is_fn {
+                t!(
+                    "in a block, a function can be used only after it, unless they are written one after the other with nothing between them: move `{name}` up, next to the function that uses it",
+                    "dans un bloc, une fonction ne s'utilise qu'après elle, sauf si elles sont écrites l'une après l'autre sans rien entre elles : remontez `{name}`, à côté de la fonction qui l'utilise"
+                )
+            } else {
+                t!(
+                    "in a block, a name can be used only after the line that defines it: move `{name} = ...` up",
+                    "dans un bloc, un nom ne s'utilise qu'après la ligne qui le définit : remontez `{name} = ...`"
+                )
+            });
+        } else if let Some(h) = suggest::alias_hint(&name) {
             d = d.help(h);
         } else {
             let names = self.visible_names();
@@ -987,6 +1005,24 @@ impl<'a> Checker<'a> {
 
     /// Checks the statements of a block and gives the type of its value.
     fn stmts(&mut self, stmts: &[Stmt]) -> Ty {
+        let defs = stmts
+            .iter()
+            .filter_map(|s| match s {
+                Stmt::Fn(def) => def.name.map(|name| (name, def.span, true)),
+                Stmt::Let(p, _) => match p.kind {
+                    PatKind::Bind(name) => Some((name, p.span, false)),
+                    _ => None,
+                },
+                Stmt::Expr(_) => None,
+            })
+            .collect();
+        self.block_defs.push(defs);
+        let t = self.block_stmts(stmts);
+        self.block_defs.pop();
+        t
+    }
+
+    fn block_stmts(&mut self, stmts: &[Stmt]) -> Ty {
         let n = stmts.len();
         let mut last = Ty::Unit;
         let mut stops = false;

@@ -1356,8 +1356,8 @@ fn pad(a: &[Value], name: &str, before: bool, span: Span) -> Fallible<Value> {
     if missing == 0 {
         return Ok(text_value(s));
     }
-    if width > 100_000_000 {
-        return Err(invalid(t!("the padded text would be too large", "le texte complété serait trop grand"), span));
+    if s.len().saturating_add(missing.saturating_mul(fill.len_utf8())) > MAX_TEXT {
+        return Err(too_big(false, span));
     }
     let fill: String = std::iter::repeat_n(fill, missing).collect();
     Ok(text_value(if before { fill + &s } else { s + &fill }))
