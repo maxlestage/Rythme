@@ -135,13 +135,15 @@ fn ok(r: &Run) {
 
 #[test]
 fn a_new_project_runs_tests_checks_formats_and_documents_itself() {
-    for lang in ["en", "fr", "es"] {
+    for lang in ["en", "fr", "es", "de", "pt", "zh"] {
         let t = Temp::new(&format!("new-{lang}"));
         let r = t.rythme(lang, "", &["new", "hello"]);
         ok(&r);
         let (lib, test) = match lang {
             "fr" => ("src/salutation.ry", "tests/salutation_test.ry"),
             "es" => ("src/saludo.ry", "tests/saludo_test.ry"),
+            "de" => ("src/gruss.ry", "tests/gruss_test.ry"),
+            "pt" => ("src/saudacao.ry", "tests/saudacao_test.ry"),
             _ => ("src/greeting.ry", "tests/greeting_test.ry"),
         };
         for f in ["rythme.toml", "src/main.ry", lib, test, "README.md", ".gitignore"] {
@@ -154,6 +156,9 @@ fn a_new_project_runs_tests_checks_formats_and_documents_itself() {
         let greeting = match lang {
             "fr" => "Bonjour, le monde !\n",
             "es" => "¡Hola, mundo!\n",
+            "de" => "Hallo, Welt!\n",
+            "pt" => "Olá, mundo!\n",
+            "zh" => "你好，世界！\n",
             _ => "Hello, World!\n",
         };
         assert_eq!(r.stdout, greeting);
@@ -162,6 +167,9 @@ fn a_new_project_runs_tests_checks_formats_and_documents_itself() {
         let summary = match lang {
             "fr" => "1 réussi(s), 0 échoué(s)",
             "es" => "1 pasada(s), 0 fallida(s)",
+            "de" => "1 bestanden, 0 fehlgeschlagen",
+            "pt" => "1 passaram, 0 falharam",
+            "zh" => "1 个通过，0 个失败",
             _ => "1 passed, 0 failed",
         };
         assert!(r.stdout.contains(summary), "{}", r.stdout);

@@ -203,6 +203,11 @@ fn push_block(out: &mut String, pad: &str, head: &str, text: &str, c: &Colors) {
 /// Longest part of a line shown under an error, in columns.
 const MAX_SHOWN: usize = 120;
 
+/// Columns taken by a text in a terminal (see [`char_width`]): `日本` takes 4.
+pub fn display_width(text: &str) -> usize {
+    text.chars().map(char_width).sum()
+}
+
 /// Columns taken by a character in a terminal: none for combining accents,
 /// two for Chinese, Japanese, Korean and most emoji, one otherwise.
 fn char_width(c: char) -> usize {
