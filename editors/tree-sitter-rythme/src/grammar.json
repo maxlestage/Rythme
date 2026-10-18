@@ -2973,7 +2973,7 @@
     },
     "symbol": {
       "type": "PATTERN",
-      "value": ":[\\p{L}_][\\p{L}\\p{M}\\p{N}_]*"
+      "value": ":[\\p{L}_][\\p{L}\\p{M}\\p{N}_]*\\??"
     },
     "integer": {
       "type": "TOKEN",

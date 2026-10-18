@@ -734,7 +734,7 @@ text 42 2.0 ["a", "b"] {name: "Ada", "full name": "Ada L."} None ()
 
 A **symbol** is a name used as a value, as in Ruby: `:ok`, `:error`,
 `:pending`. It is written `:` directly followed by a name, and shown the same
-way. Two symbols are equal when their names are; they are ordered by name;
+way; a `?` right after the name is part of it, as in Ruby (`:even?`). Two symbols are equal when their names are; they are ordered by name;
 they are never equal to a text (`:ok == "ok"` is false, and the checker warns,
 W006). They are used in `match` patterns, and `to_json` writes them as texts.
 
@@ -4123,7 +4123,7 @@ list_patterns = ".." [ NAME ] [ "," ]
 field_pattern = KEY ":" pattern | NAME | ".." ;
 
 MEMBER       = NAME [ "?" ] | CTOR | keyword | reserved word ;
-SYMBOL       = ":" NAME ;
+SYMBOL       = ":" NAME [ "?" ] ;
 KEY          = MEMBER | PLAIN_TEXT ;
 ```
 
@@ -4147,7 +4147,8 @@ Notes:
 - `"unless"`: the word starts an `unless` only as described in
   [1.5](#15-keywords-and-reserved-words); elsewhere it is a NAME.
 - `SYMBOL`: `:` directly followed by a name, except the `:` that follows a
-  field name after `{` or `,` ([2.14](#214-symbol)).
+  field name after `{` or `,` ([2.14](#214-symbol)); a `?` that touches the
+  name is part of the symbol (`:even?`), never the `postfix` operator.
 - In `match`, the subject must end on the line of `match`, and the cases may
   be separated by blank lines; `end` may follow the last case on the same
   line. In blocks, `end` may follow the last statement on the same line.

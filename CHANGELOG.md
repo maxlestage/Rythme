@@ -12,6 +12,15 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Language
+
+- **A symbol may end with `?`**, as in Ruby: `:even?` is one symbol. It was
+  read as `:even` followed by the operator `?`, which the checker always
+  refuses (E016) before running, so no program that ran changes meaning (a
+  fuzz test puts the old reading in thousands of programs made from the
+  examples and the tests: every one is refused). `rythme fmt` keeps the space
+  in `:even ?`; the VS Code and Tree-sitter grammars know the new form.
+
 ### Fixed
 
 - **`capitalize` uses the titlecase of Unicode** where it differs from the

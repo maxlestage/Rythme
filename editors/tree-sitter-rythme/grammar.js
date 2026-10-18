@@ -393,8 +393,8 @@ module.exports = grammar({
     /** `{x}`, or `#{x}` as in Ruby. */
     interpolation: $ => seq(choice(token.immediate('{'), token.immediate(prec(1, '#{'))), $._expression, '}'),
 
-    /** `:ok`: a name used as a value. */
-    symbol: _ => /:[\p{L}_][\p{L}\p{M}\p{N}_]*/,
+    /** `:ok`, `:even?`: a name used as a value. */
+    symbol: _ => /:[\p{L}_][\p{L}\p{M}\p{N}_]*\??/,
 
     integer: _ => token(choice(/0x[0-9a-fA-F_]+/, /0b[01_]+/, /[0-9][0-9_]*/)),
 
