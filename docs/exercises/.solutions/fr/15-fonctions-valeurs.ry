@@ -1,0 +1,43 @@
+# Exercice 15 · Les fonctions sont des valeurs  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn appliquer_deux_fois(f, x) = f(f(x))
+
+fn composer(f, g) = fn(x) = f(g(x))
+
+fn additionneur(n) = fn(x) = x + n
+
+fn mon_map([], _) = []
+fn mon_map([x, ..reste], f) = [f(x), ..mon_map(reste, f)]
+
+fn mon_filter([], _) = []
+fn mon_filter([x, ..reste], f) = if f(x) then [x, ..mon_filter(reste, f)] else mon_filter(reste, f)
+
+# --- Tests (ne les modifiez pas) ---
+
+test "appliquer deux fois"
+  assert_eq(appliquer_deux_fois(fn(x) = x * 3, 2), 18)
+  assert_eq(appliquer_deux_fois(upper, "salut"), "SALUT")
+end
+
+test "composer"
+  plus_un_puis_double = composer(fn(x) = x * 2, fn(x) = x + 1)
+  assert_eq(plus_un_puis_double(4), 10)
+  assert_eq(composer(len, trim)("  abc  "), 3)
+end
+
+test "additionneur"
+  ajouter10 = additionneur(10)
+  assert_eq(ajouter10(5), 15)
+  assert_eq(map([1, 2, 3], additionneur(100)), [101, 102, 103])
+end
+
+test "mon map"
+  assert_eq(mon_map([1, 2, 3], fn(x) = x * x), [1, 4, 9])
+  assert_eq(mon_map([], fn(x) = x), [])
+end
+
+test "mon filter"
+  assert_eq(mon_filter([1, 2, 3, 4, 5, 6], is_even), [2, 4, 6])
+  assert_eq(mon_filter(["a", "bb", "ccc"], fn(m) = len(m) > 1), ["bb", "ccc"])
+end

@@ -21,8 +21,11 @@ fn help_overview_and_topics() {
         "errors",
         "functional",
         "tests",
+        "exercises",
         "modules",
+        "dates",
         "repl",
+        "doc",
         "editors",
         "builtins",
     ] {
@@ -172,5 +175,23 @@ fn editor_grammar_knows_every_builtin() {
             "{} is missing from the VS Code grammar",
             b.name
         );
+    }
+}
+
+#[test]
+fn tree_sitter_grammar_knows_every_keyword() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("editors");
+    let read = |p: &str| std::fs::read_to_string(dir.join(p)).unwrap();
+    let grammar = read("tree-sitter-rythme/grammar.js");
+    let line = grammar.lines().find(|l| l.starts_with("const KEYWORDS = [")).expect("KEYWORDS in grammar.js");
+    let listed: Vec<&str> = line.split('\'').skip(1).step_by(2).collect();
+    assert_eq!(listed, rythme::lexer::KEYWORDS, "the KEYWORDS of grammar.js");
+    let queries =
+        ["tree-sitter-rythme/queries/highlights.scm", "zed/languages/rythme/highlights.scm", "helix/queries/rythme/highlights.scm"];
+    for q in queries {
+        let text = read(q);
+        for k in rythme::lexer::KEYWORDS.iter().filter(|k| !matches!(**k, "true" | "false")) {
+            assert!(text.contains(&format!("\"{k}\"")), "`{k}` has no color in {q}");
+        }
     }
 }

@@ -61,7 +61,8 @@ la définition les détache ; des lignes de commentaire ordinaire `#`, non. Un
 `##` placé après du code sur la même ligne est un commentaire ordinaire. Les
 commentaires de documentation écrits au-dessus d'un `type` documentent le
 type : `help` les affiche pour chacun de ses constructeurs (voir
-[4.7](#47-types)).
+[4.7](#47-types)). `rythme doc` en tire la documentation de fichiers entiers
+(voir [7.6](#76-la-documentation--rythme-doc)).
 
 ```rythme
 # Un commentaire ordinaire : de `#` jusqu'à la fin de la ligne.
@@ -135,7 +136,8 @@ and  do  else  end  false  fn  if  match  not  or  test  then  true  type  use
 
 Ils ne peuvent pas servir de noms. Ils peuvent servir de **noms de champs**,
 après un point ou devant `:` dans un enregistrement (`e.type`, `{type: 1}`),
-mais pas dans la forme courte `{type}`.
+mais pas dans la forme courte `{type}`. `as` n'est pas un mot-clé : il n'a
+de sens qu'après le chemin d'un `use` (`use geometrie as geo`).
 
 Les mots suivants, venus d'autres langages, sont **réservés** : en utiliser
 un comme nom est une erreur (E001) dont le message explique comment faire la
@@ -1331,8 +1333,9 @@ anonyme.
 - Un nom local peut masquer une fonction intégrée sans rien dire ; une
   définition du premier niveau qui masque une fonction intégrée donne
   l'avertissement W003.
-- Les noms des fichiers apportés par `use` comptent comme des noms du premier
-  niveau : en redéfinir un est E011.
+- Les noms apportés par `use "fichier.ry"` comptent comme des noms du
+  premier niveau : en redéfinir un est E011. Avec `use geometrie`, seul le
+  nom `geometrie` est pris (voir 4.9).
 
 ```rythme
 x = 1
@@ -1732,47 +1735,83 @@ Code de sortie : 1.
 ### 4.9 Modules : `use`
 
 ```text
-use "chemin/fichier.ry"
+use geometrie              # le fichier geometrie.ry, utilisé par son nom
+use formes/cercle          # le fichier formes/cercle.ry, utilisé comme `cercle`
+use geometrie as geo       # le même fichier, sous un autre nom
+use "geometrie.ry"         # ancienne forme : ses noms s'utilisent directement
 ```
 
-- `use` n'est permis qu'au premier niveau ; le chemin est un texte simple.
-- Le chemin est relatif au **dossier du fichier qui contient le `use`** (pour
-  `rythme -e` et le mode interactif : le dossier actuel). Quand il n'a pas
-  d'extension, `.ry` est ajouté. Ses parties sont séparées par `/` (ou `\`,
-  écrit `\\` dans un texte) sur tous les systèmes, et `..` remonte d'un
-  dossier : `use "../outils/calculs.ry"`.
-- Tout ce qui est défini au premier niveau du fichier utilisé (valeurs,
-  fonctions, types et constructeurs) devient visible dans le fichier qui
-  l'utilise, ainsi que tout ce que ce fichier utilise lui-même. Il n'y a ni
-  espaces de noms ni définitions privées : un nom défini dans deux fichiers
-  est E011.
+- **La forme recommandée est `use nom`**, sans guillemets et sans `.ry` :
+  ses définitions s'atteignent alors par ce nom, si bien que chaque nom dit
+  d'où il vient. `rythme fmt` écrit `use "geometrie.ry" as geo` sous la
+  forme `use geometrie as geo`.
+- `use` n'est permis qu'au premier niveau. Le chemin est relatif au
+  **dossier du fichier qui contient le `use`** (pour `rythme -e` et le mode
+  interactif : le dossier actuel). Ses parties sont des noms séparés par `/`
+  sur tous les systèmes, et `..` remonte d'un dossier : `use ../outils/calculs`.
+  Un fichier dont le nom n'est pas un nom Rythme (`Mes outils.ry`) s'écrit
+  comme un texte, avec un nom : `use "Mes outils.ry" as outils`.
+- Le nom est celui du fichier (`cercle` pour `formes/cercle`), ou celui écrit
+  après `as`. Alors `geometrie.aire_carre(4)` appelle une fonction,
+  `geometrie.origine` lit une valeur, `geometrie.Carre(5)` construit une
+  valeur d'un type du fichier, `geometrie.Carre(c)` la reconnaît dans un
+  `match`, et `x |> geometrie.aire_carre` marche comme d'habitude. Le
+  vérificateur les connaît tous : un nom que le fichier n'a pas est E003
+  (avec le plus proche), et le nombre d'arguments est vérifié (E004).
+- Un fichier donne ses définitions du premier niveau (valeurs, fonctions,
+  constructeurs), et celles des fichiers qu'il utilise avec des guillemets.
+  **Un nom qui commence par `_` est privé à son fichier** (`fn _verifie(x)`) :
+  les autres fichiers ne peuvent pas l'utiliser (E003). Le nom du fichier
+  n'est pas une valeur (`geometrie` seul est E003), et il ne peut rien nommer
+  d'autre dans le fichier (E011) ; deux fichiers ne peuvent pas recevoir le
+  même nom (E011).
+- Chaque fichier a ses propres noms : `geometrie.aire` et `cercle.aire` sont
+  deux fonctions différentes, et un fichier peut lui-même définir `aire`. Un
+  nom utilisé sans son fichier, mais défini par un autre fichier du dossier,
+  reçoit une aide qui nomme ce fichier et le `use` à ajouter (le serveur de
+  langage l'ajoute).
+- `use "chemin.ry"`, avec des guillemets et sans `as`, est l'ancienne forme :
+  les définitions du fichier (sauf les privées) deviennent visibles
+  directement, avec celles des fichiers qu'il utilise de cette façon ; un nom
+  défini à nouveau, ou défini par deux de ces fichiers, est E011, et le
+  message nomme les deux fichiers. `.ry` est ajouté quand le chemin n'a pas
+  d'extension.
 - Chaque fichier est chargé, vérifié et exécuté **une seule fois** par
   programme, avant le fichier qui l'utilise, où que le `use` soit écrit dans
   ce fichier. Ses expressions du premier niveau s'exécutent (un `print` dans
   un fichier utilisé affiche une fois).
-- Un fichier introuvable est E017 (avec une suggestion quand un nom proche
-  existe), un dossier aussi ; des fichiers qui s'utilisent en cercle sont
-  E017. Les messages montrent le chemin d'un fichier utilisé tel qu'on
-  l'atteint depuis le dossier actuel.
+- Un fichier introuvable est E017, avec une suggestion quand un nom proche
+  existe (ou la liste des fichiers Rythme du dossier), un dossier aussi ; des
+  fichiers qui s'utilisent en cercle sont E017, et le message nomme les deux.
+  Les messages montrent le chemin d'un fichier utilisé tel qu'on l'atteint
+  depuis le dossier actuel.
 
 ```rythme
 # geometrie.ry
 print("geometrie.ry ne s'exécute qu'une fois")
 fn aire_rectangle(l, h) = l * h
+fn aire_carre(cote) = aire_rectangle(cote, _verifie(cote))
+fn _verifie(x) = if x >= 0 then x else fail("côté négatif")
 origine = {x: 0, y: 0}
+type Forme = Rectangle(l, h) | Carre(cote)
 ```
 
 ```rythme
-# carres.ry
-use "geometrie.ry"
-fn aire_carre(cote) = aire_rectangle(cote, cote)
+# formes/cercle.ry
+fn aire(r) = pi * r ** 2
 ```
 
 ```rythme
 # principal.ry
-use "geometrie.ry"
-use "carres"               # `.ry` est ajouté quand le chemin n'a pas d'extension
-print(aire_rectangle(2, 3), aire_carre(4), origine)
+use geometrie
+use formes/cercle
+print(geometrie.aire_rectangle(2, 3), geometrie.aire_carre(4), geometrie.origine)
+print(round(cercle.aire(1), 2))
+fn aire(forme) = match forme
+  geometrie.Rectangle(l, h) -> l * h
+  geometrie.Carre(c) -> c * c
+end
+print(aire(geometrie.Carre(5)))
 ```
 
 `rythme principal.ry` :
@@ -1780,19 +1819,48 @@ print(aire_rectangle(2, 3), aire_carre(4), origine)
 ```text
 geometrie.ry ne s'exécute qu'une fois
 6 16 {x: 0, y: 0}
+3.14
+25
 ```
 
-Avec `ping.ry` qui contient `use "pong.ry"` et `pong.ry` qui contient
-`use "ping.ry"`, `rythme ping.ry` donne :
+Un fichier à côté de `geometrie.ry` qui oublie le `use`, `rythme oubli.ry` :
 
 ```text
-erreur[E017]: `ping.ry` s'utilise lui-même (directement ou via d'autres fichiers)
+erreur[E003]: nom inconnu `aire_rectangle`
+ --> oubli.ry:1:7
+  |
+1 | print(aire_rectangle(2, 3))
+  |       ^^^^^^^^^^^^^^ non défini ici
+  |
+  = aide: `aire_rectangle` est défini dans `geometrie.ry` : ajoutez `use geometrie` en haut du fichier, puis écrivez `geometrie.aire_rectangle`
+  = en savoir plus : `rythme explain E003`
+```
+
+Un nom privé, `rythme prive.ry` :
+
+```text
+erreur[E003]: `_verifie` est privé au fichier `geometrie.ry`
+ --> prive.ry:2:7
+  |
+2 | print(geometrie._verifie(2))
+  |       ^^^^^^^^^^^^^^^^^^ privé
+  |
+  = note: un nom qui commence par `_` ne s'utilise que dans son propre fichier
+  = aide: pour l'utiliser depuis d'autres fichiers, renommez-le sans `_` dans `geometrie.ry`
+  = en savoir plus : `rythme explain E003`
+```
+
+Avec `ping.ry` qui contient `use pong` et `pong.ry` qui contient `use ping`,
+`rythme ping.ry` donne :
+
+```text
+erreur[E017]: `pong.ry` et `ping.ry` s'utilisent l'un l'autre
  --> pong.ry:1:1
   |
-1 | use "ping.ry"
-  | ^^^^^^^^^^^^^
+1 | use ping
+  | ^^^^^^^^
   |
-  = aide: déplacez ce dont les deux fichiers ont besoin dans un troisième fichier, utilisé par les deux
+  = aide: des fichiers ne peuvent pas s'utiliser l'un l'autre : déplacez ce dont les deux ont besoin dans un troisième fichier, utilisé par les deux
   = en savoir plus : `rythme explain E017`
 ```
 
@@ -2103,7 +2171,7 @@ minuscules.
 |------|-----|-------|
 | E001 | Erreur de syntaxe | le code ne suit pas la grammaire : une parenthèse ou un `then` manquant, des accolades pour un bloc, un mot-clé d'un autre langage, des comparaisons enchaînées, `_` utilisé comme valeur, `{nom, ..autres}`, une expression trop longue ou imbriquée trop profondément... |
 | E002 | Texte jamais fermé | un `"` ou une `{` dans un texte n'est jamais fermé |
-| E003 | Nom inconnu | un nom ou un constructeur qui n'est pas défini à cet endroit, ou une valeur utilisée avant sa définition |
+| E003 | Nom inconnu | un nom ou un constructeur qui n'est pas défini à cet endroit, une valeur utilisée avant sa définition, ou un nom privé (`_nom`) d'un autre fichier |
 | E004 | Mauvais nombre d'arguments | un appel ou un motif de constructeur avec trop ou trop peu de valeurs ; des définitions d'une même fonction avec des nombres de paramètres différents |
 | E005 | Mauvaise sorte de valeur | une opération ou une fonction a reçu une sorte de valeur qu'elle n'accepte pas (`"a" + 1`, une condition qui n'est pas un Bool, des valeurs qu'on ne peut pas comparer...) |
 | E006 | Aucun cas ne correspond | aucun cas d'un `match`, aucune définition d'une fonction, ou le motif d'une définition n'accepte pas la valeur |
@@ -2139,7 +2207,7 @@ minuscules.
 
 ## 6. Bibliothèque standard
 
-Les 124 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
+Les 136 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
 mots-clés, leurs noms sont en anglais. `rythme help builtins` les liste
 toutes par catégorie, une ligne chacune ; `rythme help NOM` (ou `help(NOM)`
 dans un programme, ou `:doc NOM` dans le mode interactif) affiche la
@@ -2250,6 +2318,29 @@ contenu : `Ok(())` ou `Err(message)`), `append_file(chemin, valeur)` (ajoute
 à la fin, en créant le fichier si besoin), `file_exists(chemin)`. Les
 chemins relatifs partent du dossier actuel.
 
+**Dates et heures.** Une date est un enregistrement `{year, month, day}`,
+avec `hour`, `minute` et `second` pour un moment de la journée (un champ
+absent vaut 0), et `offset`, le nombre de minutes d'avance de l'heure sur
+UTC, quand il est connu. Les années vont de 1 à 9999, dans le calendrier
+grégorien (une année bissextile tous les 4 ans, sauf tous les 100 ans, sauf
+tous les 400 ans). `now()` (la date et l'heure locales avec leur `offset` :
+d'après le fuseau horaire du système sous Linux et macOS, du navigateur dans
+le bac à sable, 0 (UTC) ailleurs), `today()` (`{year, month, day}`),
+`parse_date(texte)` (un Result ; ISO 8601 : `"2024-02-29"`, puis si besoin
+`T` ou une espace et une heure `13:05` ou `13:05:00`, une fraction de
+seconde, ignorée, et `Z` ou un décalage `+01:00`, `+0100` ou `+01`),
+`format_date(date)` (le retour en ISO 8601, avec l'heure et le décalage
+quand la date en a), `is_date(valeur)`, `add_days(date, n)` et
+`add_seconds(date, n)` (l'heure et le décalage restent ; `add_seconds` donne
+toujours une heure), `days_between(a, b)` (les jours entiers de a à b,
+arrondis vers zéro) et `seconds_between(a, b)` (les décalages comptent),
+`day_of_week(date)` (de 1 pour lundi à 7 pour dimanche, comme en ISO 8601),
+`days_in_month(annee, mois)`, `is_leap_year(annee)`. Un enregistrement qui
+n'est pas une date (un champ inconnu ou absent, un nombre hors limites, un
+30 février) arrête ces fonctions avec E023, qui dit ce qui ne va pas. Un
+décalage est un nombre fixe : il n'y a pas de règles d'heure d'été, donc un
+jour après un moment, c'est la même heure le lendemain.
+
 ```rythme
 nombres = [3, 1, 4, 1, 5, 9, 2, 6]
 print(map(nombres, fn(x) = x * 2))
@@ -2357,6 +2448,41 @@ Err("fichier introuvable : absent.txt")
 true ["Ada", "36"]
 ```
 
+```rythme
+depart = unwrap(parse_date("2024-02-28T22:30:00+01:00"))
+print(depart)
+print(add_days(depart, 1) |> format_date, add_seconds(depart, 5400) |> format_date)
+print(days_between({year: 2024, month: 1, day: 1}, {year: 2025, month: 1, day: 1}), days_in_month(2023, 2), is_leap_year(1900))
+print(day_of_week({year: 2024, month: 2, day: 29}), seconds_between(depart, {year: 2024, month: 2, day: 28, hour: 21, minute: 30, offset: 0}))
+print(parse_date("2023-02-29"))
+```
+
+```text
+{year: 2024, month: 2, day: 28, hour: 22, minute: 30, second: 0, offset: 60}
+2024-02-29T22:30:00+01:00 2024-02-29T00:00:00+01:00
+366 28 false
+4 0
+Err("\"2023-02-29\" n'est pas une date valide : le jour doit aller de 1 à 28 en février 2023, pas 29 (2023 n'est pas une année bissextile)")
+```
+
+Une date qui n'existe pas est expliquée :
+
+```rythme
+echeance = {year: 2023, month: 2, day: 29}
+print(add_days(echeance, 7))
+```
+
+```text
+erreur[E023]: `add_days` a besoin d'une date valide : le jour doit aller de 1 à 28 en février 2023, pas 29 (2023 n'est pas une année bissextile)
+ --> 65-dates.ry:2:7
+  |
+2 | print(add_days(echeance, 7))
+  |       ^^^^^^^^^^^^^^^^^^^^^ pas une date valide
+  |
+  = aide: une date est un enregistrement comme `{year: 2024, month: 2, day: 29}`, avec `hour`, `minute`, `second` et `offset` (minutes d'avance sur UTC) si besoin
+  = en savoir plus : `rythme explain E023`
+```
+
 Quand il n'y a plus rien à lire (la saisie au clavier a été fermée par
 Ctrl-D, ou le texte envoyé au programme est terminé ; ici, l'entrée est
 vide), `input` arrête le programme avec E017, pour qu'un programme qui
@@ -2397,6 +2523,8 @@ rythme [--lang fr|en] [--no-color] [COMMANDE] [ARGUMENTS...]
 | `check FICHIER...` | `verifier`, `vérifier` | vérifie chaque programme sans l'exécuter (voir [5.5](#55-la-vérification-avant-lexécution)) |
 | `test FICHIER [ARGS...]` | `tester` | lance les tests (voir [4.8](#48-tests)) |
 | `fmt [--check] FICHIER...` | `format`, `formater` | donne au code sa mise en forme officielle ; aussi un dossier, ou `-` pour l'entrée standard (voir [7.4](#74-la-mise-en-forme--rythme-fmt)) |
+| `doc [--html] [--out FICHIER] FICHIER...` | `documenter` | écrit la documentation de fichiers ou de dossiers, en Markdown ou sous forme de page web (voir [7.6](#76-la-documentation--rythme-doc)) |
+| `exercise [list \| start NOM \| check FICHIER]` | `exercises`, `exercice`, `exercices` | les exercices intégrés (voir plus bas) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | exécute le code donné en argument, et affiche la valeur de sa dernière expression sauf si c'est `()` ; `ARGS` est donné à `args()` |
 | `lsp` | | le serveur de langage, lancé par un éditeur (voir [7.5](#75-éditeurs-et-serveur-de-langage)) |
 | `help [NOM]` | `aide`, `--help`, `-h` | la liste des sujets, ou l'aide d'un sujet, d'une fonction intégrée ou d'un code d'erreur |
@@ -2419,13 +2547,25 @@ valeur qui commence par `fr` ou `en` (`--lang fr`, `--lang=en`,
 `--lang fr_CA`) ; une autre valeur, ou `--lang` sans valeur, est signalée,
 avec le code de sortie 2.
 
+**Exercices.** `rythme exercise` (ou `rythme exercise list`) liste les 30
+exercices gradués intégrés au programme (les fichiers de
+[`docs/exercises/`](exercises/README.fr.md)). `start NOM` écrit l'exercice
+désigné par son numéro (`7`) ou son nom de fichier (`07-recursivite`,
+`recursivite`) dans le dossier actuel, dans la langue des messages ; il ne
+remplace jamais un fichier existant (code de sortie 1). `check FICHIER` lance
+les tests du fichier comme `rythme test`, puis explique quoi faire ensuite ;
+`FICHIER` peut aussi être le numéro d'un exercice commencé dans le dossier
+actuel. Son code de sortie est 0 quand tous les tests passent et que les tests
+de l'exercice n'ont pas été modifiés, 1 sinon. Une action ou un exercice
+inconnu donne le code de sortie 2.
+
 **Sujets d'aide.** `rythme help SUJET` accepte `start`, `syntax`,
 `functions`, `lists`, `text`, `records`, `types`, `match`, `errors`,
-`functional`, `tests`, `modules`, `repl`, `fmt`, `editors` et `builtins`,
-ainsi que des noms français ou alternatifs : `syntaxe`, `fonctions`,
-`listes`, `texte`, `enregistrements`, `motifs`, `erreurs`, `fonctionnel`,
-`boucles`, `fichiers`, `interactif`, `formater`, `lsp`, `vscode`,
-`éditeurs`, `bibliothèque`...
+`functional`, `tests`, `exercises`, `modules`, `repl`, `fmt`, `doc`,
+`editors` et `builtins`, ainsi que des noms français ou alternatifs :
+`syntaxe`, `fonctions`, `listes`, `texte`, `enregistrements`, `motifs`,
+`erreurs`, `fonctionnel`, `boucles`, `exercices`, `fichiers`, `interactif`,
+`formater`, `documentation`, `lsp`, `vscode`, `éditeurs`, `bibliothèque`...
 
 **Codes de sortie.**
 
@@ -2699,6 +2839,138 @@ choisit. Lancé à la main dans un terminal, il dit à quoi il sert ;
   Kate...) : tout éditeur qui parle le Language Server Protocol peut lancer
   `rythme lsp` ; [`editors/README.fr.md`](../editors/README.fr.md) donne la
   configuration pour chacun.
+
+### 7.6 La documentation : `rythme doc`
+
+```text
+rythme doc [--html] [--out FICHIER] FICHIER_OU_DOSSIER...
+```
+
+`rythme doc` écrit la documentation de programmes à partir de leurs
+commentaires `##` (voir [1.2](#12-commentaires)), de leurs types et des
+définitions de leurs fonctions. Rien n'est exécuté.
+
+- `rythme doc geometrie.ry` écrit du Markdown sur la sortie standard
+  (`geometrie` suffit quand `geometrie.ry` existe). Un dossier représente
+  tous les fichiers `.ry` qu'il contient, ainsi que ceux de ses
+  sous-dossiers, les dossiers cachés mis à part ; on peut donner plusieurs
+  fichiers et dossiers.
+- Un fichier est documenté avec les fichiers qu'il utilise (`use geometrie`,
+  `use formes/cercle as cercle`, `use "geometrie.ry"`), chacun une seule
+  fois : la documentation d'un programme comprend celle de ses modules.
+- `--html` écrit à la place une seule page web, avec l'allure du site,
+  claire ou sombre comme le système. Elle n'a besoin de rien d'autre (pas de
+  script, pas d'autre fichier) : on peut l'ouvrir depuis le disque ou la
+  mettre sur n'importe quel serveur web.
+- `--out FICHIER` (`-o`) écrit dans un fichier et le dit ; un nom qui finit
+  par `.html` donne la page web.
+- `documenter` est un autre nom de `doc` ; les titres (*Fonctions*,
+  *Valeurs*...) sont dans la langue des messages.
+- Un fichier illisible, ou qui a une erreur de syntaxe, est signalé et
+  laissé de côté ; les autres sont documentés, et le code de sortie est 1.
+
+Pour chaque fichier viennent : sa description, les lignes `##` du début du
+fichier quand une ligne vide les sépare de ce qui suit ; les fichiers qu'il
+utilise, sous forme de liens (avec le nom donné par `as` quand ce n'est pas
+celui du fichier) ; ses types ; ses fonctions, avec la première
+ligne de **chaque** définition (motifs et conditions `if` compris) ; ses
+valeurs (avec leur définition quand elle tient sur une ligne) ; et les noms
+de ses tests. Les noms qui commencent par `_` sont laissés de côté, comme
+des détails de leur fichier.
+
+Dans un commentaire, un nom entre accents graves, comme `` `aire` `` ou
+`` `len(liste)` ``, devient un lien vers sa documentation ; un constructeur
+mène à son type ; dans un fichier qui a `use geometrie`,
+`` `geometrie.aire` `` mène à `aire` dans `geometrie.ry` ; les fonctions
+intégrées citées ainsi sont expliquées à la fin. Une ligne `##` vide commence un nouveau paragraphe, et les lignes qui
+commencent par `- ` forment une liste. En Markdown, le code est dans des
+blocs `~~~rythme`, et les liens utilisent les ancres que GitHub donne aux
+titres.
+
+Avec `geometrie.ry` :
+
+```rythme
+## Des formes et leurs aires.
+
+## Une forme à dessiner.
+type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+
+## L'aire d'une forme : pour un `Cercle`, `pi` fois le carré
+## de son rayon. Pour compter des formes, utilisez `len`.
+fn aire(Cercle(r)) = pi * _carre(r)
+fn aire(Rect(l, h)) = l * h
+
+## Le nombre de côtés d'un carré.
+cotes = 4
+
+fn _carre(x) = x * x
+
+test "aire d'un carré" = aire(Rect(2, 2)) == 4
+```
+
+`rythme doc geometrie.ry` écrit :
+
+```text
+# geometrie.ry
+
+Des formes et leurs aires.
+
+## Types
+
+### Forme
+
+~~~rythme
+type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+~~~
+
+Une forme à dessiner.
+
+## Fonctions
+
+### aire
+
+~~~rythme
+fn aire(Cercle(r))
+fn aire(Rect(l, h))
+~~~
+
+L'aire d'une forme : pour un [`Cercle`](#forme), `pi` fois le carré
+de son rayon. Pour compter des formes, utilisez [`len`](#len).
+
+## Valeurs
+
+### cotes
+
+~~~rythme
+cotes = 4
+~~~
+
+Le nombre de côtés d'un carré.
+
+## Tests
+
+- aire d'un carré
+
+## Fonctions intégrées citées
+
+### len
+
+~~~rythme
+len(x)
+~~~
+
+Longueur d'un texte (en caractères), d'une liste ou d'un enregistrement.
+
+Exemple :
+
+~~~rythme
+len("été")                 # 3
+len([1, 2])                # 2
+~~~
+```
+
+`rythme doc --html . --out doc.html` écrit la même chose pour tous les
+fichiers du dossier, en une seule page, avec un sommaire.
 
 ---
 

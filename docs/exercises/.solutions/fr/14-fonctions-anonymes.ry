@@ -1,0 +1,31 @@
+# Exercice 14 · Fonctions anonymes  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn avec_taxe(prix, pourcentage) = map(prix, fn(p) = p + p * pourcentage / 100)
+
+fn mots_longs(mots, n) = filter(mots, fn(m) = len(m) > n)
+
+fn longueurs(mots) = map(mots, len)
+
+fn tous_positifs(liste) = all(liste, fn(x) = x > 0)
+
+fn combien_au_dessus(liste, limite) = count(liste, fn(x) = x > limite)
+
+# --- Tests (ne les modifiez pas) ---
+
+test "avec taxe"
+  assert_eq(avec_taxe([100, 50], 20), [120, 60])
+  assert_eq(avec_taxe([10], 0), [10])
+end
+
+test "mots longs" = assert_eq(mots_longs(["un", "arbre", "est", "vert"], 3), ["arbre", "vert"])
+
+test "longueurs" = assert_eq(longueurs(["un", "arbre", "a"]), [2, 5, 1])
+
+test "tous positifs"
+  assert_eq(tous_positifs([1, 5, 3]), true)
+  assert_eq(tous_positifs([1, -5, 3]), false)
+  assert_eq(tous_positifs([]), true)
+end
+
+test "combien au-dessus" = assert_eq(combien_au_dessus([3, 10, 7, 12], 5), 3)

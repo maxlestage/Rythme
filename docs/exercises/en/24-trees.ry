@@ -1,0 +1,69 @@
+# Exercise 24 · Trees  ★★★
+#
+# A type can contain itself. A binary tree is either empty (`Leaf`), or a
+# node with a value and two smaller trees, on its left and on its right.
+# Functions on trees follow the shape of the type: one case for `Leaf`, one
+# for `Node`, which calls itself on both sides.
+#
+# Statement
+#   - `size(tree)`: how many values the tree holds;
+#   - `total(tree)`: the sum of its values;
+#   - `depth(tree)`: the number of levels (0 for a Leaf);
+#   - `insert(tree, x)`: a search tree is a tree where the values on the
+#     left of a node are smaller than its value, and the others on the
+#     right; give the search tree with x added (a new Node in place of a
+#     Leaf);
+#   - `to_list(tree)`: the values, from left to right.
+#
+# Hints
+#   1. `fn size(Leaf) = 0` and `fn size(Node(left, _, right)) = ...`.
+#   2. `max(a, b)` gives the larger of two numbers.
+#   3. `insert` gives a new tree: `Node(insert(left, x), value, right)`
+#      when x goes to the left.
+#   4. `to_list` of a node is: the list of the left, then the value, then
+#      the list of the right (`+` joins lists).
+#
+# Check your work:  rythme exercise check 24-trees.ry
+#              or:  rythme test 24-trees.ry
+
+type Tree = Leaf | Node(left, value, right)
+
+fn size(tree) = fail("to do")
+
+fn total(tree) = fail("to do")
+
+fn depth(tree) = fail("to do")
+
+fn insert(tree, x) = fail("to do")
+
+fn to_list(tree) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+#       5
+#      / \
+#     3   8
+#    /
+#   1
+small = Node(Node(Node(Leaf, 1, Leaf), 3, Leaf), 5, Node(Leaf, 8, Leaf))
+
+test "size"
+  assert_eq(size(Leaf), 0)
+  assert_eq(size(small), 4)
+end
+
+test "total" = assert_eq(total(small), 17)
+
+test "depth"
+  assert_eq(depth(Leaf), 0)
+  assert_eq(depth(small), 3)
+end
+
+test "insert"
+  assert_eq(insert(Leaf, 4), Node(Leaf, 4, Leaf))
+  assert_eq(insert(Node(Leaf, 4, Leaf), 2), Node(Node(Leaf, 2, Leaf), 4, Leaf))
+end
+
+test "to list" = assert_eq(to_list(small), [1, 3, 5, 8])
+
+test "sorting with a tree" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> to_list, [1, 2, 4, 7, 9])

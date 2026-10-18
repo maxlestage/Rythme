@@ -16,10 +16,11 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 
 ## Language
 
-- [ ] **Modules with names.** `use "geometry.ry" as geo`, then `geo.area(2)`;
-  names starting with `_` stay private to their file; the checker, the
-  formatter, the language server (completion after `geo.`) and the manual
-  know it. Plain `use "x.ry"` keeps working.
+- [x] **Modules with names.** `use geometry` (or `use shapes/circle`,
+  `use "geometry.ry" as geo`), then `geometry.area(2)`; names starting with
+  `_` stay private to their file; the checker, the formatter, the language
+  server (completion after `use ` and `geo.`, a quick fix adding a missing
+  `use`) and the manual know it. Plain `use "x.ry"` keeps working.
 - [ ] **Patterns on ranges and texts.** `1..9 -> ...` in `match` (Int and
   Float bounds, exhaustiveness knows nothing new), and a text prefix pattern
   only if it stays simple; the checker reports overlapping or empty ranges.
@@ -33,7 +34,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 
 ## Library
 
-- [ ] **Dates and times.** `now()`, `today()`, dates as records
+- [x] **Dates and times.** `now()`, `today()`, dates as records
   (`{year, month, day, hour, minute, second}`), ISO 8601 parsing and
   printing, differences and additions in days/seconds, day of the week;
   UTC plus the local offset when the system gives it; no dependency if
@@ -61,13 +62,13 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 - [ ] **Step-by-step evaluation for teaching.** `rythme explain-run file.ry`
   (or a playground button) shows how an expression is reduced step by step
   (`fib(3)` → `fib(2) + fib(1)` → ...), bounded, in every language.
-- [ ] **Exercises.** `docs/exercises/` with graded exercises for a first
+- [x] **Exercises.** `docs/exercises/` with graded exercises for a first
   course (each with tests that `rythme test` runs and hints), and
   `rythme exercise` (list, start, check) if it stays simple.
 
 ## Tools
 
-- [ ] **`rythme doc`.** Documentation of a file or a folder from its `##`
+- [x] **`rythme doc`.** Documentation of a file or a folder from its `##`
   comments, types and signatures, as Markdown and HTML, linked to the
   built-ins' docs.
 - [ ] **Better `rythme test`.** A folder of files, a filter by name,
@@ -75,7 +76,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   (`check_all(fn(x) = ..., generator)`) with shrinking of the failing case.
 - [ ] **Language server extras.** Inferred types as inlay hints, semantic
   highlighting, code lenses to run a test or a file, workspace symbols.
-- [ ] **A Tree-sitter grammar** for Neovim, Helix and Zed highlighting, with
+- [x] **A Tree-sitter grammar** for Neovim, Helix and Zed highlighting, with
   its tests, and the Zed extension completed.
 - [ ] **Projects and packages.** `rythme new name`, a `rythme.toml` manifest,
   dependencies from git or a path with a lock file, `use "package/file.ry"`,
@@ -86,7 +87,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 - [ ] **Faster where it still hurts.** Building texts with `+` and adding to
   lists in constant amortized time, cheaper calls between local functions;
   measured with `bench/`, no behavior change.
-- [ ] **Installers.** A `curl | sh` / PowerShell install script using the
+- [x] **Installers.** A `curl | sh` / PowerShell install script using the
   release binaries, a Homebrew formula and a winget manifest in the
   repository, crates.io metadata, and a workflow publishing the VS Code
   extension when a `VSCE_PAT` secret exists (skipped otherwise).

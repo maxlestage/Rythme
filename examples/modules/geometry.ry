@@ -1,9 +1,21 @@
-# A module: everything defined here can be used by files that `use` it.
+# A module: the files that `use geometry` reach what it defines through its
+# name: `geometry.rectangle_area(3, 4)`. Names starting with `_` stay private.
 
 ## Area of a rectangle.
 fn rectangle_area(width, height) = width * height
 
 ## Distance between two points {x, y}.
-fn distance(a, b) = sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
+fn distance(a, b) = sqrt(_square(a.x - b.x) + _square(a.y - b.y))
+
+fn _square(x) = x * x
 
 origin = {x: 0, y: 0}
+
+## A shape, measured by `area`.
+type Shape = Rectangle(width, height) | Square(side)
+
+## Area of a shape.
+fn area(shape) = match shape
+  Rectangle(w, h) -> rectangle_area(w, h)
+  Square(s) -> _square(s)
+end

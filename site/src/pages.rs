@@ -6,12 +6,13 @@ use paquets::prelude::*;
 use crate::examples::EXAMPLES;
 use crate::highlight::{code_block, code_inline, diagnostic};
 use crate::i18n::{Lang, Texts};
+use crate::pwa;
 use crate::routes::{Page as PageKind, Route, link};
 
 pub const REPO: &str = "https://github.com/maxlestage/Rythme";
 const RELEASES: &str = "https://github.com/maxlestage/Rythme/releases";
 const PAQUETS: &str = "https://paquets-90dfc06b6fea.herokuapp.com/";
-const FONTS: &str = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap";
+pub const FONTS: &str = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap";
 
 /// What a request needs to render a page.
 pub struct Ctx {
@@ -147,6 +148,64 @@ fn github_icon() -> Element {
         ))
 }
 
+fn install_icon() -> Element {
+    svg().attr("class", "icon").attr("viewBox", "0 0 16 16").attr("width", "18").attr("height", "18").attr("aria-hidden", "true").child(
+        path()
+            .attr("fill", "none")
+            .attr("stroke", "currentColor")
+            .attr("stroke-width", "1.6")
+            .attr("stroke-linecap", "round")
+            .attr("stroke-linejoin", "round")
+            .attr("d", "M8 2v8m-3.5-3.5L8 10l3.5-3.5M3 13.5h10"),
+    )
+}
+
+/// The share button of Safari, in the hint that explains how to install on iOS.
+fn share_icon() -> Element {
+    svg().attr("class", "icon").attr("viewBox", "0 0 16 16").attr("width", "18").attr("height", "18").attr("aria-hidden", "true").child(
+        path()
+            .attr("fill", "none")
+            .attr("stroke", "currentColor")
+            .attr("stroke-width", "1.4")
+            .attr("stroke-linecap", "round")
+            .attr("stroke-linejoin", "round")
+            .attr("d", "M8 1.5v8.5M5.5 4 8 1.5 10.5 4M5 6.5H3.5v8h9v-8H11"),
+    )
+}
+
+/// The banners of the installed app, shown by `site.js`: a new version is ready, and on
+/// iPhone and iPad how to install the site.
+fn notices(t: &Texts) -> Element {
+    div()
+        .class("notices")
+        .attr("role", "status")
+        .child(
+            div().class("notice").id("app-update").attr("hidden", "").child(p().class("notice__text").text(t.app_update)).child(
+                div()
+                    .class("notice__actions")
+                    .child(button().class("btn btn--primary btn--sm").attr("type", "button").id("app-reload").text(t.app_reload))
+                    .child(button().class("btn btn--ghost btn--sm").attr("type", "button").id("app-later").text(t.app_later)),
+            ),
+        )
+        .child(
+            div()
+                .class("notice notice--hint")
+                .id("ios-hint")
+                .attr("hidden", "")
+                .child(share_icon())
+                .child(p().class("notice__text").text(t.app_ios))
+                .child(
+                    button()
+                        .class("notice__close")
+                        .attr("type", "button")
+                        .id("ios-hint-close")
+                        .attr("aria-label", t.app_close)
+                        .attr("title", t.app_close)
+                        .text("×"),
+                ),
+        )
+}
+
 fn site_header(ctx: &Ctx) -> Element {
     let t = ctx.t();
     let links = nav_pages(t).map(|(page, text)| {
@@ -164,11 +223,27 @@ fn site_header(ctx: &Ctx) -> Element {
                     .child(span().class("brand__word").text("Rythme"))
                     .child(beats()),
             )
-            .child(nav().class("nav").id("nav").attr("aria-label", t.nav_aria).child(
-                ul().class("nav__list").children(links).child(li().class("nav__item--github").child(external(
-                    a().class("nav__link nav__link--github").href(REPO).child(github_icon()).child(span().text("GitHub")),
-                ))),
-            ))
+            .child(
+                nav().class("nav").id("nav").attr("aria-label", t.nav_aria).child(
+                    ul().class("nav__list")
+                        .children(links)
+                        .child(li().class("nav__item--github").child(external(
+                            a().class("nav__link nav__link--github").href(REPO).child(github_icon()).child(span().text("GitHub")),
+                        )))
+                        // Shown by `site.js` when the browser offers to install the site.
+                        .child(
+                            li().class("nav__item--app").attr("hidden", "").child(
+                                button()
+                                    .class("nav__link nav__install")
+                                    .attr("type", "button")
+                                    .id("app-install")
+                                    .attr("title", t.app_install_title)
+                                    .child(install_icon())
+                                    .child(span().text(t.app_install)),
+                            ),
+                        ),
+                ),
+            )
             .child(lang_switch(ctx, "lang--bar"))
             .child(
                 button()
@@ -223,7 +298,7 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
     let route = ctx.route;
     let mut seo =
         Seo::new().site_name("Rythme").base_url(ctx.origin.clone()).image("/assets/og-image.png").og_type("website").locale(lang.locale());
-    if route.page == PageKind::NotFound {
+    if matches!(route.page, PageKind::NotFound | PageKind::Offline) {
         seo = seo.noindex(true);
     } else {
         seo = seo.canonical(route.path());
@@ -237,23 +312,40 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
     let head = format!(
         concat!(
             r#"<meta name="color-scheme" content="light dark"/>"#,
-            r##"<meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)"/>"##,
-            r##"<meta name="theme-color" content="#0e1118" media="(prefers-color-scheme: dark)"/>"##,
+            r#"<meta name="theme-color" content="{light}" media="(prefers-color-scheme: light)"/>"#,
+            r#"<meta name="theme-color" content="{dark}" media="(prefers-color-scheme: dark)"/>"#,
+            r#"<link rel="icon" href="{favicon}" sizes="32x32"/>"#,
             r#"<link rel="icon" href="{icon}" type="image/svg+xml"/>"#,
+            r#"<link rel="manifest" href="{manifest}"/>"#,
+            r#"<link rel="apple-touch-icon" href="{apple}"/>"#,
+            r#"<meta name="application-name" content="Rythme"/>"#,
+            r#"<meta name="mobile-web-app-capable" content="yes"/>"#,
+            r#"<meta name="apple-mobile-web-app-capable" content="yes"/>"#,
+            r#"<meta name="apple-mobile-web-app-title" content="Rythme"/>"#,
+            r#"<meta name="apple-mobile-web-app-status-bar-style" content="default"/>"#,
             r#"<link rel="preconnect" href="https://fonts.googleapis.com"/>"#,
             r#"<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>"#,
             r#"<script>document.documentElement.classList.add("js")</script>"#,
             r#"<script src="{js}" defer=""></script>"#,
         ),
         js = ctx.asset("/site.js"),
-        icon = link("/assets/logo.svg"),
+        icon = link(pwa::LOGO),
+        favicon = link(pwa::FAVICON),
+        light = pwa::LIGHT,
+        dark = pwa::DARK,
+        manifest = link(&pwa::manifest_path(lang)),
+        apple = link(pwa::APPLE_ICON),
     );
+    // `site.js` registers the service worker from these.
     let body = div()
         .class("site")
+        .attr("data-sw", link("/sw.js"))
+        .attr("data-scope", link("/"))
         .child(a().class("skip").href("#main").text(ctx.t().skip))
         .child(site_header(ctx))
         .child(content.id("main"))
-        .child(site_footer(ctx));
+        .child(site_footer(ctx))
+        .child(notices(ctx.t()));
     Page::new(title)
         .lang(lang.code())
         .description(description)
@@ -383,6 +475,7 @@ fn install(t: &Texts) -> Element {
             div().class("commands__row").child(dt().child(code().attr("translate", "no").text(*cmd))).child(dd().text(*what))
         })))
         .child(p().class("note").text(t.commands_lang))
+        .child(p().class("note note--box").text(t.install_app))
 }
 
 fn cta(ctx: &Ctx) -> Element {
@@ -532,10 +625,37 @@ pub fn playground(ctx: &Ctx) -> Page {
                 .class("panel")
                 .attr("aria-labelledby", "file-name")
                 .child(
-                    div()
-                        .class("panel__head")
-                        .child(span().class("file").id("file-name").text("main.ry"))
-                        .child(span().class("status").id("lines")),
+                    div().class("panel__head").child(span().class("file").id("file-name").text("main.ry")).child(
+                        div()
+                            .class("panel__tools")
+                            .child(
+                                button()
+                                    .class("btn btn--ghost btn--sm")
+                                    .attr("type", "button")
+                                    .id("open")
+                                    .attr("title", t.pg_open_title)
+                                    .attr("hidden", "")
+                                    .text(t.pg_open),
+                            )
+                            .child(
+                                button()
+                                    .class("btn btn--ghost btn--sm")
+                                    .attr("type", "button")
+                                    .id("save")
+                                    .attr("title", t.pg_save_title)
+                                    .attr("hidden", "")
+                                    .text(t.pg_save),
+                            )
+                            .child(
+                                input()
+                                    .attr("type", "file")
+                                    .id("open-file")
+                                    .attr("accept", ".ry,text/plain")
+                                    .attr("hidden", "")
+                                    .attr("aria-label", t.pg_open_title),
+                            )
+                            .child(span().class("status").id("lines")),
+                    ),
                 )
                 .child(
                     div().class("editor").child(div().class("gutter").id("gutter").attr("aria-hidden", "true").text("1")).child(
@@ -601,7 +721,8 @@ pub fn playground(ctx: &Ctx) -> Page {
         .child(toolbar)
         .child(workspace)
         .child(help)
-        .child(p().class("note").text(t.pg_limits));
+        .child(p().class("note").text(t.pg_limits))
+        .child(p().class("note").text(t.pg_offline));
     layout(ctx, &format!("{} — Rythme", t.pg_title), t.pg_lead, content)
         .head(format!(r#"<script src="{}" defer=""></script>"#, ctx.asset("/playground.js")))
 }
@@ -641,6 +762,45 @@ pub fn not_found(ctx: &Ctx) -> Page {
     layout(ctx, &format!("404 — {}", t.nf_title), t.nf_text, content).status(404)
 }
 
+// ----- Offline ----------------------------------------------------------------------------
+
+/// Shown by the service worker, without network, for a page it has not saved.
+pub fn offline(ctx: &Ctx) -> Page {
+    let t = ctx.t();
+    let content = main()
+        .class("page nf")
+        .child(p().class("eyebrow").child(beats()))
+        .child(h1().text(t.offline_title))
+        .child(p().class("lead").text(t.offline_text))
+        .child(
+            div()
+                .class("hero__actions")
+                // The address of the missing page: the service worker shows this page in
+                // its place.
+                .child(a().class("btn btn--primary btn--lg").href("").text(t.offline_retry))
+                .child(button_link(ctx.href(PageKind::Playground), "btn--ghost btn--lg", t.nav_playground))
+                .child(button_link(ctx.href(PageKind::Home), "btn--ghost btn--lg", t.nf_home)),
+        );
+    layout(ctx, &format!("{} — Rythme", t.offline_title), t.offline_text, content)
+}
+
+const VIEWPORT: &str = r#"<meta name="viewport" content="width=device-width, initial-scale=1"/>"#;
+/// The installed app draws under the notch and the rounded corners: `site.css` keeps
+/// the content in the safe areas.
+const VIEWPORT_COVER: &str = r#"<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>"#;
+
+/// The response of a page: its HTML with the viewport of the installed app, and its
+/// Content-Security-Policy (Paquets computes it from the same page).
+pub fn respond(page: impl Fn() -> Page) -> Response {
+    let res = page().into_response();
+    let html = page().render().replacen(VIEWPORT, VIEWPORT_COVER, 1);
+    let out = Response::new().status(res.status_code()).html(html);
+    match res.get_header("content-security-policy") {
+        Some(csp) => out.header("content-security-policy", csp.to_owned()),
+        None => out,
+    }
+}
+
 /// The page of a route.
 pub fn render(ctx: &Ctx) -> Page {
     match ctx.route.page {
@@ -649,6 +809,7 @@ pub fn render(ctx: &Ctx) -> Page {
         PageKind::Examples => examples(ctx),
         PageKind::Playground => playground(ctx),
         PageKind::Teach => teach(ctx),
+        PageKind::Offline => offline(ctx),
         PageKind::NotFound => not_found(ctx),
     }
 }

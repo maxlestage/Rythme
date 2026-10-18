@@ -1,0 +1,36 @@
+# Exercise 22 · Your own types  ★★☆
+# Reference solution. Try the exercise before reading it!
+
+type Shape = Circle(radius) | Rect(width, height) | Square(side)
+
+fn area(Circle(r)) = pi * r * r
+fn area(Rect(w, h)) = w * h
+fn area(Square(s)) = s * s
+
+fn perimeter(Circle(r)) = 2 * pi * r
+fn perimeter(Rect(w, h)) = 2 * (w + h)
+fn perimeter(Square(s)) = 4 * s
+
+fn name_of(Circle(_)) = "circle"
+fn name_of(Rect(_, _)) = "rectangle"
+fn name_of(Square(_)) = "square"
+
+fn total_area(shapes) = shapes |> map(area) |> sum
+
+# --- Tests (do not change them) ---
+
+test "area"
+  assert_eq(area(Rect(2, 3)), 6)
+  assert_eq(area(Square(4)), 16)
+  assert_eq(round(area(Circle(1)), 2), 3.14)
+end
+
+test "perimeter"
+  assert_eq(perimeter(Rect(2, 3)), 10)
+  assert_eq(perimeter(Square(4)), 16)
+  assert_eq(round(perimeter(Circle(1)), 2), 6.28)
+end
+
+test "name" = assert_eq([Circle(1), Rect(1, 2), Square(3)] |> map(name_of), ["circle", "rectangle", "square"])
+
+test "total area" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 11)

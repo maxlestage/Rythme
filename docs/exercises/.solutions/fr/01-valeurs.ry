@@ -1,0 +1,18 @@
+# Exercice 01 · Premières valeurs  ★☆☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+secondes_par_minute = 60
+secondes_par_heure = 60 * secondes_par_minute
+secondes_par_jour = 24 * secondes_par_heure
+secondes_par_semaine = 7 * secondes_par_jour
+resume = "Une semaine dure {secondes_par_semaine} secondes."
+
+# --- Tests (ne les modifiez pas) ---
+
+test "secondes dans une heure" = assert_eq(secondes_par_heure, 3600)
+
+test "secondes dans un jour" = assert_eq(secondes_par_jour, 86400)
+
+test "secondes dans une semaine" = assert_eq(secondes_par_semaine, 604800)
+
+test "le résumé" = assert_eq(resume, "Une semaine dure 604800 secondes.")

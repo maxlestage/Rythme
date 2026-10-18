@@ -1,0 +1,32 @@
+# Exercice 08 · Les chiffres d'un nombre  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn nombre_de_chiffres(n) = if n < 10 then 1 else 1 + nombre_de_chiffres(n // 10)
+
+fn somme_des_chiffres(n) = if n < 10 then n else n % 10 + somme_des_chiffres(n // 10)
+
+fn inverser_depuis(0, construit) = construit
+fn inverser_depuis(n, construit) = inverser_depuis(n // 10, construit * 10 + n % 10)
+
+fn nombre_inverse(n) = inverser_depuis(n, 0)
+
+# --- Tests (ne les modifiez pas) ---
+
+test "nombre de chiffres"
+  assert_eq(nombre_de_chiffres(0), 1)
+  assert_eq(nombre_de_chiffres(7), 1)
+  assert_eq(nombre_de_chiffres(472), 3)
+  assert_eq(nombre_de_chiffres(1000000), 7)
+end
+
+test "somme des chiffres"
+  assert_eq(somme_des_chiffres(0), 0)
+  assert_eq(somme_des_chiffres(472), 13)
+  assert_eq(somme_des_chiffres(99999), 45)
+end
+
+test "nombre inversé"
+  assert_eq(nombre_inverse(472), 274)
+  assert_eq(nombre_inverse(1230), 321)
+  assert_eq(nombre_inverse(5), 5)
+end

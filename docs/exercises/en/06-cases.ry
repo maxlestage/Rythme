@@ -1,0 +1,56 @@
+# Exercise 06 · One definition per case  ★☆☆
+#
+# A function can be written as several definitions, tried in order. A
+# parameter can be a value (`fn f(0) = ...`), and a guard (`if ...` before
+# the `=`) adds a condition:
+#   fn describe(0) = "zero"
+#   fn describe(n) if n < 0 = "negative"
+#   fn describe(_) = "positive"
+#
+# Statement
+#   - `plural(n, word)`: "1 cat" for 1, but "0 cats", "2 cats"...
+#   - `fizzbuzz(n)`: "FizzBuzz" if n is a multiple of 3 and of 5, "Fizz"
+#     for the other multiples of 3, "Buzz" for the other multiples of 5,
+#     and the number as a text otherwise;
+#   - `day_kind(day)`: "weekend" for "Saturday" and "Sunday", "weekday"
+#     for any other text.
+#
+# Hints
+#   1. Start with the special case: `fn plural(1, word) = ...`, then the
+#      general case on the next line.
+#   2. The order matters: test "FizzBuzz" before "Fizz" and "Buzz".
+#   3. `text(15)` is "15".
+#   4. `_` accepts anything, and is usually the last case.
+#
+# Check your work:  rythme exercise check 06-cases.ry
+#              or:  rythme test 06-cases.ry
+
+fn plural(n, word) = fail("to do")
+
+fn fizzbuzz(n) = fail("to do")
+
+fn day_kind(day) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "plural"
+  assert_eq(plural(1, "cat"), "1 cat")
+  assert_eq(plural(2, "cat"), "2 cats")
+  assert_eq(plural(0, "dog"), "0 dogs")
+end
+
+test "fizzbuzz"
+  assert_eq(fizzbuzz(1), "1")
+  assert_eq(fizzbuzz(3), "Fizz")
+  assert_eq(fizzbuzz(10), "Buzz")
+  assert_eq(fizzbuzz(30), "FizzBuzz")
+  assert_eq(fizzbuzz(31), "31")
+end
+
+test "the first fifteen" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+
+test "day kind"
+  assert_eq(day_kind("Saturday"), "weekend")
+  assert_eq(day_kind("Sunday"), "weekend")
+  assert_eq(day_kind("Monday"), "weekday")
+end

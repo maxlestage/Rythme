@@ -1,0 +1,62 @@
+# Exercise 05 · True or false  ★☆☆
+#
+# Comparisons (`==`, `!=`, `<`, `<=`, `>`, `>=`) give a Bool: `true` or
+# `false`. `and`, `or` and `not` combine Bools.
+#
+# Statement
+#   Each function gives a Bool, and none of them needs `if`:
+#   - `is_multiple(n, d)`: is n a multiple of d?
+#   - `is_between(x, low, high)`: is x from low to high (both included)?
+#   - `is_leap(year)`: a year is a leap year when it is a multiple of
+#     4, except the multiples of 100 that are not multiples of 400 (2000 is
+#     a leap year, 1900 is not); the library has it too, as
+#     `is_leap_year`, but here you write the rule yourself;
+#   - `exclusive_or(a, b)`: is exactly one of a and b true?
+#
+# Hints
+#   1. n is a multiple of d when the remainder `n % d` is 0.
+#   2. `x >= low and x <= high`
+#   3. Write the rule for leap years with the first function:
+#      `is_multiple(year, 4) and (...)`.
+#   4. Two Bools can be compared with `!=` too.
+#
+# Check your work:  rythme exercise check 05-logic.ry
+#              or:  rythme test 05-logic.ry
+
+fn is_multiple(n, d) = fail("to do")
+
+fn is_between(x, low, high) = fail("to do")
+
+fn is_leap(year) = fail("to do")
+
+fn exclusive_or(a, b) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "multiples"
+  assert(is_multiple(12, 3), "12 is a multiple of 3")
+  assert(not is_multiple(12, 5), "12 is not a multiple of 5")
+  assert(is_multiple(0, 7), "0 is a multiple of every number")
+end
+
+test "between"
+  assert(is_between(5, 1, 10), "5 is between 1 and 10")
+  assert(is_between(1, 1, 10), "the bounds are included")
+  assert(is_between(10, 1, 10), "the bounds are included")
+  assert(not is_between(11, 1, 10), "11 is too big")
+  assert(not is_between(0, 1, 10), "0 is too small")
+end
+
+test "leap years"
+  assert_eq(is_leap(2024), true)
+  assert_eq(is_leap(2023), false)
+  assert_eq(is_leap(1900), false)
+  assert_eq(is_leap(2000), true)
+end
+
+test "exclusive or"
+  assert_eq(exclusive_or(true, false), true)
+  assert_eq(exclusive_or(false, true), true)
+  assert_eq(exclusive_or(true, true), false)
+  assert_eq(exclusive_or(false, false), false)
+end

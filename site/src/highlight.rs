@@ -131,6 +131,18 @@ pub const BUILTINS: &[&str] = &[
     "write_file",
     "append_file",
     "file_exists",
+    "now",
+    "today",
+    "parse_date",
+    "format_date",
+    "is_date",
+    "add_days",
+    "add_seconds",
+    "days_between",
+    "seconds_between",
+    "day_of_week",
+    "days_in_month",
+    "is_leap_year",
     "pi",
 ];
 

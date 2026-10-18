@@ -194,7 +194,32 @@ pub enum Item {
     Stmt(Stmt),
     Type(TypeDef),
     Test(Rc<str>, Rc<Expr>, Span),
-    Use(Rc<str>, Span),
+    Use(Use),
+}
+
+/// `use geometry`, `use shapes/circle as circle`, `use "geometry.ry" as geo`
+/// or `use "geometry.ry"`.
+pub struct Use {
+    /// The path of the file, as written; `use geometry` gives `geometry.ry`.
+    pub path: Rc<str>,
+    /// From `use` to the end of the path.
+    pub span: Span,
+    /// The path alone.
+    pub path_span: Span,
+    /// The name its definitions are used through (`geo.area`): written after
+    /// `as`, or the name of the file in `use geometry`. Without it (`use
+    /// "geometry.ry"`), they are used directly, by their own names.
+    pub name: Option<(Sym, Span)>,
+    /// Written without quotes: `use geometry`.
+    pub short: bool,
+}
+
+/// What a `use` means, without how it is written: `use geometry` and `use
+/// "geometry.ry" as geometry` are the same (the formatter relies on it).
+impl std::fmt::Debug for Use {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Use").field("path", &self.path).field("name", &self.name.map(|(n, _)| n)).finish()
+    }
 }
 
 #[derive(Debug)]

@@ -139,7 +139,7 @@ fn history_path() -> Option<PathBuf> {
 }
 
 fn names(driver: &Driver) -> Vec<String> {
-    let mut out: Vec<String> = driver.interp.globals.keys().map(|s| s.name().to_string()).collect();
+    let mut out: Vec<String> = driver.interp.globals.keys().filter(|s| !s.is_stored()).map(|s| s.name().to_string()).collect();
     out.extend(KEYWORDS.iter().map(|k| k.to_string()));
     out.extend(COMMANDS.iter().map(|c| c.to_string()));
     out
@@ -331,6 +331,7 @@ fn command(driver: &mut Driver, input: &str) -> Next {
                 .interp
                 .globals
                 .keys()
+                .filter(|s| !s.is_stored())
                 .map(|s| s.name().to_string())
                 .filter(|n| !builtin.contains(n.as_str()) && !matches!(n.as_str(), "pi" | "Some" | "None" | "Ok" | "Err"))
                 .collect();

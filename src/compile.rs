@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use crate::ast::{BinOp, Expr, ExprKind, FnDef, ListItem, PatKind, Pattern, RecordItem, Stmt as AstStmt, TemplatePart, UnOp};
 use crate::source::Span;
-use crate::symbol::Sym;
+use crate::symbol::{Sym, SymMap};
 use crate::value::{Shape, Value};
 
 /// An expression ready to run.
@@ -197,14 +197,19 @@ impl Drop for Scope {
     }
 }
 
+/// How the top-level names of a file are stored, when not under the name
+/// written (see `Sym::stored`): its private names, the names of a file used
+/// with a name, and `geo.area` for the file used as `geo`.
+pub type Names = Rc<SymMap<Sym>>;
+
 /// Prepares a function of the program (it captures nothing).
-pub fn function(def: &FnDef) -> FnCode {
-    Compiler::default().func(def, None, Vec::new(), Vec::new())
+pub fn function(def: &FnDef, names: &Names) -> FnCode {
+    Compiler { names: names.clone(), ..Compiler::default() }.func(def, None, Vec::new(), Vec::new())
 }
 
 /// Prepares an expression that runs outside of any function.
-pub fn top(e: &Expr) -> Code {
-    let mut c = Compiler::default();
+pub fn top(e: &Expr, names: &Names) -> Code {
+    let mut c = Compiler { names: names.clone(), ..Compiler::default() };
     c.funcs.push(Func::new(0));
     let node = c.expr(e);
     let f = c.funcs.pop().unwrap();
@@ -256,6 +261,7 @@ struct Compiler {
     funcs: Vec<Func>,
     /// The same names as `funcs`, all functions together, for messages.
     scope: Scope,
+    names: Names,
 }
 
 impl Compiler {
@@ -376,7 +382,7 @@ impl Compiler {
             Some(Loc::Local(slot)) => Kind::Local(slot),
             Some(Loc::Captured(i)) => Kind::Captured(i),
             Some(Loc::Sibling(i)) => Kind::Sibling(i),
-            None => Kind::Global(sym, self.scope.clone()),
+            None => Kind::Global(self.names.get(&sym).copied().unwrap_or(sym), self.scope.clone()),
         }
     }
 
@@ -393,7 +399,7 @@ impl Compiler {
             PatKind::Int(n) => Pat::Int(*n),
             PatKind::Float(f) => Pat::Float(*f),
             PatKind::Text(t) => Pat::Text(t.clone()),
-            PatKind::Ctor(name, ps) => Pat::Ctor(*name, ps.iter().map(|p| self.pattern(p)).collect()),
+            PatKind::Ctor(name, ps) => Pat::Ctor(name.own_name(), ps.iter().map(|p| self.pattern(p)).collect()),
             PatKind::List(ps, rest) => {
                 let items = ps.iter().map(|p| self.pattern(p)).collect();
                 let rest = rest.map(|r| {

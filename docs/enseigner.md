@@ -68,6 +68,17 @@ test "négatifs" = assert_eq(plus_grand([-3, -1, -2]), -1)
 `rythme test exercice.ry` indique ce qui réussit et, pour chaque échec, les
 valeurs attendue et obtenue.
 
+Trente exercices de ce genre sont prêts : [**les exercices**](exercises/README.fr.md),
+gradués de ★☆☆ à ★★★ et qui suivent le cours ci-dessus, chacun avec un
+énoncé, des indices et des tests, en français et en anglais, avec des
+solutions de référence pour les enseignants. Ils sont intégrés à `rythme` :
+
+```sh
+rythme exercise list                       # les exercices
+rythme exercise start 7                    # copie 07-recursivite.ry dans le dossier actuel
+rythme exercise check 07-recursivite.ry    # lance ses tests, avec des conseils, et propose le suivant
+```
+
 ## Conseils pratiques
 
 - Commencez par le mode interactif (`rythme`) : chaque ligne affiche sa

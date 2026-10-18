@@ -1,0 +1,274 @@
+================================================================================
+Numbers, booleans, unit
+================================================================================
+
+[1, 1_000, 0xff, 0b101, 1.5, 2e10, 1.5e-3, true, false, ()]
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (list
+    (integer)
+    (integer)
+    (integer)
+    (integer)
+    (float)
+    (float)
+    (float)
+    (boolean)
+    (boolean)
+    (unit)))
+
+================================================================================
+Operators and precedence
+================================================================================
+
+a + b * c ** d ** e
+-x ** 2
+not a == b and c or d
+1..10 |> map(f)
+a // b % c - d / e
+a != b
+a <= b
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (binary_expression
+    (identifier)
+    (binary_expression
+      (identifier)
+      (binary_expression
+        (identifier)
+        (binary_expression
+          (identifier)
+          (identifier)))))
+  (unary_expression
+    (binary_expression
+      (identifier)
+      (integer)))
+  (binary_expression
+    (binary_expression
+      (not_expression
+        (binary_expression
+          (identifier)
+          (identifier)))
+      (identifier))
+    (identifier))
+  (pipe_expression
+    (range_expression
+      (integer)
+      (integer))
+    (call
+      (identifier)
+      (arguments
+        (identifier))))
+  (binary_expression
+    (binary_expression
+      (binary_expression
+        (identifier)
+        (identifier))
+      (identifier))
+    (binary_expression
+      (identifier)
+      (identifier)))
+  (binary_expression
+    (identifier)
+    (identifier))
+  (binary_expression
+    (identifier)
+    (identifier)))
+
+================================================================================
+Calls, fields, methods, indexes and ?
+================================================================================
+
+f(x, y)
+f (x)
+person.name
+record.type
+xs.map(f)
+xs[0]
+parse_int(t)?
+x |> f
+x |> f(1)
+x |> record.f(1)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (call
+    (identifier)
+    (arguments
+      (identifier)
+      (identifier)))
+  (call
+    (identifier)
+    (arguments
+      (identifier)))
+  (field_expression
+    (identifier)
+    (field_name))
+  (field_expression
+    (identifier)
+    (field_name))
+  (method_call
+    (identifier)
+    (field_name)
+    (arguments
+      (identifier)))
+  (index_expression
+    (identifier)
+    (integer))
+  (try_expression
+    (call
+      (identifier)
+      (arguments
+        (identifier))))
+  (pipe_expression
+    (identifier)
+    (identifier))
+  (pipe_expression
+    (identifier)
+    (call
+      (identifier)
+      (arguments
+        (integer))))
+  (pipe_expression
+    (identifier)
+    (method_call
+      (identifier)
+      (field_name)
+      (arguments
+        (integer)))))
+
+================================================================================
+Lists and records
+================================================================================
+
+[]
+[1, ..rest]
+{}
+{name: "Ada", "full name": n, type: 1, age}
+{..p, age: 37}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (list)
+  (list
+    (integer)
+    (spread
+      (identifier)))
+  (record)
+  (record
+    (record_field
+      (field_name)
+      (string
+        (string_content)))
+    (record_field
+      (string
+        (string_content))
+      (identifier))
+    (record_field
+      (field_name)
+      (integer))
+    (shorthand_field
+      (field_name)))
+  (record
+    (spread
+      (identifier))
+    (record_field
+      (field_name)
+      (integer))))
+
+================================================================================
+Match
+================================================================================
+
+fn area(shape) = match shape
+  Circle(r) -> 3.14 * r * r
+
+  # comment
+  Rectangle(w, h) -> w * h
+end
+
+match n
+  0 | 1 -> "small"
+  -1 -> "minus one"
+  x if x > 10 -> "big"
+  [a, ..] -> "list"
+  {name, ..} -> name
+  "text" -> "text"
+  _ -> "other"
+end
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    (identifier)
+    (parameters
+      (identifier))
+    (match_expression
+      (identifier)
+      (match_arm
+        (constructor_pattern
+          (constructor)
+          (identifier))
+        (binary_expression
+          (binary_expression
+            (float)
+            (identifier))
+          (identifier)))
+      (comment)
+      (match_arm
+        (constructor_pattern
+          (constructor)
+          (identifier)
+          (identifier))
+        (binary_expression
+          (identifier)
+          (identifier)))))
+  (match_expression
+    (identifier)
+    (match_arm
+      (or_pattern
+        (integer)
+        (integer))
+      (string
+        (string_content)))
+    (match_arm
+      (negative_number
+        (integer))
+      (string
+        (string_content)))
+    (match_arm
+      (identifier)
+      (guard
+        (binary_expression
+          (identifier)
+          (integer)))
+      (string
+        (string_content)))
+    (match_arm
+      (list_pattern
+        (identifier)
+        (rest_pattern))
+      (string
+        (string_content)))
+    (match_arm
+      (record_pattern
+        (field_pattern
+          (field_name))
+        (rest_pattern))
+      (identifier))
+    (match_arm
+      (string
+        (string_content))
+      (string
+        (string_content)))
+    (match_arm
+      (identifier)
+      (string
+        (string_content)))))

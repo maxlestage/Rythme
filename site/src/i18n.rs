@@ -171,6 +171,11 @@ pub struct Texts {
     pub pg_limits: &'static str,
     pub pg_noscript: &'static str,
     pub pg_welcome_code: &'static str,
+    pub pg_open: &'static str,
+    pub pg_open_title: &'static str,
+    pub pg_save: &'static str,
+    pub pg_save_title: &'static str,
+    pub pg_offline: &'static str,
     // Examples
     pub ex_title: &'static str,
     pub ex_lead: &'static str,
@@ -193,6 +198,21 @@ pub struct Texts {
     pub nf_title: &'static str,
     pub nf_text: &'static str,
     pub nf_home: &'static str,
+    // The installed app: manifest, install button, updates, offline page
+    pub app_description: &'static str,
+    pub app_install: &'static str,
+    pub app_install_title: &'static str,
+    pub app_update: &'static str,
+    pub app_reload: &'static str,
+    pub app_later: &'static str,
+    pub app_ios: &'static str,
+    pub app_close: &'static str,
+    /// The labels of the screenshots of the manifest: the home page, the playground.
+    pub app_shots: [&'static str; 2],
+    pub install_app: &'static str,
+    pub offline_title: &'static str,
+    pub offline_text: &'static str,
+    pub offline_retry: &'static str,
 }
 
 pub const FR: Texts = Texts {
@@ -259,7 +279,7 @@ pub const FR: Texts = Texts {
     install_steps: [
         item(
             "Sans rien d'autre",
-            "Téléchargez l'archive de votre système sur la page Releases, extrayez rythme et placez-le dans un dossier de votre PATH.",
+            "Linux, macOS : curl -fsSL https://raw.githubusercontent.com/maxlestage/Rythme/master/install.sh | sh. Windows : irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex. Ou téléchargez l'archive de votre système sur la page Releases, extrayez rythme et placez-le dans un dossier de votre PATH.",
         ),
         item("Avec Rust", "cargo install --git https://github.com/maxlestage/Rythme"),
         item("Premier programme", "rythme bonjour.ry"),
@@ -304,6 +324,11 @@ pub const FR: Texts = Texts {
     pg_limits: "Dans le navigateur, les fichiers ne peuvent pas être lus, input() renvoie un texte vide, et les appels imbriqués s'arrêtent à 600 (les appels terminaux n'ont pas de limite).",
     pg_noscript: "Le playground a besoin de JavaScript et de WebAssembly. Vous pouvez lire les exemples sans.",
     pg_welcome_code: "# Bienvenue dans Rythme ! Appuyez sur Lancer (Ctrl+Entrée).\n# Les valeurs ne changent jamais, tout est fonction,\n# et chaque erreur s'explique d'elle-même.\n\nfn carre(x) = x * x\n\n[1, 2, 3, 4, 5]\n  |> filter(is_odd)\n  |> map(carre)\n  |> print\n\ntype Forme = Cercle(rayon) | Rect(largeur, hauteur)\n\nfn aire(Cercle(r)) = round(pi * r * r, 2)\nfn aire(Rect(l, h)) = l * h\n\nprint(map([Cercle(1.0), Rect(2, 3)], aire))\n\nfn diviser(a, b) =\n  if b == 0 then Err(\"division par zéro impossible\") else Ok(a / b)\n\nprint(diviser(10, 4), diviser(1, 0))\n\n# Faites une erreur exprès : remplacez carre par caree plus haut, puis Lancer.\n",
+    pg_open: "Ouvrir",
+    pg_open_title: "Ouvrir un fichier .ry",
+    pg_save: "Télécharger",
+    pg_save_title: "Télécharger le programme en fichier .ry",
+    pg_offline: "Une fois visité, le playground marche aussi sans réseau, et le code en cours reste dans ce navigateur. Installez le site comme une application pour l'avoir sous la main.",
     ex_title: "Exemples",
     ex_lead: "De vrais programmes Rythme et ce qu'ils affichent. Chacun s'ouvre dans le playground.",
     ex_output: "Sortie",
@@ -367,6 +392,19 @@ pub const FR: Texts = Texts {
     nf_title: "Cette page n'existe pas",
     nf_text: "Le lien est peut-être ancien, ou l'adresse contient une faute de frappe. Rythme aurait proposé le bon nom.",
     nf_home: "Retour à l'accueil",
+    app_description: "Rythme, un langage simple et purement fonctionnel : le playground avec le vrai interpréteur, les exemples et le guide, même hors ligne.",
+    app_install: "Installer l'app",
+    app_install_title: "Installer Rythme comme une application",
+    app_update: "Une nouvelle version du site est disponible.",
+    app_reload: "Recharger",
+    app_later: "Plus tard",
+    app_ios: "Installez Rythme : touchez Partager, puis « Sur l'écran d'accueil ».",
+    app_close: "Fermer",
+    app_shots: ["La page d'accueil de Rythme", "Le playground : le vrai interpréteur Rythme dans le navigateur"],
+    install_app: "Ce site s'installe aussi comme une application (le bouton « Installer l'app » du menu, ou Partager puis « Sur l'écran d'accueil » sur iPhone et iPad) et fonctionne hors ligne, playground compris.",
+    offline_title: "Vous êtes hors ligne",
+    offline_text: "Cette page n'a pas été enregistrée pour être lue sans réseau. Le reste du site fonctionne hors ligne, playground compris.",
+    offline_retry: "Réessayer",
 };
 
 pub const EN: Texts = Texts {
@@ -430,7 +468,7 @@ pub const EN: Texts = Texts {
     install_steps: [
         item(
             "Nothing else needed",
-            "Download the archive for your system on the Releases page, extract rythme and put it in a folder of your PATH.",
+            "Linux, macOS: curl -fsSL https://raw.githubusercontent.com/maxlestage/Rythme/master/install.sh | sh. Windows: irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex. Or download the archive for your system on the Releases page, extract rythme and put it in a folder of your PATH.",
         ),
         item("With Rust", "cargo install --git https://github.com/maxlestage/Rythme"),
         item("First program", "rythme hello.ry"),
@@ -475,6 +513,11 @@ pub const EN: Texts = Texts {
     pg_limits: "In the browser, files cannot be read, input() returns an empty text, and nested calls stop at 600 (tail calls have no limit).",
     pg_noscript: "The playground needs JavaScript and WebAssembly. You can read the examples without them.",
     pg_welcome_code: "# Welcome to Rythme! Press Run (Ctrl+Enter).\n# Values never change, everything is a function,\n# and every error explains itself.\n\nfn square(x) = x * x\n\n[1, 2, 3, 4, 5]\n  |> filter(is_odd)\n  |> map(square)\n  |> print\n\ntype Shape = Circle(radius) | Rect(width, height)\n\nfn area(Circle(r)) = round(pi * r * r, 2)\nfn area(Rect(w, h)) = w * h\n\nprint(map([Circle(1.0), Rect(2, 3)], area))\n\nfn safe_divide(a, b) =\n  if b == 0 then Err(\"cannot divide by zero\") else Ok(a / b)\n\nprint(safe_divide(10, 4), safe_divide(1, 0))\n\n# Make a mistake on purpose: change square to sqaure above, then Run.\n",
+    pg_open: "Open",
+    pg_open_title: "Open a .ry file",
+    pg_save: "Download",
+    pg_save_title: "Download the program as a .ry file",
+    pg_offline: "Once visited, the playground works without a network too, and the code you are writing stays in this browser. Install the site as an app to keep it at hand.",
     ex_title: "Examples",
     ex_lead: "Real Rythme programs and what they print. Each one opens in the playground.",
     ex_output: "Output",
@@ -538,4 +581,17 @@ pub const EN: Texts = Texts {
     nf_title: "This page does not exist",
     nf_text: "The link may be old, or the address has a typo. Rythme would have suggested the right name.",
     nf_home: "Back to the home page",
+    app_description: "Rythme, a simple, purely functional language: the playground with the real interpreter, the examples and the guide, even offline.",
+    app_install: "Install app",
+    app_install_title: "Install Rythme as an app",
+    app_update: "A new version of the site is available.",
+    app_reload: "Reload",
+    app_later: "Later",
+    app_ios: "Install Rythme: tap Share, then “Add to Home Screen”.",
+    app_close: "Close",
+    app_shots: ["The home page of Rythme", "The playground: the real Rythme interpreter in the browser"],
+    install_app: "This site also installs as an app (the “Install app” button of the menu, or Share then “Add to Home Screen” on iPhone and iPad) and works offline, the playground included.",
+    offline_title: "You are offline",
+    offline_text: "This page was not saved for reading without a network. The rest of the site works offline, the playground included.",
+    offline_retry: "Try again",
 };

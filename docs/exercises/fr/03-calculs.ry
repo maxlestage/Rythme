@@ -1,0 +1,63 @@
+# Exercice 03 · Calculs  ★☆☆
+#
+# Les nombres sont entiers (Int : 3) ou décimaux (Float : 3.5). `/` donne
+# toujours un Float (`7 / 2` vaut 3.5) ; `//` divise et arrondit vers le bas
+# (`7 // 2` vaut 3) et `%` donne le reste (`7 % 2` vaut 1).
+#
+# Énoncé
+#   - `carre(x)` : x fois x ;
+#   - `moyenne(a, b)` : la moyenne de deux nombres ;
+#   - `fahrenheit(celsius)` : la température en degrés Fahrenheit
+#     (multipliez par 9, divisez par 5, ajoutez 32) ;
+#   - `hypotenuse(a, b)` : le grand côté d'un triangle rectangle dont les
+#     deux autres côtés mesurent a et b (la racine carrée de a² + b²) ;
+#   - `minutes_et_secondes(total)` : pour un nombre de secondes, un texte
+#     comme "2 min 5 s" (pour 125).
+#
+# Indices
+#   1. `sqrt(16)` vaut 4.0.
+#   2. `125 // 60` vaut 2 et `125 % 60` vaut 5.
+#   3. `3 == 3.0` est vrai : un Int et un Float de même valeur sont égaux.
+#
+# Vérifiez votre travail :  rythme exercise check 03-calculs.ry
+#                     ou :  rythme test 03-calculs.ry
+
+fn carre(x) = fail("à faire")
+
+fn moyenne(a, b) = fail("à faire")
+
+fn fahrenheit(celsius) = fail("à faire")
+
+fn hypotenuse(a, b) = fail("à faire")
+
+fn minutes_et_secondes(total) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "carré"
+  assert_eq(carre(3), 9)
+  assert_eq(carre(-4), 16)
+  assert_eq(carre(1.5), 2.25)
+end
+
+test "moyenne"
+  assert_eq(moyenne(2, 4), 3)
+  assert_eq(moyenne(1, 2), 1.5)
+end
+
+test "fahrenheit"
+  assert_eq(fahrenheit(0), 32)
+  assert_eq(fahrenheit(100), 212)
+  assert_eq(fahrenheit(-40), -40)
+end
+
+test "hypoténuse"
+  assert_eq(hypotenuse(3, 4), 5)
+  assert_eq(hypotenuse(5, 12), 13)
+end
+
+test "minutes et secondes"
+  assert_eq(minutes_et_secondes(125), "2 min 5 s")
+  assert_eq(minutes_et_secondes(59), "0 min 59 s")
+  assert_eq(minutes_et_secondes(600), "10 min 0 s")
+end

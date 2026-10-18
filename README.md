@@ -83,7 +83,8 @@ error[E001]: `for` is not used in Rythme
 The website <https://maxlestage.github.io/Rythme/> has a playground that runs
 the real interpreter, compiled to WebAssembly ([`playground/`](playground)):
 edit code, run it, check it, run tests, format it, read the help, in English
-or French, without installing anything.
+or French, without installing anything. The website also installs as an app
+(a Progressive Web App) and works offline, playground included.
 
 The [`site/`](site) folder is the website of Rythme (home, tour of the
 language, examples, playground and guide for teachers, in English and French),
@@ -113,16 +114,45 @@ Details in [`site/README.md`](site/README.md#heroku).
 
 ## Install
 
-**Without installing anything else:** each published version comes with
-ready-to-use programs for Linux, macOS and Windows on the
-[Releases page](https://github.com/maxlestage/Rythme/releases). Download the
-archive for your system, extract `rythme` (`rythme.exe` on Windows) and put it
-in a folder of your `PATH`.
+**Linux and macOS** (x86_64 and arm64): the script downloads the program of
+the latest version, checks its SHA-256 checksum and puts it in `~/.local/bin`.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/maxlestage/Rythme/master/install.sh | sh
+```
+
+Options after `sh -s --`: `--dir /usr/local/bin` (another folder),
+`--version v0.1.0` (another version); `--help` lists them.
+
+**Windows** (PowerShell): the program goes in
+`%LOCALAPPDATA%\Programs\Rythme\bin`, added to your `PATH`.
+
+```powershell
+irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex
+```
+
+Set `RYTHME_INSTALL_DIR` or `RYTHME_VERSION` before, or run the downloaded
+file: `.\install.ps1 -Dir C:\Tools -Version v0.1.0 -NoModifyPath`.
+
+**By hand:** each published version comes with ready-to-use programs for
+Linux, macOS and Windows on the
+[Releases page](https://github.com/maxlestage/Rythme/releases), and their
+checksums in `SHA256SUMS`. Download the archive for your system, extract
+`rythme` (`rythme.exe` on Windows) and put it in a folder of your `PATH`.
+
+**Homebrew** (macOS, Linux) and **winget** (Windows), once the packages are
+published ([`packaging/`](packaging/README.md)):
+
+```sh
+brew install maxlestage/rythme/rythme
+winget install Rythme.Rythme
+```
 
 **With [Rust](https://rustup.rs)** (any recent stable version):
 
 ```sh
-cargo install --git https://github.com/maxlestage/Rythme
+cargo install rythme                                    # from crates.io, once published
+cargo install --git https://github.com/maxlestage/Rythme   # the latest code
 ```
 
 Or from a clone of this repository:
@@ -142,9 +172,11 @@ cargo install --path .       # or install it in your PATH
 | `rythme test hello.ry`      | run the tests written in the file              |
 | `rythme fmt hello.ry`       | give the code its official layout (also a folder: `rythme fmt .`) |
 | `rythme fmt --check .`      | list the files to format, without changing them (for CI) |
+| `rythme doc hello.ry`       | its documentation from the `##` comments, in Markdown (`--html`: one web page) |
 | `rythme help [topic]`       | help on a topic or a function                  |
 | `rythme explain E003`       | explain an error code                          |
 | `rythme learn`              | guided tour of the language                    |
+| `rythme exercise`           | [30 graded exercises](docs/exercises/README.md): `list`, `start 1`, `check FILE` |
 | `rythme -e 'print(1 + 2)'`  | run a piece of code                            |
 | `rythme lsp`                | language server, started by your editor ([editors](editors)) |
 
@@ -199,8 +231,9 @@ end
 # Tests live next to the code: rythme test file.ry
 test "double works" = assert_eq(double(21), 42)
 
-# Other files
-use "geometry.ry"
+# Other files, used through their names
+use geometry                              # geometry.ry, next to this file
+print(geometry.area(2))
 ```
 
 More: the [reference manual](docs/reference.md), [`examples/`](examples),
@@ -220,10 +253,11 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 | [`results.ry`](examples/results.ry) | `Option`, `Result`, `?` |
 | [`students.ry`](examples/students.ry) | records, record update, grouping, averages |
 | [`sales.ry`](examples/sales.ry) | a report: `scan`, columns lined up with `pad_left`, `windows`, `chunks`, JSON |
+| [`calendar.ry`](examples/calendar.ry) | dates: the page of a month, ISO 8601 texts, `days_between`, `add_days` |
 | [`tree.ry`](examples/tree.ry) | a recursive type: binary search tree |
 | [`primes.ry`](examples/primes.ry) | a recursive sieve, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | `test` blocks |
-| [`modules/`](examples/modules) | `use` to split a program in files |
+| [`modules/`](examples/modules) | `use geometry` then `geometry.area(2)`: a program in several files, private `_names` |
 | [`bonjour.ry`](examples/bonjour.ry) | names with accents |
 
 ## Editors
@@ -242,6 +276,9 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 [`docs/teaching.md`](docs/teaching.md) proposes a course outline built on
 Rythme, and explains why it fits a first programming course and a
 functional programming course alike.
+[`docs/exercises/`](docs/exercises/README.md) holds 30 graded exercises, in
+English and French, with statements, hints, tests and solutions, that
+`rythme exercise` hands out and checks.
 
 ## How it works
 
@@ -256,7 +293,7 @@ mode) and is organised as a pipeline:
 | [`src/types.rs`](src/types.rs) | what the checker knows for sure about values: their types |
 | [`src/compile.rs`](src/compile.rs) | prepares functions: each local name becomes a numbered slot |
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
-| [`src/builtins.rs`](src/builtins.rs) | 124 built-in functions, documented in two languages, JSON included |
+| [`src/builtins.rs`](src/builtins.rs) | 136 built-in functions, documented in two languages, JSON included |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |
@@ -286,7 +323,8 @@ towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
   types of the parameters of functions, so that even more mistakes are found
   before running.
 - **Tooling.** `rythme fmt` formats the code in the official style (see
-  `rythme help fmt`), and the language server (`rythme lsp`) brings errors and
+  `rythme help fmt`), `rythme doc` writes the documentation of files and
+  folders from their `##` comments (see `rythme help doc`), and the language server (`rythme lsp`) brings errors and
   documentation inside every editor (see `rythme help editors`). The web
   playground runs the interpreter compiled to WebAssembly. Next: a package
   manager.

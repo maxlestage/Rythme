@@ -1,0 +1,42 @@
+# Exercice 03 · Calculs  ★☆☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn carre(x) = x * x
+
+fn moyenne(a, b) = (a + b) / 2
+
+fn fahrenheit(celsius) = celsius * 9 / 5 + 32
+
+fn hypotenuse(a, b) = sqrt(carre(a) + carre(b))
+
+fn minutes_et_secondes(total) = "{total // 60} min {total % 60} s"
+
+# --- Tests (ne les modifiez pas) ---
+
+test "carré"
+  assert_eq(carre(3), 9)
+  assert_eq(carre(-4), 16)
+  assert_eq(carre(1.5), 2.25)
+end
+
+test "moyenne"
+  assert_eq(moyenne(2, 4), 3)
+  assert_eq(moyenne(1, 2), 1.5)
+end
+
+test "fahrenheit"
+  assert_eq(fahrenheit(0), 32)
+  assert_eq(fahrenheit(100), 212)
+  assert_eq(fahrenheit(-40), -40)
+end
+
+test "hypoténuse"
+  assert_eq(hypotenuse(3, 4), 5)
+  assert_eq(hypotenuse(5, 12), 13)
+end
+
+test "minutes et secondes"
+  assert_eq(minutes_et_secondes(125), "2 min 5 s")
+  assert_eq(minutes_et_secondes(59), "0 min 59 s")
+  assert_eq(minutes_et_secondes(600), "10 min 0 s")
+end

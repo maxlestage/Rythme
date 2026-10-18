@@ -1,0 +1,148 @@
+================================================================================
+Use with a name
+================================================================================
+
+use geometry
+use shapes/circle
+use ../common/tools as tools
+use "My Tools.ry" as mine
+use "old.ry"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (use_declaration
+    path: (module_path
+      (module_name)))
+  (use_declaration
+    path: (module_path
+      (path_segment)
+      (module_name)))
+  (use_declaration
+    path: (module_path
+      (path_segment)
+      (module_name))
+    alias: (module_name))
+  (use_declaration
+    path: (string
+      (string_content))
+    alias: (module_name))
+  (use_declaration
+    path: (string
+      (string_content))))
+
+================================================================================
+Names of a used file
+================================================================================
+
+print(geometry.area(geometry.Square(5)), geometry.origin)
+total = shapes |> map(geo.area)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (call
+    function: (identifier)
+    arguments: (arguments
+      (method_call
+        value: (identifier)
+        method: (field_name)
+        arguments: (arguments
+          (method_call
+            value: (identifier)
+            method: (field_name)
+            arguments: (arguments
+              (integer)))))
+      (field_expression
+        value: (identifier)
+        field: (field_name))))
+  (definition
+    pattern: (identifier)
+    value: (pipe_expression
+      left: (identifier)
+      right: (call
+        function: (identifier)
+        arguments: (arguments
+          (field_expression
+            value: (identifier)
+            field: (field_name)))))))
+
+================================================================================
+Constructors of a used file in patterns
+================================================================================
+
+fn describe(shape) = match shape
+  geo.Rectangle(w, h) -> w * h
+  geo.Square(s) | geo.Circle(s) -> s
+  geo.Empty -> 0
+end
+
+fn side(geo.Square(s)) = s
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    parameters: (parameters
+      (identifier))
+    body: (match_expression
+      subject: (identifier)
+      (match_arm
+        pattern: (constructor_pattern
+          constructor: (qualified_constructor
+            module: (module_name)
+            constructor: (constructor))
+          (identifier)
+          (identifier))
+        body: (binary_expression
+          left: (identifier)
+          right: (identifier)))
+      (match_arm
+        pattern: (or_pattern
+          (constructor_pattern
+            constructor: (qualified_constructor
+              module: (module_name)
+              constructor: (constructor))
+            (identifier))
+          (constructor_pattern
+            constructor: (qualified_constructor
+              module: (module_name)
+              constructor: (constructor))
+            (identifier)))
+        body: (identifier))
+      (match_arm
+        pattern: (qualified_constructor
+          module: (module_name)
+          constructor: (constructor))
+        body: (integer))))
+  (function_definition
+    name: (identifier)
+    parameters: (parameters
+      (constructor_pattern
+        constructor: (qualified_constructor
+          module: (module_name)
+          constructor: (constructor))
+        (identifier)))
+    body: (identifier)))
+
+================================================================================
+`as` is still a name
+================================================================================
+
+as = 1
+print(as, x.as)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (definition
+    pattern: (identifier)
+    value: (integer))
+  (call
+    function: (identifier)
+    arguments: (arguments
+      (identifier)
+      (field_expression
+        value: (identifier)
+        field: (field_name)))))

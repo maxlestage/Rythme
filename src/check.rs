@@ -61,6 +61,38 @@ pub struct Knowledge {
     /// of a used file, the REPL a type of an earlier line): values of either
     /// may have them.
     pub types_defined_again: HashSet<Sym>,
+    /// The files used with a name (`use geometry`): what each one defines is
+    /// known as `geometry.area`.
+    pub modules: HashMap<Sym, ModuleMeta>,
+    /// Private names (`_helper`) of the used files, with the file of each.
+    pub private: HashMap<Sym, Rc<str>>,
+    /// Names defined by the other files of the folder, not used yet: the
+    /// name, then how to use the file (`geometry`) and its file name.
+    pub nearby: HashMap<Sym, (Rc<str>, Rc<str>)>,
+}
+
+/// What the checker knows of a file used with a name.
+#[derive(Clone, Debug, Default)]
+pub struct ModuleMeta {
+    /// Its path, as shown in messages (`geometry.ry`).
+    pub file: Rc<str>,
+    /// The names it gives, in the order of the file.
+    pub names: Vec<Sym>,
+    /// Its private names (`_helper`).
+    pub private: Vec<Sym>,
+}
+
+/// Does this type speak of a type defined with `type` (not Option or Result)?
+fn has_own_data(t: &Ty) -> bool {
+    match t {
+        Ty::List(t) => has_own_data(t),
+        Ty::Record(r) => r.fields.iter().any(|(_, t)| has_own_data(t)),
+        Ty::Data(d) => {
+            !matches!(&*d.name.name(), "Option" | "Result")
+                || d.ctors.as_ref().is_some_and(|cs| cs.iter().any(|(_, fs)| fs.iter().any(has_own_data)))
+        }
+        _ => false,
+    }
 }
 
 fn func_info(def: &FnDef) -> GlobalInfo {
@@ -75,7 +107,7 @@ fn ctor_sig(name: Sym, fields: &[Sym]) -> String {
 impl Knowledge {
     pub fn from_interp(it: &Interp) -> Knowledge {
         let mut k = Knowledge::default();
-        for (s, v) in &it.globals {
+        for (s, v) in it.globals.iter().filter(|(s, _)| !s.is_stored()) {
             let info = match v {
                 Value::Builtin(b) => GlobalInfo { kind: GKind::Builtin, arity: Some((b.min, b.max)), sig: b.sig.to_string(), span: None },
                 Value::Func(c) => func_info(&c.def),
@@ -93,7 +125,7 @@ impl Knowledge {
             };
             k.globals.insert(*s, info);
         }
-        for (t, ctors) in &it.types {
+        for (t, ctors) in it.types.iter().filter(|(t, _)| !t.is_stored()) {
             k.types.insert(*t, ctors.iter().map(|c| c.name).collect());
             for c in ctors {
                 k.ctors.insert(c.name, CtorMeta { type_name: *t, arity: c.fields.len(), fields: c.fields.clone() });
@@ -101,7 +133,7 @@ impl Knowledge {
         }
         // A constructor defined again in the REPL belongs to its last type:
         // the one its name means now.
-        for (s, v) in &it.globals {
+        for (s, v) in it.globals.iter().filter(|(s, _)| !s.is_stored()) {
             let c = match v {
                 Value::Ctor(c) => c,
                 Value::Variant(var) if var.fields.is_empty() => &var.ctor,
@@ -116,6 +148,69 @@ impl Knowledge {
             }
         }
         k
+    }
+
+    /// Adds the definitions of a used file, without running it; its private
+    /// names (`_helper`) stay unknown, but are noted as private to `file`.
+    pub fn add_used_items(&mut self, items: &[Item], file: &Rc<str>) {
+        let mut own = Knowledge { private: HashMap::new(), ..self.clone() };
+        own.add_items(items);
+        for (s, _) in crate::modules::top_names(items) {
+            if crate::modules::is_private(s) {
+                own.globals.remove(&s);
+                own.value_types.remove(&s);
+                // A private name hides nothing of the file that uses it.
+                if let Some(g) = self.globals.get(&s) {
+                    own.globals.insert(s, g.clone());
+                }
+                if let Some(t) = self.value_types.get(&s) {
+                    own.value_types.insert(s, t.clone());
+                }
+                own.private.insert(s, file.clone());
+            }
+        }
+        let mut private = std::mem::take(&mut self.private);
+        private.extend(own.private.drain());
+        *self = Knowledge { private, ..own };
+    }
+
+    /// Adds what the file used as `name` defines, as `name.area`: `module`
+    /// is what is known inside that file once its definitions are added,
+    /// `items` the definitions of the file and of the files it uses without
+    /// a name.
+    pub fn add_module(&mut self, name: Sym, file: Rc<str>, module: &Knowledge, items: &[&[Item]]) {
+        let q = |s: Sym| Sym::new(&format!("{name}.{s}"));
+        let mut meta = ModuleMeta { file, names: Vec::new(), private: Vec::new() };
+        for its in items {
+            for (s, _) in crate::modules::top_names(its) {
+                if crate::modules::is_private(s) {
+                    meta.private.push(s);
+                    continue;
+                }
+                if meta.names.contains(&s) {
+                    continue;
+                }
+                let Some(g) = module.globals.get(&s) else { continue };
+                meta.names.push(s);
+                let mut g = g.clone();
+                if g.kind != GKind::Value {
+                    g.sig = format!("{name}.{}", g.sig);
+                }
+                self.globals.insert(q(s), g);
+                match module.value_types.get(&s) {
+                    Some(t) if !has_own_data(t) => self.value_types.insert(q(s), t.clone()),
+                    _ => self.value_types.remove(&q(s)),
+                };
+                if let Some(c) = module.ctors.get(&s) {
+                    let qt = q(c.type_name);
+                    self.ctors.insert(q(s), CtorMeta { type_name: qt, arity: c.arity, fields: c.fields.clone() });
+                    if let Some(cs) = module.types.get(&c.type_name) {
+                        self.types.insert(qt, cs.iter().map(|c| q(*c)).collect());
+                    }
+                }
+            }
+        }
+        self.modules.insert(name, meta);
     }
 
     /// Adds the definitions of a module, without running it.
@@ -415,8 +510,24 @@ impl<'a> Checker<'a> {
         }
     }
 
+    /// A name given to a used file cannot name anything else: `geo.x`
+    /// always means `x` of that file.
+    fn hides_module(&mut self, s: Sym, span: Span) {
+        let Some(m) = self.know.modules.get(&s) else { return };
+        let file = &m.file;
+        self.diags.push(
+            Diagnostic::error("E011", t!("`{s}` is already the name of the file `{file}`", "`{s}` est déjà le nom du fichier `{file}`"))
+                .at(span)
+                .help(t!(
+                    "choose another name here, or give the file another one: `use ... as other_name`",
+                    "choisissez un autre nom ici, ou donnez-en un autre au fichier : `use ... as autre_nom`"
+                )),
+        );
+    }
+
     /// Returns false if the name was already defined.
     fn declare_global(&mut self, s: Sym, span: Span, info: GlobalInfo, first: &mut HashMap<Sym, Span>) -> bool {
+        self.hides_module(s, span);
         if !self.repl {
             if let Some(prev) = first.get(&s) {
                 let mut d = Diagnostic::error("E011", t!("`{s}` is already defined", "`{s}` est déjà défini"))
@@ -642,6 +753,7 @@ impl<'a> Checker<'a> {
     }
 
     fn declare_local_fn(&mut self, s: Sym, span: Span, warn: bool, info: Option<GlobalInfo>, ty: Ty, def: Option<Rc<FnDef>>) {
+        self.hides_module(s, span);
         let scope = self.scopes.last_mut().expect("scope");
         if let Some(prev) = scope.iter().find(|l| l.sym == s).map(|l| l.span) {
             self.diags.push(
@@ -756,6 +868,22 @@ impl<'a> Checker<'a> {
             self.note_use(&r);
             return r;
         }
+        if let Some(m) = self.know.modules.get(&s) {
+            let file = &m.file;
+            let example = m.names.iter().find(|n| !n.is_ctor()).or(m.names.first()).map_or("name".into(), |n| n.to_string());
+            self.diags.push(
+                Diagnostic::error(
+                    "E003",
+                    t!("`{s}` is the name of the file `{file}`, not a value", "`{s}` est le nom du fichier `{file}`, pas une valeur"),
+                )
+                .at(span)
+                .help(t!(
+                    "write `{s}.` and the name of one of its definitions, like `{s}.{example}`",
+                    "écrivez `{s}.` puis le nom d'une de ses définitions, comme `{s}.{example}`"
+                )),
+            );
+            return (Res::Unknown, Ty::Never);
+        }
         self.unknown(s, span);
         (Res::Unknown, Ty::Never)
     }
@@ -829,8 +957,92 @@ impl<'a> Checker<'a> {
         names
     }
 
+    /// `geo.x` where `geo` names a used file: `x` is private, or not there.
+    fn unknown_in_module(&mut self, m: Sym, x: Sym, span: Span) -> bool {
+        let Some(meta) = self.know.modules.get(&m) else { return false };
+        let file = &meta.file;
+        let d = if meta.private.contains(&x) {
+            Diagnostic::error("E003", t!("`{x}` is private to the file `{file}`", "`{x}` est privé au fichier `{file}`"))
+                .at(span)
+                .label(t!("private", "privé"))
+                .note(t!(
+                    "a name starting with `_` can only be used in its own file",
+                    "un nom qui commence par `_` ne s'utilise que dans son propre fichier"
+                ))
+                .help(t!(
+                    "to use it from other files, rename it without `_` in `{file}`",
+                    "pour l'utiliser depuis d'autres fichiers, renommez-le sans `_` dans `{file}`"
+                ))
+        } else {
+            let mut d = Diagnostic::error("E003", t!("the file `{file}` has no `{x}`", "le fichier `{file}` n'a pas de `{x}`"))
+                .at(span)
+                .label(t!("not in `{file}`", "absent de `{file}`"));
+            let candidates: Vec<Rc<str>> = meta.names.iter().filter(|n| n.is_ctor() == x.is_ctor()).map(|n| n.name()).collect();
+            if let Some(best) = suggest::closest(&x.name(), candidates.iter().map(|n| &**n)) {
+                d = d.help(t!("did you mean `{m}.{best}`?", "vouliez-vous dire `{m}.{best}` ?"));
+            } else if meta.names.is_empty() {
+                d = d.note(t!(
+                    "`{file}` defines nothing that other files can use",
+                    "`{file}` ne définit rien que d'autres fichiers puissent utiliser"
+                ));
+            } else {
+                let list: Vec<String> = meta.names.iter().take(12).map(|n| format!("`{m}.{n}`")).collect();
+                let more = if meta.names.len() > 12 { ", ..." } else { "" };
+                d = d.note(t!("`{file}` gives: {}{more}", "`{file}` donne : {}{more}", list.join(", ")));
+            }
+            d
+        };
+        self.diags.push(d);
+        true
+    }
+
     fn unknown(&mut self, s: Sym, span: Span) {
+        if let Some((m, x)) = s.split_module() {
+            if self.unknown_in_module(m, x, span) {
+                return;
+            }
+        }
         let name = s.name();
+        if let Some(file) = self.know.private.get(&s) {
+            self.diags.push(
+                Diagnostic::error("E003", t!("`{name}` is private to the file `{file}`", "`{name}` est privé au fichier `{file}`"))
+                    .at(span)
+                    .label(t!("private", "privé"))
+                    .note(t!(
+                        "a name starting with `_` can only be used in its own file",
+                        "un nom qui commence par `_` ne s'utilise que dans son propre fichier"
+                    )),
+            );
+            return;
+        }
+        // Defined by a file used with a name, or by another file of the folder.
+        let mut modules: Vec<(&Sym, &ModuleMeta)> = self.know.modules.iter().filter(|(_, m)| m.names.contains(&s)).collect();
+        modules.sort_by_key(|(n, _)| n.name());
+        if let Some((m, meta)) = modules.first() {
+            let file = &meta.file;
+            self.diags.push(
+                Diagnostic::error("E003", t!("unknown name `{name}`", "nom inconnu `{name}`"))
+                    .at(span)
+                    .label(t!("not defined here", "non défini ici"))
+                    .help(t!(
+                        "`{name}` is defined in `{file}`: write `{m}.{name}`",
+                        "`{name}` est défini dans `{file}` : écrivez `{m}.{name}`"
+                    )),
+            );
+            return;
+        }
+        if let Some((stem, file)) = self.know.nearby.get(&s) {
+            self.diags.push(
+                Diagnostic::error("E003", t!("unknown name `{name}`", "nom inconnu `{name}`"))
+                    .at(span)
+                    .label(t!("not defined here", "non défini ici"))
+                    .help(t!(
+                        "`{name}` is defined in `{file}`: add `use {stem}` at the top of the file, then write `{stem}.{name}`",
+                        "`{name}` est défini dans `{file}` : ajoutez `use {stem}` en haut du fichier, puis écrivez `{stem}.{name}`"
+                    )),
+            );
+            return;
+        }
         let mut d =
             Diagnostic::error("E003", t!("unknown name `{name}`", "nom inconnu `{name}`")).at(span).label(t!("not defined", "non défini"));
         // Defined further down in a block around it: say so, not what other languages call it.
@@ -2379,6 +2591,7 @@ impl<'a> Checker<'a> {
         match &p.kind {
             PatKind::Ctor(name, args) => {
                 match self.ctors.get(name).cloned() {
+                    None if name.split_module().is_some_and(|(m, x)| self.unknown_in_module(m, x, p.span)) => {}
                     None => {
                         let n = name.name();
                         let mut d = Diagnostic::error("E003", t!("unknown constructor `{n}`", "constructeur inconnu `{n}`"))

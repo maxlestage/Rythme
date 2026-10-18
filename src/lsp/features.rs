@@ -299,6 +299,17 @@ fn use_markdown(a: &Analysis, p: &str, span: Span) -> String {
         return t!("the file `{p}` is not found", "le fichier `{p}` est introuvable");
     };
     let mut out = format!("`{}`", path.display());
+    let name = a.module.items.iter().find_map(|it| match it {
+        crate::ast::Item::Use(u) if u.span == span => u.name.map(|(n, _)| n),
+        _ => None,
+    });
+    let prefix = name.map(|n| format!("{n}.")).unwrap_or_default();
+    if let Some(n) = name {
+        out.push_str(&t!(
+            "\n\nIts definitions are used through the name `{n}`: `{n}.name`",
+            "\n\nSes définitions s'utilisent par le nom `{n}` : `{n}.nom`"
+        ));
+    }
     if let Some(m) = a.modules.get(path) {
         let defs: Vec<String> = m
             .index
@@ -306,7 +317,8 @@ fn use_markdown(a: &Analysis, p: &str, span: Span) -> String {
             .iter()
             .filter_map(|(_, idx)| m.index.def(*idx))
             .filter(|d| matches!(d.kind, DefKind::Function | DefKind::Value | DefKind::Ctor))
-            .map(|d| d.sig.clone().unwrap_or_else(|| d.name.to_string()))
+            .filter(|d| !d.name.starts_with('_') || d.name.len() == 1)
+            .map(|d| format!("{prefix}{}", d.sig.clone().unwrap_or_else(|| d.name.to_string())))
             .take(40)
             .collect();
         if !defs.is_empty() {
@@ -424,9 +436,9 @@ fn def_item(cx: &Ctx, a: &Analysis, id: DefId, d: &Def, sort: &str) -> Json {
 fn snippets() -> Vec<(&'static str, &'static str, String, String)> {
     let fr = crate::lang::is_fr();
     let (name, value, other, pattern, result, what, actual, expected, condition, file) = if fr {
-        ("nom", "valeur", "autre", "motif", "résultat", "ce qu'il vérifie", "obtenu", "attendu", "condition", "fichier.ry")
+        ("nom", "valeur", "autre", "motif", "résultat", "ce qu'il vérifie", "obtenu", "attendu", "condition", "fichier")
     } else {
-        ("name", "value", "other", "pattern", "result", "what it checks", "actual", "expected", "condition", "file.ry")
+        ("name", "value", "other", "pattern", "result", "what it checks", "actual", "expected", "condition", "file")
     };
     vec![
         (
@@ -466,7 +478,15 @@ fn snippets() -> Vec<(&'static str, &'static str, String, String)> {
             t!("your own type", "votre propre type"),
         ),
         ("do … end", "do", "do\n\t$0\nend".to_string(), t!("several steps inside an expression", "plusieurs étapes dans une expression")),
-        ("use \"…\"", "use", format!("use \"${{1:{file}}}\""), t!("use another file", "utiliser un autre fichier")),
+        (
+            "use …",
+            "use",
+            format!("use ${{1:{file}}}"),
+            t!(
+                "use another file: `use geometry`, then `geometry.area(2)`",
+                "utiliser un autre fichier : `use geometrie`, puis `geometrie.aire(2)`"
+            ),
+        ),
     ]
 }
 
@@ -478,6 +498,7 @@ pub fn completion(cx: &Ctx, a: &Analysis, offset: usize, trigger: Option<&str>) 
     match sc.place {
         Place::Comment => return Json::Arr(Vec::new()),
         Place::Text => return use_completion(cx, a, offset, sc.text_start),
+        Place::Code if short_use_line(text, offset).is_some() => return short_use_completion(cx, a, offset),
         // `"` and `/` ask for file names in `use "..."`; elsewhere they are a text or a division.
         Place::Code if matches!(trigger, Some("\"" | "/")) => return Json::Arr(Vec::new()),
         Place::Code => {}
@@ -485,6 +506,26 @@ pub fn completion(cx: &Ctx, a: &Analysis, offset: usize, trigger: Option<&str>) 
     let start = scan::word_at(text, offset).map_or(offset, |(s, _)| s.min(offset));
     let before = text[..start].trim_end_matches([' ', '\t']);
     let after_dot = before.ends_with('.') && !before.ends_with("..") && start == before.len();
+    if after_dot {
+        // `geometry.`: the definitions of the file used as `geometry`.
+        let head = &before[..before.len() - 1];
+        let m = &head[head.rfind(|c: char| !scan::is_name_char(c)).map_or(0, |i| i + 1)..];
+        if a.module.named.iter().any(|(n, _)| &*n.name() == m) {
+            let mut items = Vec::new();
+            let mut defs: Vec<(DefId, &Def)> = a
+                .module
+                .dep_defs
+                .iter()
+                .filter(|(s, _)| s.split_module().is_some_and(|(n, _)| &*n.name() == m))
+                .filter_map(|(_, id)| Some((*id, a.def(*id)?)))
+                .collect();
+            defs.sort_by(|x, y| x.1.name.cmp(&y.1.name));
+            for (id, d) in defs {
+                items.push(def_item(cx, a, id, d, "0"));
+            }
+            return Json::Arr(items);
+        }
+    }
     let mut items = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
     let wanted = |d: &Def| !after_dot || d.kind == DefKind::Function || d.sig.is_some() && d.kind == DefKind::Local;
@@ -538,6 +579,54 @@ pub fn completion(cx: &Ctx, a: &Analysis, offset: usize, trigger: Option<&str>) 
             it.set("insertTextFormat", 2u32.into());
             items.push(it);
         }
+    }
+    Json::Arr(items)
+}
+
+/// After `use ` without quotes: what is typed so far (`shapes/ci`).
+fn short_use_line(text: &str, offset: usize) -> Option<&str> {
+    let line_start = text[..offset].rfind(['\n', '\r']).map_or(0, |i| i + 1);
+    let rest = text[line_start..offset].trim_start().strip_prefix("use")?;
+    if !rest.starts_with([' ', '\t']) {
+        return None;
+    }
+    let typed = rest.trim_start();
+    typed.chars().all(|c| scan::is_name_char(c) || c == '/' || c == '.').then_some(typed)
+}
+
+/// The files that `use name` can name: the Rythme files of the folder
+/// (without `.ry`) and its folders, after `use `.
+fn short_use_completion(cx: &Ctx, a: &Analysis, offset: usize) -> Json {
+    let Some(typed) = short_use_line(&a.text, offset) else { return Json::Arr(Vec::new()) };
+    let (dir, _) = typed.rsplit_once('/').unwrap_or(("", typed));
+    let replace_from = offset - typed.len() + if dir.is_empty() { 0 } else { dir.len() + 1 };
+    let folder = a.module.base.join(dir);
+    let own = a.path.as_deref().and_then(Path::file_name).map(|f| f.to_string_lossy().to_string());
+    let mut entries: Vec<(String, bool)> = std::fs::read_dir(&folder)
+        .map(|rd| {
+            rd.flatten()
+                .filter_map(|e| {
+                    let name = e.file_name().to_string_lossy().to_string();
+                    let is_dir = e.file_type().is_ok_and(|t| t.is_dir());
+                    let stem = if is_dir { Some(name.as_str()) } else { name.strip_suffix(".ry") };
+                    let ok =
+                        stem.is_some_and(|s| s.starts_with(|c: char| c.is_lowercase() || c == '_') && s.chars().all(scan::is_name_char));
+                    let own = !is_dir && dir.is_empty() && own.as_deref() == Some(name.as_str());
+                    (ok && !own).then(|| (stem.unwrap_or_default().to_string(), is_dir))
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    entries.sort();
+    let range = range_in(&a.text, &a.lines, replace_from, offset, cx.enc);
+    let mut items = Vec::new();
+    for (name, is_dir) in entries.into_iter().take(500) {
+        let shown = if is_dir { format!("{name}/") } else { name.clone() };
+        let detail = if is_dir { t!("folder", "dossier") } else { format!("{name}.ry") };
+        let mut it = obj([("label", shown.clone().into()), ("kind", if is_dir { kind::FOLDER } else { kind::FILE }.into())]);
+        it.set("detail", detail.into());
+        it.set("textEdit", obj([("range", range.clone()), ("newText", shown.into())]));
+        items.push(it);
     }
     Json::Arr(items)
 }
@@ -790,6 +879,18 @@ fn proposed_name(help: &str) -> Option<&str> {
     rest.split('`').next()
 }
 
+/// The file proposed by an "add `use geometry`" help, in either language.
+fn proposed_use(help: &str) -> Option<&str> {
+    let (_, rest) = help.split_once(": add `use ").or_else(|| help.split_once(" : ajoutez `use "))?;
+    rest.split('`').next()
+}
+
+/// Where a new `use` line goes: after the last `use` line at the top, or at the start.
+fn new_use_offset(a: &Analysis) -> usize {
+    let last = a.index().uses.iter().map(|(span, _)| span.end as usize).max();
+    last.map_or(0, |end| a.text[end..].find('\n').map_or(a.text.len(), |i| end + i + 1))
+}
+
 pub fn code_actions(cx: &Ctx, a: &Analysis, start: usize, end: usize) -> Json {
     let mut out = Vec::new();
     for d in a.diagnostics() {
@@ -800,9 +901,28 @@ pub fn code_actions(cx: &Ctx, a: &Analysis, start: usize, end: usize) -> Json {
         }
         let Some(written) = a.text.get(s..e) else { continue };
         for h in &d.helps {
+            if let Some(file) = proposed_use(h) {
+                let at = new_use_offset(a);
+                let nl = if at > 0 && !a.text[..at].ends_with('\n') { "\n" } else { "" };
+                let stem = file.rsplit('/').next().unwrap_or(file);
+                let add = obj([("range", range_in(&a.text, &a.lines, at, at, cx.enc)), ("newText", format!("{nl}use {file}\n").into())]);
+                let name = obj([("range", range_in(&a.text, &a.lines, s, e, cx.enc)), ("newText", format!("{stem}.{written}").into())]);
+                let changes = Json::Obj(vec![(a.uri.clone(), Json::Arr(vec![add, name]))]);
+                out.push(obj([
+                    (
+                        "title",
+                        t!("Add `use {file}` and write `{stem}.{written}`", "Ajouter `use {file}` et écrire `{stem}.{written}`").into(),
+                    ),
+                    ("kind", "quickfix".into()),
+                    ("diagnostics", Json::Arr(vec![diagnostic_json(cx, a, d)])),
+                    ("isPreferred", true.into()),
+                    ("edit", obj([("changes", changes)])),
+                ]));
+                continue;
+            }
             let Some(name) = proposed_name(h) else { continue };
             // Only a name is replaced by a name; `use "file"` gets its file name replaced.
-            let (from, to, new) = if !written.is_empty() && written.chars().all(scan::is_name_char) {
+            let (from, to, new) = if !written.is_empty() && written.chars().all(|c| scan::is_name_char(c) || c == '.') {
                 (s, e, name.to_string())
             } else if let (Some(q1), Some(q2)) = (written.find('"'), written.rfind('"')) {
                 if q2 <= q1 || !written.trim_start().starts_with("use") {

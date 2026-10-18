@@ -137,6 +137,15 @@ pub fn alias_hint(name: &str) -> Option<String> {
         "power" | "puissance" => "pow",
         "racine" => "sqrt",
         "somme" => "sum",
+        "utcnow" | "datetime_now" | "date_now" | "maintenant" => "now",
+        "date_today" | "aujourdhui" => "today",
+        "strptime" | "fromisoformat" | "parse_datetime" | "parseDate" => "parse_date",
+        "strftime" | "isoformat" | "toISOString" | "format_datetime" | "formatDate" => "format_date",
+        "weekday" | "isoweekday" | "getDay" | "dayOfWeek" | "day_of_the_week" => "day_of_week",
+        "isleap" | "isLeapYear" | "is_leap" | "leap_year" => "is_leap_year",
+        "daysInMonth" | "monthrange" | "month_length" => "days_in_month",
+        "addDays" | "plusDays" | "plus_days" => "add_days",
+        "addSeconds" | "plusSeconds" | "plus_seconds" => "add_seconds",
         "taille" | "longueur" => "len",
         _ => "",
     };
@@ -266,8 +275,8 @@ pub fn foreign_keyword_hint(word: &str) -> Option<String> {
             "utilisez `match` :\n  match valeur\n    0 -> \"zéro\"\n    _ -> \"autre\"\n  end"
         ),
         "import" => t!(
-            "to use another file, write `use \"other_file.ry\"`",
-            "pour utiliser un autre fichier, écrivez `use \"autre_fichier.ry\"`"
+            "to use another file, write `use other_file`, then `other_file.name`",
+            "pour utiliser un autre fichier, écrivez `use autre_fichier`, puis `autre_fichier.nom`"
         ),
         "try" | "catch" | "except" | "raise" | "throw" => t!(
             "errors are values in Rythme: return `Ok(value)` or `Err(message)`,\nthen handle them with `match` or pass them on with `?`. `fail(message)` stops the program.",

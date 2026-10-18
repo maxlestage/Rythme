@@ -1,0 +1,59 @@
+# Exercise 19 · Sorting  ★★★
+#
+# Two classic ways to sort a list, written with recursion (without the
+# built-in `sort`).
+#
+# Statement
+#   - `insert(sorted, x)`: x placed at its position in a list that is
+#     already sorted;
+#   - `insertion_sort(list)`: sorts the list by inserting each element, one
+#     after the other, into a sorted list that starts empty;
+#   - `merge(a, b)`: one sorted list from two sorted lists;
+#   - `merge_sort(list)`: cuts the list in two halves, sorts each half,
+#     and merges them.
+#
+# Hints
+#   1. `insert([], x)` is `[x]`. For `insert([first, ..rest], x)`: if
+#      x <= first, x goes in front; otherwise first stays first.
+#   2. `insertion_sort([x, ..rest])` is `insert(insertion_sort(rest), x)`
+#      (or use `fold` with `insert`).
+#   3. `merge` compares the first elements of the two lists: the smaller one
+#      comes first, followed by the merge of what remains.
+#   4. `take(list, n)` and `drop(list, n)` give the two halves, with
+#      `n = len(list) // 2`. A list of 0 or 1 element is already sorted.
+#
+# Check your work:  rythme exercise check 19-sorting.ry
+#              or:  rythme test 19-sorting.ry
+
+fn insert(sorted, x) = fail("to do")
+
+fn insertion_sort(list) = fail("to do")
+
+fn merge(a, b) = fail("to do")
+
+fn merge_sort(list) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "insert"
+  assert_eq(insert([1, 3, 5], 4), [1, 3, 4, 5])
+  assert_eq(insert([], 2), [2])
+  assert_eq(insert([1, 2], 9), [1, 2, 9])
+end
+
+test "insertion sort"
+  assert_eq(insertion_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(insertion_sort([]), [])
+end
+
+test "merge"
+  assert_eq(merge([1, 4, 6], [2, 3, 7]), [1, 2, 3, 4, 6, 7])
+  assert_eq(merge([], [1]), [1])
+  assert_eq(merge([1], []), [1])
+end
+
+test "merge sort"
+  assert_eq(merge_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(merge_sort(["pear", "apple", "fig"]), ["apple", "fig", "pear"])
+  assert_eq(merge_sort(reverse(1..100)), 1..100)
+end
