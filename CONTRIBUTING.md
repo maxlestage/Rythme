@@ -26,6 +26,11 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ interp.rs
 
 - `driver.rs` loads files and the files they `use`, checks them, runs them,
   and runs tests.
+- `types.rs` holds what the checker knows for sure about values: their types,
+  and what each built-in function accepts and gives back. `check.rs` infers
+  the types of expressions to report operations that would fail every time
+  they run. A type only says what is certain: when the checker is not sure,
+  it says nothing, because a correct program must never be rejected.
 - `diagnostic.rs` prints messages in the style of Rust.
 - `builtins.rs` holds the standard library; `help.rs` the help topics and the
   explanation of every error code; `suggest.rs` the "did you mean" logic and
@@ -54,6 +59,11 @@ in `help::CODES` (a test checks it).
    category, documentation in English and French, and an example.
 3. Add its name to the VS Code grammar (`editors/vscode/syntaxes`); a test
    checks that the two lists match.
+4. Optionally, describe it in `types::builtin_call` (what kinds of values it
+   accepts, what it gives back), so that `rythme check` finds mistakes like
+   `len(5)` before running. Without it, the checker simply knows nothing
+   about the function. `tests/types.rs` calls every described function with
+   values of every kind and checks that the description is right.
 
 ## Design rules
 
