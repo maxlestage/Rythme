@@ -24,6 +24,7 @@ fn help_overview_and_topics() {
         "exercises",
         "modules",
         "dates",
+        "regex",
         "repl",
         "doc",
         "editors",

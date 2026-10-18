@@ -405,11 +405,19 @@ fn names_from_other_languages() {
         ("getenv", "env"),
         ("startsWith", "starts_with"),
         ("pgcd", "gcd"),
+        ("trimStart", "trim_start"),
+        ("rtrim", "trim_end"),
+        ("equalsIgnoreCase", "equals_ignore_case"),
+        ("number_format", "format_number"),
+        ("fullmatch", "matches"),
+        ("findall", "find_all"),
+        ("re_split", "split_by"),
+        ("re_sub", "replace_all"),
     ] {
         let r = fails(&format!("{name}(1)"), "E003");
         assert!(r.stderr.contains(&format!("called `{rythme}`")), "{name}: {}", r.stderr);
     }
-    for (name, hint) in [("mod", "`%`"), ("div", "`//`"), ("toFixed", "text(x, 2)"), ("words", "split(text)"), ("range", "step_by")] {
+    for (name, hint) in [("mod", "`%`"), ("div", "`//`"), ("toFixed", "text(x, 2)"), ("range", "step_by")] {
         let r = fails(&format!("{name}(1)"), "E003");
         assert!(r.stderr.contains(hint), "{name}: {}", r.stderr);
     }

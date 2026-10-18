@@ -254,6 +254,7 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 | [`students.ry`](examples/students.ry) | records, record update, grouping, averages |
 | [`sales.ry`](examples/sales.ry) | a report: `scan`, columns lined up with `pad_left`, `windows`, `chunks`, JSON |
 | [`calendar.ry`](examples/calendar.ry) | dates: the page of a month, ISO 8601 texts, `days_between`, `add_days` |
+| [`logs.ry`](examples/logs.ry) | reading a log with regexes: `named_captures`, `matches`, `find_all`, `replace_all`, `format_number` |
 | [`tree.ry`](examples/tree.ry) | a recursive type: binary search tree |
 | [`primes.ry`](examples/primes.ry) | a recursive sieve, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | `test` blocks |
@@ -293,7 +294,7 @@ mode) and is organised as a pipeline:
 | [`src/types.rs`](src/types.rs) | what the checker knows for sure about values: their types |
 | [`src/compile.rs`](src/compile.rs) | prepares functions: each local name becomes a numbered slot |
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
-| [`src/builtins.rs`](src/builtins.rs) | 136 built-in functions, documented in two languages, JSON included |
+| [`src/builtins.rs`](src/builtins.rs) | 149 built-in functions, documented in two languages, JSON and regexes included |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |

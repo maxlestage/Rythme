@@ -17,6 +17,10 @@ use date::{
     add_days, add_seconds, day_of_week, days_between, days_in_month, format_date, is_date, is_leap_year, now, parse_date, seconds_between,
     today,
 };
+pub mod regex;
+use regex::{captures, captures_all, find_all, find_first, matches, named_captures, replace_all, split_by};
+mod text_tools;
+use text_tools::{equals_ignore_case, format_number, trim_end, trim_start, words};
 
 pub type BuiltinFn = fn(&mut Interp, &[Value], Span) -> Fallible<Value>;
 
@@ -312,6 +316,58 @@ pub static BUILTINS: &[Builtin] = &[
        "Writes a value as JSON text: records become objects, lists arrays, and `None` null. With `indent`, one element per line, shifted by that many spaces.",
        "Écrit une valeur en texte JSON : les enregistrements deviennent des objets, les listes des tableaux, et `None` null. Avec `indent`, un élément par ligne, décalé de ce nombre d'espaces.",
        "to_json([1.5, None, true])  # \"[1.5, null, true]\""),
+    b!("trim_start", "trim_start(text)", 1, 1, Text, trim_start,
+       "The text without spaces and line breaks at the start.",
+       "Le texte sans espaces ni retours à la ligne au début.",
+       "trim_start(\"  hi  \")       # \"hi  \""),
+    b!("trim_end", "trim_end(text)", 1, 1, Text, trim_end,
+       "The text without spaces and line breaks at the end.",
+       "Le texte sans espaces ni retours à la ligne à la fin.",
+       "trim_end(\"  hi  \")         # \"  hi\""),
+    b!("words", "words(text)", 1, 1, Text, words,
+       "The list of the words of a text: letters and digits, accents included, with `'` or `-` inside a word. Punctuation and spaces separate them.",
+       "La liste des mots d'un texte : lettres et chiffres, accents compris, avec `'` ou `-` à l'intérieur d'un mot. La ponctuation et les espaces les séparent.",
+       "words(\"Hello, world! It's me.\")   # [\"Hello\", \"world\", \"It's\", \"me\"]"),
+    b!("equals_ignore_case", "equals_ignore_case(a, b)", 2, 2, Text, equals_ignore_case,
+       "Are the two texts the same when uppercase and lowercase letters count as equal?",
+       "Les deux textes sont-ils pareils quand majuscules et minuscules comptent comme égales ?",
+       "equals_ignore_case(\"Été\", \"éTÉ\")   # true"),
+    b!("format_number", "format_number(x, decimals, language)", 1, 3, Text, format_number,
+       "Writes a number for people: thousands separated, with exactly `decimals` decimals if given, in the style of a language: \"en\" (1,234.5, by default), \"fr\" (1 234,5), \"de\", \"es\", \"it\", \"nl\" or \"pt\" (1.234,5). To line it up in a column, use `pad_left`.",
+       "Écrit un nombre pour les humains : milliers séparés, avec exactement `decimals` décimales si elles sont données, dans le style d'une langue : \"en\" (1,234.5, par défaut), \"fr\" (1 234,5), \"de\", \"es\", \"it\", \"nl\" ou \"pt\" (1.234,5). Pour l'aligner dans une colonne, utilisez `pad_left`.",
+       "format_number(1234567)     # \"1,234,567\"\nformat_number(1234.5, 2)   # \"1,234.50\"\nformat_number(-1234.5, 2, \"fr\")   # \"-1 234,50\""),
+    b!("matches", "matches(text, regex)", 2, 2, Text, matches,
+       "Does the whole text match the regex (a regular expression: see `rythme help regex`)? To look for the regex anywhere in the text, use `find_first`.",
+       "Le texte entier correspond-il à la regex (une expression régulière : voir `rythme help regex`) ? Pour chercher la regex n'importe où dans le texte, utilisez `find_first`.",
+       "matches(\"2024\", \"[0-9]+\")      # true\nmatches(\"2024!\", \"[0-9]+\")     # false"),
+    b!("find_first", "find_first(text, regex)", 2, 2, Text, find_first,
+       "The first piece of the text that matches the regex, as an Option: `Some(piece)`, or `None` if there is none.",
+       "Le premier morceau du texte qui correspond à la regex, sous forme d'Option : `Some(morceau)`, ou `None` s'il n'y en a pas.",
+       "find_first(\"tel: 06 12\", \"[0-9]+\")   # Some(\"06\")"),
+    b!("find_all", "find_all(text, regex)", 2, 2, Text, find_all,
+       "Every piece of the text that matches the regex, from left to right.",
+       "Tous les morceaux du texte qui correspondent à la regex, de gauche à droite.",
+       "find_all(\"3 cats, 12 dogs\", \"[0-9]+\")   # [\"3\", \"12\"]"),
+    b!("captures", "captures(text, regex)", 2, 2, Text, captures,
+       "The first match of the regex, as an Option of a list: the whole piece, then the text of each group `(...)`, in order (\"\" for a group that matched nothing).",
+       "La première correspondance de la regex, sous forme d'Option d'une liste : le morceau entier, puis le texte de chaque groupe `(...)`, dans l'ordre (\"\" pour un groupe qui n'a rien trouvé).",
+       "captures(\"2024-02-29\", \"([0-9]+)-([0-9]+)\")   # Some([\"2024-02\", \"2024\", \"02\"])"),
+    b!("captures_all", "captures_all(text, regex)", 2, 2, Text, captures_all,
+       "Like `captures`, for every match: a list of lists.",
+       "Comme `captures`, pour chaque correspondance : une liste de listes.",
+       "captures_all(\"a=1, b=2\", \"(\\\\w)=(\\\\d)\")   # [[\"a=1\", \"a\", \"1\"], [\"b=2\", \"b\", \"2\"]]"),
+    b!("named_captures", "named_captures(text, regex)", 2, 2, Text, named_captures,
+       "The first match of a regex with named groups `(?<name>...)`, as an Option of a record: one field for each name.",
+       "La première correspondance d'une regex avec des groupes nommés `(?<nom>...)`, sous forme d'Option d'un enregistrement : un champ par nom.",
+       "named_captures(\"2024-02\", \"(?<year>[0-9]+)-(?<month>[0-9]+)\")   # Some({year: \"2024\", month: \"02\"})"),
+    b!("split_by", "split_by(text, regex)", 2, 2, Text, split_by,
+       "Cuts a text at every piece that matches the regex.",
+       "Découpe un texte à chaque morceau qui correspond à la regex.",
+       "split_by(\"a, b;c\", \"[,;] *\")   # [\"a\", \"b\", \"c\"]"),
+    b!("replace_all", "replace_all(text, regex, new)", 3, 3, Text, replace_all,
+       "Replaces every piece that matches the regex. `new` is a text, where `$1` stands for the text of group 1 (`$<name>` for a named group, `$0` for the whole piece, `$$` for a `$`), or a function that receives each piece and gives its replacement.",
+       "Remplace chaque morceau qui correspond à la regex. `new` est un texte, où `$1` tient lieu du texte du groupe 1 (`$<nom>` pour un groupe nommé, `$0` pour le morceau entier, `$$` pour un `$`), ou une fonction qui reçoit chaque morceau et donne son remplacement.",
+       "replace_all(\"29/02/2024\", \"(\\\\d+)/(\\\\d+)/(\\\\d+)\", \"$3-$2-$1\")   # \"2024-02-29\"\nreplace_all(\"a cat\", \"\\\\b\\\\w\", upper)   # \"A Cat\""),
     // ----- Lists -----
     b!("map", "map(list, f)", 2, 2, Lists, map,
        "Applies the function f to each element and returns the list of the results. Also works on Option and Result.",
@@ -600,6 +656,8 @@ pub enum Expected {
     Result,
     /// A record `{year, month, day}`, with a time if needed.
     Date,
+    /// The replacement of `replace_all`.
+    TextOrFunction,
 }
 
 impl Expected {
@@ -622,6 +680,7 @@ impl Expected {
             Expected::Option => OPTION,
             Expected::Result => RESULT,
             Expected::Date => RECORD,
+            Expected::TextOrFunction => TEXT | FUNC,
         }
     }
 }
@@ -647,6 +706,7 @@ impl std::fmt::Display for Expected {
             Expected::Option => t!("an Option", "une Option"),
             Expected::Result => t!("a Result", "un Result"),
             Expected::Date => t!("a date (a record {{year, month, day}})", "une date (un enregistrement {{year, month, day}})"),
+            Expected::TextOrFunction => t!("a text or a function", "un texte ou une fonction"),
         })
     }
 }
@@ -697,6 +757,9 @@ pub fn wrong_argument(f: &str, i: usize, expected: Expected, got: &str, kinds: K
             "pour lire une date dans un texte comme \"2024-02-29\", utilisez `parse_date(texte)`"
         ));
     }
+    if f == "find_first" && i == 0 && is(LIST) {
+        d = d.help(t!("for a list, use `find(list, f)`", "pour une liste, utilisez `find(liste, f)`"));
+    }
     if f == "flat_map" && i == 0 && is(OPTION | RESULT) {
         d = d.help(t!("for an Option or a Result, use `and_then(x, f)`", "pour une Option ou un Result, utilisez `and_then(x, f)`"));
     }
@@ -719,6 +782,16 @@ pub fn wrong_return(f: &str, wanted: Kinds, got: &str, span: Span) -> Box<Diagno
             ),
             span,
         ),
+        TEXT => Diagnostic::error(
+            "E005",
+            t!(
+                "the function given to `{f}` must return a text, but it returned {got}",
+                "la fonction donnée à `{f}` doit renvoyer un texte, mais elle a renvoyé {got}"
+            ),
+        )
+        .at(span)
+        .help(t!("to make a text of any value, use `text(x)`", "pour faire un texte de n'importe quelle valeur, utilisez `text(x)`"))
+        .boxed(),
         OPTION | RESULT => {
             let expected = if wanted == OPTION {
                 t!("an Option (Some or None)", "une Option (Some ou None)")

@@ -2193,6 +2193,7 @@ minuscules.
 | E022 | Conversion impossible | `int(t)` ou `float(t)` sur un texte qui n'est pas un nombre |
 | E023 | Valeur invalide | une valeur de la bonne sorte mais hors de ce qui est accepté (un nombre négatif d'éléments, `min` d'une liste vide, `sqrt(-1)`, un intervalle, une liste ou un texte trop grand, un code de sortie hors de 0–255...) |
 | E024 | Une valeur est perdue | une ligne calcule une valeur dont rien ne se sert |
+| E025 | Regex invalide | une regex qui ne respecte pas une règle (une `(` jamais fermée, `*` sans rien à répéter, un `\q` inconnu...), ou un remplacement de `replace_all` avec un groupe qui n'existe pas |
 | W001 | Nom inutilisé | un nom local est défini mais jamais utilisé |
 | W002 | Cas oublié | un `match` ou une fonction à un paramètre ne traite pas toutes les valeurs possibles |
 | W003 | Fonction intégrée masquée | une définition du premier niveau prend le nom d'une fonction intégrée |
@@ -2207,7 +2208,7 @@ minuscules.
 
 ## 6. Bibliothèque standard
 
-Les 136 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
+Les 149 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
 mots-clés, leurs noms sont en anglais. `rythme help builtins` les liste
 toutes par catégorie, une ligne chacune ; `rythme help NOM` (ou `help(NOM)`
 dans un programme, ou `:doc NOM` dans le mode interactif) affiche la
@@ -2281,7 +2282,56 @@ sont acceptés), `parse_json(texte)` (un Result : les objets JSON deviennent
 des enregistrements, les tableaux des listes, `null` `None` ; une erreur
 donne la ligne et la colonne) et `to_json(valeur, indentation)` (le texte
 JSON d'une valeur, sur une ligne, ou un élément par ligne décalé de
-`indentation` espaces, au plus 16).
+`indentation` espaces, au plus 16), `trim_start` et `trim_end` (les espaces
+et retours à la ligne d'un seul côté), `words(texte)` (lettres et chiffres,
+avec `'`, `’` ou `-` à l'intérieur d'un mot : `"aujourd'hui"`,
+`"peut-être"`), `equals_ignore_case(a, b)` (majuscules et minuscules
+comptent comme égales, `ß` comme `SS`), et
+`format_number(x, decimales, langue)` (milliers séparés, `decimales`
+décimales si elles sont données, au plus 100, arrondies comme `round` ;
+`langue` vaut `"en"` par défaut : `1,234.5` ; `"fr"` : `1 234,5`, avec une
+espace ordinaire ; `"de"`, `"es"`, `"it"`, `"nl"`, `"pt"` : `1.234,5` ;
+`"fr-CA"` compte comme `"fr"`).
+
+**Regex.** Une regex (expression régulière) est un texte qui décrit des
+morceaux de texte. `matches(texte, regex)` (le texte *entier*
+correspond-il ?), `find_first(texte, regex)` (une Option),
+`find_all(texte, regex)` (chaque correspondance, de gauche à droite, sans
+chevauchement ; une correspondance vide juste après la précédente est
+sautée), `captures(texte, regex)` (une Option d'une liste : la
+correspondance entière, puis le texte de chaque groupe, `""` pour un groupe
+qui n'y a pas pris part), `captures_all`, `named_captures(texte, regex)`
+(une Option d'un enregistrement, un champ par groupe `(?<nom>...)` ; E023
+sans groupe nommé), `split_by(texte, regex)` (une correspondance vide ne
+coupe jamais) et `replace_all(texte, regex, nouveau)` (`nouveau` est un
+texte où `$1`, `$<nom>`, `$0` et `$$` tiennent lieu d'un groupe, d'un groupe
+nommé, de la correspondance entière et d'un `$`, ou une fonction qui reçoit
+chaque correspondance et doit renvoyer un texte). Une regex est faite de
+caractères, de `.` (n'importe quel caractère sauf `\n`), de classes
+`[abc]`, `[a-z]`, `[^...]` (un `]` juste après `[` ou `[^` et un `-` à un
+bout sont eux-mêmes), de `\d` (0 à 9), `\w` (une lettre, accents compris,
+un chiffre ou `_`), `\s` (une espace, une tabulation ou un retour à la
+ligne), de leurs contraires `\D`, `\W`, `\S`, de `\b` et `\B` (au bord
+d'un mot, ou non), de `^` et `$` (le début et la fin du texte), de `\n`,
+`\t`, `\r`, d'une barre oblique inverse devant un signe pour le signe
+lui-même (`\.`), d'alternatives `a|b`, de groupes `(...)`, `(?:...)` (sans
+capture) et `(?<nom>...)` (ou `(?P<nom>...)`), des répétitions `*`, `+`,
+`?`, `{n}`, `{n,}` et `{n,m}` (n et m jusqu'à 1000), qui prennent autant
+qu'elles peuvent, ou aussi peu avec un `?` après elles (`*?`), et de `(?i)`
+au début, pour ignorer la casse. Les règles habituelles choisissent entre
+plusieurs correspondances : la plus à gauche, puis la première
+alternative, puis la répétition la plus longue. Une recherche prend un temps
+proportionnel à la longueur du texte fois la taille de la regex, quelles
+qu'elles soient : le moteur suit tous les chemins à la fois au lieu de les
+essayer l'un après l'autre (pas de « retour arrière catastrophique ») ;
+pour la répétition d'une partie qui peut correspondre à un texte vide,
+comme `(a*)*`, il peut choisir une autre fin que d'autres moteurs. Dans un
+texte Rythme, la barre oblique inverse s'écrit deux fois et les accolades
+`\{` et `\}` : `"\\d\{4\}"` est la regex `\d{4}` ; un signe entre
+crochets n'a pas besoin de barre oblique : `"[.]"`, `"[(]"`. Une erreur
+dans une regex arrête le programme avec E025, qui la montre dans la regex ;
+quand la regex est écrite dans l'appel, elle est trouvée avant de lancer le
+programme, à sa place dans le code.
 
 **Listes.** `map`, `filter`, `fold(liste, depart, f)`,
 `scan(liste, depart, f)` (chaque résultat intermédiaire de `fold`), `each`,
@@ -2481,6 +2531,49 @@ erreur[E023]: `add_days` a besoin d'une date valide : le jour doit aller de 1 à
   |
   = aide: une date est un enregistrement comme `{year: 2024, month: 2, day: 29}`, avec `hour`, `minute`, `second` et `offset` (minutes d'avance sur UTC) si besoin
   = en savoir plus : `rythme explain E023`
+```
+
+Chercher et découper avec des regex, et des nombres écrits pour les humains :
+
+```rythme
+journal = "2024-02-29 ERROR disk full\n2024-03-01 INFO ok\n2024-03-02 ERROR fan"
+errors = lines(journal) |> filter(fn(line) = matches(line, ".* ERROR .*"))
+print(errors |> map(fn(line) = unwrap(find_first(line, "[0-9-]+"))))
+print(find_all("3 cats, 12 dogs and 1 fish", "\\d+"), split_by("a, b;c", "[,;] *"))
+print(captures("v2.14", "v(\\d+)\\.(\\d+)"), named_captures("2024-02", "(?<year>\\d+)-(?<month>\\d+)"))
+print(replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1"), replace_all("hello world", "\\b\\w", upper))
+print(matches("AB-12", "[A-Z]\{2\}-[0-9]+"), matches("ab-12", "(?i)[A-Z]\{2\}-[0-9]+"), find_all("x<b>y</b>", "<.+?>"))
+print(format_number(1234567.891, 2), format_number(1234567.891, 2, "fr"), format_number(-42000), pad_left(format_number(3.5, 2), 8))
+print(words("Hello, world! It's well-known."), trim_start("  hi  "), trim_end("  hi  "), equals_ignore_case("Été", "ÉTÉ"))
+```
+
+```text
+["2024-02-29", "2024-03-02"]
+["3", "12", "1"] ["a", "b", "c"]
+Some(["v2.14", "2", "14"]) Some({year: "2024", month: "02"})
+2024-02-29 Hello World
+true true ["<b>", "</b>"]
+1,234,567.89 1 234 567,89 -42,000     3.50
+["Hello", "world", "It's", "well-known"] hi     hi true
+```
+
+Une erreur dans une regex écrite dans le code est montrée avant de lancer le
+programme :
+
+```rythme
+code = "AB-12"
+print(matches(code, "[A-Z]+-([0-9]+"))
+```
+
+```text
+erreur[E025]: regex invalide : cette `(` n'est jamais fermée
+ --> 67-regex.ry:2:29
+  |
+2 | print(matches(code, "[A-Z]+-([0-9]+"))
+  |                             ^ ouverte ici
+  |
+  = aide: ajoutez une `)` là où le groupe finit ; pour le signe `(` lui-même, écrivez `[(]`
+  = en savoir plus : `rythme explain E025`
 ```
 
 Quand il n'y a plus rien à lire (la saisie au clavier a été fermée par
