@@ -540,6 +540,22 @@ impl Interp {
         }
     }
 
+    /// Evaluates an operation on names or constants (`x * 2`, the body of
+    /// many functions given to `map`), computed on the spot for whole numbers.
+    #[inline(never)]
+    fn leaf_operation(&mut self, e: &Node, fr: &Frame) -> Eval {
+        if let Kind::Binary(op, l, r, _) = &e.kind {
+            if is_leaf(l) && is_leaf(r) {
+                if let (Value::Int(x), Value::Int(y)) = (self.leaf(l, fr), self.leaf(r, fr)) {
+                    if let Some(v) = int_op(*op, *x, *y) {
+                        return Ok(v);
+                    }
+                }
+            }
+        }
+        self.eval(e, fr)
+    }
+
     /// Evaluates a condition: `true` or `false`.
     #[inline(never)]
     fn condition(&mut self, c: &Node, fr: &Frame) -> Result<bool, Flow> {
@@ -870,6 +886,7 @@ impl Interp {
                             self.eval_tail(body, &fr)
                         }
                         // A body that cannot end with a call (`x * 2`).
+                        Kind::Binary(_, ref l, ref r, _) if is_leaf(l) && is_leaf(r) => self.leaf_operation(body, &fr).map(Tail::Done),
                         _ => self.eval(body, &fr).map(Tail::Done),
                     };
                     match r {
