@@ -2306,7 +2306,8 @@ nombre va vers 0 (ou vers le bout de son intervalle le plus proche de 0), un
 texte ou une liste raccourcit, puis ses éléments se simplifient, tant que la
 propriété échoue encore. Il s'arrête alors avec E015 (ou avec l'erreur de la
 propriété, dont le message commence par la valeur), en montrant la valeur la
-plus simple trouvée, celle d'où elle vient et la **graine**. Les valeurs ne
+plus simple trouvée, celle d'où elle vient et la **graine**. Une propriété qui
+s'appelle trop profondément s'arrête aussitôt avec E014, sans simplifier. Les valeurs ne
 dépendent que de la graine et de la place de l'appel dans son fichier : chaque
 lancement, sur chaque machine, essaie les mêmes valeurs ;
 `rythme test --seed N` en essaie d'autres. La propriété peut aussi venir en

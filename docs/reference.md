@@ -2213,7 +2213,8 @@ often. When a value makes the property fail, `check_all` **simplifies** it
 a text or a list gets shorter, then its elements simpler, as long as the
 property still fails. It then stops with E015 (or with the error of the
 property, its message starting with the value), showing the simplest value
-found, the value it came from and the **seed**. The values depend only on
+found, the value it came from and the **seed**. A property that recurses too
+deep stops at once with E014, without simplifying. The values depend only on
 the seed and on the place of the call in its file, so every run, on every
 machine, tries the same values; `rythme test --seed N` tries others. The
 property may also be given last, as a block (see

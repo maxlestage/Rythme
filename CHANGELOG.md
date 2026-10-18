@@ -165,6 +165,15 @@ It gathers the pull requests #3 to #10 and the 1.0 release itself.
 - The bugs found by fuzzing (thousands of random programs, none may crash,
   hang or point outside of the code) and by reviews, each with a regression
   test.
+- Constructors of two types with the same name in two files are no longer
+  mixed at run time: patterns, `==`, order and dict keys tell them apart.
+- `check_all` stops at once with E014 when a property recurses too deep,
+  instead of running for ever while simplifying.
+- The checker no longer refuses dicts given to `d["k"]`, nor a REPL function
+  defined again.
+- `rythme steps --width` counts terminal columns (Chinese text), and the
+  help for names defined further down a block and for `xs.select(m.f?)` is
+  right.
 
 ## [0.1.0] - 2026-10-17
 
