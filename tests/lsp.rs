@@ -395,6 +395,24 @@ fn completion_offers_names_in_scope_keywords_and_snippets() {
 }
 
 #[test]
+fn dicts_and_sets_in_the_editor() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/dicts.ry";
+    let diags = lsp.open(u, "ages = dict([[\"Ada\", 36]])\nprint(union(set([1]), ages), has(ages, \"Ada\"))\n");
+    assert_eq!(diags.len(), 1, "{diags:?}");
+    let message = diags[0].get("message").as_str().unwrap();
+    assert!(message.starts_with("`union` expects a set as argument 2, but got"), "{message}");
+    let h = hover_text(&lsp.at("textDocument/hover", u, 1, 8));
+    assert!(h.contains("union(a, b)") && h.contains("rythme help union"), "{h}");
+    let l = labels(&lsp.at("textDocument/completion", u, 1, 0));
+    for name in ["dict", "set", "union", "intersection", "difference", "is_subset", "ages"] {
+        assert!(l.iter().any(|x| x == name), "{name} missing in {l:?}");
+    }
+    assert!(lsp.change(u, 2, "d = dict([[1, \"a\"]])\nprint(d[1], filter(d, fn(k, v) = k > 0))\n").is_empty());
+    assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
 fn completion_works_on_unfinished_code() {
     let (mut lsp, _) = Lsp::start("en", INIT);
     let u = "file:///nowhere/typing.ry";
@@ -503,7 +521,7 @@ fn local_functions_and_mistakes_found_by_types() {
     assert_eq!(diags.len(), 1, "{diags:?}");
     assert_eq!(diags[0].get("code").as_str(), Some("E005"));
     let message = diags[0].get("message").as_str().unwrap();
-    assert!(message.starts_with("`map` expects a list, an Option or a Result as argument 1, but got Text \"abc\""), "{message}");
+    assert!(message.starts_with("`map` expects a list, a set, an Option or a Result as argument 1, but got Text \"abc\""), "{message}");
     assert!(message.contains("help: a text is not a list: `chars(text)`"), "{message}");
     assert_eq!(range(&diags[0]), (0, 10, 0, 15));
     assert_eq!(lsp.stop(), 0);

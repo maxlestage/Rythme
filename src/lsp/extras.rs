@@ -46,6 +46,14 @@ fn label(t: &Ty, depth: usize) -> Option<String> {
             Some(e) => format!("List({e})"),
             None => "List".into(),
         },
+        Ty::Dict(k, v) => match (label(k, depth.saturating_sub(1)), label(v, depth.saturating_sub(1))) {
+            (Some(k), Some(v)) if depth > 0 => format!("Dict({k}, {v})"),
+            _ => "Dict".into(),
+        },
+        Ty::Set(e) => match label(e, depth.saturating_sub(1)).filter(|_| depth > 0) {
+            Some(e) => format!("Set({e})"),
+            None => "Set".into(),
+        },
         Ty::Record(r) => {
             if depth == 0 {
                 return Some("Record".into());

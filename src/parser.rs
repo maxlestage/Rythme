@@ -314,7 +314,10 @@ impl Parser {
     fn hint_for(&self, d: Diagnostic, tok: &Tok) -> Diagnostic {
         match tok {
             Tok::Eq => d.help(t!("to compare two values, use `==`", "pour comparer deux valeurs, utilisez `==`")),
-            Tok::FatArrow => d.help(t!("use `->` in `match` cases", "utilisez `->` dans les cas d'un `match`")),
+            Tok::FatArrow => d.help(t!(
+                "use `->` in `match` cases; a dict is built with `dict([[key, value], ...])`",
+                "utilisez `->` dans les cas d'un `match` ; un dictionnaire se construit avec `dict([[clé, valeur], ...])`"
+            )),
             Tok::AmpAmp => d.help(t!("use `and` to combine conditions", "utilisez `and` pour combiner des conditions")),
             Tok::BarBar => d.help(t!("use `or` to combine conditions", "utilisez `or` pour combiner des conditions")),
             Tok::Bang => d.help(t!("use `not` to negate a condition: `not done`", "utilisez `not` pour inverser une condition : `not fini`")),

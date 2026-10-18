@@ -1782,6 +1782,34 @@ impl Printer<'_> {
                 }
                 self.push("]");
             }
+            Value::Dict(m) => {
+                self.push("dict(");
+                for (i, (k, x)) in m.iter().enumerate() {
+                    if self.full() {
+                        break;
+                    }
+                    if i > 0 {
+                        self.push(", ");
+                    }
+                    self.value(k);
+                    self.push(" => ");
+                    self.value(x);
+                }
+                self.push(")");
+            }
+            Value::Set(m) => {
+                self.push("set(");
+                for (i, x) in m.keys().enumerate() {
+                    if self.full() {
+                        break;
+                    }
+                    if i > 0 {
+                        self.push(", ");
+                    }
+                    self.value(x);
+                }
+                self.push(")");
+            }
             Value::Record(r) => {
                 self.push("{");
                 for (i, (k, x)) in r.iter().enumerate() {

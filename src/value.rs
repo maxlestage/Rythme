@@ -9,6 +9,7 @@ use crate::ast::FnDef;
 use crate::bigint::BigInt;
 use crate::builtins::Builtin;
 use crate::compile::{FnCode, Sibling};
+pub use crate::dict::Map;
 use crate::symbol::Sym;
 
 #[derive(Clone)]
@@ -25,6 +26,10 @@ pub enum Value {
     List(List),
     Record(Rc<Record>),
     Variant(Rc<Variant>),
+    /// A dictionary: keys of any value but functions, each with a value.
+    Dict(Map),
+    /// A set: values (but functions) without repetition.
+    Set(Map),
     Func(Rc<Closure>),
     Builtin(&'static Builtin),
     Ctor(Rc<CtorInfo>),
@@ -228,6 +233,16 @@ impl Value {
         Value::List(List::new(v))
     }
 
+    /// A dictionary of these pairs (see [`Map::from_pairs`]).
+    pub fn dict(pairs: Vec<(Value, Value)>) -> Value {
+        Value::Dict(Map::from_pairs(pairs))
+    }
+
+    /// A set of these values.
+    pub fn set(items: Vec<Value>) -> Value {
+        Value::Set(Map::from_pairs(items.into_iter().map(|x| (x, Value::Unit)).collect()))
+    }
+
     pub fn type_name(&self) -> String {
         match self {
             Value::Unit => "Unit".into(),
@@ -239,6 +254,8 @@ impl Value {
             Value::List(_) => "List".into(),
             Value::Record(_) => "Record".into(),
             Value::Variant(v) => v.ctor.type_name.name().to_string(),
+            Value::Dict(_) => "Dict".into(),
+            Value::Set(_) => "Set".into(),
             Value::Func(_) | Value::Builtin(_) | Value::Ctor(_) => "Function".into(),
         }
     }
@@ -342,6 +359,31 @@ impl Value {
                             }
                         }
                     }
+                    // `dict(1 => "a", 2 => "b")` and `set(1, 2)`: what they hold, in order.
+                    Value::Dict(m) => {
+                        out.push_str("dict(");
+                        todo.push(Item::Str(")"));
+                        let pairs: Vec<(&Value, &Value)> = m.iter().collect();
+                        for (i, (k, x)) in pairs.into_iter().enumerate().rev() {
+                            todo.push(Item::Value(x));
+                            todo.push(Item::Str(" => "));
+                            todo.push(Item::Value(k));
+                            if i > 0 {
+                                todo.push(Item::Str(", "));
+                            }
+                        }
+                    }
+                    Value::Set(m) => {
+                        out.push_str("set(");
+                        todo.push(Item::Str(")"));
+                        let items: Vec<&Value> = m.keys().collect();
+                        for (i, x) in items.into_iter().enumerate().rev() {
+                            todo.push(Item::Value(x));
+                            if i > 0 {
+                                todo.push(Item::Str(", "));
+                            }
+                        }
+                    }
                     Value::Func(c) => match c.def.name {
                         Some(n) => out.push_str(&format!("<fn {n}>")),
                         None => out.push_str("<fn>"),
@@ -407,6 +449,16 @@ impl Value {
                     todo.extend(x.fields.iter().zip(y.fields.iter()));
                     true
                 }
+                (Value::Dict(x), Value::Dict(y)) | (Value::Set(x), Value::Set(y)) => {
+                    if x.len() != y.len() {
+                        return false;
+                    }
+                    for ((k1, v1), (k2, v2)) in x.iter().zip(y.iter()) {
+                        todo.push((k1, k2));
+                        todo.push((v1, v2));
+                    }
+                    true
+                }
                 (Value::Func(x), Value::Func(y)) => Rc::ptr_eq(x, y),
                 (Value::Builtin(x), Value::Builtin(y)) => std::ptr::eq(*x, *y),
                 (Value::Ctor(x), Value::Ctor(y)) => x.name == y.name,
@@ -435,6 +487,29 @@ impl Value {
             (Value::Unit, Value::Unit) => Some(Ordering::Equal),
             (Value::List(a), Value::List(b)) => {
                 for (x, y) in a.iter().zip(b.iter()) {
+                    match x.compare(y)? {
+                        Ordering::Equal => continue,
+                        o => return Some(o),
+                    }
+                }
+                Some(a.len().cmp(&b.len()))
+            }
+            // Element by element, in the order of their keys, like lists.
+            (Value::Dict(a), Value::Dict(b)) => {
+                for ((k1, v1), (k2, v2)) in a.iter().zip(b.iter()) {
+                    let o = match k1.compare(k2)? {
+                        Ordering::Equal => v1.compare(v2)?,
+                        o => o,
+                    };
+                    match o {
+                        Ordering::Equal => continue,
+                        o => return Some(o),
+                    }
+                }
+                Some(a.len().cmp(&b.len()))
+            }
+            (Value::Set(a), Value::Set(b)) => {
+                for (x, y) in a.keys().zip(b.keys()) {
                     match x.compare(y)? {
                         Ordering::Equal => continue,
                         o => return Some(o),
@@ -475,11 +550,13 @@ impl Value {
                 Value::Bool(_) => 1,
                 Value::Int(_) | Value::Big(_) | Value::Float(_) => 2,
                 Value::Text(_) => 3,
-                Value::Symbol(_) => 8,
-                Value::List(_) => 4,
-                Value::Record(_) => 5,
-                Value::Variant(_) => 6,
-                Value::Func(_) | Value::Builtin(_) | Value::Ctor(_) => 7,
+                Value::Symbol(_) => 4,
+                Value::List(_) => 5,
+                Value::Record(_) => 6,
+                Value::Variant(_) => 7,
+                Value::Dict(_) => 8,
+                Value::Set(_) => 9,
+                Value::Func(_) | Value::Builtin(_) | Value::Ctor(_) => 10,
             }
         }
         // `nan` goes at one end, according to its sign (like `f64::total_cmp`).
@@ -522,6 +599,24 @@ impl Value {
             (Value::Bool(a), Value::Bool(b)) => a.cmp(b),
             (Value::List(a), Value::List(b)) => {
                 for (x, y) in a.iter().zip(b.iter()) {
+                    match x.order(y, exact) {
+                        Ordering::Equal => continue,
+                        o => return o,
+                    }
+                }
+                a.len().cmp(&b.len())
+            }
+            (Value::Dict(a), Value::Dict(b)) => {
+                for ((k1, v1), (k2, v2)) in a.iter().zip(b.iter()) {
+                    match k1.order(k2, exact).then_with(|| v1.order(v2, exact)) {
+                        Ordering::Equal => continue,
+                        o => return o,
+                    }
+                }
+                a.len().cmp(&b.len())
+            }
+            (Value::Set(a), Value::Set(b)) => {
+                for (x, y) in a.keys().zip(b.keys()) {
                     match x.order(y, exact) {
                         Ordering::Equal => continue,
                         o => return o,
@@ -614,8 +709,8 @@ pub fn in_range(lo: crate::ast::Num, hi: crate::ast::Num, v: &Value) -> bool {
 }
 
 /// Values that may hold other values.
-fn is_container(v: &Value) -> bool {
-    matches!(v, Value::List(_) | Value::Record(_) | Value::Variant(_))
+pub(crate) fn is_container(v: &Value) -> bool {
+    matches!(v, Value::List(_) | Value::Record(_) | Value::Variant(_) | Value::Dict(_) | Value::Set(_))
 }
 
 thread_local! {
@@ -626,7 +721,7 @@ thread_local! {
 /// Frees the parts of a value. A few levels are freed recursively, which is
 /// faster; deeper ones one by one, so that a structure nested millions of
 /// levels deep does not overflow the stack when it is freed.
-fn free_parts(parts: &mut Vec<Value>) {
+pub(crate) fn free_parts(parts: &mut Vec<Value>) {
     const RECURSIVE: usize = 32;
     let depth = FREEING.with(|d| d.get());
     if depth < RECURSIVE {
@@ -664,6 +759,7 @@ fn drop_iteratively(mut todo: Vec<Value>) {
                     }
                 }
             }
+            Value::Dict(mut m) | Value::Set(mut m) => m.dismantle(&mut todo),
             _ => {}
         }
     }
