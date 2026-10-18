@@ -86,7 +86,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 - [ ] **Faster where it still hurts.** Building texts with `+` and adding to
   lists in constant amortized time, cheaper calls between local functions;
   measured with `bench/`, no behavior change.
-- [ ] **Installers.** A `curl | sh` / PowerShell install script using the
+- [x] **Installers.** A `curl | sh` / PowerShell install script using the
   release binaries, a Homebrew formula and a winget manifest in the
   repository, crates.io metadata, and a workflow publishing the VS Code
   extension when a `VSCE_PAT` secret exists (skipped otherwise).

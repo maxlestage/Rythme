@@ -114,16 +114,45 @@ Details in [`site/README.md`](site/README.md#heroku).
 
 ## Install
 
-**Without installing anything else:** each published version comes with
-ready-to-use programs for Linux, macOS and Windows on the
-[Releases page](https://github.com/maxlestage/Rythme/releases). Download the
-archive for your system, extract `rythme` (`rythme.exe` on Windows) and put it
-in a folder of your `PATH`.
+**Linux and macOS** (x86_64 and arm64): the script downloads the program of
+the latest version, checks its SHA-256 checksum and puts it in `~/.local/bin`.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/maxlestage/Rythme/master/install.sh | sh
+```
+
+Options after `sh -s --`: `--dir /usr/local/bin` (another folder),
+`--version v0.1.0` (another version); `--help` lists them.
+
+**Windows** (PowerShell): the program goes in
+`%LOCALAPPDATA%\Programs\Rythme\bin`, added to your `PATH`.
+
+```powershell
+irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex
+```
+
+Set `RYTHME_INSTALL_DIR` or `RYTHME_VERSION` before, or run the downloaded
+file: `.\install.ps1 -Dir C:\Tools -Version v0.1.0 -NoModifyPath`.
+
+**By hand:** each published version comes with ready-to-use programs for
+Linux, macOS and Windows on the
+[Releases page](https://github.com/maxlestage/Rythme/releases), and their
+checksums in `SHA256SUMS`. Download the archive for your system, extract
+`rythme` (`rythme.exe` on Windows) and put it in a folder of your `PATH`.
+
+**Homebrew** (macOS, Linux) and **winget** (Windows), once the packages are
+published ([`packaging/`](packaging/README.md)):
+
+```sh
+brew install maxlestage/rythme/rythme
+winget install Rythme.Rythme
+```
 
 **With [Rust](https://rustup.rs)** (any recent stable version):
 
 ```sh
-cargo install --git https://github.com/maxlestage/Rythme
+cargo install rythme                                    # from crates.io, once published
+cargo install --git https://github.com/maxlestage/Rythme   # the latest code
 ```
 
 Or from a clone of this repository:

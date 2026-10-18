@@ -29,10 +29,13 @@ language (`.ry` files), in English and in French.
 ## Install
 
 1. **Install Rythme** itself (the `rythme` program), as explained in the
-   [main README](https://github.com/maxlestage/Rythme#install): a ready-made
-   program from the Releases page, or `cargo install --git https://github.com/maxlestage/Rythme`.
+   [main README](https://github.com/maxlestage/Rythme#install): the install
+   script (`install.sh`, `install.ps1`), a ready-made program from the
+   Releases page, or `cargo install --git https://github.com/maxlestage/Rythme`.
    Check it in a terminal: `rythme version`.
-2. **Install the extension**, from this folder (it needs [Node.js](https://nodejs.org)):
+2. **Install the extension**: from the Visual Studio Marketplace (search
+   *Rythme* in the extensions view) once it is published there, or from this
+   folder (it needs [Node.js](https://nodejs.org)):
 
    ```sh
    cd editors/vscode
@@ -116,10 +119,13 @@ et en anglais.
 
 1. **Installez Rythme** lui-même (le programme `rythme`), comme expliqué
    dans le [README principal](https://github.com/maxlestage/Rythme/blob/main/README.fr.md#installer) :
-   un programme prêt à l'emploi depuis la page Releases, ou
+   le script d'installation (`install.sh`, `install.ps1`), un programme prêt
+   à l'emploi depuis la page Releases, ou
    `cargo install --git https://github.com/maxlestage/Rythme`.
    Vérifiez dans un terminal : `rythme version`.
-2. **Installez l'extension**, depuis ce dossier (il faut [Node.js](https://nodejs.org)) :
+2. **Installez l'extension** : depuis le Visual Studio Marketplace (cherchez
+   *Rythme* dans la vue des extensions) une fois qu'elle y est publiée, ou
+   depuis ce dossier (il faut [Node.js](https://nodejs.org)) :
 
    ```sh
    cd editors/vscode
