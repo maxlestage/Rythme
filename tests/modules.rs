@@ -191,6 +191,14 @@ fn unknown_names_say_which_file_defines_them() {
     let f = folder("fr", "print(describe(1))\n");
     let r = rythme_lang("fr", &[&f.path("main.ry")]);
     assert!(r.stderr.contains("`describe` est défini dans `geometry.ry` : ajoutez `use geometry` en haut du fichier"), "{}", r.stderr);
+    // Defined further down in the same function: that comes first.
+    for main in [
+        "fn f()\n  fn g() = describe(2)\n  y = 1\n  fn describe(x) = x + y\n  g()\nend\nprint(f())\n",
+        "use geometry as geo\nfn f()\n  x = area(2)\n  area = fn(v) = v\n  x\nend\nprint(f())\n",
+    ] {
+        let e = refused(main, &["defined here, further down", "move `"]);
+        assert!(!e.contains("is defined in `geometry.ry`"), "{e}");
+    }
 }
 
 #[test]

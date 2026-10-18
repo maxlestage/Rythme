@@ -1121,10 +1121,12 @@ impl<'a> Checker<'a> {
             );
             return;
         }
+        // Defined further down in a block around it: say so first.
+        let later = self.block_defs.iter().rev().flatten().find(|(n, at, _)| *n == s && at.start > span.start).copied();
         // Defined by a file used with a name, or by another file of the folder.
         let mut modules: Vec<(&Sym, &ModuleMeta)> = self.know.modules.iter().filter(|(_, m)| m.names.contains(&s)).collect();
         modules.sort_by_key(|(n, _)| n.name());
-        if let Some((m, meta)) = modules.first() {
+        if let Some((m, meta)) = modules.first().filter(|_| later.is_none()) {
             let file = &meta.file;
             self.diags.push(
                 Diagnostic::error("E003", t!("unknown name `{name}`", "nom inconnu `{name}`"))
@@ -1137,7 +1139,7 @@ impl<'a> Checker<'a> {
             );
             return;
         }
-        if let Some((stem, file)) = self.know.nearby.get(&s) {
+        if let Some((stem, file)) = self.know.nearby.get(&s).filter(|_| later.is_none()) {
             self.diags.push(
                 Diagnostic::error("E003", t!("unknown name `{name}`", "nom inconnu `{name}`"))
                     .at(span)
@@ -1152,8 +1154,7 @@ impl<'a> Checker<'a> {
         let mut d =
             Diagnostic::error("E003", t!("unknown name `{name}`", "nom inconnu `{name}`")).at(span).label(t!("not defined", "non défini"));
         // Defined further down in a block around it: say so, not what other languages call it.
-        let later = self.block_defs.iter().rev().flatten().find(|(n, at, _)| *n == s && at.start > span.start);
-        if let Some(&(_, at, is_fn)) = later {
+        if let Some((_, at, is_fn)) = later {
             d = d.secondary(at, t!("defined here, further down", "défini ici, plus bas")).help(if is_fn {
                 t!(
                     "in a block, a function can be used only after it, unless they are written one after the other with nothing between them: move `{name}` up, next to the function that uses it",
