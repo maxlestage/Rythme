@@ -1632,6 +1632,8 @@ Thumbs.db
         (" — did you mean `{best}`?", " — 你是想输入 `{best}` 吗？"),
         (":help lists the commands", ":help 会列出所有命令"),
         // src/steps.rs
+        ("unknown option `{flag}` for `rythme steps`", "`rythme steps` 的未知选项 `{flag}`"),
+        ("\nthe options are: --max N, --width N (see `rythme help steps`)", "\n选项有：--max N、--width N（见 `rythme help steps`）"),
         ("  ... (more steps, not shown: {n} are shown at most, change it with --max)", "  ...（更多步骤未显示：最多显示 {n} 步，可以用 --max 修改）"),
         ("this calculation became too deep to be shown step by step (more than {MAX_DEPTH} operations inside each other)", "这个计算太深了，无法一步一步显示（超过 {MAX_DEPTH} 层嵌套的运算）"),
         ("try it with smaller values, or run the program normally: `rythme file.ry`", "试试更小的值，或者正常运行程序：`rythme file.ry`"),

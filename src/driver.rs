@@ -131,6 +131,9 @@ pub struct Driver {
     /// The function defined by the previous REPL input: typing `fn fib(0) = 0`
     /// then `fn fib(n) = ...` gives one function with two definitions.
     last_repl_fn: Option<Rc<FnDef>>,
+    /// The next source read has a tail from somewhere else (see
+    /// [`source::add_with_tail`]): where it starts, and its name.
+    pub tail: Option<(usize, String)>,
 }
 
 impl Default for Driver {
@@ -154,6 +157,7 @@ impl Driver {
             warnings: 0,
             repl: false,
             last_repl_fn: None,
+            tail: None,
         }
     }
 
@@ -166,7 +170,10 @@ impl Driver {
     }
 
     pub fn parse(&mut self, name: &str, src: &str) -> Result<Vec<Item>, Box<Diagnostic>> {
-        let file = source::add(name, src);
+        let file = match self.tail.take() {
+            Some((at, tail)) => source::add_with_tail(name, src, at, &tail),
+            None => source::add(name, src),
+        };
         let lexed = lexer::lex(src, file)?;
         parser::parse(lexed)
     }
