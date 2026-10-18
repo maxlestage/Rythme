@@ -625,7 +625,17 @@ impl Interp {
     /// Evaluates the arguments of a call onto the stack.
     fn push_args(&mut self, args: &[Node], fr: &Frame) -> Result<(), Flow> {
         for a in args {
-            let v = self.operand(a, fr)?;
+            let v = match &a.kind {
+                // `n - 1`, `acc + x`: computed on the spot.
+                Kind::Binary(op, l, r, _) if is_leaf(l) && is_leaf(r) => match (self.leaf(l, fr), self.leaf(r, fr)) {
+                    (Value::Int(x), Value::Int(y)) => match int_op(*op, *x, *y) {
+                        Some(v) => v,
+                        None => self.eval(a, fr)?,
+                    },
+                    _ => self.eval(a, fr)?,
+                },
+                _ => self.operand(a, fr)?,
+            };
             self.stack.push(v);
         }
         Ok(())
