@@ -1683,10 +1683,101 @@ error[E015]: assertion failed: the values are different
        expected: 7
    = more about this error: `rythme explain E015`
 
-4 test(s): 3 passed, 1 failed
+4 test(s): 3 passed, 1 failed (1 ms)
 ```
 
-Exit code: 1.
+Exit code: 1. The time at the end of the summary is the time of the whole
+run; a test that takes half a second or more shows its own time too.
+
+**Several files, a filter.** `rythme test` takes files and folders: for a
+folder (`rythme test .`), it runs the tests of every `.ry` file inside it and
+in its subfolders that has tests, in alphabetical order (hidden folders,
+`target` and `node_modules` are skipped). Each file runs on its own, after a
+line that names it. A file with errors is reported, and counted in the
+summary. At the end, when several files ran or at least two tests failed,
+the failed tests are listed with their place. The options may come anywhere
+after `test`:
+
+| Option | What it does |
+|--------|--------------|
+| `--filter TEXT` (`-f`) | runs only the tests whose name contains `TEXT`, ignoring case; may be given several times. When no test is selected, the exit code is 1 |
+| `--seed N` | the seed of property tests (below); `--seed random` picks one and prints it |
+| `--watch` (`-w`) | runs the tests, then again each time a file changes: a file tested, a file it uses, or a `.ry` file of a folder given. The files are looked at twice a second; Ctrl+C stops |
+| `-- ARGS...` | the words after `--` are given to `args()` |
+
+**Property tests.** `check_all(property, generator)` calls the function
+`property` with 100 values made by `generator` (`check_all(property,
+generator, cases)` with another number, from 1 to 100 000). The property
+holds for a value when it gives `true`, `()`, `Some(...)` or `Ok(...)`; it
+fails when it gives `false`, `None` or `Err(...)`, or stops with an error
+(another value is E005). The first values are small, the next ones use more
+and more of the range, and the edges (0, the minimum and the maximum) come
+often. When a value makes the property fail, `check_all` **simplifies** it
+(shrinking): a number goes toward 0 (or the end of its range closest to 0),
+a text or a list gets shorter, then its elements simpler, as long as the
+property still fails. It then stops with E015 (or with the error of the
+property, its message starting with the value), showing the simplest value
+found, the value it came from and the **seed**. The values depend only on
+the seed and on the place of the call in its file, so every run, on every
+machine, tries the same values; `rythme test --seed N` tries others.
+
+The generators are records, made by `ints(min, max)` (whole numbers, from
+-1000 to 1000 without arguments), `floats(min, max)` (decimal numbers),
+`texts(max_length)` (20 at most without argument: letters, digits, spaces,
+punctuation, accents), `bools()`, `lists_of(generator, max_length)` (10 at
+most without length), `one_of(list)` (one of the values; a failing value is
+replaced by one written before it) and `records_of({field: generator,
+...})`, to give several values. `sample(generator, n)` gives `n` values (10
+without `n`) to see what a generator makes.
+
+When `assert_eq` fails on lists or records, the message also says where the
+values first differ (`[2].name`), what is missing or in excess; on two short
+texts, a mark shows the first character that differs.
+
+```rythme
+fn my_max(list) = fold(list, 0, fn(best, x) = if x > best then x else best)
+
+test "reversing twice gives the list back" = check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+
+test "the largest is in the list" = check_all(fn(l) = is_empty(l) or contains(l, my_max(l)), lists_of(ints()))
+
+test "a record" = assert_eq({name: "Ada", langs: ["en", "fr"]}, {name: "Ada", langs: ["en", "de"]})
+```
+
+`rythme test 47-properties.ry`:
+
+```text
+Running 3 test(s)
+  ✓ reversing twice gives the list back
+  ✗ the largest is in the list
+error[E015]: the property is false for [-1]
+ --> 47-properties.ry:5:37
+  |
+5 | test "the largest is in the list" = check_all(fn(l) = is_empty(l) or contains(l, my_max(l)), lists_of(ints()))
+  |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ false for [-1]
+  |
+  = note: found on try 1 of 100, then simplified from [-3, -1] in 3 step(s)
+  = note: seed 42: every run tries the same values; `rythme test --seed N` tries others
+  = help: the function must hold for every value of the generator: fix the function, or give the generator a smaller range, like `ints(1, 100)`
+  = more about this error: `rythme explain E015`
+
+  ✗ a record
+error[E015]: assertion failed: the values are different
+ --> 47-properties.ry:7:19
+  |
+7 | test "a record" = assert_eq({name: "Ada", langs: ["en", "fr"]}, {name: "Ada", langs: ["en", "de"]})
+  |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: got:      {name: "Ada", langs: ["en", "fr"]}
+      expected: {name: "Ada", langs: ["en", "de"]}
+  = note: first difference at langs[1]: got "fr", expected "de"
+  = more about this error: `rythme explain E015`
+
+Failed tests:
+  ✗ the largest is in the list (47-properties.ry:5:1)
+  ✗ a record (47-properties.ry:7:1)
+3 test(s): 1 passed, 2 failed (2 ms)
+```
 
 ### 4.9 Modules: `use`
 
@@ -2365,6 +2456,13 @@ stops these functions with E023, which says what is wrong. An offset is a
 fixed number: there are no daylight saving rules, so one day after a moment
 is the same time on the next day.
 
+**Property tests.** `check_all(property, generator, cases)`, `sample(generator, n)`,
+and the generators `ints(min, max)`, `floats(min, max)`, `texts(max_length)`,
+`bools()`, `lists_of(generator, max_length)`, `one_of(list)` and
+`records_of(fields)` (see [4.8](#48-tests)). A generator is a record like
+`{generator: "ints", min: 1, max: 6}`; one that is not well made stops
+`check_all` and `sample` with E023.
+
 ```rythme
 numbers = [3, 1, 4, 1, 5, 9, 2, 6]
 print(map(numbers, fn(x) = x * 2))
@@ -2570,7 +2668,7 @@ rythme [--lang fr|en] [--no-color] [COMMAND] [ARGUMENTS...]
 | *(none)* | `repl` | the interactive mode (see [7.2](#72-the-interactive-mode-repl)) |
 | `FILE [ARGS...]` | `run FILE [ARGS...]`, `lancer` | checks then runs the program; `ARGS` are given to `args()` |
 | `check FILE...` | `verifier`, `vérifier` | checks each program without running it (see [5.5](#55-the-check-before-running)) |
-| `test FILE [ARGS...]` | `tester` | runs the tests (see [4.8](#48-tests)) |
+| `test PATH... [--filter TEXT] [--seed N] [--watch] [-- ARGS...]` | `tester` | runs the tests of files and folders (see [4.8](#48-tests)) |
 | `fmt [--check] FILE...` | `format`, `formater` | gives the code its official layout; also a folder, or `-` for the standard input (see [7.4](#74-the-formatter-rythme-fmt)) |
 | `doc [--html] [--out FILE] FILE...` | `documenter` | writes the documentation of files or folders, in Markdown or as a web page (see [7.6](#76-documentation-rythme-doc)) |
 | `exercise [list \| start NAME \| check FILE]` | `exercises`, `exercice`, `exercices` | the built-in exercises (see below) |
@@ -2589,7 +2687,8 @@ message names files inside it) or a file that is not text in UTF-8. Anything
 else is an unknown command, with a suggestion.
 
 **Options.** `--lang` and `--no-color` must come **before** the command;
-anything after the file name goes to the program. `--lang` accepts any value
+anything after the file name goes to the program (for `rythme test`, what
+comes after `--`). `--lang` accepts any value
 that starts with `fr` or `en` (`--lang fr`, `--lang=en`, `--lang fr_CA`);
 another value, or `--lang` without a value, is reported, with exit code 2.
 

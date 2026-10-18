@@ -74,7 +74,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 - [x] **`rythme doc`.** Documentation of a file or a folder from its `##`
   comments, types and signatures, as Markdown and HTML, linked to the
   built-ins' docs.
-- [ ] **Better `rythme test`.** A folder of files, a filter by name,
+- [x] **Better `rythme test`.** A folder of files, a filter by name,
   `--watch`, a summary with times, and property tests
   (`check_all(fn(x) = ..., generator)`) with shrinking of the failing case.
 - [ ] **Language server extras.** Inferred types as inlay hints, semantic

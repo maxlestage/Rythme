@@ -131,6 +131,8 @@ pub struct Interp {
     pub types: HashMap<Sym, Vec<Rc<CtorInfo>>>,
     pub tests: Vec<TestCase>,
     pub script_args: Vec<String>,
+    /// Where the values of `check_all` and `sample` come from (`rythme test --seed N`).
+    pub property_seed: u64,
     /// How the top-level names of the file being run are stored (see
     /// `compile::Names`); set by the driver before running each file.
     pub names: compile::Names,
@@ -194,6 +196,7 @@ impl Interp {
             types,
             tests: Vec::new(),
             script_args: Vec::new(),
+            property_seed: crate::builtins::property::DEFAULT_SEED,
             names: compile::Names::default(),
             depth: 0,
             stack_base: stack_position(),
@@ -262,6 +265,11 @@ impl Interp {
     /// that any program, even one that never ends, can be run safely (tests).
     pub fn set_step_limit(&mut self, calls: u64) {
         self.steps_left = calls;
+    }
+
+    /// The calls allowed by `set_step_limit` are all made.
+    pub fn out_of_steps(&self) -> bool {
+        self.steps_left == 0
     }
 
     pub fn random_u64(&mut self) -> u64 {

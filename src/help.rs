@@ -1294,11 +1294,27 @@ Write tests next to your code:
   end
 
 Run them:
-  rythme test my_file.ry
+  rythme test my_file.ry            the tests of one file
+  rythme test .                     of every .ry file of a folder (and below)
+  rythme test . --filter double     only the tests whose name contains "double"
+  rythme test . --watch             again each time a file changes (Ctrl+C stops)
+  rythme test my_file.ry -- a b     with `args()` giving ["a", "b"]
 
 While testing, top-level expressions such as print(...) are not run: the
 definitions are loaded, then each test runs. A test passes if it ends without
-error, and its value is not false, Err(...) or None."#;
+error, and its value is not false, Err(...) or None. The summary gives the
+counts and the time; the exit code is 0 when every test passes.
+
+Property tests: check that something holds for many values
+  test "reversing twice gives the list back" =
+    check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+
+Generators: ints(min, max), floats(min, max), texts(max_length), bools(),
+lists_of(generator, max_length), one_of(list), records_of({x: ints(), y: texts()}).
+`sample(generator)` shows what one gives. When a value makes the property
+false, it is simplified (shrinking) and shown with the seed that made it: the
+same values come back on every run, and `--seed N` tries others
+(`--seed random` picks one)."#;
 
 const TESTS_FR: &str = r#"TESTS
 
@@ -1313,12 +1329,28 @@ const TESTS_FR: &str = r#"TESTS
   end
 
 Lancez-les :
-  rythme test mon_fichier.ry
+  rythme test mon_fichier.ry        les tests d'un fichier
+  rythme test .                     de chaque fichier .ry d'un dossier (et en dessous)
+  rythme test . --filter double     seulement les tests dont le nom contient « double »
+  rythme test . --watch             à nouveau à chaque changement d'un fichier (Ctrl+C arrête)
+  rythme test mon_fichier.ry -- a b avec `args()` qui donne ["a", "b"]
 
 Pendant les tests, les expressions du premier niveau comme print(...) ne sont
 pas exécutées : les définitions sont chargées, puis chaque test est lancé. Un
 test réussit s'il se termine sans erreur, et que sa valeur n'est ni false, ni
-Err(...), ni None."#;
+Err(...), ni None. Le résumé donne les nombres et le temps ; le code de sortie
+est 0 quand tous les tests réussissent.
+
+Tests de propriétés : vérifier qu'une chose est vraie pour beaucoup de valeurs
+  test "inverser deux fois redonne la liste" =
+    check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+
+Générateurs : ints(min, max), floats(min, max), texts(max_length), bools(),
+lists_of(générateur, max_length), one_of(liste), records_of({x: ints(), y: texts()}).
+`sample(générateur)` montre ce qu'il donne. Quand une valeur rend la propriété
+fausse, elle est simplifiée et montrée avec la graine qui l'a donnée : les
+mêmes valeurs reviennent à chaque lancement, et `--seed N` en essaie d'autres
+(`--seed random` en choisit une)."#;
 
 const EXERCISES_EN: &str = r#"EXERCISES
 
@@ -2003,7 +2035,11 @@ values to compare.
 `rythme check` finds before running an `assert_eq` that can never pass,
 because its two values are of kinds that are never equal:
 Wrong:   assert_eq(parse_int("3"), 3)      # a Result is never an Int
-Right:   assert_eq(parse_int("3"), Ok(3))"#,
+Right:   assert_eq(parse_int("3"), Ok(3))
+
+`check_all(property, generator)` reports E015 too when a value makes the
+property false: it shows the simplest value found, and the seed that gave it
+(the same values come back on every run; `rythme test --seed N` tries others)."#,
             r#"E015 — Assertion échouée
 
 `assert(condition)` ou `assert_eq(obtenu, attendu)` a constaté que quelque
@@ -2013,7 +2049,12 @@ le message montre les valeurs à comparer.
 `rythme check` trouve avant l'exécution un `assert_eq` qui ne peut jamais
 réussir, parce que ses deux valeurs sont de natures jamais égales :
 Faux :   assert_eq(parse_int("3"), 3)      # un Result n'est jamais un Int
-Juste :  assert_eq(parse_int("3"), Ok(3))"#,
+Juste :  assert_eq(parse_int("3"), Ok(3))
+
+`check_all(propriété, générateur)` signale aussi E015 quand une valeur rend la
+propriété fausse : il montre la valeur la plus simple trouvée, et la graine qui
+l'a donnée (les mêmes valeurs reviennent à chaque lancement ;
+`rythme test --seed N` en essaie d'autres)."#,
         ),
         "E016" => (
             r#"E016 — Wrong use of ?

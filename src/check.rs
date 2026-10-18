@@ -931,10 +931,10 @@ impl<'a> Checker<'a> {
 
     /// Notes that the code uses something that may check a value: anything
     /// but plain data, constructors and built-in functions other than
-    /// `assert`, `assert_eq` and `fail`.
+    /// `assert`, `assert_eq`, `check_all` and `fail`.
     fn note_use(&mut self, (res, ty): &(Res, Ty)) {
         let plain = match res {
-            Res::Global(g) if g.kind == GKind::Builtin => !matches!(builtin_name(g), Some("assert" | "assert_eq" | "fail")),
+            Res::Global(g) if g.kind == GKind::Builtin => !matches!(builtin_name(g), Some("assert" | "assert_eq" | "check_all" | "fail")),
             Res::Global(g) if matches!(g.kind, GKind::Ctor | GKind::CtorValue) => true,
             _ => matches!(ty, Ty::Unit | Ty::Bool | Ty::Int | Ty::Float | Ty::Num | Ty::Text),
         };

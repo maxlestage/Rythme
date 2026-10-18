@@ -14,11 +14,13 @@ use crate::types::{self, Kinds, BOOL, FUNC, INT, LIST, NUMBER, OPTION, RECORD, R
 use crate::value::*;
 
 pub(crate) mod date;
+pub mod property;
 pub(crate) mod system;
 use date::{
     add_days, add_seconds, day_of_week, days_between, days_in_month, format_date, is_date, is_leap_year, now, parse_date, seconds_between,
     today,
 };
+use property::{bools, check_all, floats, ints, lists_of, one_of, records_of, sample, texts};
 use system::{create_folder, delete_file, file_info, in_browser, input_lines, io_message, join_path, list_folder, options, split_path};
 
 pub type BuiltinFn = fn(&mut Interp, &[Value], Span) -> Fallible<Value>;
@@ -33,10 +35,11 @@ pub enum Category {
     Options,
     Files,
     Dates,
+    Tests,
 }
 
 impl Category {
-    pub const ALL: [Category; 8] = [
+    pub const ALL: [Category; 9] = [
         Category::Basics,
         Category::Numbers,
         Category::Text,
@@ -45,6 +48,7 @@ impl Category {
         Category::Options,
         Category::Files,
         Category::Dates,
+        Category::Tests,
     ];
 
     pub fn title(self) -> String {
@@ -57,6 +61,7 @@ impl Category {
             Category::Options => t!("Option and Result", "Option et Result"),
             Category::Files => t!("Files", "Fichiers"),
             Category::Dates => t!("Dates and times", "Dates et heures"),
+            Category::Tests => t!("Property tests", "Tests de propriétés"),
         }
     }
 }
@@ -598,6 +603,44 @@ pub static BUILTINS: &[Builtin] = &[
        "Does the year have a 29 February? Every 4 years, except every 100 years, except every 400 years.",
        "L'année a-t-elle un 29 février ? Tous les 4 ans, sauf tous les 100 ans, sauf tous les 400 ans.",
        "is_leap_year(2024)         # true\nis_leap_year(1900)         # false"),
+    // ----- Property tests -----
+    b!("check_all", "check_all(property, generator, cases)", 2, 3, Tests, check_all,
+       "Checks that a property holds for many values made by a generator (100, or `cases`): the function is called with each value and must give `true` (or `()`, `Some(...)`, `Ok(...)`). When a value makes it false or stops it with an error, that value is simplified as much as possible (shrinking) and shown, with the seed that made it: the same values come back on every run.",
+       "Vérifie qu'une propriété est vraie pour beaucoup de valeurs fabriquées par un générateur (100, ou `cases`) : la fonction est appelée avec chaque valeur et doit donner `true` (ou `()`, `Some(...)`, `Ok(...)`). Quand une valeur la rend fausse ou l'arrête sur une erreur, cette valeur est simplifiée autant que possible et montrée, avec la graine qui l'a donnée : les mêmes valeurs reviennent à chaque lancement.",
+       "check_all(fn(x) = x + 0 == x, ints())   # ()\ncheck_all(fn(l) = reverse(reverse(l)) == l, lists_of(texts()))   # ()\ncheck_all(fn(x) = abs(x) >= 0, floats(-1, 1), 500)   # ()"),
+    b!("sample", "sample(generator, n)", 1, 2, Tests, sample,
+       "A list of `n` values (10 if not given) made by a generator, to see what `check_all` will try.",
+       "Une liste de `n` valeurs (10 sinon) fabriquées par un générateur, pour voir ce que `check_all` essaiera.",
+       "sample(ints(1, 6), 5)      # [...]"),
+    b!("ints", "ints(min, max)", 0, 2, Tests, ints,
+       "A generator of whole numbers from `min` to `max` (from -1000 to 1000 if not given), often near 0 and at the edges. A failing number is simplified towards 0.",
+       "Un générateur de nombres entiers de `min` à `max` (de -1000 à 1000 sinon), souvent près de 0 et aux bords. Un nombre qui échoue est simplifié vers 0.",
+       "ints(1, 6)                 # {generator: \"ints\", min: 1, max: 6}"),
+    b!("floats", "floats(min, max)", 0, 2, Tests, floats,
+       "A generator of decimal numbers from `min` to `max` (from -1000.0 to 1000.0 if not given).",
+       "Un générateur de nombres décimaux de `min` à `max` (de -1000.0 à 1000.0 sinon).",
+       "floats(0, 1)               # {generator: \"floats\", min: 0.0, max: 1.0}"),
+    b!("texts", "texts(max_length)", 0, 1, Tests, texts,
+       "A generator of texts of at most `max_length` characters (20 if not given): letters mostly, with digits, spaces, punctuation and accents. A failing text is made shorter and simpler.",
+       "Un générateur de textes d'au plus `max_length` caractères (20 sinon) : surtout des lettres, avec des chiffres, des espaces, de la ponctuation et des accents. Un texte qui échoue est raccourci et simplifié.",
+       "texts(5)                   # {generator: \"texts\", max_length: 5}"),
+    b!("bools", "bools()", 0, 0, Tests, bools,
+       "A generator of `true` and `false`.",
+       "Un générateur de `true` et `false`.",
+       "bools()                    # {generator: \"bools\"}"),
+    b!("lists_of", "lists_of(generator, max_length)", 1, 2, Tests, lists_of,
+       "A generator of lists of at most `max_length` elements (10 if not given), each made by `generator`. A failing list is made shorter, then its elements simpler.",
+       "Un générateur de listes d'au plus `max_length` éléments (10 sinon), chacun fabriqué par `generator`. Une liste qui échoue est raccourcie, puis ses éléments simplifiés.",
+       "lists_of(bools(), 3)       # {generator: \"lists_of\", of: {generator: \"bools\"}, max_length: 3}"),
+    b!("one_of", "one_of(values)", 1, 1, Tests, one_of,
+       "A generator that picks one of the values of a list. A failing value is replaced by one written before it.",
+       "Un générateur qui choisit une des valeurs d'une liste. Une valeur qui échoue est remplacée par une valeur écrite avant elle.",
+       "one_of([\"red\", \"green\"])   # {generator: \"one_of\", values: [\"red\", \"green\"]}"),
+    b!("records_of", "records_of(fields)", 1, 1, Tests, records_of,
+       "A generator of records, with a generator for each field: `records_of({name: texts(), age: ints(0, 120)})`. Handy to give several values to `check_all`.",
+       "Un générateur d'enregistrements, avec un générateur pour chaque champ : `records_of({name: texts(), age: ints(0, 120)})`. Pratique pour donner plusieurs valeurs à `check_all`.",
+       "records_of({x: bools()})   # {generator: \"records_of\", fields: {x: {generator: \"bools\"}}}"),
+
 ];
 
 // ----- argument helpers --------------------------------------------------
@@ -638,6 +681,8 @@ pub enum Expected {
     Result,
     /// A record `{year, month, day}`, with a time if needed.
     Date,
+    /// A generator of values for `check_all`: a record made by `ints()`...
+    Generator,
 }
 
 impl Expected {
@@ -659,7 +704,7 @@ impl Expected {
             Expected::OptionOrResult => OPTION | RESULT,
             Expected::Option => OPTION,
             Expected::Result => RESULT,
-            Expected::Date => RECORD,
+            Expected::Date | Expected::Generator => RECORD,
         }
     }
 }
@@ -685,6 +730,7 @@ impl std::fmt::Display for Expected {
             Expected::Option => t!("an Option", "une Option"),
             Expected::Result => t!("a Result", "un Result"),
             Expected::Date => t!("a date (a record {{year, month, day}})", "une date (un enregistrement {{year, month, day}})"),
+            Expected::Generator => t!("a generator (like `ints()`)", "un générateur (comme `ints()`)"),
         })
     }
 }
@@ -1124,10 +1170,126 @@ fn assert_eq(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     if a[0].equals(&a[1]) {
         return Ok(Value::Unit);
     }
-    Err(Diagnostic::error("E015", t!("assertion failed: the values are different", "assertion échouée : les valeurs sont différentes"))
-        .at(span)
-        .note(t!("got:      {}\nexpected: {}", "obtenu :  {}\nattendu : {}", a[0].repr(), a[1].repr()))
-        .boxed())
+    let (got, expected) = (a[0].repr(), a[1].repr());
+    let mut values = t!("got:      {got}\nexpected: {expected}", "obtenu :  {got}\nattendu : {expected}");
+    // Two short texts: a mark under the first character that differs.
+    if let (Value::Text(x), Value::Text(y)) = (&a[0], &a[1]) {
+        if got.chars().count() <= 100 && expected.chars().count() <= 100 {
+            let same: String = x.chars().zip(y.chars()).take_while(|(c, d)| c == d).map(|(c, _)| c).collect();
+            let column = Value::text(&same).repr().chars().count() - 1;
+            let at = same.chars().count() + 1;
+            values.push_str(&format!(
+                "\n          {}^ {}",
+                " ".repeat(column),
+                t!("first difference: character {at}", "première différence : caractère {at}")
+            ));
+        }
+    }
+    let mut d =
+        Diagnostic::error("E015", t!("assertion failed: the values are different", "assertion échouée : les valeurs sont différentes"))
+            .at(span)
+            .note(values);
+    for note in differences(&a[0], &a[1]) {
+        d = d.note(note);
+    }
+    Err(d.boxed())
+}
+
+/// Where two different values differ, for `assert_eq`: the first place
+/// inside lists and records where they are not the same, and what is there.
+fn differences(got: &Value, expected: &Value) -> Vec<String> {
+    let mut notes = Vec::new();
+    let (mut x, mut y) = (got, expected);
+    let mut path = String::new();
+    loop {
+        let at = if path.is_empty() { String::new() } else { t!(" at {path}", " en {path}") };
+        match (x, y) {
+            (Value::List(l), Value::List(m)) => {
+                if l.len() != m.len() {
+                    notes.push(t!(
+                        "the list{at} has {} element(s), {} expected",
+                        "la liste{at} a {} élément(s), {} attendu(s)",
+                        l.len(),
+                        m.len()
+                    ));
+                }
+                match l.iter().zip(m.iter()).position(|(a, b)| !a.equals(b)) {
+                    Some(i) => {
+                        path.push_str(&format!("[{i}]"));
+                        (x, y) = (&l.as_slice()[i], &m.as_slice()[i]);
+                    }
+                    None => {
+                        let (more, from, word) = if l.len() > m.len() {
+                            (l, m.len(), t!("in excess", "en trop"))
+                        } else {
+                            (m, l.len(), t!("missing", "manquant(s)"))
+                        };
+                        let items: Vec<String> = more.iter().skip(from).take(5).map(Value::repr).collect();
+                        let dots = if more.len() - from > 5 { ", ..." } else { "" };
+                        notes.push(t!("{word} from [{from}]: {}{dots}", "{word} à partir de [{from}] : {}{dots}", items.join(", ")));
+                        return notes;
+                    }
+                }
+            }
+            (Value::Record(r), Value::Record(s)) => {
+                let missing: Vec<&str> = s.keys().iter().filter(|k| r.get(k).is_none()).map(|k| &**k).collect();
+                let extra: Vec<&str> = r.keys().iter().filter(|k| s.get(k).is_none()).map(|k| &**k).collect();
+                if !missing.is_empty() {
+                    notes.push(t!("missing field(s){at}: {}", "champ(s) manquant(s){at} : {}", missing.join(", ")));
+                }
+                if !extra.is_empty() {
+                    notes.push(t!("field(s) not expected{at}: {}", "champ(s) inattendu(s){at} : {}", extra.join(", ")));
+                }
+                let Some((k, v, w)) = r.iter().find_map(|(k, v)| s.get(k).filter(|w| !v.equals(w)).map(|w| (k, v, w))) else {
+                    return notes;
+                };
+                path.push('.');
+                path.push_str(k);
+                (x, y) = (v, w);
+            }
+            _ => break,
+        }
+    }
+    let kinds = if x.type_name() == y.type_name() {
+        String::new()
+    } else {
+        t!(", which are of different types: {} and {}", ", qui sont de types différents : {} et {}", x.type_name(), y.type_name())
+    };
+    let path = path.strip_prefix('.').unwrap_or(&path);
+    if !path.is_empty() {
+        notes.insert(
+            0,
+            t!(
+                "first difference at {path}: got {}, expected {}{kinds}",
+                "première différence en {path} : obtenu {}, attendu {}{kinds}",
+                x.repr(),
+                y.repr()
+            ),
+        );
+    } else if !kinds.is_empty() {
+        notes.push(t!(
+            "the values are of different types: {} and {}",
+            "les valeurs sont de types différents : {} et {}",
+            x.type_name(),
+            y.type_name()
+        ));
+    }
+    // Texts of several lines: the first line that differs.
+    if let (Value::Text(s), Value::Text(t)) = (x, y) {
+        if s.contains('\n') || t.contains('\n') {
+            let (a, b): (Vec<&str>, Vec<&str>) = (s.split('\n').collect(), t.split('\n').collect());
+            let i = a.iter().zip(&b).position(|(p, q)| p != q).unwrap_or(a.len().min(b.len()));
+            let line = |l: Option<&&str>| l.map(|l| Value::text(l).repr()).unwrap_or_else(|| t!("(no line)", "(pas de ligne)"));
+            notes.push(t!(
+                "first different line: line {}\n  got:      {}\n  expected: {}",
+                "première ligne différente : ligne {}\n  obtenu :  {}\n  attendu : {}",
+                i + 1,
+                line(a.get(i)),
+                line(b.get(i))
+            ));
+        }
+    }
+    notes
 }
 
 fn fail(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
