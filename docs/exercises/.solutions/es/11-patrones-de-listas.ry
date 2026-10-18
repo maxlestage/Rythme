@@ -1,0 +1,45 @@
+# Ejercicio 11 · Desarmar listas  ★★☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn total([]) = 0
+fn total([x, ..resto]) = x + total(resto)
+
+fn el_mayor([]) = fail("la lista está vacía")
+fn el_mayor([x]) = x
+fn el_mayor([x, ..resto])
+  otros = el_mayor(resto)
+  if x > otros then x else otros
+end
+
+fn contiene_valor([], _) = false
+fn contiene_valor([primero, ..resto], x) = primero == x or contiene_valor(resto, x)
+
+fn el_ultimo([]) = fail("la lista está vacía")
+fn el_ultimo([x]) = x
+fn el_ultimo([_, ..resto]) = el_ultimo(resto)
+
+# --- Pruebas (no las cambies) ---
+
+test "total"
+  assert_eq(total([]), 0)
+  assert_eq(total([4]), 4)
+  assert_eq(total([1, 2, 3, 4]), 10)
+end
+
+test "el mayor"
+  assert_eq(el_mayor([7]), 7)
+  assert_eq(el_mayor([3, 9, 2]), 9)
+  assert_eq(el_mayor([-3, -1, -2]), -1)
+end
+
+test "contiene el valor"
+  assert_eq(contiene_valor([1, 2, 3], 2), true)
+  assert_eq(contiene_valor([1, 2, 3], 5), false)
+  assert_eq(contiene_valor([], 1), false)
+  assert_eq(contiene_valor(["a", "b"], "b"), true)
+end
+
+test "el último"
+  assert_eq(el_ultimo([1, 2, 3]), 3)
+  assert_eq(el_ultimo(["único"]), "único")
+end

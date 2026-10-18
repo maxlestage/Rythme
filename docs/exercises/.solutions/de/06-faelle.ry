@@ -1,0 +1,38 @@
+# Übung 06 · Eine Definition pro Fall  ★☆☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn plural(1, wort) = "1 {wort}"
+fn plural(n, wort) = "{n} {wort}s"
+
+fn fizzbuzz(n) if n % 15 == 0 = "FizzBuzz"
+fn fizzbuzz(n) if n % 3 == 0 = "Fizz"
+fn fizzbuzz(n) if n % 5 == 0 = "Buzz"
+fn fizzbuzz(n) = text(n)
+
+fn art_des_tages("Samstag") = "Wochenende"
+fn art_des_tages("Sonntag") = "Wochenende"
+fn art_des_tages(_) = "Werktag"
+
+# --- Tests (nicht verändern) ---
+
+test "Plural"
+  assert_eq(plural(1, "Auto"), "1 Auto")
+  assert_eq(plural(2, "Auto"), "2 Autos")
+  assert_eq(plural(0, "Foto"), "0 Fotos")
+end
+
+test "FizzBuzz"
+  assert_eq(fizzbuzz(1), "1")
+  assert_eq(fizzbuzz(3), "Fizz")
+  assert_eq(fizzbuzz(10), "Buzz")
+  assert_eq(fizzbuzz(30), "FizzBuzz")
+  assert_eq(fizzbuzz(31), "31")
+end
+
+test "die ersten fünfzehn" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+
+test "Art des Tages"
+  assert_eq(art_des_tages("Samstag"), "Wochenende")
+  assert_eq(art_des_tages("Sonntag"), "Wochenende")
+  assert_eq(art_des_tages("Montag"), "Werktag")
+end

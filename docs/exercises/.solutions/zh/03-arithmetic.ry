@@ -1,0 +1,42 @@
+# 练习 03 · 算术  ★☆☆
+# 参考答案。请先自己做这个练习，再来看它！
+
+fn square(x) = x * x
+
+fn average(a, b) = (a + b) / 2
+
+fn fahrenheit(celsius) = celsius * 9 / 5 + 32
+
+fn hypotenuse(a, b) = sqrt(square(a) + square(b))
+
+fn minutes_and_seconds(total) = "{total // 60} 分 {total % 60} 秒"
+
+# --- 测试（请不要修改）---
+
+test "平方"
+  assert_eq(square(3), 9)
+  assert_eq(square(-4), 16)
+  assert_eq(square(1.5), 2.25)
+end
+
+test "平均值"
+  assert_eq(average(2, 4), 3)
+  assert_eq(average(1, 2), 1.5)
+end
+
+test "华氏温度"
+  assert_eq(fahrenheit(0), 32)
+  assert_eq(fahrenheit(100), 212)
+  assert_eq(fahrenheit(-40), -40)
+end
+
+test "斜边"
+  assert_eq(hypotenuse(3, 4), 5)
+  assert_eq(hypotenuse(5, 12), 13)
+end
+
+test "分和秒"
+  assert_eq(minutes_and_seconds(125), "2 分 5 秒")
+  assert_eq(minutes_and_seconds(59), "0 分 59 秒")
+  assert_eq(minutes_and_seconds(600), "10 分 0 秒")
+end

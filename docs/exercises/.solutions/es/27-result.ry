@@ -1,0 +1,49 @@
+# Ejercicio 27 · Una operación que puede fallar: Result  ★★☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn division_comprobada(_, 0) = Err("división entre cero")
+fn division_comprobada(a, b) = Ok(a / b)
+
+fn leer_edad(texto) = match parse_int(texto)
+  Err(_) -> Err("no es un número")
+  Ok(n) if n < 0 -> Err("una edad no puede ser negativa")
+  Ok(n) if n > 150 -> Err("demasiado mayor")
+  Ok(n) -> Ok(n)
+end
+
+fn describir(resultado) = match resultado
+  Ok(valor) -> "ok: {valor}"
+  Err(mensaje) -> "error: {mensaje}"
+end
+
+fn comprobar_codigo(codigo) =
+  if len(codigo) < 8 then Err("demasiado corto")
+  else if not any(chars(codigo), is_digit) then Err("ninguna cifra")
+  else Ok(codigo)
+
+# --- Pruebas (no las cambies) ---
+
+test "división comprobada"
+  assert_eq(division_comprobada(9, 3), Ok(3))
+  assert_eq(division_comprobada(1, 0), Err("división entre cero"))
+end
+
+test "leer la edad"
+  assert_eq(leer_edad("36"), Ok(36))
+  assert_eq(leer_edad(" 7 "), Ok(7))
+  assert_eq(leer_edad("siete"), Err("no es un número"))
+  assert_eq(leer_edad("-1"), Err("una edad no puede ser negativa"))
+  assert_eq(leer_edad("200"), Err("demasiado mayor"))
+end
+
+test "describir"
+  assert_eq(describir(Ok(42)), "ok: 42")
+  assert_eq(describir(Err("demasiado mayor")), "error: demasiado mayor")
+  assert_eq(describir(leer_edad("-5")), "error: una edad no puede ser negativa")
+end
+
+test "comprobar el código"
+  assert_eq(comprobar_codigo("rythme2024"), Ok("rythme2024"))
+  assert_eq(comprobar_codigo("abc1"), Err("demasiado corto"))
+  assert_eq(comprobar_codigo("funcional"), Err("ninguna cifra"))
+end

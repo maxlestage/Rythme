@@ -1980,8 +1980,9 @@ is a file with a statement, hints, the functions to write and their tests.
                                     runs its tests, and says what to do next
 
 In the file, replace each fail("to do") with your code; do not change the
-tests. `rythme test file.ry` runs the tests too. The exercises are also in the
-folder docs/exercises of the repository of Rythme, in English and French."#;
+tests. `rythme test file.ry` runs the tests too. The exercises follow the
+language of the messages (`rythme --lang es exercise start 7`); the folder
+docs/exercises of the repository of Rythme has them in English and French."#;
 
 const EXERCISES_FR: &str = r#"EXERCICES
 
@@ -1997,7 +1998,8 @@ indices, les fonctions à écrire et leurs tests.
 
 Dans le fichier, remplacez chaque fail("à faire") par votre code ; ne modifiez
 pas les tests. `rythme test fichier.ry` lance aussi les tests. Les exercices
-sont aussi dans le dossier docs/exercises du dépôt de Rythme, en anglais et en
+suivent la langue des messages (`rythme --lang es exercise start 7`) ; le
+dossier docs/exercises du dépôt de Rythme les contient en anglais et en
 français."#;
 
 const MODULES_EN: &str = r#"SEVERAL FILES
@@ -3300,7 +3302,7 @@ Pour des nombres décimaux, qui tombent entre 17 et 18, comparez plutôt :
 }
 
 /// Every fixed text that [`pick`] translates while running (help pages,
-/// explanations, keywords, functions, months): `tests/i18n.rs` looks for each
+/// explanations, keywords, functions, months, exercises): `tests/i18n.rs` looks for each
 /// one in every catalog. The texts given to `t!` are found in the sources.
 #[doc(hidden)]
 pub fn fixed_texts() -> Vec<&'static str> {
@@ -3309,6 +3311,7 @@ pub fn fixed_texts() -> Vec<&'static str> {
     texts.extend(KEYWORD_DOCS.iter().map(|k| k.1));
     texts.extend(BUILTINS.iter().map(|b| b.en));
     texts.extend(builtins::date::MONTHS_EN);
+    texts.extend(crate::exercise::fixed_texts());
     texts
 }
 

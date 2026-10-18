@@ -1,0 +1,53 @@
+# Exercício 23 · Escolher com `match`  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+type Luz = Verde | Amarelo | Vermelho
+
+fn proxima_luz(luz) = match luz
+  Verde -> Amarelo
+  Amarelo -> Vermelho
+  Vermelho -> Verde
+end
+
+fn pode_passar(luz) = match luz
+  Verde -> true
+  _ -> false
+end
+
+fn descrever(lista) = match lista
+  [] -> "vazia"
+  [x] -> "um: {x}"
+  [a, b] -> "dois: {a} e {b}"
+  [primeiro, ..] -> "vários, começando por {primeiro}"
+end
+
+fn saudacao(pessoa) = match pessoa
+  {titulo, sobrenome} -> "Olá, {titulo} {sobrenome}"
+  {nome} -> "Olá, {nome}"
+end
+
+# --- Testes (não os altere) ---
+
+test "próxima luz"
+  assert_eq(proxima_luz(Verde), Amarelo)
+  assert_eq(proxima_luz(Amarelo), Vermelho)
+  assert_eq(proxima_luz(Vermelho), Verde)
+end
+
+test "pode passar"
+  assert_eq(pode_passar(Verde), true)
+  assert_eq(pode_passar(Amarelo), false)
+  assert_eq(pode_passar(Vermelho), false)
+end
+
+test "descrever"
+  assert_eq(descrever([]), "vazia")
+  assert_eq(descrever([7]), "um: 7")
+  assert_eq(descrever([1, 2]), "dois: 1 e 2")
+  assert_eq(descrever([5, 6, 7]), "vários, começando por 5")
+end
+
+test "saudação"
+  assert_eq(saudacao({titulo: "Dra.", sobrenome: "Hopper", nome: "Grace"}), "Olá, Dra. Hopper")
+  assert_eq(saudacao({nome: "Grace"}), "Olá, Grace")
+end

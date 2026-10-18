@@ -1,0 +1,32 @@
+# Ejercicio 02 · Textos  ★☆☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+## Un saludo para `nombre`.
+fn saludar(nombre) = "¡Hola, {nombre}!"
+
+## El texto en mayúsculas, seguido de "!".
+fn gritar(texto) = upper(texto) + "!"
+
+## Las iniciales de una persona, cada una seguida de un punto.
+fn iniciales(nombre, apellido) = "{nombre[0]}.{apellido[0]}."
+
+## Una frase que presenta a una persona.
+fn presentar(nombre, edad) = "{nombre} tiene {edad} años."
+
+# --- Pruebas (no las cambies) ---
+
+test "saludar" = assert_eq(saludar("Ada"), "¡Hola, Ada!")
+
+test "saludar a otra persona" = assert_eq(saludar("Alan"), "¡Hola, Alan!")
+
+test "gritar"
+  assert_eq(gritar("hola"), "HOLA!")
+  assert_eq(gritar("Alto"), "ALTO!")
+end
+
+test "iniciales"
+  assert_eq(iniciales("Ada", "Lovelace"), "A.L.")
+  assert_eq(iniciales("grace", "hopper"), "g.h.")
+end
+
+test "presentar" = assert_eq(presentar("Ada", 36), "Ada tiene 36 años.")

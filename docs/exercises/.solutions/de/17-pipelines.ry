@@ -1,0 +1,29 @@
+# Übung 17 · Pipelines  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn summe_ungerader_quadrate(n) = 1..n |> filter(is_odd) |> map(fn(x) = x * x) |> sum
+
+fn die_besten_drei(punkte) = punkte |> sort |> reverse |> take(3)
+
+fn woerter_rufen(satz) = satz |> split |> map(upper) |> join(" ")
+
+fn initialen_von(satz) = satz |> split |> map(fn(w) = upper(w[0])) |> join("")
+
+# --- Tests (nicht verändern) ---
+
+test "Summe ungerader Quadrate"
+  assert_eq(summe_ungerader_quadrate(5), 35)
+  assert_eq(summe_ungerader_quadrate(1), 1)
+end
+
+test "die besten drei"
+  assert_eq(die_besten_drei([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(die_besten_drei([4]), [4])
+end
+
+test "Wörter rufen" = assert_eq(woerter_rufen("hallo  welt"), "HALLO WELT")
+
+test "Initialen von"
+  assert_eq(initialen_von("portable network graphics"), "PNG")
+  assert_eq(initialen_von("Rythme"), "R")
+end

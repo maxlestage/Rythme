@@ -1,0 +1,29 @@
+# Exercício 17 · Pipelines  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn soma_dos_quadrados_impares(n) = 1..n |> filter(is_odd) |> map(fn(x) = x * x) |> sum
+
+fn os_tres_melhores(notas) = notas |> sort |> reverse |> take(3)
+
+fn gritar_palavras(frase) = frase |> split |> map(upper) |> join(" ")
+
+fn iniciais_de(frase) = frase |> split |> map(fn(p) = upper(p[0])) |> join("")
+
+# --- Testes (não os altere) ---
+
+test "soma dos quadrados ímpares"
+  assert_eq(soma_dos_quadrados_impares(5), 35)
+  assert_eq(soma_dos_quadrados_impares(1), 1)
+end
+
+test "os três melhores"
+  assert_eq(os_tres_melhores([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(os_tres_melhores([4]), [4])
+end
+
+test "gritar palavras" = assert_eq(gritar_palavras("olá  mundo"), "OLÁ MUNDO")
+
+test "iniciais de"
+  assert_eq(iniciais_de("portable network graphics"), "PNG")
+  assert_eq(iniciais_de("Rythme"), "R")
+end

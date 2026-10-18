@@ -1,0 +1,44 @@
+# Ejercicio 28 · Transmitir los errores con `?`  ★★★
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn sumar_textos(a, b) = Ok(parse_int(a)? + parse_int(b)?)
+
+fn leer_punto(texto) = match split(texto, ",")
+  [x, y] -> Ok({x: parse_int(x)?, y: parse_int(y)?})
+  _ -> Err("se esperaba x,y")
+end
+
+fn suma_de_textos([]) = Ok(0)
+fn suma_de_textos([t, ..resto]) = Ok(parse_int(t)? + suma_de_textos(resto)?)
+
+fn cociente_de_textos(a, b)
+  x = parse_int(a)?
+  y = parse_int(b)?
+  if y == 0 then Err("división entre cero") else Ok(x / y)
+end
+
+# --- Pruebas (no las cambies) ---
+
+test "sumar textos"
+  assert_eq(sumar_textos("2", "40"), Ok(42))
+  assert(is_err(sumar_textos("2", "cuarenta")), "cuarenta no es un número")
+end
+
+test "leer un punto"
+  assert_eq(leer_punto("3,4"), Ok({x: 3, y: 4}))
+  assert_eq(leer_punto("3"), Err("se esperaba x,y"))
+  assert_eq(leer_punto("1,2,3"), Err("se esperaba x,y"))
+  assert(is_err(leer_punto("3,cuatro")), "cuatro no es un número")
+end
+
+test "suma de textos"
+  assert_eq(suma_de_textos(["1", "2", "3"]), Ok(6))
+  assert_eq(suma_de_textos([]), Ok(0))
+  assert_eq(suma_de_textos(["1", "x", "y"]), parse_int("x"))
+end
+
+test "cociente de textos"
+  assert_eq(cociente_de_textos("9", "2"), Ok(4.5))
+  assert_eq(cociente_de_textos("9", "0"), Err("división entre cero"))
+  assert(is_err(cociente_de_textos("nueve", "0")), "nueve no es un número")
+end

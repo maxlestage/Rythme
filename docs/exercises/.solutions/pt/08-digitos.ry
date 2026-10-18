@@ -1,0 +1,32 @@
+# Exercício 08 · Os dígitos de um número  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn quantidade_de_digitos(n) = if n < 10 then 1 else 1 + quantidade_de_digitos(n // 10)
+
+fn soma_dos_digitos(n) = if n < 10 then n else n % 10 + soma_dos_digitos(n // 10)
+
+fn inverter_a_partir(0, construido) = construido
+fn inverter_a_partir(n, construido) = inverter_a_partir(n // 10, construido * 10 + n % 10)
+
+fn inverter_numero(n) = inverter_a_partir(n, 0)
+
+# --- Testes (não os altere) ---
+
+test "quantidade de dígitos"
+  assert_eq(quantidade_de_digitos(0), 1)
+  assert_eq(quantidade_de_digitos(7), 1)
+  assert_eq(quantidade_de_digitos(472), 3)
+  assert_eq(quantidade_de_digitos(1000000), 7)
+end
+
+test "soma dos dígitos"
+  assert_eq(soma_dos_digitos(0), 0)
+  assert_eq(soma_dos_digitos(472), 13)
+  assert_eq(soma_dos_digitos(99999), 45)
+end
+
+test "inverter um número"
+  assert_eq(inverter_numero(472), 274)
+  assert_eq(inverter_numero(1230), 321)
+  assert_eq(inverter_numero(5), 5)
+end

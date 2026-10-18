@@ -1,0 +1,35 @@
+# Ejercicio 10 · Divisores y números primos  ★★☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn mi_mcd(a, 0) = a
+fn mi_mcd(a, b) = mi_mcd(b, a % b)
+
+fn sin_divisor_desde(n, d) if d * d > n = true
+fn sin_divisor_desde(n, d) if n % d == 0 = false
+fn sin_divisor_desde(n, d) = sin_divisor_desde(n, d + 1)
+
+fn es_primo(n) = n >= 2 and sin_divisor_desde(n, 2)
+
+fn siguiente_primo(n) = if es_primo(n + 1) then n + 1 else siguiente_primo(n + 1)
+
+# --- Pruebas (no las cambies) ---
+
+test "mcd"
+  assert_eq(mi_mcd(12, 18), 6)
+  assert_eq(mi_mcd(17, 5), 1)
+  assert_eq(mi_mcd(7, 0), 7)
+  assert_eq(mi_mcd(0, 9), 9)
+end
+
+test "números primos"
+  assert_eq(1..30 |> filter(es_primo), [2, 3, 5, 7, 11, 13, 17, 19, 23, 29])
+  assert_eq(es_primo(0), false)
+  assert_eq(es_primo(7919), true)
+  assert_eq(es_primo(7917), false)
+end
+
+test "siguiente primo"
+  assert_eq(siguiente_primo(1), 2)
+  assert_eq(siguiente_primo(13), 17)
+  assert_eq(siguiente_primo(100), 101)
+end

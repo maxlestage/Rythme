@@ -1,0 +1,36 @@
+# Übung 09 · Akkumulatoren und Endaufrufe  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn summe_ab(0, gesamt) = gesamt
+fn summe_ab(n, gesamt) = summe_ab(n - 1, gesamt + n)
+
+fn grosse_summe(n) = summe_ab(n, 0)
+
+fn collatz_ab(1, schritte) = schritte
+fn collatz_ab(n, schritte) if is_even(n) = collatz_ab(n // 2, schritte + 1)
+fn collatz_ab(n, schritte) = collatz_ab(3 * n + 1, schritte + 1)
+
+fn collatz_schritte(n) = collatz_ab(n, 0)
+
+fn fib_ab(0, a, _) = a
+fn fib_ab(n, a, b) = fib_ab(n - 1, b, a + b)
+
+fn fib(n) = fib_ab(n, 0, 1)
+
+# --- Tests (nicht verändern) ---
+
+test "große Summe"
+  assert_eq(grosse_summe(10), 55)
+  assert_eq(grosse_summe(1000000), 500000500000)
+end
+
+test "Collatz-Schritte"
+  assert_eq(collatz_schritte(1), 0)
+  assert_eq(collatz_schritte(6), 8)
+  assert_eq(collatz_schritte(27), 111)
+end
+
+test "Fibonacci"
+  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
+  assert_eq(fib(90), 2880067194370816120)
+end

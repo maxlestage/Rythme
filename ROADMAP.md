@@ -83,8 +83,9 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   message exists in every language; then every message, help topic and
   `rythme learn` in Spanish (`--lang es`). Done: `t!(en, fr)` stays, each
   other language is a catalog `src/i18n/<code>.rs` checked by
-  `tests/i18n.rs` (see CONTRIBUTING); the 30 exercises stay in English and
-  French.
+  `tests/i18n.rs` (see CONTRIBUTING); the 30 exercises too (statement,
+  hints, test names, the file `rythme exercise start` writes, with a
+  reference solution in each language checked by `tests/exercises.rs`).
 - [x] **Messages in German, Portuguese and Chinese.** `src/i18n/de.rs`,
   `pt.rs` (Brazilian, "você") and `zh.rs` (simplified Chinese) translate all
   the texts, checked complete by `tests/i18n.rs`; `--lang de|pt|zh`,
@@ -103,7 +104,8 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   (`fib(3)` → `fib(2) + fib(1)` → ...), bounded, in every language.
 - [x] **Exercises.** `docs/exercises/` with graded exercises for a first
   course (each with tests that `rythme test` runs and hints), and
-  `rythme exercise` (list, start, check) if it stays simple.
+  `rythme exercise` (list, start, check) if it stays simple, in every
+  language of the messages.
 
 ## Tools
 

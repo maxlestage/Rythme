@@ -1,0 +1,36 @@
+# Übung 13 · Die Listenfunktionen  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn quadrate(n) = map(1..n, fn(x) = x * x)
+
+fn gerade(liste) = filter(liste, is_even)
+
+fn summe_der_vielfachen(grenze) = 1..(grenze - 1) |> filter(fn(n) = n % 3 == 0 or n % 5 == 0) |> sum
+
+fn durchschnitt(liste) = sum(liste) / len(liste)
+
+fn kleinste_drei(liste) = liste |> sort |> take(3)
+
+# --- Tests (nicht verändern) ---
+
+test "Quadrate"
+  assert_eq(quadrate(5), [1, 4, 9, 16, 25])
+  assert_eq(quadrate(0), [])
+end
+
+test "gerade Zahlen" = assert_eq(gerade([5, 2, 8, 1, 4]), [2, 8, 4])
+
+test "Summe der Vielfachen"
+  assert_eq(summe_der_vielfachen(10), 23)
+  assert_eq(summe_der_vielfachen(1000), 233168)
+end
+
+test "Durchschnitt"
+  assert_eq(durchschnitt([1, 2, 3, 4]), 2.5)
+  assert_eq(durchschnitt([7]), 7)
+end
+
+test "die kleinsten drei"
+  assert_eq(kleinste_drei([5, 1, 4, 2, 3]), [1, 2, 3])
+  assert_eq(kleinste_drei([9, 8]), [8, 9])
+end

@@ -719,7 +719,7 @@ Open it, read the statement and the hints at the top, and replace each
             r#"已创建 {file}：练习 {} · {title}  {level}
 
 打开它，阅读顶部的题目和提示，然后把每个
-`fail("to do")` 替换成你的代码。之后检查你的作业：
+`fail("待完成")` 替换成你的代码。之后检查你的作业：
 
   rythme exercise check {file}"#,
         ),
@@ -753,7 +753,7 @@ to start this exercise: rythme exercise start {}"#,
             r#"  - 练习的测试被修改过：只有练习自带的测试通过，练习才算完成。
     `rythme exercise start {number}` 会给你一份新的副本（请先把你的文件改名）。"#,
         ),
-        ("  - Some functions are still to do: replace each `fail(\"to do\")` with your code.", "  - 还有一些函数没有完成：把每个 `fail(\"to do\")` 替换成你的代码。"),
+        ("  - Some functions are still to do: replace each `fail(\"to do\")` with your code.", "  - 还有一些函数没有完成：把每个 `fail(\"待完成\")` 替换成你的代码。"),
         (
             r#"  - Start with the first failure above: compare what you got with what was expected.
   - Stuck? Read the hints at the top of the file, or `rythme help NAME` for a function."#,
@@ -2627,8 +2627,9 @@ is a file with a statement, hints, the functions to write and their tests.
                                     runs its tests, and says what to do next
 
 In the file, replace each fail("to do") with your code; do not change the
-tests. `rythme test file.ry` runs the tests too. The exercises are also in the
-folder docs/exercises of the repository of Rythme, in English and French."#,
+tests. `rythme test file.ry` runs the tests too. The exercises follow the
+language of the messages (`rythme --lang es exercise start 7`); the folder
+docs/exercises of the repository of Rythme has them in English and French."#,
             r#"练习
 
 Rythme 自带 30 个分级练习，适合入门课程，内容从最初的值到递归、列表、记录、
@@ -2640,9 +2641,10 @@ Rythme 自带 30 个分级练习，适合入门课程，内容从最初的值到
   rythme exercise check 07-recursion.ry
                                     运行它的测试，并告诉你下一步做什么
 
-在文件中，把每个 fail("to do") 替换成你的代码；不要修改测试。
-`rythme test file.ry` 也会运行这些测试。这些练习也在 Rythme 仓库的
-docs/exercises 文件夹中，有英文版和法文版。"#,
+在文件中，把每个 fail("待完成") 替换成你的代码；不要修改测试。
+`rythme test file.ry` 也会运行这些测试。练习使用消息的语言
+（`rythme --lang zh exercise start 7`）；Rythme 仓库的 docs/exercises
+文件夹中有它们的英文版和法文版。"#,
         ),
         (
             r#"SEVERAL FILES
@@ -4444,5 +4446,3517 @@ For decimal numbers, which fall between 17 and 18, compare instead:
         ("October", "10月"),
         ("November", "11月"),
         ("December", "12月"),
+        // docs/exercises: the exercises of `rythme exercise` (see src/exercise.rs)
+        ("# --- Tests (do not change them) ---", "# --- 测试（请不要修改）---"),
+        ("to do", "待完成"),
+        ("01-values", "01-values"),
+        (
+            r#"# Exercise 01 · First values  ★☆☆
+#
+# A name receives a value with `=` and keeps it forever: in Rythme, values
+# never change.
+#
+# Statement
+#   `seconds_per_minute` is given. Replace each `0` (and the empty text)
+#   below with an expression that uses the names defined before it:
+#   - `seconds_per_hour`: the number of seconds in one hour;
+#   - `seconds_per_day`: the number of seconds in one day;
+#   - `seconds_per_week`: the number of seconds in one week;
+#   - `summary`: the text "A week has 604800 seconds.", where the number
+#     comes from `seconds_per_week` (do not type it yourself).
+#
+# Hints
+#   1. An hour has 60 minutes: `60 * seconds_per_minute`.
+#   2. A day has 24 hours, a week has 7 days.
+#   3. Inside a text, `{name}` is replaced by the value of `name`:
+#      "I have {count} apples".
+#
+# Check your work:  rythme exercise check 01-values.ry
+#              or:  rythme test 01-values.ry
+
+seconds_per_minute = 60
+seconds_per_hour = 0
+seconds_per_day = 0
+seconds_per_week = 0
+summary = ""
+
+# --- Tests (do not change them) ---
+
+test "seconds in an hour" = assert_eq(seconds_per_hour, 3600)
+
+test "seconds in a day" = assert_eq(seconds_per_day, 86400)
+
+test "seconds in a week" = assert_eq(seconds_per_week, 604800)
+
+test "the summary" = assert_eq(summary, "A week has 604800 seconds.")
+"#,
+            r#"# 练习 01 · 最初的值  ★☆☆
+#
+# 用 `=` 给一个名字赋值，它会永远保持这个值：在 Rythme 中，值永远不会改变。
+#
+# 题目
+#   `seconds_per_minute` 已经给出。把下面的每个 `0`（以及空文本）替换成
+#   一个表达式，使用在它之前定义的名字：
+#   - `seconds_per_hour`：一小时的秒数；
+#   - `seconds_per_day`：一天的秒数；
+#   - `seconds_per_week`：一周的秒数；
+#   - `summary`：文本 "一周有 604800 秒。"，其中的数字来自
+#     `seconds_per_week`（不要自己手写这个数字）。
+#
+# 提示
+#   1. 一小时有 60 分钟：`60 * seconds_per_minute`。
+#   2. 一天有 24 小时，一周有 7 天。
+#   3. 在文本中，`{name}` 会被替换成 `name` 的值："我有 {count} 个苹果"。
+#
+# 检查你的作业：  rythme exercise check 01-values.ry
+#           或：  rythme test 01-values.ry
+
+seconds_per_minute = 60
+seconds_per_hour = 0
+seconds_per_day = 0
+seconds_per_week = 0
+summary = ""
+
+# --- 测试（请不要修改）---
+
+test "一小时的秒数" = assert_eq(seconds_per_hour, 3600)
+
+test "一天的秒数" = assert_eq(seconds_per_day, 86400)
+
+test "一周的秒数" = assert_eq(seconds_per_week, 604800)
+
+test "总结" = assert_eq(summary, "一周有 604800 秒。")
+"#,
+        ),
+        ("02-texts", "02-texts"),
+        (
+            r#"# Exercise 02 · Texts  ★☆☆
+#
+# A function takes values and gives back a new value:
+#   fn double(x) = x * 2
+#
+# Statement
+#   Write the four functions below so that their tests pass:
+#   - `greet(name)` gives "Hello, Ada!" for "Ada";
+#   - `shout(text)` gives the text in uppercase followed by "!";
+#   - `initials(first, last)` gives "A.L." for "Ada" and "Lovelace";
+#   - `introduce(name, age)` gives "Ada is 36 years old.".
+#
+# Hints
+#   1. "Hello, {name}!" inserts the value of `name` into the text.
+#   2. `upper("hi")` is "HI", and `+` joins two texts: "HI" + "!".
+#   3. `word[0]` is the first character of `word`; it can go inside braces
+#      too: "{word[0]}.".
+#
+# Check your work:  rythme exercise check 02-texts.ry
+#              or:  rythme test 02-texts.ry
+
+## A greeting for `name`.
+fn greet(name) = fail("to do")
+
+## The text in uppercase, followed by "!".
+fn shout(text) = fail("to do")
+
+## The initials of a person, each followed by a dot.
+fn initials(first, last) = fail("to do")
+
+## A sentence that introduces a person.
+fn introduce(name, age) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "greet" = assert_eq(greet("Ada"), "Hello, Ada!")
+
+test "greet someone else" = assert_eq(greet("Alan"), "Hello, Alan!")
+
+test "shout"
+  assert_eq(shout("hello"), "HELLO!")
+  assert_eq(shout("Stop"), "STOP!")
+end
+
+test "initials"
+  assert_eq(initials("Ada", "Lovelace"), "A.L.")
+  assert_eq(initials("grace", "hopper"), "g.h.")
+end
+
+test "introduce" = assert_eq(introduce("Ada", 36), "Ada is 36 years old.")
+"#,
+            r#"# 练习 02 · 文本  ★☆☆
+#
+# 函数接收一些值，返回一个新的值：
+#   fn double(x) = x * 2
+#
+# 题目
+#   写出下面的四个函数，让它们的测试通过：
+#   - `greet(name)` 对 "Ada" 返回 "你好，Ada！"；
+#   - `shout(text)` 返回大写的文本，后面跟着 "!"；
+#   - `initials(first, last)` 对 "Ada" 和 "Lovelace" 返回 "A.L."；
+#   - `introduce(name, age)` 返回 "Ada 今年 36 岁。"。
+#
+# 提示
+#   1. "你好，{name}！" 把 `name` 的值插入文本中。
+#   2. `upper("hi")` 是 "HI"，`+` 连接两个文本："HI" + "!"。
+#   3. `word[0]` 是 `word` 的第一个字符；它也可以放在花括号里：
+#      "{word[0]}."。
+#
+# 检查你的作业：  rythme exercise check 02-texts.ry
+#           或：  rythme test 02-texts.ry
+
+## 给 `name` 的问候。
+fn greet(name) = fail("待完成")
+
+## 大写的文本，后面跟着 "!"。
+fn shout(text) = fail("待完成")
+
+## 一个人的姓名首字母，每个后面跟一个点。
+fn initials(first, last) = fail("待完成")
+
+## 介绍一个人的句子。
+fn introduce(name, age) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "问候" = assert_eq(greet("Ada"), "你好，Ada！")
+
+test "问候另一个人" = assert_eq(greet("Alan"), "你好，Alan！")
+
+test "大喊"
+  assert_eq(shout("hello"), "HELLO!")
+  assert_eq(shout("Stop"), "STOP!")
+end
+
+test "首字母"
+  assert_eq(initials("Ada", "Lovelace"), "A.L.")
+  assert_eq(initials("grace", "hopper"), "g.h.")
+end
+
+test "介绍" = assert_eq(introduce("Ada", 36), "Ada 今年 36 岁。")
+"#,
+        ),
+        ("03-arithmetic", "03-arithmetic"),
+        (
+            r#"# Exercise 03 · Arithmetic  ★☆☆
+#
+# Numbers are whole (Int: 3) or decimal (Float: 3.5). `/` always gives a
+# Float (`7 / 2` is 3.5); `//` divides and rounds down (`7 // 2` is 3) and
+# `%` gives the remainder (`7 % 2` is 1).
+#
+# Statement
+#   - `square(x)`: x times x;
+#   - `average(a, b)`: the average of two numbers;
+#   - `fahrenheit(celsius)`: the temperature in degrees Fahrenheit
+#     (multiply by 9, divide by 5, add 32);
+#   - `hypotenuse(a, b)`: the long side of a right triangle whose two other
+#     sides are a and b (the square root of a² + b²);
+#   - `minutes_and_seconds(total)`: for a number of seconds, a text like
+#     "2 min 5 s" (for 125).
+#
+# Hints
+#   1. `sqrt(16)` is 4.0.
+#   2. `125 // 60` is 2 and `125 % 60` is 5.
+#   3. `3 == 3.0` is true: an Int and a Float with the same value are equal.
+#
+# Check your work:  rythme exercise check 03-arithmetic.ry
+#              or:  rythme test 03-arithmetic.ry
+
+fn square(x) = fail("to do")
+
+fn average(a, b) = fail("to do")
+
+fn fahrenheit(celsius) = fail("to do")
+
+fn hypotenuse(a, b) = fail("to do")
+
+fn minutes_and_seconds(total) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "square"
+  assert_eq(square(3), 9)
+  assert_eq(square(-4), 16)
+  assert_eq(square(1.5), 2.25)
+end
+
+test "average"
+  assert_eq(average(2, 4), 3)
+  assert_eq(average(1, 2), 1.5)
+end
+
+test "fahrenheit"
+  assert_eq(fahrenheit(0), 32)
+  assert_eq(fahrenheit(100), 212)
+  assert_eq(fahrenheit(-40), -40)
+end
+
+test "hypotenuse"
+  assert_eq(hypotenuse(3, 4), 5)
+  assert_eq(hypotenuse(5, 12), 13)
+end
+
+test "minutes and seconds"
+  assert_eq(minutes_and_seconds(125), "2 min 5 s")
+  assert_eq(minutes_and_seconds(59), "0 min 59 s")
+  assert_eq(minutes_and_seconds(600), "10 min 0 s")
+end
+"#,
+            r#"# 练习 03 · 算术  ★☆☆
+#
+# 数分为整数（Int：3）和小数（Float：3.5）。`/` 总是得到 Float（`7 / 2`
+# 是 3.5）；`//` 做除法并向下取整（`7 // 2` 是 3），`%` 得到余数
+# （`7 % 2` 是 1）。
+#
+# 题目
+#   - `square(x)`：x 乘以 x；
+#   - `average(a, b)`：两个数的平均值；
+#   - `fahrenheit(celsius)`：华氏温度（乘以 9，除以 5，再加 32）；
+#   - `hypotenuse(a, b)`：直角三角形的斜边，另外两条边是 a 和 b
+#     （a² + b² 的平方根）；
+#   - `minutes_and_seconds(total)`：对一个秒数，给出类似 "2 分 5 秒" 的
+#     文本（对 125）。
+#
+# 提示
+#   1. `sqrt(16)` 是 4.0。
+#   2. `125 // 60` 是 2，`125 % 60` 是 5。
+#   3. `3 == 3.0` 为真：值相同的 Int 和 Float 是相等的。
+#
+# 检查你的作业：  rythme exercise check 03-arithmetic.ry
+#           或：  rythme test 03-arithmetic.ry
+
+fn square(x) = fail("待完成")
+
+fn average(a, b) = fail("待完成")
+
+fn fahrenheit(celsius) = fail("待完成")
+
+fn hypotenuse(a, b) = fail("待完成")
+
+fn minutes_and_seconds(total) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "平方"
+  assert_eq(square(3), 9)
+  assert_eq(square(-4), 16)
+  assert_eq(square(1.5), 2.25)
+end
+
+test "平均值"
+  assert_eq(average(2, 4), 3)
+  assert_eq(average(1, 2), 1.5)
+end
+
+test "华氏温度"
+  assert_eq(fahrenheit(0), 32)
+  assert_eq(fahrenheit(100), 212)
+  assert_eq(fahrenheit(-40), -40)
+end
+
+test "斜边"
+  assert_eq(hypotenuse(3, 4), 5)
+  assert_eq(hypotenuse(5, 12), 13)
+end
+
+test "分和秒"
+  assert_eq(minutes_and_seconds(125), "2 分 5 秒")
+  assert_eq(minutes_and_seconds(59), "0 分 59 秒")
+  assert_eq(minutes_and_seconds(600), "10 分 0 秒")
+end
+"#,
+        ),
+        ("04-choosing", "04-choosing"),
+        (
+            r#"# Exercise 04 · Choosing with `if`  ★☆☆
+#
+# `if condition then value else other_value` is an expression: it gives a
+# value, so `else` is always needed. `else if` chains several conditions.
+#
+# Statement
+#   Without using the built-in functions `abs`, `min` and `max`:
+#   - `absolute(n)`: n without its sign (`absolute(-5)` is 5);
+#   - `larger(a, b)`: the larger of two numbers;
+#   - `grade(score)`: for a score from 0 to 100, "A" from 90, "B" from 80,
+#     "C" from 70, "D" from 60, and "F" below 60;
+#   - `ticket_price(age)`: 0 under 4 years, 5 under 12, 12 from 65, and 10
+#     otherwise.
+#
+# Hints
+#   1. `if n < 0 then -n else n`
+#   2. Test the highest grade first: `if score >= 90 then "A" else if ...`.
+#   3. A long `if` can continue on the next lines, each starting with
+#      `else if`.
+#
+# Check your work:  rythme exercise check 04-choosing.ry
+#              or:  rythme test 04-choosing.ry
+
+fn absolute(n) = fail("to do")
+
+fn larger(a, b) = fail("to do")
+
+fn grade(score) = fail("to do")
+
+fn ticket_price(age) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "absolute"
+  assert_eq(absolute(-5), 5)
+  assert_eq(absolute(7), 7)
+  assert_eq(absolute(0), 0)
+end
+
+test "larger"
+  assert_eq(larger(3, 8), 8)
+  assert_eq(larger(8, 3), 8)
+  assert_eq(larger(-1, -2), -1)
+end
+
+test "grade"
+  assert_eq(grade(95), "A")
+  assert_eq(grade(90), "A")
+  assert_eq(grade(85), "B")
+  assert_eq(grade(70), "C")
+  assert_eq(grade(61), "D")
+  assert_eq(grade(12), "F")
+end
+
+test "ticket price"
+  assert_eq(ticket_price(2), 0)
+  assert_eq(ticket_price(4), 5)
+  assert_eq(ticket_price(11), 5)
+  assert_eq(ticket_price(30), 10)
+  assert_eq(ticket_price(65), 12)
+end
+"#,
+            r#"# 练习 04 · 用 `if` 做选择  ★☆☆
+#
+# `if 条件 then 值 else 另一个值` 是一个表达式：它给出一个值，所以 `else`
+# 总是必需的。`else if` 可以串起多个条件。
+#
+# 题目
+#   不使用内置函数 `abs`、`min` 和 `max`：
+#   - `absolute(n)`：去掉符号的 n（`absolute(-5)` 是 5）；
+#   - `larger(a, b)`：两个数中较大的那个；
+#   - `grade(score)`：对 0 到 100 的分数，90 及以上是 "A"，80 及以上是
+#     "B"，70 及以上是 "C"，60 及以上是 "D"，低于 60 是 "F"；
+#   - `ticket_price(age)`：4 岁以下 0，12 岁以下 5，65 岁及以上 12，其他
+#     情况 10。
+#
+# 提示
+#   1. `if n < 0 then -n else n`
+#   2. 先检查最高的等级：`if score >= 90 then "A" else if ...`。
+#   3. 一个长的 `if` 可以在后面几行继续，每行以 `else if` 开头。
+#
+# 检查你的作业：  rythme exercise check 04-choosing.ry
+#           或：  rythme test 04-choosing.ry
+
+fn absolute(n) = fail("待完成")
+
+fn larger(a, b) = fail("待完成")
+
+fn grade(score) = fail("待完成")
+
+fn ticket_price(age) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "绝对值"
+  assert_eq(absolute(-5), 5)
+  assert_eq(absolute(7), 7)
+  assert_eq(absolute(0), 0)
+end
+
+test "较大的数"
+  assert_eq(larger(3, 8), 8)
+  assert_eq(larger(8, 3), 8)
+  assert_eq(larger(-1, -2), -1)
+end
+
+test "等级"
+  assert_eq(grade(95), "A")
+  assert_eq(grade(90), "A")
+  assert_eq(grade(85), "B")
+  assert_eq(grade(70), "C")
+  assert_eq(grade(61), "D")
+  assert_eq(grade(12), "F")
+end
+
+test "票价"
+  assert_eq(ticket_price(2), 0)
+  assert_eq(ticket_price(4), 5)
+  assert_eq(ticket_price(11), 5)
+  assert_eq(ticket_price(30), 10)
+  assert_eq(ticket_price(65), 12)
+end
+"#,
+        ),
+        ("05-logic", "05-logic"),
+        (
+            r#"# Exercise 05 · True or false  ★☆☆
+#
+# Comparisons (`==`, `!=`, `<`, `<=`, `>`, `>=`) give a Bool: `true` or
+# `false`. `and`, `or` and `not` combine Bools.
+#
+# Statement
+#   Each function gives a Bool, and none of them needs `if`:
+#   - `is_multiple(n, d)`: is n a multiple of d?
+#   - `is_between(x, low, high)`: is x from low to high (both included)?
+#   - `is_leap(year)`: a year is a leap year when it is a multiple of
+#     4, except the multiples of 100 that are not multiples of 400 (2000 is
+#     a leap year, 1900 is not); the library has it too, as
+#     `is_leap_year`, but here you write the rule yourself;
+#   - `exclusive_or(a, b)`: is exactly one of a and b true?
+#
+# Hints
+#   1. n is a multiple of d when the remainder `n % d` is 0.
+#   2. `x >= low and x <= high`
+#   3. Write the rule for leap years with the first function:
+#      `is_multiple(year, 4) and (...)`.
+#   4. Two Bools can be compared with `!=` too.
+#
+# Check your work:  rythme exercise check 05-logic.ry
+#              or:  rythme test 05-logic.ry
+
+fn is_multiple(n, d) = fail("to do")
+
+fn is_between(x, low, high) = fail("to do")
+
+fn is_leap(year) = fail("to do")
+
+fn exclusive_or(a, b) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "multiples"
+  assert(is_multiple(12, 3), "12 is a multiple of 3")
+  assert(not is_multiple(12, 5), "12 is not a multiple of 5")
+  assert(is_multiple(0, 7), "0 is a multiple of every number")
+end
+
+test "between"
+  assert(is_between(5, 1, 10), "5 is between 1 and 10")
+  assert(is_between(1, 1, 10), "the bounds are included")
+  assert(is_between(10, 1, 10), "the bounds are included")
+  assert(not is_between(11, 1, 10), "11 is too big")
+  assert(not is_between(0, 1, 10), "0 is too small")
+end
+
+test "leap years"
+  assert_eq(is_leap(2024), true)
+  assert_eq(is_leap(2023), false)
+  assert_eq(is_leap(1900), false)
+  assert_eq(is_leap(2000), true)
+end
+
+test "exclusive or"
+  assert_eq(exclusive_or(true, false), true)
+  assert_eq(exclusive_or(false, true), true)
+  assert_eq(exclusive_or(true, true), false)
+  assert_eq(exclusive_or(false, false), false)
+end
+"#,
+            r#"# 练习 05 · 真还是假  ★☆☆
+#
+# 比较（`==`、`!=`、`<`、`<=`、`>`、`>=`）得到一个 Bool：`true` 或
+# `false`。`and`、`or` 和 `not` 组合多个 Bool。
+#
+# 题目
+#   每个函数都返回一个 Bool，而且都不需要 `if`：
+#   - `is_multiple(n, d)`：n 是 d 的倍数吗？
+#   - `is_between(x, low, high)`：x 是否在 low 和 high 之间（两端都包括）？
+#   - `is_leap(year)`：一个年份是闰年，当它是 4 的倍数，但不是 100 的倍数，
+#     除非它也是 400 的倍数（2000 年是闰年，1900 年不是）；标准库里也有
+#     `is_leap_year`，但这里你要自己写出这条规则；
+#   - `exclusive_or(a, b)`：a 和 b 中是否恰好有一个为真？
+#
+# 提示
+#   1. 当余数 `n % d` 为 0 时，n 是 d 的倍数。
+#   2. `x >= low and x <= high`
+#   3. 用第一个函数写出闰年的规则：`is_multiple(year, 4) and (...)`。
+#   4. 两个 Bool 也可以用 `!=` 比较。
+#
+# 检查你的作业：  rythme exercise check 05-logic.ry
+#           或：  rythme test 05-logic.ry
+
+fn is_multiple(n, d) = fail("待完成")
+
+fn is_between(x, low, high) = fail("待完成")
+
+fn is_leap(year) = fail("待完成")
+
+fn exclusive_or(a, b) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "倍数"
+  assert(is_multiple(12, 3), "12 是 3 的倍数")
+  assert(not is_multiple(12, 5), "12 不是 5 的倍数")
+  assert(is_multiple(0, 7), "0 是任何数的倍数")
+end
+
+test "之间"
+  assert(is_between(5, 1, 10), "5 在 1 和 10 之间")
+  assert(is_between(1, 1, 10), "包括边界")
+  assert(is_between(10, 1, 10), "包括边界")
+  assert(not is_between(11, 1, 10), "11 太大了")
+  assert(not is_between(0, 1, 10), "0 太小了")
+end
+
+test "闰年"
+  assert_eq(is_leap(2024), true)
+  assert_eq(is_leap(2023), false)
+  assert_eq(is_leap(1900), false)
+  assert_eq(is_leap(2000), true)
+end
+
+test "异或"
+  assert_eq(exclusive_or(true, false), true)
+  assert_eq(exclusive_or(false, true), true)
+  assert_eq(exclusive_or(true, true), false)
+  assert_eq(exclusive_or(false, false), false)
+end
+"#,
+        ),
+        ("06-cases", "06-cases"),
+        (
+            r#"# Exercise 06 · One definition per case  ★☆☆
+#
+# A function can be written as several definitions, tried in order. A
+# parameter can be a value (`fn f(0) = ...`), and a guard (`if ...` before
+# the `=`) adds a condition:
+#   fn describe(0) = "zero"
+#   fn describe(n) if n < 0 = "negative"
+#   fn describe(_) = "positive"
+#
+# Statement
+#   - `plural(n, word)`: "1 cat" for 1, but "0 cats", "2 cats"...
+#   - `fizzbuzz(n)`: "FizzBuzz" if n is a multiple of 3 and of 5, "Fizz"
+#     for the other multiples of 3, "Buzz" for the other multiples of 5,
+#     and the number as a text otherwise;
+#   - `day_kind(day)`: "weekend" for "Saturday" and "Sunday", "weekday"
+#     for any other text.
+#
+# Hints
+#   1. Start with the special case: `fn plural(1, word) = ...`, then the
+#      general case on the next line.
+#   2. The order matters: test "FizzBuzz" before "Fizz" and "Buzz".
+#   3. `text(15)` is "15".
+#   4. `_` accepts anything, and is usually the last case.
+#
+# Check your work:  rythme exercise check 06-cases.ry
+#              or:  rythme test 06-cases.ry
+
+fn plural(n, word) = fail("to do")
+
+fn fizzbuzz(n) = fail("to do")
+
+fn day_kind(day) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "plural"
+  assert_eq(plural(1, "cat"), "1 cat")
+  assert_eq(plural(2, "cat"), "2 cats")
+  assert_eq(plural(0, "dog"), "0 dogs")
+end
+
+test "fizzbuzz"
+  assert_eq(fizzbuzz(1), "1")
+  assert_eq(fizzbuzz(3), "Fizz")
+  assert_eq(fizzbuzz(10), "Buzz")
+  assert_eq(fizzbuzz(30), "FizzBuzz")
+  assert_eq(fizzbuzz(31), "31")
+end
+
+test "the first fifteen" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+
+test "day kind"
+  assert_eq(day_kind("Saturday"), "weekend")
+  assert_eq(day_kind("Sunday"), "weekend")
+  assert_eq(day_kind("Monday"), "weekday")
+end
+"#,
+            r#"# 练习 06 · 每种情况一个定义  ★☆☆
+#
+# 一个函数可以写成几个定义，按顺序尝试。参数可以是一个值
+# （`fn f(0) = ...`），守卫（`=` 前面的 `if ...`）可以加上一个条件：
+#   fn describe(0) = "零"
+#   fn describe(n) if n < 0 = "负数"
+#   fn describe(_) = "正数"
+#
+# 题目
+#   - `plural(n, word)`：英语的复数：1 给出 "1 cat"，而 0 和 2 给出
+#     "0 cats"、"2 cats"……
+#   - `fizzbuzz(n)`：如果 n 同时是 3 和 5 的倍数，给出 "FizzBuzz"；其他 3
+#     的倍数给出 "Fizz"；其他 5 的倍数给出 "Buzz"；否则给出数字的文本；
+#   - `day_kind(day)`：对 "星期六" 和 "星期日" 给出 "周末"，对其他任何文本
+#     给出 "工作日"。
+#
+# 提示
+#   1. 从特殊情况开始：`fn plural(1, word) = ...`，然后在下一行写一般情况。
+#   2. 顺序很重要：先检查 "FizzBuzz"，再检查 "Fizz" 和 "Buzz"。
+#   3. `text(15)` 是 "15"。
+#   4. `_` 接受任何值，通常是最后一种情况。
+#
+# 检查你的作业：  rythme exercise check 06-cases.ry
+#           或：  rythme test 06-cases.ry
+
+fn plural(n, word) = fail("待完成")
+
+fn fizzbuzz(n) = fail("待完成")
+
+fn day_kind(day) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "复数"
+  assert_eq(plural(1, "cat"), "1 cat")
+  assert_eq(plural(2, "cat"), "2 cats")
+  assert_eq(plural(0, "dog"), "0 dogs")
+end
+
+test "fizzbuzz"
+  assert_eq(fizzbuzz(1), "1")
+  assert_eq(fizzbuzz(3), "Fizz")
+  assert_eq(fizzbuzz(10), "Buzz")
+  assert_eq(fizzbuzz(30), "FizzBuzz")
+  assert_eq(fizzbuzz(31), "31")
+end
+
+test "前十五个" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+
+test "日子的种类"
+  assert_eq(day_kind("星期六"), "周末")
+  assert_eq(day_kind("星期日"), "周末")
+  assert_eq(day_kind("星期一"), "工作日")
+end
+"#,
+        ),
+        ("07-recursion", "07-recursion"),
+        (
+            r#"# Exercise 07 · Recursion  ★★☆
+#
+# Rythme has no loops: to repeat, a function calls itself. Every recursive
+# function needs a base case, which stops, and a recursive case, which
+# brings the problem closer to the base case:
+#   fn countdown(0) = "liftoff!"
+#   fn countdown(n) = "{n} " + countdown(n - 1)
+#
+# Statement
+#   - `factorial(n)`: 1 × 2 × ... × n, and `factorial(0)` is 1;
+#   - `sum_to(n)`: 1 + 2 + ... + n, and `sum_to(0)` is 0;
+#   - `power(x, n)`: x to the power n, for n ≥ 0, without `**` or `pow`.
+#
+# Hints
+#   1. `factorial(5)` is `5 * factorial(4)`.
+#   2. What is `power(x, 0)`? And `power(x, n)` compared with
+#      `power(x, n - 1)`?
+#   3. A function that never reaches its base case stops with error E014:
+#      check that n gets smaller at each call.
+#
+# Check your work:  rythme exercise check 07-recursion.ry
+#              or:  rythme test 07-recursion.ry
+
+fn factorial(n) = fail("to do")
+
+fn sum_to(n) = fail("to do")
+
+fn power(x, n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "factorial"
+  assert_eq(factorial(0), 1)
+  assert_eq(factorial(1), 1)
+  assert_eq(factorial(5), 120)
+  assert_eq(factorial(10), 3628800)
+end
+
+test "sum to"
+  assert_eq(sum_to(0), 0)
+  assert_eq(sum_to(1), 1)
+  assert_eq(sum_to(10), 55)
+  assert_eq(sum_to(100), 5050)
+end
+
+test "power"
+  assert_eq(power(2, 0), 1)
+  assert_eq(power(2, 10), 1024)
+  assert_eq(power(3, 4), 81)
+  assert_eq(power(1.5, 2), 2.25)
+end
+"#,
+            r#"# 练习 07 · 递归  ★★☆
+#
+# Rythme 没有循环：要重复做某件事，函数就调用它自己。每个递归函数都需要
+# 一个停止的基本情况，以及一个让问题更接近基本情况的递归情况：
+#   fn countdown(0) = "发射！"
+#   fn countdown(n) = "{n} " + countdown(n - 1)
+#
+# 题目
+#   - `factorial(n)`：1 × 2 × ... × n，`factorial(0)` 是 1；
+#   - `sum_to(n)`：1 + 2 + ... + n，`sum_to(0)` 是 0；
+#   - `power(x, n)`：x 的 n 次方，n ≥ 0，不使用 `**` 或 `pow`。
+#
+# 提示
+#   1. `factorial(5)` 是 `5 * factorial(4)`。
+#   2. `power(x, 0)` 是多少？`power(x, n)` 和 `power(x, n - 1)` 有什么关系？
+#   3. 一个永远到不了基本情况的函数会以错误 E014 停止：检查 n 是否在每次
+#      调用时变小。
+#
+# 检查你的作业：  rythme exercise check 07-recursion.ry
+#           或：  rythme test 07-recursion.ry
+
+fn factorial(n) = fail("待完成")
+
+fn sum_to(n) = fail("待完成")
+
+fn power(x, n) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "阶乘"
+  assert_eq(factorial(0), 1)
+  assert_eq(factorial(1), 1)
+  assert_eq(factorial(5), 120)
+  assert_eq(factorial(10), 3628800)
+end
+
+test "累加到 n"
+  assert_eq(sum_to(0), 0)
+  assert_eq(sum_to(1), 1)
+  assert_eq(sum_to(10), 55)
+  assert_eq(sum_to(100), 5050)
+end
+
+test "幂"
+  assert_eq(power(2, 0), 1)
+  assert_eq(power(2, 10), 1024)
+  assert_eq(power(3, 4), 81)
+  assert_eq(power(1.5, 2), 2.25)
+end
+"#,
+        ),
+        ("08-digits", "08-digits"),
+        (
+            r#"# Exercise 08 · The digits of a number  ★★☆
+#
+# `n % 10` is the last digit of n, and `n // 10` is n without its last
+# digit: for 472, they are 2 and 47.
+#
+# Statement
+#   For whole numbers n ≥ 0, and with recursion (without turning the number
+#   into a text):
+#   - `digit_count(n)`: how many digits n has (0 has one digit);
+#   - `digit_sum(n)`: the sum of the digits of n;
+#   - `reverse_number(n)`: the digits in the opposite order (1230 gives 321).
+#
+# Hints
+#   1. A number below 10 has a single digit: that is the base case.
+#   2. `digit_sum(472)` is `2 + digit_sum(47)`.
+#   3. For `reverse_number`, write a helper with one more parameter, the
+#      number built so far: `reverse_from(n, built)`, with
+#      `reverse_from(0, built) = built`. Each step moves the last digit of n
+#      to the end of `built`: `built * 10 + n % 10`.
+#
+# Check your work:  rythme exercise check 08-digits.ry
+#              or:  rythme test 08-digits.ry
+
+fn digit_count(n) = fail("to do")
+
+fn digit_sum(n) = fail("to do")
+
+fn reverse_number(n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "digit count"
+  assert_eq(digit_count(0), 1)
+  assert_eq(digit_count(7), 1)
+  assert_eq(digit_count(472), 3)
+  assert_eq(digit_count(1000000), 7)
+end
+
+test "digit sum"
+  assert_eq(digit_sum(0), 0)
+  assert_eq(digit_sum(472), 13)
+  assert_eq(digit_sum(99999), 45)
+end
+
+test "reverse number"
+  assert_eq(reverse_number(472), 274)
+  assert_eq(reverse_number(1230), 321)
+  assert_eq(reverse_number(5), 5)
+end
+"#,
+            r#"# 练习 08 · 一个数的各位数字  ★★☆
+#
+# `n % 10` 是 n 的最后一位数字，`n // 10` 是去掉最后一位后的 n：对 472，
+# 它们分别是 2 和 47。
+#
+# 题目
+#   对整数 n ≥ 0，使用递归（不要把数转换成文本）：
+#   - `digit_count(n)`：n 有几位数字（0 有一位）；
+#   - `digit_sum(n)`：n 的各位数字之和；
+#   - `reverse_number(n)`：各位数字倒过来（1230 得到 321）。
+#
+# 提示
+#   1. 小于 10 的数只有一位数字：这就是基本情况。
+#   2. `digit_sum(472)` 是 `2 + digit_sum(47)`。
+#   3. 对 `reverse_number`，写一个多一个参数的辅助函数，这个参数是到目前为止
+#      构造出的数：`reverse_from(n, built)`，并且
+#      `reverse_from(0, built) = built`。每一步把 n 的最后一位移到 `built`
+#      的末尾：`built * 10 + n % 10`。
+#
+# 检查你的作业：  rythme exercise check 08-digits.ry
+#           或：  rythme test 08-digits.ry
+
+fn digit_count(n) = fail("待完成")
+
+fn digit_sum(n) = fail("待完成")
+
+fn reverse_number(n) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "位数"
+  assert_eq(digit_count(0), 1)
+  assert_eq(digit_count(7), 1)
+  assert_eq(digit_count(472), 3)
+  assert_eq(digit_count(1000000), 7)
+end
+
+test "各位数字之和"
+  assert_eq(digit_sum(0), 0)
+  assert_eq(digit_sum(472), 13)
+  assert_eq(digit_sum(99999), 45)
+end
+
+test "倒转数字"
+  assert_eq(reverse_number(472), 274)
+  assert_eq(reverse_number(1230), 321)
+  assert_eq(reverse_number(5), 5)
+end
+"#,
+        ),
+        ("09-accumulators", "09-accumulators"),
+        (
+            r#"# Exercise 09 · Accumulators and tail calls  ★★☆
+#
+# In `n + sum_to(n - 1)`, the addition waits for the call to finish: a
+# million nested calls stop with error E014 ("too many nested calls"). When
+# the recursive call is the very last thing the function does (a tail
+# call), nothing waits, and there is no limit. An extra parameter, the
+# accumulator, carries the result built so far:
+#   fn sum_from(0, total) = total
+#   fn sum_from(n, total) = sum_from(n - 1, total + n)
+#
+# Statement
+#   - `big_sum(n)`: 1 + 2 + ... + n, which must work for n = 1000000;
+#   - `collatz_steps(n)`: for n ≥ 1, the number of steps to reach 1, where
+#     a step divides an even number by 2 and turns an odd number into
+#     3 × n + 1 (6 → 3 → 10 → 5 → 16 → 8 → 4 → 2 → 1 takes 8 steps);
+#   - `fib(n)`: the n-th Fibonacci number (0, 1, 1, 2, 3, 5, 8...: each
+#     one is the sum of the two before), fast even for n = 90.
+#
+# Hints
+#   1. `big_sum(n)` can simply call a helper: `sum_from(n, 0)`.
+#   2. `collatz_from(n, steps)`: when n is 1, the answer is `steps`.
+#   3. `fib(n) = fib(n - 1) + fib(n - 2)` is correct but very slow, because
+#      it computes the same numbers again and again. Carry the two last
+#      numbers instead: `fib_from(n, a, b)`, where a and b are two
+#      neighbouring Fibonacci numbers, starting with `fib_from(n, 0, 1)`.
+#
+# Check your work:  rythme exercise check 09-accumulators.ry
+#              or:  rythme test 09-accumulators.ry
+
+fn big_sum(n) = fail("to do")
+
+fn collatz_steps(n) = fail("to do")
+
+fn fib(n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "big sum"
+  assert_eq(big_sum(10), 55)
+  assert_eq(big_sum(1000000), 500000500000)
+end
+
+test "collatz steps"
+  assert_eq(collatz_steps(1), 0)
+  assert_eq(collatz_steps(6), 8)
+  assert_eq(collatz_steps(27), 111)
+end
+
+test "fibonacci"
+  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
+  assert_eq(fib(90), 2880067194370816120)
+end
+"#,
+            r#"# 练习 09 · 累加器和尾调用  ★★☆
+#
+# 在 `n + sum_to(n - 1)` 中，加法要等调用结束：一百万层嵌套调用会以错误
+# E014（"嵌套调用太多"）停止。当递归调用是函数做的最后一件事（尾调用）
+# 时，没有什么需要等待，也就没有限制。一个额外的参数，即累加器，携带到目前
+# 为止构造出的结果：
+#   fn sum_from(0, total) = total
+#   fn sum_from(n, total) = sum_from(n - 1, total + n)
+#
+# 题目
+#   - `big_sum(n)`：1 + 2 + ... + n，对 n = 1000000 也必须能工作；
+#   - `collatz_steps(n)`：对 n ≥ 1，到达 1 所需的步数，每一步把偶数除以 2，
+#     把奇数变成 3 × n + 1（6 → 3 → 10 → 5 → 16 → 8 → 4 → 2 → 1 需要
+#     8 步）；
+#   - `fib(n)`：第 n 个斐波那契数（0, 1, 1, 2, 3, 5, 8...：每个数是前两个数
+#     之和），即使 n = 90 也要很快。
+#
+# 提示
+#   1. `big_sum(n)` 可以直接调用一个辅助函数：`sum_from(n, 0)`。
+#   2. `collatz_from(n, steps)`：当 n 是 1 时，答案就是 `steps`。
+#   3. `fib(n) = fib(n - 1) + fib(n - 2)` 是对的，但非常慢，因为它一次又一次
+#      地计算相同的数。改为携带最后两个数：`fib_from(n, a, b)`，其中 a 和 b
+#      是两个相邻的斐波那契数，从 `fib_from(n, 0, 1)` 开始。
+#
+# 检查你的作业：  rythme exercise check 09-accumulators.ry
+#           或：  rythme test 09-accumulators.ry
+
+fn big_sum(n) = fail("待完成")
+
+fn collatz_steps(n) = fail("待完成")
+
+fn fib(n) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "大的和"
+  assert_eq(big_sum(10), 55)
+  assert_eq(big_sum(1000000), 500000500000)
+end
+
+test "考拉兹步数"
+  assert_eq(collatz_steps(1), 0)
+  assert_eq(collatz_steps(6), 8)
+  assert_eq(collatz_steps(27), 111)
+end
+
+test "斐波那契"
+  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
+  assert_eq(fib(90), 2880067194370816120)
+end
+"#,
+        ),
+        ("10-divisors", "10-divisors"),
+        (
+            r#"# Exercise 10 · Divisors and prime numbers  ★★☆
+#
+# Recursion can also try every candidate, one after the other, until an
+# answer is found.
+#
+# Statement
+#   - `my_gcd(a, b)`: the greatest common divisor of two whole numbers
+#     ≥ 0, with Euclid's method: the gcd of a and 0 is a, and the gcd of a
+#     and b is the gcd of b and `a % b` (without the built-in `gcd`);
+#   - `is_prime(n)`: is n a prime number (a number ≥ 2 whose only divisors
+#     are 1 and itself)?
+#   - `next_prime(n)`: the smallest prime number strictly greater than n.
+#
+# Hints
+#   1. Euclid's method is already written as two cases: translate it.
+#   2. For `is_prime`, write a helper `no_divisor_from(n, d)` that tries d,
+#      then d + 1... It can stop as soon as `d * d > n`.
+#   3. `next_prime(n)` tries n + 1: if it is prime, that is the answer;
+#      otherwise, the answer is `next_prime(n + 1)`.
+#
+# Check your work:  rythme exercise check 10-divisors.ry
+#              or:  rythme test 10-divisors.ry
+
+fn my_gcd(a, b) = fail("to do")
+
+fn is_prime(n) = fail("to do")
+
+fn next_prime(n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "gcd"
+  assert_eq(my_gcd(12, 18), 6)
+  assert_eq(my_gcd(17, 5), 1)
+  assert_eq(my_gcd(7, 0), 7)
+  assert_eq(my_gcd(0, 9), 9)
+end
+
+test "prime numbers"
+  assert_eq(1..30 |> filter(is_prime), [2, 3, 5, 7, 11, 13, 17, 19, 23, 29])
+  assert_eq(is_prime(0), false)
+  assert_eq(is_prime(7919), true)
+  assert_eq(is_prime(7917), false)
+end
+
+test "next prime"
+  assert_eq(next_prime(1), 2)
+  assert_eq(next_prime(13), 17)
+  assert_eq(next_prime(100), 101)
+end
+"#,
+            r#"# 练习 10 · 因数和质数  ★★☆
+#
+# 递归也可以一个接一个地尝试每个候选者，直到找到答案。
+#
+# 题目
+#   - `my_gcd(a, b)`：两个 ≥ 0 的整数的最大公因数，用欧几里得算法：a 和 0 的
+#     最大公因数是 a，a 和 b 的最大公因数是 b 和 `a % b` 的最大公因数（不使用
+#     内置函数 `gcd`）；
+#   - `is_prime(n)`：n 是质数吗（一个 ≥ 2 的数，它的因数只有 1 和它自己）？
+#   - `next_prime(n)`：严格大于 n 的最小质数。
+#
+# 提示
+#   1. 欧几里得算法已经写成了两种情况：把它翻译成代码。
+#   2. 对 `is_prime`，写一个辅助函数 `no_divisor_from(n, d)`，它尝试 d，
+#      然后 d + 1……一旦 `d * d > n` 就可以停下。
+#   3. `next_prime(n)` 尝试 n + 1：如果它是质数，这就是答案；否则答案是
+#      `next_prime(n + 1)`。
+#
+# 检查你的作业：  rythme exercise check 10-divisors.ry
+#           或：  rythme test 10-divisors.ry
+
+fn my_gcd(a, b) = fail("待完成")
+
+fn is_prime(n) = fail("待完成")
+
+fn next_prime(n) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "最大公因数"
+  assert_eq(my_gcd(12, 18), 6)
+  assert_eq(my_gcd(17, 5), 1)
+  assert_eq(my_gcd(7, 0), 7)
+  assert_eq(my_gcd(0, 9), 9)
+end
+
+test "质数"
+  assert_eq(1..30 |> filter(is_prime), [2, 3, 5, 7, 11, 13, 17, 19, 23, 29])
+  assert_eq(is_prime(0), false)
+  assert_eq(is_prime(7919), true)
+  assert_eq(is_prime(7917), false)
+end
+
+test "下一个质数"
+  assert_eq(next_prime(1), 2)
+  assert_eq(next_prime(13), 17)
+  assert_eq(next_prime(100), 101)
+end
+"#,
+        ),
+        ("11-list-patterns", "11-list-patterns"),
+        (
+            r#"# Exercise 11 · Taking lists apart  ★★☆
+#
+# A list is either empty, `[]`, or a first element followed by the rest of
+# the list, `[first, ..rest]`. A function on lists usually has one
+# definition for each of these two cases:
+#   fn count_items([]) = 0
+#   fn count_items([_, ..rest]) = 1 + count_items(rest)
+#
+# Statement
+#   With recursion, and without the built-in functions `len`, `sum`, `max`
+#   and `contains`:
+#   - `total(list)`: the sum of the numbers of the list;
+#   - `largest(list)`: the largest element of a list that is not empty;
+#   - `has_value(list, x)`: is x an element of the list?
+#   - `last_one(list)`: the last element of a list that is not empty.
+#
+# Hints
+#   1. The total of an empty list is 0.
+#   2. A list of one element, `[x]`, is a good base case for `largest` and
+#      `last_one`.
+#   3. The largest of `[x, ..rest]` is the larger of x and of the largest of
+#      rest.
+#   4. `has_value`: an empty list contains nothing; otherwise, either the
+#      first element is x, or x is in the rest (`or`).
+#   5. `rythme check` warns (W002) about a forgotten case, here the empty
+#      list. It has no largest element: say so with
+#      `fn largest([]) = fail("the list is empty")`.
+#
+# Check your work:  rythme exercise check 11-list-patterns.ry
+#              or:  rythme test 11-list-patterns.ry
+
+fn total(list) = fail("to do")
+
+fn largest(list) = fail("to do")
+
+fn has_value(list, x) = fail("to do")
+
+fn last_one(list) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "total"
+  assert_eq(total([]), 0)
+  assert_eq(total([4]), 4)
+  assert_eq(total([1, 2, 3, 4]), 10)
+end
+
+test "largest"
+  assert_eq(largest([7]), 7)
+  assert_eq(largest([3, 9, 2]), 9)
+  assert_eq(largest([-3, -1, -2]), -1)
+end
+
+test "has value"
+  assert_eq(has_value([1, 2, 3], 2), true)
+  assert_eq(has_value([1, 2, 3], 5), false)
+  assert_eq(has_value([], 1), false)
+  assert_eq(has_value(["a", "b"], "b"), true)
+end
+
+test "last one"
+  assert_eq(last_one([1, 2, 3]), 3)
+  assert_eq(last_one(["only"]), "only")
+end
+"#,
+            r#"# 练习 11 · 拆开列表  ★★☆
+#
+# 一个列表要么是空的，`[]`，要么是第一个元素后面跟着列表的其余部分，
+# `[first, ..rest]`。处理列表的函数通常为这两种情况各写一个定义：
+#   fn count_items([]) = 0
+#   fn count_items([_, ..rest]) = 1 + count_items(rest)
+#
+# 题目
+#   使用递归，不使用内置函数 `len`、`sum`、`max` 和 `contains`：
+#   - `total(list)`：列表中所有数的和；
+#   - `largest(list)`：非空列表中最大的元素；
+#   - `has_value(list, x)`：x 是列表中的元素吗？
+#   - `last_one(list)`：非空列表的最后一个元素。
+#
+# 提示
+#   1. 空列表的和是 0。
+#   2. 只有一个元素的列表 `[x]` 是 `largest` 和 `last_one` 很好的基本情况。
+#   3. `[x, ..rest]` 中最大的元素，是 x 和 rest 中最大元素两者中较大的那个。
+#   4. `has_value`：空列表什么都不包含；否则，要么第一个元素就是 x，要么 x
+#      在其余部分中（`or`）。
+#   5. `rythme check` 会对遗漏的情况发出警告（W002），这里是空列表。空列表
+#      没有最大元素：用 `fn largest([]) = fail("列表是空的")` 说明这一点。
+#
+# 检查你的作业：  rythme exercise check 11-list-patterns.ry
+#           或：  rythme test 11-list-patterns.ry
+
+fn total(list) = fail("待完成")
+
+fn largest(list) = fail("待完成")
+
+fn has_value(list, x) = fail("待完成")
+
+fn last_one(list) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "总和"
+  assert_eq(total([]), 0)
+  assert_eq(total([4]), 4)
+  assert_eq(total([1, 2, 3, 4]), 10)
+end
+
+test "最大的元素"
+  assert_eq(largest([7]), 7)
+  assert_eq(largest([3, 9, 2]), 9)
+  assert_eq(largest([-3, -1, -2]), -1)
+end
+
+test "包含某个值"
+  assert_eq(has_value([1, 2, 3], 2), true)
+  assert_eq(has_value([1, 2, 3], 5), false)
+  assert_eq(has_value([], 1), false)
+  assert_eq(has_value(["a", "b"], "b"), true)
+end
+
+test "最后一个"
+  assert_eq(last_one([1, 2, 3]), 3)
+  assert_eq(last_one(["唯一"]), "唯一")
+end
+"#,
+        ),
+        ("12-building-lists", "12-building-lists"),
+        (
+            r#"# Exercise 12 · Building lists  ★★☆
+#
+# `[x, ..rest]` also builds a list: x followed by the elements of rest.
+# Lists never change: a function gives back a new list.
+#   fn zeros(0) = []
+#   fn zeros(n) = [0, ..zeros(n - 1)]
+#
+# Statement
+#   With recursion, and without `map`, `reverse` or ranges (`1..n`):
+#   - `countdown(n)`: the list [n, n - 1, ..., 1, 0];
+#   - `repeat_value(x, n)`: a list with n times the value x;
+#   - `double_all(list)`: each number of the list doubled;
+#   - `reversed(list)`: the elements in the opposite order.
+#
+# Hints
+#   1. `countdown(0)` is `[0]`.
+#   2. `double_all([x, ..rest])` starts with `x * 2`.
+#   3. For `reversed`, use an accumulator: `reversed_onto(list, done)` moves
+#      the first element of list to the front of done, until list is empty.
+#      `reversed_onto([1, 2], [])` → `reversed_onto([2], [1])` →
+#      `reversed_onto([], [2, 1])`.
+#
+# Check your work:  rythme exercise check 12-building-lists.ry
+#              or:  rythme test 12-building-lists.ry
+
+fn countdown(n) = fail("to do")
+
+fn repeat_value(x, n) = fail("to do")
+
+fn double_all(list) = fail("to do")
+
+fn reversed(list) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "countdown"
+  assert_eq(countdown(0), [0])
+  assert_eq(countdown(3), [3, 2, 1, 0])
+end
+
+test "repeat value"
+  assert_eq(repeat_value("a", 3), ["a", "a", "a"])
+  assert_eq(repeat_value(1, 0), [])
+end
+
+test "double all"
+  assert_eq(double_all([1, 2, 3]), [2, 4, 6])
+  assert_eq(double_all([]), [])
+end
+
+test "reversed"
+  assert_eq(reversed([1, 2, 3]), [3, 2, 1])
+  assert_eq(reversed([]), [])
+  assert_eq(reversed(["x"]), ["x"])
+end
+
+test "the original list does not change"
+  numbers = [1, 2, 3]
+  reversed(numbers)
+  assert_eq(numbers, [1, 2, 3])
+end
+"#,
+            r#"# 练习 12 · 构造列表  ★★☆
+#
+# `[x, ..rest]` 也可以构造列表：x 后面跟着 rest 的元素。列表永远不会改变：
+# 函数返回一个新的列表。
+#   fn zeros(0) = []
+#   fn zeros(n) = [0, ..zeros(n - 1)]
+#
+# 题目
+#   使用递归，不使用 `map`、`reverse` 或范围（`1..n`）：
+#   - `countdown(n)`：列表 [n, n - 1, ..., 1, 0]；
+#   - `repeat_value(x, n)`：包含 n 个值 x 的列表；
+#   - `double_all(list)`：列表中的每个数都乘以 2；
+#   - `reversed(list)`：元素顺序倒过来。
+#
+# 提示
+#   1. `countdown(0)` 是 `[0]`。
+#   2. `double_all([x, ..rest])` 以 `x * 2` 开头。
+#   3. 对 `reversed`，使用累加器：`reversed_onto(list, done)` 把 list 的第一个
+#      元素移到 done 的前面，直到 list 变空。
+#      `reversed_onto([1, 2], [])` → `reversed_onto([2], [1])` →
+#      `reversed_onto([], [2, 1])`。
+#
+# 检查你的作业：  rythme exercise check 12-building-lists.ry
+#           或：  rythme test 12-building-lists.ry
+
+fn countdown(n) = fail("待完成")
+
+fn repeat_value(x, n) = fail("待完成")
+
+fn double_all(list) = fail("待完成")
+
+fn reversed(list) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "倒数"
+  assert_eq(countdown(0), [0])
+  assert_eq(countdown(3), [3, 2, 1, 0])
+end
+
+test "重复一个值"
+  assert_eq(repeat_value("a", 3), ["a", "a", "a"])
+  assert_eq(repeat_value(1, 0), [])
+end
+
+test "全部加倍"
+  assert_eq(double_all([1, 2, 3]), [2, 4, 6])
+  assert_eq(double_all([]), [])
+end
+
+test "倒序"
+  assert_eq(reversed([1, 2, 3]), [3, 2, 1])
+  assert_eq(reversed([]), [])
+  assert_eq(reversed(["x"]), ["x"])
+end
+
+test "原来的列表不会改变"
+  numbers = [1, 2, 3]
+  reversed(numbers)
+  assert_eq(numbers, [1, 2, 3])
+end
+"#,
+        ),
+        ("13-library", "13-library"),
+        (
+            r#"# Exercise 13 · The list functions  ★★☆
+#
+# Most work on lists needs no recursion: the built-in functions do it.
+# `1..5` is the list [1, 2, 3, 4, 5]; `map(list, f)` applies f to each
+# element; `filter(list, f)` keeps the elements for which f gives true;
+# `sum`, `len`, `sort`, `reverse`, `take`... `rythme help lists` shows them.
+#
+# Statement
+#   - `squares(n)`: the list [1, 4, 9, ..., n × n];
+#   - `evens(list)`: the even numbers of the list, in the same order;
+#   - `sum_of_multiples(limit)`: the sum of the numbers from 1 to limit - 1
+#     that are multiples of 3 or of 5;
+#   - `mean(list)`: the average of the numbers of a list that is not empty;
+#   - `smallest_three(list)`: the three smallest numbers, from the smallest.
+#
+# Hints
+#   1. `map(1..n, square)` with a function `square` written by you, or
+#      `map(1..n, fn(x) = x * x)` (an anonymous function, see exercise 14).
+#   2. `is_even` is a built-in function: `filter(list, is_even)`.
+#   3. `1..0` is the empty list `[]`.
+#   4. `sort` then `take`.
+#
+# Check your work:  rythme exercise check 13-library.ry
+#              or:  rythme test 13-library.ry
+
+fn squares(n) = fail("to do")
+
+fn evens(list) = fail("to do")
+
+fn sum_of_multiples(limit) = fail("to do")
+
+fn mean(list) = fail("to do")
+
+fn smallest_three(list) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "squares"
+  assert_eq(squares(5), [1, 4, 9, 16, 25])
+  assert_eq(squares(0), [])
+end
+
+test "evens" = assert_eq(evens([5, 2, 8, 1, 4]), [2, 8, 4])
+
+test "sum of multiples"
+  assert_eq(sum_of_multiples(10), 23)
+  assert_eq(sum_of_multiples(1000), 233168)
+end
+
+test "mean"
+  assert_eq(mean([1, 2, 3, 4]), 2.5)
+  assert_eq(mean([7]), 7)
+end
+
+test "smallest three"
+  assert_eq(smallest_three([5, 1, 4, 2, 3]), [1, 2, 3])
+  assert_eq(smallest_three([9, 8]), [8, 9])
+end
+"#,
+            r#"# 练习 13 · 列表函数  ★★☆
+#
+# 处理列表的大部分工作不需要递归：内置函数就能完成。`1..5` 是列表
+# [1, 2, 3, 4, 5]；`map(list, f)` 对每个元素应用 f；`filter(list, f)` 保留
+# 让 f 返回 true 的元素；还有 `sum`、`len`、`sort`、`reverse`、
+# `take`……`rythme help lists` 会列出它们。
+#
+# 题目
+#   - `squares(n)`：列表 [1, 4, 9, ..., n × n]；
+#   - `evens(list)`：列表中的偶数，保持原来的顺序；
+#   - `sum_of_multiples(limit)`：从 1 到 limit - 1 中是 3 或 5 的倍数的数之和；
+#   - `mean(list)`：非空列表中各数的平均值；
+#   - `smallest_three(list)`：最小的三个数，从小到大。
+#
+# 提示
+#   1. `map(1..n, square)`，其中 `square` 是你自己写的函数，或者
+#      `map(1..n, fn(x) = x * x)`（一个匿名函数，见练习 14）。
+#   2. `is_even` 是一个内置函数：`filter(list, is_even)`。
+#   3. `1..0` 是空列表 `[]`。
+#   4. 先 `sort`，再 `take`。
+#
+# 检查你的作业：  rythme exercise check 13-library.ry
+#           或：  rythme test 13-library.ry
+
+fn squares(n) = fail("待完成")
+
+fn evens(list) = fail("待完成")
+
+fn sum_of_multiples(limit) = fail("待完成")
+
+fn mean(list) = fail("待完成")
+
+fn smallest_three(list) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "平方数"
+  assert_eq(squares(5), [1, 4, 9, 16, 25])
+  assert_eq(squares(0), [])
+end
+
+test "偶数" = assert_eq(evens([5, 2, 8, 1, 4]), [2, 8, 4])
+
+test "倍数之和"
+  assert_eq(sum_of_multiples(10), 23)
+  assert_eq(sum_of_multiples(1000), 233168)
+end
+
+test "平均值"
+  assert_eq(mean([1, 2, 3, 4]), 2.5)
+  assert_eq(mean([7]), 7)
+end
+
+test "最小的三个"
+  assert_eq(smallest_three([5, 1, 4, 2, 3]), [1, 2, 3])
+  assert_eq(smallest_three([9, 8]), [8, 9])
+end
+"#,
+        ),
+        ("14-anonymous-functions", "14-anonymous-functions"),
+        (
+            r#"# Exercise 14 · Anonymous functions  ★★☆
+#
+# `fn(x) = x * 2` is a function without a name, written right where it is
+# needed. It can use the names around it:
+#   fn add_to_all(list, n) = map(list, fn(x) = x + n)
+#
+# Statement
+#   - `with_tax(prices, percent)`: each price increased by `percent` %;
+#   - `long_words(words, n)`: the words that have more than n characters;
+#   - `lengths(words)`: the length of each word;
+#   - `all_positive(list)`: are all the numbers greater than 0?
+#   - `count_above(list, limit)`: how many numbers are greater than limit.
+#
+# Hints
+#   1. A price p increased by 20 % is `p + p * 20 / 100`.
+#   2. `len("word")` is 4.
+#   3. `all(list, f)` is true when f gives true for every element, and
+#      `count(list, f)` counts the elements for which f gives true.
+#
+# Check your work:  rythme exercise check 14-anonymous-functions.ry
+#              or:  rythme test 14-anonymous-functions.ry
+
+fn with_tax(prices, percent) = fail("to do")
+
+fn long_words(words, n) = fail("to do")
+
+fn lengths(words) = fail("to do")
+
+fn all_positive(list) = fail("to do")
+
+fn count_above(list, limit) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "with tax"
+  assert_eq(with_tax([100, 50], 20), [120, 60])
+  assert_eq(with_tax([10], 0), [10])
+end
+
+test "long words" = assert_eq(long_words(["a", "tree", "is", "green"], 3), ["tree", "green"])
+
+test "lengths" = assert_eq(lengths(["a", "tree", "is"]), [1, 4, 2])
+
+test "all positive"
+  assert_eq(all_positive([1, 5, 3]), true)
+  assert_eq(all_positive([1, -5, 3]), false)
+  assert_eq(all_positive([]), true)
+end
+
+test "count above" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
+"#,
+            r#"# 练习 14 · 匿名函数  ★★☆
+#
+# `fn(x) = x * 2` 是一个没有名字的函数，直接写在需要它的地方。它可以使用
+# 周围的名字：
+#   fn add_to_all(list, n) = map(list, fn(x) = x + n)
+#
+# 题目
+#   - `with_tax(prices, percent)`：每个价格增加 `percent` %；
+#   - `long_words(words, n)`：超过 n 个字符的词；
+#   - `lengths(words)`：每个词的长度；
+#   - `all_positive(list)`：所有的数都大于 0 吗？
+#   - `count_above(list, limit)`：有多少个数大于 limit。
+#
+# 提示
+#   1. 价格 p 增加 20 % 是 `p + p * 20 / 100`。
+#   2. `len("函数式")` 是 3。
+#   3. 当 f 对每个元素都返回 true 时，`all(list, f)` 为 true；
+#      `count(list, f)` 计算让 f 返回 true 的元素个数。
+#
+# 检查你的作业：  rythme exercise check 14-anonymous-functions.ry
+#           或：  rythme test 14-anonymous-functions.ry
+
+fn with_tax(prices, percent) = fail("待完成")
+
+fn long_words(words, n) = fail("待完成")
+
+fn lengths(words) = fail("待完成")
+
+fn all_positive(list) = fail("待完成")
+
+fn count_above(list, limit) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "含税"
+  assert_eq(with_tax([100, 50], 20), [120, 60])
+  assert_eq(with_tax([10], 0), [10])
+end
+
+test "长的词" = assert_eq(long_words(["我", "喜欢", "函数式", "编程"], 1), ["喜欢", "函数式", "编程"])
+
+test "长度" = assert_eq(lengths(["我", "喜欢", "函数式"]), [1, 2, 3])
+
+test "全是正数"
+  assert_eq(all_positive([1, 5, 3]), true)
+  assert_eq(all_positive([1, -5, 3]), false)
+  assert_eq(all_positive([]), true)
+end
+
+test "大于界限的个数" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
+"#,
+        ),
+        ("15-functions-as-values", "15-functions-as-values"),
+        (
+            r#"# Exercise 15 · Functions are values  ★★☆
+#
+# A function can be given to another function, and a function can give
+# back a new function:
+#   fn twice(f) = fn(x) = f(f(x))
+#   add_two = twice(fn(x) = x + 1)      # add_two(5) is 7
+#
+# Statement
+#   - `apply_twice(f, x)`: f applied to x, then f applied to the result;
+#   - `compose(f, g)`: a new function that applies g, then f;
+#   - `adder(n)`: a new function that adds n to its argument;
+#   - `my_map(list, f)` and `my_filter(list, f)`: your own versions of
+#     `map` and `filter`, with recursion.
+#
+# Hints
+#   1. `compose(f, g)` gives `fn(x) = ...`.
+#   2. `my_map([x, ..rest], f)` starts with `f(x)`.
+#   3. `my_filter([x, ..rest], f)`: keep x only if `f(x)` is true, then
+#      continue with rest.
+#
+# Check your work:  rythme exercise check 15-functions-as-values.ry
+#              or:  rythme test 15-functions-as-values.ry
+
+fn apply_twice(f, x) = fail("to do")
+
+fn compose(f, g) = fail("to do")
+
+fn adder(n) = fail("to do")
+
+fn my_map(list, f) = fail("to do")
+
+fn my_filter(list, f) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "apply twice"
+  assert_eq(apply_twice(fn(x) = x * 3, 2), 18)
+  assert_eq(apply_twice(upper, "hi"), "HI")
+end
+
+test "compose"
+  plus_one_then_double = compose(fn(x) = x * 2, fn(x) = x + 1)
+  assert_eq(plus_one_then_double(4), 10)
+  assert_eq(compose(len, trim)("  abc  "), 3)
+end
+
+test "adder"
+  add10 = adder(10)
+  assert_eq(add10(5), 15)
+  assert_eq(map([1, 2, 3], adder(100)), [101, 102, 103])
+end
+
+test "my map"
+  assert_eq(my_map([1, 2, 3], fn(x) = x * x), [1, 4, 9])
+  assert_eq(my_map([], fn(x) = x), [])
+end
+
+test "my filter"
+  assert_eq(my_filter([1, 2, 3, 4, 5, 6], is_even), [2, 4, 6])
+  assert_eq(my_filter(["a", "bb", "ccc"], fn(w) = len(w) > 1), ["bb", "ccc"])
+end
+"#,
+            r#"# 练习 15 · 函数也是值  ★★☆
+#
+# 函数可以传给另一个函数，函数也可以返回一个新的函数：
+#   fn twice(f) = fn(x) = f(f(x))
+#   add_two = twice(fn(x) = x + 1)      # add_two(5) 是 7
+#
+# 题目
+#   - `apply_twice(f, x)`：把 f 应用到 x，再把 f 应用到结果上；
+#   - `compose(f, g)`：一个新函数，先应用 g，再应用 f；
+#   - `adder(n)`：一个新函数，把 n 加到它的参数上；
+#   - `my_map(list, f)` 和 `my_filter(list, f)`：你自己用递归写的 `map` 和
+#     `filter`。
+#
+# 提示
+#   1. `compose(f, g)` 返回 `fn(x) = ...`。
+#   2. `my_map([x, ..rest], f)` 以 `f(x)` 开头。
+#   3. `my_filter([x, ..rest], f)`：只有当 `f(x)` 为 true 时才保留 x，然后
+#      继续处理 rest。
+#
+# 检查你的作业：  rythme exercise check 15-functions-as-values.ry
+#           或：  rythme test 15-functions-as-values.ry
+
+fn apply_twice(f, x) = fail("待完成")
+
+fn compose(f, g) = fail("待完成")
+
+fn adder(n) = fail("待完成")
+
+fn my_map(list, f) = fail("待完成")
+
+fn my_filter(list, f) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "应用两次"
+  assert_eq(apply_twice(fn(x) = x * 3, 2), 18)
+  assert_eq(apply_twice(upper, "hi"), "HI")
+end
+
+test "组合"
+  plus_one_then_double = compose(fn(x) = x * 2, fn(x) = x + 1)
+  assert_eq(plus_one_then_double(4), 10)
+  assert_eq(compose(len, trim)("  abc  "), 3)
+end
+
+test "加法器"
+  add10 = adder(10)
+  assert_eq(add10(5), 15)
+  assert_eq(map([1, 2, 3], adder(100)), [101, 102, 103])
+end
+
+test "我的 map"
+  assert_eq(my_map([1, 2, 3], fn(x) = x * x), [1, 4, 9])
+  assert_eq(my_map([], fn(x) = x), [])
+end
+
+test "我的 filter"
+  assert_eq(my_filter([1, 2, 3, 4, 5, 6], is_even), [2, 4, 6])
+  assert_eq(my_filter(["a", "bb", "ccc"], fn(w) = len(w) > 1), ["bb", "ccc"])
+end
+"#,
+        ),
+        ("16-fold", "16-fold"),
+        (
+            r#"# Exercise 16 · Folding a list into one value  ★★☆
+#
+# `fold(list, start, f)` combines all the elements into one value: it
+# starts with `start`, then computes `f(result, element)` for each element.
+#   fold([1, 2, 3], 0, fn(total, x) = total + x)     # 6
+#
+# Statement
+#   With `fold`, and without recursion:
+#   - `product_of(list)`: the product of the numbers (1 for an empty list);
+#   - `longest_word(words)`: the longest word (the first one if several
+#     have the same length; "" for an empty list);
+#   - `to_number(digits)`: the number written with these digits
+#     ([1, 2, 3] gives 123);
+#   - `count_where(list, f)`: how many elements give true with f (without
+#     `count` or `filter`).
+#
+# Hints
+#   1. Choose `start` well: it is the answer for the empty list.
+#   2. For `longest_word`, the result so far is the longest word seen so
+#      far: keep it, or take the new word if it is strictly longer.
+#   3. `to_number`: with 12 so far and the digit 3, the new result is
+#      12 * 10 + 3.
+#
+# Check your work:  rythme exercise check 16-fold.ry
+#              or:  rythme test 16-fold.ry
+
+fn product_of(list) = fail("to do")
+
+fn longest_word(words) = fail("to do")
+
+fn to_number(digits) = fail("to do")
+
+fn count_where(list, f) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "product"
+  assert_eq(product_of([2, 3, 4]), 24)
+  assert_eq(product_of([]), 1)
+end
+
+test "longest word"
+  assert_eq(longest_word(["a", "tree", "is", "green"]), "green")
+  assert_eq(longest_word(["one", "two"]), "one")
+  assert_eq(longest_word([]), "")
+end
+
+test "to number"
+  assert_eq(to_number([1, 2, 3]), 123)
+  assert_eq(to_number([0, 7]), 7)
+  assert_eq(to_number([]), 0)
+end
+
+test "count where"
+  assert_eq(count_where([1, 2, 3, 4, 5], is_odd), 3)
+  assert_eq(count_where(["a", "bb"], fn(w) = len(w) > 5), 0)
+end
+"#,
+            r#"# 练习 16 · 把列表折叠成一个值  ★★☆
+#
+# `fold(list, start, f)` 把所有元素合并成一个值：它从 `start` 开始，然后对
+# 每个元素计算 `f(result, element)`。
+#   fold([1, 2, 3], 0, fn(total, x) = total + x)     # 6
+#
+# 题目
+#   使用 `fold`，不使用递归：
+#   - `product_of(list)`：各数的乘积（空列表为 1）；
+#   - `longest_word(words)`：最长的词（如果几个词一样长，取第一个；空列表
+#     为 ""）；
+#   - `to_number(digits)`：用这些数字写成的数（[1, 2, 3] 得到 123）；
+#   - `count_where(list, f)`：有多少个元素让 f 返回 true（不使用 `count`
+#     或 `filter`）。
+#
+# 提示
+#   1. 选好 `start`：它就是空列表的答案。
+#   2. 对 `longest_word`，到目前为止的结果就是目前见过的最长的词：保留它，
+#      或者在新词严格更长时换成新词。
+#   3. `to_number`：目前是 12，遇到数字 3，新的结果是 12 * 10 + 3。
+#
+# 检查你的作业：  rythme exercise check 16-fold.ry
+#           或：  rythme test 16-fold.ry
+
+fn product_of(list) = fail("待完成")
+
+fn longest_word(words) = fail("待完成")
+
+fn to_number(digits) = fail("待完成")
+
+fn count_where(list, f) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "乘积"
+  assert_eq(product_of([2, 3, 4]), 24)
+  assert_eq(product_of([]), 1)
+end
+
+test "最长的词"
+  assert_eq(longest_word(["我", "喜欢", "函数式", "编程"]), "函数式")
+  assert_eq(longest_word(["你好", "世界"]), "你好")
+  assert_eq(longest_word([]), "")
+end
+
+test "变成数"
+  assert_eq(to_number([1, 2, 3]), 123)
+  assert_eq(to_number([0, 7]), 7)
+  assert_eq(to_number([]), 0)
+end
+
+test "按条件计数"
+  assert_eq(count_where([1, 2, 3, 4, 5], is_odd), 3)
+  assert_eq(count_where(["a", "bb"], fn(w) = len(w) > 5), 0)
+end
+"#,
+        ),
+        ("17-pipelines", "17-pipelines"),
+        (
+            r#"# Exercise 17 · Pipelines  ★★☆
+#
+# `x |> f(a)` means `f(x, a)`: the value on the left becomes the first
+# argument. Steps are read from left to right, in the order they happen:
+#   [3, 1, 2] |> sort |> map(fn(x) = x * 10)        # [10, 20, 30]
+# A line that starts with `|>` continues the line before.
+#
+# Statement
+#   Write each function as one pipeline:
+#   - `sum_of_odd_squares(n)`: the sum of the squares of the odd numbers
+#     from 1 to n;
+#   - `top_three(scores)`: the three best scores, the best first;
+#   - `shout_words(sentence)`: each word in uppercase, separated by one
+#     space ("hello  world" gives "HELLO WORLD");
+#   - `initials_of(sentence)`: the first letter of each word, in uppercase
+#     ("portable network graphics" gives "PNG").
+#
+# Hints
+#   1. `filter`, then `map`, then `sum`.
+#   2. `sort`, `reverse`, `take(3)`.
+#   3. `split(text)` cuts a text at the spaces (several spaces count as
+#      one); `join(words, " ")` glues words back together.
+#   4. `word[0]` is the first character of `word`.
+#
+# Check your work:  rythme exercise check 17-pipelines.ry
+#              or:  rythme test 17-pipelines.ry
+
+fn sum_of_odd_squares(n) = fail("to do")
+
+fn top_three(scores) = fail("to do")
+
+fn shout_words(sentence) = fail("to do")
+
+fn initials_of(sentence) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "sum of odd squares"
+  assert_eq(sum_of_odd_squares(5), 35)
+  assert_eq(sum_of_odd_squares(1), 1)
+end
+
+test "top three"
+  assert_eq(top_three([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(top_three([4]), [4])
+end
+
+test "shout words" = assert_eq(shout_words("hello  world"), "HELLO WORLD")
+
+test "initials of"
+  assert_eq(initials_of("portable network graphics"), "PNG")
+  assert_eq(initials_of("Rythme"), "R")
+end
+"#,
+            r#"# 练习 17 · 管道  ★★☆
+#
+# `x |> f(a)` 的意思是 `f(x, a)`：左边的值成为第一个参数。各个步骤从左到右
+# 阅读，也就是它们发生的顺序：
+#   [3, 1, 2] |> sort |> map(fn(x) = x * 10)        # [10, 20, 30]
+# 以 `|>` 开头的一行接着上一行。
+#
+# 题目
+#   把每个函数写成一条管道：
+#   - `sum_of_odd_squares(n)`：从 1 到 n 的奇数的平方和；
+#   - `top_three(scores)`：最高的三个分数，最高的在前；
+#   - `shout_words(sentence)`：每个单词都大写，用一个空格分开
+#     （"hello  world" 得到 "HELLO WORLD"）；
+#   - `initials_of(sentence)`：每个单词的第一个字母，大写
+#     （"portable network graphics" 得到 "PNG"）。
+#
+# 提示
+#   1. 先 `filter`，再 `map`，然后 `sum`。
+#   2. `sort`、`reverse`、`take(3)`。
+#   3. `split(text)` 在空格处切开文本（多个空格算一个）；
+#      `join(words, " ")` 把单词重新粘在一起。
+#   4. `word[0]` 是 `word` 的第一个字符。
+#
+# 检查你的作业：  rythme exercise check 17-pipelines.ry
+#           或：  rythme test 17-pipelines.ry
+
+fn sum_of_odd_squares(n) = fail("待完成")
+
+fn top_three(scores) = fail("待完成")
+
+fn shout_words(sentence) = fail("待完成")
+
+fn initials_of(sentence) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "奇数的平方和"
+  assert_eq(sum_of_odd_squares(5), 35)
+  assert_eq(sum_of_odd_squares(1), 1)
+end
+
+test "前三名"
+  assert_eq(top_three([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(top_three([4]), [4])
+end
+
+test "大写每个单词" = assert_eq(shout_words("hello  world"), "HELLO WORLD")
+
+test "首字母缩写"
+  assert_eq(initials_of("portable network graphics"), "PNG")
+  assert_eq(initials_of("Rythme"), "R")
+end
+"#,
+        ),
+        ("18-text-processing", "18-text-processing"),
+        (
+            r#"# Exercise 18 · Working with texts  ★★☆
+#
+# A text can be turned into the list of its characters with `chars`, and
+# the list functions do the rest. `lower`, `upper`, `replace`, `split`,
+# `join`, `contains`... are described by `rythme help text`.
+#
+# Statement
+#   - `is_palindrome(text)`: does the text read the same from both ends,
+#     ignoring uppercase and spaces? ("Never odd or even" does.)
+#   - `count_vowels(text)`: how many characters are vowels (a, e, i, o, u
+#     or y, in lowercase or uppercase)?
+#   - `title_case(text)`: each word starts with an uppercase letter, the
+#     rest in lowercase ("the LORD of the rings" gives
+#     "The Lord Of The Rings").
+#
+# Hints
+#   1. `replace(text, " ", "")` removes the spaces, and `reverse` works on
+#      texts too.
+#   2. `contains("aeiouy", c)` tells whether the character c is a vowel.
+#   3. `capitalize("lord")` is "Lord".
+#
+# Check your work:  rythme exercise check 18-text-processing.ry
+#              or:  rythme test 18-text-processing.ry
+
+fn is_palindrome(text) = fail("to do")
+
+fn count_vowels(text) = fail("to do")
+
+fn title_case(text) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "palindromes"
+  assert_eq(is_palindrome("kayak"), true)
+  assert_eq(is_palindrome("Never odd or even"), true)
+  assert_eq(is_palindrome("rythme"), false)
+end
+
+test "vowels"
+  assert_eq(count_vowels("Rythme"), 2)
+  assert_eq(count_vowels("AEIOU"), 5)
+  assert_eq(count_vowels("xkcd"), 0)
+end
+
+test "title case" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")
+"#,
+            r#"# 练习 18 · 处理文本  ★★☆
+#
+# 用 `chars` 可以把文本变成它的字符列表，剩下的交给列表函数。`lower`、
+# `upper`、`replace`、`split`、`join`、`contains`……在 `rythme help text`
+# 中有说明。
+#
+# 题目
+#   - `is_palindrome(text)`：忽略大小写和空格后，文本从两头读起来一样吗？
+#     （"上海自来水来自海上" 和 "Never odd or even" 都是。）
+#   - `count_vowels(text)`：有多少个字符是英语元音（a、e、i、o、u 或 y，
+#     小写或大写）？
+#   - `title_case(text)`：每个英语单词以大写字母开头，其余字母小写
+#     （"the LORD of the rings" 得到 "The Lord Of The Rings"）。
+#
+# 提示
+#   1. `replace(text, " ", "")` 去掉空格，`reverse` 也可以用于文本。
+#   2. `contains("aeiouy", c)` 判断字符 c 是不是元音。
+#   3. `capitalize("lord")` 是 "Lord"。
+#
+# 检查你的作业：  rythme exercise check 18-text-processing.ry
+#           或：  rythme test 18-text-processing.ry
+
+fn is_palindrome(text) = fail("待完成")
+
+fn count_vowels(text) = fail("待完成")
+
+fn title_case(text) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "回文"
+  assert_eq(is_palindrome("上海自来水来自海上"), true)
+  assert_eq(is_palindrome("Never odd or even"), true)
+  assert_eq(is_palindrome("rythme"), false)
+end
+
+test "元音"
+  assert_eq(count_vowels("Rythme"), 2)
+  assert_eq(count_vowels("AEIOU"), 5)
+  assert_eq(count_vowels("xkcd"), 0)
+end
+
+test "标题格式" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")
+"#,
+        ),
+        ("19-sorting", "19-sorting"),
+        (
+            r#"# Exercise 19 · Sorting  ★★★
+#
+# Two classic ways to sort a list, written with recursion (without the
+# built-in `sort`).
+#
+# Statement
+#   - `insert(sorted, x)`: x placed at its position in a list that is
+#     already sorted;
+#   - `insertion_sort(list)`: sorts the list by inserting each element, one
+#     after the other, into a sorted list that starts empty;
+#   - `merge(a, b)`: one sorted list from two sorted lists;
+#   - `merge_sort(list)`: cuts the list in two halves, sorts each half,
+#     and merges them.
+#
+# Hints
+#   1. `insert([], x)` is `[x]`. For `insert([first, ..rest], x)`: if
+#      x <= first, x goes in front; otherwise first stays first.
+#   2. `insertion_sort([x, ..rest])` is `insert(insertion_sort(rest), x)`
+#      (or use `fold` with `insert`).
+#   3. `merge` compares the first elements of the two lists: the smaller one
+#      comes first, followed by the merge of what remains.
+#   4. `take(list, n)` and `drop(list, n)` give the two halves, with
+#      `n = len(list) // 2`. A list of 0 or 1 element is already sorted.
+#
+# Check your work:  rythme exercise check 19-sorting.ry
+#              or:  rythme test 19-sorting.ry
+
+fn insert(sorted, x) = fail("to do")
+
+fn insertion_sort(list) = fail("to do")
+
+fn merge(a, b) = fail("to do")
+
+fn merge_sort(list) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "insert"
+  assert_eq(insert([1, 3, 5], 4), [1, 3, 4, 5])
+  assert_eq(insert([], 2), [2])
+  assert_eq(insert([1, 2], 9), [1, 2, 9])
+end
+
+test "insertion sort"
+  assert_eq(insertion_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(insertion_sort([]), [])
+end
+
+test "merge"
+  assert_eq(merge([1, 4, 6], [2, 3, 7]), [1, 2, 3, 4, 6, 7])
+  assert_eq(merge([], [1]), [1])
+  assert_eq(merge([1], []), [1])
+end
+
+test "merge sort"
+  assert_eq(merge_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(merge_sort(["pear", "apple", "fig"]), ["apple", "fig", "pear"])
+  assert_eq(merge_sort(reverse(1..100)), 1..100)
+end
+"#,
+            r#"# 练习 19 · 排序  ★★★
+#
+# 两种经典的列表排序方法，用递归来写（不使用内置函数 `sort`）。
+#
+# 题目
+#   - `insert(sorted, x)`：把 x 放到一个已经排好序的列表中它应在的位置；
+#   - `insertion_sort(list)`：从一个空的有序列表开始，把每个元素一个接一个地
+#     插入进去，从而给列表排序；
+#   - `merge(a, b)`：把两个有序列表合并成一个有序列表；
+#   - `merge_sort(list)`：把列表切成两半，分别排序，再把它们合并。
+#
+# 提示
+#   1. `insert([], x)` 是 `[x]`。对 `insert([first, ..rest], x)`：如果
+#      x <= first，x 放在最前面；否则 first 仍然在最前面。
+#   2. `insertion_sort([x, ..rest])` 是 `insert(insertion_sort(rest), x)`
+#      （或者用 `fold` 和 `insert`）。
+#   3. `merge` 比较两个列表的第一个元素：较小的排在前面，后面跟着剩余部分的
+#      合并结果。
+#   4. `take(list, n)` 和 `drop(list, n)` 给出两半，其中
+#      `n = len(list) // 2`。只有 0 个或 1 个元素的列表已经是有序的。
+#
+# 检查你的作业：  rythme exercise check 19-sorting.ry
+#           或：  rythme test 19-sorting.ry
+
+fn insert(sorted, x) = fail("待完成")
+
+fn insertion_sort(list) = fail("待完成")
+
+fn merge(a, b) = fail("待完成")
+
+fn merge_sort(list) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "插入"
+  assert_eq(insert([1, 3, 5], 4), [1, 3, 4, 5])
+  assert_eq(insert([], 2), [2])
+  assert_eq(insert([1, 2], 9), [1, 2, 9])
+end
+
+test "插入排序"
+  assert_eq(insertion_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(insertion_sort([]), [])
+end
+
+test "合并"
+  assert_eq(merge([1, 4, 6], [2, 3, 7]), [1, 2, 3, 4, 6, 7])
+  assert_eq(merge([], [1]), [1])
+  assert_eq(merge([1], []), [1])
+end
+
+test "归并排序"
+  assert_eq(merge_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(merge_sort(["pear", "apple", "fig"]), ["apple", "fig", "pear"])
+  assert_eq(merge_sort(reverse(1..100)), 1..100)
+end
+"#,
+        ),
+        ("20-records", "20-records"),
+        (
+            r#"# Exercise 20 · Records  ★★☆
+#
+# A record groups named values: `{name: "Ada", born: 1815}`. `ada.name`
+# reads a field. A record never changes: `{..ada, born: 1816}` is a new
+# record, a copy of ada with another `born`. A parameter can take a record
+# apart: `fn hello({name}) = "Hello, {name}"`.
+#
+# Statement
+#   A person is a record `{name, born}`; a point is a record `{x, y}`.
+#   - `age_in(person, year)`: the age of the person at the end of the year;
+#   - `label(person)`: a text like "Ada (1815)";
+#   - `renamed(person, name)`: the same person with another name;
+#   - `moved(point, dx, dy)`: the point moved by dx horizontally and dy
+#     vertically;
+#   - `distance(a, b)`: the distance between two points.
+#
+# Hints
+#   1. `person.born`, or a parameter `{born}`.
+#   2. `{..person, name: name}`, which can be written `{..person, name}`.
+#   3. The distance is the square root of (xb - xa)² + (yb - ya)².
+#
+# Check your work:  rythme exercise check 20-records.ry
+#              or:  rythme test 20-records.ry
+
+fn age_in(person, year) = fail("to do")
+
+fn label(person) = fail("to do")
+
+fn renamed(person, name) = fail("to do")
+
+fn moved(point, dx, dy) = fail("to do")
+
+fn distance(a, b) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+ada = {name: "Ada", born: 1815}
+
+test "age" = assert_eq(age_in(ada, 1852), 37)
+
+test "label" = assert_eq(label(ada), "Ada (1815)")
+
+test "renamed"
+  assert_eq(renamed(ada, "Augusta"), {name: "Augusta", born: 1815})
+  assert_eq(ada.name, "Ada")
+end
+
+test "moved"
+  assert_eq(moved({x: 1, y: 2}, 3, -1), {x: 4, y: 1})
+  assert_eq(moved({x: 0, y: 0}, 0, 0), {x: 0, y: 0})
+end
+
+test "distance"
+  assert_eq(distance({x: 0, y: 0}, {x: 3, y: 4}), 5)
+  assert_eq(distance({x: 1, y: 1}, {x: 1, y: 1}), 0)
+end
+"#,
+            r#"# 练习 20 · 记录  ★★☆
+#
+# 记录把带名字的值放在一起：`{name: "Ada", born: 1815}`。`ada.name` 读取一个
+# 字段。记录永远不会改变：`{..ada, born: 1816}` 是一个新记录，是 ada 的副本，
+# 只是 `born` 不同。参数可以拆开一个记录：
+# `fn hello({name}) = "你好，{name}"`。
+#
+# 题目
+#   一个人是一个记录 `{name, born}`；一个点是一个记录 `{x, y}`。
+#   - `age_in(person, year)`：这个人在该年年底的年龄；
+#   - `label(person)`：类似 "Ada (1815)" 的文本；
+#   - `renamed(person, name)`：同一个人，换了一个名字；
+#   - `moved(point, dx, dy)`：把点水平移动 dx、垂直移动 dy；
+#   - `distance(a, b)`：两点之间的距离。
+#
+# 提示
+#   1. `person.born`，或者一个参数 `{born}`。
+#   2. `{..person, name: name}`，也可以写成 `{..person, name}`。
+#   3. 距离是 (xb - xa)² + (yb - ya)² 的平方根。
+#
+# 检查你的作业：  rythme exercise check 20-records.ry
+#           或：  rythme test 20-records.ry
+
+fn age_in(person, year) = fail("待完成")
+
+fn label(person) = fail("待完成")
+
+fn renamed(person, name) = fail("待完成")
+
+fn moved(point, dx, dy) = fail("待完成")
+
+fn distance(a, b) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+ada = {name: "Ada", born: 1815}
+
+test "年龄" = assert_eq(age_in(ada, 1852), 37)
+
+test "标签" = assert_eq(label(ada), "Ada (1815)")
+
+test "改名"
+  assert_eq(renamed(ada, "Augusta"), {name: "Augusta", born: 1815})
+  assert_eq(ada.name, "Ada")
+end
+
+test "移动"
+  assert_eq(moved({x: 1, y: 2}, 3, -1), {x: 4, y: 1})
+  assert_eq(moved({x: 0, y: 0}, 0, 0), {x: 0, y: 0})
+end
+
+test "距离"
+  assert_eq(distance({x: 0, y: 0}, {x: 3, y: 4}), 5)
+  assert_eq(distance({x: 1, y: 1}, {x: 1, y: 1}), 0)
+end
+"#,
+        ),
+        ("21-lists-of-records", "21-lists-of-records"),
+        (
+            r#"# Exercise 21 · Lists of records  ★★☆
+#
+# Real data is often a list of records: a class of students, a list of
+# orders... `map`, `filter`, `sort_by`, `max_by`, `group_by` and `sum` work
+# on them like on any list.
+#
+# Statement
+#   A student is a record `{name, score, group}` (a score from 0 to 100).
+#   - `names_of_passed(students)`: the names of the students whose score is
+#     at least 50, in the same order;
+#   - `average_score(students)`: the average of the scores;
+#   - `best(students)`: the name of the student with the best score;
+#   - `ranking(students)`: the names, from the best score to the lowest;
+#   - `group_sizes(students)`: a record that gives, for each group, how
+#     many students are in it (`{A: 2, B: 1}`).
+#
+# Hints
+#   1. `filter` then `map(fn(s) = s.name)`.
+#   2. `max_by(list, key)` gives the element whose key is the largest.
+#   3. `sort_by(list, fn(s) = -s.score)` sorts from the best score.
+#   4. `group_by(list, key)` gives a record of lists, and
+#      `map_values(record, f)` applies f to each of its values.
+#
+# Check your work:  rythme exercise check 21-lists-of-records.ry
+#              or:  rythme test 21-lists-of-records.ry
+
+fn names_of_passed(students) = fail("to do")
+
+fn average_score(students) = fail("to do")
+
+fn best(students) = fail("to do")
+
+fn ranking(students) = fail("to do")
+
+fn group_sizes(students) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+classroom = [
+  {name: "Ada", score: 92, group: "A"},
+  {name: "Alan", score: 45, group: "B"},
+  {name: "Grace", score: 78, group: "A"},
+  {name: "Edsger", score: 50, group: "B"},
+  {name: "Barbara", score: 85, group: "A"},
+]
+
+test "passed" = assert_eq(names_of_passed(classroom), ["Ada", "Grace", "Edsger", "Barbara"])
+
+test "average" = assert_eq(average_score(classroom), 70)
+
+test "best" = assert_eq(best(classroom), "Ada")
+
+test "ranking" = assert_eq(ranking(classroom), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+
+test "group sizes" = assert_eq(group_sizes(classroom), {A: 3, B: 2})
+"#,
+            r#"# 练习 21 · 记录的列表  ★★☆
+#
+# 真实的数据常常是一个记录的列表：一个班的学生、一份订单列表……`map`、
+# `filter`、`sort_by`、`max_by`、`group_by` 和 `sum` 对它们的用法和对任何
+# 列表一样。
+#
+# 题目
+#   一个学生是一个记录 `{name, score, group}`（分数从 0 到 100）。
+#   - `names_of_passed(students)`：分数至少为 50 的学生的名字，保持原来的
+#     顺序；
+#   - `average_score(students)`：分数的平均值；
+#   - `best(students)`：分数最高的学生的名字；
+#   - `ranking(students)`：名字，从最高分到最低分；
+#   - `group_sizes(students)`：一个记录，给出每个组有多少个学生
+#     （`{A: 2, B: 1}`）。
+#
+# 提示
+#   1. 先 `filter`，再 `map(fn(s) = s.name)`。
+#   2. `max_by(list, key)` 给出键最大的元素。
+#   3. `sort_by(list, fn(s) = -s.score)` 从最高分开始排序。
+#   4. `group_by(list, key)` 给出一个由列表组成的记录，
+#      `map_values(record, f)` 对它的每个值应用 f。
+#
+# 检查你的作业：  rythme exercise check 21-lists-of-records.ry
+#           或：  rythme test 21-lists-of-records.ry
+
+fn names_of_passed(students) = fail("待完成")
+
+fn average_score(students) = fail("待完成")
+
+fn best(students) = fail("待完成")
+
+fn ranking(students) = fail("待完成")
+
+fn group_sizes(students) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+classroom = [
+  {name: "Ada", score: 92, group: "A"},
+  {name: "Alan", score: 45, group: "B"},
+  {name: "Grace", score: 78, group: "A"},
+  {name: "Edsger", score: 50, group: "B"},
+  {name: "Barbara", score: 85, group: "A"},
+]
+
+test "及格" = assert_eq(names_of_passed(classroom), ["Ada", "Grace", "Edsger", "Barbara"])
+
+test "平均分" = assert_eq(average_score(classroom), 70)
+
+test "最好的" = assert_eq(best(classroom), "Ada")
+
+test "排名" = assert_eq(ranking(classroom), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+
+test "各组人数" = assert_eq(group_sizes(classroom), {A: 3, B: 2})
+"#,
+        ),
+        ("22-own-types", "22-own-types"),
+        (
+            r#"# Exercise 22 · Your own types  ★★☆
+#
+# `type` defines a new kind of value, with one constructor for each
+# possible form:
+#   type Pet = Dog(name) | Cat(name, lives) | Fish
+# A function can have one definition per constructor:
+#   fn sound(Dog(_)) = "woof"
+#
+# Statement
+#   The type `Shape` below has three forms.
+#   - `area(shape)`: the area of the shape;
+#   - `perimeter(shape)`: the length of its border;
+#   - `name_of(shape)`: "circle", "rectangle" or "square";
+#   - `total_area(shapes)`: the sum of the areas of a list of shapes.
+#
+# Hints
+#   1. `fn area(Circle(r)) = pi * r * r`, then one definition for each
+#      other constructor.
+#   2. The perimeter of a circle is 2 × π × r.
+#   3. If you forget a constructor, `rythme check` tells you which one
+#      (warning W002).
+#
+# Check your work:  rythme exercise check 22-own-types.ry
+#              or:  rythme test 22-own-types.ry
+
+type Shape = Circle(radius) | Rect(width, height) | Square(side)
+
+fn area(shape) = fail("to do")
+
+fn perimeter(shape) = fail("to do")
+
+fn name_of(shape) = fail("to do")
+
+fn total_area(shapes) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "area"
+  assert_eq(area(Rect(2, 3)), 6)
+  assert_eq(area(Square(4)), 16)
+  assert_eq(round(area(Circle(1)), 2), 3.14)
+end
+
+test "perimeter"
+  assert_eq(perimeter(Rect(2, 3)), 10)
+  assert_eq(perimeter(Square(4)), 16)
+  assert_eq(round(perimeter(Circle(1)), 2), 6.28)
+end
+
+test "name" = assert_eq([Circle(1), Rect(1, 2), Square(3)] |> map(name_of), ["circle", "rectangle", "square"])
+
+test "total area" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 11)
+"#,
+            r#"# 练习 22 · 你自己的类型  ★★☆
+#
+# `type` 定义一种新的值，每种可能的形式都有一个构造器：
+#   type Pet = Dog(name) | Cat(name, lives) | Fish
+# 函数可以为每个构造器写一个定义：
+#   fn sound(Dog(_)) = "汪"
+#
+# 题目
+#   下面的类型 `Shape` 有三种形式。
+#   - `area(shape)`：图形的面积；
+#   - `perimeter(shape)`：它的边界的长度；
+#   - `name_of(shape)`："圆形"、"长方形" 或 "正方形"；
+#   - `total_area(shapes)`：一个图形列表的面积之和。
+#
+# 提示
+#   1. `fn area(Circle(r)) = pi * r * r`，然后为其他每个构造器各写一个定义。
+#   2. 圆的周长是 2 × π × r。
+#   3. 如果你漏掉了一个构造器，`rythme check` 会告诉你是哪一个（警告 W002）。
+#
+# 检查你的作业：  rythme exercise check 22-own-types.ry
+#           或：  rythme test 22-own-types.ry
+
+type Shape = Circle(radius) | Rect(width, height) | Square(side)
+
+fn area(shape) = fail("待完成")
+
+fn perimeter(shape) = fail("待完成")
+
+fn name_of(shape) = fail("待完成")
+
+fn total_area(shapes) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "面积"
+  assert_eq(area(Rect(2, 3)), 6)
+  assert_eq(area(Square(4)), 16)
+  assert_eq(round(area(Circle(1)), 2), 3.14)
+end
+
+test "周长"
+  assert_eq(perimeter(Rect(2, 3)), 10)
+  assert_eq(perimeter(Square(4)), 16)
+  assert_eq(round(perimeter(Circle(1)), 2), 6.28)
+end
+
+test "名字" = assert_eq([Circle(1), Rect(1, 2), Square(3)] |> map(name_of), ["圆形", "长方形", "正方形"])
+
+test "总面积" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 11)
+"#,
+        ),
+        ("23-match", "23-match"),
+        (
+            r#"# Exercise 23 · Choosing with `match`  ★★☆
+#
+# `match` compares a value with patterns, in order, and gives the result of
+# the first one that fits:
+#   fn describe(n) = match n
+#     0 -> "zero"
+#     n if n < 0 -> "negative"
+#     _ -> "positive"
+#   end
+# Patterns can be numbers, texts, constructors, lists (`[]`, `[x]`,
+# `[x, ..rest]`) or records (`{name}`).
+#
+# Statement
+#   - `next_light(light)`: the light that comes after: Green, then Orange,
+#     then Red, then Green again;
+#   - `can_go(light)`: true only for Green;
+#   - `describe(list)`: "empty" for [], "one: 7" for [7], "two: 1 and 2"
+#     for [1, 2], and "many, starting with 5" for longer lists;
+#   - `greeting(person)`: for a record with a `title` field,
+#     "Hello, Dr Hopper"; otherwise, with only `name`, "Hello, Grace".
+#
+# Hints
+#   1. Each of the three lights is one case of the `match`.
+#   2. `[a, b]` matches lists of exactly two elements, `[first, ..]` lists
+#      of at least one element: put the most precise patterns first.
+#   3. `{title, last}` matches records that have at least these fields.
+#
+# Check your work:  rythme exercise check 23-match.ry
+#              or:  rythme test 23-match.ry
+
+type Light = Green | Orange | Red
+
+fn next_light(light) = fail("to do")
+
+fn can_go(light) = fail("to do")
+
+fn describe(list) = fail("to do")
+
+fn greeting(person) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "next light"
+  assert_eq(next_light(Green), Orange)
+  assert_eq(next_light(Orange), Red)
+  assert_eq(next_light(Red), Green)
+end
+
+test "can go"
+  assert_eq(can_go(Green), true)
+  assert_eq(can_go(Orange), false)
+  assert_eq(can_go(Red), false)
+end
+
+test "describe"
+  assert_eq(describe([]), "empty")
+  assert_eq(describe([7]), "one: 7")
+  assert_eq(describe([1, 2]), "two: 1 and 2")
+  assert_eq(describe([5, 6, 7]), "many, starting with 5")
+end
+
+test "greeting"
+  assert_eq(greeting({title: "Dr", last: "Hopper", name: "Grace"}), "Hello, Dr Hopper")
+  assert_eq(greeting({name: "Grace"}), "Hello, Grace")
+end
+"#,
+            r#"# 练习 23 · 用 `match` 做选择  ★★☆
+#
+# `match` 按顺序把一个值和各个模式比较，给出第一个匹配的模式的结果：
+#   fn describe(n) = match n
+#     0 -> "零"
+#     n if n < 0 -> "负数"
+#     _ -> "正数"
+#   end
+# 模式可以是数、文本、构造器、列表（`[]`、`[x]`、`[x, ..rest]`）或记录
+# （`{name}`）。
+#
+# 题目
+#   - `next_light(light)`：下一个灯：Green 之后是 Orange，然后是 Red，然后
+#     又是 Green；
+#   - `can_go(light)`：只有 Green 时为 true；
+#   - `describe(list)`：对 [] 给出 "空"，对 [7] 给出 "一个：7"，对 [1, 2]
+#     给出 "两个：1 和 2"，对更长的列表给出 "多个，从 5 开始"；
+#   - `greeting(person)`：对有 `title` 字段的记录给出 "你好，Hopper 博士"；
+#     否则，只有 `name` 时给出 "你好，Grace"。
+#
+# 提示
+#   1. 三种灯各是 `match` 的一种情况。
+#   2. `[a, b]` 匹配恰好有两个元素的列表，`[first, ..]` 匹配至少有一个元素的
+#      列表：把最精确的模式放在前面。
+#   3. `{title, last}` 匹配至少有这些字段的记录。
+#
+# 检查你的作业：  rythme exercise check 23-match.ry
+#           或：  rythme test 23-match.ry
+
+type Light = Green | Orange | Red
+
+fn next_light(light) = fail("待完成")
+
+fn can_go(light) = fail("待完成")
+
+fn describe(list) = fail("待完成")
+
+fn greeting(person) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "下一个灯"
+  assert_eq(next_light(Green), Orange)
+  assert_eq(next_light(Orange), Red)
+  assert_eq(next_light(Red), Green)
+end
+
+test "可以通行"
+  assert_eq(can_go(Green), true)
+  assert_eq(can_go(Orange), false)
+  assert_eq(can_go(Red), false)
+end
+
+test "描述"
+  assert_eq(describe([]), "空")
+  assert_eq(describe([7]), "一个：7")
+  assert_eq(describe([1, 2]), "两个：1 和 2")
+  assert_eq(describe([5, 6, 7]), "多个，从 5 开始")
+end
+
+test "问候"
+  assert_eq(greeting({title: "博士", last: "Hopper", name: "Grace"}), "你好，Hopper 博士")
+  assert_eq(greeting({name: "Grace"}), "你好，Grace")
+end
+"#,
+        ),
+        ("24-trees", "24-trees"),
+        (
+            r#"# Exercise 24 · Trees  ★★★
+#
+# A type can contain itself. A binary tree is either empty (`Leaf`), or a
+# node with a value and two smaller trees, on its left and on its right.
+# Functions on trees follow the shape of the type: one case for `Leaf`, one
+# for `Node`, which calls itself on both sides.
+#
+# Statement
+#   - `size(tree)`: how many values the tree holds;
+#   - `total(tree)`: the sum of its values;
+#   - `depth(tree)`: the number of levels (0 for a Leaf);
+#   - `insert(tree, x)`: a search tree is a tree where the values on the
+#     left of a node are smaller than its value, and the others on the
+#     right; give the search tree with x added (a new Node in place of a
+#     Leaf);
+#   - `to_list(tree)`: the values, from left to right.
+#
+# Hints
+#   1. `fn size(Leaf) = 0` and `fn size(Node(left, _, right)) = ...`.
+#   2. `max(a, b)` gives the larger of two numbers.
+#   3. `insert` gives a new tree: `Node(insert(left, x), value, right)`
+#      when x goes to the left.
+#   4. `to_list` of a node is: the list of the left, then the value, then
+#      the list of the right (`+` joins lists).
+#
+# Check your work:  rythme exercise check 24-trees.ry
+#              or:  rythme test 24-trees.ry
+
+type Tree = Leaf | Node(left, value, right)
+
+fn size(tree) = fail("to do")
+
+fn total(tree) = fail("to do")
+
+fn depth(tree) = fail("to do")
+
+fn insert(tree, x) = fail("to do")
+
+fn to_list(tree) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+#       5
+#      / \
+#     3   8
+#    /
+#   1
+small = Node(Node(Node(Leaf, 1, Leaf), 3, Leaf), 5, Node(Leaf, 8, Leaf))
+
+test "size"
+  assert_eq(size(Leaf), 0)
+  assert_eq(size(small), 4)
+end
+
+test "total" = assert_eq(total(small), 17)
+
+test "depth"
+  assert_eq(depth(Leaf), 0)
+  assert_eq(depth(small), 3)
+end
+
+test "insert"
+  assert_eq(insert(Leaf, 4), Node(Leaf, 4, Leaf))
+  assert_eq(insert(Node(Leaf, 4, Leaf), 2), Node(Node(Leaf, 2, Leaf), 4, Leaf))
+end
+
+test "to list" = assert_eq(to_list(small), [1, 3, 5, 8])
+
+test "sorting with a tree" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> to_list, [1, 2, 4, 7, 9])
+"#,
+            r#"# 练习 24 · 树  ★★★
+#
+# 一个类型可以包含它自己。二叉树要么是空的（`Leaf`），要么是一个节点，带有
+# 一个值和左右两棵更小的树。处理树的函数遵循类型的形状：`Leaf` 一种情况，
+# `Node` 一种情况，后者在两边调用自己。
+#
+# 题目
+#   - `size(tree)`：树中有多少个值；
+#   - `total(tree)`：它的值之和；
+#   - `depth(tree)`：层数（Leaf 为 0）；
+#   - `insert(tree, x)`：搜索树是这样一种树：节点左边的值都比它的值小，其余的
+#     在右边；给出加入 x 之后的搜索树（用一个新的 Node 代替一个 Leaf）；
+#   - `to_list(tree)`：从左到右的所有值。
+#
+# 提示
+#   1. `fn size(Leaf) = 0` 和 `fn size(Node(left, _, right)) = ...`。
+#   2. `max(a, b)` 给出两个数中较大的那个。
+#   3. `insert` 给出一棵新树：当 x 往左走时，是
+#      `Node(insert(left, x), value, right)`。
+#   4. 一个节点的 `to_list` 是：左边的列表，然后是值，然后是右边的列表
+#      （`+` 连接列表）。
+#
+# 检查你的作业：  rythme exercise check 24-trees.ry
+#           或：  rythme test 24-trees.ry
+
+type Tree = Leaf | Node(left, value, right)
+
+fn size(tree) = fail("待完成")
+
+fn total(tree) = fail("待完成")
+
+fn depth(tree) = fail("待完成")
+
+fn insert(tree, x) = fail("待完成")
+
+fn to_list(tree) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+#       5
+#      / \
+#     3   8
+#    /
+#   1
+small = Node(Node(Node(Leaf, 1, Leaf), 3, Leaf), 5, Node(Leaf, 8, Leaf))
+
+test "大小"
+  assert_eq(size(Leaf), 0)
+  assert_eq(size(small), 4)
+end
+
+test "总和" = assert_eq(total(small), 17)
+
+test "深度"
+  assert_eq(depth(Leaf), 0)
+  assert_eq(depth(small), 3)
+end
+
+test "插入"
+  assert_eq(insert(Leaf, 4), Node(Leaf, 4, Leaf))
+  assert_eq(insert(Node(Leaf, 4, Leaf), 2), Node(Node(Leaf, 2, Leaf), 4, Leaf))
+end
+
+test "变成列表" = assert_eq(to_list(small), [1, 3, 5, 8])
+
+test "用树排序" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> to_list, [1, 2, 4, 7, 9])
+"#,
+        ),
+        ("25-expressions", "25-expressions"),
+        (
+            r#"# Exercise 25 · A small calculator  ★★★
+#
+# A calculation like (1 + 2) × 3 is a tree: the multiplication has two
+# parts, the addition and 3. With a type, a program can hold calculations,
+# compute them and show them.
+#
+# Statement
+#   - `evaluate(expr)`: the value of the calculation;
+#   - `show(expr)`: the calculation as a text, with parentheses around every
+#     addition and multiplication: "((1 + 2) * 3)", and a negation written
+#     "-x" ("-4", "-(1 + 2)");
+#   - `count_numbers(expr)`: how many numbers the calculation contains;
+#   - `simplify(expr)`: the same calculation, where `Add(e, Num(0))`,
+#     `Mul(e, Num(1))` (and the same with the number on the left) are
+#     replaced by e, at every level.
+#
+# Hints
+#   1. One case per constructor: `fn evaluate(Num(n)) = n`,
+#      `fn evaluate(Add(a, b)) = evaluate(a) + evaluate(b)`...
+#   2. `show(Neg(e))` is "-" followed by `show(e)`.
+#   3. In `simplify`, first simplify both parts, then look at the result
+#      with a `match`.
+#
+# Check your work:  rythme exercise check 25-expressions.ry
+#              or:  rythme test 25-expressions.ry
+
+type Expr = Num(value) | Add(left, right) | Mul(left, right) | Neg(inner)
+
+fn evaluate(expr) = fail("to do")
+
+fn show(expr) = fail("to do")
+
+fn count_numbers(expr) = fail("to do")
+
+fn simplify(expr) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+calculation = Mul(Add(Num(1), Num(2)), Num(3))
+
+test "evaluate"
+  assert_eq(evaluate(Num(4)), 4)
+  assert_eq(evaluate(calculation), 9)
+  assert_eq(evaluate(Neg(calculation)), -9)
+end
+
+test "show"
+  assert_eq(show(calculation), "((1 + 2) * 3)")
+  assert_eq(show(Neg(Num(4))), "-4")
+  assert_eq(show(Neg(Add(Num(1), Num(2)))), "-(1 + 2)")
+end
+
+test "count numbers" = assert_eq(count_numbers(Add(calculation, Neg(Num(5)))), 4)
+
+test "simplify"
+  assert_eq(simplify(Add(Num(7), Num(0))), Num(7))
+  assert_eq(simplify(Mul(Num(1), Add(Num(0), Num(2)))), Num(2))
+  assert_eq(simplify(calculation), calculation)
+  assert_eq(simplify(Neg(Mul(Num(3), Num(1)))), Neg(Num(3)))
+end
+"#,
+            r#"# 练习 25 · 一个小计算器  ★★★
+#
+# 像 (1 + 2) × 3 这样的算式是一棵树：乘法有两个部分，加法和 3。有了类型，
+# 程序就可以保存算式、计算它们并显示它们。
+#
+# 题目
+#   - `evaluate(expr)`：算式的值；
+#   - `show(expr)`：算式的文本，每个加法和乘法外面都加上括号：
+#     "((1 + 2) * 3)"，取负写成 "-x"（"-4"、"-(1 + 2)"）；
+#   - `count_numbers(expr)`：算式中有多少个数；
+#   - `simplify(expr)`：同一个算式，其中 `Add(e, Num(0))`、`Mul(e, Num(1))`
+#     （以及数在左边的同样情况）在每一层都被替换成 e。
+#
+# 提示
+#   1. 每个构造器一种情况：`fn evaluate(Num(n)) = n`，
+#      `fn evaluate(Add(a, b)) = evaluate(a) + evaluate(b)`……
+#   2. `show(Neg(e))` 是 "-" 后面跟着 `show(e)`。
+#   3. 在 `simplify` 中，先化简两个部分，再用 `match` 查看结果。
+#
+# 检查你的作业：  rythme exercise check 25-expressions.ry
+#           或：  rythme test 25-expressions.ry
+
+type Expr = Num(value) | Add(left, right) | Mul(left, right) | Neg(inner)
+
+fn evaluate(expr) = fail("待完成")
+
+fn show(expr) = fail("待完成")
+
+fn count_numbers(expr) = fail("待完成")
+
+fn simplify(expr) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+calculation = Mul(Add(Num(1), Num(2)), Num(3))
+
+test "求值"
+  assert_eq(evaluate(Num(4)), 4)
+  assert_eq(evaluate(calculation), 9)
+  assert_eq(evaluate(Neg(calculation)), -9)
+end
+
+test "显示"
+  assert_eq(show(calculation), "((1 + 2) * 3)")
+  assert_eq(show(Neg(Num(4))), "-4")
+  assert_eq(show(Neg(Add(Num(1), Num(2)))), "-(1 + 2)")
+end
+
+test "数的个数" = assert_eq(count_numbers(Add(calculation, Neg(Num(5)))), 4)
+
+test "化简"
+  assert_eq(simplify(Add(Num(7), Num(0))), Num(7))
+  assert_eq(simplify(Mul(Num(1), Add(Num(0), Num(2)))), Num(2))
+  assert_eq(simplify(calculation), calculation)
+  assert_eq(simplify(Neg(Mul(Num(3), Num(1)))), Neg(Num(3)))
+end
+"#,
+        ),
+        ("26-option", "26-option"),
+        (
+            r#"# Exercise 26 · A value that may be missing: Option  ★★☆
+#
+# Rythme has no `null`. A function that may find nothing returns an Option:
+# `Some(value)` when there is a value, `None` otherwise. `match` handles
+# both cases, and `unwrap_or(option, default)` gives the value or a default.
+#   fn first_of([]) = None
+#   fn first_of([x, ..]) = Some(x)
+#
+# Statement
+#   - `safe_divide(a, b)`: `Some(a / b)`, or `None` when b is 0;
+#   - `find_age(people, name)`: the age of the person with this name, as an
+#     Option (people is a list of records `{name, age}`);
+#   - `age_or_unknown(people, name)`: a text, "36" for a known person and
+#     "unknown" otherwise;
+#   - `first_long_word(words)`: the first word with more than 5
+#     characters, as an Option;
+#   - `add_options(a, b)`: `Some(x + y)` when a is `Some(x)` and b is
+#     `Some(y)`, `None` otherwise.
+#
+# Hints
+#   1. `find(list, f)` gives the first element for which f is true, as an
+#      Option; `map(option, f)` applies f to the value inside, if any.
+#   2. `match find_age(people, name)` with the cases `Some(age)` and `None`.
+#   3. `match [a, b]` with a case `[Some(x), Some(y)]` and a case `_`.
+#
+# Check your work:  rythme exercise check 26-option.ry
+#              or:  rythme test 26-option.ry
+
+fn safe_divide(a, b) = fail("to do")
+
+fn find_age(people, name) = fail("to do")
+
+fn age_or_unknown(people, name) = fail("to do")
+
+fn first_long_word(words) = fail("to do")
+
+fn add_options(a, b) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+people = [{name: "Ada", age: 36}, {name: "Alan", age: 41}]
+
+test "safe divide"
+  assert_eq(safe_divide(10, 4), Some(2.5))
+  assert_eq(safe_divide(1, 0), None)
+end
+
+test "find age"
+  assert_eq(find_age(people, "Alan"), Some(41))
+  assert_eq(find_age(people, "Grace"), None)
+end
+
+test "age or unknown"
+  assert_eq(age_or_unknown(people, "Ada"), "36")
+  assert_eq(age_or_unknown(people, "Grace"), "unknown")
+end
+
+test "first long word"
+  assert_eq(first_long_word(["a", "functional", "language"]), Some("functional"))
+  assert_eq(first_long_word(["short", "words"]), None)
+end
+
+test "add options"
+  assert_eq(add_options(Some(2), Some(3)), Some(5))
+  assert_eq(add_options(Some(2), None), None)
+  assert_eq(add_options(None, None), None)
+end
+"#,
+            r#"# 练习 26 · 可能缺失的值：Option  ★★☆
+#
+# Rythme 没有 `null`。一个可能什么也找不到的函数返回一个 Option：有值时是
+# `Some(value)`，否则是 `None`。`match` 处理这两种情况，
+# `unwrap_or(option, default)` 给出值或者一个默认值。
+#   fn first_of([]) = None
+#   fn first_of([x, ..]) = Some(x)
+#
+# 题目
+#   - `safe_divide(a, b)`：`Some(a / b)`，当 b 为 0 时是 `None`；
+#   - `find_age(people, name)`：叫这个名字的人的年龄，作为 Option（people 是
+#     由记录 `{name, age}` 组成的列表）；
+#   - `age_or_unknown(people, name)`：一个文本，已知的人给出 "36"，否则给出
+#     "未知"；
+#   - `first_long_word(words)`：第一个超过 5 个字符的词，作为 Option；
+#   - `add_options(a, b)`：当 a 是 `Some(x)` 且 b 是 `Some(y)` 时给出
+#     `Some(x + y)`，否则给出 `None`。
+#
+# 提示
+#   1. `find(list, f)` 给出第一个让 f 为 true 的元素，作为 Option；
+#      `map(option, f)` 对里面的值（如果有）应用 f。
+#   2. `match find_age(people, name)`，情况是 `Some(age)` 和 `None`。
+#   3. `match [a, b]`，一种情况是 `[Some(x), Some(y)]`，另一种是 `_`。
+#
+# 检查你的作业：  rythme exercise check 26-option.ry
+#           或：  rythme test 26-option.ry
+
+fn safe_divide(a, b) = fail("待完成")
+
+fn find_age(people, name) = fail("待完成")
+
+fn age_or_unknown(people, name) = fail("待完成")
+
+fn first_long_word(words) = fail("待完成")
+
+fn add_options(a, b) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+people = [{name: "Ada", age: 36}, {name: "Alan", age: 41}]
+
+test "安全除法"
+  assert_eq(safe_divide(10, 4), Some(2.5))
+  assert_eq(safe_divide(1, 0), None)
+end
+
+test "查找年龄"
+  assert_eq(find_age(people, "Alan"), Some(41))
+  assert_eq(find_age(people, "Grace"), None)
+end
+
+test "年龄或未知"
+  assert_eq(age_or_unknown(people, "Ada"), "36")
+  assert_eq(age_or_unknown(people, "Grace"), "未知")
+end
+
+test "第一个长词"
+  assert_eq(first_long_word(["a", "functional", "language"]), Some("functional"))
+  assert_eq(first_long_word(["short", "words"]), None)
+end
+
+test "两个 Option 相加"
+  assert_eq(add_options(Some(2), Some(3)), Some(5))
+  assert_eq(add_options(Some(2), None), None)
+  assert_eq(add_options(None, None), None)
+end
+"#,
+        ),
+        ("27-result", "27-result"),
+        (
+            r#"# Exercise 27 · An operation that may fail: Result  ★★☆
+#
+# Rythme has no exceptions. A function that may fail returns a Result:
+# `Ok(value)` when it worked, `Err(message)` otherwise. The caller must
+# look at both cases: no error can be forgotten.
+#   parse_int("42")       # Ok(42)
+#   parse_int("forty")    # Err("\"forty\" is not a whole number")
+#
+# Statement
+#   - `checked_divide(a, b)`: `Ok(a / b)`, or `Err("division by zero")`;
+#   - `parse_age(text)`: the age written in the text, as a Result:
+#     `Err("not a number")` if the text is not a whole number,
+#     `Err("an age cannot be negative")` below 0,
+#     `Err("too old")` above 150, and `Ok(age)` otherwise;
+#   - `describe(result)`: "ok: 42" for `Ok(42)` and "error: too old" for
+#     `Err("too old")`;
+#   - `check_code(code)`: `Ok(code)` if it has at least 8
+#     characters and contains a digit; otherwise an Err with the first
+#     problem found: "too short" or "no digit".
+#
+# Hints
+#   1. `match parse_int(text)` with the cases `Err(_)`, `Ok(n) if n < 0`,
+#      `Ok(n) if n > 150` and `Ok(n)`.
+#   2. `any(chars(code), is_digit)` tells whether there is a digit.
+#
+# Check your work:  rythme exercise check 27-result.ry
+#              or:  rythme test 27-result.ry
+
+fn checked_divide(a, b) = fail("to do")
+
+fn parse_age(text) = fail("to do")
+
+fn describe(result) = fail("to do")
+
+fn check_code(code) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "checked divide"
+  assert_eq(checked_divide(9, 3), Ok(3))
+  assert_eq(checked_divide(1, 0), Err("division by zero"))
+end
+
+test "parse age"
+  assert_eq(parse_age("36"), Ok(36))
+  assert_eq(parse_age(" 7 "), Ok(7))
+  assert_eq(parse_age("seven"), Err("not a number"))
+  assert_eq(parse_age("-1"), Err("an age cannot be negative"))
+  assert_eq(parse_age("200"), Err("too old"))
+end
+
+test "describe"
+  assert_eq(describe(Ok(42)), "ok: 42")
+  assert_eq(describe(Err("too old")), "error: too old")
+  assert_eq(describe(parse_age("-5")), "error: an age cannot be negative")
+end
+
+test "check code"
+  assert_eq(check_code("rythme2024"), Ok("rythme2024"))
+  assert_eq(check_code("abc1"), Err("too short"))
+  assert_eq(check_code("functional"), Err("no digit"))
+end
+"#,
+            r#"# 练习 27 · 可能失败的操作：Result  ★★☆
+#
+# Rythme 没有异常。一个可能失败的函数返回一个 Result：成功时是
+# `Ok(value)`，否则是 `Err(message)`。调用者必须查看两种情况：任何错误都不会
+# 被遗忘。
+#   parse_int("42")       # Ok(42)
+#   parse_int("四十")     # Err("\"四十\" is not a whole number")
+#
+# 题目
+#   - `checked_divide(a, b)`：`Ok(a / b)`，或者 `Err("除以零")`；
+#   - `parse_age(text)`：文本中写的年龄，作为 Result：如果文本不是整数，给出
+#     `Err("不是数字")`；小于 0 给出 `Err("年龄不能是负数")`；大于 150 给出
+#     `Err("年龄太大")`；否则给出 `Ok(age)`；
+#   - `describe(result)`：对 `Ok(42)` 给出 "成功：42"，对 `Err("年龄太大")`
+#     给出 "错误：年龄太大"；
+#   - `check_code(code)`：如果它至少有 8 个字符并且包含一个数字，给出
+#     `Ok(code)`；否则给出一个 Err，带上发现的第一个问题："太短" 或
+#     "没有数字"。
+#
+# 提示
+#   1. `match parse_int(text)`，情况是 `Err(_)`、`Ok(n) if n < 0`、
+#      `Ok(n) if n > 150` 和 `Ok(n)`。
+#   2. `any(chars(code), is_digit)` 判断是否有数字。
+#
+# 检查你的作业：  rythme exercise check 27-result.ry
+#           或：  rythme test 27-result.ry
+
+fn checked_divide(a, b) = fail("待完成")
+
+fn parse_age(text) = fail("待完成")
+
+fn describe(result) = fail("待完成")
+
+fn check_code(code) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "检查过的除法"
+  assert_eq(checked_divide(9, 3), Ok(3))
+  assert_eq(checked_divide(1, 0), Err("除以零"))
+end
+
+test "读取年龄"
+  assert_eq(parse_age("36"), Ok(36))
+  assert_eq(parse_age(" 7 "), Ok(7))
+  assert_eq(parse_age("七"), Err("不是数字"))
+  assert_eq(parse_age("-1"), Err("年龄不能是负数"))
+  assert_eq(parse_age("200"), Err("年龄太大"))
+end
+
+test "描述"
+  assert_eq(describe(Ok(42)), "成功：42")
+  assert_eq(describe(Err("年龄太大")), "错误：年龄太大")
+  assert_eq(describe(parse_age("-5")), "错误：年龄不能是负数")
+end
+
+test "检查代码"
+  assert_eq(check_code("rythme2024"), Ok("rythme2024"))
+  assert_eq(check_code("abc1"), Err("太短"))
+  assert_eq(check_code("functional"), Err("没有数字"))
+end
+"#,
+        ),
+        ("28-question-mark", "28-question-mark"),
+        (
+            r#"# Exercise 28 · Passing errors on with `?`  ★★★
+#
+# Writing a `match` after each step that may fail is long. `?` after a
+# Result (or an Option) takes the value out of `Ok(...)` (or `Some(...)`),
+# or stops the function at once and returns the `Err(...)` (or `None`):
+#   fn double_text(t)
+#     n = parse_int(t)?          # stops here if t is not a number
+#     Ok(n * 2)
+#   end
+#
+# Statement
+#   - `add_texts(a, b)`: the sum of the two numbers written in a and b,
+#     as `Ok(sum)`, or the error of `parse_int`;
+#   - `parse_point(text)`: for "3,4", `Ok({x: 3, y: 4})`; the error
+#     `Err("expected x,y")` if the text does not have exactly two parts
+#     separated by a comma, or the error of `parse_int` for a part that is
+#     not a number;
+#   - `sum_of_texts(texts)`: the sum of the numbers written in a list of
+#     texts, or the first error;
+#   - `ratio_of_texts(a, b)`: a / b for two numbers written in texts, or the
+#     first error, with `Err("division by zero")` when b is 0.
+#
+# Hints
+#   1. `Ok(parse_int(a)? + parse_int(b)?)`
+#   2. `match split(text, ",")` with the cases `[x, y]` and `_`.
+#   3. For a list, use recursion: `sum_of_texts([])` is `Ok(0)`; for
+#      `[t, ..rest]`, take the number of t and the sum of rest, both with
+#      `?`.
+#   4. `?` can be used on any function that gives a Result, your own ones
+#      too.
+#
+# Check your work:  rythme exercise check 28-question-mark.ry
+#              or:  rythme test 28-question-mark.ry
+
+fn add_texts(a, b) = fail("to do")
+
+fn parse_point(text) = fail("to do")
+
+fn sum_of_texts(texts) = fail("to do")
+
+fn ratio_of_texts(a, b) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "add texts"
+  assert_eq(add_texts("2", "40"), Ok(42))
+  assert(is_err(add_texts("2", "forty")), "forty is not a number")
+end
+
+test "parse point"
+  assert_eq(parse_point("3,4"), Ok({x: 3, y: 4}))
+  assert_eq(parse_point("3"), Err("expected x,y"))
+  assert_eq(parse_point("1,2,3"), Err("expected x,y"))
+  assert(is_err(parse_point("3,four")), "four is not a number")
+end
+
+test "sum of texts"
+  assert_eq(sum_of_texts(["1", "2", "3"]), Ok(6))
+  assert_eq(sum_of_texts([]), Ok(0))
+  assert_eq(sum_of_texts(["1", "x", "y"]), parse_int("x"))
+end
+
+test "ratio of texts"
+  assert_eq(ratio_of_texts("9", "2"), Ok(4.5))
+  assert_eq(ratio_of_texts("9", "0"), Err("division by zero"))
+  assert(is_err(ratio_of_texts("nine", "0")), "nine is not a number")
+end
+"#,
+            r#"# 练习 28 · 用 `?` 传递错误  ★★★
+#
+# 在每个可能失败的步骤之后都写一个 `match` 太长了。写在 Result（或 Option）
+# 后面的 `?` 会取出 `Ok(...)`（或 `Some(...)`）里的值，或者立刻停止函数并
+# 返回这个 `Err(...)`（或 `None`）：
+#   fn double_text(t)
+#     n = parse_int(t)?          # 如果 t 不是数字，就在这里停止
+#     Ok(n * 2)
+#   end
+#
+# 题目
+#   - `add_texts(a, b)`：写在 a 和 b 中的两个数之和，作为 `Ok(sum)`，或者
+#     `parse_int` 的错误；
+#   - `parse_point(text)`：对 "3,4" 给出 `Ok({x: 3, y: 4})`；如果文本不是
+#     恰好由一个逗号分成两部分，给出错误 `Err("应为 x,y")`；如果某部分不是
+#     数字，给出 `parse_int` 的错误；
+#   - `sum_of_texts(texts)`：写在一个文本列表中的数之和，或者第一个错误；
+#   - `ratio_of_texts(a, b)`：写在文本中的两个数的 a / b，或者第一个错误，当
+#     b 为 0 时给出 `Err("除以零")`。
+#
+# 提示
+#   1. `Ok(parse_int(a)? + parse_int(b)?)`
+#   2. `match split(text, ",")`，情况是 `[x, y]` 和 `_`。
+#   3. 对列表使用递归：`sum_of_texts([])` 是 `Ok(0)`；对 `[t, ..rest]`，取 t
+#      的数和 rest 的和，两者都用 `?`。
+#   4. `?` 可以用于任何返回 Result 的函数，包括你自己写的函数。
+#
+# 检查你的作业：  rythme exercise check 28-question-mark.ry
+#           或：  rythme test 28-question-mark.ry
+
+fn add_texts(a, b) = fail("待完成")
+
+fn parse_point(text) = fail("待完成")
+
+fn sum_of_texts(texts) = fail("待完成")
+
+fn ratio_of_texts(a, b) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "文本相加"
+  assert_eq(add_texts("2", "40"), Ok(42))
+  assert(is_err(add_texts("2", "四十")), "四十不是数字")
+end
+
+test "读取点"
+  assert_eq(parse_point("3,4"), Ok({x: 3, y: 4}))
+  assert_eq(parse_point("3"), Err("应为 x,y"))
+  assert_eq(parse_point("1,2,3"), Err("应为 x,y"))
+  assert(is_err(parse_point("3,四")), "四不是数字")
+end
+
+test "文本之和"
+  assert_eq(sum_of_texts(["1", "2", "3"]), Ok(6))
+  assert_eq(sum_of_texts([]), Ok(0))
+  assert_eq(sum_of_texts(["1", "x", "y"]), parse_int("x"))
+end
+
+test "文本之比"
+  assert_eq(ratio_of_texts("9", "2"), Ok(4.5))
+  assert_eq(ratio_of_texts("9", "0"), Err("除以零"))
+  assert(is_err(ratio_of_texts("九", "0")), "九不是数字")
+end
+"#,
+        ),
+        ("29-word-counts", "29-word-counts"),
+        (
+            r#"# Exercise 29 · A small project: counting words  ★★★
+#
+# Everything together: texts, lists, records, pipelines and Options, for a
+# program that analyses a text.
+#
+# Statement
+#   - `words_of(text)`: the words of the text, in lowercase, without the
+#     punctuation `.`, `,`, `!` and `?`;
+#   - `frequencies(text)`: a list of `[word, count]` pairs, from the most
+#     frequent word to the least frequent, and in alphabetical order for
+#     words that appear the same number of times;
+#   - `most_frequent(text)`: the most frequent word, as an Option (`None`
+#     for a text without words);
+#   - `report(text, n)`: the n most frequent words, one per line, each as
+#     "word: count".
+#
+# Hints
+#   1. `replace` four times (or `fold` over the list [".", ",", "!", "?"]),
+#      then `lower` and `split`.
+#   2. `group_by(words, fn(w) = w)` gives a record `{word: [word, word]}`,
+#      and `entries(record)` the list of its `[name, value]` pairs.
+#   3. `sort_by` is stable: sort by word first, then by count (the largest
+#      first, with `fn([_, n]) = -n`).
+#   4. `first(list)` gives an Option, and `map(option, f)` changes the value
+#      inside.
+#   5. `join(lines, "\n")` puts each element on its own line.
+#
+# Check your work:  rythme exercise check 29-word-counts.ry
+#              or:  rythme test 29-word-counts.ry
+
+fn words_of(text) = fail("to do")
+
+fn frequencies(text) = fail("to do")
+
+fn most_frequent(text) = fail("to do")
+
+fn report(text, n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+poem = "The cat sat. The dog sat! Did the cat see the dog?"
+
+test "words" = assert_eq(words_of("Hello, World! Hello?"), ["hello", "world", "hello"])
+
+test "frequencies"
+  assert_eq(frequencies("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
+  assert_eq(frequencies(poem) |> take(3), [["the", 4], ["cat", 2], ["dog", 2]])
+end
+
+test "most frequent"
+  assert_eq(most_frequent(poem), Some("the"))
+  assert_eq(most_frequent(" ... "), None)
+end
+
+test "report" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")
+"#,
+            r#"# 练习 29 · 一个小项目：统计单词  ★★★
+#
+# 把学过的都用上：文本、列表、记录、管道和 Option，写一个分析文本的程序。
+# 这里的文本是英语，单词之间用空格分开。
+#
+# 题目
+#   - `words_of(text)`：文本中的单词，小写，去掉标点 `.`、`,`、`!` 和 `?`；
+#   - `frequencies(text)`：由 `[word, count]` 对组成的列表，从出现最多的单词
+#     到出现最少的单词，出现次数相同的单词按字母顺序排列；
+#   - `most_frequent(text)`：出现最多的单词，作为 Option（没有单词的文本给出
+#     `None`）；
+#   - `report(text, n)`：出现最多的 n 个单词，每行一个，每个写成
+#     "word: count"。
+#
+# 提示
+#   1. 用四次 `replace`（或者对列表 [".", ",", "!", "?"] 用 `fold`），然后
+#      `lower` 和 `split`。
+#   2. `group_by(words, fn(w) = w)` 给出一个记录 `{word: [word, word]}`，
+#      `entries(record)` 给出它的 `[name, value]` 对的列表。
+#   3. `sort_by` 是稳定的：先按单词排序，再按次数排序（大的在前，用
+#      `fn([_, n]) = -n`）。
+#   4. `first(list)` 给出一个 Option，`map(option, f)` 改变里面的值。
+#   5. `join(lines, "\n")` 把每个元素放在单独的一行。
+#
+# 检查你的作业：  rythme exercise check 29-word-counts.ry
+#           或：  rythme test 29-word-counts.ry
+
+fn words_of(text) = fail("待完成")
+
+fn frequencies(text) = fail("待完成")
+
+fn most_frequent(text) = fail("待完成")
+
+fn report(text, n) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+poem = "The cat sat. The dog sat! Did the cat see the dog?"
+
+test "单词" = assert_eq(words_of("Hello, World! Hello?"), ["hello", "world", "hello"])
+
+test "频率"
+  assert_eq(frequencies("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
+  assert_eq(frequencies(poem) |> take(3), [["the", 4], ["cat", 2], ["dog", 2]])
+end
+
+test "最常见的单词"
+  assert_eq(most_frequent(poem), Some("the"))
+  assert_eq(most_frequent(" ... "), None)
+end
+
+test "报告" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")
+"#,
+        ),
+        ("30-testing", "30-testing"),
+        (
+            r#"# Exercise 30 · Tests find bugs  ★★★
+#
+# A test checks one piece of code: `test "name" = assert_eq(actual,
+# expected)`. When it fails, `rythme test` shows the two values: the bug is
+# somewhere between them.
+#
+# Statement
+#   The functions below are already written, but each one has a bug.
+#   1. Run the tests and read what fails.
+#   2. Fix the functions (not the tests!) until every test passes.
+#   3. Then write a test of your own for `clamp`, at the end of the file:
+#      what should `clamp(5, 5, 5)` give?
+#
+#   - `clamp(x, low, high)`: x brought back between low and high;
+#   - `median(list)`: the middle value of the sorted list, or the average of
+#     the two middle values when the list has an even length;
+#   - `count_words(text)`: how many words the text has.
+#
+# Hints
+#   1. Read the `got:` and `expected:` lines of the first failure, and
+#      compute by hand what the function does with these arguments.
+#   2. `debug(value)` shows a value while the program runs, and gives it
+#      back unchanged: `debug(sorted)`.
+#   3. What does `split` without a separator do with several spaces?
+#
+# Check your work:  rythme exercise check 30-testing.ry
+#              or:  rythme test 30-testing.ry
+
+fn clamp(x, low, high) = max(high, min(x, low))
+
+fn median(list)
+  middle = len(list) // 2
+  if is_even(len(list)) then (list[middle - 1] + list[middle]) / 2 else list[middle]
+end
+
+fn count_words(text) = len(split(text, " "))
+
+# --- Tests (do not change them) ---
+
+test "clamp"
+  assert_eq(clamp(15, 0, 10), 10)
+  assert_eq(clamp(-5, 0, 10), 0)
+  assert_eq(clamp(5, 0, 10), 5)
+end
+
+test "median of an odd number of values"
+  assert_eq(median([1, 2, 3]), 2)
+  assert_eq(median([3, 1, 2]), 2)
+end
+
+test "median of an even number of values" = assert_eq(median([4, 1, 3, 2]), 2.5)
+
+test "count words"
+  assert_eq(count_words("one two three"), 3)
+  assert_eq(count_words("  one   two "), 2)
+end
+
+# Your test:
+"#,
+            r#"# 练习 30 · 测试能发现错误  ★★★
+#
+# 一个测试检查一段代码：`test "名字" = assert_eq(实际值, 期望值)`。当它失败
+# 时，`rythme test` 会显示这两个值：错误就在它们之间的某个地方。
+#
+# 题目
+#   下面的函数已经写好了，但每个都有一个错误。
+#   1. 运行测试，读一读哪里失败了。
+#   2. 修正这些函数（不是测试！），直到每个测试都通过。
+#   3. 然后在文件末尾为 `clamp` 写一个你自己的测试：`clamp(5, 5, 5)` 应该
+#      给出什么？
+#
+#   - `clamp(x, low, high)`：把 x 限制在 low 和 high 之间；
+#   - `median(list)`：排好序的列表中间的值，当列表长度是偶数时，取中间两个值
+#     的平均值；
+#   - `count_words(text)`：文本有多少个单词。
+#
+# 提示
+#   1. 读一读第一个失败中的 `实际：` 和 `期望：` 两行，然后用手算一算函数对
+#      这些参数做了什么。
+#   2. `debug(value)` 在程序运行时显示一个值，并原样返回它：`debug(sorted)`。
+#   3. 不带分隔符的 `split` 对多个空格会怎么做？
+#
+# 检查你的作业：  rythme exercise check 30-testing.ry
+#           或：  rythme test 30-testing.ry
+
+fn clamp(x, low, high) = max(high, min(x, low))
+
+fn median(list)
+  middle = len(list) // 2
+  if is_even(len(list)) then (list[middle - 1] + list[middle]) / 2 else list[middle]
+end
+
+fn count_words(text) = len(split(text, " "))
+
+# --- 测试（请不要修改）---
+
+test "限制范围"
+  assert_eq(clamp(15, 0, 10), 10)
+  assert_eq(clamp(-5, 0, 10), 0)
+  assert_eq(clamp(5, 0, 10), 5)
+end
+
+test "奇数个值的中位数"
+  assert_eq(median([1, 2, 3]), 2)
+  assert_eq(median([3, 1, 2]), 2)
+end
+
+test "偶数个值的中位数" = assert_eq(median([4, 1, 3, 2]), 2.5)
+
+test "统计单词"
+  assert_eq(count_words("one two three"), 3)
+  assert_eq(count_words("  one   two "), 2)
+end
+
+# 你的测试：
+"#,
+        ),
     ],
 }

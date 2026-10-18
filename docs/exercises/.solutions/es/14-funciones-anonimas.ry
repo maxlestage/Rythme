@@ -1,0 +1,31 @@
+# Ejercicio 14 · Funciones anónimas  ★★☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn con_impuesto(precios, porcentaje) = map(precios, fn(p) = p + p * porcentaje / 100)
+
+fn palabras_largas(palabras, n) = filter(palabras, fn(p) = len(p) > n)
+
+fn longitudes(palabras) = map(palabras, len)
+
+fn todos_positivos(lista) = all(lista, fn(x) = x > 0)
+
+fn cuantos_por_encima(lista, limite) = count(lista, fn(x) = x > limite)
+
+# --- Pruebas (no las cambies) ---
+
+test "con impuesto"
+  assert_eq(con_impuesto([100, 50], 20), [120, 60])
+  assert_eq(con_impuesto([10], 0), [10])
+end
+
+test "palabras largas" = assert_eq(palabras_largas(["el", "árbol", "es", "verde"], 3), ["árbol", "verde"])
+
+test "longitudes" = assert_eq(longitudes(["a", "casa", "es"]), [1, 4, 2])
+
+test "todos positivos"
+  assert_eq(todos_positivos([1, 5, 3]), true)
+  assert_eq(todos_positivos([1, -5, 3]), false)
+  assert_eq(todos_positivos([]), true)
+end
+
+test "cuántos por encima" = assert_eq(cuantos_por_encima([3, 10, 7, 12], 5), 3)

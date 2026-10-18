@@ -3364,8 +3364,7 @@ code and page of `rythme learn` exists in English, French, Spanish
 (`--lang es`), German (`--lang de`), Brazilian Portuguese (`--lang pt`) and
 simplified Chinese (`--lang zh`); the keywords, the names of the built-in functions and the
 commands stay the same in every language. The files written by `rythme new`
-follow the language too; the exercises exist in English and French, and are
-in English for the other languages. The texts of other languages are kept in
+and the exercises of `rythme exercise` follow the language too. The texts of other languages are kept in
 catalogs (`src/i18n/`); CONTRIBUTING.md explains how to add one. In
 Chinese, the code in the help stays as written in English (only its comments
 are translated), and the `^` under a mistake stay aligned: Chinese characters
@@ -3375,7 +3374,9 @@ take two columns of the terminal, in the code as in the messages.
 graded exercises built into the program (the files of
 [`docs/exercises/`](exercises/README.md)). `start NAME` writes the exercise
 named by its number (`7`) or its file name (`07-recursion`, `recursion`) into
-the current folder, in the language of the messages (English or French); it never replaces an
+the current folder, in the language of the messages (each language names
+the files in its own words, like `07-rekursion` in German: any of these
+names finds the exercise); it never replaces an
 existing file (exit code 1). `check FILE` runs the tests of the file like
 `rythme test`, then explains what to do next; `FILE` may also be the number
 of an exercise started in the current folder. Its exit code is 0 when every

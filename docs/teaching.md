@@ -68,8 +68,9 @@ expected and obtained values.
 
 Thirty such exercises are ready: [**the exercises**](exercises/README.md),
 graded from ★☆☆ to ★★★ and following the course above, each with a
-statement, hints and tests, in English and French, with reference solutions
-for teachers. They are built into `rythme`:
+statement, hints and tests, in every language of the messages (English,
+French, Spanish, German, Portuguese, Chinese), with reference solutions for
+teachers. They are built into `rythme`:
 
 ```sh
 rythme exercise list                     # the exercises

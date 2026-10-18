@@ -315,8 +315,8 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 sur Rythme, et explique pourquoi il convient aussi bien à un premier cours de
 programmation qu'à un cours de programmation fonctionnelle.
 [`docs/exercises/`](docs/exercises/README.fr.md) contient 30 exercices
-gradués, en français et en anglais, avec énoncé, indices, tests et solutions,
-que `rythme exercise` distribue et vérifie.
+gradués, avec énoncé, indices, tests et solutions, que `rythme exercise`
+distribue et vérifie dans chaque langue des messages.
 
 ## État et feuille de route
 

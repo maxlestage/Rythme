@@ -1,0 +1,43 @@
+# Ejercicio 15 · Las funciones son valores  ★★☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn aplicar_dos_veces(f, x) = f(f(x))
+
+fn componer(f, g) = fn(x) = f(g(x))
+
+fn sumador(n) = fn(x) = x + n
+
+fn mi_map([], _) = []
+fn mi_map([x, ..resto], f) = [f(x), ..mi_map(resto, f)]
+
+fn mi_filter([], _) = []
+fn mi_filter([x, ..resto], f) = if f(x) then [x, ..mi_filter(resto, f)] else mi_filter(resto, f)
+
+# --- Pruebas (no las cambies) ---
+
+test "aplicar dos veces"
+  assert_eq(aplicar_dos_veces(fn(x) = x * 3, 2), 18)
+  assert_eq(aplicar_dos_veces(upper, "hola"), "HOLA")
+end
+
+test "componer"
+  mas_uno_y_doble = componer(fn(x) = x * 2, fn(x) = x + 1)
+  assert_eq(mas_uno_y_doble(4), 10)
+  assert_eq(componer(len, trim)("  abc  "), 3)
+end
+
+test "sumador"
+  sumar10 = sumador(10)
+  assert_eq(sumar10(5), 15)
+  assert_eq(map([1, 2, 3], sumador(100)), [101, 102, 103])
+end
+
+test "mi map"
+  assert_eq(mi_map([1, 2, 3], fn(x) = x * x), [1, 4, 9])
+  assert_eq(mi_map([], fn(x) = x), [])
+end
+
+test "mi filter"
+  assert_eq(mi_filter([1, 2, 3, 4, 5, 6], is_even), [2, 4, 6])
+  assert_eq(mi_filter(["a", "bb", "ccc"], fn(p) = len(p) > 1), ["bb", "ccc"])
+end

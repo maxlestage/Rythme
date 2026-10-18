@@ -1,0 +1,40 @@
+# Ejercicio 05 · Verdadero o falso  ★☆☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn es_multiplo(n, d) = n % d == 0
+
+fn esta_entre(x, bajo, alto) = x >= bajo and x <= alto
+
+fn es_bisiesto(anio) = es_multiplo(anio, 4) and (not es_multiplo(anio, 100) or es_multiplo(anio, 400))
+
+fn o_exclusivo(a, b) = a != b
+
+# --- Pruebas (no las cambies) ---
+
+test "múltiplos"
+  assert(es_multiplo(12, 3), "12 es múltiplo de 3")
+  assert(not es_multiplo(12, 5), "12 no es múltiplo de 5")
+  assert(es_multiplo(0, 7), "0 es múltiplo de todos los números")
+end
+
+test "entre"
+  assert(esta_entre(5, 1, 10), "5 está entre 1 y 10")
+  assert(esta_entre(1, 1, 10), "los límites están incluidos")
+  assert(esta_entre(10, 1, 10), "los límites están incluidos")
+  assert(not esta_entre(11, 1, 10), "11 es demasiado grande")
+  assert(not esta_entre(0, 1, 10), "0 es demasiado pequeño")
+end
+
+test "años bisiestos"
+  assert_eq(es_bisiesto(2024), true)
+  assert_eq(es_bisiesto(2023), false)
+  assert_eq(es_bisiesto(1900), false)
+  assert_eq(es_bisiesto(2000), true)
+end
+
+test "o exclusivo"
+  assert_eq(o_exclusivo(true, false), true)
+  assert_eq(o_exclusivo(false, true), true)
+  assert_eq(o_exclusivo(true, true), false)
+  assert_eq(o_exclusivo(false, false), false)
+end

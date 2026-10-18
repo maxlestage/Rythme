@@ -1,0 +1,49 @@
+# Exercício 26 · Um valor que pode faltar: Option  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn divisao_segura(_, 0) = None
+fn divisao_segura(a, b) = Some(a / b)
+
+fn achar_idade(pessoas, nome) = pessoas |> find(fn(p) = p.nome == nome) |> map(fn(p) = p.idade)
+
+fn idade_ou_desconhecida(pessoas, nome) = match achar_idade(pessoas, nome)
+  Some(idade) -> text(idade)
+  None -> "desconhecida"
+end
+
+fn primeira_palavra_longa(palavras) = find(palavras, fn(p) = len(p) > 5)
+
+fn somar_opcoes(a, b) = match [a, b]
+  [Some(x), Some(y)] -> Some(x + y)
+  _ -> None
+end
+
+# --- Testes (não os altere) ---
+
+pessoas = [{nome: "Ada", idade: 36}, {nome: "Alan", idade: 41}]
+
+test "divisão segura"
+  assert_eq(divisao_segura(10, 4), Some(2.5))
+  assert_eq(divisao_segura(1, 0), None)
+end
+
+test "achar a idade"
+  assert_eq(achar_idade(pessoas, "Alan"), Some(41))
+  assert_eq(achar_idade(pessoas, "Grace"), None)
+end
+
+test "idade ou desconhecida"
+  assert_eq(idade_ou_desconhecida(pessoas, "Ada"), "36")
+  assert_eq(idade_ou_desconhecida(pessoas, "Grace"), "desconhecida")
+end
+
+test "primeira palavra longa"
+  assert_eq(primeira_palavra_longa(["uma", "linguagem", "funcional"]), Some("linguagem"))
+  assert_eq(primeira_palavra_longa(["sem", "nada"]), None)
+end
+
+test "somar opções"
+  assert_eq(somar_opcoes(Some(2), Some(3)), Some(5))
+  assert_eq(somar_opcoes(Some(2), None), None)
+  assert_eq(somar_opcoes(None, None), None)
+end

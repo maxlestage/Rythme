@@ -1,0 +1,45 @@
+# Exercício 11 · Desmontar listas  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn total([]) = 0
+fn total([x, ..resto]) = x + total(resto)
+
+fn o_maior([]) = fail("a lista está vazia")
+fn o_maior([x]) = x
+fn o_maior([x, ..resto])
+  outros = o_maior(resto)
+  if x > outros then x else outros
+end
+
+fn tem_valor([], _) = false
+fn tem_valor([primeiro, ..resto], x) = primeiro == x or tem_valor(resto, x)
+
+fn o_ultimo([]) = fail("a lista está vazia")
+fn o_ultimo([x]) = x
+fn o_ultimo([_, ..resto]) = o_ultimo(resto)
+
+# --- Testes (não os altere) ---
+
+test "total"
+  assert_eq(total([]), 0)
+  assert_eq(total([4]), 4)
+  assert_eq(total([1, 2, 3, 4]), 10)
+end
+
+test "o maior"
+  assert_eq(o_maior([7]), 7)
+  assert_eq(o_maior([3, 9, 2]), 9)
+  assert_eq(o_maior([-3, -1, -2]), -1)
+end
+
+test "tem o valor"
+  assert_eq(tem_valor([1, 2, 3], 2), true)
+  assert_eq(tem_valor([1, 2, 3], 5), false)
+  assert_eq(tem_valor([], 1), false)
+  assert_eq(tem_valor(["a", "b"], "b"), true)
+end
+
+test "o último"
+  assert_eq(o_ultimo([1, 2, 3]), 3)
+  assert_eq(o_ultimo(["único"]), "único")
+end

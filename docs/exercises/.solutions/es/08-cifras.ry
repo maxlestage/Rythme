@@ -1,0 +1,32 @@
+# Ejercicio 08 · Las cifras de un número  ★★☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn cantidad_de_cifras(n) = if n < 10 then 1 else 1 + cantidad_de_cifras(n // 10)
+
+fn suma_de_cifras(n) = if n < 10 then n else n % 10 + suma_de_cifras(n // 10)
+
+fn invertir_desde(0, construido) = construido
+fn invertir_desde(n, construido) = invertir_desde(n // 10, construido * 10 + n % 10)
+
+fn invertir_numero(n) = invertir_desde(n, 0)
+
+# --- Pruebas (no las cambies) ---
+
+test "cantidad de cifras"
+  assert_eq(cantidad_de_cifras(0), 1)
+  assert_eq(cantidad_de_cifras(7), 1)
+  assert_eq(cantidad_de_cifras(472), 3)
+  assert_eq(cantidad_de_cifras(1000000), 7)
+end
+
+test "suma de cifras"
+  assert_eq(suma_de_cifras(0), 0)
+  assert_eq(suma_de_cifras(472), 13)
+  assert_eq(suma_de_cifras(99999), 45)
+end
+
+test "invertir un número"
+  assert_eq(invertir_numero(472), 274)
+  assert_eq(invertir_numero(1230), 321)
+  assert_eq(invertir_numero(5), 5)
+end

@@ -3506,8 +3506,7 @@ et page de `rythme learn` existe en anglais, en français, en espagnol
 (`--lang es`), en allemand (`--lang de`), en portugais du Brésil
 (`--lang pt`) et en chinois simplifié (`--lang zh`) ; les mots-clés, les noms des fonctions intégrées et les
 commandes restent les mêmes dans toutes les langues. Les fichiers écrits par
-`rythme new` suivent aussi la langue ; les exercices existent en anglais et
-en français, et sont en anglais pour les autres langues. Les textes des
+`rythme new` et les exercices de `rythme exercise` suivent aussi la langue. Les textes des
 autres langues sont rangés dans des catalogues (`src/i18n/`) ; CONTRIBUTING.md
 explique comment en ajouter une. En chinois, le code de l'aide reste écrit
 comme en anglais (seuls ses commentaires sont traduits), et les `^` sous une
@@ -3518,8 +3517,9 @@ terminal, dans le code comme dans les messages.
 exercices gradués intégrés au programme (les fichiers de
 [`docs/exercises/`](exercises/README.fr.md)). `start NOM` écrit l'exercice
 désigné par son numéro (`7`) ou son nom de fichier (`07-recursivite`,
-`recursivite`) dans le dossier actuel, dans la langue des messages (anglais
-ou français) ; il ne
+`recursivite`) dans le dossier actuel, dans la langue des messages (chaque
+langue nomme les fichiers avec ses mots, comme `07-rekursion` en allemand :
+chacun de ces noms trouve l'exercice) ; il ne
 remplace jamais un fichier existant (code de sortie 1). `check FICHIER` lance
 les tests du fichier comme `rythme test`, puis explique quoi faire ensuite ;
 `FICHIER` peut aussi être le numéro d'un exercice commencé dans le dossier
