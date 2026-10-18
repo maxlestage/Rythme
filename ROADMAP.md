@@ -92,11 +92,16 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   `rythme new`, the VS Code setting and its texts, README.de.md, README.pt.md
   and README.zh.md. The `^` under a mistake are placed by display width, so
   Chinese lines stay aligned.
-- [ ] **The website and the playground in every language.** The playground's
-  interpreter already speaks every language (by its position in
-  `LANGUAGES`), but the pages of the site, and so the playground, exist in
-  English and French only: pages (or a choice of the language of the
-  messages) for Spanish, German, Portuguese and Chinese.
+- [x] **The website and the playground in every language.** The site has
+  `/es/`, `/de/`, `/pt/` and `/zh/` beside `/fr/` and `/en/`: every text
+  (`site/src/i18n/<code>.rs`, a missing one does not compile), the pieces of
+  code of the home page, the tour and the playground written in each language
+  and run by the tests through the interpreter in that language, a compact
+  language menu, `Accept-Language`, manifests, screenshots, service worker,
+  sitemap and `hreflang`, offline pages and the static export. The playground
+  speaks the language of its page; the guide for teachers is shown in English,
+  with a note, where it has no translation; Chinese falls back on the system's
+  fonts.
 - [x] **Step-by-step evaluation for teaching.** `rythme steps file.ry
   ["expression"]` (`rythme etapes`), `:steps` in the REPL and the Steps
   button of the playground show how an expression is reduced step by step

@@ -315,13 +315,21 @@ pub fn code_inline(source: &str) -> Element {
 }
 
 /// The class of a line of an error message, as the playground colors it.
+/// The words that start the interpreter's messages, in every language of
+/// `rythme::lang::LANGUAGES` (the tests check that none is missing; `playground.js` has
+/// the same lists).
+pub const ERROR_WORDS: [&str; 5] = ["error", "erreur", "Fehler", "erro", "错误"];
+pub const WARNING_WORDS: [&str; 6] = ["warning", "avertissement", "advertencia", "Warnung", "aviso", "警告"];
+pub const HELP_WORDS: [&str; 6] = ["help", "aide", "ayuda", "Hilfe", "ajuda", "帮助"];
+
 fn line_class(line: &str) -> Option<&'static str> {
     let trimmed = line.trim_start();
-    if line.starts_with("error") || line.starts_with("erreur") {
+    let help = trimmed.strip_prefix('=').map(str::trim_start);
+    if ERROR_WORDS.iter().any(|w| line.starts_with(w)) {
         Some("err")
-    } else if line.starts_with("warning") || line.starts_with("avertissement") {
+    } else if WARNING_WORDS.iter().any(|w| line.starts_with(w)) {
         Some("warn")
-    } else if trimmed.starts_with("= help") || trimmed.starts_with("= aide") {
+    } else if help.is_some_and(|h| HELP_WORDS.iter().any(|w| h.starts_with(w))) {
         Some("help")
     } else if trimmed.starts_with('=') || trimmed.starts_with("-->") {
         Some("note")

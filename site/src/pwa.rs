@@ -141,9 +141,9 @@ pub fn manifest(lang: Lang) -> String {
         ("name", s("Rythme")),
         ("short_name", s("Rythme")),
         ("description", s(t.app_description)),
-        ("lang", s(lang.code())),
+        ("lang", s(lang.tag())),
         ("dir", s("ltr")),
-        // One app in both languages: it opens in the language of the manifest it was
+        // One app in every language: it opens in the language of the manifest it was
         // installed from (or last updated from).
         ("id", s(link("/"))),
         ("start_url", s(page(Page::Home))),
@@ -182,7 +182,7 @@ pub fn manifest(lang: Lang) -> String {
     out
 }
 
-/// Every URL the service worker saves when it installs: every page in both languages
+/// Every URL the service worker saves when it installs: every page in every language
 /// with the offline pages, the styles, scripts and interpreter at their current version,
 /// the examples, the manifests and the icons. Only files that exist (`rythme.wasm` is
 /// built by `./build.sh`).

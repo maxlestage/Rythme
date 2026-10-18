@@ -1,4 +1,4 @@
-//! The URLs of the site: `/{lang}/` and its four pages, behind an optional base path
+//! The URLs of the site: `/{lang}/` (every language of `i18n.rs`) and its four pages, behind an optional base path
 //! (`/Rythme` when the site is exported for GitHub Pages).
 
 use std::sync::OnceLock;
@@ -126,7 +126,8 @@ mod tests {
     #[test]
     fn unknown_paths() {
         assert_eq!(Route::parse("/"), None);
-        assert_eq!(Route::parse("/de/"), None);
+        assert_eq!(Route::parse("/it/"), None);
+        assert_eq!(Route::parse("/zh/learn/"), Some(Route::new(Lang::Zh, Page::Learn)));
         assert_eq!(Route::parse("/fr/nothing/").map(|r| r.page), Some(Page::NotFound));
         assert_eq!(Route::parse("/en/learn/more/").map(|r| r.page), Some(Page::NotFound));
     }

@@ -7,7 +7,8 @@
 
 这份 README 是一个概要。Rythme 的消息、帮助和错误解释都有简体中文版
 （`--lang zh`）；完整的文档有英文版和法文版：[参考手册](docs/reference.md)
-和[教师指南](docs/teaching.md)。
+和[教师指南](docs/teaching.md)。网站和在线试玩也有中文版：
+<https://maxlestage.github.io/Rythme/zh/>。
 
 ```rythme
 # 值永远不会改变。一切都是函数。没有循环。

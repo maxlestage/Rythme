@@ -1,5 +1,5 @@
 // The service worker of the Rythme website, written by the server (src/pwa.rs) with the
-// current version and the list of the files of the site: every page in both languages,
+// current version and the list of the files of the site: every page in every language,
 // the playground and its interpreter work offline after the first visit.
 //
 // - versioned files (`?v=`): the saved copy, without asking the network;
@@ -78,8 +78,9 @@ async function file(event, url) {
   return cached;
 }
 
-// `fr` or `en`: from the address, else the one chosen with the switch (the cookie of
-// site.js, where the browser lets a worker read it), else the browser's.
+// The language (`fr`, `en`, `es`...): from the address, else the one chosen with the
+// switch (the cookie of site.js, where the browser lets a worker read it), else the
+// browser's.
 async function lang(url) {
   const first = url.pathname.slice(BASE.length).split("/")[1];
   if (first in OFFLINE) return first;
