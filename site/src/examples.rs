@@ -181,6 +181,17 @@ pub const EXAMPLES: &[Example] = &[
         ]
     ),
     example!(
+        "grades",
+        [
+            "les notes d'un tableur : csv_records avec « ; », csv_format, un tirage répétable avec random_seed",
+            "grades from a spreadsheet: csv_records with `;`, csv_format, a repeatable draw with random_seed",
+            "notas de una hoja de cálculo: csv_records con «;», csv_format, un sorteo repetible con random_seed",
+            "Noten aus einer Tabellenkalkulation: csv_records mit „;“, csv_format, eine wiederholbare Ziehung mit random_seed",
+            "notas de uma planilha: csv_records com “;”, csv_format, um sorteio repetível com random_seed",
+            "电子表格里的成绩：用“;”的 csv_records、csv_format、用 random_seed 可重复的抽签",
+        ]
+    ),
+    example!(
         "tree",
         [
             "un type récursif : arbre binaire de recherche",

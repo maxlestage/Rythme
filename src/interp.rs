@@ -333,6 +333,17 @@ impl Interp {
         x.wrapping_mul(0x2545F4914F6CDD1D)
     }
 
+    /// The draws of `random` and `shuffle` that follow depend only on `seed`
+    /// (`random_seed(n)`, `rythme run --seed N`): the same seed, the same draws.
+    pub fn seed_random(&mut self, seed: i64) {
+        // SplitMix64 spreads close seeds apart; xorshift needs a state that is not 0.
+        let mut z = (seed as u64).wrapping_add(0x9E37_79B9_7F4A_7C15);
+        z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+        z ^= z >> 31;
+        self.rng = if z == 0 { 0x2545_F491_4F6C_DD1D } else { z };
+    }
+
     // ----- definitions -------------------------------------------------
 
     pub fn register_type(&mut self, t: &TypeDef) {

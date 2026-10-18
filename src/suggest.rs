@@ -173,6 +173,10 @@ pub fn alias_hint(name: &str) -> Option<String> {
         "groupdict" | "named_groups" => "named_captures",
         "re_split" | "regex_split" | "split_regex" => "split_by",
         "re_sub" | "regex_replace" | "replace_regex" | "subn" => "replace_all",
+        "parse_csv" | "read_csv" | "csv_read" | "csv_reader" | "parseCSV" | "parseCsv" | "csv_decode" => "csv_parse",
+        "DictReader" | "dict_reader" | "csv_dicts" | "csv_rows" | "read_csv_records" => "csv_records",
+        "to_csv" | "write_csv" | "csv_write" | "csv_writer" | "toCSV" | "generate_csv" | "csv_encode" => "csv_format",
+        "srand" | "set_seed" | "setSeed" | "randomSeed" | "seed_random" | "mt_srand" => "random_seed",
         _ => "",
     };
     if !rythme.is_empty() {

@@ -2921,7 +2921,7 @@ minuscules.
 
 ## 6. Bibliothèque standard
 
-Les 174 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
+Les 178 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
 mots-clés, leurs noms sont en anglais. `rythme help builtins` les liste
 toutes par catégorie, une ligne chacune ; `rythme help NOM` (ou `help(NOM)`
 dans un programme, ou `:doc NOM` dans le mode interactif) affiche la
@@ -2973,7 +2973,8 @@ après le nom du fichier sur la ligne de commande), `options()` (les mots de
 `args()` lus comme des options, dans un Result : voir plus bas), `env(nom)` (une variable
 d'environnement, sous forme d'Option), `exit(code)`, `time()` (les secondes
 depuis 1970, un Float), `random()` (un Float dans [0, 1[), `random(a, b)`
-(un Int de a à b, inclus), `random(liste)` (un élément).
+(un Int de a à b, inclus), `random(liste)` (un élément), `random_seed(n)`
+(les mêmes tirages à chaque lancement : voir *Hasard et graines* plus bas).
 
 **Nombres.** `abs`, `min` et `max` (plusieurs valeurs, ou une liste), `sqrt`,
 `pow(x, n)` (comme `**`), `floor`, `ceil` et `round(x)` (donnent un Int),
@@ -3185,6 +3186,107 @@ n'est pas une date (un champ inconnu ou absent, un nombre hors limites, un
 30 février) arrête ces fonctions avec E023, qui dit ce qui ne va pas. Un
 décalage est un nombre fixe : il n'y a pas de règles d'heure d'été, donc un
 jour après un moment, c'est la même heure le lendemain.
+
+**CSV.** Les tableaux des tableurs, tels que la RFC 4180 les décrit.
+`csv_parse(texte, separateur)` donne `Ok(lignes)`, chaque ligne une liste de
+textes ; `csv_records(texte, separateur)` lit la première ligne comme les
+noms des colonnes et donne `Ok(enregistrements)`, un enregistrement pour
+chaque autre ligne, avec un champ pour chaque colonne, dans leur ordre ;
+`csv_format(lignes, separateur)` écrit des lignes (des listes de champs, ou
+des enregistrements : une première ligne nomme alors leurs champs) en un
+texte, chaque ligne terminée par `\n`. Le séparateur est `","` sauf s'il est
+donné : `";"` pour les tableurs en français, `"\t"` pour les tabulations ;
+un séparateur qui n'est pas un seul caractère, ou qui est un guillemet ou un
+retour à la ligne, est E023. La lecture suit la RFC : un champ entre
+guillemets peut contenir des séparateurs, des retours à la ligne et des
+guillemets écrits deux fois (`"dit ""bonjour"""`) ; les lignes finissent par
+`\n` ou `\r\n` (gardés tels quels entre guillemets) ; la dernière ligne peut
+ne pas avoir de retour à la ligne ; les lignes vides sont sautées (une ligne
+avec seulement `""` est une ligne d'un champ vide) ; les espaces sont
+gardés ; la marque que certains programmes écrivent au début d'un fichier
+(BOM) est sautée. `csv_parse` garde les lignes de longueurs différentes.
+Chaque champ est un texte : `parse_int` et `parse_float` donnent des
+nombres. Un texte qui n'est pas du CSV valide donne `Err(message)`, avec la
+ligne et la colonne de l'erreur : un guillemet jamais fermé, un guillemet au
+milieu d'un champ qui ne commence pas par un guillemet, autre chose qu'un
+séparateur ou la fin de la ligne après un guillemet fermant ; `csv_records`
+donne aussi `Err` pour deux colonnes du même nom et pour une ligne qui n'a
+pas autant de champs que l'en-tête. L'écriture ne met un champ entre
+guillemets que s'il en a besoin (le séparateur, un guillemet ou un retour à
+la ligne à l'intérieur, ou une ligne d'un seul champ vide) ; un champ est un
+texte, un nombre ou un Bool (écrits comme `print` les écrit ; une autre
+valeur est E005) ; les enregistrements doivent tous avoir les champs du
+premier (E023). Ainsi `csv_parse(csv_format(lignes))` redonne
+`Ok(lignes)` pour des lignes de textes, et
+`csv_records(csv_format(enregistrements))` redonne les enregistrements.
+
+*Des enregistrements plutôt que des dictionnaires :* les enregistrements de
+`csv_records` gardent l'ordre des colonnes (un dictionnaire range ses clés
+dans l'ordre), s'affichent comme une ligne du tableau, se lisent avec
+`l.nom` et marchent avec `keys`, `values`, `get` et `csv_format`, comme les
+objets de `parse_json`. Une colonne dont le nom n'est pas un nom Rythme se
+lit avec `get(l, "prénom usuel")` (une Option) ; `dict(enreg)` fait un
+dictionnaire d'un enregistrement quand il en faut un.
+
+```rythme
+notes = "nom;note;remarque\nAda;18,5;\"très bien; continue\"\nAlan;17;\"dit \"\"bonjour\"\"\"\n"
+lignes = unwrap(csv_records(notes, ";"))
+print(lignes[0])
+print(lignes |> map(fn(l) = unwrap(parse_float(replace(l.note, ",", ".")))))
+print(csv_parse("a,\"b\nc\",d\r\ne,f,g"))
+tableau = [["article", "prix"], ["pain", 1.5], ["confiture, maison", 4]]
+print(write_file("prix.csv", csv_format(tableau)))
+print(read_file("prix.csv") |> and_then(csv_parse))
+print(read_file("prix.csv"))
+print(trim_end(csv_format([{x: 1, y: "a;b"}, {x: 2, y: "c"}], ";")))
+print(csv_parse("a,b\nc,d\"e"))
+print(csv_records("a,b\n1"))
+```
+
+```text
+{nom: "Ada", note: "18,5", remarque: "très bien; continue"}
+[18.5, 17.0]
+Ok([["a", "b\nc", "d"], ["e", "f", "g"]])
+Ok(())
+Ok([["article", "prix"], ["pain", "1.5"], ["confiture, maison", "4"]])
+Ok("article,prix\npain,1.5\n\"confiture, maison\",4\n")
+x;y
+1;"a;b"
+2;c
+Err("ligne 2, colonne 4 : un guillemet au milieu d'un champ : mettez tout le champ entre guillemets, et écrivez deux fois chaque guillemet qu'il contient (\"écran 5\"\"\")")
+Err("ligne 2 : 1 champ(s), mais l'en-tête a 2 colonne(s)")
+```
+
+Dans le bac à sable, `csv_parse`, `csv_records` et `csv_format` marchent
+comme partout ; seuls les fichiers manquent (`read_file` donne un `Err`).
+
+**Hasard et graines.** `random` et `shuffle` tirent d'autres valeurs à
+chaque lancement. `random_seed(n)` (un nombre entier) fait dépendre les
+tirages qui suivent de `n` seulement : après `random_seed(n)`, les mêmes
+appels donnent les mêmes valeurs, dans le même ordre, à chaque lancement et
+sur chaque système, avec la même version de Rythme (une autre version peut
+tirer d'autres valeurs : la promesse vaut pour une version).
+`rythme run --seed N fichier.ry` fait de même pour tout le lancement, comme
+si le programme commençait par `random_seed(N)` ; il se donne avant le
+fichier, puisque ce qui suit le fichier est pour le programme. Sans l'un ni
+l'autre, rien ne change : chaque lancement part de l'horloge. Dans un test,
+appelez `random_seed` au début, pour que ses tirages ne dépendent pas des
+tests d'avant. Les générateurs des tests de propriétés (`check_all`,
+`sample`) ont leur propre graine, `rythme test --seed N` (voir
+[4.8](#48-tests)), que `random_seed` ne change pas.
+
+```rythme
+random_seed(2024)
+des = map(1..10, fn(_) = random(1, 6))
+print(des)
+random_seed(2024)
+print(map(1..10, fn(_) = random(1, 6)) == des, shuffle(["Ada", "Alan", "Grace"]), random(["pile", "face"]))
+```
+
+```text
+[6, 4, 6, 1, 2, 1, 1, 4, 6, 1]
+true ["Ada", "Grace", "Alan"] face
+```
 
 **Tests de propriétés.** `check_all(propriete, generateur, cas)`,
 `sample(generateur, n)`, et les générateurs `ints(min, max)`,
@@ -3481,7 +3583,7 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMANDE] [ARGUMENTS...]
 | Commande | Autres noms | Ce qu'elle fait |
 |----------|-------------|-----------------|
 | *(aucune)* | `repl` | le mode interactif (voir [7.2](#72-le-mode-interactif-repl)) |
-| `FICHIER [ARGS...]` | `run FICHIER [ARGS...]`, `lancer` | vérifie puis exécute le programme ; `ARGS` est donné à `args()`. Sans fichier, dans un projet : son programme (voir [7.7](#77-projets-et-paquets)), et de même pour `test`, `check`, `fmt` et `doc` |
+| `FICHIER [ARGS...]` | `run [--seed N] FICHIER [ARGS...]`, `lancer` | vérifie puis exécute le programme ; `ARGS` est donné à `args()` ; avec `--seed N` (un nombre entier, avant le fichier), `random` et `shuffle` tirent les mêmes valeurs à chaque lancement, comme après `random_seed(N)`. Sans fichier, dans un projet : son programme (voir [7.7](#77-projets-et-paquets)), et de même pour `test`, `check`, `fmt` et `doc` |
 | `check FICHIER...` | `verifier`, `vérifier` | vérifie chaque programme sans l'exécuter (voir [5.5](#55-la-vérification-avant-lexécution)) |
 | `test CHEMIN... [--filter TEXTE] [--seed N] [--watch] [-- ARGS...]` | `tester` | lance les tests de fichiers et de dossiers (voir [4.8](#48-tests)) |
 | `fmt [--check] FICHIER...` | `format`, `formater` | donne au code sa mise en forme officielle ; aussi un dossier, ou `-` pour l'entrée standard (voir [7.4](#74-la-mise-en-forme--rythme-fmt)) |
@@ -3541,7 +3643,7 @@ inconnu donne le code de sortie 2.
 
 **Sujets d'aide.** `rythme help SUJET` accepte `start`, `syntax`,
 `functions`, `lists`, `text`, `records`, `types`, `match`, `errors`,
-`functional`, `tests`, `exercises`, `modules`, `system`, `projects`, `dates`,
+`functional`, `tests`, `exercises`, `modules`, `system`, `projects`, `dates`, `csv`, `random`,
 `repl`, `fmt`, `doc`, `steps`, `editors`, `ruby` et `builtins`, ainsi que des
 noms français ou alternatifs : `syntaxe`, `fonctions`, `listes`, `texte`,
 `enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`, `exercices`,
