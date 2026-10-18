@@ -151,7 +151,7 @@ jobs:
       - name: Install Playwright and its Chromium
         run: |
           npm install --prefix "$RUNNER_TEMP/playwright" --no-save "$PLAYWRIGHT"
-          npx --prefix "$RUNNER_TEMP/playwright" "$PLAYWRIGHT" install --with-deps chromium
+          "$RUNNER_TEMP/playwright/node_modules/.bin/playwright" install --with-deps chromium
           echo "NODE_PATH=$RUNNER_TEMP/playwright/node_modules" >> "$GITHUB_ENV"
       - name: No horizontal scroll, the themes and their contrast (tests/pwa/layout.js)
         working-directory: site
