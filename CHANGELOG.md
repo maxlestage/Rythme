@@ -36,6 +36,10 @@ dit ce qu'une version 1.x peut changer ou non.*
   it, with the closest option, like the other commands (it was read as the
   expression `--bogus`); the mistakes in the expression given after the file
   are shown in `<expression>:1:...`, not as one more line of the file.
+- **`rythme.toml` with a section written twice** (two `[dependencies]`, or
+  `[dependencies]` and `[[dependencies]]`, or a key and a section of the same
+  name) is an error E025 at the second one, with the first, as TOML wants
+  (keys written twice already were); it was read without a word.
 
 ### Website
 
