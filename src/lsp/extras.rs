@@ -41,7 +41,7 @@ fn inner(t: &Ty, depth: usize) -> String {
 fn label(t: &Ty, depth: usize) -> Option<String> {
     Some(match t {
         Ty::Never | Ty::Any => return None,
-        Ty::Unit | Ty::Bool | Ty::Int | Ty::Float | Ty::Num | Ty::Text => t.name(),
+        Ty::Unit | Ty::Bool | Ty::Int | Ty::Float | Ty::Num | Ty::Text | Ty::Symbol => t.name(),
         Ty::List(e) => match label(e, depth.saturating_sub(1)).filter(|_| depth > 0) {
             Some(e) => format!("List({e})"),
             None => "List".into(),
@@ -96,6 +96,8 @@ struct Tree {
     literal: HashSet<Span>,
     /// `name = fn(x) ...`: the end of the head `fn(x)`, by the place of the name.
     lambda_heads: HashMap<Span, u32>,
+    /// The symbols written in the code (`:ok`), in expressions and patterns.
+    symbols: Vec<Span>,
 }
 
 impl Tree {
@@ -180,6 +182,7 @@ impl Tree {
     fn pattern(&mut self, p: &Pattern) {
         self.node(p.span);
         match &p.kind {
+            PatKind::Symbol(_) => self.symbols.push(p.span),
             PatKind::Ctor(_, ps) | PatKind::List(ps, _) | PatKind::Or(ps) => ps.iter().for_each(|x| self.pattern(x)),
             PatKind::Record(fs) => fs.iter().for_each(|(_, x)| self.pattern(x)),
             _ => {}
@@ -197,6 +200,7 @@ impl Tree {
             | ExprKind::Text(_)
             | ExprKind::Var(_)
             | ExprKind::Ctor(_) => {}
+            ExprKind::Symbol(_) => self.symbols.push(e.span),
             ExprKind::Template(parts) => {
                 self.fold(e.span);
                 for p in parts {
@@ -277,7 +281,13 @@ impl Tree {
 /// A value written as it is: `12`, `-1.5`, `"hello"`, `true`, `()`.
 fn is_literal(e: &Expr) -> bool {
     match &e.kind {
-        ExprKind::Unit | ExprKind::Bool(_) | ExprKind::Int(_) | ExprKind::Big(_) | ExprKind::Float(_) | ExprKind::Text(_) => true,
+        ExprKind::Unit
+        | ExprKind::Bool(_)
+        | ExprKind::Int(_)
+        | ExprKind::Big(_)
+        | ExprKind::Float(_)
+        | ExprKind::Text(_)
+        | ExprKind::Symbol(_) => true,
         ExprKind::Unary(UnOp::Neg, x) => matches!(x.kind, ExprKind::Int(_) | ExprKind::Big(_) | ExprKind::Float(_)),
         _ => false,
     }
@@ -386,16 +396,12 @@ fn def_token(d: &Def) -> Option<u32> {
 
 /// `textDocument/semanticTokens/full`: each name with what it is, encoded as
 /// the protocol says (five numbers per name, relative to the one before).
+/// Symbols (`:ok`) are values named like constructors (`enumMember`).
 /// Keywords, numbers, texts and comments keep the colors of the grammar.
 pub fn semantic_tokens(cx: &Ctx, a: &Analysis) -> Vec<u32> {
     let ix: &Index = a.index();
-    let mut out = Vec::new();
-    let mut prev = Pos { line: 0, character: 0 };
-    let mut last_end = 0u32;
+    let mut found: Vec<(Span, u32, u32)> = Vec::new();
     for occ in &ix.occs {
-        if occ.span.start < last_end || occ.span.end <= occ.span.start || occ.span.file != a.module.file {
-            continue;
-        }
         let (kind, mut mods) = match &occ.target {
             Target::Def(id) => match a.def(*id).and_then(def_token) {
                 Some(k) => (k, 0),
@@ -409,7 +415,18 @@ pub fn semantic_tokens(cx: &Ctx, a: &Analysis) -> Vec<u32> {
         if occ.def {
             mods |= 1;
         }
-        let (s, e) = (occ.span.start as usize, occ.span.end as usize);
+        found.push((occ.span, kind, mods));
+    }
+    found.extend(Tree::of(&a.module.items).symbols.into_iter().map(|s| (s, 4, 0)));
+    found.sort_by_key(|(s, ..)| (s.start, s.end));
+    let mut out = Vec::new();
+    let mut prev = Pos { line: 0, character: 0 };
+    let mut last_end = 0u32;
+    for (span, kind, mods) in found {
+        if span.start < last_end || span.end <= span.start || span.file != a.module.file {
+            continue;
+        }
+        let (s, e) = (span.start as usize, span.end as usize);
         let Some(text) = a.text.get(s..e) else { continue };
         if text.contains(['\n', '\r']) {
             continue;
@@ -419,7 +436,7 @@ pub fn semantic_tokens(cx: &Ctx, a: &Analysis) -> Vec<u32> {
         let delta_char = if delta_line == 0 { p.character - prev.character } else { p.character };
         out.extend([delta_line, delta_char, cx.enc.len(text) as u32, kind, mods]);
         prev = p;
-        last_end = occ.span.end;
+        last_end = span.end;
     }
     out
 }

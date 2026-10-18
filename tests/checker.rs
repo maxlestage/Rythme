@@ -113,7 +113,7 @@ fn fields_that_records_and_constructors_do_not_have() {
         "E010",
         "no variant of `Shape` has a field `depth`",
     );
-    finds("print(\"abc\".upper)", "E010", "add parentheses: `.upper()`");
+    finds("print(\"abc\".uper)", "E010", "did you mean `.upper`?");
 }
 
 #[test]
@@ -364,6 +364,13 @@ fn calls_that_always_fail_from_what_functions_do_with_their_parameters() {
     finds("fn shout(t) = t.upper()\nprint(shout(5))", "E005", "`upper` expects a text as argument 1, but got Int 5");
     finds("fn double(x) = x * 2\nfn quad(x) = double(double(x))\nprint(quad(\"a\"))", "E005", "cannot use `*` with Text and Int");
     finds("fn name_of(p) = p.name\nprint(name_of(3))", "E010", "Int 3 has no fields");
+    // Ruby style: `t.upcase` calls `upcase(t)` (the Ruby name of `upper`) when `t` has no such field.
+    quiet("fn shout(t) = t.upcase + \"!\"\nprint(shout(\"hi\"), shout({upcase: \"HO\"}))");
+    finds("fn shout(t) = t.upcase\nprint(shout(3))", "E005", "`upper` expects a text as argument 1, but got Int 3");
+    finds("fn total(xs) = xs.sum { |x| x * 2 }\nprint(total(\"abc\"))", "E005", "`sum` expects a list as argument 1");
+    // Symbols in patterns: the parameter must be one.
+    finds("fn name(:ok) = \"fine\"\nfn name(:error) = \"bad\"\nprint(name(1))", "E006", "name(1)");
+    quiet("fn name(:ok) = \"fine\"\nfn name(_) = \"bad\"\nprint(name(:ok), name(1), [10 ** 20].sum { |x| x * 2 })");
     finds("fn twice(f, x) = f(f(x))\nprint(twice(3, 4))", "E009", "`f` is not a function");
     finds("fn count([]) = 0\nfn count([_, ..rest]) = 1 + count(rest)\nfn size(xs) = count(xs)\nprint(size(\"ab\"))", "E006", "count");
     finds("fn sign(n) if n < 0 = -1\nfn sign(_) = 1\nprint(sign(\"a\"))", "E005", "cannot use `<` with Text and Int");

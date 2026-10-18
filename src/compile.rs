@@ -36,7 +36,9 @@ pub enum Kind {
     Lambda(Rc<FnDef>, Rc<FnCode>),
     Call(Box<Node>, Vec<Node>),
     Method(Box<Method>),
-    Field(Box<Node>, Rc<str>, Span),
+    /// `value.name`: the field `name` of a record or a variant, or else the
+    /// function `name` called with the value (the last node).
+    Field(Box<Node>, Rc<str>, Span, Box<Node>),
     Index(Box<Node>, Box<Node>),
     Unary(UnOp, Box<Node>),
     /// Every operator except `and` and `or`.
@@ -117,6 +119,7 @@ pub enum Pat {
     Big(Rc<crate::bigint::BigInt>),
     Float(f64),
     Text(Rc<str>),
+    Symbol(Sym),
     Ctor(Sym, Vec<Pat>),
     /// Elements, then the rest: `None` = no rest, `Some(None)` = `..`, `Some(Some(slot))` = `..name`.
     List(Vec<Pat>, Option<Option<u32>>),
@@ -401,6 +404,7 @@ impl Compiler {
             PatKind::Big(n) => Pat::Big(n.clone()),
             PatKind::Float(f) => Pat::Float(*f),
             PatKind::Text(t) => Pat::Text(t.clone()),
+            PatKind::Symbol(s) => Pat::Symbol(*s),
             PatKind::Ctor(name, ps) => Pat::Ctor(name.own_name(), ps.iter().map(|p| self.pattern(p)).collect()),
             PatKind::List(ps, rest) => {
                 let items = ps.iter().map(|p| self.pattern(p)).collect();
@@ -434,6 +438,7 @@ impl Compiler {
             ExprKind::Big(n) => Kind::Const(Value::Big(n.clone())),
             ExprKind::Float(f) => Kind::Const(Value::Float(*f)),
             ExprKind::Text(s) => Kind::Const(Value::Text(s.clone())),
+            ExprKind::Symbol(s) => Kind::Const(Value::Symbol(*s)),
             ExprKind::Template(parts) => Kind::Template(
                 parts
                     .iter()
@@ -489,7 +494,11 @@ impl Compiler {
                 let args = self.exprs(args);
                 Kind::Method(Box::new(Method { recv, name: *name, key: name.name(), func, args, name_span: *name_span }))
             }
-            ExprKind::Field(obj, name, span) => Kind::Field(self.boxed(obj), key(name), *span),
+            ExprKind::Field(obj, name, span) => {
+                let obj = self.boxed(obj);
+                let func = Node { kind: self.name(Sym::new(name)), span: *span };
+                Kind::Field(obj, key(name), *span, Box::new(func))
+            }
             ExprKind::Index(obj, idx) => Kind::Index(self.boxed(obj), self.boxed(idx)),
             ExprKind::Unary(op, x) => Kind::Unary(*op, self.boxed(x)),
             ExprKind::Binary(op @ (BinOp::And | BinOp::Or), l, r, _) => Kind::Logic(*op, self.boxed(l), self.boxed(r)),

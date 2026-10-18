@@ -592,9 +592,12 @@ fn shown(v: &Value) -> String {
 }
 
 pub(crate) fn check_all(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let f = func(a, 0, "check_all", span)?;
-    let g = generator(a, 1, "check_all", span)?;
-    let cases = if a.len() > 2 { int(a, 2, "check_all", span)? } else { CASES };
+    // `check_all(ints()) do |x| ... end`: a block is the last argument, so
+    // the property may also come after the generator (and the number of cases).
+    let (fi, gi, ci) = if !a[0].is_callable() && a.last().is_some_and(Value::is_callable) { (a.len() - 1, 0, 1) } else { (0, 1, 2) };
+    let f = func(a, fi, "check_all", span)?;
+    let g = generator(a, gi, "check_all", span)?;
+    let cases = if a.len() > 2 { int(a, ci, "check_all", span)? } else { CASES };
     if !(1..=MAX_CASES).contains(&cases) {
         return Err(invalid(
             t!("`check_all` tries from 1 to {MAX_CASES} values, not {cases}", "`check_all` essaie de 1 à {MAX_CASES} valeurs, pas {cases}"),

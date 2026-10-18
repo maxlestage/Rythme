@@ -7,6 +7,8 @@
   (lambda)
   (test_definition)
   (do_expression)
+  (do_block)
+  (brace_block)
   (match_expression)
   (type_definition)
   (definition)

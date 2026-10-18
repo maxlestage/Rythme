@@ -17,7 +17,7 @@ use crate::parser::immutable_help;
 use crate::source::Span;
 use crate::suggest;
 use crate::symbol::Sym;
-use crate::types::{self, Outcome, Ty, BOOL, DATA, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, TEXT, UNIT};
+use crate::types::{self, Outcome, Ty, BOOL, DATA, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, SYMBOL, TEXT, UNIT};
 use crate::value::{Record, Value};
 
 mod needs;
@@ -617,6 +617,8 @@ impl<'a> Checker<'a> {
             }
             if let Some(g) = self.know.globals.get(&s) {
                 match g.kind {
+                    // A Ruby name (`size`) may be given to something else.
+                    GKind::Builtin if crate::builtins::alias_of(&s.name()).is_some() => {}
                     GKind::Builtin => self.diags.push(
                         // `pi` is a value, not a function.
                         Diagnostic::warning("W003", match g.arity {
@@ -709,7 +711,7 @@ impl<'a> Checker<'a> {
         self.needs.reporting = true;
         for (i, item) in items.iter().enumerate() {
             if let Item::Stmt(Stmt::Expr(e)) = item {
-                if Some(i) != last_expr && !has_effect(e) {
+                if Some(i) != last_expr && !has_effect(e, &|name| self.may_call(name)) {
                     self.diags.push(unused_value(e));
                 }
             }
@@ -924,6 +926,14 @@ impl<'a> Checker<'a> {
     }
 
     /// A local name: marks it as used, and gives what it is.
+    /// May `value.name` call something named `name`: a local name, or a
+    /// global one (a function, or a value that may be one)?
+    fn may_call(&self, name: &str) -> bool {
+        let s = Sym::new(name);
+        self.scopes.iter().flatten().any(|l| l.sym == s && !l.ty.never(FUNC))
+            || self.own.get(&s).or_else(|| self.know.globals.get(&s)).is_some_and(|g| g.kind != GKind::Ctor && g.kind != GKind::CtorValue)
+    }
+
     fn find_local(&mut self, s: Sym) -> Option<(Res, Ty)> {
         let l = self.scopes.iter_mut().rev().flat_map(|scope| scope.iter_mut().rev()).find(|l| l.sym == s)?;
         l.used = true;
@@ -1381,7 +1391,7 @@ impl<'a> Checker<'a> {
                     stops |= t == Ty::Never;
                     // Only the last line of a block gives its value.
                     if i + 1 < n {
-                        if !has_effect(e) {
+                        if !has_effect(e, &|name| self.may_call(name)) {
                             self.diags.push(unused_value(e));
                         }
                         self.lost_result(e);
@@ -1442,6 +1452,7 @@ impl<'a> Checker<'a> {
             ExprKind::Int(_) | ExprKind::Big(_) => Ty::Int,
             ExprKind::Float(_) => Ty::Float,
             ExprKind::Text(_) => Ty::Text,
+            ExprKind::Symbol(_) => Ty::Symbol,
             ExprKind::Template(parts) => {
                 let mut stops = false;
                 for p in parts {
@@ -1483,6 +1494,17 @@ impl<'a> Checker<'a> {
                 // Only a field the record surely has can be read without error.
                 if !matches!(&t, Ty::Record(r) if r.get(name).is_some()) {
                     self.may_fail = true;
+                }
+                // `xs.sum`: without such a field, the function `sum`.
+                let has = self.has_field(&t, name);
+                if has != Some(true) && t != Ty::Never {
+                    let sym = Sym::new(name);
+                    if let Some((res, fty)) = self.lookup_method(sym).filter(|(_, fty)| !fty.never(FUNC)) {
+                        if has == Some(false) {
+                            return self.call_target(Some(sym), &res, fty, Some((obj, t)), &[], e.span);
+                        }
+                        return Ty::Any;
+                    }
                 }
                 self.field(obj, &t, name, *name_span)
             }
@@ -2247,20 +2269,50 @@ impl<'a> Checker<'a> {
                 let mut d = Diagnostic::error("E010", t!("{} has no fields", "{} n'a pas de champs", what(Some(obj), other)))
                     .at(span)
                     .label(t!("no field `{name}` here", "pas de champ `{name}` ici"));
-                let callable = self
+                // Neither a field nor a function: maybe a function with a close name.
+                let funcs: Vec<Rc<str>> = self
                     .own
-                    .get(&Sym::new(name))
-                    .or_else(|| self.know.globals.get(&Sym::new(name)))
-                    .is_some_and(|g| matches!(g.kind, GKind::Builtin | GKind::Func | GKind::Ctor));
-                if callable {
+                    .iter()
+                    .chain(self.know.globals.iter())
+                    .filter(|(s, g)| matches!(g.kind, GKind::Builtin | GKind::Func) && !s.is_stored())
+                    .map(|(s, _)| s.name())
+                    .collect();
+                if let Some(best) = suggest::closest(name, funcs.iter().map(|s| &**s)) {
                     d = d.help(t!(
-                        "to call `{name}` on this value, add parentheses: `.{name}()`",
-                        "pour appeler `{name}` sur cette valeur, ajoutez des parenthèses : `.{name}()`"
+                        "did you mean `.{best}`? (`value.{best}` calls `{best}(value)`)",
+                        "vouliez-vous dire `.{best}` ? (`valeur.{best}` appelle `{best}(valeur)`)"
                     ));
                 }
                 self.diags.push(d);
                 Ty::Never
             }
+        }
+    }
+
+    /// Does a value of type `t` have the field `name`? `None` when it may
+    /// or may not.
+    fn has_field(&self, t: &Ty, name: &str) -> Option<bool> {
+        match t {
+            Ty::Any | Ty::Never => None,
+            Ty::Record(r) => match r.get(name) {
+                Some(_) => Some(true),
+                None if r.exact => Some(false),
+                None => None,
+            },
+            Ty::Data(d) => {
+                let ctors: Vec<Sym> = match &d.ctors {
+                    Some(cs) => cs.iter().map(|(c, _)| *c).collect(),
+                    None if self.types_defined_again.contains(&d.name) => return None,
+                    None => self.types.get(&d.name)?.clone(),
+                };
+                let mut found = false;
+                for c in &ctors {
+                    found |= self.ctors.get(c)?.fields.iter().any(|f| &*f.name() == name);
+                }
+                // Some constructors have it: reading it is what is meant.
+                (!ctors.is_empty()).then_some(found)
+            }
+            _ => Some(false),
         }
     }
 
@@ -2937,6 +2989,7 @@ impl<'a> Checker<'a> {
             // `1` matches `1.0`, and `1.0` matches `1`.
             (PatKind::Int(_) | PatKind::Big(_) | PatKind::Float(_), _) => !t.never(NUMBER),
             (PatKind::Text(_), _) => !t.never(TEXT),
+            (PatKind::Symbol(_), _) => !t.never(SYMBOL),
             (PatKind::Ctor(name, args), _) => {
                 // An unknown constructor, or a wrong number of fields, is already an error.
                 if self.ctors.get(name).is_none_or(|m| m.arity != args.len()) {
@@ -3157,6 +3210,7 @@ fn literal(e: &Expr) -> Option<Value> {
         ExprKind::Float(f) => Value::Float(*f),
         ExprKind::Text(s) => Value::Text(s.clone()),
         ExprKind::Bool(b) => Value::Bool(*b),
+        ExprKind::Symbol(s) => Value::Symbol(*s),
         ExprKind::Unit => Value::Unit,
         ExprKind::List(items) => Value::list(
             items
@@ -3201,7 +3255,7 @@ fn short(e: Option<&Expr>, t: &Ty) -> String {
 fn comparable(lt: &Ty, rt: &Ty) -> bool {
     let (lk, rk) = (lt.kinds(), rt.kinds());
     let both = |k| lk & k != 0 && rk & k != 0;
-    if both(NUMBER) || both(TEXT) || both(BOOL) || both(UNIT) || both(LIST) {
+    if both(NUMBER) || both(TEXT) || both(BOOL) || both(UNIT) || both(LIST) || both(SYMBOL) {
         return true;
     }
     let data = OPTION | RESULT | DATA;
@@ -3222,7 +3276,7 @@ fn may_be_equal(lt: &Ty, rt: &Ty) -> bool {
     if lk & NUMBER != 0 && rk & NUMBER != 0 {
         return true;
     }
-    if lk & rk & (UNIT | BOOL | TEXT | LIST | RECORD | FUNC) != 0 {
+    if lk & rk & (UNIT | BOOL | TEXT | LIST | RECORD | FUNC | SYMBOL) != 0 {
         return true;
     }
     match (lt, rt) {
@@ -3381,23 +3435,26 @@ fn fields_in_expr(e: &Expr, out: &mut HashSet<Rc<str>>) {
 }
 
 /// Can evaluating this expression do anything besides computing a value
-/// (call a function, or leave the function with `?`)?
-fn has_effect(e: &Expr) -> bool {
+/// (call a function, or leave the function with `?`)? `may_call(name)`:
+/// may `value.name` call a function named `name` (`"Ada".greet`)?
+fn has_effect(e: &Expr, may_call: &dyn Fn(&str) -> bool) -> bool {
+    let effect = |x: &Expr| has_effect(x, may_call);
     match &e.kind {
         ExprKind::Call(..) | ExprKind::Method(..) | ExprKind::Try(_) => true,
-        ExprKind::Template(parts) => parts.iter().any(|p| matches!(p, TemplatePart::Expr(x) if has_effect(x))),
+        ExprKind::Template(parts) => parts.iter().any(|p| matches!(p, TemplatePart::Expr(x) if effect(x))),
         ExprKind::List(items) => items.iter().any(|it| match it {
-            ListItem::One(x) | ListItem::Spread(x) => has_effect(x),
+            ListItem::One(x) | ListItem::Spread(x) => effect(x),
         }),
         ExprKind::Record(items) => items.iter().any(|it| match it {
-            RecordItem::Field(_, _, x) | RecordItem::Spread(x) => has_effect(x),
+            RecordItem::Field(_, _, x) | RecordItem::Spread(x) => effect(x),
         }),
-        ExprKind::Field(x, _, _) | ExprKind::Unary(_, x) => has_effect(x),
-        ExprKind::Index(a, b) | ExprKind::Binary(_, a, b, _) | ExprKind::Range(a, b) => has_effect(a) || has_effect(b),
-        ExprKind::If(c, a, b) => has_effect(c) || has_effect(a) || has_effect(b),
-        ExprKind::Match(s, arms) => has_effect(s) || arms.iter().any(|a| has_effect(&a.body) || a.guard.as_ref().is_some_and(has_effect)),
+        ExprKind::Field(x, name, _) => may_call(name) || effect(x),
+        ExprKind::Unary(_, x) => effect(x),
+        ExprKind::Index(a, b) | ExprKind::Binary(_, a, b, _) | ExprKind::Range(a, b) => effect(a) || effect(b),
+        ExprKind::If(c, a, b) => effect(c) || effect(a) || effect(b),
+        ExprKind::Match(s, arms) => effect(s) || arms.iter().any(|a| effect(&a.body) || a.guard.as_ref().is_some_and(effect)),
         ExprKind::Block(stmts) => stmts.iter().any(|s| match s {
-            Stmt::Let(_, x) | Stmt::Expr(x) => has_effect(x),
+            Stmt::Let(_, x) | Stmt::Expr(x) => effect(x),
             Stmt::Fn(_) => false,
         }),
         _ => false,

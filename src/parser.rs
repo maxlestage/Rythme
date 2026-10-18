@@ -15,8 +15,66 @@ use crate::symbol::Sym;
 use crate::value::Value;
 
 pub fn parse(lexed: Lexed) -> Fallible<Vec<Item>> {
-    let mut p = Parser { toks: lexed.tokens, pos: 0, sig: vec![true], docs: lexed.docs, last: Span::default(), depth: 0, in_text: false };
+    let preds = Rc::new(predicates(&lexed.tokens));
+    let mut p =
+        Parser { toks: lexed.tokens, pos: 0, sig: vec![true], docs: lexed.docs, last: Span::default(), depth: 0, in_text: false, preds };
     p.program()
+}
+
+/// The names of the functions defined with a `?` at the end in this code:
+/// `fn adult?(person) = ...`.
+pub(crate) fn predicates(toks: &[Token]) -> Vec<Sym> {
+    let mut out = Vec::new();
+    for w in toks.windows(3) {
+        if let [Token { tok: Tok::Fn, .. }, name @ Token { tok: Tok::Ident(s), .. }, q] = w {
+            if q.tok == Tok::Question && q.span.start == name.span.end {
+                out.push(Sym::new(&format!("{s}?")));
+            }
+        }
+    }
+    out
+}
+
+/// `even?` written at `i`: a name directly followed by `?` is one name, the
+/// name of a function that answers a question, when `(` follows directly
+/// (`even?(4)`) or when a function of that name exists: a built-in one, or
+/// one defined in the code (`preds`). Otherwise the `?` is the operator that
+/// stops on `None` or `Err` (`value?`).
+pub(crate) fn predicate_at(toks: &[Token], i: usize, preds: &[Sym]) -> Option<Sym> {
+    let (Tok::Ident(s), Some(q)) = (&toks[i].tok, toks.get(i + 1)) else { return None };
+    if q.tok != Tok::Question || q.span.start != toks[i].span.end {
+        return None;
+    }
+    let name = Sym::new(&format!("{s}?"));
+    let call = toks.get(i + 2).is_some_and(|t| t.tok == Tok::LParen && t.span.start == q.span.end);
+    (call || preds.contains(&name) || crate::builtins::lookup(&name.name()).is_some()).then_some(name)
+}
+
+/// Does the name `unless` at `i` start `unless condition then a else b`? It
+/// does when the start of a value follows on the same line: a name, a number,
+/// a text, a symbol, `not`..., or a bracket after a space (`unless(x)` and
+/// `unless[0]`, without a space, use a value named `unless`).
+pub(crate) fn unless_at(toks: &[Token], i: usize) -> bool {
+    if !matches!(&toks[i].tok, Tok::Ident(s) if &*s.name() == "unless") {
+        return false;
+    }
+    let Some(next) = toks.get(i + 1) else { return false };
+    match next.tok {
+        Tok::Int(_)
+        | Tok::Float(_)
+        | Tok::Str(_)
+        | Tok::Ident(_)
+        | Tok::Ctor(_)
+        | Tok::Symbol(_)
+        | Tok::True
+        | Tok::False
+        | Tok::Not
+        | Tok::If
+        | Tok::Match
+        | Tok::Fn => true,
+        Tok::LParen | Tok::LBracket => next.span.start > toks[i].span.end,
+        _ => false,
+    }
 }
 
 struct Parser {
@@ -31,6 +89,8 @@ struct Parser {
     depth: usize,
     /// Reading the `{...}` of a text.
     in_text: bool,
+    /// The functions defined with a name ending with `?` (see `predicates`).
+    preds: Rc<Vec<Sym>>,
 }
 
 /// Deeper nesting is surely a mistake, and would exhaust the stack.
@@ -79,6 +139,7 @@ fn starts_expression(t: &Tok) -> bool {
             | Tok::LBrace
             | Tok::LParen
             | Tok::Fn
+            | Tok::Symbol(_)
     )
 }
 
@@ -329,6 +390,12 @@ impl Parser {
             (_, Tok::LBrace) | (_, Tok::Colon) | (_, Tok::PlusEq) | (_, Tok::MinusEq) | (_, Tok::StarEq) | (_, Tok::SlashEq) => {
                 d = self.hint_for(d, &tok.tok);
             }
+            (_, Tok::Do) => {
+                d = d.help(t!(
+                    "a block `do |x| ... end` is given to a call, on its line: `names.each do |name| print(name) end`",
+                    "un bloc `do |x| ... end` est donné à un appel, sur sa ligne : `noms.each do |nom| print(nom) end`"
+                ));
+            }
             (_, Tok::Else) => {
                 d = d.help(t!(
                     "`else` must follow `if condition then value` (an `if` branch holds one expression; use `do ... end` for several lines)",
@@ -456,7 +523,35 @@ impl Parser {
         let span = e.span;
         let kind = match e.kind {
             ExprKind::Var(s) if &*s.name() == "_" => PatKind::Wildcard,
+            // `ok? = 1`: the `?` is read as the operator, unless a function `ok?` exists.
+            ExprKind::Try(x) if matches!(x.kind, ExprKind::Var(_)) && x.span.end + 1 == span.end => {
+                let ExprKind::Var(s) = x.kind else { unreachable!() };
+                let s = format!("{s}?");
+                return Err(Diagnostic::error(
+                    "E001",
+                    t!("only a function can have a name that ends with `?`", "seule une fonction peut avoir un nom qui finit par `?`"),
+                )
+                .at(span)
+                .help(t!(
+                    "define it with `fn`: `fn {s}(x) = ...`; for a value, use a name without `?`",
+                    "définissez-la avec `fn` : `fn {s}(x) = ...` ; pour une valeur, utilisez un nom sans `?`"
+                ))
+                .boxed());
+            }
+            ExprKind::Var(s) if s.name().ends_with('?') => {
+                return Err(Diagnostic::error(
+                    "E001",
+                    t!("only a function can have a name that ends with `?`", "seule une fonction peut avoir un nom qui finit par `?`"),
+                )
+                .at(span)
+                .help(t!(
+                    "define it with `fn`: `fn {s}(x) = ...`; for a value, use a name without `?`",
+                    "définissez-la avec `fn` : `fn {s}(x) = ...` ; pour une valeur, utilisez un nom sans `?`"
+                ))
+                .boxed());
+            }
             ExprKind::Var(s) => PatKind::Bind(s),
+            ExprKind::Symbol(s) => PatKind::Symbol(s),
             ExprKind::Ctor(s) => PatKind::Ctor(s, Vec::new()),
             ExprKind::Call(callee, args) if matches!(callee.kind, ExprKind::Ctor(_)) => {
                 let ExprKind::Ctor(s) = callee.kind else { unreachable!() };
@@ -572,6 +667,11 @@ impl Parser {
         let (name, name_span) = if named {
             let t = self.advance();
             match t.tok {
+                // `fn adult?(person)`: a name may end with `?`.
+                Tok::Ident(s) if self.raw() == &Tok::Question && self.toks[self.pos].span.start == t.span.end => {
+                    let q = self.advance();
+                    (Some(Sym::new(&format!("{s}?"))), t.span.to(q.span))
+                }
                 Tok::Ident(s) => (Some(s), t.span),
                 _ => return Err(self.unexpected_token(&t, t!("a function name", "un nom de fonction"))),
             }
@@ -932,17 +1032,16 @@ impl Parser {
         // `x |> record.field` or `x |> value.method(args)`.
         while matches!(self.raw(), Tok::Dot) {
             self.advance();
-            let t = self.advance();
-            let name = self.member_name(&t)?;
+            let (name, name_span) = self.member()?;
             if matches!(self.raw(), Tok::LParen) {
                 self.advance();
                 let mut args = self.comma_list(&Tok::RParen, |p| p.expr())?;
                 args.insert(0, input);
-                let call = Expr::new(ExprKind::Method(Box::new(callee), Sym::new(&name), args, t.span), start.to(self.last));
+                let call = Expr::new(ExprKind::Method(Box::new(callee), Sym::new(&name), args, name_span), start.to(self.last));
                 return self.postfix_ops(call);
             }
-            let span = callee.span.to(t.span);
-            callee = Expr::new(ExprKind::Field(Box::new(callee), name, t.span), span);
+            let span = callee.span.to(name_span);
+            callee = Expr::new(ExprKind::Field(Box::new(callee), name, name_span), span);
         }
         let mut args = vec![input];
         if matches!(self.raw(), Tok::LParen) {
@@ -951,6 +1050,114 @@ impl Parser {
         }
         let call = Expr::new(ExprKind::Call(Box::new(callee), args), start.to(self.last));
         self.postfix_ops(call)
+    }
+
+    /// The name after a `.`, and where it is: `even?` too (see `predicate_at`).
+    fn member(&mut self) -> Fallible<(Rc<str>, Span)> {
+        let t = self.advance();
+        let name = self.member_name(&t)?;
+        if let Some(pred) = predicate_at(&self.toks, self.pos - 1, &self.preds) {
+            let q = self.advance();
+            return Ok((pred.name(), t.span.to(q.span)));
+        }
+        Ok((name, t.span))
+    }
+
+    /// Is the `do` or `{` here followed by the parameters of a block: `|x|`?
+    fn block_follows(&self) -> bool {
+        matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Bar | Tok::BarBar))
+    }
+
+    /// `do |x| ... end` or `{ |x| ... }` written alone, not after a call.
+    fn lone_block(&mut self) -> Box<Diagnostic> {
+        let t = self.peek_token();
+        Diagnostic::error("E001", t!("a block must follow a call", "un bloc doit suivre un appel"))
+            .at(t.span)
+            .label(t!("not given to a function", "donné à aucune fonction"))
+            .help(t!(
+                "write the block on the line of the call it is given to: `xs.map do |x| x * 2 end`;\nfor a function as a value, write `fn(x) = x * 2`",
+                "écrivez le bloc sur la ligne de l'appel auquel il est donné : `xs.map do |x| x * 2 end` ;\npour une fonction comme valeur, écrivez `fn(x) = x * 2`"
+            ))
+            .boxed()
+    }
+
+    /// A block given to a call, `do |x, y| ... end` or `{ |x| ... }`: a
+    /// function, the same as `fn(x, y) = ...`.
+    fn block_arg(&mut self) -> Fallible<Expr> {
+        self.deeper(|p| {
+            let open = p.advance();
+            let brace = open.tok == Tok::LBrace;
+            let mut params = Vec::new();
+            match p.raw() {
+                Tok::BarBar => {
+                    p.advance();
+                }
+                Tok::Bar => {
+                    p.advance();
+                    params = p.nested(false, |p| {
+                        let mut params = Vec::new();
+                        loop {
+                            if p.eat(&Tok::Bar) {
+                                return Ok(params);
+                            }
+                            params.push(p.deeper(|p| p.pattern_atom())?);
+                            if p.eat(&Tok::Comma) {
+                                continue;
+                            }
+                            if p.eat(&Tok::Bar) {
+                                return Ok(params);
+                            }
+                            let mut d = p.unexpected(t!("`,` or `|`", "`,` ou `|`"));
+                            d.helps.push(t!(
+                                "the parameters of a block go between bars: `do |name, age| ... end`",
+                                "les paramètres d'un bloc vont entre deux barres : `do |nom, age| ... end`"
+                            ));
+                            return Err(d);
+                        }
+                    })?;
+                }
+                _ => {}
+            }
+            let head = open.span.to(p.last);
+            let stmts = if brace { p.brace_block(open.span)? } else { p.block_inner(open.span, "do")? };
+            let span = open.span.to(p.last);
+            let body = Expr::new(ExprKind::Block(stmts), span);
+            let arity = params.len();
+            let def = FnDef {
+                name: None,
+                clauses: vec![Rc::new(Clause { params, guard: None, body, span: head })],
+                arity,
+                doc: None,
+                span: open.span,
+            };
+            Ok(Expr::new(ExprKind::Lambda(Rc::new(def)), span))
+        })
+    }
+
+    /// The statements of `{ |x| ... }`, up to `}`.
+    fn brace_block(&mut self, opener: Span) -> Fallible<Vec<Stmt>> {
+        self.nested(true, |p| {
+            let mut stmts = Vec::new();
+            loop {
+                p.skip_newlines();
+                match p.raw() {
+                    Tok::RBrace => {
+                        p.advance();
+                        return Ok(stmts);
+                    }
+                    Tok::Eof => {
+                        let d = p.unexpected(t!("`}}`", "`}}`"));
+                        return Err(d.secondary(opener, t!("the block starts here", "le bloc commence ici")).boxed());
+                    }
+                    _ => {}
+                }
+                let s = p.stmt()?;
+                if !matches!(p.raw(), Tok::RBrace) {
+                    p.stmt_end(Some(&s))?;
+                }
+                push_stmt(&mut stmts, s)?;
+            }
+        })
     }
 
     /// The name after a `.`: a field or a function. Keywords are allowed, so
@@ -1047,10 +1254,20 @@ impl Parser {
         })
     }
 
-    /// Calls, `[index]`, `?`, `.field` and `.method()` after an expression.
+    /// Calls, `[index]`, `?`, `.field`, `.method()` and blocks (`do |x| ...
+    /// end`) after an expression.
     fn postfix_ops(&mut self, mut e: Expr) -> Fallible<Expr> {
         loop {
             e = self.limit(e, self.last)?;
+            // A block starts on the line of the call it is given to.
+            if matches!(self.raw(), Tok::Do) || (matches!(self.raw(), Tok::LBrace) && self.block_follows()) {
+                if !matches!(e.kind, ExprKind::Call(..) | ExprKind::Method(..) | ExprKind::Field(..) | ExprKind::Var(_)) {
+                    return Ok(e);
+                }
+                let block = self.block_arg()?;
+                e = with_block(e, block);
+                continue;
+            }
             self.skip_soft();
             match self.raw() {
                 Tok::LParen => {
@@ -1081,16 +1298,15 @@ impl Parser {
                         return Ok(e);
                     }
                     self.take_cont();
-                    let t = self.advance();
-                    let name = self.member_name(&t)?;
+                    let (name, name_span) = self.member()?;
                     if matches!(self.raw(), Tok::LParen) {
                         self.advance();
                         let args = self.comma_list(&Tok::RParen, |p| p.expr())?;
                         let span = e.span.to(self.last);
-                        e = Expr::new(ExprKind::Method(Box::new(e), Sym::new(&name), args, t.span), span);
+                        e = Expr::new(ExprKind::Method(Box::new(e), Sym::new(&name), args, name_span), span);
                     } else {
-                        let span = e.span.to(t.span);
-                        e = Expr::new(ExprKind::Field(Box::new(e), name, t.span), span);
+                        let span = e.span.to(name_span);
+                        e = Expr::new(ExprKind::Field(Box::new(e), name, name_span), span);
                     }
                 }
             }
@@ -1200,9 +1416,18 @@ impl Parser {
                 self.advance();
                 self.text(parts, span)
             }
+            Tok::Ident(_) if unless_at(&self.toks, self.pos) => self.if_expr(true),
             Tok::Ident(s) => {
                 self.advance();
+                if let Some(name) = predicate_at(&self.toks, self.pos - 1, &self.preds) {
+                    let q = self.advance();
+                    return Ok(Expr::new(ExprKind::Var(name), span.to(q.span)));
+                }
                 Ok(Expr::new(ExprKind::Var(s), span))
+            }
+            Tok::Symbol(s) => {
+                self.advance();
+                Ok(Expr::new(ExprKind::Symbol(s), span))
             }
             Tok::Ctor(s) => {
                 self.advance();
@@ -1243,6 +1468,7 @@ impl Parser {
                 })?;
                 Ok(Expr::new(ExprKind::List(items), span.to(self.last)))
             }
+            Tok::LBrace if self.block_follows() => Err(self.lone_block()),
             Tok::LBrace => {
                 self.advance();
                 let items = self.comma_list(&Tok::RBrace, |p| p.record_item())?;
@@ -1267,8 +1493,9 @@ impl Parser {
                 let def = self.fn_def(false)?;
                 Ok(Expr::new(ExprKind::Lambda(Rc::new(def)), span.to(self.last)))
             }
-            Tok::If => self.if_expr(),
+            Tok::If => self.if_expr(false),
             Tok::Match => self.match_expr(),
+            Tok::Do if self.block_follows() => Err(self.lone_block()),
             Tok::Do => {
                 self.advance();
                 let stmts = self.block(span, "do")?;
@@ -1332,6 +1559,7 @@ impl Parser {
                         last: span,
                         depth: self.depth,
                         in_text: true,
+                        preds: self.preds.clone(),
                     };
                     let e =
                         sub.expr().and_then(
@@ -1357,8 +1585,11 @@ impl Parser {
         Ok(Expr::new(ExprKind::Template(out), span))
     }
 
-    fn if_expr(&mut self) -> Fallible<Expr> {
+    /// `if c then a else b`, or `unless c then a else b` (the same as
+    /// `if c then b else a`).
+    fn if_expr(&mut self, unless: bool) -> Fallible<Expr> {
         let kw = self.advance();
+        let word = if unless { "unless" } else { "if" };
         let cond = self.expr()?;
         if matches!(self.past_newlines(), Tok::Then) {
             self.skip_newlines();
@@ -1366,8 +1597,8 @@ impl Parser {
         if !self.eat(&Tok::Then) {
             let mut d = self.unexpected(t!("`then`", "`then`"));
             d.helps.push(t!(
-                "an `if` is written: `if condition then value else other_value`",
-                "un `if` s'écrit : `if condition then valeur else autre_valeur`"
+                "an `{word}` is written: `{word} condition then value else other_value`",
+                "un `{word}` s'écrit : `{word} condition then valeur else autre_valeur`"
             ));
             return Err(d);
         }
@@ -1385,9 +1616,9 @@ impl Parser {
                 }
                 self.toks[i].span
             };
-            let mut d = Diagnostic::error("E019", t!("this `if` has no `else`", "ce `if` n'a pas de `else`"))
+            let mut d = Diagnostic::error("E019", t!("this `{word}` has no `else`", "ce `{word}` n'a pas de `else`"))
                 .at(kw.span)
-                .label(t!("every `if` must have an `else`", "chaque `if` doit avoir un `else`"))
+                .label(t!("every `{word}` must have an `else`", "chaque `{word}` doit avoir un `else`"))
                 .secondary(at, t!("expected `else` here", "`else` attendu ici"));
             match next {
                 Tok::Reserved(s) if matches!(&*s.name(), "elif" | "elsif") => {
@@ -1396,10 +1627,17 @@ impl Parser {
                 Tok::Eof => d = d.incomplete(),
                 _ => {}
             }
-            d = d.help(t!(
-                "in Rythme, `if` always gives a value, so it needs both cases:\n  if age >= 18 then \"adult\" else \"minor\"",
-                "en Rythme, `if` donne toujours une valeur, il lui faut donc les deux cas :\n  if age >= 18 then \"majeur\" else \"mineur\""
-            ));
+            d = d.help(if unless {
+                t!(
+                    "in Rythme, `unless` always gives a value, so it needs both cases:\n  unless age >= 18 then \"minor\" else \"adult\"",
+                    "en Rythme, `unless` donne toujours une valeur, il lui faut donc les deux cas :\n  unless age >= 18 then \"mineur\" else \"majeur\""
+                )
+            } else {
+                t!(
+                    "in Rythme, `if` always gives a value, so it needs both cases:\n  if age >= 18 then \"adult\" else \"minor\"",
+                    "en Rythme, `if` donne toujours une valeur, il lui faut donc les deux cas :\n  if age >= 18 then \"majeur\" else \"mineur\""
+                )
+            });
             if !matches!(next, Tok::Eof | Tok::End | Tok::RParen) {
                 d = d.help(t!(
                     "a branch holds a single expression; for several lines, use `do ... end`",
@@ -1411,7 +1649,8 @@ impl Parser {
         self.skip_newlines();
         let else_branch = self.expr()?;
         let span = kw.span.to(else_branch.span);
-        Ok(Expr::new(ExprKind::If(Box::new(cond), Box::new(then_branch), Box::new(else_branch)), span))
+        let (yes, no) = if unless { (else_branch, then_branch) } else { (then_branch, else_branch) };
+        Ok(Expr::new(ExprKind::If(Box::new(cond), Box::new(yes), Box::new(no)), span))
     }
 
     fn match_expr(&mut self) -> Fallible<Expr> {
@@ -1570,6 +1809,10 @@ impl Parser {
                 self.advance();
                 PatKind::Bool(tok.tok == Tok::True)
             }
+            Tok::Symbol(s) => {
+                self.advance();
+                PatKind::Symbol(s)
+            }
             Tok::Str(parts) => {
                 self.advance();
                 if !parts.iter().all(|p| matches!(p, StrPart::Lit(_))) {
@@ -1672,8 +1915,8 @@ impl Parser {
             _ => {
                 let mut d = self.unexpected(t!("a pattern", "un motif"));
                 d.helps.push(t!(
-                    "patterns look like: `x`, `_`, `0`, `\"text\"`, `Some(x)`, `[first, ..rest]`, `{{name}}`",
-                    "les motifs ressemblent à : `x`, `_`, `0`, `\"texte\"`, `Some(x)`, `[premier, ..reste]`, `{{nom}}`"
+                    "patterns look like: `x`, `_`, `0`, `\"text\"`, `:ok`, `Some(x)`, `[first, ..rest]`, `{{name}}`",
+                    "les motifs ressemblent à : `x`, `_`, `0`, `\"texte\"`, `:ok`, `Some(x)`, `[premier, ..reste]`, `{{nom}}`"
                 ));
                 return Err(d);
             }
@@ -1710,6 +1953,25 @@ fn negated(kind: ExprKind) -> ExprKind {
         Value::Big(m) => ExprKind::Big(m),
         _ => unreachable!(),
     }
+}
+
+/// `call(args)` followed by a block: the block is its last argument.
+fn with_block(e: Expr, block: Expr) -> Expr {
+    let span = e.span.to(block.span);
+    let kind = match e.kind {
+        ExprKind::Call(f, mut args) => {
+            args.push(block);
+            ExprKind::Call(f, args)
+        }
+        ExprKind::Method(recv, name, mut args, at) => {
+            args.push(block);
+            ExprKind::Method(recv, name, args, at)
+        }
+        // `xs.each do |x| ... end` is `xs.each(fn(x) = ...)`.
+        ExprKind::Field(recv, name, at) => ExprKind::Method(recv, Sym::new(&name), vec![block], at),
+        kind => ExprKind::Call(Box::new(Expr::new(kind, e.span)), vec![block]),
+    };
+    Expr::new(kind, span)
 }
 
 fn binary(op: BinOp, l: Expr, r: Expr, op_span: Span) -> Expr {

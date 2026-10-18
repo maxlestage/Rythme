@@ -53,6 +53,7 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ("doc", &["documentation", "documenter", "docs"]),
     ("steps", &["etapes", "étapes", "step", "etape", "étape", "stepper", "pas-a-pas", "pas-à-pas"]),
     ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide"]),
+    ("ruby", &["rb", "rubyist", "blocks", "blocs", "symbols", "symboles"]),
     ("builtins", &["functions-list", "fonctions-integrees", "library", "bibliotheque", "bibliothèque", "stdlib"]),
 ];
 
@@ -107,6 +108,7 @@ Sujets (rythme help SUJET)
   doc         la documentation tirée des commentaires ## (rythme doc)
   steps       le calcul montré étape par étape (rythme etapes)
   editors     Rythme dans votre éditeur (VS Code, Neovim, Helix...)
+  ruby        venir de Ruby : blocs, symboles, enchaînements de méthodes
   builtins    toutes les fonctions intégrées
 
 Une fonction précise : rythme help map
@@ -156,6 +158,7 @@ Topics (rythme help TOPIC)
   doc         documentation from the ## comments (rythme doc)
   steps       the calculation shown step by step (rythme steps)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
+  ruby        coming from Ruby: blocks, symbols, method chains
   builtins    every built-in function
 
 A specific function: rythme help map
@@ -168,6 +171,15 @@ A specific function: rythme help map
 pub fn topic(name: &str) -> Option<String> {
     let builtin = builtins::lookup(name.trim());
     if let (Some(b), None) = (builtin, canonical_topic(name)) {
+        if builtins::alias_of(name.trim()).is_some() {
+            let alias = name.trim();
+            let of = b.name;
+            return Some(format!(
+                "{}\n{}",
+                t!("{alias}  (the Ruby name of `{of}`: the same function)", "{alias}  (le nom Ruby de `{of}` : la même fonction)"),
+                builtin_doc(b)
+            ));
+        }
         return Some(builtin_doc(b));
     }
     if let Some(text) = explain(name) {
@@ -197,6 +209,7 @@ pub fn topic(name: &str) -> Option<String> {
 pub fn unknown_topic(name: &str) -> String {
     let mut names: Vec<&str> = TOPICS.iter().map(|(t, _)| *t).collect();
     names.extend(BUILTINS.iter().map(|b| b.name));
+    names.extend(builtins::ALIASES.iter().map(|a| a.name));
     let mut out = t!("No help found for `{name}`.", "Aucune aide trouvée pour `{name}`.");
     if let Some(h) = suggest::alias_hint(name) {
         out.push_str(&format!("\n{h}"));
@@ -238,6 +251,13 @@ const KEYWORD_DOCS: &[(&str, &str, &str, &str, &str)] = &[
         "syntax",
     ),
     (
+        "unless",
+        "The opposite of `if`: `unless condition then a else b` gives `b` when the condition is true, `a` otherwise. Like `if`, it always has an `else`.",
+        "Le contraire de `if` : `unless condition then a else b` donne `b` quand la condition est vraie, `a` sinon. Comme `if`, il a toujours un `else`.",
+        "unless n < 0 then \"positive\" else \"negative\"",
+        "ruby",
+    ),
+    (
         "match",
         "Chooses according to the shape of a value: one case per line, `pattern -> result`, finished by `end`. Cases are tried in order, and `rythme check` warns about forgotten cases.",
         "Choisit selon la forme d'une valeur : un cas par ligne, `motif -> résultat`, terminé par `end`. Les cas sont essayés dans l'ordre, et `rythme check` signale les cas oubliés.",
@@ -253,9 +273,9 @@ const KEYWORD_DOCS: &[(&str, &str, &str, &str, &str)] = &[
     ),
     (
         "do",
-        "Groups several steps inside an expression, up to `end`. The last line gives the value.",
-        "Regroupe plusieurs étapes dans une expression, jusqu'à `end`. La dernière ligne donne la valeur.",
-        "total = do\n  a = 1\n  a + 1\nend",
+        "Groups several steps inside an expression, up to `end`. The last line gives the value. After a call, `do |x| ... end` is a block: a function given as the last argument.",
+        "Regroupe plusieurs étapes dans une expression, jusqu'à `end`. La dernière ligne donne la valeur. Après un appel, `do |x| ... end` est un bloc : une fonction donnée comme dernier argument.",
+        "total = do\n  a = 1\n  a + 1\nend\nnames.each do |name|\n  print(\"Hello, {name}!\")\nend",
         "syntax",
     ),
     (
@@ -317,6 +337,10 @@ pub fn keyword_help(word: &str) -> Option<String> {
 
 pub fn builtin_doc(b: &Builtin) -> String {
     let mut out = format!("{}\n  {}\n", b.sig, b.doc());
+    let ruby: Vec<String> = builtins::aliases(b.name).map(|a| format!("`{a}`")).collect();
+    if !ruby.is_empty() {
+        out.push_str(&t!("  Same as: {} (its Ruby names)\n", "  Pareil que : {} (ses noms Ruby)\n", ruby.join(", ")));
+    }
     out.push_str(&format!("  {}\n", t!("Example:", "Exemple :")));
     for line in b.example.lines() {
         out.push_str(&format!("    {line}\n"));
@@ -335,6 +359,26 @@ pub fn builtins_list() -> String {
         }
         if cat == Category::Numbers {
             out.push_str(&format!("  {:<28} {}\n", "pi", t!("the number π", "le nombre π")));
+        }
+        // The Ruby names of the functions of the category: `upcase` (same as `upper`).
+        let ruby: Vec<String> = builtins::ALIASES
+            .iter()
+            .filter(|a| builtins::lookup(a.of).is_some_and(|b| b.cat == cat))
+            .map(|a| t!("{} (same as {})", "{} (pareil que {})", a.name, a.of))
+            .collect();
+        if !ruby.is_empty() {
+            let mut line = t!("  Ruby names:", "  Noms Ruby :");
+            for (i, r) in ruby.iter().enumerate() {
+                let piece = if i + 1 < ruby.len() { format!(" {r},") } else { format!(" {r}") };
+                if line.chars().count() + piece.chars().count() > 96 {
+                    out.push_str(&line);
+                    out.push('\n');
+                    line = "   ".to_string();
+                }
+                line.push_str(&piece);
+            }
+            out.push_str(&line);
+            out.push('\n');
         }
         if cat == Category::Options {
             out.push_str(&format!(
@@ -470,6 +514,119 @@ pub fn learn() {
     ));
 }
 
+const RUBY_EN: &str = r#"COMING FROM RUBY
+
+Rythme reads like Ruby, but its values never change: no mutation, no nil,
+no exceptions. What you know from Ruby mostly works:
+
+  names = ["Ada", "Grace", "Alan"]
+  names.each do |name|
+    puts("Hello, #{name}!")
+  end
+
+  [1, 2, 3, 4, 5, 6]
+    .select(even?)
+    .map { |x| x * x }
+    .sum                         # 56
+
+  fn adult?(person) = person.age >= 18
+  kind = unless adult?(ada) then :minor else :adult
+
+The same as in Ruby
+  blocks          xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+                  a block is a function: the same as fn(x) = x * 2
+  method calls    xs.sum   name.upcase   xs.first(2)   xs.include?(3)
+  names with ?    even?   empty?   include?(x)   fn adult?(p) = ...
+  symbols         :ok   :error (compared with ==, used in match)
+  texts           "Hello #{name}" (or "Hello {name}"); "\#{" writes #{
+  unless          unless cond then a else b
+  Ruby names      puts to_s to_i to_f length size upcase downcase strip
+                  select reject reduce inject uniq each_slice each_cons
+                  each_with_index include? empty? even? odd? any? all?
+                  start_with? end_with? key? (see rythme help builtins)
+
+What is different
+  parentheses     a call needs them: puts("hi"), not puts "hi"
+  no mutation     no x += 1: give the new value a new name, total2 = total + 1
+  no nil          a missing value is None, a present one Some(x)
+  no exceptions   errors are values, Ok(x) or Err(message), passed on with ?
+  if and unless   always have an else: they give a value; no `return`, the
+                  last line of a function is its result
+  no classes      records {name: "Ada"} and types: type Shape = Circle(r) | Square(s)
+  no loops        each, map, select, reduce, or a function that calls itself
+  case/when       match value ... end, one case per line: pattern -> result
+  hashes          records {name: "Ada", age: 36}; symbols are not keys yet
+
+How x.name works
+  x.name reads the field `name` of a record; when x has no such field, it
+  calls the function `name` with x: xs.sum is sum(xs), xs.first(2) is
+  first(xs, 2). A chain may go on over several lines, each starting with `.`.
+
+When ? is part of a name
+  even?(4), xs.include?(3), fn adult?(p): right after a name, before `(`.
+  even? without `(`: when such a function exists (built-in, or defined with
+  fn in the file). Otherwise value? is the ? that stops on None or Err, and
+  (value)? always is."#;
+
+const RUBY_FR: &str = r#"VENIR DE RUBY
+
+Rythme se lit comme Ruby, mais ses valeurs ne changent jamais : pas de
+mutation, pas de nil, pas d'exceptions. Ce que vous savez de Ruby marche
+presque toujours :
+
+  noms = ["Ada", "Grace", "Alan"]
+  noms.each do |nom|
+    puts("Bonjour, #{nom} !")
+  end
+
+  [1, 2, 3, 4, 5, 6]
+    .select(even?)
+    .map { |x| x * x }
+    .sum                         # 56
+
+  fn majeur?(personne) = personne.age >= 18
+  genre = unless majeur?(ada) then :mineur else :majeur
+
+Comme en Ruby
+  blocs           xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+                  un bloc est une fonction : comme fn(x) = x * 2
+  méthodes        xs.sum   nom.upcase   xs.first(2)   xs.include?(3)
+  noms avec ?     even?   empty?   include?(x)   fn majeur?(p) = ...
+  symboles        :ok   :erreur (comparés avec ==, utilisés dans match)
+  textes          "Bonjour #{nom}" (ou "Bonjour {nom}") ; "\#{" écrit #{
+  unless          unless condition then a else b
+  noms Ruby       puts to_s to_i to_f length size upcase downcase strip
+                  select reject reduce inject uniq each_slice each_cons
+                  each_with_index include? empty? even? odd? any? all?
+                  start_with? end_with? key? (voir rythme help builtins)
+
+Ce qui change
+  parenthèses     un appel en a besoin : puts("salut"), pas puts "salut"
+  pas de mutation pas de x += 1 : donnez un nouveau nom à la nouvelle valeur,
+                  total2 = total + 1
+  pas de nil      une valeur absente est None, une valeur présente Some(x)
+  pas d'exception les erreurs sont des valeurs, Ok(x) ou Err(message),
+                  transmises avec ?
+  if et unless    ont toujours un else : ils donnent une valeur ; pas de
+                  `return`, la dernière ligne d'une fonction est son résultat
+  pas de classes  enregistrements {nom: "Ada"} et types : type Forme = Cercle(r) | Carre(c)
+  pas de boucles  each, map, select, reduce, ou une fonction qui s'appelle
+  case/when       match valeur ... end, un cas par ligne : motif -> résultat
+  hashes          enregistrements {nom: "Ada", age: 36} ; les symboles ne
+                  sont pas encore des clés
+
+Comment marche x.nom
+  x.nom lit le champ `nom` d'un enregistrement ; quand x n'a pas ce champ,
+  il appelle la fonction `nom` avec x : xs.sum est sum(xs), xs.first(2) est
+  first(xs, 2). Un enchaînement peut continuer sur plusieurs lignes, chacune
+  commençant par `.`.
+
+Quand ? fait partie d'un nom
+  even?(4), xs.include?(3), fn majeur?(p) : juste après un nom, avant `(`.
+  even? sans `(` : quand une telle fonction existe (intégrée, ou définie
+  avec fn dans le fichier). Sinon valeur? est le ? qui s'arrête sur None ou
+  Err, et (valeur)? l'est toujours."#;
+
 fn topic_text(name: &str) -> &'static str {
     match name {
         "start" => pick(START_EN, START_FR),
@@ -493,6 +650,7 @@ fn topic_text(name: &str) -> &'static str {
         "doc" => pick(DOC_EN, DOC_FR),
         "steps" => pick(STEPS_EN, STEPS_FR),
         "editors" => pick(EDITORS_EN, EDITORS_FR),
+        "ruby" => pick(RUBY_EN, RUBY_FR),
         _ => "",
     }
 }
@@ -552,8 +710,9 @@ const SYNTAX_EN: &str = r#"SYNTAX
 Values
   42   -7   1_000_000            whole numbers (Int), of any size
   3.14   2.0                     decimal numbers (Float)
-  "hello"   "total: {x}"         texts (Text); {...} inserts a value
+  "hello"   "total: {x}"         texts (Text); {...} (or #{...}) inserts a value
   true   false                   booleans (Bool)
+  :ok   :error                   symbols (Symbol): a name used as a value
   [1, 2, 3]                      lists
   {name: "Ada", age: 36}         records
   Some(3)   None                 a value that may be missing (Option)
@@ -570,6 +729,10 @@ Operators
   == != < <= > >=   and   or   not
   x |> f(y)                      same as f(x, y): steps from left to right
   x.f(y)                         also the same as f(x, y)
+  x.f                            the field f of x; if x has none, f(x): xs.sum
+  xs                             a chain may go on, each line starting with .
+    .select(even?)
+    .sum
 
 Functions
   fn double(x) = x * 2           on one line, with =
@@ -578,9 +741,18 @@ Functions
     print(message)               the last line gives the result
   end
   fn(x) = x + 1                  an anonymous function
+  fn adult?(p) = p.age >= 18     a name may end with ? (see rythme help ruby)
+
+Blocks: a function given as the last argument of a call
+  xs.map do |x| x * 2 end        same as map(xs, fn(x) = x * 2)
+  xs.each do |x|                 on several lines, finished by `end`
+    print(x)
+  end
+  xs.select { |x| x > 2 }        with braces
 
 Conditions (every if has an else)
   if x > 0 then "positive" else if x == 0 then "zero" else "negative"
+  unless x > 0 then "small" else "big"     the opposite of if
 
 Choosing by shape
   match list
@@ -611,8 +783,9 @@ const SYNTAX_FR: &str = r#"SYNTAXE
 Valeurs
   42   -7   1_000_000            nombres entiers (Int), de toute taille
   3.14   2.0                     nombres décimaux (Float)
-  "bonjour"   "total : {x}"      textes (Text) ; {...} insère une valeur
+  "bonjour"   "total : {x}"      textes (Text) ; {...} (ou #{...}) insère une valeur
   true   false                   booléens (Bool)
+  :ok   :erreur                  symboles (Symbol) : un nom utilisé comme valeur
   [1, 2, 3]                      listes
   {nom: "Ada", age: 36}          enregistrements
   Some(3)   None                 une valeur qui peut manquer (Option)
@@ -629,6 +802,10 @@ Opérateurs
   == != < <= > >=   and (et)   or (ou)   not (non)
   x |> f(y)                      comme f(x, y) : des étapes de gauche à droite
   x.f(y)                         aussi comme f(x, y)
+  x.f                            le champ f de x ; si x n'en a pas, f(x) : xs.sum
+  xs                             un enchaînement peut continuer, chaque ligne
+    .select(even?)               commençant par un point
+    .sum
 
 Fonctions
   fn double(x) = x * 2           sur une ligne, avec =
@@ -637,9 +814,18 @@ Fonctions
     print(message)               la dernière ligne donne le résultat
   end
   fn(x) = x + 1                  une fonction anonyme
+  fn majeur?(p) = p.age >= 18    un nom peut finir par ? (voir rythme help ruby)
+
+Blocs : une fonction donnée comme dernier argument d'un appel
+  xs.map do |x| x * 2 end        comme map(xs, fn(x) = x * 2)
+  xs.each do |x|                 sur plusieurs lignes, terminé par `end`
+    print(x)
+  end
+  xs.select { |x| x > 2 }        avec des accolades
 
 Conditions (chaque if a un else)
   if x > 0 then "positif" else if x == 0 then "zéro" else "négatif"
+  unless x > 0 then "petit" else "grand"   le contraire de if
 
 Choisir selon la forme
   match liste
@@ -1715,6 +1901,9 @@ The style
         | Circle(radius)
         | Rect(width, height)
   - a list written on several lines ends with a comma
+  - a block written on one line stays on one line:
+      xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+    on several lines, its statements go one level deeper than `do`
   - one statement per line (no `;`), and `end` on its own line
   - a blank line around a definition written on several lines; never two
     blank lines in a row
@@ -1751,6 +1940,9 @@ Le style
         | Cercle(rayon)
         | Rect(largeur, hauteur)
   - une liste écrite sur plusieurs lignes finit par une virgule
+  - un bloc écrit sur une ligne reste sur une ligne :
+      xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+    sur plusieurs lignes, ses instructions vont un niveau plus loin que `do`
   - une instruction par ligne (pas de `;`), et `end` sur sa propre ligne
   - une ligne vide autour d'une définition écrite sur plusieurs lignes ;
     jamais deux lignes vides de suite

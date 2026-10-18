@@ -25,11 +25,11 @@ use crate::ast::*;
 use crate::diagnostic::Diagnostic;
 use crate::source::Span;
 use crate::symbol::Sym;
-use crate::types::{self, Kinds, Outcome, Ty, ALL, BOOL, DATA, FLOAT, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, TEXT, UNIT};
+use crate::types::{self, Kinds, Outcome, Ty, ALL, BOOL, DATA, FLOAT, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, SYMBOL, TEXT, UNIT};
 use crate::value::Value;
 
 /// Each kind of value, alone.
-const EACH: [Kinds; 11] = [UNIT, BOOL, INT, FLOAT, TEXT, LIST, RECORD, OPTION, RESULT, DATA, FUNC];
+const EACH: [Kinds; 12] = [UNIT, BOOL, INT, FLOAT, TEXT, SYMBOL, LIST, RECORD, OPTION, RESULT, DATA, FUNC];
 
 /// The name given to "a value of any type of the program" when trying the
 /// kinds one by one: [`comparable`] and [`may_be_equal`] take it as the same
@@ -46,6 +46,7 @@ fn sample(k: Kinds) -> Ty {
         INT => Ty::Int,
         FLOAT => Ty::Float,
         TEXT => Ty::Text,
+        SYMBOL => Ty::Symbol,
         LIST => Ty::list(Ty::Any),
         RECORD => Ty::record(Vec::new(), false),
         OPTION => Ty::data(Sym::new("Option"), None),
@@ -336,6 +337,7 @@ impl Checker<'_> {
             // `1` matches `1.0`.
             PatKind::Int(_) | PatKind::Big(_) | PatKind::Float(_) => NUMBER,
             PatKind::Text(_) => TEXT,
+            PatKind::Symbol(_) => SYMBOL,
             PatKind::List(..) => LIST,
             PatKind::Record(_) => RECORD,
             PatKind::Or(alts) => alts.iter().fold(0, |k, a| k | self.pattern_kinds(a)),
@@ -405,7 +407,16 @@ impl Checker<'_> {
                 k |= Ty::data(m.type_name, None).kinds();
             }
         }
+        // `t.upcase`: without such a field, the function `upcase` is called with the value.
+        let mut exits = false;
+        if let Some((need, may_exit)) = self.function_need(Sym::new(name), &[], &[]) {
+            k |= need;
+            exits = may_exit;
+        }
         self.require(obj, k);
+        if exits {
+            self.may_stop();
+        }
     }
 
     /// The arguments of a call to the built-in function `b`.
@@ -603,8 +614,19 @@ impl Checker<'_> {
         self.require_param(p, RECORD);
         self.may_stop();
         self.set_ways(saved);
+        let (need, exits) = self.function_need(name, args, tys).unwrap_or((ALL, true));
+        self.require_param(p, RECORD | need);
+        if exits {
+            self.may_stop();
+        }
+    }
+
+    /// What the function `name` needs as its first argument, before `args`,
+    /// and whether it may end the program; `None` when no function has this
+    /// name (a local value may be one: anything will do then).
+    fn function_need(&self, name: Sym, args: &[&Expr], tys: &[Ty]) -> Option<(Kinds, bool)> {
         let local = self.scopes.iter().rev().flat_map(|scope| scope.iter().rev()).find(|l| l.sym == name).map(|l| l.def.clone());
-        let (need, exits) = match local {
+        Some(match local {
             Some(Some(def)) => self.needs.local.get(&def.span).map(|(n, e)| (n.first().copied().unwrap_or(ALL), *e)).unwrap_or((ALL, true)),
             Some(None) => (ALL, true),
             None => match self.own.get(&name).or_else(|| self.know.globals.get(&name)) {
@@ -623,13 +645,10 @@ impl Checker<'_> {
                     (self.needs.top.get(&name).and_then(|n| n.first().copied()).unwrap_or(ALL), self.needs.exits.contains(&name))
                 }
                 Some(g) if matches!(g.kind, GKind::Ctor | GKind::CtorValue) => (ALL, false),
-                _ => (ALL, true),
+                Some(_) => (ALL, true),
+                None => return None,
             },
-        };
-        self.require_param(p, RECORD | need);
-        if exits {
-            self.may_stop();
-        }
+        })
     }
 
     // ----- inference over the module ---------------------------------------
