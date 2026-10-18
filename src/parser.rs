@@ -7,10 +7,12 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::ast::*;
+use crate::bigint::{self, BigInt};
 use crate::diagnostic::{Diagnostic, Fallible};
 use crate::lexer::{self, describe, Lexed, StrPart, Tok, Token};
 use crate::source::Span;
 use crate::symbol::Sym;
+use crate::value::Value;
 
 pub fn parse(lexed: Lexed) -> Fallible<Vec<Item>> {
     let mut p = Parser { toks: lexed.tokens, pos: 0, sig: vec![true], docs: lexed.docs, last: Span::default(), depth: 0, in_text: false };
@@ -66,6 +68,7 @@ fn starts_expression(t: &Tok) -> bool {
     matches!(
         t,
         Tok::Int(_)
+            | Tok::Big(_)
             | Tok::Float(_)
             | Tok::Str(_)
             | Tok::Ident(_)
@@ -502,6 +505,7 @@ impl Parser {
                 PatKind::Record(fields)
             }
             ExprKind::Int(n) => PatKind::Int(n),
+            ExprKind::Big(n) => PatKind::Big(n),
             ExprKind::Float(f) => PatKind::Float(f),
             ExprKind::Text(t) => PatKind::Text(t),
             ExprKind::Bool(b) => PatKind::Bool(b),
@@ -1009,17 +1013,10 @@ impl Parser {
         match self.peek() {
             Tok::Minus => {
                 let t = self.advance();
-                if matches!(self.peek(), Tok::IntMinMagnitude) {
-                    // -9223372036854775808, the smallest whole number.
-                    let n = self.advance();
-                    return Ok(Expr::new(ExprKind::Int(i64::MIN), t.span.to(n.span)));
-                }
                 let e = self.deeper(|p| p.unary())?;
                 let span = t.span.to(e.span);
                 Ok(match e.kind {
-                    // `-(-9223372036854775808)` has no value: it is left to the
-                    // evaluation, which reports the overflow.
-                    ExprKind::Int(n) if n != i64::MIN => Expr::new(ExprKind::Int(-n), span),
+                    kind @ (ExprKind::Int(_) | ExprKind::Big(_)) => Expr::new(negated(kind), span),
                     ExprKind::Float(f) => Expr::new(ExprKind::Float(-f), span),
                     kind => Expr::new(ExprKind::Unary(UnOp::Neg, Box::new(Expr::new(kind, e.span))), span),
                 })
@@ -1187,6 +1184,10 @@ impl Parser {
                 self.advance();
                 Ok(Expr::new(ExprKind::Int(n), span))
             }
+            Tok::Big(n) => {
+                self.advance();
+                Ok(Expr::new(ExprKind::Big(n), span))
+            }
             Tok::Float(f) => {
                 self.advance();
                 Ok(Expr::new(ExprKind::Float(f), span))
@@ -1208,7 +1209,6 @@ impl Parser {
                 Ok(Expr::new(ExprKind::Ctor(s), span))
             }
             Tok::Reserved(s) => Err(self.reserved_error(s, span)),
-            Tok::IntMinMagnitude => Err(lexer::too_large("9223372036854775808", span)),
             Tok::LParen => {
                 self.advance();
                 self.nested(false, |p| {
@@ -1543,6 +1543,10 @@ impl Parser {
                 self.advance();
                 PatKind::Int(n)
             }
+            Tok::Big(n) => {
+                self.advance();
+                PatKind::Big(n)
+            }
             Tok::Float(f) => {
                 self.advance();
                 PatKind::Float(f)
@@ -1552,7 +1556,11 @@ impl Parser {
                 let t = self.advance();
                 let kind = match t.tok {
                     Tok::Int(n) => PatKind::Int(-n),
-                    Tok::IntMinMagnitude => PatKind::Int(i64::MIN),
+                    Tok::Big(n) => match negated(ExprKind::Big(n)) {
+                        ExprKind::Int(n) => PatKind::Int(n),
+                        ExprKind::Big(n) => PatKind::Big(n),
+                        _ => unreachable!(),
+                    },
                     Tok::Float(f) => PatKind::Float(-f),
                     _ => return Err(self.unexpected_token(&t, t!("a number", "un nombre"))),
                 };
@@ -1683,6 +1691,24 @@ fn field_key(tok: &Tok) -> Option<Rc<str>> {
             Some(Rc::from(parts.iter().map(|p| if let StrPart::Lit(s) = p { s.as_str() } else { "" }).collect::<String>()))
         }
         other => lexer::keyword_text(other).map(Rc::from),
+    }
+}
+
+/// `-n` for a whole number written in the code: `-9223372036854775808` is
+/// the smallest `Int`, and the opposite of a larger number may fit in one.
+fn negated(kind: ExprKind) -> ExprKind {
+    let n = match kind {
+        ExprKind::Int(n) => match n.checked_neg() {
+            Some(m) => return ExprKind::Int(m),
+            None => BigInt::from_i64(n),
+        },
+        ExprKind::Big(n) => (*n).clone(),
+        other => return other,
+    };
+    match bigint::value(n.neg()) {
+        Value::Int(m) => ExprKind::Int(m),
+        Value::Big(m) => ExprKind::Big(m),
+        _ => unreachable!(),
     }
 }
 

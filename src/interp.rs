@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::ast::*;
+use crate::bigint::{self, BigInt};
 use crate::builtins::BUILTINS;
 use crate::compile::{self, Capture, FnCode, Kind, Node, Pat, Scope, Sibling};
 use crate::diagnostic::{Diagnostic, Fallible};
@@ -1126,6 +1127,8 @@ fn match_pat(p: &Pat, v: &Value, slots: &mut [Value], first: usize) -> bool {
         (Pat::Bool(a), Value::Bool(b)) => a == b,
         (Pat::Int(a), Value::Int(b)) => a == b,
         (Pat::Int(a), Value::Float(b)) => cmp_int_float(*a, *b) == Some(std::cmp::Ordering::Equal),
+        (Pat::Big(a), Value::Big(b)) => a == b,
+        (Pat::Big(a), Value::Float(b)) => a.cmp_f64(*b) == Some(std::cmp::Ordering::Equal),
         (Pat::Float(a), Value::Float(b)) => a == b,
         (Pat::Float(a), Value::Int(b)) => cmp_int_float(*b, *a) == Some(std::cmp::Ordering::Equal),
         (Pat::Text(a), Value::Text(b)) => a == b,
@@ -1197,6 +1200,8 @@ pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> boo
         (PatKind::Bool(a), Value::Bool(b)) => a == b,
         (PatKind::Int(a), Value::Int(b)) => a == b,
         (PatKind::Int(a), Value::Float(b)) => cmp_int_float(*a, *b) == Some(std::cmp::Ordering::Equal),
+        (PatKind::Big(a), Value::Big(b)) => a == b,
+        (PatKind::Big(a), Value::Float(b)) => a.cmp_f64(*b) == Some(std::cmp::Ordering::Equal),
         (PatKind::Float(a), Value::Float(b)) => a == b,
         (PatKind::Float(a), Value::Int(b)) => cmp_int_float(*b, *a) == Some(std::cmp::Ordering::Equal),
         (PatKind::Text(a), Value::Text(b)) => a == b,
@@ -1240,7 +1245,8 @@ pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> boo
 #[inline(never)]
 fn unary(op: UnOp, v: &Value, span: Span, operand: Span) -> Fallible<Value> {
     match (op, v) {
-        (UnOp::Neg, Value::Int(n)) => n.checked_neg().map(Value::Int).ok_or_else(|| overflow(span)),
+        (UnOp::Neg, Value::Int(n)) => Ok(n.checked_neg().map_or_else(|| bigint::value(BigInt::from_i64(*n).neg()), Value::Int)),
+        (UnOp::Neg, Value::Big(n)) => Ok(bigint::value(n.neg())),
         (UnOp::Neg, Value::Float(f)) => Ok(Value::Float(-f)),
         (UnOp::Not, Value::Bool(b)) => Ok(Value::Bool(!b)),
         (UnOp::Neg, other) => {
@@ -1418,7 +1424,7 @@ fn condition_error(v: &Value, span: Span) -> Box<Diagnostic> {
     .at(span)
     .label(t!("not a Bool", "pas un Bool"));
     d = match v {
-        Value::Int(_) | Value::Float(_) => {
+        Value::Int(_) | Value::Big(_) | Value::Float(_) => {
             d.help(t!("compare it explicitly, for example `x != 0` or `x > 0`", "comparez explicitement, par exemple `x != 0` ou `x > 0`"))
         }
         Value::List(_) | Value::Text(_) | Value::Record(_) => d.help(t!(
@@ -1434,16 +1440,6 @@ fn condition_error(v: &Value, span: Span) -> Box<Diagnostic> {
     d.boxed()
 }
 
-pub fn overflow(span: Span) -> Box<Diagnostic> {
-    Diagnostic::error("E012", t!("the result is too large for a whole number (Int)", "le résultat est trop grand pour un nombre entier (Int)"))
-        .at(span)
-        .help(t!(
-            "whole numbers go from -9223372036854775808 to 9223372036854775807;\nfor bigger values, use decimal numbers (Float), like `2.0 ** 100`",
-            "les nombres entiers vont de -9223372036854775808 à 9223372036854775807 ;\npour des valeurs plus grandes, utilisez des nombres décimaux (Float), comme `2.0 ** 100`"
-        ))
-        .boxed()
-}
-
 pub fn div_zero(span: Span) -> Box<Diagnostic> {
     Diagnostic::error("E008", t!("division by zero", "division par zéro"))
         .at(span)
@@ -1454,7 +1450,7 @@ pub fn div_zero(span: Span) -> Box<Diagnostic> {
         .boxed()
 }
 
-fn zero_to_negative_power(span: Span) -> Box<Diagnostic> {
+pub fn zero_to_negative_power(span: Span) -> Box<Diagnostic> {
     let mut d = div_zero(span);
     d.notes.push(t!("`0 ** -n` is `1 / 0 ** n`", "`0 ** -n` vaut `1 / 0 ** n`"));
     d
@@ -1490,7 +1486,7 @@ fn op_error(op: BinOp, l: &Value, r: &Value, span: Span) -> Box<Diagnostic> {
         .label(format!("{} {sym} {}", l.describe(), r.describe()));
     let is_text = |v: &Value| matches!(v, Value::Text(_));
     let is_list = |v: &Value| matches!(v, Value::List(_));
-    let is_num = |v: &Value| matches!(v, Value::Int(_) | Value::Float(_));
+    let is_num = |v: &Value| matches!(v, Value::Int(_) | Value::Big(_) | Value::Float(_));
     if op == BinOp::Add && (is_text(l) || is_text(r)) {
         d = d.help(t!(
             "to build a text with a value inside, use braces: \"total: {{x}}\"\nor convert the value first: text(x)",
@@ -1558,6 +1554,7 @@ fn int_op(op: BinOp, a: i64, b: i64) -> Option<Value> {
 fn num(v: &Value) -> Option<f64> {
     match v {
         Value::Int(n) => Some(*n as f64),
+        Value::Big(n) => Some(n.to_f64()),
         Value::Float(f) => Some(*f),
         _ => None,
     }
@@ -1619,6 +1616,7 @@ pub fn binop(op: BinOp, l: &Value, r: &Value, span: Span) -> Fallible<Value> {
                     if b == 0 {
                         return Err(div_zero(span));
                     }
+                    // Only `i64::MIN // -1` does not fit.
                     a.checked_div(b).map(|q| if (a % b != 0) && ((a < 0) != (b < 0)) { q - 1 } else { q })
                 }
                 BinOp::Mod => {
@@ -1648,9 +1646,14 @@ pub fn binop(op: BinOp, l: &Value, r: &Value, span: Span) -> Fallible<Value> {
                 }
                 _ => unreachable!(),
             };
-            res.map(Int).ok_or_else(|| overflow(span))
+            match res {
+                Some(n) => Ok(Int(n)),
+                // Too large for 64 bits: computed with large numbers.
+                None => bigint::binop(op, l, r, span),
+            }
         }
-        (Int(_) | Float(_), Int(_) | Float(_)) => {
+        (Int(_) | Big(_), Int(_) | Big(_)) => bigint::binop(op, l, r, span),
+        (Int(_) | Big(_) | Float(_), Int(_) | Big(_) | Float(_)) => {
             let (a, b) = (num(l).unwrap(), num(r).unwrap());
             Ok(Float(match op {
                 BinOp::Add => a + b,
@@ -1729,28 +1732,44 @@ pub fn binop(op: BinOp, l: &Value, r: &Value, span: Span) -> Fallible<Value> {
 }
 
 fn range(a: &Value, b: &Value, span: Span) -> Fallible<Value> {
-    match (a, b) {
-        (Value::Int(a), Value::Int(b)) => {
+    if let (Value::Int(a), Value::Int(b)) = (a, b) {
+        if b < a {
+            return Ok(Value::list(Vec::new()));
+        }
+        if b.saturating_sub(*a) < MAX_RANGE {
+            return Ok(Value::list((*a..=*b).map(Value::Int).collect()));
+        }
+    }
+    match (bigint::big(a), bigint::big(b)) {
+        (Some(a), Some(b)) => {
             if b < a {
                 return Ok(Value::list(Vec::new()));
             }
-            if b.saturating_sub(*a) >= MAX_RANGE {
-                return Err(Diagnostic::error(
+            let one = BigInt::from_i64(1);
+            let size = b.sub(&a).add(&one);
+            match size.to_i64() {
+                Some(n) if n <= MAX_RANGE => {
+                    // Large numbers, but not many of them.
+                    let mut n_items = Vec::with_capacity(n as usize);
+                    let mut x = a.into_owned();
+                    for _ in 0..n {
+                        let next = x.add(&one);
+                        n_items.push(bigint::value(x));
+                        x = next;
+                    }
+                    Ok(Value::list(n_items))
+                }
+                _ => Err(Diagnostic::error(
                     "E023",
-                    t!(
-                        "this range is too large ({} elements)",
-                        "cet intervalle est trop grand ({} éléments)",
-                        (*b as i128) - (*a as i128) + 1
-                    ),
+                    t!("this range is too large ({} elements)", "cet intervalle est trop grand ({} éléments)", size),
                 )
                 .at(span)
                 .help(t!(
                     "ranges are lists: keep them under {MAX_RANGE} elements",
                     "les intervalles sont des listes : gardez-les sous {MAX_RANGE} éléments"
                 ))
-                .boxed());
+                .boxed()),
             }
-            Ok(Value::list((*a..=*b).map(Value::Int).collect()))
         }
         _ => Err(Diagnostic::error(
             "E005",
@@ -1769,7 +1788,7 @@ fn range(a: &Value, b: &Value, span: Span) -> Fallible<Value> {
 
 #[inline(never)]
 fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
-    let out_of_range = |n: i64, len: usize, what: String| {
+    let out_of_range = |n: &dyn std::fmt::Display, len: usize, what: String| {
         let mut d = Diagnostic::error("E007", t!("index {n} is out of range: {what}", "l'indice {n} est hors limites : {what}"))
             .at(idx_span)
             .label(t!("no element here", "aucun élément ici"));
@@ -1792,7 +1811,7 @@ fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
             match resolve_index(*n, len) {
                 Some(k) => Ok(l.as_slice()[k].clone()),
                 None => Err(out_of_range(
-                    *n,
+                    n,
                     len,
                     if len == 0 {
                         t!("the list is empty", "la liste est vide")
@@ -1807,7 +1826,7 @@ fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
             match resolve_index(*n, len) {
                 Some(k) => Ok(Value::text(&s.chars().nth(k).unwrap().to_string())),
                 None => Err(out_of_range(
-                    *n,
+                    n,
                     len,
                     if len == 0 {
                         t!("the text is empty", "le texte est vide")
@@ -1816,6 +1835,13 @@ fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
                     },
                 )),
             }
+        }
+        (Value::List(l), Value::Big(n)) => {
+            Err(out_of_range(n, l.len(), t!("the list has {} element(s)", "la liste a {} élément(s)", l.len())))
+        }
+        (Value::Text(s), Value::Big(n)) => {
+            let len = s.chars().count();
+            Err(out_of_range(n, len, t!("the text has {len} character(s)", "le texte a {len} caractère(s)")))
         }
         (Value::Record(r), Value::Text(k)) => r.get(k).cloned().ok_or_else(|| {
             Diagnostic::error("E010", t!("this record has no field `{k}`", "cet enregistrement n'a pas de champ `{k}`"))

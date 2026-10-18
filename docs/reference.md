@@ -142,12 +142,10 @@ elif  elsif  import  try  catch  except  raise  throw  null  nil  lambda  switch
 **Whole numbers (Int)** are written in decimal (`42`), in hexadecimal after
 `0x` (`0xFF`, digits in either case) or in binary after `0b` (`0b1010`). The
 prefixes are lowercase only; there is no octal notation. `_` may separate
-digits anywhere after the first one (`1_000_000`, `0xFF_FF`). A literal must
-fit in 64 bits: `9223372036854775807` (`0x7fffffffffffffff`) is the largest;
-`9223372036854775808` is accepted only in decimal, right after a minus sign
-(the smallest Int). A larger literal is error E012, in every base; a
-hexadecimal or binary literal with a wrong digit or no digit (`0b12`, `0x`)
-is error E018.
+digits anywhere after the first one (`1_000_000`, `0xFF_FF`). Whole numbers
+have no size limit (see 2.1): a literal of more than 100000 digits is error
+E023, in every base; a hexadecimal or binary literal with a wrong digit or no
+digit (`0b12`, `0x`) is error E018.
 
 **Decimal numbers (Float)** have digits on both sides of the point (`3.14`,
 `2.0`), an exponent (`1e3`, `1.5e-3`, `6.02E23`), or both. `.5` and `5.` are
@@ -160,13 +158,13 @@ There are no negative literals: `-7` is the operator `-` applied to `7`.
 ```rythme
 print(42, -7, 1_000_000, 0xFF, 0b1010)
 print(3.14, 2.0, 1e3, 1.5e-3, 6.02E23)
-print(9223372036854775807, -9223372036854775808)
+print(9223372036854775807, -9223372036854775808, 123456789012345678901234567890)
 ```
 
 ```text
 42 -7 1000000 255 10
 3.14 2.0 1000.0 0.0015 6.02e23
-9223372036854775807 -9223372036854775808
+9223372036854775807 -9223372036854775808 123456789012345678901234567890
 ```
 
 ### 1.7 Texts
@@ -334,7 +332,7 @@ ever converting a value silently.
 
 | Type (`type_of`) | Values | Examples |
 |------------------|--------|----------|
-| `Int` | whole numbers, 64 bits | `42`, `-7`, `0xFF` |
+| `Int` | whole numbers, of any size | `42`, `-7`, `0xFF` |
 | `Float` | decimal numbers, 64 bits | `3.14`, `2.0`, `1e3` |
 | `Text` | texts | `"hello"`, `"total: {x}"` |
 | `Bool` | `true`, `false` | |
@@ -359,27 +357,51 @@ print(map(samples, type_of))
 
 ### 2.1 Int
 
-Signed 64-bit whole numbers, from −9223372036854775808 to
-9223372036854775807. An operation whose exact result does not fit is an
-error (E012): Rythme never wraps around silently.
+Whole numbers of any size, always exact: they grow as needed, like in Python
+or Ruby, and never wrap around. The usual numbers, from −9223372036854775808
+to 9223372036854775807 (64 bits), are computed fastest; beyond, the result is
+still an Int, with all its digits. `+`, `-`, `*`, `//`, `%`, `**`, the
+comparisons (with Floats too, see 2.11), `abs`, `gcd`, `lcm`, `is_even`,
+`text`, `int`, `parse_int`, `to_json` and `parse_json` work exactly on all
+of them; a function that needs a position or a count (`take`, `get`,
+`repeat`...) refuses a number beyond 64 bits (E023), and `[...]` says it is
+out of range (E007).
 
 ```rythme
 big = 9223372036854775807
-print(big)
-print(big + 1)
+print(big + 1, big * big)
+fn factorial(n) = if n == 0 then 1 else n * factorial(n - 1)
+print(factorial(25), 2 ** 100)
+print(-(2 ** 64) // 3, -(2 ** 64) % 3, (2 ** 64) / 3)
+print(type_of(2 ** 64), 2 ** 64 - 2 ** 64 + 1)
 ```
 
 ```text
-9223372036854775807
-error[E012]: the result is too large for a whole number (Int)
- --> 11-int.ry:3:11
+9223372036854775808 85070591730234615847396907784232501249
+15511210043330985984000000 1267650600228229401496703205376
+-6148914691236517206 2 6.148914691236517e18
+Int 1
+```
+
+A whole number has at most 100000 digits: beyond, the program stops with
+E023 rather than filling the memory (a number that large usually comes from
+a calculation that grows without end).
+
+```rythme
+print(len(text(10 ** 99999)))
+print(10 ** 100000)
+```
+
+```text
+100000
+error[E023]: this whole number would be too large (more than 100000 digits)
+ --> 11-int.ry:2:10
   |
-3 | print(big + 1)
-  |           ^
+2 | print(10 ** 100000)
+  |          ^^
   |
-  = help: whole numbers go from -9223372036854775808 to 9223372036854775807;
-      for bigger values, use decimal numbers (Float), like `2.0 ** 100`
-  = more about this error: `rythme explain E012`
+  = help: does it grow without end, in a function that calls itself? For an approximate value, use a decimal number (Float), like `2.0 ** 1000`
+  = more about this error: `rythme explain E023`
 ```
 
 Exit code: 1.
@@ -734,13 +756,13 @@ error[E001]: `+` cannot follow a `|>` step directly
 
 | Operation | Ints | With a Float | Other values |
 |-----------|------|--------------|--------------|
-| `a + b` | Int (E012 on overflow) | Float | two texts: joined; two lists: joined; otherwise E005 |
-| `a - b`, `a * b` | Int (E012 on overflow) | Float | E005 |
+| `a + b` | Int, exact at any size | Float | two texts: joined; two lists: joined; otherwise E005 |
+| `a - b`, `a * b` | Int, exact at any size | Float | E005 |
 | `a / b` | **always a Float** (`6 / 3` is `2.0`) | Float | E005 |
 | `a // b` | Int, rounded down (toward −∞) | Float, rounded down | E005 |
 | `a % b` | Int, with the sign of `b` | Float: the exact remainder, with the sign of `b` | E005 |
-| `a ** b` | Int if `b >= 0` (E012 on overflow), Float if `b < 0` (`0 ** -n` is E008) | Float (E023 for a negative number to a fractional power) | E005 |
-| `-a` | Int (E012 for the smallest Int) | Float | E005 |
+| `a ** b` | Int if `b >= 0`, exact at any size, Float if `b < 0` (`0 ** -n` is E008) | Float (E023 for a negative number to a fractional power) | E005 |
+| `-a` | Int | Float | E005 |
 
 `/`, `//` and `%` by zero are error E008, for Ints and Floats. Rythme never
 converts between texts and numbers: `"1" + 1` is E005 (write `"{x}"`,
@@ -2100,7 +2122,7 @@ with examples; the code may be written in lowercase.
 | E009 | Not a function | a value that is not a function is called (`x(3)`, `None()`) |
 | E010 | Unknown field | the record or the variant has no field with this name |
 | E011 | Already defined | a name, type, constructor or field defined twice in the same place, or an attempt to change a value (`x += 1`) |
-| E012 | Number too large | a whole number outside the 64-bit range, in the code (in any base) or as a result (`-x` and `abs(x)` of the smallest Int included) |
+| E012 | Number too large | no longer given: whole numbers have no size limit (a number of more than 100000 digits is E023) |
 | E013 | `unwrap` found no value | `unwrap` on `None` or `Err(...)` |
 | E014 | Too many nested calls | calls nested deeper than the stack allows |
 | E015 | Assertion failed | `assert`, `assert_eq`, or a test that ended with `false`, `Err(...)` or `None` |
@@ -2111,7 +2133,7 @@ with examples; the code may be written in lowercase.
 | E020 | Missing `end` | a function, `test`, `match` or `do` block that is never closed |
 | E021 | Program stopped by `fail` | `fail(message)` was called |
 | E022 | Impossible conversion | `int(t)` or `float(t)` on a text that is not a number |
-| E023 | Invalid value | a value of the right kind but outside what is accepted (a negative count, `min` of an empty list, `sqrt(-1)`, a range, a list or a text too large, an exit code outside 0–255...) |
+| E023 | Invalid value | a value of the right kind but outside what is accepted (a negative count, `min` of an empty list, `sqrt(-1)`, a range, a list or a text too large, a whole number of more than 100000 digits, an exit code outside 0–255...) |
 | E024 | A value is lost | a line computes a value that nothing uses |
 | W001 | Unused name | a local name is defined but never used |
 | W002 | Forgotten case | a `match` or a one-parameter function does not handle every possible value |
@@ -3015,7 +3037,7 @@ Notes:
 
 | Limit | Value | Error |
 |-------|-------|-------|
-| whole numbers (Int) | −2⁶³ to 2⁶³ − 1 | E012 |
+| digits of a whole number (Int), in the code, as a result or read by `int` | 100 000 | E023 |
 | elements of a list (built by a range, `+`, `..xs`, `repeat`, `flatten`, `flat_map`, `chars`) | 50 000 000 | E023 |
 | length of a text (built by `+`, `{...}`, `join`, `replace`, `repeat`, `pad_left`, `pad_right`) | 100 000 000 bytes in UTF-8 | E023 |
 | nesting of brackets, blocks and other constructs in the code | 256 levels | E001 |

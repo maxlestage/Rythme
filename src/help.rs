@@ -377,7 +377,7 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
             let cat = match other {
                 Value::List(_) => Some(Category::Lists),
                 Value::Text(_) => Some(Category::Text),
-                Value::Int(_) | Value::Float(_) => Some(Category::Numbers),
+                Value::Int(_) | Value::Big(_) | Value::Float(_) => Some(Category::Numbers),
                 Value::Record(_) => Some(Category::Records),
                 Value::Variant(_) if it.wrap(other) != Wrap::Other => Some(Category::Options),
                 _ => None,
@@ -519,7 +519,7 @@ et comment la corriger. `rythme explain E003` explique un code d'erreur."#;
 const SYNTAX_EN: &str = r#"SYNTAX
 
 Values
-  42   -7   1_000_000            whole numbers (Int)
+  42   -7   1_000_000            whole numbers (Int), of any size
   3.14   2.0                     decimal numbers (Float)
   "hello"   "total: {x}"         texts (Text); {...} inserts a value
   true   false                   booleans (Bool)
@@ -578,7 +578,7 @@ Comments
 const SYNTAX_FR: &str = r#"SYNTAXE
 
 Valeurs
-  42   -7   1_000_000            nombres entiers (Int)
+  42   -7   1_000_000            nombres entiers (Int), de toute taille
   3.14   2.0                     nombres décimaux (Float)
   "bonjour"   "total : {x}"      textes (Text) ; {...} insère une valeur
   true   false                   booléens (Bool)
@@ -1916,22 +1916,27 @@ guillemets (`use "a.ry"`) ne peuvent pas définir le même nom : utilisez-les
 plutôt par leur nom (`use a`, puis `a.aire`)."#,
         ),
         "E012" => (
-            r#"E012 — Number too large
+            r#"E012 — Number too large (no longer given)
 
-Whole numbers (Int) go from -9223372036854775808 to 9223372036854775807.
-Rythme stops instead of giving a wrong result. For bigger values, use
-decimal numbers (Float), which are approximate:
+Whole numbers (Int) have no limit any more: they grow as needed, and stay
+exact. Earlier versions of Rythme stopped with this error beyond 64 bits.
 
-  2 ** 100        # error E012
-  2.0 ** 100      # 1.2676506002282294e30"#,
-            r#"E012 — Nombre trop grand
+  2 ** 100        # 1267650600228229401496703205376
+  2.0 ** 100      # 1.2676506002282294e30 (a Float is approximate)
 
-Les nombres entiers (Int) vont de -9223372036854775808 à 9223372036854775807.
-Rythme s'arrête plutôt que de donner un résultat faux. Pour des valeurs plus
-grandes, utilisez des nombres décimaux (Float), qui sont approchés :
+Only a whole number of more than 100000 digits stops the program, with
+E023: it is usually a calculation that grows without end."#,
+            r#"E012 — Nombre trop grand (plus donnée)
 
-  2 ** 100        # erreur E012
-  2.0 ** 100      # 1.2676506002282294e30"#,
+Les nombres entiers (Int) n'ont plus de limite : ils grandissent autant que
+nécessaire, et restent exacts. Les versions précédentes de Rythme
+s'arrêtaient avec cette erreur au-delà de 64 bits.
+
+  2 ** 100        # 1267650600228229401496703205376
+  2.0 ** 100      # 1.2676506002282294e30 (un Float est approché)
+
+Seul un nombre entier de plus de 100000 chiffres arrête le programme, avec
+E023 : c'est en général un calcul qui grandit sans fin."#,
         ),
         "E013" => (
             r#"E013 — unwrap found no value
@@ -2134,14 +2139,15 @@ d'un fichier, utilisez les versions sûres, qui donnent un Result :
 The function received a value of the right kind, but outside of what it
 accepts: a negative count, the minimum of an empty list, the square root of
 a negative number, a date that does not exist (30 February), a range, a
-list or a text too large... The message explains the limit."#,
+list or a text too large, a whole number of more than 100000 digits... The
+message explains the limit."#,
             r#"E023 — Valeur invalide
 
 La fonction a reçu une valeur de la bonne sorte, mais en dehors de ce qu'elle
 accepte : un nombre négatif d'éléments, le minimum d'une liste vide, la
 racine carrée d'un nombre négatif, une date qui n'existe pas (30 février),
-un intervalle, une liste ou un texte trop grand... Le message explique la
-limite."#,
+un intervalle, une liste ou un texte trop grand, un nombre entier de plus de
+100000 chiffres... Le message explique la limite."#,
         ),
         "E024" => (
             r#"E024 — A value is lost

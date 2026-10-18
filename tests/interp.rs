@@ -27,11 +27,15 @@ fn methods_and_messages_see_local_names() {
 }
 
 #[test]
-fn operations_on_whole_numbers_still_check_overflow() {
-    let r = fails("fn g(x) = x\nfn f(n) = g(n + 1)\nprint(f(9223372036854775807))", "E012");
-    assert!(r.stderr.contains("<code>:2:15") && r.stderr.contains("in `f`"), "{}", r.stderr);
-    fails("fn f(n) = n * 2\nprint(map([9223372036854775807], f))", "E012");
-    fails("print(sum([9223372036854775807, 1]))", "E012");
+fn operations_on_whole_numbers_grow_beyond_64_bits() {
+    ok("fn g(x) = x\nfn f(n) = g(n + 1)\nprint(f(9223372036854775807))", "9223372036854775808");
+    ok("fn f(n) = n * 2\nprint(map([9223372036854775807], f))", "[18446744073709551614]");
+    ok("print(sum([9223372036854775807, 1]), product([4294967296, 4294967296, -1]))", "9223372036854775808 -18446744073709551616");
+    // Back to small numbers, the fast way.
+    ok("x = 9223372036854775807 + 1\nprint(x - 1, type_of(x - 1), x - 1 == 9223372036854775807)", "9223372036854775807 Int true");
+    // Only numbers of more than 100000 digits stop, where they are made.
+    let r = fails("fn g(x) = x\nfn f(n) = g(n * n)\nprint(f(10 ** 60000))", "E023");
+    assert!(r.stderr.contains("<code>:2:15") && r.stderr.contains("in `f`") && r.stderr.contains("100000 digits"), "{}", r.stderr);
     ok("fn f(n) = if n < 2 then n else n - 1\nprint(f(1), f(5), f(1.5), 7 // 2, -7 // 2, -7 % 3, 7 % -3)", "1 4 1.5 3 -4 2 -2");
     ok("fn f(0) = \"zero\"\nfn f(n) = \"other\"\nprint(f(0), f(0.0), f(1))", "zero zero other");
 }

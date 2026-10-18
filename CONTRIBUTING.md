@@ -45,6 +45,11 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
   by a closure, so that running never searches for a local name. After a
   change to the interpreter, run `bench/run.sh` before and after: the
   programs of `bench/` print a checksum of their work and their best time.
+- `bigint.rs` holds the whole numbers beyond 64 bits (`Value::Big`), written
+  by hand. The interpreter computes the usual numbers (`Value::Int`) on the
+  spot and only goes there when a result does not fit, so keep it off the
+  fast paths: `tests/fuzz.rs` checks it against `i128` and against a simple
+  decimal multiplication.
 - `diagnostic.rs` prints messages in the style of Rust.
 - `format.rs` is `rythme fmt`, the formatter: run `cargo run -- fmt examples`
   after changing an example. Its tests (`tests/format.rs`) check on every

@@ -24,7 +24,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 - [ ] **Patterns on ranges and texts.** `1..9 -> ...` in `match` (Int and
   Float bounds, exhaustiveness knows nothing new), and a text prefix pattern
   only if it stays simple; the checker reports overlapping or empty ranges.
-- [ ] **Whole numbers without limit.** Int grows beyond 64 bits instead of
+- [x] **Whole numbers without limit.** Int grows beyond 64 bits instead of
   E012 (the way Python does), with the small-number fast path kept; `pow`,
   `gcd`, `text`, `parse_int`, JSON and comparisons with Float are exact.
 - [ ] **Types of parameters, inferred.** `rythme check` infers what a
