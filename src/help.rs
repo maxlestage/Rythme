@@ -29,6 +29,7 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ("repl", &["interactive", "interactif"]),
     ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme"]),
     ("doc", &["documentation", "documenter", "docs"]),
+    ("steps", &["etapes", "étapes", "step", "etape", "étape", "stepper", "pas-a-pas", "pas-à-pas"]),
     ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide"]),
     ("builtins", &["functions-list", "fonctions-integrees", "library", "bibliotheque", "bibliothèque", "stdlib"]),
 ];
@@ -51,6 +52,7 @@ Commandes
   rythme test fichier.ry    lancer les tests d'un fichier
   rythme fmt fichier.ry     mettre le code en forme (--check : vérifier seulement)
   rythme doc fichier.ry     écrire sa documentation, en Markdown (--html : une page web)
+  rythme etapes fichier.ry  montrer le calcul étape par étape (fib(3) → fib(2) + fib(1) → ...)
   rythme exercise           exercices corrigés automatiquement (list, start, check)
   rythme learn              visite guidée du langage, pas à pas
   rythme help SUJET         aide sur un sujet ou une fonction
@@ -77,6 +79,7 @@ Sujets (rythme help SUJET)
   repl        le mode interactif
   fmt         la mise en forme officielle du code (rythme fmt)
   doc         la documentation tirée des commentaires ## (rythme doc)
+  steps       le calcul montré étape par étape (rythme etapes)
   editors     Rythme dans votre éditeur (VS Code, Neovim, Helix...)
   builtins    toutes les fonctions intégrées
 
@@ -94,6 +97,7 @@ Commands
   rythme test file.ry       run the tests of a file
   rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
+  rythme steps file.ry      show the calculation step by step (fib(3) → fib(2) + fib(1) → ...)
   rythme exercise           exercises checked automatically (list, start, check)
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
@@ -120,6 +124,7 @@ Topics (rythme help TOPIC)
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
+  steps       the calculation shown step by step (rythme steps)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
   builtins    every built-in function
 
@@ -454,6 +459,7 @@ fn topic_text(name: &str) -> &'static str {
         "repl" => pick(REPL_EN, REPL_FR),
         "fmt" => pick(FMT_EN, FMT_FR),
         "doc" => pick(DOC_EN, DOC_FR),
+        "steps" => pick(STEPS_EN, STEPS_FR),
         "editors" => pick(EDITORS_EN, EDITORS_FR),
         _ => "",
     }
@@ -1376,6 +1382,7 @@ Commands
   :doc map        help on a name         :load f.ry     load a file
   :reset          forget everything      :lang fr|en    change the language
   :learn          guided tour            :explain E003  explain an error
+  :steps fib(4)   show the calculation step by step
 The Tab key completes names."#;
 
 const REPL_FR: &str = r#"LE MODE INTERACTIF
@@ -1392,7 +1399,71 @@ Commandes
   :doc map        aide sur un nom        :load f.ry     charger un fichier
   :reset          tout oublier           :lang fr|en    changer de langue
   :learn          visite guidée          :explain E003  expliquer une erreur
+  :etapes fib(4)  montrer le calcul étape par étape
 La touche Tab complète les noms."#;
+
+const STEPS_EN: &str = r#"STEP BY STEP: rythme steps
+
+`rythme steps` shows how a program computes its values, one step at a time:
+each call is replaced by the body of its function, with the values of the
+arguments in place, until only the result remains.
+
+  rythme steps fib.ry              each definition and expression of the file
+  rythme steps fib.ry "fib(4)"     an expression, after the definitions of the file
+  rythme steps fib.ry --max 50     show at most 50 steps of each expression
+  rythme steps fib.ry --width 80   cut the lines longer than 80 characters
+
+With  fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
+
+  fib(3)
+    → fib(2) + fib(1)
+    → fib(1) + fib(0) + fib(1)
+    → 1 + fib(0) + fib(1)
+    → 1 + 0 + fib(1)
+    → 1 + fib(1)
+    → 1 + 1
+    → 2
+
+A step is one call or one operation. The body of a called function is shown
+already simplified as far as it can be without calling another function.
+Built-in functions (and the functions of other files) give their result in
+one step. What the program prints appears between the steps. After the
+steps shown (200 by default), the rest is computed without being shown.
+
+In the interactive mode: :steps fib(4). In the playground: the Steps button.
+In French: rythme etapes."#;
+
+const STEPS_FR: &str = r#"ÉTAPE PAR ÉTAPE : rythme etapes
+
+`rythme etapes` montre comment un programme calcule ses valeurs, une étape à
+la fois : chaque appel est remplacé par le corps de sa fonction, avec les
+valeurs des arguments à leur place, jusqu'à ce qu'il ne reste que le résultat.
+
+  rythme etapes fib.ry              chaque définition et expression du fichier
+  rythme etapes fib.ry "fib(4)"     une expression, après les définitions du fichier
+  rythme etapes fib.ry --max 50     montrer au plus 50 étapes de chaque expression
+  rythme etapes fib.ry --width 80   couper les lignes de plus de 80 caractères
+
+Avec  fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
+
+  fib(3)
+    → fib(2) + fib(1)
+    → fib(1) + fib(0) + fib(1)
+    → 1 + fib(0) + fib(1)
+    → 1 + 0 + fib(1)
+    → 1 + fib(1)
+    → 1 + 1
+    → 2
+
+Une étape est un appel ou une opération. Le corps d'une fonction appelée est
+montré déjà simplifié autant que possible sans appeler une autre fonction.
+Les fonctions intégrées (et les fonctions d'autres fichiers) donnent leur
+résultat en une étape. Ce que le programme affiche apparaît entre les étapes.
+Après les étapes montrées (200 par défaut), le reste est calculé sans être
+montré.
+
+En mode interactif : :etapes fib(4). Dans le playground : le bouton Étapes.
+En anglais : rythme steps."#;
 
 const FMT_EN: &str = r#"FORMATTING: rythme fmt
 

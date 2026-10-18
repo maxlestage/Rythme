@@ -305,6 +305,32 @@ impl Interp {
 
     /// Runs the items of a module (its `use` dependencies must already have run).
     pub fn exec_items(&mut self, items: &[Item], mode: Mode) -> Fallible<Option<Value>> {
+        self.define_items(items);
+        let mut last = None;
+        for item in items {
+            last = None;
+            match item {
+                Item::Stmt(Stmt::Let(pat, e)) => {
+                    let v = self.eval_top(e)?;
+                    self.bind_global(pat, v)?;
+                }
+                Item::Stmt(Stmt::Expr(e)) => {
+                    if mode != Mode::Test {
+                        last = Some(self.eval_top(e)?);
+                    }
+                }
+                Item::Test(name, body, span) if mode == Mode::Test => {
+                    self.tests.push(TestCase { name: name.clone(), body: body.clone(), span: *span, names: self.names.clone() });
+                }
+                _ => {}
+            }
+        }
+        Ok(last)
+    }
+
+    /// Defines the types and functions of a module, and notes the names its
+    /// top-level definitions will give (for "not defined yet").
+    pub fn define_items(&mut self, items: &[Item]) {
         for item in items {
             match item {
                 Item::Type(t) => self.register_type(t),
@@ -321,34 +347,20 @@ impl Interp {
                 self.pending.extend(names.into_iter().filter(|(s, _)| !self.globals.contains_key(s)));
             }
         }
-        let mut last = None;
-        for item in items {
-            last = None;
-            match item {
-                Item::Stmt(Stmt::Let(pat, e)) => {
-                    let v = self.eval_top(e)?;
-                    let mut binds = Vec::new();
-                    if !match_pattern(pat, &v, &mut binds) {
-                        return Err(pattern_mismatch(pat.span, &v));
-                    }
-                    for (s, v) in binds {
-                        let s = self.stored(s);
-                        self.pending.remove(&s);
-                        self.globals.insert(s, v);
-                    }
-                }
-                Item::Stmt(Stmt::Expr(e)) => {
-                    if mode != Mode::Test {
-                        last = Some(self.eval_top(e)?);
-                    }
-                }
-                Item::Test(name, body, span) if mode == Mode::Test => {
-                    self.tests.push(TestCase { name: name.clone(), body: body.clone(), span: *span, names: self.names.clone() });
-                }
-                _ => {}
-            }
+    }
+
+    /// Gives the names of a top-level definition `pattern = value`.
+    pub fn bind_global(&mut self, pat: &Pattern, v: Value) -> Fallible<()> {
+        let mut binds = Vec::new();
+        if !match_pattern(pat, &v, &mut binds) {
+            return Err(pattern_mismatch(pat.span, &v));
         }
-        Ok(last)
+        for (s, v) in binds {
+            let s = self.stored(s);
+            self.pending.remove(&s);
+            self.globals.insert(s, v);
+        }
+        Ok(())
     }
 
     /// Evaluates an expression outside of any function.
@@ -860,7 +872,7 @@ impl Interp {
         d.boxed()
     }
 
-    fn field(&self, v: &Value, name: &str, span: Span) -> Fallible<Value> {
+    pub(crate) fn field(&self, v: &Value, name: &str, span: Span) -> Fallible<Value> {
         match v {
             Value::Record(r) => r.get(name).cloned().ok_or_else(|| {
                 let mut d =
@@ -1238,7 +1250,7 @@ pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> boo
 }
 
 #[inline(never)]
-fn unary(op: UnOp, v: &Value, span: Span, operand: Span) -> Fallible<Value> {
+pub(crate) fn unary(op: UnOp, v: &Value, span: Span, operand: Span) -> Fallible<Value> {
     match (op, v) {
         (UnOp::Neg, Value::Int(n)) => n.checked_neg().map(Value::Int).ok_or_else(|| overflow(span)),
         (UnOp::Neg, Value::Float(f)) => Ok(Value::Float(-f)),
@@ -1253,13 +1265,13 @@ fn unary(op: UnOp, v: &Value, span: Span, operand: Span) -> Fallible<Value> {
 }
 
 #[inline(never)]
-fn fn_arity_error(def: &FnDef, got: usize, span: Span) -> Box<Diagnostic> {
+pub(crate) fn fn_arity_error(def: &FnDef, got: usize, span: Span) -> Box<Diagnostic> {
     let name = def.name.map(|n| n.name().to_string()).unwrap_or_else(|| "fn".to_string());
     arity_error(&name, &def.signature(), def.arity, def.arity, got, span, Some(def.span))
 }
 
 #[inline(never)]
-fn no_clause(def: &FnDef, args: &[Value], span: Span) -> Box<Diagnostic> {
+pub(crate) fn no_clause(def: &FnDef, args: &[Value], span: Span) -> Box<Diagnostic> {
     let name = def.name.map(|n| n.name().to_string()).unwrap_or_else(|| "fn".to_string());
     let shown: Vec<String> = args.iter().map(|a| a.repr()).collect();
     let mut d = Diagnostic::error(
@@ -1312,7 +1324,7 @@ fn out_of_steps(span: Span) -> Box<Diagnostic> {
 }
 
 #[inline(never)]
-fn add_frame(d: &mut Diagnostic, def: &FnDef, span: Span) {
+pub(crate) fn add_frame(d: &mut Diagnostic, def: &FnDef, span: Span) {
     let name = def.name.map(|n| n.name().to_string()).unwrap_or_default();
     d.push_frame(name, span);
 }
@@ -1330,7 +1342,7 @@ fn ctor_arity_error(c: &CtorInfo, got: usize, span: Span) -> Box<Diagnostic> {
 }
 
 #[inline(never)]
-fn not_callable(v: &Value, span: Span) -> Box<Diagnostic> {
+pub(crate) fn not_callable(v: &Value, span: Span) -> Box<Diagnostic> {
     let mut d = Diagnostic::error("E009", t!("{} is not a function", "{} n'est pas une fonction", v.describe()))
         .at(span)
         .label(t!("cannot be called", "ne peut pas être appelé"));
@@ -1347,7 +1359,7 @@ fn not_callable(v: &Value, span: Span) -> Box<Diagnostic> {
 }
 
 #[inline(never)]
-fn no_case(v: &Value, span: Span) -> Box<Diagnostic> {
+pub(crate) fn no_case(v: &Value, span: Span) -> Box<Diagnostic> {
     Diagnostic::error("E006", t!("no case of this `match` handles {}", "aucun cas de ce `match` ne traite {}", v.describe()))
         .at(span)
         .label(t!("this value", "cette valeur"))
@@ -1359,7 +1371,7 @@ fn no_case(v: &Value, span: Span) -> Box<Diagnostic> {
 }
 
 #[inline(never)]
-fn try_error(v: &Value, span: Span) -> Box<Diagnostic> {
+pub(crate) fn try_error(v: &Value, span: Span) -> Box<Diagnostic> {
     Diagnostic::error(
         "E016",
         t!("`?` needs an Option or a Result, but got {}", "`?` a besoin d'une Option ou d'un Result, mais a reçu {}", v.describe()),
@@ -1372,7 +1384,7 @@ fn try_error(v: &Value, span: Span) -> Box<Diagnostic> {
     .boxed()
 }
 
-fn pattern_mismatch(span: Span, v: &Value) -> Box<Diagnostic> {
+pub(crate) fn pattern_mismatch(span: Span, v: &Value) -> Box<Diagnostic> {
     Diagnostic::error("E006", t!("the value {} does not match this pattern", "la valeur {} ne correspond pas à ce motif", v.describe()))
         .at(span)
         .help(t!(
@@ -1382,7 +1394,7 @@ fn pattern_mismatch(span: Span, v: &Value) -> Box<Diagnostic> {
         .boxed()
 }
 
-fn question_outside(span: Span) -> Box<Diagnostic> {
+pub(crate) fn question_outside(span: Span) -> Box<Diagnostic> {
     Diagnostic::error("E016", t!("`?` can only be used inside a function", "`?` ne peut être utilisé que dans une fonction"))
         .at(span)
         .help(t!(
@@ -1392,7 +1404,7 @@ fn question_outside(span: Span) -> Box<Diagnostic> {
         .boxed()
 }
 
-fn spread_error(v: &Value, span: Span, list: bool) -> Box<Diagnostic> {
+pub(crate) fn spread_error(v: &Value, span: Span, list: bool) -> Box<Diagnostic> {
     let what = if list { t!("a list", "une liste") } else { t!("a record", "un enregistrement") };
     Diagnostic::error("E005", t!("`..` expects {what} here, but got {}", "`..` attend {what} ici, mais a reçu {}", v.describe()))
         .at(span)
@@ -1406,7 +1418,7 @@ pub fn truth(v: &Value, span: Span) -> Fallible<bool> {
     }
 }
 
-fn condition_error(v: &Value, span: Span) -> Box<Diagnostic> {
+pub(crate) fn condition_error(v: &Value, span: Span) -> Box<Diagnostic> {
     let mut d = Diagnostic::error(
         "E005",
         t!(
@@ -1728,7 +1740,7 @@ pub fn binop(op: BinOp, l: &Value, r: &Value, span: Span) -> Fallible<Value> {
     }
 }
 
-fn range(a: &Value, b: &Value, span: Span) -> Fallible<Value> {
+pub(crate) fn range(a: &Value, b: &Value, span: Span) -> Fallible<Value> {
     match (a, b) {
         (Value::Int(a), Value::Int(b)) => {
             if b < a {
@@ -1768,7 +1780,7 @@ fn range(a: &Value, b: &Value, span: Span) -> Fallible<Value> {
 }
 
 #[inline(never)]
-fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
+pub(crate) fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
     let out_of_range = |n: i64, len: usize, what: String| {
         let mut d = Diagnostic::error("E007", t!("index {n} is out of range: {what}", "l'indice {n} est hors limites : {what}"))
             .at(idx_span)

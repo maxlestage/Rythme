@@ -5,7 +5,7 @@
 let module = null;
 const imports = { env: { rythme_now: () => Date.now(), rythme_offset: (ms) => -new Date(ms).getTimezoneOffset() } };
 
-// mode: 0 = run, 1 = check, 2 = test. Error messages come wrapped in U+0001 … U+0002.
+// mode: 0 = run, 1 = check, 2 = test, 4 = steps. Error messages come wrapped in U+0001 … U+0002.
 function callInterpreter(instance, code, mode, lang) {
   const e = instance.exports;
   const bytes = new TextEncoder().encode(code);

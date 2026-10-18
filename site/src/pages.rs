@@ -602,6 +602,15 @@ pub fn playground(ctx: &Ctx) -> Page {
                     button()
                         .class("btn")
                         .attr("type", "button")
+                        .id("steps")
+                        .attr("disabled", "")
+                        .attr("title", t.pg_steps_title)
+                        .text(t.pg_steps),
+                )
+                .child(
+                    button()
+                        .class("btn")
+                        .attr("type", "button")
                         .id("format")
                         .attr("disabled", "")
                         .attr("title", t.pg_format_title)

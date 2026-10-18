@@ -2525,6 +2525,7 @@ rythme [--lang fr|en] [--no-color] [COMMANDE] [ARGUMENTS...]
 | `fmt [--check] FICHIER...` | `format`, `formater` | donne au code sa mise en forme officielle ; aussi un dossier, ou `-` pour l'entrée standard (voir [7.4](#74-la-mise-en-forme--rythme-fmt)) |
 | `doc [--html] [--out FICHIER] FICHIER...` | `documenter` | écrit la documentation de fichiers ou de dossiers, en Markdown ou sous forme de page web (voir [7.6](#76-la-documentation--rythme-doc)) |
 | `exercise [list \| start NOM \| check FICHIER]` | `exercises`, `exercice`, `exercices` | les exercices intégrés (voir plus bas) |
+| `steps FICHIER [EXPRESSION] [--max N] [--width N]` | `etapes`, `étapes` | montre l'évaluation étape par étape (voir [7.7](#77-étape-par-étape--rythme-etapes)) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | exécute le code donné en argument, et affiche la valeur de sa dernière expression sauf si c'est `()` ; `ARGS` est donné à `args()` |
 | `lsp` | | le serveur de langage, lancé par un éditeur (voir [7.5](#75-éditeurs-et-serveur-de-langage)) |
 | `help [NOM]` | `aide`, `--help`, `-h` | la liste des sujets, ou l'aide d'un sujet, d'une fonction intégrée ou d'un code d'erreur |
@@ -2562,10 +2563,10 @@ inconnu donne le code de sortie 2.
 **Sujets d'aide.** `rythme help SUJET` accepte `start`, `syntax`,
 `functions`, `lists`, `text`, `records`, `types`, `match`, `errors`,
 `functional`, `tests`, `exercises`, `modules`, `repl`, `fmt`, `doc`,
-`editors` et `builtins`, ainsi que des noms français ou alternatifs :
+`steps`, `editors` et `builtins`, ainsi que des noms français ou alternatifs :
 `syntaxe`, `fonctions`, `listes`, `texte`, `enregistrements`, `motifs`,
 `erreurs`, `fonctionnel`, `boucles`, `exercices`, `fichiers`, `interactif`,
-`formater`, `documentation`, `lsp`, `vscode`, `éditeurs`, `bibliothèque`...
+`formater`, `documentation`, `etapes`, `lsp`, `vscode`, `éditeurs`, `bibliothèque`...
 
 **Codes de sortie.**
 
@@ -2657,6 +2658,7 @@ quitter.
 | `:learn` | `:apprendre` | la visite guidée |
 | `:explain CODE` | `:expliquer` | expliquer un code d'erreur |
 | `:names` | `:noms` | les noms définis jusqu'ici |
+| `:steps EXPRESSION` | `:etapes`, `:étapes` | montre l'évaluation de l'expression étape par étape (voir [7.7](#77-étape-par-étape--rythme-etapes)) |
 
 Une session (les saisies apparaissent après les invites) :
 
@@ -2714,7 +2716,9 @@ même aide, sans rien installer. Il a des boutons pour lancer (aussi
 Ctrl+Entrée), vérifier et tester (aussi Ctrl+Maj+Entrée) le code, un bouton
 **Formater** (aussi Maj+Alt+F) qui donne au code la mise en forme de
 `rythme fmt` (voir [7.4](#74-la-mise-en-forme--rythme-fmt) ; un code qui a
-une erreur est laissé tel quel, et l'erreur est affichée), un bouton pour
+une erreur est laissé tel quel, et l'erreur est affichée), un bouton
+**Étapes** qui montre l'évaluation étape par étape comme `rythme etapes`
+(voir [7.7](#77-étape-par-étape--rythme-etapes)), un bouton pour
 arrêter un programme qui ne s'arrête pas, le choix entre français et anglais,
 un menu d'exemples, et un panneau d'aide (sujets, recherche, et explication
 d'un code d'erreur en cliquant dessus).
@@ -2972,6 +2976,97 @@ len([1, 2])                # 2
 `rythme doc --html . --out doc.html` écrit la même chose pour tous les
 fichiers du dossier, en une seule page, avec un sommaire.
 
+### 7.7 Étape par étape : `rythme etapes`
+
+```text
+rythme etapes FICHIER [EXPRESSION] [--max N] [--width N]
+```
+
+`rythme etapes` (en anglais `rythme steps`) montre comment un programme
+calcule ses valeurs, une étape à la fois, pour apprendre et enseigner. Il
+suit le **modèle par substitution** : un appel est remplacé par le corps de
+sa fonction, où les valeurs des arguments sont écrites à la place des
+paramètres, jusqu'à ce qu'il ne reste que le résultat.
+
+- Sans `EXPRESSION`, chaque définition (`nom = ...`) et expression du niveau
+  principal du fichier est montrée, dans l'ordre, après la définition de ses
+  fonctions et de ses types, comme quand le fichier s'exécute. Avec
+  `EXPRESSION` (`rythme etapes fib.ry "fib(5)"`), les définitions du fichier
+  sont faites sans être montrées, ses expressions sont sautées, et seule
+  l'expression est montrée.
+- La première ligne est l'expression telle qu'elle est écrite (les pipes sont
+  montrés comme les appels qu'ils font) ; chaque ligne suivante, après `→`,
+  est l'expression après une étape de plus, écrite comme `rythme fmt` écrit
+  le code.
+- Une étape est **un appel ou une opération**, dans l'ordre d'évaluation de
+  l'interpréteur (voir [3](#3-expressions)). Le corps d'une fonction appelée
+  est montré déjà simplifié autant que possible sans appeler une autre
+  fonction : les opérations sur des valeurs connues sont faites, la branche
+  de `if` et le cas de `match` sont choisis. Un nom du programme est remplacé
+  par sa valeur quand elle est nécessaire. Les fonctions intégrées, et les
+  fonctions d'autres fichiers, donnent leur résultat en une étape.
+- Ce que le programme affiche apparaît entre les étapes, là où cela se
+  produit ; une erreur arrête l'évaluation avec le même message que quand le
+  programme s'exécute.
+- `--max N` montre au plus `N` étapes de chaque expression (200 par
+  défaut) : ensuite, `...` dit que le reste est calculé sans être montré, et
+  la dernière ligne est le résultat. `--width N` coupe les lignes de plus de
+  `N` caractères (100 par défaut, 20 au moins) avec `…` ; une étape est
+  montrée sur 24 lignes au plus. Un calcul qui ne finit jamais est arrêté
+  après 10 000 000 d'étapes, et un calcul imbriqué sur plus de 10 000
+  niveaux (1 200 dans le playground) est arrêté aussi, avec un message.
+
+La même chose existe dans le mode interactif avec `:etapes EXPRESSION` (voir
+[7.2](#72-le-mode-interactif-repl)) et dans le playground avec le bouton
+**Étapes** (voir [7.3](#73-le-playground-web)). Par exemple, avec ce
+programme :
+
+```rythme
+fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
+fn total([]) = 0
+fn total([x, ..rest]) = x + total(rest)
+fn describe(n)
+  kind = if n % 2 == 0 then "pair" else "impair"
+  "{n} est {kind}"
+end
+print(fib(3))
+t = total([10, 20, 30])
+describe(t // 4)
+[1, 2, 3] |> map(fn(x) = x * t)
+```
+
+`rythme etapes` montre :
+
+```text
+print(fib(3))
+  → print(fib(2) + fib(1))
+  → print(fib(1) + fib(0) + fib(1))
+  → print(1 + fib(0) + fib(1))
+  → print(1 + 0 + fib(1))
+  → print(1 + fib(1))
+  → print(1 + 1)
+  → print(2)
+2
+  → ()
+
+t = total([10, 20, 30])
+  → 10 + total([20, 30])
+  → 10 + (20 + total([30]))
+  → 10 + (20 + (30 + total([])))
+  → 10 + (20 + (30 + 0))
+  → 10 + (20 + 30)
+  → 10 + 50
+  → 60
+
+describe(t // 4)
+  → describe(60 // 4)
+  → describe(15)
+  → "15 est impair"
+
+map([1, 2, 3], fn(x) = x * t)
+  → [60, 120, 180]
+```
+
 ---
 
 ## Annexe A. Grammaire
@@ -3079,6 +3174,7 @@ Remarques :
 | profondeur d'une expression : chaque opérateur, appel, indice ou champ compte pour un niveau, donc `1 + 1 + ...` contient au plus 1000 nombres | 1000 niveaux | E001 |
 | textes imbriqués dans des `{...}` de textes | 32 niveaux | E001 |
 | appels imbriqués (non terminaux) | selon la fonction et la pile : plusieurs centaines de milliers avec `rythme` (environ 900 000 pour une récursion simple), 600 dans le playground | E014 |
+| étapes de `rythme etapes` : montrées pour chaque expression ; en tout ; profondeur d'une expression en cours d'évaluation | 200 (`--max`) ; 10 000 000 ; 10 000 niveaux, 1 200 dans le playground | — |
 | chiffres de `round(x, chiffres)` | ramenés entre −15 et 15 | — |
 | décimales de `text(x, decimales)` | de 0 à 100 | E023 |
 | indentation de `to_json(valeur, indentation)` | de 0 à 16 espaces | E023 |

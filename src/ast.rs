@@ -222,13 +222,13 @@ impl std::fmt::Debug for Use {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Pattern {
     pub kind: PatKind,
     pub span: Span,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum PatKind {
     Wildcard,
     Bind(Sym),
