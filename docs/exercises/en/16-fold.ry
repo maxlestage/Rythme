@@ -1,0 +1,57 @@
+# Exercise 16 · Folding a list into one value  ★★☆
+#
+# `fold(list, start, f)` combines all the elements into one value: it
+# starts with `start`, then computes `f(result, element)` for each element.
+#   fold([1, 2, 3], 0, fn(total, x) = total + x)     # 6
+#
+# Statement
+#   With `fold`, and without recursion:
+#   - `product_of(list)`: the product of the numbers (1 for an empty list);
+#   - `longest_word(words)`: the longest word (the first one if several
+#     have the same length; "" for an empty list);
+#   - `to_number(digits)`: the number written with these digits
+#     ([1, 2, 3] gives 123);
+#   - `count_where(list, f)`: how many elements give true with f (without
+#     `count` or `filter`).
+#
+# Hints
+#   1. Choose `start` well: it is the answer for the empty list.
+#   2. For `longest_word`, the result so far is the longest word seen so
+#      far: keep it, or take the new word if it is strictly longer.
+#   3. `to_number`: with 12 so far and the digit 3, the new result is
+#      12 * 10 + 3.
+#
+# Check your work:  rythme exercise check 16-fold.ry
+#              or:  rythme test 16-fold.ry
+
+fn product_of(list) = fail("to do")
+
+fn longest_word(words) = fail("to do")
+
+fn to_number(digits) = fail("to do")
+
+fn count_where(list, f) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "product"
+  assert_eq(product_of([2, 3, 4]), 24)
+  assert_eq(product_of([]), 1)
+end
+
+test "longest word"
+  assert_eq(longest_word(["a", "tree", "is", "green"]), "green")
+  assert_eq(longest_word(["one", "two"]), "one")
+  assert_eq(longest_word([]), "")
+end
+
+test "to number"
+  assert_eq(to_number([1, 2, 3]), 123)
+  assert_eq(to_number([0, 7]), 7)
+  assert_eq(to_number([]), 0)
+end
+
+test "count where"
+  assert_eq(count_where([1, 2, 3, 4, 5], is_odd), 3)
+  assert_eq(count_where(["a", "bb"], fn(w) = len(w) > 5), 0)
+end

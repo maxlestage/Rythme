@@ -14,6 +14,7 @@ pub mod compile;
 pub mod diagnostic;
 pub mod doc;
 pub mod driver;
+pub mod exercise;
 pub mod format;
 pub mod help;
 pub mod interp;

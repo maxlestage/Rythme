@@ -2457,6 +2457,7 @@ rythme [--lang fr|en] [--no-color] [COMMANDE] [ARGUMENTS...]
 | `test FICHIER [ARGS...]` | `tester` | lance les tests (voir [4.8](#48-tests)) |
 | `fmt [--check] FICHIER...` | `format`, `formater` | donne au code sa mise en forme officielle ; aussi un dossier, ou `-` pour l'entrée standard (voir [7.4](#74-la-mise-en-forme--rythme-fmt)) |
 | `doc [--html] [--out FICHIER] FICHIER...` | `documenter` | écrit la documentation de fichiers ou de dossiers, en Markdown ou sous forme de page web (voir [7.6](#76-la-documentation--rythme-doc)) |
+| `exercise [list \| start NOM \| check FICHIER]` | `exercises`, `exercice`, `exercices` | les exercices intégrés (voir plus bas) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | exécute le code donné en argument, et affiche la valeur de sa dernière expression sauf si c'est `()` ; `ARGS` est donné à `args()` |
 | `lsp` | | le serveur de langage, lancé par un éditeur (voir [7.5](#75-éditeurs-et-serveur-de-langage)) |
 | `help [NOM]` | `aide`, `--help`, `-h` | la liste des sujets, ou l'aide d'un sujet, d'une fonction intégrée ou d'un code d'erreur |
@@ -2479,13 +2480,25 @@ valeur qui commence par `fr` ou `en` (`--lang fr`, `--lang=en`,
 `--lang fr_CA`) ; une autre valeur, ou `--lang` sans valeur, est signalée,
 avec le code de sortie 2.
 
+**Exercices.** `rythme exercise` (ou `rythme exercise list`) liste les 30
+exercices gradués intégrés au programme (les fichiers de
+[`docs/exercises/`](exercises/README.fr.md)). `start NOM` écrit l'exercice
+désigné par son numéro (`7`) ou son nom de fichier (`07-recursivite`,
+`recursivite`) dans le dossier actuel, dans la langue des messages ; il ne
+remplace jamais un fichier existant (code de sortie 1). `check FICHIER` lance
+les tests du fichier comme `rythme test`, puis explique quoi faire ensuite ;
+`FICHIER` peut aussi être le numéro d'un exercice commencé dans le dossier
+actuel. Son code de sortie est 0 quand tous les tests passent et que les tests
+de l'exercice n'ont pas été modifiés, 1 sinon. Une action ou un exercice
+inconnu donne le code de sortie 2.
+
 **Sujets d'aide.** `rythme help SUJET` accepte `start`, `syntax`,
 `functions`, `lists`, `text`, `records`, `types`, `match`, `errors`,
-`functional`, `tests`, `modules`, `repl`, `fmt`, `doc`, `editors` et
-`builtins`, ainsi que des noms français ou alternatifs : `syntaxe`,
-`fonctions`, `listes`, `texte`, `enregistrements`, `motifs`, `erreurs`,
-`fonctionnel`, `boucles`, `fichiers`, `interactif`, `formater`,
-`documentation`, `lsp`, `vscode`, `éditeurs`, `bibliothèque`...
+`functional`, `tests`, `exercises`, `modules`, `repl`, `fmt`, `doc`,
+`editors` et `builtins`, ainsi que des noms français ou alternatifs :
+`syntaxe`, `fonctions`, `listes`, `texte`, `enregistrements`, `motifs`,
+`erreurs`, `fonctionnel`, `boucles`, `exercices`, `fichiers`, `interactif`,
+`formater`, `documentation`, `lsp`, `vscode`, `éditeurs`, `bibliothèque`...
 
 **Codes de sortie.**
 

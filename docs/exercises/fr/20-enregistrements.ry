@@ -1,0 +1,58 @@
+# Exercice 20 · Enregistrements  ★★☆
+#
+# Un enregistrement regroupe des valeurs nommées :
+# `{nom: "Ada", naissance: 1815}`. `ada.nom` lit un champ. Un enregistrement
+# ne change jamais : `{..ada, naissance: 1816}` est un nouvel
+# enregistrement, une copie d'ada avec une autre `naissance`. Un paramètre
+# peut démonter un enregistrement : `fn bonjour({nom}) = "Bonjour {nom}"`.
+#
+# Énoncé
+#   Une personne est un enregistrement `{nom, naissance}` ; un point est un
+#   enregistrement `{x, y}`.
+#   - `age_en(personne, annee)` : l'âge de la personne à la fin de l'année ;
+#   - `etiquette(personne)` : un texte comme "Ada (1815)" ;
+#   - `renommee(personne, nom)` : la même personne avec un autre nom ;
+#   - `deplace(point, dx, dy)` : le point déplacé de dx horizontalement et
+#     de dy verticalement ;
+#   - `distance(a, b)` : la distance entre deux points.
+#
+# Indices
+#   1. `personne.naissance`, ou un paramètre `{naissance}`.
+#   2. `{..personne, nom: nom}`, qui peut s'écrire `{..personne, nom}`.
+#   3. La distance est la racine carrée de (xb - xa)² + (yb - ya)².
+#
+# Vérifiez votre travail :  rythme exercise check 20-enregistrements.ry
+#                     ou :  rythme test 20-enregistrements.ry
+
+fn age_en(personne, annee) = fail("à faire")
+
+fn etiquette(personne) = fail("à faire")
+
+fn renommee(personne, nom) = fail("à faire")
+
+fn deplace(point, dx, dy) = fail("à faire")
+
+fn distance(a, b) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+ada = {nom: "Ada", naissance: 1815}
+
+test "âge" = assert_eq(age_en(ada, 1852), 37)
+
+test "étiquette" = assert_eq(etiquette(ada), "Ada (1815)")
+
+test "renommée"
+  assert_eq(renommee(ada, "Augusta"), {nom: "Augusta", naissance: 1815})
+  assert_eq(ada.nom, "Ada")
+end
+
+test "déplacé"
+  assert_eq(deplace({x: 1, y: 2}, 3, -1), {x: 4, y: 1})
+  assert_eq(deplace({x: 0, y: 0}, 0, 0), {x: 0, y: 0})
+end
+
+test "distance"
+  assert_eq(distance({x: 0, y: 0}, {x: 3, y: 4}), 5)
+  assert_eq(distance({x: 1, y: 1}, {x: 1, y: 1}), 0)
+end

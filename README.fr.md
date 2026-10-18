@@ -171,6 +171,7 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme help [sujet]`       | aide sur un sujet ou une fonction                   |
 | `rythme explain E003`       | expliquer un code d'erreur                          |
 | `rythme learn`              | visite guidée du langage                            |
+| `rythme exercise`           | [30 exercices gradués](docs/exercises/README.fr.md) : `list`, `start 1`, `check FICHIER` |
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
 | `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
 
@@ -274,6 +275,9 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 [`docs/enseigner.md`](docs/enseigner.md) propose un plan de cours construit
 sur Rythme, et explique pourquoi il convient aussi bien à un premier cours de
 programmation qu'à un cours de programmation fonctionnelle.
+[`docs/exercises/`](docs/exercises/README.fr.md) contient 30 exercices
+gradués, en français et en anglais, avec énoncé, indices, tests et solutions,
+que `rythme exercise` distribue et vérifie.
 
 ## État et feuille de route
 

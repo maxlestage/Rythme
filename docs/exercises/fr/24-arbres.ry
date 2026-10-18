@@ -1,0 +1,70 @@
+# Exercice 24 · Arbres  ★★★
+#
+# Un type peut se contenir lui-même. Un arbre binaire est soit vide
+# (`Feuille`), soit un nœud avec une valeur et deux arbres plus petits, à sa
+# gauche et à sa droite. Les fonctions sur les arbres suivent la forme du
+# type : un cas pour `Feuille`, un pour `Noeud`, qui s'appelle sur les deux
+# côtés.
+#
+# Énoncé
+#   - `taille(arbre)` : combien de valeurs l'arbre contient ;
+#   - `total(arbre)` : la somme de ses valeurs ;
+#   - `profondeur(arbre)` : le nombre de niveaux (0 pour une Feuille) ;
+#   - `inserer(arbre, x)` : un arbre de recherche est un arbre où les
+#     valeurs à gauche d'un nœud sont plus petites que sa valeur, et les
+#     autres à droite ; donnez l'arbre de recherche avec x ajouté (un
+#     nouveau Noeud à la place d'une Feuille) ;
+#   - `en_liste(arbre)` : les valeurs, de gauche à droite.
+#
+# Indices
+#   1. `fn taille(Feuille) = 0` et `fn taille(Noeud(gauche, _, droite)) = ...`.
+#   2. `max(a, b)` donne le plus grand de deux nombres.
+#   3. `inserer` rend un nouvel arbre : `Noeud(inserer(gauche, x), valeur,
+#      droite)` quand x va à gauche.
+#   4. `en_liste` d'un nœud, c'est : la liste de gauche, puis la valeur,
+#      puis la liste de droite (`+` colle des listes).
+#
+# Vérifiez votre travail :  rythme exercise check 24-arbres.ry
+#                     ou :  rythme test 24-arbres.ry
+
+type Arbre = Feuille | Noeud(gauche, valeur, droite)
+
+fn taille(arbre) = fail("à faire")
+
+fn total(arbre) = fail("à faire")
+
+fn profondeur(arbre) = fail("à faire")
+
+fn inserer(arbre, x) = fail("à faire")
+
+fn en_liste(arbre) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+#       5
+#      / \
+#     3   8
+#    /
+#   1
+petit = Noeud(Noeud(Noeud(Feuille, 1, Feuille), 3, Feuille), 5, Noeud(Feuille, 8, Feuille))
+
+test "taille"
+  assert_eq(taille(Feuille), 0)
+  assert_eq(taille(petit), 4)
+end
+
+test "total" = assert_eq(total(petit), 17)
+
+test "profondeur"
+  assert_eq(profondeur(Feuille), 0)
+  assert_eq(profondeur(petit), 3)
+end
+
+test "insérer"
+  assert_eq(inserer(Feuille, 4), Noeud(Feuille, 4, Feuille))
+  assert_eq(inserer(Noeud(Feuille, 4, Feuille), 2), Noeud(Noeud(Feuille, 2, Feuille), 4, Feuille))
+end
+
+test "en liste" = assert_eq(en_liste(petit), [1, 3, 5, 8])
+
+test "trier avec un arbre" = assert_eq([7, 2, 9, 4, 1] |> fold(Feuille, inserer) |> en_liste, [1, 2, 4, 7, 9])

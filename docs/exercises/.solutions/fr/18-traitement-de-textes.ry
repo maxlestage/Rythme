@@ -1,0 +1,27 @@
+# Exercice 18 · Travailler sur des textes  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn est_palindrome(texte)
+  lettres = texte |> lower |> replace(" ", "")
+  lettres == reverse(lettres)
+end
+
+fn nombre_de_voyelles(texte) = texte |> lower |> chars |> count(fn(c) = contains("aeiouy", c))
+
+fn majuscules_aux_mots(texte) = texte |> split |> map(fn(m) = capitalize(lower(m))) |> join(" ")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "palindromes"
+  assert_eq(est_palindrome("kayak"), true)
+  assert_eq(est_palindrome("Engage le jeu que je le gagne"), true)
+  assert_eq(est_palindrome("rythme"), false)
+end
+
+test "voyelles"
+  assert_eq(nombre_de_voyelles("Rythme"), 2)
+  assert_eq(nombre_de_voyelles("AEIOU"), 5)
+  assert_eq(nombre_de_voyelles("xkcd"), 0)
+end
+
+test "majuscules aux mots" = assert_eq(majuscules_aux_mots("le SEIGNEUR des anneaux"), "Le Seigneur Des Anneaux")

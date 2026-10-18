@@ -1,0 +1,49 @@
+# Exercice 27 · Une opération qui peut échouer : Result  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn division_verifiee(_, 0) = Err("division par zéro")
+fn division_verifiee(a, b) = Ok(a / b)
+
+fn lire_age(texte) = match parse_int(texte)
+  Err(_) -> Err("pas un nombre")
+  Ok(n) if n < 0 -> Err("un âge ne peut pas être négatif")
+  Ok(n) if n > 150 -> Err("trop vieux")
+  Ok(n) -> Ok(n)
+end
+
+fn decrire(resultat) = match resultat
+  Ok(valeur) -> "ok : {valeur}"
+  Err(message) -> "erreur : {message}"
+end
+
+fn verifier_mot_de_passe(mdp) =
+  if len(mdp) < 8 then Err("trop court")
+  else if not any(chars(mdp), is_digit) then Err("aucun chiffre")
+  else Ok(mdp)
+
+# --- Tests (ne les modifiez pas) ---
+
+test "division vérifiée"
+  assert_eq(division_verifiee(9, 3), Ok(3))
+  assert_eq(division_verifiee(1, 0), Err("division par zéro"))
+end
+
+test "lire l'âge"
+  assert_eq(lire_age("36"), Ok(36))
+  assert_eq(lire_age(" 7 "), Ok(7))
+  assert_eq(lire_age("sept"), Err("pas un nombre"))
+  assert_eq(lire_age("-1"), Err("un âge ne peut pas être négatif"))
+  assert_eq(lire_age("200"), Err("trop vieux"))
+end
+
+test "décrire"
+  assert_eq(decrire(Ok(42)), "ok : 42")
+  assert_eq(decrire(Err("trop vieux")), "erreur : trop vieux")
+  assert_eq(decrire(lire_age("-5")), "erreur : un âge ne peut pas être négatif")
+end
+
+test "vérifier le mot de passe"
+  assert_eq(verifier_mot_de_passe("rythme2024"), Ok("rythme2024"))
+  assert_eq(verifier_mot_de_passe("abc1"), Err("trop court"))
+  assert_eq(verifier_mot_de_passe("fonctionnel"), Err("aucun chiffre"))
+end

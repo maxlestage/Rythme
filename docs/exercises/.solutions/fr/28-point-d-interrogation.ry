@@ -1,0 +1,44 @@
+# Exercice 28 · Transmettre les erreurs avec `?`  ★★★
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn additionner_textes(a, b) = Ok(parse_int(a)? + parse_int(b)?)
+
+fn lire_point(texte) = match split(texte, ",")
+  [x, y] -> Ok({x: parse_int(x)?, y: parse_int(y)?})
+  _ -> Err("attendu : x,y")
+end
+
+fn somme_des_textes([]) = Ok(0)
+fn somme_des_textes([t, ..reste]) = Ok(parse_int(t)? + somme_des_textes(reste)?)
+
+fn rapport_des_textes(a, b)
+  x = parse_int(a)?
+  y = parse_int(b)?
+  if y == 0 then Err("division par zéro") else Ok(x / y)
+end
+
+# --- Tests (ne les modifiez pas) ---
+
+test "additionner des textes"
+  assert_eq(additionner_textes("2", "40"), Ok(42))
+  assert(is_err(additionner_textes("2", "quarante")), "quarante n'est pas un nombre")
+end
+
+test "lire un point"
+  assert_eq(lire_point("3,4"), Ok({x: 3, y: 4}))
+  assert_eq(lire_point("3"), Err("attendu : x,y"))
+  assert_eq(lire_point("1,2,3"), Err("attendu : x,y"))
+  assert(is_err(lire_point("3,quatre")), "quatre n'est pas un nombre")
+end
+
+test "somme des textes"
+  assert_eq(somme_des_textes(["1", "2", "3"]), Ok(6))
+  assert_eq(somme_des_textes([]), Ok(0))
+  assert_eq(somme_des_textes(["1", "x", "y"]), parse_int("x"))
+end
+
+test "rapport des textes"
+  assert_eq(rapport_des_textes("9", "2"), Ok(4.5))
+  assert_eq(rapport_des_textes("9", "0"), Err("division par zéro"))
+  assert(is_err(rapport_des_textes("neuf", "0")), "neuf n'est pas un nombre")
+end

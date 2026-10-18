@@ -1,0 +1,36 @@
+# Exercice 13 · Les fonctions de listes  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn carres(n) = map(1..n, fn(x) = x * x)
+
+fn pairs(liste) = filter(liste, is_even)
+
+fn somme_des_multiples(limite) = 1..(limite - 1) |> filter(fn(n) = n % 3 == 0 or n % 5 == 0) |> sum
+
+fn moyenne(liste) = sum(liste) / len(liste)
+
+fn trois_plus_petits(liste) = liste |> sort |> take(3)
+
+# --- Tests (ne les modifiez pas) ---
+
+test "carrés"
+  assert_eq(carres(5), [1, 4, 9, 16, 25])
+  assert_eq(carres(0), [])
+end
+
+test "pairs" = assert_eq(pairs([5, 2, 8, 1, 4]), [2, 8, 4])
+
+test "somme des multiples"
+  assert_eq(somme_des_multiples(10), 23)
+  assert_eq(somme_des_multiples(1000), 233168)
+end
+
+test "moyenne"
+  assert_eq(moyenne([1, 2, 3, 4]), 2.5)
+  assert_eq(moyenne([7]), 7)
+end
+
+test "trois plus petits"
+  assert_eq(trois_plus_petits([5, 1, 4, 2, 3]), [1, 2, 3])
+  assert_eq(trois_plus_petits([9, 8]), [8, 9])
+end

@@ -1,0 +1,61 @@
+# Exercice 12 · Construire des listes  ★★☆
+#
+# `[x, ..reste]` construit aussi une liste : x suivi des éléments de reste.
+# Les listes ne changent jamais : une fonction rend une nouvelle liste.
+#   fn zeros(0) = []
+#   fn zeros(n) = [0, ..zeros(n - 1)]
+#
+# Énoncé
+#   Avec la récursivité, et sans `map`, `reverse` ni intervalles (`1..n`) :
+#   - `a_rebours(n)` : la liste [n, n - 1, ..., 1, 0] ;
+#   - `repeter(x, n)` : une liste avec n fois la valeur x ;
+#   - `doubler_tout(liste)` : chaque nombre de la liste multiplié par 2 ;
+#   - `inverser(liste)` : les éléments dans l'ordre inverse.
+#
+# Indices
+#   1. `a_rebours(0)` vaut `[0]`.
+#   2. `doubler_tout([x, ..reste])` commence par `x * 2`.
+#   3. Pour `inverser`, utilisez un accumulateur : `inverser_sur(liste, fait)`
+#      déplace le premier élément de liste au début de fait, jusqu'à ce que
+#      liste soit vide. `inverser_sur([1, 2], [])` → `inverser_sur([2], [1])`
+#      → `inverser_sur([], [2, 1])`.
+#
+# Vérifiez votre travail :  rythme exercise check 12-construire-des-listes.ry
+#                     ou :  rythme test 12-construire-des-listes.ry
+
+fn a_rebours(n) = fail("à faire")
+
+fn repeter(x, n) = fail("à faire")
+
+fn doubler_tout(liste) = fail("à faire")
+
+fn inverser(liste) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "à rebours"
+  assert_eq(a_rebours(0), [0])
+  assert_eq(a_rebours(3), [3, 2, 1, 0])
+end
+
+test "répéter"
+  assert_eq(repeter("a", 3), ["a", "a", "a"])
+  assert_eq(repeter(1, 0), [])
+end
+
+test "doubler tout"
+  assert_eq(doubler_tout([1, 2, 3]), [2, 4, 6])
+  assert_eq(doubler_tout([]), [])
+end
+
+test "inverser"
+  assert_eq(inverser([1, 2, 3]), [3, 2, 1])
+  assert_eq(inverser([]), [])
+  assert_eq(inverser(["x"]), ["x"])
+end
+
+test "la liste de départ ne change pas"
+  nombres = [1, 2, 3]
+  inverser(nombres)
+  assert_eq(nombres, [1, 2, 3])
+end

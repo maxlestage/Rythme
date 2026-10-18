@@ -1,0 +1,53 @@
+# Exercise 23 · Choosing with `match`  ★★☆
+# Reference solution. Try the exercise before reading it!
+
+type Light = Green | Orange | Red
+
+fn next_light(light) = match light
+  Green -> Orange
+  Orange -> Red
+  Red -> Green
+end
+
+fn can_go(light) = match light
+  Green -> true
+  _ -> false
+end
+
+fn describe(list) = match list
+  [] -> "empty"
+  [x] -> "one: {x}"
+  [a, b] -> "two: {a} and {b}"
+  [first, ..] -> "many, starting with {first}"
+end
+
+fn greeting(person) = match person
+  {title, last} -> "Hello, {title} {last}"
+  {name} -> "Hello, {name}"
+end
+
+# --- Tests (do not change them) ---
+
+test "next light"
+  assert_eq(next_light(Green), Orange)
+  assert_eq(next_light(Orange), Red)
+  assert_eq(next_light(Red), Green)
+end
+
+test "can go"
+  assert_eq(can_go(Green), true)
+  assert_eq(can_go(Orange), false)
+  assert_eq(can_go(Red), false)
+end
+
+test "describe"
+  assert_eq(describe([]), "empty")
+  assert_eq(describe([7]), "one: 7")
+  assert_eq(describe([1, 2]), "two: 1 and 2")
+  assert_eq(describe([5, 6, 7]), "many, starting with 5")
+end
+
+test "greeting"
+  assert_eq(greeting({title: "Dr", last: "Hopper", name: "Grace"}), "Hello, Dr Hopper")
+  assert_eq(greeting({name: "Grace"}), "Hello, Grace")
+end

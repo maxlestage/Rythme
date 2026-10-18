@@ -1,0 +1,38 @@
+# Exercice 06 · Une définition par cas  ★☆☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn pluriel(1, mot) = "1 {mot}"
+fn pluriel(n, mot) = "{n} {mot}s"
+
+fn fizzbuzz(n) if n % 15 == 0 = "FizzBuzz"
+fn fizzbuzz(n) if n % 3 == 0 = "Fizz"
+fn fizzbuzz(n) if n % 5 == 0 = "Buzz"
+fn fizzbuzz(n) = text(n)
+
+fn type_de_jour("samedi") = "week-end"
+fn type_de_jour("dimanche") = "week-end"
+fn type_de_jour(_) = "semaine"
+
+# --- Tests (ne les modifiez pas) ---
+
+test "pluriel"
+  assert_eq(pluriel(1, "chat"), "1 chat")
+  assert_eq(pluriel(2, "chat"), "2 chats")
+  assert_eq(pluriel(0, "chien"), "0 chiens")
+end
+
+test "fizzbuzz"
+  assert_eq(fizzbuzz(1), "1")
+  assert_eq(fizzbuzz(3), "Fizz")
+  assert_eq(fizzbuzz(10), "Buzz")
+  assert_eq(fizzbuzz(30), "FizzBuzz")
+  assert_eq(fizzbuzz(31), "31")
+end
+
+test "les quinze premiers" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+
+test "type de jour"
+  assert_eq(type_de_jour("samedi"), "week-end")
+  assert_eq(type_de_jour("dimanche"), "week-end")
+  assert_eq(type_de_jour("lundi"), "semaine")
+end

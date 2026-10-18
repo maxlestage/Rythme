@@ -2364,6 +2364,7 @@ rythme [--lang fr|en] [--no-color] [COMMAND] [ARGUMENTS...]
 | `test FILE [ARGS...]` | `tester` | runs the tests (see [4.8](#48-tests)) |
 | `fmt [--check] FILE...` | `format`, `formater` | gives the code its official layout; also a folder, or `-` for the standard input (see [7.4](#74-the-formatter-rythme-fmt)) |
 | `doc [--html] [--out FILE] FILE...` | `documenter` | writes the documentation of files or folders, in Markdown or as a web page (see [7.6](#76-documentation-rythme-doc)) |
+| `exercise [list \| start NAME \| check FILE]` | `exercises`, `exercice`, `exercices` | the built-in exercises (see below) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | runs the code given as an argument, and shows the value of its last expression unless it is `()`; `ARGS` are given to `args()` |
 | `lsp` | | the language server, started by an editor (see [7.5](#75-editors-and-the-language-server)) |
 | `help [NAME]` | `aide`, `--help`, `-h` | the list of topics, or the help of a topic, a built-in function or an error code |
@@ -2383,13 +2384,24 @@ anything after the file name goes to the program. `--lang` accepts any value
 that starts with `fr` or `en` (`--lang fr`, `--lang=en`, `--lang fr_CA`);
 another value, or `--lang` without a value, is reported, with exit code 2.
 
+**Exercises.** `rythme exercise` (or `rythme exercise list`) lists the 30
+graded exercises built into the program (the files of
+[`docs/exercises/`](exercises/README.md)). `start NAME` writes the exercise
+named by its number (`7`) or its file name (`07-recursion`, `recursion`) into
+the current folder, in the language of the messages; it never replaces an
+existing file (exit code 1). `check FILE` runs the tests of the file like
+`rythme test`, then explains what to do next; `FILE` may also be the number
+of an exercise started in the current folder. Its exit code is 0 when every
+test passes and the tests of the exercise were not changed, 1 otherwise. An
+unknown action or exercise is exit code 2.
+
 **Help topics.** `rythme help TOPIC` accepts `start`, `syntax`, `functions`,
 `lists`, `text`, `records`, `types`, `match`, `errors`, `functional`,
-`tests`, `modules`, `repl`, `fmt`, `doc`, `editors` and `builtins`, and
-French or alternative names: `syntaxe`, `fonctions`, `listes`, `texte`,
-`enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`,
-`fichiers`, `interactif`, `format`, `documentation`, `lsp`, `vscode`,
-`éditeurs`, `bibliothèque`...
+`tests`, `exercises`, `modules`, `repl`, `fmt`, `doc`, `editors` and
+`builtins`, and French or alternative names: `syntaxe`, `fonctions`,
+`listes`, `texte`, `enregistrements`, `motifs`, `erreurs`, `fonctionnel`,
+`boucles`, `exercices`, `fichiers`, `interactif`, `format`, `documentation`,
+`lsp`, `vscode`, `éditeurs`, `bibliothèque`...
 
 **Exit codes.**
 

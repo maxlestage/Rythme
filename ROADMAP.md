@@ -61,7 +61,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 - [ ] **Step-by-step evaluation for teaching.** `rythme explain-run file.ry`
   (or a playground button) shows how an expression is reduced step by step
   (`fib(3)` → `fib(2) + fib(1)` → ...), bounded, in every language.
-- [ ] **Exercises.** `docs/exercises/` with graded exercises for a first
+- [x] **Exercises.** `docs/exercises/` with graded exercises for a first
   course (each with tests that `rythme test` runs and hints), and
   `rythme exercise` (list, start, check) if it stays simple.
 

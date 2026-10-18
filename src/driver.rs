@@ -307,13 +307,20 @@ impl Driver {
 
     /// Runs the collected tests and prints a summary. Returns true if all passed.
     pub fn run_tests(&mut self) -> bool {
+        let (_, failed) = self.run_tests_counted();
+        failed == 0
+    }
+
+    /// Runs the collected tests and prints a summary. Returns the number of
+    /// tests and the number of failed ones.
+    pub fn run_tests_counted(&mut self) -> (usize, usize) {
         let tests = std::mem::take(&mut self.interp.tests);
         if tests.is_empty() {
             out_line(&t!(
                 "No tests found. Write one like this:\n  test \"addition\" = assert_eq(1 + 1, 2)",
                 "Aucun test trouvé. Écrivez-en un comme ceci :\n  test \"addition\" = assert_eq(1 + 1, 2)"
             ));
-            return true;
+            return (0, 0);
         }
         let color = std::io::stdout().is_terminal() && crate::diagnostic::terminal_supports_color();
         let (green, red, reset) = if color { ("\x1b[32m", "\x1b[31m", "\x1b[0m") } else { ("", "", "") };
@@ -353,7 +360,7 @@ impl Driver {
         let summary = t!("{n} test(s): {passed} passed, {failed} failed", "{n} test(s) : {passed} réussi(s), {failed} échoué(s)");
         let color = if failed == 0 { green } else { red };
         out_line(&format!("{color}{summary}{reset}"));
-        failed == 0
+        (n, failed)
     }
 }
 

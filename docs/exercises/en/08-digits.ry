@@ -1,0 +1,49 @@
+# Exercise 08 · The digits of a number  ★★☆
+#
+# `n % 10` is the last digit of n, and `n // 10` is n without its last
+# digit: for 472, they are 2 and 47.
+#
+# Statement
+#   For whole numbers n ≥ 0, and with recursion (without turning the number
+#   into a text):
+#   - `digit_count(n)`: how many digits n has (0 has one digit);
+#   - `digit_sum(n)`: the sum of the digits of n;
+#   - `reverse_number(n)`: the digits in the opposite order (1230 gives 321).
+#
+# Hints
+#   1. A number below 10 has a single digit: that is the base case.
+#   2. `digit_sum(472)` is `2 + digit_sum(47)`.
+#   3. For `reverse_number`, write a helper with one more parameter, the
+#      number built so far: `reverse_from(n, built)`, with
+#      `reverse_from(0, built) = built`. Each step moves the last digit of n
+#      to the end of `built`: `built * 10 + n % 10`.
+#
+# Check your work:  rythme exercise check 08-digits.ry
+#              or:  rythme test 08-digits.ry
+
+fn digit_count(n) = fail("to do")
+
+fn digit_sum(n) = fail("to do")
+
+fn reverse_number(n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "digit count"
+  assert_eq(digit_count(0), 1)
+  assert_eq(digit_count(7), 1)
+  assert_eq(digit_count(472), 3)
+  assert_eq(digit_count(1000000), 7)
+end
+
+test "digit sum"
+  assert_eq(digit_sum(0), 0)
+  assert_eq(digit_sum(472), 13)
+  assert_eq(digit_sum(99999), 45)
+end
+
+test "reverse number"
+  assert_eq(reverse_number(472), 274)
+  assert_eq(reverse_number(1230), 321)
+  assert_eq(reverse_number(5), 5)
+end

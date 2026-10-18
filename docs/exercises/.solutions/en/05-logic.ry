@@ -1,0 +1,40 @@
+# Exercise 05 · True or false  ★☆☆
+# Reference solution. Try the exercise before reading it!
+
+fn is_multiple(n, d) = n % d == 0
+
+fn is_between(x, low, high) = x >= low and x <= high
+
+fn is_leap(year) = is_multiple(year, 4) and (not is_multiple(year, 100) or is_multiple(year, 400))
+
+fn exclusive_or(a, b) = a != b
+
+# --- Tests (do not change them) ---
+
+test "multiples"
+  assert(is_multiple(12, 3), "12 is a multiple of 3")
+  assert(not is_multiple(12, 5), "12 is not a multiple of 5")
+  assert(is_multiple(0, 7), "0 is a multiple of every number")
+end
+
+test "between"
+  assert(is_between(5, 1, 10), "5 is between 1 and 10")
+  assert(is_between(1, 1, 10), "the bounds are included")
+  assert(is_between(10, 1, 10), "the bounds are included")
+  assert(not is_between(11, 1, 10), "11 is too big")
+  assert(not is_between(0, 1, 10), "0 is too small")
+end
+
+test "leap years"
+  assert_eq(is_leap(2024), true)
+  assert_eq(is_leap(2023), false)
+  assert_eq(is_leap(1900), false)
+  assert_eq(is_leap(2000), true)
+end
+
+test "exclusive or"
+  assert_eq(exclusive_or(true, false), true)
+  assert_eq(exclusive_or(false, true), true)
+  assert_eq(exclusive_or(true, true), false)
+  assert_eq(exclusive_or(false, false), false)
+end

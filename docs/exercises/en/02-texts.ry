@@ -1,0 +1,50 @@
+# Exercise 02 · Texts  ★☆☆
+#
+# A function takes values and gives back a new value:
+#   fn double(x) = x * 2
+#
+# Statement
+#   Write the four functions below so that their tests pass:
+#   - `greet(name)` gives "Hello, Ada!" for "Ada";
+#   - `shout(text)` gives the text in uppercase followed by "!";
+#   - `initials(first, last)` gives "A.L." for "Ada" and "Lovelace";
+#   - `introduce(name, age)` gives "Ada is 36 years old.".
+#
+# Hints
+#   1. "Hello, {name}!" inserts the value of `name` into the text.
+#   2. `upper("hi")` is "HI", and `+` joins two texts: "HI" + "!".
+#   3. `word[0]` is the first character of `word`; it can go inside braces
+#      too: "{word[0]}.".
+#
+# Check your work:  rythme exercise check 02-texts.ry
+#              or:  rythme test 02-texts.ry
+
+## A greeting for `name`.
+fn greet(name) = fail("to do")
+
+## The text in uppercase, followed by "!".
+fn shout(text) = fail("to do")
+
+## The initials of a person, each followed by a dot.
+fn initials(first, last) = fail("to do")
+
+## A sentence that introduces a person.
+fn introduce(name, age) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "greet" = assert_eq(greet("Ada"), "Hello, Ada!")
+
+test "greet someone else" = assert_eq(greet("Alan"), "Hello, Alan!")
+
+test "shout"
+  assert_eq(shout("hello"), "HELLO!")
+  assert_eq(shout("Stop"), "STOP!")
+end
+
+test "initials"
+  assert_eq(initials("Ada", "Lovelace"), "A.L.")
+  assert_eq(initials("grace", "hopper"), "g.h.")
+end
+
+test "introduce" = assert_eq(introduce("Ada", 36), "Ada is 36 years old.")

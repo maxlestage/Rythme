@@ -1,0 +1,34 @@
+# Exercice 07 · Récursivité  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn factorielle(0) = 1
+fn factorielle(n) = n * factorielle(n - 1)
+
+fn somme_jusqua(0) = 0
+fn somme_jusqua(n) = n + somme_jusqua(n - 1)
+
+fn puissance(_, 0) = 1
+fn puissance(x, n) = x * puissance(x, n - 1)
+
+# --- Tests (ne les modifiez pas) ---
+
+test "factorielle"
+  assert_eq(factorielle(0), 1)
+  assert_eq(factorielle(1), 1)
+  assert_eq(factorielle(5), 120)
+  assert_eq(factorielle(10), 3628800)
+end
+
+test "somme jusqu'à"
+  assert_eq(somme_jusqua(0), 0)
+  assert_eq(somme_jusqua(1), 1)
+  assert_eq(somme_jusqua(10), 55)
+  assert_eq(somme_jusqua(100), 5050)
+end
+
+test "puissance"
+  assert_eq(puissance(2, 0), 1)
+  assert_eq(puissance(2, 10), 1024)
+  assert_eq(puissance(3, 4), 81)
+  assert_eq(puissance(1.5, 2), 2.25)
+end

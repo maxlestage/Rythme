@@ -96,6 +96,17 @@ in `help::CODES` (a test checks it).
    described function with values of every kind and checks that the
    description is right.
 
+## Adding an exercise
+
+The exercises of [`docs/exercises/`](docs/exercises/README.md) exist in
+`en/` and `fr/`, with a reference solution of each in
+`docs/exercises/.solutions/`. A new exercise needs both files, both
+solutions (the code, then exactly the tests of the exercise, after the line
+`# --- Tests ... ---`), a line in `EXERCISES` (`src/exercise.rs`, which builds
+the files into `rythme exercise`) and a line in both index files.
+`tests/exercises.rs` checks that every exercise is well formed, checks without
+a warning, fails until it is solved, and that its solution passes its tests.
+
 ## Design rules
 
 - One way to do each thing. Before adding syntax, check whether a function
