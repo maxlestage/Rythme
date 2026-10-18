@@ -582,7 +582,7 @@ impl Interp {
     fn choose_arm<'n>(&mut self, subject: &Node, arms: &'n [compile::Arm], fr: &Frame) -> Result<&'n Node, Flow> {
         let v = self.eval(subject, fr)?;
         for arm in arms {
-            if !match_pat(&arm.pat, &v, &mut self.stack[fr.base..], 0) {
+            if !may_match(&arm.pat, &v) || !match_pat(&arm.pat, &v, &mut self.stack[fr.base..], 0) {
                 continue;
             }
             if let Some(g) = &arm.guard {
@@ -918,7 +918,7 @@ impl Interp {
                 // The parts of the arguments go to the slots after the arguments.
                 let (args, rest) = self.stack[base..].split_at_mut(code.arity);
                 for (i, p) in &clause.tests {
-                    if !match_pat(p, &args[*i], rest, code.arity) {
+                    if !may_match(p, &args[*i]) || !match_pat(p, &args[*i], rest, code.arity) {
                         continue 'clauses;
                     }
                 }
@@ -976,6 +976,17 @@ fn match_pat(p: &Pat, v: &Value, slots: &mut [Value], first: usize) -> bool {
         (Pat::Record(fields), Value::Record(r)) => fields.iter().all(|(k, p)| r.get(k).is_some_and(|x| match_pat(p, x, slots, first))),
         (Pat::Or(alts), _) => alts.iter().any(|a| match_pat(a, v, slots, first)),
         _ => false,
+    }
+}
+
+/// Whether `p` may match `v`: `false` when an obvious difference (another
+/// whole number, another constructor) rules it out, without a call.
+#[inline(always)]
+fn may_match(p: &Pat, v: &Value) -> bool {
+    match (p, v) {
+        (Pat::Int(a), Value::Int(b)) => a == b,
+        (Pat::Ctor(name, _), Value::Variant(var)) => var.ctor.name == *name,
+        _ => true,
     }
 }
 
