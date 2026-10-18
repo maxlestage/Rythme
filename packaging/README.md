@@ -2,7 +2,7 @@
 
 *En français plus bas.*
 
-What happens when a version tag (`v0.1.0`) is pushed, and what is left to do
+What happens when a version tag (`v1.0.0`) is pushed, and what is left to do
 by hand.
 
 | Channel | Done by | Needs |
@@ -72,7 +72,7 @@ the artifact `rythme-vscode` of the workflow.
 
 # Distribuer Rythme
 
-Ce qui se passe quand une étiquette de version (`v0.1.0`) est poussée, et ce
+Ce qui se passe quand une étiquette de version (`v1.0.0`) est poussée, et ce
 qui reste à faire à la main.
 
 | Canal | Fait par | Demande |

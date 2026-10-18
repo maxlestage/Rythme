@@ -3,7 +3,7 @@
 *[Version française →](reference.fr.md)*
 
 This manual describes the Rythme language and its tools, as implemented by
-the `rythme` interpreter, version 0.1.0. It is meant to be complete and
+the `rythme` interpreter, version 1.0.0. It is meant to be complete and
 precise: someone who wants to write a second implementation of Rythme should
 find every rule here. It is also meant to be read by students: each rule
 comes with a short program and the exact output it gives.
@@ -17,6 +17,16 @@ playground on the [website](https://maxlestage.github.io/Rythme/).
 real output, error messages included, followed by the exit code when it
 matters. When a rule and the interpreter disagree, the interpreter is right
 and this manual has a bug.
+
+**Stability.** Rythme 1.0 is the first stable version. What this manual
+describes (the syntax, the values, the rules of evaluation, the built-in
+functions, the error and warning codes, `rythme.toml` and the commands)
+holds for every 1.x version, as the [stability
+promise](../README.md#stability-promise) says: later versions add to it,
+and anything to be removed first gives a warning for a whole minor version.
+The wording of the messages shown in the examples may still improve; their
+codes stay. What changed from version to version is in the
+[changelog](../CHANGELOG.md).
 
 ## Contents
 
@@ -3343,7 +3353,7 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMAND] [ARGUMENTS...]
 | `help [NAME]` | `aide`, `--help`, `-h` | the list of topics, or the help of a topic, a built-in function or an error code |
 | `explain [CODE]` | `expliquer` | the explanation of an error or warning code; without a code, the list of codes |
 | `learn` | `apprendre`, `tutorial`, `tutoriel` | the guided tour: the 13 topics in order, with a pause after each one when run in a terminal |
-| `version` | `--version`, `-V` | prints `rythme 0.1.0` |
+| `version` | `--version`, `-V` | prints `rythme 1.0.0` |
 
 **Finding the file.** A first argument that is not a command is taken as a
 file when it ends with `.ry` or names an existing file; if `name` does not
@@ -3431,7 +3441,7 @@ warning messages and `debug` go to the error output.
 
 ```text
 $ rythme version
-rythme 0.1.0
+rythme 1.0.0
 $ rythme -e '[1, 2, 3] |> map(fn(x) = x * x)'
 [1, 4, 9]
 $ rythme -e 'print("hello")'
@@ -3494,7 +3504,7 @@ the help of the REPL; `exit`, `quit` (or `quitter`) leaves.
 A session (the inputs are shown after the prompts):
 
 ```text
-Rythme 0.1.0 — :help for help, :quit to leave
+Rythme 1.0.0 — :help for help, :quit to leave
 ry> 1 + 2
 3
 ry> name = "Ada"

@@ -5,11 +5,11 @@
 # d'une version publiée sur GitHub, après avoir vérifié leur somme SHA-256.
 #
 #   curl -fsSL https://raw.githubusercontent.com/maxlestage/Rythme/master/install.sh | sh
-#   curl -fsSL .../install.sh | sh -s -- --dir /usr/local/bin --version v0.1.0
+#   curl -fsSL .../install.sh | sh -s -- --dir /usr/local/bin --version v1.0.0
 #
 # Options (or environment variables / ou variables d'environnement):
 #   --dir DIR        RYTHME_INSTALL_DIR   folder of the program (~/.local/bin)
-#   --version TAG    RYTHME_VERSION       a release like v0.1.0 (latest)
+#   --version TAG    RYTHME_VERSION       a release like v1.0.0 (latest)
 #                    RYTHME_DOWNLOAD_URL  where releases are downloaded from
 #                    RYTHME_LANG          en or fr (otherwise LC_ALL, LANG...)
 
@@ -136,7 +136,7 @@ main() {
                 ;;
             --dir=*) dir="${1#--dir=}"; shift ;;
             --version)
-                [ $# -ge 2 ] || fail "--version needs a version like v0.1.0" "--version attend une version comme v0.1.0"
+                [ $# -ge 2 ] || fail "--version needs a version like v1.0.0" "--version attend une version comme v1.0.0"
                 version="$2"
                 shift 2
                 ;;

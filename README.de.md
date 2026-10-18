@@ -107,6 +107,18 @@ Die Meldungen sind auf Deutsch mit `--lang de` vor dem Befehl, mit
 Funktionen und die Befehle sind in allen Sprachen gleich. Im interaktiven
 Modus wechselt `:lang de` die Sprache.
 
+## Stabilitätsversprechen
+
+Rythme 1.0 folgt der [semantischen Versionierung](https://semver.org/lang/de/).
+In allen Versionen 1.x läuft ein Programm, das läuft, weiter, mit derselben
+Ausgabe (bei denselben Eingaben) und demselben Exit-Code; die Fehler- und
+Warnungscodes (`E003`, `W004`...) behalten ihre Bedeutung; was entfernt werden
+soll, gibt zuerst mindestens eine ganze Nebenversion lang eine Warnung und
+verschwindet erst in einer 2.0. Ändern können sich der Wortlaut der Meldungen,
+die Geschwindigkeit und neue Warnungen von `rythme check`. Die Einzelheiten
+stehen im [englischen README](README.md#stability-promise), der Inhalt von 1.0
+in [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Lizenz
 
 [MIT](LICENSE).

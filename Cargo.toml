@@ -1,6 +1,6 @@
 [package]
 name = "rythme"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 description = "Rythme: a simple, purely functional programming language with help everywhere."
 license = "MIT"
@@ -21,6 +21,7 @@ include = [
     "/README.md",
     "/README.fr.md",
     "/README.es.md",
+    "/CHANGELOG.md",
     "/LICENSE",
 ]
 
@@ -30,7 +31,7 @@ path = "src/main.rs"
 
 [dependencies]
 # The `t!` macro: each message in every language of src/i18n/ (no dependency).
-rythme-macros = { path = "macros", version = "0.1.0" }
+rythme-macros = { path = "macros", version = "1.0.0" }
 
 # The interactive mode needs a terminal; the web playground (wasm32) has none.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

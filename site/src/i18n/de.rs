@@ -14,7 +14,7 @@ pub const DE: Texts = Texts {
     nav_teach: "Unterrichten",
     menu: "Menü",
     lang_aria: "Sprache",
-    hero_eyebrow: "Programmiersprache · v0.1",
+    hero_eyebrow: "Programmiersprache · v1.0",
     hero_title: "Eine einfache Sprache, in der dir jeder Fehler hilft.",
     hero_lead: "Rythme ist rein funktional: Werte ändern sich nie, alles ist eine Funktion, und es gibt keine Schleifen, kein null und keine Ausnahmen. Und der Interpreter erklärt jeden Fehler, auf Deutsch, Englisch, Französisch, Spanisch, Portugiesisch oder Chinesisch.",
     cta_try: "Im Browser ausprobieren",

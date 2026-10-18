@@ -14,7 +14,7 @@ pub const ZH: Texts = Texts {
     nav_teach: "教学",
     menu: "菜单",
     lang_aria: "语言",
-    hero_eyebrow: "编程语言 · v0.1",
+    hero_eyebrow: "编程语言 · v1.0",
     hero_title: "一门简单的语言，每个错误都在帮你。",
     hero_lead: "Rythme 是纯函数式的：值永远不变，一切都是函数，没有循环，没有 null，也没有异常。解释器会解释每一个错误，支持中文、英语、法语、西班牙语、德语和葡萄牙语。",
     cta_try: "在浏览器中试用",

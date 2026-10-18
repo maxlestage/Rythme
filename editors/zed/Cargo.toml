@@ -1,6 +1,6 @@
 [package]
 name = "zed-rythme"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 description = "Rythme for the Zed editor: colors with the Tree-sitter grammar, and the language server `rythme lsp`."
 license = "MIT"

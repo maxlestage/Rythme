@@ -206,3 +206,63 @@ exercise in every language.
 - Values never change. No feature may mutate a value in place.
 - No silent conversion: `"1" + 1` is an error with a helpful message.
 - Prefer a warning from the checker over a surprise at run time.
+
+## Releasing
+
+Only the owner of the repository tags versions. A release is one commit on
+`master` and one tag `vX.Y.Z`; the workflows do the rest.
+
+Before tagging (here for 1.0.0; the pull request of a release does it):
+
+1. The version is the same everywhere: `Cargo.toml` (and its dependency on
+   `rythme-macros`), `macros/Cargo.toml`, `playground/Cargo.toml`,
+   `site/Cargo.toml`, the lock files, `editors/vscode/package.json` and its
+   `package-lock.json`, `editors/tree-sitter-rythme/package.json`,
+   `package-lock.json` and `tree-sitter.json`, `editors/zed/Cargo.toml` and
+   `extension.toml`. `rythme --version` prints the version of `Cargo.toml`,
+   and the home page of the website shows the major and minor numbers
+   (`hero_eyebrow` in `site/src/i18n/*.rs`).
+2. `CHANGELOG.md` has a section for the version, dated the day of the tag,
+   with what moved from `[Unreleased]`, and the link at the bottom.
+3. In `editors/zed/extension.toml`, `rev` is a commit of `master` that has
+   the current grammar.
+4. CI is green on `master`.
+
+Then tag the merge commit and push the tag:
+
+```sh
+git checkout master && git pull
+git tag -a v1.0.0 -m "Rythme 1.0.0"
+git push origin v1.0.0
+```
+
+What the tag starts:
+
+- [`release.yml`](.github/workflows/release.yml) first checks that the tag
+  is `v` followed by the version of `Cargo.toml`, and stops otherwise. It
+  then builds `rythme` for Linux (x86_64, arm64), macOS (arm64, x86_64) and
+  Windows (x86_64), and publishes the GitHub release `v1.0.0` with the
+  archives, `SHA256SUMS`, `install.sh`, `install.ps1`, the Homebrew formula
+  `rythme.rb` and the winget manifests filled in by
+  [`packaging/render.sh`](packaging/render.sh). With the secret
+  `HOMEBREW_TAP_TOKEN`, it also pushes the formula to the tap
+  `maxlestage/homebrew-rythme`. From then on, the install scripts, which
+  take the latest release by default, install 1.0.0.
+- [`vscode.yml`](.github/workflows/vscode.yml) builds `rythme`, checks the
+  extension, packages it (the artifact `rythme-vscode`) and, with the secret
+  `VSCE_PAT`, publishes it on the Visual Studio Marketplace (a version
+  already there is skipped).
+- The website is not tied to tags: [`pages.yml`](.github/workflows/pages.yml)
+  and [`heroku.yml`](.github/workflows/heroku.yml) publish every push to
+  `master`.
+
+By hand, after the release ([`packaging/README.md`](packaging/README.md)
+gives the details): the winget manifests go to `microsoft/winget-pkgs`, and
+crates.io gets `rythme-macros` first, then `rythme`
+(`cargo publish -p rythme-macros`, then `cargo publish`), since `rythme`
+depends on that exact version of the macros.
+
+A patch version (1.0.1) fixes bugs; a minor version (1.1.0) adds things.
+Both keep the [stability promise](README.md#stability-promise): nothing is
+removed in 1.x; what is deprecated keeps working with a warning during at
+least a whole minor version, and may only go in 2.0.
