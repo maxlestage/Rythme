@@ -17,6 +17,22 @@ fn finish(out: Output) -> Run {
 }
 
 pub fn rythme_lang(lang: &str, args: &[&str]) -> Run {
+    // Windows refuses command lines longer than 32767 characters: very long
+    // code goes through a file instead of `-e`.
+    if let ["-e", code, rest @ ..] = args {
+        if code.len() > 30_000 {
+            static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+            let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            let file = std::env::temp_dir().join(format!("rythme-long-code-{}-{n}.ry", std::process::id()));
+            std::fs::write(&file, code).unwrap();
+            let path = file.to_string_lossy().into_owned();
+            let mut args = vec![path.as_str()];
+            args.extend(rest);
+            let run = rythme_lang(lang, &args);
+            let _ = std::fs::remove_file(&file);
+            return run;
+        }
+    }
     let out =
         Command::new(env!("CARGO_BIN_EXE_rythme")).args(args).env("RYTHME_LANG", lang).env("NO_COLOR", "1").output().expect("run rythme");
     finish(out)
