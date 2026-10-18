@@ -2012,6 +2012,15 @@ pub(crate) fn range(a: &Value, b: &Value, span: Span) -> Fallible<Value> {
     }
 }
 
+/// The help for `record[:name]`: a symbol is not the name of a field.
+pub(crate) fn symbol_field_help(field: &str, record: Option<&str>) -> String {
+    let r = record.map_or_else(|| t!("record", "enregistrement"), str::to_string);
+    t!(
+        "`:{field}` is a symbol, not a text: write `{r}.{field}` or `{r}[\"{field}\"]`, or `get({r}, \"{field}\")` to receive an Option",
+        "`:{field}` est un symbole, pas un texte : écrivez `{r}.{field}` ou `{r}[\"{field}\"]`, ou `get({r}, \"{field}\")` pour obtenir une Option"
+    )
+}
+
 #[inline(never)]
 pub(crate) fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallible<Value> {
     let out_of_range = |n: &dyn std::fmt::Display, len: usize, what: String| {
@@ -2078,16 +2087,44 @@ pub(crate) fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallibl
                 ))
                 .boxed()
         }),
+        (Value::Record(_), k) => {
+            let d = Diagnostic::error(
+                "E005",
+                t!("the name of a field must be a text, but got {}", "le nom d'un champ doit être un texte, mais a reçu {}", k.describe()),
+            )
+            .at(idx_span);
+            Err(match k {
+                Value::Symbol(s) => d.help(symbol_field_help(&s.name(), None)),
+                _ => d.help(t!(
+                    "read a field with `record[\"name\"]` or `record.name`",
+                    "lisez un champ avec `enregistrement[\"nom\"]` ou `enregistrement.nom`"
+                )),
+            }
+            .boxed())
+        }
         (Value::Dict(m), k) => {
             let found = if crate::dict::bad_key(k).is_none() { m.get(k) } else { None };
             found.cloned().ok_or_else(|| {
-                Diagnostic::error("E010", t!("this dict has no key {}", "ce dictionnaire n'a pas de clé {}", k.repr()))
-                    .at(idx_span)
-                    .help(t!(
-                        "use `get(dict, key)` to receive an Option instead, or `has(dict, key)` to check first",
-                        "utilisez `get(dico, clé)` pour obtenir une Option à la place, ou `has(dico, clé)` pour vérifier d'abord"
-                    ))
-                    .boxed()
+                let mut d =
+                    Diagnostic::error("E010", t!("this dict has no key {}", "ce dictionnaire n'a pas de clé {}", k.repr())).at(idx_span);
+                // `:a` for `"a"`, or `"a"` for `:a`.
+                let other = match k {
+                    Value::Symbol(s) => Some(Value::text(&s.name())),
+                    Value::Text(t) if crate::lexer::is_symbol_name(t) => Some(Value::Symbol(Sym::new(t))),
+                    _ => None,
+                };
+                if let Some(other) = other.filter(|o| m.get(o).is_some()) {
+                    let (key, shown) = (k.repr(), other.repr());
+                    d = d.help(t!(
+                        "the dict has the key {shown}, which is not the same key as {key}: write `[{shown}]`",
+                        "le dictionnaire a la clé {shown}, qui n'est pas la même clé que {key} : écrivez `[{shown}]`"
+                    ));
+                }
+                d.help(t!(
+                    "use `get(dict, key)` to receive an Option instead, or `has(dict, key)` to check first",
+                    "utilisez `get(dico, clé)` pour obtenir une Option à la place, ou `has(dico, clé)` pour vérifier d'abord"
+                ))
+                .boxed()
             })
         }
         (Value::List(_) | Value::Text(_), other) => Err(Diagnostic::error(

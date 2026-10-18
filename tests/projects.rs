@@ -418,6 +418,23 @@ fn mistakes_in_rythme_toml_are_shown_where_they_are() {
             "name = \"app\"\nversion = \"0.1.0\"\n[dependencies]\nlib = { gti = \"x\", tag = \"v1\" }\n",
             &["unknown key `gti`", "did you mean `git`?"],
         ),
+        // A section, or a table and a key, written twice: not silently merged.
+        (
+            "name = \"app\"\nversion = \"0.1.0\"\n[dependencies]\na = { path = \"../a\" }\n\n[dependencies]\nb = { path = \"../b\" }\n",
+            &["the section `[dependencies]` is written twice", "rythme.toml:6:1", "3 | [dependencies]", "first written here", "under one"],
+        ),
+        (
+            "name = \"app\"\nversion = \"0.1.0\"\n[dependencies]\n[[dependencies]]\n",
+            &["`dependencies` is written both as `[dependencies]` and as `[[dependencies]]`", "rythme.toml:4:1"],
+        ),
+        (
+            "name = \"app\"\nversion = \"0.1.0\"\ndependencies = \"x\"\n[dependencies]\n",
+            &["`dependencies` is written twice", "rythme.toml:4:1"],
+        ),
+        (
+            "name = \"app\"\nversion = \"0.1.0\"\n[dependencies]\na = { path = \"../a\" }\na = { path = \"../b\" }\n",
+            &["`a` is written twice", "rythme.toml:5:1"],
+        ),
     ];
     for (toml, wanted) in cases {
         t.write(&[("app/rythme.toml", toml), ("app/src/main.ry", "print(1)\n")]);

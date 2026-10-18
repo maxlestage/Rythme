@@ -386,6 +386,14 @@ mach deinen Wert zuerst zu einem Record, wie {{kind: "Circle", radius: r}}"#,
         ("defined here", "hier definiert"),
         ("from how `{name}` uses `{p}`, it needs: `{sig}`", "so wie `{name}` den Parameter `{p}` verwendet, braucht es: `{sig}`"),
         // src/check.rs
+        ("`{s} [...]` is read as an index, not as a call", "`{s} [...]` wird als Index gelesen, nicht als Aufruf"),
+        ("to call `{s}`, put its argument in parentheses: `{s}([...])`; for an index, write `{s}[...]` without a space", "um `{s}` aufzurufen, setz sein Argument in Klammern: `{s}([...])`; für einen Index schreib `{s}[...]` ohne Leerzeichen"),
+        ("`{s} -...` is read as a subtraction, not as a call", "`{s} -...` wird als Subtraktion gelesen, nicht als Aufruf"),
+        ("to call `{s}`, put its argument in parentheses: `{s}(-x)`; for a subtraction, write `{s} - x`", "um `{s}` aufzurufen, setz sein Argument in Klammern: `{s}(-x)`; für eine Subtraktion schreib `{s} - x`"),
+        ("`{s}` is not a value here", "`{s}` ist hier kein Wert"),
+        ("`{s}` is a function here", "`{s}` ist hier eine Funktion"),
+        ("because `{s}` is given a value here", "weil `{s}` hier einen Wert bekommt"),
+        ("a call without parentheses, like `{s} [1, 2]` or `{s} -1`, is read so only when the file never gives `{s}` a value", "ein Aufruf ohne Klammern, wie `{s} [1, 2]` oder `{s} -1`, wird nur so gelesen, wenn die Datei `{s}` nirgends einen Wert gibt"),
         ("the type `{name}` is part of Rythme", "der Typ `{name}` gehört zu Rythme"),
         ("give your type another name", "gib deinem Typ einen anderen Namen"),
         ("the type `{}` is already defined", "der Typ `{}` ist schon definiert"),
@@ -1001,6 +1009,9 @@ Themen: start, syntax, functions, lists, text, records, types, match, errors, fu
         ("[Enter] next   [q] quit > ", "[Enter] weiter   [q] beenden > "),
         ("To practice, run `rythme` and type code, or do the exercises: `rythme exercise list`. `rythme help builtins` lists every function.", "Zum Üben starte `rythme` und tippe Code ein, oder mach die Übungen: `rythme exercise list`. `rythme help builtins` listet alle Funktionen auf."),
         // src/interp.rs
+        ("record", "record"),
+        ("`:{field}` is a symbol, not a text: write `{r}.{field}` or `{r}[\"{field}\"]`, or `get({r}, \"{field}\")` to receive an Option", "`:{field}` ist ein Symbol, kein Text: schreib `{r}.{field}` oder `{r}[\"{field}\"]`, oder `get({r}, \"{field}\")`, um eine Option zu bekommen"),
+        ("the dict has the key {shown}, which is not the same key as {key}: write `[{shown}]`", "das Dict hat den Schlüssel {shown}, der nicht derselbe Schlüssel wie {key} ist: schreib `[{shown}]`"),
         ("this list would be too large (more than {MAX_LIST} elements)", "diese Liste wäre zu groß (mehr als {MAX_LIST} Elemente)"),
         ("this text would be too large (more than {mb} MB)", "dieser Text wäre zu groß (mehr als {mb} MB)"),
         ("does it grow in a function that calls itself? Check that the function always reaches a case where it stops", "wächst er in einer Funktion, die sich selbst aufruft? Prüfe, ob die Funktion immer einen Fall erreicht, in dem sie aufhört"),
@@ -1227,6 +1238,9 @@ Ihre Definitionen werden über den Namen `{n}` verwendet: `{n}.name`"#,
         ("some names would then refer to something else", "einige Namen würden dann auf etwas anderes verweisen"),
         ("the code would not be valid", "der Code wäre nicht gültig"),
         // src/manifest.rs
+        ("the section `[{name}]` is written twice", "der Abschnitt `[{name}]` wird zweimal geschrieben"),
+        ("put all the lines of `[{name}]` under one `[{name}]`", "schreib alle Zeilen von `[{name}]` unter ein einziges `[{name}]`"),
+        ("`{name}` is written both as `[{name}]` and as `[[{name}]]`", "`{name}` wird sowohl als `[{name}]` als auch als `[[{name}]]` geschrieben"),
         ("expected a name here", "hier wird ein Name erwartet"),
         ("each line is `name = \"value\"`, like `version = \"0.1.0\"`", "jede Zeile ist `name = \"value\"`, wie `version = \"0.1.0\"`"),
         ("this text is not closed", "dieser Text wird nicht geschlossen"),
@@ -1284,6 +1298,12 @@ Ihre Definitionen werden über den Namen `{n}` verwendet: `{n}.name`"#,
 "#,
         ),
         // src/parser.rs
+        ("a case of `match` gives one expression; for a result on several lines, write `do` after `->`, then the lines, then `end`:\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\nor move the lines into a function: `Ok(x) -> handle(x)`", "ein Fall von `match` liefert einen einzigen Ausdruck; für ein Ergebnis über mehrere Zeilen schreib `do` nach `->`, dann die Zeilen, dann `end`:\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\noder verschieb die Zeilen in eine Funktion: `Ok(x) -> behandle(x)`"),
+        ("`{name}` is read as a value here, not called, because the code gives it a value (line {line}): to call it, put its argument in parentheses, like `{name}([1, 2])`", "`{name}` wird hier als Wert gelesen, nicht aufgerufen, weil der Code ihm einen Wert gibt (Zeile {line}): um es aufzurufen, setz sein Argument in Klammern, wie `{name}([1, 2])`"),
+        ("Rythme has no `condition ? a : b`", "Rythme hat kein `Bedingung ? a : b`"),
+        ("`?` does not choose between two values", "`?` wählt nicht zwischen zwei Werten"),
+        ("write `if condition then a else b`, like `if x > 2 then \"big\" else \"small\"`", "schreib `if Bedingung then a else b`, wie `if x > 2 then \"groß\" else \"klein\"`"),
+        ("after a value, `?` takes it out of `Some(x)` or `Ok(x)` and stops on `None` or `Err(e)`; at the end of a name, it is part of the name (`even?`)", "nach einem Wert holt `?` ihn aus `Some(x)` oder `Ok(x)` und hält bei `None` oder `Err(e)` an; am Ende eines Namens gehört es zum Namen (`even?`)"),
         ("all the definitions of `{name}` must have the same number of parameters", "alle Definitionen von `{name}` müssen gleich viele Parameter haben"),
         ("{} parameter(s) here", "hier {} Parameter"),
         ("expected {expected}, found {found}", "erwartet: {expected}, gefunden: {found}"),
@@ -1614,6 +1634,7 @@ Thumbs.db
         ("src/greeting.ry", "src/gruss.ry"),
         ("tests/greeting_test.ry", "tests/gruss_test.ry"),
         // src/repl.rs
+        ("usage: :explain CODE, like :explain E003   (codes: {})", "Verwendung: :explain CODE, wie :explain E003   (Codes: {})"),
         (":help for help, :quit to leave", ":help für Hilfe, :quit zum Beenden"),
         ("(type :quit to leave)", "(tippe :quit zum Beenden)"),
         ("(cancelled)", "(abgebrochen)"),
@@ -1624,13 +1645,14 @@ Thumbs.db
         ("Everything was forgotten.", "Alles wurde vergessen."),
         ("Messages are now in English.", "Die Meldungen sind jetzt auf Deutsch."),
         ("usage: :lang fr  (or another of {codes})", "Verwendung: :lang de  (oder ein anderer von {codes})"),
-        ("unknown code; codes look like E003 or W001", "unbekannter Code; Codes sehen aus wie E003 oder W001"),
         ("usage: :steps EXPRESSION, like :steps fib(4)", "Verwendung: :steps AUSDRUCK, wie :steps fib(4)"),
         ("Nothing defined yet.", "Noch nichts definiert."),
         ("unknown command `{other}`", "unbekannter Befehl `{other}`"),
         (" — did you mean `{best}`?", " — meintest du `{best}`?"),
         (":help lists the commands", ":help listet die Befehle auf"),
         // src/steps.rs
+        ("unknown option `{flag}` for `rythme steps`", "unbekannte Option `{flag}` für `rythme steps`"),
+        ("\nthe options are: --max N, --width N (see `rythme help steps`)", "\ndie Optionen sind: --max N, --width N (siehe `rythme help steps`)"),
         ("  ... (more steps, not shown: {n} are shown at most, change it with --max)", "  ... (weitere Schritte, nicht gezeigt: höchstens {n} werden gezeigt, ändere das mit --max)"),
         ("this calculation became too deep to be shown step by step (more than {MAX_DEPTH} operations inside each other)", "diese Rechnung wurde zu tief, um Schritt für Schritt gezeigt zu werden (mehr als {MAX_DEPTH} ineinander verschachtelte Operationen)"),
         ("try it with smaller values, or run the program normally: `rythme file.ry`", "versuch es mit kleineren Werten, oder führe das Programm normal aus: `rythme datei.ry`"),
@@ -4322,6 +4344,36 @@ Richtig: 0..17 -> "young"
          18..64 -> "adult"
 Für Dezimalzahlen, die zwischen 17 und 18 liegen, vergleiche stattdessen:
   a if a < 18 -> "young""#,
+        ),
+        (
+            r#"W011 — Index or subtraction instead of a call
+
+At the start of a statement or of a result, `show [1, 2]` and `show -1`
+call `show` without parentheses, unless the file gives `show` a value
+somewhere: with `=`, as a parameter of a function or a block, or in a
+pattern. Then they are an index and a subtraction, everywhere in the file,
+even where `show` is a function. The value may be given far away, to a
+parameter of another function.
+
+Wrong:   fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011: an index of the function
+Right:   show([1, 2])
+Or give the parameter another name: fn twice(n) = n * 2"#,
+            r#"W011 — Index oder Subtraktion statt eines Aufrufs
+
+Am Anfang einer Anweisung oder eines Ergebnisses rufen `show [1, 2]` und
+`show -1` die Funktion `show` ohne Klammern auf, außer die Datei gibt `show`
+irgendwo einen Wert: mit `=`, als Parameter einer Funktion oder eines Blocks,
+oder in einem Muster. Dann sind es ein Index und eine Subtraktion, überall in
+der Datei, auch dort, wo `show` eine Funktion ist. Der Wert kann weit weg
+gegeben werden, an einen Parameter einer anderen Funktion.
+
+Falsch:  fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011: ein Index der Funktion
+Richtig: show([1, 2])
+Oder gib dem Parameter einen anderen Namen: fn twice(n) = n * 2"#,
         ),
         ("Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.", "Definiert eine Funktion: `fn name(x) = expression`, oder mit ihrem Rumpf in den folgenden Zeilen, abgeschlossen mit `end`. Ohne Namen ist `fn(x) = x * 2` eine anonyme Funktion."),
         ("Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.", "Wählt zwischen zwei Werten: `if condition then value else other`. Jedes `if` hat ein `else`, weil ein `if` immer einen Wert liefert."),

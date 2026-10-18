@@ -100,7 +100,7 @@
       ]
     },
     "symbols": {
-      "match": "(?<![\\p{L}\\p{N}_)\\]}\"':])(:)([\\p{L}_][\\p{L}\\p{N}_]*)",
+      "match": "(?<![\\p{L}\\p{N}_)\\]}\"':])(:)([\\p{L}_][\\p{L}\\p{N}_]*\\??)",
       "name": "constant.other.symbol.rythme",
       "captures": { "1": { "name": "punctuation.definition.constant.rythme" } }
     },

@@ -772,7 +772,8 @@ texte 42 2.0 ["a", "b"] {nom: "Ada", "nom complet": "Ada L."} None ()
 
 Un **symbole** est un nom utilisé comme valeur, comme en Ruby : `:ok`,
 `:erreur`, `:en_attente`. Il s'écrit `:` suivi directement d'un nom, et
-s'affiche de la même façon. Deux symboles sont égaux quand leurs noms le
+s'affiche de la même façon ; un `?` collé au nom en fait partie, comme en
+Ruby (`:pair?`). Deux symboles sont égaux quand leurs noms le
 sont ; ils sont ordonnés par nom ; ils ne sont jamais égaux à un texte
 (`:ok == "ok"` est faux, et le vérificateur avertit, W006). On les utilise
 dans les motifs de `match`, et `to_json` les écrit comme des textes.
@@ -1282,7 +1283,10 @@ end
 La valeur examinée s'écrit sur la même ligne que `match` ; chaque cas
 commence sur sa propre ligne (ou après un `;`), et `end` ferme le `match`. Il
 faut au moins un cas, et pas de `|` devant un cas. Le résultat peut commencer
-à la ligne qui suit `->`.
+à la ligne qui suit `->`. C'est une seule expression : pour un résultat sur
+plusieurs lignes, écrivez `Ok(x) -> do`, les lignes, puis `end` (ou appelez
+une fonction) ; des lignes indentées sous un cas n'en font pas partie, et
+l'erreur le dit.
 
 Les cas sont essayés **dans l'ordre**. Le premier cas dont le motif
 correspond à la valeur, et dont la garde (s'il y en a une) vaut `true`, est
@@ -1687,7 +1691,12 @@ parenthèses : `puts "Bonjour"` est `puts("Bonjour")`, et `print x, y` est
   Alors `x -1` est `x - 1` et `xs [0]` est `xs[0]`, comme toujours, dans un
   résultat aussi. Sans
   espace avant (`x-1`, `xs[0]`), ou avec une espace après le `-` (`x - 1`),
-  ce n'est jamais un appel.
+  ce n'est jamais un appel. La valeur peut être donnée n'importe où dans le
+  fichier, même à un paramètre d'une autre fonction : quand le nom est une
+  fonction là où il est écrit (`montre [1, 2]` avec `fn montre(xs)` et,
+  ailleurs, `fn autre(montre)`), le vérificateur avertit (W011) et montre où
+  le nom reçoit sa valeur ; écrivez les parenthèses, `montre([1, 2])`, pour
+  l'appeler.
 - `rythme fmt` garde le choix de l'auteur, avec ou sans parenthèses, et
   écrit les autres lectures comme ce qu'elles sont : `x - 1`, `xs[0]`.
 
@@ -2916,6 +2925,7 @@ minuscules.
 | W008 | Résultat perdu | une ligne qui ne fait qu'appeler une fonction sans effet, comme `push(liste, x)` : les valeurs ne changent jamais |
 | W009 | Fonction affichée | une fonction affichée dans un texte ou par `print` (`<fn nom>`) au lieu de ce qu'elle donne |
 | W010 | Intervalles qui se chevauchent | un motif d'intervalle a des nombres en commun avec un intervalle d'un cas ou d'une définition placé avant lui : ils vont toujours au premier |
+| W011 | Indice ou soustraction au lieu d'un appel | `montre [1, 2]` ou `montre -1` commence une instruction là où `montre` est une fonction, mais le fichier donne une valeur à `montre` ailleurs : c'est un indice ou une soustraction ([3.15](#315-appels-sans-parenthèses)) |
 
 ---
 
@@ -2985,7 +2995,8 @@ texte ; `true` vaut 1), `float(x)`, `sin`, `cos`, `tan`, `asin`, `acos`,
 PPCM de deux nombres entiers), et la constante `pi`.
 
 **Texte.** `len`, `upper`, `lower`, `capitalize` (le premier caractère en
-majuscule), `trim`, `pad_left(x, largeur, remplissage)` et `pad_right` (pour
+majuscule, ou en casse de titre quand Unicode en donne une : `ǆ` donne `ǅ`,
+`ß` donne `Ss`), `trim`, `pad_left(x, largeur, remplissage)` et `pad_right` (pour
 aligner des colonnes ; le remplissage est une espace par défaut),
 `split(texte)` (aux espaces) et `split(texte, separateur)` (un séparateur
 vide découpe en caractères), `join(liste, separateur)`, `contains`,
@@ -3039,8 +3050,11 @@ plusieurs correspondances : la plus à gauche, puis la première
 alternative, puis la répétition la plus longue. Une recherche prend un temps
 proportionnel à la longueur du texte fois la taille de la regex, quelles
 qu'elles soient : le moteur suit tous les chemins à la fois au lieu de les
-essayer l'un après l'autre (pas de « retour arrière catastrophique ») ;
-pour la répétition d'une partie qui peut correspondre à un texte vide,
+essayer l'un après l'autre (pas de « retour arrière catastrophique »), et
+les recherches de `find_all`, `split_by` et `replace_all` sautent les
+chemins dont une recherche précédente a montré qu'ils ne mènent nulle part :
+trouver toutes les correspondances lit le plus souvent le texte environ une
+fois ; pour la répétition d'une partie qui peut correspondre à un texte vide,
 comme `(a*)*`, il peut choisir une autre fin que d'autres moteurs. Dans un
 texte Rythme, la barre oblique inverse s'écrit deux fois et les accolades
 `\{` et `\}` : `"\\d\{4\}"` est la regex `\d{4}` ; un signe entre
@@ -4391,7 +4405,7 @@ list_patterns = ".." [ NAME ] [ "," ]
 field_pattern = KEY ":" pattern | NAME | ".." ;
 
 MEMBER       = NAME [ "?" ] | CTOR | mot-clé | mot réservé ;
-SYMBOL       = ":" NAME ;
+SYMBOL       = ":" NAME [ "?" ] ;
 KEY          = MEMBER | PLAIN_TEXT ;
 ```
 
@@ -4417,7 +4431,8 @@ Remarques :
 - `"unless"` : le mot commence un `unless` seulement comme décrit en
   [1.5](#15-mots-clés-et-mots-réservés) ; ailleurs c'est un NAME.
 - `SYMBOL` : `:` suivi directement d'un nom, sauf le `:` qui suit un nom de
-  champ après `{` ou `,` ([2.14](#214-symbol)).
+  champ après `{` ou `,` ([2.14](#214-symbol)) ; un `?` collé au nom fait
+  partie du symbole (`:pair?`), jamais l'opérateur `postfix`.
 - Dans `match`, la valeur examinée doit finir sur la ligne de `match`, et les
   cas peuvent être séparés par des lignes vides ; `end` peut suivre le dernier
   cas sur la même ligne. Dans les blocs, `end` peut suivre la dernière

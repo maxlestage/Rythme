@@ -386,6 +386,14 @@ turn your value into a record first, like {{kind: "Circle", radius: r}}"#,
         ("defined here", "在这里定义"),
         ("from how `{name}` uses `{p}`, it needs: `{sig}`", "从 `{name}` 使用 `{p}` 的方式来看，它需要：`{sig}`"),
         // src/check.rs
+        ("`{s} [...]` is read as an index, not as a call", "`{s} [...]` 被读作索引，而不是调用"),
+        ("to call `{s}`, put its argument in parentheses: `{s}([...])`; for an index, write `{s}[...]` without a space", "要调用 `{s}`，请把参数放进括号：`{s}([...])`；要取索引，请写 `{s}[...]`，不加空格"),
+        ("`{s} -...` is read as a subtraction, not as a call", "`{s} -...` 被读作减法，而不是调用"),
+        ("to call `{s}`, put its argument in parentheses: `{s}(-x)`; for a subtraction, write `{s} - x`", "要调用 `{s}`，请把参数放进括号：`{s}(-x)`；要做减法，请写 `{s} - x`"),
+        ("`{s}` is not a value here", "`{s}` 在这里不是值"),
+        ("`{s}` is a function here", "`{s}` 在这里是函数"),
+        ("because `{s}` is given a value here", "因为 `{s}` 在这里得到了一个值"),
+        ("a call without parentheses, like `{s} [1, 2]` or `{s} -1`, is read so only when the file never gives `{s}` a value", "只有当文件从不给 `{s}` 赋值时，`{s} [1, 2]` 或 `{s} -1` 这样的写法才会被读作不带括号的调用"),
         ("the type `{name}` is part of Rythme", "类型 `{name}` 是 Rythme 自带的"),
         ("give your type another name", "给你的类型换个名字"),
         ("the type `{}` is already defined", "类型 `{}` 已经定义过了"),
@@ -1001,6 +1009,9 @@ Topics: start, syntax, functions, lists, text, records, types, match, errors, fu
         ("[Enter] next   [q] quit > ", "[Enter] 下一步   [q] 退出 > "),
         ("To practice, run `rythme` and type code, or do the exercises: `rythme exercise list`. `rythme help builtins` lists every function.", "要练习的话，运行 `rythme` 并输入代码，或者做练习：`rythme exercise list`。`rythme help builtins` 会列出所有函数。"),
         // src/interp.rs
+        ("record", "record"),
+        ("`:{field}` is a symbol, not a text: write `{r}.{field}` or `{r}[\"{field}\"]`, or `get({r}, \"{field}\")` to receive an Option", "`:{field}` 是符号，不是文本：请写 `{r}.{field}` 或 `{r}[\"{field}\"]`，或用 `get({r}, \"{field}\")` 得到 Option"),
+        ("the dict has the key {shown}, which is not the same key as {key}: write `[{shown}]`", "这个字典有键 {shown}，它和 {key} 不是同一个键：请写 `[{shown}]`"),
         ("this list would be too large (more than {MAX_LIST} elements)", "这个列表会太大（超过 {MAX_LIST} 个元素）"),
         ("this text would be too large (more than {mb} MB)", "这个文本会太大（超过 {mb} MB）"),
         ("does it grow in a function that calls itself? Check that the function always reaches a case where it stops", "它是不是在一个调用自身的函数里不断增长？请检查函数是否总能到达停止的情况"),
@@ -1227,6 +1238,9 @@ Its definitions are used through the name `{n}`: `{n}.name`"#,
         ("some names would then refer to something else", "有些名字将会指向别的东西"),
         ("the code would not be valid", "代码将会无效"),
         // src/manifest.rs
+        ("the section `[{name}]` is written twice", "节 `[{name}]` 写了两次"),
+        ("put all the lines of `[{name}]` under one `[{name}]`", "把 `[{name}]` 的所有行放在同一个 `[{name}]` 下面"),
+        ("`{name}` is written both as `[{name}]` and as `[[{name}]]`", "`{name}` 既写成了 `[{name}]`，又写成了 `[[{name}]]`"),
         ("expected a name here", "这里需要一个名字"),
         ("each line is `name = \"value\"`, like `version = \"0.1.0\"`", "每一行都是 `name = \"value\"`，例如 `version = \"0.1.0\"`"),
         ("this text is not closed", "这个文本没有闭合"),
@@ -1284,6 +1298,12 @@ Its definitions are used through the name `{n}`: `{n}.name`"#,
 "#,
         ),
         // src/parser.rs
+        ("a case of `match` gives one expression; for a result on several lines, write `do` after `->`, then the lines, then `end`:\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\nor move the lines into a function: `Ok(x) -> handle(x)`", "`match` 的一个分支只给出一个表达式；要让结果占多行，请在 `->` 后写 `do`，然后写这些行，最后写 `end`：\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\n或者把这些行放进一个函数：`Ok(x) -> handle(x)`"),
+        ("`{name}` is read as a value here, not called, because the code gives it a value (line {line}): to call it, put its argument in parentheses, like `{name}([1, 2])`", "`{name}` 在这里被读作值而不是调用，因为代码给了它一个值（第 {line} 行）：要调用它，请把参数放进括号，例如 `{name}([1, 2])`"),
+        ("Rythme has no `condition ? a : b`", "Rythme 没有 `条件 ? a : b`"),
+        ("`?` does not choose between two values", "`?` 不会在两个值之间选择"),
+        ("write `if condition then a else b`, like `if x > 2 then \"big\" else \"small\"`", "请写 `if 条件 then a else b`，例如 `if x > 2 then \"大\" else \"小\"`"),
+        ("after a value, `?` takes it out of `Some(x)` or `Ok(x)` and stops on `None` or `Err(e)`; at the end of a name, it is part of the name (`even?`)", "在值之后，`?` 从 `Some(x)` 或 `Ok(x)` 中取出值，遇到 `None` 或 `Err(e)` 时停止；在名字末尾，它是名字的一部分（`even?`）"),
         ("all the definitions of `{name}` must have the same number of parameters", "`{name}` 的所有定义必须有相同数量的参数"),
         ("{} parameter(s) here", "这里有 {} 个参数"),
         ("expected {expected}, found {found}", "期望 {expected}，却遇到了 {found}"),
@@ -1614,6 +1634,7 @@ Thumbs.db
         ("src/greeting.ry", "src/greeting.ry"),
         ("tests/greeting_test.ry", "tests/greeting_test.ry"),
         // src/repl.rs
+        ("usage: :explain CODE, like :explain E003   (codes: {})", "用法：:explain 代码，例如 :explain E003   （代码：{}）"),
         (":help for help, :quit to leave", "输入 :help 查看帮助，:quit 退出"),
         ("(type :quit to leave)", "（输入 :quit 退出）"),
         ("(cancelled)", "（已取消）"),
@@ -1624,13 +1645,14 @@ Thumbs.db
         ("Everything was forgotten.", "所有内容都已清除。"),
         ("Messages are now in English.", "消息现在使用简体中文。"),
         ("usage: :lang fr  (or another of {codes})", "用法：:lang zh  （或 {codes} 中的另一个）"),
-        ("unknown code; codes look like E003 or W001", "未知代码；代码的样子是 E003 或 W001"),
         ("usage: :steps EXPRESSION, like :steps fib(4)", "用法：:steps 表达式，例如 :steps fib(4)"),
         ("Nothing defined yet.", "还没有定义任何东西。"),
         ("unknown command `{other}`", "未知命令 `{other}`"),
         (" — did you mean `{best}`?", " — 你是想输入 `{best}` 吗？"),
         (":help lists the commands", ":help 会列出所有命令"),
         // src/steps.rs
+        ("unknown option `{flag}` for `rythme steps`", "`rythme steps` 的未知选项 `{flag}`"),
+        ("\nthe options are: --max N, --width N (see `rythme help steps`)", "\n选项有：--max N、--width N（见 `rythme help steps`）"),
         ("  ... (more steps, not shown: {n} are shown at most, change it with --max)", "  ...（更多步骤未显示：最多显示 {n} 步，可以用 --max 修改）"),
         ("this calculation became too deep to be shown step by step (more than {MAX_DEPTH} operations inside each other)", "这个计算太深了，无法一步一步显示（超过 {MAX_DEPTH} 层嵌套的运算）"),
         ("try it with smaller values, or run the program normally: `rythme file.ry`", "试试更小的值，或者正常运行程序：`rythme file.ry`"),
@@ -4252,6 +4274,34 @@ For decimal numbers, which fall between 17 and 18, compare instead:
          18..64 -> "adult"
 对于落在 17 和 18 之间的小数，请改为比较：
   a if a < 18 -> "young""#,
+        ),
+        (
+            r#"W011 — Index or subtraction instead of a call
+
+At the start of a statement or of a result, `show [1, 2]` and `show -1`
+call `show` without parentheses, unless the file gives `show` a value
+somewhere: with `=`, as a parameter of a function or a block, or in a
+pattern. Then they are an index and a subtraction, everywhere in the file,
+even where `show` is a function. The value may be given far away, to a
+parameter of another function.
+
+Wrong:   fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011: an index of the function
+Right:   show([1, 2])
+Or give the parameter another name: fn twice(n) = n * 2"#,
+            r#"W011 — 索引或减法，而不是调用
+
+在语句或结果的开头，`show [1, 2]` 和 `show -1` 是不带括号地调用 `show`，
+除非文件在某处给了 `show` 一个值：用 `=`、作为函数或代码块的参数，或在模式中。
+这时它们在整个文件里都是索引和减法，即使在 `show` 是函数的地方也是如此。
+这个值可能在很远的地方给出，比如另一个函数的参数。
+
+错误：   fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011：对函数取索引
+正确：   show([1, 2])
+或者给参数换个名字：fn twice(n) = n * 2"#,
         ),
         ("Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.", "定义一个函数：`fn name(x) = expression`，或者把函数体写在后面几行，并以 `end` 结束。没有名字的 `fn(x) = x * 2` 是匿名函数。"),
         ("Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.", "在两个值之间选择：`if condition then value else other`。每个 `if` 都有 `else`，因为 `if` 总是给出一个值。"),

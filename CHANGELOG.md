@@ -12,6 +12,15 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Language
+
+- **A symbol may end with `?`**, as in Ruby: `:even?` is one symbol. It was
+  read as `:even` followed by the operator `?`, which the checker always
+  refuses (E016) before running, so no program that ran changes meaning (a
+  fuzz test puts the old reading in thousands of programs made from the
+  examples and the tests: every one is refused). `rythme fmt` keeps the space
+  in `:even ?`; the VS Code and Tree-sitter grammars know the new form.
+
 ### Library
 
 - **CSV**: `csv_parse(text, separator)` (`Ok(rows)`, lists of texts),
@@ -35,6 +44,56 @@ dit ce qu'une version 1.x peut changer ou non.*
   (`parse_csv`, `DictReader`, `to_csv`, `srand`...). As the stability
   promise says, a function of a program with one of these names stays its
   own (W003).
+
+### Fixed
+
+- **`capitalize` uses the titlecase of Unicode** where it differs from the
+  uppercase: `capitalize("ǆungla")` gives `ǅungla` (not `Ǆungla`), and so do
+  `ǈ ǋ ǲ`; `ß` gives `Ss`, the ligatures `ﬁ ﬂ ﬀ...` give `Fi Fl Ff...`, the
+  Greek letters with iota subscript keep it (`ᾳ` gives `ᾼ`), Armenian `և`
+  gives `Եւ`, and Georgian letters stay as they are. A program that
+  capitalizes one of these characters prints another text: a bug fix.
+  `upper` does not change.
+
+### Performance
+
+- **`find_all`, `split_by` and `replace_all` are no longer quadratic** on
+  regexes that read far ahead: their searches skip the ways that an earlier
+  search showed to lead nowhere, and share their memory. `a*b|a` on 40 000
+  `a`s took about 30 seconds and now takes a few milliseconds; the matches
+  are the same (`bench/regex.ry`).
+
+### Messages
+
+- **A case of `match` on several indented lines** (`Ok(x) ->` then the
+  lines, as in Ruby or Python) is explained: the error says that a case
+  gives one expression and shows `Ok(x) -> do ... end`, instead of a hint
+  about `==` or "put each case on its own line".
+- **W011, index or subtraction instead of a call**: `show [1, 2]` and
+  `show -1` at the start of a statement are an index and a subtraction as
+  soon as the file gives `show` a value anywhere, even to a parameter of
+  another function. The reading does not change, but where `show` is a
+  function, `rythme check` (and the editor) now warns, shows where `show`
+  gets its value, and asks for parentheses: `show([1, 2])`. A syntax error
+  in such a line says it too. `rythme explain W011`, manual §3.15.
+- **`condition ? a : b`** (Ruby, C, JavaScript) is explained: the error
+  points at the `?` and says to write `if condition then a else b`, in the
+  terminal and in the editor. Only code that was already an error gets it.
+- **`record[:name]`** says that a symbol is not a text, and how to read the
+  field (`r.name`, `r["name"]`, `get(r, "name")`), before running and while
+  running (where it said "cannot use `[...]` on Record"). A dict missing the
+  key `:a` but holding `"a"` (or the reverse) says so.
+- **`:explain` alone** in the REPL shows how to use it and the known codes,
+  instead of "unknown code"; an unknown code is named, like with
+  `rythme explain`.
+- **`rythme steps`**: an unknown option (`--bogus`) is an error that names
+  it, with the closest option, like the other commands (it was read as the
+  expression `--bogus`); the mistakes in the expression given after the file
+  are shown in `<expression>:1:...`, not as one more line of the file.
+- **`rythme.toml` with a section written twice** (two `[dependencies]`, or
+  `[dependencies]` and `[[dependencies]]`, or a key and a section of the same
+  name) is an error E025 at the second one, with the first, as TOML wants
+  (keys written twice already were); it was read without a word.
 
 ### Website
 
