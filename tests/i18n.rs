@@ -20,7 +20,7 @@ use rythme::lang::{self, Lang, LANGUAGES};
 
 /// The languages whose catalog must have every text. A new language can
 /// start partial (shown in English where missing) and join this list once done.
-const COMPLETE: &[&str] = &["es"];
+const COMPLETE: &[&str] = &["es", "de", "pt", "zh"];
 
 /// One text of the program: English, French, and where it is.
 struct Text {
@@ -166,9 +166,124 @@ fn spanish_messages() {
         .output()
         .unwrap();
     assert!(String::from_utf8_lossy(&out.stderr).contains("división entre cero"));
-    let r = common::rythme(&["--lang", "de", "help"]);
+    let r = common::rythme(&["--lang", "it", "help"]);
     assert_eq!(r.code, 2);
-    assert!(r.stderr.contains("unknown language `de`: write `--lang` and one of en, fr, es"), "{}", r.stderr);
+    assert!(r.stderr.contains("unknown language `it`: write `--lang` and one of en, fr, es, de, pt, zh"), "{}", r.stderr);
+}
+
+/// Real error messages, help and explanations in German, Portuguese and
+/// Chinese: (language, program, what its error output says).
+#[test]
+fn german_portuguese_and_chinese_messages() {
+    let errors = [
+        ("de", "x = [1, 2]\nprint(lenght(x))", "Fehler[E003]: unbekannter Name `lenght`"),
+        ("de", "x = [1, 2]\nprint(lenght(x))", "= Hilfe: in Rythme heißt das `len`"),
+        ("de", "x = [1, 2]\nprint(lenght(x))", "= mehr über diesen Fehler: `rythme explain E003`"),
+        ("de", "print(1 / 0)", "Fehler[E008]: Division durch null"),
+        ("de", "fn add(a, b) = a + b\nprint(add(1))", "`add` nimmt 2 Argument(e), hat aber 1 bekommen"),
+        (
+            "de",
+            "print(len(42))",
+            "`len` erwartet einen Text, eine Liste, einen Record, ein Dict oder eine Menge als Argument 1, erhalten: Int 42",
+        ),
+        ("pt", "x = [1, 2]\nprint(lenght(x))", "erro[E003]: nome desconhecido `lenght`"),
+        ("pt", "x = [1, 2]\nprint(lenght(x))", "= ajuda: no Rythme, isto se chama `len`"),
+        ("pt", "print(1 / 0)", "erro[E008]: divisão por zero"),
+        ("pt", "fn somar(a, b) = a + b\nprint(somar(1))", "`somar` espera 2 argumentos, mas recebeu 1"),
+        ("pt", "print(len(42))", "`len` espera um texto, uma lista, um registro, um dicionário ou um conjunto como argumento 1"),
+        ("zh", "x = [1, 2]\nprint(lenght(x))", "错误[E003]: 未知名字 `lenght`"),
+        ("zh", "x = [1, 2]\nprint(lenght(x))", "= 帮助: 在 Rythme 中，它叫 `len`"),
+        ("zh", "x = [1, 2]\nprint(lenght(x))", "= 关于这个错误的更多信息：`rythme explain E003`"),
+        ("zh", "print(1 / 0)", "错误[E008]: 除以零"),
+        ("zh", "fn add(a, b) = a + b\nprint(add(1))", "`add` 需要 2 个参数，但收到了 1 个"),
+        ("zh", "print(len(42))", "`len` 的第 1 个参数应该是文本、列表、记录、字典或集合，但得到的是 Int 42"),
+    ];
+    for (lang, code, expected) in errors {
+        let r = common::rythme_lang(lang, &["-e", code]);
+        assert_eq!(r.code, 1, "{lang}: {code}");
+        assert!(r.stderr.contains(expected), "{lang}: {expected}\n{}", r.stderr);
+    }
+
+    // Values: the months in the messages of dates, the separator of decimals.
+    let dates = [
+        ("de", "der Tag muss im Februar 2023 zwischen 1 und 28 liegen, nicht 30"),
+        ("pt", "o dia deve ir de 1 a 28 em fevereiro de 2023, não 30"),
+        ("zh", "2023年2月的日期必须在 1 到 28 之间，不能是 30"),
+    ];
+    for (lang, expected) in dates {
+        let r = common::rythme_lang(lang, &["-e", "print(parse_date(\"2023-02-30\"))"]);
+        assert!(r.stdout.contains(expected), "{lang}: {}", r.stdout);
+    }
+
+    // The help, the explanations, the documentation of functions, and the
+    // topics under their names in each language.
+    let pages = [
+        ("de", vec!["help"], format!("Rythme {} — Hilfe", rythme::VERSION)),
+        ("de", vec!["help", "listen"], "LISTEN".to_string()),
+        ("de", vec!["explain", "E001"], "E001 — Syntaxfehler".to_string()),
+        ("de", vec!["help", "map"], "map(list, f)\n  Wendet die Funktion f auf jedes Element an".to_string()),
+        ("pt", vec!["help"], format!("Rythme {} — ajuda", rythme::VERSION)),
+        ("pt", vec!["help", "funções"], "FUNÇÕES".to_string()),
+        ("pt", vec!["explain", "E001"], "E001 — Erro de sintaxe".to_string()),
+        ("pt", vec!["help", "map"], "map(list, f)\n  Aplica a função f a cada elemento".to_string()),
+        ("zh", vec!["help"], format!("Rythme {} — 帮助", rythme::VERSION)),
+        ("zh", vec!["help", "列表"], "列表".to_string()),
+        ("zh", vec!["explain", "E001"], "E001 — 语法错误".to_string()),
+        ("zh", vec!["help", "map"], "map(list, f)\n  对每个元素应用函数 f".to_string()),
+    ];
+    for (lang, args, start) in pages {
+        let r = common::rythme_lang(lang, &args);
+        assert!(r.stdout.starts_with(&start), "{lang} {args:?}: {}", r.stdout);
+    }
+    // The list of functions gives the first sentence, also in Chinese.
+    let r = common::rythme_lang("zh", &["help", "builtins"]);
+    assert!(r.stdout.contains("  abs(x)                       绝对值：去掉符号的数\n"), "{}", r.stdout);
+    let r = common::rythme_lang("zh", &["check", "missing.ry"]);
+    assert!(r.stderr.contains("错误[E017]: 找不到文件 `missing.ry`"), "{}", r.stderr);
+}
+
+/// `LANG=de_DE.UTF-8`, `pt_BR`, `zh_CN` choose the language without `--lang`.
+#[test]
+fn the_locale_chooses_german_portuguese_or_chinese() {
+    for (locale, expected) in [("de_DE.UTF-8", "Division durch null"), ("pt_BR.UTF-8", "divisão por zero"), ("zh_CN.UTF-8", "除以零")] {
+        let out = std::process::Command::new(env!("CARGO_BIN_EXE_rythme"))
+            .args(["-e", "print(1 / 0)"])
+            .env_remove("RYTHME_LANG")
+            .env_remove("LC_ALL")
+            .env_remove("LC_MESSAGES")
+            .env("LANG", locale)
+            .env("NO_COLOR", "1")
+            .output()
+            .unwrap();
+        assert!(String::from_utf8_lossy(&out.stderr).contains(expected), "{locale}: {}", String::from_utf8_lossy(&out.stderr));
+    }
+}
+
+/// Chinese characters take two columns in a terminal: the `^` under a name
+/// stay under it when the line, or the message, has some.
+#[test]
+fn carets_stay_aligned_with_chinese_text() {
+    // `x = "日本語" + nope`: 4 + 2 + 6 + 2 + 3 columns before `nope`.
+    let r = common::rythme_lang("zh", &["-e", "x = \"日本語\" + nope"]);
+    assert!(r.stderr.contains("1 | x = \"日本語\" + nope\n"), "{}", r.stderr);
+    assert!(r.stderr.contains(&format!("  | {}^^^^ 未定义\n", " ".repeat(15))), "{}", r.stderr);
+    // A wide name: its two characters take four `^`.
+    let r = common::rythme_lang("zh", &["-e", "名字 = 1\nprint(名称)"]);
+    assert!(r.stderr.contains(&format!("2 | print(名称)\n  | {}^^^^ 未定义\n", " ".repeat(6))), "{}", r.stderr);
+    assert_eq!(rythme::diagnostic::display_width("日本 ab"), 7);
+    assert_eq!(rythme::diagnostic::display_width("e\u{301}"), 1);
+}
+
+/// The playground passes the position of a language in `LANGUAGES`: its lists
+/// must follow that order.
+#[test]
+fn the_playground_knows_every_language_in_order() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let codes = LANGUAGES.iter().map(|l| format!("{:?}", l.code)).collect::<Vec<_>>().join(", ");
+    for file in ["site/public/playground.js", "site/public/playground-worker.js"] {
+        let source = std::fs::read_to_string(root.join(file)).unwrap();
+        assert!(source.contains(&format!("[{codes}]")), "{file} must list the languages as [{codes}]");
+    }
 }
 
 /// The language is found from its code, from a locale, and is listed.
@@ -180,8 +295,14 @@ fn languages_are_chosen_by_code_or_locale() {
     assert_eq!(lang::parse("ES"), Some(es));
     assert_eq!(lang::parse("español"), Some(es));
     assert_eq!(lang::parse("fr_CA"), Some(Lang::Fr));
-    assert_eq!(lang::parse("de_DE"), None);
-    assert!(lang::codes().contains("es"));
+    assert_eq!(lang::parse("it_IT"), None);
+    assert_eq!(lang::parse("de_AT.UTF-8").map(Lang::code), Some("de"));
+    assert_eq!(lang::parse("Deutsch").map(Lang::code), Some("de"));
+    assert_eq!(lang::parse("pt_BR.UTF-8").map(Lang::code), Some("pt"));
+    assert_eq!(lang::parse("pt_PT").map(Lang::code), Some("pt"));
+    assert_eq!(lang::parse("zh_CN.UTF-8").map(Lang::code), Some("zh"));
+    assert_eq!(lang::parse("zh-Hans").map(Lang::code), Some("zh"));
+    assert_eq!(lang::codes(), "en, fr, es, de, pt, zh");
     let codes: BTreeSet<&str> = LANGUAGES.iter().map(|l| l.code).collect();
     assert_eq!(codes.len(), LANGUAGES.len(), "two languages with the same code");
 }

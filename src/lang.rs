@@ -26,8 +26,14 @@ pub struct Language {
 }
 
 /// Every language. Adding one: its catalog in `src/i18n/` and its line here.
-pub static LANGUAGES: &[Language] =
-    &[Language { code: "en", name: "English", texts: &[] }, Language { code: "fr", name: "français", texts: &[] }, include!("i18n/es.rs")];
+pub static LANGUAGES: &[Language] = &[
+    Language { code: "en", name: "English", texts: &[] },
+    Language { code: "fr", name: "français", texts: &[] },
+    include!("i18n/es.rs"),
+    include!("i18n/de.rs"),
+    include!("i18n/pt.rs"),
+    include!("i18n/zh.rs"),
+];
 
 /// A language of [`LANGUAGES`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

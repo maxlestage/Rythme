@@ -30,7 +30,8 @@ pub extern "C" fn rythme_alloc(len: usize) -> *mut u8 {
 /// result is the formatted code, or error messages), 4 = steps (the
 /// calculation shown step by step, like `rythme steps`). `language`: the
 /// position of the language of the messages in `rythme::lang::LANGUAGES`
-/// (0 = English, 1 = French, 2 = Spanish); English if there is none.
+/// (0 = English, 1 = French, 2 = Spanish, 3 = German, 4 = Portuguese,
+/// 5 = Chinese); English if there is none.
 ///
 /// # Safety
 /// `ptr` must come from `rythme_alloc(len)` and hold `len` bytes of UTF-8.
