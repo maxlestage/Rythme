@@ -1,0 +1,27 @@
+# winget manifest of Rythme (template filled in by packaging/render.sh).
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: Rythme.Rythme
+PackageVersion: "@VERSION@"
+PackageLocale: en-US
+Publisher: Rythme
+PublisherUrl: https://github.com/maxlestage/Rythme
+PublisherSupportUrl: https://github.com/maxlestage/Rythme/issues
+PackageName: Rythme
+PackageUrl: https://maxlestage.github.io/Rythme/
+License: MIT
+LicenseUrl: https://github.com/maxlestage/Rythme/blob/master/LICENSE
+ShortDescription: A simple, purely functional programming language with help everywhere.
+Description: >-
+  Rythme is a programming language for learning and for work: simpler than
+  Python, purely functional, safe (no null, no exceptions), with messages and
+  help in English and French. The rythme program runs, checks, tests and
+  formats programs, and is a language server for editors.
+Moniker: rythme
+Tags:
+  - programming-language
+  - interpreter
+  - functional
+  - education
+ReleaseNotesUrl: https://github.com/maxlestage/Rythme/releases/tag/v@VERSION@
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0
