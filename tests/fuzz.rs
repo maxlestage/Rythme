@@ -731,6 +731,13 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
         let _ = a[0].repr();
         Ok(a[0].clone())
     }
+    /// `shuffle` without chance: the interpreter and the stepper must agree.
+    fn unshuffled(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+        match &a[0] {
+            Value::List(_) => Ok(a[0].clone()),
+            _ => (builtins::lookup("shuffle").unwrap().func)(it, a, span),
+        }
+    }
     fn empty_text(_: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
         Ok(Value::text(""))
     }
@@ -760,7 +767,7 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
     fn fixed_today(_: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
         Ok(moment(&[("year", 2024), ("month", 2), ("day", 29)]))
     }
-    let fakes: [(&str, builtins::BuiltinFn); 18] = [
+    let fakes: [(&str, builtins::BuiltinFn); 19] = [
         ("print", quiet),
         ("debug", same),
         ("input", empty_text),
@@ -768,6 +775,7 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
         ("exit", quiet),
         ("time", number),
         ("random", number),
+        ("shuffle", unshuffled),
         ("env", no_variable),
         ("read_file", no_file),
         ("write_file", no_file),
@@ -899,16 +907,28 @@ fn pipeline(src: &str) -> Result<Stage, String> {
     Ok(stage)
 }
 
+/// Whether a message says that a run reached its limits (number of calls or
+/// steps, depth), in any language.
+fn stopped_by_a_limit(message: &str) -> bool {
+    const LIMITS: [(&str, &str); 3] = [
+        ("the program was stopped: it made more calls than allowed for this run", "le programme a été arrêté"),
+        (
+            "this calculation became too deep to be shown step by step (more than {MAX_DEPTH} operations inside each other)",
+            "ce calcul est devenu trop profond",
+        ),
+        ("the evaluation was stopped after {limit} steps: does it ever end?", "l'évaluation a été arrêtée après"),
+    ];
+    let start = |text: &'static str| text.split('{').next().unwrap_or(text);
+    let translated =
+        lang::LANGUAGES.iter().flat_map(|l| l.texts.iter()).filter(|(en, _)| LIMITS.iter().any(|(e, _)| e == en)).map(|(_, tr)| start(tr));
+    LIMITS.iter().flat_map(|(en, fr)| [start(en), *fr]).chain(translated).any(|w| !w.is_empty() && message.starts_with(w))
+}
+
 /// `rythme steps` has an evaluator of its own: it must print the same and stop
 /// with the same error as the interpreter, unless one of them reached its
 /// limits (number of calls or steps, depth).
 fn same_as_the_stepper(items: &[Item], printed: &str, error: Option<&Diagnostic>, file: u32, src: &str) -> Result<(), String> {
-    let limited = |d: &Diagnostic| {
-        d.code == "E014"
-            || ["was stopped", "a été arrêté", "too deep to be shown", "trop profond pour être montré", "stopped after", "arrêtée après"]
-                .iter()
-                .any(|w| d.message.contains(w))
-    };
+    let limited = |d: &Diagnostic| d.code == "E014" || stopped_by_a_limit(&d.message);
     // What `help` prints is in the language of the messages, which the threads
     // of a long session change while others run.
     if error.is_some_and(limited) || src.contains("help") {
@@ -978,7 +998,7 @@ type Failure = (u64, String, String);
 /// Runs `cases` programs from `first` on a thread with a large stack (deep
 /// recursion is part of the game). Returns the failures, and how many
 /// programs stopped at each stage.
-fn fuzz(seed: u64, first: u64, cases: u64) -> (Vec<Failure>, [u64; 5]) {
+fn fuzz(seed: u64, first: u64, cases: u64, fixed: Option<Lang>) -> (Vec<Failure>, [u64; 5]) {
     std::thread::Builder::new()
         .stack_size(1 << 30)
         .spawn(move || {
@@ -989,7 +1009,7 @@ fn fuzz(seed: u64, first: u64, cases: u64) -> (Vec<Failure>, [u64; 5]) {
             let langs: Vec<Lang> = Lang::all().collect();
             for i in first..first + cases {
                 let src = case(seed, i);
-                lang::set(langs[(i % langs.len() as u64) as usize]);
+                lang::set(fixed.unwrap_or(langs[(i % langs.len() as u64) as usize]));
                 match run_case(&src) {
                     Ok(stage) => stages[stage as usize] += 1,
                     Err(e) => failures.push((i, src, e)),
@@ -1024,7 +1044,7 @@ fn report(seed: u64, failures: &[Failure]) {
 #[test]
 fn random_programs_never_crash_or_hang() {
     let seed = 0x0052_5954_4D45;
-    let (failures, stages) = fuzz(seed, 0, 4000);
+    let (failures, stages) = fuzz(seed, 0, 4000, None);
     report(seed, &failures);
     // The generators must keep reaching every stage.
     assert!(stages.iter().all(|&n| n > 100), "programs stopped by the lexer, parser, checker, at run time, or ran: {stages:?}");
@@ -1042,11 +1062,15 @@ fn long_fuzzing_session() {
     let mut failures = Vec::new();
     let mut stages = [0; 5];
     let mut next = 0;
+    let langs: Vec<Lang> = Lang::all().collect();
     while next < cases {
+        // The language is shared by the threads: one per round, so that the
+        // interpreter and the stepper of a program use the same one.
+        let round_lang = langs[(next / (threads * batch)) as usize % langs.len()];
         let handles: Vec<_> = (0..threads)
             .map(|t| next + t * batch)
             .filter(|&start| start < cases)
-            .map(|start| std::thread::spawn(move || fuzz(seed, start, batch.min(cases - start))))
+            .map(|start| std::thread::spawn(move || fuzz(seed, start, batch.min(cases - start), Some(round_lang))))
             .collect();
         next += threads * batch;
         for h in handles {
