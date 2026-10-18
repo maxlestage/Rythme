@@ -27,9 +27,10 @@ let watcher;
 const pages = new Map();
 const pagesChanged = new vscode.EventEmitter();
 
-/** English or French, like VS Code. */
-function t(en, fr) {
-  return vscode.env.language.toLowerCase().startsWith('fr') ? fr : en;
+/** English, French or Spanish, like VS Code. */
+function t(en, fr, es) {
+  const ui = vscode.env.language.toLowerCase();
+  return ui.startsWith('fr') ? fr : ui.startsWith('es') ? es : en;
 }
 
 function settings() {
@@ -81,10 +82,13 @@ function program() {
   return onPath('rythme') || (isFile(cargo) ? cargo : 'rythme');
 }
 
-/** The language chosen in the settings: 'en', 'fr' or 'auto'. */
+/** The languages of the messages of Rythme. */
+const LANGUAGES = ['en', 'fr', 'es'];
+
+/** The language chosen in the settings: 'en', 'fr', 'es' or 'auto'. */
 function languageSetting() {
   const v = settings().get('language');
-  return v === 'en' || v === 'fr' ? v : 'auto';
+  return LANGUAGES.includes(v) ? v : 'auto';
 }
 
 /** `--lang` for the commands, so that they speak like the language server. */
@@ -96,18 +100,19 @@ function langArgs() {
   if (process.env.RYTHME_LANG) {
     return [];
   }
-  const ui = vscode.env.language.toLowerCase();
-  return ui.startsWith('fr') ? ['--lang', 'fr'] : ui.startsWith('en') ? ['--lang', 'en'] : [];
+  const ui = vscode.env.language.toLowerCase().slice(0, 2);
+  return LANGUAGES.includes(ui) ? ['--lang', ui] : [];
 }
 
 function notFound(command) {
-  const install = t('How to install', 'Comment installer');
-  const settingsButton = t('Settings', 'Réglages');
+  const install = t('How to install', 'Comment installer', 'Cómo instalarlo');
+  const settingsButton = t('Settings', 'Réglages', 'Ajustes');
   vscode.window
     .showErrorMessage(
       t(
         `Rythme: the program \`${command}\` was not found. Install Rythme, or give its path in the setting \`rythme.path\`. Colors and snippets work without it.`,
-        `Rythme : le programme \`${command}\` est introuvable. Installez Rythme, ou indiquez son chemin dans le réglage \`rythme.path\`. Les couleurs et les extraits de code fonctionnent sans lui.`
+        `Rythme : le programme \`${command}\` est introuvable. Installez Rythme, ou indiquez son chemin dans le réglage \`rythme.path\`. Les couleurs et les extraits de code fonctionnent sans lui.`,
+        `Rythme: no se encontró el programa \`${command}\`. Instala Rythme, o indica su ruta en el ajuste \`rythme.path\`. Los colores y los fragmentos funcionan sin él.`
       ),
       install,
       settingsButton
@@ -162,7 +167,8 @@ async function startServer() {
     vscode.window.showErrorMessage(
       t(
         `Rythme: the language server did not start (${reason}). It needs a recent version of Rythme, which has the command \`rythme lsp\`. More in the Rythme output.`,
-        `Rythme : le serveur de langage n'a pas démarré (${reason}). Il faut une version récente de Rythme, qui a la commande \`rythme lsp\`. Plus de détails dans la sortie Rythme.`
+        `Rythme : le serveur de langage n'a pas démarré (${reason}). Il faut une version récente de Rythme, qui a la commande \`rythme lsp\`. Plus de détails dans la sortie Rythme.`,
+        `Rythme: el servidor de lenguaje no arrancó (${reason}). Hace falta una versión reciente de Rythme, que tenga el comando \`rythme lsp\`. Más detalles en la salida Rythme.`
       )
     );
   }
@@ -187,7 +193,7 @@ function restartServer() {
     await stopServer();
     await startServer();
     if (client) {
-      vscode.window.setStatusBarMessage(t('Rythme: language server restarted', 'Rythme : serveur de langage redémarré'), 3000);
+      vscode.window.setStatusBarMessage(t('Rythme: language server restarted', 'Rythme : serveur de langage redémarré', 'Rythme: servidor de lenguaje reiniciado'), 3000);
     }
   });
   return restarting;
@@ -242,7 +248,7 @@ async function documentToRun(target) {
 async function runInTerminal(subcommand, target, extra = []) {
   const doc = await documentToRun(target);
   if (!doc) {
-    vscode.window.showInformationMessage(t('Open a Rythme file (.ry) first.', "Ouvrez d'abord un fichier Rythme (.ry)."));
+    vscode.window.showInformationMessage(t('Open a Rythme file (.ry) first.', "Ouvrez d'abord un fichier Rythme (.ry).", 'Abre antes un archivo de Rythme (.ry).'));
     return;
   }
   if ((doc.isUntitled || doc.isDirty) && !(await doc.save())) {
@@ -300,7 +306,7 @@ async function explainError() {
     }
   }
   const asked = await vscode.window.showInputBox({
-    prompt: t('Error code to explain', "Code d'erreur à expliquer"),
+    prompt: t('Error code to explain', "Code d'erreur à expliquer", 'Código de error que explicar'),
     placeHolder: 'E003',
     value: code,
   });
@@ -311,7 +317,7 @@ async function explainError() {
 
 async function showHelp() {
   const asked = await vscode.window.showInputBox({
-    prompt: t('A topic or a function (empty: the list of topics)', 'Un sujet ou une fonction (vide : la liste des sujets)'),
+    prompt: t('A topic or a function (empty: the list of topics)', 'Un sujet ou une fonction (vide : la liste des sujets)', 'Un tema o una función (vacío: la lista de temas)'),
     placeHolder: 'map, lists, match, errors…',
   });
   if (asked === undefined) {

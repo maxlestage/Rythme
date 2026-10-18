@@ -3463,7 +3463,7 @@ erreur[E017]: `input` a atteint la fin de l'entrée
 ### 7.1 La ligne de commande
 
 ```text
-rythme [--lang fr|en] [--no-color] [COMMANDE] [ARGUMENTS...]
+rythme [--lang en|fr|es] [--no-color] [COMMANDE] [ARGUMENTS...]
 ```
 
 | Commande | Autres noms | Ce qu'elle fait |
@@ -3497,15 +3497,25 @@ suggestion.
 **Options.** `--lang` et `--no-color` doivent venir **avant** la commande ;
 tout ce qui suit le nom du fichier va au programme (pour `rythme test`, ce
 qui vient après `--`). `--lang` accepte toute
-valeur qui commence par `fr` ou `en` (`--lang fr`, `--lang=en`,
-`--lang fr_CA`) ; une autre valeur, ou `--lang` sans valeur, est signalée,
-avec le code de sortie 2.
+valeur qui commence par le code d'une langue, `en`, `fr` ou `es`
+(`--lang es`, `--lang=en`, `--lang fr_CA`) ; une autre valeur, ou `--lang`
+sans valeur, est signalée, avec le code de sortie 2.
+
+**Langues des messages.** Chaque message, sujet d'aide, explication d'un code
+et page de `rythme learn` existe en anglais, en français et en espagnol
+(`--lang es`) ; les mots-clés, les noms des fonctions intégrées et les
+commandes restent les mêmes dans toutes les langues. Les fichiers écrits par
+`rythme new` suivent aussi la langue ; les exercices existent en anglais et
+en français, et sont en anglais pour les autres langues. Les textes des
+autres langues sont rangés dans des catalogues (`src/i18n/`) ; CONTRIBUTING.md
+explique comment en ajouter une.
 
 **Exercices.** `rythme exercise` (ou `rythme exercise list`) liste les 30
 exercices gradués intégrés au programme (les fichiers de
 [`docs/exercises/`](exercises/README.fr.md)). `start NOM` écrit l'exercice
 désigné par son numéro (`7`) ou son nom de fichier (`07-recursivite`,
-`recursivite`) dans le dossier actuel, dans la langue des messages ; il ne
+`recursivite`) dans le dossier actuel, dans la langue des messages (anglais
+ou français) ; il ne
 remplace jamais un fichier existant (code de sortie 1). `check FICHIER` lance
 les tests du fichier comme `rythme test`, puis explique quoi faire ensuite ;
 `FICHIER` peut aussi être le numéro d'un exercice commencé dans le dossier
@@ -3521,7 +3531,9 @@ noms français ou alternatifs : `syntaxe`, `fonctions`, `listes`, `texte`,
 `enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`, `exercices`,
 `fichiers`, `système`, `dossiers`, `chemins`, `projets`, `paquets`,
 `interactif`, `formater`, `documentation`, `etapes`, `lsp`, `vscode`,
-`éditeurs`, `blocs`, `symboles`, `bibliothèque`...
+`éditeurs`, `blocs`, `symboles`, `bibliothèque`... et des noms espagnols :
+`sintaxis`, `funciones`, `listas`, `registros`, `tipos`, `patrones`,
+`errores`, `pruebas`, `ejercicios`, `proyectos`, `fechas`, `pasos`...
 
 **Codes de sortie.**
 
@@ -3535,9 +3547,10 @@ noms français ou alternatifs : `syntaxe`, `fonctions`, `listes`, `texte`,
 
 **Environnement.**
 
-- `RYTHME_LANG` : la langue des messages (`fr...` ou `en...`). Sans elle, la
-  première variable non vide parmi `LC_ALL`, `LC_MESSAGES`, `LANG` et
-  `LANGUAGE` décide : le français si elle commence par `fr`, l'anglais sinon.
+- `RYTHME_LANG` : la langue des messages (`en...`, `fr...` ou `es...`). Sans
+  elle, la première variable non vide parmi `LC_ALL`, `LC_MESSAGES`, `LANG` et
+  `LANGUAGE` décide : le français si elle commence par `fr`, l'espagnol si
+  elle commence par `es` (`LANG=es_ES.UTF-8`), l'anglais sinon.
   `--lang` l'emporte sur toutes.
 - `NO_COLOR` : quand elle est définie (avec n'importe quelle valeur), les
   messages sont sans couleurs ; `--no-color` fait de même. Les couleurs ne
@@ -3568,8 +3581,8 @@ $ rythme help lenght
 Aucune aide trouvée pour `lenght`.
 en Rythme, cela s'appelle `len`
 Voyez la liste des sujets avec `rythme help`.
-$ rythme --lang es bonjour.ry
-langue inconnue `es` : écrivez `--lang fr` ou `--lang en`, comme `rythme --lang fr bonjour.ry`
+$ rythme --lang de bonjour.ry
+langue inconnue `de` : écrivez `--lang` et l'une de en, fr, es, comme `rythme --lang fr bonjour.ry`
 ```
 
 Les trois dernières se terminent avec le code 2 (la dernière est écrite dans
@@ -3610,7 +3623,7 @@ quitter.
 | `:doc NOM` | | la documentation d'un nom défini, d'une fonction intégrée ou d'un sujet |
 | `:load FICHIER` | `:charger` | charger (à nouveau) un fichier et l'exécuter (`.ry` est ajouté si besoin) |
 | `:reset` | | tout oublier |
-| `:lang fr\|en` | `:langue` | changer la langue des messages |
+| `:lang en\|fr\|es` | `:langue` | changer la langue des messages |
 | `:learn` | `:apprendre` | la visite guidée |
 | `:explain CODE` | `:expliquer` | expliquer un code d'erreur |
 | `:names` | `:noms` | les noms définis jusqu'ici |
@@ -3974,7 +3987,7 @@ Le nom d'un projet est un nom Rythme en minuscules (lettres, chiffres et
 E025, avec l'aide `essayez rythme new mon_app` (code de sortie 2). Un
 dossier qui existe déjà et n'est pas vide n'est jamais touché (code de
 sortie 1). Les fichiers sont écrits dans la langue des messages
-(`src/greeting.ry` en anglais).
+(`src/greeting.ry` en anglais, `src/saludo.ry` en espagnol).
 
 **`rythme.toml`.** Chaque valeur est un texte entre guillemets ; `#`
 commence un commentaire.
