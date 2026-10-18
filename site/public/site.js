@@ -1,6 +1,6 @@
-// The Rythme website: the burger menu, the copy buttons, the remembered language, and
-// the installable app (the service worker, the "new version" banner, the install
-// button and the hint for iOS). Every page works without this file: the links then
+// The Rythme website: the burger menu, the copy buttons, the remembered language, the
+// installable app (the service worker, the "new version" banner, the install button
+// and the hint for iOS), and the color themes. Every page works without this file: the links then
 // stay visible under the logo, and the site is a plain website.
 (() => {
   "use strict";
@@ -141,5 +141,68 @@
       hint.hidden = true;
       store.set("rythme-ios-hint", "closed");
     });
+  }
+
+  // ----- the color themes -----
+  // The inline script of the head has already applied the theme kept (before the first
+  // paint); this shows the picker and keeps the next choice. Auto has no `data-theme`:
+  // the system's light or dark applies.
+  const picker = document.querySelector(".nav__item--theme");
+  const toggle = $("theme-toggle");
+  if (picker && toggle) {
+    const THEME_KEY = "rythme-theme";
+    const radios = [...picker.querySelectorAll('input[name="theme"]')];
+    const metas = [...document.querySelectorAll('meta[name="theme-color"]')];
+    const apply = (theme) => {
+      const radio = radios.find((r) => r.value === theme) || radios[0];
+      radio.checked = true;
+      if (radio.value === "auto") {
+        root.removeAttribute("data-theme");
+        for (const meta of metas) meta.content = /dark/.test(meta.media) ? radio.dataset.dark : radio.dataset.color;
+      } else {
+        root.setAttribute("data-theme", radio.value);
+        for (const meta of metas) meta.content = radio.dataset.color;
+      }
+    };
+    picker.hidden = false;
+    apply(root.getAttribute("data-theme") || "auto");
+    for (const radio of radios) {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        apply(radio.value);
+        store.set(THEME_KEY, radio.value);
+      });
+    }
+    // The same choice in the other tabs of the site.
+    window.addEventListener("storage", (ev) => {
+      if (ev.key === THEME_KEY) apply(ev.newValue || "auto");
+    });
+
+    // On a computer the choices open from the button of the bar.
+    const setOpen = (open) => {
+      toggle.setAttribute("aria-expanded", String(open));
+      picker.classList.toggle("is-open", open);
+    };
+    toggle.addEventListener("click", () => {
+      const open = toggle.getAttribute("aria-expanded") !== "true";
+      setOpen(open);
+      if (open) (radios.find((r) => r.checked) || radios[0]).focus();
+    });
+    picker.addEventListener("keydown", (ev) => {
+      if (!picker.classList.contains("is-open")) return;
+      if (ev.key === "Escape" || (ev.key === "Enter" && ev.target.name === "theme")) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+    document.addEventListener("click", (ev) => {
+      if (!picker.contains(ev.target)) setOpen(false);
+    });
+    picker.addEventListener("focusout", (ev) => {
+      if (ev.relatedTarget && !picker.contains(ev.relatedTarget)) setOpen(false);
+    });
+    wide.addEventListener("change", () => setOpen(false));
   }
 })();

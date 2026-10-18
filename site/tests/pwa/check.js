@@ -10,95 +10,21 @@
 "use strict";
 
 const fs = require("fs");
-const http = require("http");
-const os = require("os");
 const path = require("path");
-const { execFileSync, spawn } = require("child_process");
 const { launch } = require("./browser");
+const { workspace, freePort, startServer, startExport, binary, checker } = require("./serve");
 
-const SITE = path.join(__dirname, "..", "..");
-const BIN = path.resolve(process.argv[2] || path.join(SITE, "target", "release", "rythme-site"));
+const BIN = binary(process.argv[2]);
 const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
 const PAGES = ["", "learn/", "examples/", "playground/", "teach/"];
 const LANGS = ["fr", "en"];
 const OFFLINE_TITLE = { fr: "Vous êtes hors ligne", en: "You are offline" };
 
-let failures = 0;
-function check(ok, what, detail) {
-  console.log(`${ok ? "  ok  " : "  FAIL"} ${what}${!ok && detail !== undefined ? `: ${typeof detail === "string" ? detail : JSON.stringify(detail)}` : ""}`);
-  if (!ok) failures += 1;
-  return ok;
-}
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-function freePort() {
-  return new Promise((resolve) => {
-    const server = http.createServer().listen(0, () => {
-      const { port } = server.address();
-      server.close(() => resolve(port));
-    });
-  });
-}
-
-async function waitFor(url) {
-  for (let n = 0; n < 200; n++) {
-    const ok = await new Promise((resolve) => {
-      http.get(url, (res) => { res.resume(); resolve(res.statusCode < 500); }).on("error", () => resolve(false));
-    });
-    if (ok) return;
-    await sleep(100);
-  }
-  throw new Error(`${url} does not answer`);
-}
-
-// A copy of public/, which a "deployment" changes.
-function workspace() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rythme-pwa-"));
-  fs.cpSync(path.join(SITE, "public"), path.join(dir, "public"), { recursive: true });
-  return dir;
-}
+const checks = checker();
+const check = checks.check;
 
 function deployChange(dir) {
   fs.appendFileSync(path.join(dir, "public", "site.css"), `\n/* deployed ${Date.now()} */\n`);
-}
-
-// The server, as on Heroku.
-async function startServer(dir, port) {
-  const child = spawn(BIN, [], { cwd: dir, env: { ...process.env, PORT: String(port), SITE_DIR: dir }, stdio: "ignore" });
-  await waitFor(`http://localhost:${port}/fr/`);
-  return { stop: () => new Promise((resolve) => { child.once("exit", resolve); child.kill(); }) };
-}
-
-const TYPES = {
-  ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "application/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8", ".webmanifest": "application/manifest+json", ".wasm": "application/wasm",
-  ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".xml": "application/xml", ".txt": "text/plain",
-};
-
-// The static export behind /Rythme, served like GitHub Pages does (types, 404.html,
-// a cache of 10 minutes).
-async function startExport(dir, port) {
-  const dist = path.join(dir, "dist");
-  fs.rmSync(dist, { recursive: true, force: true });
-  const env = { ...process.env, SITE_DIR: dir, BASE_PATH: "/Rythme", SITE_URL: `http://localhost:${port}/Rythme` };
-  execFileSync(BIN, ["export", dist], { cwd: dir, env, stdio: "ignore" });
-  const server = http.createServer((req, res) => {
-    const url = new URL(req.url, "http://localhost");
-    if (url.pathname === "/Rythme") return res.writeHead(301, { location: "/Rythme/" }).end();
-    let file = url.pathname.startsWith("/Rythme/") ? path.join(dist, decodeURIComponent(url.pathname.slice(8))) : null;
-    if (file && fs.existsSync(file) && fs.statSync(file).isDirectory()) {
-      if (!url.pathname.endsWith("/")) return res.writeHead(301, { location: `${url.pathname}/` }).end();
-      file = path.join(file, "index.html");
-    }
-    if (!file || !file.startsWith(dist) || !fs.existsSync(file)) {
-      return res.writeHead(404, { "content-type": TYPES[".html"] }).end(fs.readFileSync(path.join(dist, "404.html")));
-    }
-    res.writeHead(200, { "content-type": TYPES[path.extname(file)] || "application/octet-stream", "cache-control": "max-age=600" });
-    res.end(fs.readFileSync(file));
-  });
-  await new Promise((resolve) => server.listen(port, resolve));
-  return { stop: () => new Promise((resolve) => { server.close(resolve); server.closeAllConnections(); }) };
 }
 
 // The playground has run something: its status says how it went.
@@ -119,7 +45,7 @@ async function verify(mode) {
   console.log(`\n== ${mode === "server" ? "the server, at the root" : "the static export, behind /Rythme"}`);
   const dir = workspace();
   const port = await freePort();
-  const start = mode === "server" ? startServer : startExport;
+  const start = (d, p) => (mode === "server" ? startServer : startExport)(BIN, d, p);
   let site = await start(dir, port);
   const base = `http://localhost:${port}${mode === "server" ? "" : "/Rythme"}`;
   const browser = await launch();
@@ -237,6 +163,10 @@ async function verify(mode) {
   check(true, "offline playground: the help topics");
   // A .ry file opened, the program downloaded, the code kept after closing.
   await page.setInputFiles("#open-file", { name: "hello.ry", mimeType: "text/plain", buffer: Buffer.from('print("hello from a file")\n') });
+  // The status still shows the previous run until the file is read: wait for its output.
+  await page
+    .waitForFunction(() => document.getElementById("output").textContent.includes("hello from a file"), null, { timeout: 20000 })
+    .catch(() => {});
   await ran(page);
   check((await page.textContent("#file-name")) === "hello.ry" && (await page.textContent("#output")).includes("hello from a file"), "offline playground: Open a .ry file");
   const [download] = await Promise.all([page.waitForEvent("download"), page.click("#save")]);
@@ -299,10 +229,6 @@ async function verify(mode) {
 }
 
 (async () => {
-  if (!fs.existsSync(BIN)) {
-    console.error(`${BIN} is missing: build the site (cargo build --release) or give its path`);
-    process.exit(2);
-  }
   for (const mode of MODES) {
     try {
       await verify(mode);
@@ -310,6 +236,6 @@ async function verify(mode) {
       check(false, `${mode}: ${err.message.split("\n")[0]}`);
     }
   }
-  console.log(failures ? `\n${failures} check(s) failed` : "\nevery check passed");
-  process.exit(failures ? 1 : 0);
+  console.log(checks.failures ? `\n${checks.failures} check(s) failed` : "\nevery check passed");
+  process.exit(checks.failures ? 1 : 0);
 })();
