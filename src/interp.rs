@@ -434,6 +434,7 @@ impl Interp {
                 for p in parts {
                     match p {
                         compile::Part::Lit(l) => s.push_str(l),
+                        compile::Part::Expr(x) if is_leaf(x) => self.leaf(x, fr).write_display(&mut s),
                         compile::Part::Expr(x) => self.eval(x, fr)?.write_display(&mut s),
                     }
                 }
@@ -482,14 +483,24 @@ impl Interp {
                 Ok(Value::Record(Rc::new(r)))
             }
             Kind::Lambda(def, code) => Ok(self.closure(def, code, fr)),
+            // Local names and constants are read in place (see `Kind::Binary`).
+            Kind::Field(obj, name, nspan) if is_leaf(obj) => Ok(self.field(self.leaf(obj, fr), name, *nspan)?),
             Kind::Field(obj, name, nspan) => {
                 let v = self.eval(obj, fr)?;
                 Ok(self.field(&v, name, *nspan)?)
             }
             Kind::Index(obj, idx) => {
-                let o = self.eval(obj, fr)?;
-                let i = self.eval(idx, fr)?;
-                Ok(index(&o, &i, e.span, idx.span)?)
+                let o = if is_leaf(obj) { None } else { Some(self.eval(obj, fr)?) };
+                let i = if is_leaf(idx) { None } else { Some(self.eval(idx, fr)?) };
+                let o = match &o {
+                    Some(v) => v,
+                    None => self.leaf(obj, fr),
+                };
+                let i = match &i {
+                    Some(v) => v,
+                    None => self.leaf(idx, fr),
+                };
+                Ok(index(o, i, e.span, idx.span)?)
             }
             Kind::Unary(op, x) => {
                 let v = self.eval(x, fr)?;
