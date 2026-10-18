@@ -54,6 +54,8 @@ pub struct TestCase {
     pub name: Rc<str>,
     pub body: Rc<Expr>,
     pub span: Span,
+    /// How the names of its file are stored.
+    pub names: compile::Names,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -128,6 +130,9 @@ pub struct Interp {
     pub types: HashMap<Sym, Vec<Rc<CtorInfo>>>,
     pub tests: Vec<TestCase>,
     pub script_args: Vec<String>,
+    /// How the top-level names of the file being run are stored (see
+    /// `compile::Names`); set by the driver before running each file.
+    pub names: compile::Names,
     depth: usize,
     stack_base: usize,
     /// The frames of the running functions, one after the other: their
@@ -188,6 +193,7 @@ impl Interp {
             types,
             tests: Vec::new(),
             script_args: Vec::new(),
+            names: compile::Names::default(),
             depth: 0,
             stack_base: stack_position(),
             stack: Vec::new(),
@@ -278,17 +284,23 @@ impl Interp {
             } else {
                 Value::Ctor(info.clone())
             };
-            self.globals.insert(v.name, value);
+            self.globals.insert(self.stored(v.name), value);
             ctors.push(info);
         }
-        self.types.insert(t.name, ctors);
+        self.types.insert(self.stored(t.name), ctors);
     }
 
     pub fn define_fn(&mut self, def: &Rc<FnDef>) {
         if let Some(name) = def.name {
-            let clo = Closure { def: def.clone(), code: Rc::new(compile::function(def)), captured: Vec::new(), siblings: None };
-            self.globals.insert(name, Value::Func(Rc::new(clo)));
+            let clo =
+                Closure { def: def.clone(), code: Rc::new(compile::function(def, &self.names)), captured: Vec::new(), siblings: None };
+            self.globals.insert(self.stored(name), Value::Func(Rc::new(clo)));
         }
+    }
+
+    /// The name under which a top-level name of the running file is stored.
+    pub fn stored(&self, s: Sym) -> Sym {
+        self.names.get(&s).copied().unwrap_or(s)
     }
 
     /// Runs the items of a module (its `use` dependencies must already have run).
@@ -305,6 +317,7 @@ impl Interp {
             if let Item::Stmt(Stmt::Let(pat, _)) = item {
                 let mut names = Vec::new();
                 pat.bindings(&mut names);
+                let names: Vec<(Sym, Span)> = names.into_iter().map(|(s, sp)| (self.stored(s), sp)).collect();
                 self.pending.extend(names.into_iter().filter(|(s, _)| !self.globals.contains_key(s)));
             }
         }
@@ -319,6 +332,7 @@ impl Interp {
                         return Err(pattern_mismatch(pat.span, &v));
                     }
                     for (s, v) in binds {
+                        let s = self.stored(s);
                         self.pending.remove(&s);
                         self.globals.insert(s, v);
                     }
@@ -329,7 +343,7 @@ impl Interp {
                     }
                 }
                 Item::Test(name, body, span) if mode == Mode::Test => {
-                    self.tests.push(TestCase { name: name.clone(), body: body.clone(), span: *span });
+                    self.tests.push(TestCase { name: name.clone(), body: body.clone(), span: *span, names: self.names.clone() });
                 }
                 _ => {}
             }
@@ -340,7 +354,7 @@ impl Interp {
     /// Evaluates an expression outside of any function.
     pub fn eval_top(&mut self, e: &Expr) -> Fallible<Value> {
         self.depth = 0;
-        let code = compile::top(e);
+        let code = compile::top(e, &self.names);
         let base = self.push_frame(code.slots);
         let r = self.eval(&code.node, &Frame { base, captured: &[], siblings: None });
         self.end_top(base);
@@ -352,9 +366,10 @@ impl Interp {
     }
 
     /// Evaluates the body of a test (like a function body: `?` is allowed).
-    pub fn eval_test(&mut self, e: &Expr) -> Fallible<Value> {
+    pub fn eval_test(&mut self, test: &TestCase) -> Fallible<Value> {
         self.depth = 0;
-        let code = compile::top(e);
+        let e = &*test.body;
+        let code = compile::top(e, &test.names);
         let base = self.push_frame(code.slots);
         let r = match self.eval_tail(&code.node, &Frame { base, captured: &[], siblings: None }) {
             Ok(Tail::Done(v)) => Ok(v),
@@ -819,7 +834,7 @@ impl Interp {
     }
 
     pub fn unknown_name(&self, s: Sym, scope: &Scope, span: Span) -> Box<Diagnostic> {
-        let name = s.name();
+        let name = s.shown().name();
         if let Some(def) = self.pending.get(&s) {
             return Diagnostic::error("E003", t!("`{name}` is not defined yet", "`{name}` n'est pas encore défini"))
                 .at(span)
@@ -836,7 +851,8 @@ impl Interp {
         if let Some(h) = suggest::alias_hint(&name) {
             d = d.help(h);
         } else {
-            let names: Vec<Rc<str>> = scope.names().into_iter().chain(self.globals.keys().copied()).map(|s| s.name()).collect();
+            let names: Vec<Rc<str>> =
+                scope.names().into_iter().chain(self.globals.keys().copied().filter(|s| !s.is_stored())).map(|s| s.name()).collect();
             if let Some(best) = suggest::closest(&name, names.iter().map(|s| &**s)) {
                 d = d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?"));
             }
@@ -1185,7 +1201,9 @@ pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> boo
         (PatKind::Float(a), Value::Int(b)) => cmp_int_float(*b, *a) == Some(std::cmp::Ordering::Equal),
         (PatKind::Text(a), Value::Text(b)) => a == b,
         (PatKind::Ctor(name, pats), Value::Variant(var)) => {
-            var.ctor.name == *name && pats.len() == var.fields.len() && pats.iter().zip(&var.fields).all(|(p, f)| match_pattern(p, f, out))
+            var.ctor.name == name.own_name()
+                && pats.len() == var.fields.len()
+                && pats.iter().zip(&var.fields).all(|(p, f)| match_pattern(p, f, out))
         }
         (PatKind::List(pats, rest), Value::List(l)) => {
             let n = pats.len();

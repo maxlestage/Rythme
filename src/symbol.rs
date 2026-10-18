@@ -37,9 +37,52 @@ impl Sym {
         INTERNER.with(|i| i.borrow().names[self.0 as usize].clone())
     }
 
-    /// Names starting with an uppercase letter are constructors (`Some`, `Circle`).
+    /// Names starting with an uppercase letter are constructors (`Some`,
+    /// `Circle`, and `geo.Circle` for one of the file used as `geo`).
     pub fn is_ctor(self) -> bool {
-        self.name().chars().next().is_some_and(|c| c.is_uppercase())
+        let name = self.name();
+        let own = name.rsplit('.').next().unwrap_or(&name);
+        own.chars().next().is_some_and(|c| c.is_uppercase())
+    }
+
+    /// `geo.area`: the name of a file used with `use ... as geo`, and the
+    /// name inside it.
+    pub fn split_module(self) -> Option<(Sym, Sym)> {
+        let name = self.name();
+        if name.starts_with('#') {
+            return None;
+        }
+        let (m, n) = name.split_once('.')?;
+        Some((Sym::new(m), Sym::new(n)))
+    }
+
+    /// The name inside its file: `Circle` for `geo.Circle`.
+    pub fn own_name(self) -> Sym {
+        match self.split_module() {
+            Some((_, n)) => n,
+            None => self,
+        }
+    }
+
+    /// How the interpreter stores a top-level name that must not meet the
+    /// names of other files: `#3.area` for `area` in the third file used with
+    /// a name. Such names cannot be written in a program.
+    pub fn stored(prefix: &str, name: Sym) -> Sym {
+        Sym::new(&format!("#{prefix}.{name}"))
+    }
+
+    /// Is it a name made by `stored`?
+    pub fn is_stored(self) -> bool {
+        self.name().starts_with('#')
+    }
+
+    /// The name as the program wrote it: `area` for `#3.area`.
+    pub fn shown(self) -> Sym {
+        let name = self.name();
+        match name.strip_prefix('#').and_then(|n| n.split_once('.')) {
+            Some((_, n)) => Sym::new(n),
+            None => self,
+        }
     }
 }
 

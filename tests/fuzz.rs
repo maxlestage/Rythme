@@ -809,7 +809,7 @@ fn pipeline(src: &str) -> Result<Stage, String> {
             Err(d) => check_diag(&d, file, src)?,
             Ok(_) => {
                 for test in std::mem::take(&mut interp.tests) {
-                    if let Err(d) = interp.eval_test(&test.body) {
+                    if let Err(d) = interp.eval_test(&test) {
                         check_diag(&d, file, src)?;
                     }
                 }
