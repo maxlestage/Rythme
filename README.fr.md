@@ -4,7 +4,7 @@
 programmation purement fonctionnel, avec de l'aide partout.**
 Les programmes sont des fichiers qui finissent par `.ry`. L'interpréteur est écrit en Rust.
 
-*[English version →](README.md)*
+*[English version →](README.md) · [En español →](README.es.md)*
 
 **Documentation :** le [manuel de référence](docs/reference.fr.md) (tout le
 langage, avec précision), le [guide pour les enseignants](docs/enseigner.md),
@@ -22,19 +22,19 @@ fn carre(x) = x * x
 ```
 
 La même chose, à la manière de Ruby (blocs, enchaînements de méthodes,
-noms en `?`) :
+noms en `?`, appels sans parenthèses) :
 
 ```rythme
 noms = ["Ada", "Grace", "Alan"]
 noms.each do |nom|
-  puts("Bonjour, #{nom} !")
+  puts "Bonjour, #{nom} !"
 end
 
 total = [1, 2, 3, 4]
   .select(even?)
   .map { |x| x * x }
   .sum
-puts(total)                # 20
+puts total                 # 20
 ```
 
 ## Pourquoi Rythme ?
@@ -45,7 +45,8 @@ puts(total)                # 20
   apprendre, moins de bugs à traquer.
 - **Aussi agréable que Ruby.** Des blocs (`xs.map do |x| x * 2 end`,
   `xs.select { |x| x > 2 }`), des enchaînements de méthodes
-  (`xs.filter(is_even).sum`, une étape par ligne), des noms comme `even?` et
+  (`xs.filter(is_even).sum`, une étape par ligne), des appels sans
+  parenthèses (`puts "salut"`, `print x, y`), des noms comme `even?` et
   `empty?`, `unless`, des symboles (`:ok`), `"Bonjour #{nom}"`, et les noms
   Ruby de la bibliothèque (`puts`, `upcase`, `select`, `reject`, `reduce`,
   `each_with_index`...). `rythme help ruby` montre ce qui est pareil et ce
@@ -77,8 +78,9 @@ puts(total)                # 20
   - Dans votre éditeur : les problèmes pendant la frappe, la documentation
     sous la souris, la complétion, aller à la définition, renommer
     (`rythme lsp`, le serveur de langage, pour VS Code, Neovim, Helix, Emacs...).
-  - Chaque message, chaque documentation existe en **français et en
-    anglais** (`--lang fr`, ou automatiquement selon la langue du système).
+  - Chaque message, chaque documentation existe en **français, en anglais et
+    en espagnol** (`--lang fr`, `--lang es`, ou automatiquement selon la langue
+    du système).
 
 Voici à quoi ressemble une erreur :
 
@@ -205,8 +207,8 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
 | `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
 
-Ajoutez `--lang fr` ou `--lang en` avant la commande pour choisir la langue
-des messages, ou définissez `RYTHME_LANG`.
+Ajoutez `--lang fr`, `--lang en` ou `--lang es` avant la commande pour
+choisir la langue des messages, ou définissez `RYTHME_LANG`.
 
 ## Le langage en deux minutes
 
@@ -231,10 +233,12 @@ fn fib(n) = fib(n - 1) + fib(n - 2)
 # Les conditions sont des expressions : chaque if a un else
 fn signe(n) = if n < 0 then "négatif" else if n == 0 then "zéro" else "positif"
 
-# Listes, intervalles, enregistrements
+# Listes, intervalles, enregistrements, dictionnaires et ensembles
 nombres = 1..10                           # [1, 2, ..., 10]
 ada = {nom: "Ada", naissance: 1815}
 autre = {..ada, naissance: 1816}          # un nouvel enregistrement ; ada ne change pas
+ages = dict([["Ada", 36], ["Alan", 41]])  # un dictionnaire : des clés de toute sorte
+vus = set([1, 2, 2])                      # un ensemble : set(1, 2)
 
 # Vos propres types, et match
 type Forme = Cercle(rayon) | Rect(largeur, hauteur)
@@ -285,6 +289,7 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 | [`library.ry`](examples/library.ry) | le style Ruby : blocs `do \|x\| ... end`, enchaînements de méthodes, noms en `?`, `unless`, symboles |
 | [`sales.ry`](examples/sales.ry) | un rapport : `scan`, colonnes alignées avec `pad_left`, `windows`, `chunks`, JSON |
 | [`calendar.ry`](examples/calendar.ry) | des dates : la page d'un mois, des textes ISO 8601, `days_between`, `add_days` |
+| [`logs.ry`](examples/logs.ry) | lire un journal avec des regex : `named_captures`, `matches`, `find_all`, `replace_all`, `format_number` |
 | [`tree.ry`](examples/tree.ry) | un type récursif : arbre binaire de recherche |
 | [`primes.ry`](examples/primes.ry) | un crible récursif, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | les blocs `test` |
@@ -322,8 +327,13 @@ suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
   noms locaux deviennent des cases numérotées avant l'exécution, et la
   plupart des appels n'allouent rien. Les programmes de [`bench/`](bench)
   (`bench/run.sh`) tournent 1,2 à 4,3 fois plus vite qu'avec Rythme 0.1 ;
-  c'est de l'ordre de Python, loin de Rust compilé. Suite : une machine
-  virtuelle à bytecode.
+  c'est de l'ordre de Python, loin de Rust compilé. Construire un texte avec
+  `+` ou `"{acc}..."` et ajouter à une liste (`push`, `xs + [x]`,
+  `[..xs, x]`) prennent un temps constant par ajout : 100 000 ajouts
+  prennent 0,1 s, au lieu de 23 s (textes) et 150 s (listes) avant. Les
+  fonctions locales qui s'appellent entre elles ne créent plus de fermeture
+  à chaque appel (deux fois plus rapide). Suite : une machine virtuelle à
+  bytecode.
 - **Types.** Les valeurs sont vérifiées à l'exécution (strictement : aucune
   conversion silencieuse), et `rythme check` infère leurs types quand ils
   sont certains, pour signaler avant l'exécution les opérations qui
@@ -337,9 +347,12 @@ suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
   erreurs et la documentation dans tous les éditeurs (voir
   `rythme help editors`). Le bac à sable en ligne fait tourner l'interpréteur
   compilé en WebAssembly. Suite : un gestionnaire de paquets.
-- **Langues.** Les messages existent en anglais et en français ; ajouter une
-  langue consiste à traduire les textes de `src/`. Les contributions sont
-  bienvenues.
+- **Langues.** Les messages existent en anglais, en français et en espagnol ;
+  ajouter une langue consiste à écrire un fichier de catalogue,
+  `src/i18n/<code>.rs`, qu'un test compare à tous les textes du programme
+  (voir [CONTRIBUTING](CONTRIBUTING.md#messages-in-every-language)).
+  L'allemand, le portugais et le chinois sont les prochains ; les
+  contributions sont bienvenues.
 - **Nombres.** Les nombres entiers n'ont pas de limite de taille et restent
   exacts (jusqu'à 100000 chiffres), les habituels sur 64 bits calculés le plus
   vite ; les nombres décimaux sont sur 64 bits.

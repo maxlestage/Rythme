@@ -14,6 +14,14 @@
  * (`even?(4)`, `fn adult?(p)`) or when it is a built-in one (`xs.empty?`);
  * otherwise the `?` is the operator (`value?`). (Rythme also knows the
  * functions defined with `?` in the file; this grammar does not.)
+ *
+ * And it reads the name of a call without parentheses (`puts "hi"`,
+ * `print x, y`): a name that starts a statement or a result (a branch of
+ * `if`, a case of `match`, the body after the `=` of a function), followed
+ * on its line by a space and the start of a value. Rythme reads `x -1` and `xs [0]` as a
+ * subtraction and an index when the code gives `x` and `xs` values; this
+ * grammar always reads them as calls (`rythme fmt` writes the others
+ * `x - 1` and `xs[0]`).
  */
 
 /// <reference types="tree-sitter-cli/dsl" />
@@ -57,7 +65,7 @@ function lines($, rule) {
 module.exports = grammar({
   name: 'rythme',
 
-  externals: $ => [$._newline, $.string_content, $._error_sentinel, $.predicate, $._unless],
+  externals: $ => [$._newline, $.string_content, $._error_sentinel, $.predicate, $._unless, $._command_name],
 
   extras: $ => [/[ \t\r\n\f﻿]/, ';', $.comment],
 
@@ -71,6 +79,8 @@ module.exports = grammar({
     [$.unit, $.unit_pattern],
     [$._expression, $.constructor_pattern],
     [$._expression, $.negative_number],
+    [$._expression, $._number_pattern],
+    [$._expression, $.prefix_pattern],
     [$._expression, $.rest_pattern],
     [$._expression, $.qualified_constructor],
   ],
@@ -82,7 +92,19 @@ module.exports = grammar({
 
     _item: $ => choice($.use_declaration, $.type_definition, $.test_definition, $._statement),
 
-    _statement: $ => choice($.function_definition, $.definition, $._expression),
+    _statement: $ => choice($.function_definition, $.definition, $.command_call, $._expression),
+
+    /** `print x, y`: a call without parentheses, then a `do` block given to it. */
+    command_call: $ =>
+      prec.right(
+        seq(
+          field('function', alias($._command_name, $.identifier)),
+          field('arguments', $.command_arguments),
+          optional(field('block', $.do_block)),
+        ),
+      ),
+
+    command_arguments: $ => prec.right(seq($._expression, repeat(seq(',', $._expression)))),
 
     comment: _ => token(seq('#', /[^\n]*/)),
 
@@ -126,7 +148,15 @@ module.exports = grammar({
 
     guard: $ => seq('if', $._expression),
 
-    _body: $ => choice(seq('=', field('body', $._expression)), seq($._newline, field('body', $.block))),
+    _body: $ => choice(seq('=', field('body', $._result)), seq($._newline, field('body', $.block))),
+
+    /**
+     * A result: a branch of `if`, a case of `match`, the body after the `=`
+     * of a function or a test. A call without parentheses may be written
+     * there, as at the start of a statement: `if ok then puts "yes" else
+     * puts "no"`.
+     */
+    _result: $ => choice($.command_call, $._expression),
 
     block: $ => seq(lines($, $._statement), 'end'),
 
@@ -265,9 +295,9 @@ module.exports = grammar({
           'if',
           field('condition', $._expression),
           'then',
-          field('consequence', $._expression),
+          field('consequence', $._result),
           'else',
-          field('alternative', $._expression),
+          field('alternative', $._result),
         ),
       ),
 
@@ -279,9 +309,9 @@ module.exports = grammar({
           alias($._unless, 'unless'),
           field('condition', $._expression),
           'then',
-          field('consequence', $._expression),
+          field('consequence', $._result),
           'else',
-          field('alternative', $._expression),
+          field('alternative', $._result),
         ),
       ),
 
@@ -289,7 +319,7 @@ module.exports = grammar({
       seq('match', field('subject', $._expression), $._newline, lines($, $.match_arm), 'end'),
 
     match_arm: $ =>
-      seq(field('pattern', $._pattern), optional(field('guard', $.guard)), '->', field('body', $._expression)),
+      seq(field('pattern', $._pattern), optional(field('guard', $.guard)), '->', field('body', $._result)),
 
     do_expression: $ => seq('do', field('body', $.block)),
 
@@ -315,6 +345,8 @@ module.exports = grammar({
         $.list_pattern,
         $.record_pattern,
         $.or_pattern,
+        $.range_pattern,
+        $.prefix_pattern,
       ),
 
     constructor_pattern: $ =>
@@ -343,6 +375,14 @@ module.exports = grammar({
       ),
 
     or_pattern: $ => prec.left(seq($._pattern, '|', $._pattern)),
+
+    /** `1..9`, `-0.5..0.5`: a number from the first to the second. */
+    range_pattern: $ => seq(field('start', $._number_pattern), '..', field('end', $._number_pattern)),
+
+    _number_pattern: $ => choice($.integer, $.float, $.negative_number),
+
+    /** `"Mr " + name`: a text that starts with this text, and the rest. */
+    prefix_pattern: $ => seq(field('prefix', $.string), '+', field('rest', $.identifier)),
 
     // ----- tokens ---------------------------------------------------------
 

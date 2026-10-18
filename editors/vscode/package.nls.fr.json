@@ -5,6 +5,7 @@
   "config.language.auto": "La langue de VS Code (ou la variable `RYTHME_LANG`).",
   "config.language.en": "Anglais.",
   "config.language.fr": "Français.",
+  "config.language.es": "Espagnol.",
   "config.trace": "Affiche les messages échangés avec le serveur de langage dans la sortie *Rythme*, pour chercher un problème.",
   "command.restart": "Redémarrer le serveur de langage",
   "command.run": "Lancer ce fichier",

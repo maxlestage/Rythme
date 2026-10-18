@@ -4,7 +4,7 @@
 programming language, with help everywhere.**
 Programs are files ending in `.ry`. The interpreter is written in Rust.
 
-*[Version française →](README.fr.md)*
+*[Version française →](README.fr.md) · [En español →](README.es.md)*
 
 **Documentation:** the [reference manual](docs/reference.md) (the whole
 language, precisely), the [guide for teachers](docs/teaching.md), and
@@ -21,19 +21,20 @@ fn square(x) = x * x
   |> print                # 20
 ```
 
-The same, the Ruby way (blocks, method chains, names ending with `?`):
+The same, the Ruby way (blocks, method chains, names ending with `?`, calls
+without parentheses):
 
 ```rythme
 names = ["Ada", "Grace", "Alan"]
 names.each do |name|
-  puts("Hello, #{name}!")
+  puts "Hello, #{name}!"
 end
 
 total = [1, 2, 3, 4]
   .select(even?)
   .map { |x| x * x }
   .sum
-puts(total)                # 20
+puts total                 # 20
 ```
 
 ## Why Rythme?
@@ -43,7 +44,8 @@ puts(total)                # 20
   fewer concepts to learn, fewer bugs to chase.
 - **As pleasant as Ruby.** Blocks (`xs.map do |x| x * 2 end`,
   `xs.select { |x| x > 2 }`), method chains (`xs.filter(is_even).sum`, one
-  step per line), names like `even?` and `empty?`, `unless`, symbols (`:ok`),
+  step per line), calls without parentheses (`puts "hi"`, `print x, y`),
+  names like `even?` and `empty?`, `unless`, symbols (`:ok`),
   `"Hello #{name}"`, and the Ruby names of the library (`puts`, `upcase`,
   `select`, `reject`, `reduce`, `each_with_index`...). `rythme help ruby`
   shows what is the same and what is different.
@@ -71,8 +73,9 @@ puts(total)                # 20
   - Inside your editor: the problems as you type, the documentation under
     the mouse, completion, go to definition, rename (`rythme lsp`, the
     language server, for VS Code, Neovim, Helix, Emacs...).
-  - Every message, every piece of documentation exists in **English and
-    French** (`--lang fr`, or automatically from your system language).
+  - Every message, every piece of documentation exists in **English, French
+    and Spanish** (`--lang fr`, `--lang es`, or automatically from your system
+    language).
 
 Here is what a mistake looks like:
 
@@ -208,8 +211,8 @@ cargo install --path .       # or install it in your PATH
 | `rythme -e 'print(1 + 2)'`  | run a piece of code                            |
 | `rythme lsp`                | language server, started by your editor ([editors](editors)) |
 
-Add `--lang fr` or `--lang en` before the command to choose the language of
-the messages, or set `RYTHME_LANG`.
+Add `--lang en`, `--lang fr` or `--lang es` before the command to choose the
+language of the messages, or set `RYTHME_LANG`.
 
 ## The language in two minutes
 
@@ -234,10 +237,12 @@ fn fib(n) = fib(n - 1) + fib(n - 2)
 # Conditions are expressions: every if has an else
 fn sign(n) = if n < 0 then "negative" else if n == 0 then "zero" else "positive"
 
-# Lists, ranges, records
+# Lists, ranges, records, dicts and sets
 numbers = 1..10                           # [1, 2, ..., 10]
 ada = {name: "Ada", born: 1815}
 older = {..ada, born: 1816}               # a new record; ada is unchanged
+ages = dict([["Ada", 36], ["Alan", 41]])  # a dictionary: keys of any kind
+seen = set([1, 2, 2])                     # a set: set(1, 2)
 
 # Your own types, and match
 type Shape = Circle(radius) | Rect(width, height)
@@ -283,6 +288,7 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 | [`library.ry`](examples/library.ry) | the Ruby style: `do \|x\| ... end` blocks, method chains, names ending with `?`, `unless`, symbols |
 | [`sales.ry`](examples/sales.ry) | a report: `scan`, columns lined up with `pad_left`, `windows`, `chunks`, JSON |
 | [`calendar.ry`](examples/calendar.ry) | dates: the page of a month, ISO 8601 texts, `days_between`, `add_days` |
+| [`logs.ry`](examples/logs.ry) | reading a log with regexes: `named_captures`, `matches`, `find_all`, `replace_all`, `format_number` |
 | [`tree.ry`](examples/tree.ry) | a recursive type: binary search tree |
 | [`primes.ry`](examples/primes.ry) | a recursive sieve, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | `test` blocks |
@@ -324,8 +330,9 @@ mode) and is organised as a pipeline:
 | [`src/compile.rs`](src/compile.rs) | prepares functions: each local name becomes a numbered slot |
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
 | [`src/bigint.rs`](src/bigint.rs) | whole numbers beyond 64 bits, without a dependency |
-| [`src/builtins.rs`](src/builtins.rs) | 155 built-in functions (and their Ruby names), documented in two languages, JSON included |
-| [`src/builtins/`](src/builtins) | dates, files and the system, generators of property tests |
+| [`src/dict.rs`](src/dict.rs) | the persistent ordered tree behind dictionaries and sets, and the order of their keys |
+| [`src/builtins.rs`](src/builtins.rs) | 174 built-in functions (and their Ruby names), documented in two languages, JSON included |
+| [`src/builtins/`](src/builtins) | dates, files and the system, dictionaries and sets, regexes and text tools, generators of property tests |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |
@@ -350,8 +357,12 @@ towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
 - **Speed.** It is a tree-walking interpreter: local names become numbered
   slots before running, and most calls allocate nothing. The programs of
   [`bench/`](bench) (`bench/run.sh`) run 1.2 to 4.3 times faster than with
-  Rythme 0.1; that is in the range of Python, far from compiled Rust. Next: a
-  bytecode virtual machine.
+  Rythme 0.1; that is in the range of Python, far from compiled Rust.
+  Building a text with `+` or `"{acc}..."` and adding to a list (`push`,
+  `xs + [x]`, `[..xs, x]`) take constant time per addition: 100 000 of them
+  take 0.1 s, instead of 23 s (texts) and 150 s (lists) before. Local
+  functions that call each other make no closure per call (twice as fast).
+  Next: a bytecode virtual machine.
 - **Types.** Values are checked at run time (strongly: no silent
   conversions), and `rythme check` infers their types when they are certain,
   to report before running the operations that would always fail; it also
@@ -363,8 +374,11 @@ towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
   documentation inside every editor (see `rythme help editors`). The web
   playground runs the interpreter compiled to WebAssembly. Next: a package
   manager.
-- **Languages.** Messages exist in English and French; adding a language means
-  translating the texts of `src/`. Contributions are welcome.
+- **Languages.** Messages exist in English, French and Spanish; adding a
+  language means writing one catalog file, `src/i18n/<code>.rs`, which a test
+  checks against every text of the program (see
+  [CONTRIBUTING](CONTRIBUTING.md#messages-in-every-language)). German,
+  Portuguese and Chinese are next; contributions are welcome.
 - **Numbers.** Whole numbers have no size limit and stay exact (up to 100000
   digits), the usual 64-bit ones computed fastest; decimal numbers are 64-bit.
 

@@ -20,12 +20,17 @@ include = [
     "/Cargo.lock",
     "/README.md",
     "/README.fr.md",
+    "/README.es.md",
     "/LICENSE",
 ]
 
 [[bin]]
 name = "rythme"
 path = "src/main.rs"
+
+[dependencies]
+# The `t!` macro: each message in every language of src/i18n/ (no dependency).
+rythme-macros = { path = "macros", version = "0.1.0" }
 
 # The interactive mode needs a terminal; the web playground (wasm32) has none.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

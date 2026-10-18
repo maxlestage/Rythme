@@ -17,6 +17,9 @@
 //!   line stays on one line, with one space around its parts
 //!   (`xs.map do |x| x * 2 end`, `xs.map { |x| x * 2 }`); on several lines,
 //!   its statements are one level deeper than the line of `do`;
+//! - a call without parentheses keeps them out, with one space after its
+//!   name (`puts "Hello"`, `print x, y`); a name followed by `[` or `-` that
+//!   is not such a call is written as what it is (`xs[0]`, `x - 1`);
 //! - statements separated by `;` go on their own lines, and `end` too;
 //! - a top-level definition written on several lines is separated from what
 //!   surrounds it by one blank line; one-line definitions may stay grouped;
@@ -371,6 +374,9 @@ struct Shape {
     /// The statements and the end of each block given to a call: written on
     /// one line, they stay on it.
     inline: Vec<(usize, usize)>,
+    /// Ends a call without parentheses: a comma after it would give the call
+    /// one more argument (`puts v,`).
+    command_end: Vec<bool>,
 }
 
 /// Walks the tokens like the parser does (`parser.rs`), to learn the shape of
@@ -387,6 +393,10 @@ struct Shaper<'a> {
     s: Shape,
     /// The functions with a name ending with `?` (see `parser::predicates`).
     preds: Vec<Sym>,
+    /// The names given to values (see `parser::value_names`).
+    values: std::collections::HashSet<Sym>,
+    /// In the arguments of a call without parentheses (as in the parser).
+    no_do: bool,
 }
 
 type Item<'a> = fn(&mut Shaper<'a>) -> Option<usize>;
@@ -407,8 +417,19 @@ impl<'a> Shaper<'a> {
             lists: Vec::new(),
             items: Vec::new(),
             inline: Vec::new(),
+            command_end: vec![false; pieces],
         };
-        Shaper { toks, piece_of, pos: 0, sig: vec![true], last: 0, s, preds: parser::predicates(toks) }
+        Shaper {
+            toks,
+            piece_of,
+            pos: 0,
+            sig: vec![true],
+            last: 0,
+            s,
+            preds: parser::predicates(toks),
+            values: parser::value_names(toks),
+            no_do: false,
+        }
     }
 
     // ----- tokens, as in the parser
@@ -485,7 +506,9 @@ impl<'a> Shaper<'a> {
 
     fn with_sig<T>(&mut self, sig: bool, f: impl FnOnce(&mut Self) -> Option<T>) -> Option<T> {
         self.sig.push(sig);
+        let no_do = std::mem::replace(&mut self.no_do, false);
         let r = f(self);
+        self.no_do = no_do;
         self.sig.pop();
         r
     }
@@ -522,6 +545,9 @@ impl<'a> Shaper<'a> {
         if *self.raw() == Tok::Fn && matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Ident(_))) {
             return self.fn_def(true);
         }
+        if parser::command_at(self.toks, self.pos, &self.preds, &self.values).is_some() {
+            return self.command();
+        }
         // Like the parser: `[first, ..] = list`, `{name, ..} = person`, `Some(x) = value`.
         let first = if self.pattern_before_eq() { self.pattern()? } else { self.expr()? };
         if *self.raw() == Tok::Eq {
@@ -532,6 +558,44 @@ impl<'a> Shaper<'a> {
             self.set(value, Indent::Inner(eq));
         }
         Some(first)
+    }
+
+    /// A call without parentheses: `print x, y`, and a `do` block given to it.
+    fn command(&mut self) -> Option<usize> {
+        let name = self.primary()?;
+        let no_do = std::mem::replace(&mut self.no_do, true);
+        let args = self.command_args(name);
+        self.no_do = no_do;
+        args?;
+        if *self.raw() == Tok::Do {
+            self.block_arg()?;
+        }
+        self.s.command_end[self.last] = true;
+        Some(name)
+    }
+
+    /// A branch of `if`, a case of `match`, the body after the `=` of a
+    /// function or a test: a call without parentheses may be written there,
+    /// as in the parser (`if ok then puts "yes" else puts "no"`).
+    fn result(&mut self) -> Option<usize> {
+        self.skip_soft();
+        if parser::command_at(self.toks, self.pos, &self.preds, &self.values).is_some() {
+            return self.command();
+        }
+        self.expr()
+    }
+
+    fn command_args(&mut self, name: usize) -> Option<()> {
+        loop {
+            let arg = self.expr()?;
+            self.set(arg, Indent::Inner(name));
+            if *self.raw() != Tok::Comma {
+                return Some(());
+            }
+            let comma = self.take(Role::Comma)?;
+            self.set(comma, Indent::Inner(name));
+            self.skip_newlines();
+        }
     }
 
     /// Does a definition with a bracketed pattern start here? The same test as the
@@ -674,7 +738,7 @@ impl<'a> Shaper<'a> {
                 let eq = self.advance()?;
                 self.set(eq, Indent::Inner(f));
                 self.skip_newlines();
-                let body = self.expr()?;
+                let body = self.result()?;
                 self.set(body, Indent::Inner(eq));
             }
             Tok::Newline => self.block(f)?,
@@ -727,7 +791,7 @@ impl<'a> Shaper<'a> {
                 let eq = self.advance()?;
                 self.set(eq, Indent::Inner(k));
                 self.skip_newlines();
-                let body = self.expr()?;
+                let body = self.result()?;
                 self.set(body, Indent::Inner(eq));
             }
             Tok::Newline => self.block(k)?,
@@ -899,7 +963,7 @@ impl<'a> Shaper<'a> {
     fn postfix_ops(&mut self, first: usize, mut callable: bool) -> Option<()> {
         loop {
             // A block given to the call, on its line (as the parser reads it).
-            let block = matches!(self.raw(), Tok::Do)
+            let block = (matches!(self.raw(), Tok::Do) && !self.no_do)
                 || (matches!(self.raw(), Tok::LBrace)
                     && matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Bar | Tok::BarBar)));
             if block {
@@ -1074,7 +1138,7 @@ impl<'a> Shaper<'a> {
         }
         let then = self.advance()?;
         self.skip_newlines();
-        let then_body = self.expr()?;
+        let then_body = self.result()?;
         self.set(then_body, Indent::Inner(then));
         if *self.past_newlines() == Tok::Else {
             self.skip_newlines();
@@ -1084,7 +1148,7 @@ impl<'a> Shaper<'a> {
         }
         let else_ = self.advance()?;
         self.skip_newlines();
-        let else_body = self.expr()?;
+        let else_body = self.result()?;
         self.set(else_body, Indent::Inner(else_));
         let n = self.s.ifs.len();
         if let Some(inner) = self.s.ifs.last_mut().filter(|inner| inner.if_ == else_body) {
@@ -1137,7 +1201,7 @@ impl<'a> Shaper<'a> {
                 let arrow = p.advance()?;
                 p.set(arrow, Indent::Inner(pat));
                 p.skip_newlines();
-                let body = p.expr()?;
+                let body = p.result()?;
                 p.set(body, Indent::Inner(arrow));
                 if !matches!(p.raw(), Tok::Newline | Tok::End) {
                     return None;
@@ -1149,12 +1213,24 @@ impl<'a> Shaper<'a> {
     // ----- patterns
 
     fn pattern(&mut self) -> Option<usize> {
-        let first = self.pattern_atom()?;
+        let first = self.pattern_part()?;
         while *self.peek() == Tok::Bar {
             let bar = self.advance()?;
             self.set(bar, Indent::Inner(first));
-            let alt = self.pattern_atom()?;
+            let alt = self.pattern_part()?;
             self.set(alt, Indent::Inner(first));
+        }
+        Some(first)
+    }
+
+    /// A pattern, a range `1..9`, or a text and the rest, `"Mr " + name`.
+    fn pattern_part(&mut self) -> Option<usize> {
+        let first = self.pattern_atom()?;
+        if matches!(self.peek(), Tok::DotDot | Tok::Plus) {
+            let op = if *self.peek() == Tok::DotDot { self.take(Role::Range)? } else { self.advance()? };
+            self.set(op, Indent::Inner(first));
+            let second = self.pattern_atom()?;
+            self.set(second, Indent::Inner(first));
         }
         Some(first)
     }
@@ -1360,7 +1436,8 @@ fn normalize(pieces: &mut [Piece], shape: &Shape) -> Edits {
             }
         }
     }
-    // A list on several lines ends with a comma; on one line, without.
+    // A list on several lines ends with a comma (unless its last element ends
+    // with a call without parentheses, which would take it); on one line, without.
     for list in &shape.lists {
         let last = list.close - 1;
         let comma = pieces[last].tok == Tok::Comma;
@@ -1368,7 +1445,7 @@ fn normalize(pieces: &mut [Piece], shape: &Shape) -> Edits {
             continue;
         }
         if pieces[list.close].gap.broken {
-            e.comma_after[last] = !comma;
+            e.comma_after[last] = !comma && !shape.command_end[last];
         } else if comma && !pieces[last].gap.broken {
             e.skip[last] = true;
         }
@@ -1838,6 +1915,7 @@ mod tests {
         gives("f = fn ( x ) = not x and(x or  y)\n", "f = fn(x) = not x and (x or y)\n");
         gives("b = 2**-1\n", "b = 2 ** -1\n");
         same("r = {type: 1, \"full name\": 2}\n");
+        gives("fn f(1 .. 9 | - 2.5 .. -1) = 1\nfn f(\"Mr \"+name) = name\n", "fn f(1..9 | -2.5..-1) = 1\nfn f(\"Mr \" + name) = name\n");
     }
 
     #[test]
@@ -1851,6 +1929,24 @@ mod tests {
             "students = [\n  {name: \"Ada\"},\n    {name: \"Alan\"}\n  ]\n",
             "students = [\n  {name: \"Ada\"},\n  {name: \"Alan\"},\n]\n",
         );
+    }
+
+    #[test]
+    fn calls_without_parentheses() {
+        same("puts \"Hello\"\nprint x, y\nassert_eq total, 42\nputs -1\nputs [1, 2]\n");
+        same("xs.each do |x| puts x end\n");
+        gives("puts\"a\"\nprint  x ,y\n", "puts \"a\"\nprint x, y\n");
+        // The author's choice stays: with or without parentheses.
+        same("puts(\"a\")\nputs \"a\"\n");
+        // Values: an index and a subtraction, written as such.
+        gives("xs = [1]\nputs xs [0]\nxs [0]\n", "xs = [1]\nputs xs[0]\nxs[0]\n");
+        gives("x = 1\nx -1\n", "x = 1\nx - 1\n");
+        gives("each xs do |v|\nprint v\n  end\n", "each xs do |v|\n  print v\nend\n");
+        // In results: branches, cases, the body after `=`.
+        same("fn check(ok) = if ok then puts \"yes\" else puts \"no\"\nf = fn(x) = puts x\ntest \"t\" = assert_eq 1, 1\n");
+        same("match name\n  \"Dr \" + n -> puts n\n  _ -> puts \"?\"\nend\n");
+        gives("fn f(x) =\nif x then\nputs  1\nelse\nputs 2\n", "fn f(x) =\n  if x then\n    puts 1\n  else\n    puts 2\n");
+        gives("xs = [1]\nf = fn(v) = xs [0]\n", "xs = [1]\nf = fn(v) = xs[0]\n");
     }
 
     #[test]

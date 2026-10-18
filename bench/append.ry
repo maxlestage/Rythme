@@ -1,0 +1,17 @@
+# Adding to lists one element at a time: push, `xs + [x]` and `[..xs, x]`.
+
+fn pushed(0, xs) = xs
+fn pushed(n, xs) = pushed(n - 1, push(xs, n * n % 1000))
+
+fn added(0, xs) = xs
+fn added(n, xs) = added(n - 1, xs + [n % 13])
+
+fn spread(0, xs) = xs
+fn spread(n, xs) = spread(n - 1, [..xs, n % 7])
+
+squares = 1..100_000 |> fold([], fn(acc, x) = push(acc, x * x % 101))
+a = pushed(100_000, [])
+b = added(100_000, [])
+c = spread(100_000, [])
+
+print(len(a), sum(a), len(b), sum(b), len(c), sum(c), sum(squares), take(a, 4), last(c, 3))

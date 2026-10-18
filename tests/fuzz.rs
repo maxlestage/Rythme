@@ -375,7 +375,7 @@ impl Gen<'_> {
     }
 
     fn pattern(&mut self, depth: usize) -> String {
-        let leaf = ["_", "p", "0", "-1", "1.5", "\"a\"", "true", "()", "None", "A", "-9223372036854775808"];
+        let leaf = ["_", "p", "0", "-1", "1.5", "\"a\"", "true", "()", "None", "A", "-9223372036854775808", "1..9", "-2.5..0", "\"a\" + _"];
         if depth == 0 {
             return self.rng.pick(&leaf).into();
         }
@@ -410,7 +410,37 @@ impl Gen<'_> {
                     format!("fn {name}({}) = {body}", params.join(", "))
                 }
             }
-            3..=5 => format!("print({})", self.expr(3)),
+            3 | 4 => format!("print({})", self.expr(3)),
+            // Calls without parentheses, and what looks like them: `x -1`
+            // and `xs [0]` use values, `puts -1` and `puts [1]` call.
+            5 => match self.rng.below(8) {
+                0 => {
+                    let n = self.rng.below(3);
+                    format!("print {}, {}", self.rng.pick(VALUES), self.args(n + 1, 2))
+                }
+                1 if !self.fns.is_empty() => {
+                    let (name, arity) = self.fns[self.rng.below(self.fns.len())].clone();
+                    match arity {
+                        0 => format!("{name}()"),
+                        _ => format!("{name} {}", self.args(arity, 2)),
+                    }
+                }
+                2 => format!("puts -{}\nputs [{}]", self.atom(), self.expr(2)),
+                3 => "x -1\nxs [0]\nputs x -1, xs [1]".to_string(),
+                // In results: branches, cases, the body after `=`.
+                5 => format!("print(if {} then puts {} else print {}, x)", self.expr(2), self.expr(2), self.expr(2)),
+                6 => format!(
+                    "{} = fn(v) = puts v, {}\nmatch {}\n  [a, ..] -> puts a -1\n  v -> print v, xs [0]\nend",
+                    self.name(),
+                    self.expr(2),
+                    self.expr(2)
+                ),
+                7 => {
+                    let h = self.name();
+                    format!("fn {h}(p) = if p == x then puts p -1 else print p, {}\n{h} {}", self.expr(2), self.expr(2))
+                }
+                _ => format!("xs.each do |v| puts v, {} end", self.expr(2)),
+            },
             6 => format!("{} = {}", self.name(), self.expr(3)),
             7 => {
                 let name = self.name();
@@ -955,9 +985,11 @@ fn fuzz(seed: u64, first: u64, cases: u64) -> (Vec<Failure>, [u64; 5]) {
             rythme::interp::set_stack_budget(768 << 20);
             let mut failures = Vec::new();
             let mut stages = [0; 5];
+            // Every language in turn: each one's messages must point inside the code.
+            let langs: Vec<Lang> = Lang::all().collect();
             for i in first..first + cases {
                 let src = case(seed, i);
-                lang::set(if i % 3 == 0 { Lang::Fr } else { Lang::En });
+                lang::set(langs[(i % langs.len() as u64) as usize]);
                 match run_case(&src) {
                     Ok(stage) => stages[stage as usize] += 1,
                     Err(e) => failures.push((i, src, e)),
@@ -1037,8 +1069,7 @@ fn survives(src: &str) {
             let src = src.to_string();
             move || {
                 rythme::interp::set_stack_budget(768 << 20);
-                [Lang::En, Lang::Fr]
-                    .into_iter()
+                Lang::all()
                     .filter_map(|l| {
                         lang::set(l);
                         run_case(&src).err()

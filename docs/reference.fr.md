@@ -408,6 +408,8 @@ en silence.
 | `Symbol` | des noms utilisés comme valeurs | `:ok`, `:erreur` |
 | `List` | suites ordonnées | `[1, 2, 3]`, `1..5`, `[]` |
 | `Record` | enregistrements : des champs nommés | `{nom: "Ada", naissance: 1815}` |
+| `Dict` | dictionnaires : une valeur pour chaque clé, des clés de toute sorte | `dict([["Ada", 36]])`, `dict()` |
+| `Set` | ensembles : des valeurs sans répétition | `set([1, 2, 3])`, `set()` |
 | `Function` | fonctions, fonctions intégrées, constructeurs avec champs | `fn(x) = x + 1`, `print`, `Some` |
 | `Option` | `Some(valeur)`, `None` | `Some(3)` |
 | `Result` | `Ok(valeur)`, `Err(erreur)` | `Err("oups")` |
@@ -627,6 +629,8 @@ valeur d'un tel type s'affiche comme son constructeur suivi de ses champs :
   des valeurs égales, quel que soit l'ordre des champs ;
 - deux variantes sont égales quand elles ont le même type, le même
   constructeur et des champs égaux ;
+- deux dictionnaires sont égaux quand ils ont les mêmes clés avec des valeurs
+  égales, et deux ensembles quand ils ont les mêmes éléments ;
 - une fonction n'est égale qu'à elle-même (la même valeur de fonction) ;
 - des valeurs de sortes différentes ne sont jamais égales (`"1" == 1` vaut
   `false`) ;
@@ -657,7 +661,11 @@ true true false false
 - deux valeurs **du même type** : d'abord selon le constructeur, dans l'ordre
   de la définition du type (`None < Some(x)`, `Ok(x) < Err(e)`, et pour
   `type Taille = Petit | Moyen | Grand`, `Petit < Moyen < Grand`), puis champ
-  par champ.
+  par champ ;
+- les ensembles, élément par élément dans leur ordre, comme des listes ; et
+  les dictionnaires de même, comme les listes de leurs paires
+  `[clé, valeur]`. Ce n'est pas l'inclusion : `set([1, 2]) < set([1, 3])`
+  vaut `true` (utilisez `is_subset` pour l'inclusion).
 
 Tout le reste (enregistrements, fonctions, valeurs de deux types différents,
 un nombre et un texte...) est l'erreur E005. `sort`, `sort_by`, `min` et `max`
@@ -721,6 +729,8 @@ En dehors des textes, les deux formes sont identiques :
 | List | `[1, "a", 2.0]` |
 | Record | `{nom: "Ada", "nom complet": "Ada L."}` : un nom de champ s'écrit comme un texte quand ce n'est pas un nom simple |
 | variante | `None`, `Some(3)`, `Cercle(2.0)` |
+| Dict | `dict("Ada" => 36, [0, 0] => "départ")`, `dict()` : les paires dans l'ordre des clés |
+| Set | `set(1, 2, 3)`, `set()` : les éléments dans l'ordre |
 | fonction | `<fn nom>` pour une fonction nommée ou intégrée, `<fn>` pour une fonction anonyme |
 | constructeur avec champs | `<constructeur Cercle>` (en anglais : `<constructor Cercle>`) |
 | Symbol | `:ok` |
@@ -775,6 +785,118 @@ print({etat: :ok, nombre: 2}, to_json([:ok, 1]), text(:ok))
 ```text
 :en_attente en attente Symbol true true
 {etat: :ok, nombre: 2} ["ok", 1] :ok
+```
+
+### 2.15 Dict et Set
+
+Un **dict** (dictionnaire) donne une valeur pour chacune de ses clés ; un
+**set** (ensemble) contient des valeurs sans répétition. Comme toutes les
+valeurs, ils ne changent jamais. Ils n'ont pas de syntaxe propre : ils se
+construisent avec les fonctions `dict` et `set`, et s'utilisent avec les
+fonctions de la [bibliothèque standard](#6-bibliothèque-standard).
+
+- `dict()` est le dictionnaire vide ; `dict(paires)` prend une liste de
+  paires `[clé, valeur]` (quand une clé revient plusieurs fois, sa dernière
+  valeur l'emporte) ; `dict(enregistrement)` prend les noms des champs comme
+  clés (des textes).
+- `set()` est l'ensemble vide ; `set(liste)` garde chaque élément une fois.
+- Les clés et les éléments peuvent être n'importe quelle valeur sauf une
+  fonction ou `nan` (E023) : nombres (entiers de toute taille aussi), textes,
+  symboles, Bool, `()`, listes, enregistrements, variantes, dictionnaires et
+  ensembles. Deux clés sont la
+  même clé quand elles sont égales (`==`, voir [2.11](#211-égalité)) : `1` et
+  `1.0` sont une seule clé, tout comme `{x: 1, y: 2}` et `{y: 2, x: 1}` ; la
+  clé qui reste est celle mise en premier.
+- Ils sont gardés **dans l'ordre de leurs clés**, quel que soit l'ordre dans
+  lequel ils ont été construits : l'ordre de [2.12](#212-ordre), étendu à
+  toutes ces valeurs (des valeurs de sortes différentes vont dans l'ordre
+  `()`, Bool, nombres, textes, symboles, listes, enregistrements, variantes,
+  dictionnaires, ensembles ; les symboles selon leurs noms ; les
+  enregistrements selon leurs noms de champs
+  dans l'ordre alphabétique, puis selon leurs valeurs). Cet ordre sert à
+  l'affichage, à `keys`, `values`, `entries`, `filter`, `map_values` et
+  `to_json`.
+- `dico[clé]` donne la valeur d'une clé, E010 s'il n'y en a pas (voir
+  [3.7](#37-indices)) ; `get(dico, clé)` donne une Option.
+- Ce sont des arbres équilibrés persistants : `get`, `has`, `[...]`, `put`,
+  `push` et `remove` prennent un temps en O(log n), et un nouveau
+  dictionnaire ou ensemble partage presque tout l'ancien au lieu de le
+  copier.
+- Ils s'affichent comme `dict(clé => valeur, ...)` et `set(a, b, ...)`. Ces
+  formes montrent seulement ce qu'ils contiennent : dans le code, écrivez
+  `dict([[clé, valeur], ...])` et `set([a, b, ...])`.
+
+```rythme
+ages = dict([["Bob", 25], ["Ada", 36]])
+print(ages, ages["Ada"], get(ages, "Eve"), len(ages))
+plus_vieux = put(ages, "Bob", 26)
+print(plus_vieux, ages)
+print(set([3, 1, 3, 2]), set([1, 1.0]), dict({x: 1, y: 2}))
+grille = dict([[[0, 0], "départ"], [[2, 1], "arrivée"]])
+print(grille[[2, 1]], keys(grille))
+print(type_of(ages), type_of(set()), dict() == dict([]))
+```
+
+```text
+dict("Ada" => 36, "Bob" => 25) 36 None 2
+dict("Ada" => 36, "Bob" => 26) dict("Ada" => 36, "Bob" => 25)
+set(1, 2, 3) set(1) dict("x" => 1, "y" => 2)
+arrivée [[0, 0], [2, 1]]
+Dict Set true
+```
+
+```rythme
+type Couleur = Rouge | Vert
+print(dict([[1, "a"]]) == dict([[1.0, "a"]]), set([[1, 2], [1]]) == set([[1], [1, 2]]))
+print(set([1, 2]) < set([1, 3]), sort([set([2]), set([1, 3]), set()]))
+print(set([Vert, Rouge, 2, "x", [1], ()]))
+```
+
+```text
+true true
+true [set(), set(1, 3), set(2)]
+set((), 2, "x", [1], Rouge, Vert)
+```
+
+Dans le style Ruby (voir [3.14](#314-blocs-donnés-aux-appels)), `each`, `select`
+et `reject` donnent à un bloc la clé et la valeur de chaque paire d'un
+dictionnaire, `key?` et `include?` sont `has` et `contains`, et `size` et
+`length` sont `len`. Les symboles et les entiers de toute taille sont des
+clés comme les autres :
+
+```rythme
+ages = dict([[:ada, 36], [:alan, 41]])
+ages.each do |nom, age|
+  print(nom, age)
+end
+print(ages.key?(:ada), ages.size, ages.select { |_, age| age > 40 })
+vus = set([10 ** 20, 1, 10 ** 20])
+print(vus, vus.include?(1), vus.length, to_json(ages))
+```
+
+```text
+:ada 36
+:alan 41
+true 2 dict(:alan => 41)
+set(1, 100000000000000000000) true 2 {"ada": 36, "alan": 41}
+```
+
+Une fonction ne peut pas être une clé (les fonctions ne se comparent pas) :
+
+```rythme
+fn double(x) = x * 2
+print(set([1, double]))
+```
+
+```text
+erreur[E023]: `set` : <fn double> ne peut pas être une clé de dictionnaire, ni un élément d'ensemble
+ --> 16-ensemble.ry:2:7
+  |
+2 | print(set([1, double]))
+  |       ^^^^^^^^^^^^^^^^
+  |
+  = aide: les clés et les éléments doivent être des valeurs comparables : tout sauf les fonctions et `nan`
+  = en savoir plus : `rythme explain E023`
 ```
 
 ---
@@ -908,6 +1030,8 @@ décide pas du résultat (`false and ...` vaut `false` sans évaluer `...`).
 
 `a..b` construit la liste `[a, a + 1, ..., b]`, voir [2.6](#26-list). Les
 deux côtés sont des expressions de calcul : `1..n + 1` vaut `1..(n + 1)`.
+Dans un motif, `1..9` n'est pas une liste mais n'importe quel nombre de 1 à 9
+(voir [3.10](#310-match-et-motifs)).
 
 ### 3.5 Appels
 
@@ -918,7 +1042,8 @@ nombre de paramètres (E004 ; certaines fonctions intégrées acceptent un
 nombre variable d'arguments). Appeler une valeur qui n'est pas une fonction
 est l'erreur E009, et `None()` aussi : un constructeur sans champs est une
 valeur, pas une fonction. Il n'y a ni arguments nommés, ni valeurs par
-défaut, ni application partielle.
+défaut, ni application partielle. Une instruction, ou un résultat comme une
+branche de `if`, peut aussi appeler une fonction sans parenthèses : `print x, y` (voir [3.15](#315-appels-sans-parenthèses)).
 
 ### 3.6 Enchaînements `|>`
 
@@ -981,6 +1106,7 @@ Ok(5) Err("\"deux\" n'est pas un nombre entier")
 | `liste[i]` | l'élément à la position `i` (à partir de 0) ; `-1` est le dernier, `-2` l'avant-dernier... | E007 hors limites, E005 si `i` n'est pas un Int |
 | `texte[i]` | le caractère à la position `i`, sous forme de texte | E007, E005 |
 | `enregistrement["nom"]` | le champ qui a ce nom | E010 s'il n'existe pas |
+| `dico[clé]` | la valeur de cette clé | E010 si elle n'existe pas |
 
 `get(x, i)` fait la même chose, mais renvoie une Option au lieu d'échouer.
 
@@ -1152,14 +1278,18 @@ correspond à la valeur, et dont la garde (s'il y en a une) vaut `true`, est
 choisi ; les noms donnés par le motif sont visibles dans sa garde et dans son
 résultat. Si aucun cas ne correspond, le programme s'arrête avec l'erreur
 E006. Avant l'exécution, le vérificateur signale les cas oubliés qu'il peut
-prouver (W002) et les cas placés après un cas qui accepte tout (W004).
+prouver (W002), les cas placés après un cas qui accepte tout ou les mêmes
+valeurs, et les intervalles vides (W004), et les intervalles qui se
+chevauchent (W010).
 
 | Motif | Correspond à |
 |-------|--------------|
 | `_` | n'importe quoi ; ne donne aucun nom |
 | `nom` | n'importe quoi ; le nomme `nom` |
 | `42`, `-1`, `2.5`, `-0.5` | un nombre égal à celui-ci (un motif Int correspond à un Float égal, et inversement : `0` correspond à `0.0`) |
+| `1..9`, `-5..-1`, `0.0..0.5` | un nombre du premier au second, les deux inclus : un Int ou un Float (`89.5` correspond à `0..100` mais ni à `0..89` ni à `90..100`). Les bornes sont des nombres écrits dans le code |
 | `"texte"` | exactement ce texte (pas de `{...}` dans un motif) |
+| `"M. " + nom`, `"#" + _` | un texte qui commence par ce texte ; `nom` désigne la suite du texte (après `+` vient un nom ou `_`) |
 | `true`, `false` | ce Bool |
 | `()` | la valeur unité |
 | `Feuille`, `None` | ce constructeur sans champs |
@@ -1257,6 +1387,91 @@ erreur[E006]: aucun cas de ce `match` ne traite Int 3
       dans `nom` appelée en 27b-aucun-cas.ry:6:7
   = en savoir plus : `rythme explain E006`
 ```
+
+Les intervalles et le début d'un texte :
+
+```rythme
+fn note(points) = match points
+  90..100 -> "A"
+  70..89 -> "B"
+  0..69 -> "C"
+  _ -> "pas une note"
+end
+
+fn piece(0.0..0.5) = "pile"
+fn piece(_) = "face"
+
+fn poli("M. " + nom) = "Cher Monsieur {nom}"
+fn poli("Mme " + nom) = "Chère Madame {nom}"
+fn poli(nom) = "Bonjour {nom}"
+
+print([95, 70, 100.0, 89.5, -3] |> map(note))
+print(piece(0.25), piece(0.75), piece(-2))
+print(poli("M. Martin"), "/", poli("Mme Leroy"), "/", poli("Ada"))
+```
+
+```text
+["A", "B", "A", "pas une note", "pas une note"]
+pile face face
+Cher Monsieur Martin / Chère Madame Leroy / Bonjour Ada
+```
+
+Un intervalle ne couvre jamais tous les nombres : un `match` sur des nombres
+a donc toujours besoin d'un dernier cas `_` (W002). Le vérificateur signale,
+avant l'exécution, un intervalle qui a des nombres en commun avec un
+intervalle placé avant lui (W010 : ces nombres vont toujours au premier), un
+cas dont tous les nombres sont déjà traités par les cas placés avant lui,
+même par plusieurs ensemble (W004), et un intervalle vide comme `99..65`
+(W004) :
+
+```rythme
+fn tranche(age) = match age
+  0..18 -> "jeune"
+  18..64 -> "adulte"
+  20..30 -> "vingtaine"
+  99..65 -> "senior"
+  _ -> "plus âgé"
+end
+print(tranche(18))
+```
+
+```text
+avertissement[W010]: ces intervalles se chevauchent
+ --> 54-intervalles.ry:3:3
+  |
+3 |   18..64 -> "adulte"
+  |   ^^^^^^ 18 est aussi ici
+  |
+2 |   0..18 -> "jeune"
+  |   ----- 18 va ici, au premier qui convient
+  |
+  = aide: les deux bouts d'un intervalle sont inclus : faites se suivre les intervalles sans qu'ils se chevauchent, comme `0..9` puis `10..19`
+
+avertissement[W004]: ce cas ne peut jamais être atteint
+ --> 54-intervalles.ry:4:3
+  |
+4 |   20..30 -> "vingtaine"
+  |   ^^^^^^
+  |
+3 |   18..64 -> "adulte"
+  |   ------ ce cas traite déjà ces valeurs
+  |
+  = aide: une valeur va au premier cas qui lui convient : supprimez ce cas, ou modifiez-le
+
+avertissement[W004]: cet intervalle ne correspond jamais
+ --> 54-intervalles.ry:5:3
+  |
+5 |   99..65 -> "senior"
+  |   ^^^^^^ aucun nombre ne va de 99 jusqu'à 65
+  |
+  = aide: un intervalle va du plus petit nombre au plus grand : `65..99`
+
+jeune
+```
+
+Seul le début d'un texte peut servir de motif : pour sa fin, ou pour des
+bornes qui sont des noms, utilisez une garde (`t if ends_with(t, "!") -> ...`,
+`n if n >= bas -> ...`).
 
 Les motifs servent aussi dans les définitions (`[a, b] = liste`, voir
 [4.1](#41-noms)) et dans les paramètres des fonctions (voir
@@ -1421,6 +1636,127 @@ Bonjour, Alan !
 0 Ada
 1 Grace
 2 Alan
+```
+
+### 3.15 Appels sans parenthèses
+
+Comme en Ruby, une **instruction** peut appeler une fonction sans
+parenthèses : `puts "Bonjour"` est `puts("Bonjour")`, et `print x, y` est
+`print(x, y)`.
+
+- L'instruction commence par un nom (`even?` aussi), suivi sur la même
+  ligne du début de son premier argument : un nombre, un texte, un symbole,
+  un nom, un constructeur, `true`, `false`, `not`, `if`, `match` ou `fn`.
+  Les arguments sont des expressions séparées par des virgules, jusqu'à la
+  fin de la ligne ; un retour à la ligne peut suivre une virgule.
+- Seule une instruction commence ainsi : une ligne du premier niveau, ou
+  d'une fonction, d'un bloc ou d'un test ; ou un **résultat**, qui contient
+  une expression entière comme une instruction : une branche de `if` ou de
+  `unless` (`if ok then puts "oui" else puts "non"`), ce que donne un cas de
+  `match` (`"Dr " + nom -> puts nom`), et le corps après le `=` d'une
+  fonction ou d'un test (`fn saluer(n) = puts "Salut #{n}"`,
+  `fn(x) = puts x`, `test "somme" = assert_eq 1 + 1, 2`). Les arguments
+  d'un résultat s'arrêtent là où l'expression s'arrêterait : à `else`,
+  `end`, `}`, `)` ou à un retour à la ligne (donc au cas suivant d'un
+  `match`). Partout ailleurs dans une expression, les parenthèses restent :
+  `x = len(xs)`, `print(len(xs))`, `1 + f(x)`.
+- Une virgule après les arguments appartient à l'appel, entre parenthèses
+  aussi : `print(if ok then puts 1, 2 else 0)` donne `1, 2` à `puts`.
+  Écrivez `puts(1)` pour terminer l'appel avant la virgule.
+- Un bloc `do` écrit après les arguments est donné à l'appel lui-même,
+  comme dernier argument : `each xs do |x| ... end`. Un bloc `{ |x| ... }`
+  appartient à l'expression juste avant lui, comme partout.
+- `(` garde son sens : `puts (1 + 2) * 3` est `puts(1 + 2) * 3`.
+- `[` et `-` peuvent se lire de deux façons. Comme en Ruby, un `[` après une
+  espace (`puts [1, 2]`), et un `-` après une espace mais juste avant un
+  nombre ou un nom (`puts -1`), commencent les arguments, **sauf si le code
+  donne une valeur à ce nom** : avec `=` (`x = 5`, `f = fn(v) = v`,
+  `[a, b] = xs`), comme paramètre d'une fonction ou d'un bloc, ou dans un
+  motif de `match` (les noms avant `=` ou `->` sur leur ligne comptent).
+  Alors `x -1` est `x - 1` et `xs [0]` est `xs[0]`, comme toujours, dans un
+  résultat aussi. Sans
+  espace avant (`x-1`, `xs[0]`), ou avec une espace après le `-` (`x - 1`),
+  ce n'est jamais un appel.
+- `rythme fmt` garde le choix de l'auteur, avec ou sans parenthèses, et
+  écrit les autres lectures comme ce qu'elles sont : `x - 1`, `xs[0]`.
+
+```rythme
+fn saluer(nom, salut) = print("#{salut}, #{nom} !")
+saluer "Ada", "Bonjour"
+puts "somme :", [1, 2, 3].sum
+puts -1
+puts [1, 2]
+x = 10
+xs = [7, 8]
+puts x -1, xs [0]
+[1, 2].each do |n| puts n * 10 end
+each ["a", "b"] do |s|
+  print s.upcase, s.size
+end
+```
+
+```text
+Bonjour, Ada !
+somme : 6
+-1
+[1, 2]
+9 7
+10
+20
+A 1
+B 1
+```
+
+Dans des résultats :
+
+```rythme
+fn saluer(nom) = puts "Bonjour, #{nom} !"
+fn verifier(ok) = if ok then puts "oui" else puts "non"
+fn titre(nom) =
+  match nom
+    "Dr " + reste -> puts "docteur", reste
+    _ -> puts nom
+  end
+saluer "Ada"
+verifier 1 > 2
+titre "Dr Grace"
+titre "Alan"
+[1, 2].each { |n| puts n * 10 }
+montrer = fn(v) = puts "v :", v
+montrer(3)
+x = 10
+puts(if x > 5 then x -1 else 0)
+```
+
+```text
+Bonjour, Ada !
+non
+docteur Grace
+Alan
+10
+20
+v : 3
+9
+```
+
+Un nom qui reçoit une valeur avec `=` est une valeur, même quand il contient
+une fonction :
+
+```rythme
+double = fn(v) = v * 2
+print double(4)
+double -3
+```
+
+```text
+erreur[E005]: impossible d'utiliser `-` avec Function et Int
+ --> sample.ry:3:8
+  |
+3 | double -3
+  |        ^ Function - Int 3
+  |
+  = aide: `double -x` soustrait ici ; pour appeler `double`, écrivez `double(-x)` (un appel sans parenthèses commence une instruction ou un résultat, comme une branche de `if` ou le corps après le `=` d'une fonction, et son nom ne reçoit pas de valeur avec `=` ni comme paramètre)
+  = en savoir plus : `rythme explain E005`
 ```
 
 ---
@@ -2297,8 +2633,9 @@ Le vérificateur trouve :
   les possibilités de motifs qui donnent des noms (E001) ;
 - les noms locaux inutilisés (W001), les cas oubliés (W002), les fonctions
   intégrées masquées par une définition du premier niveau (W003), les cas qui
-  ne peuvent jamais être atteints (W004), les fonctions inconnues après un
-  point (W005).
+  ne peuvent jamais être atteints et les intervalles vides (W004), les
+  fonctions inconnues après un point (W005), les intervalles qui se
+  chevauchent (W010).
 
 Le vérificateur connaît aussi la nature des valeurs quand elle est certaine :
 les valeurs écrites dans le code, et ce que donnent à coup sûr les
@@ -2556,21 +2893,23 @@ minuscules.
 | E023 | Valeur invalide | une valeur de la bonne sorte mais hors de ce qui est accepté (un nombre négatif d'éléments, `min` d'une liste vide, `sqrt(-1)`, un intervalle, une liste ou un texte trop grand, un nombre entier de plus de 100000 chiffres, un code de sortie hors de 0–255...) |
 | E024 | Une valeur est perdue | une ligne calcule une valeur dont rien ne se sert |
 | E025 | Problème de projet ou de paquet | un `rythme.toml` ou un `rythme.lock` illisible, une dépendance non installée, ou `rythme install` qui ne peut pas en obtenir une (voir [7.7](#77-projets-et-paquets)) |
+| E026 | Regex invalide | une regex qui ne respecte pas une règle (une `(` jamais fermée, `*` sans rien à répéter, un `\q` inconnu...), ou un remplacement de `replace_all` avec un groupe qui n'existe pas |
 | W001 | Nom inutilisé | un nom local est défini mais jamais utilisé |
 | W002 | Cas oublié | un `match` ou une fonction à un paramètre ne traite pas toutes les valeurs possibles |
 | W003 | Fonction intégrée masquée | une définition du premier niveau prend le nom d'une fonction intégrée |
-| W004 | Cas jamais atteint | un cas ou une définition vient après un autre qui accepte tout ou les mêmes valeurs, ou ne peut jamais correspondre à la valeur |
+| W004 | Cas jamais atteint | un cas ou une définition vient après un autre qui accepte tout ou les mêmes valeurs (ou après des intervalles qui contiennent ensemble tous ses nombres), ne peut jamais correspondre à la valeur, ou est un intervalle vide (`9..1`) |
 | W005 | Fonction inconnue après un point | `valeur.nom(...)` alors qu'aucune fonction ni aucun champ d'enregistrement ne porte ce nom |
 | W006 | Comparaison toujours fausse | `==` ou `!=` entre des valeurs de natures qui ne sont jamais égales (`nombre == "3"`) |
 | W007 | Test qui ne peut jamais échouer | un test qui ne fait que calculer ou afficher une valeur, sans jamais la comparer à ce qui est attendu |
 | W008 | Résultat perdu | une ligne qui ne fait qu'appeler une fonction sans effet, comme `push(liste, x)` : les valeurs ne changent jamais |
 | W009 | Fonction affichée | une fonction affichée dans un texte ou par `print` (`<fn nom>`) au lieu de ce qu'elle donne |
+| W010 | Intervalles qui se chevauchent | un motif d'intervalle a des nombres en commun avec un intervalle d'un cas ou d'une définition placé avant lui : ils vont toujours au premier |
 
 ---
 
 ## 6. Bibliothèque standard
 
-Les 155 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
+Les 174 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
 mots-clés, leurs noms sont en anglais. `rythme help builtins` les liste
 toutes par catégorie, une ligne chacune ; `rythme help NOM` (ou `help(NOM)`
 dans un programme, ou `:doc NOM` dans le mode interactif) affiche la
@@ -2646,7 +2985,56 @@ sont acceptés), `parse_json(texte)` (un Result : les objets JSON deviennent
 des enregistrements, les tableaux des listes, `null` `None` ; une erreur
 donne la ligne et la colonne) et `to_json(valeur, indentation)` (le texte
 JSON d'une valeur, sur une ligne, ou un élément par ligne décalé de
-`indentation` espaces, au plus 16).
+`indentation` espaces, au plus 16), `trim_start` et `trim_end` (les espaces
+et retours à la ligne d'un seul côté), `words(texte)` (lettres et chiffres,
+avec `'`, `’` ou `-` à l'intérieur d'un mot : `"aujourd'hui"`,
+`"peut-être"`), `equals_ignore_case(a, b)` (majuscules et minuscules
+comptent comme égales, `ß` comme `SS`), et
+`format_number(x, decimales, langue)` (milliers séparés, `decimales`
+décimales si elles sont données, au plus 100, arrondies comme `round` ;
+`langue` vaut `"en"` par défaut : `1,234.5` ; `"fr"` : `1 234,5`, avec une
+espace ordinaire ; `"de"`, `"es"`, `"it"`, `"nl"`, `"pt"` : `1.234,5` ;
+`"fr-CA"` compte comme `"fr"`).
+
+**Regex.** Une regex (expression régulière) est un texte qui décrit des
+morceaux de texte. `matches(texte, regex)` (le texte *entier*
+correspond-il ?), `find_first(texte, regex)` (une Option),
+`find_all(texte, regex)` (chaque correspondance, de gauche à droite, sans
+chevauchement ; une correspondance vide juste après la précédente est
+sautée), `captures(texte, regex)` (une Option d'une liste : la
+correspondance entière, puis le texte de chaque groupe, `""` pour un groupe
+qui n'y a pas pris part), `captures_all`, `named_captures(texte, regex)`
+(une Option d'un enregistrement, un champ par groupe `(?<nom>...)` ; E023
+sans groupe nommé), `split_by(texte, regex)` (une correspondance vide ne
+coupe jamais) et `replace_all(texte, regex, nouveau)` (`nouveau` est un
+texte où `$1`, `$<nom>`, `$0` et `$$` tiennent lieu d'un groupe, d'un groupe
+nommé, de la correspondance entière et d'un `$`, ou une fonction qui reçoit
+chaque correspondance et doit renvoyer un texte). Une regex est faite de
+caractères, de `.` (n'importe quel caractère sauf `\n`), de classes
+`[abc]`, `[a-z]`, `[^...]` (un `]` juste après `[` ou `[^` et un `-` à un
+bout sont eux-mêmes), de `\d` (0 à 9), `\w` (une lettre, accents compris,
+un chiffre ou `_`), `\s` (une espace, une tabulation ou un retour à la
+ligne), de leurs contraires `\D`, `\W`, `\S`, de `\b` et `\B` (au bord
+d'un mot, ou non), de `^` et `$` (le début et la fin du texte), de `\n`,
+`\t`, `\r`, d'une barre oblique inverse devant un signe pour le signe
+lui-même (`\.`), d'alternatives `a|b`, de groupes `(...)`, `(?:...)` (sans
+capture) et `(?<nom>...)` (ou `(?P<nom>...)`), des répétitions `*`, `+`,
+`?`, `{n}`, `{n,}` et `{n,m}` (n et m jusqu'à 1000), qui prennent autant
+qu'elles peuvent, ou aussi peu avec un `?` après elles (`*?`), et de `(?i)`
+au début, pour ignorer la casse. Les règles habituelles choisissent entre
+plusieurs correspondances : la plus à gauche, puis la première
+alternative, puis la répétition la plus longue. Une recherche prend un temps
+proportionnel à la longueur du texte fois la taille de la regex, quelles
+qu'elles soient : le moteur suit tous les chemins à la fois au lieu de les
+essayer l'un après l'autre (pas de « retour arrière catastrophique ») ;
+pour la répétition d'une partie qui peut correspondre à un texte vide,
+comme `(a*)*`, il peut choisir une autre fin que d'autres moteurs. Dans un
+texte Rythme, la barre oblique inverse s'écrit deux fois et les accolades
+`\{` et `\}` : `"\\d\{4\}"` est la regex `\d{4}` ; un signe entre
+crochets n'a pas besoin de barre oblique : `"[.]"`, `"[(]"`. Une erreur
+dans une regex arrête le programme avec E026, qui la montre dans la regex ;
+quand la regex est écrite dans l'appel, elle est trouvée avant de lancer le
+programme, à sa place dans le code.
 
 **Listes.** `map`, `filter`, `reject(liste, f)` (les éléments pour lesquels
 f est fausse), `fold(liste, depart, f)`, `scan(liste, depart, f)` (chaque
@@ -2674,6 +3062,49 @@ Results (`map`).
 `[nom, valeur]`) et `from_entries` (l'inverse), `has(enregistrement, nom)`,
 `put(enregistrement, nom, valeur)`, `remove(enregistrement, nom)`,
 `map_values(enregistrement, f)`.
+
+**Dictionnaires et ensembles.** `dict()`, `dict(paires)` et
+`dict(enregistrement)`, `set()` et `set(liste)` les construisent (voir
+[2.15](#215-dict-et-set)). Les fonctions des listes et des enregistrements
+marchent aussi sur eux : `len`, `is_empty`, `get(dico, clé)` (une Option),
+`has(x, clé)` et `contains(x, clé)` (une clé d'un dictionnaire, un élément
+d'un ensemble), `put(dico, clé, valeur)`, `push(ensemble, x)`,
+`remove(x, clé)` (une clé d'un dictionnaire, un élément d'un ensemble),
+`keys(dico)`, `values(x)` (les valeurs d'un dictionnaire, ou les éléments
+d'un ensemble, sous forme de liste), `entries(dico)` (une liste de
+`[clé, valeur]`), `map_values(dico, f)`, `filter(dico, f)` et `reject(dico, f)`
+(f reçoit chaque clé et sa valeur), `filter(ensemble, f)`,
+`reject(ensemble, f)`, `each(dico, f)` (f reçoit chaque clé et sa valeur),
+`each(ensemble, f)`, `map(ensemble, f)` (l'ensemble des résultats). Puis `union(a, b)` (deux ensembles, ou deux dictionnaires : pour
+une clé des deux, la valeur de `b` l'emporte), `intersection(a, b)` et
+`difference(a, b)` (pour des dictionnaires, les paires de `a` dont la clé
+est, ou n'est pas, dans `b`) et `is_subset(a, b)` (deux ensembles).
+`to_json` écrit un dictionnaire dont les clés sont toutes des textes, ou
+toutes des symboles, comme un objet JSON, et un ensemble comme un tableau ; `dict(parse_json(texte)?)`
+lit un objet comme un dictionnaire. Les autres fonctions des listes ne les
+prennent pas : `values(x)` ou `entries(x)` donnent d'abord une liste.
+
+```rythme
+a = set([1, 2, 3])
+b = set([2, 3, 4])
+print(union(a, b), intersection(a, b), difference(a, b), is_subset(set([2]), a))
+print(push(a, 0), remove(a, 2), has(a, 2), values(a), map(a, fn(x) = x % 2))
+prix = dict([["pomme", 3], ["poire", 5], ["figue", 9]])
+print(filter(prix, fn(nom, p) = p < 6), map_values(prix, fn(p) = p * 2))
+print(union(prix, dict([["figue", 1], ["kiwi", 4]])))
+compte = fold(split("a b a c b a"), dict(), fn(d, m) = put(d, m, unwrap_or(get(d, m), 0) + 1))
+print(compte, entries(compte))
+print(to_json(compte), to_json(set([1, 2])), dict(unwrap(parse_json("\{\"x\": 1}"))))
+```
+
+```text
+set(1, 2, 3, 4) set(2, 3) set(1) true
+set(0, 1, 2, 3) set(1, 3) true [1, 2, 3] set(0, 1)
+dict("poire" => 5, "pomme" => 3) dict("figue" => 18, "poire" => 10, "pomme" => 6)
+dict("figue" => 1, "kiwi" => 4, "poire" => 5, "pomme" => 3)
+dict("a" => 3, "b" => 2, "c" => 1) [["a", 3], ["b", 2], ["c", 1]]
+{"a": 3, "b": 2, "c": 1} [1, 2] dict("x" => 1)
+```
 
 **Option et Result.** `unwrap`, `unwrap_or(x, defaut)`, `is_some`,
 `is_none`, `is_ok`, `is_err`, `and_then(x, f)` (une étape de plus qui peut
@@ -2769,6 +3200,7 @@ par catégorie. Un programme peut donner l'un de ces noms à quelque chose de
 | `strip` | `trim` | `even?`, `odd?` | `is_even`, `is_odd` |
 | `start_with?` | `starts_with` | `any?`, `all?` | `any`, `all` |
 | `end_with?` | `ends_with` | `key?` | `has` |
+| `lstrip`, `rstrip` | `trim_start`, `trim_end` | `casecmp?` | `equals_ignore_case` |
 
 `sort_by`, `min_by`, `max_by`, `group_by`, `zip`, `flatten`, `sum`, `count`,
 `first`, `last`, `find`, `map`, `each`, `reject` et `each_with_index` ont le
@@ -2868,7 +3300,7 @@ erreur[E003]: nom inconnu `ord`
   = aide: en Rythme, cela s'appelle `char_code`
   = en savoir plus : `rythme explain E003`
 
-erreur[E005]: `map` attend une liste, une Option ou un Result comme argument 1, mais a reçu une valeur de type Text
+erreur[E005]: `map` attend une liste, un ensemble, une Option ou un Result comme argument 1, mais a reçu une valeur de type Text
  --> 62-indices.ry:3:11
   |
 3 | print(map(mot, upper))
@@ -2958,6 +3390,49 @@ erreur[E023]: `add_days` a besoin d'une date valide : le jour doit aller de 1 à
   = en savoir plus : `rythme explain E023`
 ```
 
+Chercher et découper avec des regex, et des nombres écrits pour les humains :
+
+```rythme
+journal = "2024-02-29 ERROR disk full\n2024-03-01 INFO ok\n2024-03-02 ERROR fan"
+errors = lines(journal) |> filter(fn(line) = matches(line, ".* ERROR .*"))
+print(errors |> map(fn(line) = unwrap(find_first(line, "[0-9-]+"))))
+print(find_all("3 cats, 12 dogs and 1 fish", "\\d+"), split_by("a, b;c", "[,;] *"))
+print(captures("v2.14", "v(\\d+)\\.(\\d+)"), named_captures("2024-02", "(?<year>\\d+)-(?<month>\\d+)"))
+print(replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1"), replace_all("hello world", "\\b\\w", upper))
+print(matches("AB-12", "[A-Z]\{2\}-[0-9]+"), matches("ab-12", "(?i)[A-Z]\{2\}-[0-9]+"), find_all("x<b>y</b>", "<.+?>"))
+print(format_number(1234567.891, 2), format_number(1234567.891, 2, "fr"), format_number(-42000), pad_left(format_number(3.5, 2), 8))
+print(words("Hello, world! It's well-known."), trim_start("  hi  "), trim_end("  hi  "), equals_ignore_case("Été", "ÉTÉ"))
+```
+
+```text
+["2024-02-29", "2024-03-02"]
+["3", "12", "1"] ["a", "b", "c"]
+Some(["v2.14", "2", "14"]) Some({year: "2024", month: "02"})
+2024-02-29 Hello World
+true true ["<b>", "</b>"]
+1,234,567.89 1 234 567,89 -42,000     3.50
+["Hello", "world", "It's", "well-known"] hi     hi true
+```
+
+Une erreur dans une regex écrite dans le code est montrée avant de lancer le
+programme :
+
+```rythme
+code = "AB-12"
+print(matches(code, "[A-Z]+-([0-9]+"))
+```
+
+```text
+erreur[E026]: regex invalide : cette `(` n'est jamais fermée
+ --> 67-regex.ry:2:29
+  |
+2 | print(matches(code, "[A-Z]+-([0-9]+"))
+  |                             ^ ouverte ici
+  |
+  = aide: ajoutez une `)` là où le groupe finit ; pour le signe `(` lui-même, écrivez `[(]`
+  = en savoir plus : `rythme explain E026`
+```
+
 Quand il n'y a plus rien à lire (la saisie au clavier a été fermée par
 Ctrl-D, ou le texte envoyé au programme est terminé ; ici, l'entrée est
 vide), `input` arrête le programme avec E017, pour qu'un programme qui
@@ -2988,7 +3463,7 @@ erreur[E017]: `input` a atteint la fin de l'entrée
 ### 7.1 La ligne de commande
 
 ```text
-rythme [--lang fr|en] [--no-color] [COMMANDE] [ARGUMENTS...]
+rythme [--lang en|fr|es] [--no-color] [COMMANDE] [ARGUMENTS...]
 ```
 
 | Commande | Autres noms | Ce qu'elle fait |
@@ -3022,15 +3497,25 @@ suggestion.
 **Options.** `--lang` et `--no-color` doivent venir **avant** la commande ;
 tout ce qui suit le nom du fichier va au programme (pour `rythme test`, ce
 qui vient après `--`). `--lang` accepte toute
-valeur qui commence par `fr` ou `en` (`--lang fr`, `--lang=en`,
-`--lang fr_CA`) ; une autre valeur, ou `--lang` sans valeur, est signalée,
-avec le code de sortie 2.
+valeur qui commence par le code d'une langue, `en`, `fr` ou `es`
+(`--lang es`, `--lang=en`, `--lang fr_CA`) ; une autre valeur, ou `--lang`
+sans valeur, est signalée, avec le code de sortie 2.
+
+**Langues des messages.** Chaque message, sujet d'aide, explication d'un code
+et page de `rythme learn` existe en anglais, en français et en espagnol
+(`--lang es`) ; les mots-clés, les noms des fonctions intégrées et les
+commandes restent les mêmes dans toutes les langues. Les fichiers écrits par
+`rythme new` suivent aussi la langue ; les exercices existent en anglais et
+en français, et sont en anglais pour les autres langues. Les textes des
+autres langues sont rangés dans des catalogues (`src/i18n/`) ; CONTRIBUTING.md
+explique comment en ajouter une.
 
 **Exercices.** `rythme exercise` (ou `rythme exercise list`) liste les 30
 exercices gradués intégrés au programme (les fichiers de
 [`docs/exercises/`](exercises/README.fr.md)). `start NOM` écrit l'exercice
 désigné par son numéro (`7`) ou son nom de fichier (`07-recursivite`,
-`recursivite`) dans le dossier actuel, dans la langue des messages ; il ne
+`recursivite`) dans le dossier actuel, dans la langue des messages (anglais
+ou français) ; il ne
 remplace jamais un fichier existant (code de sortie 1). `check FICHIER` lance
 les tests du fichier comme `rythme test`, puis explique quoi faire ensuite ;
 `FICHIER` peut aussi être le numéro d'un exercice commencé dans le dossier
@@ -3046,7 +3531,9 @@ noms français ou alternatifs : `syntaxe`, `fonctions`, `listes`, `texte`,
 `enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`, `exercices`,
 `fichiers`, `système`, `dossiers`, `chemins`, `projets`, `paquets`,
 `interactif`, `formater`, `documentation`, `etapes`, `lsp`, `vscode`,
-`éditeurs`, `blocs`, `symboles`, `bibliothèque`...
+`éditeurs`, `blocs`, `symboles`, `bibliothèque`... et des noms espagnols :
+`sintaxis`, `funciones`, `listas`, `registros`, `tipos`, `patrones`,
+`errores`, `pruebas`, `ejercicios`, `proyectos`, `fechas`, `pasos`...
 
 **Codes de sortie.**
 
@@ -3060,9 +3547,10 @@ noms français ou alternatifs : `syntaxe`, `fonctions`, `listes`, `texte`,
 
 **Environnement.**
 
-- `RYTHME_LANG` : la langue des messages (`fr...` ou `en...`). Sans elle, la
-  première variable non vide parmi `LC_ALL`, `LC_MESSAGES`, `LANG` et
-  `LANGUAGE` décide : le français si elle commence par `fr`, l'anglais sinon.
+- `RYTHME_LANG` : la langue des messages (`en...`, `fr...` ou `es...`). Sans
+  elle, la première variable non vide parmi `LC_ALL`, `LC_MESSAGES`, `LANG` et
+  `LANGUAGE` décide : le français si elle commence par `fr`, l'espagnol si
+  elle commence par `es` (`LANG=es_ES.UTF-8`), l'anglais sinon.
   `--lang` l'emporte sur toutes.
 - `NO_COLOR` : quand elle est définie (avec n'importe quelle valeur), les
   messages sont sans couleurs ; `--no-color` fait de même. Les couleurs ne
@@ -3093,8 +3581,8 @@ $ rythme help lenght
 Aucune aide trouvée pour `lenght`.
 en Rythme, cela s'appelle `len`
 Voyez la liste des sujets avec `rythme help`.
-$ rythme --lang es bonjour.ry
-langue inconnue `es` : écrivez `--lang fr` ou `--lang en`, comme `rythme --lang fr bonjour.ry`
+$ rythme --lang de bonjour.ry
+langue inconnue `de` : écrivez `--lang` et l'une de en, fr, es, comme `rythme --lang fr bonjour.ry`
 ```
 
 Les trois dernières se terminent avec le code 2 (la dernière est écrite dans
@@ -3135,7 +3623,7 @@ quitter.
 | `:doc NOM` | | la documentation d'un nom défini, d'une fonction intégrée ou d'un sujet |
 | `:load FICHIER` | `:charger` | charger (à nouveau) un fichier et l'exécuter (`.ry` est ajouté si besoin) |
 | `:reset` | | tout oublier |
-| `:lang fr\|en` | `:langue` | changer la langue des messages |
+| `:lang en\|fr\|es` | `:langue` | changer la langue des messages |
 | `:learn` | `:apprendre` | la visite guidée |
 | `:explain CODE` | `:expliquer` | expliquer un code d'erreur |
 | `:names` | `:noms` | les noms définis jusqu'ici |
@@ -3452,7 +3940,7 @@ Le nombre de côtés d'un carré.
 len(x)
 ~~~
 
-Longueur d'un texte (en caractères), d'une liste ou d'un enregistrement. Pareil que : `length`, `size` (ses noms Ruby).
+Longueur d'un texte (en caractères), d'une liste, d'un enregistrement, d'un dictionnaire ou d'un ensemble. Pareil que : `length`, `size` (ses noms Ruby).
 
 Exemple :
 
@@ -3499,7 +3987,7 @@ Le nom d'un projet est un nom Rythme en minuscules (lettres, chiffres et
 E025, avec l'aide `essayez rythme new mon_app` (code de sortie 2). Un
 dossier qui existe déjà et n'est pas vide n'est jamais touché (code de
 sortie 1). Les fichiers sont écrits dans la langue des messages
-(`src/greeting.ry` en anglais).
+(`src/greeting.ry` en anglais, `src/saludo.ry` en espagnol).
 
 **`rythme.toml`.** Chaque valeur est un texte entre guillemets ; `#`
 commence un commentaire.
@@ -3717,12 +4205,15 @@ virgule finale est permise dans toute liste séparée par des virgules.
 ```text
 program      = { NL } { item ( NL | EOF ) } ;
 item         = type_def | test_def | use_def | statement ;
-statement    = fn_def | binding | expression ;
+statement    = fn_def | binding | command | expression ;
+command      = NAME [ "?" ] expression { "," { NL } expression }
+               [ "do" [ params ] block_end ] ;     (* 3.15 *)
 
 binding      = pattern_atom "=" expression ;
 fn_def       = "fn" NAME [ "?" ] "(" [ patterns ] ")" [ "if" expression ] body ;
-body         = "=" expression
+body         = "=" result
              | NL block_end ;
+result       = command | expression ;              (* 3.15 *)
 block_end    = { statement NL } [ statement ] "end" ;
 type_def     = "type" CTOR "=" [ "|" ] variant { "|" variant } ;
 variant      = CTOR [ "(" [ NAME { "," NAME } ] ")" ] ;
@@ -3753,13 +4244,13 @@ primary      = INT | FLOAT | TEXT | SYMBOL | "true" | "false" | NAME | CTOR
              | "[" [ list_item { "," list_item } ] "]"
              | "{" [ record_item { "," record_item } ] "}"
              | "fn" "(" [ patterns ] ")" body
-             | "if" expression "then" expression "else" expression
-             | "unless" expression "then" expression "else" expression
+             | "if" expression "then" result "else" result
+             | "unless" expression "then" result "else" result
              | "match" expression NL case { NL case } NL "end"
              | "do" block_end ;
 list_item    = [ ".." ] expression ;
 record_item  = ".." expression | KEY ":" expression | NAME ;
-case         = pattern [ "if" expression ] "->" expression ;
+case         = pattern [ "if" expression ] "->" result ;
 
 patterns     = pattern { "," pattern } ;
 pattern      = pattern_atom { "|" pattern_atom } ;

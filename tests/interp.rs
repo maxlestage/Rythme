@@ -86,3 +86,50 @@ fn functions_written_one_after_the_other_share_what_they_capture() {
     );
     fails("fn f(n)\n  fn yes(0) = true\n  fn yes(k) = true and no(k - 1)\n  fn no(0) = 5\n  fn no(k) = false or yes(k - 1)\n  yes(n)\nend\nprint(f(3))", "E005");
 }
+
+#[test]
+fn functions_of_a_group_call_each_other_and_themselves_without_a_closure() {
+    // Calling itself or another one, in tail position or not, with guards, `?` and errors.
+    ok(
+        "fn f(n)\n  fn fact(0) = 1\n  fn fact(k) = k * fact(k - 1)\n  fn sum(k) if k <= 0 = 0\n  fn sum(k) = k + twice(k - 1) // 2\n  fn twice(k) = 2 * sum(k)\n  [fact(n), sum(n)]\nend\nprint(f(10))",
+        "[3628800, 55]",
+    );
+    ok(
+        "fn f(xs)\n  fn first([]) = None\n  fn first([x, ..]) = Some(x)\n  fn both(a, b) = Some([first(a)?, first(b)?])\n  [both(xs, [2]), both([], xs)]\nend\nprint(f([1]))",
+        "[Some([1, 2]), None]",
+    );
+    let r = fails("fn f(n)\n  fn a(k) = b(k, 1)\n  fn b(k) = k\n  a(n)\nend\nprint(f(1))", "E004");
+    assert!(r.stderr.contains("`b` takes 1 argument"), "{}", r.stderr);
+    let r = fails("fn f(n)\n  fn a(k) = 1 + b(k)\n  fn b(0) = 0\n  a(n)\nend\nprint(f(1))", "E006");
+    assert!(r.stderr.contains("no definition of `b`") && r.stderr.contains("in `a`"), "{}", r.stderr);
+    // Deep calls between them that are not tail calls still stop cleanly.
+    fails("fn f(n)\n  fn a(k) = 1 + b(k)\n  fn b(k) = 1 + a(k)\n  a(n)\nend\nprint(f(1))", "E014");
+}
+
+#[test]
+fn adding_at_the_end_never_changes_the_values_shared() {
+    // Lists: each value keeps its elements, whichever grew in place.
+    ok(
+        "a = [1, 2]\nb = a + [3]\nc = a + [4]\nd = push(b, 5)\ne = push(b, 6)\nf = [..d, 7]\ng = [..d, 8, ..a]\nprint(a, b, c, d, e, f, g)",
+        "[1, 2] [1, 2, 3] [1, 2, 4] [1, 2, 3, 5] [1, 2, 3, 6] [1, 2, 3, 5, 7] [1, 2, 3, 5, 8, 1, 2]",
+    );
+    ok(
+        "[_, ..rest] = [1, 2, 3]\nr = rest + [4]\nfirst = [1, 2, 3] |> take(2)\nprint(rest, r, push(rest, 5), first + [9], rest + rest, r + r)",
+        "[2, 3] [2, 3, 4] [2, 3, 5] [1, 2, 9] [2, 3, 2, 3] [2, 3, 4, 2, 3, 4]",
+    );
+    // A list added to itself, directly or inside other values.
+    ok(
+        "xs = push([1], 2)\nys = push(xs, xs)\nzs = [..ys, {l: ys}, Some([ys])]\nprint(xs, ys, zs, push(zs, 0) |> len)",
+        "[1, 2] [1, 2, [1, 2]] [1, 2, [1, 2], {l: [1, 2, [1, 2]]}, Some([[1, 2, [1, 2]]])] 6",
+    );
+    // Texts, with `+` and interpolation.
+    ok(
+        "s = \"ab\" + \"\"\nt = s + \"c\"\nu = s + \"d\"\nv = t + \"e\"\nw = \"{t}f\"\nx = \"{t}g{1}{t}\"\ny = \"{1}{t}\"\nprint(s, t, u, v, w, x, y, t + t, \"{v}\")",
+        "ab abc abd abce abcf abcg1abc 1abc abcabc abce",
+    );
+    // Built in loops: the same results, in constant time per addition.
+    ok(
+        "fn texts(0, acc) = acc\nfn texts(n, acc) = texts(n - 1, \"{acc}{n % 10}\")\nfn lists(0, acc) = acc\nfn lists(n, acc) = lists(n - 1, push(acc, n))\nt = texts(200_000, \"\")\nl = lists(200_000, [])\nf = 1..100_000 |> fold(\"\", fn(acc, x) = acc + \"x\")\ng = 1..100_000 |> fold([], fn(acc, x) = [..acc, x])\nprint(len(t), take(t, 5), len(l), l[0], l[-1], len(f), sum(g))",
+        "200000 09876 200000 200000 1 100000 5000050000",
+    );
+}

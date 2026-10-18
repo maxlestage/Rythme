@@ -1,33 +1,70 @@
 //! Help everywhere: topics, function documentation, error explanations and
-//! a guided tour, in English and in French.
+//! a guided tour, in English and in French (and in the languages of
+//! `src/i18n/`, see [`crate::lang`]).
 
 use std::io::{BufRead, IsTerminal, Write};
 
 use crate::builtins::{self, Builtin, Category, BUILTINS};
 use crate::interp::{Interp, Wrap};
-use crate::lang::{is_fr, pick};
+use crate::lang::pick;
 use crate::source;
 use crate::suggest;
 use crate::value::Value;
 
-/// Topic names, in the order of the guided tour, with their French aliases.
+/// Topic names, in the order of the guided tour, with their French and Spanish aliases.
 pub const TOPICS: &[(&str, &[&str])] = &[
-    ("start", &["intro", "debut", "début", "commencer"]),
-    ("syntax", &["syntaxe"]),
-    ("functions", &["fonctions", "fn"]),
-    ("lists", &["listes", "list", "liste"]),
-    ("text", &["texte", "texts", "textes", "string"]),
-    ("records", &["enregistrements", "record", "enregistrement"]),
-    ("types", &["type"]),
-    ("match", &["patterns", "motifs"]),
-    ("errors", &["erreurs", "option", "result", "?"]),
-    ("functional", &["fonctionnel", "loops", "boucles"]),
-    ("tests", &["test"]),
-    ("exercises", &["exercices", "exercise", "exercice"]),
-    ("modules", &["use", "files", "fichiers"]),
+    ("start", &["intro", "debut", "début", "commencer", "inicio", "empezar"]),
+    ("syntax", &["syntaxe", "sintaxis"]),
+    ("functions", &["fonctions", "fn", "funciones"]),
+    ("lists", &["listes", "list", "liste", "listas"]),
+    ("text", &["texte", "texts", "textes", "string", "texto", "textos"]),
+    ("records", &["enregistrements", "record", "enregistrement", "registros", "registro"]),
+    (
+        "dicts",
+        &[
+            "dict",
+            "dictionaries",
+            "dictionary",
+            "set",
+            "sets",
+            "dictionnaires",
+            "dictionnaire",
+            "ensembles",
+            "ensemble",
+            "hash",
+            "hashmap",
+            "diccionarios",
+            "diccionario",
+            "conjuntos",
+            "conjunto",
+        ],
+    ),
+    ("types", &["type", "tipos"]),
+    ("match", &["patterns", "motifs", "patrones"]),
+    ("errors", &["erreurs", "option", "result", "?", "errores"]),
+    ("functional", &["fonctionnel", "loops", "boucles", "funcional", "bucles"]),
+    ("tests", &["test", "pruebas", "prueba"]),
+    ("exercises", &["exercices", "exercise", "exercice", "ejercicios", "ejercicio"]),
+    ("modules", &["use", "files", "fichiers", "modulos", "módulos", "archivos"]),
     (
         "system",
-        &["systeme", "système", "folders", "folder", "dossiers", "dossier", "paths", "path", "chemins", "chemin", "stdin", "exit-codes"],
+        &[
+            "systeme",
+            "système",
+            "folders",
+            "folder",
+            "dossiers",
+            "dossier",
+            "paths",
+            "path",
+            "chemins",
+            "chemin",
+            "stdin",
+            "exit-codes",
+            "sistema",
+            "carpetas",
+            "rutas",
+        ],
     ),
     (
         "projects",
@@ -45,16 +82,35 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "dépendances",
             "dependances",
             "rythme.toml",
+            "proyectos",
+            "proyecto",
+            "paquetes",
         ],
     ),
-    ("dates", &["date", "heure", "heures", "temps", "calendar", "calendrier", "datetime"]),
-    ("repl", &["interactive", "interactif"]),
-    ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme"]),
-    ("doc", &["documentation", "documenter", "docs"]),
-    ("steps", &["etapes", "étapes", "step", "etape", "étape", "stepper", "pas-a-pas", "pas-à-pas"]),
-    ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide"]),
+    ("dates", &["date", "heure", "heures", "temps", "calendar", "calendrier", "datetime", "fechas", "fecha", "hora"]),
+    (
+        "regex",
+        &["regexp", "regexes", "regular-expressions", "expressions-regulieres", "expressions-régulières", "re", "expresiones-regulares"],
+    ),
+    ("repl", &["interactive", "interactif", "interactivo"]),
+    ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme", "formatear"]),
+    ("doc", &["documentation", "documenter", "docs", "documentacion", "documentación"]),
+    ("steps", &["etapes", "étapes", "step", "etape", "étape", "stepper", "pas-a-pas", "pas-à-pas", "pasos", "paso", "paso-a-paso"]),
+    ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide", "editores"]),
     ("ruby", &["rb", "rubyist", "blocks", "blocs", "symbols", "symboles"]),
-    ("builtins", &["functions-list", "fonctions-integrees", "library", "bibliotheque", "bibliothèque", "stdlib"]),
+    (
+        "builtins",
+        &[
+            "functions-list",
+            "fonctions-integrees",
+            "library",
+            "bibliotheque",
+            "bibliothèque",
+            "stdlib",
+            "biblioteca",
+            "funciones-integradas",
+        ],
+    ),
 ];
 
 fn canonical_topic(name: &str) -> Option<&'static str> {
@@ -64,59 +120,8 @@ fn canonical_topic(name: &str) -> Option<&'static str> {
 
 pub fn overview() -> String {
     let v = crate::VERSION;
-    if is_fr() {
-        format!(
-            r#"Rythme {v} — aide
-
-Commandes
-  rythme                    mode interactif (essayer du code ligne par ligne)
-  rythme fichier.ry         lancer un programme
-  rythme check fichier.ry   trouver les problèmes sans lancer le programme
-  rythme test fichier.ry    lancer les tests d'un fichier (ou d'un dossier)
-  rythme fmt fichier.ry     mettre le code en forme (--check : vérifier seulement)
-  rythme doc fichier.ry     écrire sa documentation, en Markdown (--html : une page web)
-  rythme etapes fichier.ry  montrer le calcul étape par étape (fib(3) → fib(2) + fib(1) → ...)
-  rythme exercise           exercices corrigés automatiquement (list, start, check)
-  rythme new NOM            créer un projet (rythme.toml, src/, tests/)
-  rythme install            télécharger les dépendances du projet
-  rythme learn              visite guidée du langage, pas à pas
-  rythme help SUJET         aide sur un sujet ou une fonction
-  rythme explain E003       expliquer un code d'erreur
-  rythme -e "code"          exécuter un morceau de code
-  rythme lsp                serveur de langage, pour les éditeurs (VS Code, Neovim...)
-  option --lang fr|en       langue des messages (ou variable RYTHME_LANG)
-
-Sujets (rythme help SUJET)
-  start       le langage en une minute
-  syntax      toute la syntaxe sur une page
-  functions   fonctions, |>, récursion
-  lists       listes et leurs fonctions
-  text        textes
-  records     enregistrements {{nom: valeur}}
-  types       vos propres types
-  match       choisir selon la forme d'une valeur
-  errors      Option, Result et ?
-  functional  pas de boucles : comment faire à la place
-  tests       écrire et lancer des tests
-  exercises   des exercices pour apprendre, avec leurs tests
-  modules     utiliser plusieurs fichiers
-  system      fichiers, dossiers, chemins, options, entrée, codes de sortie
-  projects    projets et paquets : rythme new, rythme.toml, rythme install
-  dates       dates et heures : now(), today(), calendrier, ISO 8601
-  repl        le mode interactif
-  fmt         la mise en forme officielle du code (rythme fmt)
-  doc         la documentation tirée des commentaires ## (rythme doc)
-  steps       le calcul montré étape par étape (rythme etapes)
-  editors     Rythme dans votre éditeur (VS Code, Neovim, Helix...)
-  ruby        venir de Ruby : blocs, symboles, enchaînements de méthodes
-  builtins    toutes les fonctions intégrées
-
-Une fonction précise : rythme help map
-"#
-        )
-    } else {
-        format!(
-            r#"Rythme {v} — help
+    t!(
+        r#"Rythme {v} — help
 
 Commands
   rythme                    interactive mode (try code line by line)
@@ -134,7 +139,7 @@ Commands
   rythme explain E003       explain an error code
   rythme -e "code"          run a piece of code
   rythme lsp                language server, for editors (VS Code, Neovim...)
-  option --lang fr|en       language of the messages (or RYTHME_LANG)
+  option --lang en|fr|es    language of the messages (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
   start       the language in one minute
@@ -143,6 +148,7 @@ Topics (rythme help TOPIC)
   lists       lists and their functions
   text        texts
   records     records {{name: value}}
+  dicts       dictionaries and sets: dict(...), set(...)
   types       your own types
   match       choosing according to the shape of a value
   errors      Option, Result and ?
@@ -153,6 +159,7 @@ Topics (rythme help TOPIC)
   system      files, folders, paths, options, input, exit codes
   projects    projects and packages: rythme new, rythme.toml, rythme install
   dates       dates and times: now(), today(), calendar, ISO 8601
+  regex       searching, cutting and replacing with regular expressions
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
@@ -162,9 +169,57 @@ Topics (rythme help TOPIC)
   builtins    every built-in function
 
 A specific function: rythme help map
+"#,
+        r#"Rythme {v} — aide
+
+Commandes
+  rythme                    mode interactif (essayer du code ligne par ligne)
+  rythme fichier.ry         lancer un programme
+  rythme check fichier.ry   trouver les problèmes sans lancer le programme
+  rythme test fichier.ry    lancer les tests d'un fichier (ou d'un dossier)
+  rythme fmt fichier.ry     mettre le code en forme (--check : vérifier seulement)
+  rythme doc fichier.ry     écrire sa documentation, en Markdown (--html : une page web)
+  rythme etapes fichier.ry  montrer le calcul étape par étape (fib(3) → fib(2) + fib(1) → ...)
+  rythme exercise           exercices corrigés automatiquement (list, start, check)
+  rythme new NOM            créer un projet (rythme.toml, src/, tests/)
+  rythme install            télécharger les dépendances du projet
+  rythme learn              visite guidée du langage, pas à pas
+  rythme help SUJET         aide sur un sujet ou une fonction
+  rythme explain E003       expliquer un code d'erreur
+  rythme -e "code"          exécuter un morceau de code
+  rythme lsp                serveur de langage, pour les éditeurs (VS Code, Neovim...)
+  option --lang en|fr|es    langue des messages (ou variable RYTHME_LANG)
+
+Sujets (rythme help SUJET)
+  start       le langage en une minute
+  syntax      toute la syntaxe sur une page
+  functions   fonctions, |>, récursion
+  lists       listes et leurs fonctions
+  text        textes
+  records     enregistrements {{nom: valeur}}
+  dicts       dictionnaires et ensembles : dict(...), set(...)
+  types       vos propres types
+  match       choisir selon la forme d'une valeur
+  errors      Option, Result et ?
+  functional  pas de boucles : comment faire à la place
+  tests       écrire et lancer des tests
+  exercises   des exercices pour apprendre, avec leurs tests
+  modules     utiliser plusieurs fichiers
+  system      fichiers, dossiers, chemins, options, entrée, codes de sortie
+  projects    projets et paquets : rythme new, rythme.toml, rythme install
+  dates       dates et heures : now(), today(), calendrier, ISO 8601
+  regex       chercher, découper et remplacer avec des expressions régulières
+  repl        le mode interactif
+  fmt         la mise en forme officielle du code (rythme fmt)
+  doc         la documentation tirée des commentaires ## (rythme doc)
+  steps       le calcul montré étape par étape (rythme etapes)
+  editors     Rythme dans votre éditeur (VS Code, Neovim, Helix...)
+  ruby        venir de Ruby : blocs, symboles, enchaînements de méthodes
+  builtins    toutes les fonctions intégrées
+
+Une fonction précise : rythme help map
 "#
-        )
-    }
+    )
 }
 
 /// The text of a topic, or the documentation of a built-in function.
@@ -452,6 +507,7 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
                 Value::Text(_) => Some(Category::Text),
                 Value::Int(_) | Value::Big(_) | Value::Float(_) => Some(Category::Numbers),
                 Value::Record(_) => Some(Category::Records),
+                Value::Dict(_) | Value::Set(_) => Some(Category::Dicts),
                 Value::Variant(_) if it.wrap(other) != Wrap::Other => Some(Category::Options),
                 _ => None,
             };
@@ -469,6 +525,10 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
                         "len, get, contains, is_empty, to_json, format_date, add_days, add_seconds, days_between, seconds_between, day_of_week"
                     }
                     Category::Records => "len, get, contains, is_empty, to_json",
+                    Category::Dicts if matches!(other, Value::Set(_)) => {
+                        "has, push, remove, len, is_empty, values, filter, map, to_json"
+                    }
+                    Category::Dicts => "get, put, has, remove, keys, values, entries, len, is_empty, map_values, filter, to_json",
                     Category::Options => "map",
                     _ => "",
                 };
@@ -521,7 +581,7 @@ no exceptions. What you know from Ruby mostly works:
 
   names = ["Ada", "Grace", "Alan"]
   names.each do |name|
-    puts("Hello, #{name}!")
+    puts "Hello, #{name}!"
   end
 
   [1, 2, 3, 4, 5, 6]
@@ -533,6 +593,8 @@ no exceptions. What you know from Ruby mostly works:
   kind = unless adult?(ada) then :minor else :adult
 
 The same as in Ruby
+  calls           puts "hi"   print x, y   assert_eq total, 42
+                  (at the start of a statement or a result; see below)
   blocks          xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
                   a block is a function: the same as fn(x) = x * 2
   method calls    xs.sum   name.upcase   xs.first(2)   xs.include?(3)
@@ -543,10 +605,12 @@ The same as in Ruby
   Ruby names      puts to_s to_i to_f length size upcase downcase strip
                   select reject reduce inject uniq each_slice each_cons
                   each_with_index include? empty? even? odd? any? all?
-                  start_with? end_with? key? (see rythme help builtins)
+                  start_with? end_with? key? lstrip rstrip casecmp?
+                  (see rythme help builtins)
 
 What is different
-  parentheses     a call needs them: puts("hi"), not puts "hi"
+  parentheses     a call inside an expression needs them: x = len(xs),
+                  not x = len xs
   no mutation     no x += 1: give the new value a new name, total2 = total + 1
   no nil          a missing value is None, a present one Some(x)
   no exceptions   errors are values, Ok(x) or Err(message), passed on with ?
@@ -555,7 +619,30 @@ What is different
   no classes      records {name: "Ada"} and types: type Shape = Circle(r) | Square(s)
   no loops        each, map, select, reduce, or a function that calls itself
   case/when       match value ... end, one case per line: pattern -> result
-  hashes          records {name: "Ada", age: 36}; symbols are not keys yet
+  hashes          dict([[:ada, 36]]) (keys of any kind, symbols too), or
+                  records {name: "Ada", age: 36}
+
+Calls without parentheses
+  A statement that starts with a name, followed on its line by the start of
+  a value (a number, a text, a symbol, a name, a constructor, not, if,
+  match, fn), is a call: print x, y is print(x, y). A do block after the
+  arguments is given to the call: each xs do |x| ... end. Like Ruby, a [ or
+  a - after a space, without a space after the -, starts the arguments too
+  (puts [1, 2], puts -1), except when the code gives the name a value (with
+  =, as a parameter or in a pattern): then x -1 is x - 1 and xs [0] is
+  xs[0], as before. `rythme fmt` writes those as x - 1 and xs[0].
+
+  A result may start the same way: a branch of if or unless, a case of
+  match, the body after the = of a function or a test. Its arguments end
+  at else, end, }, ) or the end of the line:
+
+  fn greet(name) = puts "Hello, #{name}!"
+  fn check(ok) = if ok then puts "yes" else puts "no"
+  match name
+    "Dr " + rest -> puts "doctor", rest
+    _ -> puts name
+  end
+  xs.each { |x| puts x }
 
 How x.name works
   x.name reads the field `name` of a record; when x has no such field, it
@@ -576,7 +663,7 @@ presque toujours :
 
   noms = ["Ada", "Grace", "Alan"]
   noms.each do |nom|
-    puts("Bonjour, #{nom} !")
+    puts "Bonjour, #{nom} !"
   end
 
   [1, 2, 3, 4, 5, 6]
@@ -588,6 +675,9 @@ presque toujours :
   genre = unless majeur?(ada) then :mineur else :majeur
 
 Comme en Ruby
+  appels          puts "salut"   print x, y   assert_eq total, 42
+                  (au début d'une instruction ou d'un résultat ; voir
+                  plus bas)
   blocs           xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
                   un bloc est une fonction : comme fn(x) = x * 2
   méthodes        xs.sum   nom.upcase   xs.first(2)   xs.include?(3)
@@ -598,10 +688,12 @@ Comme en Ruby
   noms Ruby       puts to_s to_i to_f length size upcase downcase strip
                   select reject reduce inject uniq each_slice each_cons
                   each_with_index include? empty? even? odd? any? all?
-                  start_with? end_with? key? (voir rythme help builtins)
+                  start_with? end_with? key? lstrip rstrip casecmp?
+                  (voir rythme help builtins)
 
 Ce qui change
-  parenthèses     un appel en a besoin : puts("salut"), pas puts "salut"
+  parenthèses     un appel dans une expression en a besoin : x = len(xs),
+                  pas x = len xs
   pas de mutation pas de x += 1 : donnez un nouveau nom à la nouvelle valeur,
                   total2 = total + 1
   pas de nil      une valeur absente est None, une valeur présente Some(x)
@@ -612,8 +704,31 @@ Ce qui change
   pas de classes  enregistrements {nom: "Ada"} et types : type Forme = Cercle(r) | Carre(c)
   pas de boucles  each, map, select, reduce, ou une fonction qui s'appelle
   case/when       match valeur ... end, un cas par ligne : motif -> résultat
-  hashes          enregistrements {nom: "Ada", age: 36} ; les symboles ne
-                  sont pas encore des clés
+  hashes          dict([[:ada, 36]]) (des clés de toute sorte, symboles
+                  compris), ou enregistrements {nom: "Ada", age: 36}
+
+Appels sans parenthèses
+  Une instruction qui commence par un nom, suivi sur sa ligne du début
+  d'une valeur (un nombre, un texte, un symbole, un nom, un constructeur,
+  not, if, match, fn), est un appel : print x, y est print(x, y). Un bloc
+  do après les arguments est donné à l'appel : each xs do |x| ... end.
+  Comme en Ruby, un [ ou un - après une espace, sans espace après le -,
+  commence aussi les arguments (puts [1, 2], puts -1), sauf quand le code
+  donne une valeur à ce nom (avec =, comme paramètre ou dans un motif) :
+  alors x -1 est x - 1 et xs [0] est xs[0], comme avant. `rythme fmt` les
+  écrit x - 1 et xs[0].
+
+  Un résultat peut commencer de la même façon : une branche de if ou de
+  unless, un cas de match, le corps après le = d'une fonction ou d'un
+  test. Ses arguments s'arrêtent à else, end, }, ) ou à la fin de la ligne :
+
+  fn saluer(nom) = puts "Bonjour, #{nom} !"
+  fn verifier(ok) = if ok then puts "oui" else puts "non"
+  match nom
+    "Dr " + reste -> puts "docteur", reste
+    _ -> puts nom
+  end
+  xs.each { |x| puts x }
 
 Comment marche x.nom
   x.nom lit le champ `nom` d'un enregistrement ; quand x n'a pas ce champ,
@@ -628,30 +743,38 @@ Quand ? fait partie d'un nom
   Err, et (valeur)? l'est toujours."#;
 
 fn topic_text(name: &str) -> &'static str {
+    let (en, fr) = topic_texts(name);
+    pick(en, fr)
+}
+
+/// The text of a topic, in English and French.
+fn topic_texts(name: &str) -> (&'static str, &'static str) {
     match name {
-        "start" => pick(START_EN, START_FR),
-        "syntax" => pick(SYNTAX_EN, SYNTAX_FR),
-        "functions" => pick(FUNCTIONS_EN, FUNCTIONS_FR),
-        "lists" => pick(LISTS_EN, LISTS_FR),
-        "text" => pick(TEXT_EN, TEXT_FR),
-        "records" => pick(RECORDS_EN, RECORDS_FR),
-        "types" => pick(TYPES_EN, TYPES_FR),
-        "match" => pick(MATCH_EN, MATCH_FR),
-        "errors" => pick(ERRORS_EN, ERRORS_FR),
-        "functional" => pick(FUNCTIONAL_EN, FUNCTIONAL_FR),
-        "tests" => pick(TESTS_EN, TESTS_FR),
-        "exercises" => pick(EXERCISES_EN, EXERCISES_FR),
-        "modules" => pick(MODULES_EN, MODULES_FR),
-        "system" => pick(SYSTEM_EN, SYSTEM_FR),
-        "projects" => pick(PROJECTS_EN, PROJECTS_FR),
-        "dates" => pick(DATES_EN, DATES_FR),
-        "repl" => pick(REPL_EN, REPL_FR),
-        "fmt" => pick(FMT_EN, FMT_FR),
-        "doc" => pick(DOC_EN, DOC_FR),
-        "steps" => pick(STEPS_EN, STEPS_FR),
-        "editors" => pick(EDITORS_EN, EDITORS_FR),
-        "ruby" => pick(RUBY_EN, RUBY_FR),
-        _ => "",
+        "start" => (START_EN, START_FR),
+        "syntax" => (SYNTAX_EN, SYNTAX_FR),
+        "functions" => (FUNCTIONS_EN, FUNCTIONS_FR),
+        "lists" => (LISTS_EN, LISTS_FR),
+        "text" => (TEXT_EN, TEXT_FR),
+        "records" => (RECORDS_EN, RECORDS_FR),
+        "dicts" => (DICTS_EN, DICTS_FR),
+        "types" => (TYPES_EN, TYPES_FR),
+        "match" => (MATCH_EN, MATCH_FR),
+        "errors" => (ERRORS_EN, ERRORS_FR),
+        "functional" => (FUNCTIONAL_EN, FUNCTIONAL_FR),
+        "tests" => (TESTS_EN, TESTS_FR),
+        "exercises" => (EXERCISES_EN, EXERCISES_FR),
+        "modules" => (MODULES_EN, MODULES_FR),
+        "system" => (SYSTEM_EN, SYSTEM_FR),
+        "projects" => (PROJECTS_EN, PROJECTS_FR),
+        "dates" => (DATES_EN, DATES_FR),
+        "regex" => (REGEX_EN, REGEX_FR),
+        "repl" => (REPL_EN, REPL_FR),
+        "fmt" => (FMT_EN, FMT_FR),
+        "doc" => (DOC_EN, DOC_FR),
+        "steps" => (STEPS_EN, STEPS_FR),
+        "editors" => (EDITORS_EN, EDITORS_FR),
+        "ruby" => (RUBY_EN, RUBY_FR),
+        _ => ("", ""),
     }
 }
 
@@ -1043,6 +1166,11 @@ const TEXT_EN: &str = r#"TEXT
   char_code("A")   char(66)      # 65 and "B"
   int("42")                      # 42
   parse_int("x42")               # Err(...): a conversion that cannot crash
+  trim_start("  x")   trim_end("x  ")
+  words("Hi, you!")              # ["Hi", "you"]
+  equals_ignore_case("Ada", "ADA")          # true
+  format_number(1234.5, 2)       # "1,234.50"   (with "fr": "1 234,50")
+  find_all("3 cats, 12 dogs", "[0-9]+")     # ["3", "12"]  (regexes: rythme help regex)
 
 Special characters: \n (new line), \t (tab), \r (carriage return),
 \0 (null character), \" (quote), \\ (backslash), \{ and \} (braces, because
@@ -1066,6 +1194,11 @@ const TEXT_FR: &str = r#"TEXTE
   char_code("A")   char(66)      # 65 et "B"
   int("42")                      # 42
   parse_int("x42")               # Err(...) : une conversion qui ne plante jamais
+  trim_start("  x")   trim_end("x  ")
+  words("Salut, toi !")          # ["Salut", "toi"]
+  equals_ignore_case("Ada", "ADA")          # true
+  format_number(1234.5, 2, "fr")            # "1 234,50"
+  find_all("3 chats, 12 chiens", "[0-9]+")  # ["3", "12"]  (les regex : rythme help regex)
 
 Caractères spéciaux : \n (nouvelle ligne), \t (tabulation), \r (retour
 chariot), \0 (caractère nul), \" (guillemet), \\ (barre oblique inverse),
@@ -1096,6 +1229,7 @@ Records as dictionaries
   put(counts, "pear", 5)         # {apple: 2, pear: 5}
   map_values(counts, fn(n) = n * 10)      # {apple: 20}
   group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+  For keys that are not names (numbers, lists...), use a dict: rythme help dicts
 
 JSON, the format of data on the web
   parse_json(text)               # Ok(...): objects become records, arrays lists
@@ -1125,6 +1259,8 @@ Les enregistrements comme dictionnaires
   put(compte, "poire", 5)        # {pomme: 2, poire: 5}
   map_values(compte, fn(n) = n * 10)      # {pomme: 20}
   group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+  Pour des clés qui ne sont pas des noms (nombres, listes...), utilisez un
+  dictionnaire : rythme help dicts
 
 JSON, le format des données du web
   parse_json(texte)              # Ok(...) : les objets deviennent des enregistrements, les tableaux des listes
@@ -1211,6 +1347,68 @@ Codes de sortie, pour les scripts qui lancent votre programme
 
 Dans le playground, dans le navigateur, il n'y a ni fichiers ni entrée : ces
 fonctions donnent Err("... n'est pas disponible dans le navigateur ...")."#;
+const DICTS_EN: &str = r#"DICTIONARIES AND SETS
+
+A dict (dictionary) gives a value for each key. Keys can be any value but
+functions: numbers, texts, lists, records... They are kept in order.
+  ages = dict([["Ada", 36], ["Alan", 41]])
+  ages                           # dict("Ada" => 36, "Alan" => 41)
+  ages["Ada"]                    # 36 (an error if the key is missing)
+  get(ages, "Bob")               # None: an Option, never an error
+  grid = dict([[[0, 0], "start"]])   # a list as a key
+  dict({x: 1})                   # from a record: dict("x" => 1)
+
+Dicts never change: functions give a new one, quickly (in O(log n))
+  put(ages, "Bob", 20)           # added (or replaced)
+  remove(ages, "Ada")            # without this key
+  has(ages, "Ada")   len(ages)   keys(ages)   values(ages)   entries(ages)
+  map_values(ages, fn(n) = n + 1)
+  filter(ages, fn(name, age) = age > 40)   # f receives the key and the value
+  ages.each do |name, age| print(name, age) end   # reject and select too
+  union(a, b)                    # both; for a key in both, b's value wins
+
+A set holds values without repetition, in order.
+  s = set([3, 1, 3])             # set(1, 3)
+  has(s, 3)   push(s, 5)   remove(s, 1)   len(s)   values(s)   # values: a list
+  union(a, b)   intersection(a, b)   difference(a, b)   is_subset(a, b)
+  filter(s, is_odd)   map(s, fn(x) = x * 10)
+
+Dicts and sets compare with == and <, and print as dict(k => v, ...) and
+set(a, b, ...). `to_json` writes a dict whose keys are all texts (or all symbols) as an
+object, a set as an array; `dict(parse_json(text)?)` reads an object back."#;
+
+const DICTS_FR: &str = r#"DICTIONNAIRES ET ENSEMBLES
+
+Un dict (dictionnaire) donne une valeur pour chaque clé. Les clés peuvent
+être n'importe quelle valeur sauf les fonctions : nombres, textes, listes,
+enregistrements... Elles sont gardées dans l'ordre.
+  ages = dict([["Ada", 36], ["Alan", 41]])
+  ages                           # dict("Ada" => 36, "Alan" => 41)
+  ages["Ada"]                    # 36 (une erreur si la clé manque)
+  get(ages, "Bob")               # None : une Option, jamais d'erreur
+  grille = dict([[[0, 0], "départ"]])   # une liste comme clé
+  dict({x: 1})                   # depuis un enregistrement : dict("x" => 1)
+
+Les dictionnaires ne changent jamais : les fonctions en donnent un nouveau,
+rapidement (en O(log n))
+  put(ages, "Bob", 20)           # ajoutée (ou remplacée)
+  remove(ages, "Ada")            # sans cette clé
+  has(ages, "Ada")   len(ages)   keys(ages)   values(ages)   entries(ages)
+  map_values(ages, fn(n) = n + 1)
+  filter(ages, fn(nom, age) = age > 40)   # f reçoit la clé et la valeur
+  ages.each do |nom, age| print(nom, age) end   # reject et select aussi
+  union(a, b)                    # les deux ; pour une clé des deux, la valeur de b l'emporte
+
+Un ensemble (set) contient des valeurs sans répétition, dans l'ordre.
+  e = set([3, 1, 3])             # set(1, 3)
+  has(e, 3)   push(e, 5)   remove(e, 1)   len(e)   values(e)   # values : une liste
+  union(a, b)   intersection(a, b)   difference(a, b)   is_subset(a, b)
+  filter(e, is_odd)   map(e, fn(x) = x * 10)
+
+Dictionnaires et ensembles se comparent avec == et <, et s'affichent comme
+dict(k => v, ...) et set(a, b, ...). `to_json` écrit un dictionnaire dont
+toutes les clés sont des textes (ou toutes des symboles) comme un objet, un ensemble comme un
+tableau ; `dict(parse_json(texte)?)` relit un objet."#;
 
 const DATES_EN: &str = r#"DATES AND TIMES
 
@@ -1270,6 +1468,87 @@ Calculs de calendrier (années bissextiles et longueurs des mois comprises)
 Une date qui n'existe pas arrête les fonctions avec E023, qui dit pourquoi.
 Le décalage local vient du système (UTC quand il ne le dit pas) ; time()
 donne les secondes depuis 1970 en Float, pour mesurer des durées."#;
+
+const REGEX_EN: &str = r#"REGEX: SEARCHING WITH A PATTERN
+
+A regex (regular expression) describes pieces of text: "[0-9]+" means "one
+digit or more". Rythme reads the usual regexes, and a search never takes
+more than (length of the text) × (size of the regex).
+
+  matches("2024", "[0-9]+")                  # true: the WHOLE text matches
+  find_first("tel: 06 12", "[0-9]+")         # Some("06"): the first piece
+  find_all("3 cats, 12 dogs", "[0-9]+")      # ["3", "12"]
+  split_by("a, b;c", "[,;] *")               # ["a", "b", "c"]
+  replace_all("a cat", "\\b\\w", upper)      # "A Cat" (a function for each piece)
+  replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1")   # "2024-02-29"
+  captures("2024-02", "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
+  named_captures("2024-02", "(?<year>[0-9]+)-(?<month>[0-9]+)")
+                                             # Some({year: "2024", month: "02"})
+
+What a regex can say
+  abc          these characters, in this order
+  .            any character but a line break
+  [abc]        one of these characters; [a-z] one from a to z; [^0-9] any other
+  \d \w \s     a digit (0-9); a letter (accents included), a digit or _; a space
+  \D \W \S     anything else
+  \b           the edge of a word
+  ^  $         the start and the end of the text
+  x|y          x or y
+  (...)        a group: to repeat it, or to capture its text ($1, `captures`)
+  (?:...)      a group that captures nothing; (?<name>...) a group with a name
+  x*  x+  x?   x zero times or more, once or more, zero or one time (the longest)
+  x{3}  x{2,5}  x{2,}    3 times, 2 to 5 times, 2 times or more
+  x*?  x+?     the shortest instead of the longest
+  (?i)         at the start: uppercase and lowercase letters count as equal
+
+Writing a regex in a Rythme text
+  A backslash is written twice: "\\d+" is the regex \d+. Braces are written
+  \{ and \}: "[0-9]\{4\}" is the regex [0-9]{4}. For a sign itself, put it in
+  brackets: "[.]" is a dot, "[(]" a parenthesis, "[$]" a dollar.
+
+A mistake in a regex stops the program with E026, which shows where it is;
+when the regex is written in the code, `rythme check` finds it before."#;
+
+const REGEX_FR: &str = r#"REGEX : CHERCHER AVEC UN MOTIF
+
+Une regex (expression régulière) décrit des morceaux de texte : "[0-9]+" veut
+dire « un chiffre ou plus ». Rythme lit les regex habituelles, et une
+recherche ne prend jamais plus que (longueur du texte) × (taille de la regex).
+
+  matches("2024", "[0-9]+")                  # true : le texte ENTIER correspond
+  find_first("tél : 06 12", "[0-9]+")        # Some("06") : le premier morceau
+  find_all("3 chats, 12 chiens", "[0-9]+")   # ["3", "12"]
+  split_by("a, b;c", "[,;] *")               # ["a", "b", "c"]
+  replace_all("un chat", "\\b\\w", upper)    # "Un Chat" (une fonction pour chaque morceau)
+  replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1")   # "2024-02-29"
+  captures("2024-02", "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
+  named_captures("2024-02", "(?<annee>[0-9]+)-(?<mois>[0-9]+)")
+                                             # Some({annee: "2024", mois: "02"})
+
+Ce qu'une regex peut dire
+  abc          ces caractères, dans cet ordre
+  .            n'importe quel caractère sauf un retour à la ligne
+  [abc]        un de ces caractères ; [a-z] un de a à z ; [^0-9] n'importe quel autre
+  \d \w \s     un chiffre (0-9) ; une lettre (accents compris), un chiffre ou _ ; un espace
+  \D \W \S     tout le reste
+  \b           le bord d'un mot
+  ^  $         le début et la fin du texte
+  x|y          x ou y
+  (...)        un groupe : pour le répéter, ou pour capturer son texte ($1, `captures`)
+  (?:...)      un groupe qui ne capture rien ; (?<nom>...) un groupe avec un nom
+  x*  x+  x?   x zéro fois ou plus, une fois ou plus, zéro ou une fois (le plus long)
+  x{3}  x{2,5}  x{2,}    3 fois, de 2 à 5 fois, 2 fois ou plus
+  x*?  x+?     le plus court au lieu du plus long
+  (?i)         au début : majuscules et minuscules comptent comme égales
+
+Écrire une regex dans un texte Rythme
+  La barre oblique inverse s'écrit deux fois : "\\d+" est la regex \d+. Les
+  accolades s'écrivent \{ et \} : "[0-9]\{4\}" est la regex [0-9]{4}. Pour un
+  signe lui-même, mettez-le entre crochets : "[.]" est un point, "[(]" une
+  parenthèse, "[$]" un dollar.
+
+Une erreur dans une regex arrête le programme avec E026, qui montre où elle
+est ; quand la regex est écrite dans le code, `rythme check` la trouve avant."#;
 
 const TYPES_EN: &str = r#"YOUR OWN TYPES
 
@@ -1335,6 +1614,8 @@ first one that fits:
 
 Patterns
   42   "text"   true             exactly this value
+  1..9   -5..-1   0.0..0.5       a number from the first to the second, both included
+  "Mr " + name                   a text that starts with "Mr "; name is the rest
   x                              anything, named x
   _                              anything, ignored
   Some(x)   Circle(r)            a constructor and what it contains
@@ -1362,6 +1643,8 @@ du premier qui correspond :
 
 Motifs
   42   "texte"   true            exactement cette valeur
+  1..9   -5..-1   0.0..0.5       un nombre du premier au second, inclus
+  "M. " + nom                    un texte qui commence par "M. " ; nom est la suite
   x                              n'importe quoi, nommé x
   _                              n'importe quoi, ignoré
   Some(x)   Cercle(r)            un constructeur et ce qu'il contient
@@ -1731,7 +2014,7 @@ starts by itself:
 
 VS Code
   the extension in editors/vscode: colors, snippets and the language server.
-  Settings: rythme.path (the program), rythme.language (en, fr or auto).
+  Settings: rythme.path (the program), rythme.language (en, fr, es or auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   every editor that speaks the Language Server Protocol: tell it to start
@@ -1745,7 +2028,7 @@ Zed
 Colors in Neovim, Helix and Zed
   the Tree-sitter grammar in editors/tree-sitter-rythme (see editors/README.md).
 
-The language of the messages follows the editor, unless `--lang fr|en` or
+The language of the messages follows the editor, unless `--lang en|fr|es` or
 RYTHME_LANG chooses it: rythme --lang fr lsp"#;
 
 const EDITORS_FR: &str = r#"RYTHME DANS VOTRE ÉDITEUR
@@ -1763,7 +2046,7 @@ serveur de langage, que l'éditeur lance tout seul :
 
 VS Code
   l'extension dans editors/vscode : couleurs, extraits de code et serveur de
-  langage. Réglages : rythme.path (le programme), rythme.language (en, fr ou auto).
+  langage. Réglages : rythme.path (le programme), rythme.language (en, fr, es ou auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   tout éditeur qui parle le Language Server Protocol : demandez-lui de lancer
@@ -1778,7 +2061,7 @@ Zed
 Couleurs dans Neovim, Helix et Zed
   la grammaire Tree-sitter dans editors/tree-sitter-rythme (voir editors/README.fr.md).
 
-La langue des messages suit celle de l'éditeur, sauf si `--lang fr|en` ou
+La langue des messages suit celle de l'éditeur, sauf si `--lang en|fr|es` ou
 RYTHME_LANG la choisit : rythme --lang fr lsp"#;
 
 const REPL_EN: &str = r#"THE INTERACTIVE MODE
@@ -1792,7 +2075,7 @@ Definitions are kept from one line to the next. If a line is not finished
 Commands
   :help           this help              :quit          leave (or Ctrl-D)
   :doc map        help on a name         :load f.ry     load a file
-  :reset          forget everything      :lang fr|en    change the language
+  :reset          forget everything      :lang en|fr|es change the language
   :learn          guided tour            :explain E003  explain an error
   :steps fib(4)   show the calculation step by step
 The Tab key completes names."#;
@@ -1809,7 +2092,7 @@ suivante.
 Commandes
   :help           cette aide             :quit          quitter (ou Ctrl-D)
   :doc map        aide sur un nom        :load f.ry     charger un fichier
-  :reset          tout oublier           :lang fr|en    changer de langue
+  :reset          tout oublier           :lang en|fr|es changer de langue
   :learn          visite guidée          :explain E003  expliquer une erreur
   :etapes fib(4)  montrer le calcul étape par étape
 La touche Tab complète les noms."#;
@@ -2030,8 +2313,13 @@ les lignes qui commencent par `- ` forment une liste."#;
 
 /// Long explanation of an error or warning code.
 pub fn explain(code: &str) -> Option<String> {
+    explanation(code).map(|(en, fr)| pick(en, fr).to_string())
+}
+
+/// The explanation of an error code, in English and French.
+fn explanation(code: &str) -> Option<(&'static str, &'static str)> {
     let code = code.trim().to_uppercase();
-    let (en, fr): (&str, &str) = match code.as_str() {
+    Some(match code.as_str() {
         "E001" => (
             r#"E001 — Syntax error
 
@@ -2257,21 +2545,25 @@ Pour multiplier, écrivez-le :  2 * (x + 1)"#,
         "E010" => (
             r#"E010 — Unknown field
 
-The record (or the constructor) has no field with this name.
+The record (or the constructor) has no field with this name; or the dict
+has no such key (`dict[key]`).
 
 Wrong:   {name: "Ada"}.nmae
 Right:   {name: "Ada"}.name
 Safe:    get(record, "name")     # an Option, never an error
+         get(dict, key)          # the same for a dict
 
 When the fields of the record are certain, `rythme check` finds this mistake
 before the program runs, and suggests the closest field."#,
             r#"E010 — Champ inconnu
 
-L'enregistrement (ou le constructeur) n'a pas de champ de ce nom.
+L'enregistrement (ou le constructeur) n'a pas de champ de ce nom ; ou le
+dictionnaire n'a pas cette clé (`dico[clé]`).
 
 Faux :   {nom: "Ada"}.nmo
 Juste :  {nom: "Ada"}.nom
 Sûr :    get(enregistrement, "nom")   # une Option, jamais d'erreur
+         get(dico, clé)               # de même pour un dictionnaire
 
 Quand les champs de l'enregistrement sont certains, `rythme check` trouve
 cette erreur avant l'exécution, et propose le champ le plus proche."#,
@@ -2601,6 +2893,43 @@ racine carrée d'un nombre négatif, une date qui n'existe pas (30 février),
 un intervalle, une liste ou un texte trop grand, un nombre entier de plus de
 100000 chiffres... Le message explique la limite."#,
         ),
+        "E026" => (
+            r#"E026 — Invalid regex
+
+A regex (a regular expression, given to `matches`, `find_all`, `split_by`,
+`replace_all`...) breaks one of its rules, or the replacement of
+`replace_all` uses a group that does not exist. The message shows where.
+
+Wrong:   find_all(text, "([0-9]+")       # the `(` is never closed
+Right:   find_all(text, "([0-9]+)")
+Wrong:   split_by(text, "*")             # `*` repeats nothing
+Right:   split_by(text, "[*]")           # the sign * itself, in brackets
+Wrong:   replace_all(date, "(\\d+)-(\\d+)", "$3")    # only 2 groups
+Right:   replace_all(date, "(\\d+)-(\\d+)", "$2/$1")
+
+In a Rythme text, a backslash is written twice ("\\d") and braces are
+written \{ and \} ("[0-9]\{4\}"). `rythme help regex` shows everything a
+regex can say. When the regex is written in the code, `rythme check` finds
+the mistake before running."#,
+            r#"E026 — Regex invalide
+
+Une regex (une expression régulière, donnée à `matches`, `find_all`,
+`split_by`, `replace_all`...) ne respecte pas une de ses règles, ou le
+remplacement de `replace_all` utilise un groupe qui n'existe pas. Le message
+montre où.
+
+Faux :   find_all(texte, "([0-9]+")      # la `(` n'est jamais fermée
+Juste :  find_all(texte, "([0-9]+)")
+Faux :   split_by(texte, "*")            # `*` ne répète rien
+Juste :  split_by(texte, "[*]")          # le signe * lui-même, entre crochets
+Faux :   replace_all(date, "(\\d+)-(\\d+)", "$3")    # seulement 2 groupes
+Juste :  replace_all(date, "(\\d+)-(\\d+)", "$2/$1")
+
+Dans un texte Rythme, la barre oblique inverse s'écrit deux fois ("\\d") et
+les accolades \{ et \} ("[0-9]\{4\}"). `rythme help regex` montre tout ce
+qu'une regex peut dire. Quand la regex est écrite dans le code,
+`rythme check` trouve l'erreur avant de lancer le programme."#,
+        ),
         "E024" => (
             r#"E024 — A value is lost
 
@@ -2682,7 +3011,8 @@ case (or a definition of a function) can never be used when:
     one last;
   - a case before it already handles the same values: `1 -> ...` twice;
   - the value can never have this shape: a Text never matches a list
-    pattern like `[first, ..rest]`, a number never matches `Some(x)`.
+    pattern like `[first, ..rest]`, a number never matches `Some(x)`;
+  - a range is empty: `9..1` holds no number, write `1..9`.
 
   match name                     # `name` is a Text
     [first, ..] -> first         # W004: a Text is not a list
@@ -2699,7 +3029,8 @@ quand :
   - un cas avant lui traite déjà les mêmes valeurs : `1 -> ...` deux fois ;
   - la valeur ne peut jamais avoir cette forme : un Text ne correspond
     jamais à un motif de liste comme `[premier, ..reste]`, un nombre jamais
-    à `Some(x)`.
+    à `Some(x)` ;
+  - un intervalle est vide : `9..1` ne contient aucun nombre, écrivez `1..9`.
 
   match nom                      # `nom` est un Text
     [premier, ..] -> premier     # W004 : un Text n'est pas une liste
@@ -2816,20 +3147,59 @@ parenthèses, même quand elle ne prend pas d'argument.
 Faux :   print("{salut}")             # affiche <fn salut>
 Juste :  print("{salut()}")           # affiche bonjour"#,
         ),
+        "W010" => (
+            r#"W010 — Ranges that overlap
+
+A range pattern `a..b` matches the numbers from `a` to `b`, both included.
+When two ranges of a `match` (or of the definitions of a function) share
+numbers, these numbers always go to the first one: the second never sees
+them. It is often an end written twice.
+
+Wrong:   match age
+           0..18 -> "young"
+           18..65 -> "adult"         # W010: 18 goes to "young"
+           _ -> "senior"
+         end
+Right:   0..17 -> "young"
+         18..64 -> "adult"
+For decimal numbers, which fall between 17 and 18, compare instead:
+  a if a < 18 -> "young""#,
+            r#"W010 — Des intervalles qui se chevauchent
+
+Un motif d'intervalle `a..b` correspond aux nombres de `a` à `b`, les deux
+inclus. Quand deux intervalles d'un `match` (ou des définitions d'une
+fonction) ont des nombres en commun, ces nombres vont toujours au premier :
+le second ne les voit jamais. C'est souvent un bout écrit deux fois.
+
+Faux :   match age
+           0..18 -> "jeune"
+           18..65 -> "adulte"        # W010 : 18 va à "jeune"
+           _ -> "senior"
+         end
+Juste :  0..17 -> "jeune"
+         18..64 -> "adulte"
+Pour des nombres décimaux, qui tombent entre 17 et 18, comparez plutôt :
+  a if a < 18 -> "jeune""#,
+        ),
         _ => return None,
-    };
-    Some(pick_owned(en, fr))
+    })
 }
 
-fn pick_owned(en: &str, fr: &str) -> String {
-    if is_fr() {
-        fr.to_string()
-    } else {
-        en.to_string()
-    }
+/// Every fixed text that [`pick`] translates while running (help pages,
+/// explanations, keywords, functions, months): `tests/i18n.rs` looks for each
+/// one in every catalog. The texts given to `t!` are found in the sources.
+#[doc(hidden)]
+pub fn fixed_texts() -> Vec<&'static str> {
+    let mut texts: Vec<&'static str> = TOPICS.iter().map(|(name, _)| topic_texts(name).0).filter(|t| !t.is_empty()).collect();
+    texts.extend(CODES.iter().filter_map(|c| explanation(c)).map(|(en, _)| en));
+    texts.extend(KEYWORD_DOCS.iter().map(|k| k.1));
+    texts.extend(BUILTINS.iter().map(|b| b.en));
+    texts.extend(builtins::date::MONTHS_EN);
+    texts
 }
 
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
-    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "E025", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008", "W009",
+    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "E025", "E026", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008",
+    "W009", "W010",
 ];

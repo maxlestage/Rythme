@@ -38,16 +38,53 @@ pub type Eval = Result<Value, Flow>;
 enum Tail {
     Done(Value),
     Call(Value, usize, Span),
+    /// A call that needs more (see `Extra`). (One variant for both rare
+    /// cases keeps the common ones fast.)
+    Other(Value, usize, Span, Extra),
+}
+
+/// What a call in tail position may need besides its function and arguments.
+#[derive(Clone, Copy)]
+struct Extra(u32);
+
+impl Extra {
     /// A call on the right of `and` / `or`: its result must be true or false.
-    Test(Value, usize, Span),
+    const TEST: Extra = Extra(1);
+
+    /// Calls the function number `i` of the group of the closure (the
+    /// running function's), with the same closure: calling a function of
+    /// its group makes no new closure.
+    fn member(i: u32) -> Extra {
+        Extra((i + 1) << 1)
+    }
+
+    fn test(self) -> bool {
+        self.0 & 1 == 1
+    }
+
+    fn with_test(self) -> Extra {
+        Extra(self.0 | 1)
+    }
+
+    fn sibling(self) -> Option<u32> {
+        (self.0 >> 1).checked_sub(1)
+    }
 }
 
 /// The running function: where its slots start on the stack, the values its
-/// closure captured, and the functions of its group.
+/// closure captured, and its closure (which also holds the functions of its
+/// group).
 struct Frame<'a> {
     base: usize,
     captured: &'a [Value],
-    siblings: Option<&'a Rc<[Sibling]>>,
+    clo: Option<&'a Rc<Closure>>,
+}
+
+impl Frame<'_> {
+    /// The frame of an expression outside of any function.
+    fn top(base: usize) -> Frame<'static> {
+        Frame { base, captured: &[], clo: None }
+    }
 }
 
 #[derive(Clone)]
@@ -383,7 +420,7 @@ impl Interp {
         self.depth = 0;
         let code = compile::top(e, &self.names);
         let base = self.push_frame(code.slots);
-        let r = self.eval(&code.node, &Frame { base, captured: &[], siblings: None });
+        let r = self.eval(&code.node, &Frame::top(base));
         self.end_top(base);
         match r {
             Ok(v) => Ok(v),
@@ -398,10 +435,10 @@ impl Interp {
         let e = &*test.body;
         let code = compile::top(e, &test.names);
         let base = self.push_frame(code.slots);
-        let r = match self.eval_tail(&code.node, &Frame { base, captured: &[], siblings: None }) {
+        let r = match self.eval_tail(&code.node, &Frame::top(base)) {
             Ok(Tail::Done(v)) => Ok(v),
             Ok(Tail::Call(f, argc, span)) => self.call_value(f, argc, span),
-            Ok(Tail::Test(f, argc, span)) => self.call_value(f, argc, span).and_then(|v| truth(&v, span).map(Value::Bool)),
+            Ok(Tail::Other(f, argc, span, x)) => self.call_extra(f, argc, span, x),
             Err(Flow::Return(v)) => Ok(*v),
             Err(Flow::Err(d)) => Err(d),
         };
@@ -454,10 +491,14 @@ impl Interp {
                 self.push_args(args, fr)?;
                 Ok(self.call_value(f, args.len(), e.span)?)
             }
+            Kind::SiblingCall(i, args) => {
+                self.push_args(args, fr)?;
+                Ok(self.call_sibling(fr, *i, args.len(), e.span)?)
+            }
             Kind::Method(_) | Kind::If(..) | Kind::Match(..) | Kind::Block(..) => match self.eval_tail(e, fr)? {
                 Tail::Done(v) => Ok(v),
                 Tail::Call(f, argc, span) => Ok(self.call_value(f, argc, span)?),
-                Tail::Test(f, argc, span) => Ok(Value::Bool(truth(&self.call_value(f, argc, span)?, span)?)),
+                Tail::Other(f, argc, span, x) => Ok(self.call_extra(f, argc, span, x)?),
             },
             Kind::Binary(op, l, r, op_span) => {
                 // Local names and constants are read in place, without a copy:
@@ -571,6 +612,7 @@ impl Interp {
             | Kind::Captured(_)
             | Kind::Global(..)
             | Kind::Call(..)
+            | Kind::SiblingCall(..)
             | Kind::Method(_)
             | Kind::Binary(..)
             | Kind::If(..)
@@ -582,35 +624,68 @@ impl Interp {
     /// `"... {x} ..."`
     #[inline(never)]
     fn template(&mut self, parts: &[compile::Part], span: Span, fr: &Frame) -> Eval {
+        // `"{acc}..."`: the rest is added after the text `acc`, in the room
+        // it has when it can (see `Text::concat`).
+        let mut head: Option<Text> = None;
         let mut s = String::new();
-        for p in parts {
+        for (i, p) in parts.iter().enumerate() {
             match p {
                 compile::Part::Lit(l) => s.push_str(l),
-                compile::Part::Expr(x) if is_leaf(x) => self.leaf(x, fr).write_display(&mut s),
-                compile::Part::Expr(x) => self.eval(x, fr)?.write_display(&mut s),
+                compile::Part::Expr(x) if is_leaf(x) => match self.leaf(x, fr) {
+                    Value::Text(t) if i == 0 && parts.len() > 1 => head = Some(t.clone()),
+                    v => v.write_display(&mut s),
+                },
+                compile::Part::Expr(x) => match self.eval(x, fr)? {
+                    Value::Text(t) if i == 0 && parts.len() > 1 => head = Some(t),
+                    v => v.write_display(&mut s),
+                },
             }
-            if s.len() > MAX_TEXT {
+            if s.len() + head.as_ref().map_or(0, |h| h.len()) > MAX_TEXT {
                 return Err(too_big(false, span).into());
             }
         }
-        Ok(Value::Text(Rc::from(s)))
+        Ok(Value::Text(match head {
+            Some(head) => head.concat(&s),
+            None => s.into(),
+        }))
     }
 
     /// `[a, ..xs, b]`
     #[inline(never)]
     fn list(&mut self, items: &[compile::Item], span: Span, fr: &Frame) -> Eval {
+        // `[..xs, x]`: added after `xs`, in the room it has when it can.
+        if let [compile::Item::Spread(first), rest @ ..] = items {
+            if !rest.is_empty() {
+                let head = match self.eval(first, fr)? {
+                    Value::List(l) => l,
+                    other => return Err(spread_error(&other, first.span, true).into()),
+                };
+                let mut v = Vec::with_capacity(rest.len());
+                self.list_items(rest, &mut v, head.len(), span, fr)?;
+                if head.len() + v.len() > MAX_LIST {
+                    return Err(too_big(true, span).into());
+                }
+                return Ok(Value::List(head.concat(&v)));
+            }
+        }
         let mut v = Vec::with_capacity(items.len());
+        self.list_items(items, &mut v, 0, span, fr)?;
+        Ok(Value::list(v))
+    }
+
+    /// Evaluates the elements of a list into `v`, after `before` others.
+    fn list_items(&mut self, items: &[compile::Item], v: &mut Vec<Value>, before: usize, span: Span, fr: &Frame) -> Result<(), Flow> {
         for it in items {
             match it {
                 compile::Item::One(x) => v.push(self.eval(x, fr)?),
                 compile::Item::Spread(x) => match self.eval(x, fr)? {
-                    Value::List(l) if v.len() + l.len() > MAX_LIST => return Err(too_big(true, span).into()),
+                    Value::List(l) if before + v.len() + l.len() > MAX_LIST => return Err(too_big(true, span).into()),
                     Value::List(l) => v.extend(l.iter().cloned()),
                     other => return Err(spread_error(&other, x.span, true).into()),
                 },
             }
         }
-        Ok(Value::list(v))
+        Ok(())
     }
 
     /// `{a: x, b: y}`: different names and no `..`.
@@ -715,14 +790,15 @@ impl Interp {
         loop {
             match &e.kind {
                 // `a and f(x)`: when the right side is a call, it is a tail call.
-                Kind::Logic(op, l, r) if matches!(r.kind, Kind::Call(..) | Kind::Method(_)) => {
+                Kind::Logic(op, l, r) if matches!(r.kind, Kind::Call(..) | Kind::Method(_) | Kind::SiblingCall(..)) => {
                     let left = self.condition(l, fr)?;
                     if (*op == BinOp::And) != left {
                         return Ok(Tail::Done(Value::Bool(left)));
                     }
                     // Still a tail call, but its result must be true or false.
                     return match self.eval_tail(r, fr)? {
-                        Tail::Call(f, argc, span) | Tail::Test(f, argc, span) => Ok(Tail::Test(f, argc, span)),
+                        Tail::Call(f, argc, span) => Ok(Tail::Other(f, argc, span, Extra::TEST)),
+                        Tail::Other(f, argc, span, x) => Ok(Tail::Other(f, argc, span, x.with_test())),
                         Tail::Done(v) => Ok(Tail::Done(Value::Bool(truth(&v, r.span)?))),
                     };
                 }
@@ -734,6 +810,11 @@ impl Interp {
                         Some(x) => e = x,
                         None => return Ok(Tail::Done(Value::Unit)),
                     }
+                }
+                Kind::SiblingCall(i, args) => {
+                    self.push_args(args, fr)?;
+                    let group = Value::Func(fr.clo.expect("a function of a group").clone());
+                    return Ok(Tail::Other(group, args.len(), e.span, Extra::member(*i)));
                 }
                 Kind::Call(callee, args) => {
                     let f = self.operand(callee, fr)?;
@@ -987,7 +1068,32 @@ impl Interp {
 
     /// Calls a function value with the `argc` values on top of the stack as
     /// arguments, and removes them.
+    #[inline(always)]
     fn call_value(&mut self, f: Value, argc: usize, span: Span) -> Fallible<Value> {
+        self.call_member(f, None, argc, span)
+    }
+
+    /// Calls the function number `i` of the group of the running function
+    /// (see `Extra::member`).
+    #[inline(always)]
+    fn call_sibling(&mut self, fr: &Frame, i: u32, argc: usize, span: Span) -> Fallible<Value> {
+        let clo = fr.clo.expect("a function of a group").clone();
+        self.call_member(Value::Func(clo), Some(i), argc, span)
+    }
+
+    /// Makes a call that needs more (see `Extra`).
+    #[inline(never)]
+    fn call_extra(&mut self, f: Value, argc: usize, span: Span, x: Extra) -> Fallible<Value> {
+        let v = self.call_member(f, x.sibling(), argc, span)?;
+        if x.test() {
+            return truth(&v, span).map(Value::Bool);
+        }
+        Ok(v)
+    }
+
+    /// Like `call_value`; with `member`, calls this function of the group of
+    /// the closure `f` instead of `f` itself.
+    fn call_member(&mut self, f: Value, member: Option<u32>, argc: usize, span: Span) -> Fallible<Value> {
         let base = self.stack.len() - argc;
         if stack_position().abs_diff(self.stack_base) > STACK_BUDGET.load(std::sync::atomic::Ordering::Relaxed)
             || self.depth >= MAX_DEPTH.load(std::sync::atomic::Ordering::Relaxed)
@@ -997,7 +1103,7 @@ impl Interp {
         }
         self.depth += 1;
         let mut test = None;
-        let r = self.call_loop(f, base, argc, span, &mut test);
+        let r = self.call_loop(f, member, base, argc, span, &mut test);
         self.depth -= 1;
         self.pop_to(base);
         match test {
@@ -1009,7 +1115,15 @@ impl Interp {
     /// Runs a call whose frame starts at `base`, with the arguments in its
     /// first slots. A call in tail position reuses the frame. `test` is set
     /// when the result must be true or false.
-    fn call_loop(&mut self, mut f: Value, base: usize, mut argc: usize, mut span: Span, test: &mut Option<Span>) -> Fallible<Value> {
+    fn call_loop(
+        &mut self,
+        mut f: Value,
+        mut member: Option<u32>,
+        base: usize,
+        mut argc: usize,
+        mut span: Span,
+        test: &mut Option<Span>,
+    ) -> Fallible<Value> {
         loop {
             if self.steps_left == 0 {
                 return Err(out_of_steps(span));
@@ -1017,18 +1131,25 @@ impl Interp {
             self.steps_left -= 1;
             match f {
                 Value::Func(clo) => {
-                    let code = &*clo.code;
+                    // A function of its group runs with the same closure.
+                    let (def, code) = match member {
+                        None => (&clo.def, &*clo.code),
+                        Some(i) => {
+                            let Sibling { def, code } = &clo.siblings.as_ref().expect("a function of a group")[i as usize];
+                            (def, &**code)
+                        }
+                    };
                     if argc != code.arity {
-                        return Err(fn_arity_error(&clo.def, argc, span));
+                        return Err(fn_arity_error(def, argc, span));
                     }
                     if code.slots > argc {
                         self.stack.resize_with(base + code.slots, || Value::Unit);
                     }
-                    let fr = Frame { base, captured: &clo.captured, siblings: clo.siblings.as_ref() };
+                    let fr = Frame { base, captured: &clo.captured, clo: Some(&clo) };
                     let ci = if code.simple && code.self_slot.is_none() {
                         0
                     } else {
-                        match self.enter(&clo, &fr, span) {
+                        match self.enter(&clo, def, code, &fr, span) {
                             Ok(ci) => ci,
                             // A `?` in a guard ended the call.
                             Err(Flow::Return(v)) => return Ok(*v),
@@ -1037,23 +1158,33 @@ impl Interp {
                     };
                     let body = &code.clauses[ci].body;
                     let r = match body.kind {
-                        Kind::Call(..) | Kind::Method(_) | Kind::If(..) | Kind::Match(..) | Kind::Block(..) | Kind::Logic(..) => {
-                            self.eval_tail(body, &fr)
-                        }
+                        Kind::Call(..)
+                        | Kind::SiblingCall(..)
+                        | Kind::Method(_)
+                        | Kind::If(..)
+                        | Kind::Match(..)
+                        | Kind::Block(..)
+                        | Kind::Logic(..) => self.eval_tail(body, &fr),
                         // A body that cannot end with a call (`x * 2`).
                         Kind::Binary(_, ref l, ref r, _) if is_leaf(l) && is_leaf(r) => self.leaf_operation(body, &fr).map(Tail::Done),
                         _ => self.eval(body, &fr).map(Tail::Done),
                     };
                     let (nf, nargc, nspan) = match r {
                         Ok(Tail::Done(v)) => return Ok(v),
-                        Ok(Tail::Call(nf, nargc, nspan)) => (nf, nargc, nspan),
-                        Ok(Tail::Test(nf, nargc, nspan)) => {
-                            *test = Some(nspan);
+                        Ok(Tail::Call(nf, nargc, nspan)) => {
+                            member = None;
+                            (nf, nargc, nspan)
+                        }
+                        Ok(Tail::Other(nf, nargc, nspan, x)) => {
+                            if x.test() {
+                                *test = Some(nspan);
+                            }
+                            member = x.sibling();
                             (nf, nargc, nspan)
                         }
                         Err(Flow::Return(v)) => return Ok(*v),
                         Err(Flow::Err(mut d)) => {
-                            add_frame(&mut d, &clo.def, span);
+                            add_frame(&mut d, def, span);
                             return Err(d);
                         }
                     };
@@ -1115,8 +1246,7 @@ impl Interp {
     /// arguments, which are in the first slots of the frame. `Flow::Return`:
     /// a `?` in a guard ended the call.
     #[cfg_attr(target_arch = "wasm32", inline(never))]
-    fn enter(&mut self, clo: &Rc<Closure>, fr: &Frame, span: Span) -> Result<usize, Flow> {
-        let code = &*clo.code;
+    fn enter(&mut self, clo: &Rc<Closure>, def: &FnDef, code: &FnCode, fr: &Frame, span: Span) -> Result<usize, Flow> {
         let base = fr.base;
         if let Some(slot) = code.self_slot {
             set(&mut self.stack[base + slot as usize], Value::Func(clo.clone()));
@@ -1143,7 +1273,7 @@ impl Interp {
             }
             return Ok(ci);
         }
-        Err(no_clause(&clo.def, &self.stack[base..base + code.arity], span).into())
+        Err(no_clause(def, &self.stack[base..base + code.arity], span).into())
     }
 }
 
@@ -1153,7 +1283,7 @@ impl Interp {
 /// captures the same values.
 #[inline(never)]
 fn sibling(fr: &Frame, i: u32) -> Value {
-    let group = fr.siblings.expect("a function of a group");
+    let group = fr.clo.and_then(|c| c.siblings.as_ref()).expect("a function of a group");
     let Sibling { def, code } = &group[i as usize];
     Value::Func(Rc::new(Closure { def: def.clone(), code: code.clone(), captured: fr.captured.to_vec(), siblings: Some(group.clone()) }))
 }
@@ -1177,6 +1307,10 @@ fn match_pat(p: &Pat, v: &Value, slots: &mut [Value], first: usize) -> bool {
         (Pat::Float(a), Value::Int(b)) => cmp_int_float(*b, *a) == Some(std::cmp::Ordering::Equal),
         (Pat::Text(a), Value::Text(b)) => a == b,
         (Pat::Symbol(a), Value::Symbol(b)) => a == b,
+        (Pat::Range(lo, hi), _) => in_range(*lo, *hi, v),
+        (Pat::Prefix(a, rest), Value::Text(b)) => {
+            b.strip_prefix(&**a).is_some_and(|r| match_pat(rest, &Value::Text(r.into()), slots, first))
+        }
         (Pat::Ctor(name, pats), Value::Variant(var)) => {
             var.ctor.name == *name && pats.len() == var.fields.len() && match_each(pats, &var.fields, slots, first)
         }
@@ -1260,6 +1394,10 @@ pub fn match_pattern(p: &Pattern, v: &Value, out: &mut Vec<(Sym, Value)>) -> boo
         (PatKind::Float(a), Value::Int(b)) => cmp_int_float(*b, *a) == Some(std::cmp::Ordering::Equal),
         (PatKind::Text(a), Value::Text(b)) => a == b,
         (PatKind::Symbol(a), Value::Symbol(b)) => a == b,
+        (PatKind::Range(lo, hi), _) => in_range(*lo, *hi, v),
+        (PatKind::Prefix(a, rest), Value::Text(b)) => {
+            b.strip_prefix(&**a).is_some_and(|r| match_pattern(rest, &Value::Text(r.into()), out))
+        }
         (PatKind::Ctor(name, pats), Value::Variant(var)) => {
             var.ctor.name == name.own_name()
                 && pats.len() == var.fields.len()
@@ -1482,7 +1620,7 @@ pub(crate) fn condition_error(v: &Value, span: Span) -> Box<Diagnostic> {
         Value::Int(_) | Value::Big(_) | Value::Float(_) => {
             d.help(t!("compare it explicitly, for example `x != 0` or `x > 0`", "comparez explicitement, par exemple `x != 0` ou `x > 0`"))
         }
-        Value::List(_) | Value::Text(_) | Value::Record(_) => d.help(t!(
+        Value::List(_) | Value::Text(_) | Value::Record(_) | Value::Dict(_) | Value::Set(_) => d.help(t!(
             "to test if it is empty, use `is_empty(x)` or `not is_empty(x)`",
             "pour tester si c'est vide, utilisez `is_empty(x)` ou `not is_empty(x)`"
         )),
@@ -1542,7 +1680,13 @@ fn op_error(op: BinOp, l: &Value, r: &Value, span: Span) -> Box<Diagnostic> {
     let is_text = |v: &Value| matches!(v, Value::Text(_));
     let is_list = |v: &Value| matches!(v, Value::List(_));
     let is_num = |v: &Value| matches!(v, Value::Int(_) | Value::Big(_) | Value::Float(_));
-    if op == BinOp::Add && (is_text(l) || is_text(r)) {
+    let is_dict_or_set = |v: &Value| matches!(v, Value::Dict(_) | Value::Set(_));
+    if matches!(op, BinOp::Add | BinOp::Sub) && is_dict_or_set(l) && is_dict_or_set(r) {
+        d = d.help(t!(
+            "to join two sets or two dicts, use `union(a, b)`; to take one away from the other, `difference(a, b)`",
+            "pour réunir deux ensembles ou deux dictionnaires, utilisez `union(a, b)` ; pour retirer l'un de l'autre, `difference(a, b)`"
+        ));
+    } else if op == BinOp::Add && (is_text(l) || is_text(r)) {
         d = d.help(t!(
             "to build a text with a value inside, use braces: \"total: {{x}}\"\nor convert the value first: text(x)",
             "pour construire un texte contenant une valeur, utilisez des accolades : \"total : {{x}}\"\nou convertissez d'abord la valeur : text(x)"
@@ -1768,19 +1912,13 @@ pub fn binop(op: BinOp, l: &Value, r: &Value, span: Span) -> Fallible<Value> {
             if a.len() + b.len() > MAX_TEXT {
                 return Err(too_big(false, span));
             }
-            let mut s = String::with_capacity(a.len() + b.len());
-            s.push_str(a);
-            s.push_str(b);
-            Ok(Text(Rc::from(s)))
+            Ok(Text(a.concat(b)))
         }
         (List(a), List(b)) if op == BinOp::Add => {
             if a.len() + b.len() > MAX_LIST {
                 return Err(too_big(true, span));
             }
-            let mut v = Vec::with_capacity(a.len() + b.len());
-            v.extend(a.iter().cloned());
-            v.extend(b.iter().cloned());
-            Ok(Value::list(v))
+            Ok(List(a.concat(b.as_slice())))
         }
         _ => Err(op_error(op, l, r, span)),
     }
@@ -1907,6 +2045,18 @@ pub(crate) fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallibl
                 ))
                 .boxed()
         }),
+        (Value::Dict(m), k) => {
+            let found = if crate::dict::bad_key(k).is_none() { m.get(k) } else { None };
+            found.cloned().ok_or_else(|| {
+                Diagnostic::error("E010", t!("this dict has no key {}", "ce dictionnaire n'a pas de clé {}", k.repr()))
+                    .at(idx_span)
+                    .help(t!(
+                        "use `get(dict, key)` to receive an Option instead, or `has(dict, key)` to check first",
+                        "utilisez `get(dico, clé)` pour obtenir une Option à la place, ou `has(dico, clé)` pour vérifier d'abord"
+                    ))
+                    .boxed()
+            })
+        }
         (Value::List(_) | Value::Text(_), other) => Err(Diagnostic::error(
             "E005",
             t!(
@@ -1921,8 +2071,8 @@ pub(crate) fn index(o: &Value, i: &Value, span: Span, idx_span: Span) -> Fallibl
             Err(Diagnostic::error("E005", t!("cannot use `[...]` on {}", "impossible d'utiliser `[...]` sur {}", other.describe()))
                 .at(span)
                 .help(t!(
-                    "`[...]` works on lists, texts and records",
-                    "`[...]` fonctionne sur les listes, les textes et les enregistrements"
+                    "`[...]` works on lists, texts, records and dicts",
+                    "`[...]` fonctionne sur les listes, les textes, les enregistrements et les dictionnaires"
                 ))
                 .boxed())
         }

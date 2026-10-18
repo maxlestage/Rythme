@@ -272,3 +272,63 @@ end
       (identifier)
       (string
         (string_content)))))
+
+================================================================================
+Ranges and texts in patterns
+================================================================================
+
+fn grade(90..100) = "A"
+fn title("Mr " + name) = name
+
+match t
+  -10..-1 | 0.0..0.5 -> "low"
+  "Ms " + _ -> "madam"
+end
+
+x = 1..9
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    (identifier)
+    (parameters
+      (range_pattern
+        (integer)
+        (integer)))
+    (string
+      (string_content)))
+  (function_definition
+    (identifier)
+    (parameters
+      (prefix_pattern
+        (string
+          (string_content))
+        (identifier)))
+    (identifier))
+  (match_expression
+    (identifier)
+    (match_arm
+      (or_pattern
+        (range_pattern
+          (negative_number
+            (integer))
+          (negative_number
+            (integer)))
+        (range_pattern
+          (float)
+          (float)))
+      (string
+        (string_content)))
+    (match_arm
+      (prefix_pattern
+        (string
+          (string_content))
+        (identifier))
+      (string
+        (string_content))))
+  (definition
+    (identifier)
+    (range_expression
+      (integer)
+      (integer))))

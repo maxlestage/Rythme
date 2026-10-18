@@ -2,17 +2,19 @@
 //! everywhere. This crate contains the whole interpreter.
 //!
 //! The pipeline: [`lexer`] → [`parser`] → [`check`] → [`compile`] →
-//! [`interp`], driven by [`driver`]. Every message exists in English and
-//! French ([`lang`]).
+//! [`interp`], driven by [`driver`]. Every message exists in English,
+//! French and the languages of `src/i18n/` ([`lang`]).
 
 #[macro_use]
 pub mod lang;
 pub mod ast;
 pub mod bigint;
+pub mod buffer;
 pub mod builtins;
 pub mod check;
 pub mod compile;
 pub mod diagnostic;
+pub mod dict;
 pub mod doc;
 pub mod driver;
 pub mod exercise;

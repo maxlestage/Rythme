@@ -3,7 +3,7 @@
 //! New lines end statements, except inside `()`, `[]` and `{}`, or when the
 //! next line starts with an operator such as `|>` or `.` (to continue a chain).
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use crate::ast::*;
@@ -16,8 +16,20 @@ use crate::value::Value;
 
 pub fn parse(lexed: Lexed) -> Fallible<Vec<Item>> {
     let preds = Rc::new(predicates(&lexed.tokens));
-    let mut p =
-        Parser { toks: lexed.tokens, pos: 0, sig: vec![true], docs: lexed.docs, last: Span::default(), depth: 0, in_text: false, preds };
+    let values = Rc::new(value_names(&lexed.tokens));
+    let mut p = Parser {
+        toks: lexed.tokens,
+        pos: 0,
+        sig: vec![true],
+        docs: lexed.docs,
+        last: Span::default(),
+        depth: 0,
+        in_text: false,
+        preds,
+        values,
+        no_do: false,
+        commands: HashSet::new(),
+    };
     p.program()
 }
 
@@ -77,6 +89,148 @@ pub(crate) fn unless_at(toks: &[Token], i: usize) -> bool {
     }
 }
 
+/// The names this code gives to values: defined with `=` (`x = 1`,
+/// `[a, b] = xs`, `f = fn(x) = x`), parameters of functions and blocks, and
+/// the names of the patterns of `match` (before `->`). The names on a line
+/// before `=` or `->` all count, and those inside texts too: a few more
+/// names than needed, never fewer. A call without parentheses whose first
+/// argument starts with `[` or `-` needs a name that is not among them (see
+/// [`command_at`]).
+pub(crate) fn value_names(toks: &[Token]) -> HashSet<Sym> {
+    let mut out = HashSet::new();
+    names_of_values(toks, &mut out);
+    out
+}
+
+fn names_of_values(toks: &[Token], out: &mut HashSet<Sym>) {
+    for (i, t) in toks.iter().enumerate() {
+        match &t.tok {
+            // `pattern = value` and `pattern -> body`: the names before it, on its line.
+            Tok::Eq | Tok::Arrow => {
+                let mut depth = 0usize;
+                let mut found = Vec::new();
+                let mut j = i;
+                while j > 0 {
+                    j -= 1;
+                    match &toks[j].tok {
+                        Tok::RParen | Tok::RBracket | Tok::RBrace => depth += 1,
+                        Tok::LParen | Tok::LBracket | Tok::LBrace if depth == 0 => break,
+                        Tok::LParen | Tok::LBracket | Tok::LBrace => depth -= 1,
+                        Tok::Newline if depth == 0 => break,
+                        Tok::Eq | Tok::Arrow | Tok::Do | Tok::Then | Tok::Else => break,
+                        // `fn name(x) = ...` and `fn(x) = ...`: `name` is a
+                        // function, and the parameters are found below.
+                        Tok::Fn => {
+                            found.retain(|&k| k != j + 1);
+                            break;
+                        }
+                        Tok::Ident(_) => found.push(j),
+                        _ => {}
+                    }
+                }
+                out.extend(found.into_iter().filter_map(|k| match &toks[k].tok {
+                    Tok::Ident(s) => Some(*s),
+                    _ => None,
+                }));
+            }
+            // `fn name(params)` and `fn(params)`.
+            Tok::Fn => {
+                let mut j = i + 1;
+                while matches!(toks.get(j).map(|t| &t.tok), Some(Tok::Ident(_) | Tok::Question)) {
+                    j += 1;
+                }
+                if !matches!(toks.get(j).map(|t| &t.tok), Some(Tok::LParen)) {
+                    continue;
+                }
+                let mut depth = 0usize;
+                while let Some(t) = toks.get(j) {
+                    match &t.tok {
+                        Tok::LParen | Tok::LBracket | Tok::LBrace => depth += 1,
+                        Tok::RParen | Tok::RBracket | Tok::RBrace => {
+                            depth = depth.saturating_sub(1);
+                            if depth == 0 {
+                                break;
+                            }
+                        }
+                        Tok::Ident(s) => {
+                            out.insert(*s);
+                        }
+                        Tok::Eof => break,
+                        _ => {}
+                    }
+                    j += 1;
+                }
+            }
+            // `do |x, y|` and `{ |x| ... }`.
+            Tok::Do | Tok::LBrace if matches!(toks.get(i + 1).map(|t| &t.tok), Some(Tok::Bar)) => {
+                for t in toks[i + 2..].iter().take_while(|t| !matches!(t.tok, Tok::Bar | Tok::Newline | Tok::Eof)) {
+                    if let Tok::Ident(s) = &t.tok {
+                        out.insert(*s);
+                    }
+                }
+            }
+            Tok::Str(parts) => {
+                for part in parts {
+                    if let StrPart::Code(code) = part {
+                        names_of_values(code, out);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+/// A call without parentheses, as in Ruby: `puts "Hello"`, `print x, y`,
+/// `assert_eq total, 42`. It starts a statement or a result (see
+/// `Parser::result`): a name (`even?` too), then,
+/// on the same line, the start of a value: a number, a text, a symbol, a
+/// name, a constructor, `true`, `false`, `not`, `if`, `match` or `fn`. A `[` after a space
+/// (`puts [1, 2]`) or a `-` after a space and right before a number or a
+/// name (`puts -1`) starts an argument too, but only when the code gives no
+/// value this name (see [`value_names`]): like in Ruby, `x [0]` and `x -1`
+/// keep their meaning, `x[0]` and `x - 1`, when `x` is a value. A `(` right
+/// after the name, or after a space, is the usual call. Gives the index of
+/// the first token of the arguments.
+pub(crate) fn command_at(toks: &[Token], i: usize, preds: &[Sym], values: &HashSet<Sym>) -> Option<usize> {
+    let Tok::Ident(s) = &toks[i].tok else { return None };
+    if &*s.name() == "_" || unless_at(toks, i) {
+        return None;
+    }
+    let (name, j) = match predicate_at(toks, i, preds) {
+        Some(name) => (name, i + 2),
+        None => (*s, i + 1),
+    };
+    let next = toks.get(j)?;
+    let spaced = next.span.start > toks[j - 1].span.end;
+    let free = || !values.contains(&name);
+    let ok = match &next.tok {
+        Tok::Int(_)
+        | Tok::Big(_)
+        | Tok::Float(_)
+        | Tok::Str(_)
+        | Tok::Symbol(_)
+        | Tok::Ident(_)
+        | Tok::Ctor(_)
+        | Tok::True
+        | Tok::False
+        | Tok::Not
+        | Tok::If
+        | Tok::Match
+        | Tok::Fn => true,
+        Tok::LBracket => spaced && free(),
+        Tok::Minus => {
+            spaced
+                && free()
+                && toks.get(j + 1).is_some_and(|n| {
+                    n.span.start == next.span.end && matches!(n.tok, Tok::Int(_) | Tok::Big(_) | Tok::Float(_) | Tok::Ident(_))
+                })
+        }
+        _ => false,
+    };
+    ok.then_some(j)
+}
+
 struct Parser {
     toks: Vec<Token>,
     pos: usize,
@@ -91,6 +245,13 @@ struct Parser {
     in_text: bool,
     /// The functions defined with a name ending with `?` (see `predicates`).
     preds: Rc<Vec<Sym>>,
+    /// The names given to values (see `value_names`).
+    values: Rc<HashSet<Sym>>,
+    /// Reading the arguments of a call without parentheses: a `do` block
+    /// that follows is given to that call, not to its last argument.
+    no_do: bool,
+    /// The places of the calls without parentheses read so far.
+    commands: HashSet<Span>,
 }
 
 /// Deeper nesting is surely a mistake, and would exhaust the stack.
@@ -287,7 +448,9 @@ impl Parser {
 
     fn nested<T>(&mut self, sig: bool, f: impl FnOnce(&mut Self) -> Fallible<T>) -> Fallible<T> {
         self.sig.push(sig);
+        let no_do = std::mem::replace(&mut self.no_do, false);
         let r = f(self);
+        self.no_do = no_do;
         self.sig.pop();
         r
     }
@@ -295,8 +458,13 @@ impl Parser {
     // ----- errors -------------------------------------------------------
 
     fn unexpected(&mut self, expected: String) -> Box<Diagnostic> {
+        let comma = self.after_command();
         let tok = self.peek_token();
-        self.unexpected_token(&tok, expected)
+        let mut d = self.unexpected_token(&tok, expected);
+        if comma && d.helps.is_empty() {
+            d.helps.push(commas_help());
+        }
+        d
     }
 
     fn unexpected_token(&self, tok: &Token, expected: String) -> Box<Diagnostic> {
@@ -314,7 +482,10 @@ impl Parser {
     fn hint_for(&self, d: Diagnostic, tok: &Tok) -> Diagnostic {
         match tok {
             Tok::Eq => d.help(t!("to compare two values, use `==`", "pour comparer deux valeurs, utilisez `==`")),
-            Tok::FatArrow => d.help(t!("use `->` in `match` cases", "utilisez `->` dans les cas d'un `match`")),
+            Tok::FatArrow => d.help(t!(
+                "use `->` in `match` cases; a dict is built with `dict([[key, value], ...])`",
+                "utilisez `->` dans les cas d'un `match` ; un dictionnaire se construit avec `dict([[clé, valeur], ...])`"
+            )),
             Tok::AmpAmp => d.help(t!("use `and` to combine conditions", "utilisez `and` pour combiner des conditions")),
             Tok::BarBar => d.help(t!("use `or` to combine conditions", "utilisez `or` pour combiner des conditions")),
             Tok::Bang => d.help(t!("use `not` to negate a condition: `not done`", "utilisez `not` pour inverser une condition : `not fini`")),
@@ -381,6 +552,7 @@ impl Parser {
             _ => None,
         };
         match (&callee, &tok.tok) {
+            (None, _) if self.after_command() => d = d.help(commas_help()),
             (Some(name), t) if starts_expression(t) => {
                 d = d.help(t!(
                     "to call a function, use parentheses: `{name}(...)`",
@@ -434,6 +606,9 @@ impl Parser {
             Tok::Reserved(s) => return Err(self.reserved_error(s, tok.span)),
             _ => {}
         }
+        if let Some(first) = command_at(&self.toks, self.pos, &self.preds, &self.values) {
+            return Ok(Stmt::Expr(self.command(first)?));
+        }
         if self.pattern_before_eq() {
             // Read as a pattern, so that a definition accepts what `match` accepts.
             let pat = self.pattern().map_err(|mut d| {
@@ -475,6 +650,60 @@ impl Parser {
             }
             _ => Ok(Stmt::Expr(e)),
         }
+    }
+
+    /// A call without parentheses (see [`command_at`]): `print x, y`, then
+    /// a `do` block that is given to it, as its last argument.
+    fn command(&mut self, first: usize) -> Fallible<Expr> {
+        self.deeper(|p| {
+            let callee = p.primary()?;
+            debug_assert_eq!(p.pos, first);
+            let start = callee.span;
+            let no_do = std::mem::replace(&mut p.no_do, true);
+            let args = p.command_args();
+            p.no_do = no_do;
+            let args = args?;
+            let span = start.to(p.last);
+            let mut e = p.limit(Expr::new(ExprKind::Call(Box::new(callee), args), span), span)?;
+            if matches!(p.raw(), Tok::Do) {
+                let block = p.block_arg()?;
+                e = with_block(e, block);
+            }
+            p.commands.insert(e.span);
+            Ok(e)
+        })
+    }
+
+    /// Did a call without parentheses just end, before the start of a value
+    /// (a forgotten comma: `print a b`)?
+    fn after_command(&self) -> bool {
+        starts_expression(self.raw()) && self.commands.iter().any(|s| s.end == self.last.end)
+    }
+
+    /// A result: a branch of `if` or `unless`, the body of a case of `match`,
+    /// or what follows the `=` of a function or a test (`fn greet(n) = puts
+    /// n`, `fn(x) = puts x`). As at the start of a statement, a call without
+    /// parentheses may be written there (see [`command_at`]): `if ok then
+    /// puts "yes" else puts "no"`. Its arguments end where an expression
+    /// would: at `else`, `end`, `}`, `)`, a new line...
+    fn result(&mut self) -> Fallible<Expr> {
+        self.skip_soft();
+        if let Some(first) = command_at(&self.toks, self.pos, &self.preds, &self.values) {
+            return self.command(first);
+        }
+        self.expr()
+    }
+
+    /// `a, b, c`: the arguments of a call without parentheses, up to the end
+    /// of the line (a new line may follow a comma).
+    fn command_args(&mut self) -> Fallible<Vec<Expr>> {
+        let mut args = vec![self.expr()?];
+        while matches!(self.raw(), Tok::Comma) {
+            self.advance();
+            self.skip_newlines();
+            args.push(self.expr()?);
+        }
+        Ok(args)
     }
 
     /// Does a definition with a bracketed pattern start here: `[first, ..] = list`,
@@ -599,6 +828,13 @@ impl Parser {
                 }
                 PatKind::Record(fields)
             }
+            ExprKind::Range(lo, hi) if expr_num(&lo).is_some() && expr_num(&hi).is_some() => {
+                PatKind::Range(expr_num(&lo).unwrap(), expr_num(&hi).unwrap())
+            }
+            ExprKind::Binary(BinOp::Add, l, r, _) if matches!(l.kind, ExprKind::Text(_)) && matches!(r.kind, ExprKind::Var(_)) => {
+                let ExprKind::Text(start) = l.kind else { unreachable!() };
+                PatKind::Prefix(start, Box::new(self.expr_to_pattern(*r, eq)?))
+            }
             ExprKind::Int(n) => PatKind::Int(n),
             ExprKind::Big(n) => PatKind::Big(n),
             ExprKind::Float(f) => PatKind::Float(f),
@@ -703,7 +939,7 @@ impl Parser {
             Tok::Eq => {
                 self.advance();
                 self.skip_newlines();
-                self.expr()?
+                self.result()?
             }
             Tok::Newline => {
                 let stmts = self.block(fn_tok.span, "fn")?;
@@ -826,7 +1062,7 @@ impl Parser {
             Tok::Eq => {
                 self.advance();
                 self.skip_newlines();
-                self.expr()?
+                self.result()?
             }
             Tok::Newline => {
                 let stmts = self.block(kw.span, "test")?;
@@ -1260,7 +1496,7 @@ impl Parser {
         loop {
             e = self.limit(e, self.last)?;
             // A block starts on the line of the call it is given to.
-            if matches!(self.raw(), Tok::Do) || (matches!(self.raw(), Tok::LBrace) && self.block_follows()) {
+            if (matches!(self.raw(), Tok::Do) && !self.no_do) || (matches!(self.raw(), Tok::LBrace) && self.block_follows()) {
                 if !matches!(e.kind, ExprKind::Call(..) | ExprKind::Method(..) | ExprKind::Field(..) | ExprKind::Var(_)) {
                     return Ok(e);
                 }
@@ -1560,6 +1796,9 @@ impl Parser {
                         depth: self.depth,
                         in_text: true,
                         preds: self.preds.clone(),
+                        values: self.values.clone(),
+                        no_do: false,
+                        commands: HashSet::new(),
                     };
                     let e =
                         sub.expr().and_then(
@@ -1603,11 +1842,12 @@ impl Parser {
             return Err(d);
         }
         self.skip_newlines();
-        let then_branch = self.expr()?;
+        let then_branch = self.result()?;
         if matches!(self.past_newlines(), Tok::Else) {
             self.skip_newlines();
         }
         if !self.eat(&Tok::Else) {
+            let comma = self.after_command();
             let next = self.past_newlines().clone();
             let at = {
                 let mut i = self.pos;
@@ -1638,7 +1878,9 @@ impl Parser {
                     "en Rythme, `if` donne toujours une valeur, il lui faut donc les deux cas :\n  if age >= 18 then \"majeur\" else \"mineur\""
                 )
             });
-            if !matches!(next, Tok::Eof | Tok::End | Tok::RParen) {
+            if comma {
+                d = d.help(commas_help());
+            } else if !matches!(next, Tok::Eof | Tok::End | Tok::RParen) {
                 d = d.help(t!(
                     "a branch holds a single expression; for several lines, use `do ... end`",
                     "une branche contient une seule expression ; pour plusieurs lignes, utilisez `do ... end`"
@@ -1647,7 +1889,7 @@ impl Parser {
             return Err(d.boxed());
         }
         self.skip_newlines();
-        let else_branch = self.expr()?;
+        let else_branch = self.result()?;
         let span = kw.span.to(else_branch.span);
         let (yes, no) = if unless { (else_branch, then_branch) } else { (then_branch, else_branch) };
         Ok(Expr::new(ExprKind::If(Box::new(cond), Box::new(yes), Box::new(no)), span))
@@ -1696,14 +1938,17 @@ impl Parser {
                     return Err(d);
                 }
                 p.skip_newlines();
-                let body = p.expr()?;
+                let body = p.result()?;
                 arms.push(Arm { pat, guard, body });
                 match p.raw() {
                     Tok::Newline | Tok::End => {}
                     Tok::Eof => return Err(missing_end(p.toks[p.pos].span, kw.span, "match")),
                     _ => {
+                        let comma = p.after_command();
                         let mut d = p.unexpected(t!("a new line", "une nouvelle ligne"));
-                        d.helps.push(t!("put each case on its own line", "mettez chaque cas sur sa propre ligne"));
+                        if !comma {
+                            d.helps.push(t!("put each case on its own line", "mettez chaque cas sur sa propre ligne"));
+                        }
                         return Err(d);
                     }
                 }
@@ -1726,18 +1971,69 @@ impl Parser {
     }
 
     fn pattern_inner(&mut self) -> Fallible<Pattern> {
-        let first = self.pattern_atom()?;
+        let first = self.pattern_part()?;
         if !matches!(self.peek(), Tok::Bar) {
             return Ok(first);
         }
         let mut span = first.span;
         let mut alts = vec![first];
         while self.eat(&Tok::Bar) {
-            let p = self.pattern_atom()?;
+            let p = self.pattern_part()?;
             span = span.to(p.span);
             alts.push(p);
         }
         Ok(Pattern { kind: PatKind::Or(alts), span })
+    }
+
+    /// A pattern, a range of numbers `1..9`, or a text that starts with a
+    /// text, `"Mr " + name`.
+    fn pattern_part(&mut self) -> Fallible<Pattern> {
+        let first = self.pattern_atom()?;
+        match self.peek() {
+            Tok::DotDot => {
+                self.advance();
+                let lo = range_bound(&first)?;
+                let second = match self.peek() {
+                    Tok::Int(_) | Tok::Big(_) | Tok::Float(_) | Tok::Minus => self.pattern_atom()?,
+                    _ => {
+                        let mut d = self.unexpected(t!("a number after `..`", "un nombre après `..`"));
+                        d.helps.push(range_help());
+                        return Err(d);
+                    }
+                };
+                let hi = range_bound(&second)?;
+                Ok(Pattern { kind: PatKind::Range(lo, hi), span: first.span.to(second.span) })
+            }
+            Tok::Plus => {
+                let plus = self.advance();
+                let PatKind::Text(start) = first.kind else {
+                    return Err(Diagnostic::error(
+                        "E001",
+                        t!("only a text can come before `+` in a pattern", "seul un texte peut venir avant `+` dans un motif"),
+                    )
+                    .at(first.span.to(plus.span))
+                    .help(prefix_help())
+                    .help(t!(
+                        "to look at the end of a text, use a guard: `s if ends_with(s, \"!\") -> ...`",
+                        "pour regarder la fin d'un texte, utilisez une condition : `s if ends_with(s, \"!\") -> ...`"
+                    ))
+                    .boxed());
+                };
+                let rest = self.pattern_atom()?;
+                if !matches!(rest.kind, PatKind::Bind(_) | PatKind::Wildcard) {
+                    return Err(Diagnostic::error(
+                        "E001",
+                        t!("after `+`, a pattern takes a name or `_`", "après `+`, un motif prend un nom ou `_`"),
+                    )
+                    .at(rest.span)
+                    .help(prefix_help())
+                    .boxed());
+                }
+                let span = first.span.to(rest.span);
+                Ok(Pattern { kind: PatKind::Prefix(start, Box::new(rest)), span })
+            }
+            _ => Ok(first),
+        }
     }
 
     fn pattern_atom(&mut self) -> Fallible<Pattern> {
@@ -1972,6 +2268,66 @@ fn with_block(e: Expr, block: Expr) -> Expr {
         kind => ExprKind::Call(Box::new(Expr::new(kind, e.span)), vec![block]),
     };
     Expr::new(kind, span)
+}
+
+/// A number written in the code, `5` or `-2.5` (the parser folds the sign), as the bound of a range.
+fn expr_num(e: &Expr) -> Option<Num> {
+    match &e.kind {
+        ExprKind::Int(n) => Some(Num::Int(*n)),
+        ExprKind::Float(f) => Some(Num::Float(*f)),
+        _ => None,
+    }
+}
+
+/// A bound of a range pattern: a number written in the code.
+fn range_bound(p: &Pattern) -> Fallible<Num> {
+    match p.kind {
+        PatKind::Int(n) => Ok(Num::Int(n)),
+        PatKind::Float(f) => Ok(Num::Float(f)),
+        PatKind::Big(_) => Err(Diagnostic::error(
+            "E001",
+            t!(
+                "the ends of a range in a pattern are whole numbers of 64 bits at most",
+                "les bouts d'un intervalle dans un motif sont des nombres entiers de 64 bits au plus"
+            ),
+        )
+        .at(p.span)
+        .label(t!("too large for a range", "trop grand pour un intervalle"))
+        .help(t!(
+            "compare with a guard instead: `n if n >= low and n <= high -> ...`; a range still matches large numbers between its ends, and a decimal end like `1.0e30` works too",
+            "comparez plutôt avec une condition : `n if n >= bas and n <= haut -> ...` ; un intervalle accepte quand même les grands nombres entre ses bouts, et un bout décimal comme `1.0e30` marche aussi"
+        ))
+        .boxed()),
+        _ => Err(Diagnostic::error(
+            "E001",
+            t!("a range in a pattern goes from a number to a number", "un intervalle dans un motif va d'un nombre à un nombre"),
+        )
+        .at(p.span)
+        .label(t!("not a number", "pas un nombre"))
+        .help(range_help())
+        .boxed()),
+    }
+}
+
+fn commas_help() -> String {
+    t!(
+        "the arguments of a call without parentheses are separated by commas: `print a, b`",
+        "les arguments d'un appel sans parenthèses sont séparés par des virgules : `print a, b`"
+    )
+}
+
+fn range_help() -> String {
+    t!(
+        "write the numbers themselves, like `1..9` or `0.0..0.5`; to compare with names, use a guard: `n if n >= low and n <= high -> ...`",
+        "écrivez les nombres eux-mêmes, comme `1..9` ou `0.0..0.5` ; pour comparer avec des noms, utilisez une condition : `n if n >= bas and n <= haut -> ...`"
+    )
+}
+
+fn prefix_help() -> String {
+    t!(
+        "a text that starts with a text is written `\"Mr \" + name`: `name` is the rest of the text",
+        "un texte qui commence par un texte s'écrit `\"M. \" + nom` : `nom` est le reste du texte"
+    )
 }
 
 fn binary(op: BinOp, l: Expr, r: Expr, op_span: Span) -> Expr {
