@@ -15,7 +15,8 @@ teach, so that students spend their time on ideas rather than on syntax.
   place, explain the problem and propose a fix. Mistakes carried over from
   other languages (`for`, `return`, `x += 1`, `null`...) get an explanation
   of the functional way. `rythme explain E0xx` gives the long version with
-  examples. `rythme check` finds problems without running the program.
+  examples. `rythme check` finds problems without running the program,
+  including operations that would always fail, such as `"age: " + 36`.
 - **Functional thinking from day one.** Immutability, functions as values,
   recursion, pattern matching, algebraic types, errors as values (`Option`,
   `Result`): the concepts of Haskell, OCaml, Elm, Elixir or Rust, without
@@ -69,4 +70,12 @@ expected and obtained values.
   `:doc map` shows the documentation of a function, Tab completes names.
 - `rythme learn` is a guided tour that students can follow alone.
 - `rythme help builtins` lists every built-in function by category.
-- Install the [VS Code extension](../editors/vscode) for colors and snippets.
+- Install the [VS Code extension](../editors/vscode): colors, snippets, and
+  the problems shown as students type, with the documentation under the
+  mouse. Other editors can use the language server too
+  ([`editors/README.md`](../editors/README.md)).
+- `rythme fmt` gives every file the same layout: students can run it (or
+  `rythme fmt --check .`) before handing in their work.
+- Nothing to install on the students' computers? The playground of the
+  [website](https://maxlestage.github.io/Rythme/) runs the real interpreter
+  in the browser.

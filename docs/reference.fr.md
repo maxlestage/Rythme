@@ -59,8 +59,9 @@ documente la définition `fn` qui suit : `help(f)` dans un programme et
 `:doc f` dans le mode interactif l'affichent. Une ligne vide entre les lignes `##` et
 la définition les détache ; des lignes de commentaire ordinaire `#`, non. Un
 `##` placé après du code sur la même ligne est un commentaire ordinaire. Les
-commentaires de documentation écrits au-dessus d'un `type` sont acceptés,
-mais `help` ne les affiche pas.
+commentaires de documentation écrits au-dessus d'un `type` documentent le
+type : `help` les affiche pour chacun de ses constructeurs (voir
+[4.7](#47-types)).
 
 ```rythme
 # Un commentaire ordinaire : de `#` jusqu'à la fin de la ligne.
@@ -153,10 +154,11 @@ après `0x` (`0xFF`, chiffres en majuscules ou minuscules) ou en binaire après
 `0b` (`0b1010`). Les préfixes s'écrivent en minuscules ; il n'y a pas de
 notation octale. `_` peut séparer les chiffres partout après le premier
 (`1_000_000`, `0xFF_FF`). Un littéral doit tenir sur 64 bits :
-`9223372036854775807` est le plus grand ; `9223372036854775808` n'est accepté
-que juste après un signe moins (c'est le plus petit Int). Un littéral décimal
-plus grand est l'erreur E012, un littéral hexadécimal ou binaire trop grand
-l'erreur E018.
+`9223372036854775807` (`0x7fffffffffffffff`) est le plus grand ;
+`9223372036854775808` n'est accepté qu'en décimal, juste après un signe moins
+(c'est le plus petit Int). Un littéral plus grand est l'erreur E012, dans
+toutes les bases ; un littéral hexadécimal ou binaire avec un mauvais chiffre
+ou sans chiffre (`0b12`, `0x`) est l'erreur E018.
 
 Les **nombres décimaux (Float)** ont des chiffres des deux côtés du point
 (`3.14`, `2.0`), un exposant (`1e3`, `1.5e-3`, `6.02E23`), ou les deux. `.5`
@@ -242,6 +244,30 @@ Certains symboles d'autres langages ne sont reconnus que pour expliquer quoi
 écrire à la place, et sont toujours des erreurs : `=>`, `+=`, `-=`, `*=`,
 `/=`, `++`, `&&`, `||`, `!` (seul), `&`, `...`, `'`, `` ` ``, `^`, `$`, et les
 guillemets typographiques.
+
+Les caractères souvent copiés depuis un document ou une page web sont aussi
+des erreurs (E018), avec ce qu'il faut faire : les sosies des opérateurs
+(`−` `–` `×` `÷` `≠` `≤` `≥` `→`, la ponctuation pleine chasse comme `（`)
+donnent le caractère à écrire à la place ; les caractères invisibles (une
+espace insécable ou une autre espace spéciale, une espace sans largeur, une
+marque d'ordre des octets ailleurs qu'au début du fichier, un caractère de
+contrôle) sont désignés par leur code, comme `U+00A0`, puisqu'on ne les
+verrait pas dans le message.
+
+```rythme
+prix = 6 × 7
+```
+
+```text
+erreur[E018]: caractère inattendu `×`
+ --> 08-sosie.ry:1:10
+  |
+1 | prix = 6 × 7
+  |          ^
+  |
+  = aide: écrivez plutôt `*`
+  = en savoir plus : `rythme explain E018`
+```
 
 ### 1.9 Retours à la ligne, `;` et lignes de continuation
 
@@ -383,7 +409,11 @@ Code de sortie : 1.
 Nombres à virgule flottante en double précision (IEEE 754). Les résultats
 trop grands deviennent `inf` ou `-inf`, les résultats indéfinis `nan` ; mais
 **une division par zéro est toujours une erreur** (E008), pour les Float
-comme pour les Int.
+comme pour les Int, et `0 ** -n` aussi, qui vaut `1 / 0 ** n`. Un calcul qui
+n'a pas de valeur parmi les nombres réels est l'erreur E023 plutôt que
+`nan` : un nombre négatif à une puissance fractionnaire (`(-8.0) ** 0.5`),
+`sqrt` d'un nombre négatif, `log` de 0 ou d'un nombre négatif, `asin` et
+`acos` hors de −1...1.
 
 Un Float s'affiche toujours avec un point ou un exposant, pour qu'on ne le
 confonde pas avec un Int : `2.0`, `0.5`, `1e16`. Les valeurs dont la valeur
@@ -420,6 +450,32 @@ Un texte est une suite de caractères Unicode (des points de code). `len`, les
 indices et `slice` comptent des caractères, pas des octets : `len("été")`
 vaut 3.
 
+Un texte contient au plus 100 000 000 octets en UTF-8 (1 octet pour une
+lettre sans accent, un chiffre ou une espace, 2 pour `é`, 4 pour un émoji) :
+pour un texte sans accents, 100 000 000 caractères, comme le dit le message.
+En construire un plus long, avec `+`, `{...}`, `join`, `replace` ou
+`repeat`, est l'erreur E023. Cette limite, comme celle de la longueur
+des listes (voir [2.6](#26-list)), arrête une valeur qui grandit sans fin
+avant que la mémoire de l'ordinateur ne soit épuisée :
+
+```rythme
+fn doubler_texte(t) = doubler_texte(t + t)   # ne s'arrête jamais
+doubler_texte("ab")
+```
+
+```text
+erreur[E023]: ce texte serait trop grand (plus de 100000000 caractères)
+ --> 13-trop-grand.ry:1:39
+  |
+1 | fn doubler_texte(t) = doubler_texte(t + t)   # ne s'arrête jamais
+  |                                       ^
+  |
+  = aide: grandit-il dans une fonction qui s'appelle elle-même ? Vérifiez que la fonction atteint toujours un cas où elle s'arrête
+  = appels en cours (le plus récent d'abord) :
+      dans `doubler_texte` appelée en 13-trop-grand.ry:1:23
+  = en savoir plus : `rythme explain E023`
+```
+
 ### 2.4 Bool
 
 `true` et `false`. Les conditions (`if`, gardes, `and`, `or`, `not`,
@@ -444,6 +500,10 @@ Un **intervalle** `a..b` est la liste des nombres entiers de `a` à `b`, tous
 deux inclus. C'est une liste ordinaire (`type_of(1..3)` vaut `"List"`). Il
 est vide quand `b < a`, ses deux bornes doivent être des Int (sinon E005), et
 il contient au plus 50 000 000 éléments (E023).
+
+La même limite vaut pour toutes les listes : construire une liste de plus de
+50 000 000 éléments, avec `+`, `..xs` entre crochets, `repeat`, `flatten`,
+`flat_map` ou `chars`, est aussi l'erreur E023 (voir [2.3](#23-text)).
 
 ### 2.7 Record
 
@@ -472,6 +532,8 @@ type Result = Ok(value) | Err(error)
 `Option` sert pour une valeur qui peut manquer, `Result` pour une opération
 qui peut échouer (voir [5.1](#51-les-erreurs-sont-des-valeurs)). Leurs champs
 ont des noms : `Some(3).value` vaut `3` et `Err("oups").error` vaut `"oups"`.
+Ils font partie du langage : définir un type `Option` ou `Result`, ou un
+constructeur `Some`, `None`, `Ok` ou `Err`, est l'erreur E011.
 
 ### 2.10 Vos propres types
 
@@ -484,7 +546,8 @@ valeur d'un tel type s'affiche comme son constructeur suivi de ses champs :
 `==` et `!=` acceptent **deux valeurs quelconques** et n'échouent jamais :
 
 - un Int et un Float sont égaux quand ils ont la même valeur numérique
-  (`1 == 1.0`) ;
+  (`1 == 1.0`), comparée exactement : l'Int n'est pas d'abord arrondi en
+  Float, donc `9007199254740993 == 9007199254740992.0` vaut `false` ;
 - les textes, les Bool et `()` sont égaux quand ils sont identiques ;
 - deux listes sont égales quand elles ont la même longueur et des éléments
   égaux, dans l'ordre ;
@@ -707,8 +770,8 @@ erreur[E001]: `+` ne peut pas suivre directement une étape `|>`
 | `a - b`, `a * b` | Int (E012 en cas de dépassement) | Float | E005 |
 | `a / b` | **toujours un Float** (`6 / 3` vaut `2.0`) | Float | E005 |
 | `a // b` | Int, arrondi vers le bas (vers −∞) | Float, arrondi vers le bas | E005 |
-| `a % b` | Int, du signe de `b` | Float : `a - b * floor(a / b)` | E005 |
-| `a ** b` | Int si `b >= 0` (E012 en cas de dépassement), Float si `b < 0` | Float | E005 |
+| `a % b` | Int, du signe de `b` | Float : le reste exact, du signe de `b` | E005 |
+| `a ** b` | Int si `b >= 0` (E012 en cas de dépassement), Float si `b < 0` (`0 ** -n` est E008) | Float (E023 pour un nombre négatif à une puissance fractionnaire) | E005 |
 | `-a` | Int (E012 pour le plus petit Int) | Float | E005 |
 
 `/`, `//` et `%` par zéro donnent l'erreur E008, pour les Int comme pour les
@@ -953,7 +1016,7 @@ prouver (W002) et les cas placés après un cas qui accepte tout (W004).
 | `Cercle(m)`, `Rect(m1, m2)` | une variante de ce constructeur dont les champs correspondent aux motifs |
 | `[]`, `[m]`, `[m1, m2]` | une liste d'exactement cette longueur dont les éléments correspondent |
 | `[m1, ..reste]`, `[m1, ..]`, `[..reste]` | une liste d'au moins cette longueur ; `reste` désigne les éléments restants. `..` doit venir en dernier |
-| `{nom}`, `{nom, age: m}`, `{"nom complet": m}` | un enregistrement qui a au moins ces champs (il peut en avoir d'autres) ; `{nom}` abrège `{nom: nom}` ; `{}` correspond à n'importe quel enregistrement |
+| `{nom}`, `{nom, age: m}`, `{"nom complet": m}`, `{nom, ..}` | un enregistrement qui a au moins ces champs (il peut en avoir d'autres) ; `{nom}` abrège `{nom: nom}` ; un `..` parmi les champs ne change rien (`{nom, ..}` vaut `{nom}`), et `{nom, ..autres}` est E001 : on ne peut pas donner de nom aux autres champs ; `{}` correspond à n'importe quel enregistrement |
 | `m1 \| m2 \| m3` | l'une des possibilités ; elles ne peuvent pas donner de noms (E001) |
 | `(m)` | la même chose que `m` |
 
@@ -1169,38 +1232,59 @@ print([0, ..xs, 3], xs + [9], 1..5, 5..1)
 ### 4.1 Noms
 
 `motif = expression` donne des noms à une valeur, au premier niveau ou dans
-un bloc. La partie gauche est le plus souvent un nom, mais ce peut être un
-motif qui décompose la valeur : un nom, `_`, un motif de liste (`[a, b]`,
-`[premier, ..reste]`), un motif d'enregistrement (`{nom, naissance: annee}`),
-un motif de constructeur (`Some(v)`) ou un littéral. Si la valeur ne
-correspond pas, le programme s'arrête avec E006. La valeur peut commencer à
-la ligne qui suit `=`.
+un bloc. La partie gauche est le plus souvent un nom, mais ce peut être
+n'importe quel motif de `match` (voir [3.10](#310-match-et-motifs)) qui
+décompose la valeur : `_`, un motif de liste (`[a, b]`, `[premier, ..reste]`,
+`[premier, ..]`), un motif d'enregistrement (`{nom, naissance: annee}`,
+`{nom, ..}`), un motif de constructeur (`Some(v)`) ou un littéral. Si la
+valeur ne correspond pas, le programme s'arrête avec E006 (trouvée avant
+l'exécution quand la nature de la valeur est certaine). La valeur peut
+commencer à la ligne qui suit `=`.
 
-À cet endroit, la partie gauche est lue comme une expression : deux formes
-qui marchent dans `match` n'y sont donc pas acceptées, `[premier, ..]`
-(écrivez `[premier, .._]`) et `{nom, ..}` (écrivez `{nom}`, qui ignore déjà
-les autres champs). Les possibilités (`|`) et les gardes n'y sont pas
-permises non plus.
+Comme dans `match`, `{nom, ..autres}` est E001 : on ne peut pas donner de
+nom aux autres champs d'un enregistrement (écrivez `{nom, ..}`, ou utilisez
+`remove`). Une garde n'est pas permise (utilisez `match`), et les
+possibilités (`|`) seulement à l'intérieur de parenthèses, de crochets ou
+d'accolades, où elles ne peuvent pas donner de noms : `Some(1 | 2) = x` ne fait que vérifier la
+valeur.
 
 ```rythme
 [a, b] = [1, 2]
 {nom, naissance: annee} = {nom: "Ada", naissance: 1815, ville: "Londres"}
 [tete, ..queue] = 1..4
+[premier, ..] = ["x", "y", "z"]
+{ville, ..} = {nom: "Ada", ville: "Londres"}
 Some(v) = Some(5)
-print(a, b, nom, annee, tete, queue, v)
+print(a, b, nom, annee, tete, queue, premier, ville, v)
 [x, y] = [1, 2, 3]
 ```
 
 ```text
-1 2 Ada 1815 1 [2, 3, 4] 5
+1 2 Ada 1815 1 [2, 3, 4] x Londres 5
 erreur[E006]: la valeur List [1, 2, 3] ne correspond pas à ce motif
- --> 40-noms.ry:6:1
+ --> 40-noms.ry:8:1
   |
-6 | [x, y] = [1, 2, 3]
+8 | [x, y] = [1, 2, 3]
   | ^^^^^^
   |
   = aide: utilisez `match` pour traiter les différentes formes possibles d'une valeur
   = en savoir plus : `rythme explain E006`
+```
+
+```rythme
+ada = {nom: "Ada", naissance: 1815}
+{nom, ..autres} = ada
+```
+
+```text
+erreur[E001]: un motif d'enregistrement ne peut pas nommer les autres champs
+ --> 40b-reste.ry:2:9
+  |
+2 | {nom, ..autres} = ada
+  |         ^^^^^^
+  |
+  = aide: écrivez `{nom, ..}` pour ignorer les autres champs ; pour un enregistrement sans certains champs, utilisez `remove(enregistrement, "nom")`
+  = en savoir plus : `rythme explain E001`
 ```
 
 ### 4.2 Les noms ne changent jamais
@@ -1372,9 +1456,13 @@ fn nom(paramètres) if garde = expression
   fonctions à un paramètre, les cas qu'aucune définition ne traite (W002).
 - Une fonction écrite dans un bloc est **locale** : elle est visible après sa
   définition dans ce bloc et peut s'appeler elle-même, mais elle ne voit que
-  les noms définis avant elle. Deux fonctions locales ne peuvent pas
-  s'appeler l'une l'autre ; utilisez pour cela des fonctions du premier
-  niveau.
+  les noms définis avant elle. Des fonctions locales écrites **les unes juste
+  après les autres** (seulement des lignes vides et des commentaires entre
+  elles) forment un groupe, et chaque fonction du groupe voit toutes les
+  autres, dans n'importe quel ordre, comme les fonctions du premier niveau :
+  elles peuvent s'appeler les unes les autres. Une valeur définie entre deux
+  fonctions locales termine le groupe ; pour s'en servir dans les deux
+  fonctions, définissez-la avant elles.
 - Les appels avec un mauvais nombre d'arguments sont trouvés avant
   l'exécution quand la fonction est connue par son nom (E004), sinon pendant
   l'exécution.
@@ -1396,6 +1484,21 @@ print(fib(10), signe(-5), signe(0), signe(9), saluer({nom: "Ada", age: 36}), bon
 
 ```text
 55 négatif zéro positif Bonjour, Ada ! bonjour
+```
+
+```rythme
+fn parite(n)
+  fn pair(0) = true
+  fn pair(k) = impair(k - 1)     # impair est écrite juste après : pair la voit
+  fn impair(0) = false
+  fn impair(k) = pair(k - 1)
+  if pair(n) then "pair" else "impair"
+end
+print(parite(10), parite(7))
+```
+
+```text
+pair impair
 ```
 
 ```rythme
@@ -1455,8 +1558,9 @@ qui est suivi de `?`, n'est pas en position terminale.
 Les autres appels s'imbriquent, et l'imbrication est limitée par la pile :
 au-delà d'une limite, le programme s'arrête avec E014. La limite dépend de la
 fonction ; avec la commande `rythme`, c'est plusieurs centaines de milliers
-d'appels imbriqués (environ 600 dans le playground). Les fonctions de listes
-(`map`, `fold`...) ne s'imbriquent pas.
+d'appels imbriqués (environ 900 000 pour `somme` ci-dessous, plus de 400 000
+même pour une fonction qui en fait bien plus à chaque appel), et 600 dans le
+playground. Les fonctions de listes (`map`, `fold`...) ne s'imbriquent pas.
 
 ```rythme
 fn decompte(0, acc) = acc
@@ -1468,12 +1572,12 @@ fn est_impair(n) = est_pair(n - 1)
 print(decompte(1000000, 0), est_pair(1000001))
 fn somme([]) = 0
 fn somme([x, ..reste]) = x + somme(reste)             # pas un appel terminal : + vient après
-print(somme(1..1000000))
+print(somme(1..5000000))
 ```
 
 ```text
 1000000 false
-erreur[E014]: trop d'appels imbriqués (624683 appels en cours)
+erreur[E014]: trop d'appels imbriqués (917503 appels en cours)
  --> 44-terminal.ry:9:30
   |
 9 | fn somme([x, ..reste]) = x + somme(reste)             # pas un appel terminal : + vient après
@@ -1487,7 +1591,7 @@ erreur[E014]: trop d'appels imbriqués (624683 appels en cours)
       ou utilisez `fold`, `map`, `filter`, qui n'ont pas de limite.
   = appels en cours (le plus récent d'abord) :
       dans `somme` (×40) appelée en 44-terminal.ry:9:30
-      … et 624643 autres appels
+      … et 917463 autres appels
   = en savoir plus : `rythme explain E014`
 ```
 
@@ -1509,14 +1613,18 @@ type Nom = Variante | Variante(champ, champ) | ...
   est une valeur (l'appeler est E009).
 - Les noms de constructeurs sont globaux : deux types ne peuvent pas avoir un
   constructeur du même nom, et un type ne peut pas être défini deux fois
-  (E011). Le nom du type n'est pas une valeur ; il apparaît dans `type_of` et
-  dans les messages.
+  (E011) ; `Option`, `Result` et leurs constructeurs ne peuvent pas non plus
+  être redéfinis. Le nom du type n'est pas une valeur ; il apparaît dans
+  `type_of` et dans les messages.
 - Un type peut se contenir lui-même (arbres, listes...). `type` n'est permis
   qu'au premier niveau.
 - On lit les champs avec `.champ` ou avec des motifs. Égalité et ordre : voir
   [2.11](#211-égalité) et [2.12](#212-ordre).
+- Les commentaires `##` écrits au-dessus d'un `type` le documentent : `help`
+  les affiche pour chacun de ses constructeurs, après le nom du type.
 
 ```rythme
+## Une forme à dessiner.
 type Forme =
   | Cercle(rayon)
   | Rect(largeur, hauteur)
@@ -1534,9 +1642,9 @@ help(Cercle)
 
 ```text
 avertissement[W009]: ceci affiche une fonction, pas une valeur
-  --> sample.ry:12:42
+  --> sample.ry:13:42
    |
-12 | print(Rect(2, 3).largeur, type_of(Vide), Cercle, map([1, 2], Cercle))
+13 | print(Rect(2, 3).largeur, type_of(Vide), Cercle, map([1, 2], Cercle))
    |                                          ^^^^^^ un constructeur, affiché comme `<constructeur ...>`
    |
    = aide: pour afficher ce qu'elle donne, appelez-la : `Cercle(...)`
@@ -1545,6 +1653,7 @@ avertissement[W009]: ceci affiche une fonction, pas une valeur
 2 Forme <constructeur Cercle> [Cercle(1), Cercle(2)]
 Cercle(rayon)
   Un constructeur du type `Forme`.
+  Une forme à dessiner.
 ```
 
 (Le vérificateur prévient que `Cercle` seul est affiché comme une fonction :
@@ -1629,7 +1738,9 @@ use "chemin/fichier.ry"
 - `use` n'est permis qu'au premier niveau ; le chemin est un texte simple.
 - Le chemin est relatif au **dossier du fichier qui contient le `use`** (pour
   `rythme -e` et le mode interactif : le dossier actuel). Quand il n'a pas
-  d'extension, `.ry` est ajouté.
+  d'extension, `.ry` est ajouté. Ses parties sont séparées par `/` (ou `\`,
+  écrit `\\` dans un texte) sur tous les systèmes, et `..` remonte d'un
+  dossier : `use "../outils/calculs.ry"`.
 - Tout ce qui est défini au premier niveau du fichier utilisé (valeurs,
   fonctions, types et constructeurs) devient visible dans le fichier qui
   l'utilise, ainsi que tout ce que ce fichier utilise lui-même. Il n'y a ni
@@ -1640,7 +1751,9 @@ use "chemin/fichier.ry"
   ce fichier. Ses expressions du premier niveau s'exécutent (un `print` dans
   un fichier utilisé affiche une fois).
 - Un fichier introuvable est E017 (avec une suggestion quand un nom proche
-  existe) ; des fichiers qui s'utilisent en cercle sont E017.
+  existe), un dossier aussi ; des fichiers qui s'utilisent en cercle sont
+  E017. Les messages montrent le chemin d'un fichier utilisé tel qu'on
+  l'atteint depuis le dossier actuel.
 
 ```rythme
 # geometrie.ry
@@ -1670,12 +1783,11 @@ geometrie.ry ne s'exécute qu'une fois
 ```
 
 Avec `ping.ry` qui contient `use "pong.ry"` et `pong.ry` qui contient
-`use "ping.ry"`, `rythme ping.ry` donne (le chemin absolu est raccourci
-ici) :
+`use "ping.ry"`, `rythme ping.ry` donne :
 
 ```text
 erreur[E017]: `ping.ry` s'utilise lui-même (directement ou via d'autres fichiers)
- --> …/modules/pong.ry:1:1
+ --> pong.ry:1:1
   |
 1 | use "ping.ry"
   | ^^^^^^^^^^^^^
@@ -1693,12 +1805,14 @@ erreur[E017]: `ping.ry` s'utilise lui-même (directement ou via d'autres fichier
 Rythme n'a ni `null` ni exceptions. Une valeur qui peut manquer est une
 `Option` (`Some(valeur)` ou `None`) ; une opération qui peut échouer renvoie
 un `Result` (`Ok(valeur)` ou `Err(erreur)`). La bibliothèque suit cette
-règle : `first`, `last`, `get`, `find` et `index_of` renvoient des Options ;
-`parse_int`, `parse_float`, `read_file` et `write_file` renvoient des Results.
+règle : `first`, `last`, `get`, `find`, `index_of` et `env` renvoient des
+Options ; `parse_int`, `parse_float`, `parse_json`, `read_file`, `write_file`
+et `append_file` renvoient des Results.
 
 On les traite avec `match`, avec `?`, ou avec les fonctions `unwrap_or`,
-`unwrap`, `is_some`, `is_none`, `is_ok`, `is_err` et `map` (qui applique une
-fonction à la valeur contenue dans `Some` ou `Ok`).
+`unwrap`, `is_some`, `is_none`, `is_ok`, `is_err`, `map` (qui applique une
+fonction à la valeur contenue dans `Some` ou `Ok`), `and_then`, `ok_or` et
+`map_err` (voir [6](#6-bibliothèque-standard)).
 
 ### 5.2 L'opérateur `?`
 
@@ -1791,7 +1905,9 @@ Code de sortie : 1.
 Chaque programme est **lu et vérifié en entier avant d'être exécuté** : par
 `rythme fichier.ry`, `rythme run`, `rythme test`, `rythme -e`, et pour chaque
 saisie du mode interactif. `rythme check fichier.ry` ne fait que cette étape,
-et n'exécute rien.
+et n'exécute rien ; avec plusieurs fichiers (`rythme check a.ry b.ry`), il
+vérifie chacun d'eux, même après un fichier qui a des erreurs, et se termine
+avec le code 1 si l'un d'eux a une erreur.
 
 - Une erreur de syntaxe arrête la lecture à la première.
 - Ensuite, le vérificateur signale **tous** les problèmes qu'il trouve d'un
@@ -1985,29 +2101,29 @@ minuscules.
 
 | Code | Nom | Quand |
 |------|-----|-------|
-| E001 | Erreur de syntaxe | le code ne suit pas la grammaire : une parenthèse ou un `then` manquant, des accolades pour un bloc, un mot-clé d'un autre langage, des comparaisons enchaînées, `_` utilisé comme valeur... |
+| E001 | Erreur de syntaxe | le code ne suit pas la grammaire : une parenthèse ou un `then` manquant, des accolades pour un bloc, un mot-clé d'un autre langage, des comparaisons enchaînées, `_` utilisé comme valeur, `{nom, ..autres}`, une expression trop longue ou imbriquée trop profondément... |
 | E002 | Texte jamais fermé | un `"` ou une `{` dans un texte n'est jamais fermé |
 | E003 | Nom inconnu | un nom ou un constructeur qui n'est pas défini à cet endroit, ou une valeur utilisée avant sa définition |
 | E004 | Mauvais nombre d'arguments | un appel ou un motif de constructeur avec trop ou trop peu de valeurs ; des définitions d'une même fonction avec des nombres de paramètres différents |
 | E005 | Mauvaise sorte de valeur | une opération ou une fonction a reçu une sorte de valeur qu'elle n'accepte pas (`"a" + 1`, une condition qui n'est pas un Bool, des valeurs qu'on ne peut pas comparer...) |
 | E006 | Aucun cas ne correspond | aucun cas d'un `match`, aucune définition d'une fonction, ou le motif d'une définition n'accepte pas la valeur |
 | E007 | Indice hors limites | `liste[i]` ou `texte[i]` hors des positions valides |
-| E008 | Division par zéro | `/`, `//` ou `%` par zéro |
+| E008 | Division par zéro | `/`, `//` ou `%` par zéro, ou `0 ** -n` |
 | E009 | Pas une fonction | on appelle une valeur qui n'est pas une fonction (`x(3)`, `None()`) |
 | E010 | Champ inconnu | l'enregistrement ou la variante n'a pas de champ de ce nom |
 | E011 | Déjà défini | un nom, un type, un constructeur ou un champ défini deux fois au même endroit, ou une tentative de modifier une valeur (`x += 1`) |
-| E012 | Nombre trop grand | un nombre entier hors de l'intervalle des 64 bits, dans le code ou comme résultat |
+| E012 | Nombre trop grand | un nombre entier hors de l'intervalle des 64 bits, dans le code (dans n'importe quelle base) ou comme résultat (`-x` et `abs(x)` du plus petit Int compris) |
 | E013 | `unwrap` n'a pas trouvé de valeur | `unwrap` sur `None` ou `Err(...)` |
 | E014 | Trop d'appels imbriqués | des appels imbriqués plus profondément que la pile ne le permet |
 | E015 | Assertion échouée | `assert`, `assert_eq`, ou un test qui s'est terminé avec `false`, `Err(...)` ou `None` |
 | E016 | Mauvaise utilisation de `?` | `?` hors d'une fonction, ou sur une valeur qui n'est ni une Option ni un Result |
-| E017 | Problème de fichier | un fichier illisible ou introuvable, ou des fichiers qui s'utilisent en cercle |
-| E018 | Caractère inattendu | un caractère ou un nombre qui n'a pas de sens ici (`'`, `&`, `2x`, `...`, `++`, une séquence d'échappement inconnue) |
+| E017 | Problème de fichier | un fichier illisible ou introuvable, un dossier donné à la place d'un fichier, des fichiers qui s'utilisent en cercle, ou `input()` à la fin de l'entrée |
+| E018 | Caractère inattendu | un caractère ou un nombre qui n'a pas de sens ici (`'`, `&`, `2x`, `...`, `++`, une séquence d'échappement inconnue, un sosie comme `×` ou un caractère invisible copié depuis un document) |
 | E019 | `if` sans `else` | un `if` sans `else` |
 | E020 | Il manque `end` | une fonction, un `test`, un `match` ou un bloc `do` jamais fermé |
 | E021 | Programme arrêté par `fail` | `fail(message)` a été appelé |
 | E022 | Conversion impossible | `int(t)` ou `float(t)` sur un texte qui n'est pas un nombre |
-| E023 | Valeur invalide | une valeur de la bonne sorte mais hors de ce qui est accepté (un nombre négatif d'éléments, `min` d'une liste vide, un intervalle trop grand, un code de sortie hors de 0–255...) |
+| E023 | Valeur invalide | une valeur de la bonne sorte mais hors de ce qui est accepté (un nombre négatif d'éléments, `min` d'une liste vide, `sqrt(-1)`, un intervalle, une liste ou un texte trop grand, un code de sortie hors de 0–255...) |
 | E024 | Une valeur est perdue | une ligne calcule une valeur dont rien ne se sert |
 | W001 | Nom inutilisé | un nom local est défini mais jamais utilisé |
 | W002 | Cas oublié | un `match` ou une fonction à un paramètre ne traite pas toutes les valeurs possibles |
@@ -2023,12 +2139,14 @@ minuscules.
 
 ## 6. Bibliothèque standard
 
-Les fonctions intégrées sont toujours disponibles, sans `use`. Comme les
+Les 124 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
 mots-clés, leurs noms sont en anglais. `rythme help builtins` les liste
-toutes par catégorie, `rythme help NOM` (ou `help(NOM)` dans un programme, ou
-`:doc NOM` dans le mode interactif) affiche la documentation de l'une d'elles
-avec un exemple. Cette partie donne les conventions et les fonctions les plus
-importantes.
+toutes par catégorie, une ligne chacune ; `rythme help NOM` (ou `help(NOM)`
+dans un programme, ou `:doc NOM` dans le mode interactif) affiche la
+documentation de l'une d'elles, avec des exemples dont les valeurs sont
+vérifiées par les tests de Rythme. Cette partie donne les conventions et ce
+que contient chaque catégorie ; `rythme help NOM` est la référence pour le
+détail de chaque fonction.
 
 **Conventions.**
 
@@ -2050,53 +2168,87 @@ importantes.
   renvoie un Bool (E005).
 - Les textes des valeurs `Err(...)` fabriquées par les fonctions intégrées
   (par exemple par `parse_int`) sont écrits dans la langue des messages.
+- Les erreurs reçoivent une indication : le nom d'une fonction d'un autre
+  langage donne son nom en Rythme (`ord` → `char_code`, `padStart` →
+  `pad_left`, `takeWhile` → `take_while`, `stringify` → `to_json`...), et
+  une valeur d'une sorte voisine renvoie vers la bonne fonction (un texte
+  donné là où une liste est attendue : `chars` ; un enregistrement :
+  `entries`, `keys` ou `values` ; une liste donnée à `put`, `remove` ou
+  `has` : `set_at`, `remove_at` ou `contains` ; une Option donnée à
+  `flat_map` : `and_then`). Quand la nature des valeurs est certaine, ces
+  erreurs sont trouvées avant l'exécution (voir
+  [5.5](#55-la-vérification-avant-lexécution)).
 
 **Bases.** `print(valeurs...)` et `debug(valeur)` (voir
 [2.13](#213-affichage-des-valeurs)), `text(valeur)` (la forme affichée, sous
-forme de texte), `input(invite)` (lit une ligne au clavier ; un texte vide à
-la fin de l'entrée), `type_of(valeur)`, `help(valeur)`,
-`assert(condition, message)`, `assert_eq(obtenu, attendu)`, `fail(message)`,
-`args()` (les mots donnés après le nom du fichier sur la ligne de commande),
-`exit(code)`, `time()` (les secondes depuis 1970, un Float), `random()` (un
-Float dans [0, 1[), `random(a, b)` (un Int de a à b, inclus), `random(liste)`
-(un élément).
+forme de texte) et `text(nombre, decimales)` (un nombre avec exactement ce
+nombre de décimales, au plus 100 : `text(5, 2)` vaut `"5.00"`),
+`input(invite)` (lit une ligne au clavier ; à la fin de l'entrée, l'erreur
+E017), `type_of(valeur)`, `help(valeur)`, `assert(condition, message)`,
+`assert_eq(obtenu, attendu)`, `fail(message)`, `args()` (les mots donnés
+après le nom du fichier sur la ligne de commande), `env(nom)` (une variable
+d'environnement, sous forme d'Option), `exit(code)`, `time()` (les secondes
+depuis 1970, un Float), `random()` (un Float dans [0, 1[), `random(a, b)`
+(un Int de a à b, inclus), `random(liste)` (un élément).
 
 **Nombres.** `abs`, `min` et `max` (plusieurs valeurs, ou une liste), `sqrt`,
 `pow(x, n)` (comme `**`), `floor`, `ceil` et `round(x)` (donnent un Int),
 `round(x, chiffres)` (donne un Float), `int(x)` (coupe les décimales ; lit un
-texte ; `true` vaut 1), `float(x)`, `sin`, `cos`, `tan`, `log(x)` et
-`log(x, base)`, `exp`, `is_even`, `is_odd`, et la constante `pi`.
+texte ; `true` vaut 1), `float(x)`, `sin`, `cos`, `tan`, `asin`, `acos`,
+`atan(x)` et `atan(y, x)` (l'angle du point (x, y), de −π à π), `log(x)` et
+`log(x, base)`, `exp`, `is_even`, `is_odd`, `gcd` et `lcm` (le PGCD et le
+PPCM de deux nombres entiers), et la constante `pi`.
 
-**Texte.** `len`, `upper`, `lower`, `trim`, `split(texte)` (aux espaces) et
-`split(texte, separateur)` (un séparateur vide découpe en caractères),
-`join(liste, separateur)`, `contains`, `starts_with`, `ends_with`,
-`replace(texte, ancien, nouveau)`, `chars`, `lines`, `repeat(x, n)`,
-`parse_int(texte)` et `parse_float(texte)` (des Results ; les espaces autour
-du nombre et les `_` sont acceptés).
+**Texte.** `len`, `upper`, `lower`, `capitalize` (le premier caractère en
+majuscule), `trim`, `pad_left(x, largeur, remplissage)` et `pad_right` (pour
+aligner des colonnes ; le remplissage est une espace par défaut),
+`split(texte)` (aux espaces) et `split(texte, separateur)` (un séparateur
+vide découpe en caractères), `join(liste, separateur)`, `contains`,
+`starts_with`, `ends_with`, `replace(texte, ancien, nouveau)`, `chars`,
+`lines`, `repeat(x, n)`, `char_code(c)` et `char(code)` (un caractère et son
+numéro Unicode), `is_digit`, `is_letter` et `is_space` (le texte, non vide,
+n'est-il fait que de tels caractères ?), `parse_int(texte)` et
+`parse_float(texte)` (des Results ; les espaces autour du nombre et les `_`
+sont acceptés), `parse_json(texte)` (un Result : les objets JSON deviennent
+des enregistrements, les tableaux des listes, `null` `None` ; une erreur
+donne la ligne et la colonne) et `to_json(valeur, indentation)` (le texte
+JSON d'une valeur, sur une ligne, ou un élément par ligne décalé de
+`indentation` espaces, au plus 16).
 
-**Listes.** `map`, `filter`, `fold(liste, depart, f)`, `each`, `sum`,
-`product`, `first`, `last`, `rest`, `get(x, cle)`, `push(liste, x)`,
-`reverse`, `sort`, `sort_by(liste, cle)` (stable), `unique`,
-`slice(x, debut, fin)`, `take`, `drop`, `zip`, `enumerate`, `any`, `all`,
-`find`, `count`, `index_of`, `flatten`, `flat_map`, `partition`,
+**Listes.** `map`, `filter`, `fold(liste, depart, f)`,
+`scan(liste, depart, f)` (chaque résultat intermédiaire de `fold`), `each`,
+`sum`, `product`, `first`, `last`, `rest`, `get(x, cle)`, `push(liste, x)`,
+`set_at(liste, i, x)`, `insert_at(liste, i, x)` et `remove_at(liste, i)`
+(les positions négatives partent de la fin), `reverse`, `sort`,
+`sort_by(liste, cle)` (stable), `unique`, `shuffle`, `slice(x, debut, fin)`,
+`take`, `drop`, `take_while(x, f)` et `drop_while(x, f)`, `step_by(x, n)`
+(un élément sur n), `chunks(x, n)` (des morceaux de n éléments) et
+`windows(x, n)` (chaque groupe de n éléments voisins), `zip`, `enumerate`,
+`any`, `all`, `find`, `count`, `index_of`, `min_by(liste, cle)` et
+`max_by(liste, cle)`, `flatten`, `flat_map`, `partition`,
 `group_by(liste, cle)` (un enregistrement dont les noms de champs sont les
 clés sous forme de textes), `is_empty`. Beaucoup acceptent aussi des textes
 (`first`, `last`, `rest`, `get`, `reverse`, `slice`, `take`, `drop`,
-`index_of`), des enregistrements (`len`, `contains`, `get`, `is_empty`) ou
-des Options et des Results (`map`).
+`take_while`, `drop_while`, `step_by`, `chunks`, `windows`, `index_of`), des
+enregistrements (`len`, `contains`, `get`, `is_empty`) ou des Options et des
+Results (`map`).
 
 **Enregistrements.** `keys`, `values`, `entries` (une liste de
-`[nom, valeur]`), `has(enregistrement, nom)`,
-`put(enregistrement, nom, valeur)`, `remove(enregistrement, nom)`.
+`[nom, valeur]`) et `from_entries` (l'inverse), `has(enregistrement, nom)`,
+`put(enregistrement, nom, valeur)`, `remove(enregistrement, nom)`,
+`map_values(enregistrement, f)`.
 
 **Option et Result.** `unwrap`, `unwrap_or(x, defaut)`, `is_some`,
-`is_none`, `is_ok`, `is_err`, et les constructeurs `Some`, `None`, `Ok`,
-`Err`.
+`is_none`, `is_ok`, `is_err`, `and_then(x, f)` (une étape de plus qui peut
+échouer : `f` donne une Option ou un Result), `ok_or(option, erreur)` (une
+Option transformée en Result, prête pour `?`), `map_err(result, f)`, et les
+constructeurs `Some`, `None`, `Ok`, `Err`.
 
 **Fichiers.** `read_file(chemin)` (`Ok(texte)` ou `Err(message)`),
 `write_file(chemin, valeur)` (écrit la forme affichée en remplaçant le
-contenu : `Ok(())` ou `Err(message)`), `file_exists(chemin)`. Les chemins
-relatifs partent du dossier actuel.
+contenu : `Ok(())` ou `Err(message)`), `append_file(chemin, valeur)` (ajoute
+à la fin, en créant le fichier si besoin), `file_exists(chemin)`. Les
+chemins relatifs partent du dossier actuel.
 
 ```rythme
 nombres = [3, 1, 4, 1, 5, 9, 2, 6]
@@ -2130,6 +2282,63 @@ défaut Some(3) false
 ```
 
 ```rythme
+print(gcd(12, 18), lcm(4, 6), atan(1, -1), text(3.14159, 2), text(5, 2))
+print(capitalize("élise"), pad_left("7", 3, "0"), pad_right("ab", 4, "."), char_code("A"), char(66))
+print(is_digit("42"), is_letter("été"), is_space(" \n"), take_while("42 cm", is_digit))
+print(scan([1, 2, 3], 0, fn(total, x) = total + x), set_at([1, 2, 3], 0, 9), insert_at([1, 2], 1, 7), remove_at([1, 2, 3], -1))
+print(drop_while([1, 3, 4, 5], is_odd), 0..10 |> step_by(5), chunks([1, 2, 3, 4, 5], 2), windows([1, 2, 3], 2))
+personnes = [{nom: "Ada", age: 36}, {nom: "Alan", age: 41}]
+print(min_by(["ccc", "a", "bb"], len), max_by(personnes, fn(p) = p.age).nom)
+print(from_entries([["a", 1], ["b", 2]]), map_values({a: 1, b: 2}, fn(x) = x * 10))
+print(parse_int("42") |> and_then(fn(n) = if n > 0 then Ok(n) else Err("pas positif")))
+print(ok_or(None, "absent"), map_err(Err("introuvable"), fn(e) = "config : {e}"))
+print(parse_json("[1, 2.5, null, \{\"ok\": true\}]"), to_json({nom: "Ada", etiquettes: ["x"], age: None}))
+```
+
+```text
+6 12 2.356194490192345 3.14 5.00
+Élise 007 ab.. 65 B
+true true true 42
+[1, 3, 6] [9, 2, 3] [1, 7, 2] [1, 2]
+[4, 5] [0, 5, 10] [[1, 2], [3, 4], [5]] [[1, 2], [2, 3]]
+a Alan
+{a: 1, b: 2} {a: 10, b: 20}
+Ok(42)
+Err("absent") Err("config : introuvable")
+Ok([1, 2.5, None, {ok: true}]) {"nom": "Ada", "etiquettes": ["x"], "age": null}
+```
+
+Un nom venu d'un autre langage et une valeur de la mauvaise sorte reçoivent
+une indication, ici avant que le programme ne s'exécute :
+
+```rythme
+mot = "bonjour"
+print(ord(mot[0]))
+print(map(mot, upper))
+```
+
+```text
+erreur[E003]: nom inconnu `ord`
+ --> 62-indices.ry:2:7
+  |
+2 | print(ord(mot[0]))
+  |       ^^^ non défini
+  |
+  = aide: en Rythme, cela s'appelle `char_code`
+  = en savoir plus : `rythme explain E003`
+
+erreur[E005]: `map` attend une liste, une Option ou un Result comme argument 1, mais a reçu une valeur de type Text
+ --> 62-indices.ry:3:11
+  |
+3 | print(map(mot, upper))
+  |           ^^^ mauvaise sorte de valeur
+  |
+  = aide: utilisation : `map(list, f)`
+  = aide: un texte n'est pas une liste : `chars(texte)` donne la liste de ses caractères
+  = en savoir plus : `rythme explain E005`
+```
+
+```rythme
 fn ecrire_puis_lire(chemin)
   write_file(chemin, "ligne 1\nligne 2")?
   contenu = read_file(chemin)?
@@ -2148,6 +2357,29 @@ Err("fichier introuvable : absent.txt")
 true ["Ada", "36"]
 ```
 
+Quand il n'y a plus rien à lire (la saisie au clavier a été fermée par
+Ctrl-D, ou le texte envoyé au programme est terminé ; ici, l'entrée est
+vide), `input` arrête le programme avec E017, pour qu'un programme qui
+redemande sans cesse ne tourne pas indéfiniment :
+
+```rythme
+print("Votre nom ?")
+nom = input()
+print("Bonjour, {nom} !")
+```
+
+```text
+Votre nom ?
+erreur[E017]: `input` a atteint la fin de l'entrée
+ --> 63-saisie.ry:2:7
+  |
+2 | nom = input()
+  |       ^^^^^^^ plus aucune ligne à lire
+  |
+  = note: la saisie au clavier a été fermée (Ctrl-D), ou le texte envoyé au programme est terminé
+  = en savoir plus : `rythme explain E017`
+```
+
 ---
 
 ## 7. Outils
@@ -2162,9 +2394,11 @@ rythme [--lang fr|en] [--no-color] [COMMANDE] [ARGUMENTS...]
 |----------|-------------|-----------------|
 | *(aucune)* | `repl` | le mode interactif (voir [7.2](#72-le-mode-interactif-repl)) |
 | `FICHIER [ARGS...]` | `run FICHIER [ARGS...]`, `lancer` | vérifie puis exécute le programme ; `ARGS` est donné à `args()` |
-| `check FICHIER` | `verifier`, `vérifier` | vérifie le programme sans l'exécuter |
+| `check FICHIER...` | `verifier`, `vérifier` | vérifie chaque programme sans l'exécuter (voir [5.5](#55-la-vérification-avant-lexécution)) |
 | `test FICHIER [ARGS...]` | `tester` | lance les tests (voir [4.8](#48-tests)) |
-| `-e CODE` | `eval CODE` | exécute le code donné en argument, et affiche la valeur de sa dernière expression sauf si c'est `()` |
+| `fmt [--check] FICHIER...` | `format`, `formater` | donne au code sa mise en forme officielle ; aussi un dossier, ou `-` pour l'entrée standard (voir [7.4](#74-la-mise-en-forme--rythme-fmt)) |
+| `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | exécute le code donné en argument, et affiche la valeur de sa dernière expression sauf si c'est `()` ; `ARGS` est donné à `args()` |
+| `lsp` | | le serveur de langage, lancé par un éditeur (voir [7.5](#75-éditeurs-et-serveur-de-langage)) |
 | `help [NOM]` | `aide`, `--help`, `-h` | la liste des sujets, ou l'aide d'un sujet, d'une fonction intégrée ou d'un code d'erreur |
 | `explain [CODE]` | `expliquer` | l'explication d'un code d'erreur ou d'avertissement ; sans code, la liste des codes |
 | `learn` | `apprendre`, `tutorial`, `tutoriel` | la visite guidée : les 13 sujets dans l'ordre, avec une pause après chacun quand elle tourne dans un terminal |
@@ -2174,28 +2408,32 @@ rythme [--lang fr|en] [--no-color] [COMMANDE] [ARGUMENTS...]
 pris pour un fichier quand il finit par `.ry` ou qu'il désigne un fichier
 existant ; si `nom` n'existe pas mais que `nom.ry` existe, c'est `nom.ry` qui
 est utilisé. Un fichier qui ne finit pas par `.ry` s'exécute après un
-avertissement. Un fichier introuvable est E017. Tout le reste est une
-commande inconnue, avec une suggestion.
+avertissement. Un fichier introuvable est E017, un dossier aussi (le message
+nomme des fichiers qu'il contient), ainsi qu'un fichier qui n'est pas du
+texte en UTF-8. Tout le reste est une commande inconnue, avec une
+suggestion.
 
 **Options.** `--lang` et `--no-color` doivent venir **avant** la commande ;
 tout ce qui suit le nom du fichier va au programme. `--lang` accepte toute
 valeur qui commence par `fr` ou `en` (`--lang fr`, `--lang=en`,
-`--lang fr_CA`).
+`--lang fr_CA`) ; une autre valeur, ou `--lang` sans valeur, est signalée,
+avec le code de sortie 2.
 
 **Sujets d'aide.** `rythme help SUJET` accepte `start`, `syntax`,
 `functions`, `lists`, `text`, `records`, `types`, `match`, `errors`,
-`functional`, `tests`, `modules`, `repl` et `builtins`, ainsi que des noms
-français ou alternatifs : `syntaxe`, `fonctions`, `listes`, `texte`,
-`enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`,
-`fichiers`, `interactif`, `bibliothèque`...
+`functional`, `tests`, `modules`, `repl`, `fmt`, `editors` et `builtins`,
+ainsi que des noms français ou alternatifs : `syntaxe`, `fonctions`,
+`listes`, `texte`, `enregistrements`, `motifs`, `erreurs`, `fonctionnel`,
+`boucles`, `fichiers`, `interactif`, `formater`, `lsp`, `vscode`,
+`éditeurs`, `bibliothèque`...
 
 **Codes de sortie.**
 
 | Code | Signification |
 |------|---------------|
-| 0 | succès ; `check` sans erreur (avertissements permis) ; tous les tests réussis, ou aucun test |
-| 1 | une erreur dans le programme (syntaxe, vérification ou exécution), un test échoué, ou un fichier introuvable |
-| 2 | une mauvaise utilisation de la commande : commande inconnue, nom de fichier manquant, sujet d'aide ou code d'erreur inconnu |
+| 0 | succès ; `check` sans erreur (avertissements permis) ; tous les tests réussis, ou aucun test ; `fmt --check` avec tous les fichiers déjà en forme |
+| 1 | une erreur dans le programme (syntaxe, vérification ou exécution), un test échoué, un fichier introuvable, ou des fichiers à mettre en forme pour `fmt --check` |
+| 2 | une mauvaise utilisation de la commande : commande ou option inconnue, nom de fichier manquant, langue, sujet d'aide ou code d'erreur inconnu |
 | 0 à 255 | le code donné à `exit(code)` par le programme |
 | 101 | une erreur interne de Rythme (un bug, à signaler) |
 
@@ -2213,8 +2451,8 @@ français ou alternatifs : `syntaxe`, `fonctions`, `listes`, `texte`,
   historique.
 
 **Sorties.** Ce que le programme affiche (`print`, l'invite de `input`, les
-résultats de `check` et de `test`) va sur la sortie standard ; les messages
-d'erreur et d'avertissement et `debug` vont sur la sortie d'erreur.
+résultats de `check`, de `test` et de `fmt`) va sur la sortie standard ; les
+messages d'erreur et d'avertissement et `debug` vont sur la sortie d'erreur.
 
 ```text
 $ rythme version
@@ -2223,6 +2461,8 @@ $ rythme -e '[1, 2, 3] |> map(fn(x) = x * x)'
 [1, 4, 9]
 $ rythme -e 'print("bonjour")'
 bonjour
+$ rythme -e 'print(args())' Ada 36
+["Ada", "36"]
 $ rythme chek 01.ry
 commande ou fichier inconnu `chek`
 vouliez-vous dire `rythme check` ?
@@ -2231,9 +2471,12 @@ $ rythme help lenght
 Aucune aide trouvée pour `lenght`.
 en Rythme, cela s'appelle `len`
 Voyez la liste des sujets avec `rythme help`.
+$ rythme --lang es bonjour.ry
+langue inconnue `es` : écrivez `--lang fr` ou `--lang en`, comme `rythme --lang fr bonjour.ry`
 ```
 
-Les deux dernières se terminent avec le code 2.
+Les trois dernières se terminent avec le code 2 (la dernière est écrite dans
+la langue du système).
 
 ### 7.2 Le mode interactif (REPL)
 
@@ -2254,9 +2497,10 @@ Différences avec un fichier :
 
 Une saisie qui n'est pas finie (une parenthèse ouverte, un bloc sans `end`,
 un texte non fermé...) continue à la ligne suivante ; deux lignes vides de
-suite l'exécutent quand même. Une ligne qui commence par `|>` ou par `.nom`
-continue la saisie précédente : on peut donc taper (ou coller) un
-enchaînement étape par étape. Ctrl-C annule la saisie en cours, Ctrl-D fait
+suite l'exécutent quand même, et à la fin de l'entrée (Ctrl-D) une saisie
+restée inachevée est vérifiée, pour que son erreur soit affichée. Une ligne
+qui commence par `|>` ou par `.nom` continue la saisie précédente : on peut
+donc taper (ou coller) un enchaînement étape par étape. Ctrl-C annule la saisie en cours, Ctrl-D fait
 quitter. La touche Tab complète les noms, les mots-clés et les commandes.
 L'historique est gardé dans `~/.rythme_history`. Taper `help` (ou `aide`)
 affiche l'aide du mode interactif ; `exit`, `quit` (ou `quitter`) fait
@@ -2317,7 +2561,7 @@ erreur[E003]: nom inconnu `fib`
 1 | fib(3)
   | ^^^ non défini
   |
-  = aide: vouliez-vous dire `min` ?
+  = aide: définissez-le avant de l'utiliser : `fib = ...` ou `fn fib(...) = ...`
   = en savoir plus : `rythme explain E003`
 ```
 
@@ -2327,21 +2571,134 @@ Le [site](https://maxlestage.github.io/Rythme/) propose un playground (un bac
 à sable en ligne) qui fait tourner le vrai interpréteur, compilé en
 WebAssembly, dans le navigateur : le même langage, les mêmes messages et la
 même aide, sans rien installer. Il a des boutons pour lancer (aussi
-Ctrl+Entrée), vérifier et tester le code, un bouton pour arrêter un programme
-qui ne s'arrête pas, le choix entre français et anglais, un menu d'exemples,
-et un panneau d'aide (sujets, recherche, et explication d'un code d'erreur
-en cliquant dessus).
+Ctrl+Entrée), vérifier et tester (aussi Ctrl+Maj+Entrée) le code, un bouton
+**Formater** (aussi Maj+Alt+F) qui donne au code la mise en forme de
+`rythme fmt` (voir [7.4](#74-la-mise-en-forme--rythme-fmt) ; un code qui a
+une erreur est laissé tel quel, et l'erreur est affichée), un bouton pour
+arrêter un programme qui ne s'arrête pas, le choix entre français et anglais,
+un menu d'exemples, et un panneau d'aide (sujets, recherche, et explication
+d'un code d'erreur en cliquant dessus).
 
 Différences avec la commande `rythme` : les fichiers ne peuvent être ni lus
-ni écrits (`read_file` et `write_file` renvoient `Err(...)`), `input()`
-renvoie un texte vide, `args()` est vide, `exit(code)` arrête le programme
-avec l'erreur E021, et les appels imbriqués s'arrêtent à 600 (les appels
-terminaux n'ont pas de limite).
+ni écrits (`read_file`, `write_file` et `append_file` renvoient `Err(...)`),
+`input()` renvoie un texte vide, `args()` est vide, `env(nom)` vaut `None`,
+`exit(code)` arrête le programme avec l'erreur E021, et les appels imbriqués
+s'arrêtent à 600 (les appels terminaux n'ont pas de limite).
 
-### 7.4 Éditeurs
+### 7.4 La mise en forme : `rythme fmt`
 
-[`editors/vscode`](../editors/vscode) ajoute à Visual Studio Code les
-couleurs, l'indentation et des extraits de code pour Rythme.
+```text
+rythme fmt [--check] FICHIER_OU_DOSSIER...
+rythme fmt [--check] -
+```
+
+`rythme fmt` donne au code la mise en forme officielle de Rythme, pour que
+tous les programmes se ressemblent. Il ne change que la disposition (les
+espaces, les lignes vides, les retours à la ligne, les `;`, la virgule après
+le dernier élément d'une liste écrite sur plusieurs lignes), jamais ce que
+fait le programme : le résultat est relu, et doit donner le même programme
+avec les mêmes commentaires, sinon le fichier est laissé tel quel.
+
+- `rythme fmt bonjour.ry` réécrit le fichier (`bonjour` suffit quand
+  `bonjour.ry` existe, comme avec `rythme run`) et écrit
+  `mis en forme : bonjour.ry`. Un dossier désigne tous les fichiers `.ry`
+  qu'il contient, ainsi que ses sous-dossiers, sauf les dossiers cachés comme
+  `.git`. On peut donner plusieurs fichiers et dossiers ; un bilan suit.
+- `--check` ne change rien : il liste les fichiers à mettre en forme et se
+  termine avec le code 1 s'il y en a, pour l'intégration continue.
+- `-` lit le code sur l'entrée standard et écrit le résultat sur la sortie
+  standard.
+- Un fichier qui a une erreur de syntaxe est laissé tel quel, et l'erreur est
+  affichée (code de sortie 1).
+- `format` et `formater` sont d'autres noms de `fmt`, `--verifier` de
+  `--check`.
+
+Le style, décrit par `rythme help fmt` : deux espaces par niveau ; des
+espaces autour des opérateurs, de `=`, de `->` et de `|>`, aucun dans les
+parenthèses et crochets ni autour de `..` ; un enchaînement écrit sur
+plusieurs lignes a une étape par ligne, et un type écrit sur plusieurs lignes
+une variante par ligne ; une liste ou un enregistrement écrit sur plusieurs
+lignes finit par une virgule ; une instruction par ligne, et `end` sur sa
+propre ligne ; une ligne vide autour d'une définition écrite sur plusieurs
+lignes, et jamais deux lignes vides de suite ; chaque commentaire est gardé,
+et les commentaires en fin de lignes consécutives sont alignés. Là où le
+langage laisse le choix, les retours à la ligne sont gardés, et les lignes
+longues sont gardées telles quelles.
+
+Avec `brouillon.ry` :
+
+```rythme
+type Forme = Cercle(rayon)|Rect(largeur,hauteur)
+fn aire(f)=match f
+    Cercle(r)->pi*r*r
+    Rect(l,h)->l*h
+  end
+prix=[12,5,30]
+total=prix|>filter(fn(p)=p>10)
+  |>sum
+print( total ) ; print(aire(Rect(2,3)))
+```
+
+`rythme fmt - < brouillon.ry` écrit :
+
+```text
+type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+
+fn aire(f) = match f
+  Cercle(r) -> pi * r * r
+  Rect(l, h) -> l * h
+end
+
+prix = [12, 5, 30]
+
+total = prix
+  |> filter(fn(p) = p > 10)
+  |> sum
+
+print(total)
+print(aire(Rect(2, 3)))
+```
+
+Dans un dossier qui contient `brouillon.ry` et un `propre.ry` déjà en forme :
+
+```text
+$ rythme fmt --check .
+à mettre en forme : ./brouillon.ry
+✗ 1 fichier(s) à mettre en forme, 1 déjà en forme ; `rythme fmt` (sans --check) les met en forme
+$ rythme fmt .
+mis en forme : ./brouillon.ry
+1 fichier(s) mis en forme, 1 déjà en forme
+$ rythme fmt --check .
+✓ 2 fichier(s) déjà en forme
+```
+
+La première commande se termine avec le code 1, les autres avec le code 0.
+
+### 7.5 Éditeurs et serveur de langage
+
+`rythme lsp` est un serveur de langage (le Language Server Protocol, sur
+l'entrée et la sortie standard) : un éditeur le lance tout seul et obtient,
+pour les fichiers `.ry`, les problèmes pendant la frappe (toutes les erreurs
+et tous les avertissements de `rythme check`, y compris ceux des fichiers
+donnés à `use`), la documentation au survol (les fonctions intégrées avec un
+exemple, les mots-clés, vos fonctions et vos types avec leurs commentaires
+`##`, l'explication d'un code d'erreur), la complétion, les paramètres d'un
+appel, aller à la définition, les références, renommer, le plan du fichier,
+les corrections rapides des fautes de frappe, et la mise en forme comme
+`rythme fmt`. Les messages sont dans la langue de l'éditeur, sauf si un
+réglage de l'éditeur, `--lang` (`rythme --lang fr lsp`) ou `RYTHME_LANG` la
+choisit. Lancé à la main dans un terminal, il dit à quoi il sert ;
+`rythme lsp --help` affiche le même texte que `rythme help editors`.
+
+- **VS Code** : l'extension dans [`editors/vscode`](../editors/vscode) ajoute
+  les couleurs, l'indentation, des extraits de code et le serveur de langage,
+  avec des commandes pour lancer le fichier, lancer ses tests ou expliquer un
+  code d'erreur, et les réglages `rythme.path` (le programme) et
+  `rythme.language`.
+- **Les autres éditeurs** (Neovim, Helix, Zed, Emacs, Sublime Text,
+  Kate...) : tout éditeur qui parle le Language Server Protocol peut lancer
+  `rythme lsp` ; [`editors/README.fr.md`](../editors/README.fr.md) donne la
+  configuration pour chacun.
 
 ---
 
@@ -2360,7 +2717,7 @@ program      = { NL } { item ( NL | EOF ) } ;
 item         = type_def | test_def | use_def | statement ;
 statement    = fn_def | binding | expression ;
 
-binding      = expression "=" expression ;          (* la partie gauche doit avoir la forme d'un motif *)
+binding      = pattern_atom "=" expression ;
 fn_def       = "fn" NAME "(" [ patterns ] ")" [ "if" expression ] body ;
 body         = "=" expression
              | NL block_end ;
@@ -2416,10 +2773,14 @@ KEY          = MEMBER | PLAIN_TEXT ;
 
 Remarques :
 
-- `binding` : la partie gauche est lue comme une expression, puis transformée
-  en motif. Seuls les noms, `_`, les appels de constructeurs, les listes (avec
-  `..nom` en dernier), les enregistrements (dont les éléments `..` sont
-  ignorés) et les littéraux sont acceptés (sinon E001).
+- `binding` : quand une instruction commence par `(`, `[`, `{` ou un
+  constructeur suivi de `(`, et que la parenthèse, le crochet ou l'accolade
+  qui le ferme est suivi de `=`, la partie gauche est lue comme un motif.
+  Sinon, l'instruction est lue comme une expression et, si `=` suit, cette
+  expression est transformée en motif : seuls un nom, `_`, un constructeur
+  sans champs et un littéral y sont acceptés (sinon E001, avec une
+  indication pour `f(x) = ...`, `xs[0] = ...` et `e.x = ...`).
+- `field_pattern` : `..` suivi d'un nom (`{nom, ..autres}`) est E001.
 - Dans `match`, la valeur examinée doit finir sur la ligne de `match`, et les
   cas peuvent être séparés par des lignes vides ; `end` peut suivre le dernier
   cas sur la même ligne. Dans les blocs, `end` peut suivre la dernière
@@ -2430,16 +2791,30 @@ Remarques :
 - Dans `step`, un `.MEMBER (arguments)` fait un appel de méthode dont les
   arguments sont la valeur enchaînée suivie de `arguments` (voir
   [3.6](#36-enchaînements-)).
+- Parenthèses, blocs et autres constructions s'imbriquent sur au plus 256
+  niveaux, et une expression a au plus 1000 niveaux de profondeur, chaque
+  opérateur, appel, indice et champ comptant pour un (E001, voir
+  [l'annexe B](#annexe-b-limites-de-limplémentation)).
 
 ## Annexe B. Limites de l'implémentation
 
 | Limite | Valeur | Erreur |
 |--------|--------|--------|
 | nombres entiers (Int) | de −2⁶³ à 2⁶³ − 1 | E012 |
-| éléments d'un intervalle | 50 000 000 | E023 |
-| `repeat` | 100 000 000 octets pour un texte, 50 000 000 éléments pour une liste | E023 |
-| imbrication des expressions dans le code | 256 niveaux | E001 |
+| éléments d'une liste (construite par un intervalle, `+`, `..xs`, `repeat`, `flatten`, `flat_map`, `chars`) | 50 000 000 | E023 |
+| longueur d'un texte (construit par `+`, `{...}`, `join`, `replace`, `repeat`) | 100 000 000 octets en UTF-8 | E023 |
+| largeur donnée à `pad_left` et `pad_right` | 100 000 000 caractères | E023 |
+| imbrication des parenthèses, crochets, blocs et autres constructions dans le code | 256 niveaux | E001 |
+| profondeur d'une expression : chaque opérateur, appel, indice ou champ compte pour un niveau, donc `1 + 1 + ...` contient au plus 1000 nombres | 1000 niveaux | E001 |
 | textes imbriqués dans des `{...}` de textes | 32 niveaux | E001 |
-| appels imbriqués (non terminaux) | selon la pile : plusieurs centaines de milliers avec `rythme`, 600 dans le playground | E014 |
+| appels imbriqués (non terminaux) | selon la fonction et la pile : plusieurs centaines de milliers avec `rythme` (environ 900 000 pour une récursion simple), 600 dans le playground | E014 |
 | chiffres de `round(x, chiffres)` | ramenés entre −15 et 15 | — |
+| décimales de `text(x, decimales)` | de 0 à 100 | E023 |
+| indentation de `to_json(valeur, indentation)` | de 0 à 16 espaces | E023 |
 | codes de sortie | de 0 à 255 | E023 |
+
+Les appels terminaux et les fonctions de listes (`map`, `fold`, `sort`...) ne
+comptent pas comme des appels imbriqués, et `parse_json` et `to_json` lisent
+et écrivent des données imbriquées sur des centaines de milliers de niveaux
+(indentées par `to_json(valeur, indentation)`, de telles données seraient
+trop grandes : E023).

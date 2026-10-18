@@ -22,8 +22,9 @@ First install Rythme itself (see the [main README](../README.md#install)) and
 check that `rythme version` works in a terminal. If your editor does not find
 the program, give it the full path (for example `~/.cargo/bin/rythme`).
 
-The messages are in the language of the editor when it tells it (VS Code
-does), otherwise in the language of `RYTHME_LANG` or of the system. To choose:
+The messages are in the language of `RYTHME_LANG` when it is set, otherwise
+in the language of the editor when it tells it (VS Code does), otherwise in
+the language of the system. To choose it whatever these say:
 `rythme --lang fr lsp`, or the option `{"language": "fr"}` sent at start-up
 (`initializationOptions`).
 

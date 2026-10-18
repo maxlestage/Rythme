@@ -27,9 +27,10 @@ et vérifiez que `rythme version` marche dans un terminal. Si votre éditeur ne
 trouve pas le programme, donnez-lui le chemin complet (par exemple
 `~/.cargo/bin/rythme`).
 
-Les messages sont dans la langue de l'éditeur quand il la donne (VS Code le
-fait), sinon dans celle de `RYTHME_LANG` ou du système. Pour choisir :
-`rythme --lang fr lsp`, ou l'option `{"language": "fr"}` envoyée au démarrage
+Les messages sont dans la langue de `RYTHME_LANG` quand elle est définie,
+sinon dans celle de l'éditeur quand il la donne (VS Code le fait), sinon dans
+celle du système. Pour la choisir quoi qu'il en soit : `rythme --lang fr lsp`,
+ou l'option `{"language": "fr"}` envoyée au démarrage
 (`initializationOptions`).
 
 ## VS Code

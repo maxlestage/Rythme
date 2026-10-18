@@ -82,8 +82,8 @@ error[E001]: `for` is not used in Rythme
 
 The website <https://maxlestage.github.io/Rythme/> has a playground that runs
 the real interpreter, compiled to WebAssembly ([`playground/`](playground)):
-edit code, run it, run tests, read the help, in English or French, without
-installing anything.
+edit code, run it, check it, run tests, format it, read the help, in English
+or French, without installing anything.
 
 The [`site/`](site) folder is the website of Rythme (home, tour of the
 language, examples, playground and guide for teachers, in English and French),
@@ -256,7 +256,7 @@ mode) and is organised as a pipeline:
 | [`src/types.rs`](src/types.rs) | what the checker knows for sure about values: their types |
 | [`src/compile.rs`](src/compile.rs) | prepares functions: each local name becomes a numbered slot |
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
-| [`src/builtins.rs`](src/builtins.rs) | ~120 built-in functions, documented in two languages, JSON included |
+| [`src/builtins.rs`](src/builtins.rs) | 124 built-in functions, documented in two languages, JSON included |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |
@@ -264,8 +264,10 @@ mode) and is organised as a pipeline:
 | [`src/lsp/`](src/lsp) | the language server (`rythme lsp`): help inside editors |
 
 `cargo test` runs the examples, checks that every example of the standard
-library gives the value it shows, and runs ~70 tests of the language, the
-library, the messages and the commands.
+library gives the value it shows and that every sample of the
+[reference manual](docs/reference.md) prints what it shows, and runs about
+200 tests of the language, the library, the checker, the messages, the
+formatter, the language server and the commands, fuzzing included.
 
 ## Status and roadmap
 

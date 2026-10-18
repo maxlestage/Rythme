@@ -547,7 +547,7 @@ Tests and other files
 
 Comments
   # an ordinary comment
-  ## a documentation comment, above a function, shown by help(...)"#;
+  ## a documentation comment, above a function or a type, shown by help(...)"#;
 
 const SYNTAX_FR: &str = r#"SYNTAXE
 
@@ -606,7 +606,7 @@ Tests et autres fichiers
 
 Commentaires
   # un commentaire ordinaire
-  ## un commentaire de documentation, au-dessus d'une fonction, affiché par help(...)"#;
+  ## un commentaire de documentation, au-dessus d'une fonction ou d'un type, affiché par help(...)"#;
 
 const FUNCTIONS_EN: &str = r#"FUNCTIONS
 
@@ -1373,7 +1373,8 @@ Pour écrire une accolade dans un texte : "\{pas inséré\}""#,
 This name is not defined at this place. Check the spelling (uppercase and
 lowercase letters are different), and that the name is defined before it is
 used. Inside a function, the parameters and the names defined above are
-visible; at the top level, all functions are visible everywhere.
+visible, and local functions written one right after the other see each
+other; at the top level, all functions are visible everywhere.
 
 Wrong:   print(lenght([1, 2]))
 Right:   print(len([1, 2]))
@@ -1384,7 +1385,9 @@ Rythme suggests the closest existing name when there is one."#,
 Ce nom n'est pas défini à cet endroit. Vérifiez l'orthographe (majuscules et
 minuscules sont différentes), et que le nom est défini avant d'être utilisé.
 Dans une fonction, les paramètres et les noms définis au-dessus sont
-visibles ; au premier niveau, toutes les fonctions sont visibles partout.
+visibles, et des fonctions locales écrites les unes juste après les autres
+se voient entre elles ; au premier niveau, toutes les fonctions sont
+visibles partout.
 
 Faux :   print(lenght([1, 2]))
 Juste :  print(len([1, 2]))
@@ -1450,8 +1453,8 @@ avant l'exécution, même dans du code qui ne s'exécute pas à chaque fois."#,
         "E006" => (
             r#"E006 — No case matches
 
-None of the cases of a `match` (or of the definitions of a function) accepts
-this value.
+None of the cases of a `match` (or of the definitions of a function, or the
+pattern of a definition like `[a, b] = list`) accepts this value.
 
 Wrong:   fn name(1) = "one"
          name(2)
@@ -1463,8 +1466,8 @@ kind of the value is certain, it also reports, before running, a case that
 can never fit it: `[first, ..rest]` for a Text, `Circle(r)` for a number."#,
             r#"E006 — Aucun cas ne correspond
 
-Aucun des cas d'un `match` (ou des définitions d'une fonction) n'accepte
-cette valeur.
+Aucun des cas d'un `match` (ou des définitions d'une fonction, ou le motif
+d'une définition comme `[a, b] = liste`) n'accepte cette valeur.
 
 Faux :   fn nom(1) = "un"
          nom(2)
@@ -1799,13 +1802,15 @@ d'un fichier, utilisez les versions sûres, qui donnent un Result :
             r#"E023 — Invalid value
 
 The function received a value of the right kind, but outside of what it
-accepts: a negative count, the minimum of an empty list, a range too large...
-The message explains the limit."#,
+accepts: a negative count, the minimum of an empty list, the square root of
+a negative number, a range, a list or a text too large... The message
+explains the limit."#,
             r#"E023 — Valeur invalide
 
 La fonction a reçu une valeur de la bonne sorte, mais en dehors de ce qu'elle
-accepte : un nombre négatif d'éléments, le minimum d'une liste vide, un
-intervalle trop grand... Le message explique la limite."#,
+accepte : un nombre négatif d'éléments, le minimum d'une liste vide, la
+racine carrée d'un nombre négatif, un intervalle, une liste ou un texte trop
+grand... Le message explique la limite."#,
         ),
         "E024" => (
             r#"E024 — A value is lost
