@@ -95,7 +95,7 @@ pub enum Stmt {
 
 /// A pattern whose names are slots.
 pub enum Pat {
-    /// Matches anything, binds nothing (`_`, or a parameter that is a plain name).
+    /// Matches anything, binds nothing: `_`.
     Any,
     Bind(u32),
     Unit,
@@ -166,6 +166,19 @@ impl Scope {
             cur = &node.next.0;
         }
         out
+    }
+}
+
+impl Drop for Scope {
+    /// Frees a long list of names one by one, not recursively.
+    fn drop(&mut self) {
+        let mut cur = self.0.take();
+        while let Some(rc) = cur {
+            cur = match Rc::try_unwrap(rc) {
+                Ok(mut node) => node.next.0.take(),
+                Err(_) => None,
+            };
+        }
     }
 }
 
