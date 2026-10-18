@@ -43,8 +43,9 @@ fn carre(x) = x * x
     Rythme.
   - Le programme est vérifié **avant** d'être exécuté : tous les noms
     inconnus, les mauvais nombres d'arguments, les opérations sur de mauvaises
-    sortes de valeurs (`"âge : " + 36`, `len(5)`, un champ mal écrit) et les
-    cas oubliés sont signalés d'un coup.
+    sortes de valeurs (`"âge : " + 36`, `len(5)`, un champ mal écrit), les
+    appels qui échouent à coup sûr (`aire("grand")` quand `aire` multiplie son
+    paramètre) et les cas oubliés sont signalés d'un coup.
   - `rythme explain E003` explique n'importe quel code d'erreur en détail,
     avec des exemples.
   - `rythme help`, `rythme help map`, `help(x)` dans le code, `:doc` dans le
@@ -295,8 +296,9 @@ suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
 - **Types.** Les valeurs sont vérifiées à l'exécution (strictement : aucune
   conversion silencieuse), et `rythme check` infère leurs types quand ils
   sont certains, pour signaler avant l'exécution les opérations qui
-  échoueraient à coup sûr. Suite : les types des paramètres des fonctions,
-  pour trouver encore plus d'erreurs avant l'exécution.
+  échoueraient à coup sûr ; il déduit aussi ce que doivent être les
+  paramètres de chaque fonction, pour signaler les appels qui échouent à
+  coup sûr, et l'éditeur montre ces signatures au survol.
 - **Outils.** `rythme fmt` met le code en forme dans le style officiel (voir
   `rythme help fmt`), `rythme doc` écrit la documentation de fichiers et de
   dossiers à partir de leurs commentaires `##` (voir `rythme help doc`), et le

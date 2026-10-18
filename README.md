@@ -40,8 +40,9 @@ fn square(x) = x * x
     `def`, `class`... each gets an explanation of the Rythme way.
   - The program is checked **before** it runs: all the unknown names, wrong
     numbers of arguments, operations on the wrong kinds of values
-    (`"age: " + 36`, `len(5)`, a misspelled field) and forgotten cases are
-    reported at once.
+    (`"age: " + 36`, `len(5)`, a misspelled field), calls that always fail
+    (`area("big")` when `area` multiplies its parameter) and forgotten cases
+    are reported at once.
   - `rythme explain E003` explains any error code in detail, with examples.
   - `rythme help`, `rythme help map`, `help(x)` in code, `:doc` in the REPL,
     `rythme learn` for a guided tour.
@@ -291,6 +292,7 @@ mode) and is organised as a pipeline:
 | [`src/parser.rs`](src/parser.rs) | tokens → syntax tree, with hints for common mistakes |
 | [`src/check.rs`](src/check.rs) | finds errors before running: names, arguments, kinds of values, forgotten cases |
 | [`src/types.rs`](src/types.rs) | what the checker knows for sure about values: their types |
+| [`src/check/needs.rs`](src/check/needs.rs) | what the parameters of each function must be, and the calls that always fail |
 | [`src/compile.rs`](src/compile.rs) | prepares functions: each local name becomes a numbered slot |
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
 | [`src/builtins.rs`](src/builtins.rs) | 136 built-in functions, documented in two languages, JSON included |
@@ -319,9 +321,9 @@ towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
   bytecode virtual machine.
 - **Types.** Values are checked at run time (strongly: no silent
   conversions), and `rythme check` infers their types when they are certain,
-  to report before running the operations that would always fail. Next: the
-  types of the parameters of functions, so that even more mistakes are found
-  before running.
+  to report before running the operations that would always fail; it also
+  infers what the parameters of each function must be, to report the calls
+  that always fail, and the editor shows these signatures on hover.
 - **Tooling.** `rythme fmt` formats the code in the official style (see
   `rythme help fmt`), `rythme doc` writes the documentation of files and
   folders from their `##` comments (see `rythme help doc`), and the language server (`rythme lsp`) brings errors and

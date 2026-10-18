@@ -534,6 +534,78 @@ fn generated_programs() {
     assert!(found * 30 > programs, "only {found} errors found before running");
 }
 
+/// Functions that use their parameters in every way (operators, built-in
+/// functions, patterns, guards, `match`, recursion...), each called with
+/// values of every kind: when the checker says a call always fails, running
+/// it fails.
+#[test]
+fn calls_said_to_always_fail_do_fail() {
+    on_large_stack(failing_calls);
+}
+
+fn failing_calls() {
+    rythme::lang::set(rythme::lang::Lang::En);
+    let know = Knowledge::from_interp(&Interp::new());
+    let programs: u64 = std::env::var("RYTHME_TYPE_PROGRAMS").ok().and_then(|n| n.parse().ok()).unwrap_or(400) * 3;
+    let firsts = ["p", "p", "p", "p", "0", "\"a\"", "[]", "[h, ..t]", "Some(h)", "None", "{a}", "A(h)", "true", "_"];
+    let args = ["[1, 2]", "{a: 1}", "Some(2)", "None", "A(1)", "B", "Ok(\"x\")", "fn(v) = v", "Pair(1, 2)"];
+    let (mut reported, mut said) = (0, 0);
+    for seed in 1..=programs {
+        let mut g = Gen { state: seed.wrapping_mul(0xD1B5_4A32_D192_ED03) | 1, vars: Vec::new(), straight: false, fns: Vec::new() };
+        let mut code = HEADER.to_string();
+        // Another function that uses its parameter, for this one to call.
+        let helper = g.expr(2, &["p"]);
+        code.push_str(&format!("fn k(p) = {helper}\n"));
+        g.fns = vec![("k".into(), 1), ("f".into(), 2)];
+        for _ in 0..1 + g.below(3) {
+            let first = g.pick(&firsts);
+            let mut locals: Vec<&str> = vec!["q"];
+            match first {
+                "p" => locals.push("p"),
+                "[h, ..t]" => locals.extend(["h", "t"]),
+                "Some(h)" | "A(h)" => locals.push("h"),
+                "{a}" => locals.push("a"),
+                _ => {}
+            }
+            let guard = if g.below(4) == 0 { format!(" if {}", g.expr(1, &locals)) } else { String::new() };
+            let body = match g.below(3) {
+                0 => {
+                    let w = g.expr(2, &locals);
+                    let rest = g.expr(2, &[&locals[..], &["w"]].concat());
+                    format!("\n  w = {w}\n  {rest}\nend")
+                }
+                _ => format!(" = {}", g.expr(3, &locals)),
+            };
+            let head = format!("fn f({first}, q){guard}");
+            code.push_str(&format!("{head}{body}\n"));
+        }
+        let mut arg = || if g.below(3) == 0 { g.pick(&args).to_string() } else { g.literal() };
+        let call = format!("x = f({}, {})\n", arg(), arg());
+        code.push_str(&call);
+        let call_line = code.lines().count();
+        let Some(items) = parse(&format!("calls{seed}.ry"), &code) else { continue };
+        let diags = check::check(&items, &know, false);
+        let on_call: Vec<_> = diags
+            .iter()
+            .filter(|d| d.is_error() && d.span.is_some_and(|s| source::get(s.file).unwrap().line_col(s.start as usize).0 == call_line))
+            .collect();
+        if on_call.is_empty() {
+            continue;
+        }
+        rythme::io::capture();
+        let values = run(&items);
+        rythme::io::take_captured();
+        let d = on_call[0];
+        assert!(!values.contains_key(&Sym::new("x")), "program {seed}: the call works, but the checker reports: {}\n{code}", d.message);
+        reported += 1;
+        if d.label.contains("every time") {
+            said += 1;
+        }
+    }
+    eprintln!("{reported} calls reported, {said} through what the parameters need");
+    assert!(said * 40 > programs, "only {said} calls found failing through what the parameters need");
+}
+
 /// The warnings say the truth: a comparison said to be always false (or
 /// true) is false (or true) when it runs, and a case said never to be
 /// reached is never the one taken.
@@ -647,6 +719,19 @@ fn errors_found_before_running_are_those_of_the_run_time() {
         "[a, b] = 5",
         "fn f(0) = 1\nx = f(\"a\")",
         "fn f(a) = a\nx = f(1, 2)",
+        // Calls that always fail, from what the function does with its parameters.
+        "fn area(side) = side * side\nx = area(\"big\")",
+        "fn shout(t) = upper(t) + \"!\"\nx = shout(5)",
+        "fn double(x) = x * 2\nfn quad(x) = double(double(x))\nx = quad(\"a\")",
+        "fn first_name(p) = p.name\nx = first_name(5)",
+        "fn total(xs) = fold(xs, 0, fn(a, b) = a + b)\nx = total(\"abc\")",
+        "fn pick(c, a, b) = if c then a else b\nx = pick(1, 2, 3)",
+        "fn count(xs) = match xs\n  [] -> 0\n  [_, ..rest] -> 1 + count(rest)\nend\nx = count(\"ab\")",
+        "fn sign(n) if n < 0 = -1\nfn sign(n) = 1\nx = sign(\"a\")",
+        "fn add_one(x) = x + 1\nfn add_two(x) = add_one(add_one(x))\nx = add_two(\"a\")",
+        "fn get_or(o, d) = o?\nx = get_or(5, 0)",
+        "fn shout(t) = t.upper()\nx = shout(5)",
+        "fn f(x)\n  print(\"start\")\n  -x\nend\nx = f(\"a\")",
     ];
     for code in cases {
         let items = parse("same.ry", code).unwrap();
