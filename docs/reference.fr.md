@@ -155,10 +155,8 @@ Les **nombres entiers (Int)** s'écrivent en décimal (`42`), en hexadécimal
 après `0x` (`0xFF`, chiffres en majuscules ou minuscules) ou en binaire après
 `0b` (`0b1010`). Les préfixes s'écrivent en minuscules ; il n'y a pas de
 notation octale. `_` peut séparer les chiffres partout après le premier
-(`1_000_000`, `0xFF_FF`). Un littéral doit tenir sur 64 bits :
-`9223372036854775807` (`0x7fffffffffffffff`) est le plus grand ;
-`9223372036854775808` n'est accepté qu'en décimal, juste après un signe moins
-(c'est le plus petit Int). Un littéral plus grand est l'erreur E012, dans
+(`1_000_000`, `0xFF_FF`). Les nombres entiers n'ont pas de limite de taille
+(voir 2.1) : un littéral de plus de 100000 chiffres est l'erreur E023, dans
 toutes les bases ; un littéral hexadécimal ou binaire avec un mauvais chiffre
 ou sans chiffre (`0b12`, `0x`) est l'erreur E018.
 
@@ -174,13 +172,13 @@ Il n'y a pas de littéraux négatifs : `-7` est l'opérateur `-` appliqué à `7
 ```rythme
 print(42, -7, 1_000_000, 0xFF, 0b1010)
 print(3.14, 2.0, 1e3, 1.5e-3, 6.02E23)
-print(9223372036854775807, -9223372036854775808)
+print(9223372036854775807, -9223372036854775808, 123456789012345678901234567890)
 ```
 
 ```text
 42 -7 1000000 255 10
 3.14 2.0 1000.0 0.0015 6.02e23
-9223372036854775807 -9223372036854775808
+9223372036854775807 -9223372036854775808 123456789012345678901234567890
 ```
 
 ### 1.7 Textes
@@ -356,7 +354,7 @@ en silence.
 
 | Type (`type_of`) | Valeurs | Exemples |
 |------------------|---------|----------|
-| `Int` | nombres entiers, 64 bits | `42`, `-7`, `0xFF` |
+| `Int` | nombres entiers, de toute taille | `42`, `-7`, `0xFF` |
 | `Float` | nombres décimaux, 64 bits | `3.14`, `2.0`, `1e3` |
 | `Text` | textes | `"bonjour"`, `"total : {x}"` |
 | `Bool` | `true`, `false` | |
@@ -381,27 +379,52 @@ print(map(exemples, type_of))
 
 ### 2.1 Int
 
-Nombres entiers signés sur 64 bits, de −9223372036854775808 à
-9223372036854775807. Une opération dont le résultat exact ne tient pas est
-une erreur (E012) : Rythme ne « fait jamais le tour » en silence.
+Des nombres entiers de toute taille, toujours exacts : ils grandissent autant
+que nécessaire, comme en Python ou en Ruby, et ne « font jamais le tour ».
+Les nombres habituels, de −9223372036854775808 à 9223372036854775807
+(64 bits), sont calculés le plus vite ; au-delà, le résultat est encore un
+Int, avec tous ses chiffres. `+`, `-`, `*`, `//`, `%`, `**`, les comparaisons
+(avec les Floats aussi, voir 2.11), `abs`, `gcd`, `lcm`, `is_even`, `text`,
+`int`, `parse_int`, `to_json` et `parse_json` sont exacts sur tous ; une
+fonction qui a besoin d'une position ou d'un nombre d'éléments (`take`,
+`get`, `repeat`...) refuse un nombre au-delà de 64 bits (E023), et `[...]`
+dit qu'il est hors limites (E007).
 
 ```rythme
 grand = 9223372036854775807
-print(grand)
-print(grand + 1)
+print(grand + 1, grand * grand)
+fn factorielle(n) = if n == 0 then 1 else n * factorielle(n - 1)
+print(factorielle(25), 2 ** 100)
+print(-(2 ** 64) // 3, -(2 ** 64) % 3, (2 ** 64) / 3)
+print(type_of(2 ** 64), 2 ** 64 - 2 ** 64 + 1)
 ```
 
 ```text
-9223372036854775807
-erreur[E012]: le résultat est trop grand pour un nombre entier (Int)
- --> 11-entier.ry:3:13
+9223372036854775808 85070591730234615847396907784232501249
+15511210043330985984000000 1267650600228229401496703205376
+-6148914691236517206 2 6.148914691236517e18
+Int 1
+```
+
+Un nombre entier a au plus 100000 chiffres : au-delà, le programme s'arrête
+avec E023 plutôt que de remplir la mémoire (un nombre aussi grand vient en
+général d'un calcul qui grandit sans fin).
+
+```rythme
+print(len(text(10 ** 99999)))
+print(10 ** 100000)
+```
+
+```text
+100000
+erreur[E023]: ce nombre entier serait trop grand (plus de 100000 chiffres)
+ --> 11-entier.ry:2:10
   |
-3 | print(grand + 1)
-  |             ^
+2 | print(10 ** 100000)
+  |          ^^
   |
-  = aide: les nombres entiers vont de -9223372036854775808 à 9223372036854775807 ;
-      pour des valeurs plus grandes, utilisez des nombres décimaux (Float), comme `2.0 ** 100`
-  = en savoir plus : `rythme explain E012`
+  = aide: grandit-il sans fin, dans une fonction qui s'appelle elle-même ? Pour une valeur approchée, utilisez un nombre décimal (Float), comme `2.0 ** 1000`
+  = en savoir plus : `rythme explain E023`
 ```
 
 Code de sortie : 1.
@@ -768,13 +791,13 @@ erreur[E001]: `+` ne peut pas suivre directement une étape `|>`
 
 | Opération | Entre Int | Avec un Float | Autres valeurs |
 |-----------|-----------|---------------|----------------|
-| `a + b` | Int (E012 en cas de dépassement) | Float | deux textes : mis bout à bout ; deux listes : mises bout à bout ; sinon E005 |
-| `a - b`, `a * b` | Int (E012 en cas de dépassement) | Float | E005 |
+| `a + b` | Int, exact à toute taille | Float | deux textes : mis bout à bout ; deux listes : mises bout à bout ; sinon E005 |
+| `a - b`, `a * b` | Int, exact à toute taille | Float | E005 |
 | `a / b` | **toujours un Float** (`6 / 3` vaut `2.0`) | Float | E005 |
 | `a // b` | Int, arrondi vers le bas (vers −∞) | Float, arrondi vers le bas | E005 |
 | `a % b` | Int, du signe de `b` | Float : le reste exact, du signe de `b` | E005 |
-| `a ** b` | Int si `b >= 0` (E012 en cas de dépassement), Float si `b < 0` (`0 ** -n` est E008) | Float (E023 pour un nombre négatif à une puissance fractionnaire) | E005 |
-| `-a` | Int (E012 pour le plus petit Int) | Float | E005 |
+| `a ** b` | Int si `b >= 0`, exact à toute taille, Float si `b < 0` (`0 ** -n` est E008) | Float (E023 pour un nombre négatif à une puissance fractionnaire) | E005 |
+| `-a` | Int | Float | E005 |
 
 `/`, `//` et `%` par zéro donnent l'erreur E008, pour les Int comme pour les
 Float. Rythme ne convertit jamais entre textes et nombres : `"1" + 1` est
@@ -2180,7 +2203,7 @@ minuscules.
 | E009 | Pas une fonction | on appelle une valeur qui n'est pas une fonction (`x(3)`, `None()`) |
 | E010 | Champ inconnu | l'enregistrement ou la variante n'a pas de champ de ce nom |
 | E011 | Déjà défini | un nom, un type, un constructeur ou un champ défini deux fois au même endroit, ou une tentative de modifier une valeur (`x += 1`) |
-| E012 | Nombre trop grand | un nombre entier hors de l'intervalle des 64 bits, dans le code (dans n'importe quelle base) ou comme résultat (`-x` et `abs(x)` du plus petit Int compris) |
+| E012 | Nombre trop grand | plus donnée : les nombres entiers n'ont pas de limite de taille (un nombre de plus de 100000 chiffres est E023) |
 | E013 | `unwrap` n'a pas trouvé de valeur | `unwrap` sur `None` ou `Err(...)` |
 | E014 | Trop d'appels imbriqués | des appels imbriqués plus profondément que la pile ne le permet |
 | E015 | Assertion échouée | `assert`, `assert_eq`, ou un test qui s'est terminé avec `false`, `Err(...)` ou `None` |
@@ -2191,7 +2214,7 @@ minuscules.
 | E020 | Il manque `end` | une fonction, un `test`, un `match` ou un bloc `do` jamais fermé |
 | E021 | Programme arrêté par `fail` | `fail(message)` a été appelé |
 | E022 | Conversion impossible | `int(t)` ou `float(t)` sur un texte qui n'est pas un nombre |
-| E023 | Valeur invalide | une valeur de la bonne sorte mais hors de ce qui est accepté (un nombre négatif d'éléments, `min` d'une liste vide, `sqrt(-1)`, un intervalle, une liste ou un texte trop grand, un code de sortie hors de 0–255...) |
+| E023 | Valeur invalide | une valeur de la bonne sorte mais hors de ce qui est accepté (un nombre négatif d'éléments, `min` d'une liste vide, `sqrt(-1)`, un intervalle, une liste ou un texte trop grand, un nombre entier de plus de 100000 chiffres, un code de sortie hors de 0–255...) |
 | E024 | Une valeur est perdue | une ligne calcule une valeur dont rien ne se sert |
 | W001 | Nom inutilisé | un nom local est défini mais jamais utilisé |
 | W002 | Cas oublié | un `match` ou une fonction à un paramètre ne traite pas toutes les valeurs possibles |
@@ -3072,7 +3095,7 @@ Remarques :
 
 | Limite | Valeur | Erreur |
 |--------|--------|--------|
-| nombres entiers (Int) | de −2⁶³ à 2⁶³ − 1 | E012 |
+| chiffres d'un nombre entier (Int), dans le code, comme résultat ou lu par `int` | 100 000 | E023 |
 | éléments d'une liste (construite par un intervalle, `+`, `..xs`, `repeat`, `flatten`, `flat_map`, `chars`) | 50 000 000 | E023 |
 | longueur d'un texte (construit par `+`, `{...}`, `join`, `replace`, `repeat`, `pad_left`, `pad_right`) | 100 000 000 octets en UTF-8 | E023 |
 | imbrication des parenthèses, crochets, blocs et autres constructions dans le code | 256 niveaux | E001 |

@@ -6,8 +6,9 @@ use std::collections::HashSet;
 use std::io::Write;
 use std::rc::Rc;
 
+use crate::bigint::{self, BigInt};
 use crate::diagnostic::{Diagnostic, Fallible};
-use crate::interp::{binop, overflow, resolve_index, too_big, Interp, Wrap, MAX_LIST, MAX_TEXT};
+use crate::interp::{binop, resolve_index, too_big, Interp, Wrap, MAX_LIST, MAX_TEXT};
 use crate::source::{self, Span};
 use crate::types::{self, Kinds, BOOL, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, TEXT};
 use crate::value::*;
@@ -769,13 +770,34 @@ fn text<'a>(a: &'a [Value], i: usize, f: &str, span: Span) -> Fallible<&'a str> 
 fn int(a: &[Value], i: usize, f: &str, span: Span) -> Fallible<i64> {
     match &a[i] {
         Value::Int(n) => Ok(*n),
+        Value::Big(n) => {
+            Err(invalid(t!("the number {n} is too large for `{f}`", "le nombre {n} est trop grand pour `{f}`", n = short_number(n)), span))
+        }
         v => Err(wrong(f, i, Expected::Int, v, span)),
     }
+}
+
+/// A large number in a message: its first and last digits.
+fn short_number(n: &BigInt) -> String {
+    let s = n.to_string();
+    let digits = s.trim_start_matches('-').len();
+    if digits <= 40 {
+        return s;
+    }
+    let sign = n.is_negative() as usize;
+    let lots = t!("{digits} digits", "{digits} chiffres");
+    format!("{}...{} ({lots})", &s[..sign + 10], &s[s.len() - 10..])
+}
+
+/// A whole number of any size.
+fn whole<'a>(a: &'a [Value], i: usize, f: &str, span: Span) -> Fallible<std::borrow::Cow<'a, BigInt>> {
+    bigint::big(&a[i]).ok_or_else(|| wrong(f, i, Expected::Int, &a[i], span))
 }
 
 fn number(a: &[Value], i: usize, f: &str, span: Span) -> Fallible<f64> {
     match &a[i] {
         Value::Int(n) => Ok(*n as f64),
+        Value::Big(n) => Ok(n.to_f64()),
         Value::Float(x) => Ok(*x),
         v => Err(wrong(f, i, Expected::Number, v, span)),
     }
@@ -923,11 +945,23 @@ fn f64_to_int(x: f64, span: Span) -> Fallible<Value> {
         ))
         .boxed());
     }
-    // i64 covers [-2^63, 2^63); infinities are outside of that range too.
-    if !(-9.223_372_036_854_776e18..9.223_372_036_854_776e18).contains(&x) {
-        return Err(overflow(span));
+    if x.is_infinite() {
+        return Err(Diagnostic::error(
+            "E022",
+            t!(
+                "`{}` (infinity) cannot be converted to a whole number",
+                "`{}` (l'infini) ne peut pas être converti en nombre entier",
+                fmt_float(x)
+            ),
+        )
+        .at(span)
+        .help(t!(
+            "an infinity comes from a calculation too large for decimal numbers, like `1e308 * 10.0`, or from a division by `0.0`",
+            "un infini vient d'un calcul trop grand pour les nombres décimaux, comme `1e308 * 10.0`, ou d'une division par `0.0`"
+        ))
+        .boxed());
     }
-    Ok(Value::Int(x as i64))
+    Ok(bigint::from_whole_f64(x))
 }
 
 // ----- Basics ------------------------------------------------------------
@@ -970,6 +1004,8 @@ fn to_text(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         return Ok(text_value(match &a[0] {
             Value::Int(n) if digits == 0 => n.to_string(),
             Value::Int(n) => format!("{n}.{}", "0".repeat(digits)),
+            Value::Big(n) if digits == 0 => n.to_string(),
+            Value::Big(n) => format!("{n}.{}", "0".repeat(digits)),
             Value::Float(x) => fixed(*x, digits),
             v => return Err(wrong("text", 0, Expected::Number, v, span)),
         }));
@@ -1132,7 +1168,8 @@ fn random(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn abs(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     match &a[0] {
-        Value::Int(n) => n.checked_abs().map(Value::Int).ok_or_else(|| overflow(span)),
+        Value::Int(n) => Ok(n.checked_abs().map_or_else(|| bigint::value(BigInt::from_i64(*n).abs()), Value::Int)),
+        Value::Big(n) => Ok(bigint::value(n.abs())),
         Value::Float(x) => Ok(Value::Float(x.abs())),
         v => Err(wrong("abs", 0, Expected::Number, v, span)),
     }
@@ -1202,7 +1239,7 @@ fn pow(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn rounding(a: &[Value], name: &str, span: Span, f: fn(f64) -> f64) -> Fallible<Value> {
     match &a[0] {
-        Value::Int(n) => Ok(Value::Int(*n)),
+        Value::Int(_) | Value::Big(_) => Ok(a[0].clone()),
         Value::Float(x) => f64_to_int(f(*x), span),
         v => Err(wrong(name, 0, Expected::Number, v, span)),
     }
@@ -1233,13 +1270,15 @@ fn round(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn to_int(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     match &a[0] {
-        Value::Int(n) => Ok(Value::Int(*n)),
+        Value::Int(_) | Value::Big(_) => Ok(a[0].clone()),
         Value::Float(x) => f64_to_int(x.trunc(), span),
         Value::Bool(b) => Ok(Value::Int(*b as i64)),
         Value::Text(s) => {
             let t = s.trim();
-            if let Ok(n) = t.replace('_', "").parse::<i64>() {
-                return Ok(Value::Int(n));
+            match read_whole(t) {
+                Some(Ok(n)) => return Ok(n),
+                Some(Err(())) => return Err(bigint::too_large(span)),
+                None => {}
             }
             if let Ok(x) = t.replace('_', "").parse::<f64>() {
                 return f64_to_int(x.trunc(), span);
@@ -1262,6 +1301,7 @@ fn to_int(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 fn to_float(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     match &a[0] {
         Value::Int(n) => Ok(Value::Float(*n as f64)),
+        Value::Big(n) => Ok(Value::Float(n.to_f64())),
         Value::Float(x) => Ok(Value::Float(*x)),
         Value::Text(s) => s.trim().replace('_', "").parse::<f64>().map(Value::Float).map_err(|_| {
             Diagnostic::error("E022", t!("cannot convert \"{s}\" to a decimal number", "impossible de convertir \"{s}\" en nombre décimal"))
@@ -1343,12 +1383,20 @@ fn log(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::Float(x.ln()))
 }
 
+fn even(a: &[Value], f: &str, span: Span) -> Fallible<bool> {
+    match &a[0] {
+        Value::Int(n) => Ok(n % 2 == 0),
+        Value::Big(n) => Ok(n.is_even()),
+        v => Err(wrong(f, 0, Expected::Int, v, span)),
+    }
+}
+
 fn is_even(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    Ok(Value::Bool(int(a, 0, "is_even", span)? % 2 == 0))
+    Ok(Value::Bool(even(a, "is_even", span)?))
 }
 
 fn is_odd(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    Ok(Value::Bool(int(a, 0, "is_odd", span)? % 2 != 0))
+    Ok(Value::Bool(!even(a, "is_odd", span)?))
 }
 
 /// Euclid's algorithm, on the absolute values (they always fit in a u64).
@@ -1360,18 +1408,31 @@ fn gcd_of(mut a: u64, mut b: u64) -> u64 {
 }
 
 fn gcd(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let (x, y) = (int(a, 0, "gcd", span)?, int(a, 1, "gcd", span)?);
-    let g = gcd_of(x.unsigned_abs(), y.unsigned_abs());
-    i64::try_from(g).map(Value::Int).map_err(|_| overflow(span))
+    if let (Value::Int(x), Value::Int(y)) = (&a[0], &a[1]) {
+        if let Ok(g) = i64::try_from(gcd_of(x.unsigned_abs(), y.unsigned_abs())) {
+            return Ok(Value::Int(g));
+        }
+    }
+    let (x, y) = (whole(a, 0, "gcd", span)?, whole(a, 1, "gcd", span)?);
+    Ok(bigint::value(x.gcd(&y)))
 }
 
 fn lcm(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let (x, y) = (int(a, 0, "lcm", span)?, int(a, 1, "lcm", span)?);
-    if x == 0 || y == 0 {
+    if let (Value::Int(x), Value::Int(y)) = (&a[0], &a[1]) {
+        if *x == 0 || *y == 0 {
+            return Ok(Value::Int(0));
+        }
+        let (x, y) = (x.unsigned_abs(), y.unsigned_abs());
+        if let Some(m) = (x / gcd_of(x, y)).checked_mul(y).and_then(|m| i64::try_from(m).ok()) {
+            return Ok(Value::Int(m));
+        }
+    }
+    let (x, y) = (whole(a, 0, "lcm", span)?, whole(a, 1, "lcm", span)?);
+    if x.is_zero() || y.is_zero() {
         return Ok(Value::Int(0));
     }
-    let (x, y) = (x.unsigned_abs(), y.unsigned_abs());
-    (x / gcd_of(x, y)).checked_mul(y).and_then(|m| i64::try_from(m).ok()).map(Value::Int).ok_or_else(|| overflow(span))
+    let (m, _) = x.abs().div_mod_floor(&x.gcd(&y));
+    binop(crate::ast::BinOp::Mul, &bigint::value(m), &bigint::value(y.abs()), span)
 }
 
 // ----- Text --------------------------------------------------------------
@@ -1589,10 +1650,22 @@ fn repeat(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn parse_int(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let s = text(a, 0, "parse_int", span)?;
-    Ok(match s.trim().replace('_', "").parse::<i64>() {
-        Ok(n) => it.ok(Value::Int(n)),
-        Err(_) => it.err(text_value(t!("\"{s}\" is not a whole number", "\"{s}\" n'est pas un nombre entier"))),
+    Ok(match read_whole(s.trim()) {
+        Some(Ok(n)) => it.ok(n),
+        Some(Err(())) => {
+            it.err(text_value(t!("this number has more than {} digits", "ce nombre a plus de {} chiffres", bigint::MAX_DIGITS)))
+        }
+        None => it.err(text_value(t!("\"{s}\" is not a whole number", "\"{s}\" n'est pas un nombre entier"))),
     })
+}
+
+/// A whole number written in a text (`-12`, `+7`, `1_000`), of any size:
+/// `Some(Err(()))` when it has too many digits.
+fn read_whole(t: &str) -> Option<Result<Value, ()>> {
+    if let Ok(n) = t.replace('_', "").parse::<i64>() {
+        return Some(Ok(Value::Int(n)));
+    }
+    BigInt::parse(&t.replace('_', ""), 10).map(|r| r.map(bigint::value))
 }
 
 fn parse_float(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -1794,8 +1867,11 @@ impl Json<'_> {
             if let Ok(n) = s.parse::<i64>() {
                 return Ok(Value::Int(n));
             }
+            if let Some(Ok(n)) = BigInt::parse(s, 10) {
+                return Ok(bigint::value(n));
+            }
         }
-        // Also whole numbers too large for an Int.
+        // Also whole numbers with too many digits.
         s.parse::<f64>().map(Value::Float).map_err(|_| bad(self))
     }
 
@@ -1960,6 +2036,7 @@ fn write_json(it: &Interp, v: &Value, indent: Option<usize>) -> Result<String, U
                 Value::Unit => out.push_str("null"),
                 Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
                 Value::Int(n) => out.push_str(&n.to_string()),
+                Value::Big(n) => out.push_str(&n.to_string()),
                 Value::Float(f) if f.is_finite() => out.push_str(&fmt_float(*f)),
                 Value::Text(s) => json_text(s, &mut out),
                 Value::List(l) if l.is_empty() => out.push_str("[]"),
@@ -2118,7 +2195,7 @@ fn sum(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "sum", span)?;
     let mut acc = Value::Int(0);
     for x in l.iter() {
-        if !matches!(x, Value::Int(_) | Value::Float(_)) {
+        if !matches!(x, Value::Int(_) | Value::Big(_) | Value::Float(_)) {
             return Err(invalid(
                 t!(
                     "`sum` needs a list of numbers, but it contains {}",
@@ -2143,7 +2220,7 @@ fn product(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "product", span)?;
     let mut acc = Value::Int(1);
     for x in l.iter() {
-        if !matches!(x, Value::Int(_) | Value::Float(_)) {
+        if !matches!(x, Value::Int(_) | Value::Big(_) | Value::Float(_)) {
             return Err(invalid(
                 t!(
                     "`product` needs a list of numbers, but it contains {}",
@@ -2299,6 +2376,7 @@ fn unique(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     #[derive(PartialEq, Eq, Hash)]
     enum Key {
         Int(i64),
+        Big(Rc<BigInt>),
         Float(u64),
         Text(Rc<str>),
         Bool(bool),
@@ -2307,8 +2385,14 @@ fn unique(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     fn key(v: &Value) -> Option<Key> {
         Some(match v {
             Value::Int(n) => Key::Int(*n),
+            Value::Big(n) => Key::Big(n.clone()),
             Value::Float(f) if f.is_nan() => return None,
-            Value::Float(f) if f.fract() == 0.0 && f.abs() < 9.0e18 => Key::Int(*f as i64),
+            // Whole decimal numbers have the key of the whole number they are worth.
+            Value::Float(f) if f.fract() == 0.0 => match bigint::from_whole_f64(*f) {
+                Value::Int(n) => Key::Int(n),
+                Value::Big(n) => Key::Big(n),
+                _ => unreachable!(),
+            },
             Value::Float(f) => Key::Float(f.to_bits()),
             Value::Text(s) => Key::Text(s.clone()),
             Value::Bool(b) => Key::Bool(*b),

@@ -32,7 +32,7 @@ fn square(x) = x * x
   `None`). No exceptions: an operation that may fail returns a `Result`
   (`Ok(x)` or `Err(e)`), and `?` passes errors on. Algebraic types, pattern
   matching, a checker that warns about forgotten cases, no silent conversion,
-  no silent integer overflow.
+  whole numbers that never overflow.
 - **Help everywhere, at all times.**
   - Every error says *where* it is, *why*, and *how to fix it*, the way Rust
     does, and suggests the right name when you make a typo.
@@ -330,8 +330,8 @@ towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
   manager.
 - **Languages.** Messages exist in English and French; adding a language means
   translating the texts of `src/`. Contributions are welcome.
-- Numbers are 64-bit: whole numbers stop with an error beyond ±9.2 × 10¹⁸
-  (use decimal numbers beyond that).
+- **Numbers.** Whole numbers have no size limit and stay exact (up to 100000
+  digits), the usual 64-bit ones computed fastest; decimal numbers are 64-bit.
 
 ## License
 

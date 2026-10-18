@@ -8,6 +8,7 @@
 #[macro_use]
 pub mod lang;
 pub mod ast;
+pub mod bigint;
 pub mod builtins;
 pub mod check;
 pub mod compile;

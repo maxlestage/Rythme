@@ -1317,7 +1317,7 @@ impl<'a> Checker<'a> {
         match &e.kind {
             ExprKind::Unit => Ty::Unit,
             ExprKind::Bool(_) => Ty::Bool,
-            ExprKind::Int(_) => Ty::Int,
+            ExprKind::Int(_) | ExprKind::Big(_) => Ty::Int,
             ExprKind::Float(_) => Ty::Float,
             ExprKind::Text(_) => Ty::Text,
             ExprKind::Template(parts) => {
@@ -1570,6 +1570,7 @@ impl<'a> Checker<'a> {
                 self.call_target(Some(*s), &res, ty, None, args, span)
             }
             ExprKind::Int(_)
+            | ExprKind::Big(_)
             | ExprKind::Float(_)
             | ExprKind::Text(_)
             | ExprKind::Template(_)
@@ -1580,7 +1581,7 @@ impl<'a> Checker<'a> {
                     .at(callee.span)
                     .label(t!("cannot be called", "ne peut pas être appelé"));
                 let d = match &callee.kind {
-                    ExprKind::Int(_) | ExprKind::Float(_) => d.help(t!(
+                    ExprKind::Int(_) | ExprKind::Big(_) | ExprKind::Float(_) => d.help(t!(
                         "to multiply, write `*` explicitly: `2 * (x + 1)`",
                         "pour multiplier, écrivez `*` explicitement : `2 * (x + 1)`"
                     )),
@@ -2376,7 +2377,7 @@ impl<'a> Checker<'a> {
             self.op_error(op, l, lt, r, rt, at);
             return Ty::Never;
         }
-        // On numbers: a division by zero, or a whole number too large.
+        // On numbers: a division by zero, or a whole number with too many digits.
         if numbers {
             self.may_fail = true;
         }
@@ -2750,7 +2751,7 @@ impl<'a> Checker<'a> {
             (PatKind::Unit, _) => !t.never(UNIT),
             (PatKind::Bool(_), _) => !t.never(BOOL),
             // `1` matches `1.0`, and `1.0` matches `1`.
-            (PatKind::Int(_) | PatKind::Float(_), _) => !t.never(NUMBER),
+            (PatKind::Int(_) | PatKind::Big(_) | PatKind::Float(_), _) => !t.never(NUMBER),
             (PatKind::Text(_), _) => !t.never(TEXT),
             (PatKind::Ctor(name, args), _) => {
                 // An unknown constructor, or a wrong number of fields, is already an error.
@@ -2815,6 +2816,7 @@ impl<'a> Checker<'a> {
             (PatKind::Unit, PatKind::Unit) => true,
             (PatKind::Bool(a), PatKind::Bool(b)) => a == b,
             (PatKind::Int(a), PatKind::Int(b)) => a == b,
+            (PatKind::Big(a), PatKind::Big(b)) => a == b,
             (PatKind::Float(a), PatKind::Float(b)) => a == b,
             (PatKind::Text(a), PatKind::Text(b)) => a == b,
             (PatKind::Ctor(a, qs), PatKind::Ctor(b, ps)) => {
@@ -2941,7 +2943,7 @@ impl<'a> Checker<'a> {
                     missing
                 }
             }
-            PatKind::Int(_) | PatKind::Float(_) | PatKind::Text(_) => vec!["_".to_string()],
+            PatKind::Int(_) | PatKind::Big(_) | PatKind::Float(_) | PatKind::Text(_) => vec!["_".to_string()],
             _ => Vec::new(),
         }
     }
@@ -2965,6 +2967,7 @@ fn pattern_help() -> String {
 fn literal(e: &Expr) -> Option<Value> {
     Some(match &e.kind {
         ExprKind::Int(n) => Value::Int(*n),
+        ExprKind::Big(n) => Value::Big(n.clone()),
         ExprKind::Float(f) => Value::Float(*f),
         ExprKind::Text(s) => Value::Text(s.clone()),
         ExprKind::Bool(b) => Value::Bool(*b),
@@ -3220,6 +3223,7 @@ fn starts_with_minus(e: &Expr) -> bool {
     match &e.kind {
         ExprKind::Unary(UnOp::Neg, _) => true,
         ExprKind::Int(n) => *n < 0,
+        ExprKind::Big(n) => n.is_negative(),
         ExprKind::Float(f) => *f < 0.0,
         ExprKind::Binary(_, l, _, _) | ExprKind::Range(l, _) | ExprKind::Index(l, _) | ExprKind::Field(l, _, _) => starts_with_minus(l),
         _ => false,

@@ -647,7 +647,7 @@ fn highlight(code: &str) -> String {
         }
         out.push_str(&gap(&code[last..start]));
         let class = match &t.tok {
-            Tok::Int(_) | Tok::Float(_) | Tok::IntMinMagnitude => Some("num"),
+            Tok::Int(_) | Tok::Big(_) | Tok::Float(_) => Some("num"),
             Tok::Str(_) => Some("str"),
             Tok::Ctor(_) | Tok::True | Tok::False => Some("ctor"),
             Tok::Ident(_) if after_fn => Some("fn"),

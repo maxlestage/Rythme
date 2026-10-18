@@ -794,12 +794,8 @@ impl<'a> Shaper<'a> {
             return self.power();
         }
         let minus = self.take(Role::Minus)?;
-        if *self.peek() == Tok::IntMinMagnitude {
-            self.advance()?;
-        } else {
-            let e = self.unary()?;
-            self.set(e, Indent::Inner(minus));
-        }
+        let e = self.unary()?;
+        self.set(e, Indent::Inner(minus));
         Some(minus)
     }
 
@@ -891,7 +887,9 @@ impl<'a> Shaper<'a> {
 
     fn primary(&mut self) -> Option<usize> {
         match self.peek() {
-            Tok::Int(_) | Tok::Float(_) | Tok::True | Tok::False | Tok::Str(_) | Tok::Ident(_) | Tok::Ctor(_) => self.advance(),
+            Tok::Int(_) | Tok::Big(_) | Tok::Float(_) | Tok::True | Tok::False | Tok::Str(_) | Tok::Ident(_) | Tok::Ctor(_) => {
+                self.advance()
+            }
             Tok::LParen => {
                 let open = self.take(Role::Open)?;
                 self.with_sig(false, |p| {
@@ -1066,7 +1064,7 @@ impl<'a> Shaper<'a> {
                 }
                 Some(m)
             }
-            Tok::Ident(_) | Tok::Int(_) | Tok::Float(_) | Tok::True | Tok::False | Tok::Str(_) => self.advance(),
+            Tok::Ident(_) | Tok::Int(_) | Tok::Big(_) | Tok::Float(_) | Tok::True | Tok::False | Tok::Str(_) => self.advance(),
             Tok::Ctor(_) => {
                 let c = self.advance()?;
                 if *self.raw() == Tok::LParen {
