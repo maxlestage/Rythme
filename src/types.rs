@@ -473,6 +473,14 @@ fn date_ty(timed: bool, exact: bool) -> Ty {
     Ty::record(names.iter().map(|n| (Rc::from(*n), Ty::Int)).collect(), exact)
 }
 
+/// A generator of `check_all`: a record with the field `generator` and
+/// these ones.
+fn generator_ty(names: &[&str]) -> Ty {
+    let mut fields = vec![(Rc::from("generator"), Ty::Text)];
+    fields.extend(names.iter().map(|n| (Rc::from(*n), Ty::Any)));
+    Ty::record(fields, true)
+}
+
 /// What a call to the built-in function `name` gives, with arguments of
 /// these types. `None` for a function the checker knows nothing about: new
 /// built-in functions work without being described here.
@@ -961,6 +969,41 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 need(a, 0, Expected::Int)?;
                 Ty::Bool
             }
+            "check_all" => {
+                need(a, 0, Expected::Function)?;
+                need(a, 1, Expected::Generator)?;
+                need(a, 2, Expected::Int)?;
+                Ty::Unit
+            }
+            "sample" => {
+                need(a, 0, Expected::Generator)?;
+                need(a, 1, Expected::Int)?;
+                Ty::list(Ty::Any)
+            }
+            "ints" | "floats" if n == 2 => {
+                need(a, 0, if name == "ints" { Expected::Int } else { Expected::Number })?;
+                need(a, 1, if name == "ints" { Expected::Int } else { Expected::Number })?;
+                generator_ty(&["min", "max"])
+            }
+            "ints" | "floats" if n == 0 => generator_ty(&["min", "max"]),
+            "texts" => {
+                need(a, 0, Expected::Int)?;
+                generator_ty(&["max_length"])
+            }
+            "bools" => generator_ty(&[]),
+            "lists_of" => {
+                need(a, 0, Expected::Generator)?;
+                need(a, 1, Expected::Int)?;
+                generator_ty(&["of", "max_length"])
+            }
+            "one_of" => {
+                need(a, 0, Expected::List)?;
+                generator_ty(&["values"])
+            }
+            "records_of" => {
+                need(a, 0, Expected::Record)?;
+                generator_ty(&["fields"])
+            }
             _ => return Err(Outcome::Gives(Ty::Any)),
         })
     })();
@@ -1014,6 +1057,8 @@ pub fn callback(name: &str, index: usize, a: &[Ty]) -> Option<Callback> {
             Ty::Data(d) if matches!(d.kind(), OPTION | RESULT) => (vec![d.payload()], Some(d.kind())),
             _ => (vec![Ty::Any], None),
         },
+        // A property: it may give true or false, `()`, an Option or a Result.
+        ("check_all", 0) => (vec![Ty::Any], None),
         ("map_err", 1) => match &first {
             Ty::Data(d) if d.kind() == RESULT => (vec![error_of(d)], None),
             _ => (vec![Ty::Any], None),

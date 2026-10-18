@@ -143,6 +143,15 @@ pub const BUILTINS: &[&str] = &[
     "day_of_week",
     "days_in_month",
     "is_leap_year",
+    "check_all",
+    "sample",
+    "ints",
+    "floats",
+    "texts",
+    "bools",
+    "lists_of",
+    "one_of",
+    "records_of",
     "pi",
 ];
 

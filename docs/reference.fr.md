@@ -1727,10 +1727,106 @@ erreur[E015]: assertion échouée : les valeurs sont différentes
        attendu : 7
    = en savoir plus : `rythme explain E015`
 
-4 test(s) : 3 réussi(s), 1 échoué(s)
+4 test(s) : 3 réussi(s), 1 échoué(s) (1 ms)
 ```
 
-Code de sortie : 1.
+Code de sortie : 1. Le temps à la fin du résumé est celui de tout le
+passage ; un test qui dure une demi-seconde ou plus montre aussi son temps.
+
+**Plusieurs fichiers, un filtre.** `rythme test` accepte des fichiers et des
+dossiers : pour un dossier (`rythme test .`), il lance les tests de chaque
+fichier `.ry` qu'il contient, sous-dossiers compris, qui a des tests, dans
+l'ordre alphabétique (les dossiers cachés, `target` et `node_modules` sont
+sautés). Chaque fichier s'exécute à part, après une ligne qui le nomme. Un
+fichier avec des erreurs est signalé, et compté dans le résumé. À la fin,
+quand plusieurs fichiers ont été lancés ou qu'au moins deux tests ont échoué,
+les tests échoués sont listés avec leur position. Les options peuvent venir
+n'importe où après `test` :
+
+| Option | Ce qu'elle fait |
+|--------|-----------------|
+| `--filter TEXTE` (`-f`) | lance seulement les tests dont le nom contient `TEXTE`, sans tenir compte des majuscules ; peut être donnée plusieurs fois. Quand aucun test n'est choisi, le code de sortie est 1 |
+| `--seed N` | la graine des tests de propriétés (ci-dessous) ; `--seed random` en choisit une et l'affiche |
+| `--watch` (`-w`) | lance les tests, puis à nouveau à chaque changement d'un fichier : un fichier testé, un fichier qu'il utilise, ou un fichier `.ry` d'un dossier donné. Les fichiers sont regardés deux fois par seconde ; Ctrl+C arrête |
+| `-- ARGS...` | les mots après `--` sont donnés à `args()` |
+
+**Tests de propriétés.** `check_all(propriete, generateur)` appelle la
+fonction `propriete` avec 100 valeurs fabriquées par `generateur`
+(`check_all(propriete, generateur, cas)` avec un autre nombre, de 1 à
+100 000). La propriété est vraie pour une valeur quand elle donne `true`,
+`()`, `Some(...)` ou `Ok(...)` ; elle échoue quand elle donne `false`, `None`
+ou `Err(...)`, ou s'arrête sur une erreur (une autre valeur est E005). Les
+premières valeurs sont petites, les suivantes utilisent de plus en plus
+l'intervalle, et les bords (0, le minimum et le maximum) reviennent souvent.
+Quand une valeur fait échouer la propriété, `check_all` la **simplifie** : un
+nombre va vers 0 (ou vers le bout de son intervalle le plus proche de 0), un
+texte ou une liste raccourcit, puis ses éléments se simplifient, tant que la
+propriété échoue encore. Il s'arrête alors avec E015 (ou avec l'erreur de la
+propriété, dont le message commence par la valeur), en montrant la valeur la
+plus simple trouvée, celle d'où elle vient et la **graine**. Les valeurs ne
+dépendent que de la graine et de la place de l'appel dans son fichier : chaque
+lancement, sur chaque machine, essaie les mêmes valeurs ;
+`rythme test --seed N` en essaie d'autres.
+
+Les générateurs sont des enregistrements, fabriqués par `ints(min, max)`
+(nombres entiers, de -1000 à 1000 sans arguments), `floats(min, max)`
+(nombres décimaux), `texts(max_length)` (20 au plus sans argument : lettres,
+chiffres, espaces, ponctuation, accents), `bools()`,
+`lists_of(generateur, max_length)` (10 au plus sans longueur),
+`one_of(liste)` (une des valeurs ; une valeur qui échoue est remplacée par une
+valeur écrite avant elle) et `records_of({champ: generateur, ...})`, pour
+donner plusieurs valeurs. `sample(generateur, n)` donne `n` valeurs (10 sans
+`n`) pour voir ce que fabrique un générateur.
+
+Quand `assert_eq` échoue sur des listes ou des enregistrements, le message dit
+aussi où les valeurs diffèrent en premier (`[2].name`), ce qui manque ou est en
+trop ; sur deux textes courts, une marque montre le premier caractère qui
+diffère.
+
+```rythme
+fn mon_max(liste) = fold(liste, 0, fn(meilleur, x) = if x > meilleur then x else meilleur)
+
+test "inverser deux fois redonne la liste" = check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+
+test "le plus grand est dans la liste" = check_all(fn(l) = is_empty(l) or contains(l, mon_max(l)), lists_of(ints()))
+
+test "un enregistrement" = assert_eq({nom: "Ada", langues: ["en", "fr"]}, {nom: "Ada", langues: ["en", "de"]})
+```
+
+`rythme test 47-proprietes.ry` :
+
+```text
+Exécution de 3 test(s)
+  ✓ inverser deux fois redonne la liste
+  ✗ le plus grand est dans la liste
+erreur[E015]: la propriété est fausse pour [-1]
+ --> 47-proprietes.ry:5:42
+  |
+5 | test "le plus grand est dans la liste" = check_all(fn(l) = is_empty(l) or contains(l, mon_max(l)), lists_of(ints()))
+  |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ fausse pour [-1]
+  |
+  = note: trouvé à l'essai 1 sur 100, puis simplifié depuis [-3, -1] en 3 étape(s)
+  = note: graine 42 : chaque lancement essaie les mêmes valeurs ; `rythme test --seed N` en essaie d'autres
+  = aide: la fonction doit être vraie pour chaque valeur du générateur : corrigez la fonction, ou donnez au générateur un intervalle plus petit, comme `ints(1, 100)`
+  = en savoir plus : `rythme explain E015`
+
+  ✗ un enregistrement
+erreur[E015]: assertion échouée : les valeurs sont différentes
+ --> 47-proprietes.ry:7:28
+  |
+7 | test "un enregistrement" = assert_eq({nom: "Ada", langues: ["en", "fr"]}, {nom: "Ada", langues: ["en", "de"]})
+  |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: obtenu :  {nom: "Ada", langues: ["en", "fr"]}
+      attendu : {nom: "Ada", langues: ["en", "de"]}
+  = note: première différence en langues[1] : obtenu "fr", attendu "de"
+  = en savoir plus : `rythme explain E015`
+
+Tests échoués :
+  ✗ le plus grand est dans la liste (47-proprietes.ry:5:1)
+  ✗ un enregistrement (47-proprietes.ry:7:1)
+3 test(s) : 1 réussi(s), 2 échoué(s) (7 ms)
+```
 
 ### 4.9 Modules : `use`
 
@@ -2341,6 +2437,14 @@ n'est pas une date (un champ inconnu ou absent, un nombre hors limites, un
 décalage est un nombre fixe : il n'y a pas de règles d'heure d'été, donc un
 jour après un moment, c'est la même heure le lendemain.
 
+**Tests de propriétés.** `check_all(propriete, generateur, cas)`,
+`sample(generateur, n)`, et les générateurs `ints(min, max)`,
+`floats(min, max)`, `texts(max_length)`, `bools()`,
+`lists_of(generateur, max_length)`, `one_of(liste)` et `records_of(champs)`
+(voir [4.8](#48-tests)). Un générateur est un enregistrement comme
+`{generator: "ints", min: 1, max: 6}` ; un générateur mal fait arrête
+`check_all` et `sample` avec E023.
+
 ```rythme
 nombres = [3, 1, 4, 1, 5, 9, 2, 6]
 print(map(nombres, fn(x) = x * 2))
@@ -2521,7 +2625,7 @@ rythme [--lang fr|en] [--no-color] [COMMANDE] [ARGUMENTS...]
 | *(aucune)* | `repl` | le mode interactif (voir [7.2](#72-le-mode-interactif-repl)) |
 | `FICHIER [ARGS...]` | `run FICHIER [ARGS...]`, `lancer` | vérifie puis exécute le programme ; `ARGS` est donné à `args()` |
 | `check FICHIER...` | `verifier`, `vérifier` | vérifie chaque programme sans l'exécuter (voir [5.5](#55-la-vérification-avant-lexécution)) |
-| `test FICHIER [ARGS...]` | `tester` | lance les tests (voir [4.8](#48-tests)) |
+| `test CHEMIN... [--filter TEXTE] [--seed N] [--watch] [-- ARGS...]` | `tester` | lance les tests de fichiers et de dossiers (voir [4.8](#48-tests)) |
 | `fmt [--check] FICHIER...` | `format`, `formater` | donne au code sa mise en forme officielle ; aussi un dossier, ou `-` pour l'entrée standard (voir [7.4](#74-la-mise-en-forme--rythme-fmt)) |
 | `doc [--html] [--out FICHIER] FICHIER...` | `documenter` | écrit la documentation de fichiers ou de dossiers, en Markdown ou sous forme de page web (voir [7.6](#76-la-documentation--rythme-doc)) |
 | `exercise [list \| start NOM \| check FICHIER]` | `exercises`, `exercice`, `exercices` | les exercices intégrés (voir plus bas) |
@@ -2542,7 +2646,8 @@ texte en UTF-8. Tout le reste est une commande inconnue, avec une
 suggestion.
 
 **Options.** `--lang` et `--no-color` doivent venir **avant** la commande ;
-tout ce qui suit le nom du fichier va au programme. `--lang` accepte toute
+tout ce qui suit le nom du fichier va au programme (pour `rythme test`, ce
+qui vient après `--`). `--lang` accepte toute
 valeur qui commence par `fr` ou `en` (`--lang fr`, `--lang=en`,
 `--lang fr_CA`) ; une autre valeur, ou `--lang` sans valeur, est signalée,
 avec le code de sortie 2.
