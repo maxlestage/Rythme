@@ -47,6 +47,36 @@ jobs:
           npm ci
           npm run check
 
+  tree-sitter:
+    name: Tree-sitter grammar and Zed extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+          components: clippy, rustfmt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build rythme
+        run: cargo build
+      - name: The generated parser is up to date
+        working-directory: editors/tree-sitter-rythme
+        run: |
+          npm ci
+          npm run generate
+          git diff --exit-code -- src
+      - name: Corpus and highlight tests, examples and manual samples, queries
+        working-directory: editors/tree-sitter-rythme
+        run: npm test
+      - name: Zed extension
+        working-directory: editors/zed
+        run: |
+          cargo fmt --check
+          cargo clippy --target wasm32-wasip1 -- -D warnings
+          cargo build --release --target wasm32-wasip1
+
   playground:
     name: Web playground (WebAssembly)
     runs-on: ubuntu-latest

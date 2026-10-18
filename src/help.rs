@@ -1194,6 +1194,12 @@ Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   every editor that speaks the Language Server Protocol: tell it to start
   `rythme lsp` for .ry files. Ready-made configurations: editors/README.md
 
+Zed
+  the extension in editors/zed: colors and the language server.
+
+Colors in Neovim, Helix and Zed
+  the Tree-sitter grammar in editors/tree-sitter-rythme (see editors/README.md).
+
 The language of the messages follows the editor, unless `--lang fr|en` or
 RYTHME_LANG chooses it: rythme --lang fr lsp"#;
 
@@ -1213,6 +1219,12 @@ VS Code
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   tout éditeur qui parle le Language Server Protocol : demandez-lui de lancer
   `rythme lsp` pour les fichiers .ry. Configurations prêtes : editors/README.fr.md
+
+Zed
+  l'extension dans editors/zed : couleurs et serveur de langage.
+
+Couleurs dans Neovim, Helix et Zed
+  la grammaire Tree-sitter dans editors/tree-sitter-rythme (voir editors/README.fr.md).
 
 La langue des messages suit celle de l'éditeur, sauf si `--lang fr|en` ou
 RYTHME_LANG la choisit : rythme --lang fr lsp"#;

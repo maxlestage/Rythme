@@ -1,0 +1,18 @@
+id = "rythme"
+name = "Rythme"
+description = "Rythme: colors, indentation, outline, and the language server (`rythme lsp`): problems as you type, documentation, completion, go to definition, rename, formatting."
+version = "0.1.0"
+schema_version = 1
+authors = ["The Rythme authors"]
+repository = "https://github.com/maxlestage/Rythme"
+
+# The grammar is in the same repository (editors/tree-sitter-rythme), at
+# this commit: change `rev` when the grammar changes.
+[grammars.rythme]
+repository = "https://github.com/maxlestage/Rythme"
+rev = "d344d7fed0f41f9057f5c13a7813fe079e6420c2"
+path = "editors/tree-sitter-rythme"
+
+[language_servers.rythme]
+name = "Rythme"
+languages = ["Rythme"]
