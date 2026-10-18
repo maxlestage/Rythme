@@ -23,6 +23,10 @@ fn samples(it: &Interp) -> Vec<Value> {
     let text = Value::text;
     let mut one_field = Record::new();
     one_field.set(Rc::from("a"), int(1));
+    let mut date = Record::new();
+    for (k, v) in [("year", 2024), ("month", 2), ("day", 29)] {
+        date.set(Rc::from(k), int(v));
+    }
     let leaf = Rc::new(CtorInfo { type_name: Sym::new("T"), name: Sym::new("A"), fields: vec![Sym::new("x")], index: 0, doc: None });
     vec![
         Value::Unit,
@@ -44,6 +48,7 @@ fn samples(it: &Interp) -> Vec<Value> {
         Value::list(vec![int(1), Value::Float(0.5)]),
         Value::Record(Rc::new(Record::new())),
         Value::Record(Rc::new(one_field)),
+        Value::Record(Rc::new(date)),
         it.some(int(1)),
         it.none(),
         it.ok(text("x")),

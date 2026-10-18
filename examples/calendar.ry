@@ -1,0 +1,34 @@
+# A calendar: the page of a month, then a few events read from ISO 8601
+# texts, with their day of the week and how long after the first one.
+
+names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+## The page of a month, as lines of text: weeks start on Monday.
+fn page(year, month)
+  first = {year: year, month: month, day: 1}
+  blanks = repeat(["  "], day_of_week(first) - 1)
+  days = map(1..days_in_month(year, month), fn(d) = pad_left(d, 2))
+  title = "{year}-{pad_left(month, 2, "0")}"
+  weeks = chunks(blanks + days, 7) |> map(fn(week) = join(week, " "))
+  [title, "Mo Tu We Th Fr Sa Su"] + weeks
+end
+
+page(2024, 2) |> each(print)
+print("2024 is a leap year: {is_leap_year(2024)}")
+print("")
+
+events = ["2024-03-01T09:00", "2024-02-29T18:30", "2024-12-25", "not a date"]
+
+fn show(text)
+  match parse_date(text)
+    Ok(d) -> "{format_date(d)}  {names[day_of_week(d) - 1]}"
+    Err(e) -> "skipped: {e}"
+  end
+end
+
+events |> map(show) |> each(print)
+
+start = {year: 2024, month: 2, day: 29}
+print("From {format_date(start)} to Christmas: {days_between(start, {year: 2024, month: 12, day: 25})} days")
+print("One year later: {format_date(add_days(start, 365))}")
+print("90 minutes after 23:00: {format_date(add_seconds({..start, hour: 23}, 90 * 60))}")
