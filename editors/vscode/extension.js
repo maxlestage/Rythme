@@ -27,10 +27,10 @@ let watcher;
 const pages = new Map();
 const pagesChanged = new vscode.EventEmitter();
 
-/** English, French or Spanish, like VS Code. */
-function t(en, fr, es) {
-  const ui = vscode.env.language.toLowerCase();
-  return ui.startsWith('fr') ? fr : ui.startsWith('es') ? es : en;
+/** The text in the language of VS Code: English, French, Spanish, German, Portuguese or Chinese. */
+function t(en, fr, es, de, pt, zh) {
+  const texts = { fr, es, de, pt, zh };
+  return texts[vscode.env.language.toLowerCase().slice(0, 2)] || en;
 }
 
 function settings() {
@@ -83,9 +83,9 @@ function program() {
 }
 
 /** The languages of the messages of Rythme. */
-const LANGUAGES = ['en', 'fr', 'es'];
+const LANGUAGES = ['en', 'fr', 'es', 'de', 'pt', 'zh'];
 
-/** The language chosen in the settings: 'en', 'fr', 'es' or 'auto'. */
+/** The language chosen in the settings: one of `LANGUAGES`, or 'auto'. */
 function languageSetting() {
   const v = settings().get('language');
   return LANGUAGES.includes(v) ? v : 'auto';
@@ -105,14 +105,17 @@ function langArgs() {
 }
 
 function notFound(command) {
-  const install = t('How to install', 'Comment installer', 'Cómo instalarlo');
-  const settingsButton = t('Settings', 'Réglages', 'Ajustes');
+  const install = t('How to install', 'Comment installer', 'Cómo instalarlo', 'Installationsanleitung', 'Como instalar', '如何安装');
+  const settingsButton = t('Settings', 'Réglages', 'Ajustes', 'Einstellungen', 'Configurações', '设置');
   vscode.window
     .showErrorMessage(
       t(
         `Rythme: the program \`${command}\` was not found. Install Rythme, or give its path in the setting \`rythme.path\`. Colors and snippets work without it.`,
         `Rythme : le programme \`${command}\` est introuvable. Installez Rythme, ou indiquez son chemin dans le réglage \`rythme.path\`. Les couleurs et les extraits de code fonctionnent sans lui.`,
-        `Rythme: no se encontró el programa \`${command}\`. Instala Rythme, o indica su ruta en el ajuste \`rythme.path\`. Los colores y los fragmentos funcionan sin él.`
+        `Rythme: no se encontró el programa \`${command}\`. Instala Rythme, o indica su ruta en el ajuste \`rythme.path\`. Los colores y los fragmentos funcionan sin él.`,
+        `Rythme: das Programm \`${command}\` wurde nicht gefunden. Installiere Rythme, oder gib seinen Pfad in der Einstellung \`rythme.path\` an. Farben und Snippets funktionieren auch ohne es.`,
+        `Rythme: o programa \`${command}\` não foi encontrado. Instale o Rythme, ou informe o caminho dele na configuração \`rythme.path\`. As cores e os snippets funcionam sem ele.`,
+        `Rythme：找不到程序 \`${command}\`。请安装 Rythme，或者在设置 \`rythme.path\` 中给出它的路径。没有它，着色和代码片段也能使用。`
       ),
       install,
       settingsButton
@@ -168,7 +171,10 @@ async function startServer() {
       t(
         `Rythme: the language server did not start (${reason}). It needs a recent version of Rythme, which has the command \`rythme lsp\`. More in the Rythme output.`,
         `Rythme : le serveur de langage n'a pas démarré (${reason}). Il faut une version récente de Rythme, qui a la commande \`rythme lsp\`. Plus de détails dans la sortie Rythme.`,
-        `Rythme: el servidor de lenguaje no arrancó (${reason}). Hace falta una versión reciente de Rythme, que tenga el comando \`rythme lsp\`. Más detalles en la salida Rythme.`
+        `Rythme: el servidor de lenguaje no arrancó (${reason}). Hace falta una versión reciente de Rythme, que tenga el comando \`rythme lsp\`. Más detalles en la salida Rythme.`,
+        `Rythme: der Sprachserver ist nicht gestartet (${reason}). Er braucht eine aktuelle Version von Rythme, die den Befehl \`rythme lsp\` hat. Mehr in der Ausgabe Rythme.`,
+        `Rythme: o servidor de linguagem não iniciou (${reason}). É preciso uma versão recente do Rythme, que tenha o comando \`rythme lsp\`. Mais detalhes na saída Rythme.`,
+        `Rythme：语言服务器没有启动（${reason}）。它需要较新版本的 Rythme，带有命令 \`rythme lsp\`。更多信息见 Rythme 输出。`
       )
     );
   }
@@ -193,7 +199,14 @@ function restartServer() {
     await stopServer();
     await startServer();
     if (client) {
-      vscode.window.setStatusBarMessage(t('Rythme: language server restarted', 'Rythme : serveur de langage redémarré', 'Rythme: servidor de lenguaje reiniciado'), 3000);
+      vscode.window.setStatusBarMessage(t(
+          'Rythme: language server restarted',
+          'Rythme : serveur de langage redémarré',
+          'Rythme: servidor de lenguaje reiniciado',
+          'Rythme: Sprachserver neu gestartet',
+          'Rythme: servidor de linguagem reiniciado',
+          'Rythme：语言服务器已重启'
+        ), 3000);
     }
   });
   return restarting;
@@ -248,7 +261,14 @@ async function documentToRun(target) {
 async function runInTerminal(subcommand, target, extra = []) {
   const doc = await documentToRun(target);
   if (!doc) {
-    vscode.window.showInformationMessage(t('Open a Rythme file (.ry) first.', "Ouvrez d'abord un fichier Rythme (.ry).", 'Abre antes un archivo de Rythme (.ry).'));
+    vscode.window.showInformationMessage(t(
+        'Open a Rythme file (.ry) first.',
+        "Ouvrez d'abord un fichier Rythme (.ry).",
+        'Abre antes un archivo de Rythme (.ry).',
+        'Öffne zuerst eine Rythme-Datei (.ry).',
+        'Abra antes um arquivo do Rythme (.ry).',
+        '请先打开一个 Rythme 文件（.ry）。'
+      ));
     return;
   }
   if ((doc.isUntitled || doc.isDirty) && !(await doc.save())) {
@@ -306,7 +326,7 @@ async function explainError() {
     }
   }
   const asked = await vscode.window.showInputBox({
-    prompt: t('Error code to explain', "Code d'erreur à expliquer", 'Código de error que explicar'),
+    prompt: t('Error code to explain', "Code d'erreur à expliquer", 'Código de error que explicar', 'Zu erklärender Fehlercode', 'Código de erro a explicar', '要解释的错误代码'),
     placeHolder: 'E003',
     value: code,
   });
@@ -317,7 +337,14 @@ async function explainError() {
 
 async function showHelp() {
   const asked = await vscode.window.showInputBox({
-    prompt: t('A topic or a function (empty: the list of topics)', 'Un sujet ou une fonction (vide : la liste des sujets)', 'Un tema o una función (vacío: la lista de temas)'),
+    prompt: t(
+      'A topic or a function (empty: the list of topics)',
+      'Un sujet ou une fonction (vide : la liste des sujets)',
+      'Un tema o una función (vacío: la lista de temas)',
+      'Ein Thema oder eine Funktion (leer: die Liste der Themen)',
+      'Um tema ou uma função (vazio: a lista de temas)',
+      '一个主题或一个函数（留空：主题列表）'
+    ),
     placeHolder: 'map, lists, match, errors…',
   });
   if (asked === undefined) {

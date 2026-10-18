@@ -1,0 +1,32 @@
+# Exercício 02 · Textos  ★☆☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+## Um cumprimento para `nome`.
+fn cumprimentar(nome) = "Olá, {nome}!"
+
+## O texto em maiúsculas, seguido de "!".
+fn gritar(texto) = upper(texto) + "!"
+
+## As iniciais de uma pessoa, cada uma seguida de um ponto.
+fn iniciais(nome, sobrenome) = "{nome[0]}.{sobrenome[0]}."
+
+## Uma frase que apresenta uma pessoa.
+fn apresentar(nome, idade) = "{nome} tem {idade} anos."
+
+# --- Testes (não os altere) ---
+
+test "cumprimentar" = assert_eq(cumprimentar("Ada"), "Olá, Ada!")
+
+test "cumprimentar outra pessoa" = assert_eq(cumprimentar("Alan"), "Olá, Alan!")
+
+test "gritar"
+  assert_eq(gritar("olá"), "OLÁ!")
+  assert_eq(gritar("Pare"), "PARE!")
+end
+
+test "iniciais"
+  assert_eq(iniciais("Ada", "Lovelace"), "A.L.")
+  assert_eq(iniciais("grace", "hopper"), "g.h.")
+end
+
+test "apresentar" = assert_eq(apresentar("Ada", 36), "Ada tem 36 anos.")

@@ -23,8 +23,9 @@ teach, so that students spend their time on ideas rather than on syntax.
   their syntax or a type system to fight on the first day.
 - **Testing is built in.** `test "..." = assert_eq(actual, expected)` next to
   the code, `rythme test file.ry` to run. Exercises can ship with their tests.
-- **In your students' language.** Every message exists in English, French and
-  Spanish (`--lang fr`, `--lang es`).
+- **In your students' language.** Every message exists in English, French,
+  Spanish, German, Portuguese and Chinese (`--lang fr`, `--lang es`,
+  `--lang de`, `--lang pt`, `--lang zh`).
 - **Easy to install, free, open.** One program, no dependency, MIT license,
   runs on Linux, macOS and Windows.
 
@@ -67,8 +68,9 @@ expected and obtained values.
 
 Thirty such exercises are ready: [**the exercises**](exercises/README.md),
 graded from ★☆☆ to ★★★ and following the course above, each with a
-statement, hints and tests, in English and French, with reference solutions
-for teachers. They are built into `rythme`:
+statement, hints and tests, in every language of the messages (English,
+French, Spanish, German, Portuguese, Chinese), with reference solutions for
+teachers. They are built into `rythme`:
 
 ```sh
 rythme exercise list                     # the exercises

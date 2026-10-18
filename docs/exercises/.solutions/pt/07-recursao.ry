@@ -1,0 +1,34 @@
+# Exercício 07 · Recursão  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn fatorial(0) = 1
+fn fatorial(n) = n * fatorial(n - 1)
+
+fn soma_ate(0) = 0
+fn soma_ate(n) = n + soma_ate(n - 1)
+
+fn potencia(_, 0) = 1
+fn potencia(x, n) = x * potencia(x, n - 1)
+
+# --- Testes (não os altere) ---
+
+test "fatorial"
+  assert_eq(fatorial(0), 1)
+  assert_eq(fatorial(1), 1)
+  assert_eq(fatorial(5), 120)
+  assert_eq(fatorial(10), 3628800)
+end
+
+test "soma até"
+  assert_eq(soma_ate(0), 0)
+  assert_eq(soma_ate(1), 1)
+  assert_eq(soma_ate(10), 55)
+  assert_eq(soma_ate(100), 5050)
+end
+
+test "potência"
+  assert_eq(potencia(2, 0), 1)
+  assert_eq(potencia(2, 10), 1024)
+  assert_eq(potencia(3, 4), 81)
+  assert_eq(potencia(1.5, 2), 2.25)
+end

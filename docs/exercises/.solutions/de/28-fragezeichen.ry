@@ -1,0 +1,44 @@
+# Übung 28 · Fehler mit `?` weitergeben  ★★★
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn texte_addieren(a, b) = Ok(parse_int(a)? + parse_int(b)?)
+
+fn punkt_lesen(text) = match split(text, ",")
+  [x, y] -> Ok({x: parse_int(x)?, y: parse_int(y)?})
+  _ -> Err("x,y erwartet")
+end
+
+fn summe_der_texte([]) = Ok(0)
+fn summe_der_texte([t, ..rest]) = Ok(parse_int(t)? + summe_der_texte(rest)?)
+
+fn verhaeltnis_der_texte(a, b)
+  x = parse_int(a)?
+  y = parse_int(b)?
+  if y == 0 then Err("Division durch null") else Ok(x / y)
+end
+
+# --- Tests (nicht verändern) ---
+
+test "Texte addieren"
+  assert_eq(texte_addieren("2", "40"), Ok(42))
+  assert(is_err(texte_addieren("2", "vierzig")), "vierzig ist keine Zahl")
+end
+
+test "Punkt lesen"
+  assert_eq(punkt_lesen("3,4"), Ok({x: 3, y: 4}))
+  assert_eq(punkt_lesen("3"), Err("x,y erwartet"))
+  assert_eq(punkt_lesen("1,2,3"), Err("x,y erwartet"))
+  assert(is_err(punkt_lesen("3,vier")), "vier ist keine Zahl")
+end
+
+test "Summe der Texte"
+  assert_eq(summe_der_texte(["1", "2", "3"]), Ok(6))
+  assert_eq(summe_der_texte([]), Ok(0))
+  assert_eq(summe_der_texte(["1", "x", "y"]), parse_int("x"))
+end
+
+test "Verhältnis der Texte"
+  assert_eq(verhaeltnis_der_texte("9", "2"), Ok(4.5))
+  assert_eq(verhaeltnis_der_texte("9", "0"), Err("Division durch null"))
+  assert(is_err(verhaeltnis_der_texte("neun", "0")), "neun ist keine Zahl")
+end

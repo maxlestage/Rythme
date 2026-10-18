@@ -1,0 +1,44 @@
+# Exercício 28 · Repassar os erros com `?`  ★★★
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn somar_textos(a, b) = Ok(parse_int(a)? + parse_int(b)?)
+
+fn ler_ponto(texto) = match split(texto, ",")
+  [x, y] -> Ok({x: parse_int(x)?, y: parse_int(y)?})
+  _ -> Err("esperado x,y")
+end
+
+fn soma_dos_textos([]) = Ok(0)
+fn soma_dos_textos([t, ..resto]) = Ok(parse_int(t)? + soma_dos_textos(resto)?)
+
+fn razao_dos_textos(a, b)
+  x = parse_int(a)?
+  y = parse_int(b)?
+  if y == 0 then Err("divisão por zero") else Ok(x / y)
+end
+
+# --- Testes (não os altere) ---
+
+test "somar textos"
+  assert_eq(somar_textos("2", "40"), Ok(42))
+  assert(is_err(somar_textos("2", "quarenta")), "quarenta não é um número")
+end
+
+test "ler um ponto"
+  assert_eq(ler_ponto("3,4"), Ok({x: 3, y: 4}))
+  assert_eq(ler_ponto("3"), Err("esperado x,y"))
+  assert_eq(ler_ponto("1,2,3"), Err("esperado x,y"))
+  assert(is_err(ler_ponto("3,quatro")), "quatro não é um número")
+end
+
+test "soma dos textos"
+  assert_eq(soma_dos_textos(["1", "2", "3"]), Ok(6))
+  assert_eq(soma_dos_textos([]), Ok(0))
+  assert_eq(soma_dos_textos(["1", "x", "y"]), parse_int("x"))
+end
+
+test "razão dos textos"
+  assert_eq(razao_dos_textos("9", "2"), Ok(4.5))
+  assert_eq(razao_dos_textos("9", "0"), Err("divisão por zero"))
+  assert(is_err(razao_dos_textos("nove", "0")), "nove não é um número")
+end

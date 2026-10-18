@@ -1,0 +1,49 @@
+# 练习 27 · 可能失败的操作：Result  ★★☆
+# 参考答案。请先自己做这个练习，再来看它！
+
+fn checked_divide(_, 0) = Err("除以零")
+fn checked_divide(a, b) = Ok(a / b)
+
+fn parse_age(text) = match parse_int(text)
+  Err(_) -> Err("不是数字")
+  Ok(n) if n < 0 -> Err("年龄不能是负数")
+  Ok(n) if n > 150 -> Err("年龄太大")
+  Ok(n) -> Ok(n)
+end
+
+fn describe(result) = match result
+  Ok(value) -> "成功：{value}"
+  Err(message) -> "错误：{message}"
+end
+
+fn check_code(code) =
+  if len(code) < 8 then Err("太短")
+  else if not any(chars(code), is_digit) then Err("没有数字")
+  else Ok(code)
+
+# --- 测试（请不要修改）---
+
+test "检查过的除法"
+  assert_eq(checked_divide(9, 3), Ok(3))
+  assert_eq(checked_divide(1, 0), Err("除以零"))
+end
+
+test "读取年龄"
+  assert_eq(parse_age("36"), Ok(36))
+  assert_eq(parse_age(" 7 "), Ok(7))
+  assert_eq(parse_age("七"), Err("不是数字"))
+  assert_eq(parse_age("-1"), Err("年龄不能是负数"))
+  assert_eq(parse_age("200"), Err("年龄太大"))
+end
+
+test "描述"
+  assert_eq(describe(Ok(42)), "成功：42")
+  assert_eq(describe(Err("年龄太大")), "错误：年龄太大")
+  assert_eq(describe(parse_age("-5")), "错误：年龄不能是负数")
+end
+
+test "检查代码"
+  assert_eq(check_code("rythme2024"), Ok("rythme2024"))
+  assert_eq(check_code("abc1"), Err("太短"))
+  assert_eq(check_code("functional"), Err("没有数字"))
+end

@@ -1,0 +1,27 @@
+# 练习 18 · 处理文本  ★★☆
+# 参考答案。请先自己做这个练习，再来看它！
+
+fn is_palindrome(text)
+  letters = text |> lower |> replace(" ", "")
+  letters == reverse(letters)
+end
+
+fn count_vowels(text) = text |> lower |> chars |> count(fn(c) = contains("aeiouy", c))
+
+fn title_case(text) = text |> split |> map(fn(w) = capitalize(lower(w))) |> join(" ")
+
+# --- 测试（请不要修改）---
+
+test "回文"
+  assert_eq(is_palindrome("上海自来水来自海上"), true)
+  assert_eq(is_palindrome("Never odd or even"), true)
+  assert_eq(is_palindrome("rythme"), false)
+end
+
+test "元音"
+  assert_eq(count_vowels("Rythme"), 2)
+  assert_eq(count_vowels("AEIOU"), 5)
+  assert_eq(count_vowels("xkcd"), 0)
+end
+
+test "标题格式" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")

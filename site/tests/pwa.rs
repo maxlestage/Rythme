@@ -55,7 +55,7 @@ async fn the_manifests_are_served_and_complete() {
         assert_eq!(m["name"], "Rythme");
         assert_eq!(m["short_name"], "Rythme");
         assert_eq!(m["description"], t.app_description);
-        assert_eq!(m["lang"], code);
+        assert_eq!(m["lang"], lang.tag());
         assert_eq!(m["display"], "standalone");
         assert_eq!(m["id"], "/");
         assert_eq!(resolve(&path, m["start_url"].as_str().unwrap()), format!("/{code}/"));
@@ -92,7 +92,7 @@ async fn the_manifests_are_served_and_complete() {
             }
         }
     }
-    assert_eq!(client.get("/de/manifest.webmanifest").await.status(), 404);
+    assert_eq!(client.get("/it/manifest.webmanifest").await.status(), 404);
 }
 
 /// The list of a `const NAME = [...]` of the service worker.
@@ -188,7 +188,7 @@ async fn the_offline_page_exists_in_both_languages() {
         let res = client.get(&path).await;
         assert_eq!(res.status(), 200, "{path}");
         let html = res.text();
-        assert!(html.starts_with(&format!("<!DOCTYPE html><html lang=\"{}\">", lang.code())), "{path}");
+        assert!(html.starts_with(&format!("<!DOCTYPE html><html lang=\"{}\">", lang.tag())), "{path}");
         assert!(html.contains(&lang.texts().offline_title.replace('\'', "&#x27;")), "{path}");
         assert!(html.contains("noindex"), "{path}");
     }

@@ -1,0 +1,18 @@
+# Übung 01 · Erste Werte  ★☆☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+sekunden_pro_minute = 60
+sekunden_pro_stunde = 60 * sekunden_pro_minute
+sekunden_pro_tag = 24 * sekunden_pro_stunde
+sekunden_pro_woche = 7 * sekunden_pro_tag
+zusammenfassung = "Eine Woche hat {sekunden_pro_woche} Sekunden."
+
+# --- Tests (nicht verändern) ---
+
+test "Sekunden in einer Stunde" = assert_eq(sekunden_pro_stunde, 3600)
+
+test "Sekunden an einem Tag" = assert_eq(sekunden_pro_tag, 86400)
+
+test "Sekunden in einer Woche" = assert_eq(sekunden_pro_woche, 604800)
+
+test "die Zusammenfassung" = assert_eq(zusammenfassung, "Eine Woche hat 604800 Sekunden.")

@@ -1,0 +1,40 @@
+# Übung 05 · Wahr oder falsch  ★☆☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn ist_vielfaches(n, d) = n % d == 0
+
+fn liegt_zwischen(x, unten, oben) = x >= unten and x <= oben
+
+fn ist_schaltjahr(jahr) = ist_vielfaches(jahr, 4) and (not ist_vielfaches(jahr, 100) or ist_vielfaches(jahr, 400))
+
+fn exklusiv_oder(a, b) = a != b
+
+# --- Tests (nicht verändern) ---
+
+test "Vielfache"
+  assert(ist_vielfaches(12, 3), "12 ist ein Vielfaches von 3")
+  assert(not ist_vielfaches(12, 5), "12 ist kein Vielfaches von 5")
+  assert(ist_vielfaches(0, 7), "0 ist ein Vielfaches jeder Zahl")
+end
+
+test "zwischen"
+  assert(liegt_zwischen(5, 1, 10), "5 liegt zwischen 1 und 10")
+  assert(liegt_zwischen(1, 1, 10), "die Grenzen gehören dazu")
+  assert(liegt_zwischen(10, 1, 10), "die Grenzen gehören dazu")
+  assert(not liegt_zwischen(11, 1, 10), "11 ist zu groß")
+  assert(not liegt_zwischen(0, 1, 10), "0 ist zu klein")
+end
+
+test "Schaltjahre"
+  assert_eq(ist_schaltjahr(2024), true)
+  assert_eq(ist_schaltjahr(2023), false)
+  assert_eq(ist_schaltjahr(1900), false)
+  assert_eq(ist_schaltjahr(2000), true)
+end
+
+test "exklusives Oder"
+  assert_eq(exklusiv_oder(true, false), true)
+  assert_eq(exklusiv_oder(false, true), true)
+  assert_eq(exklusiv_oder(true, true), false)
+  assert_eq(exklusiv_oder(false, false), false)
+end

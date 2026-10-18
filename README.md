@@ -4,7 +4,7 @@
 programming language, with help everywhere.**
 Programs are files ending in `.ry`. The interpreter is written in Rust.
 
-*[Version française →](README.fr.md) · [En español →](README.es.md)*
+*[Version française →](README.fr.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md) · [中文 →](README.zh.md)*
 
 **Documentation:** the [reference manual](docs/reference.md) (the whole
 language, precisely), the [guide for teachers](docs/teaching.md), and
@@ -73,8 +73,9 @@ puts total                 # 20
   - Inside your editor: the problems as you type, the documentation under
     the mouse, completion, go to definition, rename (`rythme lsp`, the
     language server, for VS Code, Neovim, Helix, Emacs...).
-  - Every message, every piece of documentation exists in **English, French
-    and Spanish** (`--lang fr`, `--lang es`, or automatically from your system
+  - Every message, every piece of documentation exists in **English, French,
+    Spanish, German, Portuguese and Chinese** (`--lang fr`, `--lang es`,
+    `--lang de`, `--lang pt`, `--lang zh`, or automatically from your system
     language).
 
 Here is what a mistake looks like:
@@ -108,14 +109,14 @@ error[E001]: `for` is not used in Rythme
 
 The website <https://maxlestage.github.io/Rythme/> has a playground that runs
 the real interpreter, compiled to WebAssembly ([`playground/`](playground)):
-edit code, run it, check it, run tests, format it, read the help, in English
-or French, without installing anything. The website also installs as an app
+edit code, run it, check it, run tests, format it, read the help, in English,
+French, Spanish, German, Portuguese or Chinese, without installing anything. The website also installs as an app
 (a Progressive Web App) and works offline, playground included. Its menu offers color
 themes (Auto, Light, Dark, High contrast, Sepia, Tempo), and no page scrolls
 sideways, from a 320px phone to a wide screen.
 
 The [`site/`](site) folder is the website of Rythme (home, tour of the
-language, examples, playground and guide for teachers, in English and French),
+language, examples, playground and guide for teachers, in six languages),
 written in Rust with Paquets.
 
 ### Deploy the website on Heroku
@@ -211,8 +212,8 @@ cargo install --path .       # or install it in your PATH
 | `rythme -e 'print(1 + 2)'`  | run a piece of code                            |
 | `rythme lsp`                | language server, started by your editor ([editors](editors)) |
 
-Add `--lang en`, `--lang fr` or `--lang es` before the command to choose the
-language of the messages, or set `RYTHME_LANG`.
+Add `--lang` and a language (`en`, `fr`, `es`, `de`, `pt` or `zh`) before the
+command to choose the language of the messages, or set `RYTHME_LANG`.
 
 ## The language in two minutes
 
@@ -311,9 +312,9 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 [`docs/teaching.md`](docs/teaching.md) proposes a course outline built on
 Rythme, and explains why it fits a first programming course and a
 functional programming course alike.
-[`docs/exercises/`](docs/exercises/README.md) holds 30 graded exercises, in
-English and French, with statements, hints, tests and solutions, that
-`rythme exercise` hands out and checks.
+[`docs/exercises/`](docs/exercises/README.md) holds 30 graded exercises, with
+statements, hints, tests and solutions, that `rythme exercise` hands out and
+checks in every language of the messages.
 
 ## How it works
 
@@ -374,11 +375,11 @@ towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
   documentation inside every editor (see `rythme help editors`). The web
   playground runs the interpreter compiled to WebAssembly. Next: a package
   manager.
-- **Languages.** Messages exist in English, French and Spanish; adding a
-  language means writing one catalog file, `src/i18n/<code>.rs`, which a test
-  checks against every text of the program (see
-  [CONTRIBUTING](CONTRIBUTING.md#messages-in-every-language)). German,
-  Portuguese and Chinese are next; contributions are welcome.
+- **Languages.** Messages exist in English, French, Spanish, German,
+  Portuguese and simplified Chinese; adding a language means writing one
+  catalog file, `src/i18n/<code>.rs`, which a test checks against every text
+  of the program (see [CONTRIBUTING](CONTRIBUTING.md#messages-in-every-language)).
+  Contributions are welcome.
 - **Numbers.** Whole numbers have no size limit and stay exact (up to 100000
   digits), the usual 64-bit ones computed fastest; decimal numbers are 64-bit.
 

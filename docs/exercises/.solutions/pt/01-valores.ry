@@ -1,0 +1,18 @@
+# Exercício 01 · Primeiros valores  ★☆☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+segundos_por_minuto = 60
+segundos_por_hora = 60 * segundos_por_minuto
+segundos_por_dia = 24 * segundos_por_hora
+segundos_por_semana = 7 * segundos_por_dia
+resumo = "Uma semana tem {segundos_por_semana} segundos."
+
+# --- Testes (não os altere) ---
+
+test "segundos em uma hora" = assert_eq(segundos_por_hora, 3600)
+
+test "segundos em um dia" = assert_eq(segundos_por_dia, 86400)
+
+test "segundos em uma semana" = assert_eq(segundos_por_semana, 604800)
+
+test "o resumo" = assert_eq(resumo, "Uma semana tem 604800 segundos.")

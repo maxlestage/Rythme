@@ -4,7 +4,7 @@
 programmation purement fonctionnel, avec de l'aide partout.**
 Les programmes sont des fichiers qui finissent par `.ry`. L'interpréteur est écrit en Rust.
 
-*[English version →](README.md) · [En español →](README.es.md)*
+*[English version →](README.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md) · [中文 →](README.zh.md)*
 
 **Documentation :** le [manuel de référence](docs/reference.fr.md) (tout le
 langage, avec précision), le [guide pour les enseignants](docs/enseigner.md),
@@ -78,9 +78,10 @@ puts total                 # 20
   - Dans votre éditeur : les problèmes pendant la frappe, la documentation
     sous la souris, la complétion, aller à la définition, renommer
     (`rythme lsp`, le serveur de langage, pour VS Code, Neovim, Helix, Emacs...).
-  - Chaque message, chaque documentation existe en **français, en anglais et
-    en espagnol** (`--lang fr`, `--lang es`, ou automatiquement selon la langue
-    du système).
+  - Chaque message, chaque documentation existe en **français, en anglais, en
+    espagnol, en allemand, en portugais et en chinois** (`--lang fr`,
+    `--lang es`, `--lang de`, `--lang pt`, `--lang zh`, ou automatiquement
+    selon la langue du système).
 
 Voici à quoi ressemble une erreur :
 
@@ -101,15 +102,16 @@ erreur[E005]: impossible d'utiliser `+` avec Text et Int
 Le site <https://maxlestage.github.io/Rythme/> a un playground qui fait
 tourner le vrai interpréteur, compilé en WebAssembly ([`playground/`](playground)) :
 modifier du code, le lancer, le vérifier, lancer des tests, le mettre en
-forme, lire l'aide, en français ou en anglais, sans rien installer. Le site
+forme, lire l'aide, en français, anglais, espagnol, allemand, portugais ou chinois,
+sans rien installer. Le site
 s'installe aussi comme une application (une Progressive Web App) et fonctionne
 hors ligne, playground compris. Son menu propose des thèmes de couleurs
 (Auto, Clair, Sombre, Contraste élevé, Sépia, Tempo), et aucune page ne défile
 de côté, d'un téléphone de 320 px à un grand écran.
 
 Le dossier [`site/`](site) est le site web de Rythme (accueil, visite du
-langage, exemples, playground et guide pour les enseignants, en français et en
-anglais), écrit en Rust avec Paquets.
+langage, exemples, playground et guide pour les enseignants, en six
+langues), écrit en Rust avec Paquets.
 
 ### Déployer le site sur Heroku
 
@@ -207,8 +209,8 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
 | `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
 
-Ajoutez `--lang fr`, `--lang en` ou `--lang es` avant la commande pour
-choisir la langue des messages, ou définissez `RYTHME_LANG`.
+Ajoutez `--lang` et une langue (`fr`, `en`, `es`, `de`, `pt` ou `zh`) avant la
+commande pour choisir la langue des messages, ou définissez `RYTHME_LANG`.
 
 ## Le langage en deux minutes
 
@@ -314,8 +316,8 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 sur Rythme, et explique pourquoi il convient aussi bien à un premier cours de
 programmation qu'à un cours de programmation fonctionnelle.
 [`docs/exercises/`](docs/exercises/README.fr.md) contient 30 exercices
-gradués, en français et en anglais, avec énoncé, indices, tests et solutions,
-que `rythme exercise` distribue et vérifie.
+gradués, avec énoncé, indices, tests et solutions, que `rythme exercise`
+distribue et vérifie dans chaque langue des messages.
 
 ## État et feuille de route
 
@@ -347,11 +349,11 @@ suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
   erreurs et la documentation dans tous les éditeurs (voir
   `rythme help editors`). Le bac à sable en ligne fait tourner l'interpréteur
   compilé en WebAssembly. Suite : un gestionnaire de paquets.
-- **Langues.** Les messages existent en anglais, en français et en espagnol ;
-  ajouter une langue consiste à écrire un fichier de catalogue,
-  `src/i18n/<code>.rs`, qu'un test compare à tous les textes du programme
-  (voir [CONTRIBUTING](CONTRIBUTING.md#messages-in-every-language)).
-  L'allemand, le portugais et le chinois sont les prochains ; les
+- **Langues.** Les messages existent en anglais, en français, en espagnol, en
+  allemand, en portugais et en chinois simplifié ; ajouter une langue consiste
+  à écrire un fichier de catalogue, `src/i18n/<code>.rs`, qu'un test compare à
+  tous les textes du programme (voir
+  [CONTRIBUTING](CONTRIBUTING.md#messages-in-every-language)). Les
   contributions sont bienvenues.
 - **Nombres.** Les nombres entiers n'ont pas de limite de taille et restent
   exacts (jusqu'à 100000 chiffres), les habituels sur 64 bits calculés le plus

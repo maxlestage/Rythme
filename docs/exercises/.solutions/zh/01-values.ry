@@ -1,0 +1,18 @@
+# 练习 01 · 最初的值  ★☆☆
+# 参考答案。请先自己做这个练习，再来看它！
+
+seconds_per_minute = 60
+seconds_per_hour = 60 * seconds_per_minute
+seconds_per_day = 24 * seconds_per_hour
+seconds_per_week = 7 * seconds_per_day
+summary = "一周有 {seconds_per_week} 秒。"
+
+# --- 测试（请不要修改）---
+
+test "一小时的秒数" = assert_eq(seconds_per_hour, 3600)
+
+test "一天的秒数" = assert_eq(seconds_per_day, 86400)
+
+test "一周的秒数" = assert_eq(seconds_per_week, 604800)
+
+test "总结" = assert_eq(summary, "一周有 604800 秒。")

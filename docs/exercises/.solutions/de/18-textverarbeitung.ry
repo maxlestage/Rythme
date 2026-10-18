@@ -1,0 +1,27 @@
+# Übung 18 · Mit Texten arbeiten  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn ist_palindrom(text)
+  buchstaben = text |> lower |> replace(" ", "")
+  buchstaben == reverse(buchstaben)
+end
+
+fn vokale_zaehlen(text) = text |> lower |> chars |> count(fn(c) = contains("aeiou", c))
+
+fn titelschreibung(text) = text |> split |> map(fn(w) = capitalize(lower(w))) |> join(" ")
+
+# --- Tests (nicht verändern) ---
+
+test "Palindrome"
+  assert_eq(ist_palindrom("Kajak"), true)
+  assert_eq(ist_palindrom("Ein Esel lese nie"), true)
+  assert_eq(ist_palindrom("rythme"), false)
+end
+
+test "Vokale"
+  assert_eq(vokale_zaehlen("Rythme"), 1)
+  assert_eq(vokale_zaehlen("AEIOU"), 5)
+  assert_eq(vokale_zaehlen("xkcd"), 0)
+end
+
+test "Titelschreibung" = assert_eq(titelschreibung("der HERR der ringe"), "Der Herr Der Ringe")

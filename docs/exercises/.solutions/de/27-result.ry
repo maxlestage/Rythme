@@ -1,0 +1,49 @@
+# Übung 27 · Eine Operation, die scheitern kann: Result  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn geprueft_teilen(_, 0) = Err("Division durch null")
+fn geprueft_teilen(a, b) = Ok(a / b)
+
+fn alter_lesen(text) = match parse_int(text)
+  Err(_) -> Err("keine Zahl")
+  Ok(n) if n < 0 -> Err("ein Alter kann nicht negativ sein")
+  Ok(n) if n > 150 -> Err("zu alt")
+  Ok(n) -> Ok(n)
+end
+
+fn beschreiben(ergebnis) = match ergebnis
+  Ok(wert) -> "ok: {wert}"
+  Err(meldung) -> "Fehler: {meldung}"
+end
+
+fn code_pruefen(code) =
+  if len(code) < 8 then Err("zu kurz")
+  else if not any(chars(code), is_digit) then Err("keine Ziffer")
+  else Ok(code)
+
+# --- Tests (nicht verändern) ---
+
+test "geprüft teilen"
+  assert_eq(geprueft_teilen(9, 3), Ok(3))
+  assert_eq(geprueft_teilen(1, 0), Err("Division durch null"))
+end
+
+test "Alter lesen"
+  assert_eq(alter_lesen("36"), Ok(36))
+  assert_eq(alter_lesen(" 7 "), Ok(7))
+  assert_eq(alter_lesen("sieben"), Err("keine Zahl"))
+  assert_eq(alter_lesen("-1"), Err("ein Alter kann nicht negativ sein"))
+  assert_eq(alter_lesen("200"), Err("zu alt"))
+end
+
+test "beschreiben"
+  assert_eq(beschreiben(Ok(42)), "ok: 42")
+  assert_eq(beschreiben(Err("zu alt")), "Fehler: zu alt")
+  assert_eq(beschreiben(alter_lesen("-5")), "Fehler: ein Alter kann nicht negativ sein")
+end
+
+test "Code prüfen"
+  assert_eq(code_pruefen("rythme2024"), Ok("rythme2024"))
+  assert_eq(code_pruefen("abc1"), Err("zu kurz"))
+  assert_eq(code_pruefen("funktional"), Err("keine Ziffer"))
+end

@@ -1,0 +1,35 @@
+# Exercício 10 · Divisores e números primos  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn meu_mdc(a, 0) = a
+fn meu_mdc(a, b) = meu_mdc(b, a % b)
+
+fn sem_divisor_a_partir(n, d) if d * d > n = true
+fn sem_divisor_a_partir(n, d) if n % d == 0 = false
+fn sem_divisor_a_partir(n, d) = sem_divisor_a_partir(n, d + 1)
+
+fn e_primo(n) = n >= 2 and sem_divisor_a_partir(n, 2)
+
+fn proximo_primo(n) = if e_primo(n + 1) then n + 1 else proximo_primo(n + 1)
+
+# --- Testes (não os altere) ---
+
+test "mdc"
+  assert_eq(meu_mdc(12, 18), 6)
+  assert_eq(meu_mdc(17, 5), 1)
+  assert_eq(meu_mdc(7, 0), 7)
+  assert_eq(meu_mdc(0, 9), 9)
+end
+
+test "números primos"
+  assert_eq(1..30 |> filter(e_primo), [2, 3, 5, 7, 11, 13, 17, 19, 23, 29])
+  assert_eq(e_primo(0), false)
+  assert_eq(e_primo(7919), true)
+  assert_eq(e_primo(7917), false)
+end
+
+test "próximo primo"
+  assert_eq(proximo_primo(1), 2)
+  assert_eq(proximo_primo(13), 17)
+  assert_eq(proximo_primo(100), 101)
+end

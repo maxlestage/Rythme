@@ -1,0 +1,45 @@
+# 练习 11 · 拆开列表  ★★☆
+# 参考答案。请先自己做这个练习，再来看它！
+
+fn total([]) = 0
+fn total([x, ..rest]) = x + total(rest)
+
+fn largest([]) = fail("列表是空的")
+fn largest([x]) = x
+fn largest([x, ..rest])
+  others = largest(rest)
+  if x > others then x else others
+end
+
+fn has_value([], _) = false
+fn has_value([first, ..rest], x) = first == x or has_value(rest, x)
+
+fn last_one([]) = fail("列表是空的")
+fn last_one([x]) = x
+fn last_one([_, ..rest]) = last_one(rest)
+
+# --- 测试（请不要修改）---
+
+test "总和"
+  assert_eq(total([]), 0)
+  assert_eq(total([4]), 4)
+  assert_eq(total([1, 2, 3, 4]), 10)
+end
+
+test "最大的元素"
+  assert_eq(largest([7]), 7)
+  assert_eq(largest([3, 9, 2]), 9)
+  assert_eq(largest([-3, -1, -2]), -1)
+end
+
+test "包含某个值"
+  assert_eq(has_value([1, 2, 3], 2), true)
+  assert_eq(has_value([1, 2, 3], 5), false)
+  assert_eq(has_value([], 1), false)
+  assert_eq(has_value(["a", "b"], "b"), true)
+end
+
+test "最后一个"
+  assert_eq(last_one([1, 2, 3]), 3)
+  assert_eq(last_one(["唯一"]), "唯一")
+end

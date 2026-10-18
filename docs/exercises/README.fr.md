@@ -30,9 +30,11 @@ votre code, et vérifiez de nouveau, jusqu'à ce que tous les tests passent :
 `rythme exercise check` propose alors l'exercice suivant. Ne modifiez pas les
 tests. `rythme test 01-valeurs.ry` lance les mêmes tests, et
 `rythme check 01-valeurs.ry` trouve les erreurs sans rien lancer.
-`rythme exercise` donne la version française de chaque exercice quand le
-système est en français, ou avec `--lang fr`
-(`rythme --lang fr exercise start 1`).
+`rythme exercise` donne chaque exercice dans la langue des messages :
+français, anglais, espagnol, allemand, portugais ou chinois, choisie par votre
+système ou par `--lang` (`rythme --lang fr exercise start 1`). Ce dossier
+contient les fichiers français et anglais ; les autres langues sont intégrées
+à `rythme`.
 
 Les exercices sont intégrés à `rythme` : rien d'autre à télécharger. Sans
 rien installer, copiez un exercice dans le playground du
@@ -81,7 +83,8 @@ rien installer, copiez un exercice dans le playground du
   22–25 pour les types, 26–28 pour les erreurs comme valeurs, 29–30 pour les
   tests et un petit projet.
 - Les solutions de référence sont dans le dossier caché
-  [`.solutions/`](.solutions) (`fr/` et `en/`), avec les mêmes tests : les
+  [`.solutions/`](.solutions) (`fr/`, `en/`, `es/`, `de/`, `pt/`, `zh/`),
+  avec les mêmes tests : les
   tests de Rythme vérifient que chaque solution passe tous les tests de son
   exercice, et que chaque exercice échoue à ses tests tant qu'il n'est pas
   résolu.

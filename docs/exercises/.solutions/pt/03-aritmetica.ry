@@ -1,0 +1,42 @@
+# Exercício 03 · Aritmética  ★☆☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn quadrado(x) = x * x
+
+fn media(a, b) = (a + b) / 2
+
+fn fahrenheit(celsius) = celsius * 9 / 5 + 32
+
+fn hipotenusa(a, b) = sqrt(quadrado(a) + quadrado(b))
+
+fn minutos_e_segundos(total) = "{total // 60} min {total % 60} s"
+
+# --- Testes (não os altere) ---
+
+test "quadrado"
+  assert_eq(quadrado(3), 9)
+  assert_eq(quadrado(-4), 16)
+  assert_eq(quadrado(1.5), 2.25)
+end
+
+test "média"
+  assert_eq(media(2, 4), 3)
+  assert_eq(media(1, 2), 1.5)
+end
+
+test "fahrenheit"
+  assert_eq(fahrenheit(0), 32)
+  assert_eq(fahrenheit(100), 212)
+  assert_eq(fahrenheit(-40), -40)
+end
+
+test "hipotenusa"
+  assert_eq(hipotenusa(3, 4), 5)
+  assert_eq(hipotenusa(5, 12), 13)
+end
+
+test "minutos e segundos"
+  assert_eq(minutos_e_segundos(125), "2 min 5 s")
+  assert_eq(minutos_e_segundos(59), "0 min 59 s")
+  assert_eq(minutos_e_segundos(600), "10 min 0 s")
+end

@@ -1,4 +1,4 @@
-// The Rythme website: the burger menu, the copy buttons, the remembered language, the
+// The Rythme website: the burger menu, the language menu, the copy buttons, the remembered language, the
 // installable app (the service worker, the "new version" banner, the install button
 // and the hint for iOS), and the color themes. Every page works without this file: the links then
 // stay visible under the logo, and the site is a plain website.
@@ -32,6 +32,33 @@
       }
     });
     wide.addEventListener("change", () => setMenu(false));
+  }
+
+  // ----- the language menu of the bar -----
+  // A `details`: it opens and closes without this script; this closes it with Escape
+  // (the focus goes back to its button), a click elsewhere, the focus leaving it, or the
+  // burger menu opening.
+  const langMenu = document.querySelector(".lang--bar");
+  if (langMenu) {
+    const toggle = langMenu.querySelector("summary");
+    const close = () => { langMenu.open = false; };
+    langMenu.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && langMenu.open) {
+        ev.stopPropagation();
+        close();
+        toggle.focus();
+      }
+    });
+    document.addEventListener("click", (ev) => {
+      if (langMenu.open && !langMenu.contains(ev.target)) close();
+    });
+    langMenu.addEventListener("focusout", (ev) => {
+      if (ev.relatedTarget && !langMenu.contains(ev.relatedTarget)) close();
+    });
+    langMenu.addEventListener("toggle", () => {
+      if (langMenu.open && burger && root.classList.contains("menu-open")) setMenu(false);
+    });
+    if (burger) burger.addEventListener("click", close);
   }
 
   // ----- the language chosen with the switch, for the next visit of / -----

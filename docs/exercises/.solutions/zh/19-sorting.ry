@@ -1,0 +1,42 @@
+# 练习 19 · 排序  ★★★
+# 参考答案。请先自己做这个练习，再来看它！
+
+fn insert([], x) = [x]
+fn insert([first, ..rest], x) = if x <= first then [x, first, ..rest] else [first, ..insert(rest, x)]
+
+fn insertion_sort(list) = fold(list, [], insert)
+
+fn merge([], b) = b
+fn merge(a, []) = a
+fn merge([x, ..xs], [y, ..ys]) = if x <= y then [x, ..merge(xs, [y, ..ys])] else [y, ..merge([x, ..xs], ys)]
+
+fn merge_sort(list) if len(list) <= 1 = list
+fn merge_sort(list)
+  half = len(list) // 2
+  merge(merge_sort(take(list, half)), merge_sort(drop(list, half)))
+end
+
+# --- 测试（请不要修改）---
+
+test "插入"
+  assert_eq(insert([1, 3, 5], 4), [1, 3, 4, 5])
+  assert_eq(insert([], 2), [2])
+  assert_eq(insert([1, 2], 9), [1, 2, 9])
+end
+
+test "插入排序"
+  assert_eq(insertion_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(insertion_sort([]), [])
+end
+
+test "合并"
+  assert_eq(merge([1, 4, 6], [2, 3, 7]), [1, 2, 3, 4, 6, 7])
+  assert_eq(merge([], [1]), [1])
+  assert_eq(merge([1], []), [1])
+end
+
+test "归并排序"
+  assert_eq(merge_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(merge_sort(["pear", "apple", "fig"]), ["apple", "fig", "pear"])
+  assert_eq(merge_sort(reverse(1..100)), 1..100)
+end

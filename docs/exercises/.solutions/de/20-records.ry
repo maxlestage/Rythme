@@ -1,0 +1,35 @@
+# Übung 20 · Records  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn alter_im(person, jahr) = jahr - person.geboren
+
+fn etikett({name, geboren}) = "{name} ({geboren})"
+
+fn umbenannt(person, name) = {..person, name}
+
+fn verschoben({x, y}, dx, dy) = {x: x + dx, y: y + dy}
+
+fn abstand(a, b) = sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
+
+# --- Tests (nicht verändern) ---
+
+ada = {name: "Ada", geboren: 1815}
+
+test "Alter" = assert_eq(alter_im(ada, 1852), 37)
+
+test "Etikett" = assert_eq(etikett(ada), "Ada (1815)")
+
+test "umbenannt"
+  assert_eq(umbenannt(ada, "Augusta"), {name: "Augusta", geboren: 1815})
+  assert_eq(ada.name, "Ada")
+end
+
+test "verschoben"
+  assert_eq(verschoben({x: 1, y: 2}, 3, -1), {x: 4, y: 1})
+  assert_eq(verschoben({x: 0, y: 0}, 0, 0), {x: 0, y: 0})
+end
+
+test "Abstand"
+  assert_eq(abstand({x: 0, y: 0}, {x: 3, y: 4}), 5)
+  assert_eq(abstand({x: 1, y: 1}, {x: 1, y: 1}), 0)
+end

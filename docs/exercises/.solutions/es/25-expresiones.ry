@@ -1,0 +1,57 @@
+# Ejercicio 25 · Una pequeña calculadora  ★★★
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+type Expr = Num(valor) | Suma(izquierda, derecha) | Producto(izquierda, derecha) | Opuesto(interior)
+
+fn evaluar(Num(n)) = n
+fn evaluar(Suma(a, b)) = evaluar(a) + evaluar(b)
+fn evaluar(Producto(a, b)) = evaluar(a) * evaluar(b)
+fn evaluar(Opuesto(e)) = -evaluar(e)
+
+fn mostrar(Num(n)) = text(n)
+fn mostrar(Suma(a, b)) = "({mostrar(a)} + {mostrar(b)})"
+fn mostrar(Producto(a, b)) = "({mostrar(a)} * {mostrar(b)})"
+fn mostrar(Opuesto(e)) = "-" + mostrar(e)
+
+fn cantidad_de_numeros(Num(_)) = 1
+fn cantidad_de_numeros(Suma(a, b)) = cantidad_de_numeros(a) + cantidad_de_numeros(b)
+fn cantidad_de_numeros(Producto(a, b)) = cantidad_de_numeros(a) + cantidad_de_numeros(b)
+fn cantidad_de_numeros(Opuesto(e)) = cantidad_de_numeros(e)
+
+fn simplificar(Suma(a, b)) = match [simplificar(a), simplificar(b)]
+  [e, Num(0)] -> e
+  [Num(0), e] -> e
+  [x, y] -> Suma(x, y)
+end
+fn simplificar(Producto(a, b)) = match [simplificar(a), simplificar(b)]
+  [e, Num(1)] -> e
+  [Num(1), e] -> e
+  [x, y] -> Producto(x, y)
+end
+fn simplificar(Opuesto(e)) = Opuesto(simplificar(e))
+fn simplificar(expr) = expr
+
+# --- Pruebas (no las cambies) ---
+
+calculo = Producto(Suma(Num(1), Num(2)), Num(3))
+
+test "evaluar"
+  assert_eq(evaluar(Num(4)), 4)
+  assert_eq(evaluar(calculo), 9)
+  assert_eq(evaluar(Opuesto(calculo)), -9)
+end
+
+test "mostrar"
+  assert_eq(mostrar(calculo), "((1 + 2) * 3)")
+  assert_eq(mostrar(Opuesto(Num(4))), "-4")
+  assert_eq(mostrar(Opuesto(Suma(Num(1), Num(2)))), "-(1 + 2)")
+end
+
+test "cantidad de números" = assert_eq(cantidad_de_numeros(Suma(calculo, Opuesto(Num(5)))), 4)
+
+test "simplificar"
+  assert_eq(simplificar(Suma(Num(7), Num(0))), Num(7))
+  assert_eq(simplificar(Producto(Num(1), Suma(Num(0), Num(2)))), Num(2))
+  assert_eq(simplificar(calculo), calculo)
+  assert_eq(simplificar(Opuesto(Producto(Num(3), Num(1)))), Opuesto(Num(3)))
+end

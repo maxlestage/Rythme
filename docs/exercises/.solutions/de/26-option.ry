@@ -1,0 +1,49 @@
+# Übung 26 · Ein Wert, der fehlen kann: Option  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn sicher_teilen(_, 0) = None
+fn sicher_teilen(a, b) = Some(a / b)
+
+fn alter_finden(leute, name) = leute |> find(fn(p) = p.name == name) |> map(fn(p) = p.alter)
+
+fn alter_oder_unbekannt(leute, name) = match alter_finden(leute, name)
+  Some(alter) -> text(alter)
+  None -> "unbekannt"
+end
+
+fn erstes_langes_wort(woerter) = find(woerter, fn(w) = len(w) > 5)
+
+fn optionen_addieren(a, b) = match [a, b]
+  [Some(x), Some(y)] -> Some(x + y)
+  _ -> None
+end
+
+# --- Tests (nicht verändern) ---
+
+leute = [{name: "Ada", alter: 36}, {name: "Alan", alter: 41}]
+
+test "sicher teilen"
+  assert_eq(sicher_teilen(10, 4), Some(2.5))
+  assert_eq(sicher_teilen(1, 0), None)
+end
+
+test "Alter finden"
+  assert_eq(alter_finden(leute, "Alan"), Some(41))
+  assert_eq(alter_finden(leute, "Grace"), None)
+end
+
+test "Alter oder unbekannt"
+  assert_eq(alter_oder_unbekannt(leute, "Ada"), "36")
+  assert_eq(alter_oder_unbekannt(leute, "Grace"), "unbekannt")
+end
+
+test "erstes langes Wort"
+  assert_eq(erstes_langes_wort(["eine", "funktionale", "Sprache"]), Some("funktionale"))
+  assert_eq(erstes_langes_wort(["kurze", "Worte"]), None)
+end
+
+test "Optionen addieren"
+  assert_eq(optionen_addieren(Some(2), Some(3)), Some(5))
+  assert_eq(optionen_addieren(Some(2), None), None)
+  assert_eq(optionen_addieren(None, None), None)
+end

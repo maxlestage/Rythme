@@ -1,0 +1,45 @@
+# Übung 12 · Listen bauen  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn countdown(0) = [0]
+fn countdown(n) = [n, ..countdown(n - 1)]
+
+fn wert_wiederholen(_, 0) = []
+fn wert_wiederholen(x, n) = [x, ..wert_wiederholen(x, n - 1)]
+
+fn alle_verdoppeln([]) = []
+fn alle_verdoppeln([x, ..rest]) = [x * 2, ..alle_verdoppeln(rest)]
+
+fn umgedreht_auf([], fertig) = fertig
+fn umgedreht_auf([x, ..rest], fertig) = umgedreht_auf(rest, [x, ..fertig])
+
+fn umgedreht(liste) = umgedreht_auf(liste, [])
+
+# --- Tests (nicht verändern) ---
+
+test "Countdown"
+  assert_eq(countdown(0), [0])
+  assert_eq(countdown(3), [3, 2, 1, 0])
+end
+
+test "Wert wiederholen"
+  assert_eq(wert_wiederholen("a", 3), ["a", "a", "a"])
+  assert_eq(wert_wiederholen(1, 0), [])
+end
+
+test "alle verdoppeln"
+  assert_eq(alle_verdoppeln([1, 2, 3]), [2, 4, 6])
+  assert_eq(alle_verdoppeln([]), [])
+end
+
+test "umgedreht"
+  assert_eq(umgedreht([1, 2, 3]), [3, 2, 1])
+  assert_eq(umgedreht([]), [])
+  assert_eq(umgedreht(["x"]), ["x"])
+end
+
+test "die ursprüngliche Liste ändert sich nicht"
+  zahlen = [1, 2, 3]
+  umgedreht(zahlen)
+  assert_eq(zahlen, [1, 2, 3])
+end

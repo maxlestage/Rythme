@@ -1,0 +1,43 @@
+# Exercício 15 · Funções são valores  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn aplicar_duas_vezes(f, x) = f(f(x))
+
+fn compor(f, g) = fn(x) = f(g(x))
+
+fn somador(n) = fn(x) = x + n
+
+fn meu_map([], _) = []
+fn meu_map([x, ..resto], f) = [f(x), ..meu_map(resto, f)]
+
+fn meu_filter([], _) = []
+fn meu_filter([x, ..resto], f) = if f(x) then [x, ..meu_filter(resto, f)] else meu_filter(resto, f)
+
+# --- Testes (não os altere) ---
+
+test "aplicar duas vezes"
+  assert_eq(aplicar_duas_vezes(fn(x) = x * 3, 2), 18)
+  assert_eq(aplicar_duas_vezes(upper, "oi"), "OI")
+end
+
+test "compor"
+  mais_um_e_dobro = compor(fn(x) = x * 2, fn(x) = x + 1)
+  assert_eq(mais_um_e_dobro(4), 10)
+  assert_eq(compor(len, trim)("  abc  "), 3)
+end
+
+test "somador"
+  somar10 = somador(10)
+  assert_eq(somar10(5), 15)
+  assert_eq(map([1, 2, 3], somador(100)), [101, 102, 103])
+end
+
+test "meu map"
+  assert_eq(meu_map([1, 2, 3], fn(x) = x * x), [1, 4, 9])
+  assert_eq(meu_map([], fn(x) = x), [])
+end
+
+test "meu filter"
+  assert_eq(meu_filter([1, 2, 3, 4, 5, 6], is_even), [2, 4, 6])
+  assert_eq(meu_filter(["a", "bb", "ccc"], fn(p) = len(p) > 1), ["bb", "ccc"])
+end

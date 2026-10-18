@@ -1,0 +1,40 @@
+# Exercício 05 · Verdadeiro ou falso  ★☆☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn e_multiplo(n, d) = n % d == 0
+
+fn esta_entre(x, baixo, alto) = x >= baixo and x <= alto
+
+fn e_bissexto(ano) = e_multiplo(ano, 4) and (not e_multiplo(ano, 100) or e_multiplo(ano, 400))
+
+fn ou_exclusivo(a, b) = a != b
+
+# --- Testes (não os altere) ---
+
+test "múltiplos"
+  assert(e_multiplo(12, 3), "12 é múltiplo de 3")
+  assert(not e_multiplo(12, 5), "12 não é múltiplo de 5")
+  assert(e_multiplo(0, 7), "0 é múltiplo de todos os números")
+end
+
+test "entre"
+  assert(esta_entre(5, 1, 10), "5 está entre 1 e 10")
+  assert(esta_entre(1, 1, 10), "os limites estão incluídos")
+  assert(esta_entre(10, 1, 10), "os limites estão incluídos")
+  assert(not esta_entre(11, 1, 10), "11 é grande demais")
+  assert(not esta_entre(0, 1, 10), "0 é pequeno demais")
+end
+
+test "anos bissextos"
+  assert_eq(e_bissexto(2024), true)
+  assert_eq(e_bissexto(2023), false)
+  assert_eq(e_bissexto(1900), false)
+  assert_eq(e_bissexto(2000), true)
+end
+
+test "ou exclusivo"
+  assert_eq(ou_exclusivo(true, false), true)
+  assert_eq(ou_exclusivo(false, true), true)
+  assert_eq(ou_exclusivo(true, true), false)
+  assert_eq(ou_exclusivo(false, false), false)
+end

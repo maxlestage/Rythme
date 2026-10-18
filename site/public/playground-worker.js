@@ -7,7 +7,7 @@ const imports = { env: { rythme_now: () => Date.now(), rythme_offset: (ms) => -n
 
 // mode: 0 = run, 1 = check, 2 = test, 4 = steps. Error messages come wrapped in U+0001 … U+0002.
 // The language of the messages is its position in rythme::lang::LANGUAGES.
-const LANGS = ["en", "fr", "es"];
+const LANGS = ["en", "fr", "es", "de", "pt", "zh"];
 function callInterpreter(instance, code, mode, lang) {
   const e = instance.exports;
   const bytes = new TextEncoder().encode(code);

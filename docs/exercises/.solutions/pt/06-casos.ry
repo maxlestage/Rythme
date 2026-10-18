@@ -1,0 +1,38 @@
+# Exercício 06 · Uma definição por caso  ★☆☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn plural(1, palavra) = "1 {palavra}"
+fn plural(n, palavra) = "{n} {palavra}s"
+
+fn fizzbuzz(n) if n % 15 == 0 = "FizzBuzz"
+fn fizzbuzz(n) if n % 3 == 0 = "Fizz"
+fn fizzbuzz(n) if n % 5 == 0 = "Buzz"
+fn fizzbuzz(n) = text(n)
+
+fn tipo_de_dia("sábado") = "fim de semana"
+fn tipo_de_dia("domingo") = "fim de semana"
+fn tipo_de_dia(_) = "dia útil"
+
+# --- Testes (não os altere) ---
+
+test "plural"
+  assert_eq(plural(1, "gato"), "1 gato")
+  assert_eq(plural(2, "gato"), "2 gatos")
+  assert_eq(plural(0, "cachorro"), "0 cachorros")
+end
+
+test "fizzbuzz"
+  assert_eq(fizzbuzz(1), "1")
+  assert_eq(fizzbuzz(3), "Fizz")
+  assert_eq(fizzbuzz(10), "Buzz")
+  assert_eq(fizzbuzz(30), "FizzBuzz")
+  assert_eq(fizzbuzz(31), "31")
+end
+
+test "os quinze primeiros" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+
+test "tipo de dia"
+  assert_eq(tipo_de_dia("sábado"), "fim de semana")
+  assert_eq(tipo_de_dia("domingo"), "fim de semana")
+  assert_eq(tipo_de_dia("segunda"), "dia útil")
+end

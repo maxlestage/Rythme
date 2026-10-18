@@ -26,8 +26,11 @@ Open the file, read the statement, replace each `fail("to do")` with your
 code, and check again, until every test passes: `rythme exercise check` then
 proposes the next exercise. Do not change the tests. `rythme test
 01-values.ry` runs the same tests, and `rythme check 01-values.ry` finds
-mistakes without running anything. With `--lang fr` (or when your system is
-in French), `rythme exercise` gives the French version of each exercise.
+mistakes without running anything. `rythme exercise` gives each exercise in
+the language of the messages: English, French, Spanish, German, Portuguese or
+Chinese, chosen by your system or by `--lang` (`rythme --lang es exercise
+start 1` writes `01-valores.ry`). This folder has the English and French
+files; the other languages are built into `rythme`.
 
 The exercises are built into `rythme`: nothing else to download. Without
 installing anything, copy an exercise into the playground of the
@@ -75,7 +78,8 @@ installing anything, copy an exercise into the playground of the
   higher-order functions, 20–21 for records, 22–25 for types, 26–28 for
   errors as values, 29–30 for tests and a small project.
 - Reference solutions are in the hidden folder
-  [`.solutions/`](.solutions) (`en/` and `fr/`), with the same tests: the
+  [`.solutions/`](.solutions) (`en/`, `fr/`, `es/`, `de/`, `pt/`, `zh/`),
+  with the same tests: the
   tests of Rythme check that each solution passes every test of its exercise,
   and that each exercise fails its tests until it is solved.
 - Your own exercises can follow the same pattern: a statement and hints in
