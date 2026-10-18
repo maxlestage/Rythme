@@ -27,8 +27,9 @@ idées plutôt que sur la syntaxe.
 - **Les tests sont intégrés.** `test "..." = assert_eq(obtenu, attendu)` à
   côté du code, `rythme test fichier.ry` pour les lancer. Les exercices
   peuvent être fournis avec leurs tests.
-- **Dans la langue des élèves.** Chaque message existe en français, en anglais
-  et en espagnol (`--lang fr`, `--lang es`).
+- **Dans la langue des élèves.** Chaque message existe en français, en anglais,
+  en espagnol, en allemand, en portugais et en chinois (`--lang fr`,
+  `--lang es`, `--lang de`, `--lang pt`, `--lang zh`).
 - **Facile à installer, gratuit, ouvert.** Un seul programme, aucune
   dépendance, licence MIT, fonctionne sous Linux, macOS et Windows.
 
@@ -71,8 +72,9 @@ valeurs attendue et obtenue.
 
 Trente exercices de ce genre sont prêts : [**les exercices**](exercises/README.fr.md),
 gradués de ★☆☆ à ★★★ et qui suivent le cours ci-dessus, chacun avec un
-énoncé, des indices et des tests, en français et en anglais, avec des
-solutions de référence pour les enseignants. Ils sont intégrés à `rythme` :
+énoncé, des indices et des tests, dans chaque langue des messages (français,
+anglais, espagnol, allemand, portugais, chinois), avec des solutions de
+référence pour les enseignants. Ils sont intégrés à `rythme` :
 
 ```sh
 rythme exercise list                       # les exercices

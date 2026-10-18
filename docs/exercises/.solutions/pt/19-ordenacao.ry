@@ -1,0 +1,42 @@
+# Exercício 19 · Ordenação  ★★★
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn inserir([], x) = [x]
+fn inserir([primeiro, ..resto], x) = if x <= primeiro then [x, primeiro, ..resto] else [primeiro, ..inserir(resto, x)]
+
+fn ordenar_por_insercao(lista) = fold(lista, [], inserir)
+
+fn intercalar([], b) = b
+fn intercalar(a, []) = a
+fn intercalar([x, ..xs], [y, ..ys]) = if x <= y then [x, ..intercalar(xs, [y, ..ys])] else [y, ..intercalar([x, ..xs], ys)]
+
+fn ordenar_por_intercalacao(lista) if len(lista) <= 1 = lista
+fn ordenar_por_intercalacao(lista)
+  metade = len(lista) // 2
+  intercalar(ordenar_por_intercalacao(take(lista, metade)), ordenar_por_intercalacao(drop(lista, metade)))
+end
+
+# --- Testes (não os altere) ---
+
+test "inserir"
+  assert_eq(inserir([1, 3, 5], 4), [1, 3, 4, 5])
+  assert_eq(inserir([], 2), [2])
+  assert_eq(inserir([1, 2], 9), [1, 2, 9])
+end
+
+test "ordenar por inserção"
+  assert_eq(ordenar_por_insercao([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(ordenar_por_insercao([]), [])
+end
+
+test "intercalar"
+  assert_eq(intercalar([1, 4, 6], [2, 3, 7]), [1, 2, 3, 4, 6, 7])
+  assert_eq(intercalar([], [1]), [1])
+  assert_eq(intercalar([1], []), [1])
+end
+
+test "ordenar por intercalação"
+  assert_eq(ordenar_por_intercalacao([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(ordenar_por_intercalacao(["pera", "maçã", "figo"]), ["figo", "maçã", "pera"])
+  assert_eq(ordenar_por_intercalacao(reverse(1..100)), 1..100)
+end

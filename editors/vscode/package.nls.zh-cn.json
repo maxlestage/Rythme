@@ -1,0 +1,19 @@
+{
+  "description": "Rythme 语言（.ry）：着色、代码片段，以及一个在你输入时显示问题、文档、自动补全等内容的语言服务器。",
+  "config.path": "`rythme` 程序。默认先在 `PATH` 中查找，然后在 `~/.cargo/bin`（`cargo install` 安装的位置）中查找。",
+  "config.language": "消息、文档和帮助的语言。",
+  "config.language.auto": "VS Code 的语言（或变量 `RYTHME_LANG`）。",
+  "config.language.en": "英语。",
+  "config.language.fr": "法语。",
+  "config.language.es": "西班牙语。",
+  "config.language.de": "德语。",
+  "config.language.pt": "葡萄牙语。",
+  "config.language.zh": "简体中文。",
+  "config.trace": "在 *Rythme* 输出中显示与语言服务器交换的消息，用于排查问题。",
+  "command.restart": "重启语言服务器",
+  "command.run": "运行这个文件",
+  "command.test": "运行这个文件的测试",
+  "command.runTest": "运行这个文件中的一个测试",
+  "command.explain": "解释错误代码",
+  "command.help": "某个主题或函数的帮助"
+}

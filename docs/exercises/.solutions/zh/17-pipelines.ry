@@ -1,0 +1,29 @@
+# 练习 17 · 管道  ★★☆
+# 参考答案。请先自己做这个练习，再来看它！
+
+fn sum_of_odd_squares(n) = 1..n |> filter(is_odd) |> map(fn(x) = x * x) |> sum
+
+fn top_three(scores) = scores |> sort |> reverse |> take(3)
+
+fn shout_words(sentence) = sentence |> split |> map(upper) |> join(" ")
+
+fn initials_of(sentence) = sentence |> split |> map(fn(w) = upper(w[0])) |> join("")
+
+# --- 测试（请不要修改）---
+
+test "奇数的平方和"
+  assert_eq(sum_of_odd_squares(5), 35)
+  assert_eq(sum_of_odd_squares(1), 1)
+end
+
+test "前三名"
+  assert_eq(top_three([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(top_three([4]), [4])
+end
+
+test "大写每个单词" = assert_eq(shout_words("hello  world"), "HELLO WORLD")
+
+test "首字母缩写"
+  assert_eq(initials_of("portable network graphics"), "PNG")
+  assert_eq(initials_of("Rythme"), "R")
+end

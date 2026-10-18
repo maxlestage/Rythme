@@ -3,13 +3,14 @@
 The website of Rythme, written in Rust with [Paquets](https://paquets-90dfc06b6fea.herokuapp.com/):
 the server is a `paquets::App`, the pages are `paquets::Page`s built with active views,
 rendered on the server with their SEO tags and a strict Content-Security-Policy.
-French and English, mobile first. It installs as an app and works offline (see
+In the six languages of the interpreter (see [Languages](#languages)), mobile first.
+It installs as an app and works offline (see
 [The installable app](#the-installable-app)), has color themes and never scrolls
 sideways (see [Themes and layout](#themes-and-layout)).
 
 | Path | Page |
 |---|---|
-| `/` | redirects to `/fr/` or `/en/` (the language chosen with the switch, else `Accept-Language`) |
+| `/` | redirects to `/{lang}/`: the language chosen with the switch, else the first of `Accept-Language` the site has, else French |
 | `/{lang}/` | home page |
 | `/{lang}/learn/` | the language in two minutes; each piece of code opens in the playground |
 | `/{lang}/examples/` | the programs of `examples/` with their output |
@@ -21,8 +22,8 @@ sideways (see [Themes and layout](#themes-and-layout)).
 
 | Part | Where |
 |---|---|
-| Texts in both languages | `src/i18n.rs` (a missing translation does not compile) |
-| Pages, header with the burger menu and the language switch | `src/pages.rs` |
+| The languages, their texts | `src/i18n.rs`, `src/i18n/<code>.rs` (a missing translation does not compile) |
+| Pages, header with the burger menu and the language menu | `src/pages.rs` |
 | Server and routes | `src/server.rs`, `src/routes.rs` |
 | Rythme code colors, code blocks that wrap line by line | `src/highlight.rs` |
 | Color themes: names, `theme-color`, the inline script of the head | `src/themes.rs` (colors in `public/site.css`) |
@@ -47,6 +48,48 @@ Paquets is fetched from its git repository. Without `public/rythme.wasm` the sit
 except the playground. `SITE_URL` sets the public address used in canonical and Open
 Graph links (taken from each request otherwise).
 
+## Languages
+
+French, English, Spanish, German, Portuguese (Brazilian, "você") and Chinese
+(simplified): the languages of the interpreter (`LANGUAGES` in `src/lang.rs`).
+
+- **Texts.** `src/i18n.rs` has `Lang` and the `Texts` structure; each language is a
+  `Texts` constant in `src/i18n/<code>.rs`. Everything else that depends on the
+  language (the names of the languages, the descriptions of the examples…) is an
+  array of `i18n::COUNT` values given to `Lang::pick`: a missing text, or a missing
+  language, does not compile. The pieces of code of the home page, of the playground
+  and of the tour of *Learn* are written in each language (names, comments, texts):
+  the tests run every one through the real interpreter in that language, and the
+  error of the home page must be exactly the interpreter's message.
+- **Addresses.** `/{code}/…` for each language; the pages have `lang` and `hreflang`
+  set to their tag (`pt-BR`, `zh-Hans`: browsers pick the simplified Chinese glyphs),
+  canonical and `hreflang` links for every language (`x-default`: French), as in the
+  sitemap. `/` follows the cookie of the language switch, else `Accept-Language`
+  (`zh-TW` and `pt-PT` go to `zh` and `pt`), else French; the static export does the
+  same in the browser.
+- **The language menu.** In the bar, a button with the code of the language opens the
+  list of languages, each named in itself (a `details`: it works without JavaScript;
+  `site.js` closes it with Escape, which gives the focus back to the button, a click
+  elsewhere, or the focus leaving it). It hangs under the button, never wider than the
+  screen: at 320px the bar keeps one line. The footer lists every language.
+- **The playground** gives the interpreter the language of the page (its position in
+  `LANGUAGES`, `Lang::interpreter`, checked by the tests), so its messages, its help
+  and its steps are in that language; its own texts come from `src/i18n/` (`data-ui`).
+  It colors the messages by their first word in every language (`error`, `Fehler`,
+  `错误`…), like `highlight.rs`; the tests check both lists against the catalogs.
+- **The guide for teachers** exists in English and French. The other languages show
+  the English guide (marked `lang="en"`) under a note in their language
+  (`Texts::teach_note`, `teach::guide_lang`): a guide added later only needs its line in
+  `teach.rs`.
+- **Chinese.** The web fonts have no Chinese characters: on the pages in Chinese, a
+  list of system fonts (`--cjk` in `site.css`: PingFang, Microsoft YaHei, Noto Sans
+  CJK…) comes after the Latin font and before the generic family, in the text, the
+  titles and the code; titles lose the tight letter spacing made for Latin letters.
+
+Adding a language: its catalog in the interpreter first, then `src/i18n/<code>.rs`,
+its line in `Lang` (and every array the compiler then asks for), the screenshots
+(`tests/pwa/images.js`) and the lists of `tests/pwa/*.js`.
+
 ## The installable app
 
 The site is a Progressive Web App, on Heroku (at `/`) and on GitHub Pages (behind
@@ -55,7 +98,7 @@ behind `BASE_PATH`.
 
 - **Manifest**: each page links the manifest of its language,
   `/{lang}/manifest.webmanifest` (`application/manifest+json`), so the app opens in
-  the language it was installed from. One `id` (the base path) for both: it is one
+  the language it was installed from. One `id` (the base path) for all: it is one
   app. Its URLs are relative to it (`start_url` `../fr/`, `scope` `../`), so they
   hold under any base path. It has the icons (PNG 192 and 512, a maskable 512 and the
   SVG), screenshots (narrow and wide, for the rich install dialog of Chrome),
@@ -66,7 +109,7 @@ behind `BASE_PATH`.
 - **Service worker** (`/sw.js`, `no-cache`): `src/sw.js` with the constants the
   server writes: the version (a hash of everything it saves: the pages as rendered,
   the files, the manifests), the base path and the list of URLs to save at install:
-  every page in both languages, the offline pages, `site.css`, `site.js`,
+  every page in every language, the offline pages, `site.css`, `site.js`,
   `playground.js`, `playground-worker.js` and `rythme.wasm` at their `?v=` version,
   `examples.json`, the manifests and the icons. Versioned files come from the cache
   without asking the network; other files of the site from the cache, refreshed in
@@ -103,10 +146,11 @@ its size), the service worker (`no-cache`, every URL it saves answers), the tags
 every page and the offline pages, the theme picker and the hash of the inline script
 in the policy of every page. The rest needs a real browser: the scripts of
 [`tests/pwa/`](tests/pwa/README.md), with Playwright and Chromium, check that the app
-is installable, works offline (every page in both languages, the playground runs,
-checks, tests and formats), shows the offline page, and offers a new version, both
-with the server and with the static export; and that no page scrolls sideways, in
-every theme, with the contrast of each (`layout.js`). The `browser` job of CI runs
+is installable, works offline (every page in every language, the playground runs,
+checks, tests and formats, with its messages in the language of the page), shows the
+offline page, and offers a new version, both with the server and with the static
+export; and that no page scrolls sideways, in every language and theme, with the
+contrast of each, and that the language menu fits the screen (`layout.js`). The `browser` job of CI runs
 both.
 
 ## Themes and layout
@@ -119,7 +163,7 @@ beat on deep violet). Every color of the site is a custom property of `site.css`
 redefined under `:root[data-theme="…"]` (Auto has no attribute and follows
 `prefers-color-scheme`): pages, code blocks and the playground's editor, tables,
 the offline page, the update and install banners. The picker is a `fieldset` of real
-radio buttons with their labels in both languages: Tab reaches the chosen one, the
+radio buttons with their labels in every language: Tab reaches the chosen one, the
 arrow keys choose, and on a computer Escape (or Enter) closes the panel and gives
 the focus back to its button (`aria-expanded`). The choice is kept in `localStorage`
 (`rythme-theme`, every access in `try`/`catch`) and applied before the first paint by
@@ -200,8 +244,8 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 ```
 
-The tests render every page in both languages through Paquets' test client (status,
+The tests render every page in every language through Paquets' test client (status,
 `lang`, canonical and `hreflang` links, burger menu, CSP), check the redirections, the
 404 page, the sitemap and `/examples.json`, that every program of `examples/` is listed,
-and run every piece of code the site shows through the real interpreter, in French and
-English: the home page's error message must be exactly the interpreter's.
+and run every piece of code the site shows through the real interpreter, in the language
+of each page: the home page's error message must be exactly the interpreter's.

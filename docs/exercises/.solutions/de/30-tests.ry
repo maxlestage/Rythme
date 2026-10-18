@@ -1,0 +1,35 @@
+# Übung 30 · Tests finden Fehler  ★★★
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn begrenzen(x, unten, oben) = max(unten, min(x, oben))
+
+fn median(liste)
+  sortiert = sort(liste)
+  mitte = len(sortiert) // 2
+  if is_even(len(sortiert)) then (sortiert[mitte - 1] + sortiert[mitte]) / 2 else sortiert[mitte]
+end
+
+fn woerter_zaehlen(text) = len(split(text))
+
+# --- Tests (nicht verändern) ---
+
+test "begrenzen"
+  assert_eq(begrenzen(15, 0, 10), 10)
+  assert_eq(begrenzen(-5, 0, 10), 0)
+  assert_eq(begrenzen(5, 0, 10), 5)
+end
+
+test "Median einer ungeraden Anzahl von Werten"
+  assert_eq(median([1, 2, 3]), 2)
+  assert_eq(median([3, 1, 2]), 2)
+end
+
+test "Median einer geraden Anzahl von Werten" = assert_eq(median([4, 1, 3, 2]), 2.5)
+
+test "Wörter zählen"
+  assert_eq(woerter_zaehlen("eins zwei drei"), 3)
+  assert_eq(woerter_zaehlen("  eins   zwei "), 2)
+end
+
+# Dein Test:
+test "auf einen einzigen Wert begrenzen" = assert_eq(begrenzen(5, 5, 5), 5)

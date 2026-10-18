@@ -1,0 +1,45 @@
+# Exercício 12 · Construir listas  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn contagem_regressiva(0) = [0]
+fn contagem_regressiva(n) = [n, ..contagem_regressiva(n - 1)]
+
+fn repetir_valor(_, 0) = []
+fn repetir_valor(x, n) = [x, ..repetir_valor(x, n - 1)]
+
+fn dobrar_todos([]) = []
+fn dobrar_todos([x, ..resto]) = [x * 2, ..dobrar_todos(resto)]
+
+fn inverter_sobre([], feito) = feito
+fn inverter_sobre([x, ..resto], feito) = inverter_sobre(resto, [x, ..feito])
+
+fn invertida(lista) = inverter_sobre(lista, [])
+
+# --- Testes (não os altere) ---
+
+test "contagem regressiva"
+  assert_eq(contagem_regressiva(0), [0])
+  assert_eq(contagem_regressiva(3), [3, 2, 1, 0])
+end
+
+test "repetir um valor"
+  assert_eq(repetir_valor("a", 3), ["a", "a", "a"])
+  assert_eq(repetir_valor(1, 0), [])
+end
+
+test "dobrar todos"
+  assert_eq(dobrar_todos([1, 2, 3]), [2, 4, 6])
+  assert_eq(dobrar_todos([]), [])
+end
+
+test "invertida"
+  assert_eq(invertida([1, 2, 3]), [3, 2, 1])
+  assert_eq(invertida([]), [])
+  assert_eq(invertida(["x"]), ["x"])
+end
+
+test "a lista original não muda"
+  numeros = [1, 2, 3]
+  invertida(numeros)
+  assert_eq(numeros, [1, 2, 3])
+end

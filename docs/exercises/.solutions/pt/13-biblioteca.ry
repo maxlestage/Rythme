@@ -1,0 +1,36 @@
+# Exercício 13 · As funções de listas  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn quadrados(n) = map(1..n, fn(x) = x * x)
+
+fn pares(lista) = filter(lista, is_even)
+
+fn soma_dos_multiplos(limite) = 1..(limite - 1) |> filter(fn(n) = n % 3 == 0 or n % 5 == 0) |> sum
+
+fn media_de(lista) = sum(lista) / len(lista)
+
+fn os_tres_menores(lista) = lista |> sort |> take(3)
+
+# --- Testes (não os altere) ---
+
+test "quadrados"
+  assert_eq(quadrados(5), [1, 4, 9, 16, 25])
+  assert_eq(quadrados(0), [])
+end
+
+test "pares" = assert_eq(pares([5, 2, 8, 1, 4]), [2, 8, 4])
+
+test "soma dos múltiplos"
+  assert_eq(soma_dos_multiplos(10), 23)
+  assert_eq(soma_dos_multiplos(1000), 233168)
+end
+
+test "média"
+  assert_eq(media_de([1, 2, 3, 4]), 2.5)
+  assert_eq(media_de([7]), 7)
+end
+
+test "os três menores"
+  assert_eq(os_tres_menores([5, 1, 4, 2, 3]), [1, 2, 3])
+  assert_eq(os_tres_menores([9, 8]), [8, 9])
+end

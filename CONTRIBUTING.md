@@ -91,7 +91,8 @@ Every text shown to users is written in English and French where it is used:
 t!("unknown name `{name}`", "nom inconnu `{name}`")
 ```
 
-The other languages (Spanish today) have a **catalog**, `src/i18n/<code>.rs`:
+The other languages (Spanish, German, Portuguese and Chinese today) have a
+**catalog**, `src/i18n/<code>.rs`:
 each English text of the program with its translation, compiled into the
 program. Fixed texts that are not formatted (help pages, explanations of
 codes, documentation of functions) go through `lang::pick(en, fr)` instead of
@@ -122,20 +123,25 @@ Language {
   translation uses a `{name}` its English text does not have.
 - **Changing an English text** therefore means updating its entry in each
   catalog: the test names it.
-- **Adding a language** (German, Portuguese, Chinese...): add a line to
-  `LANGUAGES` in `src/lang.rs` (`include!("i18n/de.rs")`), create
-  `src/i18n/de.rs` with `code`, `name` and an empty list, then run
+- **Adding a language** (Italian, Japanese...): add a line to
+  `LANGUAGES` in `src/lang.rs` (`include!("i18n/it.rs")`), create
+  `src/i18n/it.rs` with `code`, `name` and an empty list, then run
   `RYTHME_I18N_MISSING=missing.rs cargo test --test i18n`: `missing.rs` lists
   every text to translate, in the order of the sources, with the French text
   as a guide, as entries `("English", "")` ready to copy into the catalog. An
   empty translation counts as missing, so the catalog can be filled little by
   little; add the code to `COMPLETE` once it is done. The code picks the
-  language for `--lang de`, `RYTHME_LANG` and `LANG=de_DE.UTF-8`, and the
-  playground's language number is its position in `LANGUAGES`. Keywords,
+  language for `--lang it`, `RYTHME_LANG` and `LANG=it_IT.UTF-8`, and the
+  playground's language number is its position in `LANGUAGES` (add the code
+  to the lists of `site/public/playground.js` and `playground-worker.js`, a
+  test checks them). Add it to the VS Code setting too (`package.json` and
+  `package.nls.*.json`), and to the topic names of `help::TOPICS`. Keywords,
   built-in names and commands stay in English in every language.
 - **Writing translations.** Keep every `{name}`, `{}`, backtick and example of
   code; translate the names and texts inside examples when the French text
-  does; keep the alignment of columns in help pages. Run
+  does (or keep the code as it is, like the Chinese catalog); keep the
+  alignment of columns in help pages: Chinese, Japanese and Korean characters
+  take two columns of the terminal. Run
   `rythme --lang es help`, `rythme --lang es explain E003` and a few
   programs with errors to read the result.
 
@@ -181,6 +187,17 @@ solutions (the code, then exactly the tests of the exercise, after the line
 the files into `rythme exercise`) and a line in both index files.
 `tests/exercises.rs` checks that every exercise is well formed, checks without
 a warning, fails until it is solved, and that its solution passes its tests.
+
+The other languages translate each exercise in their catalog, like a help
+page: an entry for its file name (ASCII, `07-rekursion`; Chinese keeps the
+English names and identifiers) and one for the whole file, whose English text
+is the key, so changing an English exercise shows its translations as stale
+in `tests/i18n.rs`. Translate the statement, the hints, the names of the
+tests and `fail("to do")` (an entry of its own), and the names of the code
+the way the French file does; keep the numbers and the structure, so the
+same tests check the same things. Each language has its reference solutions
+in `docs/exercises/.solutions/<code>/`, and `tests/exercises.rs` runs every
+exercise in every language.
 
 ## Design rules
 

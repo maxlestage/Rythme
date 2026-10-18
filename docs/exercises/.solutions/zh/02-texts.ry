@@ -1,0 +1,32 @@
+# 练习 02 · 文本  ★☆☆
+# 参考答案。请先自己做这个练习，再来看它！
+
+## 给 `name` 的问候。
+fn greet(name) = "你好，{name}！"
+
+## 大写的文本，后面跟着 "!"。
+fn shout(text) = upper(text) + "!"
+
+## 一个人的姓名首字母，每个后面跟一个点。
+fn initials(first, last) = "{first[0]}.{last[0]}."
+
+## 介绍一个人的句子。
+fn introduce(name, age) = "{name} 今年 {age} 岁。"
+
+# --- 测试（请不要修改）---
+
+test "问候" = assert_eq(greet("Ada"), "你好，Ada！")
+
+test "问候另一个人" = assert_eq(greet("Alan"), "你好，Alan！")
+
+test "大喊"
+  assert_eq(shout("hello"), "HELLO!")
+  assert_eq(shout("Stop"), "STOP!")
+end
+
+test "首字母"
+  assert_eq(initials("Ada", "Lovelace"), "A.L.")
+  assert_eq(initials("grace", "hopper"), "g.h.")
+end
+
+test "介绍" = assert_eq(introduce("Ada", 36), "Ada 今年 36 岁。")

@@ -1,0 +1,31 @@
+# Übung 14 · Anonyme Funktionen  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn mit_steuer(preise, prozent) = map(preise, fn(p) = p + p * prozent / 100)
+
+fn lange_woerter(woerter, n) = filter(woerter, fn(w) = len(w) > n)
+
+fn laengen(woerter) = map(woerter, len)
+
+fn alle_positiv(liste) = all(liste, fn(x) = x > 0)
+
+fn anzahl_ueber(liste, grenze) = count(liste, fn(x) = x > grenze)
+
+# --- Tests (nicht verändern) ---
+
+test "mit Steuer"
+  assert_eq(mit_steuer([100, 50], 20), [120, 60])
+  assert_eq(mit_steuer([10], 0), [10])
+end
+
+test "lange Wörter" = assert_eq(lange_woerter(["ein", "Baum", "ist", "grün"], 3), ["Baum", "grün"])
+
+test "Längen" = assert_eq(laengen(["a", "Baum", "ist"]), [1, 4, 3])
+
+test "alle positiv"
+  assert_eq(alle_positiv([1, 5, 3]), true)
+  assert_eq(alle_positiv([1, -5, 3]), false)
+  assert_eq(alle_positiv([]), true)
+end
+
+test "Anzahl darüber" = assert_eq(anzahl_ueber([3, 10, 7, 12], 5), 3)

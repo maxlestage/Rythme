@@ -1,0 +1,45 @@
+# 练习 12 · 构造列表  ★★☆
+# 参考答案。请先自己做这个练习，再来看它！
+
+fn countdown(0) = [0]
+fn countdown(n) = [n, ..countdown(n - 1)]
+
+fn repeat_value(_, 0) = []
+fn repeat_value(x, n) = [x, ..repeat_value(x, n - 1)]
+
+fn double_all([]) = []
+fn double_all([x, ..rest]) = [x * 2, ..double_all(rest)]
+
+fn reversed_onto([], done) = done
+fn reversed_onto([x, ..rest], done) = reversed_onto(rest, [x, ..done])
+
+fn reversed(list) = reversed_onto(list, [])
+
+# --- 测试（请不要修改）---
+
+test "倒数"
+  assert_eq(countdown(0), [0])
+  assert_eq(countdown(3), [3, 2, 1, 0])
+end
+
+test "重复一个值"
+  assert_eq(repeat_value("a", 3), ["a", "a", "a"])
+  assert_eq(repeat_value(1, 0), [])
+end
+
+test "全部加倍"
+  assert_eq(double_all([1, 2, 3]), [2, 4, 6])
+  assert_eq(double_all([]), [])
+end
+
+test "倒序"
+  assert_eq(reversed([1, 2, 3]), [3, 2, 1])
+  assert_eq(reversed([]), [])
+  assert_eq(reversed(["x"]), ["x"])
+end
+
+test "原来的列表不会改变"
+  numbers = [1, 2, 3]
+  reversed(numbers)
+  assert_eq(numbers, [1, 2, 3])
+end

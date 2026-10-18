@@ -1,0 +1,36 @@
+# Exercício 22 · Seus próprios tipos  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+type Forma = Circulo(raio) | Retangulo(largura, altura) | Quadrado(lado)
+
+fn area(Circulo(r)) = pi * r * r
+fn area(Retangulo(l, a)) = l * a
+fn area(Quadrado(l)) = l * l
+
+fn perimetro(Circulo(r)) = 2 * pi * r
+fn perimetro(Retangulo(l, a)) = 2 * (l + a)
+fn perimetro(Quadrado(l)) = 4 * l
+
+fn nome_de(Circulo(_)) = "círculo"
+fn nome_de(Retangulo(_, _)) = "retângulo"
+fn nome_de(Quadrado(_)) = "quadrado"
+
+fn area_total(formas) = formas |> map(area) |> sum
+
+# --- Testes (não os altere) ---
+
+test "área"
+  assert_eq(area(Retangulo(2, 3)), 6)
+  assert_eq(area(Quadrado(4)), 16)
+  assert_eq(round(area(Circulo(1)), 2), 3.14)
+end
+
+test "perímetro"
+  assert_eq(perimetro(Retangulo(2, 3)), 10)
+  assert_eq(perimetro(Quadrado(4)), 16)
+  assert_eq(round(perimetro(Circulo(1)), 2), 6.28)
+end
+
+test "nome" = assert_eq([Circulo(1), Retangulo(1, 2), Quadrado(3)] |> map(nome_de), ["círculo", "retângulo", "quadrado"])
+
+test "área total" = assert_eq(area_total([Retangulo(2, 3), Quadrado(2), Retangulo(1, 1)]), 11)

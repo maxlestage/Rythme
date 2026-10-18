@@ -1,0 +1,50 @@
+# Ejercicio 04 · Elegir con `if`  ★☆☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn absoluto(n) = if n < 0 then -n else n
+
+fn mayor(a, b) = if a > b then a else b
+
+fn calificacion(puntos) =
+  if puntos >= 90 then "A"
+  else if puntos >= 80 then "B"
+  else if puntos >= 70 then "C"
+  else if puntos >= 60 then "D"
+  else "F"
+
+fn precio_entrada(edad) =
+  if edad < 4 then 0
+  else if edad < 12 then 5
+  else if edad >= 65 then 12
+  else 10
+
+# --- Pruebas (no las cambies) ---
+
+test "absoluto"
+  assert_eq(absoluto(-5), 5)
+  assert_eq(absoluto(7), 7)
+  assert_eq(absoluto(0), 0)
+end
+
+test "mayor"
+  assert_eq(mayor(3, 8), 8)
+  assert_eq(mayor(8, 3), 8)
+  assert_eq(mayor(-1, -2), -1)
+end
+
+test "calificación"
+  assert_eq(calificacion(95), "A")
+  assert_eq(calificacion(90), "A")
+  assert_eq(calificacion(85), "B")
+  assert_eq(calificacion(70), "C")
+  assert_eq(calificacion(61), "D")
+  assert_eq(calificacion(12), "F")
+end
+
+test "precio de la entrada"
+  assert_eq(precio_entrada(2), 0)
+  assert_eq(precio_entrada(4), 5)
+  assert_eq(precio_entrada(11), 5)
+  assert_eq(precio_entrada(30), 10)
+  assert_eq(precio_entrada(65), 12)
+end

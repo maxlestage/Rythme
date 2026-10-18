@@ -1,0 +1,35 @@
+# Übung 10 · Teiler und Primzahlen  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn mein_ggt(a, 0) = a
+fn mein_ggt(a, b) = mein_ggt(b, a % b)
+
+fn kein_teiler_ab(n, d) if d * d > n = true
+fn kein_teiler_ab(n, d) if n % d == 0 = false
+fn kein_teiler_ab(n, d) = kein_teiler_ab(n, d + 1)
+
+fn ist_primzahl(n) = n >= 2 and kein_teiler_ab(n, 2)
+
+fn naechste_primzahl(n) = if ist_primzahl(n + 1) then n + 1 else naechste_primzahl(n + 1)
+
+# --- Tests (nicht verändern) ---
+
+test "ggT"
+  assert_eq(mein_ggt(12, 18), 6)
+  assert_eq(mein_ggt(17, 5), 1)
+  assert_eq(mein_ggt(7, 0), 7)
+  assert_eq(mein_ggt(0, 9), 9)
+end
+
+test "Primzahlen"
+  assert_eq(1..30 |> filter(ist_primzahl), [2, 3, 5, 7, 11, 13, 17, 19, 23, 29])
+  assert_eq(ist_primzahl(0), false)
+  assert_eq(ist_primzahl(7919), true)
+  assert_eq(ist_primzahl(7917), false)
+end
+
+test "nächste Primzahl"
+  assert_eq(naechste_primzahl(1), 2)
+  assert_eq(naechste_primzahl(13), 17)
+  assert_eq(naechste_primzahl(100), 101)
+end

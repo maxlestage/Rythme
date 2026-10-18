@@ -1,0 +1,27 @@
+# Ejercicio 18 · Trabajar con textos  ★★☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn es_palindromo(texto)
+  letras = texto |> lower |> replace(" ", "")
+  letras == reverse(letras)
+end
+
+fn contar_vocales(texto) = texto |> lower |> chars |> count(fn(c) = contains("aeiou", c))
+
+fn tipo_titulo(texto) = texto |> split |> map(fn(p) = capitalize(lower(p))) |> join(" ")
+
+# --- Pruebas (no las cambies) ---
+
+test "palíndromos"
+  assert_eq(es_palindromo("reconocer"), true)
+  assert_eq(es_palindromo("Anita lava la tina"), true)
+  assert_eq(es_palindromo("rythme"), false)
+end
+
+test "vocales"
+  assert_eq(contar_vocales("Murcielago"), 5)
+  assert_eq(contar_vocales("AEIOU"), 5)
+  assert_eq(contar_vocales("xkcd"), 0)
+end
+
+test "tipo título" = assert_eq(tipo_titulo("el SEÑOR de los anillos"), "El Señor De Los Anillos")

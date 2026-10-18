@@ -8,29 +8,27 @@
 
   const page = document.querySelector(".playground");
   if (!page) return;
-  const lang = page.dataset.lang === "fr" ? "fr" : "en";
+  // The language of the page, which is also the language of the interpreter's messages.
+  const lang = page.dataset.lang || "en";
 
   // ----- the texts that change while the page runs -----
+  // Written by the server in the language of the page (`data-ui`, from src/i18n/).
+  const TEXTS = JSON.parse(page.dataset.ui);
   const UI = {
-    en: {
-      loading: "Loading the interpreter…", loadFailed: "The interpreter could not be loaded: ",
-      running: "running…", stopped: "Stopped.", ranIn: (ms) => `ran in ${ms} ms`, failedIn: (ms) => `stopped with an error after ${ms} ms`,
-      nothing: "The program printed nothing.",
-      tooDeep: "The browser ran out of stack: too many nested calls. Make the function tail-recursive, or use fold, map or filter. The installed rythme allows several hundred thousand nested calls.",
-      lines: (n) => `${n} line${n === 1 ? "" : "s"}`,
-      explain: "explain", custom: "main.ry (edited)",
-      formatted: "formatted like rythme fmt", alreadyFormatted: "already formatted", notFormatted: "not formatted: the code has an error",
-    },
-    fr: {
-      loading: "Chargement de l'interpréteur…", loadFailed: "L'interpréteur n'a pas pu être chargé : ",
-      running: "en cours…", stopped: "Arrêté.", ranIn: (ms) => `exécuté en ${ms} ms`, failedIn: (ms) => `arrêté par une erreur après ${ms} ms`,
-      nothing: "Le programme n'a rien affiché.",
-      tooDeep: "Le navigateur manque de pile : trop d'appels imbriqués. Rendez la fonction récursive terminale, ou utilisez fold, map ou filter. Le rythme installé permet plusieurs centaines de milliers d'appels imbriqués.",
-      lines: (n) => `${n} ligne${n > 1 ? "s" : ""}`,
-      explain: "expliquer", custom: "main.ry (modifié)",
-      formatted: "mis en forme comme rythme fmt", alreadyFormatted: "déjà en forme", notFormatted: "pas mis en forme : le code a une erreur",
-    },
-  }[lang];
+    ...TEXTS,
+    ranIn: (ms) => TEXTS.ranIn.replace("{ms}", ms),
+    failedIn: (ms) => TEXTS.failedIn.replace("{ms}", ms),
+    lines: (n) => (n === 1 ? TEXTS.line : TEXTS.lines).replace("{n}", n),
+  };
+  // The words that start the interpreter's messages, in every language
+  // (rythme::lang::LANGUAGES; the tests of the site check that none is missing).
+  const ERROR = "error|erreur|Fehler|erro|错误";
+  const WARNING = "warning|avertissement|advertencia|Warnung|aviso|警告";
+  const HELP = "help|aide|ayuda|Hilfe|ajuda|帮助";
+  const FAILED = new RegExp(`\\u0001(${ERROR})\\[`);
+  const ERROR_LINE = new RegExp(`^(${ERROR})(\\[|:)`);
+  const WARNING_LINE = new RegExp(`^(${WARNING})(\\[|:)`);
+  const HELP_LINE = new RegExp(`^\\s*=\\s*(${HELP})`);
 
   const TOPICS = ["start", "syntax", "functions", "lists", "text", "records", "types", "match", "errors", "functional", "tests", "builtins"];
   const KEYWORDS = new Set(["fn", "if", "then", "else", "match", "end", "do", "type", "test", "use", "and", "or", "not", "true", "false", "unless"]);
@@ -247,7 +245,7 @@
     const ptr = e.rythme_alloc(bytes.length);
     new Uint8Array(e.memory.buffer, ptr, bytes.length).set(bytes);
     // The language of the messages: its position in rythme::lang::LANGUAGES.
-    const at = e.rythme_run(ptr, bytes.length, mode, Math.max(0, ["en", "fr", "es"].indexOf(lang)));
+    const at = e.rythme_run(ptr, bytes.length, mode, Math.max(0, ["en", "fr", "es", "de", "pt", "zh"].indexOf(lang)));
     return new TextDecoder().decode(new Uint8Array(e.memory.buffer, at, e.rythme_result_len()));
   }
 
@@ -288,7 +286,7 @@
       return;
     }
     renderOutput(result.text);
-    const failed = /\u0001(error|erreur)\[/.test(result.text) || /✗/.test(result.text);
+    const failed = FAILED.test(result.text) || /✗/.test(result.text);
     statusEl.className = failed ? "status bad" : "status good";
     statusEl.textContent = failed ? UI.failedIn(ms) : UI.ranIn(ms);
     // On a phone the output is under the editor: bring it into view.
@@ -355,9 +353,9 @@
 
   // ----- output: messages styled like in a terminal -----
   function lineClass(line) {
-    if (/^(error|erreur)(\[|:)/.test(line)) return "err";
-    if (/^(warning|avertissement)(\[|:)/.test(line)) return "warn";
-    if (/^\s*=\s*(help|aide)/.test(line)) return "help";
+    if (ERROR_LINE.test(line)) return "err";
+    if (WARNING_LINE.test(line)) return "warn";
+    if (HELP_LINE.test(line)) return "help";
     if (/^\s*=\s*/.test(line)) return "note";
     if (/^\s*-->/.test(line)) return "note";
     return null;
@@ -409,7 +407,7 @@
       if (!part) continue;
       const inError = part.startsWith("\u0001");
       const body = inError ? part.slice(1, -1) : part;
-      const severity = /^(warning|avertissement)/.test(body) ? "warn" : "err";
+      const severity = WARNING_LINE.test(body) ? "warn" : "err";
       const lines = body.replace(/\n+$/, "").split("\n");
       lines.forEach((line, k) => {
         output.append(renderLine(line, inError, severity));

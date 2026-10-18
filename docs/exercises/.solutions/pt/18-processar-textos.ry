@@ -1,0 +1,27 @@
+# Exercício 18 · Trabalhar com textos  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn e_palindromo(texto)
+  letras = texto |> lower |> replace(" ", "")
+  letras == reverse(letras)
+end
+
+fn contar_vogais(texto) = texto |> lower |> chars |> count(fn(c) = contains("aeiou", c))
+
+fn estilo_titulo(texto) = texto |> split |> map(fn(p) = capitalize(lower(p))) |> join(" ")
+
+# --- Testes (não os altere) ---
+
+test "palíndromos"
+  assert_eq(e_palindromo("arara"), true)
+  assert_eq(e_palindromo("Socorram me subi no onibus em Marrocos"), true)
+  assert_eq(e_palindromo("rythme"), false)
+end
+
+test "vogais"
+  assert_eq(contar_vogais("Rythme"), 1)
+  assert_eq(contar_vogais("AEIOU"), 5)
+  assert_eq(contar_vogais("xkcd"), 0)
+end
+
+test "estilo título" = assert_eq(estilo_titulo("o SENHOR dos anéis"), "O Senhor Dos Anéis")

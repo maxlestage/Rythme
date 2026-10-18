@@ -1,0 +1,50 @@
+# Exercício 24 · Árvores  ★★★
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+type Arvore = Folha | No(esquerda, valor, direita)
+
+fn tamanho(Folha) = 0
+fn tamanho(No(esquerda, _, direita)) = tamanho(esquerda) + 1 + tamanho(direita)
+
+fn total(Folha) = 0
+fn total(No(esquerda, valor, direita)) = total(esquerda) + valor + total(direita)
+
+fn profundidade(Folha) = 0
+fn profundidade(No(esquerda, _, direita)) = 1 + max(profundidade(esquerda), profundidade(direita))
+
+fn inserir(Folha, x) = No(Folha, x, Folha)
+fn inserir(No(esquerda, valor, direita), x) =
+  if x < valor then No(inserir(esquerda, x), valor, direita) else No(esquerda, valor, inserir(direita, x))
+
+fn para_lista(Folha) = []
+fn para_lista(No(esquerda, valor, direita)) = para_lista(esquerda) + [valor] + para_lista(direita)
+
+# --- Testes (não os altere) ---
+
+#       5
+#      / \
+#     3   8
+#    /
+#   1
+pequena = No(No(No(Folha, 1, Folha), 3, Folha), 5, No(Folha, 8, Folha))
+
+test "tamanho"
+  assert_eq(tamanho(Folha), 0)
+  assert_eq(tamanho(pequena), 4)
+end
+
+test "total" = assert_eq(total(pequena), 17)
+
+test "profundidade"
+  assert_eq(profundidade(Folha), 0)
+  assert_eq(profundidade(pequena), 3)
+end
+
+test "inserir"
+  assert_eq(inserir(Folha, 4), No(Folha, 4, Folha))
+  assert_eq(inserir(No(Folha, 4, Folha), 2), No(No(Folha, 2, Folha), 4, Folha))
+end
+
+test "para lista" = assert_eq(para_lista(pequena), [1, 3, 5, 8])
+
+test "ordenar com uma árvore" = assert_eq([7, 2, 9, 4, 1] |> fold(Folha, inserir) |> para_lista, [1, 2, 4, 7, 9])

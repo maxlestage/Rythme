@@ -1,0 +1,36 @@
+# Übung 22 · Eigene Typen  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+type Form = Kreis(radius) | Rechteck(breite, hoehe) | Quadrat(seite)
+
+fn flaeche(Kreis(r)) = pi * r * r
+fn flaeche(Rechteck(b, h)) = b * h
+fn flaeche(Quadrat(s)) = s * s
+
+fn umfang(Kreis(r)) = 2 * pi * r
+fn umfang(Rechteck(b, h)) = 2 * (b + h)
+fn umfang(Quadrat(s)) = 4 * s
+
+fn name_von(Kreis(_)) = "Kreis"
+fn name_von(Rechteck(_, _)) = "Rechteck"
+fn name_von(Quadrat(_)) = "Quadrat"
+
+fn gesamtflaeche(formen) = formen |> map(flaeche) |> sum
+
+# --- Tests (nicht verändern) ---
+
+test "Fläche"
+  assert_eq(flaeche(Rechteck(2, 3)), 6)
+  assert_eq(flaeche(Quadrat(4)), 16)
+  assert_eq(round(flaeche(Kreis(1)), 2), 3.14)
+end
+
+test "Umfang"
+  assert_eq(umfang(Rechteck(2, 3)), 10)
+  assert_eq(umfang(Quadrat(4)), 16)
+  assert_eq(round(umfang(Kreis(1)), 2), 6.28)
+end
+
+test "Name" = assert_eq([Kreis(1), Rechteck(1, 2), Quadrat(3)] |> map(name_von), ["Kreis", "Rechteck", "Quadrat"])
+
+test "Gesamtfläche" = assert_eq(gesamtflaeche([Rechteck(2, 3), Quadrat(2), Rechteck(1, 1)]), 11)

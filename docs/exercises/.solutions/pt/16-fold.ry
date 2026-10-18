@@ -1,0 +1,34 @@
+# Exercício 16 · Dobrar uma lista em um só valor  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn produto_de(lista) = fold(lista, 1, fn(resultado, x) = resultado * x)
+
+fn palavra_mais_longa(palavras) = fold(palavras, "", fn(melhor, p) = if len(p) > len(melhor) then p else melhor)
+
+fn para_numero(digitos) = fold(digitos, 0, fn(n, d) = n * 10 + d)
+
+fn contar_se(lista, f) = fold(lista, 0, fn(n, x) = if f(x) then n + 1 else n)
+
+# --- Testes (não os altere) ---
+
+test "produto"
+  assert_eq(produto_de([2, 3, 4]), 24)
+  assert_eq(produto_de([]), 1)
+end
+
+test "palavra mais longa"
+  assert_eq(palavra_mais_longa(["a", "árvore", "é", "verde"]), "árvore")
+  assert_eq(palavra_mais_longa(["um", "ou"]), "um")
+  assert_eq(palavra_mais_longa([]), "")
+end
+
+test "para número"
+  assert_eq(para_numero([1, 2, 3]), 123)
+  assert_eq(para_numero([0, 7]), 7)
+  assert_eq(para_numero([]), 0)
+end
+
+test "contar se"
+  assert_eq(contar_se([1, 2, 3, 4, 5], is_odd), 3)
+  assert_eq(contar_se(["a", "bb"], fn(p) = len(p) > 5), 0)
+end

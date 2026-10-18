@@ -1,0 +1,32 @@
+# Exercício 21 · Listas de registros  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn nomes_dos_aprovados(alunos) = alunos |> filter(fn(a) = a.nota >= 50) |> map(fn(a) = a.nome)
+
+fn nota_media(alunos) = alunos |> map(fn(a) = a.nota) |> sum |> fn(total) = total / len(alunos)
+
+fn melhor(alunos) = max_by(alunos, fn(a) = a.nota).nome
+
+fn classificacao(alunos) = alunos |> sort_by(fn(a) = -a.nota) |> map(fn(a) = a.nome)
+
+fn tamanhos_dos_grupos(alunos) = alunos |> group_by(fn(a) = a.grupo) |> map_values(len)
+
+# --- Testes (não os altere) ---
+
+turma = [
+  {nome: "Ada", nota: 92, grupo: "A"},
+  {nome: "Alan", nota: 45, grupo: "B"},
+  {nome: "Grace", nota: 78, grupo: "A"},
+  {nome: "Edsger", nota: 50, grupo: "B"},
+  {nome: "Barbara", nota: 85, grupo: "A"},
+]
+
+test "aprovados" = assert_eq(nomes_dos_aprovados(turma), ["Ada", "Grace", "Edsger", "Barbara"])
+
+test "média" = assert_eq(nota_media(turma), 70)
+
+test "melhor" = assert_eq(melhor(turma), "Ada")
+
+test "classificação" = assert_eq(classificacao(turma), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+
+test "tamanhos dos grupos" = assert_eq(tamanhos_dos_grupos(turma), {A: 3, B: 2})

@@ -1,0 +1,42 @@
+# Übung 19 · Sortieren  ★★★
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn einfuegen([], x) = [x]
+fn einfuegen([erstes, ..rest], x) = if x <= erstes then [x, erstes, ..rest] else [erstes, ..einfuegen(rest, x)]
+
+fn sortieren_durch_einfuegen(liste) = fold(liste, [], einfuegen)
+
+fn mischen([], b) = b
+fn mischen(a, []) = a
+fn mischen([x, ..xs], [y, ..ys]) = if x <= y then [x, ..mischen(xs, [y, ..ys])] else [y, ..mischen([x, ..xs], ys)]
+
+fn sortieren_durch_mischen(liste) if len(liste) <= 1 = liste
+fn sortieren_durch_mischen(liste)
+  haelfte = len(liste) // 2
+  mischen(sortieren_durch_mischen(take(liste, haelfte)), sortieren_durch_mischen(drop(liste, haelfte)))
+end
+
+# --- Tests (nicht verändern) ---
+
+test "einfügen"
+  assert_eq(einfuegen([1, 3, 5], 4), [1, 3, 4, 5])
+  assert_eq(einfuegen([], 2), [2])
+  assert_eq(einfuegen([1, 2], 9), [1, 2, 9])
+end
+
+test "Sortieren durch Einfügen"
+  assert_eq(sortieren_durch_einfuegen([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(sortieren_durch_einfuegen([]), [])
+end
+
+test "mischen"
+  assert_eq(mischen([1, 4, 6], [2, 3, 7]), [1, 2, 3, 4, 6, 7])
+  assert_eq(mischen([], [1]), [1])
+  assert_eq(mischen([1], []), [1])
+end
+
+test "Sortieren durch Mischen"
+  assert_eq(sortieren_durch_mischen([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(sortieren_durch_mischen(["Birne", "Apfel", "Feige"]), ["Apfel", "Birne", "Feige"])
+  assert_eq(sortieren_durch_mischen(reverse(1..100)), 1..100)
+end

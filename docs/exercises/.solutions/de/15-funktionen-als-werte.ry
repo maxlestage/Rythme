@@ -1,0 +1,43 @@
+# Übung 15 · Funktionen sind Werte  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn zweimal_anwenden(f, x) = f(f(x))
+
+fn verketten(f, g) = fn(x) = f(g(x))
+
+fn addierer(n) = fn(x) = x + n
+
+fn mein_map([], _) = []
+fn mein_map([x, ..rest], f) = [f(x), ..mein_map(rest, f)]
+
+fn mein_filter([], _) = []
+fn mein_filter([x, ..rest], f) = if f(x) then [x, ..mein_filter(rest, f)] else mein_filter(rest, f)
+
+# --- Tests (nicht verändern) ---
+
+test "zweimal anwenden"
+  assert_eq(zweimal_anwenden(fn(x) = x * 3, 2), 18)
+  assert_eq(zweimal_anwenden(upper, "hi"), "HI")
+end
+
+test "verketten"
+  plus_eins_dann_doppelt = verketten(fn(x) = x * 2, fn(x) = x + 1)
+  assert_eq(plus_eins_dann_doppelt(4), 10)
+  assert_eq(verketten(len, trim)("  abc  "), 3)
+end
+
+test "Addierer"
+  plus10 = addierer(10)
+  assert_eq(plus10(5), 15)
+  assert_eq(map([1, 2, 3], addierer(100)), [101, 102, 103])
+end
+
+test "mein map"
+  assert_eq(mein_map([1, 2, 3], fn(x) = x * x), [1, 4, 9])
+  assert_eq(mein_map([], fn(x) = x), [])
+end
+
+test "mein filter"
+  assert_eq(mein_filter([1, 2, 3, 4, 5, 6], is_even), [2, 4, 6])
+  assert_eq(mein_filter(["a", "bb", "ccc"], fn(w) = len(w) > 1), ["bb", "ccc"])
+end
