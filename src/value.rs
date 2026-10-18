@@ -7,6 +7,8 @@ use std::rc::Rc;
 
 use crate::ast::FnDef;
 use crate::bigint::BigInt;
+pub use crate::buffer::Text;
+use crate::buffer::{self, Buf};
 use crate::builtins::Builtin;
 use crate::compile::{FnCode, Sibling};
 pub use crate::dict::Map;
@@ -20,7 +22,7 @@ pub enum Value {
     /// A whole number outside of the 64-bit range (never one that fits in an `Int`).
     Big(Rc<BigInt>),
     Float(f64),
-    Text(Rc<str>),
+    Text(Text),
     /// `:ok`: a value that is only its name.
     Symbol(Sym),
     List(List),
@@ -36,10 +38,11 @@ pub enum Value {
 }
 
 /// An immutable list. Taking the rest of a list (`[first, ..rest]`) shares the
-/// elements instead of copying them.
+/// elements instead of copying them, and adding at the end of a list often
+/// writes in the room its memory has left (see `buffer`).
 #[derive(Clone)]
 pub struct List {
-    data: Rc<Vec<Value>>,
+    data: Rc<Buf<Value>>,
     // 32-bit positions keep every value small (a list of 4 billion
     // elements would not fit in memory anyway).
     start: u32,
@@ -49,11 +52,36 @@ pub struct List {
 impl List {
     pub fn new(v: Vec<Value>) -> List {
         let end = u32::try_from(v.len()).expect("a list of more than 4 billion elements");
-        List { data: Rc::new(v), start: 0, end }
+        List { data: Rc::new(Buf::from_vec(v)), start: 0, end }
     }
 
+    #[inline(always)]
     pub fn as_slice(&self) -> &[Value] {
-        &self.data[self.start as usize..self.end as usize]
+        self.data.slice(self.start as usize, self.end as usize)
+    }
+
+    /// This list followed by the elements of `tail`: in the room after it
+    /// when it can, so that adding at the end again and again is fast.
+    pub fn concat(&self, tail: &[Value]) -> List {
+        let end = self.end + u32::try_from(tail.len()).expect("a list of more than 4 billion elements");
+        let in_place = self.may_grow_with(tail);
+        match buffer::append(&self.data, self.start as usize, self.end as usize, tail, in_place) {
+            None => List { data: self.data.clone(), start: self.start, end },
+            Some(data) => List { data, start: 0, end: end - self.start },
+        }
+    }
+
+    /// This list followed by `x`.
+    pub fn push(&self, x: Value) -> List {
+        self.concat(std::slice::from_ref(&x))
+    }
+
+    /// Whether `tail` may be written in the memory of this list: not when
+    /// it holds this memory, which would then hold itself and never be freed.
+    fn may_grow_with(&self, tail: &[Value]) -> bool {
+        self.data.used() == self.end as usize
+            && self.data.room() >= tail.len()
+            && (Rc::strong_count(&self.data) == 1 || !holds(tail, &self.data))
     }
 
     pub fn len(&self) -> usize {
@@ -78,6 +106,53 @@ impl List {
     pub fn get(&self, i: usize) -> Option<&Value> {
         self.as_slice().get(i)
     }
+}
+
+/// Whether one of `values` may hold `data`, the memory of a list. Values
+/// with many parts are not looked at in full: they are assumed to hold it.
+fn holds(values: &[Value], data: &Rc<Buf<Value>>) -> bool {
+    /// The values made of other values.
+    fn parts(v: &Value) -> Option<&[Value]> {
+        match v {
+            Value::Unit
+            | Value::Bool(_)
+            | Value::Int(_)
+            | Value::Big(_)
+            | Value::Float(_)
+            | Value::Text(_)
+            | Value::Symbol(_)
+            | Value::Builtin(_)
+            | Value::Ctor(_) => None,
+            Value::List(l) => Some(l.as_slice()),
+            Value::Record(r) => Some(&r.vals),
+            Value::Variant(var) => Some(&var.fields),
+            Value::Func(c) => Some(&c.captured),
+            // Not looked into: assumed to hold it when not empty.
+            Value::Dict(_) | Value::Set(_) => None,
+        }
+    }
+    /// A dict or a set that may hold the list.
+    fn map(v: &Value) -> bool {
+        matches!(v, Value::Dict(m) | Value::Set(m) if !m.is_empty())
+    }
+    if values.iter().all(|v| parts(v).is_none() && !map(v)) {
+        return false;
+    }
+    let mut budget = 64usize;
+    let mut todo = vec![values];
+    while let Some(vs) = todo.pop() {
+        if vs.len() > budget {
+            return true;
+        }
+        budget -= vs.len();
+        for v in vs {
+            if map(v) || matches!(v, Value::List(l) if Rc::ptr_eq(&l.data, data)) {
+                return true;
+            }
+            todo.extend(parts(v));
+        }
+    }
+    false
 }
 
 /// A record: named fields, kept in the order they were written.
@@ -226,7 +301,7 @@ pub struct Variant {
 
 impl Value {
     pub fn text(s: &str) -> Value {
-        Value::Text(Rc::from(s))
+        Value::Text(Text::from(s))
     }
 
     pub fn list(v: Vec<Value>) -> Value {
@@ -746,9 +821,9 @@ fn drop_iteratively(mut todo: Vec<Value>) {
                 }
             }
             Value::List(mut l) => {
-                if let Some(items) = Rc::get_mut(&mut l.data) {
-                    if items.iter().any(is_container) {
-                        todo.append(items);
+                if let Some(buf) = Rc::get_mut(&mut l.data) {
+                    if buf.slice(0, buf.used()).iter().any(is_container) {
+                        todo.append(&mut buf.take());
                     }
                 }
             }
@@ -775,9 +850,9 @@ impl Drop for Variant {
 
 impl Drop for List {
     fn drop(&mut self) {
-        if let Some(items) = Rc::get_mut(&mut self.data) {
-            if items.iter().any(is_container) {
-                free_parts(items);
+        if let Some(buf) = Rc::get_mut(&mut self.data) {
+            if buf.slice(0, buf.used()).iter().any(is_container) {
+                free_parts(&mut buf.take());
             }
         }
     }
@@ -828,5 +903,37 @@ pub fn fmt_float(f: f64) -> String {
         format!("{f:.1}")
     } else {
         format!("{f}")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A list whose memory has room after it.
+    fn roomy() -> List {
+        List::new(vec![Value::Int(1)]).push(Value::Int(2)).push(Value::Int(3))
+    }
+
+    #[test]
+    fn lists_grow_in_place_but_never_hold_their_own_memory() {
+        let xs = roomy();
+        let ys = xs.push(Value::Int(4));
+        assert!(Rc::ptr_eq(&xs.data, &ys.data), "in the room after `xs`");
+        assert_eq!((xs.len(), ys.len()), (3, 4));
+        // `xs` no longer ends where its memory is used: copied.
+        assert!(!Rc::ptr_eq(&xs.data, &xs.push(Value::Int(5)).data));
+        let ctor = Rc::new(CtorInfo { type_name: Sym::new("T"), name: Sym::new("A"), fields: vec![], index: 0, doc: None });
+        let with_itself = [
+            Value::List(ys.clone()),
+            Value::Variant(Rc::new(Variant { ctor, fields: vec![Value::list(vec![Value::Int(0), Value::List(ys.clone())])] })),
+        ];
+        for v in with_itself {
+            let grown = ys.push(v);
+            assert!(!Rc::ptr_eq(&ys.data, &grown.data), "a list that would hold itself is copied");
+        }
+        let zs = ys.push(Value::list(vec![Value::Int(7)]));
+        assert!(Rc::ptr_eq(&ys.data, &zs.data));
+        assert_eq!(Value::List(zs).repr(), "[1, 2, 3, 4, [7]]");
     }
 }

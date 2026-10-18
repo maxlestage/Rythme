@@ -1,0 +1,21 @@
+# Local functions that call each other, defined one after the other in a block.
+
+fn collatz(limit)
+  fn steps(1, count) = count
+  fn steps(n, count) = if n % 2 == 0 then half(n, count) else triple(n, count)
+  fn half(n, count) = steps(n // 2, count + 1)
+  fn triple(n, count) = steps(3 * n + 1, count + 1)
+  fn better(n, best, at, s) = if s > best then longest(n + 1, s, n) else longest(n + 1, best, at)
+  fn longest(n, best, at) = if n > limit then [best, at] else better(n, best, at, steps(n, 0))
+  longest(1, 0, 1)
+end
+
+fn parity(n)
+  fn even(0) = true
+  fn even(k) = odd(k - 1)
+  fn odd(0) = false
+  fn odd(k) = even(k - 1)
+  even(n)
+end
+
+print(collatz(30_000), parity(1_000_000), parity(777_777))

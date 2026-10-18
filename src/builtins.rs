@@ -1245,7 +1245,7 @@ fn out(s: &str) {
     crate::io::out_line(s);
 }
 
-fn text_value(s: impl Into<Rc<str>>) -> Value {
+fn text_value(s: impl Into<Text>) -> Value {
     Value::Text(s.into())
 }
 
@@ -2511,7 +2511,7 @@ fn write_json(it: &Interp, v: &Value, indent: Option<usize>) -> Result<String, U
                     for (i, (k, x)) in m.iter().collect::<Vec<_>>().into_iter().enumerate().rev() {
                         todo.push(Item::Value(x, depth + 1));
                         match k {
-                            Value::Text(k) => todo.push(Item::Key(k.clone())),
+                            Value::Text(k) => todo.push(Item::Key(Rc::from(&**k))),
                             Value::Symbol(k) => todo.push(Item::Key(k.name())),
                             _ => {}
                         }
@@ -2847,10 +2847,11 @@ fn push(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         Value::Set(m) => return dicts::push(m, &a[1], span),
         v => return Err(wrong("push", 0, Expected::ListOrSet, v, span)),
     };
-    let mut v = Vec::with_capacity(l.len() + 1);
-    v.extend(l.iter().cloned());
-    v.push(a[1].clone());
-    Ok(Value::list(v))
+    if l.len() >= MAX_LIST {
+        return Err(too_big(true, span));
+    }
+    // In the room after the list when it can: pushing again and again is fast.
+    Ok(Value::List(l.push(a[1].clone())))
 }
 
 fn set_at(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -2944,7 +2945,7 @@ fn unique(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         Int(i64),
         Big(Rc<BigInt>),
         Float(u64),
-        Text(Rc<str>),
+        Text(Text),
         Bool(bool),
         Unit,
     }
@@ -3314,7 +3315,7 @@ fn is_empty(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn keys(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     match &a[0] {
-        Value::Record(r) => Ok(Value::list(r.keys().iter().map(|k| Value::Text(k.clone())).collect())),
+        Value::Record(r) => Ok(Value::list(r.keys().iter().map(|k| Value::Text(k.into())).collect())),
         Value::Dict(m) => Ok(Value::list(m.keys().cloned().collect())),
         v => Err(wrong("keys", 0, Expected::RecordOrDict, v, span)),
     }
@@ -3331,7 +3332,7 @@ fn values(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn entries(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     match &a[0] {
-        Value::Record(r) => Ok(Value::list(r.iter().map(|(k, v)| Value::list(vec![Value::Text(k.clone()), v.clone()])).collect())),
+        Value::Record(r) => Ok(Value::list(r.iter().map(|(k, v)| Value::list(vec![Value::Text(k.into()), v.clone()])).collect())),
         Value::Dict(m) => Ok(dicts::entries(m)),
         v => Err(wrong("entries", 0, Expected::RecordOrDict, v, span)),
     }
@@ -3344,7 +3345,7 @@ fn from_entries(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         match pair {
             Value::List(p) if p.len() == 2 && matches!(p.as_slice()[0], Value::Text(_)) => {
                 if let Value::Text(k) = &p.as_slice()[0] {
-                    r.set(k.clone(), p.as_slice()[1].clone());
+                    r.set(k.into(), p.as_slice()[1].clone());
                 }
             }
             other => {

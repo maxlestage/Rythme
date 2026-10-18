@@ -86,7 +86,7 @@ pub fn dict(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
             }
             Ok(Value::Dict(Map::from_pairs(pairs)))
         }
-        Value::Record(r) => Ok(Value::Dict(Map::from_pairs(r.iter().map(|(k, v)| (Value::Text(k.clone()), v.clone())).collect()))),
+        Value::Record(r) => Ok(Value::Dict(Map::from_pairs(r.iter().map(|(k, v)| (Value::Text(k.into()), v.clone())).collect()))),
         Value::Dict(_) => Ok(x.clone()),
         v => Err(wrong("dict", 0, Expected::Pairs, v, span)),
     }

@@ -3437,7 +3437,7 @@ fn literal(e: &Expr) -> Option<Value> {
         ExprKind::Int(n) => Value::Int(*n),
         ExprKind::Big(n) => Value::Big(n.clone()),
         ExprKind::Float(f) => Value::Float(*f),
-        ExprKind::Text(s) => Value::Text(s.clone()),
+        ExprKind::Text(s) => Value::Text(s.into()),
         ExprKind::Bool(b) => Value::Bool(*b),
         ExprKind::Symbol(s) => Value::Symbol(*s),
         ExprKind::Unit => Value::Unit,
