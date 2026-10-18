@@ -266,8 +266,8 @@ pub fn foreign_keyword_hint(word: &str) -> Option<String> {
             "utilisez `match` :\n  match valeur\n    0 -> \"zéro\"\n    _ -> \"autre\"\n  end"
         ),
         "import" => t!(
-            "to use another file, write `use \"other_file.ry\"`",
-            "pour utiliser un autre fichier, écrivez `use \"autre_fichier.ry\"`"
+            "to use another file, write `use other_file`, then `other_file.name`",
+            "pour utiliser un autre fichier, écrivez `use autre_fichier`, puis `autre_fichier.nom`"
         ),
         "try" | "catch" | "except" | "raise" | "throw" => t!(
             "errors are values in Rythme: return `Ok(value)` or `Err(message)`,\nthen handle them with `match` or pass them on with `?`. `fail(message)` stops the program.",

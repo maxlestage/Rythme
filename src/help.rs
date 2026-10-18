@@ -226,9 +226,9 @@ const KEYWORD_DOCS: &[(&str, &str, &str, &str, &str)] = &[
     ),
     (
         "use",
-        "Uses the definitions of another file. The path is relative to the folder of the file that contains `use`.",
-        "Utilise les définitions d'un autre fichier. Le chemin est relatif au dossier du fichier qui contient `use`.",
-        "use \"geometry.ry\"",
+        "Uses another file through its name: `use geometry`, then `geometry.area(2)`. The path is relative to the folder of the file that contains `use`.",
+        "Utilise un autre fichier par son nom : `use geometrie`, puis `geometrie.aire(2)`. Le chemin est relatif au dossier du fichier qui contient `use`.",
+        "use geometry",
         "modules",
     ),
     (
@@ -1156,27 +1156,51 @@ Err(...), ni None."#;
 const MODULES_EN: &str = r#"SEVERAL FILES
 
   # geometry.ry
+  ## Area of a rectangle.
   fn area(w, h) = w * h
+  fn _check(x) = x >= 0          # private: starts with `_`
 
   # main.ry
-  use "geometry.ry"
-  print(area(2, 3))
+  use geometry                    # the file geometry.ry, next to main.ry
+  print(geometry.area(2, 3))      # 6
 
-The path is relative to the file that contains `use`. Everything defined at
-the top level of the used file becomes available. Each file runs only once."#;
+`use geometry` gives the definitions of geometry.ry through its name:
+`geometry.area`, `geometry.Circle(1)`, and in a `match`, `geometry.Circle(r)`.
+So you always see where a name comes from. A file in a folder:
+`use shapes/circle`, then `circle.perimeter(1)`. Another name: `use
+geometry as geo`, then `geo.area(2, 3)`. Names starting with `_` stay
+private to their file.
+
+The path is relative to the folder of the file that contains `use`. Each file
+runs only once. Rythme says which file defines a name you forgot to use.
+
+Older form: `use "geometry.ry"` (with quotes) gives its definitions directly,
+as `area(2, 3)`; prefer `use geometry`."#;
 
 const MODULES_FR: &str = r#"PLUSIEURS FICHIERS
 
   # geometrie.ry
+  ## Aire d'un rectangle.
   fn aire(l, h) = l * h
+  fn _verifier(x) = x >= 0       # privée : commence par `_`
 
   # principal.ry
-  use "geometrie.ry"
-  print(aire(2, 3))
+  use geometrie                   # le fichier geometrie.ry, à côté de principal.ry
+  print(geometrie.aire(2, 3))     # 6
 
-Le chemin est relatif au fichier qui contient `use`. Tout ce qui est défini au
-premier niveau du fichier utilisé devient disponible. Chaque fichier n'est
-exécuté qu'une fois."#;
+`use geometrie` donne les définitions de geometrie.ry par son nom :
+`geometrie.aire`, `geometrie.Cercle(1)`, et dans un `match`,
+`geometrie.Cercle(r)`. On voit ainsi toujours d'où vient un nom. Un fichier
+dans un dossier : `use formes/cercle`, puis `cercle.perimetre(1)`. Un autre
+nom : `use geometrie as geo`, puis `geo.aire(2, 3)`. Les noms qui commencent
+par `_` restent privés à leur fichier.
+
+Le chemin est relatif au dossier du fichier qui contient `use`. Chaque
+fichier n'est exécuté qu'une fois. Rythme dit quel fichier définit un nom que
+vous avez oublié d'utiliser.
+
+Ancienne forme : `use "geometrie.ry"` (avec des guillemets) donne ses
+définitions directement, comme `aire(2, 3)` ; préférez `use geometrie`."#;
 
 const EDITORS_EN: &str = r#"RYTHME IN YOUR EDITOR
 
@@ -1379,7 +1403,13 @@ other; at the top level, all functions are visible everywhere.
 Wrong:   print(lenght([1, 2]))
 Right:   print(len([1, 2]))
 
-Rythme suggests the closest existing name when there is one."#,
+Rythme suggests the closest existing name when there is one, and the file
+that defines it when it is another file of the folder:
+
+  use geometry                   # then
+  print(geometry.area(2))        # not area(2)
+
+A name starting with `_` is private to its file: other files cannot use it."#,
             r#"E003 — Nom inconnu
 
 Ce nom n'est pas défini à cet endroit. Vérifiez l'orthographe (majuscules et
@@ -1392,7 +1422,14 @@ visibles partout.
 Faux :   print(lenght([1, 2]))
 Juste :  print(len([1, 2]))
 
-Rythme propose le nom existant le plus proche quand il y en a un."#,
+Rythme propose le nom existant le plus proche quand il y en a un, et le
+fichier qui le définit quand c'est un autre fichier du dossier :
+
+  use geometrie                  # puis
+  print(geometrie.aire(2))       # et non aire(2)
+
+Un nom qui commence par `_` est privé à son fichier : les autres fichiers ne
+peuvent pas l'utiliser."#,
         ),
         "E004" => (
             r#"E004 — Wrong number of arguments
@@ -1567,7 +1604,12 @@ For a function with several cases, write the definitions one right after the
 other:
   fn fib(0) = 0
   fn fib(1) = 1
-  fn fib(n) = fib(n - 1) + fib(n - 2)"#,
+  fn fib(n) = fib(n - 1) + fib(n - 2)
+
+The name given to a used file (`use geometry`, `use ... as geo`) cannot name
+anything else in the file; and two files used with quotes (`use "a.ry"`)
+cannot define the same name: use them by their names instead
+(`use a`, then `a.area`)."#,
             r#"E011 — Déjà défini
 
 En Rythme, un nom désigne toujours la même valeur : il ne peut pas être
@@ -1583,7 +1625,12 @@ Pour une fonction à plusieurs cas, écrivez les définitions les unes juste
 après les autres :
   fn fib(0) = 0
   fn fib(1) = 1
-  fn fib(n) = fib(n - 1) + fib(n - 2)"#,
+  fn fib(n) = fib(n - 1) + fib(n - 2)
+
+Le nom donné à un fichier utilisé (`use geometrie`, `use ... as geo`) ne peut
+rien nommer d'autre dans le fichier ; et deux fichiers utilisés avec des
+guillemets (`use "a.ry"`) ne peuvent pas définir le même nom : utilisez-les
+plutôt par leur nom (`use a`, puis `a.aire`)."#,
         ),
         "E012" => (
             r#"E012 — Number too large

@@ -16,10 +16,11 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 
 ## Language
 
-- [ ] **Modules with names.** `use "geometry.ry" as geo`, then `geo.area(2)`;
-  names starting with `_` stay private to their file; the checker, the
-  formatter, the language server (completion after `geo.`) and the manual
-  know it. Plain `use "x.ry"` keeps working.
+- [x] **Modules with names.** `use geometry` (or `use shapes/circle`,
+  `use "geometry.ry" as geo`), then `geometry.area(2)`; names starting with
+  `_` stay private to their file; the checker, the formatter, the language
+  server (completion after `use ` and `geo.`, a quick fix adding a missing
+  `use`) and the manual know it. Plain `use "x.ry"` keeps working.
 - [ ] **Patterns on ranges and texts.** `1..9 -> ...` in `match` (Int and
   Float bounds, exhaustiveness knows nothing new), and a text prefix pattern
   only if it stays simple; the checker reports overlapping or empty ranges.
