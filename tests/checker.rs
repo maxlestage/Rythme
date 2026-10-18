@@ -170,11 +170,13 @@ fn cases_handled_twice() {
 fn tests_that_check_nothing() {
     let file = temp_file(
         "empty_tests.ry",
-        "test \"sum\" = sum([1, 2])\ntest \"shown\"\n  print(1 + 1)\nend\ntest \"good\" = assert_eq(sum([1, 2]), 3)\n",
+        "test \"length\" = len([1, 2])\ntest \"shown\"\n  print(upper(\"total\"))\nend\ntest \"good\" = assert_eq(sum([1, 2]), 3)\n",
     );
     let r = rythme(&["check", file.to_str().unwrap()]);
     assert_eq!(r.code, 0, "{}", r.stderr);
     assert_eq!(r.stderr.matches("warning[W007]").count(), 2, "{}", r.stderr);
+    // These fail when something in them stops with an error.
+    quiet("test \"parse\" = unwrap(parse_int(\"4\"))\ntest \"index\" = [1, 2][1]\ntest \"sum\" = sum([1, 2])\ntest \"read\" = len(unwrap(read_file(\"x.ry\")))\nfn double(x) = x * 2\ntest \"user\" = double(2)");
 }
 
 #[test]
@@ -213,6 +215,49 @@ fn a_call_on_the_right_of_and_or_gives_its_own_value() {
 fn functions_that_are_never_called_are_not_checked_against_their_caller() {
     quiet("print(map(None, fn(a, b) = a), filter([], fn(x) = 1), fold([], 0, fn(x) = x))");
     finds("print(map(Some(1), fn(a, b) = a))", "E004", "`map` gives 1 argument(s) to this function, but it takes 2");
+}
+
+#[test]
+fn a_value_hiding_a_built_in_is_the_built_in_until_its_line_runs() {
+    let r = rythme(&[
+        "-e",
+        "fn label(x) = text(x)\na = label(1)\ntext = \"hello\"\nfn c() = [1, 2].len()\nb = c()\nlen = 3\nprint(a, b, text, len)",
+    ]);
+    assert_eq!(r.stdout.trim(), "1 2 hello 3", "{}", r.stderr);
+    assert!(!r.stderr.contains("error"), "{}", r.stderr);
+}
+
+#[test]
+fn a_record_that_may_have_more_fields_may_hold_the_function_called() {
+    quiet("fn f(x) = x\nr = put({a: 1}, \"f\", fn(x) = x + 1)\nprint(r.f(1), f(2))");
+}
+
+/// Runs lines in the interactive mode; returns everything it printed.
+fn repl(input: &str) -> String {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+    let mut child = Command::new(env!("CARGO_BIN_EXE_rythme"))
+        .env("RYTHME_LANG", "en")
+        .env("NO_COLOR", "1")
+        .env("HOME", std::env::temp_dir())
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child.stdin.take().unwrap().write_all(format!("{input}:quit\n").as_bytes()).unwrap();
+    let out = child.wait_with_output().unwrap();
+    String::from_utf8_lossy(&out.stdout).into_owned() + &String::from_utf8_lossy(&out.stderr)
+}
+
+#[test]
+fn the_interactive_mode_keeps_what_old_definitions_made() {
+    // The old `Circle` still works after its type is defined again.
+    let out = repl("type Shape = Circle(r)\ntype Shape = Square(s)\nmatch Circle(2)\n  Circle(r) -> r\nend\n");
+    assert!(out.contains("\n2\n") && !out.contains("error") && !out.contains("warning"), "{out}");
+    // `pi` defined again is what it now holds.
+    let out = repl("pi = \"x\"\npi + \"a\"\n");
+    assert!(out.contains("\"xa\"") && !out.contains("error"), "{out}");
 }
 
 #[test]

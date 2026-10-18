@@ -531,3 +531,55 @@ fn warnings_are_true() {
     eprintln!("{comparisons} comparisons and {cases} cases checked");
     assert!(comparisons * 50 > programs && cases * 50 > programs, "only {comparisons} comparisons and {cases} cases checked");
 }
+
+/// For mistakes written with values in the code, the checker reports the
+/// error the program would stop with: same code, same message, and every
+/// piece of help the run time gives (so that `rythme explain` applies).
+#[test]
+fn errors_found_before_running_are_those_of_the_run_time() {
+    rythme::lang::set(rythme::lang::Lang::En);
+    let know = Knowledge::from_interp(&Interp::new());
+    let cases = [
+        "x = \"age: \" + 36",
+        "x = 1 + [2]",
+        "x = [1] + 2",
+        "x = [1] - 2",
+        "x = \"a\" * 3",
+        "x = true < 1",
+        "x = 1 < \"a\"",
+        "x = {a: 1} < {a: 2}",
+        "x = -\"a\"",
+        "x = not 1",
+        "x = if 1 then 2 else 3",
+        "x = 1.5..3",
+        "x = [1, 2][\"a\"]",
+        "x = 5[0]",
+        "x = {a: 1}.b",
+        "x = {name: 1}.nmae",
+        "x = 5.a",
+        "x = len(5)",
+        "x = upper(3)",
+        "x = map(5, text)",
+        "x = split(\"a\", 1)",
+        "x = [..5]",
+        "type T = A(v) | B\nx = A(1).w",
+        "fn f() = 5?\nx = f()",
+        "x = match \"abc\"\n  [h, ..t] -> 1\nend",
+        "[a, b] = 5",
+        "fn f(0) = 1\nx = f(\"a\")",
+        "fn f(a) = a\nx = f(1, 2)",
+    ];
+    for code in cases {
+        let items = parse("same.ry", code).unwrap();
+        let found = check::check(&items, &know, false).into_iter().find(|d| d.is_error());
+        let found = found.unwrap_or_else(|| panic!("not found before running:\n{code}"));
+        rythme::io::capture();
+        let stopped = Interp::new().exec_items(&items, Mode::Run).err();
+        rythme::io::take_captured();
+        let stopped = stopped.unwrap_or_else(|| panic!("runs without error:\n{code}"));
+        assert_eq!((found.code, &found.message), (stopped.code, &stopped.message), "{code}");
+        for help in &stopped.helps {
+            assert!(found.helps.contains(help), "{code}: the help `{help}` is missing before running");
+        }
+    }
+}

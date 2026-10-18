@@ -84,7 +84,7 @@ impl Knowledge {
                 Value::Variant(var) if var.fields.is_empty() && var.ctor.name == *s => {
                     GlobalInfo { kind: GKind::CtorValue, arity: None, sig: s.name().to_string(), span: None }
                 }
-                _ if &*s.name() == "pi" => GlobalInfo { kind: GKind::Builtin, arity: None, sig: "pi".into(), span: None },
+                Value::Float(_) if &*s.name() == "pi" => GlobalInfo { kind: GKind::Builtin, arity: None, sig: "pi".into(), span: None },
                 _ => GlobalInfo { kind: GKind::Value, arity: None, sig: String::new(), span: None },
             };
             k.globals.insert(*s, info);
@@ -105,6 +105,10 @@ impl Knowledge {
             };
             if c.name == *s {
                 k.ctors.insert(c.name, CtorMeta { type_name: c.type_name, arity: c.fields.len(), fields: c.fields.clone() });
+                // Its type was defined again without it: values of both remain.
+                if !k.types.get(&c.type_name).is_some_and(|cs| cs.contains(&c.name)) {
+                    k.types_defined_again.insert(c.type_name);
+                }
             }
         }
         // `Option` or `Result` defined again in the REPL: the built-in functions still give the old ones.
@@ -233,9 +237,9 @@ struct Checker<'a> {
     fn_defs: HashMap<Sym, Rc<FnDef>>,
     /// For each function being checked, what its `?` may return early.
     early: Vec<Ty>,
-    /// Did the code just checked use something that may check a value
-    /// (`assert`, `?`, a function of the program...)? For tests.
-    may_check: bool,
+    /// May the code just checked stop with an error (`assert`, `?`, an
+    /// index, a function of the program...)? For tests.
+    may_fail: bool,
     /// How many `fold` functions are being checked inside each other.
     folds: usize,
     /// The last call to a built-in function without effect, and where it is.
@@ -313,7 +317,7 @@ impl<'a> Checker<'a> {
             gtypes: HashMap::new(),
             fn_defs: HashMap::new(),
             early: Vec::new(),
-            may_check: false,
+            may_fail: false,
             folds: 0,
             pure_call: None,
             types_defined_again: know.types_defined_again.clone(),
@@ -518,7 +522,7 @@ impl<'a> Checker<'a> {
                     self.fn_depth += 1;
                     self.early.push(Ty::Never);
                     self.scopes.push(Vec::new());
-                    self.may_check = false;
+                    self.may_fail = false;
                     let t = match &body.kind {
                         ExprKind::Block(stmts) => self.stmts(stmts),
                         _ => self.expr(body),
@@ -579,9 +583,9 @@ impl<'a> Checker<'a> {
     }
 
     /// A test fails when it stops with an error, or ends with `false`,
-    /// `None` or `Err(...)`. One that can do none of these checks nothing.
+    /// `None` or `Err(...)`. One that can do none of these never fails.
     fn test_checks_something(&mut self, body: &Expr, t: &Ty, span: Span) {
-        if self.may_check || !t.is_known() || !t.never(BOOL | OPTION | RESULT) {
+        if self.may_fail || !t.is_known() || !t.never(BOOL | OPTION | RESULT) {
             return;
         }
         let at = match &body.kind {
@@ -592,7 +596,7 @@ impl<'a> Checker<'a> {
             _ => body.span,
         };
         self.diags.push(
-            Diagnostic::warning("W007", t!("this test asserts nothing", "ce test ne contient aucune assertion"))
+            Diagnostic::warning("W007", t!("this test can never fail", "ce test ne peut jamais échouer"))
                 .at(at)
                 .label(t!(
                     "its result, {}, is never compared with what is expected",
@@ -600,8 +604,8 @@ impl<'a> Checker<'a> {
                     what(None, t)
                 ))
                 .note(t!(
-                    "a test fails only when it stops with an error, or ends with `false`, `None` or `Err(...)`",
-                    "un test n'échoue que s'il s'arrête sur une erreur, ou s'il finit par `false`, `None` ou `Err(...)`"
+                    "a test fails only when it stops with an error, or ends with `false`, `None` or `Err(...)`;\nnothing in this one can",
+                    "un test n'échoue que s'il s'arrête sur une erreur, ou s'il finit par `false`, `None` ou `Err(...)` ;\nrien dans celui-ci ne le peut"
                 ))
                 .help(t!(
                     "compare the result with what you expect: `assert_eq(actual, expected)`",
@@ -694,16 +698,18 @@ impl<'a> Checker<'a> {
         }
     }
 
+    /// A local name: marks it as used, and gives what it is.
+    fn find_local(&mut self, s: Sym) -> Option<(Res, Ty)> {
+        let l = self.scopes.iter_mut().rev().flat_map(|scope| scope.iter_mut().rev()).find(|l| l.sym == s)?;
+        l.used = true;
+        let r = (Res::Local(l.info.clone(), l.def.clone()), l.ty.clone());
+        self.note_use(&r);
+        Some(r)
+    }
+
     fn resolve(&mut self, s: Sym, span: Span) -> (Res, Ty) {
-        for scope in self.scopes.iter_mut().rev() {
-            for l in scope.iter_mut().rev() {
-                if l.sym == s {
-                    l.used = true;
-                    let r = (Res::Local(l.info.clone(), l.def.clone()), l.ty.clone());
-                    self.note_use(&r);
-                    return r;
-                }
-            }
+        if let Some(r) = self.find_local(s) {
+            return r;
         }
         if let Some(g) = self.own.get(&s) {
             if g.kind == GKind::Value && self.fn_depth == 0 && !self.defined.contains(&s) && !self.repl {
@@ -743,7 +749,7 @@ impl<'a> Checker<'a> {
             _ => matches!(ty, Ty::Unit | Ty::Bool | Ty::Int | Ty::Float | Ty::Num | Ty::Text),
         };
         if !plain {
-            self.may_check = true;
+            self.may_fail = true;
         }
     }
 
@@ -752,9 +758,9 @@ impl<'a> Checker<'a> {
         match g.kind {
             GKind::Ctor => self.ctor_fn_type(s),
             GKind::CtorValue => self.ctor_value_type(s),
-            // In the REPL, a value defined again may still be the old one
-            // where it is used before its new definition.
-            GKind::Value if self.repl && self.know.globals.contains_key(&s) => Ty::Any,
+            // A value that hides a built-in function (or, in the REPL, an
+            // earlier value) is still the old one until its line has run.
+            GKind::Value if self.know.globals.contains_key(&s) => Ty::Any,
             _ => self.gtypes.get(&s).cloned().unwrap_or(Ty::Any),
         }
     }
@@ -1019,6 +1025,9 @@ impl<'a> Checker<'a> {
 
     /// `pattern = value`: the value must fit the pattern.
     fn let_pattern(&mut self, p: &Pattern, e: &Expr, t: &Ty) {
+        if !self.catches_all(p, t) {
+            self.may_fail = true;
+        }
         if !t.is_known() || self.can_match(p, t, true) {
             return;
         }
@@ -1078,17 +1087,23 @@ impl<'a> Checker<'a> {
             ExprKind::Method(recv, name, args, name_span) => self.method_call(e, recv, *name, args, *name_span),
             ExprKind::Field(obj, name, name_span) => {
                 let t = self.expr(obj);
+                // Only a field the record surely has can be read without error.
+                if !matches!(&t, Ty::Record(r) if r.get(name).is_some()) {
+                    self.may_fail = true;
+                }
                 self.field(obj, &t, name, *name_span)
             }
             ExprKind::Index(a, b) => {
                 let ta = self.expr(a);
                 let tb = self.expr(b);
+                self.may_fail = true;
                 self.index(e, a, &ta, b, &tb)
             }
             ExprKind::Binary(op, a, b, op_span) => self.binary(*op, a, b, *op_span),
             ExprKind::Range(a, b) => {
                 let ta = self.expr(a);
                 let tb = self.expr(b);
+                self.may_fail = true;
                 self.range(e, a, &ta, b, &tb)
             }
             ExprKind::Unary(op, x) => {
@@ -1106,7 +1121,10 @@ impl<'a> Checker<'a> {
                     ta.join(&tb)
                 }
             }
-            ExprKind::Match(subject, arms) => self.match_expr(e, subject, arms),
+            ExprKind::Match(subject, arms) => {
+                self.may_fail = true;
+                self.match_expr(e, subject, arms)
+            }
             ExprKind::Block(stmts) => {
                 self.scopes.push(Vec::new());
                 let t = self.stmts(stmts);
@@ -1115,7 +1133,7 @@ impl<'a> Checker<'a> {
             }
             ExprKind::Try(x) => {
                 let t = self.expr(x);
-                self.may_check = true;
+                self.may_fail = true;
                 if self.fn_depth == 0 {
                     self.diags.push(
                         Diagnostic::error(
@@ -1187,6 +1205,9 @@ impl<'a> Checker<'a> {
                 ListItem::Spread(x) => {
                     let t = self.expr(x);
                     stops |= t == Ty::Never;
+                    if !matches!(t, Ty::List(_)) {
+                        self.may_fail = true;
+                    }
                     if t.never(LIST) {
                         self.spread_error(x, &t, true);
                         stops = true;
@@ -1246,6 +1267,7 @@ impl<'a> Checker<'a> {
                         }
                         _ => {
                             exact = false;
+                            self.may_fail = true;
                             fields.iter_mut().for_each(|f| f.1 = Ty::Any);
                         }
                     }
@@ -1315,7 +1337,7 @@ impl<'a> Checker<'a> {
             }
             _ => {
                 let ty = self.expr(callee);
-                self.may_check = true;
+                self.may_fail = true;
                 self.call_target(None, &Res::Unknown, ty, None, args, span)
             }
         }
@@ -1346,6 +1368,9 @@ impl<'a> Checker<'a> {
                 if WITHOUT_EFFECT.contains(&b) {
                     self.pure_call = Some((span, b));
                 }
+            }
+            if !(WITHOUT_EFFECT.contains(&b) || matches!(b, "print" | "debug" | "help")) {
+                self.may_fail = true;
             }
             return t;
         }
@@ -1663,7 +1688,7 @@ impl<'a> Checker<'a> {
                 Ty::Never
             }
             Some(Some(ft)) => {
-                self.may_check = true;
+                self.may_fail = true;
                 self.call_target(None, &Res::Unknown, ft, None, args, e.span)
             }
             // Surely the function.
@@ -1681,8 +1706,13 @@ impl<'a> Checker<'a> {
                 for a in args {
                     self.expr(a);
                 }
-                self.method(name, args.len() + 1, e.span, name_span);
-                self.may_check = true;
+                if matches!(rt, Ty::Record(_)) {
+                    // A record that may have more fields: `name` may be one of them.
+                    self.lookup_method(name);
+                } else {
+                    self.method(name, args.len() + 1, e.span, name_span);
+                }
+                self.may_fail = true;
                 if rt == Ty::Never {
                     Ty::Never
                 } else {
@@ -1694,15 +1724,8 @@ impl<'a> Checker<'a> {
 
     /// The function called by `value.name(...)`, if there is one.
     fn lookup_method(&mut self, name: Sym) -> Option<(Res, Ty)> {
-        for scope in self.scopes.iter_mut().rev() {
-            for l in scope.iter_mut().rev() {
-                if l.sym == name {
-                    l.used = true;
-                    let r = (Res::Local(l.info.clone(), l.def.clone()), l.ty.clone());
-                    self.note_use(&r);
-                    return Some(r);
-                }
-            }
+        if let Some(r) = self.find_local(name) {
+            return Some(r);
         }
         let g = self.own.get(&name).or_else(|| self.know.globals.get(&name)).cloned()?;
         let ty = if self.own.contains_key(&name) { self.own_type(name, &g) } else { self.known_type(name, &g) };
@@ -1713,13 +1736,8 @@ impl<'a> Checker<'a> {
 
     /// `value.name(args)` calls a record's field `name`, or the function `name`.
     fn method(&mut self, name: Sym, n: usize, span: Span, name_span: Span) {
-        for scope in self.scopes.iter_mut().rev() {
-            for l in scope.iter_mut().rev() {
-                if l.sym == name {
-                    l.used = true;
-                    return;
-                }
-            }
+        if self.find_local(name).is_some() {
+            return;
         }
         // A record of this file has a field with this name: it may be what is called.
         let maybe_field = self.record_fields.contains(&*name.name());
@@ -2001,6 +2019,9 @@ impl<'a> Checker<'a> {
         }
         match op {
             UnOp::Neg => {
+                if *t != Ty::Float {
+                    self.may_fail = true;
+                }
                 if t.never(NUMBER) {
                     self.diags.push(
                         Diagnostic::error("E005", t!("cannot use `-` on {}", "impossible d'utiliser `-` sur {}", what(Some(x), t)))
@@ -2085,6 +2106,10 @@ impl<'a> Checker<'a> {
                 Ty::Bool
             }
             BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge => {
+                // Lists may hold values that cannot be compared, decimals may be `nan`.
+                if !matches!((&lt, &rt), (Ty::Int, Ty::Int) | (Ty::Text, Ty::Text) | (Ty::Bool, Ty::Bool)) {
+                    self.may_fail = true;
+                }
                 if comparable(&lt, &rt) {
                     Ty::Bool
                 } else {
@@ -2108,6 +2133,10 @@ impl<'a> Checker<'a> {
         if !(numbers || texts || lists) {
             self.op_error(op, l, lt, r, rt, at);
             return Ty::Never;
+        }
+        // On numbers: a division by zero, or a whole number too large.
+        if numbers {
+            self.may_fail = true;
         }
         let mut t = Ty::Never;
         if numbers {
