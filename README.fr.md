@@ -193,7 +193,7 @@ cargo install --path .       # ou l'installer dans le PATH
 | Commande                    | Ce qu'elle fait                                     |
 |-----------------------------|-----------------------------------------------------|
 | `rythme`                    | mode interactif : tapez du code, voyez le résultat  |
-| `rythme bonjour.ry`         | lancer un programme (`rythme run bonjour.ry` marche aussi) |
+| `rythme bonjour.ry`         | lancer un programme (`rythme run bonjour.ry` marche aussi ; `rythme run --seed 42 bonjour.ry` : les mêmes tirages de `random` à chaque fois) |
 | `rythme check bonjour.ry`   | trouver les problèmes sans lancer le programme      |
 | `rythme test bonjour.ry`    | lancer les tests écrits dans le fichier (aussi un dossier : `rythme test .`, avec `--filter NOM`, `--watch`) |
 | `rythme fmt bonjour.ry`     | mettre le code en forme dans le style officiel (aussi un dossier : `rythme fmt .`) |
@@ -292,6 +292,7 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 | [`sales.ry`](examples/sales.ry) | un rapport : `scan`, colonnes alignées avec `pad_left`, `windows`, `chunks`, JSON |
 | [`calendar.ry`](examples/calendar.ry) | des dates : la page d'un mois, des textes ISO 8601, `days_between`, `add_days` |
 | [`logs.ry`](examples/logs.ry) | lire un journal avec des regex : `named_captures`, `matches`, `find_all`, `replace_all`, `format_number` |
+| [`grades.ry`](examples/grades.ry) | les notes d'un tableur : `csv_records` avec `;`, `csv_format`, un tirage répétable avec `random_seed` |
 | [`tree.ry`](examples/tree.ry) | un type récursif : arbre binaire de recherche |
 | [`primes.ry`](examples/primes.ry) | un crible récursif, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | les blocs `test` |

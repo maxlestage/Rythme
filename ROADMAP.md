@@ -172,6 +172,13 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
   where it is not yet.
 - **More of the library**: CSV, HTTP requests, `random` with a seed that a
   program can repeat, with the same care for errors as values.
+  - [x] **CSV**: `csv_parse`, `csv_records`, `csv_format` (RFC 4180, any
+    one-character separator, errors as `Err` values with the line and the
+    column; `rythme help csv`).
+  - [x] **A seed for `random`**: `random_seed(n)` and `rythme run --seed N`
+    (same seed, same version: same draws of `random` and `shuffle`;
+    `rythme help random`). *Still open:* a seed option in the playground.
+  - [ ] **HTTP requests.**
 - [x] **Sharing in the playground**: a link to a program with its steps and its
   tests, for classrooms. Done: the Share button of the playground, a link that
   holds the program and its test mode (see [site/README.md](site/README.md#sharing-links)),
