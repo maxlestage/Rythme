@@ -1637,26 +1637,29 @@ Juste :  get(notes, "ada") == Some(19)
 Juste :  unwrap_or(get(notes, "ada"), 0) == 19"#,
         ),
         "W007" => (
-            r#"W007 — Test that checks nothing
+            r#"W007 — Test without assertion
 
-A test fails when it stops with an error, or when it ends with `false`,
-`None` or `Err(...)`. A test that only computes or prints a value can only
-fail by crashing: it never checks that the value is right.
+A test fails only when it stops with an error, or when it ends with `false`,
+`None` or `Err(...)`. A test that only computes or prints a value, and never
+compares it with what is expected, fails only if something in it stops with
+an error: it does not check that the value is right.
 
-Wrong:   test "double" = double(2)
-Wrong:   test "double" = print(double(2))
-Right:   test "double" = assert_eq(double(2), 4)
-Right:   test "double" = double(2) == 4"#,
-            r#"W007 — Test qui ne vérifie rien
+Wrong:   test "sum" = sum([1, 2])
+Wrong:   test "sum" = print(sum([1, 2]))
+Right:   test "sum" = assert_eq(sum([1, 2]), 3)
+Right:   test "sum" = sum([1, 2]) == 3"#,
+            r#"W007 — Test sans assertion
 
-Un test échoue s'il s'arrête sur une erreur, ou s'il finit par `false`,
-`None` ou `Err(...)`. Un test qui ne fait que calculer ou afficher une valeur
-ne peut échouer qu'en plantant : il ne vérifie jamais que la valeur est juste.
+Un test n'échoue que s'il s'arrête sur une erreur, ou s'il finit par
+`false`, `None` ou `Err(...)`. Un test qui ne fait que calculer ou afficher
+une valeur, sans jamais la comparer à ce qui est attendu, n'échoue que si
+quelque chose s'y arrête sur une erreur : il ne vérifie pas que la valeur
+est juste.
 
-Faux :   test "double" = double(2)
-Faux :   test "double" = print(double(2))
-Juste :  test "double" = assert_eq(double(2), 4)
-Juste :  test "double" = double(2) == 4"#,
+Faux :   test "somme" = sum([1, 2])
+Faux :   test "somme" = print(sum([1, 2]))
+Juste :  test "somme" = assert_eq(sum([1, 2]), 3)
+Juste :  test "somme" = sum([1, 2]) == 3"#,
         ),
         "W008" => (
             r#"W008 — Result lost

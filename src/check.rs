@@ -54,6 +54,9 @@ pub struct Knowledge {
     pub types: HashMap<Sym, Vec<Sym>>,
     /// The types of the values defined by the `use`d files, when certain.
     pub value_types: HashMap<Sym, Ty>,
+    /// Names of types defined more than once (a file may define again
+    /// `Result`, or a type of a used file): values of either may have them.
+    pub types_defined_again: HashSet<Sym>,
 }
 
 fn func_info(def: &FnDef) -> GlobalInfo {
@@ -92,6 +95,24 @@ impl Knowledge {
                 k.ctors.insert(c.name, CtorMeta { type_name: *t, arity: c.fields.len(), fields: c.fields.clone() });
             }
         }
+        // A constructor defined again in the REPL belongs to its last type:
+        // the one its name means now.
+        for (s, v) in &it.globals {
+            let c = match v {
+                Value::Ctor(c) => c,
+                Value::Variant(var) if var.fields.is_empty() => &var.ctor,
+                _ => continue,
+            };
+            if c.name == *s {
+                k.ctors.insert(c.name, CtorMeta { type_name: c.type_name, arity: c.fields.len(), fields: c.fields.clone() });
+            }
+        }
+        // `Option` or `Result` defined again in the REPL: the built-in functions still give the old ones.
+        for (t, ctor) in [("Option", "Some"), ("Result", "Ok")] {
+            if !k.types.get(&Sym::new(t)).is_some_and(|cs| cs.contains(&Sym::new(ctor))) {
+                k.types_defined_again.insert(Sym::new(t));
+            }
+        }
         k
     }
 
@@ -122,6 +143,9 @@ impl Knowledge {
                     }
                 }
                 Item::Type(t) => {
+                    if self.types.contains_key(&t.name) {
+                        self.types_defined_again.insert(t.name);
+                    }
                     self.types.insert(t.name, t.variants.iter().map(|v| v.name).collect());
                     for v in &t.variants {
                         self.value_types.remove(&v.name);
@@ -216,10 +240,15 @@ struct Checker<'a> {
     folds: usize,
     /// The last call to a built-in function without effect, and where it is.
     pure_call: Option<(Span, &'static str)>,
+    /// Names of types defined more than once: their constructors may be those of any of them.
+    types_defined_again: HashSet<Sym>,
+    /// The types of the built-in functions used as values, computed once.
+    builtin_types: HashMap<&'static str, Ty>,
 }
 
-/// Built-in functions that only compute a value: no effect, and no function
-/// of the program called. (`int` and `unwrap` may be used to stop on bad input.)
+/// Built-in functions that only compute a value: no effect, no function of
+/// the program called, and no error for arguments of the right kinds (a
+/// line may call `sqrt(x)` or `int(t)` only to stop on a bad value).
 const WITHOUT_EFFECT: &[&str] = &[
     "len",
     "upper",
@@ -230,46 +259,29 @@ const WITHOUT_EFFECT: &[&str] = &[
     "contains",
     "starts_with",
     "ends_with",
-    "replace",
     "chars",
     "lines",
-    "repeat",
     "parse_int",
     "parse_float",
     "text",
     "type_of",
-    "abs",
-    "min",
-    "max",
-    "sqrt",
-    "pow",
-    "floor",
-    "ceil",
-    "round",
     "sin",
     "cos",
     "tan",
-    "log",
     "exp",
     "is_even",
     "is_odd",
-    "sum",
-    "product",
     "first",
     "last",
     "rest",
     "get",
     "push",
     "reverse",
-    "sort",
     "unique",
     "slice",
-    "take",
-    "drop",
     "zip",
     "enumerate",
     "index_of",
-    "flatten",
     "is_empty",
     "keys",
     "values",
@@ -304,6 +316,8 @@ impl<'a> Checker<'a> {
             may_check: false,
             folds: 0,
             pure_call: None,
+            types_defined_again: know.types_defined_again.clone(),
+            builtin_types: HashMap::new(),
         };
         for item in items {
             match item {
@@ -354,6 +368,9 @@ impl<'a> Checker<'a> {
                         continue;
                     }
                     type_first.insert(t.name, t.span);
+                    if self.know.types.contains_key(&t.name) {
+                        self.types_defined_again.insert(t.name);
+                    }
                     for v in &t.variants {
                         let mut seen: HashSet<Sym> = HashSet::new();
                         for f in &v.fields {
@@ -575,12 +592,16 @@ impl<'a> Checker<'a> {
             _ => body.span,
         };
         self.diags.push(
-            Diagnostic::warning("W007", t!("this test checks nothing", "ce test ne vérifie rien"))
+            Diagnostic::warning("W007", t!("this test asserts nothing", "ce test ne contient aucune assertion"))
                 .at(at)
-                .label(t!("its result, {}, is never checked", "son résultat, {}, n'est jamais vérifié", what(None, t)))
+                .label(t!(
+                    "its result, {}, is never compared with what is expected",
+                    "son résultat, {}, n'est jamais comparé à ce qui est attendu",
+                    what(None, t)
+                ))
                 .note(t!(
-                    "a test fails when it stops with an error, or ends with `false`, `None` or `Err(...)`",
-                    "un test échoue s'il s'arrête sur une erreur, ou s'il finit par `false`, `None` ou `Err(...)`"
+                    "a test fails only when it stops with an error, or ends with `false`, `None` or `Err(...)`",
+                    "un test n'échoue que s'il s'arrête sur une erreur, ou s'il finit par `false`, `None` ou `Err(...)`"
                 ))
                 .help(t!(
                     "compare the result with what you expect: `assert_eq(actual, expected)`",
@@ -739,11 +760,11 @@ impl<'a> Checker<'a> {
     }
 
     /// The type of a name defined before this module (built-in, `use`d file, REPL).
-    fn known_type(&self, s: Sym, g: &GlobalInfo) -> Ty {
+    fn known_type(&mut self, s: Sym, g: &GlobalInfo) -> Ty {
         match g.kind {
             GKind::Builtin if g.arity.is_none() && g.sig == "pi" => Ty::Float,
             GKind::Builtin => match builtin_name(g).and_then(crate::builtins::lookup) {
-                Some(b) => types::builtin_value(b),
+                Some(b) => self.builtin_types.entry(b.name).or_insert_with(|| types::builtin_value(b)).clone(),
                 None => Ty::Any,
             },
             GKind::Func => Ty::func(g.arity, Ty::Any, Some(g.sig.as_str().into())),
@@ -1404,6 +1425,10 @@ impl<'a> Checker<'a> {
         for (i, t) in tys.iter().enumerate() {
             let Some(cb) = types::callback(b, i, tys) else { continue };
             let Ty::Func(f) = t else { continue };
+            // An empty list, `None` or `Err(...)`: the function is never called.
+            if cb.params.contains(&Ty::Never) {
+                continue;
+            }
             let n = cb.params.len();
             if let Some((min, max)) = f.arity {
                 if n < min || n > max {
@@ -1821,6 +1846,7 @@ impl<'a> Checker<'a> {
     fn data_field(&mut self, d: &types::DataTy, name: &str, span: Span) -> Ty {
         let ctors: Vec<(Sym, Option<Vec<Ty>>)> = match &d.ctors {
             Some(cs) => cs.iter().map(|(c, fs)| (*c, Some(fs.clone()))).collect(),
+            None if self.types_defined_again.contains(&d.name) => return Ty::Any,
             None => self.types.get(&d.name).map(|cs| cs.iter().map(|c| (*c, None)).collect()).unwrap_or_default(),
         };
         let mut found = None;
@@ -2038,10 +2064,17 @@ impl<'a> Checker<'a> {
         match op {
             BinOp::And | BinOp::Or => {
                 let left = self.condition(l, &lt);
-                // The right side runs only when needed, but when it runs, it must be a Bool too.
-                self.condition(r, &rt);
+                // The right side runs only when needed, but when it runs, it
+                // must be a Bool too. A call there is a tail call: its value
+                // is given as it is, without being checked.
+                let call = matches!(r.kind, ExprKind::Call(..) | ExprKind::Method(..));
+                if !call {
+                    self.condition(r, &rt);
+                }
                 if lt == Ty::Never || !left {
                     Ty::Never
+                } else if call {
+                    Ty::Bool.join(&rt)
                 } else {
                     Ty::Bool
                 }
@@ -2425,9 +2458,10 @@ impl<'a> Checker<'a> {
         }
     }
 
-    /// Is `ctor` one of the constructors of the type `type_name`?
+    /// May `ctor` be one of the constructors of the type `type_name`?
     fn in_type(&self, type_name: Sym, ctor: Sym) -> bool {
         match self.types.get(&type_name) {
+            _ if self.types_defined_again.contains(&type_name) => true,
             Some(cs) => cs.contains(&ctor),
             None => true,
         }
@@ -2485,7 +2519,9 @@ impl<'a> Checker<'a> {
             // The only constructor of the type of the value.
             PatKind::Ctor(name, args) => match t {
                 Ty::Data(d) => {
-                    self.types.get(&d.name).is_some_and(|cs| cs.as_slice() == [*name]) && args.iter().all(|a| self.catches_all(a, &Ty::Any))
+                    !self.types_defined_again.contains(&d.name)
+                        && self.types.get(&d.name).is_some_and(|cs| cs.as_slice() == [*name])
+                        && args.iter().all(|a| self.catches_all(a, &Ty::Any))
                 }
                 _ => false,
             },
@@ -2558,6 +2594,10 @@ impl<'a> Checker<'a> {
             PatKind::Ctor(name, _) => {
                 let Some(meta) = self.ctors.get(name) else { return Vec::new() };
                 let Some(variants) = self.types.get(&meta.type_name) else { return Vec::new() };
+                // A type name defined again: the value may be of either type.
+                if self.types_defined_again.contains(&meta.type_name) || !variants.contains(name) {
+                    return Vec::new();
+                }
                 let mut out = Vec::new();
                 for v in variants {
                     let arity = self.ctors.get(v).map(|m| m.arity).unwrap_or(0);
@@ -2774,123 +2814,104 @@ fn callees_first(items: &[Item]) -> Vec<Rc<FnDef>> {
     out
 }
 
-/// Collects the names used in an expression.
-fn names_in_expr(e: &Expr, out: &mut Vec<Sym>) {
-    match &e.kind {
-        ExprKind::Var(s) => out.push(*s),
-        ExprKind::Template(parts) => parts.iter().for_each(|p| {
-            if let TemplatePart::Expr(x) = p {
-                names_in_expr(x, out)
-            }
-        }),
-        ExprKind::List(items) => items.iter().for_each(|it| match it {
-            ListItem::One(x) | ListItem::Spread(x) => names_in_expr(x, out),
-        }),
-        ExprKind::Record(items) => items.iter().for_each(|it| match it {
-            RecordItem::Field(_, _, x) | RecordItem::Spread(x) => names_in_expr(x, out),
-        }),
-        ExprKind::Lambda(def) => def.clauses.iter().for_each(|c| {
+/// Calls `f` on each expression directly inside `e`, guards included.
+fn each_inner(e: &Expr, f: &mut dyn FnMut(&Expr)) {
+    let clauses = |def: &FnDef, f: &mut dyn FnMut(&Expr)| {
+        for c in &def.clauses {
             if let Some(g) = &c.guard {
-                names_in_expr(g, out);
+                f(g);
             }
-            names_in_expr(&c.body, out)
-        }),
-        ExprKind::Call(f, args) => {
-            names_in_expr(f, out);
-            args.iter().for_each(|a| names_in_expr(a, out));
+            f(&c.body);
         }
-        ExprKind::Method(r, name, args, _) => {
-            out.push(*name);
-            names_in_expr(r, out);
-            args.iter().for_each(|a| names_in_expr(a, out));
+    };
+    match &e.kind {
+        ExprKind::Template(parts) => {
+            for p in parts {
+                if let TemplatePart::Expr(x) = p {
+                    f(x);
+                }
+            }
         }
-        ExprKind::Field(x, _, _) | ExprKind::Unary(_, x) | ExprKind::Try(x) => names_in_expr(x, out),
+        ExprKind::List(items) => {
+            for it in items {
+                let (ListItem::One(x) | ListItem::Spread(x)) = it;
+                f(x);
+            }
+        }
+        ExprKind::Record(items) => {
+            for it in items {
+                let (RecordItem::Field(_, _, x) | RecordItem::Spread(x)) = it;
+                f(x);
+            }
+        }
+        ExprKind::Lambda(def) => clauses(def, f),
+        ExprKind::Call(x, args) | ExprKind::Method(x, _, args, _) => {
+            f(x);
+            for a in args {
+                f(a);
+            }
+        }
+        ExprKind::Field(x, _, _) | ExprKind::Unary(_, x) | ExprKind::Try(x) => f(x),
         ExprKind::Index(a, b) | ExprKind::Binary(_, a, b, _) | ExprKind::Range(a, b) => {
-            names_in_expr(a, out);
-            names_in_expr(b, out);
+            f(a);
+            f(b);
         }
         ExprKind::If(c, a, b) => {
-            names_in_expr(c, out);
-            names_in_expr(a, out);
-            names_in_expr(b, out);
+            f(c);
+            f(a);
+            f(b);
         }
         ExprKind::Match(s, arms) => {
-            names_in_expr(s, out);
+            f(s);
             for arm in arms {
                 if let Some(g) = &arm.guard {
-                    names_in_expr(g, out);
+                    f(g);
                 }
-                names_in_expr(&arm.body, out);
+                f(&arm.body);
             }
         }
-        ExprKind::Block(stmts) => stmts.iter().for_each(|s| match s {
-            Stmt::Let(_, x) | Stmt::Expr(x) => names_in_expr(x, out),
-            Stmt::Fn(def) => def.clauses.iter().for_each(|c| names_in_expr(&c.body, out)),
-        }),
+        ExprKind::Block(stmts) => {
+            for s in stmts {
+                match s {
+                    Stmt::Let(_, x) | Stmt::Expr(x) => f(x),
+                    Stmt::Fn(def) => clauses(def, f),
+                }
+            }
+        }
         _ => {}
     }
+}
+
+/// Collects the names used in an expression.
+fn names_in_expr(e: &Expr, out: &mut Vec<Sym>) {
+    if let ExprKind::Var(s) | ExprKind::Method(_, s, _, _) = &e.kind {
+        out.push(*s);
+    }
+    each_inner(e, &mut |x| names_in_expr(x, out));
 }
 
 /// Collects the field names written in record literals (`{name: ...}`).
 fn fields_in_stmt(s: &Stmt, out: &mut HashSet<Rc<str>>) {
     match s {
         Stmt::Let(_, e) | Stmt::Expr(e) => fields_in_expr(e, out),
-        Stmt::Fn(def) => def.clauses.iter().for_each(|c| fields_in_expr(&c.body, out)),
+        Stmt::Fn(def) => def.clauses.iter().for_each(|c| {
+            if let Some(g) = &c.guard {
+                fields_in_expr(g, out);
+            }
+            fields_in_expr(&c.body, out);
+        }),
     }
 }
 
 fn fields_in_expr(e: &Expr, out: &mut HashSet<Rc<str>>) {
-    match &e.kind {
-        ExprKind::Record(items) => {
-            for it in items {
-                match it {
-                    RecordItem::Field(k, _, x) => {
-                        out.insert(k.clone());
-                        fields_in_expr(x, out);
-                    }
-                    RecordItem::Spread(x) => fields_in_expr(x, out),
-                }
+    if let ExprKind::Record(items) = &e.kind {
+        for it in items {
+            if let RecordItem::Field(k, _, _) = it {
+                out.insert(k.clone());
             }
         }
-        ExprKind::Template(parts) => parts.iter().for_each(|p| {
-            if let TemplatePart::Expr(x) = p {
-                fields_in_expr(x, out)
-            }
-        }),
-        ExprKind::List(items) => items.iter().for_each(|it| match it {
-            ListItem::One(x) | ListItem::Spread(x) => fields_in_expr(x, out),
-        }),
-        ExprKind::Lambda(def) => def.clauses.iter().for_each(|c| fields_in_expr(&c.body, out)),
-        ExprKind::Call(f, args) => {
-            fields_in_expr(f, out);
-            args.iter().for_each(|a| fields_in_expr(a, out));
-        }
-        ExprKind::Method(r, _, args, _) => {
-            fields_in_expr(r, out);
-            args.iter().for_each(|a| fields_in_expr(a, out));
-        }
-        ExprKind::Field(x, _, _) | ExprKind::Unary(_, x) | ExprKind::Try(x) => fields_in_expr(x, out),
-        ExprKind::Index(a, b) | ExprKind::Binary(_, a, b, _) | ExprKind::Range(a, b) => {
-            fields_in_expr(a, out);
-            fields_in_expr(b, out);
-        }
-        ExprKind::If(c, a, b) => {
-            fields_in_expr(c, out);
-            fields_in_expr(a, out);
-            fields_in_expr(b, out);
-        }
-        ExprKind::Match(s, arms) => {
-            fields_in_expr(s, out);
-            for arm in arms {
-                if let Some(g) = &arm.guard {
-                    fields_in_expr(g, out);
-                }
-                fields_in_expr(&arm.body, out);
-            }
-        }
-        ExprKind::Block(stmts) => stmts.iter().for_each(|s| fields_in_stmt(s, out)),
-        _ => {}
     }
+    each_inner(e, &mut |x| fields_in_expr(x, out));
 }
 
 /// Can evaluating this expression do anything besides computing a value

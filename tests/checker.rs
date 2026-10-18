@@ -180,11 +180,60 @@ fn tests_that_check_nothing() {
 #[test]
 fn results_of_functions_without_effect_that_are_lost() {
     warns("numbers = [1, 2]\npush(numbers, 4)\nprint(numbers)", "W008", "the result of `push` is lost");
-    warns("numbers = [3, 1]\nnumbers.sort()\nprint(numbers)", "W008", "`sort(list)` gives a new value");
+    warns("numbers = [3, 1]\nnumbers.reverse()\nprint(numbers)", "W008", "`reverse(x)` gives a new value");
     warns("fn f(name)\n  name |> upper\n  name\nend\nprint(f(\"a\"))", "W008", "the result of `upper` is lost");
     // The last line gives the value; effects, and conversions that may stop the program, are not lost.
     quiet("fn add(xs) = push(xs, 4)\nfn f(xs)\n  print(len(xs))\n  push(xs, 1)\nend\nprint(add([1]), f([2]))");
     quiet("xs = [1, 2]\nxs |> map(fn(x) = print(x))\nunwrap(first(xs))\nint(\"42\")\neach(xs, fn(x) = push([x], x))\nprint(sort(xs))");
+    // These stop the program on a bad value: a line may call them only for that.
+    quiet("x = 4\nsqrt(x)\nsum([x])\nsort([x])\nmin([x])\nprint(x)");
+}
+
+// ----- found by reviewing the checker -------------------------------------
+
+#[test]
+fn a_type_name_defined_again_keeps_the_constructors_of_both() {
+    quiet("type Result = Win | Lose\nr = parse_int(\"3\")\nmatch r\n  Ok(n) -> print(n)\n  Err(e) -> print(e)\nend\nprint(Win)");
+    let lib = temp_file("lib.ry", "type Shape = Circle(r) | Square(s)\nc = Circle(2)\n");
+    let main = lib.with_file_name("main.ry");
+    std::fs::write(&main, "use \"lib\"\ntype Shape = Tri(a)\nprint(match c\n  Circle(r) -> r\n  _ -> 0\nend, Tri(1))\n").unwrap();
+    let r = rythme(&[main.to_str().unwrap()]);
+    assert_eq!(r.stdout.trim(), "2 Tri(1)", "{}", r.stderr);
+    assert!(r.stderr.is_empty(), "{}", r.stderr);
+}
+
+#[test]
+fn a_call_on_the_right_of_and_or_gives_its_own_value() {
+    // In tail position, `a and f()` gives what `f()` gives, without checking it.
+    quiet("fn both(a, f) = a and f()\nprint(both(true, fn() = 5) + 1)");
+    quiet("fn describe(x) = \"small\"\nfn check(x) = x > 0 or describe(x)\nprint(check(0))");
+}
+
+#[test]
+fn functions_that_are_never_called_are_not_checked_against_their_caller() {
+    quiet("print(map(None, fn(a, b) = a), filter([], fn(x) = 1), fold([], 0, fn(x) = x))");
+    finds("print(map(Some(1), fn(a, b) = a))", "E004", "`map` gives 1 argument(s) to this function, but it takes 2");
+}
+
+#[test]
+fn constructors_defined_again_in_the_interactive_mode_belong_to_their_last_type() {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+    for _ in 0..5 {
+        let mut child = Command::new(env!("CARGO_BIN_EXE_rythme"))
+            .env("RYTHME_LANG", "en")
+            .env("NO_COLOR", "1")
+            .env("HOME", std::env::temp_dir())
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        child.stdin.take().unwrap().write_all(b"type A = X(v)\ntype B = X(v) | Y\nX(1) == Y\n:quit\n").unwrap();
+        let out = child.wait_with_output().unwrap();
+        let all = String::from_utf8_lossy(&out.stdout).into_owned() + &String::from_utf8_lossy(&out.stderr);
+        assert!(all.contains("false") && !all.contains("W006"), "{all}");
+    }
 }
 
 #[test]

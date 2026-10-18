@@ -234,19 +234,6 @@ impl Ty {
         }
     }
 
-    /// The type of a field of a record (`None`: the record surely has no
-    /// such field).
-    pub fn field(&self, name: &str) -> Option<Ty> {
-        match self {
-            Ty::Record(r) => match r.get(name) {
-                Some(t) => Some(t.clone()),
-                None if r.exact => None,
-                None => Some(Ty::Any),
-            },
-            _ => Some(Ty::Any),
-        }
-    }
-
     /// What `f(...)` gives, for a function.
     pub fn ret(&self) -> Ty {
         match self {
