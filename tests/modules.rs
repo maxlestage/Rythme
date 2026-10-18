@@ -98,6 +98,31 @@ fn definitions_through_the_name_of_the_file() {
     runs("use \"geometry.ry\" as geo\nuse geometry\nprint(geo.area(2), geometry.area(2))\n", "geometry runs\n4 4\n");
 }
 
+/// A type of the program and a type of the same name in a file used with a
+/// name are two types, as the checker says: their values are never equal, and
+/// a pattern of one never matches a value of the other.
+#[test]
+fn each_file_keeps_its_own_types() {
+    runs(
+        "use geometry\nuse geometry as geo\ntype Shape = Square(side) | Dot\nfn which(s) = match s\n  Square(_) -> \"mine\"\n  geometry.Square(_) -> \"theirs\"\n  _ -> \"other\"\nend\nprint(which(geometry.Square(1)), which(Square(1)), which(geo.Dot), which(Dot))\nprint(geo.Square(1) == geometry.Square(1), [Square(1), geometry.Square(1), Dot, geometry.Dot] |> set |> len)\nprint(geometry.Dot < geometry.Square(1), sort([Square(2), Dot]))\n",
+        "geometry runs\ntheirs mine other other\ntrue 4\nfalse [Square(2), Dot]\n",
+    );
+    // At the top level, where the checker does not know the values.
+    runs(
+        "use geometry\ntype Shape = Square(side)\nfn hide(x) = x\nSquare(n) = hide(Square(5))\nprint(n, hide(Square(1)) == hide(geometry.Square(1)), hide(geometry.Square(1)) == geometry.Square(1))\n",
+        "geometry runs\n5 false true\n",
+    );
+    let f = folder(
+        "homonyms",
+        "use geometry\ntype Shape = Square(side)\nfn hide(x) = x\nprint(sort([hide(Square(1)), hide(geometry.Square(1))]))\n",
+    );
+    let r = rythme(&[&f.path("main.ry")]);
+    assert!(r.stderr.contains("two different types named `Shape`, defined in two files"), "{}", r.stderr);
+    let f = folder("homonyms", "use geometry\ntype Shape = Square(side)\nfn hide(x) = x\nSquare(n) = hide(geometry.Square(1))\n");
+    let r = rythme(&[&f.path("main.ry")]);
+    assert!(r.stderr.contains("E006"), "{}", r.stderr);
+}
+
 #[test]
 fn each_file_keeps_its_own_names() {
     // `area` of two files and of the program, and private names that do not meet.
@@ -166,6 +191,30 @@ fn unknown_names_say_which_file_defines_them() {
     let f = folder("fr", "print(describe(1))\n");
     let r = rythme_lang("fr", &[&f.path("main.ry")]);
     assert!(r.stderr.contains("`describe` est défini dans `geometry.ry` : ajoutez `use geometry` en haut du fichier"), "{}", r.stderr);
+    // Defined further down in the same function: that comes first.
+    for main in [
+        "fn f()\n  fn g() = describe(2)\n  y = 1\n  fn describe(x) = x + y\n  g()\nend\nprint(f())\n",
+        "use geometry as geo\nfn f()\n  x = area(2)\n  area = fn(v) = v\n  x\nend\nprint(f())\n",
+    ] {
+        let e = refused(main, &["defined here, further down", "move `"]);
+        assert!(!e.contains("is defined in `geometry.ry`"), "{e}");
+    }
+    // `people.adult?` without `(`: the help does not suggest what was written.
+    let f = Folder::new(
+        "question",
+        &[
+            ("people.ry", "fn adult?(p) = p.age >= 18\n"),
+            ("main.ry", "use people\nfn adults(list) = list.select(people.adult?)\nprint(people.adult?({age: 3}), adults([{age: 30}]))\n"),
+        ],
+    );
+    let r = rythme(&[&f.path("main.ry")]);
+    assert!(
+        r.stderr.contains("`people.adult?` is a function of `")
+            && r.stderr.contains("people.ry`, but without `(` right after it, `?` is the operator")
+            && !r.stderr.contains("did you mean"),
+        "{}",
+        r.stderr
+    );
 }
 
 #[test]

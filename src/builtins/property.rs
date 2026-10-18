@@ -575,8 +575,10 @@ fn verdict(it: &mut Interp, f: &Value, x: &Value, span: Span) -> Fallible<Verdic
             Wrap::None | Wrap::Err => Ok(Verdict::Returned(v)),
             Wrap::Other => Err(wrong_return("check_all", BOOL, &v.describe(), span)),
         },
-        // Out of the calls allowed for this run: nothing more can be tried.
-        Err(d) if it.out_of_steps() => Err(d),
+        // Out of the calls allowed for this run, or too deep: nothing more can
+        // be tried (simplifying would go as deep again, at every `check_all`
+        // around this one).
+        Err(d) if it.out_of_steps() || d.code == "E014" => Err(d),
         Err(d) => Ok(Verdict::Stopped(d)),
     }
 }

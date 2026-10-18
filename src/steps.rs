@@ -755,7 +755,7 @@ impl<'a> Stepper<'a> {
                 let mut arms = std::mem::take(arms);
                 for mut arm in arms.drain(..) {
                     let mut binds = Vec::new();
-                    if !interp::match_pattern(&arm.pat, &val, &mut binds) {
+                    if !interp::match_pattern(&arm.pat, &val, &self.it.names, &mut binds) {
                         continue;
                     }
                     if let Some(mut g) = arm.guard.take() {
@@ -793,7 +793,7 @@ impl<'a> Stepper<'a> {
                     St::Let(p, x) => {
                         sub!(self, x, d);
                         let mut binds = Vec::new();
-                        if !interp::match_pattern(p, v(x), &mut binds) {
+                        if !interp::match_pattern(p, v(x), &self.it.names, &mut binds) {
                             return S::Err(interp::pattern_mismatch(p.span, v(x)));
                         }
                         binds
@@ -894,7 +894,7 @@ impl<'a> Stepper<'a> {
         'clauses: for clause in &def.clauses {
             let mut binds = Vec::new();
             for (p, a) in clause.params.iter().zip(&args) {
-                if !interp::match_pattern(p, a, &mut binds) {
+                if !interp::match_pattern(p, a, &self.it.names, &mut binds) {
                     continue 'clauses;
                 }
             }
@@ -1130,7 +1130,7 @@ impl<'a> Stepper<'a> {
                     let mut chosen = None;
                     for (i, arm) in arms.iter().enumerate() {
                         let mut binds = Vec::new();
-                        if !interp::match_pattern(&arm.pat, &val, &mut binds) {
+                        if !interp::match_pattern(&arm.pat, &val, &self.it.names, &mut binds) {
                             continue;
                         }
                         if let Some(g) = &arm.guard {
@@ -1168,7 +1168,7 @@ impl<'a> Stepper<'a> {
                                 return false;
                             }
                             let mut binds = Vec::new();
-                            if !interp::match_pattern(p, v(x), &mut binds) {
+                            if !interp::match_pattern(p, v(x), &self.it.names, &mut binds) {
                                 return false;
                             }
                             stmts.remove(0);
@@ -1299,12 +1299,22 @@ impl<'a> Stepper<'a> {
     }
 }
 
-/// Cuts a line to `width` characters.
+/// Cuts a line to `width` columns of the terminal (`日` takes two).
 fn clip(line: &str, width: usize) -> String {
-    if line.chars().count() <= width {
+    use crate::diagnostic::{char_width, display_width};
+    if display_width(line) <= width {
         return line.to_string();
     }
-    let mut s: String = line.chars().take(width.saturating_sub(1).max(1)).collect();
+    let room = width.saturating_sub(1).max(1);
+    let mut s = String::new();
+    let mut used = 0;
+    for c in line.chars() {
+        used += char_width(c);
+        if used > room {
+            break;
+        }
+        s.push(c);
+    }
     s.push('…');
     s
 }
