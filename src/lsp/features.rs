@@ -210,6 +210,12 @@ fn heads(def: &Def) -> String {
     out
 }
 
+/// What the checker infers of a function: `fn area(side: Int|Float) -> Int|Float`.
+fn inferred(a: &Analysis, id: DefId, def: &Def) -> Option<String> {
+    let sig = a.module_of(id.file)?.signatures.get(&def.span)?;
+    sig.is_informative().then(|| format!("{}\n{}", t!("Inferred from its code:", "Déduit de son code :"), code_block(&sig.to_string())))
+}
+
 fn def_markdown(a: &Analysis, id: DefId, def: &Def) -> String {
     let mut parts = Vec::new();
     match def.kind {
@@ -253,6 +259,9 @@ fn def_markdown(a: &Analysis, id: DefId, def: &Def) -> String {
     }
     if let Some(doc) = &def.doc {
         parts.push(doc.to_string());
+    }
+    if def.kind == DefKind::Function {
+        parts.extend(inferred(a, id, def));
     }
     if id.file != a.module.file {
         if let Some(uri) = a.uri_of(id.file) {

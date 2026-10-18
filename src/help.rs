@@ -1315,9 +1315,11 @@ définitions directement, comme `aire(2, 3)` ; préférez `use geometrie`."#;
 const EDITORS_EN: &str = r#"RYTHME IN YOUR EDITOR
 
 Rythme helps inside the editor too: problems as you type, the documentation
-of a function under the mouse, completion, the parameters of a call, go to
-definition, references, rename, quick fixes for typos, formatting like
-`rythme fmt`. This is the language server, that the editor starts by itself:
+of a function under the mouse (with the signature inferred from its code,
+like `fn area(side: Int|Float) -> Int|Float`), completion, the parameters of
+a call, go to definition, references, rename, quick fixes for typos,
+formatting like `rythme fmt`. This is the language server, that the editor
+starts by itself:
   rythme lsp
 
 VS Code
@@ -1340,10 +1342,11 @@ RYTHME_LANG chooses it: rythme --lang fr lsp"#;
 const EDITORS_FR: &str = r#"RYTHME DANS VOTRE ÉDITEUR
 
 Rythme aide aussi dans l'éditeur : les problèmes pendant la frappe, la
-documentation d'une fonction sous la souris, la complétion, les paramètres
-d'un appel, aller à la définition, les références, renommer, les corrections
-rapides des fautes de frappe, la mise en forme comme `rythme fmt`. C'est le
-serveur de langage, que l'éditeur lance tout seul :
+documentation d'une fonction sous la souris (avec la signature déduite de son
+code, comme `fn aire(cote: Int|Float) -> Int|Float`), la complétion, les
+paramètres d'un appel, aller à la définition, les références, renommer, les
+corrections rapides des fautes de frappe, la mise en forme comme `rythme fmt`.
+C'est le serveur de langage, que l'éditeur lance tout seul :
   rythme lsp
 
 VS Code
@@ -1664,7 +1667,9 @@ Wrong:   if len(list) then ... else ...
 Right:   if len(list) > 0 then ... else ...
 
 When the kinds of the values are certain, `rythme check` finds this mistake
-before the program runs, even in code that does not run every time."#,
+before the program runs, even in code that does not run every time, and in
+the calls that give a function what it cannot use: `area("big")` when
+`area(side)` computes `side * side`."#,
             r#"E005 — Mauvaise sorte de valeur
 
 L'opération ne fonctionne pas avec cette sorte de valeur. Rythme ne convertit
@@ -1679,7 +1684,9 @@ Faux :   if len(liste) then ... else ...
 Juste :  if len(liste) > 0 then ... else ...
 
 Quand la nature des valeurs est certaine, `rythme check` trouve cette erreur
-avant l'exécution, même dans du code qui ne s'exécute pas à chaque fois."#,
+avant l'exécution, même dans du code qui ne s'exécute pas à chaque fois, et
+dans les appels qui donnent à une fonction ce qu'elle ne peut pas utiliser :
+`aire("grand")` quand `aire(cote)` calcule `cote * cote`."#,
         ),
         "E006" => (
             r#"E006 — No case matches
