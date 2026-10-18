@@ -2103,6 +2103,68 @@ warning[W005]: there is no function named `size`
 
 Exit code: 0.
 
+The checker also infers what the **parameters of each function** must be,
+from how its code uses them: `side * side` needs numbers, `upper(t)` a
+text, `p.name` a record (or a value whose constructor has a field `name`),
+`if c` a Bool, a `match` the kinds of its patterns, a call to another
+function what that one needs. It follows every way through the function:
+the branches of an `if` or of a `match`, and the definitions of a function
+(one per case), add up their kinds; one operation after the other narrows
+them down; a `?`, or a call that may end the program (`exit`), keeps what is
+known at that point. A call with an argument of another kind fails every
+time it runs: the checker reports it, with the code, the message and the
+help of the error the function would stop with, where it stops in the
+function, and what the function needs. Nothing is reported when the call
+may work: a function that works on several kinds of values (`twice` below,
+on numbers, texts and lists), definitions chosen by their patterns or their
+guards, recursion, functions never called. What the functions of another
+file need is not inferred.
+
+```rythme
+fn area(side) = side * side
+fn shout(t) = upper(t) + "!"
+fn twice(x) = x + x
+print(area(3), shout("hi"), twice("ab"))
+print(area("big"))
+print(shout(5))
+```
+
+`rythme check 54-params.ry`:
+
+```text
+error[E005]: cannot use `*` with Text and Text
+ --> 54-params.ry:5:7
+  |
+5 | print(area("big"))
+  |       ^^^^^^^^^^^ `area` stops with this error, every time
+  |
+1 | fn area(side) = side * side
+  |                      - in `area`: Text "big" * Text "big"
+  |
+  = note: from how `area` uses `side`, it needs: `fn area(side: Int|Float) -> Int|Float`
+  = more about this error: `rythme explain E005`
+
+error[E005]: `upper` expects a text as argument 1, but got Int 5
+ --> 54-params.ry:6:7
+  |
+6 | print(shout(5))
+  |       ^^^^^^^^ `shout` stops with this error, every time
+  |
+2 | fn shout(t) = upper(t) + "!"
+  |                     - in `shout`: wrong kind of value
+  |
+  = note: from how `shout` uses `t`, it needs: `fn shout(t: Text) -> Text`
+  = help: usage: `upper(text)`
+  = more about this error: `rythme explain E005`
+
+✗ 54-params.ry: 2 error(s)
+```
+
+In an editor, the hover of a function shows what the checker infers, as a
+signature: `fn area(side: Int|Float) -> Int|Float`, the kinds each
+parameter must be (separated by `|`) and what a call gives back, when they
+are known (see [7.5](#75-editors-and-the-language-server)).
+
 ### 5.6 Error and warning codes
 
 Every error and warning has a code. `rythme explain CODE` (or
@@ -2796,7 +2858,9 @@ standard input and output): an editor starts it by itself and gets, for
 `.ry` files, the problems as you type (every error and warning of
 `rythme check`, those of the files given to `use` included), documentation
 on hover (built-in functions with an example, keywords, your functions and
-types with their `##` comments, the explanation of an error code),
+types with their `##` comments, the signature the checker infers for a
+function, like `fn area(side: Int|Float) -> Int|Float`, the explanation of
+an error code),
 completion, the parameters of a call, go to definition, references, rename,
 the outline of the file, quick fixes for typos, and formatting like
 `rythme fmt`. The messages are in the language of the editor, unless a

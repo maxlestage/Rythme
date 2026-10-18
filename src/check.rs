@@ -20,6 +20,9 @@ use crate::symbol::Sym;
 use crate::types::{self, Outcome, Ty, BOOL, DATA, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, TEXT, UNIT};
 use crate::value::{Record, Value};
 
+mod needs;
+pub use needs::Signature;
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum GKind {
     Builtin,
@@ -271,10 +274,34 @@ fn ctor_info(v: &VariantDef) -> GlobalInfo {
 
 /// Checks a module. Returns errors and warnings (errors prevent running).
 pub fn check(items: &[Item], know: &Knowledge, repl: bool) -> Vec<Diagnostic> {
+    analyze(items, know, repl, false).diagnostics
+}
+
+/// What checking a module finds.
+pub struct Analysis {
+    /// Errors and warnings.
+    pub diagnostics: Vec<Diagnostic>,
+    /// The signatures inferred for its functions (top-level and local), by
+    /// the place of their definition ([`FnDef::span`]), when asked for.
+    pub signatures: HashMap<Span, Signature>,
+}
+
+/// Checks a module, and infers the signatures of its functions if `signatures`.
+pub fn analyze(items: &[Item], know: &Knowledge, repl: bool, signatures: bool) -> Analysis {
     let mut c = Checker::new(items, know, repl);
     c.infer(items);
+    if signatures {
+        c.needs.signatures = Some(HashMap::new());
+    }
     c.walk(items);
-    c.diags
+    c.top_signatures();
+    Analysis { diagnostics: c.diags, signatures: c.needs.signatures.unwrap_or_default() }
+}
+
+/// The signatures inferred for the functions of a module, by the place of
+/// their definition: `fn area(side: Int|Float) -> Int|Float`.
+pub fn signatures(items: &[Item], know: &Knowledge) -> HashMap<Span, Signature> {
+    analyze(items, know, false, true).signatures
 }
 
 /// The types inferred for the top-level names of a module, without checking
@@ -283,7 +310,7 @@ pub fn check(items: &[Item], know: &Knowledge, repl: bool) -> Vec<Diagnostic> {
 #[doc(hidden)]
 pub fn top_level_types(items: &[Item], know: &Knowledge) -> HashMap<Sym, Ty> {
     let mut c = Checker::new(items, know, false);
-    c.infer(items);
+    c.infer_types(items);
     c.gtypes
 }
 
@@ -301,6 +328,9 @@ struct Local {
     ty: Ty,
     /// For a local function: its definition.
     def: Option<Rc<FnDef>>,
+    /// A parameter of a function being checked (or another name for it):
+    /// the depth of that function, and the number of the parameter.
+    param: Option<(usize, usize)>,
 }
 
 enum Res {
@@ -344,6 +374,8 @@ struct Checker<'a> {
     types_defined_again: HashSet<Sym>,
     /// The types of the built-in functions used as values, computed once.
     builtin_types: HashMap<&'static str, Ty>,
+    /// What the parameters of the functions must be (see [`needs`]).
+    needs: needs::Needs,
 }
 
 /// Built-in functions that only compute a value: no effect, no function of
@@ -425,6 +457,7 @@ impl<'a> Checker<'a> {
             pure_call: None,
             types_defined_again: know.types_defined_again.clone(),
             builtin_types: HashMap::new(),
+            needs: needs::Needs::default(),
         };
         for item in items {
             match item {
@@ -585,7 +618,13 @@ impl<'a> Checker<'a> {
     /// each other in any order, and functions may call themselves: starting
     /// from "no value" for all of them, the module is walked again and again
     /// until their types stop changing. Only the last walk reports problems.
+    /// Then what the parameters of the functions must be.
     fn infer(&mut self, items: &[Item]) {
+        self.infer_types(items);
+        self.infer_needs(&callees_first(items));
+    }
+
+    fn infer_types(&mut self, items: &[Item]) {
         if self.gtypes.is_empty() {
             return;
         }
@@ -635,6 +674,7 @@ impl<'a> Checker<'a> {
         // The value of the last expression is shown by the REPL and `rythme -e`;
         // the values of the other top-level expressions are lost.
         let last_expr = items.iter().rposition(|it| matches!(it, Item::Stmt(Stmt::Expr(_))));
+        self.needs.reporting = true;
         for (i, item) in items.iter().enumerate() {
             if let Item::Stmt(Stmt::Expr(e)) = item {
                 if Some(i) != last_expr && !has_effect(e) {
@@ -674,6 +714,7 @@ impl<'a> Checker<'a> {
         if let Some(name) = def.name {
             if self.own.get(&name).is_some_and(|g| g.kind == GKind::Func) {
                 self.set_global(name, t);
+                self.narrow_top(name);
             }
         }
     }
@@ -765,7 +806,7 @@ impl<'a> Checker<'a> {
             );
             return;
         }
-        scope.push(Local { sym: s, span, used: false, warn, info, ty, def });
+        scope.push(Local { sym: s, span, used: false, warn, info, ty, def, param: None });
     }
 
     /// Gives its type to a local function, once its body is checked.
@@ -1088,8 +1129,11 @@ impl<'a> Checker<'a> {
     /// values it receives, when they are known for sure (a function written
     /// in place for `map`, or called right where it is written).
     fn func(&mut self, def: &FnDef, params: Option<&[Ty]>) -> Ty {
+        // Checked again with the arguments of a call: only the definitions that match them speak.
+        let quiet = self.take_quiet();
         self.fn_depth += 1;
         self.early.push(Ty::Never);
+        self.need_enter(def.arity);
         let mut ret = Ty::Never;
         let mut catch_all: Option<Span> = None;
         let mut reported_unreachable = false;
@@ -1146,6 +1190,8 @@ impl<'a> Checker<'a> {
                 catch_all = Some(clause.span);
             }
             self.scopes.push(Vec::new());
+            self.need_clause(&clause.params);
+            let reported = self.diags.len();
             let mut b = Vec::new();
             let mut tys = Vec::new();
             let mut matches = true;
@@ -1156,6 +1202,9 @@ impl<'a> Checker<'a> {
                 self.binding_types(p, &t, &mut tys);
                 if !self.can_match(p, &t, true) {
                     matches = false;
+                    if quiet {
+                        continue;
+                    }
                     self.diags.push(
                         Diagnostic::error(
                             "E006",
@@ -1177,9 +1226,17 @@ impl<'a> Checker<'a> {
                     self.declare_local(s, sp, false, t);
                 }
             }
+            for (i, p) in clause.params.iter().enumerate() {
+                if let PatKind::Bind(s) = p.kind {
+                    self.mark_param(s, p.span, i);
+                }
+            }
             if let Some(g) = &clause.guard {
+                let start = self.need_guard_start();
                 let t = self.expr(g);
                 self.condition(g, &t);
+                self.require(g, BOOL);
+                self.need_guard_end(start, &clause.params);
             }
             let body = match &clause.body.kind {
                 ExprKind::Block(stmts) => self.stmts(stmts),
@@ -1187,7 +1244,10 @@ impl<'a> Checker<'a> {
             };
             if matches {
                 ret = ret.join(&body);
+            } else if quiet {
+                self.diags.truncate(reported);
             }
+            self.need_clause_end();
             self.pop_scope();
         }
         if def.arity == 1 && def.name.is_some() && !self.repl {
@@ -1212,6 +1272,7 @@ impl<'a> Checker<'a> {
         }
         let early = self.early.pop().unwrap_or(Ty::Never);
         self.fn_depth -= 1;
+        self.need_leave(def);
         Ty::func(Some((def.arity, def.arity)), ret.join(&early), Some(def.signature().into()))
     }
 
@@ -1247,13 +1308,19 @@ impl<'a> Checker<'a> {
                         let info = GlobalInfo { sig: def.signature().replacen("fn(", &format!("{name}("), 1), ..func_info(def) };
                         let first = Ty::func(Some((def.arity, def.arity)), Ty::Any, Some(info.sig.as_str().into()));
                         self.declare_local_fn(*name, p.span, true, Some(info), first, Some(def.clone()));
+                        self.forget_local(def);
                         let t = self.func(def, None);
+                        self.note_local_signature(def, &t);
                         self.set_local_type(*name, p.span, t);
                     } else {
                         let t = self.expr(e);
                         stops |= t == Ty::Never;
                         self.let_pattern(p, e, &t);
+                        // A value that does not match the pattern stops the program.
+                        let k = self.pattern_kinds(p);
+                        self.require(e, k);
                         self.bind_pattern(p, true, &t);
+                        self.alias(p, e);
                     }
                 }
                 Stmt::Expr(e) => {
@@ -1277,9 +1344,11 @@ impl<'a> Checker<'a> {
                                 let first = Ty::func(Some((d.arity, d.arity)), Ty::Any, Some(d.signature().into()));
                                 self.declare_local_fn(name, d.span, true, Some(func_info(d)), first, Some(d.clone()));
                             }
+                            self.forget_local(d);
                         }
                     }
                     let t = self.func(def, None);
+                    self.note_local_signature(def, &t);
                     if let Some(name) = def.name {
                         self.set_local_type(name, def.span, t);
                     }
@@ -1357,6 +1426,7 @@ impl<'a> Checker<'a> {
             ExprKind::Method(recv, name, args, name_span) => self.method_call(e, recv, *name, args, *name_span),
             ExprKind::Field(obj, name, name_span) => {
                 let t = self.expr(obj);
+                self.need_field(obj, name);
                 // Only a field the record surely has can be read without error.
                 if !matches!(&t, Ty::Record(r) if r.get(name).is_some()) {
                     self.may_fail = true;
@@ -1367,6 +1437,7 @@ impl<'a> Checker<'a> {
                 let ta = self.expr(a);
                 let tb = self.expr(b);
                 self.may_fail = true;
+                self.need_index(a, &ta, b, &tb);
                 self.index(e, a, &ta, b, &tb)
             }
             ExprKind::Binary(op, a, b, op_span) => self.binary(*op, a, b, *op_span),
@@ -1374,6 +1445,10 @@ impl<'a> Checker<'a> {
                 let ta = self.expr(a);
                 let tb = self.expr(b);
                 self.may_fail = true;
+                if ta != Ty::Never && tb != Ty::Never {
+                    self.require(a, INT);
+                    self.require(b, INT);
+                }
                 self.range(e, a, &ta, b, &tb)
             }
             ExprKind::Unary(op, x) => {
@@ -1383,8 +1458,13 @@ impl<'a> Checker<'a> {
             ExprKind::If(c, a, b) => {
                 let tc = self.expr(c);
                 let ok = self.condition(c, &tc);
+                self.require(c, BOOL);
+                // One of the two branches runs.
+                let before = self.ways();
                 let ta = self.expr(a);
+                let after = self.set_ways(before);
                 let tb = self.expr(b);
+                self.join_ways(after);
                 if tc == Ty::Never || !ok {
                     Ty::Never
                 } else {
@@ -1404,6 +1484,10 @@ impl<'a> Checker<'a> {
             ExprKind::Try(x) => {
                 let t = self.expr(x);
                 self.may_fail = true;
+                if t != Ty::Never {
+                    self.require(x, OPTION | RESULT);
+                    self.leaves_early();
+                }
                 // In `x??`, the inner `?` is already reported.
                 if self.fn_depth == 0 && !matches!(x.kind, ExprKind::Try(_)) {
                     self.diags.push(
@@ -1476,6 +1560,7 @@ impl<'a> Checker<'a> {
                 ListItem::Spread(x) => {
                     let t = self.expr(x);
                     stops |= t == Ty::Never;
+                    self.require(x, LIST);
                     if !matches!(t, Ty::List(_)) {
                         self.may_fail = true;
                     }
@@ -1520,6 +1605,7 @@ impl<'a> Checker<'a> {
                 }
                 RecordItem::Spread(x) => {
                     let t = self.expr(x);
+                    self.require(x, RECORD);
                     match &t {
                         Ty::Never => stops = true,
                         Ty::Record(r) => {
@@ -1567,6 +1653,7 @@ impl<'a> Checker<'a> {
         match &callee.kind {
             ExprKind::Var(s) | ExprKind::Ctor(s) if &*s.name() != "_" => {
                 let (res, ty) = self.resolve(*s, callee.span);
+                self.needs.callee = self.tracked(callee);
                 self.call_target(Some(*s), &res, ty, None, args, span)
             }
             ExprKind::Int(_)
@@ -1611,10 +1698,16 @@ impl<'a> Checker<'a> {
                 }
                 let t = self.func(def, Some(&tys));
                 if tys.contains(&Ty::Never) {
-                    Ty::Never
-                } else {
-                    t.ret()
+                    return Ty::Never;
                 }
+                let (needs, exits) = self.needs.last.clone();
+                for (a, k) in args.iter().zip(needs) {
+                    self.require(a, k);
+                }
+                if exits {
+                    self.may_stop();
+                }
+                t.ret()
             }
             _ => {
                 let ty = self.expr(callee);
@@ -1627,6 +1720,7 @@ impl<'a> Checker<'a> {
     /// A call, once the function is known: `f(args)`, or `x.f(args)` with the
     /// receiver `x` given first.
     fn call_target(&mut self, name: Option<Sym>, res: &Res, fty: Ty, first: Option<(&Expr, Ty)>, args: &[Expr], span: Span) -> Ty {
+        let callee = self.needs.callee.take();
         let builtin = match res {
             Res::Global(g) if g.kind == GKind::Builtin => builtin_name(g),
             _ => None,
@@ -1640,6 +1734,17 @@ impl<'a> Checker<'a> {
             _ => self.check_value_arity(name, &fty, n, span),
         };
         if !arity_ok || fty == Ty::Never || tys.contains(&Ty::Never) {
+            return Ty::Never;
+        }
+        let def = match (name, res) {
+            (Some(s), Res::Global(g)) if g.kind == GKind::Func && self.own.contains_key(&s) => self.fn_defs.get(&s).cloned(),
+            (_, Res::Local(_, def)) => def.clone(),
+            _ => None,
+        };
+        // A pattern that no definition matches is the error, if there is one.
+        if !def.as_ref().is_some_and(|d| d.arity == n && !self.some_clause_accepts(d, &tys))
+            && self.need_call(name, res, builtin, callee, &exprs, &tys, span)
+        {
             return Ty::Never;
         }
         if let Some(b) = builtin {
@@ -1665,11 +1770,6 @@ impl<'a> Checker<'a> {
                         };
                     }
                 }
-                let def = match (name, res) {
-                    (Some(s), Res::Global(g)) if g.kind == GKind::Func && self.own.contains_key(&s) => self.fn_defs.get(&s).cloned(),
-                    (_, Res::Local(_, def)) => def.clone(),
-                    _ => None,
-                };
                 if let Some(def) = def {
                     if def.arity == n && !self.some_clause_accepts(&def, &tys) {
                         self.no_clause(&def, &exprs, &tys, span);
@@ -1952,8 +2052,10 @@ impl<'a> Checker<'a> {
                 }
             },
             None => {
-                for a in args {
-                    self.expr(a);
+                let tys: Vec<Ty> = args.iter().map(|a| self.expr(a)).collect();
+                if rt != Ty::Never && !tys.contains(&Ty::Never) {
+                    let exprs: Vec<&Expr> = args.iter().collect();
+                    self.need_method(recv, name, &exprs, &tys);
                 }
                 if matches!(rt, Ty::Record(_)) {
                     // A record that may have more fields: `name` may be one of them.
@@ -2266,6 +2368,7 @@ impl<'a> Checker<'a> {
         if *t == Ty::Never {
             return Ty::Never;
         }
+        self.require(x, if op == UnOp::Neg { NUMBER } else { BOOL });
         match op {
             UnOp::Neg => {
                 if *t != Ty::Float {
@@ -2330,9 +2433,16 @@ impl<'a> Checker<'a> {
 
     fn binary(&mut self, op: BinOp, l: &Expr, r: &Expr, op_span: Span) -> Ty {
         let lt = self.expr(l);
+        // The right side of `and` and `or` runs only when needed.
+        let before = matches!(op, BinOp::And | BinOp::Or).then(|| self.ways());
         let rt = self.expr(r);
+        if let Some(before) = before {
+            self.require(r, BOOL);
+            self.join_ways(before);
+        }
         match op {
             BinOp::And | BinOp::Or => {
+                self.require(l, BOOL);
                 let left = self.condition(l, &lt);
                 // The right side runs only when needed, but when it runs, it
                 // must be a Bool too, even a call there (a tail call).
@@ -2353,6 +2463,7 @@ impl<'a> Checker<'a> {
                 if !matches!((&lt, &rt), (Ty::Int, Ty::Int) | (Ty::Text, Ty::Text) | (Ty::Bool, Ty::Bool)) {
                     self.may_fail = true;
                 }
+                self.need_comparable(l, &lt, r, &rt);
                 if comparable(&lt, &rt) {
                     Ty::Bool
                 } else {
@@ -2369,6 +2480,7 @@ impl<'a> Checker<'a> {
         if *lt == Ty::Never || *rt == Ty::Never {
             return Ty::Never;
         }
+        self.need_arith(op, l, lt, r, rt);
         let (lk, rk) = (lt.kinds(), rt.kinds());
         let numbers = lk & NUMBER != 0 && rk & NUMBER != 0;
         let texts = op == BinOp::Add && lk & TEXT != 0 && rk & TEXT != 0;
@@ -2491,6 +2603,10 @@ impl<'a> Checker<'a> {
         let mut any_matches = false;
         // Cases that never match the type of the value: reported unless no case matches at all.
         let mut dead: Vec<Diagnostic> = Vec::new();
+        // The value goes to one of the cases, and only of the kinds it matches.
+        let before = self.ways();
+        let mut after: Option<Vec<types::Kinds>> = None;
+        let subject_param = self.tracked(subject);
         for (i, arm) in arms.iter().enumerate() {
             if let (Some(prev), false) = (catch_all, reported) {
                 reported = true;
@@ -2529,17 +2645,32 @@ impl<'a> Checker<'a> {
                 catch_all = Some(arm.pat.span);
             }
             self.scopes.push(Vec::new());
+            self.set_ways(before.clone());
+            if subject_param.is_some() {
+                let k = self.pattern_kinds(&arm.pat);
+                self.require(subject, k);
+            }
             self.bind_pattern(&arm.pat, true, &st);
+            self.alias(&arm.pat, subject);
             if let Some(g) = &arm.guard {
                 let t = self.expr(g);
                 self.condition(g, &t);
+                self.require(g, BOOL);
             }
             let body = self.expr(&arm.body);
+            let way = self.ways();
+            after = match (after, way) {
+                (Some(a), Some(w)) => Some(a.into_iter().zip(w).map(|(x, y)| x | y).collect()),
+                (a, w) => a.or(w),
+            };
             if self.can_match(&arm.pat, &st, true) {
                 any_matches = true;
                 result = result.join(&body);
             }
             self.pop_scope();
+        }
+        if after.is_some() {
+            self.set_ways(after);
         }
         if st.is_known() && !any_matches {
             self.diags.push(
@@ -2966,6 +3097,8 @@ fn pattern_help() -> String {
 /// list or a record of literals (`[1, 2]`, `{a: 1}`).
 fn literal(e: &Expr) -> Option<Value> {
     Some(match &e.kind {
+        // A parameter, while its function is checked again with the values of a call.
+        ExprKind::Var(s) => return needs::literal_arg(*s),
         ExprKind::Int(n) => Value::Int(*n),
         ExprKind::Big(n) => Value::Big(n.clone()),
         ExprKind::Float(f) => Value::Float(*f),
@@ -3025,7 +3158,7 @@ fn comparable(lt: &Ty, rt: &Ty) -> bool {
     match (lt, rt) {
         // Two variants compare when they are of the same type: first by
         // constructor, in the order of the type (`None < Some(x)`), then field by field.
-        (Ty::Data(a), Ty::Data(b)) => a.name == b.name,
+        (Ty::Data(a), Ty::Data(b)) => a.name == b.name || [a.name, b.name].contains(&needs::any_data()),
         _ => true,
     }
 }
@@ -3040,7 +3173,7 @@ fn may_be_equal(lt: &Ty, rt: &Ty) -> bool {
         return true;
     }
     match (lt, rt) {
-        (Ty::Data(a), Ty::Data(b)) => a.name == b.name,
+        (Ty::Data(a), Ty::Data(b)) => a.name == b.name || [a.name, b.name].contains(&needs::any_data()),
         _ => false,
     }
 }

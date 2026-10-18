@@ -27,7 +27,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 - [x] **Whole numbers without limit.** Int grows beyond 64 bits instead of
   E012 (the way Python does), with the small-number fast path kept; `pow`,
   `gcd`, `text`, `parse_int`, JSON and comparisons with Float are exact.
-- [ ] **Types of parameters, inferred.** `rythme check` infers what a
+- [x] **Types of parameters, inferred.** `rythme check` infers what a
   function's parameters must be from how it uses them, and reports a call
   that always fails (`area("big")` when `area` multiplies), with zero false
   positives; the language server shows the inferred signature on hover.

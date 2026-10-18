@@ -326,6 +326,8 @@ fn hover_shows_documentation() {
     // A function of the file, with its `##` documentation.
     let h = hover_text(&lsp.at("textDocument/hover", u, 9, 20));
     assert!(h.contains("fn double(x)") && h.contains("Doubles a number.\nWorks on Int and Float."), "{h}");
+    // With what the checker infers from its code.
+    assert!(h.contains("Inferred from its code:") && h.contains("fn double(x: Int|Float) -> Int|Float"), "{h}");
     // Every definition of a function.
     let h = hover_text(&lsp.at("textDocument/hover", u, 9, 40));
     assert!(h.contains("fn fib(0)\nfn fib(n)"), "{h}");
@@ -500,6 +502,7 @@ fn several_files() {
     // Hover and definition reach the other file.
     let h = hover_text(&lsp.at("textDocument/hover", &mu, 1, 7));
     assert!(h.contains("Area of a rectangle.") && h.contains("geometry.ry"), "{h}");
+    assert!(h.contains("fn area(w: Int|Float, h: Int|Float) -> Int|Float"), "{h}");
     let d = lsp.at("textDocument/definition", &mu, 1, 7);
     assert_eq!(d.get("uri").as_str(), Some(gu.as_str()));
     assert_eq!(range(&d), (1, 3, 1, 7));

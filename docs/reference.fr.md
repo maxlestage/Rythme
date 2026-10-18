@@ -2186,6 +2186,71 @@ avertissement[W005]: il n'existe pas de fonction nommée `taille`
 
 Code de sortie : 0.
 
+Le vérificateur déduit aussi ce que doivent être les **paramètres de chaque
+fonction**, d'après la façon dont son code les utilise : `cote * cote` a
+besoin de nombres, `upper(t)` d'un texte, `p.nom` d'un enregistrement (ou
+d'une valeur dont le constructeur a un champ `nom`), `if c` d'un Bool, un
+`match` des natures de ses motifs, un appel à une autre fonction de ce dont
+celle-ci a besoin. Il suit chaque chemin de la fonction : les branches d'un
+`if` ou d'un `match`, et les définitions d'une fonction (une par cas),
+additionnent leurs natures ; une opération après l'autre les restreint ; un
+`?`, ou un appel qui peut terminer le programme (`exit`), garde ce qui est
+connu à cet endroit. Un appel avec un argument d'une autre nature échoue à
+chaque exécution : le vérificateur le signale, avec le code, le message et
+l'aide de l'erreur sur laquelle la fonction s'arrêterait, l'endroit où elle
+s'arrête dans la fonction, et ce dont la fonction a besoin. Rien n'est
+signalé quand l'appel peut marcher : une fonction qui marche sur plusieurs
+natures de valeurs (`deux_fois` ci-dessous, sur les nombres, les textes et
+les listes), des définitions choisies par leurs motifs ou leurs gardes, la
+récursivité, les fonctions jamais appelées. Ce dont ont besoin les fonctions
+d'un autre fichier n'est pas déduit.
+
+```rythme
+fn aire(cote) = cote * cote
+fn crier(t) = upper(t) + "!"
+fn deux_fois(x) = x + x
+print(aire(3), crier("salut"), deux_fois("ab"))
+print(aire("grand"))
+print(crier(5))
+```
+
+`rythme check 54-parametres.ry` :
+
+```text
+erreur[E005]: impossible d'utiliser `*` avec Text et Text
+ --> 54-parametres.ry:5:7
+  |
+5 | print(aire("grand"))
+  |       ^^^^^^^^^^^^^ `aire` s'arrête sur cette erreur, à chaque fois
+  |
+1 | fn aire(cote) = cote * cote
+  |                      - dans `aire` : Text "grand" * Text "grand"
+  |
+  = note: d'après la façon dont `aire` utilise `cote`, elle a besoin de : `fn aire(cote: Int|Float) -> Int|Float`
+  = en savoir plus : `rythme explain E005`
+
+erreur[E005]: `upper` attend un texte comme argument 1, mais a reçu Int 5
+ --> 54-parametres.ry:6:7
+  |
+6 | print(crier(5))
+  |       ^^^^^^^^ `crier` s'arrête sur cette erreur, à chaque fois
+  |
+2 | fn crier(t) = upper(t) + "!"
+  |                     - dans `crier` : mauvaise sorte de valeur
+  |
+  = note: d'après la façon dont `crier` utilise `t`, elle a besoin de : `fn crier(t: Text) -> Text`
+  = aide: utilisation : `upper(text)`
+  = en savoir plus : `rythme explain E005`
+
+✗ 54-parametres.ry : 2 erreur(s)
+```
+
+Dans un éditeur, le survol d'une fonction montre ce que le vérificateur
+déduit, sous forme de signature : `fn aire(cote: Int|Float) -> Int|Float`,
+les natures que doit avoir chaque paramètre (séparées par `|`) et ce que
+donne un appel, quand elles sont connues (voir
+[7.5](#75-éditeurs-et-serveur-de-langage)).
+
 ### 5.6 Codes d'erreur et d'avertissement
 
 Chaque erreur et chaque avertissement a un code. `rythme explain CODE` (ou
@@ -2909,7 +2974,8 @@ pour les fichiers `.ry`, les problèmes pendant la frappe (toutes les erreurs
 et tous les avertissements de `rythme check`, y compris ceux des fichiers
 donnés à `use`), la documentation au survol (les fonctions intégrées avec un
 exemple, les mots-clés, vos fonctions et vos types avec leurs commentaires
-`##`, l'explication d'un code d'erreur), la complétion, les paramètres d'un
+`##`, la signature que le vérificateur déduit pour une fonction, comme
+`fn aire(cote: Int|Float) -> Int|Float`, l'explication d'un code d'erreur), la complétion, les paramètres d'un
 appel, aller à la définition, les références, renommer, le plan du fichier,
 les corrections rapides des fautes de frappe, et la mise en forme comme
 `rythme fmt`. Les messages sont dans la langue de l'éditeur, sauf si un
