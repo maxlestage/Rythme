@@ -134,6 +134,7 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme test bonjour.ry`    | lancer les tests écrits dans le fichier             |
 | `rythme fmt bonjour.ry`     | mettre le code en forme dans le style officiel (aussi un dossier : `rythme fmt .`) |
 | `rythme fmt --check .`      | lister les fichiers à mettre en forme, sans les changer (pour l'intégration continue) |
+| `rythme doc bonjour.ry`     | sa documentation tirée des commentaires `##`, en Markdown (`--html` : une page web) |
 | `rythme help [sujet]`       | aide sur un sujet ou une fonction                   |
 | `rythme explain E003`       | expliquer un code d'erreur                          |
 | `rythme learn`              | visite guidée du langage                            |
@@ -258,7 +259,9 @@ suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
   échoueraient à coup sûr. Suite : les types des paramètres des fonctions,
   pour trouver encore plus d'erreurs avant l'exécution.
 - **Outils.** `rythme fmt` met le code en forme dans le style officiel (voir
-  `rythme help fmt`), et le serveur de langage (`rythme lsp`) apporte les
+  `rythme help fmt`), `rythme doc` écrit la documentation de fichiers et de
+  dossiers à partir de leurs commentaires `##` (voir `rythme help doc`), et le
+  serveur de langage (`rythme lsp`) apporte les
   erreurs et la documentation dans tous les éditeurs (voir
   `rythme help editors`). Le bac à sable en ligne fait tourner l'interpréteur
   compilé en WebAssembly. Suite : un gestionnaire de paquets.

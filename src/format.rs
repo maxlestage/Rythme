@@ -1603,7 +1603,7 @@ impl Run {
 }
 
 /// The `.ry` files of a folder and of its subfolders (except hidden ones, like `.git`), sorted.
-fn ry_files(dir: &Path, found: &mut Vec<PathBuf>) {
+pub(crate) fn ry_files(dir: &Path, found: &mut Vec<PathBuf>) {
     let Ok(entries) = std::fs::read_dir(dir) else { return };
     let mut entries: Vec<_> = entries.flatten().collect();
     entries.sort_by_key(|e| e.file_name());
@@ -1618,7 +1618,7 @@ fn ry_files(dir: &Path, found: &mut Vec<PathBuf>) {
     }
 }
 
-fn not_found(path: &Path) -> Diagnostic {
+pub(crate) fn not_found(path: &Path) -> Diagnostic {
     let shown = path.display();
     let mut d = Diagnostic::error("E017", t!("file or folder `{shown}` not found", "fichier ou dossier `{shown}` introuvable"));
     let dir = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));

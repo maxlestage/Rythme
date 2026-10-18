@@ -26,6 +26,7 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ("modules", &["use", "files", "fichiers"]),
     ("repl", &["interactive", "interactif"]),
     ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme"]),
+    ("doc", &["documentation", "documenter", "docs"]),
     ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide"]),
     ("builtins", &["functions-list", "fonctions-integrees", "library", "bibliotheque", "bibliothèque", "stdlib"]),
 ];
@@ -47,6 +48,7 @@ Commandes
   rythme check fichier.ry   trouver les problèmes sans lancer le programme
   rythme test fichier.ry    lancer les tests d'un fichier
   rythme fmt fichier.ry     mettre le code en forme (--check : vérifier seulement)
+  rythme doc fichier.ry     écrire sa documentation, en Markdown (--html : une page web)
   rythme learn              visite guidée du langage, pas à pas
   rythme help SUJET         aide sur un sujet ou une fonction
   rythme explain E003       expliquer un code d'erreur
@@ -69,6 +71,7 @@ Sujets (rythme help SUJET)
   modules     utiliser plusieurs fichiers
   repl        le mode interactif
   fmt         la mise en forme officielle du code (rythme fmt)
+  doc         la documentation tirée des commentaires ## (rythme doc)
   editors     Rythme dans votre éditeur (VS Code, Neovim, Helix...)
   builtins    toutes les fonctions intégrées
 
@@ -85,6 +88,7 @@ Commands
   rythme check file.ry      find problems without running the program
   rythme test file.ry       run the tests of a file
   rythme fmt file.ry        give the code its official layout (--check: only check)
+  rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
@@ -107,6 +111,7 @@ Topics (rythme help TOPIC)
   modules     using several files
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
+  doc         documentation from the ## comments (rythme doc)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
   builtins    every built-in function
 
@@ -435,6 +440,7 @@ fn topic_text(name: &str) -> &'static str {
         "modules" => pick(MODULES_EN, MODULES_FR),
         "repl" => pick(REPL_EN, REPL_FR),
         "fmt" => pick(FMT_EN, FMT_FR),
+        "doc" => pick(DOC_EN, DOC_FR),
         "editors" => pick(EDITORS_EN, EDITORS_FR),
         _ => "",
     }
@@ -1318,6 +1324,76 @@ Les retours à la ligne sont gardés là où le langage laisse le choix, et les
 lignes longues sont gardées telles quelles. La mise en forme ne change jamais
 ce que fait un programme : un fichier avec une erreur de syntaxe est laissé
 tel quel, et l'erreur est affichée."#;
+
+const DOC_EN: &str = r#"DOCUMENTATION: rythme doc
+
+`rythme doc` writes the documentation of your code from its `##` comments,
+its types and the definitions of its functions.
+
+  rythme doc geometry.ry         Markdown on the screen
+  rythme doc .                   every .ry file of a folder and its subfolders
+  rythme doc --html geometry.ry  one web page, which needs nothing else
+  rythme doc . --out doc.html    written to a file (.html gives the web page)
+
+Write a `##` comment just above what it documents:
+
+  ## Shapes and their areas.      <- at the top, followed by a blank line:
+                                     it describes the whole file
+  ## A shape to draw.
+  type Shape = Circle(radius) | Rect(width, height)
+
+  ## The area of a shape. See `len` and `area`.
+  fn area(Circle(r)) = pi * r * r
+  fn area(Rect(w, h)) = w * h
+
+What is written
+  - for each file: its description, the files it uses (documented too),
+    its types, its functions (the first line of every definition), its
+    values and the names of its tests
+  - names starting with `_` are left out: they stay inside their file
+  - a name between backticks in a comment, like `area` or `len(list)`,
+    becomes a link to its documentation; the built-in functions named
+    this way are explained at the end
+  - the titles are in the language of the messages (`--lang fr`)
+
+In a comment, a blank `##` line starts a new paragraph, and lines starting
+with `- ` make a list."#;
+
+const DOC_FR: &str = r#"DOCUMENTATION : rythme doc
+
+`rythme doc` écrit la documentation de votre code à partir de ses
+commentaires `##`, de ses types et des définitions de ses fonctions.
+
+  rythme doc geometrie.ry         du Markdown à l'écran
+  rythme doc .                    tous les fichiers .ry d'un dossier et de
+                                  ses sous-dossiers
+  rythme doc --html geometrie.ry  une page web, qui n'a besoin de rien d'autre
+  rythme doc . --out doc.html     écrit dans un fichier (.html donne la page web)
+
+Écrivez un commentaire `##` juste au-dessus de ce qu'il documente :
+
+  ## Des formes et leurs aires.   <- en haut, suivi d'une ligne vide :
+                                     il décrit tout le fichier
+  ## Une forme à dessiner.
+  type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+
+  ## L'aire d'une forme. Voir `len` et `aire`.
+  fn aire(Cercle(r)) = pi * r * r
+  fn aire(Rect(l, h)) = l * h
+
+Ce qui est écrit
+  - pour chaque fichier : sa description, les fichiers qu'il utilise
+    (documentés eux aussi), ses types, ses fonctions (la première ligne de
+    chaque définition), ses valeurs et les noms de ses tests
+  - les noms qui commencent par `_` sont laissés de côté : ils restent à
+    l'intérieur de leur fichier
+  - un nom entre accents graves dans un commentaire, comme `aire` ou
+    `len(liste)`, devient un lien vers sa documentation ; les fonctions
+    intégrées citées ainsi sont expliquées à la fin
+  - les titres sont dans la langue des messages (`--lang fr`)
+
+Dans un commentaire, une ligne `##` vide commence un nouveau paragraphe, et
+les lignes qui commencent par `- ` forment une liste."#;
 
 // ----- error explanations -----------------------------------------------
 
