@@ -653,8 +653,9 @@ fn tame(src: String) -> String {
 // ----- running a case --------------------------------------------------------
 
 /// Built-in functions that touch the world outside of the program are
-/// replaced: no files, no keyboard, no `exit`, no output, no clock (`time`,
-/// `now` and `today` give fixed values), no environment variables.
+/// replaced: no files or folders, no keyboard, no `exit`, no output, no
+/// clock (`time`, `now` and `today` give fixed values), no environment
+/// variables, no command line (`args` and `options` see no words).
 fn sandbox() -> &'static Vec<&'static Builtin> {
     static SANDBOX: OnceLock<Vec<&'static Builtin>> = OnceLock::new();
     fn quiet(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
@@ -676,6 +677,9 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
     fn number(_: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
         Ok(Value::Int(4))
     }
+    fn no_lines(it: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
+        Ok(it.ok(Value::list(Vec::new())))
+    }
     fn no_variable(it: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
         Ok(it.none())
     }
@@ -693,10 +697,11 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
     fn fixed_today(_: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
         Ok(moment(&[("year", 2024), ("month", 2), ("day", 29)]))
     }
-    let fakes: [(&str, builtins::BuiltinFn); 13] = [
+    let fakes: [(&str, builtins::BuiltinFn); 18] = [
         ("print", quiet),
         ("debug", same),
         ("input", empty_text),
+        ("input_lines", no_lines),
         ("exit", quiet),
         ("time", number),
         ("random", number),
@@ -705,6 +710,10 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
         ("write_file", no_file),
         ("append_file", no_file),
         ("file_exists", number),
+        ("file_info", no_file),
+        ("list_folder", no_file),
+        ("create_folder", no_file),
+        ("delete_file", no_file),
         ("now", fixed_now),
         ("today", fixed_today),
     ];

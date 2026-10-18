@@ -926,6 +926,33 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 need(a, 0, Expected::Text)?;
                 Ty::Bool
             }
+            "file_info" => {
+                need(a, 0, Expected::Text)?;
+                let info = Ty::record(vec![(Rc::from("is_folder"), Ty::Bool), (Rc::from("size"), Ty::Int)], true);
+                Ty::result(info, Ty::Text)
+            }
+            "list_folder" => {
+                need(a, 0, Expected::Text)?;
+                Ty::result(Ty::list(Ty::Text), Ty::Text)
+            }
+            "create_folder" | "delete_file" => {
+                need(a, 0, Expected::Text)?;
+                Ty::result(Ty::Unit, Ty::Text)
+            }
+            "join_path" => {
+                need(a, 0, Expected::List)?;
+                Ty::Text
+            }
+            "split_path" => {
+                need(a, 0, Expected::Text)?;
+                Ty::list(Ty::Text)
+            }
+            "input_lines" => Ty::result(Ty::list(Ty::Text), Ty::Text),
+            // The other fields are the options found, of unknown names.
+            "options" => {
+                need(a, 0, Expected::List)?;
+                Ty::result(Ty::record(vec![(Rc::from("args"), Ty::list(Ty::Text))], false), Ty::Text)
+            }
             // A date always has these fields; `now()` exactly these and its time.
             "now" => date_ty(true, true),
             "today" => date_ty(false, true),
