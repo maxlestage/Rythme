@@ -12,6 +12,12 @@ use crate::source::{self, Span};
 use crate::types::{self, Kinds, BOOL, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, TEXT};
 use crate::value::*;
 
+pub(crate) mod date;
+use date::{
+    add_days, add_seconds, day_of_week, days_between, days_in_month, format_date, is_date, is_leap_year, now, parse_date, seconds_between,
+    today,
+};
+
 pub type BuiltinFn = fn(&mut Interp, &[Value], Span) -> Fallible<Value>;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -23,11 +29,20 @@ pub enum Category {
     Records,
     Options,
     Files,
+    Dates,
 }
 
 impl Category {
-    pub const ALL: [Category; 7] =
-        [Category::Basics, Category::Numbers, Category::Text, Category::Lists, Category::Records, Category::Options, Category::Files];
+    pub const ALL: [Category; 8] = [
+        Category::Basics,
+        Category::Numbers,
+        Category::Text,
+        Category::Lists,
+        Category::Records,
+        Category::Options,
+        Category::Files,
+        Category::Dates,
+    ];
 
     pub fn title(self) -> String {
         match self {
@@ -38,6 +53,7 @@ impl Category {
             Category::Records => t!("Records", "Enregistrements"),
             Category::Options => t!("Option and Result", "Option et Result"),
             Category::Files => t!("Files", "Fichiers"),
+            Category::Dates => t!("Dates and times", "Dates et heures"),
         }
     }
 }
@@ -495,6 +511,55 @@ pub static BUILTINS: &[Builtin] = &[
        "Ajoute un texte à la fin d'un fichier, en créant le fichier si besoin : `Ok(())` ou `Err(message)`.",
        "append_file(\"log.txt\", \"done\\n\")"),
     b!("file_exists", "file_exists(path)", 1, 1, Files, file_exists, "Does this file exist?", "Ce fichier existe-t-il ?", "file_exists(\"notes.txt\")"),
+    // ----- Dates and times -----
+    b!("now", "now()", 0, 0, Dates, now,
+       "The date and time now, where the program runs: a record {year, month, day, hour, minute, second, offset}, where `offset` is the number of minutes the local time is ahead of UTC (0 when the system does not tell).",
+       "La date et l'heure maintenant, là où le programme tourne : un enregistrement {year, month, day, hour, minute, second, offset}, où `offset` est le nombre de minutes d'avance de l'heure locale sur UTC (0 quand le système ne le dit pas).",
+       "now()                      # {year: 2026, month: 10, day: 18, hour: 14, minute: 5, second: 9, offset: 120}"),
+    b!("today", "today()", 0, 0, Dates, today,
+       "The date of today, where the program runs: a record {year, month, day}.",
+       "La date d'aujourd'hui, là où le programme tourne : un enregistrement {year, month, day}.",
+       "today()                    # {year: 2026, month: 10, day: 18}"),
+    b!("parse_date", "parse_date(text)", 1, 1, Dates, parse_date,
+       "Reads a date written as ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date.",
+       "Lit une date écrite en ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", avec `Z` ou un décalage comme `+01:00` si besoin) : `Ok(date)`, ou `Err(message)` si ce n'est pas une date valide.",
+       "parse_date(\"2024-02-29\")   # Ok({year: 2024, month: 2, day: 29})\nparse_date(\"2023-02-29\")   # Err(\"\\\"2023-02-29\\\" is not a valid date: ...\")"),
+    b!("format_date", "format_date(date)", 1, 1, Dates, format_date,
+       "Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one.",
+       "Écrit une date en ISO 8601 : \"2024-02-29\", avec l'heure si la date en a une, et `Z` ou le décalage si elle en a un.",
+       "format_date({year: 2024, month: 2, day: 29, hour: 9, minute: 5})   # \"2024-02-29T09:05:00\""),
+    b!("is_date", "is_date(value)", 1, 1, Dates, is_date,
+       "Is the value a valid date: a record {year, month, day} (with `hour`, `minute`, `second`, `offset` if needed) for a day that exists?",
+       "La valeur est-elle une date valide : un enregistrement {year, month, day} (avec `hour`, `minute`, `second`, `offset` si besoin) pour un jour qui existe ?",
+       "is_date({year: 2024, month: 2, day: 29})   # true\nis_date({year: 2023, month: 2, day: 29})   # false"),
+    b!("add_days", "add_days(date, n)", 2, 2, Dates, add_days,
+       "The date n days later (or earlier, when n is negative), at the same time of day.",
+       "La date n jours plus tard (ou plus tôt, quand n est négatif), à la même heure.",
+       "add_days({year: 2024, month: 2, day: 28}, 2)   # {year: 2024, month: 3, day: 1}"),
+    b!("add_seconds", "add_seconds(date, n)", 2, 2, Dates, add_seconds,
+       "The date and time n seconds later (or earlier, when n is negative). Add `60 * minutes` or `3600 * hours` the same way.",
+       "La date et l'heure n secondes plus tard (ou plus tôt, quand n est négatif). Ajoutez `60 * minutes` ou `3600 * heures` de la même façon.",
+       "add_seconds({year: 2024, month: 12, day: 31, hour: 23, minute: 59, second: 30}, 45)   # {year: 2025, month: 1, day: 1, hour: 0, minute: 0, second: 15}"),
+    b!("days_between", "days_between(a, b)", 2, 2, Dates, days_between,
+       "The number of whole days from date a to date b: negative when b is before a.",
+       "Le nombre de jours entiers de la date a à la date b : négatif quand b est avant a.",
+       "days_between({year: 2024, month: 1, day: 1}, {year: 2025, month: 1, day: 1})   # 366"),
+    b!("seconds_between", "seconds_between(a, b)", 2, 2, Dates, seconds_between,
+       "The number of seconds from date a to date b, taking their offsets into account: negative when b is before a.",
+       "Le nombre de secondes de la date a à la date b, en tenant compte de leurs décalages : négatif quand b est avant a.",
+       "seconds_between({year: 2024, month: 1, day: 1}, {year: 2024, month: 1, day: 1, hour: 1})   # 3600"),
+    b!("day_of_week", "day_of_week(date)", 1, 1, Dates, day_of_week,
+       "The day of the week of a date, from 1 (Monday) to 7 (Sunday), as in ISO 8601.",
+       "Le jour de la semaine d'une date, de 1 (lundi) à 7 (dimanche), comme en ISO 8601.",
+       "day_of_week({year: 2024, month: 2, day: 29})   # 4"),
+    b!("days_in_month", "days_in_month(year, month)", 2, 2, Dates, days_in_month,
+       "The number of days of a month (from 1 to 12) of a year: 28 to 31.",
+       "Le nombre de jours d'un mois (de 1 à 12) d'une année : de 28 à 31.",
+       "days_in_month(2024, 2)     # 29"),
+    b!("is_leap_year", "is_leap_year(year)", 1, 1, Dates, is_leap_year,
+       "Does the year have a 29 February? Every 4 years, except every 100 years, except every 400 years.",
+       "L'année a-t-elle un 29 février ? Tous les 4 ans, sauf tous les 100 ans, sauf tous les 400 ans.",
+       "is_leap_year(2024)         # true\nis_leap_year(1900)         # false"),
 ];
 
 // ----- argument helpers --------------------------------------------------
@@ -533,6 +598,8 @@ pub enum Expected {
     OptionOrResult,
     Option,
     Result,
+    /// A record `{year, month, day}`, with a time if needed.
+    Date,
 }
 
 impl Expected {
@@ -554,6 +621,7 @@ impl Expected {
             Expected::OptionOrResult => OPTION | RESULT,
             Expected::Option => OPTION,
             Expected::Result => RESULT,
+            Expected::Date => RECORD,
         }
     }
 }
@@ -578,6 +646,7 @@ impl std::fmt::Display for Expected {
             Expected::OptionOrResult => t!("an Option or a Result", "une Option ou un Result"),
             Expected::Option => t!("an Option", "une Option"),
             Expected::Result => t!("a Result", "un Result"),
+            Expected::Date => t!("a date (a record {{year, month, day}})", "une date (un enregistrement {{year, month, day}})"),
         })
     }
 }
@@ -621,6 +690,12 @@ pub fn wrong_argument(f: &str, i: usize, expected: Expected, got: &str, kinds: K
         if !cousin.is_empty() {
             d = d.help(t!("for a list, use `{cousin}`", "pour une liste, utilisez `{cousin}`"));
         }
+    }
+    if expected == Expected::Date && is(TEXT) {
+        d = d.help(t!(
+            "to read a date from a text like \"2024-02-29\", use `parse_date(text)`",
+            "pour lire une date dans un texte comme \"2024-02-29\", utilisez `parse_date(texte)`"
+        ));
     }
     if f == "flat_map" && i == 0 && is(OPTION | RESULT) {
         d = d.help(t!("for an Option or a Result, use `and_then(x, f)`", "pour une Option ou un Result, utilisez `and_then(x, f)`"));

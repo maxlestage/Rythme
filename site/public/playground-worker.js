@@ -3,7 +3,7 @@
 "use strict";
 
 let module = null;
-const imports = { env: { rythme_now: () => Date.now() } };
+const imports = { env: { rythme_now: () => Date.now(), rythme_offset: (ms) => -new Date(ms).getTimezoneOffset() } };
 
 // mode: 0 = run, 1 = check, 2 = test. Error messages come wrapped in U+0001 … U+0002.
 function callInterpreter(instance, code, mode, lang) {

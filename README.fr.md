@@ -217,6 +217,7 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 | [`results.ry`](examples/results.ry) | `Option`, `Result`, `?` |
 | [`students.ry`](examples/students.ry) | enregistrements, mise à jour, regroupements, moyennes |
 | [`sales.ry`](examples/sales.ry) | un rapport : `scan`, colonnes alignées avec `pad_left`, `windows`, `chunks`, JSON |
+| [`calendar.ry`](examples/calendar.ry) | des dates : la page d'un mois, des textes ISO 8601, `days_between`, `add_days` |
 | [`tree.ry`](examples/tree.ry) | un type récursif : arbre binaire de recherche |
 | [`primes.ry`](examples/primes.ry) | un crible récursif, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | les blocs `test` |

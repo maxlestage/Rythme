@@ -2059,7 +2059,7 @@ with examples; the code may be written in lowercase.
 
 ## 6. Standard library
 
-The 124 built-in functions are always available, without `use`. Like the
+The 136 built-in functions are always available, without `use`. Like the
 keywords, their names are in English. `rythme help builtins` lists all of
 them by category, one line each; `rythme help NAME` (or `help(NAME)` in a
 program, or `:doc NAME` in the REPL) shows the documentation of one, with
@@ -2157,6 +2157,28 @@ Result, ready for `?`), `map_err(result, f)`, and the constructors `Some`,
 `Ok(())` or `Err(message)`), `append_file(path, value)` (adds at the end,
 creating the file if needed), `file_exists(path)`. Relative paths are
 relative to the current folder.
+
+**Dates and times.** A date is a record `{year, month, day}`, with `hour`,
+`minute` and `second` for a moment of the day (a missing one is 0), and
+`offset`, the number of minutes the time is ahead of UTC, when it is known.
+Years go from 1 to 9999, in the Gregorian calendar (leap years every 4
+years, except every 100 years, except every 400 years). `now()` (the local
+date and time with its `offset`: from the time zone of the system on Linux
+and macOS, of the browser in the playground, 0 (UTC) elsewhere), `today()`
+(`{year, month, day}`), `parse_date(text)` (a Result; ISO 8601:
+`"2024-02-29"`, then optionally `T` or a space and a time `13:05` or
+`13:05:00`, a fraction of a second, ignored, and `Z` or an offset `+01:00`,
+`+0100` or `+01`), `format_date(date)` (back to ISO 8601, with the time and
+the offset when the date has them), `is_date(value)`, `add_days(date, n)`
+and `add_seconds(date, n)` (the time of day and the offset stay;
+`add_seconds` always gives a time), `days_between(a, b)` (whole days from a
+to b, rounded toward zero) and `seconds_between(a, b)` (offsets count),
+`day_of_week(date)` (1 for Monday to 7 for Sunday, as in ISO 8601),
+`days_in_month(year, month)`, `is_leap_year(year)`. A record that is not a
+date (an unknown or missing field, a number out of range, a 30 February)
+stops these functions with E023, which says what is wrong. An offset is a
+fixed number: there are no daylight saving rules, so one day after a moment
+is the same time on the next day.
 
 ```rythme
 numbers = [3, 1, 4, 1, 5, 9, 2, 6]
@@ -2263,6 +2285,41 @@ print(file_exists("notes.txt"), args())
 Ok(["line 1", "line 2"])
 Err("file not found: missing.txt")
 true ["Ada", "36"]
+```
+
+```rythme
+launch = unwrap(parse_date("2024-02-28T22:30:00+01:00"))
+print(launch)
+print(add_days(launch, 1) |> format_date, add_seconds(launch, 5400) |> format_date)
+print(days_between({year: 2024, month: 1, day: 1}, {year: 2025, month: 1, day: 1}), days_in_month(2023, 2), is_leap_year(1900))
+print(day_of_week({year: 2024, month: 2, day: 29}), seconds_between(launch, {year: 2024, month: 2, day: 28, hour: 21, minute: 30, offset: 0}))
+print(parse_date("2023-02-29"))
+```
+
+```text
+{year: 2024, month: 2, day: 28, hour: 22, minute: 30, second: 0, offset: 60}
+2024-02-29T22:30:00+01:00 2024-02-29T00:00:00+01:00
+366 28 false
+4 0
+Err("\"2023-02-29\" is not a valid date: the day must go from 1 to 28 in February 2023, not 29 (2023 is not a leap year)")
+```
+
+A date that does not exist is explained:
+
+```rythme
+deadline = {year: 2023, month: 2, day: 29}
+print(add_days(deadline, 7))
+```
+
+```text
+error[E023]: `add_days` needs a valid date: the day must go from 1 to 28 in February 2023, not 29 (2023 is not a leap year)
+ --> 65-dates.ry:2:7
+  |
+2 | print(add_days(deadline, 7))
+  |       ^^^^^^^^^^^^^^^^^^^^^ not a valid date
+  |
+  = help: a date is a record like `{year: 2024, month: 2, day: 29}`, with `hour`, `minute`, `second` and `offset` (minutes ahead of UTC) if needed
+  = more about this error: `rythme explain E023`
 ```
 
 When there is nothing more to read (the keyboard input was closed with
