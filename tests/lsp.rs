@@ -465,6 +465,23 @@ fn definition_symbols_and_highlights() {
 }
 
 #[test]
+fn ranges_and_texts_in_patterns() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/ranges.ry";
+    let text = "fn title(\"Mr \" + name) = upper(name)\nfn title(other) = other\nfn size(n) = match n\n  0..10 -> \"small\"\n  10..99 -> \"big\"\n  _ -> \"huge\"\nend\nprint(title(\"Mr X\"), size(3))\n";
+    let diags = lsp.open(u, text);
+    assert_eq!(diags.len(), 1, "{diags:?}");
+    assert_eq!(diags[0].get("code").as_str(), Some("W010"));
+    assert_eq!(range(&diags[0]), (4, 2, 4, 8));
+    // The rest of the text is a name like the others.
+    let d = lsp.at("textDocument/definition", u, 0, 32);
+    assert_eq!(range(&d), (0, 17, 0, 21));
+    let h = lsp.at("textDocument/documentHighlight", u, 0, 18);
+    assert_eq!(h.as_array().len(), 2);
+    assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
 fn local_functions_and_mistakes_found_by_types() {
     let (mut lsp, _) = Lsp::start("en", INIT);
     let u = "file:///nowhere/types.ry";

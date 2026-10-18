@@ -1043,12 +1043,24 @@ impl<'a> Shaper<'a> {
     // ----- patterns
 
     fn pattern(&mut self) -> Option<usize> {
-        let first = self.pattern_atom()?;
+        let first = self.pattern_part()?;
         while *self.peek() == Tok::Bar {
             let bar = self.advance()?;
             self.set(bar, Indent::Inner(first));
-            let alt = self.pattern_atom()?;
+            let alt = self.pattern_part()?;
             self.set(alt, Indent::Inner(first));
+        }
+        Some(first)
+    }
+
+    /// A pattern, a range `1..9`, or a text and the rest, `"Mr " + name`.
+    fn pattern_part(&mut self) -> Option<usize> {
+        let first = self.pattern_atom()?;
+        if matches!(self.peek(), Tok::DotDot | Tok::Plus) {
+            let op = if *self.peek() == Tok::DotDot { self.take(Role::Range)? } else { self.advance()? };
+            self.set(op, Indent::Inner(first));
+            let second = self.pattern_atom()?;
+            self.set(second, Indent::Inner(first));
         }
         Some(first)
     }
@@ -1723,6 +1735,7 @@ mod tests {
         gives("f = fn ( x ) = not x and(x or  y)\n", "f = fn(x) = not x and (x or y)\n");
         gives("b = 2**-1\n", "b = 2 ** -1\n");
         same("r = {type: 1, \"full name\": 2}\n");
+        gives("fn f(1 .. 9 | - 2.5 .. -1) = 1\nfn f(\"Mr \"+name) = name\n", "fn f(1..9 | -2.5..-1) = 1\nfn f(\"Mr \" + name) = name\n");
     }
 
     #[test]

@@ -256,6 +256,7 @@ impl Indexer<'_> {
         match &p.kind {
             PatKind::Bind(s) => out.push((*s, p.span, false)),
             PatKind::Ctor(_, ps) => ps.iter().for_each(|x| self.binds(x, out)),
+            PatKind::Prefix(_, rest) => self.binds(rest, out),
             PatKind::List(ps, rest) => {
                 ps.iter().for_each(|x| self.binds(x, out));
                 if let Some(Some((s, sp))) = rest {

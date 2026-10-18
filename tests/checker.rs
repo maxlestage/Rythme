@@ -168,6 +168,57 @@ fn cases_handled_twice() {
 }
 
 #[test]
+fn ranges_in_patterns() {
+    let m = |cases: &str| format!("x = len(\"abc\")\nprint(match x\n{cases}\n  _ -> \"other\"\nend)");
+    // Overlapping, even only at one end.
+    warns(&m("  0..10 -> \"a\"\n  10..20 -> \"b\""), "W010", "10 is also here");
+    warns(&m("  0..10 -> \"a\"\n  5..20 -> \"b\""), "W010", "5..10 goes here, the first that fits");
+    warns(&m("  0.0..1.5 -> \"a\"\n  1..3 -> \"b\""), "W010", "1..1.5 is also here");
+    warns(&m("  0..9 -> \"a\"\n  -5..-1 | 9..12 -> \"b\""), "W010", "9 is also here");
+    warns("fn f(1..5) = 1\nfn f(5..9) = 2\nfn f(_) = 3\nprint(f(5))", "W010", "5 goes here");
+    // Handled by a range before, or by several together.
+    warns(&m("  0..10 -> \"a\"\n  3..4 -> \"b\""), "W004", "this case already handles these values");
+    warns(&m("  0..10 -> \"a\"\n  3 -> \"b\""), "W004", "this case already handles these values");
+    warns(&m("  0..10 -> \"a\"\n  2.5 -> \"b\""), "W004", "this case already handles these values");
+    warns(&m("  0..10 -> \"a\"\n  10..20 -> \"b\"\n  5..15 -> \"c\""), "W004", "the cases before it already handle all its numbers");
+    warns(&m("  0..4 | 4.0..5 -> \"a\"\n  6 | 5.0..9 -> \"b\"\n  3..7 -> \"c\""), "W004", "handles some of these numbers");
+    // 4.5 goes to no range before.
+    warns(&m("  0..4 | 5 -> \"a\"\n  5.0..9 -> \"b\"\n  3..7 -> \"c\""), "W010", "3..4 is also here");
+    warns("fn f(0..4) = 1\nfn f(4..9) = 2\nfn f(1..8) = 3\nfn f(_) = 4\nprint(f(1))", "W004", "this definition of `f` can never be used");
+    warns("fn f(0..9) = 1\nfn f(3) = 2\nfn f(_) = 3\nprint(f(1))", "W004", "this definition already accepts these arguments");
+    // Empty.
+    warns(&m("  9..1 -> \"a\""), "W004", "no number goes from 9 up to 1");
+    warns(&m("  0.5..-0.5 -> \"a\""), "W004", "`-0.5..0.5`");
+    // A range never matches what is not a number; a match on numbers still needs `_`.
+    warns("print(match \"abc\"\n  1..3 -> 1\n  _ -> 2\nend)", "W004", "a value of type Text never matches this pattern");
+    warns("fn f(n) = match n\n  1..5 -> 1\nend\nprint(f(1))", "W002", "not handled: `_`");
+    finds("print(match \"abc\"\n  1..3 -> 1\nend)", "E006", "no case of this `match` handles Text \"abc\"");
+    // Correct programs say nothing: ranges that follow each other, with a gap, a
+    // special case first, guards, a range of one number, the same numbers in
+    // another position.
+    quiet(&m("  0..9 -> \"a\"\n  10..19 -> \"b\"\n  -1.5..-0.5 -> \"c\"\n  -0.4..-0.1 -> \"d\""));
+    quiet(&m("  5 -> \"five\"\n  1..9 -> \"digit\""));
+    quiet(&m("  1..9 if x > 3 -> \"big digit\"\n  1..9 -> \"digit\""));
+    quiet(&m("  3..3 -> \"three\"\n  0..2 | 4..9 -> \"digit\""));
+    quiet(&m("  0..4 -> \"a\"\n  5..9 -> \"b\"\n  4.5 -> \"between\"\n  4.1..4.9 -> \"between\""));
+    quiet("fn f(1..5, 1) = 1\nfn f(1..5, 2) = 2\nfn f(_, _) = 3\nprint(f(1, 2))");
+    quiet("fn f(1..5) = 1\nfn f(n) if n < 0 = 2\nfn f(_) = 3\nprint(f(1))");
+    quiet("print(match [1, 2]\n  [0..1, _] -> 1\n  [_, 0..5] -> 2\n  _ -> 3\nend)");
+}
+
+#[test]
+fn texts_that_start_with_a_text() {
+    let m = |cases: &str| format!("x = upper(\"mr x\")\nprint(match x\n{cases}\n  _ -> \"other\"\nend)");
+    warns(&m("  \"MR \" + n -> n\n  \"MR X\" -> \"b\""), "W004", "this case already handles these values");
+    warns(&m("  \"MR\" + _ -> \"a\"\n  \"MR \" + n -> n"), "W004", "this case already handles these values");
+    warns("print(match 5\n  \"5\" + _ -> 1\n  _ -> 2\nend)", "W004", "a value of type Int never matches this pattern");
+    // The rest is a Text.
+    finds("fn f(\"a\" + rest) = rest + 1\nprint(f(\"ab\"))", "E005", "cannot use `+` with Text and Int");
+    quiet(&m("  \"MR X\" -> \"exact\"\n  \"MR \" + n -> n\n  \"MRS \" + n -> n"));
+    quiet("fn f(\"a\" + rest) = rest\nfn f(other) = other\nprint(f(\"ab\"))");
+}
+
+#[test]
 fn tests_that_check_nothing() {
     let file = temp_file(
         "empty_tests.ry",

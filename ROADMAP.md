@@ -21,9 +21,13 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   `_` stay private to their file; the checker, the formatter, the language
   server (completion after `use ` and `geo.`, a quick fix adding a missing
   `use`) and the manual know it. Plain `use "x.ry"` keeps working.
-- [ ] **Patterns on ranges and texts.** `1..9 -> ...` in `match` (Int and
+- [x] **Patterns on ranges and texts.** `1..9 -> ...` in `match` (Int and
   Float bounds, exhaustiveness knows nothing new), and a text prefix pattern
   only if it stays simple; the checker reports overlapping or empty ranges.
+  Done as `1..9`, `-5..-1`, `0.0..0.5` (both ends included, Int or Float
+  values) and `"Mr " + name`, in `match`, function definitions and
+  definitions; W004 for empty ranges and ranges handled by the cases before,
+  W010 for ranges that overlap.
 - [ ] **Whole numbers without limit.** Int grows beyond 64 bits instead of
   E012 (the way Python does), with the small-number fast path kept; `pow`,
   `gcd`, `text`, `parse_int`, JSON and comparisons with Float are exact.
