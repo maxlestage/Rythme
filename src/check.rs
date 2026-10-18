@@ -1084,7 +1084,13 @@ impl<'a> Checker<'a> {
                 .at(span)
                 .label(t!("not in `{file}`", "absent de `{file}`"));
             let candidates: Vec<Rc<str>> = meta.names.iter().filter(|n| n.is_ctor() == x.is_ctor()).map(|n| n.name()).collect();
-            if let Some(best) = suggest::closest(&x.name(), candidates.iter().map(|n| &**n)) {
+            if meta.names.contains(&Sym::new(&format!("{x}?"))) {
+                // `m.adult?` without `(` right after it: `?` is the operator.
+                d = d.help(t!(
+                    "`{m}.{x}?` is a function of `{file}`, but without `(` right after it, `?` is the operator: call it, `{m}.{x}?(...)`, or give it as `fn(v) = {m}.{x}?(v)`",
+                    "`{m}.{x}?` est une fonction de `{file}`, mais sans `(` juste après, `?` est l'opérateur : appelez-la, `{m}.{x}?(...)`, ou donnez-la comme `fn(v) = {m}.{x}?(v)`"
+                ));
+            } else if let Some(best) = suggest::closest(&x.name(), candidates.iter().map(|n| &**n)) {
                 d = d.help(t!("did you mean `{m}.{best}`?", "vouliez-vous dire `{m}.{best}` ?"));
             } else if meta.names.is_empty() {
                 d = d.note(t!(
