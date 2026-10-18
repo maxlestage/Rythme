@@ -389,3 +389,37 @@ fn values_in_results_keep_their_meaning() {
     let r = rythme(&["help", "ruby"]);
     assert!(r.stdout.contains("if ok then puts \"yes\" else puts \"no\""), "{}", r.stdout);
 }
+
+/// `show [1, 2]` is an index when the file gives `show` a value anywhere,
+/// even far away: the reading does not change (1.x keeps it), but where
+/// `show` is a function, W011 says why and asks for parentheses.
+#[test]
+fn a_name_given_a_value_elsewhere_is_not_called_without_parentheses() {
+    let r = fails("fn show(xs) = print(xs)\nfn twice(show) = show * 2\nshow [1]", "E005");
+    assert!(r.stderr.contains("warning[W011]: `show [...]` is read as an index, not as a call"), "{}", r.stderr);
+    assert!(r.stderr.contains("2 | fn twice(show) = show * 2\n  |          ---- because `show` is given a value here"), "{}", r.stderr);
+    assert!(r.stderr.contains("`show([...])`; for an index, write `show[...]` without a space"), "{}", r.stderr);
+    // In a result, with `-`, and for a function kept in a value.
+    let r = fails("fn neg(v) = -v\nfn g(neg) = neg * 2\nfn h(b) = if b then neg -5 else 0", "E005");
+    assert!(r.stderr.contains("warning[W011]: `neg -...` is read as a subtraction, not as a call"), "{}", r.stderr);
+    assert!(r.stderr.contains("`neg(-x)`; for a subtraction, write `neg - x`"), "{}", r.stderr);
+    let r = fails("fn show(xs) = print(xs)\nfn twice(show) = show * 2\nfn f() = show [1]", "E005");
+    assert!(r.stderr.contains("warning[W011]") && r.stderr.contains("`show` is a function here"), "{}", r.stderr);
+    // A value that holds a function is a value: its error says how to call it.
+    let r = fails("show = fn(xs) = print(xs)\nshow [1]", "E005");
+    assert!(!r.stderr.contains("W011"), "{}", r.stderr);
+    // A syntax error there says it too.
+    let r = fails("fn show(xs) = print(xs)\nfn twice(show) = show * 2\nshow [1, 2]", "E001");
+    assert!(r.stderr.contains("`show` is read as a value here, not called, because the code gives it a value (line 2)"), "{}", r.stderr);
+    // Where the name is a value, or has none in the file, nothing is said.
+    ok("xs = [7, 8]\nfn f(x) = x -1\nprint(xs [0], f(3))\nputs [1, 2]\nputs -1", "7 2\n[1, 2]\n-1");
+    let r = rythme(&["-e", "xs = [7, 8]\nfn first(xs) = xs [0]\nprint(first(xs))"]);
+    assert_eq!(r.stdout, "7\n");
+    assert!(!r.stderr.contains("W011"), "{}", r.stderr);
+    // The parentheses call it.
+    ok("fn show(xs) = print(xs)\nfn twice(show) = show * 2\nshow([1, 2])", "[1, 2]");
+    let r = rythme(&["explain", "W011"]);
+    assert!(r.stdout.contains("W011 — Index or subtraction instead of a call"), "{}", r.stdout);
+    let r = rythme_lang("fr", &["-e", "fn montre(xs) = print(xs)\nfn double(montre) = montre * 2\nmontre [1]"]);
+    assert!(r.stderr.contains("`montre [...]` est lu comme un indice, pas comme un appel"), "{}", r.stderr);
+}

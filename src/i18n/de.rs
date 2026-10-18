@@ -386,6 +386,14 @@ mach deinen Wert zuerst zu einem Record, wie {{kind: "Circle", radius: r}}"#,
         ("defined here", "hier definiert"),
         ("from how `{name}` uses `{p}`, it needs: `{sig}`", "so wie `{name}` den Parameter `{p}` verwendet, braucht es: `{sig}`"),
         // src/check.rs
+        ("`{s} [...]` is read as an index, not as a call", "`{s} [...]` wird als Index gelesen, nicht als Aufruf"),
+        ("to call `{s}`, put its argument in parentheses: `{s}([...])`; for an index, write `{s}[...]` without a space", "um `{s}` aufzurufen, setz sein Argument in Klammern: `{s}([...])`; für einen Index schreib `{s}[...]` ohne Leerzeichen"),
+        ("`{s} -...` is read as a subtraction, not as a call", "`{s} -...` wird als Subtraktion gelesen, nicht als Aufruf"),
+        ("to call `{s}`, put its argument in parentheses: `{s}(-x)`; for a subtraction, write `{s} - x`", "um `{s}` aufzurufen, setz sein Argument in Klammern: `{s}(-x)`; für eine Subtraktion schreib `{s} - x`"),
+        ("`{s}` is not a value here", "`{s}` ist hier kein Wert"),
+        ("`{s}` is a function here", "`{s}` ist hier eine Funktion"),
+        ("because `{s}` is given a value here", "weil `{s}` hier einen Wert bekommt"),
+        ("a call without parentheses, like `{s} [1, 2]` or `{s} -1`, is read so only when the file never gives `{s}` a value", "ein Aufruf ohne Klammern, wie `{s} [1, 2]` oder `{s} -1`, wird nur so gelesen, wenn die Datei `{s}` nirgends einen Wert gibt"),
         ("the type `{name}` is part of Rythme", "der Typ `{name}` gehört zu Rythme"),
         ("give your type another name", "gib deinem Typ einen anderen Namen"),
         ("the type `{}` is already defined", "der Typ `{}` ist schon definiert"),
@@ -1284,6 +1292,7 @@ Ihre Definitionen werden über den Namen `{n}` verwendet: `{n}.name`"#,
 "#,
         ),
         // src/parser.rs
+        ("`{name}` is read as a value here, not called, because the code gives it a value (line {line}): to call it, put its argument in parentheses, like `{name}([1, 2])`", "`{name}` wird hier als Wert gelesen, nicht aufgerufen, weil der Code ihm einen Wert gibt (Zeile {line}): um es aufzurufen, setz sein Argument in Klammern, wie `{name}([1, 2])`"),
         ("Rythme has no `condition ? a : b`", "Rythme hat kein `Bedingung ? a : b`"),
         ("`?` does not choose between two values", "`?` wählt nicht zwischen zwei Werten"),
         ("write `if condition then a else b`, like `if x > 2 then \"big\" else \"small\"`", "schreib `if Bedingung then a else b`, wie `if x > 2 then \"groß\" else \"klein\"`"),
@@ -4328,6 +4337,36 @@ Richtig: 0..17 -> "young"
          18..64 -> "adult"
 Für Dezimalzahlen, die zwischen 17 und 18 liegen, vergleiche stattdessen:
   a if a < 18 -> "young""#,
+        ),
+        (
+            r#"W011 — Index or subtraction instead of a call
+
+At the start of a statement or of a result, `show [1, 2]` and `show -1`
+call `show` without parentheses, unless the file gives `show` a value
+somewhere: with `=`, as a parameter of a function or a block, or in a
+pattern. Then they are an index and a subtraction, everywhere in the file,
+even where `show` is a function. The value may be given far away, to a
+parameter of another function.
+
+Wrong:   fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011: an index of the function
+Right:   show([1, 2])
+Or give the parameter another name: fn twice(n) = n * 2"#,
+            r#"W011 — Index oder Subtraktion statt eines Aufrufs
+
+Am Anfang einer Anweisung oder eines Ergebnisses rufen `show [1, 2]` und
+`show -1` die Funktion `show` ohne Klammern auf, außer die Datei gibt `show`
+irgendwo einen Wert: mit `=`, als Parameter einer Funktion oder eines Blocks,
+oder in einem Muster. Dann sind es ein Index und eine Subtraktion, überall in
+der Datei, auch dort, wo `show` eine Funktion ist. Der Wert kann weit weg
+gegeben werden, an einen Parameter einer anderen Funktion.
+
+Falsch:  fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011: ein Index der Funktion
+Richtig: show([1, 2])
+Oder gib dem Parameter einen anderen Namen: fn twice(n) = n * 2"#,
         ),
         ("Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.", "Definiert eine Funktion: `fn name(x) = expression`, oder mit ihrem Rumpf in den folgenden Zeilen, abgeschlossen mit `end`. Ohne Namen ist `fn(x) = x * 2` eine anonyme Funktion."),
         ("Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.", "Wählt zwischen zwei Werten: `if condition then value else other`. Jedes `if` hat ein `else`, weil ein `if` immer einen Wert liefert."),

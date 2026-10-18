@@ -386,6 +386,14 @@ turn your value into a record first, like {{kind: "Circle", radius: r}}"#,
         ("defined here", "在这里定义"),
         ("from how `{name}` uses `{p}`, it needs: `{sig}`", "从 `{name}` 使用 `{p}` 的方式来看，它需要：`{sig}`"),
         // src/check.rs
+        ("`{s} [...]` is read as an index, not as a call", "`{s} [...]` 被读作索引，而不是调用"),
+        ("to call `{s}`, put its argument in parentheses: `{s}([...])`; for an index, write `{s}[...]` without a space", "要调用 `{s}`，请把参数放进括号：`{s}([...])`；要取索引，请写 `{s}[...]`，不加空格"),
+        ("`{s} -...` is read as a subtraction, not as a call", "`{s} -...` 被读作减法，而不是调用"),
+        ("to call `{s}`, put its argument in parentheses: `{s}(-x)`; for a subtraction, write `{s} - x`", "要调用 `{s}`，请把参数放进括号：`{s}(-x)`；要做减法，请写 `{s} - x`"),
+        ("`{s}` is not a value here", "`{s}` 在这里不是值"),
+        ("`{s}` is a function here", "`{s}` 在这里是函数"),
+        ("because `{s}` is given a value here", "因为 `{s}` 在这里得到了一个值"),
+        ("a call without parentheses, like `{s} [1, 2]` or `{s} -1`, is read so only when the file never gives `{s}` a value", "只有当文件从不给 `{s}` 赋值时，`{s} [1, 2]` 或 `{s} -1` 这样的写法才会被读作不带括号的调用"),
         ("the type `{name}` is part of Rythme", "类型 `{name}` 是 Rythme 自带的"),
         ("give your type another name", "给你的类型换个名字"),
         ("the type `{}` is already defined", "类型 `{}` 已经定义过了"),
@@ -1284,6 +1292,7 @@ Its definitions are used through the name `{n}`: `{n}.name`"#,
 "#,
         ),
         // src/parser.rs
+        ("`{name}` is read as a value here, not called, because the code gives it a value (line {line}): to call it, put its argument in parentheses, like `{name}([1, 2])`", "`{name}` 在这里被读作值而不是调用，因为代码给了它一个值（第 {line} 行）：要调用它，请把参数放进括号，例如 `{name}([1, 2])`"),
         ("Rythme has no `condition ? a : b`", "Rythme 没有 `条件 ? a : b`"),
         ("`?` does not choose between two values", "`?` 不会在两个值之间选择"),
         ("write `if condition then a else b`, like `if x > 2 then \"big\" else \"small\"`", "请写 `if 条件 then a else b`，例如 `if x > 2 then \"大\" else \"小\"`"),
@@ -4258,6 +4267,34 @@ For decimal numbers, which fall between 17 and 18, compare instead:
          18..64 -> "adult"
 对于落在 17 和 18 之间的小数，请改为比较：
   a if a < 18 -> "young""#,
+        ),
+        (
+            r#"W011 — Index or subtraction instead of a call
+
+At the start of a statement or of a result, `show [1, 2]` and `show -1`
+call `show` without parentheses, unless the file gives `show` a value
+somewhere: with `=`, as a parameter of a function or a block, or in a
+pattern. Then they are an index and a subtraction, everywhere in the file,
+even where `show` is a function. The value may be given far away, to a
+parameter of another function.
+
+Wrong:   fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011: an index of the function
+Right:   show([1, 2])
+Or give the parameter another name: fn twice(n) = n * 2"#,
+            r#"W011 — 索引或减法，而不是调用
+
+在语句或结果的开头，`show [1, 2]` 和 `show -1` 是不带括号地调用 `show`，
+除非文件在某处给了 `show` 一个值：用 `=`、作为函数或代码块的参数，或在模式中。
+这时它们在整个文件里都是索引和减法，即使在 `show` 是函数的地方也是如此。
+这个值可能在很远的地方给出，比如另一个函数的参数。
+
+错误：   fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011：对函数取索引
+正确：   show([1, 2])
+或者给参数换个名字：fn twice(n) = n * 2"#,
         ),
         ("Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.", "定义一个函数：`fn name(x) = expression`，或者把函数体写在后面几行，并以 `end` 结束。没有名字的 `fn(x) = x * 2` 是匿名函数。"),
         ("Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.", "在两个值之间选择：`if condition then value else other`。每个 `if` 都有 `else`，因为 `if` 总是给出一个值。"),

@@ -1688,7 +1688,12 @@ parenthèses : `puts "Bonjour"` est `puts("Bonjour")`, et `print x, y` est
   Alors `x -1` est `x - 1` et `xs [0]` est `xs[0]`, comme toujours, dans un
   résultat aussi. Sans
   espace avant (`x-1`, `xs[0]`), ou avec une espace après le `-` (`x - 1`),
-  ce n'est jamais un appel.
+  ce n'est jamais un appel. La valeur peut être donnée n'importe où dans le
+  fichier, même à un paramètre d'une autre fonction : quand le nom est une
+  fonction là où il est écrit (`montre [1, 2]` avec `fn montre(xs)` et,
+  ailleurs, `fn autre(montre)`), le vérificateur avertit (W011) et montre où
+  le nom reçoit sa valeur ; écrivez les parenthèses, `montre([1, 2])`, pour
+  l'appeler.
 - `rythme fmt` garde le choix de l'auteur, avec ou sans parenthèses, et
   écrit les autres lectures comme ce qu'elles sont : `x - 1`, `xs[0]`.
 
@@ -2917,6 +2922,7 @@ minuscules.
 | W008 | Résultat perdu | une ligne qui ne fait qu'appeler une fonction sans effet, comme `push(liste, x)` : les valeurs ne changent jamais |
 | W009 | Fonction affichée | une fonction affichée dans un texte ou par `print` (`<fn nom>`) au lieu de ce qu'elle donne |
 | W010 | Intervalles qui se chevauchent | un motif d'intervalle a des nombres en commun avec un intervalle d'un cas ou d'une définition placé avant lui : ils vont toujours au premier |
+| W011 | Indice ou soustraction au lieu d'un appel | `montre [1, 2]` ou `montre -1` commence une instruction là où `montre` est une fonction, mais le fichier donne une valeur à `montre` ailleurs : c'est un indice ou une soustraction ([3.15](#315-appels-sans-parenthèses)) |
 
 ---
 

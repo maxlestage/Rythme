@@ -41,6 +41,13 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ### Messages
 
+- **W011, index or subtraction instead of a call**: `show [1, 2]` and
+  `show -1` at the start of a statement are an index and a subtraction as
+  soon as the file gives `show` a value anywhere, even to a parameter of
+  another function. The reading does not change, but where `show` is a
+  function, `rythme check` (and the editor) now warns, shows where `show`
+  gets its value, and asks for parentheses: `show([1, 2])`. A syntax error
+  in such a line says it too. `rythme explain W011`, manual §3.15.
 - **`condition ? a : b`** (Ruby, C, JavaScript) is explained: the error
   points at the `?` and says to write `if condition then a else b`, in the
   terminal and in the editor. Only code that was already an error gets it.

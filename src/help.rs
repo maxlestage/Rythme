@@ -3297,6 +3297,37 @@ Juste :  0..17 -> "jeune"
 Pour des nombres décimaux, qui tombent entre 17 et 18, comparez plutôt :
   a if a < 18 -> "jeune""#,
         ),
+        "W011" => (
+            r#"W011 — Index or subtraction instead of a call
+
+At the start of a statement or of a result, `show [1, 2]` and `show -1`
+call `show` without parentheses, unless the file gives `show` a value
+somewhere: with `=`, as a parameter of a function or a block, or in a
+pattern. Then they are an index and a subtraction, everywhere in the file,
+even where `show` is a function. The value may be given far away, to a
+parameter of another function.
+
+Wrong:   fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011: an index of the function
+Right:   show([1, 2])
+Or give the parameter another name: fn twice(n) = n * 2"#,
+            r#"W011 — Indice ou soustraction au lieu d'un appel
+
+Au début d'une instruction ou d'un résultat, `montre [1, 2]` et
+`montre -1` appellent `montre` sans parenthèses, sauf si le fichier donne
+une valeur à `montre` quelque part : avec `=`, comme paramètre d'une
+fonction ou d'un bloc, ou dans un motif. Ce sont alors un indice et une
+soustraction, partout dans le fichier, même là où `montre` est une
+fonction. La valeur peut être donnée loin, à un paramètre d'une autre
+fonction.
+
+Faux :   fn montre(xs) = print(xs)
+         fn double(montre) = montre * 2
+         montre [1, 2]                # W011 : un indice de la fonction
+Juste :  montre([1, 2])
+Ou donnez un autre nom au paramètre : fn double(n) = n * 2"#,
+        ),
         _ => return None,
     })
 }
@@ -3318,5 +3349,5 @@ pub fn fixed_texts() -> Vec<&'static str> {
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
     "E018", "E019", "E020", "E021", "E022", "E023", "E024", "E025", "E026", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008",
-    "W009", "W010",
+    "W009", "W010", "W011",
 ];
