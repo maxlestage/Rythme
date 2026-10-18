@@ -15,6 +15,7 @@ const EFFECTS: &[&str] = &[
     "debug",
     "each",
     "input",
+    "input_lines",
     "help",
     "fail",
     "args",
@@ -27,6 +28,10 @@ const EFFECTS: &[&str] = &[
     "write_file",
     "append_file",
     "file_exists",
+    "file_info",
+    "list_folder",
+    "create_folder",
+    "delete_file",
     "now",
     "today",
 ];

@@ -128,6 +128,14 @@ pub fn alias_hint(name: &str) -> Option<String> {
         "appendFile" | "append_to_file" => "append_file",
         "exists" | "path_exists" | "existsSync" | "is_file" | "isfile" => "file_exists",
         "getenv" | "getEnv" | "environ" | "env_var" => "env",
+        "listdir" | "readdir" | "readdirSync" | "read_dir" | "scandir" | "list_dir" | "ls" | "dir" => "list_folder",
+        "mkdir" | "makedirs" | "mkdirSync" | "create_dir" | "create_dir_all" | "mkdir_p" | "make_dir" => "create_folder",
+        "unlink" | "unlinkSync" | "remove_file" | "rm" | "delete" | "del_file" | "supprimer" => "delete_file",
+        "stat" | "statSync" | "getsize" | "file_size" | "filesize" | "metadata" | "is_dir" | "isdir" | "is_folder" => "file_info",
+        "path_join" | "joinpath" | "join_paths" | "pathJoin" => "join_path",
+        "path_split" | "split_paths" | "path_parts" | "components" => "split_path",
+        "stdin_lines" | "read_stdin" | "readAll" | "read_all_lines" => "input_lines",
+        "argparse" | "getopt" | "getopts" | "parse_args" | "parseArgs" | "flags" | "argv_options" => "options",
         "assertEqual" | "assert_equal" | "assert_equals" | "assertEquals" => "assert_eq",
         "error" | "panic" | "raise" | "throw" | "die" | "abort" | "erreur" => "fail",
         "isEmpty" | "empty" | "is_empty?" | "vide" => "is_empty",
@@ -195,8 +203,8 @@ pub fn alias_hint(name: &str) -> Option<String> {
             "pour découper un texte en mots, utilisez `split(texte)` : sans séparateur, il découpe aux espaces"
         ),
         "read_lines" | "readlines" | "readLines" => t!(
-            "read the whole file with `read_file(path)`, then cut it with `lines(text)`",
-            "lisez tout le fichier avec `read_file(chemin)`, puis découpez-le avec `lines(texte)`"
+            "read the whole file with `read_file(path)`, then cut it with `lines(text)`; the lines of the standard input are `input_lines()`",
+            "lisez tout le fichier avec `read_file(chemin)`, puis découpez-le avec `lines(texte)` ; les lignes de l'entrée standard sont `input_lines()`"
         ),
         "merge" | "assign" | "update" => t!(
             "to merge two records, write `{{..a, ..b}}`: the fields of `b` replace those of `a`",

@@ -25,6 +25,10 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ("tests", &["test"]),
     ("exercises", &["exercices", "exercise", "exercice"]),
     ("modules", &["use", "files", "fichiers"]),
+    (
+        "system",
+        &["systeme", "système", "folders", "folder", "dossiers", "dossier", "paths", "path", "chemins", "chemin", "stdin", "exit-codes"],
+    ),
     ("dates", &["date", "heure", "heures", "temps", "calendar", "calendrier", "datetime"]),
     ("repl", &["interactive", "interactif"]),
     ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme"]),
@@ -73,6 +77,7 @@ Sujets (rythme help SUJET)
   tests       écrire et lancer des tests
   exercises   des exercices pour apprendre, avec leurs tests
   modules     utiliser plusieurs fichiers
+  system      fichiers, dossiers, chemins, options, entrée, codes de sortie
   dates       dates et heures : now(), today(), calendrier, ISO 8601
   repl        le mode interactif
   fmt         la mise en forme officielle du code (rythme fmt)
@@ -116,6 +121,7 @@ Topics (rythme help TOPIC)
   tests       writing and running tests
   exercises   exercises to learn, with their tests
   modules     using several files
+  system      files, folders, paths, options, input, exit codes
   dates       dates and times: now(), today(), calendar, ISO 8601
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
@@ -450,6 +456,7 @@ fn topic_text(name: &str) -> &'static str {
         "tests" => pick(TESTS_EN, TESTS_FR),
         "exercises" => pick(EXERCISES_EN, EXERCISES_FR),
         "modules" => pick(MODULES_EN, MODULES_FR),
+        "system" => pick(SYSTEM_EN, SYSTEM_FR),
         "dates" => pick(DATES_EN, DATES_FR),
         "repl" => pick(REPL_EN, REPL_FR),
         "fmt" => pick(FMT_EN, FMT_FR),
@@ -905,6 +912,88 @@ Les enregistrements comme dictionnaires
 JSON, le format des données du web
   parse_json(texte)              # Ok(...) : les objets deviennent des enregistrements, les tableaux des listes
   to_json(valeur)                # le texte, prêt à enregistrer avec write_file"#;
+
+const SYSTEM_EN: &str = r#"FILES AND THE SYSTEM
+
+Every function that touches the system returns a Result: Ok(...), or
+Err(message) with a message that says what went wrong.
+
+Files and folders (relative paths start in the current folder)
+  read_file("notes.txt")         # Ok("...") or Err("file not found: notes.txt")
+  write_file("out.txt", "hi")    # Ok(()), replaces the content
+  append_file("log.txt", "done\n")
+  file_exists("notes.txt")       # true or false
+  file_info("notes.txt")         # Ok({is_folder: false, size: 11}), in bytes
+  list_folder(".")               # Ok(["notes.txt", "photos"]), in order
+  create_folder("backup/2024")   # Ok(()), with the missing folders around it
+  delete_file("old.txt")         # Ok(()); never a folder
+
+Paths that work on Linux, macOS and Windows
+  join_path(["data", "notes.txt"])       # "data/notes.txt"
+  split_path("/home/ada/notes.txt")      # ["/", "home", "ada", "notes.txt"]
+  split_path("C:\Users\ada")             # ["C:\", "Users", "ada"]
+
+The command line: rythme tool.ry --verbose --name=Ada notes.txt
+  args()                         # ["--verbose", "--name=Ada", "notes.txt"]
+  options()                      # Ok({args: ["notes.txt"], verbose: true, name: "Ada"})
+  opts = unwrap(options())
+  name = unwrap_or(get(opts, "name"), "World")   # an option that may be missing
+  env("HOME")                    # Some("/home/ada") or None
+
+The standard input: rythme count.ry < names.txt
+  input("Name? ")                # one line
+  input_lines()                  # Ok(["Ada", "Alan"]): every line until the end
+
+Exit codes, for the scripts that run your program
+  0    everything went well (also at the end of the program)
+  1    an error in the program: syntax, check, while running, failed test
+  2    a wrong use of the command (unknown command or option)
+  101  an internal error of Rythme (a bug, to report)
+  exit(code)                     # stops now with this code, from 0 to 255
+
+In the playground, in the browser, there are no files and no input: these
+functions give Err("... is not available in the browser ...")."#;
+
+const SYSTEM_FR: &str = r#"FICHIERS ET SYSTÈME
+
+Chaque fonction qui touche au système renvoie un Result : Ok(...), ou
+Err(message) avec un message qui dit ce qui ne va pas.
+
+Fichiers et dossiers (les chemins relatifs partent du dossier courant)
+  read_file("notes.txt")         # Ok("...") ou Err("fichier introuvable : notes.txt")
+  write_file("out.txt", "salut") # Ok(()), remplace le contenu
+  append_file("journal.txt", "fini\n")
+  file_exists("notes.txt")       # true ou false
+  file_info("notes.txt")         # Ok({is_folder: false, size: 11}), en octets
+  list_folder(".")               # Ok(["notes.txt", "photos"]), dans l'ordre
+  create_folder("sauvegarde/2024")   # Ok(()), avec les dossiers manquants autour
+  delete_file("ancien.txt")      # Ok(()) ; jamais un dossier
+
+Des chemins qui marchent sous Linux, macOS et Windows
+  join_path(["données", "notes.txt"])    # "données/notes.txt"
+  split_path("/home/ada/notes.txt")      # ["/", "home", "ada", "notes.txt"]
+  split_path("C:\Users\ada")             # ["C:\", "Users", "ada"]
+
+La ligne de commande : rythme outil.ry --verbose --name=Ada notes.txt
+  args()                         # ["--verbose", "--name=Ada", "notes.txt"]
+  options()                      # Ok({args: ["notes.txt"], verbose: true, name: "Ada"})
+  opts = unwrap(options())
+  nom = unwrap_or(get(opts, "name"), "le monde")   # une option qui peut manquer
+  env("HOME")                    # Some("/home/ada") ou None
+
+L'entrée standard : rythme compter.ry < noms.txt
+  input("Nom ? ")                # une ligne
+  input_lines()                  # Ok(["Ada", "Alan"]) : toutes les lignes jusqu'à la fin
+
+Codes de sortie, pour les scripts qui lancent votre programme
+  0    tout s'est bien passé (aussi à la fin du programme)
+  1    une erreur dans le programme : syntaxe, vérification, exécution, test échoué
+  2    une mauvaise utilisation de la commande (commande ou option inconnue)
+  101  une erreur interne de Rythme (un bug, à signaler)
+  exit(code)                     # s'arrête tout de suite avec ce code, de 0 à 255
+
+Dans le playground, dans le navigateur, il n'y a ni fichiers ni entrée : ces
+fonctions donnent Err("... n'est pas disponible dans le navigateur ...")."#;
 
 const DATES_EN: &str = r#"DATES AND TIMES
 
