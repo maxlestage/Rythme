@@ -235,7 +235,34 @@ pub fn parse(text: &str, file: u32) -> Result<Doc, Box<Diagnostic>> {
                 let close = if array { "]]" } else { "]" };
                 return Err(toml_error(t!("expected `{close}` here", "`{close}` était attendu ici"), c.here()).boxed());
             }
-            doc.sections.push(Section { name, array, span: c.span(start, c.i), entries: Vec::new() });
+            let span = c.span(start, c.i);
+            // `[[package]]` may come again (one more element); `[dependencies]` may not.
+            if let Some(first) = doc.sections.iter().find(|s| s.name == name && !(array && s.array)) {
+                let d = if array == first.array {
+                    Diagnostic::error("E025", t!("the section `[{name}]` is written twice", "la section `[{name}]` est écrite deux fois"))
+                        .help(t!(
+                            "put all the lines of `[{name}]` under one `[{name}]`",
+                            "mettez toutes les lignes de `[{name}]` sous un seul `[{name}]`"
+                        ))
+                } else {
+                    Diagnostic::error(
+                        "E025",
+                        t!(
+                            "`{name}` is written both as `[{name}]` and as `[[{name}]]`",
+                            "`{name}` est écrit à la fois `[{name}]` et `[[{name}]]`"
+                        ),
+                    )
+                };
+                return Err(d.at(span).secondary(first.span, t!("first written here", "écrit une première fois ici")).boxed());
+            }
+            if let Some(first) = doc.top.iter().find(|e| e.key == name) {
+                let key = &name;
+                let d = Diagnostic::error("E025", t!("`{key}` is written twice", "`{key}` est écrit deux fois"))
+                    .at(span)
+                    .secondary(first.key_span, t!("first written here", "écrit une première fois ici"));
+                return Err(d.boxed());
+            }
+            doc.sections.push(Section { name, array, span, entries: Vec::new() });
         } else {
             let (key, key_span) = c.key()?;
             c.skip_ws();

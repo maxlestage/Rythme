@@ -734,7 +734,7 @@ text 42 2.0 ["a", "b"] {name: "Ada", "full name": "Ada L."} None ()
 
 A **symbol** is a name used as a value, as in Ruby: `:ok`, `:error`,
 `:pending`. It is written `:` directly followed by a name, and shown the same
-way. Two symbols are equal when their names are; they are ordered by name;
+way; a `?` right after the name is part of it, as in Ruby (`:even?`). Two symbols are equal when their names are; they are ordered by name;
 they are never equal to a text (`:ok == "ok"` is false, and the checker warns,
 W006). They are used in `match` patterns, and `to_json` writes them as texts.
 
@@ -1227,7 +1227,9 @@ end
 The subject is written on the same line as `match`; each case starts on its
 own line (or after a `;`), and `end` closes the `match`. There must be at
 least one case, and no `|` before a case. The result may start on the line
-after `->`.
+after `->`. It is one expression: for a result on several lines, write
+`Ok(x) -> do`, the lines, then `end` (or call a function); indented lines
+under a case are not part of it, and the error says so.
 
 The cases are tried **in order**. The first case whose pattern matches the
 value, and whose guard (if any) is `true`, is chosen; the names bound by the
@@ -1618,7 +1620,11 @@ As in Ruby, a **statement** may call a function without parentheses:
   before `=` or `->` on their line count). Then `x -1` is `x - 1` and
   `xs [0]` is `xs[0]`, as they always were, in a result too. Without a space before
   (`x-1`, `xs[0]`), or with a space after the `-` (`x - 1`), it is never a
-  call.
+  call. The value may be given anywhere in the file, even to a parameter of
+  another function: when the name is a function where it is written
+  (`show [1, 2]` with `fn show(xs)` and, elsewhere, `fn other(show)`), the
+  checker warns (W011) and shows where the name gets its value; write the
+  parentheses, `show([1, 2])`, to call it.
 - `rythme fmt` keeps the choice of the author, with or without parentheses,
   and writes the other readings as what they are: `x - 1`, `xs[0]`.
 
@@ -2800,6 +2806,7 @@ with examples; the code may be written in lowercase.
 | W008 | Result lost | a line that only calls a function without effect, like `push(list, x)`: values never change |
 | W009 | Function shown | a function shown in a text or printed (`<fn name>`) instead of what it gives |
 | W010 | Ranges that overlap | a range pattern shares numbers with a range of a case or definition before it: they always go to the first one |
+| W011 | Index or subtraction instead of a call | `show [1, 2]` or `show -1` starts a statement where `show` is a function, but the file gives `show` a value elsewhere: it is an index or a subtraction ([3.15](#315-calls-without-parentheses)) |
 
 ---
 
@@ -2862,7 +2869,8 @@ every run: see *Chance and seeds* below).
 numbers), and the constant `pi`.
 
 **Text.** `len`, `upper`, `lower`, `capitalize` (the first character in
-uppercase), `trim`, `pad_left(x, width, fill)` and `pad_right` (to line up
+uppercase, or in titlecase where Unicode has one: `ǆ` gives `ǅ`, `ß` gives
+`Ss`), `trim`, `pad_left(x, width, fill)` and `pad_right` (to line up
 columns; `fill` is a space by default), `split(text)` (at white space) and
 `split(text, separator)` (an empty separator cuts into characters),
 `join(list, separator)`, `contains`, `starts_with`, `ends_with`,
@@ -2909,7 +2917,10 @@ ignore the case. The usual rules choose between several matches: the
 leftmost, then the first alternative, then the longest repetition. Searching
 takes a time proportional to the length of the text times the size of the
 regex, whatever they are: the engine follows every way at once instead of
-trying one after the other (no "catastrophic backtracking"); for a
+trying one after the other (no "catastrophic backtracking"), and the
+searches of `find_all`, `split_by` and `replace_all` skip the ways that an
+earlier one showed to lead nowhere, so that finding every match usually
+reads the text about once; for a
 repetition of a part that can match an empty text, like `(a*)*`, it may
 choose another end than other engines. In a Rythme text, a backslash is
 written twice and braces `\{` and `\}`: `"\\d\{4\}"` is the regex
@@ -4214,7 +4225,7 @@ list_patterns = ".." [ NAME ] [ "," ]
 field_pattern = KEY ":" pattern | NAME | ".." ;
 
 MEMBER       = NAME [ "?" ] | CTOR | keyword | reserved word ;
-SYMBOL       = ":" NAME ;
+SYMBOL       = ":" NAME [ "?" ] ;
 KEY          = MEMBER | PLAIN_TEXT ;
 ```
 
@@ -4238,7 +4249,8 @@ Notes:
 - `"unless"`: the word starts an `unless` only as described in
   [1.5](#15-keywords-and-reserved-words); elsewhere it is a NAME.
 - `SYMBOL`: `:` directly followed by a name, except the `:` that follows a
-  field name after `{` or `,` ([2.14](#214-symbol)).
+  field name after `{` or `,` ([2.14](#214-symbol)); a `?` that touches the
+  name is part of the symbol (`:even?`), never the `postfix` operator.
 - In `match`, the subject must end on the line of `match`, and the cases may
   be separated by blank lines; `end` may follow the last case on the same
   line. In blocks, `end` may follow the last statement on the same line.

@@ -616,6 +616,14 @@ fn repl_commands_accept_what_the_command_line_accepts() {
 }
 
 #[test]
+fn repl_explain_without_a_code_shows_how_to_use_it() {
+    let out = repl(":explain\n:explain   \n:explain E999\n");
+    assert_eq!(out.matches("usage: :explain CODE, like :explain E003   (codes: E001 E002").count(), 2, "{out}");
+    assert!(out.contains("unknown code `E999`. Known codes: E001"), "{out}");
+    assert!(!out.contains("unknown code;"), "{out}");
+}
+
+#[test]
 fn repl_shows_the_error_of_code_left_unfinished_at_the_end() {
     let out = repl("print(\"unclosed\n");
     assert!(out.contains("error[E002]"), "{out}");

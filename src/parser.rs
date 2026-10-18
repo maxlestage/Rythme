@@ -16,7 +16,8 @@ use crate::value::Value;
 
 pub fn parse(lexed: Lexed) -> Fallible<Vec<Item>> {
     let preds = Rc::new(predicates(&lexed.tokens));
-    let values = Rc::new(value_names(&lexed.tokens));
+    let value_spans = Rc::new(value_places(&lexed.tokens));
+    let values = Rc::new(value_spans.keys().copied().collect());
     let mut p = Parser {
         toks: lexed.tokens,
         pos: 0,
@@ -27,10 +28,122 @@ pub fn parse(lexed: Lexed) -> Fallible<Vec<Item>> {
         in_text: false,
         preds,
         values,
+        value_spans,
         no_do: false,
         commands: HashSet::new(),
     };
-    p.program()
+    p.program().map_err(|d| ternary(&p.toks, d))
+}
+
+/// Marks the name that starts `e` with the place where the code gives it a
+/// value (see `Parser::value_elsewhere`), for the checker (W011).
+fn mark_value_elsewhere(e: &mut Expr, far: Option<(Sym, u32, Span)>) {
+    let Some((_, start, at)) = far else { return };
+    let mut e = e;
+    while e.span.start == start {
+        match &mut e.kind {
+            ExprKind::Var(_) => {
+                e.value_elsewhere = Some(at);
+                return;
+            }
+            ExprKind::Index(x, _)
+            | ExprKind::Binary(_, x, _, _)
+            | ExprKind::Field(x, ..)
+            | ExprKind::Method(x, ..)
+            | ExprKind::Call(x, _)
+            | ExprKind::Try(x) => e = x,
+            _ => return,
+        }
+    }
+}
+
+/// A syntax error in `show [1, 2]`, read as an index because the code gives
+/// `show` a value elsewhere (see `Parser::value_elsewhere`): says so.
+fn far_help(mut d: Box<Diagnostic>, far: Option<(Sym, u32, Span)>) -> Box<Diagnostic> {
+    let Some((name, _, at)) = far else { return d };
+    if d.code != "E001" || d.incomplete {
+        return d;
+    }
+    let line = crate::source::get(at.file).map_or(0, |f| f.line_col(at.start as usize).0);
+    d.helps.push(t!(
+        "`{name}` is read as a value here, not called, because the code gives it a value (line {line}): to call it, put its argument in parentheses, like `{name}([1, 2])`",
+        "`{name}` est lu ici comme une valeur, pas appelé, parce que le code lui donne une valeur (ligne {line}) : pour l'appeler, mettez son argument entre parenthèses, comme `{name}([1, 2])`"
+    ));
+    d
+}
+
+/// The 1-based line and column of the start of a span.
+fn line_of(span: Span) -> usize {
+    crate::source::get(span.file).map_or(0, |f| f.line_col(span.start as usize).0)
+}
+
+fn column_of(span: Span) -> usize {
+    crate::source::get(span.file).map_or(0, |f| f.line_col(span.start as usize).1)
+}
+
+/// A case of `match` whose result is written on several lines, as in Ruby
+/// or Python: a case gives one expression, and `do ... end` holds several lines.
+fn multi_line_case(mut d: Box<Diagnostic>) -> Box<Diagnostic> {
+    if d.code != "E001" || d.incomplete {
+        return d;
+    }
+    d.helps.clear();
+    d.helps.push(t!(
+        "a case of `match` gives one expression; for a result on several lines, write `do` after `->`, then the lines, then `end`:\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\nor move the lines into a function: `Ok(x) -> handle(x)`",
+        "un cas de `match` donne une seule expression ; pour un résultat sur plusieurs lignes, écrivez `do` après `->`, puis les lignes, puis `end` :\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\nou mettez les lignes dans une fonction : `Ok(x) -> traiter(x)`"
+    ));
+    d
+}
+
+/// Ruby's (and C's) `condition ? a : b`, written `if condition then a else b`
+/// in Rythme. It never parses: `?` after a value is the operator that stops on
+/// `None` or `Err`. A syntax error on a line where a `?` is followed by a
+/// value and then by a `:` becomes an error that says so, at the `?`. Only
+/// code that does not parse is concerned.
+fn ternary(toks: &[Token], d: Box<Diagnostic>) -> Box<Diagnostic> {
+    let Some(at) = d.span else { return d };
+    if d.code != "E001" || d.incomplete {
+        return d;
+    }
+    let Some(e) = toks.iter().position(|t| t.span.start >= at.start) else { return d };
+    let start = toks[..e].iter().rposition(|t| t.tok == Tok::Newline).map_or(0, |i| i + 1);
+    let end = toks[e..].iter().position(|t| matches!(t.tok, Tok::Newline | Tok::Eof)).map_or(toks.len(), |i| e + i);
+    let colon_after = |q: usize| {
+        let mut depth = 0i32;
+        for t in &toks[q + 1..end] {
+            match t.tok {
+                Tok::LParen | Tok::LBracket | Tok::LBrace => depth += 1,
+                Tok::RParen | Tok::RBracket | Tok::RBrace => {
+                    depth -= 1;
+                    if depth < 0 {
+                        return false;
+                    }
+                }
+                Tok::Colon if depth == 0 => return true,
+                _ => {}
+            }
+        }
+        false
+    };
+    let value_after = |t: &Tok| starts_expression(t) || matches!(t, Tok::Minus | Tok::Not | Tok::If | Tok::Match);
+    let found: Vec<usize> =
+        (start..e).filter(|&q| toks[q].tok == Tok::Question && q + 2 < end && value_after(&toks[q + 1].tok) && colon_after(q)).collect();
+    // `even?(x) ? a : b`: the `?` with a space after it, rather than the end of a name.
+    let Some(q) = found.iter().copied().find(|&q| toks[q + 1].span.start > toks[q].span.end).or(found.first().copied()) else {
+        return d;
+    };
+    Diagnostic::error("E001", t!("Rythme has no `condition ? a : b`", "Rythme n'a pas de `condition ? a : b`"))
+        .at(toks[q].span)
+        .label(t!("`?` does not choose between two values", "`?` ne choisit pas entre deux valeurs"))
+        .help(t!(
+            "write `if condition then a else b`, like `if x > 2 then \"big\" else \"small\"`",
+            "écrivez `if condition then a else b`, comme `if x > 2 then \"grand\" else \"petit\"`"
+        ))
+        .note(t!(
+            "after a value, `?` takes it out of `Some(x)` or `Ok(x)` and stops on `None` or `Err(e)`; at the end of a name, it is part of the name (`even?`)",
+            "après une valeur, `?` la sort de `Some(x)` ou `Ok(x)` et s'arrête sur `None` ou `Err(e)` ; à la fin d'un nom, il fait partie du nom (`even?`)"
+        ))
+        .boxed()
 }
 
 /// The names of the functions defined with a `?` at the end in this code:
@@ -97,12 +210,17 @@ pub(crate) fn unless_at(toks: &[Token], i: usize) -> bool {
 /// argument starts with `[` or `-` needs a name that is not among them (see
 /// [`command_at`]).
 pub(crate) fn value_names(toks: &[Token]) -> HashSet<Sym> {
-    let mut out = HashSet::new();
+    value_places(toks).into_keys().collect()
+}
+
+/// The names of [`value_names`], each with the first place where it is given a value.
+fn value_places(toks: &[Token]) -> HashMap<Sym, Span> {
+    let mut out = HashMap::new();
     names_of_values(toks, &mut out);
     out
 }
 
-fn names_of_values(toks: &[Token], out: &mut HashSet<Sym>) {
+fn names_of_values(toks: &[Token], out: &mut HashMap<Sym, Span>) {
     for (i, t) in toks.iter().enumerate() {
         match &t.tok {
             // `pattern = value` and `pattern -> body`: the names before it, on its line.
@@ -128,10 +246,11 @@ fn names_of_values(toks: &[Token], out: &mut HashSet<Sym>) {
                         _ => {}
                     }
                 }
-                out.extend(found.into_iter().filter_map(|k| match &toks[k].tok {
-                    Tok::Ident(s) => Some(*s),
-                    _ => None,
-                }));
+                for k in found.into_iter().rev() {
+                    if let Tok::Ident(s) = &toks[k].tok {
+                        out.entry(*s).or_insert(toks[k].span);
+                    }
+                }
             }
             // `fn name(params)` and `fn(params)`.
             Tok::Fn => {
@@ -153,7 +272,7 @@ fn names_of_values(toks: &[Token], out: &mut HashSet<Sym>) {
                             }
                         }
                         Tok::Ident(s) => {
-                            out.insert(*s);
+                            out.entry(*s).or_insert(t.span);
                         }
                         Tok::Eof => break,
                         _ => {}
@@ -165,7 +284,7 @@ fn names_of_values(toks: &[Token], out: &mut HashSet<Sym>) {
             Tok::Do | Tok::LBrace if matches!(toks.get(i + 1).map(|t| &t.tok), Some(Tok::Bar)) => {
                 for t in toks[i + 2..].iter().take_while(|t| !matches!(t.tok, Tok::Bar | Tok::Newline | Tok::Eof)) {
                     if let Tok::Ident(s) = &t.tok {
-                        out.insert(*s);
+                        out.entry(*s).or_insert(t.span);
                     }
                 }
             }
@@ -247,6 +366,8 @@ struct Parser {
     preds: Rc<Vec<Sym>>,
     /// The names given to values (see `value_names`).
     values: Rc<HashSet<Sym>>,
+    /// The same names, with the first place where each is given a value.
+    value_spans: Rc<HashMap<Sym, Span>>,
     /// Reading the arguments of a call without parentheses: a `do` block
     /// that follows is given to that call, not to its last argument.
     no_do: bool,
@@ -629,7 +750,9 @@ impl Parser {
             let value = self.expr()?;
             return Ok(Stmt::Let(pat, value));
         }
-        let e = self.expr()?;
+        let far = self.value_elsewhere();
+        let mut e = self.expr().map_err(|d| far_help(d, far))?;
+        mark_value_elsewhere(&mut e, far);
         match self.raw() {
             Tok::Eq => {
                 let eq = self.advance();
@@ -691,7 +814,21 @@ impl Parser {
         if let Some(first) = command_at(&self.toks, self.pos, &self.preds, &self.values) {
             return self.command(first);
         }
-        self.expr()
+        let far = self.value_elsewhere();
+        let mut e = self.expr().map_err(|d| far_help(d, far))?;
+        mark_value_elsewhere(&mut e, far);
+        Ok(e)
+    }
+
+    /// `show [1, 2]` or `show -1` where a call without parentheses may start,
+    /// read as an index or a subtraction only because the code gives the name
+    /// `show` a value somewhere (see [`command_at`]): where the name starts,
+    /// and that place.
+    fn value_elsewhere(&self) -> Option<(Sym, u32, Span)> {
+        command_at(&self.toks, self.pos, &self.preds, &HashSet::new())?;
+        let Tok::Ident(s) = &self.toks[self.pos].tok else { return None };
+        let name = predicate_at(&self.toks, self.pos, &self.preds).unwrap_or(*s);
+        self.value_spans.get(&name).map(|at| (name, self.toks[self.pos].span.start, *at))
     }
 
     /// `a, b, c`: the arguments of a call without parentheses, up to the end
@@ -1797,6 +1934,7 @@ impl Parser {
                         in_text: true,
                         preds: self.preds.clone(),
                         values: self.values.clone(),
+                        value_spans: self.value_spans.clone(),
                         no_do: false,
                         commands: HashSet::new(),
                     };
@@ -1910,6 +2048,9 @@ impl Parser {
         }
         let arms = self.nested(true, |p| {
             let mut arms = Vec::new();
+            // The column of the pattern of the previous case, and whether
+            // its result started on the line after `->`.
+            let mut previous: Option<(usize, bool)> = None;
             loop {
                 p.skip_newlines();
                 match p.raw() {
@@ -1930,22 +2071,36 @@ impl Parser {
                     }
                     _ => {}
                 }
-                let pat = p.pattern()?;
+                let column = column_of(p.toks[p.pos].span);
+                // A line indented under the previous case, read as a case: the
+                // second line of a result written on several lines.
+                let deeper = previous.is_some_and(|(c, _)| column > c);
+                let pat = p.pattern().map_err(|d| if deeper { multi_line_case(d) } else { d })?;
                 let guard = if p.eat(&Tok::If) { Some(p.expr()?) } else { None };
                 if !p.eat(&Tok::Arrow) {
                     let mut d = p.unexpected(t!("`->`", "`->`"));
+                    if deeper {
+                        return Err(multi_line_case(d));
+                    }
                     d.helps.push(t!("each case is written `pattern -> result`", "chaque cas s'écrit `motif -> résultat`"));
                     return Err(d);
                 }
+                let arrow_line = line_of(p.last);
                 p.skip_newlines();
+                let next_line = line_of(p.toks[p.pos].span) > arrow_line;
                 let body = p.result()?;
                 arms.push(Arm { pat, guard, body });
+                previous = Some((column, next_line));
                 match p.raw() {
                     Tok::Newline | Tok::End => {}
                     Tok::Eof => return Err(missing_end(p.toks[p.pos].span, kw.span, "match")),
                     _ => {
                         let comma = p.after_command();
-                        let mut d = p.unexpected(t!("a new line", "une nouvelle ligne"));
+                        let d = p.unexpected(t!("a new line", "une nouvelle ligne"));
+                        if next_line {
+                            return Err(multi_line_case(d));
+                        }
+                        let mut d = d;
                         if !comma {
                             d.helps.push(t!("put each case on its own line", "mettez chaque cas sur sa propre ligne"));
                         }

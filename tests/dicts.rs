@@ -11,6 +11,33 @@ use common::{fails, ok, rythme, rythme_lang};
 use rythme::dict::{bad_key, key_cmp, Map};
 use rythme::value::{Record, Value};
 
+/// `{a: 1}[:a]`: a symbol is neither the name of a field nor the text key of
+/// a dict; the message says how to write it, before running and while running.
+#[test]
+fn a_symbol_in_brackets_is_explained() {
+    let r = fails("r = {a: 1}\nprint(r[:a])", "E005");
+    assert!(r.stderr.contains("the name of a field must be a text, but got Symbol :a"), "{}", r.stderr);
+    assert!(r.stderr.contains("write `r.a` or `r[\"a\"]`, or `get(r, \"a\")`"), "{}", r.stderr);
+    let r = fails("print({a: 1}[:a])", "E005");
+    assert!(r.stderr.contains("write `record.a` or `record[\"a\"]`"), "{}", r.stderr);
+    // Found while running, when the checker cannot know.
+    let r = fails("fn at(r, k) = r[k]\nprint(at({a: 1}, :a))", "E005");
+    assert!(r.stderr.contains("the name of a field must be a text, but got Symbol :a"), "{}", r.stderr);
+    assert!(r.stderr.contains("`:a` is a symbol, not a text"), "{}", r.stderr);
+    assert!(!r.stderr.contains("cannot use `[...]`"), "{}", r.stderr);
+    let r = fails("fn at(r, k) = r[k]\nprint(at({a: 1}, 0))", "E005");
+    assert!(r.stderr.contains("read a field with `record[\"name\"]`"), "{}", r.stderr);
+    // Dicts: `:a` and `"a"` are different keys.
+    let r = fails("d = dict([[\"a\", 1], [:b, 2]])\nprint(d[:a])", "E010");
+    assert!(r.stderr.contains("the dict has the key \"a\", which is not the same key as :a: write `[\"a\"]`"), "{}", r.stderr);
+    let r = fails("d = dict([[\"a\", 1], [:b, 2]])\nprint(d[\"b\"])", "E010");
+    assert!(r.stderr.contains("the dict has the key :b, which is not the same key as \"b\": write `[:b]`"), "{}", r.stderr);
+    let r = fails("d = dict([[\"a\", 1]])\nprint(d[:c])", "E010");
+    assert!(!r.stderr.contains("not the same key"), "{}", r.stderr);
+    let r = rythme_lang("fr", &["-e", "r = {a: 1}\nprint(r[:a])"]);
+    assert!(r.stderr.contains("`:a` est un symbole, pas un texte"), "{}", r.stderr);
+}
+
 #[test]
 fn dicts_give_a_value_for_each_key() {
     ok(

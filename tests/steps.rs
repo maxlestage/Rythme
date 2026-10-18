@@ -317,6 +317,40 @@ fn the_command_explains_its_usage() {
     assert!(r.stdout.contains("rythme etapes"), "{}", r.stdout);
 }
 
+/// An unknown option is an error naming it, not an expression, and the
+/// expression is shown as itself in messages, not as a line of the file.
+#[test]
+fn unknown_options_and_mistakes_in_the_expression() {
+    let path = program("fib_options", "fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)\n");
+    let file = path.to_str().unwrap();
+    for args in [vec!["steps", file, "--bogus"], vec!["steps", file, "fib(3)", "--bogus"], vec!["steps", "--bogus=2", file]] {
+        let r = rythme(&args);
+        assert_eq!(r.code, 2, "{args:?}");
+        assert!(r.stderr.contains("unknown option `--bogus` for `rythme steps`"), "{}", r.stderr);
+        assert!(!r.stderr.contains("E003") && r.stdout.is_empty(), "{}", r.stderr);
+    }
+    let r = rythme(&["steps", file, "--widht", "40"]);
+    assert!(r.stderr.contains("did you mean `--width`?"), "{}", r.stderr);
+    let r = rythme_lang("fr", &["etapes", file, "--bogus"]);
+    assert!(r.stderr.contains("option inconnue `--bogus` pour `rythme etapes`"), "{}", r.stderr);
+    // `--3` is an expression.
+    let r = rythme(&["steps", file, "--3"]);
+    assert_eq!(r.code, 0, "{}", r.stderr);
+    assert_eq!(r.stdout.trim(), "3");
+    // Mistakes in the expression are in `<expression>`, at its line 1.
+    let r = rythme(&["steps", file, "fob(2)"]);
+    assert_eq!(r.code, 1);
+    assert!(r.stderr.contains("--> <expression>:1:1\n  |\n1 | fob(2)"), "{}", r.stderr);
+    let r = rythme(&["steps", file, "fib("]);
+    assert!(r.stderr.contains("--> <expression>:1:5"), "{}", r.stderr);
+    let r = rythme(&["steps", file, "fib(2) + 1 / 0"]);
+    assert!(r.stderr.contains("--> <expression>:1:12"), "{}", r.stderr);
+    // Mistakes in the file stay in the file.
+    let path = program("fib_mistake", "fn f(n) = n / 0\n");
+    let r = rythme(&["steps", path.to_str().unwrap(), "f(1)"]);
+    assert!(r.stderr.contains("fib_mistake.ry:1:13") && r.stderr.contains("called at <expression>:1:1"), "{}", r.stderr);
+}
+
 /// The steps are written like `rythme fmt` writes code.
 #[test]
 fn steps_are_written_in_the_style_of_the_formatter() {

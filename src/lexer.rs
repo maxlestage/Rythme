@@ -178,6 +178,12 @@ fn is_ident_continue(c: char) -> bool {
     c.is_alphanumeric() || c == '_'
 }
 
+/// Can `:` and this text be written as a symbol (`:name`)?
+pub fn is_symbol_name(s: &str) -> bool {
+    let mut chars = s.chars();
+    chars.next().is_some_and(is_ident_start) && chars.all(is_ident_continue)
+}
+
 impl<'a> Lexer<'a> {
     fn peek(&self) -> Option<char> {
         self.src[self.pos..].chars().next()
@@ -291,6 +297,11 @@ impl<'a> Lexer<'a> {
                 ',' => Tok::Comma,
                 ':' if self.peek().is_some_and(is_ident_start) && !key_before(&toks, interpolation) => {
                     while self.peek().is_some_and(is_ident_continue) {
+                        self.bump();
+                    }
+                    // `:even?`, as in Ruby. Before 1.1 it was read `:even` then
+                    // the operator `?`, which a symbol always refuses (E016).
+                    if self.peek() == Some('?') {
                         self.bump();
                     }
                     Tok::Symbol(Sym::new(&self.src[start + 1..self.pos]))

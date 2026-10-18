@@ -252,7 +252,24 @@ fn numbers_as_text() {
 
 #[test]
 fn text_functions() {
-    ok("print(capitalize(\"élise\"), capitalize(\"\"), capitalize(\"ßa\"), capitalize(\"1abc\"))", "Élise  SSa 1abc");
+    ok("print(capitalize(\"élise\"), capitalize(\"\"), capitalize(\"ßa\"), capitalize(\"1abc\"))", "Élise  Ssa 1abc");
+    // The titlecase of Unicode, where it is not the uppercase: digraphs,
+    // ligatures, Greek with iota subscript, Armenian; Georgian stays.
+    ok(
+        "print(capitalize(\"ǆungla\"), capitalize(\"ǉubav\"), capitalize(\"ǌ\"), capitalize(\"ǳ\"), capitalize(\"Ǆ\"), capitalize(\"ǅx\"))",
+        "ǅungla ǈubav ǋ ǲ ǅ ǅx",
+    );
+    ok("print(capitalize(\"ﬁn\"), capitalize(\"ﬄ\"), capitalize(\"ᾳ\"), capitalize(\"ᾀ\"), capitalize(\"ᾈ\"))", "Fin Ffl ᾼ ᾈ ᾈ");
+    assert_eq!(rythme::builtins::titlecase('\u{1fb7}'), "\u{391}\u{342}\u{345}");
+    assert_eq!(rythme::builtins::titlecase('\u{10d0}'), "\u{10d0}");
+    assert_eq!(rythme::builtins::titlecase('\u{1c6}'), "\u{1c5}");
+    assert_eq!(rythme::builtins::titlecase('é'), "É");
+    ok(
+        "print(capitalize(\"և\"), capitalize(\"ﬓ\"), capitalize(\"გამარჯობა\"), capitalize(\"ŉ\"), capitalize(\"ǰ\"), capitalize(\"ı\"))",
+        "Եւ Մն გამარჯობა ʼN J̌ I",
+    );
+    // `upper` stays the uppercase.
+    ok("print(upper(\"ǆ\"), upper(\"ß\"), upper(\"ﬁ\"))", "Ǆ SS FI");
     ok(
         "print(pad_left(\"été\", 5, \"*\"), pad_right(3.5, 6, \"_\"), pad_left(\"long\", 2), pad_left(\"\", 0) == \"\")",
         "**été 3.5___ long true",
