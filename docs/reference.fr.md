@@ -3041,12 +3041,12 @@ inconnu donne le code de sortie 2.
 **Sujets d'aide.** `rythme help SUJET` accepte `start`, `syntax`,
 `functions`, `lists`, `text`, `records`, `types`, `match`, `errors`,
 `functional`, `tests`, `exercises`, `modules`, `system`, `projects`, `dates`,
-`repl`, `fmt`, `doc`, `steps`, `editors` et `builtins`, ainsi que des noms
-français ou alternatifs : `syntaxe`, `fonctions`, `listes`, `texte`,
+`repl`, `fmt`, `doc`, `steps`, `editors`, `ruby` et `builtins`, ainsi que des
+noms français ou alternatifs : `syntaxe`, `fonctions`, `listes`, `texte`,
 `enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`, `exercices`,
 `fichiers`, `système`, `dossiers`, `chemins`, `projets`, `paquets`,
 `interactif`, `formater`, `documentation`, `etapes`, `lsp`, `vscode`,
-`éditeurs`, `bibliothèque`...
+`éditeurs`, `blocs`, `symboles`, `bibliothèque`...
 
 **Codes de sortie.**
 

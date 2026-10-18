@@ -31,6 +31,7 @@ fn help_overview_and_topics() {
         "doc",
         "steps",
         "editors",
+        "ruby",
         "builtins",
     ] {
         let r = rythme(&["help", topic]);

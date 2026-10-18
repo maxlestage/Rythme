@@ -321,11 +321,14 @@ mode) and is organised as a pipeline:
 | [`src/check/needs.rs`](src/check/needs.rs) | what the parameters of each function must be, and the calls that always fail |
 | [`src/compile.rs`](src/compile.rs) | prepares functions: each local name becomes a numbered slot |
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
+| [`src/bigint.rs`](src/bigint.rs) | whole numbers beyond 64 bits, without a dependency |
 | [`src/builtins.rs`](src/builtins.rs) | 155 built-in functions (and their Ruby names), documented in two languages, JSON included |
+| [`src/builtins/`](src/builtins) | dates, files and the system, generators of property tests |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |
 | [`src/project.rs`](src/project.rs), [`src/manifest.rs`](src/manifest.rs) | projects and packages: `rythme new`, `rythme install`, `rythme.toml`, `use package/file` |
+| [`src/testing.rs`](src/testing.rs) | `rythme test`: files and folders, `--filter`, `--watch`, the summary |
 | [`src/format.rs`](src/format.rs) | `rythme fmt`: the official layout, which never changes the meaning |
 | [`src/steps.rs`](src/steps.rs) | `rythme steps`: the evaluation shown step by step, for teaching |
 | [`src/lsp/`](src/lsp) | the language server (`rythme lsp`): help inside editors |

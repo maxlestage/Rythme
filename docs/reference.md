@@ -2921,11 +2921,12 @@ unknown action or exercise is exit code 2.
 **Help topics.** `rythme help TOPIC` accepts `start`, `syntax`, `functions`,
 `lists`, `text`, `records`, `types`, `match`, `errors`, `functional`,
 `tests`, `exercises`, `modules`, `system`, `projects`, `dates`, `repl`,
-`fmt`, `doc`, `steps`, `editors` and `builtins`, and French or alternative
-names: `syntaxe`, `fonctions`, `listes`, `texte`, `enregistrements`, `motifs`,
-`erreurs`, `fonctionnel`, `boucles`, `exercices`, `fichiers`, `système`,
-`dossiers`, `chemins`, `projets`, `paquets`, `interactif`, `format`,
-`documentation`, `etapes`, `lsp`, `vscode`, `éditeurs`, `bibliothèque`...
+`fmt`, `doc`, `steps`, `editors`, `ruby` and `builtins`, and French or
+alternative names: `syntaxe`, `fonctions`, `listes`, `texte`,
+`enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`,
+`exercices`, `fichiers`, `système`, `dossiers`, `chemins`, `projets`,
+`paquets`, `interactif`, `format`, `documentation`, `etapes`, `lsp`,
+`vscode`, `éditeurs`, `blocs`, `symboles`, `bibliothèque`...
 
 **Exit codes.**
 
