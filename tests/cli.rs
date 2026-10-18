@@ -27,6 +27,8 @@ fn help_overview_and_topics() {
         "projects",
         "dates",
         "regex",
+        "csv",
+        "random",
         "repl",
         "fmt",
         "doc",

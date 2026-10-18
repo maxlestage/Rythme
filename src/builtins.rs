@@ -26,7 +26,9 @@ use property::{bools, check_all, floats, ints, lists_of, one_of, records_of, sam
 use system::{create_folder, delete_file, file_info, in_browser, input_lines, io_message, join_path, list_folder, options, split_path};
 pub mod regex;
 use regex::{captures, captures_all, find_all, find_first, matches, named_captures, replace_all, split_by};
+pub mod csv;
 mod text_tools;
+use csv::{csv_format, csv_parse, csv_records};
 use text_tools::{equals_ignore_case, format_number, trim_end, trim_start, words};
 
 pub type BuiltinFn = fn(&mut Interp, &[Value], Span) -> Fallible<Value>;
@@ -227,6 +229,10 @@ pub static BUILTINS: &[Builtin] = &[
        "random() donne un nombre décimal entre 0 et 1 ; random(a, b) un nombre entier de a à b (inclus) ; random(liste) un élément au hasard.",
        "random(1, 6)               # a dice roll"),
     // ----- Numbers -----
+    b!("random_seed", "random_seed(n)", 1, 1, Basics, random_seed,
+       "Makes the draws of `random` and `shuffle` that follow the same on every run: the same seed (a whole number) gives the same draws, with the same version of Rythme. For tests and classes; `rythme run --seed N file.ry` does the same from the command line.",
+       "Rend identiques à chaque exécution les tirages de `random` et `shuffle` qui suivent : la même graine (un nombre entier) donne les mêmes tirages, avec la même version de Rythme. Pour les tests et les cours ; `rythme run --seed N fichier.ry` fait de même depuis la ligne de commande.",
+       "random_seed(42)\nrandom(1, 6)               # 5\nrandom(1, 6)               # 2"),
     b!("abs", "abs(x)", 1, 1, Numbers, abs,
        "Absolute value: the number without its sign.",
        "Valeur absolue : le nombre sans son signe.",
@@ -444,6 +450,18 @@ pub static BUILTINS: &[Builtin] = &[
        "Replaces every piece that matches the regex. `new` is a text, where `$1` stands for the text of group 1 (`$<name>` for a named group, `$0` for the whole piece, `$$` for a `$`), or a function that receives each piece and gives its replacement.",
        "Remplace chaque morceau qui correspond à la regex. `new` est un texte, où `$1` tient lieu du texte du groupe 1 (`$<nom>` pour un groupe nommé, `$0` pour le morceau entier, `$$` pour un `$`), ou une fonction qui reçoit chaque morceau et donne son remplacement.",
        "replace_all(\"29/02/2024\", \"(\\\\d+)/(\\\\d+)/(\\\\d+)\", \"$3-$2-$1\")   # \"2024-02-29\"\nreplace_all(\"a cat\", \"\\\\b\\\\w\", upper)   # \"A Cat\""),
+    b!("csv_parse", "csv_parse(text, separator)", 1, 2, Text, csv_parse,
+       "Reads a CSV table (a spreadsheet saved as text): `Ok(list of rows)`, each row a list of texts, or `Err(message)` saying at which line and column the text is not valid CSV. A field between quotes may hold separators, line breaks and quotes (written twice). The separator is \",\" unless given: \";\" for French spreadsheets, \"\\t\" for tabs. See `rythme help csv`.",
+       "Lit un tableau CSV (un tableur enregistré en texte) : `Ok(liste de lignes)`, chaque ligne une liste de textes, ou `Err(message)` qui dit à quelle ligne et quelle colonne le texte n'est pas du CSV valide. Un champ entre guillemets peut contenir des séparateurs, des retours à la ligne et des guillemets (écrits deux fois). Le séparateur est \",\" sauf s'il est donné : \";\" pour les tableurs en français, \"\\t\" pour les tabulations. Voir `rythme help csv`.",
+       "csv_parse(\"name,age\\nAda,36\")   # Ok([[\"name\", \"age\"], [\"Ada\", \"36\"]])\ncsv_parse(\"a;b\", \";\")             # Ok([[\"a\", \"b\"]])"),
+    b!("csv_records", "csv_records(text, separator)", 1, 2, Text, csv_records,
+       "Reads a CSV table whose first line names the columns: `Ok(list of records)`, one record for each other line, with one field for each column, in their order, holding a text. `Err(message)` when the text is not valid CSV, when a line does not have as many fields as the header, or when two columns have the same name. To get numbers, use `parse_int` or `parse_float` on the fields.",
+       "Lit un tableau CSV dont la première ligne nomme les colonnes : `Ok(liste d'enregistrements)`, un enregistrement pour chaque autre ligne, avec un champ pour chaque colonne, dans leur ordre, qui contient un texte. `Err(message)` quand le texte n'est pas du CSV valide, quand une ligne n'a pas autant de champs que l'en-tête, ou quand deux colonnes ont le même nom. Pour avoir des nombres, utilisez `parse_int` ou `parse_float` sur les champs.",
+       "csv_records(\"name,age\\nAda,36\")   # Ok([{name: \"Ada\", age: \"36\"}])"),
+    b!("csv_format", "csv_format(rows, separator)", 1, 2, Text, csv_format,
+       "Writes rows as a CSV text, each one on its line, ended by a line break. The rows are lists of fields, or records: then a first line names their fields. A field is a text, a number or a Bool, put between quotes only when it needs them (a separator, a quote or a line break inside). The separator is \",\" unless given.",
+       "Écrit des lignes en texte CSV, chacune sur sa ligne, terminée par un retour à la ligne. Les lignes sont des listes de champs, ou des enregistrements : une première ligne nomme alors leurs champs. Un champ est un texte, un nombre ou un Bool, mis entre guillemets seulement quand il en a besoin (un séparateur, un guillemet ou un retour à la ligne à l'intérieur). Le séparateur est \",\" sauf s'il est donné.",
+       "csv_format([[\"name\", \"note\"], [\"Ada\", \"a, b\"]])   # \"name,note\\nAda,\\\"a, b\\\"\\n\"\ncsv_format([{x: 1, y: 2}], \";\")                   # \"x;y\\n1;2\\n\""),
     // ----- Lists -----
     b!("map", "map(list, f)", 2, 2, Lists, map,
        "Applies the function f to each element and returns the list of the results. Also works on Option and Result, and on a set (giving the set of the results).",
@@ -1598,6 +1616,11 @@ fn random(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
             Ok(Value::Int((lo as i128 + r as i128) as i64))
         }
     }
+}
+
+fn random_seed(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    it.seed_random(int(a, 0, "random_seed", span)?);
+    Ok(Value::Unit)
 }
 
 // ----- Numbers -----------------------------------------------------------

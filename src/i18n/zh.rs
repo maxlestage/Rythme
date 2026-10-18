@@ -801,6 +801,7 @@ see `rythme help fmt`"#,
 Commands
   rythme                    interactive mode (try code line by line)
   rythme file.ry            run a program
+  rythme run --seed 42 f.ry run it with the same draws of random every time
   rythme check file.ry      find problems without running the program
   rythme test file.ry       run the tests of a file (or of a folder)
   rythme fmt file.ry        give the code its official layout (--check: only check)
@@ -835,6 +836,8 @@ Topics (rythme help TOPIC)
   projects    projects and packages: rythme new, rythme.toml, rythme install
   dates       dates and times: now(), today(), calendar, ISO 8601
   regex       searching, cutting and replacing with regular expressions
+  csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
+  random      chance, and the same draws again with a seed
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
@@ -850,6 +853,7 @@ A specific function: rythme help map
 命令
   rythme                    交互模式（逐行试验代码）
   rythme file.ry            运行程序
+  rythme run --seed 42 f.ry 每次都用相同的 random 抽取结果运行它
   rythme check file.ry      不运行程序，找出问题
   rythme test file.ry       运行一个文件（或一个文件夹）的测试
   rythme fmt file.ry        把代码整理成官方格式（--check：只检查）
@@ -884,6 +888,8 @@ A specific function: rythme help map
   projects    项目和包：rythme new、rythme.toml、rythme install
   dates       日期和时间：now()、today()、日历、ISO 8601
   regex       用正则表达式搜索、切分和替换
+  csv         电子表格中的表格：csv_parse、csv_records、csv_format
+  random      随机，以及用种子再次得到相同的抽取结果
   repl        交互模式
   fmt         代码的官方格式（rythme fmt）
   doc         根据 ## 注释生成文档（rythme doc）
@@ -7960,5 +7966,151 @@ end
 # 你的测试：
 "#,
         ),
+        // ----- CSV and seeded random (src/builtins/csv.rs, src/builtins.rs, src/main.rs, src/help.rs)
+        // src/builtins/csv.rs
+        ("line {line}, column {column}: the quote that starts this field is never closed (a quote inside a field is written twice: \"\")", "第 {line} 行，第 {column} 列：开始这个字段的引号从未闭合（字段里的引号要写两次：\"\"）"),
+        ("line {line}, column {column}: a quote in the middle of a field: put the whole field between quotes, and write each quote inside it twice (\"5\"\" screen\")", "第 {line} 行，第 {column} 列：字段中间有一个引号：把整个字段放在引号里，并把其中的每个引号写两次（\"5\"\" screen\"）"),
+        ("line {line}, column {column}: after the quote that closes a field comes {sep} or the end of the line, not {c}", "第 {line} 行，第 {column} 列：闭合字段的引号之后应是 {sep} 或行尾，而不是 {c}"),
+        ("line {line}: the header names the column \"{name}\" twice", "第 {line} 行：表头两次使用了列名 \"{name}\""),
+        ("line {line}: {got} field(s), but the header has {wanted} column(s)", "第 {line} 行：有 {got} 个字段，但表头有 {wanted} 列"),
+        ("line {line}: this table has too many rows or fields (more than {MAX_LIST})", "第 {line} 行：这个表格的行或字段太多（超过 {MAX_LIST}）"),
+        ("a tab", "一个制表符"),
+        ("a space", "一个空格"),
+        ("`{f}` cannot use {c} as separator: it has another meaning in CSV", "`{f}` 不能用 {c} 作分隔符：它在 CSV 中另有含义"),
+        ("the separator of `{f}` is one character, not \"{s}\"", "`{f}` 的分隔符是一个字符，而不是 \"{s}\""),
+        ("the usual separators: \",\" (by default), \";\" (French spreadsheets), \"\\t\" (a tab)", "常用的分隔符：\",\"（默认）、\";\"（法语等语言的电子表格）、\"\\t\"（制表符）"),
+        ("`csv_format`: the field {column} of row {row} must be a text, a number or a Bool, but it is {got}", "`csv_format`：第 {row} 行的第 {column} 个字段必须是文本、数字或 Bool，但它是 {got}"),
+        ("turn it into a text first, with `text(x)` or `unwrap_or(x, \"\")`", "先把它变成文本，用 `text(x)` 或 `unwrap_or(x, \"\")`"),
+        ("`csv_format`: record {number} has the fields {{{these}}}, but the first one has {{{wanted}}}: every record must have the same fields", "`csv_format`：第 {number} 个记录的字段是 {{{these}}}，但第一个记录的是 {{{wanted}}}：所有记录必须有相同的字段"),
+        ("a record, like the first row", "一个记录，和第一行一样"),
+        ("a list of fields", "一个字段列表"),
+        ("`csv_format`: row {number} must be {wanted}, but it is {got}", "`csv_format`：第 {number} 行必须是{wanted}，但它是 {got}"),
+        ("`csv_format` takes a list of rows: lists of fields ([[\"name\", \"age\"], [\"Ada\", 36]]) or records ([{{name: \"Ada\", age: 36}}])", "`csv_format` 接受一个行的列表：字段列表（[[\"name\", \"age\"], [\"Ada\", 36]]）或记录（[{{name: \"Ada\", age: 36}}]）"),
+        // src/main.rs
+        ("the seed must be a whole number, like `rythme run --seed 42 game.ry`, not `{v}`", "种子必须是整数，例如 `rythme run --seed 42 game.ry`，而不是 `{v}`"),
+        ("`--seed` needs a whole number, like `rythme run --seed 42 game.ry`", "`--seed` 需要一个整数，例如 `rythme run --seed 42 game.ry`"),
+        // src/builtins.rs
+        ("Makes the draws of `random` and `shuffle` that follow the same on every run: the same seed (a whole number) gives the same draws, with the same version of Rythme. For tests and classes; `rythme run --seed N file.ry` does the same from the command line.", "让之后 `random` 和 `shuffle` 的抽取结果每次运行都相同：同一个种子（一个整数）在同一版本的 Rythme 中给出相同的抽取结果。用于测试和课堂；`rythme run --seed N file.ry` 在命令行中做同样的事。"),
+        ("Reads a CSV table (a spreadsheet saved as text): `Ok(list of rows)`, each row a list of texts, or `Err(message)` saying at which line and column the text is not valid CSV. A field between quotes may hold separators, line breaks and quotes (written twice). The separator is \",\" unless given: \";\" for French spreadsheets, \"\\t\" for tabs. See `rythme help csv`.", "读取一个 CSV 表格（保存为文本的电子表格）：`Ok(行的列表)`，每行是一个文本列表；或者 `Err(消息)`，说明文本在哪一行哪一列不是有效的 CSV。引号中的字段可以包含分隔符、换行和引号（写两次）。不指定时分隔符是 \",\"：法语等语言的电子表格用 \";\"，制表符用 \"\\t\"。见 `rythme help csv`。"),
+        ("Reads a CSV table whose first line names the columns: `Ok(list of records)`, one record for each other line, with one field for each column, in their order, holding a text. `Err(message)` when the text is not valid CSV, when a line does not have as many fields as the header, or when two columns have the same name. To get numbers, use `parse_int` or `parse_float` on the fields.", "读取一个第一行为列名的 CSV 表格：`Ok(记录的列表)`，其余每一行一个记录，每列一个字段（按列的顺序），值是文本。当文本不是有效的 CSV、某行的字段数和表头不同、或两列同名时，给出 `Err(消息)`。要得到数字，对字段使用 `parse_int` 或 `parse_float`。"),
+        ("Writes rows as a CSV text, each one on its line, ended by a line break. The rows are lists of fields, or records: then a first line names their fields. A field is a text, a number or a Bool, put between quotes only when it needs them (a separator, a quote or a line break inside). The separator is \",\" unless given.", "把多行写成 CSV 文本，每行一行，以换行结尾。行是字段列表，或者是记录：这时第一行写出它们的字段名。字段是文本、数字或 Bool，只在需要时才加引号（里面有分隔符、引号或换行）。不指定时分隔符是 \",\"。"),
+        // src/help.rs
+        (r#"CSV: THE TABLES OF SPREADSHEETS
+
+A CSV text is a table: one row per line, its fields separated by commas.
+Every spreadsheet (LibreOffice, Excel, Google Sheets...) opens and saves it.
+
+  csv_parse("name,age\nAda,36")              # Ok([["name", "age"], ["Ada", "36"]])
+  csv_records("name,age\nAda,36")            # Ok([{name: "Ada", age: "36"}])
+  csv_format([["name", "age"], ["Ada", 36]]) # "name,age\nAda,36\n"
+  csv_format([{name: "Ada", age: 36}])       # the same text: records give a header
+
+With files
+  match read_file("grades.csv").and_then(csv_records)
+    Ok(rows) -> print(len(rows), "students")
+    Err(e) -> print("Error: {e}")
+  end
+  write_file("copy.csv", csv_format(rows))
+
+The rules (RFC 4180)
+  A field between quotes may hold commas, line breaks and quotes, written
+  twice: "say ""hi""" is the field  say "hi"  ; csv_format adds the quotes
+  only where they are needed.
+  Lines end with \n or \r\n (Windows); the last one may have no line break.
+  Empty lines are skipped; spaces are kept as they are in the file.
+  Every field is a text: parse_int(r.age) or parse_float(r.price) give numbers.
+  csv_records: the first line names the columns, which become the fields of
+  the records (r.name; get(r, "first name") for a name with spaces); every
+  line must have as many fields as the header.
+
+Another separator: the last argument
+  ";" (spreadsheets in French, where the comma is the decimal point), "\t"
+  (tabs), "|"...
+  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
+  csv_format(rows, ";")
+
+A text that is not valid CSV gives Err, which says where (line and column):
+  csv_parse("a,b\"c")   # Err("line 1, column 4: a quote in the middle of a field: ...")"#, r#"CSV：电子表格的表格
+
+CSV 文本就是一个表格：每行文本是表格的一行，字段用逗号分开。所有电子表格软件
+（LibreOffice、Excel、Google Sheets……）都能打开和保存它。
+
+  csv_parse("name,age\nAda,36")              # Ok([["name", "age"], ["Ada", "36"]])
+  csv_records("name,age\nAda,36")            # Ok([{name: "Ada", age: "36"}])
+  csv_format([["name", "age"], ["Ada", 36]]) # "name,age\nAda,36\n"
+  csv_format([{name: "Ada", age: 36}])       # 同样的文本：记录会生成表头
+
+使用文件
+  match read_file("grades.csv").and_then(csv_records)
+    Ok(rows) -> print(len(rows), "students")
+    Err(e) -> print("Error: {e}")
+  end
+  write_file("copy.csv", csv_format(rows))
+
+规则（RFC 4180）
+  引号中的字段可以包含逗号、换行和引号（引号写两次）："say ""hi""" 就是字段
+  say "hi"；csv_format 只在需要的地方加引号。
+  行以 \n 或 \r\n（Windows）结尾；最后一行可以没有换行。
+  空行会被跳过；空格保持文件中的原样。
+  每个字段都是文本：parse_int(r.age) 或 parse_float(r.price) 得到数字。
+  csv_records：第一行给出列名，列名成为记录的字段（r.name；名字带空格时用
+  get(r, "first name")）；每一行的字段数必须和表头相同。
+
+另一个分隔符：最后一个参数
+  ";"（法语等语言的电子表格，那里逗号用作小数点）、"\t"（制表符）、"|"……
+  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
+  csv_format(rows, ";")
+
+不是有效 CSV 的文本给出 Err，并说明位置（行和列）：
+  csv_parse("a,b\"c")   # Err("第 1 行，第 4 列：字段中间有一个引号：……")"#),
+        (r#"RANDOM: CHANCE, AND THE SAME CHANCE AGAIN
+
+  random()                   # a decimal number from 0 (included) to 1 (excluded)
+  random(1, 6)               # a whole number from 1 to 6, both included
+  random(["a", "b", "c"])    # one element of the list
+  shuffle([1, 2, 3])         # the list in a random order
+
+Every run draws other values. To get the same draws again (a test, a class
+where everyone sees the same game, a mistake to find again), give a seed:
+
+  random_seed(42)                  # in the program: the draws that follow
+  rythme run --seed 42 game.ry     # from the command line: the whole run
+
+The same seed gives the same draws, in the same order, with the same version
+of Rythme (another version may draw other values). Without a seed, nothing
+changes: every run is different.
+
+In a test, call random_seed at its start: its draws then do not depend on
+the tests before it.
+  test "a dice roll stays between 1 and 6"
+    random_seed(7)
+    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+  end
+
+The property tests (check_all, sample) have their own seed:
+rythme test --seed N (see rythme help tests)."#, r#"RANDOM：随机，以及再次得到同样的随机
+
+  random()                   # 0（含）到 1（不含）之间的小数
+  random(1, 6)               # 1 到 6 之间的整数，两端都包含
+  random(["a", "b", "c"])    # 列表中的一个元素
+  shuffle([1, 2, 3])         # 顺序随机打乱的列表
+
+每次运行都会抽到不同的值。要再次得到相同的抽取结果（一个测试、一堂大家都看
+同一局游戏的课、一个要重现的错误），请给出种子：
+
+  random_seed(42)                  # 在程序中：之后的抽取
+  rythme run --seed 42 game.ry     # 在命令行中：整次运行
+
+同一个种子在同一版本的 Rythme 中，按同样的顺序给出相同的抽取结果（其他版本
+可能抽到不同的值）。没有种子时一切照旧：每次运行都不同。
+
+在测试中，在开头调用 random_seed：这样它的抽取结果就不依赖于之前的测试。
+  test "a dice roll stays between 1 and 6"
+    random_seed(7)
+    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+  end
+
+属性测试（check_all、sample）有自己的种子：rythme test --seed N
+（见 rythme help tests）。"#),
     ],
 }
