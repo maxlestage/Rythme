@@ -29,9 +29,11 @@ in the repository settings (Settings → Pages → Source: GitHub Actions).
 - `src/lib.rs` exports `rythme_alloc`, `rythme_run` and `rythme_result_len`.
   The page writes the code in the WebAssembly memory, runs it, and reads the
   output back. Error messages are wrapped in the characters U+0001 … U+0002 so
-  that the page can color them.
+  that the page can color them. The modes of `rythme_run`: 0 runs, 1 checks,
+  2 tests, 3 formats like `rythme fmt` (the result is the formatted code, or
+  the error messages); the Format button and Shift+Alt+F use mode 3.
 - Programs run in a Web Worker: a program that never stops can be stopped.
 - The browser's call stack is small, so nested (non-tail) calls are limited
-  to 600 here; tail calls have no limit. The installed `rythme` allows about
-  200,000 nested calls.
+  to 600 here; tail calls have no limit. The installed `rythme` allows several
+  hundred thousand nested calls.
 - Files cannot be read in the browser, and `input()` returns an empty text.

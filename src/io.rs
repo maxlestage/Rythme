@@ -63,7 +63,8 @@ pub fn out_line(text: &str) {
     }
 }
 
-/// Writes text on the error output.
+/// Writes text on the error output. If it cannot be written (closed or full),
+/// the text is lost, but the program goes on.
 pub fn err(text: &str) {
     if !captured(|b| {
         b.push(ERR_START);
@@ -71,8 +72,12 @@ pub fn err(text: &str) {
         b.push(ERR_END);
     }) {
         let _ = std::io::stdout().flush();
-        eprint!("{text}");
+        let _ = std::io::stderr().write_all(text.as_bytes());
     }
+}
+
+pub fn err_line(text: &str) {
+    err(&format!("{text}\n"));
 }
 
 /// Current time in seconds.

@@ -17,7 +17,8 @@ idées plutôt que sur la syntaxe.
   réflexes venus d'autres langages (`for`, `return`, `x += 1`, `null`...)
   reçoivent une explication de la façon fonctionnelle de faire.
   `rythme explain E0xx` donne la version longue avec des exemples.
-  `rythme check` trouve les problèmes sans lancer le programme.
+  `rythme check` trouve les problèmes sans lancer le programme, y compris
+  les opérations qui échoueraient à coup sûr, comme `"âge : " + 36`.
 - **Penser fonctionnel dès le premier jour.** Immuabilité, fonctions comme
   valeurs, récursion, filtrage par motifs, types algébriques, erreurs comme
   valeurs (`Option`, `Result`) : les concepts de Haskell, OCaml, Elm, Elixir
@@ -74,5 +75,13 @@ valeurs attendue et obtenue.
   les noms.
 - `rythme learn` est une visite guidée que les étudiants peuvent suivre seuls.
 - `rythme help builtins` liste toutes les fonctions intégrées par catégorie.
-- Installez l'[extension VS Code](../editors/vscode) pour les couleurs et les
-  extraits de code.
+- Installez l'[extension VS Code](../editors/vscode) : les couleurs, des
+  extraits de code, et les problèmes affichés pendant la frappe, avec la
+  documentation sous la souris. Les autres éditeurs peuvent aussi utiliser
+  le serveur de langage ([`editors/README.fr.md`](../editors/README.fr.md)).
+- `rythme fmt` donne à tous les fichiers la même mise en forme : les
+  étudiants peuvent le lancer (ou `rythme fmt --check .`) avant de rendre
+  leur travail.
+- Rien à installer sur les ordinateurs des étudiants ? Le playground du
+  [site](https://maxlestage.github.io/Rythme/) fait tourner le vrai
+  interpréteur dans le navigateur.

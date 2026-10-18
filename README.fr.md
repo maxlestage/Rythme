@@ -5,6 +5,10 @@ Les programmes sont des fichiers qui finissent par `.ry`. L'interpréteur est é
 
 *[English version →](README.md)*
 
+**Documentation :** le [manuel de référence](docs/reference.fr.md) (tout le
+langage, avec précision), le [guide pour les enseignants](docs/enseigner.md),
+et [tous les documents](docs/README.md#en-français).
+
 ```rythme
 # Les valeurs ne changent jamais. Tout est fonction. Il n'y a pas de boucles.
 fn carre(x) = x * x
@@ -38,12 +42,16 @@ fn carre(x) = x * x
     `def`, `class`... chacun reçoit une explication de la façon de faire en
     Rythme.
   - Le programme est vérifié **avant** d'être exécuté : tous les noms
-    inconnus, les mauvais nombres d'arguments et les cas oubliés sont signalés
-    d'un coup.
+    inconnus, les mauvais nombres d'arguments, les opérations sur de mauvaises
+    sortes de valeurs (`"âge : " + 36`, `len(5)`, un champ mal écrit) et les
+    cas oubliés sont signalés d'un coup.
   - `rythme explain E003` explique n'importe quel code d'erreur en détail,
     avec des exemples.
   - `rythme help`, `rythme help map`, `help(x)` dans le code, `:doc` dans le
     mode interactif, `rythme learn` pour une visite guidée.
+  - Dans votre éditeur : les problèmes pendant la frappe, la documentation
+    sous la souris, la complétion, aller à la définition, renommer
+    (`rythme lsp`, le serveur de langage, pour VS Code, Neovim, Helix, Emacs...).
   - Chaque message, chaque documentation existe en **français et en
     anglais** (`--lang fr`, ou automatiquement selon la langue du système).
 
@@ -65,8 +73,8 @@ erreur[E005]: impossible d'utiliser `+` avec Text et Int
 
 Le site <https://maxlestage.github.io/Rythme/> a un playground qui fait
 tourner le vrai interpréteur, compilé en WebAssembly ([`playground/`](playground)) :
-modifier du code, le lancer, lancer des tests, lire l'aide, en français ou en
-anglais, sans rien installer.
+modifier du code, le lancer, le vérifier, lancer des tests, le mettre en
+forme, lire l'aide, en français ou en anglais, sans rien installer.
 
 Le dossier [`site/`](site) est le site web de Rythme (accueil, visite du
 langage, exemples, playground et guide pour les enseignants, en français et en
@@ -124,10 +132,13 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme bonjour.ry`         | lancer un programme (`rythme run bonjour.ry` marche aussi) |
 | `rythme check bonjour.ry`   | trouver les problèmes sans lancer le programme      |
 | `rythme test bonjour.ry`    | lancer les tests écrits dans le fichier             |
+| `rythme fmt bonjour.ry`     | mettre le code en forme dans le style officiel (aussi un dossier : `rythme fmt .`) |
+| `rythme fmt --check .`      | lister les fichiers à mettre en forme, sans les changer (pour l'intégration continue) |
 | `rythme help [sujet]`       | aide sur un sujet ou une fonction                   |
 | `rythme explain E003`       | expliquer un code d'erreur                          |
 | `rythme learn`              | visite guidée du langage                            |
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
+| `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
 
 Ajoutez `--lang fr` ou `--lang en` avant la commande pour choisir la langue
 des messages, ou définissez `RYTHME_LANG`.
@@ -189,11 +200,39 @@ langages répandus (c'est ce qui permet de partager du code dans le monde
 entier), mais vos propres noms peuvent être en français, accents compris :
 `prénom`, `âge`, `résultat`.
 
-Pour aller plus loin : [`examples/`](examples), `rythme help syntax`, `rythme learn`.
+Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
+[`examples/`](examples), `rythme help syntax`, `rythme learn`.
+
+## Exemples
+
+| Fichier | Montre |
+|---------|--------|
+| [`hello.ry`](examples/hello.ry) | le premier programme classique |
+| [`fizzbuzz.ry`](examples/fizzbuzz.ry) | `match` sur une liste, intervalles, `each` |
+| [`fibonacci.ry`](examples/fibonacci.ry) | définitions par cas, appels terminaux, documentation `##` |
+| [`shapes.ry`](examples/shapes.ry) | vos propres types, gardes, `sort_by` |
+| [`quicksort.ry`](examples/quicksort.ry) | motifs de listes, `filter`, `+` sur les listes |
+| [`words.ry`](examples/words.ry) | traitement de texte, `group_by`, enregistrements |
+| [`cipher.ry`](examples/cipher.ry) | le chiffre de César : `char_code`, `char`, compter les lettres |
+| [`results.ry`](examples/results.ry) | `Option`, `Result`, `?` |
+| [`students.ry`](examples/students.ry) | enregistrements, mise à jour, regroupements, moyennes |
+| [`sales.ry`](examples/sales.ry) | un rapport : `scan`, colonnes alignées avec `pad_left`, `windows`, `chunks`, JSON |
+| [`tree.ry`](examples/tree.ry) | un type récursif : arbre binaire de recherche |
+| [`primes.ry`](examples/primes.ry) | un crible récursif, `all`, `and` |
+| [`testing.ry`](examples/testing.ry) | les blocs `test` |
+| [`modules/`](examples/modules) | `use` pour répartir un programme en plusieurs fichiers |
+| [`bonjour.ry`](examples/bonjour.ry) | des noms avec des accents |
 
 ## Éditeurs
 
-- **VS Code** : couleurs, indentation et extraits de code dans [`editors/vscode`](editors/vscode).
+- **VS Code** : l'extension dans [`editors/vscode`](editors/vscode) : couleurs,
+  extraits de code, et le serveur de langage, pour les problèmes pendant la
+  frappe, la documentation au survol, la complétion, les paramètres d'un
+  appel, aller à la définition, les références, renommer, le plan du
+  fichier et la mise en forme, en français ou en anglais.
+- **Neovim, Helix, Zed, Emacs, Sublime Text, Kate...** : tout éditeur qui
+  parle le Language Server Protocol peut lancer `rythme lsp` ; quelques
+  lignes de configuration pour chacun sont dans [`editors/README.fr.md`](editors/README.fr.md).
 
 ## Pour les enseignants
 
@@ -207,16 +246,22 @@ Rythme 0.1 est un interpréteur complet et testé, utilisable dès aujourd'hui
 pour apprendre et pour de petits programmes. Les limites, honnêtement, et la
 suite :
 
-- **Vitesse.** C'est un interpréteur qui parcourt l'arbre du programme :
-  à peu près aussi rapide que Python, loin de Rust compilé. Suite : une
-  machine virtuelle à bytecode.
+- **Vitesse.** C'est un interpréteur qui parcourt l'arbre du programme : les
+  noms locaux deviennent des cases numérotées avant l'exécution, et la
+  plupart des appels n'allouent rien. Les programmes de [`bench/`](bench)
+  (`bench/run.sh`) tournent 1,2 à 4,3 fois plus vite qu'avec Rythme 0.1 ;
+  c'est de l'ordre de Python, loin de Rust compilé. Suite : une machine
+  virtuelle à bytecode.
 - **Types.** Les valeurs sont vérifiées à l'exécution (strictement : aucune
-  conversion silencieuse). Suite : l'inférence de types dans `rythme check`,
-  pour trouver plus d'erreurs avant l'exécution.
-- **Outils.** Suite : un formateur (`rythme fmt`), un serveur de langage
-  (erreurs et documentation dans tous les éditeurs), un gestionnaire de
-  paquets, et un bac à sable en ligne (l'interpréteur compilé en WebAssembly)
-  pour essayer Rythme sans rien installer.
+  conversion silencieuse), et `rythme check` infère leurs types quand ils
+  sont certains, pour signaler avant l'exécution les opérations qui
+  échoueraient à coup sûr. Suite : les types des paramètres des fonctions,
+  pour trouver encore plus d'erreurs avant l'exécution.
+- **Outils.** `rythme fmt` met le code en forme dans le style officiel (voir
+  `rythme help fmt`), et le serveur de langage (`rythme lsp`) apporte les
+  erreurs et la documentation dans tous les éditeurs (voir
+  `rythme help editors`). Le bac à sable en ligne fait tourner l'interpréteur
+  compilé en WebAssembly. Suite : un gestionnaire de paquets.
 - **Langues.** Les messages existent en anglais et en français ; ajouter une
   langue consiste à traduire les textes de `src/`. Les contributions sont
   bienvenues.

@@ -25,6 +25,8 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ("tests", &["test"]),
     ("modules", &["use", "files", "fichiers"]),
     ("repl", &["interactive", "interactif"]),
+    ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme"]),
+    ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide"]),
     ("builtins", &["functions-list", "fonctions-integrees", "library", "bibliotheque", "bibliothèque", "stdlib"]),
 ];
 
@@ -44,10 +46,12 @@ Commandes
   rythme fichier.ry         lancer un programme
   rythme check fichier.ry   trouver les problèmes sans lancer le programme
   rythme test fichier.ry    lancer les tests d'un fichier
+  rythme fmt fichier.ry     mettre le code en forme (--check : vérifier seulement)
   rythme learn              visite guidée du langage, pas à pas
   rythme help SUJET         aide sur un sujet ou une fonction
   rythme explain E003       expliquer un code d'erreur
   rythme -e "code"          exécuter un morceau de code
+  rythme lsp                serveur de langage, pour les éditeurs (VS Code, Neovim...)
   option --lang fr|en       langue des messages (ou variable RYTHME_LANG)
 
 Sujets (rythme help SUJET)
@@ -64,6 +68,8 @@ Sujets (rythme help SUJET)
   tests       écrire et lancer des tests
   modules     utiliser plusieurs fichiers
   repl        le mode interactif
+  fmt         la mise en forme officielle du code (rythme fmt)
+  editors     Rythme dans votre éditeur (VS Code, Neovim, Helix...)
   builtins    toutes les fonctions intégrées
 
 Une fonction précise : rythme help map
@@ -78,10 +84,12 @@ Commands
   rythme file.ry            run a program
   rythme check file.ry      find problems without running the program
   rythme test file.ry       run the tests of a file
+  rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
   rythme -e "code"          run a piece of code
+  rythme lsp                language server, for editors (VS Code, Neovim...)
   option --lang fr|en       language of the messages (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
@@ -98,6 +106,8 @@ Topics (rythme help TOPIC)
   tests       writing and running tests
   modules     using several files
   repl        the interactive mode
+  fmt         the official layout of the code (rythme fmt)
+  editors     Rythme in your editor (VS Code, Neovim, Helix...)
   builtins    every built-in function
 
 A specific function: rythme help map
@@ -117,6 +127,11 @@ pub fn topic(name: &str) -> Option<String> {
     }
     if name.trim() == "pi" {
         return Some(t!("pi\n  The number π = 3.141592653589793.", "pi\n  Le nombre π = 3.141592653589793."));
+    }
+    if canonical_topic(name).is_none() {
+        if let Some(text) = keyword_help(name.trim()) {
+            return Some(text);
+        }
     }
     let t = canonical_topic(name)?;
     if t == "builtins" {
@@ -142,6 +157,114 @@ pub fn unknown_topic(name: &str) -> String {
     }
     out.push_str(&t!("\nSee the list of topics with `rythme help`.", "\nVoyez la liste des sujets avec `rythme help`."));
     out
+}
+
+/// Every keyword, explained: (keyword, English, French, example, topic).
+const KEYWORD_DOCS: &[(&str, &str, &str, &str, &str)] = &[
+    (
+        "fn",
+        "Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.",
+        "Définit une fonction : `fn nom(x) = expression`, ou avec son corps sur les lignes suivantes, terminé par `end`. Sans nom, `fn(x) = x * 2` est une fonction anonyme.",
+        "fn double(x) = x * 2",
+        "functions",
+    ),
+    (
+        "if",
+        "Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.",
+        "Choisit entre deux valeurs : `if condition then valeur else autre`. Chaque `if` a un `else`, car un `if` donne toujours une valeur.",
+        "if n < 0 then \"negative\" else \"positive\"",
+        "syntax",
+    ),
+    (
+        "then",
+        "Separates the condition of an `if` from the value it gives when the condition is true.",
+        "Sépare la condition d'un `if` de la valeur donnée quand la condition est vraie.",
+        "if n < 0 then \"negative\" else \"positive\"",
+        "syntax",
+    ),
+    (
+        "else",
+        "Gives the value of an `if` when the condition is false. It is always required; `else if` chains several conditions.",
+        "Donne la valeur d'un `if` quand la condition est fausse. Il est toujours obligatoire ; `else if` enchaîne plusieurs conditions.",
+        "if n < 0 then \"negative\" else if n == 0 then \"zero\" else \"positive\"",
+        "syntax",
+    ),
+    (
+        "match",
+        "Chooses according to the shape of a value: one case per line, `pattern -> result`, finished by `end`. Cases are tried in order, and `rythme check` warns about forgotten cases.",
+        "Choisit selon la forme d'une valeur : un cas par ligne, `motif -> résultat`, terminé par `end`. Les cas sont essayés dans l'ordre, et `rythme check` signale les cas oubliés.",
+        "match list\n  [] -> \"empty\"\n  [x, ..rest] -> \"starts with {x}\"\nend",
+        "match",
+    ),
+    (
+        "end",
+        "Closes a block: a function written on several lines, a `match`, a `do` or a `test`.",
+        "Ferme un bloc : une fonction écrite sur plusieurs lignes, un `match`, un `do` ou un `test`.",
+        "fn greet(name)\n  print(\"Hello, {name}!\")\nend",
+        "syntax",
+    ),
+    (
+        "do",
+        "Groups several steps inside an expression, up to `end`. The last line gives the value.",
+        "Regroupe plusieurs étapes dans une expression, jusqu'à `end`. La dernière ligne donne la valeur.",
+        "total = do\n  a = 1\n  a + 1\nend",
+        "syntax",
+    ),
+    (
+        "type",
+        "Defines your own type and its variants. Each variant is a constructor, with or without fields.",
+        "Définit votre propre type et ses variantes. Chaque variante est un constructeur, avec ou sans champs.",
+        "type Shape = Circle(radius) | Rect(width, height)",
+        "types",
+    ),
+    (
+        "test",
+        "Defines a test, next to the code. `rythme test file.ry` runs the tests of the file.",
+        "Définit un test, à côté du code. `rythme test fichier.ry` lance les tests du fichier.",
+        "test \"double works\" = assert_eq(double(21), 42)",
+        "tests",
+    ),
+    (
+        "use",
+        "Uses the definitions of another file. The path is relative to the folder of the file that contains `use`.",
+        "Utilise les définitions d'un autre fichier. Le chemin est relatif au dossier du fichier qui contient `use`.",
+        "use \"geometry.ry\"",
+        "modules",
+    ),
+    (
+        "and",
+        "True when both conditions are true. The second one is computed only if the first one is true.",
+        "Vrai quand les deux conditions sont vraies. La seconde n'est calculée que si la première est vraie.",
+        "if age >= 18 and has_ticket then \"enter\" else \"wait\"",
+        "syntax",
+    ),
+    (
+        "or",
+        "True when at least one of the conditions is true. The second one is computed only if the first one is false.",
+        "Vrai quand au moins une des conditions est vraie. La seconde n'est calculée que si la première est fausse.",
+        "is_weekend = day == \"saturday\" or day == \"sunday\"",
+        "syntax",
+    ),
+    ("not", "Inverts a condition: `not true` is `false`.", "Inverse une condition : `not true` vaut `false`.", "if not done then \"wait\" else \"go\"", "syntax"),
+    ("true", "One of the two values of the type Bool.", "L'une des deux valeurs du type Bool.", "is_ready = true", "syntax"),
+    ("false", "One of the two values of the type Bool.", "L'une des deux valeurs du type Bool.", "is_ready = false", "syntax"),
+];
+
+/// The documentation of a keyword in the current language, with an example
+/// and the help topic that tells more.
+pub fn keyword_doc(word: &str) -> Option<(&'static str, &'static str, &'static str)> {
+    KEYWORD_DOCS.iter().find(|k| k.0 == word).map(|&(_, en, fr, example, topic)| (pick(en, fr), example, topic))
+}
+
+/// What `rythme help then` shows.
+pub fn keyword_help(word: &str) -> Option<String> {
+    let (doc, example, topic) = keyword_doc(word)?;
+    let mut out = format!("{word}  ({})\n  {doc}\n  {}\n", t!("keyword", "mot-clé"), t!("Example:", "Exemple :"));
+    for line in example.lines() {
+        out.push_str(&format!("    {line}\n"));
+    }
+    out.push_str(&t!("  More: rythme help {topic}\n", "  Plus : rythme help {topic}\n"));
+    Some(out)
 }
 
 pub fn builtin_doc(b: &Builtin) -> String {
@@ -180,6 +303,15 @@ pub fn builtins_list() -> String {
     out
 }
 
+/// The `##` documentation of the type of a constructor, if it has one.
+fn push_type_doc(out: &mut String, c: &crate::value::CtorInfo) {
+    if let Some(doc) = &c.doc {
+        for line in doc.lines() {
+            out.push_str(&format!("  {line}\n"));
+        }
+    }
+}
+
 /// What `help(x)` shows inside a program or in the REPL.
 pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
     let Some(v) = v else {
@@ -210,13 +342,15 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
         }
         Value::Ctor(c) => {
             let fields: Vec<String> = c.fields.iter().map(|f| f.to_string()).collect();
-            t!(
+            let mut out = t!(
                 "{}({})\n  A constructor of the type `{}`.\n",
                 "{}({})\n  Un constructeur du type `{}`.\n",
                 c.name,
                 fields.join(", "),
                 c.type_name
-            )
+            );
+            push_type_doc(&mut out, c);
+            out
         }
         Value::Text(s) => topic(s).unwrap_or_else(|| unknown_topic(s)),
         other => {
@@ -230,14 +364,21 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
                 _ => None,
             };
             let mut out = t!("This is a value of type {ty}: {}\n", "Ceci est une valeur de type {ty} : {}\n", other.repr());
+            if let Value::Variant(var) = other {
+                push_type_doc(&mut out, &var.ctor);
+            }
             if let Some(cat) = cat {
                 let names: Vec<&str> = BUILTINS.iter().filter(|b| b.cat == cat).map(|b| b.name).collect();
                 out.push_str(&t!("Useful functions: {}\n", "Fonctions utiles : {}\n", names.join(", ")));
-                if cat == Category::Lists {
-                    out.push_str(&t!(
-                        "Also: len, contains, reverse, slice, take, drop\n",
-                        "Aussi : len, contains, reverse, slice, take, drop\n"
-                    ));
+                // Functions of other categories that work on this kind of value too.
+                let also = match cat {
+                    Category::Lists => "len, contains, join, repeat, min, max, to_json",
+                    Category::Records => "len, get, contains, is_empty, to_json",
+                    Category::Options => "map",
+                    _ => "",
+                };
+                if !also.is_empty() {
+                    out.push_str(&t!("Also: {also}\n", "Aussi : {also}\n"));
                 }
             }
             if let Value::Variant(var) = other {
@@ -293,6 +434,8 @@ fn topic_text(name: &str) -> &'static str {
         "tests" => pick(TESTS_EN, TESTS_FR),
         "modules" => pick(MODULES_EN, MODULES_FR),
         "repl" => pick(REPL_EN, REPL_FR),
+        "fmt" => pick(FMT_EN, FMT_FR),
+        "editors" => pick(EDITORS_EN, EDITORS_FR),
         _ => "",
     }
 }
@@ -404,7 +547,7 @@ Tests and other files
 
 Comments
   # an ordinary comment
-  ## a documentation comment, above a function, shown by help(...)"#;
+  ## a documentation comment, above a function or a type, shown by help(...)"#;
 
 const SYNTAX_FR: &str = r#"SYNTAXE
 
@@ -463,7 +606,7 @@ Tests et autres fichiers
 
 Commentaires
   # un commentaire ordinaire
-  ## un commentaire de documentation, au-dessus d'une fonction, affiché par help(...)"#;
+  ## un commentaire de documentation, au-dessus d'une fonction ou d'un type, affiché par help(...)"#;
 
 const FUNCTIONS_EN: &str = r#"FUNCTIONS
 
@@ -581,6 +724,17 @@ Safe access (never an error)
   first([])                      # None
   get(numbers, 10)               # None
 
+"Change" a list: you get a new list, the old one stays the same
+  set_at(numbers, 0, 9)          # [9, 1, 2]
+  insert_at(numbers, 1, 7)       # [3, 7, 1, 2]
+  remove_at(numbers, -1)         # [3, 1]
+
+Pieces of a list
+  take_while(numbers, fn(x) = x > 2)      # [3]
+  chunks([1, 2, 3, 4, 5], 2)              # [[1, 2], [3, 4], [5]]
+  windows([1, 2, 3], 2)                   # [[1, 2], [2, 3]]
+  0..10 |> step_by(5)                     # [0, 5, 10]
+
 Take a list apart with patterns
   match numbers
     [] -> "empty"
@@ -609,6 +763,17 @@ Accès sûr (jamais d'erreur)
   first([])                      # None
   get(nombres, 10)               # None
 
+« Modifier » une liste : on obtient une nouvelle liste, l'ancienne ne change pas
+  set_at(nombres, 0, 9)          # [9, 1, 2]
+  insert_at(nombres, 1, 7)       # [3, 7, 1, 2]
+  remove_at(nombres, -1)         # [3, 1]
+
+Des morceaux d'une liste
+  take_while(nombres, fn(x) = x > 2)      # [3]
+  chunks([1, 2, 3, 4, 5], 2)              # [[1, 2], [3, 4], [5]]
+  windows([1, 2, 3], 2)                   # [[1, 2], [2, 3]]
+  0..10 |> step_by(5)                     # [0, 5, 10]
+
 Décomposer une liste avec des motifs
   match nombres
     [] -> "vide"
@@ -630,11 +795,15 @@ const TEXT_EN: &str = r#"TEXT
   replace("2024", "4", "5")      # "2025"
   contains("hello", "ell")       # true
   text(42)                       # "42"
+  text(3.14159, 2)               # "3.14" (a number with 2 decimals)
+  pad_left("7", 3, "0")          # "007"  (and pad_right: to line up columns)
+  char_code("A")   char(66)      # 65 and "B"
   int("42")                      # 42
   parse_int("x42")               # Err(...): a conversion that cannot crash
 
-Special characters: \n (new line), \t (tab), \" (quote), \\ (backslash),
-\{ and \} (braces, because { starts an insertion)."#;
+Special characters: \n (new line), \t (tab), \r (carriage return),
+\0 (null character), \" (quote), \\ (backslash), \{ and \} (braces, because
+{ starts an insertion), \u{e9} (any character by its Unicode number: é)."#;
 
 const TEXT_FR: &str = r#"TEXTE
 
@@ -649,11 +818,16 @@ const TEXT_FR: &str = r#"TEXTE
   replace("2024", "4", "5")      # "2025"
   contains("bonjour", "jour")    # true
   text(42)                       # "42"
+  text(3.14159, 2)               # "3.14" (un nombre avec 2 décimales)
+  pad_left("7", 3, "0")          # "007"  (et pad_right : pour aligner des colonnes)
+  char_code("A")   char(66)      # 65 et "B"
   int("42")                      # 42
   parse_int("x42")               # Err(...) : une conversion qui ne plante jamais
 
-Caractères spéciaux : \n (nouvelle ligne), \t (tabulation), \" (guillemet),
-\\ (barre oblique inverse), \{ et \} (accolades, car { commence une insertion)."#;
+Caractères spéciaux : \n (nouvelle ligne), \t (tabulation), \r (retour
+chariot), \0 (caractère nul), \" (guillemet), \\ (barre oblique inverse),
+\{ et \} (accolades, car { commence une insertion), \u{e9} (tout caractère
+par son numéro Unicode : é)."#;
 
 const RECORDS_EN: &str = r#"RECORDS
 
@@ -671,10 +845,18 @@ Take apart
 
 Useful functions
   keys(ada)   values(ada)   has(ada, "name")   get(ada, "x")   put(ada, "x", 1)
+  entries(ada)                   # [["name", "Ada"], ["born", 1815]]
+  from_entries([["x", 1]])       # {x: 1}
 
 Records as dictionaries
   counts = {apple: 2}
-  put(counts, "pear", 5)         # {apple: 2, pear: 5}"#;
+  put(counts, "pear", 5)         # {apple: 2, pear: 5}
+  map_values(counts, fn(n) = n * 10)      # {apple: 20}
+  group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+
+JSON, the format of data on the web
+  parse_json(text)               # Ok(...): objects become records, arrays lists
+  to_json(value)                 # the text, ready to save with write_file"#;
 
 const RECORDS_FR: &str = r#"ENREGISTREMENTS
 
@@ -692,10 +874,18 @@ Décomposer
 
 Fonctions utiles
   keys(ada)   values(ada)   has(ada, "nom")   get(ada, "x")   put(ada, "x", 1)
+  entries(ada)                   # [["nom", "Ada"], ["naissance", 1815]]
+  from_entries([["x", 1]])       # {x: 1}
 
 Les enregistrements comme dictionnaires
   compte = {pomme: 2}
-  put(compte, "poire", 5)        # {pomme: 2, poire: 5}"#;
+  put(compte, "poire", 5)        # {pomme: 2, poire: 5}
+  map_values(compte, fn(n) = n * 10)      # {pomme: 20}
+  group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+
+JSON, le format des données du web
+  parse_json(texte)              # Ok(...) : les objets deviennent des enregistrements, les tableaux des listes
+  to_json(valeur)                # le texte, prêt à enregistrer avec write_file"#;
 
 const TYPES_EN: &str = r#"YOUR OWN TYPES
 
@@ -826,6 +1016,9 @@ Quick tools
   unwrap(Some(3))                # 3 (stops the program on None or Err)
   is_some(x)   is_none(x)   is_ok(x)   is_err(x)
   map(Some(2), fn(x) = x * 10)   # Some(20)
+  ok_or(get(person, "age"), "no age")   # Err("no age") if missing: ready for ?
+  and_then(x, f)                 # one more step that may fail
+  map_err(r, fn(e) = "config: {e}")     # explain an error better
 
 To stop the whole program: fail("message")."#;
 
@@ -854,6 +1047,9 @@ Outils rapides
   unwrap(Some(3))                # 3 (arrête le programme sur None ou Err)
   is_some(x)   is_none(x)   is_ok(x)   is_err(x)
   map(Some(2), fn(x) = x * 10)   # Some(20)
+  ok_or(get(personne, "age"), "pas d'âge")   # Err("pas d'âge") s'il manque : prêt pour ?
+  and_then(x, f)                 # une étape de plus qui peut échouer
+  map_err(r, fn(e) = "config : {e}")    # mieux expliquer une erreur
 
 Pour arrêter tout le programme : fail("message")."#;
 
@@ -867,7 +1063,9 @@ Instead of a loop that prints:       1..5 |> each(fn(i) = print(i))
 Instead of a loop that transforms:   map(list, f)
 Instead of a loop that selects:      filter(list, f)
 Instead of a loop that accumulates:  fold(list, start, f)   or sum, product
-Instead of a loop that searches:     find, any, all, index_of
+Instead of running totals:           scan(list, start, f)
+Instead of a loop that searches:     find, any, all, index_of, min_by, max_by
+Instead of "break":                  take_while(list, f)
 Instead of "while":                  a recursive function
 
   # Python:  total = 0
@@ -896,7 +1094,9 @@ Au lieu d'une boucle qui affiche :      1..5 |> each(fn(i) = print(i))
 Au lieu d'une boucle qui transforme :   map(liste, f)
 Au lieu d'une boucle qui sélectionne :  filter(liste, f)
 Au lieu d'une boucle qui accumule :     fold(liste, depart, f)   ou sum, product
-Au lieu d'une boucle qui cherche :      find, any, all, index_of
+Au lieu de totaux cumulés :             scan(liste, depart, f)
+Au lieu d'une boucle qui cherche :      find, any, all, index_of, min_by, max_by
+Au lieu de « break » :                  take_while(liste, f)
 Au lieu de « tant que » :               une fonction récursive
 
   # Python :  total = 0
@@ -978,6 +1178,45 @@ Le chemin est relatif au fichier qui contient `use`. Tout ce qui est défini au
 premier niveau du fichier utilisé devient disponible. Chaque fichier n'est
 exécuté qu'une fois."#;
 
+const EDITORS_EN: &str = r#"RYTHME IN YOUR EDITOR
+
+Rythme helps inside the editor too: problems as you type, the documentation
+of a function under the mouse, completion, the parameters of a call, go to
+definition, references, rename, quick fixes for typos, formatting like
+`rythme fmt`. This is the language server, that the editor starts by itself:
+  rythme lsp
+
+VS Code
+  the extension in editors/vscode: colors, snippets and the language server.
+  Settings: rythme.path (the program), rythme.language (en, fr or auto).
+
+Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
+  every editor that speaks the Language Server Protocol: tell it to start
+  `rythme lsp` for .ry files. Ready-made configurations: editors/README.md
+
+The language of the messages follows the editor, unless `--lang fr|en` or
+RYTHME_LANG chooses it: rythme --lang fr lsp"#;
+
+const EDITORS_FR: &str = r#"RYTHME DANS VOTRE ÉDITEUR
+
+Rythme aide aussi dans l'éditeur : les problèmes pendant la frappe, la
+documentation d'une fonction sous la souris, la complétion, les paramètres
+d'un appel, aller à la définition, les références, renommer, les corrections
+rapides des fautes de frappe, la mise en forme comme `rythme fmt`. C'est le
+serveur de langage, que l'éditeur lance tout seul :
+  rythme lsp
+
+VS Code
+  l'extension dans editors/vscode : couleurs, extraits de code et serveur de
+  langage. Réglages : rythme.path (le programme), rythme.language (en, fr ou auto).
+
+Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
+  tout éditeur qui parle le Language Server Protocol : demandez-lui de lancer
+  `rythme lsp` pour les fichiers .ry. Configurations prêtes : editors/README.fr.md
+
+La langue des messages suit celle de l'éditeur, sauf si `--lang fr|en` ou
+RYTHME_LANG la choisit : rythme --lang fr lsp"#;
+
 const REPL_EN: &str = r#"THE INTERACTIVE MODE
 
 Run `rythme` without a file. Type an expression and see its value:
@@ -1008,6 +1247,77 @@ Commandes
   :reset          tout oublier           :lang fr|en    changer de langue
   :learn          visite guidée          :explain E003  expliquer une erreur
 La touche Tab complète les noms."#;
+
+const FMT_EN: &str = r#"FORMATTING: rythme fmt
+
+`rythme fmt` gives code the official layout of Rythme: every program looks
+the same, and nobody has to argue about spaces.
+
+  rythme fmt hello.ry            format a file (it is rewritten)
+  rythme fmt .                   every .ry file of a folder and its subfolders
+  rythme fmt --check .           only check: lists the files to format and
+                                 fails (exit code 1) if there are any, for CI
+  rythme fmt - < hello.ry        reads the code, writes the result
+
+The style
+  - 2 spaces per level of indentation
+  - spaces around operators: x = a + b * 2   xs |> map(f)   n -> n * 2
+  - none inside brackets or around ..: f(x)   [1, 2]   {name: "Ada"}   1..10
+  - a pipeline written on several lines: one step per line
+      total = prices
+        |> filter(fn(p) = p > 10)
+        |> sum
+  - a type written on several lines: one variant per line
+      type Shape =
+        | Circle(radius)
+        | Rect(width, height)
+  - a list written on several lines ends with a comma
+  - one statement per line (no `;`), and `end` on its own line
+  - a blank line around a definition written on several lines; never two
+    blank lines in a row
+  - every comment is kept; the comments at the end of consecutive lines
+    are aligned
+
+Line breaks are kept where the language allows a choice, and long lines are
+kept as written. The formatter never changes what a program does: a file with
+a syntax error is left as it is, and the error is shown."#;
+
+const FMT_FR: &str = r#"MISE EN FORME : rythme fmt
+
+`rythme fmt` donne au code la mise en forme officielle de Rythme : tous les
+programmes se ressemblent, et personne n'a à discuter des espaces.
+
+  rythme fmt bonjour.ry          mettre en forme un fichier (il est réécrit)
+  rythme fmt .                   tous les fichiers .ry d'un dossier et de ses
+                                 sous-dossiers
+  rythme fmt --check .           vérifier seulement : liste les fichiers à
+                                 mettre en forme et échoue (code de sortie 1)
+                                 s'il y en a, pour l'intégration continue
+  rythme fmt - < bonjour.ry      lit le code, écrit le résultat
+
+Le style
+  - 2 espaces par niveau d'indentation
+  - des espaces autour des opérateurs : x = a + b * 2   xs |> map(f)   n -> n * 2
+  - aucun dans les crochets ni autour de .. : f(x)   [1, 2]   {nom: "Ada"}   1..10
+  - un enchaînement écrit sur plusieurs lignes : une étape par ligne
+      total = prix
+        |> filter(fn(p) = p > 10)
+        |> sum
+  - un type écrit sur plusieurs lignes : une variante par ligne
+      type Forme =
+        | Cercle(rayon)
+        | Rect(largeur, hauteur)
+  - une liste écrite sur plusieurs lignes finit par une virgule
+  - une instruction par ligne (pas de `;`), et `end` sur sa propre ligne
+  - une ligne vide autour d'une définition écrite sur plusieurs lignes ;
+    jamais deux lignes vides de suite
+  - chaque commentaire est gardé ; les commentaires en fin de lignes
+    consécutives sont alignés
+
+Les retours à la ligne sont gardés là où le langage laisse le choix, et les
+lignes longues sont gardées telles quelles. La mise en forme ne change jamais
+ce que fait un programme : un fichier avec une erreur de syntaxe est laissé
+tel quel, et l'erreur est affichée."#;
 
 // ----- error explanations -----------------------------------------------
 
@@ -1063,7 +1373,8 @@ Pour écrire une accolade dans un texte : "\{pas inséré\}""#,
 This name is not defined at this place. Check the spelling (uppercase and
 lowercase letters are different), and that the name is defined before it is
 used. Inside a function, the parameters and the names defined above are
-visible; at the top level, all functions are visible everywhere.
+visible, and local functions written one right after the other see each
+other; at the top level, all functions are visible everywhere.
 
 Wrong:   print(lenght([1, 2]))
 Right:   print(len([1, 2]))
@@ -1074,7 +1385,9 @@ Rythme suggests the closest existing name when there is one."#,
 Ce nom n'est pas défini à cet endroit. Vérifiez l'orthographe (majuscules et
 minuscules sont différentes), et que le nom est défini avant d'être utilisé.
 Dans une fonction, les paramètres et les noms définis au-dessus sont
-visibles ; au premier niveau, toutes les fonctions sont visibles partout.
+visibles, et des fonctions locales écrites les unes juste après les autres
+se voient entre elles ; au premier niveau, toutes les fonctions sont
+visibles partout.
 
 Faux :   print(lenght([1, 2]))
 Juste :  print(len([1, 2]))
@@ -1117,7 +1430,10 @@ Right:   "age: " + text(36)       (convert it first)
 
 Conditions must be true or false:
 Wrong:   if len(list) then ... else ...
-Right:   if len(list) > 0 then ... else ..."#,
+Right:   if len(list) > 0 then ... else ...
+
+When the kinds of the values are certain, `rythme check` finds this mistake
+before the program runs, even in code that does not run every time."#,
             r#"E005 — Mauvaise sorte de valeur
 
 L'opération ne fonctionne pas avec cette sorte de valeur. Rythme ne convertit
@@ -1129,31 +1445,39 @@ Juste :  "âge : " + text(36)      (la convertir d'abord)
 
 Les conditions doivent être true ou false :
 Faux :   if len(liste) then ... else ...
-Juste :  if len(liste) > 0 then ... else ..."#,
+Juste :  if len(liste) > 0 then ... else ...
+
+Quand la nature des valeurs est certaine, `rythme check` trouve cette erreur
+avant l'exécution, même dans du code qui ne s'exécute pas à chaque fois."#,
         ),
         "E006" => (
             r#"E006 — No case matches
 
-None of the cases of a `match` (or of the definitions of a function) accepts
-this value.
+None of the cases of a `match` (or of the definitions of a function, or the
+pattern of a definition like `[a, b] = list`) accepts this value.
 
 Wrong:   fn name(1) = "one"
          name(2)
 Right:   fn name(1) = "one"
          fn name(_) = "another number"
 
-`rythme check` warns about forgotten cases before running (W002)."#,
+`rythme check` warns about forgotten cases before running (W002). When the
+kind of the value is certain, it also reports, before running, a case that
+can never fit it: `[first, ..rest]` for a Text, `Circle(r)` for a number."#,
             r#"E006 — Aucun cas ne correspond
 
-Aucun des cas d'un `match` (ou des définitions d'une fonction) n'accepte
-cette valeur.
+Aucun des cas d'un `match` (ou des définitions d'une fonction, ou le motif
+d'une définition comme `[a, b] = liste`) n'accepte cette valeur.
 
 Faux :   fn nom(1) = "un"
          nom(2)
 Juste :  fn nom(1) = "un"
          fn nom(_) = "un autre nombre"
 
-`rythme check` prévient des cas oubliés avant l'exécution (W002)."#,
+`rythme check` prévient des cas oubliés avant l'exécution (W002). Quand la
+nature de la valeur est certaine, il signale aussi, avant l'exécution, un cas
+qui ne peut jamais lui convenir : `[premier, ..reste]` pour un Text,
+`Cercle(r)` pour un nombre."#,
         ),
         "E007" => (
             r#"E007 — Index out of range
@@ -1213,14 +1537,20 @@ The record (or the constructor) has no field with this name.
 
 Wrong:   {name: "Ada"}.nmae
 Right:   {name: "Ada"}.name
-Safe:    get(record, "name")     # an Option, never an error"#,
+Safe:    get(record, "name")     # an Option, never an error
+
+When the fields of the record are certain, `rythme check` finds this mistake
+before the program runs, and suggests the closest field."#,
             r#"E010 — Champ inconnu
 
 L'enregistrement (ou le constructeur) n'a pas de champ de ce nom.
 
 Faux :   {nom: "Ada"}.nmo
 Juste :  {nom: "Ada"}.nom
-Sûr :    get(enregistrement, "nom")   # une Option, jamais d'erreur"#,
+Sûr :    get(enregistrement, "nom")   # une Option, jamais d'erreur
+
+Quand les champs de l'enregistrement sont certains, `rythme check` trouve
+cette erreur avant l'exécution, et propose le champ le plus proche."#,
         ),
         "E011" => (
             r#"E011 — Already defined
@@ -1326,12 +1656,22 @@ Plus simple : sum(liste)  ou  fold(liste, 0, fn(a, x) = a + x)"#,
 
 `assert(condition)` or `assert_eq(actual, expected)` found that something is
 not as expected. In a test, this means the test fails: the message shows the
-values to compare."#,
+values to compare.
+
+`rythme check` finds before running an `assert_eq` that can never pass,
+because its two values are of kinds that are never equal:
+Wrong:   assert_eq(parse_int("3"), 3)      # a Result is never an Int
+Right:   assert_eq(parse_int("3"), Ok(3))"#,
             r#"E015 — Assertion échouée
 
 `assert(condition)` ou `assert_eq(obtenu, attendu)` a constaté que quelque
 chose n'est pas comme prévu. Dans un test, cela veut dire que le test échoue :
-le message montre les valeurs à comparer."#,
+le message montre les valeurs à comparer.
+
+`rythme check` trouve avant l'exécution un `assert_eq` qui ne peut jamais
+réussir, parce que ses deux valeurs sont de natures jamais égales :
+Faux :   assert_eq(parse_int("3"), 3)      # un Result n'est jamais un Int
+Juste :  assert_eq(parse_int("3"), Ok(3))"#,
         ),
         "E016" => (
             r#"E016 — Wrong use of ?
@@ -1362,12 +1702,23 @@ donc que dans une fonction, sur une Option ou un Result.
 
 A file could not be read, or a file given to `use` was not found, or files
 use each other in a circle. Paths in `use` are relative to the folder of the
-file that contains the `use`."#,
+file that contains the `use`. Programs are text files saved in UTF-8 (the
+usual choice of editors).
+
+`input()` also stops with this error when there is nothing more to read:
+the keyboard input was closed (Ctrl-D), or the text sent to the program
+(`rythme prog.ry < answers.txt`) has no more lines."#,
             r#"E017 — Problème de fichier
 
 Un fichier n'a pas pu être lu, ou un fichier donné à `use` est introuvable,
 ou des fichiers s'utilisent les uns les autres en cercle. Les chemins de
-`use` sont relatifs au dossier du fichier qui contient le `use`."#,
+`use` sont relatifs au dossier du fichier qui contient le `use`. Les
+programmes sont des fichiers texte enregistrés en UTF-8 (le choix habituel
+des éditeurs).
+
+`input()` s'arrête aussi avec cette erreur quand il n'y a plus rien à lire :
+la saisie au clavier a été fermée (Ctrl-D), ou le texte envoyé au programme
+(`rythme prog.ry < reponses.txt`) n'a plus de lignes."#,
         ),
         "E018" => (
             r#"E018 — Unexpected character
@@ -1451,13 +1802,15 @@ d'un fichier, utilisez les versions sûres, qui donnent un Result :
             r#"E023 — Invalid value
 
 The function received a value of the right kind, but outside of what it
-accepts: a negative count, the minimum of an empty list, a range too large...
-The message explains the limit."#,
+accepts: a negative count, the minimum of an empty list, the square root of
+a negative number, a range, a list or a text too large... The message
+explains the limit."#,
             r#"E023 — Valeur invalide
 
 La fonction a reçu une valeur de la bonne sorte, mais en dehors de ce qu'elle
-accepte : un nombre négatif d'éléments, le minimum d'une liste vide, un
-intervalle trop grand... Le message explique la limite."#,
+accepte : un nombre négatif d'éléments, le minimum d'une liste vide, la
+racine carrée d'un nombre négatif, un intervalle, une liste ou un texte trop
+grand... Le message explique la limite."#,
         ),
         "E024" => (
             r#"E024 — A value is lost
@@ -1534,14 +1887,36 @@ autre nom pour garder les deux."#,
         "W004" => (
             r#"W004 — Case never reached
 
-Cases are tried in order. A case that accepts everything (`_`, or a plain
-name) catches every value, so the cases after it can never be used. Put it
-last."#,
+Cases are tried in order, and a value goes to the first one that fits. A
+case (or a definition of a function) can never be used when:
+  - a case before it accepts everything (`_`, or a plain name): put that
+    one last;
+  - a case before it already handles the same values: `1 -> ...` twice;
+  - the value can never have this shape: a Text never matches a list
+    pattern like `[first, ..rest]`, a number never matches `Some(x)`.
+
+  match name                     # `name` is a Text
+    [first, ..] -> first         # W004: a Text is not a list
+    _ -> "?"
+  end
+To look at the characters of a text, use `chars(name)`."#,
             r#"W004 — Cas jamais atteint
 
-Les cas sont essayés dans l'ordre. Un cas qui accepte tout (`_`, ou un
-simple nom) attrape toutes les valeurs : les cas suivants ne peuvent jamais
-servir. Mettez-le en dernier."#,
+Les cas sont essayés dans l'ordre, et une valeur va au premier qui lui
+convient. Un cas (ou une définition d'une fonction) ne peut jamais servir
+quand :
+  - un cas avant lui accepte tout (`_`, ou un simple nom) : mettez celui-ci
+    en dernier ;
+  - un cas avant lui traite déjà les mêmes valeurs : `1 -> ...` deux fois ;
+  - la valeur ne peut jamais avoir cette forme : un Text ne correspond
+    jamais à un motif de liste comme `[premier, ..reste]`, un nombre jamais
+    à `Some(x)`.
+
+  match nom                      # `nom` est un Text
+    [premier, ..] -> premier     # W004 : un Text n'est pas une liste
+    _ -> "?"
+  end
+Pour parcourir les caractères d'un texte, utilisez `chars(nom)`."#,
         ),
         "W005" => (
             r#"W005 — Unknown function after a dot
@@ -1561,6 +1936,97 @@ du fichier n'a un tel champ : c'est sans doute une faute de frappe.
 Faux :   [1, 2].lenght()
 Juste :  [1, 2].len()"#,
         ),
+        "W006" => (
+            r#"W006 — Comparison always false
+
+Values of different kinds are never equal: Rythme never converts them
+silently. When `x` is a number, `x == "1"` is always false and `x != "1"`
+always true. It is often a forgotten conversion, or a value inside an Option
+compared as if it were outside.
+
+Wrong:   if count == "3" then ...            (a number and a text)
+Right:   if count == 3 then ...
+Wrong:   get(scores, "ada") == 19            (an Option and a number)
+Right:   get(scores, "ada") == Some(19)
+Right:   unwrap_or(get(scores, "ada"), 0) == 19"#,
+            r#"W006 — Comparaison toujours fausse
+
+Des valeurs de natures différentes ne sont jamais égales : Rythme ne les
+convertit jamais en silence. Quand `x` est un nombre, `x == "1"` est
+toujours faux et `x != "1"` toujours vrai. C'est souvent une conversion
+oubliée, ou une valeur dans une Option comparée comme si elle était dehors.
+
+Faux :   if nombre == "3" then ...           (un nombre et un texte)
+Juste :  if nombre == 3 then ...
+Faux :   get(notes, "ada") == 19             (une Option et un nombre)
+Juste :  get(notes, "ada") == Some(19)
+Juste :  unwrap_or(get(notes, "ada"), 0) == 19"#,
+        ),
+        "W007" => (
+            r#"W007 — Test that can never fail
+
+A test fails only when it stops with an error, or when it ends with `false`,
+`None` or `Err(...)`. A test that only computes or prints a value with
+functions that never stop, and never compares it with what is expected,
+can never fail: it checks nothing.
+
+Wrong:   test "length" = len([1, 2])
+Wrong:   test "length" = print(len([1, 2]))
+Right:   test "length" = assert_eq(len([1, 2]), 2)
+Right:   test "length" = len([1, 2]) == 2"#,
+            r#"W007 — Test qui ne peut jamais échouer
+
+Un test n'échoue que s'il s'arrête sur une erreur, ou s'il finit par
+`false`, `None` ou `Err(...)`. Un test qui ne fait que calculer ou afficher
+une valeur avec des fonctions qui ne s'arrêtent jamais, sans la comparer à
+ce qui est attendu, ne peut jamais échouer : il ne vérifie rien.
+
+Faux :   test "longueur" = len([1, 2])
+Faux :   test "longueur" = print(len([1, 2]))
+Juste :  test "longueur" = assert_eq(len([1, 2]), 2)
+Juste :  test "longueur" = len([1, 2]) == 2"#,
+        ),
+        "W008" => (
+            r#"W008 — Result lost
+
+Values never change in Rythme: `push(list, 4)` does not add 4 to `list`, it
+gives a new list. A line that only calls such a function, and does nothing
+with what it gives, does nothing at all.
+
+Wrong:   push(numbers, 4)               # `numbers` is unchanged
+Right:   more = push(numbers, 4)
+Wrong:   name.upper()
+Right:   print(name.upper())"#,
+            r#"W008 — Résultat perdu
+
+Les valeurs ne changent jamais en Rythme : `push(liste, 4)` n'ajoute pas 4
+à `liste`, il donne une nouvelle liste. Une ligne qui ne fait qu'appeler une
+telle fonction, sans rien faire de ce qu'elle donne, ne fait rien du tout.
+
+Faux :   push(nombres, 4)               # `nombres` ne change pas
+Juste :  plus = push(nombres, 4)
+Faux :   nom.upper()
+Juste :  print(nom.upper())"#,
+        ),
+        "W009" => (
+            r#"W009 — A function shown instead of its value
+
+A function shown in a text or printed appears as `<fn name>`. To show what
+it gives, call it, with parentheses, even when it takes no argument.
+
+  fn greeting() = "hello"
+Wrong:   print("{greeting}")          # shows <fn greeting>
+Right:   print("{greeting()}")        # shows hello"#,
+            r#"W009 — Une fonction affichée au lieu de sa valeur
+
+Une fonction affichée dans un texte ou par `print` apparaît comme
+`<fn nom>`. Pour afficher ce qu'elle donne, appelez-la, avec des
+parenthèses, même quand elle ne prend pas d'argument.
+
+  fn salut() = "bonjour"
+Faux :   print("{salut}")             # affiche <fn salut>
+Juste :  print("{salut()}")           # affiche bonjour"#,
+        ),
         _ => return None,
     };
     Some(pick_owned(en, fr))
@@ -1576,5 +2042,5 @@ fn pick_owned(en: &str, fr: &str) -> String {
 
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
-    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "W001", "W002", "W003", "W004", "W005",
+    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008", "W009",
 ];
