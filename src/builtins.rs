@@ -92,8 +92,60 @@ macro_rules! b {
     };
 }
 
+/// The built-in function `name`, also under its Ruby name (`upcase` gives `upper`).
 pub fn lookup(name: &str) -> Option<&'static Builtin> {
+    let name = alias_of(name).unwrap_or(name);
     BUILTINS.iter().find(|b| b.name == name)
+}
+
+/// A second name of a built-in function: the name Ruby gives it.
+pub struct Alias {
+    pub name: &'static str,
+    /// The built-in function it names.
+    pub of: &'static str,
+}
+
+const fn alias(name: &'static str, of: &'static str) -> Alias {
+    Alias { name, of }
+}
+
+/// The Ruby names of built-in functions: `xs.select(is_even)`,
+/// `"hi".upcase`, `n.even?`. Each one is exactly the function it names.
+pub static ALIASES: &[Alias] = &[
+    alias("puts", "print"),
+    alias("to_s", "text"),
+    alias("to_i", "int"),
+    alias("to_f", "float"),
+    alias("even?", "is_even"),
+    alias("odd?", "is_odd"),
+    alias("length", "len"),
+    alias("size", "len"),
+    alias("upcase", "upper"),
+    alias("downcase", "lower"),
+    alias("strip", "trim"),
+    alias("include?", "contains"),
+    alias("start_with?", "starts_with"),
+    alias("end_with?", "ends_with"),
+    alias("select", "filter"),
+    alias("reduce", "fold"),
+    alias("inject", "fold"),
+    alias("uniq", "unique"),
+    alias("each_slice", "chunks"),
+    alias("each_cons", "windows"),
+    alias("any?", "any"),
+    alias("all?", "all"),
+    alias("empty?", "is_empty"),
+    alias("key?", "has"),
+];
+
+/// The function that `name` is a Ruby name of: `upper` for `upcase`.
+pub fn alias_of(name: &str) -> Option<&'static str> {
+    ALIASES.iter().find(|a| a.name == name).map(|a| a.of)
+}
+
+/// The Ruby names of the built-in function `name`.
+pub fn aliases(name: &str) -> impl Iterator<Item = &'static str> + '_ {
+    ALIASES.iter().filter(move |a| a.of == name).map(|a| a.name)
 }
 
 pub static BUILTINS: &[Builtin] = &[
@@ -119,8 +171,8 @@ pub static BUILTINS: &[Builtin] = &[
        "Lit toutes les lignes de l'entrée standard, jusqu'à sa fin : `Ok(liste de textes)`, ou `Err(message)` si elle ne peut pas être lue. Pour `rythme compter.ry < noms.txt`, ou du texte tapé jusqu'à Ctrl-D (Ctrl-Z puis Entrée sous Windows).",
        "match input_lines()\n  Ok(lines) -> print(len(lines), \"lines\")\n  Err(e) -> print(\"Error: {e}\")\nend"),
     b!("type_of", "type_of(value)", 1, 1, Basics, type_of,
-       "Returns the name of the type of a value: \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (for `()`), \"Option\", \"Result\", or the name of your own type.",
-       "Renvoie le nom du type d'une valeur : \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (pour `()`), \"Option\", \"Result\", ou le nom de votre propre type.",
+       "Returns the name of the type of a value: \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (for `()`), \"Symbol\" (for `:ok`), \"Option\", \"Result\", or the name of your own type.",
+       "Renvoie le nom du type d'une valeur : \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (pour `()`), \"Symbol\" (pour `:ok`), \"Option\", \"Result\", ou le nom de votre propre type.",
        "type_of([1, 2])            # \"List\""),
     b!("help", "help(value)", 0, 1, Basics, help,
        "Shows help: about a function (`help(map)`), a topic (`help(\"lists\")`), or what you can do with a value (`help([1, 2])`).",
@@ -349,16 +401,19 @@ pub static BUILTINS: &[Builtin] = &[
        "Calls f on each element, for its effect (like printing). Returns ().",
        "Appelle f sur chaque élément, pour son effet (comme afficher). Renvoie ().",
        "1..3 |> each(fn(i) = print(i))"),
-    b!("sum", "sum(list)", 1, 1, Lists, sum, "The sum of the numbers of a list.", "La somme des nombres d'une liste.", "sum([1, 2, 3])             # 6"),
+    b!("sum", "sum(list, f)", 1, 2, Lists, sum,
+       "The sum of the numbers of a list; with f, the sum of f(x) for each element.",
+       "La somme des nombres d'une liste ; avec f, la somme de f(x) pour chaque élément.",
+       "sum([1, 2, 3])             # 6\nsum([\"ab\", \"c\"], len)     # 3"),
     b!("product", "product(list)", 1, 1, Lists, product, "The product of the numbers of a list.", "Le produit des nombres d'une liste.", "product([2, 3, 4])         # 24"),
-    b!("first", "first(list)", 1, 1, Lists, first,
-       "The first element of a list (or character of a text), as an Option: `Some(x)`, or `None` if there is none.",
-       "Le premier élément d'une liste (ou caractère d'un texte), sous forme d'Option : `Some(x)`, ou `None` s'il n'y en a pas.",
-       "first([7, 8])              # Some(7)"),
-    b!("last", "last(list)", 1, 1, Lists, last,
-       "The last element of a list (or character of a text), as an Option.",
-       "Le dernier élément d'une liste (ou caractère d'un texte), sous forme d'Option.",
-       "last([7, 8])               # Some(8)"),
+    b!("first", "first(list, n)", 1, 2, Lists, first,
+       "The first element of a list (or character of a text), as an Option: `Some(x)`, or `None` if there is none. With n, the first n elements (like `take`).",
+       "Le premier élément d'une liste (ou caractère d'un texte), sous forme d'Option : `Some(x)`, ou `None` s'il n'y en a pas. Avec n, les n premiers éléments (comme `take`).",
+       "first([7, 8])              # Some(7)\nfirst([7, 8, 9], 2)        # [7, 8]"),
+    b!("last", "last(list, n)", 1, 2, Lists, last,
+       "The last element of a list (or character of a text), as an Option. With n, the last n elements.",
+       "Le dernier élément d'une liste (ou caractère d'un texte), sous forme d'Option. Avec n, les n derniers éléments.",
+       "last([7, 8])               # Some(8)\nlast([7, 8, 9], 2)         # [8, 9]"),
     b!("rest", "rest(list)", 1, 1, Lists, rest,
        "The list (or text) without its first element.",
        "La liste (ou le texte) sans son premier élément.",
@@ -440,7 +495,18 @@ pub static BUILTINS: &[Builtin] = &[
        "The first element for which f is true, as an Option.",
        "Le premier élément pour lequel f est vraie, sous forme d'Option.",
        "find([1, 4, 6], is_even)   # Some(4)"),
-    b!("count", "count(list, f)", 2, 2, Lists, count, "How many elements make f true.", "Combien d'éléments rendent f vraie.", "count([1, 2, 4], is_even)  # 2"),
+    b!("count", "count(list, f)", 1, 2, Lists, count,
+       "How many elements make f true; without f, how many elements there are.",
+       "Combien d'éléments rendent f vraie ; sans f, combien il y a d'éléments.",
+       "count([1, 2, 4], is_even)  # 2\ncount([1, 2, 4])           # 3"),
+    b!("reject", "reject(list, f)", 2, 2, Lists, reject,
+       "The elements for which f is false: the opposite of `filter`.",
+       "Les éléments pour lesquels f est fausse : le contraire de `filter`.",
+       "reject([1, 2, 3, 4], is_even) # [1, 3]"),
+    b!("each_with_index", "each_with_index(list, f)", 2, 2, Lists, each_with_index,
+       "Calls f(element, position) for each element, in order (positions start at 0). For effects, like `print`.",
+       "Appelle f(élément, position) pour chaque élément, dans l'ordre (les positions commencent à 0). Pour des effets, comme `print`.",
+       "each_with_index([\"a\", \"b\"], fn(x, i) = print(i, x))"),
     b!("index_of", "index_of(x, item)", 2, 2, Lists, index_of,
        "The position of an element in a list (or of a piece of text in a text), as an Option.",
        "La position d'un élément dans une liste (ou d'un morceau de texte dans un texte), sous forme d'Option.",
@@ -605,8 +671,8 @@ pub static BUILTINS: &[Builtin] = &[
        "is_leap_year(2024)         # true\nis_leap_year(1900)         # false"),
     // ----- Property tests -----
     b!("check_all", "check_all(property, generator, cases)", 2, 3, Tests, check_all,
-       "Checks that a property holds for many values made by a generator (100, or `cases`): the function is called with each value and must give `true` (or `()`, `Some(...)`, `Ok(...)`). When a value makes it false or stops it with an error, that value is simplified as much as possible (shrinking) and shown, with the seed that made it: the same values come back on every run.",
-       "Vérifie qu'une propriété est vraie pour beaucoup de valeurs fabriquées par un générateur (100, ou `cases`) : la fonction est appelée avec chaque valeur et doit donner `true` (ou `()`, `Some(...)`, `Ok(...)`). Quand une valeur la rend fausse ou l'arrête sur une erreur, cette valeur est simplifiée autant que possible et montrée, avec la graine qui l'a donnée : les mêmes valeurs reviennent à chaque lancement.",
+       "Checks that a property holds for many values made by a generator (100, or `cases`): the function is called with each value and must give `true` (or `()`, `Some(...)`, `Ok(...)`). When a value makes it false or stops it with an error, that value is simplified as much as possible (shrinking) and shown, with the seed that made it: the same values come back on every run. The property may also come last, as a block: `check_all(ints()) { |x| x + 0 == x }`.",
+       "Vérifie qu'une propriété est vraie pour beaucoup de valeurs fabriquées par un générateur (100, ou `cases`) : la fonction est appelée avec chaque valeur et doit donner `true` (ou `()`, `Some(...)`, `Ok(...)`). Quand une valeur la rend fausse ou l'arrête sur une erreur, cette valeur est simplifiée autant que possible et montrée, avec la graine qui l'a donnée : les mêmes valeurs reviennent à chaque lancement. La propriété peut aussi venir en dernier, comme un bloc : `check_all(ints()) { |x| x + 0 == x }`.",
        "check_all(fn(x) = x + 0 == x, ints())   # ()\ncheck_all(fn(l) = reverse(reverse(l)) == l, lists_of(texts()))   # ()\ncheck_all(fn(x) = abs(x) >= 0, floats(-1, 1), 500)   # ()"),
     b!("sample", "sample(generator, n)", 1, 2, Tests, sample,
        "A list of `n` values (10 if not given) made by a generator, to see what `check_all` will try.",
@@ -2238,6 +2304,8 @@ fn write_json(it: &Interp, v: &Value, indent: Option<usize>) -> Result<String, U
                 Value::Big(n) => out.push_str(&n.to_string()),
                 Value::Float(f) if f.is_finite() => out.push_str(&fmt_float(*f)),
                 Value::Text(s) => json_text(s, &mut out),
+                // `:ok` is written as its name, as Ruby does.
+                Value::Symbol(s) => json_text(&s.name(), &mut out),
                 Value::List(l) if l.is_empty() => out.push_str("[]"),
                 Value::Record(r) if r.is_empty() => out.push_str("{}"),
                 Value::List(l) => {
@@ -2359,6 +2427,27 @@ fn filter(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::list(out))
 }
 
+fn reject(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let l = list(a, 0, "reject", span)?;
+    let f = func(a, 1, "reject", span)?;
+    let mut out = Vec::new();
+    for x in l.iter() {
+        if !test(it, &f, x, "reject", span)? {
+            out.push(x.clone());
+        }
+    }
+    Ok(Value::list(out))
+}
+
+fn each_with_index(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let l = list(a, 0, "each_with_index", span)?;
+    let f = func(a, 1, "each_with_index", span)?;
+    for (i, x) in l.iter().enumerate() {
+        call_given2(it, "each_with_index", &f, x.clone(), Value::Int(i as i64), span)?;
+    }
+    Ok(Value::Unit)
+}
+
 fn fold(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "fold", span)?;
     let f = func(a, 2, "fold", span)?;
@@ -2390,8 +2479,16 @@ fn each(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::Unit)
 }
 
-fn sum(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let l = list(a, 0, "sum", span)?;
+fn sum(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let mut l = list(a, 0, "sum", span)?.clone();
+    if a.len() == 2 {
+        let f = func(a, 1, "sum", span)?;
+        let mut values = Vec::with_capacity(l.len());
+        for x in l.iter() {
+            values.push(call_given1(it, "sum", &f, x.clone(), span)?);
+        }
+        l = List::new(values);
+    }
     let mut acc = Value::Int(0);
     for x in l.iter() {
         if !matches!(x, Value::Int(_) | Value::Big(_) | Value::Float(_)) {
@@ -2441,6 +2538,11 @@ fn product(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn first(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    if a.len() == 2 {
+        let len = length_of(&a[0], "first", span)?;
+        let n = count_arg(a, 1, "first", span)?;
+        return Ok(cut(&a[0], 0, n.min(len)));
+    }
     Ok(match &a[0] {
         Value::List(l) => it.option(l.get(0).cloned()),
         Value::Text(s) => it.option(s.chars().next().map(|c| text_value(c.to_string()))),
@@ -2449,6 +2551,11 @@ fn first(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn last(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    if a.len() == 2 {
+        let len = length_of(&a[0], "last", span)?;
+        let n = count_arg(a, 1, "last", span)?;
+        return Ok(cut(&a[0], len - n.min(len), len));
+    }
     Ok(match &a[0] {
         Value::List(l) => it.option(l.as_slice().last().cloned()),
         Value::Text(s) => it.option(s.chars().last().map(|c| text_value(c.to_string()))),
@@ -2798,6 +2905,9 @@ fn find(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn count(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "count", span)?;
+    if a.len() == 1 {
+        return Ok(Value::Int(l.len() as i64));
+    }
     let f = func(a, 1, "count", span)?;
     let mut n = 0;
     for x in l.iter() {

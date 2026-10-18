@@ -1,6 +1,7 @@
 # Rythme
 
-**A simple, purely functional programming language, with help everywhere.**
+**Simpler than Python and Ruby, as pleasant as Ruby: a purely functional
+programming language, with help everywhere.**
 Programs are files ending in `.ry`. The interpreter is written in Rust.
 
 *[Version française →](README.fr.md)*
@@ -20,11 +21,32 @@ fn square(x) = x * x
   |> print                # 20
 ```
 
+The same, the Ruby way (blocks, method chains, names ending with `?`):
+
+```rythme
+names = ["Ada", "Grace", "Alan"]
+names.each do |name|
+  puts("Hello, #{name}!")
+end
+
+total = [1, 2, 3, 4]
+  .select(even?)
+  .map { |x| x * x }
+  .sum
+puts(total)                # 20
+```
+
 ## Why Rythme?
 
 - **Simpler than Python or Ruby.** 15 keywords (Python has 35). One way to do
   each thing. No classes, no `null`, no exceptions, no loops, no mutation:
   fewer concepts to learn, fewer bugs to chase.
+- **As pleasant as Ruby.** Blocks (`xs.map do |x| x * 2 end`,
+  `xs.select { |x| x > 2 }`), method chains (`xs.filter(is_even).sum`, one
+  step per line), names like `even?` and `empty?`, `unless`, symbols (`:ok`),
+  `"Hello #{name}"`, and the Ruby names of the library (`puts`, `upcase`,
+  `select`, `reject`, `reduce`, `each_with_index`...). `rythme help ruby`
+  shows what is the same and what is different.
 - **Purely functional.** Values are immutable, functions are values, every
   `if` and `match` is an expression. Recursion in tail position never runs
   out of stack.
@@ -256,6 +278,7 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 | [`cipher.ry`](examples/cipher.ry) | the Caesar cipher: `char_code`, `char`, counting letters |
 | [`results.ry`](examples/results.ry) | `Option`, `Result`, `?` |
 | [`students.ry`](examples/students.ry) | records, record update, grouping, averages |
+| [`library.ry`](examples/library.ry) | the Ruby style: `do \|x\| ... end` blocks, method chains, names ending with `?`, `unless`, symbols |
 | [`sales.ry`](examples/sales.ry) | a report: `scan`, columns lined up with `pad_left`, `windows`, `chunks`, JSON |
 | [`calendar.ry`](examples/calendar.ry) | dates: the page of a month, ISO 8601 texts, `days_between`, `add_days` |
 | [`tree.ry`](examples/tree.ry) | a recursive type: binary search tree |
@@ -298,7 +321,7 @@ mode) and is organised as a pipeline:
 | [`src/check/needs.rs`](src/check/needs.rs) | what the parameters of each function must be, and the calls that always fail |
 | [`src/compile.rs`](src/compile.rs) | prepares functions: each local name becomes a numbered slot |
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
-| [`src/builtins.rs`](src/builtins.rs) | 144 built-in functions, documented in two languages, JSON included |
+| [`src/builtins.rs`](src/builtins.rs) | 155 built-in functions (and their Ruby names), documented in two languages, JSON included |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |

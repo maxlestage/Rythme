@@ -126,6 +126,43 @@ Ada 2 Japon Oui un mot-clé comme nom de champ un texte comme nom de champ
 Les mots-clés et les fonctions intégrées sont en anglais, mais vos propres
 noms peuvent être en français, accents compris.
 
+**Noms qui finissent par `?`.** Le nom d'une fonction qui répond à une
+question peut finir par `?`, comme en Ruby : `even?`, `empty?`,
+`fn majeur?(personne) = ...`. Comme `?` est aussi l'opérateur qui s'arrête
+sur `None` ou `Err` ([5.2](#52-lopérateur-)), la règle est précise : un nom
+suivi directement de `?` (sans espace entre les deux) est un seul nom qui
+finit par `?`
+
+- après `fn` (`fn majeur?(p)`), ou quand `(` suit directement le `?`
+  (`majeur?(ada)`, `xs.include?(3)`) ;
+- sinon, quand une fonction de ce nom existe : une fonction intégrée
+  (`even?`, `empty?`... voir [6](#6-bibliothèque-standard)), ou une fonction
+  définie avec `fn` dans le même fichier.
+
+Dans tous les autres cas, `?` est l'opérateur : `valeur?`, `parse_int(t)?`,
+`x |> parse_int?`. Pour appliquer l'opérateur à une valeur dont le nom est
+aussi celui d'une telle fonction, écrivez `(valeur)?` ou `valeur ?`. Seules
+les fonctions peuvent avoir un nom qui finit par `?` (E001 pour `ok? = 1`),
+et `is_even` et les autres noms marchent toujours.
+
+```rythme
+fn majeur?(personne) = personne.age >= 18
+ada = {nom: "Ada", age: 36}
+print(majeur?(ada), ada.majeur?, even?(4), [1, 2].include?(2), [].empty?)
+print([1, 2, 3, 4].select(even?))
+fn premier_double(xs)
+  x = first(xs)?             # `first` n'est pas suivi de `(` : l'opérateur
+  Some(x * 2)
+end
+print(premier_double([5]), premier_double([]))
+```
+
+```text
+true true true true true
+[2, 4]
+Some(10) None
+```
+
 ### 1.5 Mots-clés et mots réservés
 
 Rythme a 15 mots-clés :
@@ -137,7 +174,12 @@ and  do  else  end  false  fn  if  match  not  or  test  then  true  type  use
 Ils ne peuvent pas servir de noms. Ils peuvent servir de **noms de champs**,
 après un point ou devant `:` dans un enregistrement (`e.type`, `{type: 1}`),
 mais pas dans la forme courte `{type}`. `as` n'est pas un mot-clé : il n'a
-de sens qu'après le chemin d'un `use` (`use geometrie as geo`).
+de sens qu'après le chemin d'un `use` (`use geometrie as geo`). `unless`
+n'en est pas un non plus : il commence `unless condition then a else b`
+([3.9](#39-if)) seulement quand le début d'une valeur le suit sur la même
+ligne (un nom, un nombre, un texte, un symbole, `not`, `if`, `match`, `fn`,
+ou un crochet après une espace) ; `unless(x)` et `unless[0]`, sans espace,
+utilisent une valeur nommée `unless`.
 
 Les mots suivants, venus d'autres langages, sont **réservés** : en utiliser
 un comme nom est une erreur (E001) dont le message explique comment faire la
@@ -199,6 +241,7 @@ Séquences d'échappement :
 | `\\` | une barre oblique inverse |
 | `\"` | un guillemet |
 | `\{` et `\}` | des accolades |
+| `\#` | `#` ; `\#{` donne `#{`, écrit tel quel |
 | `\u{e9}` | le caractère de ce code hexadécimal (ici é) |
 
 Toute autre séquence `\` est l'erreur E018.
@@ -209,7 +252,8 @@ Toute expression est permise, enregistrements et autres textes compris ; les
 accolades qu'elle contient sont appariées, et les retours à la ligne entre
 les accolades sont ignorés. Un `{}` vide est une erreur (E001). Pour écrire
 une `{`, utilisez `\{`. Une `}` qui ne ferme pas d'insertion est un caractère
-ordinaire (`\}` est aussi accepté).
+ordinaire (`\}` est aussi accepté). Comme en Ruby, `#{expression}` est
+pareil que `{expression}` ; `\#{` écrit `#{` tel quel.
 
 Les textes utilisés comme motif, comme nom de test ou comme chemin de `use`
 doivent être des textes simples, sans insertion.
@@ -222,6 +266,7 @@ print("\u{e9}t\u{e9} \u{1F3B5}")
 print("un texte peut tenir
 sur plusieurs lignes")
 print("{ {x: 1}.x } et {"imbriqué {nom}"}")
+print("style Ruby : #{nom}, #{2 * 21}, \#{nom}")
 ```
 
 ```text
@@ -231,6 +276,7 @@ tab :	| guillemet : " | barre : \ | accolades : { et }
 un texte peut tenir
 sur plusieurs lignes
 1 et imbriqué Ada
+style Ruby : Ada, 42, #{nom}
 ```
 
 ### 1.8 Opérateurs et ponctuation
@@ -359,6 +405,7 @@ en silence.
 | `Text` | textes | `"bonjour"`, `"total : {x}"` |
 | `Bool` | `true`, `false` | |
 | `Unit` | `()`, « pas de valeur intéressante » | `()` |
+| `Symbol` | des noms utilisés comme valeurs | `:ok`, `:erreur` |
 | `List` | suites ordonnées | `[1, 2, 3]`, `1..5`, `[]` |
 | `Record` | enregistrements : des champs nommés | `{nom: "Ada", naissance: 1815}` |
 | `Function` | fonctions, fonctions intégrées, constructeurs avec champs | `fn(x) = x + 1`, `print`, `Some` |
@@ -676,6 +723,7 @@ En dehors des textes, les deux formes sont identiques :
 | variante | `None`, `Some(3)`, `Cercle(2.0)` |
 | fonction | `<fn nom>` pour une fonction nommée ou intégrée, `<fn>` pour une fonction anonyme |
 | constructeur avec champs | `<constructeur Cercle>` (en anglais : `<constructor Cercle>`) |
+| Symbol | `:ok` |
 
 `print` écrit ses arguments séparés par une espace, puis un retour à la
 ligne, sur la sortie standard. `debug(x)` écrit `[debug fichier:ligne:colonne]`
@@ -697,6 +745,36 @@ texte 42 2.0 ["a", "b"] {nom: "Ada", "nom complet": "Ada L."} None ()
 [debug 15-affichage.ry:4:10] ["a", "b"]
 2
 [<fn print>, <fn>, <constructeur Some>, None]
+```
+
+### 2.14 Symbol
+
+Un **symbole** est un nom utilisé comme valeur, comme en Ruby : `:ok`,
+`:erreur`, `:en_attente`. Il s'écrit `:` suivi directement d'un nom, et
+s'affiche de la même façon. Deux symboles sont égaux quand leurs noms le
+sont ; ils sont ordonnés par nom ; ils ne sont jamais égaux à un texte
+(`:ok == "ok"` est faux, et le vérificateur avertit, W006). On les utilise
+dans les motifs de `match`, et `to_json` les écrit comme des textes.
+
+Un `:` est celui d'un enregistrement quand il suit un nom de champ qui suit
+`{` ou `,` (`{etat:ok}` est le champ `etat` avec la valeur de `ok`) ;
+partout ailleurs, `:nom` est un symbole : `{etat: :ok}`, `[:a, :b]`,
+`f(:ok)`.
+
+```rythme
+etat = :en_attente
+fn etiquette(e) = match e
+  :ok -> "fait"
+  :en_attente -> "en attente"
+  _ -> "inconnu"
+end
+print(etat, etiquette(etat), type_of(:ok), :a < :b, :ok == :ok)
+print({etat: :ok, nombre: 2}, to_json([:ok, 1]), text(:ok))
+```
+
+```text
+:en_attente en attente Symbol true true
+{etat: :ok, nombre: 2} ["ok", 1] :ok
 ```
 
 ---
@@ -922,10 +1000,20 @@ mot-clé ou un mot réservé.
   `(valeur, args...)` : `"salut".upper()` vaut `upper("salut")`, `10.max(20)`
   vaut `max(10, 20)`.
 
+`valeur.nom` **sans parenthèses** lit le champ `nom` quand la valeur en a un
+(un champ d'enregistrement, ou un champ d'une variante) ; quand elle n'en a
+pas, il appelle la fonction `nom` avec la valeur : `xs.sum` vaut `sum(xs)`,
+`"salut".upcase` vaut `upcase("salut")`, `forme.aire` vaut `aire(forme)`
+quand `Cercle` n'a pas de champ `aire`. Le champ gagne toujours : les
+enregistrements gardent leur sens. Un nom qui finit par `?` marche de la même
+façon : `xs.empty?`, `n.even?`. Quand il n'y a ni champ ni fonction, c'est
+l'erreur E010.
+
 Le vérificateur avertit (W005) quand aucune fonction ni aucun champ
 d'enregistrement du fichier ne porte ce nom. Une ligne qui commence par `.`
 continue la ligne précédente : on peut donc enchaîner les appels de méthode
-sur plusieurs lignes.
+sur plusieurs lignes, une étape par ligne, comme on écrit en Ruby (des lignes
+vides et des commentaires peuvent venir entre les étapes).
 
 ```rythme
 type Forme = Cercle(rayon)
@@ -953,6 +1041,27 @@ erreur[E007]: l'indice 5 est hors limites : la liste a 3 élément(s)
   = aide: les indices valides vont de 0 à 2 (ou -1 pour le dernier élément)
   = aide: pour obtenir une Option au lieu d'une erreur, utilisez `get(x, 5)`
   = en savoir plus : `rythme explain E007`
+```
+
+Sans parenthèses, et sur plusieurs lignes :
+
+```rythme
+xs = [3, 1, 4, 1, 5, 9, 2, 6]
+print(xs.sum, xs.size, xs.sort.first, "rythme".upcase, xs.uniq.size)
+top = xs
+  .sort
+  .reverse
+  # les trois plus grands
+  .first(3)
+print(top)
+point = {x: 1, sum: "un champ"}
+print(point.sum)                        # le champ gagne sur la fonction
+```
+
+```text
+31 8 Some(1) RYTHME 7
+[9, 6, 5]
+un champ
 ```
 
 ### 3.9 `if`
@@ -1006,6 +1115,22 @@ erreur[E019]: ce `if` n'a pas de `else`
 
 Quand il n'y a rien à faire dans un des cas, donnez la valeur unité :
 `if x > 0 then print("positif") else ()`.
+
+**`unless`**, comme en Ruby, est le contraire de `if` :
+`unless condition then a else b` donne `b` quand la condition est vraie et
+`a` quand elle est fausse ; c'est exactement `if condition then b else a`.
+Comme `if`, il a toujours un `else` (E019). Voir
+[1.5](#15-mots-clés-et-mots-réservés) pour savoir quand le mot `unless` le
+commence.
+
+```rythme
+fn decrire(stock) = unless stock > 0 then "épuisé" else "{stock} restant(s)"
+print(decrire(0), decrire(3))
+```
+
+```text
+épuisé 3 restant(s)
+```
 
 ### 3.10 `match` et motifs
 
@@ -1248,6 +1373,54 @@ print([0, ..xs, 3], xs + [9], 1..5, 5..1)
 {nom: "Ada", naissance: 1816} {nom: "Ada", naissance: 1815, ville: "Londres"} {naissance: 1815, nom: "Ada"}
 {nom: "Grace", naissance: 1906}
 [0, 1, 2, 3] [1, 2, 9] [1, 2, 3, 4, 5] []
+```
+
+### 3.14 Blocs donnés aux appels
+
+Comme en Ruby, on peut donner une fonction à un appel sous forme de **bloc**,
+écrit après l'appel : `do |paramètres| ... end`, ou `{ |paramètres| ... }`.
+Un bloc est le **dernier argument** de l'appel, et c'est exactement une
+fonction anonyme : `xs.map do |x| x * 2 end` vaut `map(xs, fn(x) = x * 2)`.
+
+- Il suit un appel (`map(xs) do ... end`), un appel de méthode
+  (`xs.reduce(0) do |somme, x| ... end`), un `.nom` sans parenthèses
+  (`xs.each do |x| ... end` vaut `xs.each(fn(x) = ...)`), ou un nom
+  (`lancer do ... end` vaut `lancer(fn() = ...)`).
+- `do` (ou `{`) doit être sur la ligne de l'appel ; le bloc peut ensuite
+  continuer sur plusieurs lignes, jusqu'à `end` (ou `}`), ou tenir sur une
+  ligne.
+- Les paramètres vont entre deux barres, séparés par des virgules ; ce
+  peuvent être des motifs (`|[cle, valeur]|`, `|{nom, ..}|`, `|Some(x)|`) ;
+  sans paramètres, écrivez `do ... end` ou `{ || ... }`.
+- `{ |x| ... }` n'est jamais un enregistrement : un enregistrement ne
+  commence jamais par `|`. Un bloc écrit seul, pas après un appel, est
+  l'erreur E001.
+- La valeur du bloc est sa dernière ligne, comme dans une fonction. La suite
+  de l'enchaînement s'applique au résultat de l'appel :
+  `xs.map do |x| x end.sum`.
+
+```rythme
+noms = ["Ada", "Grace", "Alan"]
+noms.each do |nom|
+  print("Bonjour, #{nom} !")
+end
+print(noms.map { |n| n.size })
+total = [1, 2, 3].reduce(0) do |somme, x|
+  somme + x
+end
+print(total, [[1, 2], [3, 4]].map do |[a, b]| a * b end)
+noms.each_with_index do |nom, i| print(i, nom) end
+```
+
+```text
+Bonjour, Ada !
+Bonjour, Grace !
+Bonjour, Alan !
+[3, 5, 4]
+6 [2, 12]
+0 Ada
+1 Grace
+2 Alan
 ```
 
 ---
@@ -1789,7 +1962,9 @@ propriété, dont le message commence par la valeur), en montrant la valeur la
 plus simple trouvée, celle d'où elle vient et la **graine**. Les valeurs ne
 dépendent que de la graine et de la place de l'appel dans son fichier : chaque
 lancement, sur chaque machine, essaie les mêmes valeurs ;
-`rythme test --seed N` en essaie d'autres.
+`rythme test --seed N` en essaie d'autres. La propriété peut aussi venir en
+dernier, comme un bloc (voir [3.14](#314-blocs-donnés-aux-appels)) :
+`check_all(ints(0, 9)) { |x| x * 0 == 0 }`.
 
 Les générateurs sont des enregistrements, fabriqués par `ints(min, max)`
 (nombres entiers, de -1000 à 1000 sans arguments), `floats(min, max)`
@@ -2395,7 +2570,7 @@ minuscules.
 
 ## 6. Bibliothèque standard
 
-Les 144 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
+Les 155 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
 mots-clés, leurs noms sont en anglais. `rythme help builtins` les liste
 toutes par catégorie, une ligne chacune ; `rythme help NOM` (ou `help(NOM)`
 dans un programme, ou `:doc NOM` dans le mode interactif) affiche la
@@ -2473,16 +2648,20 @@ donne la ligne et la colonne) et `to_json(valeur, indentation)` (le texte
 JSON d'une valeur, sur une ligne, ou un élément par ligne décalé de
 `indentation` espaces, au plus 16).
 
-**Listes.** `map`, `filter`, `fold(liste, depart, f)`,
-`scan(liste, depart, f)` (chaque résultat intermédiaire de `fold`), `each`,
-`sum`, `product`, `first`, `last`, `rest`, `get(x, cle)`, `push(liste, x)`,
+**Listes.** `map`, `filter`, `reject(liste, f)` (les éléments pour lesquels
+f est fausse), `fold(liste, depart, f)`, `scan(liste, depart, f)` (chaque
+résultat intermédiaire de `fold`), `each`, `each_with_index(liste, f)`
+(appelle `f(x, i)`), `sum` (et `sum(liste, f)`, la somme des `f(x)`),
+`product`, `first` et `last` (une Option ; `first(liste, n)` et
+`last(liste, n)` donnent les n premiers ou derniers éléments), `rest`, `get(x, cle)`, `push(liste, x)`,
 `set_at(liste, i, x)`, `insert_at(liste, i, x)` et `remove_at(liste, i)`
 (les positions négatives partent de la fin), `reverse`, `sort`,
 `sort_by(liste, cle)` (stable), `unique`, `shuffle`, `slice(x, debut, fin)`,
 `take`, `drop`, `take_while(x, f)` et `drop_while(x, f)`, `step_by(x, n)`
 (un élément sur n), `chunks(x, n)` (des morceaux de n éléments) et
 `windows(x, n)` (chaque groupe de n éléments voisins), `zip`, `enumerate`,
-`any`, `all`, `find`, `count`, `index_of`, `min_by(liste, cle)` et
+`any`, `all`, `find`, `count` (et `count(liste)`, le nombre d'éléments),
+`index_of`, `min_by(liste, cle)` et
 `max_by(liste, cle)`, `flatten`, `flat_map`, `partition`,
 `group_by(liste, cle)` (un enregistrement dont les noms de champs sont les
 clés sous forme de textes), `is_empty`. Beaucoup acceptent aussi des textes
@@ -2571,6 +2750,46 @@ jour après un moment, c'est la même heure le lendemain.
 (voir [4.8](#48-tests)). Un générateur est un enregistrement comme
 `{generator: "ints", min: 1, max: 6}` ; un générateur mal fait arrête
 `check_all` et `sample` avec E023.
+
+**Noms Ruby.** Certaines fonctions ont un second nom, celui que Ruby leur
+donne. Chacun est exactement la fonction qu'il nomme (mêmes arguments, mêmes
+messages) : `rythme help upcase` le dit, et `rythme help builtins` les liste
+par catégorie. Un programme peut donner l'un de ces noms à quelque chose de
+à lui sans avertissement.
+
+| Nom Ruby | Pareil que | Nom Ruby | Pareil que |
+|----------|------------|----------|------------|
+| `puts` | `print` | `select` | `filter` |
+| `to_s` | `text` | `reduce`, `inject` | `fold` |
+| `to_i` | `int` | `uniq` | `unique` |
+| `to_f` | `float` | `each_slice` | `chunks` |
+| `length`, `size` | `len` | `each_cons` | `windows` |
+| `upcase` | `upper` | `include?` | `contains` |
+| `downcase` | `lower` | `empty?` | `is_empty` |
+| `strip` | `trim` | `even?`, `odd?` | `is_even`, `is_odd` |
+| `start_with?` | `starts_with` | `any?`, `all?` | `any`, `all` |
+| `end_with?` | `ends_with` | `key?` | `has` |
+
+`sort_by`, `min_by`, `max_by`, `group_by`, `zip`, `flatten`, `sum`, `count`,
+`first`, `last`, `find`, `map`, `each`, `reject` et `each_with_index` ont le
+même nom dans les deux langages. Avec les appels de méthode et les blocs
+([3.8](#38-champs-et-appels-de-méthode), [3.14](#314-blocs-donnés-aux-appels)),
+du code Ruby marche souvent tel quel :
+
+```rythme
+mots = ["poire", "figue", "banane", "figue"]
+print(mots.uniq.size, mots.select { |m| m.size > 5 }, mots.reject { |m| m.include?("a") })
+print(mots.first(2), mots.last(1), mots.count, mots.sum { |m| m.length })
+print(mots.each_slice(3), "  Rythme ".strip.downcase, 42.to_s + " !", "7".to_i + 1)
+print([1, 2, 3].reduce(0) do |acc, x| acc + x end, [3, 1, 2].sort_by { |x| -x })
+```
+
+```text
+3 ["banane"] ["poire", "figue", "figue"]
+["poire", "figue"] ["figue"] 4 21
+[["poire", "figue", "banane"], ["figue"]] rythme 42 ! 8
+6 [3, 2, 1]
+```
 
 ```rythme
 nombres = [3, 1, 4, 1, 5, 9, 2, 6]
@@ -3027,8 +3246,11 @@ une variante par ligne ; une liste ou un enregistrement écrit sur plusieurs
 lignes finit par une virgule ; une instruction par ligne, et `end` sur sa
 propre ligne ; une ligne vide autour d'une définition écrite sur plusieurs
 lignes, et jamais deux lignes vides de suite ; chaque commentaire est gardé,
-et les commentaires en fin de lignes consécutives sont alignés. Là où le
-langage laisse le choix, les retours à la ligne sont gardés, et les lignes
+et les commentaires en fin de lignes consécutives sont alignés ; un bloc
+donné à un appel écrit sur une ligne reste sur une ligne, avec une espace
+autour de ses parties (`xs.map do |x| x * 2 end`, `xs.map { |x| x * 2 }`),
+et sur plusieurs lignes ses instructions vont un niveau plus loin que la
+ligne de `do`. Là où le langage laisse le choix, les retours à la ligne sont gardés, et les lignes
 longues sont gardées telles quelles.
 
 Avec `brouillon.ry` :
@@ -3230,7 +3452,7 @@ Le nombre de côtés d'un carré.
 len(x)
 ~~~
 
-Longueur d'un texte (en caractères), d'une liste ou d'un enregistrement.
+Longueur d'un texte (en caractères), d'une liste ou d'un enregistrement. Pareil que : `length`, `size` (ses noms Ruby).
 
 Exemple :
 
@@ -3498,7 +3720,7 @@ item         = type_def | test_def | use_def | statement ;
 statement    = fn_def | binding | expression ;
 
 binding      = pattern_atom "=" expression ;
-fn_def       = "fn" NAME "(" [ patterns ] ")" [ "if" expression ] body ;
+fn_def       = "fn" NAME [ "?" ] "(" [ patterns ] ")" [ "if" expression ] body ;
 body         = "=" expression
              | NL block_end ;
 block_end    = { statement NL } [ statement ] "end" ;
@@ -3520,15 +3742,19 @@ product      = unary { ( "*" | "/" | "//" | "%" ) unary } ;
 unary        = "-" unary | power ;
 power        = primary { postfix } [ "**" unary ] ;
 postfix      = "(" [ arguments ] ")" | "[" expression "]" | "?"
-             | "." MEMBER [ "(" [ arguments ] ")" ] ;
+             | "." MEMBER [ "(" [ arguments ] ")" ] | block ;
+block        = "do" [ params ] block_end
+             | "{" params { statement NL } [ statement ] "}" ;
+params       = "|" [ pattern_atom { "," pattern_atom } ] "|" | "||" ;
 arguments    = expression { "," expression } ;
 
-primary      = INT | FLOAT | TEXT | "true" | "false" | NAME | CTOR
+primary      = INT | FLOAT | TEXT | SYMBOL | "true" | "false" | NAME | CTOR
              | "(" ")" | "(" expression ")"
              | "[" [ list_item { "," list_item } ] "]"
              | "{" [ record_item { "," record_item } ] "}"
              | "fn" "(" [ patterns ] ")" body
              | "if" expression "then" expression "else" expression
+             | "unless" expression "then" expression "else" expression
              | "match" expression NL case { NL case } NL "end"
              | "do" block_end ;
 list_item    = [ ".." ] expression ;
@@ -3539,7 +3765,7 @@ patterns     = pattern { "," pattern } ;
 pattern      = pattern_atom { "|" pattern_atom } ;
 pattern_atom = "_" | NAME
              | CTOR [ "(" [ patterns ] ")" ]
-             | [ "-" ] INT | [ "-" ] FLOAT | PLAIN_TEXT | "true" | "false"
+             | [ "-" ] INT | [ "-" ] FLOAT | PLAIN_TEXT | SYMBOL | "true" | "false"
              | "(" ")" | "(" pattern ")"
              | "[" [ list_patterns ] "]"
              | "{" [ field_pattern { "," field_pattern } ] "}" ;
@@ -3547,7 +3773,8 @@ list_patterns = ".." [ NAME ] [ "," ]
              | pattern [ "," [ list_patterns ] ] ;
 field_pattern = KEY ":" pattern | NAME | ".." ;
 
-MEMBER       = NAME | CTOR | mot-clé | mot réservé ;
+MEMBER       = NAME [ "?" ] | CTOR | mot-clé | mot réservé ;
+SYMBOL       = ":" NAME ;
 KEY          = MEMBER | PLAIN_TEXT ;
 ```
 
@@ -3561,6 +3788,19 @@ Remarques :
   sans champs et un littéral y sont acceptés (sinon E001, avec une
   indication pour `f(x) = ...`, `xs[0] = ...` et `e.x = ...`).
 - `field_pattern` : `..` suivi d'un nom (`{nom, ..autres}`) est E001.
+- `NAME [ "?" ]` : un seul nom seulement quand le `?` touche le nom et que
+  les règles de [1.4](#14-noms) le disent ; sinon le `?` est l'opérateur
+  `postfix`. Un `NAME` suivi d'un `?` qui fait partie du nom (`even?`) est
+  aussi un `primary`.
+- `block` : seulement après un appel, un appel de méthode, un `.` MEMBER ou
+  un NAME, avec `do` ou `{` sur la même ligne
+  ([3.14](#314-blocs-donnés-aux-appels)) ; c'est le dernier argument de
+  l'appel. `{` suivi de `|` ou `||` commence toujours un bloc, jamais un
+  enregistrement.
+- `"unless"` : le mot commence un `unless` seulement comme décrit en
+  [1.5](#15-mots-clés-et-mots-réservés) ; ailleurs c'est un NAME.
+- `SYMBOL` : `:` suivi directement d'un nom, sauf le `:` qui suit un nom de
+  champ après `{` ou `,` ([2.14](#214-symbol)).
 - Dans `match`, la valeur examinée doit finir sur la ligne de `match`, et les
   cas peuvent être séparés par des lignes vides ; `end` peut suivre le dernier
   cas sur la même ligne. Dans les blocs, `end` peut suivre la dernière

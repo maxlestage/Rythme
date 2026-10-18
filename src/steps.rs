@@ -93,7 +93,9 @@ enum K {
     Call(Box<Term>, Vec<Term>, Look),
     /// `value.name(args)`: the value, the name, the function `name` and the arguments.
     Method(Box<Term>, Sym, Box<Term>, Vec<Term>, Span),
-    Field(Box<Term>, Rc<str>, Span),
+    /// `value.name`: the field `name`, or else the function `name` (the
+    /// last term) called with the value.
+    Field(Box<Term>, Rc<str>, Span, Box<Term>),
     Index(Box<Term>, Box<Term>),
     Unary(UnOp, Box<Term>),
     Binary(BinOp, Box<Term>, Box<Term>, Span),
@@ -232,6 +234,7 @@ fn convert(e: &Expr, sub: &mut Sub) -> Term {
         ExprKind::Big(n) => K::Val(Value::Big(n.clone())),
         ExprKind::Float(f) => K::Val(Value::Float(*f)),
         ExprKind::Text(s) => K::Val(Value::Text(s.clone())),
+        ExprKind::Symbol(s) => K::Val(Value::Symbol(*s)),
         ExprKind::Template(parts) => K::Template(
             parts
                 .iter()
@@ -267,7 +270,10 @@ fn convert(e: &Expr, sub: &mut Sub) -> Term {
             let func = Box::new(Term::new(name_term(sub, *name), *nspan));
             K::Method(recv, *name, func, args.iter().map(|a| convert(a, sub)).collect(), *nspan)
         }
-        ExprKind::Field(x, name, nspan) => K::Field(bx(x, sub), key(name), *nspan),
+        ExprKind::Field(x, name, nspan) => {
+            let func = Box::new(Term::new(name_term(sub, Sym::new(name)), *nspan));
+            K::Field(bx(x, sub), key(name), *nspan, func)
+        }
         ExprKind::Index(a, b) => K::Index(bx(a, sub), bx(b, sub)),
         ExprKind::Unary(op, x) => K::Unary(*op, bx(x, sub)),
         ExprKind::Binary(op @ (BinOp::And | BinOp::Or), l, r, _) => K::Logic(*op, bx(l, sub), bx(r, sub)),
@@ -387,7 +393,11 @@ fn subst(t: &mut Term, b: &[(Sym, Value)]) {
             subst(func, b);
             args.iter_mut().for_each(|a| subst(a, b));
         }
-        K::Field(x, ..) | K::Unary(_, x) | K::Truth(x) | K::Try(x) | K::Frame(x, _) => subst(x, b),
+        K::Field(x, _, _, func) => {
+            subst(x, b);
+            subst(func, b);
+        }
+        K::Unary(_, x) | K::Truth(x) | K::Try(x) | K::Frame(x, _) => subst(x, b),
         K::Index(x, y) | K::Binary(_, x, y, _) | K::Logic(_, x, y) | K::Range(x, y) => {
             subst(x, b);
             subst(y, b);
@@ -679,9 +689,25 @@ impl<'a> Stepper<'a> {
                 t.k = K::Call(Box::new(Term::val(f, nspan)), args, look);
                 S::Did
             }
-            K::Field(x, name, nspan) => {
+            K::Field(x, name, nspan, func) => {
                 sub!(self, x, d);
-                t.k = K::Val(fail!(self.it.field(v(x), name, *nspan)));
+                if let Some(val) = interp::field_of(v(x), name) {
+                    t.k = K::Val(val);
+                    return S::Did;
+                }
+                // `xs.sum`: no field, so the function `sum` called with the value, if there is one.
+                let f = match &func.k {
+                    K::Val(f) => Some(f.clone()),
+                    K::Global(s) => self.lookup(*s, *nspan).ok(),
+                    _ => None,
+                };
+                match f {
+                    Some(f) if f.is_callable() => {
+                        let x = std::mem::replace(&mut **x, Term::val(Value::Unit, span));
+                        t.k = K::Call(Box::new(Term::val(f, *nspan)), vec![x], Look::Plain);
+                    }
+                    _ => t.k = K::Val(fail!(self.it.field(v(x), name, *nspan))),
+                }
                 S::Did
             }
             K::Index(x, i) => {
@@ -1008,7 +1034,7 @@ impl<'a> Stepper<'a> {
                         _ => return false,
                     }
                 }
-                K::Field(x, name, nspan) => {
+                K::Field(x, name, nspan, _) => {
                     if !self.pure(x, d) {
                         return false;
                     }
@@ -1388,7 +1414,7 @@ fn clone_term(t: &Term) -> Term {
         K::Lambda(d, env) => K::Lambda(d.clone(), env.clone()),
         K::Call(f, args, look) => K::Call(b(f), args.iter().map(clone_term).collect(), look.clone()),
         K::Method(r, n, f, args, s) => K::Method(b(r), *n, b(f), args.iter().map(clone_term).collect(), *s),
-        K::Field(x, n, s) => K::Field(b(x), n.clone(), *s),
+        K::Field(x, n, s, f) => K::Field(b(x), n.clone(), *s, b(f)),
         K::Index(x, y) => K::Index(b(x), b(y)),
         K::Unary(op, x) => K::Unary(*op, b(x)),
         K::Binary(op, x, y, s) => K::Binary(*op, b(x), b(y), *s),
@@ -1639,7 +1665,7 @@ impl Printer<'_> {
                 self.push(&name.name());
                 self.args(args);
             }
-            K::Field(x, name, _) => {
+            K::Field(x, name, ..) => {
                 self.term(x, ATOM);
                 self.push(".");
                 self.push(name);
@@ -1739,6 +1765,10 @@ impl Printer<'_> {
             Value::Big(n) => self.push(&n.to_string()),
             Value::Float(f) => self.push(&fmt_float(*f)),
             Value::Text(s) => write_text_repr(s, &mut self.out),
+            Value::Symbol(s) => {
+                self.push(":");
+                self.push(&s.name());
+            }
             Value::List(l) => {
                 self.push("[");
                 for (i, x) in l.iter().enumerate() {
@@ -1805,6 +1835,10 @@ impl Printer<'_> {
             PatKind::Big(n) => self.push(&n.to_string()),
             PatKind::Float(f) => self.push(&fmt_float(*f)),
             PatKind::Text(s) => write_text_repr(s, &mut self.out),
+            PatKind::Symbol(s) => {
+                self.push(":");
+                self.push(&s.name());
+            }
             PatKind::Ctor(name, ps) => {
                 self.push(&name.name());
                 if !ps.is_empty() {
@@ -1889,6 +1923,13 @@ impl Printer<'_> {
         }
         let body = convert(&clause.body, &mut sub);
         match &body.k {
+            // A block of one expression (`{ |x| x * 2 }`) is shown as `fn(x) = x * 2`.
+            K::Block(stmts) if matches!(stmts.as_slice(), [St::Expr(_)]) => {
+                if let [St::Expr(x)] = stmts.as_slice() {
+                    self.push(" = ");
+                    self.term(x, LOW);
+                }
+            }
             K::Block(stmts) => self.statements(stmts),
             _ => {
                 self.push(" = ");

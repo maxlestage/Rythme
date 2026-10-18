@@ -8,6 +8,12 @@
  * `.`, `+`, `and`, `else`...): the external scanner (src/scanner.c) only
  * emits a new line where the grammar accepts one, and decides about the
  * continuations by looking at the next line.
+ *
+ * The scanner also reads the names that end with `?` (`even?`): a name
+ * directly followed by `?` is one name when `(` follows directly
+ * (`even?(4)`, `fn adult?(p)`) or when it is a built-in one (`xs.empty?`);
+ * otherwise the `?` is the operator (`value?`). (Rythme also knows the
+ * functions defined with `?` in the file; this grammar does not.)
  */
 
 /// <reference types="tree-sitter-cli/dsl" />
@@ -51,7 +57,7 @@ function lines($, rule) {
 module.exports = grammar({
   name: 'rythme',
 
-  externals: $ => [$._newline, $.string_content, $._error_sentinel],
+  externals: $ => [$._newline, $.string_content, $._error_sentinel, $.predicate, $._unless],
 
   extras: $ => [/[ \t\r\n\f﻿]/, ';', $.comment],
 
@@ -110,7 +116,7 @@ module.exports = grammar({
     function_definition: $ =>
       seq(
         'fn',
-        field('name', $.identifier),
+        field('name', choice($.identifier, $.predicate)),
         field('parameters', $.parameters),
         optional(field('guard', $.guard)),
         $._body,
@@ -131,10 +137,12 @@ module.exports = grammar({
     _expression: $ =>
       choice(
         $.identifier,
+        $.predicate,
         $.constructor,
         $.integer,
         $.float,
         $.string,
+        $.symbol,
         $.boolean,
         $.unit,
         $.list,
@@ -151,6 +159,7 @@ module.exports = grammar({
         $.pipe_expression,
         $.range_expression,
         $.if_expression,
+        $.unless_expression,
         $.match_expression,
         $.do_expression,
         $.lambda,
@@ -176,11 +185,32 @@ module.exports = grammar({
     _field_name: $ =>
       choice(
         alias($.identifier, $.field_name),
+        alias($.predicate, $.field_name),
         alias($.constructor, $.field_name),
         ...KEYWORDS.map(k => alias(k, $.field_name)),
       ),
 
-    call: $ => prec(PREC.postfix, seq(field('function', $._expression), field('arguments', $.arguments))),
+    // Right associative: a block after `f(x)` belongs to that call.
+    call: $ =>
+      prec.right(
+        PREC.postfix,
+        seq(
+          field('function', $._expression),
+          choice(seq(field('arguments', $.arguments), optional(field('block', $._block))), field('block', $._block)),
+        ),
+      ),
+
+    /** A block given as the last argument: `do |x| ... end` or `{ |x| ... }`. */
+    _block: $ => choice($.do_block, $.brace_block),
+
+    do_block: $ => seq('do', optional(field('parameters', $.block_parameters)), field('body', $.block)),
+
+    brace_block: $ => seq('{', field('parameters', $.block_parameters), lines($, $._statement), '}'),
+
+    block_parameters: $ => choice('||', seq('|', commaSep($._block_parameter), '|')),
+
+    _block_parameter: $ =>
+      choice($.identifier, $.constructor_pattern, $.list_pattern, $.record_pattern, $.parenthesized_pattern, $.unit_pattern),
 
     arguments: $ => seq('(', commaSep($._expression), ')'),
 
@@ -189,11 +219,16 @@ module.exports = grammar({
 
     field_expression: $ => prec(PREC.postfix, seq(field('value', $._expression), '.', field('field', $._field_name))),
 
-    /** `value.name(arguments)` calls `name(value, arguments)`. */
+    /** `value.name(arguments)` calls `name(value, arguments)`; a block may follow. */
     method_call: $ =>
-      prec(
+      prec.right(
         PREC.postfix + 1,
-        seq(field('value', $._expression), '.', field('method', $._field_name), field('arguments', $.arguments)),
+        seq(
+          field('value', $._expression),
+          '.',
+          field('method', $._field_name),
+          choice(seq(field('arguments', $.arguments), optional(field('block', $._block))), field('block', $._block)),
+        ),
       ),
 
     try_expression: $ => prec(PREC.postfix, seq($._expression, '?')),
@@ -236,6 +271,20 @@ module.exports = grammar({
         ),
       ),
 
+    /** `unless c then a else b`: the same as `if c then b else a`. */
+    unless_expression: $ =>
+      prec.right(
+        PREC.lambda,
+        seq(
+          alias($._unless, 'unless'),
+          field('condition', $._expression),
+          'then',
+          field('consequence', $._expression),
+          'else',
+          field('alternative', $._expression),
+        ),
+      ),
+
     match_expression: $ =>
       seq('match', field('subject', $._expression), $._newline, lines($, $.match_arm), 'end'),
 
@@ -259,6 +308,7 @@ module.exports = grammar({
         $.float,
         $.negative_number,
         $.string,
+        $.symbol,
         $.boolean,
         $.unit_pattern,
         $.parenthesized_pattern,
@@ -298,9 +348,13 @@ module.exports = grammar({
 
     string: $ => seq('"', repeat(choice($.string_content, $.escape_sequence, $.interpolation)), token.immediate('"')),
 
-    escape_sequence: _ => token.immediate(/\\(u\{[0-9a-fA-F]+\}|[ntr0\\"{}])/),
+    escape_sequence: _ => token.immediate(/\\(u\{[0-9a-fA-F]+\}|#\{?|[ntr0\\"{}])/),
 
-    interpolation: $ => seq(token.immediate('{'), $._expression, '}'),
+    /** `{x}`, or `#{x}` as in Ruby. */
+    interpolation: $ => seq(choice(token.immediate('{'), token.immediate(prec(1, '#{'))), $._expression, '}'),
+
+    /** `:ok`: a name used as a value. */
+    symbol: _ => /:[\p{L}_][\p{L}\p{M}\p{N}_]*/,
 
     integer: _ => token(choice(/0x[0-9a-fA-F_]+/, /0b[01_]+/, /[0-9][0-9_]*/)),
 

@@ -1120,3 +1120,54 @@ fn folding_and_growing_the_selection() {
     assert_eq!(chain, [(3, 20, 3, 23), (3, 12, 3, 25), (3, 2, 3, 25), (2, 0, 8, 3), (0, 0, 14, 0)]);
     assert_eq!(lsp.stop(), 0);
 }
+
+#[test]
+fn ruby_style_in_hints_and_semantic_tokens() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/ruby_extras.ry";
+    let text = "fn adult?(p) = p.age >= 18\nfn status(n) = if n > 0 then :ok else :error\nfn name(:ok) = \"fine\"\nfn name(:error) = \"bad\"\ns = status(2)\ndoubled = [1, 2].map { |x| x * 2 }\nprint(adult?({age: 20}), name(s), doubled)\n";
+    let diags = lsp.open(u, text);
+    assert!(diags.is_empty(), "{diags:?}");
+    let found = hints(&mut lsp, u);
+    for want in [(0, 11, ": Record"), (1, 12, "→ Symbol"), (4, 1, ": Symbol"), (5, 7, ": List(Int)"), (5, 25, ": Int")] {
+        assert!(found.contains(&(want.0, want.1, want.2.to_string())), "{want:?} in {found:?}");
+    }
+    let tokens = decode(lsp.result("textDocument/semanticTokens/full", &doc(u)).get("data"));
+    // `adult?` is one name, `?` included; `:ok` is colored like a constructor.
+    assert!(tokens.contains(&[0, 3, 6, 0, 1]), "{tokens:?}");
+    assert!(tokens.contains(&[1, 29, 3, 4, 0]) && tokens.contains(&[2, 8, 3, 4, 0]), "{tokens:?}");
+    // The parameter of a block.
+    assert!(tokens.contains(&[5, 24, 1, 2, 1]), "{tokens:?}");
+    assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
+fn ruby_style_names_blocks_and_completion_after_a_dot() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/ruby.ry";
+    let text = "xs = [1, 2, 3]\nprint(xs.sum, \"hi\".upcase, xs.select do |x| x.even? end)\nfn adult?(p) = p.age >= 18\nprint(adult?({age: 20}), :ok)\n";
+    let diags = lsp.open(u, text);
+    assert!(diags.is_empty(), "{diags:?}");
+    // `xs.sum` calls `sum`; `upcase` is the Ruby name of `upper`.
+    let h = hover_text(&lsp.at("textDocument/hover", u, 1, 10));
+    assert!(h.contains("sum(list, f)") && h.contains("`value.sum` reads the field `sum`, or calls `sum(value)`"), "{h}");
+    let h = hover_text(&lsp.at("textDocument/hover", u, 1, 22));
+    assert!(h.contains("the Ruby name of `upper`") && h.contains("upper(text)"), "{h}");
+    // `even?` is one name; `adult?` a function of the file.
+    let h = hover_text(&lsp.at("textDocument/hover", u, 1, 51));
+    assert!(h.contains("the Ruby name of `is_even`"), "{h}");
+    let h = hover_text(&lsp.at("textDocument/hover", u, 3, 8));
+    assert!(h.contains("fn adult?(p)"), "{h}");
+    // After `"text".`: the functions that take a text first, with their Ruby names.
+    lsp.change(u, 2, "\"abc\".");
+    let l = labels(&lsp.at("textDocument/completion", u, 0, 6));
+    for name in ["upper", "upcase", "split", "len", "size", "empty?"] {
+        assert!(l.iter().any(|x| x == name), "{name} missing in {l:?}");
+    }
+    assert!(!l.iter().any(|x| x == "sum" || x == "select"), "a text has no sum: {l:?}");
+    // After a list, the functions on lists.
+    lsp.change(u, 3, "[1, 2].");
+    let l = labels(&lsp.at("textDocument/completion", u, 0, 7));
+    assert!(l.iter().any(|x| x == "sum") && l.iter().any(|x| x == "select") && !l.iter().any(|x| x == "upcase"), "{l:?}");
+    assert_eq!(lsp.stop(), 0);
+}

@@ -204,6 +204,25 @@ fn fib_is_shown_in_the_substitution_model() {
 }
 
 #[test]
+fn large_whole_numbers_symbols_and_blocks() {
+    let code = "fn fact(0) = 1\nfn fact(n) = n * fact(n - 1)\nfn status(n) = if n > 0 then :ok else :error\nxs = [10 ** 19, 2]\n";
+    let path = program("ruby", code);
+    let r = rythme(&["steps", path.to_str().unwrap(), "fact(21) // fact(20)"]);
+    assert_eq!(r.code, 0, "{}", r.stderr);
+    assert!(r.stdout.ends_with("  → 51090942171709440000 // 2432902008176640000\n  → 21\n"), "{}", r.stdout);
+    let r = rythme(&["steps", path.to_str().unwrap(), "status(-1)"]);
+    assert_eq!(r.stdout, "status(-1)\n  → :error\n", "{}", r.stderr);
+    // A block is the function it stands for; `xs.sum` calls `sum(xs)`.
+    let r = rythme(&["steps", path.to_str().unwrap(), "xs.map { |x| x * 2 }.sum"]);
+    assert_eq!(
+        r.stdout,
+        "xs.map(fn(x) = x * 2).sum\n  → [10000000000000000000, 2].map(fn(x) = x * 2).sum\n  → [20000000000000000000, 4].sum\n  → sum([20000000000000000000, 4])\n  → 20000000000000000004\n",
+        "{}",
+        r.stderr
+    );
+}
+
+#[test]
 fn recursion_on_lists_and_definitions() {
     let code = "fn total([]) = 0\nfn total([x, ..rest]) = x + total(rest)\nsum3 = total([1, 2, 3])\nprint(sum3 * 2)\n";
     let path = program("lists", code);

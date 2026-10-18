@@ -21,6 +21,8 @@ pub enum Tok {
     Ctor(Sym),
     /// A keyword from another language (`for`, `return`...), reserved to give better help.
     Reserved(Sym),
+    /// A symbol: `:ok`, `:error` (the name, without the `:`).
+    Symbol(Sym),
     // Keywords
     Fn,
     If,
@@ -287,6 +289,12 @@ impl<'a> Lexer<'a> {
                     Tok::RBrace
                 }
                 ',' => Tok::Comma,
+                ':' if self.peek().is_some_and(is_ident_start) && !key_before(&toks, interpolation) => {
+                    while self.peek().is_some_and(is_ident_continue) {
+                        self.bump();
+                    }
+                    Tok::Symbol(Sym::new(&self.src[start + 1..self.pos]))
+                }
                 ':' => Tok::Colon,
                 '?' => Tok::Question,
                 '%' => Tok::Percent,
@@ -610,6 +618,14 @@ impl<'a> Lexer<'a> {
                         Some('"') => cur.push('"'),
                         Some('{') => cur.push('{'),
                         Some('}') => cur.push('}'),
+                        // `\#{x}` is written as it is, as in Ruby.
+                        Some('#') => {
+                            cur.push('#');
+                            if self.peek() == Some('{') {
+                                self.bump();
+                                cur.push('{');
+                            }
+                        }
                         Some('u') if self.peek() == Some('{') => {
                             self.bump();
                             let hex_start = self.pos;
@@ -632,14 +648,18 @@ impl<'a> Lexer<'a> {
                             return Err(self
                                 .error("E018", at, t!("unknown escape sequence in text", "séquence d'échappement inconnue dans le texte"))
                                 .help(t!(
-                                    "valid escapes: \\n (new line), \\t (tab), \\r (carriage return), \\0 (null character), \\\\ (backslash),\n\\\" (quote), \\{{ and \\}} (braces), \\u{{e9}} (a character by its Unicode number: é)",
-                                    "échappements valides : \\n (nouvelle ligne), \\t (tabulation), \\r (retour chariot), \\0 (caractère nul), \\\\ (barre oblique),\n\\\" (guillemet), \\{{ et \\}} (accolades), \\u{{e9}} (un caractère par son numéro Unicode : é)"
+                                    "valid escapes: \\n (new line), \\t (tab), \\r (carriage return), \\0 (null character), \\\\ (backslash),\n\\\" (quote), \\{{ and \\}} (braces), \\# (a `#` before a brace), \\u{{e9}} (a character by its Unicode number: é)",
+                                    "échappements valides : \\n (nouvelle ligne), \\t (tabulation), \\r (retour chariot), \\0 (caractère nul), \\\\ (barre oblique),\n\\\" (guillemet), \\{{ et \\}} (accolades), \\# (un `#` devant une accolade), \\u{{e9}} (un caractère par son numéro Unicode : é)"
                                 ))
                                 .boxed())
                         }
                     }
                 }
-                '{' => {
+                // `#{x}`, as in Ruby, is the same as `{x}`.
+                '{' | '#' if c == '{' || self.peek() == Some('{') => {
+                    if c == '#' {
+                        self.bump();
+                    }
                     if !cur.is_empty() {
                         parts.push(StrPart::Lit(std::mem::take(&mut cur)));
                     }
@@ -688,6 +708,21 @@ impl<'a> Lexer<'a> {
     }
 }
 
+/// Is a `:` read now the one between a field name and its value, as in
+/// `{name:value}`? It is when it follows a name (or a keyword, or a text)
+/// that itself follows `{` or `,`. Otherwise, `:name` is a symbol: `:ok`.
+fn key_before(toks: &[Token], interpolation: bool) -> bool {
+    let key = |t: &Tok| matches!(t, Tok::Ident(_) | Tok::Ctor(_) | Tok::Reserved(_) | Tok::Str(_)) || keyword_text(t).is_some();
+    // Records may be written on several lines.
+    let mut before = toks.iter().rev().filter(|t| t.tok != Tok::Newline).map(|t| &t.tok);
+    match (before.next(), before.next()) {
+        (Some(last), Some(before)) => key(last) && matches!(before, Tok::LBrace | Tok::Comma),
+        // `"{name:value}"`: the `{` of the text comes before.
+        (Some(last), None) => key(last) && interpolation,
+        _ => false,
+    }
+}
+
 /// For a mistake inside the `{...}` of a text: maybe the brace was meant literally.
 pub fn add_literal_brace_help(d: &mut Diagnostic) {
     let help = t!(
@@ -715,6 +750,7 @@ pub fn describe(tok: &Tok) -> String {
         Tok::Float(f) => t!("the number `{f}`", "le nombre `{f}`"),
         Tok::Str(_) => t!("a text", "un texte"),
         Tok::Ident(s) | Tok::Ctor(s) | Tok::Reserved(s) => t!("the name `{s}`", "le nom `{s}`"),
+        Tok::Symbol(s) => t!("the symbol `:{s}`", "le symbole `:{s}`"),
         Tok::Newline => t!("the end of the line", "la fin de la ligne"),
         Tok::Eof => t!("the end of the code", "la fin du code"),
         other => {

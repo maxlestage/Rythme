@@ -180,6 +180,19 @@ fn generators_of_whole_numbers_have_no_size_limit() {
 }
 
 #[test]
+fn properties_given_as_blocks_and_symbols() {
+    // Ruby style: the property as a block, after the generator (and the number of cases).
+    let e = property("check_all(ints(0, 100)) { |x| x < 10 }", &[]);
+    assert!(e.contains("error[E015]: the property is false for 10\n"), "{e}");
+    let e = property("check_all(ints(), 50) do |x| x.odd? end", &[]);
+    assert!(e.contains("false for 0\n") && e.contains("of 50"), "{e}");
+    let e = property("check_all(one_of([:ok, :error, :later])) { |s| s != :later }", &[]);
+    assert!(e.contains("false for :later\n"), "{e}");
+    let r = test_code("test \"blocks\" = check_all(lists_of(ints()), 30) { |l| l.reverse.reverse == l }\n", &["--filter", "block"]);
+    assert_eq!(r.code, 0, "{}{}", r.stdout, r.stderr);
+}
+
+#[test]
 fn the_seed_gives_the_same_values() {
     let code = "check_all(fn(x) = x < 1000, ints(0, 1000000))";
     let first = property(code, &["--seed", "5"]);

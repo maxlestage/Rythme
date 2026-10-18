@@ -2,7 +2,10 @@
 
 (function_definition
   "fn" @context
-  name: (identifier) @name) @item
+  name: [
+    (identifier)
+    (predicate)
+  ] @name) @item
 
 (type_definition
   "type" @context

@@ -442,7 +442,13 @@ impl Indexer<'_> {
 
     fn expr(&mut self, e: &Expr) {
         match &e.kind {
-            ExprKind::Unit | ExprKind::Bool(_) | ExprKind::Int(_) | ExprKind::Big(_) | ExprKind::Float(_) | ExprKind::Text(_) => {}
+            ExprKind::Unit
+            | ExprKind::Bool(_)
+            | ExprKind::Int(_)
+            | ExprKind::Big(_)
+            | ExprKind::Float(_)
+            | ExprKind::Text(_)
+            | ExprKind::Symbol(_) => {}
             ExprKind::Template(parts) => {
                 for p in parts {
                     if let TemplatePart::Expr(x) = p {
@@ -491,9 +497,23 @@ impl Indexer<'_> {
                 }
                 self.reference(*name, *name_span, false, true);
             }
-            ExprKind::Field(obj, name, _) => {
+            ExprKind::Field(obj, name, name_span) => {
                 self.out.fields.insert(name.clone());
                 self.expr(obj);
+                // `xs.sum` calls `sum` when `xs` has no field `sum`.
+                let s = Sym::new(name);
+                let function = match self.resolve(s) {
+                    Target::Builtin(_) => true,
+                    // A function of this file (not a value that only has the name of the field).
+                    Target::Def(id) if id.file == self.file => {
+                        self.out.defs.get(id.idx as usize).is_some_and(|d| d.kind == DefKind::Function || d.sig.is_some())
+                    }
+                    Target::Def(_) => true,
+                    _ => false,
+                };
+                if function {
+                    self.reference(s, *name_span, false, true);
+                }
             }
             ExprKind::Index(a, b) | ExprKind::Binary(_, a, b, _) | ExprKind::Range(a, b) => {
                 self.expr(a);
