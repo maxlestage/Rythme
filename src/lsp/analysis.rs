@@ -19,6 +19,7 @@ use crate::check::{self, Knowledge};
 use crate::diagnostic::Diagnostic;
 use crate::source::{self, Span};
 use crate::symbol::Sym;
+use crate::types::Ty;
 use crate::{driver, lexer, modules, parser};
 
 /// One source id per file, reused at each edit (see `source::replace`).
@@ -71,6 +72,9 @@ pub struct Module {
     /// The signatures the checker infers for its functions, by the place of
     /// their definition: `fn area(side: Int|Float) -> Int|Float`.
     pub signatures: HashMap<Span, check::Signature>,
+    /// The types the checker inferred for the names defined, by place
+    /// (empty when the checker could not run).
+    pub types: HashMap<Span, Ty>,
 }
 
 /// Where texts come from: the editor's version of a file when it is open
@@ -184,6 +188,7 @@ impl<'a> Loader<'a> {
             self.loading.pop();
         }
         let order = self.dep_order(&deps);
+        let mut types = HashMap::new();
         if complete {
             // Like the driver: the built-ins, then what the used files define.
             let mut know = self.base.clone();
@@ -202,9 +207,10 @@ impl<'a> Loader<'a> {
                 all.extend(inner.iter().map(|d| d.items.as_slice()));
                 know.add_module(*n, Rc::from(short_name(&m.uri)), &inside, &all);
             }
-            if let Some(analysis) = guard(|| check::analyze(&items, &know, false, true)) {
+            if let Some(analysis) = guard(|| check::analyze_all(&items, &know, false, true, true)) {
                 let mut found = analysis.diagnostics;
                 signatures = analysis.signatures;
+                types = analysis.types;
                 if found.iter().any(|d| d.code == "E003") {
                     // As the driver does: say which file of the folder defines an unknown name.
                     let mut skip: Vec<PathBuf> = order.iter().filter_map(|m| m.path.clone()).collect();
@@ -254,6 +260,7 @@ impl<'a> Loader<'a> {
             dep_defs: tops,
             index,
             signatures,
+            types,
         }
     }
 
@@ -286,6 +293,7 @@ impl<'a> Loader<'a> {
                     dep_defs: HashMap::new(),
                     index: Index { file, ..Index::default() },
                     signatures: HashMap::new(),
+                    types: HashMap::new(),
                 }
             }
         };

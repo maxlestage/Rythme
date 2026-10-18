@@ -284,24 +284,53 @@ pub struct Analysis {
     /// The signatures inferred for its functions (top-level and local), by
     /// the place of their definition ([`FnDef::span`]), when asked for.
     pub signatures: HashMap<Span, Signature>,
+    /// The types inferred for the names it defines, by place, when asked for
+    /// (see [`check_with_types`]).
+    pub types: HashMap<Span, Ty>,
 }
 
 /// Checks a module, and infers the signatures of its functions if `signatures`.
 pub fn analyze(items: &[Item], know: &Knowledge, repl: bool, signatures: bool) -> Analysis {
+    analyze_all(items, know, repl, signatures, false)
+}
+
+/// Checks a module; infers the signatures of its functions if `signatures`,
+/// and the types of the names it defines if `types` (the language server
+/// asks for both).
+pub fn analyze_all(items: &[Item], know: &Knowledge, repl: bool, signatures: bool, types: bool) -> Analysis {
     let mut c = Checker::new(items, know, repl);
     c.infer(items);
     if signatures {
         c.needs.signatures = Some(HashMap::new());
     }
+    if types {
+        // Only the last walk counts: the types of the top-level names are known by then.
+        c.name_types = Some(HashMap::new());
+    }
     c.walk(items);
     c.top_signatures();
-    Analysis { diagnostics: c.diags, signatures: c.needs.signatures.unwrap_or_default() }
+    Analysis { diagnostics: c.diags, signatures: c.needs.signatures.unwrap_or_default(), types: c.name_types.unwrap_or_default() }
 }
 
 /// The signatures inferred for the functions of a module, by the place of
 /// their definition: `fn area(side: Int|Float) -> Int|Float`.
 pub fn signatures(items: &[Item], know: &Knowledge) -> HashMap<Span, Signature> {
     analyze(items, know, false, true).signatures
+}
+
+/// Checks a module like `check`, and also gives the type inferred for each
+/// name it defines, by the place where the name is written: values, local
+/// names, names given by a pattern, parameters, and functions (their type
+/// tells what they give back). The language server shows them in the editor.
+/// A name defined in code that is walked several times (a function given to
+/// `map` and called elsewhere) gets the type that holds every time. Only what
+/// is certain is useful: `Ty::is_known` says when a type says something.
+///
+/// Parameters get the type the checker gives them while checking the body
+/// (`Any`); what the code needs of them is in the signatures of [`analyze`].
+pub fn check_with_types(items: &[Item], know: &Knowledge, repl: bool) -> (Vec<Diagnostic>, HashMap<Span, Ty>) {
+    let a = analyze_all(items, know, repl, false, true);
+    (a.diagnostics, a.types)
 }
 
 /// The types inferred for the top-level names of a module, without checking
@@ -376,6 +405,8 @@ struct Checker<'a> {
     builtin_types: HashMap<&'static str, Ty>,
     /// What the parameters of the functions must be (see [`needs`]).
     needs: needs::Needs,
+    /// The types of the names defined, by place, when asked (`check_with_types`).
+    name_types: Option<HashMap<Span, Ty>>,
 }
 
 /// Built-in functions that only compute a value: no effect, no function of
@@ -458,6 +489,7 @@ impl<'a> Checker<'a> {
             types_defined_again: know.types_defined_again.clone(),
             builtin_types: HashMap::new(),
             needs: needs::Needs::default(),
+            name_types: None,
         };
         for item in items {
             match item {
@@ -711,6 +743,7 @@ impl<'a> Checker<'a> {
 
     fn top_fn(&mut self, def: &FnDef) {
         let t = self.func(def, None);
+        self.note_type(def.span, &t);
         if let Some(name) = def.name {
             if self.own.get(&name).is_some_and(|g| g.kind == GKind::Func) {
                 self.set_global(name, t);
@@ -728,7 +761,8 @@ impl<'a> Checker<'a> {
         let mut tys = Vec::new();
         self.binding_types(p, &t, &mut tys);
         self.check_duplicates(&b);
-        for ((s, _), t) in b.into_iter().zip(tys) {
+        for ((s, sp), t) in b.into_iter().zip(tys) {
+            self.note_type(sp, &t);
             self.defined.insert(s);
             if self.own.get(&s).is_some_and(|g| g.kind == GKind::Value) {
                 self.set_global(s, t);
@@ -789,6 +823,17 @@ impl<'a> Checker<'a> {
 
     // ----- scopes ------------------------------------------------------
 
+    /// Records the type of the name written at `span`, for `check_with_types`.
+    fn note_type(&mut self, span: Span, ty: &Ty) {
+        if let Some(types) = &mut self.name_types {
+            let t = match types.get(&span) {
+                Some(old) => old.join(ty),
+                None => ty.clone(),
+            };
+            types.insert(span, t);
+        }
+    }
+
     fn declare_local(&mut self, s: Sym, span: Span, warn: bool, ty: Ty) {
         self.declare_local_fn(s, span, warn, None, ty, None);
     }
@@ -806,11 +851,17 @@ impl<'a> Checker<'a> {
             );
             return;
         }
+        // A local function gets its type once its body is checked (`set_local_type`).
+        if info.is_none() {
+            self.note_type(span, &ty);
+        }
+        let scope = self.scopes.last_mut().expect("scope");
         scope.push(Local { sym: s, span, used: false, warn, info, ty, def, param: None });
     }
 
     /// Gives its type to a local function, once its body is checked.
     fn set_local_type(&mut self, s: Sym, span: Span, ty: Ty) {
+        self.note_type(span, &ty);
         if let Some(l) = self.scopes.last_mut().and_then(|scope| scope.iter_mut().rev().find(|l| l.sym == s && l.span == span)) {
             l.ty = ty;
         }
@@ -1138,6 +1189,8 @@ impl<'a> Checker<'a> {
         let mut catch_all: Option<Span> = None;
         let mut reported_unreachable = false;
         let name = def.name.map(|n| n.to_string()).unwrap_or_default();
+        // The types of the parameters, when the caller knows them; they reach
+        // `check_with_types` (and the editor's hints) through `declare_local`.
         let param_ty = |i: usize| params.and_then(|p| p.get(i).cloned()).unwrap_or(Ty::Any);
         for (ci, clause) in def.clauses.iter().enumerate() {
             if let (Some(prev), false) = (catch_all, reported_unreachable) {
