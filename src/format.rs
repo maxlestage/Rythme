@@ -569,6 +569,17 @@ impl<'a> Shaper<'a> {
         Some(name)
     }
 
+    /// A branch of `if`, a case of `match`, the body after the `=` of a
+    /// function or a test: a call without parentheses may be written there,
+    /// as in the parser (`if ok then puts "yes" else puts "no"`).
+    fn result(&mut self) -> Option<usize> {
+        self.skip_soft();
+        if parser::command_at(self.toks, self.pos, &self.preds, &self.values).is_some() {
+            return self.command();
+        }
+        self.expr()
+    }
+
     fn command_args(&mut self, name: usize) -> Option<()> {
         loop {
             let arg = self.expr()?;
@@ -722,7 +733,7 @@ impl<'a> Shaper<'a> {
                 let eq = self.advance()?;
                 self.set(eq, Indent::Inner(f));
                 self.skip_newlines();
-                let body = self.expr()?;
+                let body = self.result()?;
                 self.set(body, Indent::Inner(eq));
             }
             Tok::Newline => self.block(f)?,
@@ -775,7 +786,7 @@ impl<'a> Shaper<'a> {
                 let eq = self.advance()?;
                 self.set(eq, Indent::Inner(k));
                 self.skip_newlines();
-                let body = self.expr()?;
+                let body = self.result()?;
                 self.set(body, Indent::Inner(eq));
             }
             Tok::Newline => self.block(k)?,
@@ -1122,7 +1133,7 @@ impl<'a> Shaper<'a> {
         }
         let then = self.advance()?;
         self.skip_newlines();
-        let then_body = self.expr()?;
+        let then_body = self.result()?;
         self.set(then_body, Indent::Inner(then));
         if *self.past_newlines() == Tok::Else {
             self.skip_newlines();
@@ -1132,7 +1143,7 @@ impl<'a> Shaper<'a> {
         }
         let else_ = self.advance()?;
         self.skip_newlines();
-        let else_body = self.expr()?;
+        let else_body = self.result()?;
         self.set(else_body, Indent::Inner(else_));
         let n = self.s.ifs.len();
         if let Some(inner) = self.s.ifs.last_mut().filter(|inner| inner.if_ == else_body) {
@@ -1185,7 +1196,7 @@ impl<'a> Shaper<'a> {
                 let arrow = p.advance()?;
                 p.set(arrow, Indent::Inner(pat));
                 p.skip_newlines();
-                let body = p.expr()?;
+                let body = p.result()?;
                 p.set(body, Indent::Inner(arrow));
                 if !matches!(p.raw(), Tok::Newline | Tok::End) {
                     return None;
@@ -1925,6 +1936,11 @@ mod tests {
         gives("xs = [1]\nputs xs [0]\nxs [0]\n", "xs = [1]\nputs xs[0]\nxs[0]\n");
         gives("x = 1\nx -1\n", "x = 1\nx - 1\n");
         gives("each xs do |v|\nprint v\n  end\n", "each xs do |v|\n  print v\nend\n");
+        // In results: branches, cases, the body after `=`.
+        same("fn check(ok) = if ok then puts \"yes\" else puts \"no\"\nf = fn(x) = puts x\ntest \"t\" = assert_eq 1, 1\n");
+        same("match name\n  \"Dr \" + n -> puts n\n  _ -> puts \"?\"\nend\n");
+        gives("fn f(x) =\nif x then\nputs  1\nelse\nputs 2\n", "fn f(x) =\n  if x then\n    puts 1\n  else\n    puts 2\n");
+        gives("xs = [1]\nf = fn(v) = xs [0]\n", "xs = [1]\nf = fn(v) = xs[0]\n");
     }
 
     #[test]

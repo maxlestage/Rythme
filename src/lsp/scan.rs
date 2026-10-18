@@ -33,7 +33,9 @@ pub struct Scan {
 }
 
 enum Frame {
-    Paren(Option<OpenCall>),
+    /// A `(`, after the name of a call, and whether it holds the parameters
+    /// of a function (`fn greet(`, `fn(`).
+    Paren(Option<OpenCall>, bool),
     /// A call without parentheses, up to the end of its line.
     Command(OpenCall),
     Bracket,
@@ -67,6 +69,12 @@ pub fn scan(text: &str, offset: usize) -> Scan {
     // parentheses if the start of a value follows.
     let mut command: Option<OpenCall> = None;
     let mut last_starts_line = false;
+    // Just read: the `)` of the parameters of a function, the name of a test,
+    // `do` or `{` (the `|` of a block may follow), the `|x|` of a block.
+    let mut fn_head = false;
+    let mut test_name = false;
+    let mut block_open = false;
+    let mut block_params = false;
     let mut chars = src.char_indices().peekable();
     while let Some((i, c)) = chars.next() {
         if comment {
@@ -96,7 +104,7 @@ pub fn scan(text: &str, offset: usize) -> Scan {
                 if matches!(stack.last(), Some(Frame::Command(_))) {
                     stack.pop();
                 }
-                line_start = !stack.iter().any(|f| matches!(f, Frame::Paren(_) | Frame::Bracket));
+                line_start = !stack.iter().any(|f| matches!(f, Frame::Paren(..) | Frame::Bracket));
                 command = None;
             } else if last_starts_line && command.is_none() {
                 // `puts ` at the start of a line.
@@ -105,10 +113,42 @@ pub fn scan(text: &str, offset: usize) -> Scan {
             continue;
         }
         let starts_line = std::mem::replace(&mut line_start, false);
-        last_starts_line = false;
+        let prev_starts_line = std::mem::replace(&mut last_starts_line, false);
         let name = last.take();
+        let next = src[i + c.len_utf8()..].chars().next();
+        // A result, where a call without parentheses may start as at the start
+        // of a line: after `then`, `else`, `->`, the `=` of a function or a
+        // test, and the parameters of a block (`do |x| puts x end`).
+        let fn_eq = std::mem::replace(&mut fn_head, false) | std::mem::replace(&mut test_name, false);
+        let block_bar = std::mem::replace(&mut block_open, false) && c == '|';
+        if c == '=' && next != Some('=') && fn_eq {
+            line_start = true;
+        }
+        if c == '-' && next == Some('>') {
+            chars.next();
+            command = None;
+            line_start = true;
+            continue;
+        }
+        if block_bar || (block_params && c == '|') {
+            if next == Some('|') && block_bar {
+                // `do || ...`: no parameters.
+                chars.next();
+                line_start = true;
+            } else {
+                block_params = !block_params;
+                line_start = !block_params;
+            }
+            continue;
+        }
+        // `)`, `}`, `]`, `else` and `end` end the arguments of a call without parentheses.
+        let word_end = src[i..].find(|d: char| !is_name_char(d)).map_or(src.len(), |k| i + k);
+        if matches!(c, ')' | '}' | ']') || matches!(&src[i..word_end], "then" | "else" | "end" | "do") {
+            while matches!(stack.last(), Some(Frame::Command(_))) {
+                stack.pop();
+            }
+        }
         if let Some(call) = command.take() {
-            let next = src[i + c.len_utf8()..].chars().next();
             let value = c == '"'
                 || c == '['
                 || c.is_ascii_digit()
@@ -121,15 +161,31 @@ pub fn scan(text: &str, offset: usize) -> Scan {
         }
         match c {
             '#' => comment = true,
-            '"' => stack.push(Frame::Text(i)),
-            '(' => stack.push(Frame::Paren(name.map(|mut call| {
-                call.commas = 0;
-                call
-            }))),
+            '"' => {
+                // `test "name" = `: its name is read as a text.
+                test_name = prev_starts_line && name.as_ref().is_some_and(|call| call.name == "test");
+                stack.push(Frame::Text(i))
+            }
+            '(' => {
+                let before = name.as_ref().map_or(&src[..i], |call| &src[..call.at]).trim_end();
+                let fn_params = matches!(&name, Some(call) if call.name == "fn")
+                    || (before.ends_with("fn") && !before[..before.len() - 2].ends_with(is_name_char));
+                stack.push(Frame::Paren(
+                    name.map(|mut call| {
+                        call.commas = 0;
+                        call
+                    }),
+                    fn_params,
+                ))
+            }
             '[' => stack.push(Frame::Bracket),
-            '{' => stack.push(Frame::Brace),
+            '{' => {
+                block_open = true;
+                stack.push(Frame::Brace)
+            }
             ')' => {
-                if matches!(stack.last(), Some(Frame::Paren(_))) {
+                if let Some(Frame::Paren(_, fn_params)) = stack.last() {
+                    fn_head = *fn_params;
                     stack.pop();
                 }
             }
@@ -144,7 +200,7 @@ pub fn scan(text: &str, offset: usize) -> Scan {
                 }
             }
             ',' => {
-                if let Some(Frame::Paren(Some(call)) | Frame::Command(call)) = stack.last_mut() {
+                if let Some(Frame::Paren(Some(call), _) | Frame::Command(call)) = stack.last_mut() {
                     call.commas += 1;
                 }
             }
@@ -172,8 +228,21 @@ pub fn scan(text: &str, offset: usize) -> Scan {
                         call.name.push('?');
                     }
                 }
-                // Only a name that starts a line may be called without parentheses.
+                // Only a name that starts a line (or a result) may be called
+                // without parentheses.
                 last_starts_line = starts_line;
+                match &src[i..j] {
+                    "then" | "else" => line_start = true,
+                    "do" => {
+                        line_start = true;
+                        block_open = true;
+                    }
+                    _ => {}
+                }
+                if matches!(&src[i..j], "then" | "else" | "do" | "end") {
+                    last = None;
+                    last_starts_line = false;
+                }
             }
             c if c.is_ascii_digit() => {
                 while chars.peek().is_some_and(|&(_, d)| is_name_char(d)) {
@@ -198,7 +267,7 @@ pub fn scan(text: &str, offset: usize) -> Scan {
     let calls = stack
         .into_iter()
         .filter_map(|f| match f {
-            Frame::Paren(call) => call,
+            Frame::Paren(call, _) => call,
             Frame::Command(call) => Some(call),
             _ => None,
         })
@@ -246,6 +315,22 @@ mod tests {
         assert_eq!(names(&scan("even? 4, ", 9)), [("even?".to_string(), 1)]);
         assert_eq!(names(&scan("puts f(1, ", 10)), [("puts".to_string(), 0), ("f".to_string(), 1)]);
         assert_eq!(names(&scan("puts (1, ", 9)), [("puts".to_string(), 1)]);
+        // In a result: a branch, a case, the body of a function or a test, a block.
+        let last = |text: &str| scan(text, text.len()).calls.last().map(|c| (c.name.clone(), c.commas));
+        assert_eq!(last("if ok then puts 1, "), Some(("puts".to_string(), 1)));
+        assert_eq!(last("if ok then puts 1 else print "), Some(("print".to_string(), 0)));
+        assert_eq!(last("if ok then puts 1 else "), None);
+        assert_eq!(last("  \"Dr \" + n -> puts "), Some(("puts".to_string(), 0)));
+        assert_eq!(last("fn greet(n) = puts "), Some(("puts".to_string(), 0)));
+        assert_eq!(last("f = fn(x) = puts x, "), Some(("puts".to_string(), 1)));
+        assert_eq!(last("test \"a\" = assert_eq 1, "), Some(("assert_eq".to_string(), 1)));
+        assert_eq!(last("xs.each { |x| puts "), Some(("puts".to_string(), 0)));
+        assert_eq!(last("xs.each do |x, y| print x, "), Some(("print".to_string(), 1)));
+        assert_eq!(last("xs.each { |x| puts x }"), None);
+        assert_eq!(last("print(if ok then puts 1)"), None);
+        // Not after a name given a value, nor in the middle of an expression.
+        assert_eq!(last("x = puts "), None);
+        assert_eq!(last("y = f(x) + puts "), None);
     }
 
     #[test]

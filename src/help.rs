@@ -548,7 +548,7 @@ no exceptions. What you know from Ruby mostly works:
 
 The same as in Ruby
   calls           puts "hi"   print x, y   assert_eq total, 42
-                  (at the start of a statement; see below)
+                  (at the start of a statement or a result; see below)
   blocks          xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
                   a block is a function: the same as fn(x) = x * 2
   method calls    xs.sum   name.upcase   xs.first(2)   xs.include?(3)
@@ -586,6 +586,18 @@ Calls without parentheses
   =, as a parameter or in a pattern): then x -1 is x - 1 and xs [0] is
   xs[0], as before. `rythme fmt` writes those as x - 1 and xs[0].
 
+  A result may start the same way: a branch of if or unless, a case of
+  match, the body after the = of a function or a test. Its arguments end
+  at else, end, }, ) or the end of the line:
+
+  fn greet(name) = puts "Hello, #{name}!"
+  fn check(ok) = if ok then puts "yes" else puts "no"
+  match name
+    "Dr " + rest -> puts "doctor", rest
+    _ -> puts name
+  end
+  xs.each { |x| puts x }
+
 How x.name works
   x.name reads the field `name` of a record; when x has no such field, it
   calls the function `name` with x: xs.sum is sum(xs), xs.first(2) is
@@ -618,7 +630,8 @@ presque toujours :
 
 Comme en Ruby
   appels          puts "salut"   print x, y   assert_eq total, 42
-                  (au début d'une instruction ; voir plus bas)
+                  (au début d'une instruction ou d'un résultat ; voir
+                  plus bas)
   blocs           xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
                   un bloc est une fonction : comme fn(x) = x * 2
   méthodes        xs.sum   nom.upcase   xs.first(2)   xs.include?(3)
@@ -658,6 +671,18 @@ Appels sans parenthèses
   donne une valeur à ce nom (avec =, comme paramètre ou dans un motif) :
   alors x -1 est x - 1 et xs [0] est xs[0], comme avant. `rythme fmt` les
   écrit x - 1 et xs[0].
+
+  Un résultat peut commencer de la même façon : une branche de if ou de
+  unless, un cas de match, le corps après le = d'une fonction ou d'un
+  test. Ses arguments s'arrêtent à else, end, }, ) ou à la fin de la ligne :
+
+  fn saluer(nom) = puts "Bonjour, #{nom} !"
+  fn verifier(ok) = if ok then puts "oui" else puts "non"
+  match nom
+    "Dr " + reste -> puts "docteur", reste
+    _ -> puts nom
+  end
+  xs.each { |x| puts x }
 
 Comment marche x.nom
   x.nom lit le champ `nom` d'un enregistrement ; quand x n'a pas ce champ,

@@ -2709,8 +2709,8 @@ impl<'a> Checker<'a> {
         };
         if let Some(name) = spaced_minus {
             d = d.help(t!(
-                "`{name} -x` subtracts here; to call `{name}`, write `{name}(-x)` (a call without parentheses starts a statement, and its name is not given a value with `=` or as a parameter)",
-                "`{name} -x` soustrait ici ; pour appeler `{name}`, écrivez `{name}(-x)` (un appel sans parenthèses commence une instruction, et son nom ne reçoit pas de valeur avec `=` ni comme paramètre)"
+                "`{name} -x` subtracts here; to call `{name}`, write `{name}(-x)` (a call without parentheses starts a statement or a result, such as a branch of `if` or the body after the `=` of a function, and its name is not given a value with `=` or as a parameter)",
+                "`{name} -x` soustrait ici ; pour appeler `{name}`, écrivez `{name}(-x)` (un appel sans parenthèses commence une instruction ou un résultat, comme une branche de `if` ou le corps après le `=` d'une fonction, et son nom ne reçoit pas de valeur avec `=` ni comme paramètre)"
             ));
         } else if matches!(op, BinOp::Add | BinOp::Sub) && dict_or_set(lt) && dict_or_set(rt) {
             d = d.help(t!(
