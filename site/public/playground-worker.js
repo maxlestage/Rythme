@@ -5,7 +5,7 @@
 let module = null;
 const imports = { env: { rythme_now: () => Date.now(), rythme_offset: (ms) => -new Date(ms).getTimezoneOffset() } };
 
-// mode: 0 = run, 1 = check, 2 = test, 4 = steps. Error messages come wrapped in U+0001 … U+0002.
+// mode: 0 = run, 1 = check, 2 = test, 4 = steps, 5 = the steps of one expression. Error messages come wrapped in U+0001 … U+0002.
 // The language of the messages is its position in rythme::lang::LANGUAGES.
 const LANGS = ["en", "fr", "es", "de", "pt", "zh"];
 function callInterpreter(instance, code, mode, lang) {

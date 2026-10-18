@@ -7,6 +7,7 @@
 use std::cell::RefCell;
 use std::path::Path;
 
+use rythme::ast::{Item, Stmt};
 use rythme::driver::Driver;
 use rythme::interp::Mode;
 use rythme::lang::{self, Lang};
@@ -28,7 +29,10 @@ pub extern "C" fn rythme_alloc(len: usize) -> *mut u8 {
 
 /// Runs the code. `mode`: 0 = run, 1 = check, 2 = test, 3 = format (the
 /// result is the formatted code, or error messages), 4 = steps (the
-/// calculation shown step by step, like `rythme steps`). `language`: the
+/// calculation shown step by step, like `rythme steps`), 5 = the steps of one
+/// expression (the code is the program, U+0000, then the expression: the last
+/// expression of the program when it is empty; U+0005 alone when there is no
+/// expression to show). `language`: the
 /// position of the language of the messages in `rythme::lang::LANGUAGES`
 /// (0 = English, 1 = French, 2 = Spanish, 3 = German, 4 = Portuguese,
 /// 5 = Chinese); English if there is none.
@@ -66,6 +70,10 @@ fn run(code: &str, mode: u32) -> String {
             }
         };
     }
+    if mode == 5 {
+        let (program, expr) = code.rsplit_once('\0').unwrap_or((code, ""));
+        return steps_of_one(program, expr);
+    }
     // The browser's own call stack is the limit here, not the memory: about
     // 760 nested calls in a Chrome worker. Stop before, with a clear message.
     rythme::interp::set_max_depth(600);
@@ -99,6 +107,32 @@ fn run(code: &str, mode: u32) -> String {
             }
         }
         (None, _) => {}
+    }
+    io::take_captured()
+}
+
+/// The steps of one expression: `expr` computed after the definitions of the
+/// program (like `rythme steps file.ry "expr"`), or the last expression of the
+/// program. Only that expression is shown; the others of the program are
+/// skipped, and its definitions are made first.
+fn steps_of_one(program: &str, expr: &str) -> String {
+    rythme::interp::set_max_depth(600);
+    rythme::interp::set_stack_budget(12 << 20);
+    io::capture();
+    let mut driver = Driver::new();
+    driver.color = false;
+    let expr = expr.trim();
+    let whole = if expr.is_empty() { program.to_string() } else { format!("{}\n{expr}\n", program.trim_end()) };
+    if let Some(m) = driver.load_source("main.ry", &whole, None, Path::new(".")) {
+        let last = m.items.iter().rposition(|item| matches!(item, Item::Stmt(Stmt::Let(..) | Stmt::Expr(_))));
+        match last {
+            Some(i) => {
+                // Long lines wrap in the page, rather than being cut at 100 characters.
+                let opts = rythme::steps::Options { width: 400, ..rythme::steps::Options::default() };
+                let _ = rythme::steps::run_module(&mut driver, &m, opts, Some(m.items.len() - i));
+            }
+            None => io::out("\u{5}"),
+        }
     }
     io::take_captured()
 }

@@ -247,6 +247,16 @@ pub struct Texts {
     pub pg_share_select: &'static str,
     pub pg_share_too_long: &'static str,
     pub pg_share_broken: &'static str,
+    /// The steps of a calculation: the buttons, the label of the slider, the keys,
+    /// "Step {n} of {total}", the label of what a step printed, and the message when
+    /// there is no expression to show.
+    pub pg_steps_prev: &'static str,
+    pub pg_steps_next: &'static str,
+    pub pg_steps_slider: &'static str,
+    pub pg_steps_keys: &'static str,
+    pub pg_steps_of: &'static str,
+    pub pg_steps_printed: &'static str,
+    pub pg_steps_none: &'static str,
     // Examples
     pub ex_title: &'static str,
     pub ex_lead: &'static str,
@@ -258,6 +268,9 @@ pub struct Texts {
     pub learn_title: &'static str,
     pub learn_lead: &'static str,
     pub learn_try: &'static str,
+    /// The link of a step of the tour that opens the playground on the steps of a
+    /// calculation.
+    pub learn_steps: &'static str,
     pub tour: [Step; 8],
     pub learn_names: &'static str,
     pub learn_next_title: &'static str,

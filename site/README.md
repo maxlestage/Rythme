@@ -144,10 +144,12 @@ alike.
 
 - **Format.** `#code=1:` then the program compressed with deflate (raw, RFC 1951),
   or `#code=0:` then the program as it is (UTF-8), both in URL-safe base64; *Share*
-  takes the shorter. `&mode=test` follows when Run runs the tests (`testing.ry`).
+  takes the shorter. `&mode=test` follows when Run runs the tests (`testing.ry`),
+  `&mode=steps&step=N` when the steps of a calculation are shown (see below), with
+  `&expr=…` (percent-encoded) when they are the steps of a selected piece of code.
   `#code=` followed by anything else is the program percent-encoded: the links of
-  *Learn* and of the home page, written by `pages::playground_link`, which stay
-  readable in the address bar.
+  *Learn* and of the home page, written by `pages::playground_link` (and
+  `pages::steps_link`), which stay readable in the address bar.
 - **Compression.** The browser's `CompressionStream("deflate-raw")`; without it, the
   plain form. To read a link, `DecompressionStream`, else a small inflate written in
   `playground.js` (stored, fixed and dynamic blocks). No library, no inline script:
@@ -173,6 +175,33 @@ the test mode, a long program, a damaged link, the share sheet of a phone and th
 browsers without compression streams (with links made by zlib: stored, fixed and
 dynamic blocks); `layout.js` checks the notice and the link in every language,
 theme and width.
+
+### Steps
+
+*Steps*, in the playground, shows how one expression is computed, like
+`rythme steps`: the last expression of the program, or the selected code (computed
+after the definitions of the program, like `rythme steps file.ry "fib(5)"`). The
+other expressions of the program are not run. The steps are shown one at a time in
+the place of the output: *Previous* and *Next*, a slider, the arrow keys, Home and
+End; the step before stays above, faint; what the program printed meanwhile comes
+with the step that follows it; an error comes after the last step. A live region
+(`aria-live`) says each step ("Step 3 of 14: fib(2) + fib(1) + fib(2)"). Long lines
+wrap like code blocks, under their indentation; the colors are the editor's.
+
+- **The interpreter.** Mode 5 of `rythme_run` (`playground/src/lib.rs`): the program,
+  U+0000, then the selected code (empty: the last expression). It answers with the
+  text of `rythme steps` (lines up to 400 characters rather than 100), or U+0005 when
+  there is no expression to show; `playground.js` cuts it into steps.
+- **Links.** Run, Check and Test bring the output back. *Share* from the steps makes
+  a link with `&mode=steps&step=N` (and `&expr=…`), which opens on that step;
+  without `step`, on the first one. One step of *Learn* (`pages::TOUR_STEPS`) opens
+  on the steps of `fib(4)` this way.
+
+`tests/pwa/check.js` opens a steps link offline on its step, moves with the buttons,
+the keys and the slider, shares from the steps (the mode, the step and the selected
+code travel), and checks the selection, what is printed, an error, a program without
+expression and the link of *Learn*; `layout.js` shows long and nested steps in every
+language, theme and width.
 
 On GitHub Pages, `sw.js` comes with a cache of 10 minutes rather than `no-cache`:
 browsers check service workers past their HTTP cache (`updateViaCache: "none"`).
