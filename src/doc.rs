@@ -413,6 +413,8 @@ fn plan<'a>(files: &'a [FileDoc], title: &str) -> Plan<'a> {
     }
     // Built-in functions named in the comments, in the order they are first named.
     let mut builtins = Vec::new();
+    // The Ruby names written (`upcase`), and the function each one names.
+    let mut ruby: Vec<(String, &'static str)> = Vec::new();
     let mut named = HashSet::new();
     let comments = files
         .iter()
@@ -424,7 +426,12 @@ fn plan<'a>(files: &'a [FileDoc], title: &str) -> Plan<'a> {
                 continue;
             }
             if let Some(b) = builtins::lookup(name) {
-                builtins.push(b);
+                if builtins::alias_of(name).is_some() {
+                    ruby.push((name.to_string(), b.name));
+                }
+                if !builtins.iter().any(|x: &&Builtin| x.name == b.name) {
+                    builtins.push(b);
+                }
             }
         }
     }
@@ -433,7 +440,21 @@ fn plan<'a>(files: &'a [FileDoc], title: &str) -> Plan<'a> {
     for (b, a) in &builtins {
         targets.insert(b.name.to_string(), a.clone());
     }
+    for (alias, of) in ruby {
+        if let Some((_, a)) = builtins.iter().find(|(b, _)| b.name == of) {
+            targets.insert(alias, a.clone());
+        }
+    }
     Plan { files: planned, builtins, builtins_anchor, targets }
+}
+
+/// ` Same as: `upcase` (its Ruby names).` after the documentation of `upper`.
+fn ruby_names(b: &Builtin) -> String {
+    let names: Vec<String> = builtins::aliases(b.name).map(|a| format!("`{a}`")).collect();
+    if names.is_empty() {
+        return String::new();
+    }
+    t!(" Same as: {} (its Ruby names).", " Pareil que : {} (ses noms Ruby).", names.join(", "))
 }
 
 /// The parts of a comment written between backticks: (code, byte range of the whole span).
@@ -522,7 +543,7 @@ fn markdown(plan: &Plan, title: &str) -> String {
         for (b, _) in &plan.builtins {
             out.push_str(&format!("### {}\n\n", b.name));
             out.push_str(&code(b.sig));
-            out.push_str(&format!("{}\n\n{}\n\n", b.doc(), t!("Example:", "Exemple :")));
+            out.push_str(&format!("{}{}\n\n{}\n\n", b.doc(), ruby_names(b), t!("Example:", "Exemple :")));
             out.push_str(&code(b.example));
         }
     }
@@ -647,7 +668,7 @@ fn highlight(code: &str) -> String {
         }
         out.push_str(&gap(&code[last..start]));
         let class = match &t.tok {
-            Tok::Int(_) | Tok::Float(_) | Tok::IntMinMagnitude => Some("num"),
+            Tok::Int(_) | Tok::Big(_) | Tok::Float(_) => Some("num"),
             Tok::Str(_) => Some("str"),
             Tok::Ctor(_) | Tok::True | Tok::False => Some("ctor"),
             Tok::Ident(_) if after_fn => Some("fn"),
@@ -745,7 +766,12 @@ fn html(plan: &Plan, title: &str) -> String {
             nav.push_str(&format!("<li><a href=\"#{a}\"><code>{}</code></a></li>", b.name));
             main.push_str(&format!("<article class=\"entry\" id=\"{a}\">\n<h4><code>{}</code></h4>\n", b.name));
             main.push_str(&code(b.sig));
-            main.push_str(&format!("<p>{}</p>\n<p class=\"label\">{}</p>\n", escape(b.doc()), escape(&label("example"))));
+            main.push_str(&format!(
+                "<p>{}{}</p>\n<p class=\"label\">{}</p>\n",
+                escape(b.doc()),
+                escape(&ruby_names(b)),
+                escape(&label("example"))
+            ));
             main.push_str(&code(b.example));
             main.push_str("</article>\n");
         }

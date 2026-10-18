@@ -64,13 +64,15 @@
       { "command": "rythme.restartServer", "title": "%command.restart%", "category": "Rythme" },
       { "command": "rythme.runFile", "title": "%command.run%", "category": "Rythme", "icon": "$(play)" },
       { "command": "rythme.testFile", "title": "%command.test%", "category": "Rythme", "icon": "$(beaker)" },
+      { "command": "rythme.runTest", "title": "%command.runTest%", "category": "Rythme" },
       { "command": "rythme.explainError", "title": "%command.explain%", "category": "Rythme" },
       { "command": "rythme.showHelp", "title": "%command.help%", "category": "Rythme" }
     ],
     "menus": {
       "commandPalette": [
         { "command": "rythme.runFile", "when": "editorLangId == rythme" },
-        { "command": "rythme.testFile", "when": "editorLangId == rythme" }
+        { "command": "rythme.testFile", "when": "editorLangId == rythme" },
+        { "command": "rythme.runTest", "when": "false" }
       ],
       "editor/title/run": [
         { "command": "rythme.runFile", "when": "resourceLangId == rythme", "group": "navigation@1" },

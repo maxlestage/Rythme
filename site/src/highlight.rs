@@ -4,19 +4,21 @@
 use paquets::prelude::*;
 
 pub const KEYWORDS: &[&str] =
-    &["fn", "if", "then", "else", "match", "end", "do", "type", "test", "use", "and", "or", "not", "true", "false"];
+    &["fn", "if", "then", "else", "match", "end", "do", "type", "test", "use", "and", "or", "not", "true", "false", "unless"];
 
 pub const BUILTINS: &[&str] = &[
     "print",
     "debug",
     "text",
     "input",
+    "input_lines",
     "type_of",
     "help",
     "assert",
     "assert_eq",
     "fail",
     "args",
+    "options",
     "env",
     "exit",
     "time",
@@ -102,6 +104,8 @@ pub const BUILTINS: &[&str] = &[
     "all",
     "find",
     "count",
+    "reject",
+    "each_with_index",
     "index_of",
     "min_by",
     "max_by",
@@ -131,6 +135,12 @@ pub const BUILTINS: &[&str] = &[
     "write_file",
     "append_file",
     "file_exists",
+    "file_info",
+    "list_folder",
+    "create_folder",
+    "delete_file",
+    "join_path",
+    "split_path",
     "now",
     "today",
     "parse_date",
@@ -143,6 +153,15 @@ pub const BUILTINS: &[&str] = &[
     "day_of_week",
     "days_in_month",
     "is_leap_year",
+    "check_all",
+    "sample",
+    "ints",
+    "floats",
+    "texts",
+    "bools",
+    "lists_of",
+    "one_of",
+    "records_of",
     "pi",
 ];
 

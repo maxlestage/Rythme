@@ -128,8 +128,10 @@ impl Qualify<'_> {
             ExprKind::Unit
             | ExprKind::Bool(_)
             | ExprKind::Int(_)
+            | ExprKind::Big(_)
             | ExprKind::Float(_)
             | ExprKind::Text(_)
+            | ExprKind::Symbol(_)
             | ExprKind::Var(_)
             | ExprKind::Ctor(_) => {}
             ExprKind::Template(parts) => {

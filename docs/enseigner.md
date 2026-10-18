@@ -93,6 +93,11 @@ rythme exercise check 07-recursivite.ry    # lance ses tests, avec des conseils,
 - `rythme fmt` donne à tous les fichiers la même mise en forme : les
   étudiants peuvent le lancer (ou `rythme fmt --check .`) avant de rendre
   leur travail.
+- `rythme etapes fib.ry "fib(4)"` montre un calcul étape par étape, dans le
+  modèle par substitution (`fib(4)` → `fib(3) + fib(2)` → ...) : la
+  récursion, les accumulateurs et les appels terminaux deviennent visibles.
+  `:etapes` le fait dans le mode interactif, et le bouton **Étapes** dans le
+  playground.
 - Rien à installer sur les ordinateurs des étudiants ? Le playground du
   [site](https://maxlestage.github.io/Rythme/) fait tourner le vrai
   interpréteur dans le navigateur.

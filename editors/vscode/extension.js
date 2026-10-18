@@ -1,7 +1,10 @@
 // The Rythme extension for VS Code: colors and snippets (declared in
 // package.json), and the language server `rythme lsp` for help everywhere:
 // problems as you type, documentation on hover, completion, the parameters of
-// a call, go to definition, references, renaming, an outline, quick fixes.
+// a call, go to definition, references, renaming, an outline, quick fixes,
+// the types of names, "Run" and "Run test" above the code (the server asks
+// for the commands `rythme.runFile`, `rythme.testFile` and `rythme.runTest`,
+// carried out here), the names of the workspace, folding.
 
 'use strict';
 
@@ -190,33 +193,77 @@ function restartServer() {
   return restarting;
 }
 
-/** Quotes a word for the shell; backslashes always (Git Bash would remove them). */
-function quote(arg) {
-  return /^[\w./:-]+$/.test(arg) ? arg : `"${arg.replace(/"/g, '\\"')}"`;
+/**
+ * Quotes a word for the shell, so that it reaches the program as it is
+ * (backslashes, `$`, quotes): single quotes for POSIX shells and PowerShell
+ * (Git Bash keeps the backslashes of Windows paths), double quotes for cmd.
+ */
+function quote(arg, shell) {
+  if (/^[\w./:-]+$/.test(arg)) {
+    return arg;
+  }
+  if (shell === 'cmd') {
+    return `"${arg.replace(/"/g, '""')}"`;
+  }
+  if (shell === 'powershell') {
+    return `'${arg.replace(/'/g, "''")}'`;
+  }
+  return `'${arg.replace(/'/g, "'\\''")}'`;
 }
 
-/** Runs `rythme [subcommand] file` in a terminal, after saving the file. */
-async function runInTerminal(subcommand) {
+/** The kind of shell of the terminals: 'powershell', 'cmd' or 'posix'. */
+function shellKind() {
+  const shell = (vscode.env.shell || '').toLowerCase();
+  if (shell.includes('powershell') || shell.includes('pwsh')) {
+    return 'powershell';
+  }
+  return shell.endsWith('cmd.exe') ? 'cmd' : 'posix';
+}
+
+/**
+ * The document to run: the one named by `target` (an address, from a code
+ * lens of the language server, or a Uri, from the buttons of the editor),
+ * else the active one.
+ */
+async function documentToRun(target) {
+  if (target) {
+    const uri = typeof target === 'string' ? vscode.Uri.parse(target) : target;
+    const open = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
+    return open || vscode.workspace.openTextDocument(uri);
+  }
   const editor = vscode.window.activeTextEditor;
-  if (!editor || editor.document.languageId !== 'rythme') {
+  return editor && editor.document.languageId === 'rythme' ? editor.document : undefined;
+}
+
+/**
+ * Runs `rythme [subcommand] file [extra...]` in a terminal, after saving the
+ * file. `target` chooses the file (see `documentToRun`).
+ */
+async function runInTerminal(subcommand, target, extra = []) {
+  const doc = await documentToRun(target);
+  if (!doc) {
     vscode.window.showInformationMessage(t('Open a Rythme file (.ry) first.', "Ouvrez d'abord un fichier Rythme (.ry)."));
     return;
   }
-  const doc = editor.document;
   if ((doc.isUntitled || doc.isDirty) && !(await doc.save())) {
     return;
   }
   const file = doc.uri.fsPath;
-  const args = [...langArgs(), ...(subcommand ? [subcommand] : []), file];
+  const args = [...langArgs(), ...(subcommand ? [subcommand] : []), file, ...extra];
   let terminal = vscode.window.terminals.find((term) => term.name === 'Rythme');
   if (!terminal) {
     terminal = vscode.window.createTerminal({ name: 'Rythme', cwd: path.dirname(file) });
   }
   terminal.show(true);
   // PowerShell runs a quoted program with `&`.
-  const shell = (vscode.env.shell || '').toLowerCase();
-  const call = shell.includes('powershell') || shell.includes('pwsh') ? '& ' : '';
-  terminal.sendText(call + [program(), ...args].map(quote).join(' '));
+  const shell = shellKind();
+  const call = shell === 'powershell' ? '& ' : '';
+  terminal.sendText(call + [program(), ...args].map((a) => quote(a, shell)).join(' '));
+}
+
+/** The arguments of `rythme test file ...` that run only the test `name`. */
+function testFilter(name) {
+  return ['--filter', name];
 }
 
 /** Shows what `rythme args...` prints, in a read-only page beside the code. */
@@ -286,8 +333,12 @@ async function activate(context) {
       provideTextDocumentContent: (uri) => pages.get(uri.toString()) || '',
     }),
     vscode.commands.registerCommand('rythme.restartServer', restartServer),
-    vscode.commands.registerCommand('rythme.runFile', () => runInTerminal('')),
-    vscode.commands.registerCommand('rythme.testFile', () => runInTerminal('test')),
+    vscode.commands.registerCommand('rythme.runFile', (target) => runInTerminal('', target)),
+    vscode.commands.registerCommand('rythme.testFile', (target) => runInTerminal('test', target)),
+    // From the "Run test" code lens: the address of the file and the name of the test.
+    vscode.commands.registerCommand('rythme.runTest', (target, name) =>
+      runInTerminal('test', target, typeof name === 'string' ? testFilter(name) : [])
+    ),
     vscode.commands.registerCommand('rythme.explainError', explainError),
     vscode.commands.registerCommand('rythme.showHelp', showHelp),
     vscode.workspace.onDidChangeConfiguration((e) => {
@@ -304,4 +355,4 @@ function deactivate() {
   return stopServer();
 }
 
-module.exports = { activate, deactivate };
+module.exports = { activate, deactivate, quote, testFilter };

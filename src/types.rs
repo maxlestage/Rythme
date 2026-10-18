@@ -30,6 +30,8 @@ pub enum Ty {
     /// A number: an Int or a Float.
     Num,
     Text,
+    /// `:ok`, `:error`...
+    Symbol,
     /// A list whose elements all have this type.
     List(Rc<Ty>),
     Record(Rc<RecordTy>),
@@ -79,8 +81,9 @@ pub const RESULT: Kinds = 1 << 8;
 /// A value of a type defined with `type`.
 pub const DATA: Kinds = 1 << 9;
 pub const FUNC: Kinds = 1 << 10;
+pub const SYMBOL: Kinds = 1 << 11;
 pub const NUMBER: Kinds = INT | FLOAT;
-pub const ALL: Kinds = (1 << 11) - 1;
+pub const ALL: Kinds = (1 << 12) - 1;
 
 /// Types nested deeper than this are not followed (`Any` instead), so that
 /// inferring the types of recursive functions always ends.
@@ -124,6 +127,7 @@ impl Ty {
             Ty::Float => FLOAT,
             Ty::Num => NUMBER,
             Ty::Text => TEXT,
+            Ty::Symbol => SYMBOL,
             Ty::List(_) => LIST,
             Ty::Record(_) => RECORD,
             Ty::Data(d) => d.kind(),
@@ -253,6 +257,7 @@ impl Ty {
             Ty::Float => "Float".into(),
             Ty::Num => "Int/Float".into(),
             Ty::Text => "Text".into(),
+            Ty::Symbol => "Symbol".into(),
             Ty::List(_) => "List".into(),
             Ty::Record(_) => "Record".into(),
             Ty::Data(d) => d.name.to_string(),
@@ -270,9 +275,10 @@ impl Ty {
         match v {
             Value::Unit => Ty::Unit,
             Value::Bool(_) => Ty::Bool,
-            Value::Int(_) => Ty::Int,
+            Value::Int(_) | Value::Big(_) => Ty::Int,
             Value::Float(_) => Ty::Float,
             Value::Text(_) => Ty::Text,
+            Value::Symbol(_) => Ty::Symbol,
             Value::List(l) => {
                 let mut t = Ty::Never;
                 for (i, x) in l.iter().enumerate() {
@@ -299,8 +305,13 @@ impl Ty {
     pub fn contains(&self, v: &Value) -> bool {
         match (self, v) {
             (Ty::Any, _) => true,
-            (Ty::Unit, Value::Unit) | (Ty::Bool, Value::Bool(_)) | (Ty::Int, Value::Int(_)) | (Ty::Float, Value::Float(_)) => true,
-            (Ty::Num, Value::Int(_) | Value::Float(_)) | (Ty::Text, Value::Text(_)) => true,
+            (Ty::Unit, Value::Unit)
+            | (Ty::Bool, Value::Bool(_))
+            | (Ty::Int, Value::Int(_) | Value::Big(_))
+            | (Ty::Float, Value::Float(_)) => true,
+            (Ty::Num, Value::Int(_) | Value::Big(_) | Value::Float(_)) | (Ty::Text, Value::Text(_)) | (Ty::Symbol, Value::Symbol(_)) => {
+                true
+            }
             (Ty::List(t), Value::List(l)) => l.iter().all(|x| t.contains(x)),
             (Ty::Record(r), Value::Record(rec)) => {
                 (!r.exact || r.fields.len() == rec.len()) && r.fields.iter().all(|(k, t)| rec.get(k).is_some_and(|x| t.contains(x)))
@@ -348,9 +359,10 @@ pub fn kind_of(v: &Value) -> Kinds {
     match v {
         Value::Unit => UNIT,
         Value::Bool(_) => BOOL,
-        Value::Int(_) => INT,
+        Value::Int(_) | Value::Big(_) => INT,
         Value::Float(_) => FLOAT,
         Value::Text(_) => TEXT,
+        Value::Symbol(_) => SYMBOL,
         Value::List(_) => LIST,
         Value::Record(_) => RECORD,
         Value::Variant(var) => data_kind(var.ctor.type_name),
@@ -471,6 +483,14 @@ fn date_ty(timed: bool, exact: bool) -> Ty {
         _ => &["year", "month", "day"],
     };
     Ty::record(names.iter().map(|n| (Rc::from(*n), Ty::Int)).collect(), exact)
+}
+
+/// A generator of `check_all`: a record with the field `generator` and
+/// these ones.
+fn generator_ty(names: &[&str]) -> Ty {
+    let mut fields = vec![(Rc::from("generator"), Ty::Text)];
+    fields.extend(names.iter().map(|n| (Rc::from(*n), Ty::Any)));
+    Ty::record(fields, true)
 }
 
 /// What a call to the built-in function `name` gives, with arguments of
@@ -660,7 +680,7 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                     _ => Ty::Any,
                 }
             }
-            "filter" | "sort_by" => {
+            "filter" | "sort_by" | "reject" => {
                 need(a, 0, Expected::List)?;
                 need(a, 1, Expected::Function)?;
                 Ty::list(arg(0).elem())
@@ -675,7 +695,7 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 need(a, 2, Expected::Function)?;
                 Ty::list(arg(2).ret())
             }
-            "each" => {
+            "each" | "each_with_index" => {
                 need(a, 0, Expected::List)?;
                 need(a, 1, Expected::Function)?;
                 Ty::Unit
@@ -692,7 +712,9 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
             }
             "count" => {
                 need(a, 0, Expected::List)?;
-                need(a, 1, Expected::Function)?;
+                if n == 2 {
+                    need(a, 1, Expected::Function)?;
+                }
                 Ty::Int
             }
             "min_by" | "max_by" => {
@@ -715,12 +737,25 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 need(a, 1, Expected::Function)?;
                 Ty::record(Vec::new(), false)
             }
+            "sum" if n == 2 => {
+                need(a, 0, Expected::List)?;
+                need(a, 1, Expected::Function)?;
+                match arg(1).ret() {
+                    Ty::Int | Ty::Never => Ty::Int,
+                    _ => Ty::Num,
+                }
+            }
             "sum" | "product" => {
                 need(a, 0, Expected::List)?;
                 match arg(0).elem() {
                     Ty::Int | Ty::Never => Ty::Int,
                     _ => Ty::Num,
                 }
+            }
+            "first" | "last" if n == 2 => {
+                need(a, 0, Expected::ListOrText)?;
+                need(a, 1, Expected::Int)?;
+                same_list_or_text(&arg(0))
             }
             "first" | "last" => {
                 need(a, 0, Expected::ListOrText)?;
@@ -926,6 +961,33 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 need(a, 0, Expected::Text)?;
                 Ty::Bool
             }
+            "file_info" => {
+                need(a, 0, Expected::Text)?;
+                let info = Ty::record(vec![(Rc::from("is_folder"), Ty::Bool), (Rc::from("size"), Ty::Int)], true);
+                Ty::result(info, Ty::Text)
+            }
+            "list_folder" => {
+                need(a, 0, Expected::Text)?;
+                Ty::result(Ty::list(Ty::Text), Ty::Text)
+            }
+            "create_folder" | "delete_file" => {
+                need(a, 0, Expected::Text)?;
+                Ty::result(Ty::Unit, Ty::Text)
+            }
+            "join_path" => {
+                need(a, 0, Expected::List)?;
+                Ty::Text
+            }
+            "split_path" => {
+                need(a, 0, Expected::Text)?;
+                Ty::list(Ty::Text)
+            }
+            "input_lines" => Ty::result(Ty::list(Ty::Text), Ty::Text),
+            // The other fields are the options found, of unknown names.
+            "options" => {
+                need(a, 0, Expected::List)?;
+                Ty::result(Ty::record(vec![(Rc::from("args"), Ty::list(Ty::Text))], false), Ty::Text)
+            }
             // A date always has these fields; `now()` exactly these and its time.
             "now" => date_ty(true, true),
             "today" => date_ty(false, true),
@@ -961,6 +1023,62 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 need(a, 0, Expected::Int)?;
                 Ty::Bool
             }
+            // The property first, or last when it is a block: `check_all(ints()) { |x| ... }`
+            // (when the first argument is not a function and the last one is).
+            "check_all" => {
+                let first = || -> Result<(), Outcome> {
+                    need(a, 0, Expected::Function)?;
+                    need(a, 1, Expected::Generator)?;
+                    need(a, 2, Expected::Int)
+                };
+                let last = || -> Result<(), Outcome> {
+                    need(a, n - 1, Expected::Function)?;
+                    need(a, 0, Expected::Generator)?;
+                    if n == 3 {
+                        need(a, 1, Expected::Int)?;
+                    }
+                    Ok(())
+                };
+                let (f0, fl) = (arg(0).kinds() & FUNC != 0, arg(n - 1).kinds() & FUNC != 0);
+                if arg(0).kinds() == FUNC || !fl {
+                    first()?;
+                } else if !f0 {
+                    last()?;
+                } else if last().is_err() {
+                    // Either order may be the one: wrong only when both are.
+                    first()?;
+                }
+                Ty::Unit
+            }
+            "sample" => {
+                need(a, 0, Expected::Generator)?;
+                need(a, 1, Expected::Int)?;
+                Ty::list(Ty::Any)
+            }
+            "ints" | "floats" if n == 2 => {
+                need(a, 0, if name == "ints" { Expected::Int } else { Expected::Number })?;
+                need(a, 1, if name == "ints" { Expected::Int } else { Expected::Number })?;
+                generator_ty(&["min", "max"])
+            }
+            "ints" | "floats" if n == 0 => generator_ty(&["min", "max"]),
+            "texts" => {
+                need(a, 0, Expected::Int)?;
+                generator_ty(&["max_length"])
+            }
+            "bools" => generator_ty(&[]),
+            "lists_of" => {
+                need(a, 0, Expected::Generator)?;
+                need(a, 1, Expected::Int)?;
+                generator_ty(&["of", "max_length"])
+            }
+            "one_of" => {
+                need(a, 0, Expected::List)?;
+                generator_ty(&["values"])
+            }
+            "records_of" => {
+                need(a, 0, Expected::Record)?;
+                generator_ty(&["fields"])
+            }
             _ => return Err(Outcome::Gives(Ty::Any)),
         })
     })();
@@ -994,7 +1112,9 @@ pub fn callback(name: &str, index: usize, a: &[Ty]) -> Option<Callback> {
             };
             (vec![x], None)
         }
-        ("filter" | "any" | "all" | "find" | "count" | "partition", 1) => (vec![elem], Some(BOOL)),
+        ("filter" | "reject" | "any" | "all" | "find" | "count" | "partition", 1) => (vec![elem], Some(BOOL)),
+        ("sum", 1) => (vec![elem], Some(NUMBER)),
+        ("each_with_index", 1) => (vec![elem, Ty::Int], None),
         // Each element of a list, or each character of a text.
         ("take_while" | "drop_while", 1) => (vec![piece(&first)], Some(BOOL)),
         ("flat_map", 1) => (vec![elem], Some(LIST)),
@@ -1014,6 +1134,9 @@ pub fn callback(name: &str, index: usize, a: &[Ty]) -> Option<Callback> {
             Ty::Data(d) if matches!(d.kind(), OPTION | RESULT) => (vec![d.payload()], Some(d.kind())),
             _ => (vec![Ty::Any], None),
         },
+        // A property: it may give true or false, `()`, an Option or a Result.
+        // First, or last when given as a block.
+        ("check_all", _) => (vec![Ty::Any], None),
         ("map_err", 1) => match &first {
             Ty::Data(d) if d.kind() == RESULT => (vec![error_of(d)], None),
             _ => (vec![Ty::Any], None),

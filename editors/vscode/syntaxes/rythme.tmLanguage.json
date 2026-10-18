@@ -7,8 +7,10 @@
     { "include": "#comments" },
     { "include": "#strings" },
     { "include": "#definitions" },
+    { "include": "#blocks" },
     { "include": "#keywords" },
     { "include": "#constants" },
+    { "include": "#symbols" },
     { "include": "#numbers" },
     { "include": "#constructors" },
     { "include": "#calls" },
@@ -26,10 +28,10 @@
       "begin": "\"",
       "end": "\"",
       "patterns": [
-        { "name": "constant.character.escape.rythme", "match": "\\\\(n|t|r|0|\\\\|\"|\\{|\\}|u\\{[0-9a-fA-F]+\\})" },
+        { "name": "constant.character.escape.rythme", "match": "\\\\(n|t|r|0|\\\\|\"|\\{|\\}|#\\{?|u\\{[0-9a-fA-F]+\\})" },
         {
           "name": "meta.interpolation.rythme",
-          "begin": "\\{",
+          "begin": "#?\\{",
           "end": "\\}",
           "beginCaptures": { "0": { "name": "punctuation.section.interpolation.begin.rythme" } },
           "endCaptures": { "0": { "name": "punctuation.section.interpolation.end.rythme" } },
@@ -41,7 +43,7 @@
     "definitions": {
       "patterns": [
         {
-          "match": "\\b(fn)\\s+([\\p{L}_][\\p{L}\\p{N}_]*)",
+          "match": "\\b(fn)\\s+([\\p{L}_][\\p{L}\\p{N}_]*\\??)",
           "captures": {
             "1": { "name": "keyword.declaration.function.rythme" },
             "2": { "name": "entity.name.function.rythme" }
@@ -77,6 +79,7 @@
     "keywords": {
       "patterns": [
         { "name": "keyword.control.rythme", "match": "\\b(if|then|else|match|end|do)\\b" },
+        { "name": "keyword.control.rythme", "match": "\\bunless\\b(?=[ \\t]+[^\\s=,)\\]}.|+\\-*/%<>!])" },
         { "name": "keyword.declaration.function.rythme", "match": "\\bfn\\b" },
         { "name": "keyword.operator.word.rythme", "match": "\\b(and|or|not)\\b" }
       ]
@@ -96,6 +99,25 @@
         { "name": "constant.numeric.integer.rythme", "match": "\\b\\d[\\d_]*\\b" }
       ]
     },
+    "symbols": {
+      "match": "(?<![\\p{L}\\p{N}_)\\]}\"':])(:)([\\p{L}_][\\p{L}\\p{N}_]*)",
+      "name": "constant.other.symbol.rythme",
+      "captures": { "1": { "name": "punctuation.definition.constant.rythme" } }
+    },
+    "blocks": {
+      "patterns": [
+        {
+          "match": "(?:\\b(do)|(\\{))[ \\t]*(\\|)([^|\\n]*)(\\|)",
+          "captures": {
+            "1": { "name": "keyword.control.rythme" },
+            "2": { "name": "punctuation.section.block.begin.rythme" },
+            "3": { "name": "punctuation.definition.parameters.begin.rythme" },
+            "4": { "name": "variable.parameter.rythme" },
+            "5": { "name": "punctuation.definition.parameters.end.rythme" }
+          }
+        }
+      ]
+    },
     "constructors": {
       "name": "entity.name.type.constructor.rythme",
       "match": "\\b\\p{Lu}[\\p{L}\\p{N}_]*\\b"
@@ -104,11 +126,15 @@
       "patterns": [
         {
           "name": "support.function.builtin.rythme",
-          "match": "\\b(print|debug|text|input|type_of|help|assert|assert_eq|fail|args|env|exit|time|random|abs|min|max|sqrt|pow|floor|ceil|round|int|float|sin|cos|tan|asin|acos|atan|log|exp|is_even|is_odd|gcd|lcm|len|upper|lower|capitalize|trim|pad_left|pad_right|split|join|contains|starts_with|ends_with|replace|chars|lines|char_code|char|is_digit|is_letter|is_space|repeat|parse_int|parse_float|parse_json|to_json|map|filter|fold|scan|each|sum|product|first|last|rest|get|push|set_at|insert_at|remove_at|reverse|sort|sort_by|unique|shuffle|slice|take|drop|take_while|drop_while|step_by|chunks|windows|zip|enumerate|any|all|find|count|index_of|min_by|max_by|flatten|flat_map|partition|group_by|is_empty|keys|values|entries|from_entries|has|put|remove|map_values|unwrap|unwrap_or|is_some|is_none|is_ok|is_err|and_then|ok_or|map_err|read_file|write_file|append_file|file_exists|now|today|parse_date|format_date|is_date|add_days|add_seconds|days_between|seconds_between|day_of_week|days_in_month|is_leap_year)\\b(?=\\s*\\()"
+          "match": "\\b(print|debug|text|input|input_lines|type_of|help|assert|assert_eq|fail|args|options|env|exit|time|random|abs|min|max|sqrt|pow|floor|ceil|round|int|float|sin|cos|tan|asin|acos|atan|log|exp|is_even|is_odd|gcd|lcm|len|upper|lower|capitalize|trim|pad_left|pad_right|split|join|contains|starts_with|ends_with|replace|chars|lines|char_code|char|is_digit|is_letter|is_space|repeat|parse_int|parse_float|parse_json|to_json|map|filter|fold|scan|each|sum|product|first|last|rest|get|push|set_at|insert_at|remove_at|reverse|sort|sort_by|unique|shuffle|slice|take|drop|take_while|drop_while|step_by|chunks|windows|zip|enumerate|any|all|find|count|reject|each_with_index|index_of|min_by|max_by|flatten|flat_map|partition|group_by|is_empty|keys|values|entries|from_entries|has|put|remove|map_values|unwrap|unwrap_or|is_some|is_none|is_ok|is_err|and_then|ok_or|map_err|read_file|write_file|append_file|file_exists|file_info|list_folder|create_folder|delete_file|join_path|split_path|now|today|parse_date|format_date|is_date|add_days|add_seconds|days_between|seconds_between|day_of_week|days_in_month|is_leap_year|check_all|sample|ints|floats|texts|bools|lists_of|one_of|records_of)\\b(?=\\s*\\()"
+        },
+        {
+          "name": "support.function.builtin.rythme",
+          "match": "\\b(even|odd|include|start_with|end_with|any|all|empty|key)\\?(?=\\s*\\()"
         },
         {
           "name": "entity.name.function.call.rythme",
-          "match": "\\b[\\p{Ll}_][\\p{L}\\p{N}_]*(?=\\()"
+          "match": "\\b[\\p{Ll}_][\\p{L}\\p{N}_]*\\??(?=\\()"
         }
       ]
     },

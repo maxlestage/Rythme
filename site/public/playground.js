@@ -33,12 +33,13 @@
   }[lang];
 
   const TOPICS = ["start", "syntax", "functions", "lists", "text", "records", "types", "match", "errors", "functional", "tests", "builtins"];
-  const KEYWORDS = new Set(["fn", "if", "then", "else", "match", "end", "do", "type", "test", "use", "and", "or", "not", "true", "false"]);
-  const BUILTINS = new Set(("print debug text input type_of help assert assert_eq fail args env exit time random abs min max sqrt pow floor ceil round int float sin cos tan asin acos atan log exp is_even is_odd gcd lcm len upper lower capitalize trim pad_left pad_right split join contains starts_with ends_with replace chars lines char_code char is_digit is_letter is_space repeat parse_int parse_float parse_json to_json map filter fold scan each sum product first last rest get push set_at insert_at remove_at reverse sort sort_by unique shuffle slice take drop take_while drop_while step_by chunks windows zip enumerate any all find count index_of min_by max_by flatten flat_map partition group_by is_empty keys values entries from_entries has put remove map_values unwrap unwrap_or is_some is_none is_ok is_err and_then ok_or map_err read_file write_file append_file file_exists now today parse_date format_date is_date add_days add_seconds days_between seconds_between day_of_week days_in_month is_leap_year pi").split(" "));
+  const KEYWORDS = new Set(["fn", "if", "then", "else", "match", "end", "do", "type", "test", "use", "and", "or", "not", "true", "false", "unless"]);
+  const BUILTINS = new Set(("print debug text input input_lines type_of help assert assert_eq fail args options env exit time random abs min max sqrt pow floor ceil round int float sin cos tan asin acos atan log exp is_even is_odd gcd lcm len upper lower capitalize trim pad_left pad_right split join contains starts_with ends_with replace chars lines char_code char is_digit is_letter is_space repeat parse_int parse_float parse_json to_json map filter fold scan each sum product first last rest get push set_at insert_at remove_at reverse sort sort_by unique shuffle slice take drop take_while drop_while step_by chunks windows zip enumerate any all find count reject each_with_index index_of min_by max_by flatten flat_map partition group_by is_empty keys values entries from_entries has put remove map_values unwrap unwrap_or is_some is_none is_ok is_err and_then ok_or map_err read_file write_file append_file file_exists file_info list_folder create_folder delete_file join_path split_path now today parse_date format_date is_date add_days add_seconds days_between seconds_between day_of_week days_in_month is_leap_year check_all sample ints floats texts bools lists_of one_of records_of pi").split(" "));
 
   const $ = (id) => document.getElementById(id);
   const source = $("source"), highlight = $("highlight"), gutter = $("gutter"), output = $("output");
   const statusEl = $("status"), runBtn = $("run"), stopBtn = $("stop"), checkBtn = $("check"), testBtn = $("test"), formatBtn = $("format");
+  const stepsBtn = $("steps");
   const exampleSel = $("example"), helpText = $("help-text");
   // The welcome program, written in the page by the server.
   const WELCOME = source.value;
@@ -239,6 +240,7 @@
     stopBtn.hidden = !on;
     checkBtn.disabled = on;
     testBtn.disabled = on;
+    stepsBtn.disabled = on;
   }
 
   function execute(mode) {
@@ -281,6 +283,8 @@
   runBtn.addEventListener("click", () => execute(runMode));
   checkBtn.addEventListener("click", () => execute(1));
   testBtn.addEventListener("click", () => execute(2));
+  // The calculation shown step by step, like `rythme steps`.
+  stepsBtn.addEventListener("click", () => execute(4));
   formatBtn.addEventListener("click", formatCode);
 
   // ----- format: the layout of `rythme fmt`, done at once (it cannot loop) -----
@@ -495,7 +499,7 @@
       output.append(text(UI.loadFailed + err, "err"));
       return;
     }
-    for (const b of [runBtn, checkBtn, testBtn, formatBtn]) b.disabled = false;
+    for (const b of [runBtn, checkBtn, testBtn, stepsBtn, formatBtn]) b.disabled = false;
     newWorker();
     try {
       examples = await (await fetch(page.dataset.examples)).json();

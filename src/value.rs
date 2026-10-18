@@ -6,6 +6,7 @@ use std::fmt::Write;
 use std::rc::Rc;
 
 use crate::ast::FnDef;
+use crate::bigint::BigInt;
 use crate::builtins::Builtin;
 use crate::compile::{FnCode, Sibling};
 use crate::symbol::Sym;
@@ -15,8 +16,12 @@ pub enum Value {
     Unit,
     Bool(bool),
     Int(i64),
+    /// A whole number outside of the 64-bit range (never one that fits in an `Int`).
+    Big(Rc<BigInt>),
     Float(f64),
     Text(Rc<str>),
+    /// `:ok`: a value that is only its name.
+    Symbol(Sym),
     List(List),
     Record(Rc<Record>),
     Variant(Rc<Variant>),
@@ -227,9 +232,10 @@ impl Value {
         match self {
             Value::Unit => "Unit".into(),
             Value::Bool(_) => "Bool".into(),
-            Value::Int(_) => "Int".into(),
+            Value::Int(_) | Value::Big(_) => "Int".into(),
             Value::Float(_) => "Float".into(),
             Value::Text(_) => "Text".into(),
+            Value::Symbol(_) => "Symbol".into(),
             Value::List(_) => "List".into(),
             Value::Record(_) => "Record".into(),
             Value::Variant(v) => v.ctor.type_name.name().to_string(),
@@ -293,8 +299,15 @@ impl Value {
                     Value::Int(n) => {
                         let _ = write!(out, "{n}");
                     }
+                    Value::Big(n) => {
+                        let _ = write!(out, "{n}");
+                    }
                     Value::Float(f) => out.push_str(&fmt_float(*f)),
                     Value::Text(s) => write_text_repr(s, out),
+                    Value::Symbol(s) => {
+                        out.push(':');
+                        out.push_str(&s.name());
+                    }
                     Value::List(l) => {
                         out.push('[');
                         todo.push(Item::Str("]"));
@@ -363,8 +376,11 @@ impl Value {
                 (Value::Bool(x), Value::Bool(y)) => x == y,
                 (Value::Int(x), Value::Int(y)) => x == y,
                 (Value::Int(x), Value::Float(y)) | (Value::Float(y), Value::Int(x)) => cmp_int_float(*x, *y) == Some(Ordering::Equal),
+                (Value::Big(x), Value::Big(y)) => x == y,
+                (Value::Big(x), Value::Float(y)) | (Value::Float(y), Value::Big(x)) => x.cmp_f64(*y) == Some(Ordering::Equal),
                 (Value::Float(x), Value::Float(y)) => x == y,
                 (Value::Text(x), Value::Text(y)) => x == y,
+                (Value::Symbol(x), Value::Symbol(y)) => x == y,
                 (Value::List(x), Value::List(y)) => {
                     if x.len() != y.len() {
                         return false;
@@ -410,7 +426,11 @@ impl Value {
             (Value::Int(a), Value::Float(b)) => cmp_int_float(*a, *b),
             (Value::Float(a), Value::Int(b)) => cmp_int_float(*b, *a).map(Ordering::reverse),
             (Value::Float(a), Value::Float(b)) => a.partial_cmp(b),
+            (Value::Big(_) | Value::Int(_), Value::Big(_) | Value::Int(_)) => Some(cmp_whole(self, other)),
+            (Value::Big(a), Value::Float(b)) => a.cmp_f64(*b),
+            (Value::Float(a), Value::Big(b)) => b.cmp_f64(*a).map(Ordering::reverse),
             (Value::Text(a), Value::Text(b)) => Some(a.cmp(b)),
+            (Value::Symbol(a), Value::Symbol(b)) => Some(a.name().cmp(&b.name())),
             (Value::Bool(a), Value::Bool(b)) => Some(a.cmp(b)),
             (Value::Unit, Value::Unit) => Some(Ordering::Equal),
             (Value::List(a), Value::List(b)) => {
@@ -453,8 +473,9 @@ impl Value {
             match v {
                 Value::Unit => 0,
                 Value::Bool(_) => 1,
-                Value::Int(_) | Value::Float(_) => 2,
+                Value::Int(_) | Value::Big(_) | Value::Float(_) => 2,
                 Value::Text(_) => 3,
+                Value::Symbol(_) => 8,
                 Value::List(_) => 4,
                 Value::Record(_) => 5,
                 Value::Variant(_) => 6,
@@ -478,8 +499,13 @@ impl Value {
                 (false, true) => nan_side(b).reverse(),
             }
         }
-        fn int_float(i: i64, f: f64, exact: bool) -> Ordering {
-            match cmp_int_float(i, f) {
+        fn int_float(i: &Value, f: f64, exact: bool) -> Ordering {
+            let o = match i {
+                Value::Int(i) => cmp_int_float(*i, f),
+                Value::Big(b) => b.cmp_f64(f),
+                _ => unreachable!(),
+            };
+            match o {
                 Some(Ordering::Equal) if exact => Ordering::Less,
                 Some(o) => o,
                 None => nan_side(f).reverse(),
@@ -488,9 +514,11 @@ impl Value {
         match (self, other) {
             (Value::Int(a), Value::Int(b)) => a.cmp(b),
             (Value::Float(a), Value::Float(b)) => floats(*a, *b, exact),
-            (Value::Int(a), Value::Float(b)) => int_float(*a, *b, exact),
-            (Value::Float(a), Value::Int(b)) => int_float(*b, *a, exact).reverse(),
+            (Value::Big(_) | Value::Int(_), Value::Big(_) | Value::Int(_)) => cmp_whole(self, other),
+            (Value::Int(_) | Value::Big(_), Value::Float(b)) => int_float(self, *b, exact),
+            (Value::Float(a), Value::Int(_) | Value::Big(_)) => int_float(other, *a, exact).reverse(),
             (Value::Text(a), Value::Text(b)) => a.cmp(b),
+            (Value::Symbol(a), Value::Symbol(b)) => a.name().cmp(&b.name()),
             (Value::Bool(a), Value::Bool(b)) => a.cmp(b),
             (Value::List(a), Value::List(b)) => {
                 for (x, y) in a.iter().zip(b.iter()) {
@@ -538,6 +566,29 @@ pub fn cmp_int_float(i: i64, f: f64) -> Option<Ordering> {
         // Both the whole part and the rest are exact.
         let whole = f.trunc();
         Some(i.cmp(&(whole as i64)).then_with(|| 0.0.partial_cmp(&(f - whole)).unwrap_or(Ordering::Equal)))
+    }
+}
+
+/// The order of two whole numbers, one of them at least large: a large
+/// number is beyond all the small ones.
+fn cmp_whole(a: &Value, b: &Value) -> Ordering {
+    match (a, b) {
+        (Value::Big(x), Value::Big(y)) => x.cmp(y),
+        (Value::Big(x), _) => {
+            if x.is_negative() {
+                Ordering::Less
+            } else {
+                Ordering::Greater
+            }
+        }
+        (_, Value::Big(y)) => {
+            if y.is_negative() {
+                Ordering::Greater
+            } else {
+                Ordering::Less
+            }
+        }
+        _ => unreachable!(),
     }
 }
 
@@ -623,12 +674,12 @@ impl Drop for Record {
     }
 }
 
-fn is_plain_key(k: &str) -> bool {
+pub fn is_plain_key(k: &str) -> bool {
     let mut chars = k.chars();
     matches!(chars.next(), Some(c) if c.is_alphabetic() || c == '_') && chars.all(|c| c.is_alphanumeric() || c == '_')
 }
 
-fn write_text_repr(s: &str, out: &mut String) {
+pub fn write_text_repr(s: &str, out: &mut String) {
     out.push('"');
     for c in s.chars() {
         match c {

@@ -1,6 +1,7 @@
 # Rythme
 
-**A simple, purely functional programming language, with help everywhere.**
+**Simpler than Python and Ruby, as pleasant as Ruby: a purely functional
+programming language, with help everywhere.**
 Programs are files ending in `.ry`. The interpreter is written in Rust.
 
 *[Version française →](README.fr.md)*
@@ -20,11 +21,32 @@ fn square(x) = x * x
   |> print                # 20
 ```
 
+The same, the Ruby way (blocks, method chains, names ending with `?`):
+
+```rythme
+names = ["Ada", "Grace", "Alan"]
+names.each do |name|
+  puts("Hello, #{name}!")
+end
+
+total = [1, 2, 3, 4]
+  .select(even?)
+  .map { |x| x * x }
+  .sum
+puts(total)                # 20
+```
+
 ## Why Rythme?
 
 - **Simpler than Python or Ruby.** 15 keywords (Python has 35). One way to do
   each thing. No classes, no `null`, no exceptions, no loops, no mutation:
   fewer concepts to learn, fewer bugs to chase.
+- **As pleasant as Ruby.** Blocks (`xs.map do |x| x * 2 end`,
+  `xs.select { |x| x > 2 }`), method chains (`xs.filter(is_even).sum`, one
+  step per line), names like `even?` and `empty?`, `unless`, symbols (`:ok`),
+  `"Hello #{name}"`, and the Ruby names of the library (`puts`, `upcase`,
+  `select`, `reject`, `reduce`, `each_with_index`...). `rythme help ruby`
+  shows what is the same and what is different.
 - **Purely functional.** Values are immutable, functions are values, every
   `if` and `match` is an expression. Recursion in tail position never runs
   out of stack.
@@ -32,7 +54,7 @@ fn square(x) = x * x
   `None`). No exceptions: an operation that may fail returns a `Result`
   (`Ok(x)` or `Err(e)`), and `?` passes errors on. Algebraic types, pattern
   matching, a checker that warns about forgotten cases, no silent conversion,
-  no silent integer overflow.
+  whole numbers that never overflow.
 - **Help everywhere, at all times.**
   - Every error says *where* it is, *why*, and *how to fix it*, the way Rust
     does, and suggests the right name when you make a typo.
@@ -40,8 +62,9 @@ fn square(x) = x * x
     `def`, `class`... each gets an explanation of the Rythme way.
   - The program is checked **before** it runs: all the unknown names, wrong
     numbers of arguments, operations on the wrong kinds of values
-    (`"age: " + 36`, `len(5)`, a misspelled field) and forgotten cases are
-    reported at once.
+    (`"age: " + 36`, `len(5)`, a misspelled field), calls that always fail
+    (`area("big")` when `area` multiplies its parameter) and forgotten cases
+    are reported at once.
   - `rythme explain E003` explains any error code in detail, with examples.
   - `rythme help`, `rythme help map`, `help(x)` in code, `:doc` in the REPL,
     `rythme learn` for a guided tour.
@@ -169,14 +192,17 @@ cargo install --path .       # or install it in your PATH
 | `rythme`                    | interactive mode: type code, see the result    |
 | `rythme hello.ry`           | run a program (`rythme run hello.ry` also works) |
 | `rythme check hello.ry`     | find problems without running the program      |
-| `rythme test hello.ry`      | run the tests written in the file              |
+| `rythme test hello.ry`      | run the tests written in the file (also a folder: `rythme test .`, with `--filter NAME`, `--watch`) |
 | `rythme fmt hello.ry`       | give the code its official layout (also a folder: `rythme fmt .`) |
 | `rythme fmt --check .`      | list the files to format, without changing them (for CI) |
 | `rythme doc hello.ry`       | its documentation from the `##` comments, in Markdown (`--html`: one web page) |
+| `rythme new hello`          | a new project: `rythme.toml`, `src/`, `tests/`; then `rythme run`, `rythme test`... without a file |
+| `rythme install`            | download the dependencies of `rythme.toml` (git or folders), and write `rythme.lock` |
 | `rythme help [topic]`       | help on a topic or a function                  |
 | `rythme explain E003`       | explain an error code                          |
 | `rythme learn`              | guided tour of the language                    |
 | `rythme exercise`           | [30 graded exercises](docs/exercises/README.md): `list`, `start 1`, `check FILE` |
+| `rythme steps fib.ry "fib(4)"` | the calculation step by step: `fib(4)` → `fib(3) + fib(2)` → ... |
 | `rythme -e 'print(1 + 2)'`  | run a piece of code                            |
 | `rythme lsp`                | language server, started by your editor ([editors](editors)) |
 
@@ -252,6 +278,7 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 | [`cipher.ry`](examples/cipher.ry) | the Caesar cipher: `char_code`, `char`, counting letters |
 | [`results.ry`](examples/results.ry) | `Option`, `Result`, `?` |
 | [`students.ry`](examples/students.ry) | records, record update, grouping, averages |
+| [`library.ry`](examples/library.ry) | the Ruby style: `do \|x\| ... end` blocks, method chains, names ending with `?`, `unless`, symbols |
 | [`sales.ry`](examples/sales.ry) | a report: `scan`, columns lined up with `pad_left`, `windows`, `chunks`, JSON |
 | [`calendar.ry`](examples/calendar.ry) | dates: the page of a month, ISO 8601 texts, `days_between`, `add_days` |
 | [`tree.ry`](examples/tree.ry) | a recursive type: binary search tree |
@@ -265,8 +292,8 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 - **VS Code**: the extension in [`editors/vscode`](editors/vscode): colors,
   snippets, and the language server, for the problems as you type, the
   documentation on hover, completion, the parameters of a call, go to
-  definition, references, rename, an outline and formatting, in English or
-  French.
+  definition, references, rename, an outline, formatting, the types of the
+  names, *Run* and *Run test* above the code, in English or French.
 - **Neovim, Helix, Zed, Emacs, Sublime Text, Kate...**: every editor that
   speaks the Language Server Protocol can start `rythme lsp`; a few lines of
   configuration for each are in [`editors/README.md`](editors/README.md).
@@ -291,13 +318,19 @@ mode) and is organised as a pipeline:
 | [`src/parser.rs`](src/parser.rs) | tokens → syntax tree, with hints for common mistakes |
 | [`src/check.rs`](src/check.rs) | finds errors before running: names, arguments, kinds of values, forgotten cases |
 | [`src/types.rs`](src/types.rs) | what the checker knows for sure about values: their types |
+| [`src/check/needs.rs`](src/check/needs.rs) | what the parameters of each function must be, and the calls that always fail |
 | [`src/compile.rs`](src/compile.rs) | prepares functions: each local name becomes a numbered slot |
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
-| [`src/builtins.rs`](src/builtins.rs) | 136 built-in functions, documented in two languages, JSON included |
+| [`src/bigint.rs`](src/bigint.rs) | whole numbers beyond 64 bits, without a dependency |
+| [`src/builtins.rs`](src/builtins.rs) | 155 built-in functions (and their Ruby names), documented in two languages, JSON included |
+| [`src/builtins/`](src/builtins) | dates, files and the system, generators of property tests |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |
+| [`src/project.rs`](src/project.rs), [`src/manifest.rs`](src/manifest.rs) | projects and packages: `rythme new`, `rythme install`, `rythme.toml`, `use package/file` |
+| [`src/testing.rs`](src/testing.rs) | `rythme test`: files and folders, `--filter`, `--watch`, the summary |
 | [`src/format.rs`](src/format.rs) | `rythme fmt`: the official layout, which never changes the meaning |
+| [`src/steps.rs`](src/steps.rs) | `rythme steps`: the evaluation shown step by step, for teaching |
 | [`src/lsp/`](src/lsp) | the language server (`rythme lsp`): help inside editors |
 
 `cargo test` runs the examples, checks that every example of the standard
@@ -319,9 +352,9 @@ towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
   bytecode virtual machine.
 - **Types.** Values are checked at run time (strongly: no silent
   conversions), and `rythme check` infers their types when they are certain,
-  to report before running the operations that would always fail. Next: the
-  types of the parameters of functions, so that even more mistakes are found
-  before running.
+  to report before running the operations that would always fail; it also
+  infers what the parameters of each function must be, to report the calls
+  that always fail, and the editor shows these signatures on hover.
 - **Tooling.** `rythme fmt` formats the code in the official style (see
   `rythme help fmt`), `rythme doc` writes the documentation of files and
   folders from their `##` comments (see `rythme help doc`), and the language server (`rythme lsp`) brings errors and
@@ -330,8 +363,8 @@ towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
   manager.
 - **Languages.** Messages exist in English and French; adding a language means
   translating the texts of `src/`. Contributions are welcome.
-- Numbers are 64-bit: whole numbers stop with an error beyond ±9.2 × 10¹⁸
-  (use decimal numbers beyond that).
+- **Numbers.** Whole numbers have no size limit and stay exact (up to 100000
+  digits), the usual 64-bit ones computed fastest; decimal numbers are 64-bit.
 
 ## License
 
