@@ -633,13 +633,24 @@ impl<'a> Lexer<'a> {
                             }
                         }
                         _ => {
-                            return Err(self
-                                .error("E018", at, t!("unknown escape sequence in text", "séquence d'échappement inconnue dans le texte"))
+                            let mut d = self.error(
+                                "E018",
+                                at,
+                                t!("unknown escape sequence in text", "séquence d'échappement inconnue dans le texte"),
+                            );
+                            // `"\d+"` for a regex: the backslash must be written twice.
+                            if let Some(c) = esc.filter(|c| "dDwWsSbB.()[]*+?|^$-/".contains(*c)) {
+                                d = d.help(t!(
+                                    "in a regex, write the backslash twice: \"\\\\{c}\" is the text \\{c}",
+                                    "dans une regex, écrivez la barre oblique inverse deux fois : \"\\\\{c}\" est le texte \\{c}"
+                                ));
+                            }
+                            return Err(d
                                 .help(t!(
                                     "valid escapes: \\n (new line), \\t (tab), \\r (carriage return), \\0 (null character), \\\\ (backslash),\n\\\" (quote), \\{{ and \\}} (braces), \\u{{e9}} (a character by its Unicode number: é)",
                                     "échappements valides : \\n (nouvelle ligne), \\t (tabulation), \\r (retour chariot), \\0 (caractère nul), \\\\ (barre oblique),\n\\\" (guillemet), \\{{ et \\}} (accolades), \\u{{e9}} (un caractère par son numéro Unicode : é)"
                                 ))
-                                .boxed())
+                                .boxed());
                         }
                     }
                 }

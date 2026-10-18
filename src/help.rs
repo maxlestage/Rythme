@@ -26,6 +26,7 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ("exercises", &["exercices", "exercise", "exercice"]),
     ("modules", &["use", "files", "fichiers"]),
     ("dates", &["date", "heure", "heures", "temps", "calendar", "calendrier", "datetime"]),
+    ("regex", &["regexp", "regexes", "regular-expressions", "expressions-regulieres", "expressions-régulières", "re"]),
     ("repl", &["interactive", "interactif"]),
     ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme"]),
     ("doc", &["documentation", "documenter", "docs"]),
@@ -74,6 +75,7 @@ Sujets (rythme help SUJET)
   exercises   des exercices pour apprendre, avec leurs tests
   modules     utiliser plusieurs fichiers
   dates       dates et heures : now(), today(), calendrier, ISO 8601
+  regex       chercher, découper et remplacer avec des expressions régulières
   repl        le mode interactif
   fmt         la mise en forme officielle du code (rythme fmt)
   doc         la documentation tirée des commentaires ## (rythme doc)
@@ -117,6 +119,7 @@ Topics (rythme help TOPIC)
   exercises   exercises to learn, with their tests
   modules     using several files
   dates       dates and times: now(), today(), calendar, ISO 8601
+  regex       searching, cutting and replacing with regular expressions
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
@@ -451,6 +454,7 @@ fn topic_text(name: &str) -> &'static str {
         "exercises" => pick(EXERCISES_EN, EXERCISES_FR),
         "modules" => pick(MODULES_EN, MODULES_FR),
         "dates" => pick(DATES_EN, DATES_FR),
+        "regex" => pick(REGEX_EN, REGEX_FR),
         "repl" => pick(REPL_EN, REPL_FR),
         "fmt" => pick(FMT_EN, FMT_FR),
         "doc" => pick(DOC_EN, DOC_FR),
@@ -819,6 +823,11 @@ const TEXT_EN: &str = r#"TEXT
   char_code("A")   char(66)      # 65 and "B"
   int("42")                      # 42
   parse_int("x42")               # Err(...): a conversion that cannot crash
+  trim_start("  x")   trim_end("x  ")
+  words("Hi, you!")              # ["Hi", "you"]
+  equals_ignore_case("Ada", "ADA")          # true
+  format_number(1234.5, 2)       # "1,234.50"   (with "fr": "1 234,50")
+  find_all("3 cats, 12 dogs", "[0-9]+")     # ["3", "12"]  (regexes: rythme help regex)
 
 Special characters: \n (new line), \t (tab), \r (carriage return),
 \0 (null character), \" (quote), \\ (backslash), \{ and \} (braces, because
@@ -842,6 +851,11 @@ const TEXT_FR: &str = r#"TEXTE
   char_code("A")   char(66)      # 65 et "B"
   int("42")                      # 42
   parse_int("x42")               # Err(...) : une conversion qui ne plante jamais
+  trim_start("  x")   trim_end("x  ")
+  words("Salut, toi !")          # ["Salut", "toi"]
+  equals_ignore_case("Ada", "ADA")          # true
+  format_number(1234.5, 2, "fr")            # "1 234,50"
+  find_all("3 chats, 12 chiens", "[0-9]+")  # ["3", "12"]  (les regex : rythme help regex)
 
 Caractères spéciaux : \n (nouvelle ligne), \t (tabulation), \r (retour
 chariot), \0 (caractère nul), \" (guillemet), \\ (barre oblique inverse),
@@ -964,6 +978,87 @@ Calculs de calendrier (années bissextiles et longueurs des mois comprises)
 Une date qui n'existe pas arrête les fonctions avec E023, qui dit pourquoi.
 Le décalage local vient du système (UTC quand il ne le dit pas) ; time()
 donne les secondes depuis 1970 en Float, pour mesurer des durées."#;
+
+const REGEX_EN: &str = r#"REGEX: SEARCHING WITH A PATTERN
+
+A regex (regular expression) describes pieces of text: "[0-9]+" means "one
+digit or more". Rythme reads the usual regexes, and a search never takes
+more than (length of the text) × (size of the regex).
+
+  matches("2024", "[0-9]+")                  # true: the WHOLE text matches
+  find_first("tel: 06 12", "[0-9]+")         # Some("06"): the first piece
+  find_all("3 cats, 12 dogs", "[0-9]+")      # ["3", "12"]
+  split_by("a, b;c", "[,;] *")               # ["a", "b", "c"]
+  replace_all("a cat", "\\b\\w", upper)      # "A Cat" (a function for each piece)
+  replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1")   # "2024-02-29"
+  captures("2024-02", "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
+  named_captures("2024-02", "(?<year>[0-9]+)-(?<month>[0-9]+)")
+                                             # Some({year: "2024", month: "02"})
+
+What a regex can say
+  abc          these characters, in this order
+  .            any character but a line break
+  [abc]        one of these characters; [a-z] one from a to z; [^0-9] any other
+  \d \w \s     a digit (0-9); a letter (accents included), a digit or _; a space
+  \D \W \S     anything else
+  \b           the edge of a word
+  ^  $         the start and the end of the text
+  x|y          x or y
+  (...)        a group: to repeat it, or to capture its text ($1, `captures`)
+  (?:...)      a group that captures nothing; (?<name>...) a group with a name
+  x*  x+  x?   x zero times or more, once or more, zero or one time (the longest)
+  x{3}  x{2,5}  x{2,}    3 times, 2 to 5 times, 2 times or more
+  x*?  x+?     the shortest instead of the longest
+  (?i)         at the start: uppercase and lowercase letters count as equal
+
+Writing a regex in a Rythme text
+  A backslash is written twice: "\\d+" is the regex \d+. Braces are written
+  \{ and \}: "[0-9]\{4\}" is the regex [0-9]{4}. For a sign itself, put it in
+  brackets: "[.]" is a dot, "[(]" a parenthesis, "[$]" a dollar.
+
+A mistake in a regex stops the program with E025, which shows where it is;
+when the regex is written in the code, `rythme check` finds it before."#;
+
+const REGEX_FR: &str = r#"REGEX : CHERCHER AVEC UN MOTIF
+
+Une regex (expression régulière) décrit des morceaux de texte : "[0-9]+" veut
+dire « un chiffre ou plus ». Rythme lit les regex habituelles, et une
+recherche ne prend jamais plus que (longueur du texte) × (taille de la regex).
+
+  matches("2024", "[0-9]+")                  # true : le texte ENTIER correspond
+  find_first("tél : 06 12", "[0-9]+")        # Some("06") : le premier morceau
+  find_all("3 chats, 12 chiens", "[0-9]+")   # ["3", "12"]
+  split_by("a, b;c", "[,;] *")               # ["a", "b", "c"]
+  replace_all("un chat", "\\b\\w", upper)    # "Un Chat" (une fonction pour chaque morceau)
+  replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1")   # "2024-02-29"
+  captures("2024-02", "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
+  named_captures("2024-02", "(?<annee>[0-9]+)-(?<mois>[0-9]+)")
+                                             # Some({annee: "2024", mois: "02"})
+
+Ce qu'une regex peut dire
+  abc          ces caractères, dans cet ordre
+  .            n'importe quel caractère sauf un retour à la ligne
+  [abc]        un de ces caractères ; [a-z] un de a à z ; [^0-9] n'importe quel autre
+  \d \w \s     un chiffre (0-9) ; une lettre (accents compris), un chiffre ou _ ; un espace
+  \D \W \S     tout le reste
+  \b           le bord d'un mot
+  ^  $         le début et la fin du texte
+  x|y          x ou y
+  (...)        un groupe : pour le répéter, ou pour capturer son texte ($1, `captures`)
+  (?:...)      un groupe qui ne capture rien ; (?<nom>...) un groupe avec un nom
+  x*  x+  x?   x zéro fois ou plus, une fois ou plus, zéro ou une fois (le plus long)
+  x{3}  x{2,5}  x{2,}    3 fois, de 2 à 5 fois, 2 fois ou plus
+  x*?  x+?     le plus court au lieu du plus long
+  (?i)         au début : majuscules et minuscules comptent comme égales
+
+Écrire une regex dans un texte Rythme
+  La barre oblique inverse s'écrit deux fois : "\\d+" est la regex \d+. Les
+  accolades s'écrivent \{ et \} : "[0-9]\{4\}" est la regex [0-9]{4}. Pour un
+  signe lui-même, mettez-le entre crochets : "[.]" est un point, "[(]" une
+  parenthèse, "[$]" un dollar.
+
+Une erreur dans une regex arrête le programme avec E025, qui montre où elle
+est ; quand la regex est écrite dans le code, `rythme check` la trouve avant."#;
 
 const TYPES_EN: &str = r#"YOUR OWN TYPES
 
@@ -2054,6 +2149,43 @@ racine carrée d'un nombre négatif, une date qui n'existe pas (30 février),
 un intervalle, une liste ou un texte trop grand... Le message explique la
 limite."#,
         ),
+        "E025" => (
+            r#"E025 — Invalid regex
+
+A regex (a regular expression, given to `matches`, `find_all`, `split_by`,
+`replace_all`...) breaks one of its rules, or the replacement of
+`replace_all` uses a group that does not exist. The message shows where.
+
+Wrong:   find_all(text, "([0-9]+")       # the `(` is never closed
+Right:   find_all(text, "([0-9]+)")
+Wrong:   split_by(text, "*")             # `*` repeats nothing
+Right:   split_by(text, "[*]")           # the sign * itself, in brackets
+Wrong:   replace_all(date, "(\\d+)-(\\d+)", "$3")    # only 2 groups
+Right:   replace_all(date, "(\\d+)-(\\d+)", "$2/$1")
+
+In a Rythme text, a backslash is written twice ("\\d") and braces are
+written \{ and \} ("[0-9]\{4\}"). `rythme help regex` shows everything a
+regex can say. When the regex is written in the code, `rythme check` finds
+the mistake before running."#,
+            r#"E025 — Regex invalide
+
+Une regex (une expression régulière, donnée à `matches`, `find_all`,
+`split_by`, `replace_all`...) ne respecte pas une de ses règles, ou le
+remplacement de `replace_all` utilise un groupe qui n'existe pas. Le message
+montre où.
+
+Faux :   find_all(texte, "([0-9]+")      # la `(` n'est jamais fermée
+Juste :  find_all(texte, "([0-9]+)")
+Faux :   split_by(texte, "*")            # `*` ne répète rien
+Juste :  split_by(texte, "[*]")          # le signe * lui-même, entre crochets
+Faux :   replace_all(date, "(\\d+)-(\\d+)", "$3")    # seulement 2 groupes
+Juste :  replace_all(date, "(\\d+)-(\\d+)", "$2/$1")
+
+Dans un texte Rythme, la barre oblique inverse s'écrit deux fois ("\\d") et
+les accolades \{ et \} ("[0-9]\{4\}"). `rythme help regex` montre tout ce
+qu'une regex peut dire. Quand la regex est écrite dans le code,
+`rythme check` trouve l'erreur avant de lancer le programme."#,
+        ),
         "E024" => (
             r#"E024 — A value is lost
 
@@ -2284,5 +2416,5 @@ fn pick_owned(en: &str, fr: &str) -> String {
 
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
-    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008", "W009",
+    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "E025", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008", "W009",
 ];

@@ -1798,6 +1798,9 @@ impl<'a> Checker<'a> {
         match types::builtin_call(name, tys) {
             None => Ty::Any,
             Some(Outcome::Gives(t)) => {
+                if let Some(t) = self.regex_call(name, exprs) {
+                    return t;
+                }
                 // `get(record, "field")`: the type of the field.
                 if let (Some(Ty::Record(r)), Some(ExprKind::Text(k))) = (tys.first(), exprs.get(1).map(|e| &e.kind)) {
                     if name == "get" {
@@ -1817,6 +1820,47 @@ impl<'a> Checker<'a> {
                 Ty::Never
             }
         }
+    }
+
+    /// A regex written in the code is read before running: a mistake in it
+    /// (or in the replacement of `replace_all`) is shown at its place, and
+    /// `named_captures` gives a record with the names of its groups.
+    fn regex_call(&mut self, name: &str, exprs: &[&Expr]) -> Option<Ty> {
+        use crate::builtins::regex::{regex_error, replacement, span_in_text, Regex};
+        const TAKE_A_REGEX: &[&str] =
+            &["matches", "find_first", "find_all", "captures", "captures_all", "named_captures", "split_by", "replace_all"];
+        if !TAKE_A_REGEX.contains(&name) {
+            return None;
+        }
+        let at_place = |e: &Expr, source: &str, err, in_replacement| {
+            let err: &crate::builtins::regex::RegexError = err;
+            match span_in_text(e.span, err.at, err.len) {
+                Some(span) => regex_error(err, source, in_replacement, span, true),
+                None => regex_error(err, source, in_replacement, e.span, false),
+            }
+        };
+        let e = exprs.get(1)?;
+        let ExprKind::Text(pattern) = &e.kind else { return None };
+        let re = match Regex::new(pattern) {
+            Ok(re) => re,
+            Err(err) => {
+                self.diags.push(*at_place(e, pattern, &err, false));
+                return Some(Ty::Never);
+            }
+        };
+        if name == "replace_all" {
+            if let Some(Expr { kind: ExprKind::Text(new), .. }) = exprs.get(2).copied() {
+                if let Err(err) = replacement(new, &re) {
+                    self.diags.push(*at_place(exprs[2], new, &err, true));
+                    return Some(Ty::Never);
+                }
+            }
+        }
+        if name == "named_captures" && re.names().iter().any(Option::is_some) {
+            let fields = re.names().iter().flatten().map(|n| (n.clone(), Ty::Text)).collect();
+            return Some(Ty::option(Ty::record(fields, true)));
+        }
+        None
     }
 
     /// `assert_eq(actual, expected)` with values of kinds that are never equal.

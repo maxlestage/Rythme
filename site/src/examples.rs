@@ -59,6 +59,11 @@ pub const EXAMPLES: &[Example] = &[
         "des dates : la page d'un mois, des textes ISO 8601, days_between, add_days",
         "dates: the page of a month, ISO 8601 texts, days_between, add_days"
     ),
+    example!(
+        "logs",
+        "lire un journal avec des regex : named_captures, matches, find_all, replace_all, format_number",
+        "reading a log with regexes: named_captures, matches, find_all, replace_all, format_number"
+    ),
     example!("tree", "un type récursif : arbre binaire de recherche", "a recursive type: binary search tree"),
     example!("primes", "un crible récursif, all, and", "a recursive sieve, all, and"),
     example!("testing", "les blocs test", "test blocks"),
