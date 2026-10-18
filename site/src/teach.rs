@@ -2,7 +2,10 @@
 //! site and rendered to HTML, with the links between files turned into links of the
 //! site.
 
-use pulldown_cmark::{CowStr, Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
+use paquets::prelude::Node;
+use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
+
+use crate::highlight::{code_block, plain_block};
 
 use crate::i18n::Lang;
 use crate::routes::{Page, Route};
@@ -72,6 +75,13 @@ pub fn render(lang: Lang) -> Rendered {
     // language switch does that).
     let mut skip_paragraph = false;
     let mut skipping = false;
+    // A code block being read: (its language, its text).
+    let mut code: Option<(String, String)> = None;
+    // Tables: the texts of the header cells, written on each cell of the body
+    // (`data-label`) for the cards they become on phones (`site.css`).
+    let mut in_head = false;
+    let mut head: Vec<String> = Vec::new();
+    let mut column = 0;
 
     for event in Parser::new_ext(source(lang), Options::ENABLE_TABLES) {
         if skipping {
@@ -124,6 +134,54 @@ pub fn render(lang: Lang) -> Rendered {
                 Some(true) => events.push(Event::Html("</a>".into())),
                 _ => events.push(Event::End(TagEnd::Link)),
             },
+            // Code wraps line by line under its indentation, colored when it is Rythme.
+            Event::Start(Tag::CodeBlock(kind)) => {
+                let lang = match kind {
+                    CodeBlockKind::Fenced(info) => info.split_whitespace().next().unwrap_or("").to_owned(),
+                    CodeBlockKind::Indented => String::new(),
+                };
+                code = Some((lang, String::new()));
+            }
+            Event::Text(text) if code.is_some() => {
+                if let Some((_, body)) = code.as_mut() {
+                    body.push_str(&text);
+                }
+            }
+            Event::End(TagEnd::CodeBlock) => {
+                if let Some((lang, body)) = code.take() {
+                    let block = if lang == "rythme" { code_block(&body) } else { plain_block(&body) };
+                    events.push(Event::Html(Node::from(block).render().into()));
+                }
+            }
+            Event::Start(Tag::TableHead) => {
+                in_head = true;
+                head.clear();
+                events.push(event);
+            }
+            Event::End(TagEnd::TableHead) => {
+                in_head = false;
+                events.push(event);
+            }
+            Event::Start(Tag::TableRow) => {
+                column = 0;
+                events.push(event);
+            }
+            Event::Start(Tag::TableCell) if in_head => {
+                head.push(String::new());
+                events.push(event);
+            }
+            Event::Text(text) | Event::Code(text) if in_head => {
+                if let Some(cell) = head.last_mut() {
+                    cell.push_str(&text);
+                }
+                events.push(Event::Text(text));
+            }
+            Event::Start(Tag::TableCell) => {
+                let label = head.get(column).map(|h| escape_attr(h)).unwrap_or_default();
+                column += 1;
+                events.push(Event::Html(format!(r#"<td data-label="{label}">"#).into()));
+            }
+            Event::End(TagEnd::TableCell) if !in_head => events.push(Event::Html("</td>".into())),
             Event::Start(Tag::Table(_)) => {
                 events.push(Event::Html(r#"<div class="table-wrap">"#.into()));
                 events.push(event);
@@ -150,6 +208,11 @@ pub fn render(lang: Lang) -> Rendered {
     Rendered { title, sections, html: out }
 }
 
+/// Text in a double-quoted attribute.
+fn escape_attr(text: &str) -> String {
+    text.replace('&', "&amp;").replace('"', "&quot;").replace('<', "&lt;").replace('>', "&gt;")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -166,6 +229,12 @@ mod tests {
                 assert!(!link.ends_with(".md") || link.starts_with(REPO), "{lang:?}: {link}");
             }
             assert!(r.html.contains("<table>"), "{lang:?}");
+            // Each cell of a table carries the title of its column, for phones.
+            assert!(r.html.contains(r##"<td data-label="#">"##), "{lang:?}");
+            assert!(!r.html.contains("<td>"), "{lang:?}");
+            // Code wraps line by line; Rythme is colored.
+            assert!(r.html.contains(r#"<pre class="code-block"><code translate="no"><span class="line">"#), "{lang:?}");
+            assert!(r.html.contains(r#"<span class="t-kw">"#), "{lang:?}");
             for (id, _) in &r.sections {
                 assert!(r.html.contains(&format!(r#"id="{id}""#)), "{id}");
             }

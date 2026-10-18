@@ -14,8 +14,7 @@ use crate::server::{ASSETS, Site, site_dir, version};
 
 /// The paper of the light and dark themes (`site.css`): the splash screen and the bar of
 /// the installed app.
-pub const LIGHT: &str = "#eef1f6";
-pub const DARK: &str = "#0e1118";
+pub use crate::themes::{DARK, LIGHT};
 
 /// The icons of `public/`, made from `assets/logo.svg` by `tests/pwa/images.js`:
 /// (path, sizes, purpose). The maskable one keeps the beats in the central circle.
