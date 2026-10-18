@@ -200,16 +200,71 @@ fn push_block(out: &mut String, pad: &str, head: &str, text: &str, c: &Colors) {
     }
 }
 
+/// Longest part of a line shown under an error, in columns.
+const MAX_SHOWN: usize = 120;
+
+/// Columns taken by a character in a terminal: none for combining accents,
+/// two for Chinese, Japanese, Korean and most emoji, one otherwise.
+fn char_width(c: char) -> usize {
+    match c as u32 {
+        0x0300..=0x036F
+        | 0x1AB0..=0x1AFF
+        | 0x1DC0..=0x1DFF
+        | 0x200B..=0x200F
+        | 0x20D0..=0x20FF
+        | 0xFE00..=0xFE0F
+        | 0xFE20..=0xFE2F
+        | 0x1F3FB..=0x1F3FF
+        | 0xE0100..=0xE01EF => 0,
+        0x1100..=0x115F
+        | 0x2E80..=0x303E
+        | 0x3041..=0x33FF
+        | 0x3400..=0x4DBF
+        | 0x4E00..=0x9FFF
+        | 0xA000..=0xA4CF
+        | 0xAC00..=0xD7A3
+        | 0xF900..=0xFAFF
+        | 0xFE30..=0xFE4F
+        | 0xFF00..=0xFF60
+        | 0xFFE0..=0xFFE6
+        | 0x1F300..=0x1F64F
+        | 0x1F680..=0x1F6FF
+        | 0x1F900..=0x1F9FF
+        | 0x20000..=0x3FFFD => 2,
+        _ => 1,
+    }
+}
+
 fn snippet(out: &mut String, span: Span, mark: char, label: &str, color: &str, width: usize, c: &Colors) {
     let Some(file) = source::get(span.file) else { return };
     let (line, col) = file.line_col(span.start as usize);
     let (end_line, end_col) = file.line_col(span.end as usize);
-    let text = file.line_text(line).replace('\t', " ");
-    let line_len = text.chars().count();
-    let len = if end_line == line { end_col.saturating_sub(col).max(1) } else { (line_len + 1).saturating_sub(col).max(1) };
+    // Tabs and other control characters would move the cursor: show them as spaces.
+    let chars: Vec<char> = file.line_text(line).chars().map(|ch| if ch.is_control() { ' ' } else { ch }).collect();
+    let from = (col - 1).min(chars.len());
+    let to = if end_line == line { (end_col - 1).clamp(from, chars.len()) } else { chars.len() };
+    // A long line is cut around the start of the marked part.
+    let cols = |part: &[char]| part.iter().map(|&ch| char_width(ch)).sum::<usize>();
+    let first = if cols(&chars) > MAX_SHOWN { from.saturating_sub(MAX_SHOWN / 3) } else { 0 };
+    let mut last = first;
+    let mut shown = 0;
+    while last < chars.len() && shown + char_width(chars[last]) <= MAX_SHOWN {
+        shown += char_width(chars[last]);
+        last += 1;
+    }
+    let mut text: String = chars[first..last].iter().collect();
+    let mut pad_cols = cols(&chars[first..from]);
+    if first > 0 {
+        text.insert_str(0, "...");
+        pad_cols += 3;
+    }
+    if last < chars.len() {
+        text.push_str("...");
+    }
+    let len = cols(&chars[from.min(last)..to.min(last)]).max(1);
     out.push_str(&format!("{}{:>width$} |{} {}\n", c.blue, line, c.reset, text));
     let marks: String = std::iter::repeat_n(mark, len).collect();
-    let pad = " ".repeat(col - 1);
+    let pad = " ".repeat(pad_cols);
     if label.is_empty() {
         out.push_str(&format!("{}{} |{} {pad}{}{marks}{}\n", c.blue, " ".repeat(width), c.reset, color, c.reset));
     } else {

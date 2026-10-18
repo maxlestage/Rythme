@@ -9,11 +9,63 @@ use crate::symbol::Sym;
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
+    /// How many expressions are nested inside each other here, this one
+    /// included (1 for a name or a number). The parser refuses code that is
+    /// too deep, so that the passes that walk the tree never run out of stack.
+    pub depth: u32,
 }
 
 impl Expr {
     pub fn new(kind: ExprKind, span: Span) -> Expr {
-        Expr { kind, span }
+        let depth = kind.inner_depth().saturating_add(1);
+        Expr { kind, span, depth }
+    }
+}
+
+impl ExprKind {
+    /// The depth of the deepest expression directly inside this one.
+    fn inner_depth(&self) -> u32 {
+        fn deepest<'a>(exprs: impl Iterator<Item = &'a Expr>) -> u32 {
+            exprs.map(|e| e.depth).max().unwrap_or(0)
+        }
+        fn clauses(def: &FnDef) -> u32 {
+            deepest(def.clauses.iter().flat_map(|c| std::iter::once(&c.body).chain(c.guard.as_ref())))
+        }
+        match self {
+            ExprKind::Unit
+            | ExprKind::Bool(_)
+            | ExprKind::Int(_)
+            | ExprKind::Float(_)
+            | ExprKind::Text(_)
+            | ExprKind::Var(_)
+            | ExprKind::Ctor(_) => 0,
+            ExprKind::Template(parts) => deepest(parts.iter().filter_map(|p| match p {
+                TemplatePart::Expr(e) => Some(e),
+                TemplatePart::Lit(_) => None,
+            })),
+            ExprKind::List(items) => deepest(items.iter().map(|it| match it {
+                ListItem::One(e) | ListItem::Spread(e) => e,
+            })),
+            ExprKind::Record(items) => deepest(items.iter().map(|it| match it {
+                RecordItem::Field(_, _, e) | RecordItem::Spread(e) => e,
+            })),
+            ExprKind::Lambda(def) => clauses(def),
+            ExprKind::Call(f, args) | ExprKind::Method(f, _, args, _) => f.depth.max(deepest(args.iter())),
+            ExprKind::Field(x, _, _) | ExprKind::Unary(_, x) | ExprKind::Try(x) => x.depth,
+            ExprKind::Index(a, b) | ExprKind::Binary(_, a, b, _) | ExprKind::Range(a, b) => a.depth.max(b.depth),
+            ExprKind::If(c, a, b) => c.depth.max(a.depth).max(b.depth),
+            ExprKind::Match(subject, arms) => {
+                subject.depth.max(deepest(arms.iter().flat_map(|a| std::iter::once(&a.body).chain(a.guard.as_ref()))))
+            }
+            ExprKind::Block(stmts) => stmts
+                .iter()
+                .map(|s| match s {
+                    Stmt::Let(_, e) | Stmt::Expr(e) => e.depth,
+                    Stmt::Fn(def) => clauses(def),
+                })
+                .max()
+                .unwrap_or(0),
+        }
     }
 }
 

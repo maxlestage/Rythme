@@ -14,27 +14,29 @@
       loading: "Loading the interpreter…", loadFailed: "The interpreter could not be loaded: ",
       running: "running…", stopped: "Stopped.", ranIn: (ms) => `ran in ${ms} ms`, failedIn: (ms) => `stopped with an error after ${ms} ms`,
       nothing: "The program printed nothing.",
-      tooDeep: "The browser ran out of stack: too many nested calls. Make the function tail-recursive, or use fold, map or filter. The installed rythme allows about 200,000 nested calls.",
+      tooDeep: "The browser ran out of stack: too many nested calls. Make the function tail-recursive, or use fold, map or filter. The installed rythme allows several hundred thousand nested calls.",
       lines: (n) => `${n} line${n === 1 ? "" : "s"}`,
       explain: "explain", custom: "main.ry (edited)",
+      formatted: "formatted like rythme fmt", alreadyFormatted: "already formatted", notFormatted: "not formatted: the code has an error",
     },
     fr: {
       loading: "Chargement de l'interpréteur…", loadFailed: "L'interpréteur n'a pas pu être chargé : ",
       running: "en cours…", stopped: "Arrêté.", ranIn: (ms) => `exécuté en ${ms} ms`, failedIn: (ms) => `arrêté par une erreur après ${ms} ms`,
       nothing: "Le programme n'a rien affiché.",
-      tooDeep: "Le navigateur manque de pile : trop d'appels imbriqués. Rendez la fonction récursive terminale, ou utilisez fold, map ou filter. Le rythme installé permet environ 200 000 appels imbriqués.",
+      tooDeep: "Le navigateur manque de pile : trop d'appels imbriqués. Rendez la fonction récursive terminale, ou utilisez fold, map ou filter. Le rythme installé permet plusieurs centaines de milliers d'appels imbriqués.",
       lines: (n) => `${n} ligne${n > 1 ? "s" : ""}`,
       explain: "expliquer", custom: "main.ry (modifié)",
+      formatted: "mis en forme comme rythme fmt", alreadyFormatted: "déjà en forme", notFormatted: "pas mis en forme : le code a une erreur",
     },
   }[lang];
 
   const TOPICS = ["start", "syntax", "functions", "lists", "text", "records", "types", "match", "errors", "functional", "tests", "builtins"];
   const KEYWORDS = new Set(["fn", "if", "then", "else", "match", "end", "do", "type", "test", "use", "and", "or", "not", "true", "false"]);
-  const BUILTINS = new Set(("print debug text input type_of help assert assert_eq fail args exit time random abs min max sqrt pow floor ceil round int float sin cos tan log exp is_even is_odd len upper lower trim split join contains starts_with ends_with replace chars lines repeat parse_int parse_float map filter fold each sum product first last rest get push reverse sort sort_by unique slice take drop zip enumerate any all find count index_of flatten flat_map partition group_by is_empty keys values entries has put remove unwrap unwrap_or is_some is_none is_ok is_err read_file write_file file_exists pi").split(" "));
+  const BUILTINS = new Set(("print debug text input type_of help assert assert_eq fail args env exit time random abs min max sqrt pow floor ceil round int float sin cos tan asin acos atan log exp is_even is_odd gcd lcm len upper lower capitalize trim pad_left pad_right split join contains starts_with ends_with replace chars lines char_code char is_digit is_letter is_space repeat parse_int parse_float parse_json to_json map filter fold scan each sum product first last rest get push set_at insert_at remove_at reverse sort sort_by unique shuffle slice take drop take_while drop_while step_by chunks windows zip enumerate any all find count index_of min_by max_by flatten flat_map partition group_by is_empty keys values entries from_entries has put remove map_values unwrap unwrap_or is_some is_none is_ok is_err and_then ok_or map_err read_file write_file append_file file_exists pi").split(" "));
 
   const $ = (id) => document.getElementById(id);
   const source = $("source"), highlight = $("highlight"), gutter = $("gutter"), output = $("output");
-  const statusEl = $("status"), runBtn = $("run"), stopBtn = $("stop"), checkBtn = $("check"), testBtn = $("test");
+  const statusEl = $("status"), runBtn = $("run"), stopBtn = $("stop"), checkBtn = $("check"), testBtn = $("test"), formatBtn = $("format");
   const exampleSel = $("example"), helpText = $("help-text");
   // The welcome program, written in the page by the server.
   const WELCOME = source.value;
@@ -146,6 +148,9 @@
     if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") {
       ev.preventDefault();
       execute(ev.shiftKey ? 2 : 0);
+    } else if (ev.shiftKey && ev.altKey && ev.code === "KeyF") {
+      ev.preventDefault();
+      formatCode();
     } else if (ev.key === "Tab" && !ev.shiftKey && !ev.altKey) {
       ev.preventDefault();
       insertText("  ");
@@ -226,6 +231,49 @@
   runBtn.addEventListener("click", () => execute(runMode));
   checkBtn.addEventListener("click", () => execute(1));
   testBtn.addEventListener("click", () => execute(2));
+  formatBtn.addEventListener("click", formatCode);
+
+  // ----- format: the layout of `rythme fmt`, done at once (it cannot loop) -----
+  let formatInstance = null;
+  async function formatCode() {
+    if (!wasmModule) return;
+    const code = source.value;
+    let result;
+    try {
+      formatInstance = formatInstance || await WebAssembly.instantiate(wasmModule, imports);
+      result = callInterpreter(formatInstance, code, 3);
+    } catch (err) {
+      formatInstance = null;
+      result = "\u0001" + err + "\u0002";
+    }
+    statusEl.className = "status good";
+    if (result.startsWith("\u0001")) {
+      renderOutput(result);
+      statusEl.className = "status bad";
+      statusEl.textContent = UI.notFormatted;
+      return;
+    }
+    if (result === code) {
+      statusEl.textContent = UI.alreadyFormatted;
+      return;
+    }
+    // Keep the cursor on the same line, and the view where it was.
+    const line = code.slice(0, source.selectionStart).split("\n").length;
+    const top = source.scrollTop;
+    // With a mouse, through the editing commands so that Ctrl+Z undoes it;
+    // on a phone, without opening the keyboard.
+    const desktop = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    if (desktop) {
+      source.focus();
+      source.select();
+    }
+    if (!desktop || !document.execCommand("insertText", false, result)) source.value = result;
+    const at = result.split("\n").slice(0, line - 1).join("\n").length + (line > 1 ? 1 : 0);
+    source.selectionStart = source.selectionEnd = Math.min(at, result.length);
+    source.scrollTop = top;
+    onEdit();
+    statusEl.textContent = UI.formatted;
+  }
 
   // ----- output: messages styled like in a terminal -----
   function lineClass(line) {
@@ -382,7 +430,7 @@
       output.append(text(UI.loadFailed + err, "err"));
       return;
     }
-    for (const b of [runBtn, checkBtn, testBtn]) b.disabled = false;
+    for (const b of [runBtn, checkBtn, testBtn, formatBtn]) b.disabled = false;
     newWorker();
     try {
       examples = await (await fetch(page.dataset.examples)).json();

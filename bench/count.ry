@@ -1,0 +1,6 @@
+# A tail-recursive loop: one definition per case, ten million calls.
+
+fn loop(0, acc) = acc
+fn loop(n, acc) = loop(n - 1, acc + 1)
+
+print(loop(10_000_000, 0))

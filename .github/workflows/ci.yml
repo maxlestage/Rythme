@@ -30,6 +30,23 @@ jobs:
           for f in examples/*.ry; do ./target/release/rythme "$f" > /dev/null; done
           ./target/release/rythme test examples/testing.ry
 
+  vscode:
+    name: VS Code extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build rythme
+        run: cargo build
+      - name: Load the extension and talk to `rythme lsp`
+        working-directory: editors/vscode
+        run: |
+          npm ci
+          npm run check
+
   playground:
     name: Web playground (WebAssembly)
     runs-on: ubuntu-latest

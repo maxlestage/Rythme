@@ -26,7 +26,9 @@ pub extern "C" fn rythme_alloc(len: usize) -> *mut u8 {
     ptr
 }
 
-/// Runs the code. `mode`: 0 = run, 1 = check, 2 = test. `language`: 0 = English, 1 = French.
+/// Runs the code. `mode`: 0 = run, 1 = check, 2 = test, 3 = format (the
+/// result is the formatted code, or error messages). `language`: 0 = English,
+/// 1 = French.
 ///
 /// # Safety
 /// `ptr` must come from `rythme_alloc(len)` and hold `len` bytes of UTF-8.
@@ -49,6 +51,18 @@ pub extern "C" fn rythme_result_len() -> usize {
 }
 
 fn run(code: &str, mode: u32) -> String {
+    if mode == 3 {
+        return match rythme::format::format_named("main.ry", code) {
+            Ok(formatted) => formatted,
+            Err(diags) => {
+                io::capture();
+                for d in diags {
+                    io::err(&format!("{}\n", d.render(false)));
+                }
+                io::take_captured()
+            }
+        };
+    }
     // The browser's own call stack is the limit here, not the memory: about
     // 760 nested calls in a Chrome worker. Stop before, with a clear message.
     rythme::interp::set_max_depth(600);

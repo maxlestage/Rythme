@@ -1,0 +1,17 @@
+# Building and processing text: interpolation, split, join, concatenation.
+
+words = ["alpha", "beta", "gamma", "delta", "epsilon"]
+
+fn line(i) = "line {i}: {words[i % 5]} and {words[(i * 7) % 3]} make {i * i}"
+
+big = 0..199_999 |> map(line) |> join("\n")
+parts = split(big, "\n")
+word_count = parts |> map(fn(l) = len(split(l))) |> sum
+gammas = parts |> filter(fn(l) = contains(l, "gamma")) |> map(upper) |> map(len) |> sum
+
+fn build(0, acc) = acc
+fn build(n, acc) = build(n - 1, acc + "{n},")
+
+short = build(5_000, "")
+
+print(len(big), len(parts), word_count, gammas, len(short), replace(big, "a", "") |> len)

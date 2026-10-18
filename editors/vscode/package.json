@@ -1,8 +1,8 @@
 {
   "name": "rythme",
   "displayName": "Rythme",
-  "description": "Syntax highlighting, indentation and snippets for the Rythme language (.ry)",
-  "version": "0.1.0",
+  "description": "%description%",
+  "version": "0.2.0",
   "publisher": "rythme",
   "license": "MIT",
   "repository": {
@@ -10,9 +10,11 @@
     "url": "https://github.com/maxlestage/Rythme"
   },
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.82.0"
   },
-  "categories": ["Programming Languages", "Snippets"],
+  "categories": ["Programming Languages", "Snippets", "Linters"],
+  "main": "./extension.js",
+  "activationEvents": ["onLanguage:rythme"],
   "contributes": {
     "languages": [
       {
@@ -34,6 +36,53 @@
         "language": "rythme",
         "path": "./snippets/rythme.json"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Rythme",
+      "properties": {
+        "rythme.path": {
+          "type": "string",
+          "default": "rythme",
+          "markdownDescription": "%config.path%"
+        },
+        "rythme.language": {
+          "type": "string",
+          "enum": ["auto", "en", "fr"],
+          "enumDescriptions": ["%config.language.auto%", "%config.language.en%", "%config.language.fr%"],
+          "default": "auto",
+          "markdownDescription": "%config.language%"
+        },
+        "rythme.trace.server": {
+          "type": "string",
+          "enum": ["off", "messages", "verbose"],
+          "default": "off",
+          "markdownDescription": "%config.trace%"
+        }
+      }
+    },
+    "commands": [
+      { "command": "rythme.restartServer", "title": "%command.restart%", "category": "Rythme" },
+      { "command": "rythme.runFile", "title": "%command.run%", "category": "Rythme", "icon": "$(play)" },
+      { "command": "rythme.testFile", "title": "%command.test%", "category": "Rythme", "icon": "$(beaker)" },
+      { "command": "rythme.explainError", "title": "%command.explain%", "category": "Rythme" },
+      { "command": "rythme.showHelp", "title": "%command.help%", "category": "Rythme" }
+    ],
+    "menus": {
+      "commandPalette": [
+        { "command": "rythme.runFile", "when": "editorLangId == rythme" },
+        { "command": "rythme.testFile", "when": "editorLangId == rythme" }
+      ],
+      "editor/title/run": [
+        { "command": "rythme.runFile", "when": "resourceLangId == rythme", "group": "navigation@1" },
+        { "command": "rythme.testFile", "when": "resourceLangId == rythme", "group": "navigation@2" }
+      ]
+    }
+  },
+  "scripts": {
+    "check": "node --check extension.js && node test/load.js && node test/server.js",
+    "package": "npx @vscode/vsce package"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
   }
 }

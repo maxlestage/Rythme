@@ -1,0 +1,17 @@
+Month        Amount     Total
+January     1200.00   1200.00
+February     950.50   2150.50
+March       1430.25   3580.75
+April       1610.00   5190.75
+May         1385.75   6576.50
+June        1720.40   8296.90
+Best month: June, 1720.40
+Better than the month before: March, April, June
+{
+  "year": 2026,
+  "quarters": [
+    3580.75,
+    4716.15
+  ],
+  "best": "June"
+}

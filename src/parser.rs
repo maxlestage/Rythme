@@ -13,7 +13,7 @@ use crate::source::Span;
 use crate::symbol::Sym;
 
 pub fn parse(lexed: Lexed) -> Fallible<Vec<Item>> {
-    let mut p = Parser { toks: lexed.tokens, pos: 0, sig: vec![true], docs: lexed.docs, last: Span::default(), depth: 0 };
+    let mut p = Parser { toks: lexed.tokens, pos: 0, sig: vec![true], docs: lexed.docs, last: Span::default(), depth: 0, in_text: false };
     p.program()
 }
 
@@ -27,13 +27,19 @@ struct Parser {
     last: Span,
     /// How many expressions are being read inside each other.
     depth: usize,
+    /// Reading the `{...}` of a text.
+    in_text: bool,
 }
 
 /// Deeper nesting is surely a mistake, and would exhaust the stack.
 const MAX_NESTING: usize = 256;
 
+/// The deepest expression accepted (see `Expr::depth`): a chain like
+/// `a + b + c + ...` nests one level per operator, without brackets.
+const MAX_DEPTH: u32 = 1000;
+
 /// Tokens that may start a line and still continue the previous expression.
-fn is_continuation(t: &Tok) -> bool {
+pub(crate) fn is_continuation(t: &Tok) -> bool {
     matches!(
         t,
         Tok::PipeGt
@@ -250,6 +256,8 @@ impl Parser {
             Tok::Bang => d.help(t!("use `not` to negate a condition: `not done`", "utilisez `not` pour inverser une condition : `not fini`")),
             Tok::PlusEq | Tok::MinusEq | Tok::StarEq | Tok::SlashEq => d.help(immutable_help()),
             Tok::Reserved(s) => d.help(lexer::reserved_help(&s.name())),
+            // Inside `"{...}"`, braces and `:` are rather meant literally (see `text`).
+            Tok::LBrace | Tok::Colon if self.in_text => d,
             Tok::LBrace => d.help(t!(
                 "Rythme does not use braces for blocks: write `do` ... `end`, or put a function body on the following lines and finish with `end`",
                 "Rythme n'utilise pas d'accolades pour les blocs : écrivez `do` ... `end`, ou mettez le corps d'une fonction sur les lignes suivantes et terminez par `end`"
@@ -356,6 +364,26 @@ impl Parser {
             Tok::Reserved(s) => return Err(self.reserved_error(s, tok.span)),
             _ => {}
         }
+        if self.pattern_before_eq() {
+            // Read as a pattern, so that a definition accepts what `match` accepts.
+            let pat = self.pattern().map_err(|mut d| {
+                if !d.helps.is_empty() {
+                    return d;
+                }
+                d.helps.push(t!(
+                    "before `=` comes a name or a pattern, like `[first, ..rest]`, `{{name, ..}}` or `Some(x)`",
+                    "avant `=` vient un nom ou un motif, comme `[premier, ..reste]`, `{{nom, ..}}` ou `Some(x)`"
+                ));
+                d
+            })?;
+            if !matches!(self.raw(), Tok::Eq) {
+                return Err(self.unexpected(t!("`=`", "`=`")));
+            }
+            self.advance();
+            self.skip_newlines();
+            let value = self.expr()?;
+            return Ok(Stmt::Let(pat, value));
+        }
         let e = self.expr()?;
         match self.raw() {
             Tok::Eq => {
@@ -377,6 +405,48 @@ impl Parser {
             }
             _ => Ok(Stmt::Expr(e)),
         }
+    }
+
+    /// Does a definition with a bracketed pattern start here: `[first, ..] = list`,
+    /// `{name, ..} = person`, `Some(x) = value`?
+    fn pattern_before_eq(&self) -> bool {
+        let mut i = self.pos;
+        if matches!(self.toks[i].tok, Tok::Ctor(_)) {
+            i += 1;
+        }
+        if !matches!(self.toks[i].tok, Tok::LParen | Tok::LBracket | Tok::LBrace) {
+            return false;
+        }
+        let mut depth = 0usize;
+        loop {
+            match self.toks[i].tok {
+                Tok::LParen | Tok::LBracket | Tok::LBrace => depth += 1,
+                Tok::RParen | Tok::RBracket | Tok::RBrace => {
+                    depth -= 1;
+                    if depth == 0 {
+                        break;
+                    }
+                }
+                Tok::Eof => return false,
+                _ => {}
+            }
+            i += 1;
+        }
+        matches!(self.toks[i + 1].tok, Tok::Eq)
+    }
+
+    /// `{name, ..others}`: the other fields cannot be given a name.
+    fn named_record_rest(&self, span: Span) -> Box<Diagnostic> {
+        Diagnostic::error(
+            "E001",
+            t!("a record pattern cannot give a name to the other fields", "un motif d'enregistrement ne peut pas nommer les autres champs"),
+        )
+        .at(span)
+        .help(t!(
+            "write `{{name, ..}}` to ignore the other fields; for a record without some fields, use `remove(record, \"name\")`",
+            "écrivez `{{nom, ..}}` pour ignorer les autres champs ; pour un enregistrement sans certains champs, utilisez `remove(enregistrement, \"nom\")`"
+        ))
+        .boxed()
     }
 
     fn expr_to_pattern(&self, e: Expr, eq: Span) -> Fallible<Pattern> {
@@ -426,7 +496,7 @@ impl Parser {
                 for item in items {
                     match item {
                         RecordItem::Field(k, _, v) => fields.push((k, self.expr_to_pattern(v, eq)?)),
-                        RecordItem::Spread(_) => {}
+                        RecordItem::Spread(x) => return Err(self.named_record_rest(x.span)),
                     }
                 }
                 PatKind::Record(fields)
@@ -451,8 +521,8 @@ impl Parser {
                         "les enregistrements ne peuvent pas être modifiés ; construisez-en un nouveau : `nouveau = {{..ancien, {name}: valeur}}`"
                     )),
                     ExprKind::Index(..) => d.help(t!(
-                        "lists cannot be changed; build a new list with `map`, `+` or `[..xs, x]`",
-                        "les listes ne peuvent pas être modifiées ; construisez une nouvelle liste avec `map`, `+` ou `[..xs, x]`"
+                        "values cannot be changed; build a new one: `set_at(list, i, x)` for a list, `put(record, name, x)` for a record",
+                        "les valeurs ne peuvent pas être modifiées ; construisez-en une nouvelle : `set_at(liste, i, x)` pour une liste, `put(enreg, nom, x)` pour un enregistrement"
                     )),
                     _ => d.help(t!("to compare two values, use `==`", "pour comparer deux valeurs, utilisez `==`")),
                 };
@@ -463,6 +533,10 @@ impl Parser {
     }
 
     fn block(&mut self, opener: Span, what: &str) -> Fallible<Vec<Stmt>> {
+        self.deeper(|p| p.block_inner(opener, what))
+    }
+
+    fn block_inner(&mut self, opener: Span, what: &str) -> Fallible<Vec<Stmt>> {
         self.nested(true, |p| {
             let mut stmts = Vec::new();
             loop {
@@ -502,6 +576,10 @@ impl Parser {
         };
         if !matches!(self.peek(), Tok::LParen) {
             let mut d = self.unexpected(t!("`(` and the parameters", "`(` et les paramètres"));
+            // `fn greet = ...`: the `=` is right, only the parentheses are missing.
+            if matches!(self.peek(), Tok::Eq) {
+                d.helps.clear();
+            }
             d.helps.push(t!(
                 "even without parameters, write the parentheses: `fn greet() = print(\"hi\")`",
                 "même sans paramètres, écrivez les parenthèses : `fn saluer() = print(\"salut\")`"
@@ -685,7 +763,7 @@ impl Parser {
                     let op = self.take_cont();
                     self.skip_newlines();
                     let r = self.and_expr()?;
-                    l = binary(BinOp::Or, l, r, op.span);
+                    l = self.limit(binary(BinOp::Or, l, r, op.span), op.span)?;
                 }
                 Tok::BarBar => return Err(self.unexpected(t!("the end of the expression", "la fin de l'expression"))),
                 _ => return Ok(l),
@@ -701,7 +779,7 @@ impl Parser {
                     let op = self.take_cont();
                     self.skip_newlines();
                     let r = self.not_expr()?;
-                    l = binary(BinOp::And, l, r, op.span);
+                    l = self.limit(binary(BinOp::And, l, r, op.span), op.span)?;
                 }
                 Tok::AmpAmp => return Err(self.unexpected(t!("the end of the expression", "la fin de l'expression"))),
                 _ => return Ok(l),
@@ -752,9 +830,10 @@ impl Parser {
         let mut l = self.range_expr()?;
         let mut piped = false;
         while matches!(self.peek_cont(), Tok::PipeGt) {
-            self.take_cont();
+            let op = self.take_cont();
             self.skip_newlines();
-            l = self.pipe_step(l)?;
+            l = self.deeper(|p| p.pipe_step(l))?;
+            l = self.limit(l, op.span)?;
             piped = true;
         }
         let arithmetic = matches!(
@@ -840,7 +919,7 @@ impl Parser {
             let t = self.take_cont();
             self.skip_newlines();
             let r = self.mul_expr()?;
-            l = binary(op, l, r, t.span);
+            l = self.limit(binary(op, l, r, t.span), t.span)?;
         }
     }
 
@@ -857,7 +936,7 @@ impl Parser {
             let t = self.take_cont();
             self.skip_newlines();
             let r = self.unary()?;
-            l = binary(op, l, r, t.span);
+            l = self.limit(binary(op, l, r, t.span), t.span)?;
         }
     }
 
@@ -873,7 +952,9 @@ impl Parser {
                 let e = self.deeper(|p| p.unary())?;
                 let span = t.span.to(e.span);
                 Ok(match e.kind {
-                    ExprKind::Int(n) => Expr::new(ExprKind::Int(n.wrapping_neg()), span),
+                    // `-(-9223372036854775808)` has no value: it is left to the
+                    // evaluation, which reports the overflow.
+                    ExprKind::Int(n) if n != i64::MIN => Expr::new(ExprKind::Int(-n), span),
                     ExprKind::Float(f) => Expr::new(ExprKind::Float(-f), span),
                     kind => Expr::new(ExprKind::Unary(UnOp::Neg, Box::new(Expr::new(kind, e.span))), span),
                 })
@@ -888,20 +969,26 @@ impl Parser {
         if matches!(self.peek_cont(), Tok::StarStar) {
             let t = self.take_cont();
             self.skip_newlines();
-            let exp = self.unary()?;
-            return Ok(binary(BinOp::Pow, base, exp, t.span));
+            // `**` groups to the right: `2 ** 3 ** 2` is `2 ** (3 ** 2)`.
+            let exp = self.deeper(|p| p.unary())?;
+            return self.limit(binary(BinOp::Pow, base, exp, t.span), t.span);
         }
         Ok(base)
     }
 
     fn postfix(&mut self) -> Fallible<Expr> {
-        let e = self.primary()?;
-        self.postfix_ops(e)
+        // The arguments of the calls that follow are nested inside this level too.
+        self.deeper(|p| {
+            let e = p.primary_inner()?;
+            let e = p.limit(e, p.last)?;
+            p.postfix_ops(e)
+        })
     }
 
     /// Calls, `[index]`, `?`, `.field` and `.method()` after an expression.
     fn postfix_ops(&mut self, mut e: Expr) -> Fallible<Expr> {
         loop {
+            e = self.limit(e, self.last)?;
             self.skip_soft();
             match self.raw() {
                 Tok::LParen => {
@@ -999,8 +1086,32 @@ impl Parser {
         r
     }
 
+    /// Refuses an expression that is too deep (see `MAX_DEPTH`); `at` is
+    /// where it became too deep.
+    fn limit(&self, e: Expr, at: Span) -> Fallible<Expr> {
+        if e.depth <= MAX_DEPTH {
+            return Ok(e);
+        }
+        Err(Diagnostic::error(
+            "E001",
+            t!(
+                "this expression is too long or nested too deeply (more than {MAX_DEPTH} levels)",
+                "cette expression est trop longue ou imbriquée trop profondément (plus de {MAX_DEPTH} niveaux)"
+            ),
+        )
+        .at(at)
+        .help(t!(
+            "split it into several named values or functions;\nto combine many values, put them in a list: `sum([a, b, c])`, `join([x, y, z])`",
+            "découpez-la en plusieurs valeurs ou fonctions nommées ;\npour combiner beaucoup de valeurs, mettez-les dans une liste : `sum([a, b, c])`, `join([x, y, z])`"
+        ))
+        .boxed())
+    }
+
     fn primary(&mut self) -> Fallible<Expr> {
-        self.deeper(|p| p.primary_inner())
+        self.deeper(|p| {
+            let e = p.primary_inner()?;
+            p.limit(e, p.last)
+        })
     }
 
     fn primary_inner(&mut self) -> Fallible<Expr> {
@@ -1148,7 +1259,15 @@ impl Parser {
             match part {
                 StrPart::Lit(s) => out.push(TemplatePart::Lit(Rc::from(s))),
                 StrPart::Code(tokens) => {
-                    let mut sub = Parser { toks: tokens, pos: 0, sig: vec![false], docs: HashMap::new(), last: span, depth: self.depth };
+                    let mut sub = Parser {
+                        toks: tokens,
+                        pos: 0,
+                        sig: vec![false],
+                        docs: HashMap::new(),
+                        last: span,
+                        depth: self.depth,
+                        in_text: true,
+                    };
                     let e =
                         sub.expr().and_then(
                             |e| {
@@ -1163,10 +1282,7 @@ impl Parser {
                         Ok(e) => out.push(TemplatePart::Expr(e)),
                         Err(mut d) => {
                             d.incomplete = false;
-                            d.helps.push(t!(
-                                "inside a text, `{{...}}` inserts a value; write `\\{{` to get a literal brace",
-                                "dans un texte, `{{...}}` insère une valeur ; écrivez `\\{{` pour obtenir une accolade"
-                            ));
+                            lexer::add_literal_brace_help(&mut d);
                             return Err(d);
                         }
                     }
@@ -1354,6 +1470,7 @@ impl Parser {
                 let t = self.advance();
                 let kind = match t.tok {
                     Tok::Int(n) => PatKind::Int(-n),
+                    Tok::IntMinMagnitude => PatKind::Int(i64::MIN),
                     Tok::Float(f) => PatKind::Float(-f),
                     _ => return Err(self.unexpected_token(&t, t!("a number", "un nombre"))),
                 };
@@ -1440,6 +1557,10 @@ impl Parser {
                 self.advance();
                 let fields = self.comma_list(&Tok::RBrace, |p| {
                     if p.eat(&Tok::DotDot) {
+                        if let Tok::Ident(_) = p.peek() {
+                            let name = p.peek_token();
+                            return Err(p.named_record_rest(name.span));
+                        }
                         return Ok(None);
                     }
                     let t = p.advance();

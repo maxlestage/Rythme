@@ -5,6 +5,10 @@ Programs are files ending in `.ry`. The interpreter is written in Rust.
 
 *[Version française →](README.fr.md)*
 
+**Documentation:** the [reference manual](docs/reference.md) (the whole
+language, precisely), the [guide for teachers](docs/teaching.md), and
+[all the documents](docs/README.md).
+
 ```rythme
 # Values never change. Everything is a function. There are no loops.
 fn square(x) = x * x
@@ -35,10 +39,15 @@ fn square(x) = x * x
   - Coming from another language? `for`, `return`, `null`, `x += 1`, `&&`,
     `def`, `class`... each gets an explanation of the Rythme way.
   - The program is checked **before** it runs: all the unknown names, wrong
-    numbers of arguments and forgotten cases are reported at once.
+    numbers of arguments, operations on the wrong kinds of values
+    (`"age: " + 36`, `len(5)`, a misspelled field) and forgotten cases are
+    reported at once.
   - `rythme explain E003` explains any error code in detail, with examples.
   - `rythme help`, `rythme help map`, `help(x)` in code, `:doc` in the REPL,
     `rythme learn` for a guided tour.
+  - Inside your editor: the problems as you type, the documentation under
+    the mouse, completion, go to definition, rename (`rythme lsp`, the
+    language server, for VS Code, Neovim, Helix, Emacs...).
   - Every message, every piece of documentation exists in **English and
     French** (`--lang fr`, or automatically from your system language).
 
@@ -73,8 +82,8 @@ error[E001]: `for` is not used in Rythme
 
 The website <https://maxlestage.github.io/Rythme/> has a playground that runs
 the real interpreter, compiled to WebAssembly ([`playground/`](playground)):
-edit code, run it, run tests, read the help, in English or French, without
-installing anything.
+edit code, run it, check it, run tests, format it, read the help, in English
+or French, without installing anything.
 
 The [`site/`](site) folder is the website of Rythme (home, tour of the
 language, examples, playground and guide for teachers, in English and French),
@@ -131,10 +140,13 @@ cargo install --path .       # or install it in your PATH
 | `rythme hello.ry`           | run a program (`rythme run hello.ry` also works) |
 | `rythme check hello.ry`     | find problems without running the program      |
 | `rythme test hello.ry`      | run the tests written in the file              |
+| `rythme fmt hello.ry`       | give the code its official layout (also a folder: `rythme fmt .`) |
+| `rythme fmt --check .`      | list the files to format, without changing them (for CI) |
 | `rythme help [topic]`       | help on a topic or a function                  |
 | `rythme explain E003`       | explain an error code                          |
 | `rythme learn`              | guided tour of the language                    |
 | `rythme -e 'print(1 + 2)'`  | run a piece of code                            |
+| `rythme lsp`                | language server, started by your editor ([editors](editors)) |
 
 Add `--lang fr` or `--lang en` before the command to choose the language of
 the messages, or set `RYTHME_LANG`.
@@ -191,7 +203,8 @@ test "double works" = assert_eq(double(21), 42)
 use "geometry.ry"
 ```
 
-More: [`examples/`](examples), `rythme help syntax`, `rythme learn`.
+More: the [reference manual](docs/reference.md), [`examples/`](examples),
+`rythme help syntax`, `rythme learn`.
 
 ## Examples
 
@@ -203,8 +216,10 @@ More: [`examples/`](examples), `rythme help syntax`, `rythme learn`.
 | [`shapes.ry`](examples/shapes.ry) | your own types, guards, `sort_by` |
 | [`quicksort.ry`](examples/quicksort.ry) | list patterns, `filter`, `+` on lists |
 | [`words.ry`](examples/words.ry) | text processing, `group_by`, records |
+| [`cipher.ry`](examples/cipher.ry) | the Caesar cipher: `char_code`, `char`, counting letters |
 | [`results.ry`](examples/results.ry) | `Option`, `Result`, `?` |
 | [`students.ry`](examples/students.ry) | records, record update, grouping, averages |
+| [`sales.ry`](examples/sales.ry) | a report: `scan`, columns lined up with `pad_left`, `windows`, `chunks`, JSON |
 | [`tree.ry`](examples/tree.ry) | a recursive type: binary search tree |
 | [`primes.ry`](examples/primes.ry) | a recursive sieve, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | `test` blocks |
@@ -213,7 +228,14 @@ More: [`examples/`](examples), `rythme help syntax`, `rythme learn`.
 
 ## Editors
 
-- **VS Code**: colors, indentation and snippets in [`editors/vscode`](editors/vscode).
+- **VS Code**: the extension in [`editors/vscode`](editors/vscode): colors,
+  snippets, and the language server, for the problems as you type, the
+  documentation on hover, completion, the parameters of a call, go to
+  definition, references, rename, an outline and formatting, in English or
+  French.
+- **Neovim, Helix, Zed, Emacs, Sublime Text, Kate...**: every editor that
+  speaks the Language Server Protocol can start `rythme lsp`; a few lines of
+  configuration for each are in [`editors/README.md`](editors/README.md).
 
 ## For teachers
 
@@ -230,30 +252,43 @@ mode) and is organised as a pipeline:
 |------|------|
 | [`src/lexer.rs`](src/lexer.rs) | text → tokens (with `{...}` inside texts) |
 | [`src/parser.rs`](src/parser.rs) | tokens → syntax tree, with hints for common mistakes |
-| [`src/check.rs`](src/check.rs) | finds errors before running: names, arguments, forgotten cases |
+| [`src/check.rs`](src/check.rs) | finds errors before running: names, arguments, kinds of values, forgotten cases |
+| [`src/types.rs`](src/types.rs) | what the checker knows for sure about values: their types |
+| [`src/compile.rs`](src/compile.rs) | prepares functions: each local name becomes a numbered slot |
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
-| [`src/builtins.rs`](src/builtins.rs) | ~90 built-in functions, documented in two languages |
+| [`src/builtins.rs`](src/builtins.rs) | 124 built-in functions, documented in two languages, JSON included |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |
+| [`src/format.rs`](src/format.rs) | `rythme fmt`: the official layout, which never changes the meaning |
+| [`src/lsp/`](src/lsp) | the language server (`rythme lsp`): help inside editors |
 
-`cargo test` runs the examples and ~30 tests of the language, the messages
-and the commands.
+`cargo test` runs the examples, checks that every example of the standard
+library gives the value it shows and that every sample of the
+[reference manual](docs/reference.md) prints what it shows, and runs about
+200 tests of the language, the library, the checker, the messages, the
+formatter, the language server and the commands, fuzzing included.
 
 ## Status and roadmap
 
 Rythme 0.1 is a complete, tested interpreter, usable today for learning and
 for small programs. Honest limits, and what comes next:
 
-- **Speed.** It is a tree-walking interpreter: about as fast as Python, far
-  from compiled Rust. Next: a bytecode virtual machine.
+- **Speed.** It is a tree-walking interpreter: local names become numbered
+  slots before running, and most calls allocate nothing. The programs of
+  [`bench/`](bench) (`bench/run.sh`) run 1.2 to 4.3 times faster than with
+  Rythme 0.1; that is in the range of Python, far from compiled Rust. Next: a
+  bytecode virtual machine.
 - **Types.** Values are checked at run time (strongly: no silent
-  conversions). Next: type inference in `rythme check`, so that more mistakes
-  are found before running.
-- **Tooling.** Next: a formatter (`rythme fmt`), a language server (errors and
-  documentation inside every editor), a package manager, and a web playground
-  (the interpreter compiled to WebAssembly) so that anyone can try Rythme
-  without installing anything.
+  conversions), and `rythme check` infers their types when they are certain,
+  to report before running the operations that would always fail. Next: the
+  types of the parameters of functions, so that even more mistakes are found
+  before running.
+- **Tooling.** `rythme fmt` formats the code in the official style (see
+  `rythme help fmt`), and the language server (`rythme lsp`) brings errors and
+  documentation inside every editor (see `rythme help editors`). The web
+  playground runs the interpreter compiled to WebAssembly. Next: a package
+  manager.
 - **Languages.** Messages exist in English and French; adding a language means
   translating the texts of `src/`. Contributions are welcome.
 - Numbers are 64-bit: whole numbers stop with an error beyond ±9.2 × 10¹⁸

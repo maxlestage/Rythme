@@ -1,0 +1,27 @@
+# A binary search tree of 100 000 keys, built and walked with pattern matching.
+
+type Tree = Leaf | Node(left, value, right)
+
+fn insert(Leaf, x) = Node(Leaf, x, Leaf)
+fn insert(Node(l, v, r), x) =
+  if x < v then Node(insert(l, x), v, r)
+  else if x > v then Node(l, v, insert(r, x))
+  else Node(l, v, r)
+
+fn member(Leaf, _) = false
+fn member(Node(l, v, r), x) =
+  if x == v then true
+  else if x < v then member(l, x)
+  else member(r, x)
+
+fn size(Leaf) = 0
+fn size(Node(l, _, r)) = size(l) + 1 + size(r)
+
+fn height(Leaf) = 0
+fn height(Node(l, _, r)) = 1 + max(height(l), height(r))
+
+numbers = 0..99_999 |> map(fn(i) = (i * 7919) % 100_003)
+tree = fold(numbers, Leaf, insert)
+found = numbers |> filter(fn(k) = member(tree, k + 1)) |> len
+
+print(size(tree), height(tree), found)

@@ -57,6 +57,8 @@ pub fn rewrite_link(dest: &str, lang: Lang) -> (String, bool) {
     match file {
         "teaching.md" => (Route::new(Lang::En, Page::Teach).href(), false),
         "enseigner.md" => (Route::new(Lang::Fr, Page::Teach).href(), false),
+        // A file of the repository opens on GitHub (`tree/` for a folder).
+        _ if file.contains('.') => (format!("{REPO}/blob/master/{file}"), true),
         _ => (format!("{REPO}/tree/master/{file}"), true),
     }
 }
@@ -159,7 +161,10 @@ mod tests {
             assert!(!r.title.is_empty(), "{lang:?}");
             assert!(r.sections.len() >= 3, "{lang:?}");
             assert!(!r.html.contains("<h1"), "{lang:?}");
-            assert!(!r.html.contains(".md\""), "{lang:?}: {}", r.html);
+            // No link left to a Markdown file next to the guide: only to GitHub.
+            for link in r.html.split("href=\"").skip(1).map(|rest| &rest[..rest.find('"').unwrap_or(0)]) {
+                assert!(!link.ends_with(".md") || link.starts_with(REPO), "{lang:?}: {link}");
+            }
             assert!(r.html.contains("<table>"), "{lang:?}");
             for (id, _) in &r.sections {
                 assert!(r.html.contains(&format!(r#"id="{id}""#)), "{id}");

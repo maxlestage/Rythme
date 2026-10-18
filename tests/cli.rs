@@ -23,6 +23,7 @@ fn help_overview_and_topics() {
         "tests",
         "modules",
         "repl",
+        "editors",
         "builtins",
     ] {
         let r = rythme(&["help", topic]);
@@ -57,9 +58,14 @@ fn every_error_code_is_explained() {
 
 #[test]
 fn every_error_code_used_in_the_sources_is_explained() {
-    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
-    for entry in std::fs::read_dir(dir).unwrap() {
-        let text = std::fs::read_to_string(entry.unwrap().path()).unwrap();
+    // The sources, folders included.
+    let mut todo = vec![std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src")];
+    while let Some(path) = todo.pop() {
+        if path.is_dir() {
+            todo.extend(std::fs::read_dir(&path).unwrap().map(|e| e.unwrap().path()));
+            continue;
+        }
+        let text = std::fs::read_to_string(&path).unwrap();
         for (i, _) in text.match_indices("(\"E0").chain(text.match_indices("(\"W0")) {
             let code = &text[i + 2..i + 6];
             assert!(rythme::help::CODES.contains(&code), "{code} has no explanation");

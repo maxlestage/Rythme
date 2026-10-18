@@ -42,8 +42,18 @@ pub const EXAMPLES: &[Example] = &[
     example!("shapes", "vos propres types, gardes, sort_by", "your own types, guards, sort_by"),
     example!("quicksort", "motifs de listes, filter, + sur les listes", "list patterns, filter, + on lists"),
     example!("words", "traitement de texte, group_by, enregistrements", "text processing, group_by, records"),
+    example!(
+        "cipher",
+        "le chiffre de César : char_code, char, compter les lettres",
+        "the Caesar cipher: char_code, char, counting letters"
+    ),
     example!("results", "Option, Result et ?", "Option, Result and ?"),
     example!("students", "enregistrements, mise à jour, regroupements, moyennes", "records, record update, grouping, averages"),
+    example!(
+        "sales",
+        "un rapport : scan, colonnes alignées avec pad_left, windows, chunks, JSON",
+        "a report: scan, columns lined up with pad_left, windows, chunks, JSON"
+    ),
     example!("tree", "un type récursif : arbre binaire de recherche", "a recursive type: binary search tree"),
     example!("primes", "un crible récursif, all, and", "a recursive sieve, all, and"),
     example!("testing", "les blocs test", "test blocks"),

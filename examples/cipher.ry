@@ -1,0 +1,33 @@
+# The Caesar cipher: every letter moves a fixed number of places in the
+# alphabet. Then we break it, by counting letters.
+
+## Moves a letter `key` places, from the letter `first` ("a" or "A").
+fn rotate(c, first, key)
+  start = char_code(first)
+  char((char_code(c) - start + key) % 26 + start)
+end
+
+fn shift(c, key) =
+  if c >= "a" and c <= "z" then rotate(c, "a", key)
+  else if c >= "A" and c <= "Z" then rotate(c, "A", key)
+  else c
+
+fn encrypt(message, key) = chars(message) |> map(fn(c) = shift(c, key)) |> join
+fn decrypt(message, key) = encrypt(message, -key)
+
+secret = encrypt("Hello, World!", 3)
+print(secret)
+print(decrypt(secret, 3))
+
+## In English, the most frequent letter is almost always "e".
+fn guess_key(message)
+  counts = chars(lower(message)) |> filter(is_letter) |> group_by(fn(c) = c) |> map_values(len)
+  common = max_by(keys(counts), fn(c) = counts[c])
+  (char_code(common) - char_code("e")) % 26
+end
+
+quote = "Programs must be written for people to read, and only incidentally for machines to execute."
+hidden = encrypt(quote, 11)
+print(hidden)
+key = guess_key(hidden)
+print("The key is probably {key}: {decrypt(hidden, key)}")

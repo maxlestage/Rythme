@@ -175,7 +175,7 @@ pub fn run() -> i32 {
     let mut rl: Editor<RyHelper, DefaultHistory> = match Editor::new() {
         Ok(rl) => rl,
         Err(e) => {
-            eprintln!("{e}");
+            crate::io::err_line(&e.to_string());
             return 1;
         }
     };
@@ -241,9 +241,15 @@ pub fn run() -> i32 {
                     crate::io::out_line(&t!("(cancelled)", "(annulé)"));
                 }
             }
-            Err(ReadlineError::Eof) => break,
+            Err(ReadlineError::Eof) => {
+                // Unfinished code at the end of the input: show what is missing.
+                if !buffer.trim().is_empty() {
+                    eval(&mut driver, &buffer);
+                }
+                break;
+            }
             Err(e) => {
-                eprintln!("{e}");
+                crate::io::err_line(&t!("cannot read what is typed: {e}", "impossible de lire ce qui est tapé : {e}"));
                 break;
             }
         }
@@ -289,7 +295,8 @@ fn command(driver: &mut Driver, input: &str) -> Next {
                 crate::io::out_line(&t!("usage: :load file.ry", "utilisation : :load fichier.ry"));
             } else {
                 let mut path = PathBuf::from(arg);
-                if path.extension().is_none() {
+                // Like `rythme file`: `.ry` is added only if needed.
+                if path.extension().is_none() && !path.is_file() {
                     path.set_extension("ry");
                 }
                 if let Some(m) = driver.reload_file(&path) {
@@ -311,7 +318,7 @@ fn command(driver: &mut Driver, input: &str) -> Next {
             None => crate::io::out_line(&t!("usage: :lang fr  or  :lang en", "utilisation : :lang fr  ou  :lang en")),
         },
         ":learn" | ":apprendre" => help::learn(),
-        ":explain" | ":expliquer" => match help::explain(arg) {
+        ":explain" | ":expliquer" => match help::explain(arg.split_whitespace().next().unwrap_or("")) {
             Some(text) => crate::io::out_line(&text),
             None => crate::io::out_line(&t!(
                 "unknown code; codes look like E003 or W001",
