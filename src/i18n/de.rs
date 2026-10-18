@@ -1292,6 +1292,7 @@ Ihre Definitionen werden über den Namen `{n}` verwendet: `{n}.name`"#,
 "#,
         ),
         // src/parser.rs
+        ("a case of `match` gives one expression; for a result on several lines, write `do` after `->`, then the lines, then `end`:\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\nor move the lines into a function: `Ok(x) -> handle(x)`", "ein Fall von `match` liefert einen einzigen Ausdruck; für ein Ergebnis über mehrere Zeilen schreib `do` nach `->`, dann die Zeilen, dann `end`:\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\noder verschieb die Zeilen in eine Funktion: `Ok(x) -> behandle(x)`"),
         ("`{name}` is read as a value here, not called, because the code gives it a value (line {line}): to call it, put its argument in parentheses, like `{name}([1, 2])`", "`{name}` wird hier als Wert gelesen, nicht aufgerufen, weil der Code ihm einen Wert gibt (Zeile {line}): um es aufzurufen, setz sein Argument in Klammern, wie `{name}([1, 2])`"),
         ("Rythme has no `condition ? a : b`", "Rythme hat kein `Bedingung ? a : b`"),
         ("`?` does not choose between two values", "`?` wählt nicht zwischen zwei Werten"),

@@ -1227,7 +1227,9 @@ end
 The subject is written on the same line as `match`; each case starts on its
 own line (or after a `;`), and `end` closes the `match`. There must be at
 least one case, and no `|` before a case. The result may start on the line
-after `->`.
+after `->`. It is one expression: for a result on several lines, write
+`Ok(x) -> do`, the lines, then `end` (or call a function); indented lines
+under a case are not part of it, and the error says so.
 
 The cases are tried **in order**. The first case whose pattern matches the
 value, and whose guard (if any) is `true`, is chosen; the names bound by the

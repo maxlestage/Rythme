@@ -41,6 +41,10 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ### Messages
 
+- **A case of `match` on several indented lines** (`Ok(x) ->` then the
+  lines, as in Ruby or Python) is explained: the error says that a case
+  gives one expression and shows `Ok(x) -> do ... end`, instead of a hint
+  about `==` or "put each case on its own line".
 - **W011, index or subtraction instead of a call**: `show [1, 2]` and
   `show -1` at the start of a statement are an index and a subtraction as
   soon as the file gives `show` a value anywhere, even to a parameter of

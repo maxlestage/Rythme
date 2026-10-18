@@ -1283,7 +1283,10 @@ end
 La valeur examinée s'écrit sur la même ligne que `match` ; chaque cas
 commence sur sa propre ligne (ou après un `;`), et `end` ferme le `match`. Il
 faut au moins un cas, et pas de `|` devant un cas. Le résultat peut commencer
-à la ligne qui suit `->`.
+à la ligne qui suit `->`. C'est une seule expression : pour un résultat sur
+plusieurs lignes, écrivez `Ok(x) -> do`, les lignes, puis `end` (ou appelez
+une fonction) ; des lignes indentées sous un cas n'en font pas partie, et
+l'erreur le dit.
 
 Les cas sont essayés **dans l'ordre**. Le premier cas dont le motif
 correspond à la valeur, et dont la garde (s'il y en a une) vaut `true`, est
