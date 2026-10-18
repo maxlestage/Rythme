@@ -151,7 +151,7 @@ curl -fsSL https://raw.githubusercontent.com/maxlestage/Rythme/master/install.sh
 ```
 
 Options after `sh -s --`: `--dir /usr/local/bin` (another folder),
-`--version v0.1.0` (another version); `--help` lists them.
+`--version v1.0.0` (another version); `--help` lists them.
 
 **Windows** (PowerShell): the program goes in
 `%LOCALAPPDATA%\Programs\Rythme\bin`, added to your `PATH`.
@@ -161,7 +161,7 @@ irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex
 ```
 
 Set `RYTHME_INSTALL_DIR` or `RYTHME_VERSION` before, or run the downloaded
-file: `.\install.ps1 -Dir C:\Tools -Version v0.1.0 -NoModifyPath`.
+file: `.\install.ps1 -Dir C:\Tools -Version v1.0.0 -NoModifyPath`.
 
 **By hand:** each published version comes with ready-to-use programs for
 Linux, macOS and Windows on the
@@ -349,21 +349,23 @@ library gives the value it shows and that every sample of the
 200 tests of the language, the library, the checker, the messages, the
 formatter, the language server and the commands, fuzzing included.
 
-## Status and roadmap
+## Status
 
-Rythme 0.1 is a complete, tested interpreter, usable today for learning and
-for small programs. Honest limits, and what comes next (the complete list
-towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
+Rythme 1.0 is a complete, tested language: the interpreter, the checker, the
+formatter, the language server, the editors, the playground, the manual and
+messages in six languages. What it contains is in
+[`CHANGELOG.md`](CHANGELOG.md); ideas for what comes next are at the end of
+[`ROADMAP.md`](ROADMAP.md#after-10). Honest limits:
 
 - **Speed.** It is a tree-walking interpreter: local names become numbered
   slots before running, and most calls allocate nothing. The programs of
   [`bench/`](bench) (`bench/run.sh`) run 1.2 to 4.3 times faster than with
-  Rythme 0.1; that is in the range of Python, far from compiled Rust.
+  the first version, Rythme 0.1; that is in the range of Python, far from
+  compiled Rust.
   Building a text with `+` or `"{acc}..."` and adding to a list (`push`,
   `xs + [x]`, `[..xs, x]`) take constant time per addition: 100 000 of them
   take 0.1 s, instead of 23 s (texts) and 150 s (lists) before. Local
   functions that call each other make no closure per call (twice as fast).
-  Next: a bytecode virtual machine.
 - **Types.** Values are checked at run time (strongly: no silent
   conversions), and `rythme check` infers their types when they are certain,
   to report before running the operations that would always fail; it also
@@ -371,10 +373,11 @@ towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
   that always fail, and the editor shows these signatures on hover.
 - **Tooling.** `rythme fmt` formats the code in the official style (see
   `rythme help fmt`), `rythme doc` writes the documentation of files and
-  folders from their `##` comments (see `rythme help doc`), and the language server (`rythme lsp`) brings errors and
+  folders from their `##` comments (see `rythme help doc`), `rythme new` and
+  `rythme install` make projects with dependencies (see `rythme help
+  projects`), and the language server (`rythme lsp`) brings errors and
   documentation inside every editor (see `rythme help editors`). The web
-  playground runs the interpreter compiled to WebAssembly. Next: a package
-  manager.
+  playground runs the interpreter compiled to WebAssembly.
 - **Languages.** Messages exist in English, French, Spanish, German,
   Portuguese and simplified Chinese; adding a language means writing one
   catalog file, `src/i18n/<code>.rs`, which a test checks against every text
@@ -382,6 +385,41 @@ towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
   Contributions are welcome.
 - **Numbers.** Whole numbers have no size limit and stay exact (up to 100000
   digits), the usual 64-bit ones computed fastest; decimal numbers are 64-bit.
+
+## Stability promise
+
+Rythme follows [semantic versioning](https://semver.org). For every 1.x
+version (1.0, 1.1, 1.2...):
+
+- **A program that runs keeps running, with the same output.** The same
+  program, given the same input (arguments, files, standard input, clock),
+  prints the same thing on the standard output (apart from what `random`
+  and `shuffle` draw) and ends with the same exit code. The syntax, the keywords, the built-in functions (their names, their
+  parameters and their results), the formats of `rythme.toml` and
+  `rythme.lock`, and the commands and options of `rythme` keep working.
+  No word becomes a keyword; a new built-in function never replaces a
+  function of yours with the same name (your definition wins, and `rythme
+  check` mentions it with W003).
+- **Error and warning codes are stable.** `E003` or `W004` keep their
+  meaning, and `rythme explain` keeps explaining them; new codes may be
+  added, never reused.
+- **Nothing disappears without notice.** A feature to be removed is first
+  *deprecated*: it keeps working and gives a warning, with the way to
+  replace it, during at least one whole minor version (deprecated in 1.3,
+  still there and warning in all of 1.4). Removals only happen in a 2.0.
+
+What may change in a 1.x version:
+
+- the wording of messages, hints and help pages, in every language (rely on
+  the codes, not on the text);
+- performance, in either direction for some programs, though the goal is
+  always faster;
+- new warnings of `rythme check`, new built-in functions, new commands and
+  options, new help topics;
+- the layout chosen by `rythme fmt` for code it could not format before, or
+  formatted wrongly;
+- the output of a program that depended on a bug (a crash, a wrong result):
+  fixing it is not a break of the promise.
 
 ## License
 

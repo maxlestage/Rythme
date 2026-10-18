@@ -676,7 +676,7 @@ dependencies = [
 
 [[package]]
 name = "rythme"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "rustyline",
  "rythme-macros",
@@ -684,11 +684,11 @@ dependencies = [
 
 [[package]]
 name = "rythme-macros"
-version = "0.1.0"
+version = "1.0.0"
 
 [[package]]
 name = "rythme-site"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "paquets",
  "pulldown-cmark",

@@ -4,7 +4,7 @@
 #
 #   packaging/render.sh VERSION SHA256SUMS OUTDIR
 #
-# VERSION is like 0.1.0 or v0.1.0; SHA256SUMS is the file the release workflow
+# VERSION is like 1.0.0 or v1.0.0; SHA256SUMS is the file the release workflow
 # publishes (lines "checksum  file"). Writes OUTDIR/rythme.rb and
 # OUTDIR/winget/*.yaml, and fails if a checksum is missing.
 

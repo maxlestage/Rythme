@@ -14,7 +14,7 @@ pub const EN: Texts = Texts {
     nav_teach: "Teach",
     menu: "Menu",
     lang_aria: "Language",
-    hero_eyebrow: "Programming language · v0.1",
+    hero_eyebrow: "Programming language · v1.0",
     hero_title: "A simple language where every error helps you.",
     hero_lead: "Rythme is purely functional: values never change, everything is a function, and there are no loops, no null and no exceptions. And the interpreter explains every error, in English, French, Spanish, German, Portuguese or Chinese.",
     cta_try: "Try it in your browser",

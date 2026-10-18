@@ -105,6 +105,18 @@ Los mensajes están en español con `--lang es` antes del comando, con
 integradas y los comandos son los mismos en todos los idiomas. En el modo
 interactivo, `:lang es` cambia el idioma.
 
+## Promesa de estabilidad
+
+Rythme 1.0 sigue el [versionado semántico](https://semver.org/lang/es/). En
+todas las versiones 1.x, un programa que funciona sigue funcionando, con la
+misma salida (para las mismas entradas) y el mismo código de salida; los
+códigos de error y de aviso (`E003`, `W004`...) no cambian de sentido; lo que
+vaya a retirarse primero da un aviso durante al menos una versión menor
+completa, y solo se retira en una 2.0. Pueden cambiar la redacción de los
+mensajes, el rendimiento y los avisos nuevos de `rythme check`. Los detalles
+están en el [README en inglés](README.md#stability-promise) y el contenido de
+la 1.0 en [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Licencia
 
 [MIT](LICENSE).

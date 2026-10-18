@@ -147,7 +147,7 @@ curl -fsSL https://raw.githubusercontent.com/maxlestage/Rythme/master/install.sh
 ```
 
 Options après `sh -s --` : `--dir /usr/local/bin` (un autre dossier),
-`--version v0.1.0` (une autre version) ; `--help` les liste.
+`--version v1.0.0` (une autre version) ; `--help` les liste.
 
 **Windows** (PowerShell) : le programme va dans
 `%LOCALAPPDATA%\Programs\Rythme\bin`, ajouté à votre `PATH`.
@@ -157,7 +157,7 @@ irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex
 ```
 
 Définissez `RYTHME_INSTALL_DIR` ou `RYTHME_VERSION` avant, ou lancez le
-fichier téléchargé : `.\install.ps1 -Dir C:\Outils -Version v0.1.0 -NoModifyPath`.
+fichier téléchargé : `.\install.ps1 -Dir C:\Outils -Version v1.0.0 -NoModifyPath`.
 
 **À la main :** chaque version publiée est accompagnée de programmes prêts à
 l'emploi pour Linux, macOS et Windows sur la
@@ -319,23 +319,25 @@ programmation qu'à un cours de programmation fonctionnelle.
 gradués, avec énoncé, indices, tests et solutions, que `rythme exercise`
 distribue et vérifie dans chaque langue des messages.
 
-## État et feuille de route
+## État
 
-Rythme 0.1 est un interpréteur complet et testé, utilisable dès aujourd'hui
-pour apprendre et pour de petits programmes. Les limites, honnêtement, et la
-suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
+Rythme 1.0 est un langage complet et testé : l'interpréteur, le vérificateur,
+le formateur, le serveur de langage, les éditeurs, le bac à sable, le manuel
+et des messages en six langues. Son contenu est décrit dans
+[`CHANGELOG.md`](CHANGELOG.md) ; des idées pour la suite sont à la fin de
+[`ROADMAP.md`](ROADMAP.md#after-10). Les limites, honnêtement :
 
 - **Vitesse.** C'est un interpréteur qui parcourt l'arbre du programme : les
   noms locaux deviennent des cases numérotées avant l'exécution, et la
   plupart des appels n'allouent rien. Les programmes de [`bench/`](bench)
-  (`bench/run.sh`) tournent 1,2 à 4,3 fois plus vite qu'avec Rythme 0.1 ;
+  (`bench/run.sh`) tournent 1,2 à 4,3 fois plus vite qu'avec la première
+  version, Rythme 0.1 ;
   c'est de l'ordre de Python, loin de Rust compilé. Construire un texte avec
   `+` ou `"{acc}..."` et ajouter à une liste (`push`, `xs + [x]`,
   `[..xs, x]`) prennent un temps constant par ajout : 100 000 ajouts
   prennent 0,1 s, au lieu de 23 s (textes) et 150 s (listes) avant. Les
   fonctions locales qui s'appellent entre elles ne créent plus de fermeture
-  à chaque appel (deux fois plus rapide). Suite : une machine virtuelle à
-  bytecode.
+  à chaque appel (deux fois plus rapide).
 - **Types.** Les valeurs sont vérifiées à l'exécution (strictement : aucune
   conversion silencieuse), et `rythme check` infère leurs types quand ils
   sont certains, pour signaler avant l'exécution les opérations qui
@@ -344,11 +346,12 @@ suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
   coup sûr, et l'éditeur montre ces signatures au survol.
 - **Outils.** `rythme fmt` met le code en forme dans le style officiel (voir
   `rythme help fmt`), `rythme doc` écrit la documentation de fichiers et de
-  dossiers à partir de leurs commentaires `##` (voir `rythme help doc`), et le
-  serveur de langage (`rythme lsp`) apporte les
-  erreurs et la documentation dans tous les éditeurs (voir
+  dossiers à partir de leurs commentaires `##` (voir `rythme help doc`),
+  `rythme new` et `rythme install` créent des projets avec leurs dépendances
+  (voir `rythme help projets`), et le serveur de langage (`rythme lsp`)
+  apporte les erreurs et la documentation dans tous les éditeurs (voir
   `rythme help editors`). Le bac à sable en ligne fait tourner l'interpréteur
-  compilé en WebAssembly. Suite : un gestionnaire de paquets.
+  compilé en WebAssembly.
 - **Langues.** Les messages existent en anglais, en français, en espagnol, en
   allemand, en portugais et en chinois simplifié ; ajouter une langue consiste
   à écrire un fichier de catalogue, `src/i18n/<code>.rs`, qu'un test compare à
@@ -358,6 +361,44 @@ suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
 - **Nombres.** Les nombres entiers n'ont pas de limite de taille et restent
   exacts (jusqu'à 100000 chiffres), les habituels sur 64 bits calculés le plus
   vite ; les nombres décimaux sont sur 64 bits.
+
+## Promesse de stabilité
+
+Rythme suit le [versionnage sémantique](https://semver.org/lang/fr/). Pour
+toutes les versions 1.x (1.0, 1.1, 1.2...) :
+
+- **Un programme qui fonctionne continue de fonctionner, avec la même
+  sortie.** Le même programme, avec les mêmes entrées (arguments, fichiers,
+  entrée standard, horloge), affiche la même chose sur la sortie standard (à
+  part ce que tirent `random` et `shuffle`) et se termine avec le même code
+  de sortie. La syntaxe, les mots-clés, les
+  fonctions intégrées (leurs noms, leurs paramètres et leurs résultats), les
+  formats de `rythme.toml` et de `rythme.lock`, et les commandes et options
+  de `rythme` continuent de fonctionner. Aucun mot ne devient un mot-clé ;
+  une nouvelle fonction intégrée ne remplace jamais une fonction à vous du
+  même nom (votre définition l'emporte, et `rythme check` le signale avec
+  W003).
+- **Les codes d'erreur et d'avertissement sont stables.** `E003` ou `W004`
+  gardent leur sens, et `rythme explain` continue de les expliquer ; de
+  nouveaux codes peuvent s'ajouter, jamais être réutilisés.
+- **Rien ne disparaît sans prévenir.** Ce qui doit être retiré est d'abord
+  *déprécié* : cela continue de fonctionner et donne un avertissement, avec
+  la façon de le remplacer, pendant au moins une version mineure entière
+  (déprécié en 1.3, encore là et signalé pendant toute la 1.4). Les retraits
+  n'arrivent que dans une 2.0.
+
+Ce qui peut changer dans une version 1.x :
+
+- la formulation des messages, des conseils et des pages d'aide, dans toutes
+  les langues (comptez sur les codes, pas sur le texte) ;
+- les performances, dans un sens ou dans l'autre pour certains programmes,
+  même si le but est toujours d'aller plus vite ;
+- de nouveaux avertissements de `rythme check`, de nouvelles fonctions
+  intégrées, commandes, options et pages d'aide ;
+- la mise en forme choisie par `rythme fmt` pour du code qu'il ne savait pas
+  mettre en forme, ou mettait mal en forme ;
+- la sortie d'un programme qui dépendait d'un bogue (un plantage, un résultat
+  faux) : le corriger ne rompt pas la promesse.
 
 ## Licence
 

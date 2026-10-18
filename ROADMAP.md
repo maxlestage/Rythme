@@ -1,14 +1,21 @@
 # Roadmap to Rythme 1.0
 
-*En français : la feuille de route vers Rythme 1.0. Chaque point est fait,
-testé et fusionné l'un après l'autre ; une case cochée est terminée.*
+*En français : la feuille de route vers Rythme 1.0. Chaque point a été fait,
+testé et fusionné l'un après l'autre ; toutes les cases sont cochées : c'est
+Rythme 1.0 (voir [`CHANGELOG.md`](CHANGELOG.md)). Des idées pour la suite,
+sans promesse, sont à la fin.*
 
-Rythme 0.1 has the language, the checker, the formatter, the language server,
-the playground and the manual. This list is what remains for a **complete**
+**Every item is done: this is Rythme 1.0.** What it contains is in
+[`CHANGELOG.md`](CHANGELOG.md), what 1.x guarantees in the
+[stability promise](README.md#stability-promise), and ideas for what comes
+next, without promises, under [After 1.0](#after-10).
+
+Rythme 0.1 had the language, the checker, the formatter, the language server,
+the playground and the manual. This list was what remained for a **complete**
 language: one that universities everywhere and teams at work can adopt. Items
-are worked on in order, one at a time, each one fully (code, checks, messages
+were worked on in order, one at a time, each one fully (code, checks, messages
 in every supported language, `rythme help`, the reference manual in English
-and French, tests, CI green) before it is checked.
+and French, tests, CI green) before it was checked.
 
 The rules of the language stay the rules of every item: simpler than Python,
 purely functional, safe like Rust (no `null`, no exceptions), help everywhere.
@@ -138,6 +145,32 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   release binaries, a Homebrew formula and a winget manifest in the
   repository, crates.io metadata, and a workflow publishing the VS Code
   extension when a `VSCE_PAT` secret exists (skipped otherwise).
-- [ ] **Rythme 1.0.** Version 1.0.0 everywhere, a CHANGELOG, a stability
+- [x] **Rythme 1.0.** Version 1.0.0 everywhere, a CHANGELOG, a stability
   promise in the README, the manual and the website up to date. Opened as a
-  pull request; the `v1.0.0` tag is left to the owner.
+  pull request; the `v1.0.0` tag is left to the owner. Done: every package
+  (interpreter, macros, playground, site, VS Code, Tree-sitter, Zed) is at
+  1.0.0, [`CHANGELOG.md`](CHANGELOG.md) lists what 1.0 contains, the READMEs
+  give the stability promise of 1.x, and
+  [CONTRIBUTING](CONTRIBUTING.md#releasing) explains how to tag `v1.0.0` and
+  what the release workflows then do.
+
+## After 1.0
+
+Ideas, not promises: each one would be weighed against the rules above, and
+none may break the [stability promise](README.md#stability-promise) of 1.x.
+
+- **A bytecode virtual machine**, for programs several times faster that
+  print exactly the same thing.
+- **Types written by hand where they help**: optional, checked by
+  `rythme check`, built on the inference that exists; code without them
+  stays as it is.
+- **A package index**: finding and sharing packages by name, beside the
+  dependencies from a repository or a folder of `rythme.toml`.
+- **A debugger in the editors** (breakpoints, values of the names), building
+  on `rythme steps` and the language server.
+- **More languages of the messages**, and the guide for teachers translated
+  where it is not yet.
+- **More of the library**: CSV, HTTP requests, `random` with a seed that a
+  program can repeat, with the same care for errors as values.
+- **Sharing in the playground**: a link to a program with its steps and its
+  tests, for classrooms.
