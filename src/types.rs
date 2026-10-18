@@ -724,6 +724,14 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 need(a, 1, Expected::Function)?;
                 Ty::record(Vec::new(), false)
             }
+            "sum" if n == 2 => {
+                need(a, 0, Expected::List)?;
+                need(a, 1, Expected::Function)?;
+                match arg(1).ret() {
+                    Ty::Int | Ty::Never => Ty::Int,
+                    _ => Ty::Num,
+                }
+            }
             "sum" | "product" => {
                 need(a, 0, Expected::List)?;
                 match arg(0).elem() {
@@ -1009,6 +1017,7 @@ pub fn callback(name: &str, index: usize, a: &[Ty]) -> Option<Callback> {
             (vec![x], None)
         }
         ("filter" | "reject" | "any" | "all" | "find" | "count" | "partition", 1) => (vec![elem], Some(BOOL)),
+        ("sum", 1) => (vec![elem], Some(NUMBER)),
         ("each_with_index", 1) => (vec![elem, Ty::Int], None),
         // Each element of a list, or each character of a text.
         ("take_while" | "drop_while", 1) => (vec![piece(&first)], Some(BOOL)),

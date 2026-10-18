@@ -50,6 +50,11 @@ pub const EXAMPLES: &[Example] = &[
     example!("results", "Option, Result et ?", "Option, Result and ?"),
     example!("students", "enregistrements, mise à jour, regroupements, moyennes", "records, record update, grouping, averages"),
     example!(
+        "library",
+        "le style Ruby : blocs do |x| ... end, enchaînements de méthodes, noms en ?, unless, symboles",
+        "the Ruby style: do |x| ... end blocks, method chains, names ending with ?, unless, symbols"
+    ),
+    example!(
         "sales",
         "un rapport : scan, colonnes alignées avec pad_left, windows, chunks, JSON",
         "a report: scan, columns lined up with pad_left, windows, chunks, JSON"

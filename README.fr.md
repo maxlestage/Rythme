@@ -1,6 +1,7 @@
 # Rythme
 
-**Un langage de programmation simple, purement fonctionnel, avec de l'aide partout.**
+**Plus simple que Python et Ruby, aussi agréable que Ruby : un langage de
+programmation purement fonctionnel, avec de l'aide partout.**
 Les programmes sont des fichiers qui finissent par `.ry`. L'interpréteur est écrit en Rust.
 
 *[English version →](README.md)*
@@ -20,12 +21,35 @@ fn carre(x) = x * x
   |> print                # 20
 ```
 
+La même chose, à la manière de Ruby (blocs, enchaînements de méthodes,
+noms en `?`) :
+
+```rythme
+noms = ["Ada", "Grace", "Alan"]
+noms.each do |nom|
+  puts("Bonjour, #{nom} !")
+end
+
+total = [1, 2, 3, 4]
+  .select(even?)
+  .map { |x| x * x }
+  .sum
+puts(total)                # 20
+```
+
 ## Pourquoi Rythme ?
 
 - **Plus simple que Python ou Ruby.** 15 mots-clés (Python en a 35). Une seule
   façon de faire chaque chose. Pas de classes, pas de `null`, pas
   d'exceptions, pas de boucles, pas de modification : moins de concepts à
   apprendre, moins de bugs à traquer.
+- **Aussi agréable que Ruby.** Des blocs (`xs.map do |x| x * 2 end`,
+  `xs.select { |x| x > 2 }`), des enchaînements de méthodes
+  (`xs.filter(is_even).sum`, une étape par ligne), des noms comme `even?` et
+  `empty?`, `unless`, des symboles (`:ok`), `"Bonjour #{nom}"`, et les noms
+  Ruby de la bibliothèque (`puts`, `upcase`, `select`, `reject`, `reduce`,
+  `each_with_index`...). `rythme help ruby` montre ce qui est pareil et ce
+  qui change.
 - **Purement fonctionnel.** Les valeurs sont immuables, les fonctions sont des
   valeurs, chaque `if` et chaque `match` est une expression. La récursion en
   position terminale n'épuise jamais la pile.
@@ -252,6 +276,7 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 | [`cipher.ry`](examples/cipher.ry) | le chiffre de César : `char_code`, `char`, compter les lettres |
 | [`results.ry`](examples/results.ry) | `Option`, `Result`, `?` |
 | [`students.ry`](examples/students.ry) | enregistrements, mise à jour, regroupements, moyennes |
+| [`library.ry`](examples/library.ry) | le style Ruby : blocs `do \|x\| ... end`, enchaînements de méthodes, noms en `?`, `unless`, symboles |
 | [`sales.ry`](examples/sales.ry) | un rapport : `scan`, colonnes alignées avec `pad_left`, `windows`, `chunks`, JSON |
 | [`calendar.ry`](examples/calendar.ry) | des dates : la page d'un mois, des textes ISO 8601, `days_between`, `add_days` |
 | [`tree.ry`](examples/tree.ry) | un type récursif : arbre binaire de recherche |

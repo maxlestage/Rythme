@@ -854,7 +854,7 @@ fn ruby_style_names_blocks_and_completion_after_a_dot() {
     assert!(diags.is_empty(), "{diags:?}");
     // `xs.sum` calls `sum`; `upcase` is the Ruby name of `upper`.
     let h = hover_text(&lsp.at("textDocument/hover", u, 1, 10));
-    assert!(h.contains("sum(list)") && h.contains("`value.sum` reads the field `sum`, or calls `sum(value)`"), "{h}");
+    assert!(h.contains("sum(list, f)") && h.contains("`value.sum` reads the field `sum`, or calls `sum(value)`"), "{h}");
     let h = hover_text(&lsp.at("textDocument/hover", u, 1, 22));
     assert!(h.contains("the Ruby name of `upper`") && h.contains("upper(text)"), "{h}");
     // `even?` is one name; `adult?` a function of the file.

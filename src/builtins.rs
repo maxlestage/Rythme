@@ -385,7 +385,10 @@ pub static BUILTINS: &[Builtin] = &[
        "Calls f on each element, for its effect (like printing). Returns ().",
        "Appelle f sur chaque élément, pour son effet (comme afficher). Renvoie ().",
        "1..3 |> each(fn(i) = print(i))"),
-    b!("sum", "sum(list)", 1, 1, Lists, sum, "The sum of the numbers of a list.", "La somme des nombres d'une liste.", "sum([1, 2, 3])             # 6"),
+    b!("sum", "sum(list, f)", 1, 2, Lists, sum,
+       "The sum of the numbers of a list; with f, the sum of f(x) for each element.",
+       "La somme des nombres d'une liste ; avec f, la somme de f(x) pour chaque élément.",
+       "sum([1, 2, 3])             # 6\nsum([\"ab\", \"c\"], len)     # 3"),
     b!("product", "product(list)", 1, 1, Lists, product, "The product of the numbers of a list.", "Le produit des nombres d'une liste.", "product([2, 3, 4])         # 24"),
     b!("first", "first(list, n)", 1, 2, Lists, first,
        "The first element of a list (or character of a text), as an Option: `Some(x)`, or `None` if there is none. With n, the first n elements (like `take`).",
@@ -2200,8 +2203,16 @@ fn each(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(Value::Unit)
 }
 
-fn sum(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    let l = list(a, 0, "sum", span)?;
+fn sum(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let mut l = list(a, 0, "sum", span)?.clone();
+    if a.len() == 2 {
+        let f = func(a, 1, "sum", span)?;
+        let mut values = Vec::with_capacity(l.len());
+        for x in l.iter() {
+            values.push(call_given1(it, "sum", &f, x.clone(), span)?);
+        }
+        l = List::new(values);
+    }
     let mut acc = Value::Int(0);
     for x in l.iter() {
         if !matches!(x, Value::Int(_) | Value::Float(_)) {

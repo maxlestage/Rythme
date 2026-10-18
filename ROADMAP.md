@@ -21,6 +21,15 @@ No new keyword or syntax unless an item says so and nothing simpler works.
   `_` stay private to their file; the checker, the formatter, the language
   server (completion after `use ` and `geo.`, a quick fix adding a missing
   `use`) and the manual know it. Plain `use "x.ry"` keeps working.
+- [x] **Ruby style.** Blocks given to calls (`xs.map do |x| x * 2 end`,
+  `xs.select { |x| x > 2 }`), method chains without parentheses and over
+  several lines (`xs.select(even?).sum`; a field wins over a function),
+  names ending with `?` (`even?`, `fn adult?(p)`) with a precise rule
+  against the `?` operator, `unless ... then ... else`, symbols (`:ok`),
+  `"#{x}"` in texts, and the Ruby names of the library (`puts`, `upcase`,
+  `select`, `reduce`, `size`...) as real built-in names; known by the
+  checker, the formatter, the language server, the editors' grammars,
+  `rythme help ruby` and the manual. Every existing program keeps working.
 - [ ] **Patterns on ranges and texts.** `1..9 -> ...` in `match` (Int and
   Float bounds, exhaustiveness knows nothing new), and a text prefix pattern
   only if it stays simple; the checker reports overlapping or empty ranges.

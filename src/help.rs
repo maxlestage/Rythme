@@ -30,7 +30,7 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme"]),
     ("doc", &["documentation", "documenter", "docs"]),
     ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide"]),
-    ("ruby", &["rb", "rubyist", "blocks", "blocs", "symbols", "symboles", "unless"]),
+    ("ruby", &["rb", "rubyist", "blocks", "blocs", "symbols", "symboles"]),
     ("builtins", &["functions-list", "fonctions-integrees", "library", "bibliotheque", "bibliothèque", "stdlib"]),
 ];
 
@@ -1604,6 +1604,9 @@ The style
         | Circle(radius)
         | Rect(width, height)
   - a list written on several lines ends with a comma
+  - a block written on one line stays on one line:
+      xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+    on several lines, its statements go one level deeper than `do`
   - one statement per line (no `;`), and `end` on its own line
   - a blank line around a definition written on several lines; never two
     blank lines in a row
@@ -1640,6 +1643,9 @@ Le style
         | Cercle(rayon)
         | Rect(largeur, hauteur)
   - une liste écrite sur plusieurs lignes finit par une virgule
+  - un bloc écrit sur une ligne reste sur une ligne :
+      xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+    sur plusieurs lignes, ses instructions vont un niveau plus loin que `do`
   - une instruction par ligne (pas de `;`), et `end` sur sa propre ligne
   - une ligne vide autour d'une définition écrite sur plusieurs lignes ;
     jamais deux lignes vides de suite
