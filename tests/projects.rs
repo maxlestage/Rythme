@@ -135,12 +135,15 @@ fn ok(r: &Run) {
 
 #[test]
 fn a_new_project_runs_tests_checks_formats_and_documents_itself() {
-    for lang in ["en", "fr"] {
+    for lang in ["en", "fr", "es"] {
         let t = Temp::new(&format!("new-{lang}"));
         let r = t.rythme(lang, "", &["new", "hello"]);
         ok(&r);
-        let (lib, test) =
-            if lang == "fr" { ("src/salutation.ry", "tests/salutation_test.ry") } else { ("src/greeting.ry", "tests/greeting_test.ry") };
+        let (lib, test) = match lang {
+            "fr" => ("src/salutation.ry", "tests/salutation_test.ry"),
+            "es" => ("src/saludo.ry", "tests/saludo_test.ry"),
+            _ => ("src/greeting.ry", "tests/greeting_test.ry"),
+        };
         for f in ["rythme.toml", "src/main.ry", lib, test, "README.md", ".gitignore"] {
             assert!(t.path("hello").join(f).is_file(), "{lang}: {f} is missing");
             assert!(r.stdout.contains(&format!("hello/{f}")), "{lang}: {}", r.stdout);
@@ -148,10 +151,20 @@ fn a_new_project_runs_tests_checks_formats_and_documents_itself() {
         assert!(t.read("hello/rythme.toml").contains("name = \"hello\"\nversion = \"0.1.0\"\nentry = \"src/main.ry\""));
         let r = t.rythme(lang, "hello", &["run"]);
         ok(&r);
-        assert_eq!(r.stdout, if lang == "fr" { "Bonjour, le monde !\n" } else { "Hello, World!\n" });
+        let greeting = match lang {
+            "fr" => "Bonjour, le monde !\n",
+            "es" => "¡Hola, mundo!\n",
+            _ => "Hello, World!\n",
+        };
+        assert_eq!(r.stdout, greeting);
         let r = t.rythme(lang, "hello", &["test"]);
         ok(&r);
-        assert!(r.stdout.contains(if lang == "fr" { "1 réussi(s), 0 échoué(s)" } else { "1 passed, 0 failed" }), "{}", r.stdout);
+        let summary = match lang {
+            "fr" => "1 réussi(s), 0 échoué(s)",
+            "es" => "1 pasada(s), 0 fallida(s)",
+            _ => "1 passed, 0 failed",
+        };
+        assert!(r.stdout.contains(summary), "{}", r.stdout);
         let r = t.rythme(lang, "hello", &["check"]);
         ok(&r);
         assert_eq!(r.stdout.lines().count(), 3, "{}", r.stdout);

@@ -315,7 +315,10 @@ fn command(driver: &mut Driver, input: &str) -> Next {
                 lang::set(l);
                 crate::io::out_line(&t!("Messages are now in English.", "Les messages sont maintenant en français."));
             }
-            None => crate::io::out_line(&t!("usage: :lang fr  or  :lang en", "utilisation : :lang fr  ou  :lang en")),
+            None => {
+                let codes = lang::codes();
+                crate::io::out_line(&t!("usage: :lang fr  (or another of {codes})", "utilisation : :lang fr  (ou une autre de {codes})"))
+            }
         },
         ":learn" | ":apprendre" => help::learn(),
         ":explain" | ":expliquer" => match help::explain(arg.split_whitespace().next().unwrap_or("")) {

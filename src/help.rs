@@ -1,37 +1,70 @@
 //! Help everywhere: topics, function documentation, error explanations and
-//! a guided tour, in English and in French.
+//! a guided tour, in English and in French (and in the languages of
+//! `src/i18n/`, see [`crate::lang`]).
 
 use std::io::{BufRead, IsTerminal, Write};
 
 use crate::builtins::{self, Builtin, Category, BUILTINS};
 use crate::interp::{Interp, Wrap};
-use crate::lang::{is_fr, pick};
+use crate::lang::pick;
 use crate::source;
 use crate::suggest;
 use crate::value::Value;
 
-/// Topic names, in the order of the guided tour, with their French aliases.
+/// Topic names, in the order of the guided tour, with their French and Spanish aliases.
 pub const TOPICS: &[(&str, &[&str])] = &[
-    ("start", &["intro", "debut", "début", "commencer"]),
-    ("syntax", &["syntaxe"]),
-    ("functions", &["fonctions", "fn"]),
-    ("lists", &["listes", "list", "liste"]),
-    ("text", &["texte", "texts", "textes", "string"]),
-    ("records", &["enregistrements", "record", "enregistrement"]),
+    ("start", &["intro", "debut", "début", "commencer", "inicio", "empezar"]),
+    ("syntax", &["syntaxe", "sintaxis"]),
+    ("functions", &["fonctions", "fn", "funciones"]),
+    ("lists", &["listes", "list", "liste", "listas"]),
+    ("text", &["texte", "texts", "textes", "string", "texto", "textos"]),
+    ("records", &["enregistrements", "record", "enregistrement", "registros", "registro"]),
     (
         "dicts",
-        &["dict", "dictionaries", "dictionary", "set", "sets", "dictionnaires", "dictionnaire", "ensembles", "ensemble", "hash", "hashmap"],
+        &[
+            "dict",
+            "dictionaries",
+            "dictionary",
+            "set",
+            "sets",
+            "dictionnaires",
+            "dictionnaire",
+            "ensembles",
+            "ensemble",
+            "hash",
+            "hashmap",
+            "diccionarios",
+            "diccionario",
+            "conjuntos",
+            "conjunto",
+        ],
     ),
-    ("types", &["type"]),
-    ("match", &["patterns", "motifs"]),
-    ("errors", &["erreurs", "option", "result", "?"]),
-    ("functional", &["fonctionnel", "loops", "boucles"]),
-    ("tests", &["test"]),
-    ("exercises", &["exercices", "exercise", "exercice"]),
-    ("modules", &["use", "files", "fichiers"]),
+    ("types", &["type", "tipos"]),
+    ("match", &["patterns", "motifs", "patrones"]),
+    ("errors", &["erreurs", "option", "result", "?", "errores"]),
+    ("functional", &["fonctionnel", "loops", "boucles", "funcional", "bucles"]),
+    ("tests", &["test", "pruebas", "prueba"]),
+    ("exercises", &["exercices", "exercise", "exercice", "ejercicios", "ejercicio"]),
+    ("modules", &["use", "files", "fichiers", "modulos", "módulos", "archivos"]),
     (
         "system",
-        &["systeme", "système", "folders", "folder", "dossiers", "dossier", "paths", "path", "chemins", "chemin", "stdin", "exit-codes"],
+        &[
+            "systeme",
+            "système",
+            "folders",
+            "folder",
+            "dossiers",
+            "dossier",
+            "paths",
+            "path",
+            "chemins",
+            "chemin",
+            "stdin",
+            "exit-codes",
+            "sistema",
+            "carpetas",
+            "rutas",
+        ],
     ),
     (
         "projects",
@@ -49,17 +82,35 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "dépendances",
             "dependances",
             "rythme.toml",
+            "proyectos",
+            "proyecto",
+            "paquetes",
         ],
     ),
-    ("dates", &["date", "heure", "heures", "temps", "calendar", "calendrier", "datetime"]),
-    ("regex", &["regexp", "regexes", "regular-expressions", "expressions-regulieres", "expressions-régulières", "re"]),
-    ("repl", &["interactive", "interactif"]),
-    ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme"]),
-    ("doc", &["documentation", "documenter", "docs"]),
-    ("steps", &["etapes", "étapes", "step", "etape", "étape", "stepper", "pas-a-pas", "pas-à-pas"]),
-    ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide"]),
+    ("dates", &["date", "heure", "heures", "temps", "calendar", "calendrier", "datetime", "fechas", "fecha", "hora"]),
+    (
+        "regex",
+        &["regexp", "regexes", "regular-expressions", "expressions-regulieres", "expressions-régulières", "re", "expresiones-regulares"],
+    ),
+    ("repl", &["interactive", "interactif", "interactivo"]),
+    ("fmt", &["format", "formater", "formatage", "formatting", "style", "mise-en-forme", "formatear"]),
+    ("doc", &["documentation", "documenter", "docs", "documentacion", "documentación"]),
+    ("steps", &["etapes", "étapes", "step", "etape", "étape", "stepper", "pas-a-pas", "pas-à-pas", "pasos", "paso", "paso-a-paso"]),
+    ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide", "editores"]),
     ("ruby", &["rb", "rubyist", "blocks", "blocs", "symbols", "symboles"]),
-    ("builtins", &["functions-list", "fonctions-integrees", "library", "bibliotheque", "bibliothèque", "stdlib"]),
+    (
+        "builtins",
+        &[
+            "functions-list",
+            "fonctions-integrees",
+            "library",
+            "bibliotheque",
+            "bibliothèque",
+            "stdlib",
+            "biblioteca",
+            "funciones-integradas",
+        ],
+    ),
 ];
 
 fn canonical_topic(name: &str) -> Option<&'static str> {
@@ -69,9 +120,57 @@ fn canonical_topic(name: &str) -> Option<&'static str> {
 
 pub fn overview() -> String {
     let v = crate::VERSION;
-    if is_fr() {
-        format!(
-            r#"Rythme {v} — aide
+    t!(
+        r#"Rythme {v} — help
+
+Commands
+  rythme                    interactive mode (try code line by line)
+  rythme file.ry            run a program
+  rythme check file.ry      find problems without running the program
+  rythme test file.ry       run the tests of a file (or of a folder)
+  rythme fmt file.ry        give the code its official layout (--check: only check)
+  rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
+  rythme steps file.ry      show the calculation step by step (fib(3) → fib(2) + fib(1) → ...)
+  rythme exercise           exercises checked automatically (list, start, check)
+  rythme new NAME           create a project (rythme.toml, src/, tests/)
+  rythme install            download the dependencies of the project
+  rythme learn              guided tour of the language, step by step
+  rythme help TOPIC         help on a topic or a function
+  rythme explain E003       explain an error code
+  rythme -e "code"          run a piece of code
+  rythme lsp                language server, for editors (VS Code, Neovim...)
+  option --lang en|fr|es    language of the messages (or RYTHME_LANG)
+
+Topics (rythme help TOPIC)
+  start       the language in one minute
+  syntax      the whole syntax on one page
+  functions   functions, |>, recursion
+  lists       lists and their functions
+  text        texts
+  records     records {{name: value}}
+  dicts       dictionaries and sets: dict(...), set(...)
+  types       your own types
+  match       choosing according to the shape of a value
+  errors      Option, Result and ?
+  functional  no loops: what to do instead
+  tests       writing and running tests
+  exercises   exercises to learn, with their tests
+  modules     using several files
+  system      files, folders, paths, options, input, exit codes
+  projects    projects and packages: rythme new, rythme.toml, rythme install
+  dates       dates and times: now(), today(), calendar, ISO 8601
+  regex       searching, cutting and replacing with regular expressions
+  repl        the interactive mode
+  fmt         the official layout of the code (rythme fmt)
+  doc         documentation from the ## comments (rythme doc)
+  steps       the calculation shown step by step (rythme steps)
+  editors     Rythme in your editor (VS Code, Neovim, Helix...)
+  ruby        coming from Ruby: blocks, symbols, method chains
+  builtins    every built-in function
+
+A specific function: rythme help map
+"#,
+        r#"Rythme {v} — aide
 
 Commandes
   rythme                    mode interactif (essayer du code ligne par ligne)
@@ -89,7 +188,7 @@ Commandes
   rythme explain E003       expliquer un code d'erreur
   rythme -e "code"          exécuter un morceau de code
   rythme lsp                serveur de langage, pour les éditeurs (VS Code, Neovim...)
-  option --lang fr|en       langue des messages (ou variable RYTHME_LANG)
+  option --lang en|fr|es    langue des messages (ou variable RYTHME_LANG)
 
 Sujets (rythme help SUJET)
   start       le langage en une minute
@@ -120,60 +219,7 @@ Sujets (rythme help SUJET)
 
 Une fonction précise : rythme help map
 "#
-        )
-    } else {
-        format!(
-            r#"Rythme {v} — help
-
-Commands
-  rythme                    interactive mode (try code line by line)
-  rythme file.ry            run a program
-  rythme check file.ry      find problems without running the program
-  rythme test file.ry       run the tests of a file (or of a folder)
-  rythme fmt file.ry        give the code its official layout (--check: only check)
-  rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
-  rythme steps file.ry      show the calculation step by step (fib(3) → fib(2) + fib(1) → ...)
-  rythme exercise           exercises checked automatically (list, start, check)
-  rythme new NAME           create a project (rythme.toml, src/, tests/)
-  rythme install            download the dependencies of the project
-  rythme learn              guided tour of the language, step by step
-  rythme help TOPIC         help on a topic or a function
-  rythme explain E003       explain an error code
-  rythme -e "code"          run a piece of code
-  rythme lsp                language server, for editors (VS Code, Neovim...)
-  option --lang fr|en       language of the messages (or RYTHME_LANG)
-
-Topics (rythme help TOPIC)
-  start       the language in one minute
-  syntax      the whole syntax on one page
-  functions   functions, |>, recursion
-  lists       lists and their functions
-  text        texts
-  records     records {{name: value}}
-  dicts       dictionaries and sets: dict(...), set(...)
-  types       your own types
-  match       choosing according to the shape of a value
-  errors      Option, Result and ?
-  functional  no loops: what to do instead
-  tests       writing and running tests
-  exercises   exercises to learn, with their tests
-  modules     using several files
-  system      files, folders, paths, options, input, exit codes
-  projects    projects and packages: rythme new, rythme.toml, rythme install
-  dates       dates and times: now(), today(), calendar, ISO 8601
-  regex       searching, cutting and replacing with regular expressions
-  repl        the interactive mode
-  fmt         the official layout of the code (rythme fmt)
-  doc         documentation from the ## comments (rythme doc)
-  steps       the calculation shown step by step (rythme steps)
-  editors     Rythme in your editor (VS Code, Neovim, Helix...)
-  ruby        coming from Ruby: blocks, symbols, method chains
-  builtins    every built-in function
-
-A specific function: rythme help map
-"#
-        )
-    }
+    )
 }
 
 /// The text of a topic, or the documentation of a built-in function.
@@ -697,32 +743,38 @@ Quand ? fait partie d'un nom
   Err, et (valeur)? l'est toujours."#;
 
 fn topic_text(name: &str) -> &'static str {
+    let (en, fr) = topic_texts(name);
+    pick(en, fr)
+}
+
+/// The text of a topic, in English and French.
+fn topic_texts(name: &str) -> (&'static str, &'static str) {
     match name {
-        "start" => pick(START_EN, START_FR),
-        "syntax" => pick(SYNTAX_EN, SYNTAX_FR),
-        "functions" => pick(FUNCTIONS_EN, FUNCTIONS_FR),
-        "lists" => pick(LISTS_EN, LISTS_FR),
-        "text" => pick(TEXT_EN, TEXT_FR),
-        "records" => pick(RECORDS_EN, RECORDS_FR),
-        "dicts" => pick(DICTS_EN, DICTS_FR),
-        "types" => pick(TYPES_EN, TYPES_FR),
-        "match" => pick(MATCH_EN, MATCH_FR),
-        "errors" => pick(ERRORS_EN, ERRORS_FR),
-        "functional" => pick(FUNCTIONAL_EN, FUNCTIONAL_FR),
-        "tests" => pick(TESTS_EN, TESTS_FR),
-        "exercises" => pick(EXERCISES_EN, EXERCISES_FR),
-        "modules" => pick(MODULES_EN, MODULES_FR),
-        "system" => pick(SYSTEM_EN, SYSTEM_FR),
-        "projects" => pick(PROJECTS_EN, PROJECTS_FR),
-        "dates" => pick(DATES_EN, DATES_FR),
-        "regex" => pick(REGEX_EN, REGEX_FR),
-        "repl" => pick(REPL_EN, REPL_FR),
-        "fmt" => pick(FMT_EN, FMT_FR),
-        "doc" => pick(DOC_EN, DOC_FR),
-        "steps" => pick(STEPS_EN, STEPS_FR),
-        "editors" => pick(EDITORS_EN, EDITORS_FR),
-        "ruby" => pick(RUBY_EN, RUBY_FR),
-        _ => "",
+        "start" => (START_EN, START_FR),
+        "syntax" => (SYNTAX_EN, SYNTAX_FR),
+        "functions" => (FUNCTIONS_EN, FUNCTIONS_FR),
+        "lists" => (LISTS_EN, LISTS_FR),
+        "text" => (TEXT_EN, TEXT_FR),
+        "records" => (RECORDS_EN, RECORDS_FR),
+        "dicts" => (DICTS_EN, DICTS_FR),
+        "types" => (TYPES_EN, TYPES_FR),
+        "match" => (MATCH_EN, MATCH_FR),
+        "errors" => (ERRORS_EN, ERRORS_FR),
+        "functional" => (FUNCTIONAL_EN, FUNCTIONAL_FR),
+        "tests" => (TESTS_EN, TESTS_FR),
+        "exercises" => (EXERCISES_EN, EXERCISES_FR),
+        "modules" => (MODULES_EN, MODULES_FR),
+        "system" => (SYSTEM_EN, SYSTEM_FR),
+        "projects" => (PROJECTS_EN, PROJECTS_FR),
+        "dates" => (DATES_EN, DATES_FR),
+        "regex" => (REGEX_EN, REGEX_FR),
+        "repl" => (REPL_EN, REPL_FR),
+        "fmt" => (FMT_EN, FMT_FR),
+        "doc" => (DOC_EN, DOC_FR),
+        "steps" => (STEPS_EN, STEPS_FR),
+        "editors" => (EDITORS_EN, EDITORS_FR),
+        "ruby" => (RUBY_EN, RUBY_FR),
+        _ => ("", ""),
     }
 }
 
@@ -1962,7 +2014,7 @@ starts by itself:
 
 VS Code
   the extension in editors/vscode: colors, snippets and the language server.
-  Settings: rythme.path (the program), rythme.language (en, fr or auto).
+  Settings: rythme.path (the program), rythme.language (en, fr, es or auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   every editor that speaks the Language Server Protocol: tell it to start
@@ -1976,7 +2028,7 @@ Zed
 Colors in Neovim, Helix and Zed
   the Tree-sitter grammar in editors/tree-sitter-rythme (see editors/README.md).
 
-The language of the messages follows the editor, unless `--lang fr|en` or
+The language of the messages follows the editor, unless `--lang en|fr|es` or
 RYTHME_LANG chooses it: rythme --lang fr lsp"#;
 
 const EDITORS_FR: &str = r#"RYTHME DANS VOTRE ÉDITEUR
@@ -1994,7 +2046,7 @@ serveur de langage, que l'éditeur lance tout seul :
 
 VS Code
   l'extension dans editors/vscode : couleurs, extraits de code et serveur de
-  langage. Réglages : rythme.path (le programme), rythme.language (en, fr ou auto).
+  langage. Réglages : rythme.path (le programme), rythme.language (en, fr, es ou auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   tout éditeur qui parle le Language Server Protocol : demandez-lui de lancer
@@ -2009,7 +2061,7 @@ Zed
 Couleurs dans Neovim, Helix et Zed
   la grammaire Tree-sitter dans editors/tree-sitter-rythme (voir editors/README.fr.md).
 
-La langue des messages suit celle de l'éditeur, sauf si `--lang fr|en` ou
+La langue des messages suit celle de l'éditeur, sauf si `--lang en|fr|es` ou
 RYTHME_LANG la choisit : rythme --lang fr lsp"#;
 
 const REPL_EN: &str = r#"THE INTERACTIVE MODE
@@ -2023,7 +2075,7 @@ Definitions are kept from one line to the next. If a line is not finished
 Commands
   :help           this help              :quit          leave (or Ctrl-D)
   :doc map        help on a name         :load f.ry     load a file
-  :reset          forget everything      :lang fr|en    change the language
+  :reset          forget everything      :lang en|fr|es change the language
   :learn          guided tour            :explain E003  explain an error
   :steps fib(4)   show the calculation step by step
 The Tab key completes names."#;
@@ -2040,7 +2092,7 @@ suivante.
 Commandes
   :help           cette aide             :quit          quitter (ou Ctrl-D)
   :doc map        aide sur un nom        :load f.ry     charger un fichier
-  :reset          tout oublier           :lang fr|en    changer de langue
+  :reset          tout oublier           :lang en|fr|es changer de langue
   :learn          visite guidée          :explain E003  expliquer une erreur
   :etapes fib(4)  montrer le calcul étape par étape
 La touche Tab complète les noms."#;
@@ -2261,8 +2313,13 @@ les lignes qui commencent par `- ` forment une liste."#;
 
 /// Long explanation of an error or warning code.
 pub fn explain(code: &str) -> Option<String> {
+    explanation(code).map(|(en, fr)| pick(en, fr).to_string())
+}
+
+/// The explanation of an error code, in English and French.
+fn explanation(code: &str) -> Option<(&'static str, &'static str)> {
     let code = code.trim().to_uppercase();
-    let (en, fr): (&str, &str) = match code.as_str() {
+    Some(match code.as_str() {
         "E001" => (
             r#"E001 — Syntax error
 
@@ -3125,16 +3182,20 @@ Pour des nombres décimaux, qui tombent entre 17 et 18, comparez plutôt :
   a if a < 18 -> "jeune""#,
         ),
         _ => return None,
-    };
-    Some(pick_owned(en, fr))
+    })
 }
 
-fn pick_owned(en: &str, fr: &str) -> String {
-    if is_fr() {
-        fr.to_string()
-    } else {
-        en.to_string()
-    }
+/// Every fixed text that [`pick`] translates while running (help pages,
+/// explanations, keywords, functions, months): `tests/i18n.rs` looks for each
+/// one in every catalog. The texts given to `t!` are found in the sources.
+#[doc(hidden)]
+pub fn fixed_texts() -> Vec<&'static str> {
+    let mut texts: Vec<&'static str> = TOPICS.iter().map(|(name, _)| topic_texts(name).0).filter(|t| !t.is_empty()).collect();
+    texts.extend(CODES.iter().filter_map(|c| explanation(c)).map(|(en, _)| en));
+    texts.extend(KEYWORD_DOCS.iter().map(|k| k.1));
+    texts.extend(BUILTINS.iter().map(|b| b.en));
+    texts.extend(builtins::date::MONTHS_EN);
+    texts
 }
 
 pub const CODES: &[&str] = &[
