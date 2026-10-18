@@ -32,6 +32,10 @@ dit ce qu'une version 1.x peut changer ou non.*
 - **`:explain` alone** in the REPL shows how to use it and the known codes,
   instead of "unknown code"; an unknown code is named, like with
   `rythme explain`.
+- **`rythme steps`**: an unknown option (`--bogus`) is an error that names
+  it, with the closest option, like the other commands (it was read as the
+  expression `--bogus`); the mistakes in the expression given after the file
+  are shown in `<expression>:1:...`, not as one more line of the file.
 
 ### Website
 

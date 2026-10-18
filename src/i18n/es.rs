@@ -1632,6 +1632,8 @@ Thumbs.db
         (" — did you mean `{best}`?", " — ¿quisiste decir `{best}`?"),
         (":help lists the commands", ":help lista los comandos"),
         // src/steps.rs
+        ("unknown option `{flag}` for `rythme steps`", "opción desconocida `{flag}` para `rythme steps`"),
+        ("\nthe options are: --max N, --width N (see `rythme help steps`)", "\nlas opciones son: --max N, --width N (ver `rythme help steps`)"),
         ("  ... (more steps, not shown: {n} are shown at most, change it with --max)", "  ... (más pasos, no mostrados: se muestran {n} como máximo, cámbialo con --max)"),
         ("this calculation became too deep to be shown step by step (more than {MAX_DEPTH} operations inside each other)", "este cálculo se volvió demasiado profundo para mostrarlo paso a paso (más de {MAX_DEPTH} operaciones unas dentro de otras)"),
         ("try it with smaller values, or run the program normally: `rythme file.ry`", "pruébalo con valores más pequeños, o ejecuta el programa normalmente: `rythme archivo.ry`"),
