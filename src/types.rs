@@ -270,7 +270,7 @@ impl Ty {
         match v {
             Value::Unit => Ty::Unit,
             Value::Bool(_) => Ty::Bool,
-            Value::Int(_) => Ty::Int,
+            Value::Int(_) | Value::Big(_) => Ty::Int,
             Value::Float(_) => Ty::Float,
             Value::Text(_) => Ty::Text,
             Value::List(l) => {
@@ -299,8 +299,11 @@ impl Ty {
     pub fn contains(&self, v: &Value) -> bool {
         match (self, v) {
             (Ty::Any, _) => true,
-            (Ty::Unit, Value::Unit) | (Ty::Bool, Value::Bool(_)) | (Ty::Int, Value::Int(_)) | (Ty::Float, Value::Float(_)) => true,
-            (Ty::Num, Value::Int(_) | Value::Float(_)) | (Ty::Text, Value::Text(_)) => true,
+            (Ty::Unit, Value::Unit)
+            | (Ty::Bool, Value::Bool(_))
+            | (Ty::Int, Value::Int(_) | Value::Big(_))
+            | (Ty::Float, Value::Float(_)) => true,
+            (Ty::Num, Value::Int(_) | Value::Big(_) | Value::Float(_)) | (Ty::Text, Value::Text(_)) => true,
             (Ty::List(t), Value::List(l)) => l.iter().all(|x| t.contains(x)),
             (Ty::Record(r), Value::Record(rec)) => {
                 (!r.exact || r.fields.len() == rec.len()) && r.fields.iter().all(|(k, t)| rec.get(k).is_some_and(|x| t.contains(x)))
@@ -348,7 +351,7 @@ pub fn kind_of(v: &Value) -> Kinds {
     match v {
         Value::Unit => UNIT,
         Value::Bool(_) => BOOL,
-        Value::Int(_) => INT,
+        Value::Int(_) | Value::Big(_) => INT,
         Value::Float(_) => FLOAT,
         Value::Text(_) => TEXT,
         Value::List(_) => LIST,

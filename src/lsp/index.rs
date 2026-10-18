@@ -442,7 +442,7 @@ impl Indexer<'_> {
 
     fn expr(&mut self, e: &Expr) {
         match &e.kind {
-            ExprKind::Unit | ExprKind::Bool(_) | ExprKind::Int(_) | ExprKind::Float(_) | ExprKind::Text(_) => {}
+            ExprKind::Unit | ExprKind::Bool(_) | ExprKind::Int(_) | ExprKind::Big(_) | ExprKind::Float(_) | ExprKind::Text(_) => {}
             ExprKind::Template(parts) => {
                 for p in parts {
                     if let TemplatePart::Expr(x) = p {

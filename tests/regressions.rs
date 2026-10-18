@@ -175,9 +175,13 @@ fn fail_with_an_empty_message_still_says_something() {
 // ----- wrong results -----------------------------------------------------
 
 #[test]
-fn the_negation_of_the_smallest_whole_number_overflows() {
-    fails("print(-(-9223372036854775808))", "E012");
-    fails("print(- -9223372036854775808)", "E012");
+fn the_negation_of_the_smallest_whole_number_is_exact() {
+    ok("print(-(-9223372036854775808))", "9223372036854775808");
+    ok("print(- -9223372036854775808, abs(-9223372036854775808))", "9223372036854775808 9223372036854775808");
+    ok(
+        "x = -9223372036854775808\nprint(-x, -(-x) == x, x // -1, x * -1)",
+        "9223372036854775808 true 9223372036854775808 9223372036854775808",
+    );
     ok("print(match -9223372036854775808\n  -9223372036854775808 -> \"min\"\n  _ -> \"other\"\nend)", "min");
 }
 
@@ -300,7 +304,11 @@ fn whole_number_edge_cases() {
         "print((-9223372036854775807 - 1) % -1, 1 ** 5000000000, 0 ** 5000000000, (-1) ** 5000000001, -9223372036854775808)",
         "0 1 0 -1 -9223372036854775808",
     );
-    fails("print(9223372036854775808)", "E012");
+    ok(
+        "print(9223372036854775808, -9223372036854775809, 0xFFFFFFFFFFFFFFFF)",
+        "9223372036854775808 -9223372036854775809 18446744073709551615",
+    );
+    fails(&format!("print({})", "9".repeat(100_001)), "E023");
     fails("exit(256)", "E023");
 }
 
@@ -497,8 +505,8 @@ fn every_file_given_to_check_is_checked_and_code_gets_its_arguments() {
 
 #[test]
 fn number_errors_say_what_is_wrong() {
-    let r = fails("print(0xFFFFFFFFFFFFFFFF)", "E012");
-    assert!(r.stderr.contains("too large"), "{}", r.stderr);
+    let r = fails(&format!("print(1{})", "0".repeat(100_000)), "E023");
+    assert!(r.stderr.contains("too large") && r.stderr.contains("100000 digits"), "{}", r.stderr);
     let r = fails("print(0xg)", "E018");
     assert!(r.stderr.contains("0xff"), "{}", r.stderr);
     let r = fails("print(\"a\\q\")", "E018");

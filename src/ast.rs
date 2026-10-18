@@ -2,6 +2,7 @@
 
 use std::rc::Rc;
 
+use crate::bigint::BigInt;
 use crate::source::Span;
 use crate::symbol::Sym;
 
@@ -35,6 +36,7 @@ impl ExprKind {
             ExprKind::Unit
             | ExprKind::Bool(_)
             | ExprKind::Int(_)
+            | ExprKind::Big(_)
             | ExprKind::Float(_)
             | ExprKind::Text(_)
             | ExprKind::Var(_)
@@ -74,6 +76,8 @@ pub enum ExprKind {
     Unit,
     Bool(bool),
     Int(i64),
+    /// A whole number too large for 64 bits.
+    Big(Rc<BigInt>),
     Float(f64),
     Text(Rc<str>),
     /// A text with `{expressions}` inside.
@@ -235,6 +239,8 @@ pub enum PatKind {
     Unit,
     Bool(bool),
     Int(i64),
+    /// A whole number too large for 64 bits.
+    Big(Rc<BigInt>),
     Float(f64),
     Text(Rc<str>),
     Ctor(Sym, Vec<Pattern>),
