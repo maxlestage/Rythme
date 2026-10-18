@@ -7,10 +7,14 @@ authors = ["The Rythme authors"]
 repository = "https://github.com/maxlestage/Rythme"
 
 # The grammar is in the same repository (editors/tree-sitter-rythme), at
-# this commit: change `rev` when the grammar changes.
+# the commit `rev`. Zed wants a commit SHA (not a branch, so that a
+# version of the extension always gets the same grammar): change it when
+# the grammar changes. GitHub keeps the commits of a pull request, even
+# squashed, so this one stays reachable; after merging, set it to the
+# commit of the default branch that has the grammar.
 [grammars.rythme]
 repository = "https://github.com/maxlestage/Rythme"
-rev = "d344d7fed0f41f9057f5c13a7813fe079e6420c2"
+rev = "c46e196a96932fc641e866679e42ebfb1ad5504e"
 path = "editors/tree-sitter-rythme"
 
 [language_servers.rythme]

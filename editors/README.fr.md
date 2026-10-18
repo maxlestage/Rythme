@@ -196,8 +196,10 @@ Les réglages, dans le `settings.json` de Zed (tous facultatifs) :
 ```
 
 L'extension prend la grammaire dans ce dépôt au commit `rev` de son
-`extension.toml` : changez-le quand la grammaire change (pour essayer la
-grammaire d'un clone, `repository = "file:///chemin/vers/Rythme"`).
+`extension.toml` : changez-le quand la grammaire change, et après la fusion
+d'une pull request qui l'a changée (une fusion « squash » donne de nouveaux
+commits). Zed veut l'identifiant (SHA) d'un commit, pas une branche. Pour
+essayer la grammaire d'un clone, `repository = "file:///chemin/vers/Rythme"`.
 
 ## Tout autre éditeur
 
