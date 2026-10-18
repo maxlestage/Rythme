@@ -2715,8 +2715,12 @@ standard input and output): an editor starts it by itself and gets, for
 on hover (built-in functions with an example, keywords, your functions and
 types with their `##` comments, the explanation of an error code),
 completion, the parameters of a call, go to definition, references, rename,
-the outline of the file, quick fixes for typos, and formatting like
-`rythme fmt`. The messages are in the language of the editor, unless a
+the outline of the file, quick fixes for typos, formatting like
+`rythme fmt`, the types the checker is sure of next to the names (inlay
+hints such as `names: List(Text)`), colors that follow what each name is
+(semantic tokens), *Run* and *Run test* above the code (code lenses), the
+names of every file of the workspace, folding and growing the selection.
+The messages are in the language of the editor, unless a
 setting of the editor, `--lang` (`rythme --lang fr lsp`) or `RYTHME_LANG`
 chooses it. Started by hand in a terminal, it says what it is for;
 `rythme lsp --help` shows the same text as `rythme help editors`.

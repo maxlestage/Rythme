@@ -74,8 +74,9 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 - [ ] **Better `rythme test`.** A folder of files, a filter by name,
   `--watch`, a summary with times, and property tests
   (`check_all(fn(x) = ..., generator)`) with shrinking of the failing case.
-- [ ] **Language server extras.** Inferred types as inlay hints, semantic
-  highlighting, code lenses to run a test or a file, workspace symbols.
+- [x] **Language server extras.** Inferred types as inlay hints, semantic
+  highlighting, code lenses to run a test or a file, workspace symbols
+  (and folding, selection ranges).
 - [x] **A Tree-sitter grammar** for Neovim, Helix and Zed highlighting, with
   its tests, and the Zed extension completed.
 - [ ] **Projects and packages.** `rythme new name`, a `rythme.toml` manifest,

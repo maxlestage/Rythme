@@ -7,6 +7,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use rythme::ast::{Item, Stmt};
 use rythme::builtins::{lookup, BUILTINS};
 use rythme::check::{self, Knowledge};
 use rythme::diagnostic::Severity;
@@ -496,13 +497,25 @@ fn generated_programs() {
         rythme::io::capture();
         let values = run(&items);
         let diags = check::check(&items, &know, false);
+        // The types shown in the editor, by the place of each name.
+        let (_, by_place) = check::check_with_types(&items, &know, false);
         rythme::io::take_captured();
+        let mut places = HashMap::new();
+        for item in &items {
+            if let Item::Stmt(Stmt::Let(p, _)) = item {
+                let mut b = Vec::new();
+                p.bindings(&mut b);
+                places.extend(b);
+            }
+        }
         // The lines that ran: their names have a value.
         let ran = names.iter().take_while(|n| values.contains_key(&Sym::new(n))).count();
         for n in &names[..ran] {
             let s = Sym::new(n);
             let (t, v) = (&types[&s], &values[&s]);
             assert!(t.contains(v), "program {seed}: `{n}` is {}, not of the type {t:?}\n{code}", v.repr());
+            let shown = &by_place[&places[&s]];
+            assert!(shown.contains(v), "program {seed}: `{n}` is {}, not of the type shown {shown:?}\n{code}", v.repr());
             typed += 1;
             if *t != Ty::Any {
                 known += 1;

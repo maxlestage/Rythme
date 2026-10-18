@@ -218,6 +218,12 @@ fn initialize_announces_the_features() {
         "renameProvider",
         "documentSymbolProvider",
         "documentFormattingProvider",
+        "inlayHintProvider",
+        "semanticTokensProvider",
+        "codeLensProvider",
+        "workspaceSymbolProvider",
+        "foldingRangeProvider",
+        "selectionRangeProvider",
     ] {
         assert!(!caps.get(feature).is_null(), "{feature}");
     }
@@ -744,12 +750,39 @@ fn typing_the_examples_never_breaks_the_server() {
                 let r = lsp.request(method, &at(&u, (k as u32 * 7) % (lines + 1), (k as u32 * 13) % 40));
                 assert!(r.get("error").is_null(), "{method} on {}: {r}", file.display());
             }
-            let r = lsp.request("textDocument/documentSymbol", &format!(r#"{{"textDocument":{{"uri":{}}}}}"#, s(&u)));
+            for method in
+                ["textDocument/documentSymbol", "textDocument/semanticTokens/full", "textDocument/codeLens", "textDocument/foldingRange"]
+            {
+                let r = lsp.request(method, &doc(&u));
+                assert!(r.get("error").is_null(), "{method} on {} ({cut} bytes): {r}", file.display());
+            }
+            let r = lsp.request("textDocument/inlayHint", &lines_range(&u, 0, lines));
+            assert!(r.get("error").is_null(), "{r}");
+            let positions = format!(
+                r#"{{"textDocument":{{"uri":{}}},"positions":[{{"line":{},"character":{last}}}]}}"#,
+                s(&u),
+                lines.saturating_sub(1)
+            );
+            let r = lsp.request("textDocument/selectionRange", &positions);
             assert!(r.get("error").is_null(), "{r}");
         }
         // The whole example has no error.
         let errors: Vec<Json> = lsp.change(&u, version + 1, &text).into_iter().filter(|d| d.get("severity").as_u64() == Some(1)).collect();
         assert!(errors.is_empty(), "{}: {errors:?}", file.display());
+        // Its colors are in order, one name after the other, on its lines.
+        let tokens = decode(lsp.result("textDocument/semanticTokens/full", &doc(&u)).get("data"));
+        let line_texts: Vec<&str> = text.lines().collect();
+        let mut previous = (0, 0);
+        for t in &tokens {
+            assert!((t[0], t[1]) >= previous, "{}: {tokens:?}", file.display());
+            let line = line_texts[t[0] as usize];
+            assert!(t[1] + t[2] <= line.encode_utf16().count() as u64, "{}: {t:?}", file.display());
+            previous = (t[0], t[1] + t[2]);
+        }
+        assert!(!tokens.is_empty(), "{}", file.display());
+        for f in lsp.result("textDocument/foldingRange", &doc(&u)).as_array() {
+            assert!(f.get("startLine").as_u64() < f.get("endLine").as_u64(), "{}: {f}", file.display());
+        }
         if n % 3 == 0 {
             lsp.notify("textDocument/didClose", &format!(r#"{{"textDocument":{{"uri":{}}}}}"#, s(&u)));
             lsp.diagnostics(&u);
@@ -843,4 +876,229 @@ fn files_used_with_a_name() {
     assert_eq!(range(&main_edits[0]), (1, 15, 1, 19));
     assert_eq!(lsp.stop(), 0);
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+fn doc(u: &str) -> String {
+    format!(r#"{{"textDocument":{{"uri":{}}}}}"#, s(u))
+}
+
+fn lines_range(u: &str, first: u32, last: u32) -> String {
+    format!(
+        r#"{{"textDocument":{{"uri":{}}},"range":{{"start":{{"line":{first},"character":0}},"end":{{"line":{last},"character":0}}}}}}"#,
+        s(u)
+    )
+}
+
+/// The inlay hints: (line, character, label).
+fn hints(lsp: &mut Lsp, u: &str) -> Vec<(u64, u64, String)> {
+    let r = lsp.result("textDocument/inlayHint", &lines_range(u, 0, 999));
+    r.as_array()
+        .iter()
+        .map(|h| {
+            let p = h.get("position");
+            (p.get("line").as_u64().unwrap(), p.get("character").as_u64().unwrap(), h.get("label").as_str().unwrap().to_string())
+        })
+        .collect()
+}
+
+#[test]
+fn inlay_hints_show_the_types_the_checker_is_sure_of() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/hints.ry";
+    let text = "fn area(r) = 3.14 * r * r\nnames = [\"Ada\", \"Alan\"]\nlengths = map(names, fn(n) = len(n))\nperson = {name: \"Ada\", age: 36}\nfn greet(who)\n  message = \"Hello {who}\"\n  message\nend\nfound = first(names)\nr = match found\n  Some(v) -> v\n  None -> \"nobody\"\nend\nx = 12\n{age} = person\nprint(area(2), lengths, greet(1), r, x, age)\n";
+    assert!(lsp.open(u, text).is_empty());
+    let expected = [
+        (0, 10, "→ Float"),
+        (1, 5, ": List(Text)"),
+        (2, 7, ": List(Int)"),
+        // The parameter of a function given to `map`: the elements of the list.
+        (2, 25, ": Text"),
+        (3, 6, ": {name: Text, age: Int}"),
+        (4, 13, "→ Text"),
+        (5, 9, ": Text"),
+        (8, 5, ": Option(Text)"),
+        (9, 1, ": Text"),
+        (10, 8, ": Text"),
+    ];
+    let expected: Vec<(u64, u64, String)> = expected.iter().map(|(l, c, t)| (*l, *c, t.to_string())).collect();
+    // Nothing for `who` (it may be anything), `x = 12` (written right there), `{age}`.
+    assert_eq!(hints(&mut lsp, u), expected);
+    // Only the hints of the lines asked.
+    assert_eq!(lsp.result("textDocument/inlayHint", &lines_range(u, 1, 2)).as_array().len(), 1);
+    // A file the checker cannot read: no hints rather than wrong ones.
+    lsp.change(u, 2, "names = [\"Ada\"]\nprint(names\n");
+    assert!(hints(&mut lsp, u).is_empty());
+    assert_eq!(lsp.stop(), 0);
+}
+
+/// Semantic tokens, decoded: (line, character, length, type, modifiers).
+fn decode(data: &Json) -> Vec<[u64; 5]> {
+    let n: Vec<u64> = data.as_array().iter().map(|x| x.as_u64().unwrap()).collect();
+    let (mut line, mut ch) = (0, 0);
+    n.chunks(5)
+        .map(|t| {
+            if t[0] > 0 {
+                line += t[0];
+                ch = t[1];
+            } else {
+                ch += t[1];
+            }
+            [line, ch, t[2], t[3], t[4]]
+        })
+        .collect()
+}
+
+#[test]
+fn semantic_tokens_tell_what_each_name_is() {
+    let (mut lsp, r) = Lsp::start("en", INIT);
+    let legend = r.get_path(&["result", "capabilities", "semanticTokensProvider", "legend"]);
+    let types: Vec<&str> = legend.get("tokenTypes").as_array().iter().filter_map(|t| t.as_str()).collect();
+    assert_eq!(types, ["function", "variable", "parameter", "type", "enumMember"]);
+    let u = "file:///nowhere/tokens.ry";
+    let text = "type Shape = Dot | Circle(r)\nfn size(Circle(r)) = r\nfn size(Dot) = 0\nété = size(Some(Dot)) + len(\"ab\")\nprint(été)\n";
+    lsp.open(u, text);
+    let full = lsp.result("textDocument/semanticTokens/full", &doc(u));
+    let tokens = decode(full.get("data"));
+    let expected: [[u64; 5]; 16] = [
+        [0, 5, 5, 3, 1],  // Shape: a type, defined here
+        [0, 13, 3, 4, 1], // Dot: a constructor
+        [0, 19, 6, 4, 1],
+        [1, 3, 4, 0, 1],  // size: a function
+        [1, 8, 6, 4, 0],  // Circle in a pattern
+        [1, 15, 1, 2, 1], // r: a parameter
+        [1, 21, 1, 2, 0],
+        [2, 3, 4, 0, 1],
+        [2, 8, 3, 4, 0],
+        [3, 0, 3, 1, 1], // été: a value (3 UTF-16 units)
+        [3, 6, 4, 0, 0],
+        [3, 11, 4, 4, 2], // Some: part of Rythme
+        [3, 16, 3, 4, 0],
+        [3, 24, 3, 0, 2], // len: a built-in function
+        [4, 0, 5, 0, 2],
+        [4, 6, 3, 1, 0],
+    ];
+    assert_eq!(tokens, expected);
+    // After a change, only what changed.
+    let id = full.get("resultId").as_str().unwrap().to_string();
+    lsp.change(u, 2, &text.replace("print(été)", "print(été, été)"));
+    let params = format!(r#"{{"textDocument":{{"uri":{}}},"previousResultId":{}}}"#, s(u), s(&id));
+    let delta = lsp.result("textDocument/semanticTokens/full/delta", &params);
+    let edits = delta.get("edits").as_array();
+    assert_eq!(edits.len(), 1, "{delta}");
+    assert_eq!(edits[0].get("start").as_u64(), Some(80), "{delta}");
+    assert_eq!(edits[0].get("deleteCount").as_u64(), Some(0), "{delta}");
+    assert_eq!(edits[0].get("data").as_array().len(), 5, "{delta}");
+    assert_ne!(delta.get("resultId").as_str(), Some(id.as_str()));
+    // An unknown previous id: every token again.
+    let params = format!(r#"{{"textDocument":{{"uri":{}}},"previousResultId":"old"}}"#, s(u));
+    assert_eq!(decode(lsp.result("textDocument/semanticTokens/full/delta", &params).get("data")).len(), 17);
+    // Some lines only.
+    let in_range = decode(lsp.result("textDocument/semanticTokens/range", &lines_range(u, 3, 3)).get("data"));
+    assert_eq!(in_range.len(), 5);
+    assert_eq!(in_range[0], [3, 0, 3, 1, 1]);
+    assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
+fn code_lenses_run_the_file_and_each_test() {
+    let (mut lsp, _) = Lsp::start("fr", INIT);
+    let u = "file:///nowhere/lenses.ry";
+    lsp.open(
+        u,
+        "fn double(x) = x * 2\nprint(double(2))\ntest \"double\" = assert_eq(double(2), 4)\ntest \"zéro\" = assert_eq(double(0), 0)\n",
+    );
+    let lenses = lsp.result("textDocument/codeLens", &doc(u));
+    let found: Vec<(u64, String, String, Vec<String>)> = lenses
+        .as_array()
+        .iter()
+        .map(|l| {
+            let c = l.get("command");
+            let args = c.get("arguments").as_array().iter().map(|a| a.as_str().unwrap().to_string()).collect();
+            (range(l).0, c.get("title").as_str().unwrap().to_string(), c.get("command").as_str().unwrap().to_string(), args)
+        })
+        .collect();
+    let v = |a: &[&str]| a.iter().map(|x| x.to_string()).collect::<Vec<_>>();
+    let expected: Vec<(u64, String, String, Vec<String>)> = vec![
+        (1, "▶ Lancer".into(), "rythme.runFile".into(), v(&[u])),
+        (2, "▶ Lancer les 2 tests".into(), "rythme.testFile".into(), v(&[u])),
+        (2, "▶ Lancer le test".into(), "rythme.runTest".into(), v(&[u, "double"])),
+        (3, "▶ Lancer le test".into(), "rythme.runTest".into(), v(&[u, "zéro"])),
+    ];
+    assert_eq!(found, expected);
+    // Only definitions: nothing to run.
+    lsp.change(u, 2, "fn double(x) = x * 2\n");
+    assert!(lsp.result("textDocument/codeLens", &doc(u)).as_array().is_empty());
+    assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
+fn workspace_symbols_find_names_in_every_file() {
+    let dir = temp_dir("symbols");
+    std::fs::create_dir_all(dir.join("lib")).unwrap();
+    std::fs::create_dir_all(dir.join(".hidden")).unwrap();
+    std::fs::write(dir.join("lib/geometry.ry"), "type Shape = Circle(r) | Dot\nfn area(shape) = 0\n").unwrap();
+    std::fs::write(dir.join(".hidden/secret.ry"), "fn area_secret() = 0\n").unwrap();
+    std::fs::write(dir.join("broken.ry"), "fn area_broken(\n").unwrap();
+    let main = dir.join("main.ry");
+    std::fs::write(&main, "fn old() = 1\n").unwrap();
+    let init = format!(r#"{{"processId":null,"rootUri":{},"capabilities":{{}}}}"#, s(&uri(&dir)));
+    let (mut lsp, _) = Lsp::start("en", &init);
+    // The open document wins over the file on the disk.
+    let mu = uri(&main);
+    lsp.open(&mu, "fn surface(x) = x\ntest \"surface\" = assert_eq(surface(1), 1)\n");
+    let search = |lsp: &mut Lsp, q: &str| -> Vec<(String, u64, String, String)> {
+        let r = lsp.result("workspace/symbol", &format!(r#"{{"query":{}}}"#, s(q)));
+        r.as_array()
+            .iter()
+            .map(|x| {
+                (
+                    x.get("name").as_str().unwrap().to_string(),
+                    x.get("kind").as_u64().unwrap(),
+                    x.get_path(&["location", "uri"]).as_str().unwrap().to_string(),
+                    x.get("containerName").as_str().unwrap_or("").to_string(),
+                )
+            })
+            .collect()
+    };
+    let gu = uri(&dir.join("lib/geometry.ry"));
+    assert_eq!(search(&mut lsp, "area"), [("area".to_string(), 12, gu.clone(), "geometry.ry".to_string())]);
+    // Letters in order, whatever the case: `Circle` for `CLe`.
+    assert_eq!(search(&mut lsp, "CLe"), [("Circle".to_string(), 22, gu.clone(), "Shape · geometry.ry".to_string())]);
+    let names: Vec<String> = search(&mut lsp, "").into_iter().map(|x| x.0).collect();
+    assert_eq!(names, ["Circle", "Dot", "Shape", "area", "surface", "test \"surface\""]);
+    // A file changed on the disk is read again.
+    std::fs::write(dir.join("lib/geometry.ry"), "fn perimeter(shape) = 0\n").unwrap();
+    let later = std::time::SystemTime::now() + Duration::from_secs(5);
+    std::fs::File::options().write(true).open(dir.join("lib/geometry.ry")).unwrap().set_modified(later).unwrap();
+    assert_eq!(search(&mut lsp, "per").len(), 1);
+    assert!(search(&mut lsp, "area").is_empty());
+    assert_eq!(lsp.stop(), 0);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn folding_and_growing_the_selection() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/fold.ry";
+    let text = "# A comment\n# on two lines.\nfn greet(who)\n  message = \"Hello {who}\"\n  match who\n    \"Ada\" -> message\n    _ -> \"?\"\n  end\nend\nxs = [\n  1,\n  2,\n]\nprint(greet(xs))\n";
+    lsp.open(u, text);
+    let folds = lsp.result("textDocument/foldingRange", &doc(u));
+    let found: Vec<(u64, u64, Option<&str>)> = folds
+        .as_array()
+        .iter()
+        .map(|f| (f.get("startLine").as_u64().unwrap(), f.get("endLine").as_u64().unwrap(), f.get("kind").as_str()))
+        .collect();
+    // The line of `end` or `]` stays visible.
+    assert_eq!(found, [(0, 1, Some("comment")), (2, 7, None), (4, 6, None), (9, 11, None)]);
+    // From `who` in the text, out to the whole document.
+    let params = format!(r#"{{"textDocument":{{"uri":{}}},"positions":[{{"line":3,"character":21}}]}}"#, s(u));
+    let sel = lsp.result("textDocument/selectionRange", &params);
+    let mut chain = Vec::new();
+    let mut node = &sel.as_array()[0];
+    while !node.is_null() {
+        chain.push(range(node));
+        node = node.get("parent");
+    }
+    assert_eq!(chain, [(3, 20, 3, 23), (3, 12, 3, 25), (3, 2, 3, 25), (2, 0, 8, 3), (0, 0, 14, 0)]);
+    assert_eq!(lsp.stop(), 0);
 }

@@ -9,6 +9,7 @@
   "command.restart": "Restart the language server",
   "command.run": "Run this file",
   "command.test": "Run the tests of this file",
+  "command.runTest": "Run one test of this file",
   "command.explain": "Explain an error code",
   "command.help": "Help on a topic or a function"
 }

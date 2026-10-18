@@ -1317,7 +1317,10 @@ const EDITORS_EN: &str = r#"RYTHME IN YOUR EDITOR
 Rythme helps inside the editor too: problems as you type, the documentation
 of a function under the mouse, completion, the parameters of a call, go to
 definition, references, rename, quick fixes for typos, formatting like
-`rythme fmt`. This is the language server, that the editor starts by itself:
+`rythme fmt`, the types of the names when they are certain, colors that
+follow what each name is, "Run" and "Run test" above the code, the names of
+the whole workspace, folding. This is the language server, that the editor
+starts by itself:
   rythme lsp
 
 VS Code
@@ -1327,6 +1330,8 @@ VS Code
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   every editor that speaks the Language Server Protocol: tell it to start
   `rythme lsp` for .ry files. Ready-made configurations: editors/README.md
+  ("Run" and "Run test" name the commands rythme.runFile, rythme.testFile and
+  rythme.runTest, that the editor carries out: see editors/README.md)
 
 Zed
   the extension in editors/zed: colors and the language server.
@@ -1342,8 +1347,11 @@ const EDITORS_FR: &str = r#"RYTHME DANS VOTRE ÉDITEUR
 Rythme aide aussi dans l'éditeur : les problèmes pendant la frappe, la
 documentation d'une fonction sous la souris, la complétion, les paramètres
 d'un appel, aller à la définition, les références, renommer, les corrections
-rapides des fautes de frappe, la mise en forme comme `rythme fmt`. C'est le
-serveur de langage, que l'éditeur lance tout seul :
+rapides des fautes de frappe, la mise en forme comme `rythme fmt`, les types
+des noms quand ils sont certains, des couleurs qui suivent ce qu'est chaque
+nom, « Lancer » et « Lancer le test » au-dessus du code, les noms de tout
+l'espace de travail, le pliage. C'est le serveur de langage, que l'éditeur
+lance tout seul :
   rythme lsp
 
 VS Code
@@ -1353,6 +1361,9 @@ VS Code
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   tout éditeur qui parle le Language Server Protocol : demandez-lui de lancer
   `rythme lsp` pour les fichiers .ry. Configurations prêtes : editors/README.fr.md
+  (« Lancer » et « Lancer le test » nomment les commandes rythme.runFile,
+  rythme.testFile et rythme.runTest, que l'éditeur exécute : voir
+  editors/README.fr.md)
 
 Zed
   l'extension dans editors/zed : couleurs et serveur de langage.

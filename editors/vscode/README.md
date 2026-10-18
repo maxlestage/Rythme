@@ -21,6 +21,13 @@ language (`.ry` files), in English and in French.
   the **outline** of the file, highlights of a name.
 - **Format Document** (`Shift+Alt+F`, or on save with `editor.formatOnSave`):
   the layout of `rythme fmt`.
+- **The types of the names**, when the checker is sure of them
+  (`names: List(Text)`, `fn area(r) → Float`), **colors** that follow what
+  each name is (a function, a parameter, a constructor...), **▶ Run** above
+  the first line that does something and **▶ Run test** above each test,
+  the names of the whole workspace (`Ctrl+T`), folding, and growing the
+  selection (`Shift+Alt+→`). The types can be hidden with the VS Code setting
+  `editor.inlayHints.enabled`.
 - Colors, automatic indentation and snippets, even without the program.
 - Commands (`Ctrl+Shift+P`, then *Rythme*): run the file, run its tests,
   explain an error code, help on a topic or a function, restart the
@@ -109,6 +116,14 @@ et en anglais.
   sens du code), le **plan** du fichier, la mise en évidence d'un nom.
 - **Mettre le document en forme** (`Maj+Alt+F`, ou à l'enregistrement avec
   `editor.formatOnSave`) : la mise en forme de `rythme fmt`.
+- **Les types des noms**, quand le vérificateur en est sûr
+  (`noms: List(Text)`, `fn aire(r) → Float`), des **couleurs** qui suivent ce
+  qu'est chaque nom (une fonction, un paramètre, un constructeur...),
+  **▶ Lancer** au-dessus de la première ligne qui fait quelque chose et
+  **▶ Lancer le test** au-dessus de chaque test, les noms de tout l'espace de
+  travail (`Ctrl+T`), le pliage, et l'agrandissement de la sélection
+  (`Maj+Alt+→`). Le réglage `editor.inlayHints.enabled` de VS Code masque les
+  types.
 - Couleurs, indentation automatique et extraits de code, même sans le programme.
 - Des commandes (`Ctrl+Maj+P`, puis *Rythme*) : lancer le fichier, lancer
   ses tests, expliquer un code d'erreur, l'aide sur un sujet ou une

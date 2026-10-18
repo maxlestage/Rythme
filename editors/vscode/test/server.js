@@ -50,6 +50,25 @@ async function main() {
   const items = await connection.sendRequest('textDocument/completion', { textDocument: { uri }, position: { line: 2, character: 0 } });
   assert.ok(items.some((i) => i.label === 'double') && items.some((i) => i.label === 'map'));
 
+  // The extras: the types of names, colors, "Run" above the code, the names of the workspace.
+  assert.deepStrictEqual(init.capabilities.semanticTokensProvider.full, { delta: true });
+  const typed = 'nom = upper("ada")\nprint(nom)\ntest "nom" = assert_eq(nom, "ADA")\n';
+  const typedUri = 'file:///nowhere/types.ry';
+  connection.sendNotification('textDocument/didOpen', { textDocument: { uri: typedUri, languageId: 'rythme', version: 1, text: typed } });
+  const whole = { start: { line: 0, character: 0 }, end: { line: 3, character: 0 } };
+  const hints = await connection.sendRequest('textDocument/inlayHint', { textDocument: { uri: typedUri }, range: whole });
+  assert.deepStrictEqual(hints[0], { position: { line: 0, character: 3 }, label: ': Text', kind: 1 });
+  const tokens = await connection.sendRequest('textDocument/semanticTokens/full', { textDocument: { uri: typedUri } });
+  assert.deepStrictEqual(tokens.data.slice(0, 5), [0, 0, 3, 1, 1]);
+  const lenses = await connection.sendRequest('textDocument/codeLens', { textDocument: { uri: typedUri } });
+  assert.deepStrictEqual(
+    lenses.map((l) => l.command.command),
+    ['rythme.runFile', 'rythme.runTest']
+  );
+  assert.deepStrictEqual(lenses[1].command.arguments, [typedUri, 'nom']);
+  const symbols = await connection.sendRequest('workspace/symbol', { query: 'doub' });
+  assert.deepStrictEqual(symbols.map((x) => x.name), ['double']);
+
   // A request the server does not know: an error answer, and the server goes on.
   await assert.rejects(connection.sendRequest('rythme/unknown', {}), /unknown method/);
 

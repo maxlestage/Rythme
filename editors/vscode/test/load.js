@@ -28,7 +28,7 @@ function anything() {
 
 /** A `vscode` that records what the extension does. */
 function fakeVscode(config) {
-  const done = { commands: {}, messages: [] };
+  const done = { commands: {}, messages: [], sent: [] };
   const disposable = { dispose() {} };
   class EventEmitter {
     constructor() {
@@ -41,7 +41,10 @@ function fakeVscode(config) {
     done,
     env: { language: 'fr', shell: '/bin/bash', openExternal() {} },
     EventEmitter,
-    Uri: { parse: (s) => ({ toString: () => s }), from: (o) => ({ toString: () => `${o.scheme}:${o.path}` }) },
+    Uri: {
+      parse: (s) => ({ toString: () => s, fsPath: decodeURIComponent(s.replace(/^file:\/\//, '')) }),
+      from: (o) => ({ toString: () => `${o.scheme}:${o.path}` }),
+    },
     ViewColumn: { Beside: -2 },
     window: {
       createOutputChannel: () => ({ appendLine() {}, append() {}, show() {}, dispose() {} }),
@@ -55,11 +58,14 @@ function fakeVscode(config) {
       },
       setStatusBarMessage() {},
       terminals: [],
+      createTerminal: () => ({ name: 'Rythme', show() {}, sendText: (text) => done.sent.push(text) }),
       activeTextEditor: undefined,
     },
     workspace: {
       getConfiguration: () => ({ get: (key) => config[key] }),
       workspaceFolders: undefined,
+      textDocuments: [],
+      openTextDocument: (uri) => Promise.resolve({ uri, isUntitled: false, isDirty: false, languageId: 'rythme' }),
       registerTextDocumentContentProvider: () => disposable,
       onDidChangeConfiguration: () => disposable,
       createFileSystemWatcher: () => disposable,
@@ -118,7 +124,7 @@ async function main() {
   const vscode = fakeVscode({ path: bin, language: 'auto' });
   const withClient = load({ vscode, 'vscode-languageclient/node': { LanguageClient: FakeClient } });
   await withClient.activate({ subscriptions: [] });
-  for (const name of ['rythme.restartServer', 'rythme.runFile', 'rythme.testFile', 'rythme.explainError', 'rythme.showHelp']) {
+  for (const name of ['rythme.restartServer', 'rythme.runFile', 'rythme.testFile', 'rythme.runTest', 'rythme.explainError', 'rythme.showHelp']) {
     assert.ok(vscode.done.commands[name], `${name} is registered`);
   }
   assert.strictEqual(started.length, 1, `the server starts (${vscode.done.messages.join(' ')})`);
@@ -129,6 +135,14 @@ async function main() {
   assert.strictEqual(c.options.synchronize.configurationSection, 'rythme');
   await vscode.done.commands['rythme.restartServer']();
   assert.strictEqual(started.length, 2, 'the server restarts');
+  // The "Run test" code lens of the server: the file and the name of the test, quoted for the shell.
+  await vscode.done.commands['rythme.runTest']('file:///tmp/my%20tests.ry', "it's $HOME");
+  const lang = process.env.RYTHME_LANG ? '' : '--lang fr ';
+  assert.deepStrictEqual(vscode.done.sent, [`${bin} ${lang}test '/tmp/my tests.ry' --filter 'it'\\''s $HOME'`]);
+  await vscode.done.commands['rythme.runFile']('file:///tmp/a.ry');
+  assert.strictEqual(vscode.done.sent[1], `${bin} ${lang}/tmp/a.ry`);
+  assert.strictEqual(withClient.quote('C:\\Users\\a b.ry', 'powershell'), "'C:\\Users\\a b.ry'");
+  assert.strictEqual(withClient.quote('say "hi"', 'cmd'), '"say ""hi"""');
   await withClient.deactivate();
 
   // A missing program: a message in the language of VS Code, and no server.
