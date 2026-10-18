@@ -25,6 +25,10 @@ dit ce qu'une version 1.x peut changer ou non.*
 - **`condition ? a : b`** (Ruby, C, JavaScript) is explained: the error
   points at the `?` and says to write `if condition then a else b`, in the
   terminal and in the editor. Only code that was already an error gets it.
+- **`record[:name]`** says that a symbol is not a text, and how to read the
+  field (`r.name`, `r["name"]`, `get(r, "name")`), before running and while
+  running (where it said "cannot use `[...]` on Record"). A dict missing the
+  key `:a` but holding `"a"` (or the reverse) says so.
 
 ### Website
 

@@ -2484,10 +2484,19 @@ impl<'a> Checker<'a> {
                     ),
                 )
                 .at(b.span)
-                .help(t!(
-                    "read a field with `record[\"name\"]` or `record.name`",
-                    "lisez un champ avec `enregistrement[\"nom\"]` ou `enregistrement.nom`"
-                )),
+                .help(match &b.kind {
+                    ExprKind::Symbol(s) => {
+                        let record = match &a.kind {
+                            ExprKind::Var(v) => Some(v.name()),
+                            _ => None,
+                        };
+                        crate::interp::symbol_field_help(&s.name(), record.as_deref())
+                    }
+                    _ => t!(
+                        "read a field with `record[\"name\"]` or `record.name`",
+                        "lisez un champ avec `enregistrement[\"nom\"]` ou `enregistrement.nom`"
+                    ),
+                }),
             );
             return Ty::Never;
         }

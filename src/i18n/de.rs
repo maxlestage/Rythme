@@ -995,6 +995,9 @@ Themen: start, syntax, functions, lists, text, records, types, match, errors, fu
         ("[Enter] next   [q] quit > ", "[Enter] weiter   [q] beenden > "),
         ("To practice, run `rythme` and type code, or do the exercises: `rythme exercise list`. `rythme help builtins` lists every function.", "Zum Üben starte `rythme` und tippe Code ein, oder mach die Übungen: `rythme exercise list`. `rythme help builtins` listet alle Funktionen auf."),
         // src/interp.rs
+        ("record", "record"),
+        ("`:{field}` is a symbol, not a text: write `{r}.{field}` or `{r}[\"{field}\"]`, or `get({r}, \"{field}\")` to receive an Option", "`:{field}` ist ein Symbol, kein Text: schreib `{r}.{field}` oder `{r}[\"{field}\"]`, oder `get({r}, \"{field}\")`, um eine Option zu bekommen"),
+        ("the dict has the key {shown}, which is not the same key as {key}: write `[{shown}]`", "das Dict hat den Schlüssel {shown}, der nicht derselbe Schlüssel wie {key} ist: schreib `[{shown}]`"),
         ("this list would be too large (more than {MAX_LIST} elements)", "diese Liste wäre zu groß (mehr als {MAX_LIST} Elemente)"),
         ("this text would be too large (more than {mb} MB)", "dieser Text wäre zu groß (mehr als {mb} MB)"),
         ("does it grow in a function that calls itself? Check that the function always reaches a case where it stops", "wächst er in einer Funktion, die sich selbst aufruft? Prüfe, ob die Funktion immer einen Fall erreicht, in dem sie aufhört"),
