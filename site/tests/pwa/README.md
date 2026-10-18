@@ -18,6 +18,7 @@ It runs twice: the server at the root (as on Heroku), then the static export beh
 run works on a copy of `public/` in a temporary folder and checks:
 
 1. on an iPhone, the hint to add the site to the home screen, until it is closed;
+   *Share* hands the link to the share sheet (a Web Share API made by hand);
 2. the service worker is activated, controls the page and has saved the site;
 3. `Page.getInstallabilityErrors` gives no error and `Page.getAppManifest` parses,
    in every language; the install button appears when the browser offers to install
@@ -25,7 +26,13 @@ run works on a copy of `public/` in a temporary folder and checks:
 4. offline (the site stopped and the browser offline): every page in every
    language, with its fonts and no horizontal scroll; the playground runs, checks,
    tests and formats, its examples menu and help work, a `.ry` file opens and
-   downloads, the code survives a reload, a shared text opens; in every language the
+   downloads, the code survives a reload, a shared text opens; *Share* makes a link
+   (copied, compressed, URL-safe) that opens the same program in another page, which
+   runs, without replacing the draft until it is changed, after a reload too, with
+   *Back to my draft*; the test mode travels with it, a program too long is refused,
+   a damaged link is said so, and without `CompressionStream` and
+   `DecompressionStream` compressed links still open (made by Share and by zlib) and
+   Share makes plain ones; in every language the
    playground shows its texts and the interpreter's messages in that language; the
    language menu (it lists every language) and the burger menu; an unknown page
    shows the offline page of its language;
@@ -53,17 +60,20 @@ blocked. It checks:
    1280px: it lists every language and stays inside the screen; Enter opens it,
    Escape closes it and gives the focus back to its button, a click elsewhere closes
    it;
-3. the playground's editor wraps a long line, a long word and a long address, and
+3. the notice of a program opened from a link and the box of the link made by
+   *Share*, open together in every language, at 320 to 1280px in every theme: no
+   horizontal scroll, every text at the contrast of the theme;
+4. the playground's editor wraps a long line, a long word and a long address, and
    each line number stays level with its wrapped line;
-4. contrast: every pair of colors of each theme (text on paper, on cards and on the
+5. contrast: every pair of colors of each theme (text on paper, on cards and on the
    soft accent; buttons, banners and commands on their background) at 4.5:1, 7:1 in
    High contrast; then every visible text of every page, against the background it
    is drawn on, at 390 and 1280px;
-5. the picker with the keyboard only, in the menu of a phone and in the bar of a
+6. the picker with the keyboard only, in the menu of a phone and in the bar of a
    computer: the focus on the chosen theme, the arrow keys choose, Escape closes and
    gives the focus back; the page and its `theme-color` follow; every option has its
    label in French; the choice is kept from page to page;
-6. no flash: the stored theme (and its `theme-color`) is on `<html>` as soon as
+7. no flash: the stored theme (and its `theme-color`) is on `<html>` as soon as
    `<body>` exists, before any deferred script, on every kind of page; Auto follows
    the system; an unknown stored value falls back to Auto.
 

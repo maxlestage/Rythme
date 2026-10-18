@@ -62,6 +62,31 @@ async fn the_pages_hold_their_content() {
         assert!(playground.contains(r#"id="source""#));
         assert!(playground.contains(r#"id="format""#) && playground.contains(t.pg_format), "the Format button");
         assert!(playground.contains(r#"id="steps""#) && playground.contains(t.pg_steps), "the Steps button");
+        // Share: its button (shown by playground.js), the box of the link with its
+        // labelled field, the notice of a program opened from a link and its button.
+        let attr = |s: &str| s.replace('\'', "&#x27;");
+        assert!(playground.contains(r#"id="share""#) && playground.contains(&attr(t.pg_share_title)), "the Share button");
+        assert!(playground.contains(r#"aria-controls="share-box""#), "{lang:?}");
+        assert!(
+            playground.contains(r#"id="share-box""#) && playground.contains(r#"<label class="share__label" for="share-link">"#),
+            "{lang:?}"
+        );
+        assert!(
+            playground.contains(&attr(t.pg_share_link))
+                && playground.contains(&attr(t.pg_share_copy))
+                && playground.contains(&attr(t.pg_share_close)),
+            "{lang:?}"
+        );
+        assert!(
+            playground.contains(r#"id="shared-note""#)
+                && playground.contains(&attr(t.pg_shared_note))
+                && playground.contains(&attr(t.pg_shared_back)),
+            "{lang:?}"
+        );
+        for text in [t.pg_share_copied, t.pg_share_shared, t.pg_share_select, t.pg_share_too_long, t.pg_share_broken] {
+            assert!(playground.contains(&attr(text).replace('"', "&quot;")), "{lang:?}: {text}");
+        }
+        assert!(t.pg_share_too_long.contains("{n}") && t.pg_share_too_long.contains("{max}"), "{lang:?}");
         assert!(playground.contains("/playground.js?v="));
         assert!(playground.contains(r#"data-wasm="/rythme.wasm?v="#));
         let learn = page(Page::Learn).await;

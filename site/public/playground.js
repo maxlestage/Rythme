@@ -2,7 +2,8 @@
 // (public/rythme.wasm, built by ./build.sh). The page itself comes from the server,
 // in the language of its address; this script makes it work. The code being edited
 // stays in localStorage; a .ry file can be opened, from the button, from the system
-// (the installed app's file handler) or shared as text, and downloaded.
+// (the installed app's file handler) or shared as text, and downloaded. Share puts
+// the program in a link (`#code=…`, in the link itself: nothing is sent anywhere).
 (() => {
   "use strict";
 
@@ -167,6 +168,11 @@
   }
 
   function onEdit() {
+    leaveLink();
+    if (!shareBox.hidden) {
+      shareBox.hidden = true;
+      shareBtn.setAttribute("aria-expanded", "false");
+    }
     refreshEditor();
     store.set(SAVED.code, source.value);
     setCustom();
@@ -211,7 +217,7 @@
   });
   // The last keystrokes, if the app is closed before the storage was written.
   window.addEventListener("pagehide", () => {
-    if (exampleSel.value === "custom") store.set(SAVED.code, source.value);
+    if (exampleSel.value === "custom" && !linked) store.set(SAVED.code, source.value);
   });
 
   source.addEventListener("input", onEdit);
@@ -454,6 +460,7 @@
 
   // ----- examples -----
   function loadExample(name) {
+    leaveLink();
     source.value = name === "welcome" ? WELCOME : examples[name] || "";
     exampleSel.value = name;
     $("file-name").textContent = name === "welcome" ? "main.ry" : name + ".ry";
@@ -470,32 +477,370 @@
     if (exampleSel.value !== "custom") loadExample(exampleSel.value);
   });
 
-  // `#example=fizzbuzz`, or `#code=…&mode=test`: links from the other pages;
-  // `?text=…&title=…&url=…`: a text shared with the installed app (its share target).
-  function fromAddress() {
-    const params = new URLSearchParams(location.hash.slice(1));
-    const found = { example: params.get("example"), code: params.get("code"), mode: params.get("mode") === "test" ? 2 : 0 };
+  // ----- sharing: the program in the link itself -----
+  // `#code=1:…` is the program compressed (deflate-raw), `#code=0:…` as it is (UTF-8),
+  // both in URL-safe base64 (Share takes the shorter); `#code=` followed by anything
+  // else is the program percent-encoded (the links of the other pages). A fragment
+  // never leaves the browser: nothing is sent anywhere, and the links work offline and
+  // on any host, the static export too.
+  const LINK_MAX = 8000; // characters of a shared program, packed
+  const CODE_MAX = 200000; // bytes of a program opened from a link
+  const PACKED = /^([01]):([A-Za-z0-9_-]*)$/;
+
+  function toBase64(bytes) {
+    let s = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  function fromBase64(text) {
+    const s = atob(text.replace(/-/g, "+").replace(/_/g, "/"));
+    const bytes = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) bytes[i] = s.charCodeAt(i);
+    return bytes;
+  }
+
+  // A compression stream of the browser, if it knows deflate-raw.
+  function browserStream(Kind) {
+    try {
+      return typeof Kind === "function" ? new Kind("deflate-raw") : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function through(bytes, stream) {
+    const reader = new Blob([bytes]).stream().pipeThrough(stream).getReader();
+    const chunks = [];
+    let size = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.length;
+      if (size > CODE_MAX) {
+        reader.cancel();
+        throw new Error("too long");
+      }
+      chunks.push(value);
+    }
+    const out = new Uint8Array(size);
+    let at = 0;
+    for (const chunk of chunks) {
+      out.set(chunk, at);
+      at += chunk.length;
+    }
+    return out;
+  }
+
+  // Inflate (RFC 1951), for the browsers without DecompressionStream: stored, fixed and
+  // dynamic blocks, at most `max` bytes out. Throws on a damaged stream.
+  const LEN_BASE = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258];
+  const LEN_EXTRA = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0];
+  const DIST_BASE = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577];
+  const DIST_EXTRA = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13];
+  const ORDER = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
+
+  function inflate(data, max) {
+    let pos = 0;
+    let bit = 0;
+    let out = new Uint8Array(4096);
+    let size = 0;
+    const damaged = () => new Error("damaged");
+    const bits = (n) => {
+      let v = 0;
+      for (let i = 0; i < n; i++) {
+        if (pos >= data.length) throw damaged();
+        v |= ((data[pos] >> bit) & 1) << i;
+        if (++bit === 8) {
+          bit = 0;
+          pos++;
+        }
+      }
+      return v;
+    };
+    const put = (b) => {
+      if (size === out.length) {
+        if (size >= max) throw new Error("too long");
+        const bigger = new Uint8Array(Math.min(max, size * 2));
+        bigger.set(out);
+        out = bigger;
+      }
+      out[size++] = b;
+    };
+    // A canonical Huffman code from its lengths: how many codes of each length, and
+    // the symbols in the order of their codes.
+    const table = (lengths) => {
+      const counts = new Uint16Array(16);
+      const offsets = new Uint16Array(16);
+      for (const l of lengths) counts[l]++;
+      counts[0] = 0;
+      for (let l = 1; l < 16; l++) offsets[l] = offsets[l - 1] + counts[l - 1];
+      const symbols = new Uint16Array(lengths.length);
+      lengths.forEach((l, s) => { if (l) symbols[offsets[l]++] = s; });
+      return { counts, symbols };
+    };
+    const decode = (h) => {
+      let code = 0;
+      let first = 0;
+      let index = 0;
+      for (let l = 1; l < 16; l++) {
+        code |= bits(1);
+        const count = h.counts[l];
+        if (code - count < first) return h.symbols[index + (code - first)];
+        index += count;
+        first = (first + count) << 1;
+        code <<= 1;
+      }
+      throw damaged();
+    };
+    let fixed = null;
+    let last = 0;
+    while (!last) {
+      last = bits(1);
+      const type = bits(2);
+      if (type === 0) {
+        if (bit) {
+          bit = 0;
+          pos++;
+        }
+        if (pos + 4 > data.length) throw damaged();
+        const len = data[pos] | (data[pos + 1] << 8);
+        if ((len ^ 0xffff) !== (data[pos + 2] | (data[pos + 3] << 8))) throw damaged();
+        pos += 4;
+        if (pos + len > data.length) throw damaged();
+        for (let i = 0; i < len; i++) put(data[pos + i]);
+        pos += len;
+        continue;
+      }
+      let lit;
+      let dist;
+      if (type === 1) {
+        if (!fixed) {
+          const lengths = new Array(288);
+          for (let i = 0; i < 288; i++) lengths[i] = i < 144 ? 8 : i < 256 ? 9 : i < 280 ? 7 : 8;
+          fixed = { lit: table(lengths), dist: table(new Array(30).fill(5)) };
+        }
+        ({ lit, dist } = fixed);
+      } else if (type === 2) {
+        const nlit = bits(5) + 257;
+        const ndist = bits(5) + 1;
+        const ncode = bits(4) + 4;
+        const codeLengths = new Array(19).fill(0);
+        for (let i = 0; i < ncode; i++) codeLengths[ORDER[i]] = bits(3);
+        const lengthCode = table(codeLengths);
+        const lengths = [];
+        while (lengths.length < nlit + ndist) {
+          const sym = decode(lengthCode);
+          if (sym < 16) lengths.push(sym);
+          else {
+            if (sym === 16 && !lengths.length) throw damaged();
+            const [value, n] = sym === 16 ? [lengths[lengths.length - 1], 3 + bits(2)] : sym === 17 ? [0, 3 + bits(3)] : [0, 11 + bits(7)];
+            if (lengths.length + n > nlit + ndist) throw damaged();
+            for (let i = 0; i < n; i++) lengths.push(value);
+          }
+        }
+        lit = table(lengths.slice(0, nlit));
+        dist = table(lengths.slice(nlit));
+      } else {
+        throw damaged();
+      }
+      for (;;) {
+        let sym = decode(lit);
+        if (sym < 256) put(sym);
+        else if (sym === 256) break;
+        else {
+          sym -= 257;
+          if (sym >= 29) throw damaged();
+          const len = LEN_BASE[sym] + bits(LEN_EXTRA[sym]);
+          const d = decode(dist);
+          if (d >= 30) throw damaged();
+          const back = DIST_BASE[d] + bits(DIST_EXTRA[d]);
+          if (back > size) throw damaged();
+          for (let i = 0; i < len; i++) put(out[size - back]);
+        }
+      }
+    }
+    return out.subarray(0, size);
+  }
+
+  // The program, packed for a link: compressed when the browser can and it is shorter.
+  async function pack(code) {
+    const bytes = new TextEncoder().encode(code);
+    const plain = "0:" + toBase64(bytes);
+    const deflate = browserStream(window.CompressionStream);
+    if (!deflate || bytes.length > CODE_MAX) return plain;
+    try {
+      const packed = "1:" + toBase64(await through(bytes, deflate));
+      return packed.length < plain.length ? packed : plain;
+    } catch {
+      return plain;
+    }
+  }
+
+  async function unpack(value) {
+    const [, kind, data] = value.match(PACKED);
+    let bytes = fromBase64(data);
+    if (kind === "1") {
+      const native = browserStream(window.DecompressionStream);
+      bytes = native ? await through(bytes, native) : inflate(bytes, CODE_MAX);
+    }
+    if (bytes.length > CODE_MAX) throw new Error("too long");
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  }
+
+  // `#example=fizzbuzz`, or `#code=…&mode=test`: links from the other pages and shared
+  // links; `?text=…&title=…&url=…`: a text shared with the installed app (its share
+  // target), which becomes a `#code=` link. A program from a link stays in the address
+  // until it is changed, so that a reload shows it again.
+  async function fromAddress() {
+    const hash = location.hash.slice(1);
+    const params = new URLSearchParams(hash);
+    const found = { example: params.get("example"), code: null, mode: params.get("mode") === "test" ? 2 : 0, broken: false };
+    const raw = (hash.match(/(?:^|&)code=([^&]*)/) || [])[1];
+    if (raw !== undefined) {
+      try {
+        if (raw.length > 4 * LINK_MAX) throw new Error("too long");
+        found.code = PACKED.test(raw) ? await unpack(raw) : params.get("code");
+        if (found.code.length > CODE_MAX) throw new Error("too long");
+        found.example = null;
+      } catch {
+        found.code = null;
+        found.broken = true;
+      }
+    }
     const query = new URLSearchParams(location.search);
     if (["text", "title", "url"].some((k) => query.has(k))) {
       const text = query.get("text") || query.get("title") || "";
       const url = query.get("url");
       found.code = url && !text.includes(url) ? `${text ? text + "\n" : ""}# ${url}\n` : text;
       found.example = null;
+      found.broken = false;
+      history.replaceState(null, "", `${location.pathname}#code=${encodeURIComponent(found.code)}`);
+    } else if (found.example || found.broken) {
+      history.replaceState(null, "", location.pathname);
     }
-    if (found.example || found.code !== null) history.replaceState(null, "", location.pathname);
     return found;
+  }
+
+  // A program from a link is shown without touching the draft saved in this browser:
+  // the notice says so, and its button brings the draft back. The first change makes
+  // the program the draft.
+  const sharedNote = $("shared-note"), sharedText = $("shared-text"), backBtn = $("shared-back");
+  const NOTE = sharedText.textContent;
+  let linked = false;
+
+  function setNote(message, back) {
+    sharedText.textContent = message;
+    backBtn.hidden = !back;
+    sharedNote.hidden = !message;
+  }
+
+  function showLinked(asked) {
+    source.value = asked.code;
+    runMode = asked.mode;
+    fileName = "main.ry";
+    linked = true;
+    setCustom();
+    setNote(NOTE, true);
+  }
+
+  function leaveLink() {
+    if (!sharedNote.hidden) setNote("", false);
+    if (!linked) return;
+    linked = false;
+    store.set(SAVED.file, fileName);
+    if (/(?:^|&)code=/.test(location.hash.slice(1))) history.replaceState(null, "", location.pathname + location.search);
+  }
+
+  backBtn.addEventListener("click", () => {
+    linked = false;
+    setNote("", false);
+    history.replaceState(null, "", location.pathname + location.search);
+    const saved = store.get(SAVED.code);
+    if (saved) {
+      fileName = store.get(SAVED.file) || "main.ry";
+      source.value = saved;
+      refreshEditor();
+      setCustom();
+      runMode = 0;
+      execute(runMode);
+    } else {
+      const example = store.get(SAVED.example);
+      loadExample(example && examples[example] ? example : "welcome");
+    }
+    // The button is gone: the focus goes to the top of the playground.
+    exampleSel.focus();
+  });
+
+  // Share: the link, copied (or handed to the share sheet of a phone), and shown in a
+  // field to select by hand when the clipboard says no.
+  const shareBtn = $("share"), shareBox = $("share-box"), shareMsg = $("share-msg"), shareRow = $("share-row"), shareLink = $("share-link");
+  shareBtn.hidden = false;
+
+  function showShare(message, bad, link) {
+    shareBox.hidden = false;
+    shareBtn.setAttribute("aria-expanded", "true");
+    shareMsg.textContent = message;
+    shareMsg.classList.toggle("bad", bad);
+    shareRow.hidden = !link;
+    if (link) shareLink.value = link;
+  }
+
+  function closeShare() {
+    shareBox.hidden = true;
+    shareBtn.setAttribute("aria-expanded", "false");
+    shareBtn.focus();
+  }
+
+  async function copyLink(link) {
+    try {
+      await navigator.clipboard.writeText(link);
+      showShare(UI.shareCopied, false, link);
+    } catch {
+      showShare(UI.shareSelect, false, link);
+      shareLink.focus();
+      shareLink.select();
+    }
+  }
+
+  shareBtn.addEventListener("click", async () => {
+    const packed = await pack(source.value);
+    if (packed.length > LINK_MAX) {
+      const n = (x) => x.toLocaleString(document.documentElement.lang || lang);
+      showShare(UI.shareTooLong.replace("{n}", n(packed.length)).replace("{max}", n(LINK_MAX)), true, null);
+      return;
+    }
+    const link = `${location.origin}${location.pathname}#code=${packed}${runMode === 2 ? "&mode=test" : ""}`;
+    if (navigator.share && window.matchMedia("(pointer: coarse)").matches) {
+      showShare("", false, link);
+      try {
+        await navigator.share({ title: document.title, url: link });
+        showShare(UI.shareShared, false, link);
+        return;
+      } catch (err) {
+        if (err && err.name === "AbortError") {
+          showShare(UI.shareSelect, false, link);
+          return;
+        }
+      }
+    }
+    await copyLink(link);
+  });
+  $("share-copy").addEventListener("click", () => copyLink(shareLink.value));
+  $("share-close").addEventListener("click", closeShare);
+  // Escape closes the box, from the box or from the button that opened it.
+  for (const el of [shareBox, shareBtn]) {
+    el.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && !shareBox.hidden) closeShare();
+    });
   }
 
   // ----- start -----
   async function start() {
-    const asked = fromAddress();
+    const asked = await fromAddress();
     const saved = store.get(SAVED.code);
     if (asked.code !== null) {
-      source.value = asked.code;
-      runMode = asked.mode;
-      store.set(SAVED.code, asked.code);
-      store.set(SAVED.file, fileName);
-      setCustom();
+      showLinked(asked);
     } else if (saved && !asked.example) {
       fileName = store.get(SAVED.file) || fileName;
       source.value = saved;
@@ -503,6 +848,7 @@
     }
     // The example that was open, when nothing else is asked.
     const example = asked.example || (asked.code === null && !saved ? store.get(SAVED.example) : null);
+    if (asked.broken) setNote(UI.shareBroken, false);
     refreshEditor();
     output.textContent = "";
     output.append(text(UI.loading, "empty"));
@@ -537,6 +883,20 @@
   }
 
   start();
+
+  // A link pasted in the address bar while the playground is open changes only the
+  // fragment: the page stays, the program of the link comes in.
+  window.addEventListener("hashchange", async () => {
+    const asked = await fromAddress();
+    if (asked.code !== null) {
+      showLinked(asked);
+      refreshEditor();
+      execute(runMode);
+    } else if (asked.example && (asked.example === "welcome" || examples[asked.example])) {
+      loadExample(asked.example);
+    }
+    if (asked.broken) setNote(UI.shareBroken, false);
+  });
 
   // A .ry file opened from the system with the installed app (file_handlers of the
   // manifest; Chrome and Edge on computers).
