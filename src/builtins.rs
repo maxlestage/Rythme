@@ -1025,6 +1025,12 @@ fn sum(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
                 span,
             ));
         }
+        if let (Value::Int(total), Value::Int(n)) = (&acc, x) {
+            if let Some(t) = total.checked_add(*n) {
+                acc = Value::Int(t);
+                continue;
+            }
+        }
         acc = binop(crate::ast::BinOp::Add, &acc, x, span)?;
     }
     Ok(acc)
@@ -1043,6 +1049,12 @@ fn product(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
                 ),
                 span,
             ));
+        }
+        if let (Value::Int(total), Value::Int(n)) = (&acc, x) {
+            if let Some(t) = total.checked_mul(*n) {
+                acc = Value::Int(t);
+                continue;
+            }
         }
         acc = binop(crate::ast::BinOp::Mul, &acc, x, span)?;
     }
