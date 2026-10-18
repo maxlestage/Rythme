@@ -3038,8 +3038,11 @@ plusieurs correspondances : la plus à gauche, puis la première
 alternative, puis la répétition la plus longue. Une recherche prend un temps
 proportionnel à la longueur du texte fois la taille de la regex, quelles
 qu'elles soient : le moteur suit tous les chemins à la fois au lieu de les
-essayer l'un après l'autre (pas de « retour arrière catastrophique ») ;
-pour la répétition d'une partie qui peut correspondre à un texte vide,
+essayer l'un après l'autre (pas de « retour arrière catastrophique »), et
+les recherches de `find_all`, `split_by` et `replace_all` sautent les
+chemins dont une recherche précédente a montré qu'ils ne mènent nulle part :
+trouver toutes les correspondances lit le plus souvent le texte environ une
+fois ; pour la répétition d'une partie qui peut correspondre à un texte vide,
 comme `(a*)*`, il peut choisir une autre fin que d'autres moteurs. Dans un
 texte Rythme, la barre oblique inverse s'écrit deux fois et les accolades
 `\{` et `\}` : `"\\d\{4\}"` est la regex `\d{4}` ; un signe entre
