@@ -400,6 +400,11 @@ fn generated_programs() {
     for seed in 1..=programs {
         let mut g = Gen { state: seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1, vars: Vec::new(), straight: seed % 3 == 0, fns: Vec::new() };
         let mut code = HEADER.to_string();
+        // The program may define a type named like a built-in one.
+        if seed % 4 == 1 {
+            code.push_str("type Result = Win | Lose(why)\n");
+            g.vars.push("Win".into());
+        }
         // Functions with any body, recursive or not (their code does not run every time).
         if !g.straight {
             let body = g.expr(2, &["p", "q"]);
