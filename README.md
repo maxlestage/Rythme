@@ -350,8 +350,12 @@ towards 1.0 is in [`ROADMAP.md`](ROADMAP.md)):
 - **Speed.** It is a tree-walking interpreter: local names become numbered
   slots before running, and most calls allocate nothing. The programs of
   [`bench/`](bench) (`bench/run.sh`) run 1.2 to 4.3 times faster than with
-  Rythme 0.1; that is in the range of Python, far from compiled Rust. Next: a
-  bytecode virtual machine.
+  Rythme 0.1; that is in the range of Python, far from compiled Rust.
+  Building a text with `+` or `"{acc}..."` and adding to a list (`push`,
+  `xs + [x]`, `[..xs, x]`) take constant time per addition: 100 000 of them
+  take 0.1 s, instead of 23 s (texts) and 150 s (lists) before. Local
+  functions that call each other make no closure per call (twice as fast).
+  Next: a bytecode virtual machine.
 - **Types.** Values are checked at run time (strongly: no silent
   conversions), and `rythme check` infers their types when they are certain,
   to report before running the operations that would always fail; it also

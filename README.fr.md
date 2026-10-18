@@ -322,8 +322,13 @@ suite (la liste complète vers la 1.0 est dans [`ROADMAP.md`](ROADMAP.md)) :
   noms locaux deviennent des cases numérotées avant l'exécution, et la
   plupart des appels n'allouent rien. Les programmes de [`bench/`](bench)
   (`bench/run.sh`) tournent 1,2 à 4,3 fois plus vite qu'avec Rythme 0.1 ;
-  c'est de l'ordre de Python, loin de Rust compilé. Suite : une machine
-  virtuelle à bytecode.
+  c'est de l'ordre de Python, loin de Rust compilé. Construire un texte avec
+  `+` ou `"{acc}..."` et ajouter à une liste (`push`, `xs + [x]`,
+  `[..xs, x]`) prennent un temps constant par ajout : 100 000 ajouts
+  prennent 0,1 s, au lieu de 23 s (textes) et 150 s (listes) avant. Les
+  fonctions locales qui s'appellent entre elles ne créent plus de fermeture
+  à chaque appel (deux fois plus rapide). Suite : une machine virtuelle à
+  bytecode.
 - **Types.** Les valeurs sont vérifiées à l'exécution (strictement : aucune
   conversion silencieuse), et `rythme check` infère leurs types quand ils
   sont certains, pour signaler avant l'exécution les opérations qui

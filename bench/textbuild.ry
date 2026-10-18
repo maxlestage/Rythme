@@ -1,0 +1,13 @@
+# Building texts piece by piece: `+` and interpolation in recursions and folds.
+
+fn build(0, acc) = acc
+fn build(n, acc) = build(n - 1, acc + "{n},")
+
+fn journal(0, acc) = acc
+fn journal(n, acc) = journal(n - 1, "{acc}line {n}\n")
+
+numbers = build(100_000, "")
+report = journal(100_000, "")
+csv = 1..100_000 |> fold("", fn(acc, x) = acc + text(x % 97) + ";")
+
+print(len(numbers), len(report), len(csv), take(numbers, 12), last(split(report, "\n"), 2), slice(csv, 100, 112))

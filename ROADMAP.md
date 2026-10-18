@@ -98,7 +98,7 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 
 ## Speed and release
 
-- [ ] **Faster where it still hurts.** Building texts with `+` and adding to
+- [x] **Faster where it still hurts.** Building texts with `+` and adding to
   lists in constant amortized time, cheaper calls between local functions;
   measured with `bench/`, no behavior change.
 - [x] **Installers.** A `curl | sh` / PowerShell install script using the

@@ -50,6 +50,11 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
   by a closure, so that running never searches for a local name. After a
   change to the interpreter, run `bench/run.sh` before and after: the
   programs of `bench/` print a checksum of their work and their best time.
+- `buffer.rs` holds the memory of texts and lists: a value made by adding at
+  the end of another one (`acc + "x"`, `push(xs, x)`, `[..xs, x]`) is written
+  in the room left after it, when nothing else was written there, so that
+  building a text or a list piece by piece takes constant time per piece.
+  Its `unsafe` code relies on one rule: what is written never changes.
 - `bigint.rs` holds the whole numbers beyond 64 bits (`Value::Big`), written
   by hand. The interpreter computes the usual numbers (`Value::Int`) on the
   spot and only goes there when a result does not fit, so keep it off the
