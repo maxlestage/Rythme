@@ -105,16 +105,47 @@ Détails dans [`site/README.md`](site/README.md#heroku).
 
 ## Installer
 
-**Sans rien installer d'autre :** chaque version publiée est accompagnée de
-programmes prêts à l'emploi pour Linux, macOS et Windows sur la
-[page des versions](https://github.com/maxlestage/Rythme/releases).
-Téléchargez l'archive de votre système, extrayez `rythme` (`rythme.exe` sous
-Windows) et placez-le dans un dossier de votre `PATH`.
+**Linux et macOS** (x86_64 et arm64) : le script télécharge le programme de
+la dernière version, vérifie sa somme SHA-256 et le place dans
+`~/.local/bin`.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/maxlestage/Rythme/master/install.sh | sh
+```
+
+Options après `sh -s --` : `--dir /usr/local/bin` (un autre dossier),
+`--version v0.1.0` (une autre version) ; `--help` les liste.
+
+**Windows** (PowerShell) : le programme va dans
+`%LOCALAPPDATA%\Programs\Rythme\bin`, ajouté à votre `PATH`.
+
+```powershell
+irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex
+```
+
+Définissez `RYTHME_INSTALL_DIR` ou `RYTHME_VERSION` avant, ou lancez le
+fichier téléchargé : `.\install.ps1 -Dir C:\Outils -Version v0.1.0 -NoModifyPath`.
+
+**À la main :** chaque version publiée est accompagnée de programmes prêts à
+l'emploi pour Linux, macOS et Windows sur la
+[page des versions](https://github.com/maxlestage/Rythme/releases), et de
+leurs sommes de contrôle dans `SHA256SUMS`. Téléchargez l'archive de votre
+système, extrayez `rythme` (`rythme.exe` sous Windows) et placez-le dans un
+dossier de votre `PATH`.
+
+**Homebrew** (macOS, Linux) et **winget** (Windows), une fois les paquets
+publiés ([`packaging/`](packaging/README.md)) :
+
+```sh
+brew install maxlestage/rythme/rythme
+winget install Rythme.Rythme
+```
 
 **Avec [Rust](https://rustup.rs)** (une version stable récente) :
 
 ```sh
-cargo install --git https://github.com/maxlestage/Rythme
+cargo install rythme                                    # depuis crates.io, une fois publié
+cargo install --git https://github.com/maxlestage/Rythme   # le code le plus récent
 ```
 
 Ou depuis une copie de ce dépôt :
