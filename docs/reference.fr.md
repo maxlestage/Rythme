@@ -3179,7 +3179,7 @@ Le nombre de côtés d'un carré.
 len(x)
 ~~~
 
-Longueur d'un texte (en caractères), d'une liste ou d'un enregistrement.
+Longueur d'un texte (en caractères), d'une liste ou d'un enregistrement. Pareil que : `length`, `size` (ses noms Ruby).
 
 Exemple :
 

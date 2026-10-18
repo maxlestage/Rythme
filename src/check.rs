@@ -639,7 +639,7 @@ impl<'a> Checker<'a> {
         let last_expr = items.iter().rposition(|it| matches!(it, Item::Stmt(Stmt::Expr(_))));
         for (i, item) in items.iter().enumerate() {
             if let Item::Stmt(Stmt::Expr(e)) = item {
-                if Some(i) != last_expr && !has_effect(e) {
+                if Some(i) != last_expr && !has_effect(e, &|name| self.may_call(name)) {
                     self.diags.push(unused_value(e));
                 }
             }
@@ -834,6 +834,14 @@ impl<'a> Checker<'a> {
     }
 
     /// A local name: marks it as used, and gives what it is.
+    /// May `value.name` call something named `name`: a local name, or a
+    /// global one (a function, or a value that may be one)?
+    fn may_call(&self, name: &str) -> bool {
+        let s = Sym::new(name);
+        self.scopes.iter().flatten().any(|l| l.sym == s && !l.ty.never(FUNC))
+            || self.own.get(&s).or_else(|| self.know.globals.get(&s)).is_some_and(|g| g.kind != GKind::Ctor && g.kind != GKind::CtorValue)
+    }
+
     fn find_local(&mut self, s: Sym) -> Option<(Res, Ty)> {
         let l = self.scopes.iter_mut().rev().flat_map(|scope| scope.iter_mut().rev()).find(|l| l.sym == s)?;
         l.used = true;
@@ -1263,7 +1271,7 @@ impl<'a> Checker<'a> {
                     stops |= t == Ty::Never;
                     // Only the last line of a block gives its value.
                     if i + 1 < n {
-                        if !has_effect(e) {
+                        if !has_effect(e, &|name| self.may_call(name)) {
                             self.diags.push(unused_value(e));
                         }
                         self.lost_result(e);
@@ -3238,23 +3246,26 @@ fn fields_in_expr(e: &Expr, out: &mut HashSet<Rc<str>>) {
 }
 
 /// Can evaluating this expression do anything besides computing a value
-/// (call a function, or leave the function with `?`)?
-fn has_effect(e: &Expr) -> bool {
+/// (call a function, or leave the function with `?`)? `may_call(name)`:
+/// may `value.name` call a function named `name` (`"Ada".greet`)?
+fn has_effect(e: &Expr, may_call: &dyn Fn(&str) -> bool) -> bool {
+    let effect = |x: &Expr| has_effect(x, may_call);
     match &e.kind {
         ExprKind::Call(..) | ExprKind::Method(..) | ExprKind::Try(_) => true,
-        ExprKind::Template(parts) => parts.iter().any(|p| matches!(p, TemplatePart::Expr(x) if has_effect(x))),
+        ExprKind::Template(parts) => parts.iter().any(|p| matches!(p, TemplatePart::Expr(x) if effect(x))),
         ExprKind::List(items) => items.iter().any(|it| match it {
-            ListItem::One(x) | ListItem::Spread(x) => has_effect(x),
+            ListItem::One(x) | ListItem::Spread(x) => effect(x),
         }),
         ExprKind::Record(items) => items.iter().any(|it| match it {
-            RecordItem::Field(_, _, x) | RecordItem::Spread(x) => has_effect(x),
+            RecordItem::Field(_, _, x) | RecordItem::Spread(x) => effect(x),
         }),
-        ExprKind::Field(x, _, _) | ExprKind::Unary(_, x) => has_effect(x),
-        ExprKind::Index(a, b) | ExprKind::Binary(_, a, b, _) | ExprKind::Range(a, b) => has_effect(a) || has_effect(b),
-        ExprKind::If(c, a, b) => has_effect(c) || has_effect(a) || has_effect(b),
-        ExprKind::Match(s, arms) => has_effect(s) || arms.iter().any(|a| has_effect(&a.body) || a.guard.as_ref().is_some_and(has_effect)),
+        ExprKind::Field(x, name, _) => may_call(name) || effect(x),
+        ExprKind::Unary(_, x) => effect(x),
+        ExprKind::Index(a, b) | ExprKind::Binary(_, a, b, _) | ExprKind::Range(a, b) => effect(a) || effect(b),
+        ExprKind::If(c, a, b) => effect(c) || effect(a) || effect(b),
+        ExprKind::Match(s, arms) => effect(s) || arms.iter().any(|a| effect(&a.body) || a.guard.as_ref().is_some_and(effect)),
         ExprKind::Block(stmts) => stmts.iter().any(|s| match s {
-            Stmt::Let(_, x) | Stmt::Expr(x) => has_effect(x),
+            Stmt::Let(_, x) | Stmt::Expr(x) => effect(x),
             Stmt::Fn(_) => false,
         }),
         _ => false,
