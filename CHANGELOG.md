@@ -21,6 +21,9 @@ dit ce qu'une version 1.x peut changer ou non.*
   misspelled one is reported (W005) with the closest field suggested. A
   function given under the name of one of the language (`db.all`) is not
   taken for it. `tests/embedding.rs` shows how.
+- **A function given by the embedding program may be defined again**
+  without W003: a web page's own `fn header(...)` hides the framework's
+  `header` element on purpose. The language's own functions still warn.
 
 ### Language
 
