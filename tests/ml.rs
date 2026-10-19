@@ -171,3 +171,58 @@ fn mistakes_with_slopes() {
     // The function's own errors stay its own: sqrt below 0.
     fails("derivative(sqrt, 0)", "E023");
 }
+
+// ----- charts as text -------------------------------------------------------------
+
+#[test]
+fn plots_are_text() {
+    let r = rythme(&["-e", "print(plot([1, 4, 9, 16, 25, 36, 49]))"]);
+    let expected = [
+        "49 ┤                                                 •",
+        "   │",
+        "   │",
+        "   │                                         •",
+        "   │",
+        "25 ┤                                 •",
+        "   │",
+        "   │                         •",
+        "   │                •",
+        "   │        •",
+        " 1 ┤•",
+        "   └──────────────────────────────────────────────────",
+        "    0                                                6",
+    ];
+    assert_eq!(r.stdout.lines().collect::<Vec<_>>(), expected, "{}", r.stderr);
+    // x and y, with negative numbers; a flat line; tiny numbers.
+    let r = rythme(&["-e", "print(plot([-3, 0, 3], [9, 0, 9]))\nprint(plot([5, 5]))\nprint(plot([0.001, 0.002]))"]);
+    let lines: Vec<&str> = r.stdout.lines().collect();
+    assert_eq!(lines[0], "  9 ┤•                                                •");
+    assert_eq!(lines[10], "  0 ┤                         •");
+    assert_eq!(lines[12], "     -3                                               3");
+    assert!(r.stdout.contains("  5 ┤•                                                •"), "{}", r.stdout);
+    assert!(r.stdout.contains(" 0.002 ┤") && r.stdout.contains("0.0015 ┤"), "{}", r.stdout);
+    // The same numbers, the same drawing; nan and inf are left out.
+    ok("xs = map(0..100, fn(i) = sin(i / 10))\nprint(plot(xs) == plot(xs), plot([1, float(\"nan\"), 2]) == plot([1, 2]))", "true false");
+    ok("print(plot([1, float(\"inf\"), 2]) |> lines |> len)", "13");
+    let r = fails("plot([])", "E023");
+    assert!(r.stderr.contains("`plot` has nothing to draw"), "{}", r.stderr);
+    fails("plot([float(\"nan\")])", "E023");
+    fails("plot([1, 2], [1])", "E023");
+    fails("plot([1, \"a\"])", "E005");
+}
+
+#[test]
+fn histograms_are_text() {
+    ok("print(histogram([1, 2, 2, 3], 2))", "1 – 2 │█████████████▎ 1\n2 – 3 │████████████████████████████████████████ 3");
+    ok("print(histogram([7, 7, 7]))", "7 – 7 │████████████████████████████████████████ 3");
+    let r = rythme(&["-e", "random_seed(1)\nprint(histogram(map(1..1000, fn(_) = random_normal(170, 10))))"]);
+    let lines: Vec<&str> = r.stdout.lines().collect();
+    assert_eq!(lines.len(), 10, "{}", r.stdout);
+    // Every interval lines up, and the counts add up to 1000.
+    assert!(lines.iter().all(|l| l.find('│') == lines[0].find('│')), "{}", r.stdout);
+    let total: usize = lines.iter().map(|l| l.rsplit(' ').next().unwrap().parse::<usize>().unwrap()).sum();
+    assert_eq!(total, 1000);
+    fails("histogram([])", "E023");
+    fails("histogram([1], 0)", "E023");
+    fails("histogram([1], 101)", "E023");
+}

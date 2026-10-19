@@ -32,12 +32,14 @@ use csv::{csv_format, csv_parse, csv_records};
 use text_tools::{equals_ignore_case, format_number, trim_end, trim_start, words};
 mod grad;
 mod ml;
+mod plot;
 use grad::{derivative, gradient};
 use ml::{
     argmax, argmin, dot, identity_matrix, matmul, norm, normalize, ones, percentile, random_choice_weighted, random_normal, relu, shape,
     sigmoid, softmax, stats, std_dev, tanh, train_test_split, transpose, variance, vector_add, vector_mul, vector_scale, vector_sub, zeros,
     zip_with,
 };
+use plot::{histogram, plot};
 
 pub type BuiltinFn = fn(&mut Interp, &[Value], Span) -> Fallible<Value>;
 
@@ -959,6 +961,14 @@ pub static BUILTINS: &[Builtin] = &[
        "The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`). f takes a list of numbers and gives one number. Going against it lowers f: the heart of gradient descent.",
        "Le gradient de f au point xs : la liste des pentes de f le long de chaque nombre de xs (voir `derivative`). f prend une liste de nombres et donne un nombre. Aller en sens inverse fait baisser f : le cœur de la descente de gradient.",
        "gradient(fn([x, y]) = x * x + 3 * y, [2, 5])   # [4.0, 3.0]"),
+    b!("plot", "plot(xs, ys)", 1, 2, Ml, plot,
+       "Draws the points (x, y) as a chart in text, 50 columns wide and 11 lines high, with the smallest and largest values on the axes; with one list, draws its numbers at the positions 0, 1, 2... Gives a text: `print(plot(losses))`.",
+       "Dessine les points (x, y) sous forme de graphique en texte, de 50 colonnes de large et 11 lignes de haut, avec les plus petites et les plus grandes valeurs sur les axes ; avec une seule liste, dessine ses nombres aux positions 0, 1, 2... Donne un texte : `print(plot(pertes))`.",
+       "plot([1, 4, 9]) |> lines |> len   # 13"),
+    b!("histogram", "histogram(xs, bars)", 1, 2, Ml, histogram,
+       "Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each. Gives a text: `print(histogram(heights))`.",
+       "Compte combien de nombres tombent dans chacun des `bars` intervalles de même largeur (10 sinon) et les dessine en barres horizontales de texte, avec l'intervalle et le compte de chacune. Donne un texte : `print(histogram(tailles))`.",
+       "histogram([1, 2, 2, 3], 2) |> lines   # [\"1 – 2 │█████████████▎ 1\", \"2 – 3 │████████████████████████████████████████ 3\"]"),
 ];
 
 // ----- argument helpers --------------------------------------------------
