@@ -29,9 +29,23 @@ language (`.ry` files), in English and in French.
   the names of the whole workspace (`Ctrl+T`), folding, and growing the
   selection (`Shift+Alt+→`). The types can be hidden with the VS Code setting
   `editor.inlayHints.enabled`.
+- **The debugger**: click in the margin to put a breakpoint (or add a
+  function breakpoint by its name), then press `F5` on a `.ry` file, or the
+  *Debug this file* button at the top right: no `launch.json` is needed.
+  The program pauses there; the *Run and Debug* view shows the calls in
+  progress with their arguments (a call in tail position says which one it
+  replaced), the values of the names (lists, records, variants and
+  dictionaries open), and the watch expressions; step over (`F10`), step
+  into (`F11`), step out (`Shift+F11`) show where the program goes; the
+  debug console computes any expression, with values only (no output, files
+  or chance). When an error stops the program, it pauses where the error
+  happened. What the program prints appears in the debug console. The
+  extension starts `rythme dap`; a `launch.json` made by VS Code has the
+  configuration *Debug this Rythme file* (`program`, and `args`, `cwd`,
+  `stopOnEntry` if you want them).
 - Colors, automatic indentation and snippets, even without the program.
 - Commands (`Ctrl+Shift+P`, then *Rythme*): run the file, run its tests,
-  explain an error code, help on a topic or a function, restart the
+  debug it, explain an error code, help on a topic or a function, restart the
   language server. The *run* buttons are also at the top right of the editor.
 
 ## Install
@@ -54,8 +68,9 @@ language (`.ry` files), in English and in French.
 
    Or, to work on the extension: open `editors/vscode` in VS Code, run
    `npm install`, and press `F5` (a VS Code window starts with the extension).
-   `npm run check` loads the extension and talks to the language server
-   without VS Code (after `cargo build` at the root of the repository).
+   `npm run check` loads the extension, talks to the language server and
+   debugs a program with `rythme dap`, without VS Code (after `cargo build`
+   at the root of the repository).
 
 Open a `.ry` file: the language server starts by itself.
 
@@ -126,11 +141,26 @@ et en anglais.
   travail (`Ctrl+T`), le pliage, et l'agrandissement de la sélection
   (`Maj+Alt+→`). Le réglage `editor.inlayHints.enabled` de VS Code masque les
   types.
+- **Le débogueur** : cliquez dans la marge pour poser un point d'arrêt (ou
+  ajoutez un point d'arrêt sur une fonction, par son nom), puis appuyez sur
+  `F5` dans un fichier `.ry`, ou sur le bouton *Déboguer ce fichier* en haut
+  à droite : aucun `launch.json` n'est nécessaire. Le programme s'y met en
+  pause ; la vue *Exécuter et déboguer* montre les appels en cours avec leurs
+  arguments (un appel terminal dit lequel il a remplacé), les valeurs des
+  noms (listes, enregistrements, variantes et dictionnaires s'ouvrent) et les
+  expressions espionnées ; pas à pas principal (`F10`), détaillé (`F11`) et
+  sortant (`Maj+F11`) montrent où va le programme ; la console de débogage
+  calcule n'importe quelle expression, avec des valeurs seulement (ni
+  affichage, ni fichiers, ni hasard). Quand une erreur arrête le programme,
+  il fait une pause là où elle s'est produite. Ce que le programme affiche
+  apparaît dans la console de débogage. L'extension lance `rythme dap` ; un
+  `launch.json` créé par VS Code a la configuration *Déboguer ce fichier
+  Rythme* (`program`, et `args`, `cwd`, `stopOnEntry` si vous le voulez).
 - Couleurs, indentation automatique et extraits de code, même sans le programme.
 - Des commandes (`Ctrl+Maj+P`, puis *Rythme*) : lancer le fichier, lancer
-  ses tests, expliquer un code d'erreur, l'aide sur un sujet ou une
-  fonction, redémarrer le serveur de langage. Les boutons *lancer* sont aussi
-  en haut à droite de l'éditeur.
+  ses tests, le déboguer, expliquer un code d'erreur, l'aide sur un sujet ou
+  une fonction, redémarrer le serveur de langage. Les boutons *lancer* sont
+  aussi en haut à droite de l'éditeur.
 
 ## Installer
 
@@ -153,9 +183,9 @@ et en anglais.
 
    Ou, pour travailler sur l'extension : ouvrez `editors/vscode` dans VS
    Code, lancez `npm install`, et appuyez sur `F5` (une fenêtre de VS Code
-   démarre avec l'extension). `npm run check` charge l'extension et dialogue
-   avec le serveur de langage sans VS Code (après `cargo build` à la racine
-   du dépôt).
+   démarre avec l'extension). `npm run check` charge l'extension, dialogue
+   avec le serveur de langage et débogue un programme avec `rythme dap`, sans
+   VS Code (après `cargo build` à la racine du dépôt).
 
 Ouvrez un fichier `.ry` : le serveur de langage démarre tout seul.
 

@@ -209,6 +209,7 @@ cargo install --path .       # or install it in your PATH
 | `rythme learn`              | guided tour of the language                    |
 | `rythme exercise`           | [30 graded exercises](docs/exercises/README.md): `list`, `start 1`, `check FILE` |
 | `rythme steps fib.ry "fib(4)"` | the calculation step by step: `fib(4)` → `fib(3) + fib(2)` → ... |
+| `rythme debug fib.ry`       | the debugger: `break 12`, `run`, `next`, `step`, `where`, `print n * 2` ([manual](docs/reference.md#79-the-debugger-rythme-debug)) |
 | `rythme -e 'print(1 + 2)'`  | run a piece of code                            |
 | `rythme lsp`                | language server, started by your editor ([editors](editors)) |
 
@@ -342,6 +343,7 @@ mode) and is organised as a pipeline:
 | [`src/testing.rs`](src/testing.rs) | `rythme test`: files and folders, `--filter`, `--watch`, the summary |
 | [`src/format.rs`](src/format.rs) | `rythme fmt`: the official layout, which never changes the meaning |
 | [`src/steps.rs`](src/steps.rs) | `rythme steps`: the evaluation shown step by step, for teaching |
+| [`src/debug/`](src/debug) | the debugger: `rythme debug` in a terminal, `rythme dap` for editors |
 | [`src/lsp/`](src/lsp) | the language server (`rythme lsp`): help inside editors |
 
 `cargo test` runs the examples, checks that every example of the standard

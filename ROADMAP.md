@@ -166,8 +166,14 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
   stays as it is.
 - **A package index**: finding and sharing packages by name, beside the
   dependencies from a repository or a folder of `rythme.toml`.
-- **A debugger in the editors** (breakpoints, values of the names), building
-  on `rythme steps` and the language server.
+- [x] **A debugger in the editors** (breakpoints, values of the names), building
+  on `rythme steps` and the language server. Done: `rythme debug file.ry`
+  in a terminal (breakpoints on lines and functions, `next`, `step`,
+  `finish`, `where` with the arguments and the depth of recursion, `print`
+  of any expression with values only, `locals`, a pause on errors, tail
+  calls shown as such; `rythme help debug`), and `rythme dap`, the Debug
+  Adapter Protocol, used by the VS Code extension for the debugger type
+  `rythme`. Without the debugger, programs run at the same speed.
 - **More languages of the messages**, and the guide for teachers translated
   where it is not yet.
 - **More of the library**: CSV, HTTP requests, `random` with a seed that a

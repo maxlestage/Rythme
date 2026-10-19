@@ -73,6 +73,14 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
   and the summary (`tests/testing.rs`); `run_paths` tests files and folders
   for any tool. Property tests (`check_all` and its generators) live in
   `builtins/property.rs`.
+- `debug/` is the debugger: `rythme debug` in a terminal (`term.rs`) and
+  `rythme dap` for editors (`dap.rs`). `compile.rs` adds the places where it
+  may pause (`Stmt::Stop`) only to the code of a program it runs, and the
+  interpreter follows the calls through hooks on paths it already takes
+  (`call_hook`, `return_hook`, `error_hook`), so that programs without it run
+  as fast as before: check with `bench/run.sh` after a change there.
+  `tests/debug.rs` types sessions, speaks the protocol, and runs every
+  example step by step.
 - `doc.rs` is `rythme doc`: the documentation of files and folders, from
   their `##` comments, as Markdown or one HTML page (`tests/doc.rs`).
 - `builtins.rs` holds the standard library; `help.rs` the help topics and the
