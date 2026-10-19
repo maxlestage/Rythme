@@ -8881,5 +8881,22 @@ läuft; die Editoren und `rythme doc` zeigen sie."#,
             "The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`). f takes a list of numbers and gives one number. Going against it lowers f: the heart of gradient descent.",
             "Der Gradient von f im Punkt xs: die Liste der Steigungen von f entlang jeder Zahl von xs (siehe `derivative`). f nimmt eine Liste von Zahlen und gibt eine Zahl. Gegen ihn zu gehen senkt f: das Herz des Gradientenabstiegs.",
         ),
+        // src/builtins/plot.rs: charts as text
+        (
+            "`{f}` has nothing to draw: the list is empty, or holds no finite number",
+            "`{f}` hat nichts zu zeichnen: die Liste ist leer oder enthält keine endliche Zahl",
+        ),
+        (
+            "`histogram` draws at most 100 bars, not {bins}",
+            "`histogram` zeichnet höchstens 100 Balken, nicht {bins}",
+        ),
+        (
+            "Draws the points (x, y) as a chart in text, 50 columns wide and 11 lines high, with the smallest and largest values on the axes; with one list, draws its numbers at the positions 0, 1, 2... Gives a text: `print(plot(losses))`.",
+            "Zeichnet die Punkte (x, y) als Diagramm aus Text, 50 Spalten breit und 11 Zeilen hoch, mit den kleinsten und größten Werten an den Achsen; mit einer einzigen Liste zeichnet es ihre Zahlen an den Positionen 0, 1, 2... Gibt einen Text: `print(plot(verluste))`.",
+        ),
+        (
+            "Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each. Gives a text: `print(histogram(heights))`.",
+            "Zählt, wie viele Zahlen in jedes von `bars` gleich breiten Intervallen fallen (10, wenn nicht angegeben), und zeichnet sie als waagerechte Balken aus Text, mit dem Intervall und der Anzahl jedes Balkens. Gibt einen Text: `print(histogram(groessen))`.",
+        ),
     ],
 }

@@ -1360,6 +1360,16 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 need(a, 1, Expected::List)?;
                 Ty::list(Ty::Float)
             }
+            "plot" => {
+                need(a, 0, Expected::List)?;
+                need(a, 1, Expected::List)?;
+                Ty::Text
+            }
+            "histogram" => {
+                need(a, 0, Expected::List)?;
+                need(a, 1, Expected::Int)?;
+                Ty::Text
+            }
             "train_test_split" => {
                 need(a, 0, Expected::List)?;
                 need(a, 1, Expected::Number)?;

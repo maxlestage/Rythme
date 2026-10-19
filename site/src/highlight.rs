@@ -214,6 +214,8 @@ pub const BUILTINS: &[
     "train_test_split",
     "derivative",
     "gradient",
+    "plot",
+    "histogram",
     "pi",
 ];
 

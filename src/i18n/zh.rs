@@ -8648,5 +8648,16 @@ Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把�
             "The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`). f takes a list of numbers and gives one number. Going against it lowers f: the heart of gradient descent.",
             "f 在点 xs 处的梯度：f 沿 xs 中每个数方向的斜率列表（见 `derivative`）。f 接受一个数字列表并返回一个数。沿其反方向前进会使 f 减小：这就是梯度下降的核心。",
         ),
+        // src/builtins/plot.rs: charts as text
+        ("`{f}` has nothing to draw: the list is empty, or holds no finite number", "`{f}` 没有可画的内容：列表为空，或不含任何有限的数"),
+        ("`histogram` draws at most 100 bars, not {bins}", "`histogram` 最多画 100 个条，而不是 {bins} 个"),
+        (
+            "Draws the points (x, y) as a chart in text, 50 columns wide and 11 lines high, with the smallest and largest values on the axes; with one list, draws its numbers at the positions 0, 1, 2... Gives a text: `print(plot(losses))`.",
+            "把点 (x, y) 画成文本图表，宽 50 列、高 11 行，坐标轴上标出最小值和最大值；只给一个列表时，把其中的数画在位置 0、1、2……上。返回文本：`print(plot(losses))`。",
+        ),
+        (
+            "Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each. Gives a text: `print(histogram(heights))`.",
+            "统计落入 `bars` 个等宽区间（默认 10 个）中每个区间的数的个数，并画成水平的文本条形，标出每个区间及其计数。返回文本：`print(histogram(heights))`。",
+        ),
     ],
 }
