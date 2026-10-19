@@ -11,7 +11,16 @@
   const nav = document.getElementById("nav");
   const wide = window.matchMedia("(min-width: 860px)");
 
+  // The bottom of the bar, where the menu panel and the language list start: the bar
+  // wraps on two lines when the text is enlarged, and scrolls away on a short screen.
+  const bar = document.querySelector(".bar");
+  const measureBar = () => {
+    if (bar) root.style.setProperty("--bar-bottom", `${Math.max(0, Math.round(bar.getBoundingClientRect().bottom))}px`);
+  };
+  window.addEventListener("resize", measureBar);
+
   function setMenu(open) {
+    if (open) measureBar();
     root.classList.toggle("menu-open", open);
     burger.setAttribute("aria-expanded", String(open));
     // Closed on a phone, the panel's links leave the tab order.
@@ -56,6 +65,7 @@
       if (ev.relatedTarget && !langMenu.contains(ev.relatedTarget)) close();
     });
     langMenu.addEventListener("toggle", () => {
+      if (langMenu.open) measureBar();
       if (langMenu.open && burger && root.classList.contains("menu-open")) setMenu(false);
     });
     if (burger) burger.addEventListener("click", close);
@@ -96,17 +106,40 @@
   const $ = (id) => document.getElementById(id);
 
   // The service worker keeps the site offline. A new version installs in the
-  // background and waits: the banner offers to reload, nothing reloads on its own (the
-  // playground may be in use).
+  // background (looked for at each visit, and each time the app comes back to the
+  // foreground) and waits. It comes in by itself only when nobody can lose anything:
+  // when the app opens or comes back and the new version is ready before the visitor
+  // has touched anything, or when the app goes to the background with no field being
+  // edited and no program running (an installed app is rarely closed, so "next launch"
+  // would otherwise never come). Otherwise the banner offers to reload, and nothing
+  // reloads on its own: the playground may be in use.
   const site = document.querySelector(".site[data-sw]");
   const update = $("app-update");
   if (site && update && "serviceWorker" in navigator) {
     let registration = null;
     let reloading = false;
+    // Touched since the page opened or came back to the foreground.
+    let touched = false;
+    for (const type of ["pointerdown", "keydown", "input"]) document.addEventListener(type, () => { touched = true; }, true);
+    const editing = () => {
+      const el = document.activeElement;
+      return (!!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) || document.body.classList.contains("running");
+    };
     const offer = () => { update.hidden = false; };
+    const apply = () => {
+      reloading = true;
+      registration.waiting.postMessage("skip-waiting");
+    };
+    // A new version is waiting: in by itself if that loses nothing, else the banner.
+    const settle = () => {
+      if (!registration || !registration.waiting || !navigator.serviceWorker.controller || reloading) return;
+      const hidden = document.visibilityState === "hidden";
+      if (!editing() && (hidden || !touched)) apply();
+      else offer();
+    };
     const watch = (worker) => {
       worker.addEventListener("statechange", () => {
-        if (worker.state === "installed" && navigator.serviceWorker.controller) offer();
+        if (worker.state === "installed") settle();
       });
     };
     window.addEventListener("load", async () => {
@@ -116,12 +149,18 @@
         return;
       }
       if (!registration) return;
-      if (registration.waiting && navigator.serviceWorker.controller) offer();
+      settle();
       if (registration.installing) watch(registration.installing);
       registration.addEventListener("updatefound", () => watch(registration.installing));
-      // An app left open looks for a new version when it comes back.
+      // An app left open looks for a new version when it comes back, and takes the one
+      // waiting when it leaves.
       document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") registration.update().catch(() => {});
+        if (document.visibilityState === "visible") {
+          touched = false;
+          registration.update().catch(() => {});
+        } else {
+          settle();
+        }
       });
     });
     navigator.serviceWorker.addEventListener("controllerchange", () => {

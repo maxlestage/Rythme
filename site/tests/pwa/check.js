@@ -598,6 +598,73 @@ async function verify(mode) {
   check(after.keys.filter((k) => /^rythme-[0-9a-f]{10}$/.test(k)).length === 1, "update: the old cache is deleted", after.keys);
   check(after.code.includes("typing"), "update: the code being typed is kept");
 
+  // (e2) The installed app opens, or comes back to the foreground, and finds a new
+  // version before anything is touched: it comes in by itself, the code kept.
+  const css = () => page.getAttribute('link[href*="site.css"]', "href");
+  const deploy = async () => {
+    await site.stop();
+    deployChange(dir);
+    site = await start(dir, port);
+  };
+  const lookForUpdate = () => page.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
+  // The app goes to the background (as when another app is opened).
+  const hide = () => page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  let before = await css();
+  await deploy();
+  await page.evaluate(() => { window.stillHere = true; });
+  const reloaded = await Promise.all([page.waitForEvent("load", { timeout: 30000 }), lookForUpdate()]).then(() => true, () => false);
+  await ran(page);
+  check(reloaded && (await css()) !== before && !(await page.evaluate(() => window.stillHere)) && !(await page.isVisible("#app-update")),
+    "update: found before anything is touched, the new version comes in by itself");
+  check((await page.inputValue("#source")).includes("typing"), "update: … and the code is kept");
+
+  // (e3) Touched, nothing being edited: the banner; then the app goes to the background
+  // and the new version comes in (an installed app is rarely closed).
+  before = await css();
+  await deploy();
+  await page.click("h1");
+  await page.evaluate(() => { window.stillHere = true; });
+  await lookForUpdate();
+  await page.waitForSelector("#app-update:not([hidden])", { timeout: 30000 }).catch(() => null);
+  check(await page.isVisible("#app-update") && await page.evaluate(() => window.stillHere === true), "update: once the page is touched, the banner and no reload");
+  await Promise.all([page.waitForEvent("load", { timeout: 30000 }), hide()]).catch(() => null);
+  await ran(page);
+  check((await css()) !== before && !(await page.evaluate(() => window.stillHere)), "update: the app going to the background takes the new version");
+
+  // (e4) A program being typed when the app goes to the background: nothing reloads, the
+  // banner stays. The next launch (a new page) takes the new version by itself.
+  before = await css();
+  await deploy();
+  await page.click("#source");
+  await page.keyboard.type("# still typing\n");
+  await page.evaluate(() => { window.stillHere = true; });
+  await lookForUpdate();
+  await page.waitForSelector("#app-update:not([hidden])", { timeout: 30000 }).catch(() => null);
+  await hide();
+  await page.waitForTimeout(2000);
+  check(await page.evaluate(() => window.stillHere === true) && await page.isVisible("#app-update") && (await page.inputValue("#source")).includes("still typing"),
+    "update: a field being edited when the app leaves: no reload, the banner stays");
+  const launch2 = await context.newPage();
+  await launch2.goto(`${base}/fr/playground/`);
+  const waiting = async () => {
+    for (let n = 0; n < 100; n++) {
+      const left = await launch2.evaluate(async () => !!(await navigator.serviceWorker.getRegistration()).waiting).catch(() => true);
+      if (!left) return false;
+      await launch2.waitForTimeout(200);
+    }
+    return true;
+  };
+  const stillWaiting = await waiting();
+  await launch2.waitForLoadState("load");
+  await ran(launch2);
+  check(!stillWaiting && (await launch2.getAttribute('link[href*="site.css"]', "href")) !== before && (await launch2.inputValue("#source")).includes("still typing"),
+    "update: the next launch takes the waiting version by itself, with the code typed");
+  check(await page.evaluate(() => window.stillHere === true) && (await page.inputValue("#source")).includes("still typing"), "update: … and the page being edited is left alone");
+  await launch2.close();
+
   // (f) No console error, no CSP violation, on any page.
   check(errors.length === 0, "no console error", errors.join("\n"));
   await browser.close();
