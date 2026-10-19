@@ -28,7 +28,9 @@ const checks = checker();
 const check = checks.check;
 
 // What overflows the viewport, measured in the page: the document's own width, every
-// element that sticks out of the viewport, and every element that scrolls sideways.
+// element that sticks out of the viewport, and every element that scrolls sideways;
+// under 700px, every text field whose text is under 16px (iOS zooms into it when it is
+// focused, and the page then scrolls sideways).
 function measure() {
   const root = document.documentElement;
   const vw = root.clientWidth;
@@ -41,18 +43,22 @@ function measure() {
   };
   const wide = [];
   const scrollers = [];
+  const small = [];
   for (const el of document.body.querySelectorAll("*")) {
+    if (vw < 700 && el.matches("input:not([type=range]):not([type=radio]):not([type=checkbox]):not([type=file]):not([type=hidden]), textarea, select, [contenteditable]")
+      && parseFloat(getComputedStyle(el).fontSize) < 16) small.push(`${name(el)} ${getComputedStyle(el).fontSize}`);
     const r = el.getBoundingClientRect();
     if (r.width === 0 && r.height === 0) continue;
     const cs = getComputedStyle(el);
-    if (cs.display === "none") continue;
+    // The content of a closed `details` is not drawn (Chromium still lays it out).
+    if (cs.display === "none" || el.closest("details:not([open]) > :not(summary)")) continue;
     if (r.right > vw + 0.5 || r.left < -0.5) wide.push(`${name(el)} [${Math.round(r.left)}, ${Math.round(r.right)}]`);
     if (/auto|scroll/.test(cs.overflowX) && el.scrollWidth > el.clientWidth + 1) scrollers.push(`${name(el)} ${el.scrollWidth} > ${el.clientWidth}`);
   }
   // The bar keeps one line: the logo, the language switch and the burger (or the links).
   const bar = document.querySelector(".bar__inner");
   if (bar && bar.getBoundingClientRect().height > parseFloat(getComputedStyle(bar).minHeight) + 1) wide.push(`the bar wraps (${Math.round(bar.getBoundingClientRect().height)}px high)`);
-  return { scrollWidth: root.scrollWidth, clientWidth: vw, wide: wide.slice(0, 20), scrollers: scrollers.slice(0, 20) };
+  return { scrollWidth: root.scrollWidth, clientWidth: vw, wide: wide.slice(0, 20), scrollers: scrollers.slice(0, 20), small };
 }
 
 // Every piece of text against the background it is drawn on: the ratios under the
@@ -169,6 +175,7 @@ async function noHorizontalScroll(browser, base, mode) {
           if (m.scrollWidth > m.clientWidth) failed.push(`${url} ${theme} ${width}px: the page is ${m.scrollWidth}px wide`);
           for (const what of m.wide) failed.push(`${url} ${theme} ${width}px: sticks out: ${what}`);
           for (const what of m.scrollers) failed.push(`${url} ${theme} ${width}px: scrolls sideways: ${what}`);
+          for (const what of m.small) failed.push(`${url} ${theme} ${width}px: a field under 16px (iOS zooms in): ${what}`);
         }
       }
     }
@@ -179,7 +186,7 @@ async function noHorizontalScroll(browser, base, mode) {
     const key = line.replace(/ \S+ \d+px: /, ": ").replace(/\[-?\d+, -?\d+\]|\d+ > \d+|\d+px wide/g, "");
     if (!unique.has(key)) unique.set(key, line);
   }
-  check(failed.length === 0, `${mode}: no horizontal scroll on ${LANGS.length * PAGES.length} pages × ${THEMES.length} themes × ${WIDTHS.length} widths (${measured} layouts)`, `\n    ${[...unique.values()].slice(0, 60).join("\n    ")}`);
+  check(failed.length === 0, `${mode}: no horizontal scroll, every field at 16px under 700px, on ${LANGS.length * PAGES.length} pages × ${THEMES.length} themes × ${WIDTHS.length} widths (${measured} layouts)`, `\n    ${[...unique.values()].slice(0, 60).join("\n    ")}`);
   await context.close();
 }
 

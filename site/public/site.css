@@ -1,8 +1,15 @@
 /* The Rythme website. Mobile first: every rule is written for a phone, and the
-   media queries at the end of each part add room for wider screens.
+   media queries at the end of each part add room for wider screens (`min-width` or
+   `min-height` only, never `max-width`).
    The look is a score: paper, ink, a blue accent, and four beats.
    Nothing scrolls sideways: code wraps, tables become cards on phones, long words
-   break. tests/pwa/layout.js checks it at every width, in every theme. */
+   break. tests/pwa/layout.js checks it at every width, in every theme; and
+   tests/pwa/mobile.js as real phones show it: with the text enlarged (Android's font
+   size, Safari's and Chrome's text zoom) and the page zoomed (200% of a phone is a
+   window of 180px), in landscape, with the keyboard open, with every menu open; every
+   field at 16px at least (iOS zooms into a smaller one, and the page then scrolls
+   sideways), every target of a finger at 44px at least. Sizes follow the text (`em`,
+   `rem`, `ch`), never a fixed width wider than a phone. */
 
 /* ----- color themes --------------------------------------------------------------- */
 
@@ -108,6 +115,9 @@
   --bar-h: 60px;
   --radius: 12px;
   --code-size: 13.5px;
+  /* The bottom of the bar, measured by site.js (it may wrap on two lines when the text
+     is enlarged, or scroll away in landscape): the menu panel starts there. */
+  --bar-bottom: calc(var(--bar-h) + env(safe-area-inset-top));
 }
 /* Chinese pages: the Latin fonts first (code, names, numbers), then a Chinese one;
    headings without the tight spacing made for Latin letters, text with more air. */
@@ -123,19 +133,19 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html { -webkit-text-size-adjust: 100%; scroll-padding-top: calc(var(--bar-h) + env(safe-area-inset-top) + 12px); }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: calc(var(--bar-h) + env(safe-area-inset-top) + 12px); }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
   font: 16px/1.6 var(--body);
-  /* A word or an address longer than the line breaks rather than pushing the page. */
-  overflow-wrap: break-word;
+  /* A word or an address longer than the line breaks rather than pushing the page,
+     everywhere: titles, buttons and labels too, even where the layout measures its
+     narrowest content (grid and flex items). With the text enlarged or the page
+     zoomed, a phone may be 180px wide. */
+  overflow-wrap: anywhere;
 }
-/* In running text, a long word or address may break anywhere, even where the layout
-   measures its narrowest content (grid and flex items). */
-p, dd, td { overflow-wrap: anywhere; }
 /* Code exactly as typed: `|>` must not turn into a triangle. */
 code, pre, textarea, kbd, .file, .topic, .chip, .lang, .gutter, #search {
   font-variant-ligatures: none;
@@ -149,13 +159,14 @@ button, select, input, textarea { font: inherit; color: inherit; }
 code { font-family: var(--mono); font-size: 0.92em; overflow-wrap: anywhere; }
 ul, ol { margin: 0; padding: 0; }
 
+/* Out of sight above the page, however big its text, until focused. */
 .skip {
-  position: absolute; left: var(--gutter); top: -60px; z-index: 100;
+  position: absolute; left: var(--gutter); top: 0; z-index: 100; transform: translateY(-110%);
   background: var(--accent); color: var(--accent-ink); padding: 8px 14px; border-radius: 8px; font-weight: 600;
 }
-.skip:focus { top: 10px; }
+.skip:focus { transform: translateY(10px); }
 
-.site { min-height: 100vh; display: flex; flex-direction: column; }
+.site { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
 .site > main { flex: 1; }
 
 .lead { color: var(--ink-soft); font-size: 1.05rem; max-width: 62ch; text-wrap: pretty; }
@@ -196,13 +207,18 @@ ul, ol { margin: 0; padding: 0; }
 .btn--ghost { background: transparent; }
 .btn--stop { background: var(--err); border-color: var(--err); color: var(--err-ink); }
 .btn--lg { min-height: 50px; padding: 10px 22px; font-size: 16px; }
-.btn--sm { min-height: 38px; padding: 6px 12px; font-size: 14px; }
+.btn--sm { min-height: 44px; padding: 6px 12px; font-size: 14px; }
+/* A finger needs 44px; a mouse can aim at less. */
+@media (pointer: fine) { .btn--sm { min-height: 38px; } }
 
 /* ----- header and burger menu -------------------------------------------------------- */
 
 /* Under the status bar of the installed app (`viewport-fit=cover`), the bar keeps its
    content in the safe area. */
-.bar { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--rule); padding-top: env(safe-area-inset-top); }
+.bar { position: relative; top: 0; z-index: 50; border-bottom: 1px solid var(--rule); padding-top: env(safe-area-inset-top); }
+/* The bar stays at the top while scrolling, unless the screen is too short for it: a
+   phone in landscape, above all with its keyboard open, keeps its height for the page. */
+@media (min-height: 520px) { .bar { position: sticky; } }
 /* The blur sits on a layer of its own: on the bar itself it would become the
    containing block of the fixed menu panel and shrink it to the bar's height. */
 .bar::before {
@@ -212,7 +228,7 @@ ul, ol { margin: 0; padding: 0; }
   backdrop-filter: saturate(1.4) blur(12px);
 }
 .bar__inner {
-  max-width: 1160px; margin: 0 auto; min-height: var(--bar-h);
+  position: relative; max-width: 1160px; margin: 0 auto; min-height: var(--bar-h);
   padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left));
   display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
 }
@@ -234,10 +250,10 @@ ul, ol { margin: 0; padding: 0; }
 
 /* The language switch of the bar: a button with the code of the language, which opens
    the list of languages (a `details`: it works without JavaScript). The list hangs
-   under the button, aligned on its right edge, never wider than the screen. */
-.lang--bar { position: relative; }
+   under the bar, on the right edge of its content, never wider nor taller than the
+   screen (even when the bar wraps and the button is on the left). */
 .lang__toggle {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px;
+  display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 0 9px;
   border: 1px solid var(--rule); border-radius: 999px; background: var(--staff); color: var(--ink);
   font: 600 13px/1 var(--mono); letter-spacing: 0.04em; cursor: pointer; list-style: none; user-select: none;
 }
@@ -251,8 +267,10 @@ ul, ol { margin: 0; padding: 0; }
 .lang--bar[open] .lang__toggle::after { margin-top: 3px; transform: rotate(-135deg); }
 .lang__toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .lang__menu {
-  position: absolute; right: 0; top: calc(100% + 8px); z-index: 70;
-  width: max-content; min-width: 190px; max-width: calc(100vw - 2 * var(--gutter));
+  position: absolute; right: max(var(--gutter), env(safe-area-inset-right)); top: calc(100% + 8px); z-index: 70;
+  width: max-content; min-width: min(12em, 100% - 2 * var(--gutter)); max-width: calc(100% - 2 * var(--gutter));
+  max-height: calc(100vh - var(--bar-bottom) - 16px); max-height: calc(100dvh - var(--bar-bottom) - 16px);
+  overflow-y: auto; overscroll-behavior: contain;
   margin: 0; padding: 6px; list-style: none;
   background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow);
 }
@@ -267,11 +285,14 @@ ul, ol { margin: 0; padding: 0; }
 .lang__list { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none; }
 .lang--foot .lang__code { display: none; }
 .foot__meta .lang--foot .lang__link.is-active { color: var(--ink); font-weight: 600; }
-/* The smallest phones (320px): the logo, the language switch and the burger on one line. */
-@media (max-width: 379px) {
-  .bar__inner { column-gap: 6px; }
-  .brand { gap: 6px; }
-  .lang__toggle { padding: 0 9px; gap: 5px; }
+/* The smallest phones (320px) have the logo, the language switch and the burger on one
+   line; larger screens give them more room. */
+.bar__inner { column-gap: 6px; }
+.brand { gap: 6px; }
+@media (min-width: 380px) {
+  .bar__inner { column-gap: 12px; }
+  .brand { gap: 10px; }
+  .lang__toggle { padding: 0 12px; gap: 6px; }
 }
 
 .burger {
@@ -295,7 +316,7 @@ ul, ol { margin: 0; padding: 0; }
 /* With JavaScript, on a phone: the links fold behind the burger, in a panel that
    covers the page under the bar. */
 .js .nav {
-  position: fixed; left: 0; right: 0; top: calc(var(--bar-h) + env(safe-area-inset-top)); bottom: 0; width: auto;
+  position: fixed; left: 0; right: 0; top: var(--bar-bottom); bottom: 0; width: auto;
   background: var(--paper);
   padding: 12px max(var(--gutter), env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
   overflow-y: auto; overscroll-behavior: contain;
@@ -333,17 +354,30 @@ ul, ol { margin: 0; padding: 0; }
   .burger { display: none !important; }
   .js.menu-open body { overflow: auto; }
 }
-@media (min-width: 860px) and (max-width: 980px) {
+@media (min-width: 860px) {
   .nav__link--github span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
+@media (min-width: 981px) {
+  .nav__link--github span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
 }
 
 /* ----- shared layout ------------------------------------------------------------------ */
 
 .home, .page { width: 100%; max-width: 1160px; margin: 0 auto; padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left)); }
-.page { padding-top: 36px; padding-bottom: 64px; display: grid; gap: 28px; align-content: start; }
+.page { padding-top: clamp(16px, 4svh, 36px); padding-bottom: 64px; display: grid; gap: 28px; align-content: start; }
 .page--wide { max-width: 1320px; }
+/* One column on phones, which never grows past the screen: without `minmax(0, …)` a
+   grid column is as wide as the widest thing that cannot wrap (a field and its basis, a
+   select and its longest option), and the page widens. Wider screens set their columns
+   below. */
+.page, .section, .hero, .page-head, .section__head, .split__text, .cards, .examples, .tour,
+.tour__step, .workspace, .toolbar, .help, .doc, .steps, .step, .card, .stepper, .foot__inner, .commands {
+  grid-template-columns: minmax(0, 1fr);
+}
 .page-head { display: grid; gap: 12px; }
-.page-head h1 { font-size: clamp(36px, 9vw, 60px); font-weight: 800; }
+/* Titles follow the width, and the height too: a phone in landscape keeps its screen
+   for the content (the playground's editor) rather than for a huge title. */
+.page-head h1 { font-size: clamp(32px, min(9vw, 6svh + 12px), 60px); font-weight: 800; }
 
 .section { padding: 56px 0; display: grid; gap: 28px; border-top: 1px solid var(--rule); }
 .section__head { display: grid; gap: 10px; }
@@ -356,7 +390,7 @@ ul, ol { margin: 0; padding: 0; }
   padding: 20px; display: grid; gap: 8px; align-content: start;
 }
 .card h3 { font-size: 21px; }
-.card h3 a { color: inherit; }
+.card h3 a { color: inherit; display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; margin-block: -9px; }
 .card h3 code { font-size: 0.85em; color: var(--accent); }
 .card p { color: var(--ink-soft); font-size: 15px; }
 .card__num { font: 600 12px/1 var(--mono); color: var(--accent); letter-spacing: 0.06em; }
@@ -378,13 +412,16 @@ ul, ol { margin: 0; padding: 0; }
 .code-block, .output {
   margin: 0; padding: 16px; min-width: 0;
   font: var(--code-size)/1.6 var(--mono); tab-size: 2;
-  white-space: pre-wrap; overflow-wrap: anywhere;
+  /* `break-spaces`: a run of spaces (the columns of a table printed by a program)
+     wraps too, rather than hanging out of the line. */
+  white-space: pre-wrap; white-space: break-spaces; overflow-wrap: anywhere;
   background: var(--staff); color: var(--ink);
 }
 .code-block code, .output code { font-size: inherit; }
 .code-block code { display: block; }
 .code-block .line {
-  --hang: calc((var(--indent, 0) + 2) * 1ch);
+  /* At most a third of the screen: a deep line still has room to wrap. */
+  --hang: min(calc((var(--indent, 0) + 2) * 1ch), 33vw);
   display: block; padding-left: var(--hang); text-indent: calc(-1 * var(--hang));
 }
 .t-kw { color: var(--tok-kw); font-weight: 600; }
@@ -416,7 +453,7 @@ ul, ol { margin: 0; padding: 0; }
 .command code { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; padding: 8px 0; }
 .command__prompt { opacity: 0.5; margin-right: 10px; user-select: none; }
 .command__copy {
-  flex: none; min-height: 36px; padding: 0 12px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); border-radius: 8px;
+  flex: none; min-height: 44px; padding: 0 12px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); border-radius: 8px;
   background: transparent; color: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
 }
 .command__copy:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
@@ -424,7 +461,7 @@ ul, ol { margin: 0; padding: 0; }
 /* ----- home: hero -------------------------------------------------------------------- */
 
 .hero { display: grid; gap: 32px; padding: 40px 0 56px; }
-.hero__title { font-size: clamp(40px, 11vw, 76px); font-weight: 800; letter-spacing: -0.035em; }
+.hero__title { font-size: clamp(36px, min(11vw, 8svh + 16px), 76px); font-weight: 800; letter-spacing: -0.035em; }
 .hero__lead { margin-top: 18px; color: var(--ink-soft); font-size: 1.1rem; max-width: 56ch; text-wrap: pretty; }
 .hero__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
 .hero__actions .btn { flex: 1 1 220px; }
@@ -439,7 +476,7 @@ ul, ol { margin: 0; padding: 0; }
 }
 .score__run, .tour__try {
   font: 600 13px/1 var(--body); color: var(--accent); text-decoration: none;
-  display: inline-flex; align-items: center; min-height: 36px; padding: 0 10px; border-radius: 8px;
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 10px; border-radius: 8px;
 }
 .score__run:hover, .tour__try:hover { background: var(--accent-soft); }
 .score__out { display: flex; align-items: baseline; gap: 14px; padding: 12px 16px; border-top: 1px dashed var(--rule); }
@@ -552,7 +589,7 @@ ul, ol { margin: 0; padding: 0; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
-  flex: none; display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px;
+  flex: 0 1 auto; display: inline-flex; align-items: center; min-height: 44px; min-width: 0; padding: 0 14px;
   border: 1px solid var(--rule); border-radius: 999px; background: var(--staff);
   font: 500 13px/1 var(--mono); color: var(--ink); text-decoration: none;
 }
@@ -565,10 +602,10 @@ ul, ol { margin: 0; padding: 0; }
 .example__head p { color: var(--ink-soft); font-size: 15px; margin-top: 6px; }
 .example__head .btn { flex: 1 1 100%; }
 .example__body { display: grid; min-width: 0; }
-.example__body .code-block { max-height: 480px; overflow-y: auto; }
+.example__body .code-block { max-height: min(480px, 70svh); overflow-y: auto; }
 .example__out { border-top: 1px dashed var(--rule); padding-top: 12px; background: var(--paper); min-width: 0; }
 .example__out .score__label { padding: 0 16px; }
-.example__out .output { background: transparent; max-height: 360px; overflow-y: auto; }
+.example__out .output { background: transparent; max-height: min(360px, 60svh); overflow-y: auto; }
 .example:target { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 @media (min-width: 560px) { .example__head .btn { flex: none; } }
 @media (min-width: 960px) {
@@ -579,13 +616,14 @@ ul, ol { margin: 0; padding: 0; }
 /* ----- playground ----------------------------------------------------------------------- */
 
 .toolbar { display: grid; gap: 12px; }
-.picker { display: flex; align-items: center; gap: 10px; }
+.picker { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
 .picker label, .help__nav h2 + p { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-weight: 600; }
-.picker select { flex: 1; }
+/* A select is as wide as its longest option unless told otherwise. */
+.picker select { flex: 1 1 10em; min-width: 0; }
 select {
   min-height: 44px; border: 1px solid var(--rule); background: var(--staff); border-radius: 10px; padding: 8px 10px; max-width: 100%;
 }
-.actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 5.5em), 1fr)); gap: 8px; }
 .actions .btn { padding: 8px 10px; }
 .actions #run, .actions #stop { order: -1; grid-column: 1 / -1; }
 .kbd { display: none; font: 500 11px var(--mono); opacity: 0.75; }
@@ -599,7 +637,7 @@ select {
 .seed__toggle::-webkit-details-marker { display: none; }
 .seed__toggle::marker { content: ""; }
 .seed[open] .seed__toggle { border-color: var(--accent); }
-.seed__name { flex: none; }
+.seed__name { flex: 0 1 auto; min-width: 0; }
 .seed__value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 13px var(--mono); color: var(--accent); }
 .seed__value:empty { display: none; }
 .seed__panel {
@@ -619,7 +657,7 @@ select {
 .seed__row input::placeholder { color: var(--ink-soft); opacity: 1; }
 .seed__row .btn { flex: none; min-height: 44px; }
 .seed__hint { font-size: 13px; color: var(--ink-soft); }
-.seed-used { margin-left: auto; font: 500 12px var(--mono); color: var(--accent); white-space: nowrap; }
+.seed-used { margin-left: auto; min-width: 0; font: 500 12px var(--mono); color: var(--accent); }
 .seed-used[hidden] { display: none; }
 @media (min-width: 720px) {
   .seed__panel { left: auto; width: min(26rem, 100%); }
@@ -633,15 +671,24 @@ select {
 
 .workspace { display: grid; gap: 14px; }
 .panel__head { flex-wrap: wrap; }
-.panel__tools { display: flex; align-items: center; gap: 6px; margin-left: auto; }
-.panel__tools .btn--sm { min-height: 34px; padding: 4px 10px; font-size: 13px; }
+.panel__tools { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; margin-left: auto; min-width: 0; }
+.panel__tools .btn--sm { padding: 4px 10px; font-size: 13px; }
+@media (pointer: fine) { .panel__tools .btn--sm { min-height: 34px; } }
 .panel { background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 .status { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; text-align: right; }
 .status.bad { color: var(--err); }
 .status.good { color: var(--ok); }
 
-/* 16px in the editor on phones: iOS does not zoom into a field with a smaller text. */
-.editor { --code-size: 16px; position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); height: clamp(300px, 55vh, 560px); }
+/* 16px in the editor on phones and tablets: iOS zooms into a field with a smaller text
+   (in landscape too), and the page then scrolls sideways. Its height follows the
+   screen: the small one (`svh`, with the browser's bars shown), and with the keyboard
+   open the part of the screen left above it (`--keyboard-free`, set by playground.js
+   from the visual viewport), so that the line being typed stays in sight. */
+.editor {
+  --code-size: 16px; position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr);
+  height: clamp(12rem, 55vh, 35rem); height: clamp(12rem, 55svh, 35rem);
+}
+.keyboard .editor { height: max(8rem, min(35rem, var(--keyboard-free, 55svh) - 1rem)); }
 /* The editor wraps long lines: the field (transparent) and its colors under it wrap
    the same way, at the same width (the same reserved scrollbar gutter); each line of
    the colors is a block, and `playground.js` gives each line number the height of its
@@ -665,10 +712,14 @@ select {
 .no-wasm .editor__code textarea { color: var(--ink); }
 .editor__code textarea::selection { background: var(--accent-soft); color: transparent; }
 .editor__code textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-soft); }
-.output--live { flex: 1; min-height: 180px; max-height: clamp(300px, 55vh, 560px); overflow-y: auto; }
+.output--live {
+  flex: 1; min-height: 9rem; overflow-y: auto;
+  max-height: clamp(12rem, 55vh, 35rem); max-height: clamp(12rem, 55svh, 35rem);
+}
 .explain { font: inherit; background: var(--accent-soft); color: var(--accent); border: 0; border-radius: 4px; padding: 0 5px; cursor: pointer; }
 .explain:hover { text-decoration: underline; }
-@media (min-width: 700px) { .editor { --code-size: 14px; } }
+/* 14px only with a mouse and no touch screen at all. */
+@media (min-width: 700px) and (pointer: fine) and (not (any-pointer: coarse)) { .editor { --code-size: 14px; } }
 @media (min-width: 960px) { .workspace { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); } }
 
 .help { display: grid; gap: 14px; }
@@ -677,15 +728,16 @@ select {
 .help__nav h2 + p { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 14px; }
 .topics { display: flex; flex-wrap: wrap; gap: 6px; }
 .topic {
-  min-height: 36px; border: 1px solid var(--rule); background: var(--staff); border-radius: 999px; padding: 0 12px; cursor: pointer;
+  min-height: 44px; min-width: 0; border: 1px solid var(--rule); background: var(--staff); border-radius: 999px; padding: 0 12px; cursor: pointer;
   font: 500 13px var(--mono);
 }
+@media (pointer: fine) { .topic { min-height: 36px; } }
 .topic[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
 .search { display: flex; gap: 6px; }
 .search input { flex: 1; min-width: 0; min-height: 44px; border: 1px solid var(--rule); background: var(--staff); border-radius: 10px; padding: 8px 12px; font-family: var(--mono); font-size: 16px; }
 .help__text {
   margin: 0; background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); padding: 16px;
-  font: 13px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; overflow-y: auto; max-height: 520px; min-width: 0; min-height: 120px;
+  font: 13px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; overflow-y: auto; max-height: min(520px, 70svh); min-width: 0; min-height: 120px;
 }
 @media (min-width: 800px) { .help { grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); } }
 
@@ -709,14 +761,15 @@ select {
    lines wrap like code blocks (each line under its indentation, two columns further). */
 .stepper { display: grid; align-content: start; gap: 10px; padding: 12px 14px 16px; min-width: 0; }
 .stepper__nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
-.stepper__nav .btn--sm { min-height: 40px; padding: 4px 12px; font-size: 13px; }
+.stepper__nav .btn--sm { padding: 4px 12px; font-size: 13px; }
 .stepper__count { flex: 1 1 6em; min-width: 0; text-align: center; font: 600 13px/1.3 var(--mono); font-variant-numeric: tabular-nums; }
-.stepper__range { width: 100%; min-width: 0; min-height: 32px; margin: 0; accent-color: var(--accent); }
+.stepper__range { width: 100%; min-width: 0; min-height: 44px; margin: 0; accent-color: var(--accent); }
 .stepper__keys { font-size: 12.5px; color: var(--ink-soft); }
-@media (hover: none) { .stepper__keys { display: none; } }
+.stepper__keys { display: none; }
+@media (hover: hover) and (pointer: fine) { .stepper__keys { display: block; } }
 .stepper .output { padding: 10px 12px; border-radius: 8px; }
 .stepper .output .line {
-  --hang: calc((var(--indent, 0) + 2) * 1ch);
+  --hang: min(calc((var(--indent, 0) + 2) * 1ch), 33vw);
   display: block; padding-left: var(--hang); text-indent: calc(-1 * var(--hang));
 }
 .stepper__from { color: var(--ink-soft); border: 1px dashed var(--rule); background: transparent; }
@@ -733,7 +786,7 @@ select {
 .toc__title { font: 600 12px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin-bottom: 10px; }
 .toc ol { list-style: none; display: grid; gap: 2px; counter-reset: toc; }
 .toc li { counter-increment: toc; }
-.toc a { display: flex; gap: 10px; min-height: 36px; align-items: center; color: var(--ink); text-decoration: none; font-size: 15px; }
+.toc a { display: flex; gap: 10px; min-height: 44px; align-items: center; color: var(--ink); text-decoration: none; font-size: 15px; }
 .toc a::before { content: counter(toc, decimal-leading-zero); font: 500 12px var(--mono); color: var(--accent); }
 .toc a:hover { color: var(--accent); }
 @media (min-width: 960px) {
@@ -749,7 +802,10 @@ select {
 .prose strong { color: var(--ink); }
 .prose p, .prose li { color: var(--ink-soft); }
 .prose :not(pre) > code { background: var(--staff); border: 1px solid var(--rule); border-radius: 5px; padding: 1px 5px; color: var(--ink); font-size: 0.86em; }
-.prose pre { margin: 0; padding: 16px; background: var(--staff); border: 1px solid var(--rule); border-radius: 10px; font: 13.5px/1.6 var(--mono); }
+.prose pre {
+  margin: 0; padding: 16px; background: var(--staff); border: 1px solid var(--rule); border-radius: 10px;
+  font: 13.5px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0;
+}
 /* The tables of the guide: cards on phones, one per row, each cell with the title of its
    column (`data-label`, written by `teach.rs`); a table from 700px. */
 .prose table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
@@ -771,7 +827,7 @@ select {
 
 /* ----- not found ------------------------------------------------------------------------ */
 
-.nf { min-height: 60vh; align-content: center; justify-items: start; }
+.nf { min-height: 60vh; min-height: 60svh; align-content: center; justify-items: start; }
 .nf h1 { font-size: clamp(36px, 9vw, 60px); font-weight: 800; }
 .nf .eyebrow { font-size: 14px; margin: 0; }
 
@@ -786,7 +842,7 @@ select {
 .foot__brand { display: grid; gap: 6px; }
 .foot__brand p { color: var(--ink-soft); font-size: 15px; max-width: 40ch; }
 .foot__links, .foot__meta { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: center; }
-.foot__links a, .foot__meta a { color: var(--ink-soft); text-decoration: none; min-height: 40px; display: inline-flex; align-items: center; font-size: 15px; }
+.foot__links a, .foot__meta a { color: var(--ink-soft); text-decoration: none; min-height: 44px; min-width: 44px; justify-content: center; display: inline-flex; align-items: center; font-size: 15px; }
 .foot__links a:hover, .foot__meta a:hover { color: var(--accent); }
 .foot__meta { font-size: 14px; }
 @media (min-width: 860px) {
@@ -849,8 +905,8 @@ select {
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
   padding: 12px 14px; border-radius: 14px; background: var(--notice-bg); color: var(--notice-ink); box-shadow: var(--shadow);
 }
-.notice__text { flex: 1 1 220px; font-size: 15px; }
-.notice__actions { display: flex; gap: 8px; }
+.notice__text { flex: 1 1 14em; min-width: 0; font-size: 15px; }
+.notice__actions { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
 .notice .btn--ghost { color: inherit; border-color: color-mix(in srgb, currentColor 35%, transparent); }
 .notice__close {
   flex: none; width: 44px; height: 44px; margin: -8px -8px -8px 0; border: 0; border-radius: 10px;

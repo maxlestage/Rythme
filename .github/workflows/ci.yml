@@ -125,7 +125,7 @@ jobs:
           curl -fsS -o /dev/null -w '%{content_type}\n' localhost:5000/rythme.wasm | grep application/wasm
 
   browser:
-    name: Website in Chromium (layout, themes, offline app)
+    name: Website in Chromium (layout, phones, themes, offline app)
     runs-on: ubuntu-latest
     env:
       PLAYWRIGHT: playwright@1.56.1
@@ -159,6 +159,9 @@ jobs:
       - name: The installable app, offline and updated (tests/pwa/check.js)
         working-directory: site
         run: node tests/pwa/check.js target/release/rythme-site
+      - name: As real phones show it (tests/pwa/mobile.js)
+        working-directory: site
+        run: node tests/pwa/mobile.js target/release/rythme-site
 
   docker:
     name: Website (Docker image)
