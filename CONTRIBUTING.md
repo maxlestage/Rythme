@@ -4,6 +4,8 @@ Thank you for helping! Rythme aims to be the simplest language to learn, with
 help everywhere. Every change should keep that in mind: if a beginner can be
 confused, a message should explain.
 
+AI coding agents: read [AGENTS.md](AGENTS.md) first.
+
 ## Build and test
 
 ```sh
@@ -170,7 +172,9 @@ in `help::CODES` (a test checks it), and its translation in each catalog.
    each catalog of `src/i18n/`), and an example. Each
    example line `code   # value` is run by `tests/stdlib.rs`: it must give
    exactly that value.
-3. Add its name to the VS Code grammar (`editors/vscode/syntaxes`), to
+3. Write `docs/llms-full.txt` again (`cargo run -- help llms >
+   docs/llms-full.txt`: `tests/llms.rs` checks it is up to date). Add its
+   name to the VS Code grammar (`editors/vscode/syntaxes`), to
    `site/src/highlight.rs`, `site/public/playground.js` and
    `playground/web/index.html`, in the order of `BUILTINS`; tests check that
    the lists match.

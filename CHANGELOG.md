@@ -12,6 +12,42 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Rythme and AI assistants
+
+AI assistants and coding agents can now learn Rythme, write it and fix their
+own mistakes in a loop (manual 7.10, README "AI assistants"):
+
+- **`--format json`** for `rythme check`, `run`, `test`, `fix`, `explain` and
+  `help`: one JSON document (`"version": 1`, described by
+  `docs/rythme-output.schema.json`) with each diagnostic's stable code,
+  severity, message in the chosen language, file, line/column and byte
+  ranges, labels, notes, help, call trace and fixes as text edits; the
+  output of the program for `run`, each test for `test`, every built-in
+  function (signature, doc, example, Ruby names, arity), keyword, topic and
+  code for `help` and `explain`. The messages for people stay the default.
+- **Fixes**: diagnostics carry the exact change when it is known (a misspelt
+  name, a missing `use`, `a ? b : c`, `&&`, `===`, `<>`, `let`, `def`,
+  `elif`, `return`, `lambda`, `=>`, `|x| ...`, `f"..."`, `"n = " + n`,
+  `"%s" % x`, `xs[1:]`, `Math.sqrt`, a missing `then`...), marked safe or a
+  guess. **`rythme fix FILE`** applies the safe ones until none is left
+  (`--dry-run` prints a diff, `--all` also applies the guesses); the
+  language server offers them all as quick fixes.
+- **`rythme help llms`** prints `docs/llms-full.txt`, the whole language in
+  one text for a model (rules, syntax by example, every built-in function,
+  habits from other languages, every code), and `rythme help llms.txt` its
+  index `docs/llms.txt`; both are generated from the sources and tested.
+- **`rythme mcp`**, a Model Context Protocol server (stdio): run in a
+  sandbox with a time and memory limit, check, test, fix, format, explain,
+  help, steps, and the reference as a resource. `rythme run --sandbox`,
+  `rythme test --sandbox` and `RYTHME_SANDBOX=1` keep a program away from
+  files, folders and environment variables.
+- **`AGENTS.md`** (and `CLAUDE.md`) for the agents of contributors, and in
+  every project made by `rythme new`.
+- **Messages for the habits of other languages**: named arguments, `n = n +
+  1`, `x += 1`, slices, `|x|` and `->` lambdas, Kotlin blocks, format
+  specifiers, `Math.`, `yield`, `case`/`when`, `{name = 1}`, an `if` without
+  `else` on one line... now say exactly what to write, in every language.
+
 ### Language
 
 - **Types written in the code, optional and checked**:

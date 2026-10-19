@@ -195,6 +195,7 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme`                    | mode interactif : tapez du code, voyez le résultat  |
 | `rythme bonjour.ry`         | lancer un programme (`rythme run bonjour.ry` marche aussi ; `rythme run --seed 42 bonjour.ry` : les mêmes tirages de `random` à chaque fois) |
 | `rythme check bonjour.ry`   | trouver les problèmes sans lancer le programme      |
+| `rythme fix bonjour.ry`     | appliquer les corrections sûres de ces problèmes (`--dry-run` : montrer seulement le diff) |
 | `rythme test bonjour.ry`    | lancer les tests écrits dans le fichier (aussi un dossier : `rythme test .`, avec `--filter NOM`, `--watch`) |
 | `rythme fmt bonjour.ry`     | mettre le code en forme dans le style officiel (aussi un dossier : `rythme fmt .`) |
 | `rythme fmt --check .`      | lister les fichiers à mettre en forme, sans les changer (pour l'intégration continue) |
@@ -209,6 +210,7 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme debug fib.ry`       | le débogueur : `break 12`, `run`, `next`, `step`, `where`, `print n * 2` ([manuel](docs/reference.fr.md#79-le-débogueur--rythme-debug)) |
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
 | `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
+| `rythme mcp`                | serveur pour les assistants d'IA ([plus bas](#assistants-dia)) |
 
 Ajoutez `--lang` et une langue (`fr`, `en`, `es`, `de`, `pt` ou `zh`) avant la
 commande pour choisir la langue des messages, ou définissez `RYTHME_LANG`.
@@ -311,6 +313,24 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 - **Neovim, Helix, Zed, Emacs, Sublime Text, Kate...** : tout éditeur qui
   parle le Language Server Protocol peut lancer `rythme lsp` ; quelques
   lignes de configuration pour chacun sont dans [`editors/README.fr.md`](editors/README.fr.md).
+
+## Assistants d'IA
+
+Rythme est nouveau, les assistants d'IA ne le connaissent donc pas encore ;
+il est fait pour qu'ils l'apprennent vite et corrigent leurs propres erreurs :
+
+- `rythme help llms` affiche [tout le langage en un texte](docs/llms-full.txt)
+  (aussi [`docs/llms.txt`](docs/llms.txt)) : donnez-le d'abord à l'assistant.
+- `rythme check --format json`, `run`, `test`, `explain` et `help` affichent
+  un [JSON versionné](docs/rythme-output.schema.json) : codes stables,
+  endroits exacts, aide qui nomme la correction, et corrections sous forme
+  de modifications du texte ; `rythme fix` applique les corrections sûres.
+- `rythme mcp` est un serveur [Model Context Protocol](https://modelcontextprotocol.io)
+  (lancer dans un bac à sable, vérifier, tester, corriger, mettre en forme,
+  expliquer, aider) : `claude mcp add rythme -- rythme mcp` pour Claude Code ;
+  Claude Desktop, Cursor et VS Code dans le [manuel](docs/reference.fr.md#710-rythme-et-les-assistants-dia).
+- `rythme new` écrit un `AGENTS.md` pour les agents qui travaillent dans le
+  projet, et [`AGENTS.md`](AGENTS.md) guide ceux qui travaillent sur Rythme lui-même.
 
 ## Pour les enseignants
 
