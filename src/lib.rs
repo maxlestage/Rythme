@@ -25,6 +25,7 @@ pub mod help;
 pub mod interp;
 pub mod io;
 pub mod lexer;
+pub mod llms;
 // Output for programs (`--format json`) and `rythme fix`, written with the JSON of the language server.
 #[cfg(not(target_arch = "wasm32"))]
 pub mod machine;
