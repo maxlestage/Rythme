@@ -5,6 +5,7 @@
 // (the installed app's file handler) or shared as text, and downloaded. Share puts
 // the program in a link (`#code=…`, in the link itself: nothing is sent anywhere).
 // Steps shows the calculation of one expression step by step, one step at a time.
+// Seed, next to Run, makes the same draws of `random` and `shuffle` on every run.
 (() => {
   "use strict";
 
@@ -22,6 +23,7 @@
     failedIn: (ms) => TEXTS.failedIn.replace("{ms}", ms),
     lines: (n) => (n === 1 ? TEXTS.line : TEXTS.lines).replace("{n}", n),
     stepsOf: (n, total) => TEXTS.stepsOf.replace("{n}", n).replace("{total}", total),
+    seedUsed: (seed) => TEXTS.seedUsed.replace("{seed}", seed),
   };
   // The words that start the interpreter's messages, in every language
   // (rythme::lang::LANGUAGES; the tests of the site check that none is missing).
@@ -51,8 +53,8 @@
   };
 
   // Keys of localStorage: the code being edited ("" for an example as it is), the
-  // example shown, and the name of the opened file.
-  const SAVED = { code: "rythme-code", example: "rythme-example", file: "rythme-file" };
+  // example shown, the name of the opened file, and the seed ("" for none).
+  const SAVED = { code: "rythme-code", example: "rythme-example", file: "rythme-file", seed: "rythme-seed" };
 
   let examples = {};
   // The name of the edited code: main.ry, or the name of the opened file.
@@ -65,6 +67,8 @@
   let runMode = 0;
   // What the interpreter is doing: one of the modes of `rythme_run` (5: steps).
   let runningMode = 0;
+  // The seed of that run, or null.
+  let runningSeed = null;
 
   // ----- editor: highlighting, line numbers -----
   const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -279,12 +283,14 @@
     if (!wasmModule) return;
     runId += 1;
     runningMode = mode;
+    // Check runs nothing: no draws.
+    runningSeed = mode === 1 ? null : seed();
     setRunning(true);
     statusEl.className = "status";
     statusEl.textContent = UI.running;
     // Steps: the program, U+0000, then the expression to compute ("": the last one).
     const code = mode === 5 ? source.value + "\u0000" + stepsExpr : source.value;
-    worker.postMessage({ id: runId, code, mode, lang });
+    worker.postMessage({ id: runId, code, mode, lang, seed: runningSeed });
   }
 
   function finish(result) {
@@ -293,6 +299,8 @@
     const ms = Math.max(1, Math.round(result.ms));
     const stepping = runningMode === 5 && !result.trap;
     showStepper(stepping);
+    seedUsed.hidden = runningSeed === null;
+    seedUsed.textContent = runningSeed === null ? "" : UI.seedUsed(runningSeed);
     if (result.trap) {
       renderOutput("\u0001" + UI.tooDeep + (/stack/i.test(result.trap) ? "" : "\n" + result.trap) + "\u0002");
       statusEl.className = "status bad";
@@ -325,6 +333,66 @@
     showSteps(selected === source.value.trim() ? "" : selected, 1);
   });
   formatBtn.addEventListener("click", formatCode);
+
+  // ----- the seed of the draws -----
+  // Empty: the draws of `random` and `shuffle` change from run to run. A whole number:
+  // every run makes the same draws (`rythme run --seed N`), and Test the same values of
+  // `check_all` and `sample` too (`rythme test --seed N`). It is kept in this browser
+  // with the draft, travels with Share (`&seed=N`) and is shown in the head of the
+  // output after a run that used it. The dice picks a new one and runs.
+  const SEED = /^\d{1,15}$/;
+  const seedOption = $("seed-option"), seedField = $("seed"), seedShown = $("seed-shown"), seedNew = $("seed-new"), seedUsed = $("seed-used");
+  seedOption.hidden = false;
+  const seed = () => (SEED.test(seedField.value) ? Number(seedField.value) : null);
+
+  // Shows a seed (a number, digits, or nothing), without saving it.
+  function showSeed(value) {
+    const text = value === null || value === undefined ? "" : String(value);
+    seedField.value = SEED.test(text) ? String(Number(text)) : "";
+    seedShown.textContent = seedField.value;
+  }
+
+  // The seed was changed by hand: saved, and a program from a link becomes the draft
+  // (with its seed), as when it is edited.
+  function seedChanged() {
+    seedShown.textContent = seedField.value;
+    if (linked) onEdit();
+    else if (!shareBox.hidden) {
+      shareBox.hidden = true;
+      shareBtn.setAttribute("aria-expanded", "false");
+    }
+    store.set(SAVED.seed, seedField.value);
+  }
+
+  seedField.addEventListener("input", () => {
+    const digits = seedField.value.replace(/\D+/g, "").slice(0, 15);
+    if (digits !== seedField.value) seedField.value = digits;
+    seedChanged();
+  });
+  seedField.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      if (!document.body.classList.contains("running")) execute(runMode);
+    }
+  });
+  seedNew.addEventListener("click", () => {
+    let n;
+    do n = 1 + Math.floor(Math.random() * 999999); while (n === seed());
+    showSeed(n);
+    seedChanged();
+    if (!document.body.classList.contains("running")) execute(runMode);
+  });
+  // Escape closes the option and gives the focus back to its button; so does a click
+  // elsewhere.
+  seedOption.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && seedOption.open) {
+      seedOption.open = false;
+      seedOption.querySelector("summary").focus();
+    }
+  });
+  document.addEventListener("click", (ev) => {
+    if (seedOption.open && !seedOption.contains(ev.target)) seedOption.open = false;
+  });
 
   // ----- format: the layout of `rythme fmt`, done at once (it cannot loop) -----
   let formatInstance = null;
@@ -833,7 +901,8 @@
     return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   }
 
-  // `#example=fizzbuzz`, `#code=…&mode=test`, or `#code=…&mode=steps&step=3` (with
+  // `#example=fizzbuzz`, `#code=…&mode=test` (with `&seed=42` before the mode when the
+  // program runs with a seed), or `#code=…&mode=steps&step=3` (with
   // `&expr=…`, percent-encoded, for the steps of a piece of code rather than of the last
   // expression): links from the other pages and shared
   // links; `?text=…&title=…&url=…`: a text shared with the installed app (its share
@@ -843,6 +912,7 @@
     const hash = location.hash.slice(1);
     const params = new URLSearchParams(hash);
     const found = { example: params.get("example"), code: null, mode: params.get("mode") === "test" ? 2 : 0, broken: false };
+    found.seed = SEED.test(params.get("seed") || "") ? params.get("seed") : null;
     found.steps = params.get("mode") === "steps";
     found.expr = (params.get("expr") || "").slice(0, LINK_MAX);
     found.step = Math.max(1, Math.min(parseInt(params.get("step"), 10) || 1, 100000));
@@ -890,6 +960,8 @@
     runMode = asked.mode;
     fileName = "main.ry";
     linked = true;
+    // The seed of the link (none: draws that change), without touching the saved one.
+    showSeed(asked.seed);
     setCustom();
     setNote(NOTE, true);
   }
@@ -899,6 +971,7 @@
     if (!linked) return;
     linked = false;
     store.set(SAVED.file, fileName);
+    store.set(SAVED.seed, seedField.value);
     if (/(?:^|&)code=/.test(location.hash.slice(1))) history.replaceState(null, "", location.pathname + location.search);
   }
 
@@ -906,6 +979,7 @@
     linked = false;
     setNote("", false);
     history.replaceState(null, "", location.pathname + location.search);
+    showSeed(store.get(SAVED.seed));
     const saved = store.get(SAVED.code);
     if (saved) {
       fileName = store.get(SAVED.file) || "main.ry";
@@ -964,7 +1038,8 @@
     const mode = stepsShown()
       ? `&mode=steps${stepsExpr ? "&expr=" + encodeURIComponent(stepsExpr) : ""}&step=${stepAt + 1}`
       : runMode === 2 ? "&mode=test" : "";
-    const link = `${location.origin}${location.pathname}#code=${packed}${mode}`;
+    const seeded = seed() === null ? "" : `&seed=${seed()}`;
+    const link = `${location.origin}${location.pathname}#code=${packed}${seeded}${mode}`;
     if (navigator.share && window.matchMedia("(pointer: coarse)").matches) {
       showShare("", false, link);
       try {
@@ -993,6 +1068,7 @@
   async function start() {
     const asked = await fromAddress();
     const saved = store.get(SAVED.code);
+    showSeed(store.get(SAVED.seed));
     if (asked.code !== null) {
       showLinked(asked);
     } else if (saved && !asked.example) {

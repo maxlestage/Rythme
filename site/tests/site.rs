@@ -108,6 +108,28 @@ async fn the_pages_hold_their_content() {
             assert!(playground.contains(&attr(text).replace('"', "&quot;")), "{lang:?}: {text}");
         }
         assert!(t.pg_steps_of.contains("{n}") && t.pg_steps_of.contains("{total}"), "{lang:?}");
+        // The Seed option next to Run: hidden until playground.js shows it, a labelled
+        // field for digits described by its hint, the dice, and the seed in the head of
+        // the output, in the language of the page.
+        assert!(playground.contains(r#"<details class="seed" id="seed-option" hidden="">"#), "{lang:?}");
+        assert!(
+            playground.contains(&format!(r#"<summary class="btn seed__toggle" title="{}">"#, attr(t.pg_seed_title)))
+                && playground.contains(&format!(r#"<span class="seed__name">{}</span>"#, attr(t.pg_seed))),
+            "{lang:?}"
+        );
+        assert!(playground.contains(&format!(r#"<label class="seed__label" for="seed">{}</label>"#, attr(t.pg_seed_label))), "{lang:?}");
+        assert!(
+            playground.contains(&format!(
+                r#"id="seed" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="15" spellcheck="false" autocomplete="off" placeholder="{}" aria-describedby="seed-hint""#,
+                attr(t.pg_seed_random)
+            )),
+            "{lang:?}"
+        );
+        assert!(playground.contains(&format!(r#"id="seed-hint">{}</p>"#, attr(t.pg_seed_hint))), "{lang:?}");
+        assert!(playground.contains(&format!("<span>{}</span></button>", attr(t.pg_seed_new))), "{lang:?}");
+        assert!(playground.contains(r#"id="seed-used" hidden="""#), "{lang:?}");
+        assert!(t.pg_seed_used.contains("{seed}") && playground.contains(&attr(t.pg_seed_used)), "{lang:?}");
+        assert!(t.pg_seed_hint.contains("--seed 42") && t.pg_seed_hint.contains("check_all"), "{lang:?}");
         let learn = page(Page::Learn).await;
         assert_eq!(learn.matches("class=\"tour__try\"").count(), t.tour.len());
         // One step of the tour also opens on the steps of a calculation.

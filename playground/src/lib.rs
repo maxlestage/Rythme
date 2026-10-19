@@ -2,9 +2,10 @@
 //!
 //! The page writes the code in memory obtained with `rythme_alloc`, calls
 //! `rythme_run`, then reads `rythme_result_len()` bytes at the returned
-//! address. Error messages are wrapped in \u{1} ... \u{2}.
+//! address. Error messages are wrapped in \u{1} ... \u{2}. `rythme_seed`, called
+//! before, gives the seed of the draws (the Seed option of the playground).
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::path::Path;
 
 use rythme::ast::{Item, Stmt};
@@ -16,6 +17,32 @@ use rythme::{io, t};
 
 thread_local! {
     static RESULT: RefCell<Vec<u8>> = const { RefCell::new(Vec::new()) };
+    static SEED: Cell<Option<i64>> = const { Cell::new(None) };
+}
+
+/// The seed of the runs that follow (modes 0, 2, 4 and 5 of `rythme_run`): a
+/// whole number from 0 to 2^53, like `rythme run --seed N` (the draws of
+/// `random` and `shuffle`) and, for the tests, `rythme test --seed N` (the
+/// values of `check_all` and `sample`). Anything else (-1, a fraction, NaN):
+/// no seed, the draws change from run to run.
+#[no_mangle]
+pub extern "C" fn rythme_seed(seed: f64) {
+    let valid = seed.is_finite() && seed >= 0.0 && seed.fract() == 0.0 && seed <= 9_007_199_254_740_992.0;
+    SEED.with(|s| s.set(valid.then_some(seed as i64)));
+}
+
+/// A new interpreter, with the seed of `rythme_seed` if there is one; for the
+/// tests, the seed of the values of `check_all` and `sample` too.
+fn new_driver(tests: bool) -> Driver {
+    let mut driver = Driver::new();
+    driver.color = false;
+    if let Some(seed) = SEED.with(Cell::get) {
+        driver.interp.seed_random(seed);
+        if tests {
+            driver.interp.property_seed = seed as u64;
+        }
+    }
+    driver
 }
 
 /// Memory for `len` bytes of code.
@@ -79,8 +106,7 @@ fn run(code: &str, mode: u32) -> String {
     rythme::interp::set_max_depth(600);
     rythme::interp::set_stack_budget(12 << 20);
     io::capture();
-    let mut driver = Driver::new();
-    driver.color = false;
+    let mut driver = new_driver(mode == 2);
     let module = driver.load_source("main.ry", code, None, Path::new("."));
     match (module, mode) {
         (Some(_), 1) => {
@@ -119,8 +145,7 @@ fn steps_of_one(program: &str, expr: &str) -> String {
     rythme::interp::set_max_depth(600);
     rythme::interp::set_stack_budget(12 << 20);
     io::capture();
-    let mut driver = Driver::new();
-    driver.color = false;
+    let mut driver = new_driver(false);
     let expr = expr.trim();
     let whole = if expr.is_empty() { program.to_string() } else { format!("{}\n{expr}\n", program.trim_end()) };
     if let Some(m) = driver.load_source("main.ry", &whole, None, Path::new(".")) {

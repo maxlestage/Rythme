@@ -177,7 +177,9 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
     column; `rythme help csv`).
   - [x] **A seed for `random`**: `random_seed(n)` and `rythme run --seed N`
     (same seed, same version: same draws of `random` and `shuffle`;
-    `rythme help random`). *Still open:* a seed option in the playground.
+    `rythme help random`), and the *Seed* option of the playground (every
+    Run, Test and Steps with the same draws, kept with the draft, in sharing
+    links as `&seed=N`; see [site/README.md](site/README.md#seed)).
   - [ ] **HTTP requests.**
 - [x] **Sharing in the playground**: a link to a program with its steps and its
   tests, for classrooms. Done: the Share button of the playground, a link that
