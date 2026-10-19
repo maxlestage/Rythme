@@ -26,11 +26,13 @@ pub struct Options {
     pub seed: u64,
     /// What `args()` gives to the programs tested.
     pub script_args: Vec<String>,
+    /// `--sandbox`: the tests touch no files, folders or environment variables.
+    pub sandbox: bool,
 }
 
 impl Default for Options {
     fn default() -> Self {
-        Options { filters: Vec::new(), seed: crate::builtins::property::DEFAULT_SEED, script_args: Vec::new() }
+        Options { filters: Vec::new(), seed: crate::builtins::property::DEFAULT_SEED, script_args: Vec::new(), sandbox: false }
     }
 }
 
@@ -239,6 +241,7 @@ pub fn run_file(path: &Path, options: &Options, title: Option<&str>) -> FileRepo
     let mut driver = Driver::new();
     driver.interp.script_args = options.script_args.clone();
     driver.interp.property_seed = options.seed;
+    driver.interp.sandboxed = options.sandbox;
     let mut report = FileReport { path: path.to_path_buf(), broken: true, results: Vec::new(), filtered_out: 0, files: Vec::new() };
     if let Some(module) = driver.load_file(path) {
         if driver.execute(&module, Mode::Test).is_ok() {
@@ -408,9 +411,59 @@ fn usage(msg: String) -> i32 {
     2
 }
 
+/// The words of `rythme test`, read.
+pub struct Args {
+    pub options: Options,
+    pub paths: Vec<PathBuf>,
+    pub watch: bool,
+    /// `--seed random`.
+    pub random_seed: bool,
+}
+
 /// `rythme test PATH... [--filter NAME] [--seed N] [--watch] [-- ARGS...]`;
 /// without a path, in a project, the files of the project that have tests.
 pub fn command(args: &[String]) -> i32 {
+    let Args { mut options, mut paths, watch, random_seed } = match parse_args(args) {
+        Ok(a) => a,
+        Err(code) => return code,
+    };
+    if paths.is_empty() {
+        // At the root of a project (or in one of its folders): its files with tests.
+        match crate::project::targets(crate::project::Cmd::Test) {
+            Some(Ok(files)) => paths = files.into_iter().map(PathBuf::from).collect(),
+            Some(Err(())) => return 1,
+            None => {}
+        }
+    }
+    if paths.is_empty() {
+        return usage(which_files());
+    }
+    if random_seed {
+        options.seed = (crate::io::now() * 1e6) as u64 % 1_000_000;
+        out_line(&t!("Seed: {}", "Graine : {}", options.seed));
+    }
+    if watch {
+        return watch_paths(&paths, &options);
+    }
+    match run_paths(&paths, &options) {
+        Ok(summary) => exit_code(&summary, &options),
+        Err(d) => {
+            Driver::new().report(&d);
+            1
+        }
+    }
+}
+
+/// The message when `rythme test` has nothing to test.
+pub fn which_files() -> String {
+    t!(
+        "which file or folder? Example: rythme test my_tests.ry, or rythme test . for the files of this folder",
+        "quel fichier ou dossier ? Exemple : rythme test mes_tests.ry, ou rythme test . pour les fichiers de ce dossier"
+    )
+}
+
+/// Reads the words of `rythme test` (a wrong use is reported: exit code 2).
+pub fn parse_args(args: &[String]) -> Result<Args, i32> {
     let mut options = Options::default();
     let mut paths = Vec::new();
     let mut watch = false;
@@ -440,66 +493,39 @@ pub fn command(args: &[String]) -> i32 {
                 options.script_args = args[i..].to_vec();
                 break;
             }
-            "--filter" | "--filtre" | "-f" => match value(&t!("a part of the name of a test", "une partie du nom d'un test")) {
-                Ok(v) => options.filters.push(v),
-                Err(code) => return code,
-            },
+            "--filter" | "--filtre" | "-f" => {
+                options.filters.push(value(&t!("a part of the name of a test", "une partie du nom d'un test"))?)
+            }
             "--seed" | "--graine" => match value(&t!("a number, or `random`", "un nombre, ou `random`")) {
                 Ok(v) if v == "random" || v == "hasard" => random_seed = true,
                 Ok(v) => match v.parse::<u64>() {
                     Ok(n) => options.seed = n,
                     Err(_) => {
-                        return usage(t!(
+                        return Err(usage(t!(
                             "the seed must be a whole number of 0 or more, or `random`, not `{v}`",
                             "la graine doit être un nombre entier positif ou nul, ou `random`, pas `{v}`"
-                        ))
+                        )))
                     }
                 },
-                Err(code) => return code,
+                Err(code) => return Err(code),
             },
+            "--sandbox" => options.sandbox = true,
             "--watch" | "--surveiller" | "-w" => watch = true,
             _ if name.starts_with('-') && name.len() > 1 => {
                 let mut msg = t!("unknown option `{name}` for `rythme test`", "option inconnue `{name}` pour `rythme test`");
-                if let Some(best) = suggest::closest(name, ["--filter", "--seed", "--watch"]) {
+                if let Some(best) = suggest::closest(name, ["--filter", "--seed", "--watch", "--sandbox", "--format"]) {
                     msg.push_str(&t!("\ndid you mean `{best}`?", "\nvouliez-vous dire `{best}` ?"));
                 }
                 msg.push_str(&t!(
-                    "\nthe options are: --filter NAME, --seed N, --watch (see `rythme help tests`)",
-                    "\nles options sont : --filter NOM, --seed N, --watch (voir `rythme help tests`)"
+                    "\nthe options are: --filter NAME, --seed N, --watch, --sandbox, --format json (see `rythme help tests`)",
+                    "\nles options sont : --filter NOM, --seed N, --watch, --sandbox, --format json (voir `rythme help tests`)"
                 ));
-                return usage(msg);
+                return Err(usage(msg));
             }
             _ => paths.push(PathBuf::from(arg)),
         }
     }
-    if paths.is_empty() {
-        // At the root of a project (or in one of its folders): its files with tests.
-        match crate::project::targets(crate::project::Cmd::Test) {
-            Some(Ok(files)) => paths = files.into_iter().map(PathBuf::from).collect(),
-            Some(Err(())) => return 1,
-            None => {}
-        }
-    }
-    if paths.is_empty() {
-        return usage(t!(
-            "which file or folder? Example: rythme test my_tests.ry, or rythme test . for the files of this folder",
-            "quel fichier ou dossier ? Exemple : rythme test mes_tests.ry, ou rythme test . pour les fichiers de ce dossier"
-        ));
-    }
-    if random_seed {
-        options.seed = (crate::io::now() * 1e6) as u64 % 1_000_000;
-        out_line(&t!("Seed: {}", "Graine : {}", options.seed));
-    }
-    if watch {
-        return watch_paths(&paths, &options);
-    }
-    match run_paths(&paths, &options) {
-        Ok(summary) => exit_code(&summary, &options),
-        Err(d) => {
-            Driver::new().report(&d);
-            1
-        }
-    }
+    Ok(Args { options, paths, watch, random_seed })
 }
 
 /// What a file looks like on the disk, to see that it changed.

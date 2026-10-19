@@ -18,6 +18,31 @@ thread_local! {
     static NO_INPUT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
+/// What runs when the program calls `exit(code)` (see [`on_exit`]).
+pub type ExitHook = Box<dyn FnOnce(i32)>;
+
+thread_local! {
+    static EXIT_HOOK: RefCell<Option<ExitHook>> = const { RefCell::new(None) };
+}
+
+/// `hook` runs when the program calls `exit(code)`, just before Rythme stops
+/// (`rythme run --format json` prints its report there).
+pub fn on_exit(hook: ExitHook) {
+    EXIT_HOOK.with(|h| *h.borrow_mut() = Some(hook));
+}
+
+/// Forgets the hook given to [`on_exit`].
+pub fn clear_on_exit() {
+    EXIT_HOOK.with(|h| *h.borrow_mut() = None);
+}
+
+/// Runs the hook given to [`on_exit`], if any.
+pub fn before_exit(code: i32) {
+    if let Some(hook) = EXIT_HOOK.with(|h| h.borrow_mut().take()) {
+        hook(code);
+    }
+}
+
 /// From now on, output goes to `sink` (the debugger of an editor, whose
 /// standard output carries its protocol).
 pub fn set_sink(sink: Sink) {

@@ -1562,7 +1562,7 @@ fn args(it: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
 fn env(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let name = text(a, 0, "env", span)?;
     // The system refuses these names; they are never set.
-    if name.is_empty() || name.contains(['=', '\0']) {
+    if name.is_empty() || name.contains(['=', '\0']) || it.sandboxed {
         return Ok(it.none());
     }
     Ok(it.option(std::env::var_os(name).map(|v| text_value(v.to_string_lossy()))))
@@ -1578,6 +1578,7 @@ fn exit(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
             .at(span)
             .boxed());
     }
+    crate::io::before_exit(code as i32);
     let _ = std::io::stdout().flush();
     std::process::exit(code as i32);
 }
@@ -3631,8 +3632,8 @@ fn append_file(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     })
 }
 
-fn file_exists(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+fn file_exists(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let path = text(a, 0, "file_exists", span)?;
-    // The browser has no files.
-    Ok(Value::Bool(!cfg!(target_arch = "wasm32") && std::path::Path::new(path).exists()))
+    // The browser and the sandbox have no files.
+    Ok(Value::Bool(!cfg!(target_arch = "wasm32") && !it.sandboxed && std::path::Path::new(path).exists()))
 }

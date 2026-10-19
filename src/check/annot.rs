@@ -544,8 +544,10 @@ impl Checker<'_> {
                 let mut d = Diagnostic::error("E027", t!("unknown type `{name}`", "type inconnu `{name}`")).at(t.span);
                 if let Some(best) = other_name(&name) {
                     d = d.help(t!("in Rythme, write `{best}`", "en Rythme, écrivez `{best}`"));
+                    d = crate::fix::guess(d, t.span, &name, best);
+                    d.fixes.iter_mut().for_each(|f| f.safe = true);
                 } else if let Some(best) = crate::suggest::closest(&capitalized(&name), self.type_names().iter().map(|s| &**s)) {
-                    d = d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?"));
+                    d = crate::fix::guess(d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?")), t.span, &name, &best);
                 }
                 self.report(d.note(t!(
                     "the names of types start with an uppercase letter; a type variable, which stands for any type, is one lowercase letter, like `a`",
@@ -571,8 +573,10 @@ impl Checker<'_> {
                     let mut d = Diagnostic::error("E027", t!("unknown type `{name}`", "type inconnu `{name}`")).at(t.span);
                     if let Some(best) = other_name(&name) {
                         d = d.help(t!("in Rythme, write `{best}`", "en Rythme, écrivez `{best}`"));
+                        d = crate::fix::guess(d, t.span, &name, best);
+                        d.fixes.iter_mut().for_each(|f| f.safe = true);
                     } else if let Some(best) = crate::suggest::closest(&name, self.type_names().iter().map(|s| &**s)) {
-                        d = d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?"));
+                        d = crate::fix::guess(d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?")), t.span, &name, &best);
                     } else {
                         d = d.help(t!(
                             "a type is one of Rythme's (`Int`, `Float`, `Text`, `Bool`, `List`, `Dict`...) or one defined with `type`",

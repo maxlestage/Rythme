@@ -571,6 +571,11 @@ const KEYWORD_DOCS: &[(&str, &str, &str, &str, &str)] = &[
 
 /// The documentation of a keyword in the current language, with an example
 /// and the help topic that tells more.
+/// The keywords that have a documentation (`rythme help fn`), in order.
+pub fn keywords() -> impl Iterator<Item = &'static str> {
+    KEYWORD_DOCS.iter().map(|k| k.0)
+}
+
 pub fn keyword_doc(word: &str) -> Option<(&'static str, &'static str, &'static str)> {
     KEYWORD_DOCS.iter().find(|k| k.0 == word).map(|&(_, en, fr, example, topic)| (pick(en, fr), example, topic))
 }
@@ -2787,6 +2792,14 @@ les lignes qui commencent par `- ` forment une liste."#;
 /// Long explanation of an error or warning code.
 pub fn explain(code: &str) -> Option<String> {
     explanation(code).map(|(en, fr)| pick(en, fr).to_string())
+}
+
+/// The title of a code, from the first line of its explanation:
+/// "Syntax error" for `E001`.
+pub fn code_title(code: &str) -> Option<String> {
+    let text = explain(code)?;
+    let first = text.lines().next()?;
+    Some(first.split_once(" — ").map_or(first, |(_, t)| t).trim().to_string())
 }
 
 /// The explanation of an error code, in English and French.

@@ -19,11 +19,15 @@ pub mod dict;
 pub mod doc;
 pub mod driver;
 pub mod exercise;
+pub mod fix;
 pub mod format;
 pub mod help;
 pub mod interp;
 pub mod io;
 pub mod lexer;
+// Output for programs (`--format json`) and `rythme fix`, written with the JSON of the language server.
+#[cfg(not(target_arch = "wasm32"))]
+pub mod machine;
 pub mod manifest;
 // The language server talks on the standard input and output; the web playground has none.
 #[cfg(not(target_arch = "wasm32"))]
