@@ -40,7 +40,12 @@ run works on a copy of `public/` in a temporary folder and checks:
    (and two test runs) give the same output, after a reload too, the dice, a link
    with `&seed=` reproduces the draws in another page without changing the seed
    saved there; in every language the
-   playground shows its texts and the interpreter's messages in that language; the
+   playground shows its texts and the interpreter's messages in that language;
+   `llms.txt` and `llms-full.txt` (with the addresses of the site), the copy button
+   of an MCP configuration on the AI page, and *Copy for AI*: after Run, Check and
+   Test, the program and its output or errors as Markdown with the address of
+   `llms-full.txt`, no output once the code is changed, and without a clipboard the
+   text shown selected, Escape closing the box; the
    language menu (it lists every language) and the burger menu; an unknown page
    shows the offline page of its language;
 5. a new version deployed while the playground is open and being typed in: the
@@ -64,7 +69,7 @@ The same two deployments (`server` or `export` to run one), with service workers
 blocked. It checks:
 
 1. no horizontal scrolling: every page in every language (home, learn, examples,
-   playground, teach, offline, 404), at 320, 360, 375, 390, 414, 600, 768, 1024,
+   playground, teach, AI, offline, 404), at 320, 360, 375, 390, 414, 600, 768, 1024,
    1280, 1440 and 1920px, in each of the six themes: the document is no wider than
    the window, no element sticks out of it, none scrolls sideways, the bar keeps
    one line, and under 700px every text field is at 16px or more (iOS zooms into a
@@ -75,7 +80,9 @@ blocked. It checks:
    it;
 3. the notice of a program opened from a link and the box of the link made by
    *Share*, open together in every language, at 320 to 1280px in every theme: no
-   horizontal scroll, every text at the contrast of the theme;
+   horizontal scroll, every text at the contrast of the theme; *Copy for AI* when the
+   clipboard says no (the Markdown shown, focused, in its field), in every language,
+   at 320 to 1280px in every theme, the same way;
    the steps of a calculation (long lines without spaces, a nested block, the step
    before and what it printed), opened from a link in every language, at 320 to
    1280px in every theme, on three steps: no horizontal scroll, every text at the
@@ -123,7 +130,8 @@ shown only on hover, no text kept on one line unless its overflow is hidden. The
    200% page zoom and 200% text: the burger menu (under the real bottom of the bar,
    with the theme picker), the language menu (inside the screen, reachable), the
    banners of the app all shown, and in the playground the Seed option with a seed of
-   15 digits and long output lines, the box of a shared link, a topic of the help, the
+   15 digits and long output lines, the box of a shared link, the text of *Copy for
+   AI* to copy by hand, a topic of the help, the
    steps of a calculation, a long error;
 3. the keyboard, at 390×844 and 844×390: the visible height shrinks, the editor fits
    above it while typing, nothing scrolls sideways, and it gets its height back once

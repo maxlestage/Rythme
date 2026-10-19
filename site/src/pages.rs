@@ -4,14 +4,14 @@
 use paquets::prelude::*;
 
 use crate::examples::{EXAMPLES, json_string};
-use crate::highlight::{code_block, code_inline, diagnostic};
+use crate::highlight::{code_block, code_inline, diagnostic, plain_block};
 use crate::i18n::{Lang, Texts};
 use crate::pwa;
 use crate::routes::{Page as PageKind, Route, link};
 use crate::themes::{self, AUTO, THEMES};
 
 pub const REPO: &str = "https://github.com/maxlestage/Rythme";
-const RELEASES: &str = "https://github.com/maxlestage/Rythme/releases";
+pub const RELEASES: &str = "https://github.com/maxlestage/Rythme/releases";
 const PAQUETS: &str = "https://paquets-90dfc06b6fea.herokuapp.com/";
 pub const FONTS: &str = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap";
 
@@ -39,6 +39,11 @@ impl Ctx {
 
     fn asset(&self, path: &str) -> String {
         format!("{}?v={}", link(path), self.version)
+    }
+
+    /// The absolute address of a page.
+    pub fn url(&self, route: Route) -> String {
+        format!("{}{}", self.origin, route.path())
     }
 }
 
@@ -161,12 +166,13 @@ fn lang_list(ctx: &Ctx) -> Element {
 }
 
 /// The pages of the navigation, with their names.
-fn nav_pages(t: &Texts) -> [(PageKind, &'static str); 4] {
+fn nav_pages(t: &Texts) -> [(PageKind, &'static str); 5] {
     [
         (PageKind::Learn, t.nav_learn),
         (PageKind::Examples, t.nav_examples),
         (PageKind::Playground, t.nav_playground),
         (PageKind::Teach, t.nav_teach),
+        (PageKind::Ai, t.nav_ai),
     ]
 }
 
@@ -409,6 +415,22 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
         }
         seo = seo.alternate("x-default", route.with_lang(Lang::Fr).path());
     }
+    if let Some(json) = crate::structured::json_ld(ctx) {
+        seo = seo.json_ld(json);
+    }
+    // For AI assistants: the whole language in one text, and this page as Markdown.
+    let mut alternates = format!(
+        concat!(
+            r#"<link rel="alternate" type="text/plain" href="{llms}" title="llms.txt"/>"#,
+            r#"<link rel="alternate" type="text/plain" href="{full}" title="llms-full.txt"/>"#,
+        ),
+        llms = link(crate::ai::LLMS_PATH),
+        full = link(crate::ai::LLMS_FULL_PATH),
+    );
+    if route.page.has_markdown() {
+        alternates
+            .push_str(&format!(r#"<link rel="alternate" type="text/markdown" href="{}" title="Markdown"/>"#, crate::markdown::href(route)));
+    }
     // Before the first paint (`themes::head_script`): `js` on <html>, the menu folds
     // behind the burger only when the script that opens it can run; and the theme
     // chosen, with its color for the browser's bar.
@@ -428,10 +450,12 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
             r#"<meta name="apple-mobile-web-app-status-bar-style" content="default"/>"#,
             r#"<link rel="preconnect" href="https://fonts.googleapis.com"/>"#,
             r#"<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>"#,
+            r#"{alternates}"#,
             r#"<script>{theme}</script>"#,
             r#"<script src="{js}" defer=""></script>"#,
         ),
         js = ctx.asset("/site.js"),
+        alternates = alternates,
         theme = themes::head_script(),
         icon = link(pwa::LOGO),
         favicon = link(pwa::FAVICON),
@@ -717,6 +741,9 @@ pub fn playground_ui(t: &Texts) -> String {
         ("stepsOf", t.pg_steps_of),
         ("stepsNone", t.pg_steps_none),
         ("seedUsed", t.pg_seed_used),
+        ("aiCopied", t.pg_ai_copied),
+        ("aiSelect", t.pg_ai_select),
+        ("aiIntro", t.pg_ai_intro),
     ];
     let pairs: Vec<String> = fields.iter().map(|(k, v)| format!("{}:{}", json_string(k), json_string(v))).collect();
     format!("{{{}}}", pairs.join(","))
@@ -851,6 +878,17 @@ pub fn playground(ctx: &Ctx) -> Page {
                                     .text(t.pg_share),
                             )
                             .child(
+                                button()
+                                    .class("btn btn--ghost btn--sm")
+                                    .attr("type", "button")
+                                    .id("copy-ai")
+                                    .attr("title", t.pg_ai_title)
+                                    .attr("aria-controls", "share-box")
+                                    .attr("aria-expanded", "false")
+                                    .attr("hidden", "")
+                                    .text(t.pg_ai),
+                            )
+                            .child(
                                 input()
                                     .attr("type", "file")
                                     .id("open-file")
@@ -923,6 +961,7 @@ pub fn playground(ctx: &Ctx) -> Page {
         .attr("data-wasm", ctx.asset("/rythme.wasm"))
         .attr("data-worker", ctx.asset("/playground-worker.js"))
         .attr("data-examples", link("/examples.json"))
+        .attr("data-llms", link(crate::ai::LLMS_FULL_PATH))
         .child(page_head(t.pg_title, t.pg_lead))
         .child(noscript().child(p().class("note note--box").text(t.pg_noscript)))
         .child(toolbar)
@@ -1021,6 +1060,23 @@ fn share_box(t: &Texts) -> Element {
                 )
                 .child(button().class("btn btn--sm").attr("type", "button").id("share-copy").text(t.pg_share_copy)),
         )
+        // Copy for AI, when the clipboard says no: the text, ready to select.
+        .child(
+            div()
+                .class("share__row share__ai")
+                .id("ai-row")
+                .attr("hidden", "")
+                .child(label().class("share__label").attr("for", "ai-text").text(t.pg_ai_label))
+                .child(
+                    textarea()
+                        .id("ai-text")
+                        .attr("readonly", "")
+                        .attr("rows", "8")
+                        .attr("spellcheck", "false")
+                        .attr("autocomplete", "off")
+                        .attr("translate", "no"),
+                ),
+        )
         .child(button().class("btn btn--ghost btn--sm share__close").attr("type", "button").id("share-close").text(t.pg_share_close))
 }
 
@@ -1047,6 +1103,83 @@ pub fn teach(ctx: &Ctx) -> Page {
     };
     let content = main().class("page").child(head).child(div().class("doc").child(toc).child(article));
     layout(ctx, &format!("{} — Rythme", guide.title), t.teach_lead, content)
+}
+
+// ----- For AI assistants --------------------------------------------------------------------
+
+/// A piece of text to copy as it is (a configuration, a message for a chat): its name,
+/// where it goes, a copy button (made to work by `site.js`) and the text, which wraps.
+fn snippet(t: &Texts, name: &str, place: Option<&str>, text: &str) -> Element {
+    let head = div().class("snippet__head").child(span().class("snippet__name file").text(name.to_owned()));
+    let head = match place {
+        Some(place) => head.child(span().class("snippet__where").text(place.to_owned())),
+        None => head,
+    };
+    div()
+        .class("snippet")
+        .child(
+            head.child(
+                button()
+                    .class("command__copy snippet__copy")
+                    .attr("type", "button")
+                    .attr("data-copy", text.to_owned())
+                    .attr("data-copied", t.copied)
+                    .attr("title", format!("{} — {name}", t.copy))
+                    .attr("hidden", "")
+                    .text(t.copy),
+            ),
+        )
+        .child(plain_block(text))
+}
+
+pub fn ai(ctx: &Ctx) -> Page {
+    let t = ctx.t();
+    let lang = ctx.lang();
+    let targets = [link(crate::ai::LLMS_FULL_PATH), link(crate::ai::LLMS_PATH), crate::markdown::href(Route::new(lang, PageKind::Learn))];
+    let give = section()
+        .class("section")
+        .id("give")
+        .attr("aria-labelledby", "give-title")
+        .child(section_head("give", t.ai_give_title, t.ai_give_lead))
+        .child(ul().class("cards cards--3").children(t.ai_give.iter().zip(targets).map(|(item, href)| {
+            li().class("card").child(h3().child(a().href(href).attr("translate", "no").text(item.title))).child(p().text(item.text))
+        })))
+        .child(snippet(t, t.ai_prompt_label, None, &crate::ai::prompt(lang, &ctx.origin)));
+    let mcp = section()
+        .class("section")
+        .id("mcp")
+        .attr("aria-labelledby", "mcp-title")
+        .child(section_head("mcp", t.ai_mcp_title, t.ai_mcp_lead))
+        .child(
+            div()
+                .class("snippets")
+                .children(crate::ai::MCP.iter().zip(t.ai_mcp_where).map(|((name, _, text), place)| snippet(t, name, Some(place), text))),
+        )
+        .child(p().class("note").text(t.ai_mcp_path));
+    let fix = section()
+        .class("section")
+        .id("loop")
+        .attr("aria-labelledby", "loop-title")
+        .child(section_head("loop", t.ai_loop_title, t.ai_loop_lead))
+        .child(dl().class("commands").children(crate::ai::LOOP.iter().zip(t.ai_loop).map(|(cmd, what)| {
+            div().class("commands__row").child(dt().child(code().attr("translate", "no").text(*cmd))).child(dd().text(what))
+        })))
+        .child(div().class("terminal").child(plain_block(crate::ai::FIX_EXAMPLE)));
+    let agents = section()
+        .class("section")
+        .id("agents")
+        .attr("aria-labelledby", "agents-title")
+        .child(section_head("agents", t.ai_agents_title, t.ai_agents_lead))
+        .child(command(t, crate::ai::NEW_PROJECT));
+    let play = section()
+        .class("section")
+        .id("from-playground")
+        .attr("aria-labelledby", "from-playground-title")
+        .child(section_head("from-playground", t.ai_play_title, t.ai_play_lead))
+        .child(button_link(ctx.href(PageKind::Playground), "btn--primary", t.cta_try));
+    let content =
+        main().class("page ai").child(page_head(t.ai_title, t.ai_lead)).child(give).child(mcp).child(fix).child(agents).child(play);
+    layout(ctx, &format!("{} — Rythme", t.ai_title), t.ai_lead, content)
 }
 
 // ----- Not found ------------------------------------------------------------------------
@@ -1114,6 +1247,7 @@ pub fn render(ctx: &Ctx) -> Page {
         PageKind::Examples => examples(ctx),
         PageKind::Playground => playground(ctx),
         PageKind::Teach => teach(ctx),
+        PageKind::Ai => ai(ctx),
         PageKind::Offline => offline(ctx),
         PageKind::NotFound => not_found(ctx),
     }
@@ -1159,6 +1293,9 @@ mod tests {
             "seed",
             "seed-new",
             "seed-used",
+            "copy-ai",
+            "ai-row",
+            "ai-text",
         ] {
             assert!(js.contains(&format!("$(\"{id}\")")), "playground.js does not use #{id}");
             assert!(page.contains(&format!("id=\"{id}\"")), "the playground has no #{id}");

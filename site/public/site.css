@@ -458,6 +458,22 @@ ul, ol { margin: 0; padding: 0; }
 }
 .command__copy:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
 
+/* A text to copy as it is (the AI page: a message for a chat, the configurations of
+   the MCP server): its name, where it goes and its copy button above, the text below,
+   which wraps like code. */
+.snippets { display: grid; gap: 16px; min-width: 0; }
+.snippet { min-width: 0; background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; }
+.snippet__head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0;
+  padding: 6px 6px 6px 16px; border-bottom: 1px solid var(--rule); color: var(--ink);
+}
+.snippet__name { overflow-wrap: anywhere; min-width: 0; }
+.snippet__where { flex: 1 1 14em; min-width: 0; color: var(--ink-soft); font-size: 14px; overflow-wrap: anywhere; }
+.snippet__copy { margin-left: auto; }
+.snippet .code-block { background: transparent; }
+.ai .terminal .code-block { border-bottom: 0; }
+.ai .card h3 a { overflow-wrap: anywhere; }
+
 /* ----- home: hero -------------------------------------------------------------------- */
 
 .hero { display: grid; gap: 32px; padding: 40px 0 56px; }
@@ -755,6 +771,11 @@ select {
   border-radius: 10px; padding: 8px 12px; font: 16px var(--mono);
 }
 .share__close { margin-left: auto; }
+/* Copy for AI, when the clipboard says no: the Markdown, to select and copy. */
+.share__ai textarea {
+  flex: 1 1 100%; width: 100%; min-width: 0; min-height: 44px; resize: vertical; border: 1px solid var(--rule); background: var(--paper); color: var(--ink);
+  border-radius: 10px; padding: 8px 12px; font: 16px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere;
+}
 
 /* The steps of a calculation, one at a time, in the place of the output: the buttons
    and the count, a slider, the step before (faint) and the step itself, whose long

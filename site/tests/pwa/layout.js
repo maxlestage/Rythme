@@ -16,7 +16,7 @@ const BIN = binary(process.argv[2]);
 const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
 // Every language of the site (src/i18n.rs).
 const LANGS = ["fr", "en", "es", "de", "pt", "zh"];
-const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "offline/", "nothing-here/"];
+const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "ai/", "offline/", "nothing-here/"];
 const WIDTHS = [320, 360, 375, 390, 414, 600, 768, 1024, 1280, 1440, 1920];
 // The color themes, as `site.css` defines them; `auto` follows the system.
 const THEMES = ["auto", "light", "dark", "contrast", "sepia", "tempo"];
@@ -306,6 +306,47 @@ async function shareLayout(browser, base, mode) {
   await context.close();
 }
 
+// Copy for AI in every language, when the clipboard says no: the box with the
+// Markdown in a field to copy by hand (a long line without spaces); no horizontal
+// scroll at any width, in any theme, and its texts at the contrast of each theme.
+async function copyForAiLayout(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 320, height: 800 } });
+  await context.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: () => Promise.reject(new Error("refused")) } });
+  });
+  const page = await context.newPage();
+  const failed = [];
+  for (const lang of LANGS) {
+    await page.goto(`${base}/${lang}/playground/#code=${encodeURIComponent(`print("${"y".repeat(200)}")\n`)}`);
+    await ran(page);
+    await page.click("#copy-ai");
+    const shown = await page.evaluate(() => ({
+      box: !document.getElementById("share-box").hidden,
+      row: !document.getElementById("ai-row").hidden,
+      text: document.getElementById("ai-text").value,
+      focused: document.activeElement.id,
+    }));
+    if (!shown.box || !shown.row || !shown.text.includes("```rythme") || shown.focused !== "ai-text") failed.push(`/${lang}/: the text to copy by hand is not shown: ${JSON.stringify(shown)}`);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      for (const width of [320, 390, 768, 1280]) {
+        await page.setViewportSize({ width, height: 800 });
+        await settle(page);
+        const m = await page.evaluate(measure);
+        if (m.scrollWidth > m.clientWidth || m.wide.length || m.scrollers.length || m.small.length) failed.push(`/${lang}/ ${theme} ${width}px: ${JSON.stringify(m)}`);
+        if (theme !== "auto" && (width === 320 || width === 1280)) {
+          await page.waitForTimeout(300);
+          const result = await page.evaluate(contrast, MIN_CONTRAST[theme] || 4.5);
+          if (result.bad.length) failed.push(`/${lang}/ ${theme} ${width}px: contrast ${result.bad.join("; ")}`);
+        }
+      }
+    }
+    await page.setViewportSize({ width: 320, height: 800 });
+  }
+  check(failed.length === 0, `${mode}: Copy for AI (the text to copy by hand) fits and reads well in every language, theme and width`, `\n    ${failed.slice(0, 20).join("\n    ")}`);
+  await context.close();
+}
+
 // The steps of a calculation in every language: a link with `&mode=steps` opens on a
 // step whose lines are long (a text without spaces) and nested (a block), with the step
 // before and what it printed; no horizontal scroll at any width, in any theme (long
@@ -520,6 +561,7 @@ async function verify(mode) {
     await languageMenu(browser, base, mode);
     await editorWraps(browser, base);
     await shareLayout(browser, base, mode);
+    await copyForAiLayout(browser, base, mode);
     await stepsLayout(browser, base, mode);
     await seedLayout(browser, base, mode);
     await themes(browser, base, mode);

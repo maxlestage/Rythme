@@ -126,7 +126,18 @@ async fn the_service_worker_saves_only_urls_that_exist() {
     if std::path::Path::new("public/rythme.wasm").is_file() {
         assert!(precache.contains(&format!("/rythme.wasm?v={}", site.version)));
     }
-    for file in ["/examples.json", "/fr/manifest.webmanifest", "/en/manifest.webmanifest", "/icons/icon-512.png", "/favicon.ico"] {
+    // The AI page links llms-full.txt and llms.txt: offline too.
+    for file in [
+        "/examples.json",
+        "/llms.txt",
+        "/llms-full.txt",
+        "/fr/ai/",
+        "/zh/ai/",
+        "/fr/manifest.webmanifest",
+        "/en/manifest.webmanifest",
+        "/icons/icon-512.png",
+        "/favicon.ico",
+    ] {
         assert!(precache.contains(&file.to_owned()), "{file}");
     }
     // A URL that fails would cancel the installation of the worker.

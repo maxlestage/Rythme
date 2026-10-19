@@ -8,6 +8,7 @@
 //! only `id`, resolved against the origin, is written with the base path.
 
 use crate::i18n::Lang;
+use crate::json::{Json, js_string, s};
 use crate::pages::{self, Ctx};
 use crate::routes::{Page, Route, base, link};
 use crate::server::{ASSETS, Site, site_dir, version};
@@ -45,64 +46,6 @@ pub fn manifest_path(lang: Lang) -> String {
 pub fn screenshot_path(lang: Lang, page: Page, form: &str) -> String {
     let name = if page == Page::Home { "home" } else { page.slug() };
     format!("/screenshots/{}-{name}-{form}.png", lang.code())
-}
-
-/// A small JSON value, enough for the manifest.
-enum Json {
-    Str(String),
-    Arr(Vec<Json>),
-    Obj(Vec<(&'static str, Json)>),
-}
-
-fn s(value: impl Into<String>) -> Json {
-    Json::Str(value.into())
-}
-
-impl Json {
-    fn write(&self, out: &mut String) {
-        match self {
-            Json::Str(value) => out.push_str(&js_string(value)),
-            Json::Arr(items) => {
-                out.push('[');
-                for (n, item) in items.iter().enumerate() {
-                    if n > 0 {
-                        out.push(',');
-                    }
-                    item.write(out);
-                }
-                out.push(']');
-            }
-            Json::Obj(fields) => {
-                out.push('{');
-                for (n, (key, value)) in fields.iter().enumerate() {
-                    if n > 0 {
-                        out.push(',');
-                    }
-                    out.push_str(&js_string(key));
-                    out.push(':');
-                    value.write(out);
-                }
-                out.push('}');
-            }
-        }
-    }
-}
-
-/// A JSON (and JavaScript) string.
-fn js_string(value: &str) -> String {
-    let mut out = String::with_capacity(value.len() + 2);
-    out.push('"');
-    for c in value.chars() {
-        match c {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '<' => out.push_str("\\u003c"),
-            c if (c as u32) < 0x20 || c == '\u{2028}' || c == '\u{2029}' => out.push_str(&format!("\\u{:04x}", c as u32)),
-            c => out.push(c),
-        }
-    }
-    out.push('"');
-    out
 }
 
 /// A path of the site, relative to the manifests (which are one folder down).
@@ -177,9 +120,7 @@ pub fn manifest(lang: Lang) -> String {
             ]),
         ),
     ]);
-    let mut out = String::with_capacity(4096);
-    manifest.write(&mut out);
-    out
+    manifest.to_string()
 }
 
 /// Every URL the service worker saves when it installs: every page in every language
@@ -192,6 +133,8 @@ pub fn precache(site: &Site) -> Vec<String> {
     let mut urls: Vec<String> = Route::all().chain(Lang::ALL.map(|l| Route::new(l, Page::Offline))).map(|r| r.href()).collect();
     urls.extend(ASSETS.iter().filter(|a| exists(a)).map(|a| format!("{}?v={}", link(a), site.version)));
     urls.push(link("/examples.json"));
+    // The whole language for AI assistants, linked by the AI page: offline too.
+    urls.extend([crate::ai::LLMS_PATH, crate::ai::LLMS_FULL_PATH].map(link));
     urls.extend(Lang::ALL.map(|l| link(&manifest_path(l))));
     let files = ICONS.iter().map(|i| i.0).chain([APPLE_ICON, FAVICON, LOGO]);
     urls.extend(files.filter(|f| exists(f)).map(link));
@@ -204,7 +147,12 @@ pub fn precache(site: &Site) -> Vec<String> {
 /// the "new version" banner and, once activated, deletes the old caches.
 pub fn worker(site: &Site) -> String {
     let origin = site.site_url.clone().unwrap_or_else(|| format!("http://localhost{}", base()));
-    let mut parts: Vec<Vec<u8>> = vec![site.version.clone().into_bytes(), crate::examples::json().into_bytes()];
+    let mut parts: Vec<Vec<u8>> = vec![
+        site.version.clone().into_bytes(),
+        crate::examples::json().into_bytes(),
+        crate::ai::llms_txt(&origin).into_bytes(),
+        crate::ai::LLMS_FULL.as_bytes().to_vec(),
+    ];
     for lang in Lang::ALL {
         parts.push(manifest(lang).into_bytes());
         for page in Page::ALL.into_iter().chain(Page::EXTRA) {
@@ -230,11 +178,6 @@ pub fn worker(site: &Site) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn strings_cannot_close_a_script() {
-        assert_eq!(js_string("a\"</script>\n"), r#""a\"\u003c/script>\u000a""#);
-    }
 
     #[test]
     fn manifest_urls_are_relative_to_the_manifest() {
