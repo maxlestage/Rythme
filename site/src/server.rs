@@ -1,5 +1,6 @@
-//! The server: a `paquets::App` with the pages in every language, the examples for the
-//! playground, the sitemap and `robots.txt`, the manifests and the service worker of
+//! The server: a `paquets::App` with the pages in every language and their Markdown,
+//! the examples for the playground, the sitemap and `robots.txt`, `llms.txt` and
+//! `llms-full.txt` for AI assistants (`ai.rs`), the manifests and the service worker of
 //! the installable app (`pwa.rs`). Static files (styles, scripts, the
 //! interpreter compiled to WebAssembly) come from `public/`, found by Paquets in the
 //! current directory.
@@ -97,9 +98,13 @@ fn root(_site: &Site, req: &Request) -> Response {
         .header("cache-control", "no-cache")
 }
 
-/// A page of the site: `/{lang}/` and `/{lang}/{page}/`.
+/// A page of the site: `/{lang}/` and `/{lang}/{page}/`, and their Markdown
+/// (`/{lang}/index.md`).
 fn page(site: &Site, req: &Request) -> Response {
     let path = req.path();
+    if path.ends_with("/index.md") {
+        return markdown(site, req);
+    }
     let Some(route) = Route::parse(path).filter(|r| r.page != PageKind::NotFound) else {
         return not_found(site, req);
     };
@@ -109,6 +114,46 @@ fn page(site: &Site, req: &Request) -> Response {
     }
     let ctx = site.ctx(req, route);
     pages::respond(|| pages::render(&ctx)).header("cache-control", "no-cache")
+}
+
+/// `/{lang}/learn/index.md`: a page as Markdown, for AI assistants. Its HTML page is
+/// the canonical one (a `Link` header says so); not in the sitemap, which lists the
+/// canonical pages only.
+fn markdown(site: &Site, req: &Request) -> Response {
+    let Some(route) = Route::parse_markdown(req.path()) else {
+        return not_found(site, req);
+    };
+    let ctx = site.ctx(req, route);
+    match crate::markdown::render(&ctx) {
+        Some(text) => Response::new()
+            .header("content-type", "text/markdown; charset=utf-8")
+            .header("cache-control", "no-cache")
+            .header("link", format!("<{}>; rel=\"canonical\"", ctx.url(route)))
+            .header("content-security-policy", TEXT_POLICY)
+            .send(text),
+        None => not_found(site, req),
+    }
+}
+
+/// `/llms.txt` and `/llms-full.txt`: the whole language for AI assistants.
+fn text(body: String) -> Response {
+    Response::new()
+        .header("content-type", "text/plain; charset=utf-8")
+        .header("cache-control", "public, max-age=300")
+        .header("content-security-policy", TEXT_POLICY)
+        .send(body)
+}
+
+/// The policy of the texts for assistants (`llms.txt`, the Markdown): nothing runs, and
+/// nothing is loaded; only the style that browsers give a text they show.
+pub const TEXT_POLICY: &str = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
+
+fn llms(site: &Site, req: &Request) -> Response {
+    text(crate::ai::llms_txt(&site.origin(req)))
+}
+
+fn llms_full(_site: &Site, _req: &Request) -> Response {
+    text(crate::ai::LLMS_FULL.to_owned())
 }
 
 /// The "not found" page, in the language of the address or of the visitor.
@@ -171,9 +216,16 @@ fn sitemap(site: &Site, req: &Request) -> Response {
 }
 
 fn robots(site: &Site, req: &Request) -> Response {
-    Response::new()
-        .header("content-type", "text/plain; charset=utf-8")
-        .send(format!("User-agent: *\nAllow: /\n\nSitemap: {}/sitemap.xml\n", site.origin(req)))
+    Response::new().header("content-type", "text/plain; charset=utf-8").send(format!(
+        concat!(
+            "User-agent: *\nAllow: /\n\nSitemap: {origin}/sitemap.xml\n\n",
+            "# For AI assistants: the index {origin}{llms}, the whole language {origin}{full},\n",
+            "# and every page as Markdown (index.md, e.g. {origin}/en/learn/index.md).\n",
+        ),
+        origin = site.origin(req),
+        llms = crate::ai::LLMS_PATH,
+        full = crate::ai::LLMS_FULL_PATH,
+    ))
 }
 
 /// Routes a handler that only needs the site and the request.
@@ -192,6 +244,8 @@ pub fn app(site: Arc<Site>) -> App {
     route(&mut app, "/examples.json", &site, examples_json);
     route(&mut app, "/sitemap.xml", &site, sitemap);
     route(&mut app, "/robots.txt", &site, robots);
+    route(&mut app, crate::ai::LLMS_PATH, &site, llms);
+    route(&mut app, crate::ai::LLMS_FULL_PATH, &site, llms_full);
     route(&mut app, "/sw.js", &site, service_worker);
     route(&mut app, "/:lang/manifest.webmanifest", &site, manifest);
     for path in ["/:lang", "/:lang/:page"] {
@@ -200,7 +254,7 @@ pub fn app(site: Arc<Site>) -> App {
     let fallback = site.clone();
     app.fallback(move |req: Request| {
         let site = fallback.clone();
-        async move { not_found(&site, &req) }
+        async move { if req.path().ends_with("/index.md") { markdown(&site, &req) } else { not_found(&site, &req) } }
     });
     app
 }

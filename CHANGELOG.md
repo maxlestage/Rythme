@@ -60,6 +60,18 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   1`, `x += 1`, slices, `|x|` and `->` lambdas, Kotlin blocks, format
   specifiers, `Math.`, `yield`, `case`/`when`, `{name = 1}`, an `if` without
   `else` on one line... now say exactly what to write, in every language.
+- **The website for assistants**: `/llms.txt` (with the addresses of the
+  site) and `/llms-full.txt`, linked from every page and from `robots.txt`,
+  saved for offline use; every page with content also as clean Markdown
+  (`/en/learn/index.md`: the code fenced as `rythme`, run by the tests
+  through the real interpreter), advertised by a `<link rel="alternate">`;
+  structured data (JSON-LD: Rythme, its interpreter with version, license
+  and download, the code of *Learn* and of the examples); a page *For AI
+  assistants* (`/{lang}/ai/`, in the six languages) with the message to
+  paste, the MCP configurations for Claude Code, Claude Desktop, Cursor and
+  VS Code with copy buttons, the loop of `--format json` and `rythme fix`,
+  and `AGENTS.md`; and **Copy for AI** in the playground, which copies the
+  program and its output or errors as Markdown, ready for a chat.
 
 ### Language
 

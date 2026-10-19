@@ -6,7 +6,9 @@ rendered on the server with their SEO tags and a strict Content-Security-Policy.
 In the six languages of the interpreter (see [Languages](#languages)), mobile first.
 It installs as an app and works offline (see
 [The installable app](#the-installable-app)), has color themes and never scrolls
-sideways (see [Themes and layout](#themes-and-layout)).
+sideways (see [Themes and layout](#themes-and-layout)). AI assistants and the tools
+that read the web for them find the whole language in `/llms.txt`, every page as
+Markdown and structured data (see [For AI assistants](#for-ai-assistants)).
 
 | Path | Page |
 |---|---|
@@ -16,6 +18,9 @@ sideways (see [Themes and layout](#themes-and-layout)).
 | `/{lang}/examples/` | the programs of `examples/` with their output |
 | `/{lang}/playground/` | the real interpreter, compiled to WebAssembly |
 | `/{lang}/teach/` | the guide for teachers (`docs/teaching.md`, `docs/enseigner.md`) |
+| `/{lang}/ai/` | for AI assistants: how to give them Rythme, the MCP server, the loop of `--format json` and `rythme fix` |
+| `/{lang}/index.md`, `/{lang}/{page}/index.md` | the home page, *Learn*, the examples, the guide and the AI page as Markdown (`text/markdown`) |
+| `/llms.txt`, `/llms-full.txt` | the index and the whole language for AI assistants (`docs/llms.txt`, `docs/llms-full.txt`) |
 | `/{lang}/offline/` | shown by the service worker for a page it has not saved, without network |
 | `/examples.json`, `/sitemap.xml`, `/robots.txt` | for the playground and search engines |
 | `/{lang}/manifest.webmanifest`, `/sw.js` | the manifest of the app in each language, its service worker |
@@ -29,6 +34,9 @@ sideways (see [Themes and layout](#themes-and-layout)).
 | Color themes: names, `theme-color`, the inline script of the head | `src/themes.rs` (colors in `public/site.css`) |
 | Styles (mobile first), menu, playground | `public/site.css`, `public/site.js`, `public/playground.js` |
 | Manifests, service worker | `src/pwa.rs`, `src/sw.js` |
+| `llms.txt`, the MCP configurations, the AI page's commands | `src/ai.rs` (the page itself in `src/pages.rs`) |
+| The pages as Markdown | `src/markdown.rs` |
+| Structured data (JSON-LD) | `src/structured.rs`, written by `src/json.rs` (the manifests too) |
 | Icons, `favicon.ico`, screenshots of the install dialog | `public/icons/`, `public/screenshots/`, made by `tests/pwa/images.js` |
 
 The examples and the guide are built into the server (`include_str!`): nothing to copy
@@ -250,8 +258,8 @@ every page and the offline pages, the theme picker and the hash of the inline sc
 in the policy of every page. The rest needs a real browser: the scripts of
 [`tests/pwa/`](tests/pwa/README.md), with Playwright and Chromium, check that the app
 is installable, works offline (every page in every language, the playground runs,
-checks, tests and formats, with its messages in the language of the page), shows the
-offline page, and offers a new version, both with the server and with the static
+checks, tests and formats, with its messages in the language of the page; Copy for AI;
+`llms.txt`), shows the offline page, and offers a new version, both with the server and with the static
 export; and that no page scrolls sideways, in every language and theme, with the
 contrast of each, and that the language menu fits the screen (`layout.js`); and that
 real phones never scroll sideways either, text enlarged, page zoomed, in landscape,
@@ -325,6 +333,62 @@ sideways. So:
 `tests/pwa/layout.js` checks the widths and themes in Chromium, `tests/pwa/mobile.js`
 the phones (see [`tests/pwa/`](tests/pwa/README.md)).
 
+## For AI assistants
+
+Assistants were trained before Rythme existed: the site gives them the language, and
+tells people how to give it to them (Rythme's own tools for them are in section 7.10
+of the manual).
+
+- **`/llms.txt` and `/llms-full.txt`** (`text/plain; charset=utf-8`): `docs/llms.txt`
+  and `docs/llms-full.txt`, built into the server (`include_str!`), at the root of
+  the base path. In `/llms.txt` the link to the complete file leads to the site's
+  own `/llms-full.txt`, and a *Website* section gives the Markdown of the pages, all
+  as absolute addresses on `SITE_URL` (or the address of the request): the tests
+  follow every one. Every page links both (`<link rel="alternate" type="text/plain">`),
+  `robots.txt` names them, and the service worker saves them, so the AI page works
+  offline with its links.
+- **Markdown**: `/{lang}/index.md`, `/{lang}/learn/index.md`, `/{lang}/examples/index.md`,
+  `/{lang}/teach/index.md` and `/{lang}/ai/index.md` (`text/markdown; charset=utf-8`),
+  written by `src/markdown.rs` from the texts, code and examples of the HTML pages:
+  one `#` title, the lead as a quote, the code fenced as ```` ```rythme ````, what it
+  prints as ```` ```text ````, every link absolute, no HTML. The guide for teachers is
+  its own Markdown, its links leading to the site. Each page announces its Markdown
+  (`<link rel="alternate" type="text/markdown">`); the server sends the HTML page as
+  canonical (`Link: <…>; rel="canonical"`). **Not in the sitemap**: it lists the
+  canonical pages, each with its languages; the Markdown is the same content in
+  another format, found from the page itself and from `/llms.txt`, and listing it
+  would offer search engines duplicates. The playground, the offline and 404 pages
+  have none. The static export writes them next to `index.html`.
+- **Structured data** (JSON-LD, `src/structured.rs`): on the home page, Rythme as a
+  `ComputerLanguage`, its interpreter as a `SoftwareApplication` (version from the
+  interpreter's `Cargo.toml`, MIT license, the Releases page as `downloadUrl`,
+  operating systems, free) and its `SoftwareSourceCode` (written in Rust, the
+  repository); on *Learn*, the examples, the guide and the AI page, a `TechArticle`
+  in the language of the page with its Markdown as `encoding`, and on *Learn* and
+  the examples each piece of code as a `SoftwareSourceCode` in Rythme. JSON-LD is
+  data, not a script: the Content-Security-Policy computes no hash for it and still
+  forbids every inline script but the theme's.
+- **The AI page** (`/{lang}/ai/`, *AI* in the menu and the footer): the cards of
+  `llms-full.txt`, `llms.txt` and the Markdown, a first message to paste into a chat
+  (with the address of `llms-full.txt`), the configurations of `rythme mcp` for
+  Claude Code, Claude Desktop, Cursor and VS Code (`src/ai.rs`, the same text as the
+  manual: a test checks it), the commands of the loop and what `rythme fix` does,
+  `rythme new` and its `AGENTS.md`. Each text to copy has its button (`site.js`, as
+  the commands of the home page) and wraps like code: nothing scrolls sideways.
+- **Copy for AI**, in the playground, next to *Share*: the program and what its last
+  run gave as Markdown, after a line in the language of the page that gives the
+  address of `llms-full.txt`: the name of the file, the code fenced as `rythme`, then
+  the command as in a terminal (`rythme run main.ry`, `rythme check`, `rythme test`,
+  `rythme steps … "expr"`, with `--seed N`) and its output or its errors fenced as
+  `text` (the program's own output when the code was changed since: none). Copied
+  with the Clipboard API; when it says no, the text is shown selected in a field of
+  the box of *Share* (Escape closes it and gives the focus back). Everything happens
+  in the page: it works offline.
+
+The response of a text (`llms.txt`, Markdown) has a policy of its own: nothing runs
+in it, and the browser may style the text it shows. `tests/ai.rs` serves all of it
+through Paquets' test client; `tests/pwa/check.js` uses it offline in Chromium.
+
 ## Heroku
 
 The repository deploys this site, with its playground, on Heroku in two ways:
@@ -367,7 +431,8 @@ BASE_PATH=/Rythme SITE_URL=https://maxlestage.github.io/Rythme cargo run --relea
 
 Every page is rendered by the app itself through Paquets' test client and written to
 `dist/<path>/index.html`, with `404.html`, `sitemap.xml`, `robots.txt`,
-`examples.json`, `sw.js`, the manifests and `public/`. Every link is behind `BASE_PATH`. `/` picks the language
+`examples.json`, `sw.js`, the manifests, `llms.txt`, `llms-full.txt`, the Markdown of the
+pages (`dist/<path>/index.md`) and `public/`. Every link is behind `BASE_PATH`. `/` picks the language
 in the browser. In the repository settings, Pages must use **GitHub Actions** as its
 source (with "Deploy from a branch", GitHub shows the README instead).
 
@@ -384,3 +449,7 @@ The tests render every page in every language through Paquets' test client (stat
 404 page, the sitemap and `/examples.json`, that every program of `examples/` is listed,
 and run every piece of code the site shows through the real interpreter, in the language
 of each page: the home page's error message must be exactly the interpreter's.
+`tests/ai.rs` checks what the site gives AI assistants: `llms.txt` and its links, the
+Markdown of every page (well formed, every link existing, every piece of Rythme code
+run through the interpreter, printing exactly the text that follows it), the JSON-LD
+of every page, the titles and descriptions, the AI page and Copy for AI.

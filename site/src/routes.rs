@@ -1,5 +1,6 @@
-//! The URLs of the site: `/{lang}/` (every language of `i18n.rs`) and its four pages, behind an optional base path
-//! (`/Rythme` when the site is exported for GitHub Pages).
+//! The URLs of the site: `/{lang}/` (every language of `i18n.rs`) and its pages, behind an optional base path
+//! (`/Rythme` when the site is exported for GitHub Pages). The pages with content also
+//! exist as Markdown, for AI assistants: `/{lang}/learn/index.md`.
 
 use std::sync::OnceLock;
 
@@ -39,6 +40,8 @@ pub enum Page {
     Examples,
     Playground,
     Teach,
+    /// For AI assistants: how to give them Rythme.
+    Ai,
     /// Shown by the service worker for a page that was not saved, without network.
     Offline,
     NotFound,
@@ -46,7 +49,7 @@ pub enum Page {
 
 impl Page {
     /// Every page that has an address, in the order of the navigation.
-    pub const ALL: [Page; 5] = [Page::Home, Page::Learn, Page::Examples, Page::Playground, Page::Teach];
+    pub const ALL: [Page; 6] = [Page::Home, Page::Learn, Page::Examples, Page::Playground, Page::Teach, Page::Ai];
     /// The pages that have an address but are not in the navigation nor the sitemap.
     pub const EXTRA: [Page; 1] = [Page::Offline];
 
@@ -58,9 +61,15 @@ impl Page {
             Page::Examples => "examples",
             Page::Playground => "playground",
             Page::Teach => "teach",
+            Page::Ai => "ai",
             Page::Offline => "offline",
             Page::NotFound => "404",
         }
+    }
+
+    /// The pages that also exist as Markdown (`index.md`): those with content to read.
+    pub fn has_markdown(self) -> bool {
+        matches!(self, Page::Home | Page::Learn | Page::Examples | Page::Teach | Page::Ai)
     }
 }
 
@@ -93,6 +102,17 @@ impl Route {
             Page::Home => format!("/{}/", self.lang.code()),
             page => format!("/{}/{}/", self.lang.code(), page.slug()),
         }
+    }
+
+    /// The route of the Markdown version of a page, `/{lang}/learn/index.md`.
+    pub fn parse_markdown(path: &str) -> Option<Route> {
+        let page = path.strip_suffix("index.md")?;
+        Route::parse(page).filter(|r| r.page.has_markdown() && r.path() == page)
+    }
+
+    /// The path of the Markdown version of the page, e.g. `/en/learn/index.md`.
+    pub fn markdown_path(&self) -> String {
+        format!("{}index.md", self.path())
     }
 
     /// The link to the page, behind the base path.
@@ -130,5 +150,23 @@ mod tests {
         assert_eq!(Route::parse("/zh/learn/"), Some(Route::new(Lang::Zh, Page::Learn)));
         assert_eq!(Route::parse("/fr/nothing/").map(|r| r.page), Some(Page::NotFound));
         assert_eq!(Route::parse("/en/learn/more/").map(|r| r.page), Some(Page::NotFound));
+    }
+
+    #[test]
+    fn markdown_paths() {
+        for route in Route::all().filter(|r| r.page.has_markdown()) {
+            assert_eq!(Route::parse_markdown(&route.markdown_path()), Some(route));
+        }
+        assert_eq!(Route::parse_markdown("/en/index.md"), Some(Route::new(Lang::En, Page::Home)));
+        for path in [
+            "/en/playground/index.md",
+            "/en/offline/index.md",
+            "/en/nothing/index.md",
+            "/en/learn/index.html",
+            "/it/index.md",
+            "/en//learn/index.md",
+        ] {
+            assert_eq!(Route::parse_markdown(path), None, "{path}");
+        }
     }
 }
