@@ -345,7 +345,7 @@ mode) and is organised as a pipeline:
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
 | [`src/bigint.rs`](src/bigint.rs) | whole numbers beyond 64 bits, without a dependency |
 | [`src/dict.rs`](src/dict.rs) | the persistent ordered tree behind dictionaries and sets, and the order of their keys |
-| [`src/builtins.rs`](src/builtins.rs) | 178 built-in functions (and their Ruby names), documented in two languages, JSON and CSV included |
+| [`src/builtins.rs`](src/builtins.rs) | 211 built-in functions (and their Ruby names), documented in two languages, JSON, CSV, HTTP and machine learning included |
 | [`src/builtins/`](src/builtins) | dates, files and the system, dictionaries and sets, regexes and text tools, CSV, generators of property tests |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |

@@ -847,6 +847,7 @@ Topics (rythme help TOPIC)
   regex       searching, cutting and replacing with regular expressions
   csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
   random      chance, and the same draws again with a seed
+  ml          machine learning and AI: vectors, statistics, slopes, charts, HTTP
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
@@ -901,6 +902,7 @@ A specific function: rythme help map
   regex       用正则表达式搜索、切分和替换
   csv         电子表格中的表格：csv_parse、csv_records、csv_format
   random      随机，以及用种子再次得到相同的抽取结果
+  ml          机器学习与人工智能：向量、统计、斜率、图表、HTTP
   repl        交互模式
   fmt         代码的官方格式（rythme fmt）
   doc         根据 ## 注释生成文档（rythme doc）
@@ -9283,6 +9285,93 @@ test "最佳走法"
   assert_eq(best_move(8), None)
 end
 "#,
+        ),
+        // src/help.rs: rythme help ml
+        (
+            r#"MACHINE LEARNING AND AI
+
+A vector is a list of numbers, a matrix a list of rows of the same length.
+These functions never change them: they give new lists, always of Floats.
+
+Vectors and matrices
+  dot([1, 2], [3, 4])            # 11.0
+  norm([3, 4])                   # 5.0, the length
+  vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # number by number
+  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  matmul(m, n)  matmul(m, v)     # product of matrices, or matrix by vector
+  transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
+  zip_with(xs, ys, f)            # f on the pairs, for anything else
+
+Neurons
+  sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # scores into probabilities
+
+Statistics
+  stats(xs)                      # {count, mean, median, std_dev, min, max}
+  variance(xs)  std_dev(xs)  percentile(xs, 90)  argmax(xs)  argmin(xs)
+  normalize(xs)                  # from 0.0 (smallest) to 1.0 (largest)
+
+Chance, the same on every run after random_seed(n)
+  random_normal(0, 1)  random_choice_weighted(xs, weights)
+  train_test_split(examples, 0.8)    # {train, test}
+
+Slopes, for gradient descent (central differences, about 9 digits)
+  derivative(fn(x) = x * x, 3)               # 6.0
+  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+
+Charts as text
+  print(plot(losses))  print(plot(xs, ys))  print(histogram(heights))
+
+The web and language models
+  http_get(url)  http_post(url, body, headers)   # Ok(text) or Err(message)
+  Keep API keys out of the code: env("ANTHROPIC_API_KEY"). The example
+  examples/ask_claude.ry asks Claude a question with http_post and JSON.
+
+A mistake of shape names both shapes ("cannot multiply a 2×3 matrix by a
+2×2 matrix"). Programs to read: the examples linear_regression, perceptron,
+xor_network, kmeans, knn, naive_bayes, markov, tictactoe, pathfinding and
+genetic; exercises 31 to 36 (rythme exercise list)."#,
+            r#"机器学习与人工智能
+
+向量是数字列表，矩阵是由等长的行组成的列表。这些函数从不改变它们：总是给出
+新的列表，元素都是 Float。
+
+向量和矩阵
+  dot([1, 2], [3, 4])            # 11.0
+  norm([3, 4])                   # 5.0，长度
+  vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # 逐个数字计算
+  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  matmul(m, n)  matmul(m, v)     # 矩阵乘积，或矩阵乘向量
+  transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
+  zip_with(xs, ys, f)            # 对每一对调用 f，用于其他一切运算
+
+神经元
+  sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # 把分数变成概率
+
+统计
+  stats(xs)                      # {count, mean, median, std_dev, min, max}
+  variance(xs)  std_dev(xs)  percentile(xs, 90)  argmax(xs)  argmin(xs)
+  normalize(xs)                  # 从 0.0（最小）到 1.0（最大）
+
+随机，在 random_seed(n) 之后每次运行都相同
+  random_normal(0, 1)  random_choice_weighted(xs, weights)
+  train_test_split(examples, 0.8)    # {train, test}
+
+斜率，用于梯度下降（中心差分，约 9 位有效数字）
+  derivative(fn(x) = x * x, 3)               # 6.0
+  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+
+文本图表
+  print(plot(losses))  print(plot(xs, ys))  print(histogram(heights))
+
+网络与语言模型
+  http_get(url)  http_post(url, body, headers)   # Ok(文本) 或 Err(消息)
+  不要把 API 密钥写进代码：用 env("ANTHROPIC_API_KEY")。示例
+  examples/ask_claude.ry 用 http_post 和 JSON 向 Claude 提问。
+
+形状错误会同时给出两个形状（“无法将一个 2×3 矩阵乘以一个 2×2 矩阵”）。
+可以阅读的程序：示例 linear_regression、perceptron、xor_network、kmeans、
+knn、naive_bayes、markov、tictactoe、pathfinding 和 genetic；练习 31 到 36
+（rythme exercise list）。"#,
         ),
     ],
 }

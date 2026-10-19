@@ -847,6 +847,7 @@ Topics (rythme help TOPIC)
   regex       searching, cutting and replacing with regular expressions
   csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
   random      chance, and the same draws again with a seed
+  ml          machine learning and AI: vectors, statistics, slopes, charts, HTTP
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
@@ -901,6 +902,7 @@ Temas (rythme help TEMA)
   regex       buscar, cortar y reemplazar con expresiones regulares
   csv         las tablas de las hojas de cálculo: csv_parse, csv_records, csv_format
   random      el azar, y los mismos sorteos otra vez con una semilla
+  ml          aprendizaje automático e IA: vectores, estadística, pendientes, gráficos, HTTP
   repl        el modo interactivo
   fmt         el formato oficial del código (rythme fmt)
   doc         la documentación sacada de los comentarios ## (rythme doc)
@@ -9517,6 +9519,96 @@ test "mejor jugada"
   assert_eq(mejor_jugada(8), None)
 end
 "#,
+        ),
+        // src/help.rs: rythme help ml
+        (
+            r#"MACHINE LEARNING AND AI
+
+A vector is a list of numbers, a matrix a list of rows of the same length.
+These functions never change them: they give new lists, always of Floats.
+
+Vectors and matrices
+  dot([1, 2], [3, 4])            # 11.0
+  norm([3, 4])                   # 5.0, the length
+  vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # number by number
+  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  matmul(m, n)  matmul(m, v)     # product of matrices, or matrix by vector
+  transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
+  zip_with(xs, ys, f)            # f on the pairs, for anything else
+
+Neurons
+  sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # scores into probabilities
+
+Statistics
+  stats(xs)                      # {count, mean, median, std_dev, min, max}
+  variance(xs)  std_dev(xs)  percentile(xs, 90)  argmax(xs)  argmin(xs)
+  normalize(xs)                  # from 0.0 (smallest) to 1.0 (largest)
+
+Chance, the same on every run after random_seed(n)
+  random_normal(0, 1)  random_choice_weighted(xs, weights)
+  train_test_split(examples, 0.8)    # {train, test}
+
+Slopes, for gradient descent (central differences, about 9 digits)
+  derivative(fn(x) = x * x, 3)               # 6.0
+  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+
+Charts as text
+  print(plot(losses))  print(plot(xs, ys))  print(histogram(heights))
+
+The web and language models
+  http_get(url)  http_post(url, body, headers)   # Ok(text) or Err(message)
+  Keep API keys out of the code: env("ANTHROPIC_API_KEY"). The example
+  examples/ask_claude.ry asks Claude a question with http_post and JSON.
+
+A mistake of shape names both shapes ("cannot multiply a 2×3 matrix by a
+2×2 matrix"). Programs to read: the examples linear_regression, perceptron,
+xor_network, kmeans, knn, naive_bayes, markov, tictactoe, pathfinding and
+genetic; exercises 31 to 36 (rythme exercise list)."#,
+            r#"APRENDIZAJE AUTOMÁTICO E IA
+
+Un vector es una lista de números, una matriz una lista de filas de la misma
+longitud. Estas funciones nunca los cambian: dan listas nuevas, siempre de
+Floats.
+
+Vectores y matrices
+  dot([1, 2], [3, 4])            # 11.0
+  norm([3, 4])                   # 5.0, la longitud
+  vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # número a número
+  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  matmul(m, n)  matmul(m, v)     # producto de matrices, o matriz por vector
+  transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
+  zip_with(xs, ys, f)            # f sobre los pares, para todo lo demás
+
+Neuronas
+  sigmoid(x)  tanh(x)  relu(x)   softmax(puntuaciones)   # en probabilidades
+
+Estadística
+  stats(xs)                      # {count, mean, median, std_dev, min, max}
+  variance(xs)  std_dev(xs)  percentile(xs, 90)  argmax(xs)  argmin(xs)
+  normalize(xs)                  # de 0.0 (el más pequeño) a 1.0 (el más grande)
+
+El azar, el mismo en cada ejecución tras random_seed(n)
+  random_normal(0, 1)  random_choice_weighted(xs, pesos)
+  train_test_split(ejemplos, 0.8)    # {train, test}
+
+Pendientes, para el descenso de gradiente (diferencias centradas, unas 9 cifras)
+  derivative(fn(x) = x * x, 3)               # 6.0
+  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+
+Gráficos de texto
+  print(plot(perdidas))  print(plot(xs, ys))  print(histogram(alturas))
+
+La web y los modelos de lenguaje
+  http_get(url)  http_post(url, cuerpo, cabeceras)   # Ok(texto) o Err(mensaje)
+  Deja las claves de API fuera del código: env("ANTHROPIC_API_KEY"). El
+  ejemplo examples/ask_claude.ry hace una pregunta a Claude con http_post y
+  JSON.
+
+Un error de forma nombra las dos formas ("no puede multiplicar una matriz
+2×3 por una matriz 2×2"). Programas para leer: los ejemplos
+linear_regression, perceptron, xor_network, kmeans, knn, naive_bayes, markov,
+tictactoe, pathfinding y genetic; los ejercicios 31 a 36 (rythme exercise
+list)."#,
         ),
     ],
 }

@@ -3111,7 +3111,7 @@ minuscules.
 
 ## 6. Bibliothèque standard
 
-Les 178 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
+Les 211 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
 mots-clés, leurs noms sont en anglais. `rythme help builtins` les liste
 toutes par catégorie, une ligne chacune ; `rythme help NOM` (ou `help(NOM)`
 dans un programme, ou `:doc NOM` dans le mode interactif) affiche la
@@ -3489,6 +3489,141 @@ true ["Ada", "Grace", "Alan"] face
 (voir [4.8](#48-tests)). Un générateur est un enregistrement comme
 `{generator: "ints", min: 1, max: 6}` ; un générateur mal fait arrête
 `check_all` et `sample` avec E023.
+
+**Apprentissage automatique.** Les vecteurs sont des listes de nombres,
+les matrices des listes de lignes de même longueur : les fonctions de cette
+catégorie les prennent telles quelles et donnent de nouvelles listes,
+toujours de Floats (les nombres entiers de toute taille comptent comme des
+nombres). `dot`, `norm`, `vector_add`, `vector_sub` et `vector_mul` (nombre
+par nombre, sur deux vecteurs ou deux matrices de même forme),
+`vector_scale(x, k)`, `zip_with(xs, ys, f)` (une fonction des listes :
+n'importe quelle `f` sur les paires), `matmul(a, b)` (une matrice par une
+matrice, ou par un vecteur, ce qui donne un vecteur), `transpose`,
+`zeros(n)` et `zeros(lignes, colonnes)`, `ones`, `identity_matrix(n)`,
+`shape` (la longueur à chaque niveau : `[2, 3]` pour 2 lignes de 3
+nombres) ; `sigmoid`, `tanh`, `relu`, `softmax` ; `stats(xs)` (un
+enregistrement `{count, mean, median, std_dev, min, max}`), `variance` et
+`std_dev` (de toute la population : divisées par n), `percentile(xs, p)`
+(p de 0 à 100, entre les deux nombres les plus proches en proportion, comme
+les tableurs), `argmax`, `argmin` (la première position du plus grand ou du
+plus petit nombre), `normalize` (de 0.0 pour le plus petit à 1.0 pour le
+plus grand). Les noms `mean`, `median` et `average` sont laissés aux
+programmes, qui les définissent souvent : `stats(xs).mean` et
+`percentile(xs, 50)` les donnent. `random_normal(moyenne, ecart)`,
+`random_choice_weighted(xs, poids)` et `train_test_split(xs, part)` (un
+enregistrement `{train, test}`, après un mélange) suivent `random_seed`
+comme `random`.
+
+`derivative(f, x)` et `gradient(f, xs)` calculent des pentes par
+différences centrées, (f(x + h) − f(x − h)) / 2h avec
+h = 0,00001 × max(1, |x|). La même formule avec 2h estime l'erreur de la
+première, et seuls les chiffres qu'elle et l'arrondi des valeurs de f
+laissent sûrs sont gardés : environ 9 chiffres significatifs pour une
+fonction régulière, de sorte que `derivative(fn(x) = x * x, 3)` vaut `6.0`
+et `derivative(exp, 1)` vaut `2.718281829`. Les pentes sont numériques, pas
+symboliques : f est appelée quatre fois par nombre, et une erreur de f
+(`sqrt` sous 0) est la sienne.
+
+```rythme
+w = [[1, 2], [3, 4]]
+print(matmul(w, [1, 1]), transpose(w), shape(w))
+print(stats([2, 4, 4, 4, 5, 5, 7, 9]))
+print(softmax([1, 2, 3]) |> map(fn(p) = round(p, 2)), argmax([0.1, 0.7, 0.2]))
+print(derivative(fn(x) = x ** 3, 2), gradient(fn([x, y]) = x * y, [3, 4]))
+```
+
+```text
+[3.0, 7.0] [[1.0, 3.0], [2.0, 4.0]] [2, 2]
+{count: 8, mean: 5.0, median: 4.5, std_dev: 2.0, min: 2.0, max: 9.0}
+[0.09, 0.24, 0.67] 1
+12.0 [4.0, 3.0]
+```
+
+Deux valeurs de formes différentes arrêtent le programme avec E023, et le
+message nomme les deux formes ; un élément qui n'est pas un nombre est E005,
+avec sa position. Aucune valeur ne fait planter ces fonctions : les listes
+vides ou irrégulières sont des erreurs avec un message, `nan` n'est jamais
+choisi par `argmax` ni `argmin`, et les listes imbriquées sur plus de 64
+niveaux sont refusées.
+
+```rythme
+vector_add([1, 2, 3], [[1, 2], [3, 4]])
+```
+
+```text
+erreur[E023]: `vector_add` a besoin de deux valeurs de même forme, mais a reçu un vecteur de 3 nombre(s) et une matrice 2×2
+ --> sample.ry:1:1
+  |
+1 | vector_add([1, 2, 3], [[1, 2], [3, 4]])
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = aide: `shape(x)` donne la forme d'un vecteur ou d'une matrice : [3] ou [2, 3]
+  = en savoir plus : `rythme explain E023`
+```
+
+**Graphiques en texte.** `plot(ys)` dessine les nombres d'une liste aux
+positions 0, 1, 2..., et `plot(xs, ys)` les points (x, y), sur une grille de
+50 colonnes et 11 lignes, avec la plus grande valeur, celle du milieu et la
+plus petite sur l'axe vertical et les extrêmes de x en dessous ;
+`histogram(xs, barres)` compte combien de nombres tombent dans chacun des
+`barres` intervalles de même largeur (10 sinon) et dessine une barre
+horizontale pour chacun, en huitièmes de colonne. Les deux donnent un texte,
+à afficher avec `print` : le même dans un terminal, le playground et un
+test, les mêmes nombres donnant toujours le même dessin. Les nombres qui ne
+sont pas finis sont laissés de côté ; une liste sans aucun nombre fini est
+E023.
+
+```rythme
+heights = [1.52, 1.60, 1.63, 1.68, 1.70, 1.71, 1.75, 1.80, 1.66, 1.72]
+print(histogram(heights, 4))
+print(plot(map(0..20, fn(i) = 10 / (i + 1))))
+```
+
+```text
+1.52 – 1.59 │██████████ 1
+1.59 – 1.66 │██████████████████████████████ 3
+1.66 – 1.73 │████████████████████████████████████████ 4
+1.73 –  1.8 │████████████████████ 2
+  10 ┤•
+     │
+     │
+     │
+     │
+5.24 ┤  •
+     │
+     │     •
+     │       •  •
+     │            •  • •  • •
+0.48 ┤                         • • •  • •  • •  • •  • •
+     └──────────────────────────────────────────────────
+      0                                               20
+```
+
+**Le web.** `http_get(url, en_tetes)` et `http_post(url, corps, en_tetes)`
+donnent `Ok(texte de la réponse)`, ou `Err(message)` quand il n'y a pas de
+réseau, que l'adresse est fausse, que le serveur répond par un code d'erreur
+(le message commence par lui : `le serveur a répondu 404 : ...`), qu'il ne
+répond pas en 30 secondes (10 pour se connecter), ou que la connexion
+sécurisée échoue. `en_tetes` est un enregistrement (ou un dictionnaire) de
+textes, comme `{"content-type": "application/json"}` ; `corps` est un texte,
+souvent fait avec `to_json`. Seules les adresses `http://` et `https://`
+sont acceptées, redirections comprises. Les requêtes sont faites par le
+programme curl, présent sous Windows 10 et après, macOS et la plupart des
+systèmes Linux (sinon, un `Err` dit comment l'installer) : l'adresse, les
+en-têtes et le corps lui sont donnés sur son entrée standard, jamais sur sa
+ligne de commande, pour qu'une clé d'API reste hors de la liste des
+processus. Gardez aussi les clés hors du code : lisez-les avec `env`. Dans
+le playground, les deux donnent un `Err`.
+[`examples/ask_claude.ry`](../examples/ask_claude.ry) pose ainsi une
+question à un modèle de langage.
+
+```rythme
+print(http_get("ftp://example.com/data.csv"))
+```
+
+```text
+Err("une adresse web commence par http:// ou https://, pas \"ftp://example.com/data.csv\"")
+```
 
 **Noms Ruby.** Certaines fonctions ont un second nom, celui que Ruby leur
 donne. Chacun est exactement la fonction qu'il nomme (mêmes arguments, mêmes
