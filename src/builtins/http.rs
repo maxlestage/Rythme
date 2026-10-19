@@ -15,7 +15,6 @@
 //! most 30 seconds (10 to connect). The playground runs in a browser, which
 //! has no curl: there, both give an `Err` that says so.
 
-use std::io::Write as _;
 use std::process::{Command, Stdio};
 
 use super::*;

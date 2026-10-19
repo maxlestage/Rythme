@@ -199,7 +199,11 @@ fn exercise_list_and_start() {
     let dir = temp_dir("start");
     let r = rythme_in(&dir, "en", &["exercise", "list"]);
     assert_eq!(r.code, 0);
-    assert!(r.stdout.contains("01  First values") && r.stdout.contains("30-testing.ry") && r.stdout.contains("36-minimax.ry"), "{}", r.stdout);
+    assert!(
+        r.stdout.contains("01  First values") && r.stdout.contains("30-testing.ry") && r.stdout.contains("36-minimax.ry"),
+        "{}",
+        r.stdout
+    );
     let r = rythme_in(&dir, "fr", &["exercice"]);
     assert!(r.stdout.contains("01  Premières valeurs") && r.stdout.contains("30-tests.ry"), "{}", r.stdout);
     let r = rythme_in(&dir, "de", &["exercise", "list"]);
