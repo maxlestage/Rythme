@@ -1,0 +1,30 @@
+# Exercice 32 · Des statistiques sur des données  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn centrer_reduire(xs)
+  s = stats(xs)
+  map(xs, fn(x) = (x - s.mean) / s.std_dev)
+end
+
+fn valeurs_aberrantes(xs)
+  s = stats(xs)
+  filter(xs, fn(x) = abs(x - s.mean) > 2 * s.std_dev)
+end
+
+fn exactitude(predictions, reponses) = count(zip(predictions, reponses), fn([p, a]) = p == a) / len(reponses)
+
+# --- Tests (ne les modifiez pas) ---
+
+test "centrer et réduire"
+  assert_eq(centrer_reduire([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "valeurs aberrantes"
+  assert_eq(valeurs_aberrantes([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(valeurs_aberrantes([1, 2, 3]), [])
+end
+
+test "exactitude"
+  assert_eq(exactitude(["chat", "chien", "chat", "chat"], ["chat", "chien", "chien", "chat"]), 0.75)
+  assert_eq(exactitude([1, 0], [0, 1]), 0.0)
+end

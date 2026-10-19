@@ -1,0 +1,35 @@
+# Ejercicio 35 · Los vecinos más cercanos  ★★★
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn vecinos(ejemplos, punto, k) = ejemplos |> sort_by(fn(e) = norm(vector_sub(e.punto, punto))) |> take(k)
+
+fn mayoria(etiquetas) = max_by(etiquetas, fn(etiqueta) = count(etiquetas, fn(l) = l == etiqueta))
+
+fn clasificar(ejemplos, punto, k) = vecinos(ejemplos, punto, k) |> map(fn(e) = e.etiqueta) |> mayoria
+
+# --- Pruebas (no las cambies) ---
+
+jardin = [
+  {punto: [1, 1], etiqueta: "rojo"},
+  {punto: [1, 2], etiqueta: "rojo"},
+  {punto: [2, 1], etiqueta: "rojo"},
+  {punto: [8, 8], etiqueta: "azul"},
+  {punto: [9, 8], etiqueta: "azul"},
+  {punto: [5, 5], etiqueta: "azul"},
+]
+
+test "vecinos"
+  assert_eq(vecinos(jardin, [0, 0], 2) |> map(fn(e) = e.punto), [[1, 1], [1, 2]])
+  assert_eq(len(vecinos(jardin, [0, 0], 10)), 6)
+end
+
+test "mayoría"
+  assert_eq(mayoria(["a", "b", "b", "c"]), "b")
+  assert_eq(mayoria(["x", "y"]), "x")
+end
+
+test "clasificar"
+  assert_eq(clasificar(jardin, [2, 2], 3), "rojo")
+  assert_eq(clasificar(jardin, [7, 7], 3), "azul")
+  assert_eq(clasificar(jardin, [4, 4], 1), "azul")
+end

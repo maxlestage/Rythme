@@ -1,0 +1,30 @@
+# Ejercicio 32 · Estadística sobre datos  ★★☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn estandarizar(xs)
+  s = stats(xs)
+  map(xs, fn(x) = (x - s.mean) / s.std_dev)
+end
+
+fn atipicos(xs)
+  s = stats(xs)
+  filter(xs, fn(x) = abs(x - s.mean) > 2 * s.std_dev)
+end
+
+fn exactitud(predicciones, respuestas) = count(zip(predicciones, respuestas), fn([p, a]) = p == a) / len(respuestas)
+
+# --- Pruebas (no las cambies) ---
+
+test "estandarizar"
+  assert_eq(estandarizar([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "valores atípicos"
+  assert_eq(atipicos([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(atipicos([1, 2, 3]), [])
+end
+
+test "exactitud"
+  assert_eq(exactitud(["gato", "perro", "gato", "gato"], ["gato", "perro", "perro", "gato"]), 0.75)
+  assert_eq(exactitud([1, 0], [0, 1]), 0.0)
+end

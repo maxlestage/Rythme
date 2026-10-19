@@ -207,7 +207,7 @@ cargo install --path .       # or install it in your PATH
 | `rythme help [topic]`       | help on a topic or a function                  |
 | `rythme explain E003`       | explain an error code                          |
 | `rythme learn`              | guided tour of the language                    |
-| `rythme exercise`           | [30 graded exercises](docs/exercises/README.md): `list`, `start 1`, `check FILE` |
+| `rythme exercise`           | [36 graded exercises](docs/exercises/README.md): `list`, `start 1`, `check FILE` |
 | `rythme steps fib.ry "fib(4)"` | the calculation step by step: `fib(4)` → `fib(3) + fib(2)` → ... |
 | `rythme debug fib.ry`       | the debugger: `break 12`, `run`, `next`, `step`, `where`, `print n * 2` ([manual](docs/reference.md#79-the-debugger-rythme-debug)) |
 | `rythme -e 'print(1 + 2)'`  | run a piece of code                            |
@@ -325,7 +325,7 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 [`docs/teaching.md`](docs/teaching.md) proposes a course outline built on
 Rythme, and explains why it fits a first programming course and a
 functional programming course alike.
-[`docs/exercises/`](docs/exercises/README.md) holds 30 graded exercises, with
+[`docs/exercises/`](docs/exercises/README.md) holds 36 graded exercises (six about AI), with
 statements, hints, tests and solutions, that `rythme exercise` hands out and
 checks in every language of the messages.
 

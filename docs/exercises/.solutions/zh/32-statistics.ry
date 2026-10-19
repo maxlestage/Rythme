@@ -1,0 +1,30 @@
+# 练习 32 · 数据的统计  ★★☆
+# 参考答案。请先自己做这个练习，再来看它！
+
+fn standardize(xs)
+  s = stats(xs)
+  map(xs, fn(x) = (x - s.mean) / s.std_dev)
+end
+
+fn outliers(xs)
+  s = stats(xs)
+  filter(xs, fn(x) = abs(x - s.mean) > 2 * s.std_dev)
+end
+
+fn accuracy(predictions, answers) = count(zip(predictions, answers), fn([p, a]) = p == a) / len(answers)
+
+# --- 测试（请不要修改）---
+
+test "标准化"
+  assert_eq(standardize([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "离群值"
+  assert_eq(outliers([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(outliers([1, 2, 3]), [])
+end
+
+test "准确率"
+  assert_eq(accuracy(["猫", "狗", "猫", "猫"], ["猫", "狗", "狗", "猫"]), 0.75)
+  assert_eq(accuracy([1, 0], [0, 1]), 0.0)
+end

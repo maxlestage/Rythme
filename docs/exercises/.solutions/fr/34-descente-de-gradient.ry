@@ -1,0 +1,28 @@
+# Exercice 34 · Descendre la pente  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn pas(f, x, taux) = x - taux * derivative(f, x)
+
+fn descendre(f, x, taux, 0) = x
+fn descendre(f, x, taux, pas_restants) = descendre(f, pas(f, x, taux), taux, pas_restants - 1)
+
+fn descendre_tout(f, xs, taux, pas_restants) = fold(1..pas_restants, xs, fn(p, _) = vector_sub(p, vector_scale(gradient(f, p), taux)))
+
+# --- Tests (ne les modifiez pas) ---
+
+fn parabole(x) = (x - 3) ** 2
+
+test "un pas"
+  assert_eq(pas(parabole, 0, 0.5), 3.0)
+  assert_eq(pas(parabole, 1, 0.25), 2.0)
+end
+
+test "jusqu'en bas"
+  assert_eq(round(descendre(parabole, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descendre(parabole, 10, 0.1, 0), 10)
+end
+
+test "plusieurs nombres"
+  cuvette = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descendre_tout(cuvette, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end

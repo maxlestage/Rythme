@@ -2651,9 +2651,11 @@ lists_of(generator, max_length)、one_of(list)、records_of({x: ints(), y: texts
         (
             r#"EXERCISES
 
-Rythme comes with 30 graded exercises for a first course, from the first
-values to recursion, lists, records, types, Option, Result and tests. Each one
-is a file with a statement, hints, the functions to write and their tests.
+Rythme comes with 36 graded exercises for a first course, from the first
+values to recursion, lists, records, types, Option, Result and tests, then six
+about artificial intelligence (31 to 36: vectors, statistics, a neuron,
+gradient descent, nearest neighbours, minimax). Each one is a file with a
+statement, hints, the functions to write and their tests.
 
   rythme exercise list              the exercises, from ★☆☆ (easy) to ★★★
   rythme exercise start 7           copies exercise 7 into the current folder
@@ -2666,9 +2668,10 @@ language of the messages (`rythme --lang es exercise start 7`); the folder
 docs/exercises of the repository of Rythme has them in English and French."#,
             r#"练习
 
-Rythme 自带 30 个分级练习，适合入门课程，内容从最初的值到递归、列表、记录、
-类型、Option、Result 和测试。每个练习都是一个文件，包含题目、提示、要编写的
-函数以及它们的测试。
+Rythme 自带 36 个分级练习，适合入门课程，内容从最初的值到递归、列表、记录、
+类型、Option、Result 和测试，最后六个关于人工智能（31 到 36：向量、统计、
+神经元、梯度下降、最近邻、极小化极大）。每个练习都是一个文件，包含题目、
+提示、要编写的函数以及它们的测试。
 
   rythme exercise list              列出练习，难度从 ★☆☆（简单）到 ★★★
   rythme exercise start 7           把练习 7 复制到当前文件夹
@@ -8695,6 +8698,591 @@ Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把�
         (
             r#"Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`. To call a web service or a language model: `http_post(url, to_json(request), {"content-type": "application/json"})`. Keep keys out of your code: read them with `env`."#,
             r#"把文本（通常是用 `to_json` 生成的 JSON）发送到一个网址，像 `http_get` 一样返回 `Ok(响应文本)` 或 `Err(消息)`。调用网络服务或语言模型：`http_post(url, to_json(request), {"content-type": "application/json"})`。不要把密钥写进代码：用 `env` 读取。"#,
+        ),
+        // docs/exercises: the exercises about artificial intelligence (31 to 36)
+        ("31-vectors", "31-vectors"),
+        (
+            r#"# Exercise 31 · Points as vectors  ★☆☆
+#
+# In machine learning, an example is a list of numbers: a vector. The
+# built-in functions `vector_add`, `vector_sub`, `vector_scale`, `dot` and
+# `norm` work on them, and always give Floats.
+#   vector_sub([5, 5], [1, 2])     # [4.0, 3.0]
+#   norm([3, 4])                   # 5.0
+#
+# Statement
+#   - `distance(a, b)`: the distance between the points a and b (the length
+#     of the vector from one to the other);
+#   - `midpoint(a, b)`: the point halfway between a and b;
+#   - `closest(points, p)`: the point of the list nearest to p.
+#
+# Hints
+#   1. `distance` is the `norm` of a difference.
+#   2. Halfway: add the two points, then scale by 0.5.
+#   3. `min_by(list, f)` gives the element for which f is the smallest.
+#
+# Check your work:  rythme exercise check 31-vectors.ry
+#              or:  rythme test 31-vectors.ry
+
+fn distance(a, b) = fail("to do")
+
+fn midpoint(a, b) = fail("to do")
+
+fn closest(points, p) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "distance"
+  assert_eq(distance([0, 0], [3, 4]), 5.0)
+  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+end
+
+test "midpoint"
+  assert_eq(midpoint([0, 0], [4, 2]), [2.0, 1.0])
+  assert_eq(midpoint([-1, 3], [1, 3]), [0.0, 3.0])
+end
+
+test "closest"
+  assert_eq(closest([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
+  assert_eq(closest([[2, 2]], [100, -100]), [2, 2])
+end
+"#,
+            r#"# 练习 31 · 把点当作向量  ★☆☆
+#
+# 在机器学习中，一个样本就是一个数字列表：一个向量。内置函数
+# `vector_add`、`vector_sub`、`vector_scale`、`dot` 和 `norm` 处理向量，
+# 结果总是 Float。
+#   vector_sub([5, 5], [1, 2])     # [4.0, 3.0]
+#   norm([3, 4])                   # 5.0
+#
+# 题目
+#   - `distance(a, b)`：点 a 和点 b 之间的距离（从一个点到另一个点的向量
+#     的长度）；
+#   - `midpoint(a, b)`：a 和 b 正中间的点；
+#   - `closest(points, p)`：列表中离 p 最近的点。
+#
+# 提示
+#   1. `distance` 就是差的 `norm`。
+#   2. 正中间：把两个点相加，再乘以 0.5。
+#   3. `min_by(list, f)` 给出使 f 最小的元素。
+#
+# 检查你的作业：  rythme exercise check 31-vectors.ry
+#           或：  rythme test 31-vectors.ry
+
+fn distance(a, b) = fail("待完成")
+
+fn midpoint(a, b) = fail("待完成")
+
+fn closest(points, p) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "距离"
+  assert_eq(distance([0, 0], [3, 4]), 5.0)
+  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+end
+
+test "中点"
+  assert_eq(midpoint([0, 0], [4, 2]), [2.0, 1.0])
+  assert_eq(midpoint([-1, 3], [1, 3]), [0.0, 3.0])
+end
+
+test "最近的点"
+  assert_eq(closest([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
+  assert_eq(closest([[2, 2]], [100, -100]), [2, 2])
+end
+"#,
+        ),
+        ("32-statistics", "32-statistics"),
+        (
+            r#"# Exercise 32 · Statistics on data  ★★☆
+#
+# Before learning from data, look at it. `stats(xs)` gives a record with the
+# count, the mean, the median, the standard deviation, the min and the max:
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).mean       # 5.0
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).std_dev    # 2.0
+#
+# Statement
+#   - `standardize(xs)`: each number becomes its distance to the mean,
+#     counted in standard deviations: (x - mean) / std_dev;
+#   - `outliers(xs)`: the numbers more than 2 standard deviations away from
+#     the mean, in their order;
+#   - `accuracy(predictions, answers)`: the share (from 0.0 to 1.0) of the
+#     predictions equal to the answer at the same position.
+#
+# Hints
+#   1. Compute `stats(xs)` once, give it a name, then `map`.
+#   2. `abs` gives the distance whatever the side.
+#   3. `zip(a, b)` pairs the elements; `count` counts those that are right.
+#
+# Check your work:  rythme exercise check 32-statistics.ry
+#              or:  rythme test 32-statistics.ry
+
+fn standardize(xs) = fail("to do")
+
+fn outliers(xs) = fail("to do")
+
+fn accuracy(predictions, answers) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "standardize"
+  assert_eq(standardize([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "outliers"
+  assert_eq(outliers([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(outliers([1, 2, 3]), [])
+end
+
+test "accuracy"
+  assert_eq(accuracy(["cat", "dog", "cat", "cat"], ["cat", "dog", "dog", "cat"]), 0.75)
+  assert_eq(accuracy([1, 0], [0, 1]), 0.0)
+end
+"#,
+            r#"# 练习 32 · 数据的统计  ★★☆
+#
+# 从数据中学习之前，先看看数据。`stats(xs)` 给出一个记录，包含个数、平均
+# 值、中位数、标准差、最小值和最大值：
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).mean       # 5.0
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).std_dev    # 2.0
+#
+# 题目
+#   - `standardize(xs)`：每个数变成它到平均值的距离，以标准差为单位：
+#     (x - 平均值) / 标准差；
+#   - `outliers(xs)`：离平均值超过 2 个标准差的数，保持原来的顺序；
+#   - `accuracy(predictions, answers)`：预测与同一位置的答案相等的比例
+#     （从 0.0 到 1.0）。
+#
+# 提示
+#   1. 只计算一次 `stats(xs)`，给它起个名字，然后用 `map`。
+#   2. `abs` 给出距离，不管在哪一边。
+#   3. `zip(a, b)` 把元素配成对；`count` 数出正确的个数。
+#
+# 检查你的作业：  rythme exercise check 32-statistics.ry
+#           或：  rythme test 32-statistics.ry
+
+fn standardize(xs) = fail("待完成")
+
+fn outliers(xs) = fail("待完成")
+
+fn accuracy(predictions, answers) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "标准化"
+  assert_eq(standardize([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "离群值"
+  assert_eq(outliers([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(outliers([1, 2, 3]), [])
+end
+
+test "准确率"
+  assert_eq(accuracy(["猫", "狗", "猫", "猫"], ["猫", "狗", "狗", "猫"]), 0.75)
+  assert_eq(accuracy([1, 0], [0, 1]), 0.0)
+end
+"#,
+        ),
+        ("33-neurons", "33-neurons"),
+        (
+            r#"# Exercise 33 · An artificial neuron  ★★☆
+#
+# A neuron multiplies each input by a weight, adds them up with a bias, and
+# passes the sum through an activation function such as `sigmoid`, which
+# gives a number between 0 and 1.
+#   sigmoid(0)                     # 0.5
+#   dot([1, 2], [3, 4])            # 11.0
+#
+# Statement
+#   - `neuron(weights, bias, inputs)`: sigmoid(weights · inputs + bias);
+#   - `fires(weights, bias, inputs)`: true when the neuron gives 0.5 or more;
+#   - `layer(matrix, biases, inputs)`: a layer of neurons, one per row of the
+#     matrix (its weights) and per bias: the list of their outputs.
+#
+# Hints
+#   1. `dot` gives the weighted sum.
+#   2. `matmul(matrix, inputs)` computes every weighted sum of a layer at
+#      once; `vector_add` adds the biases; `map` applies `sigmoid`.
+#
+# Check your work:  rythme exercise check 33-neurons.ry
+#              or:  rythme test 33-neurons.ry
+
+fn neuron(weights, bias, inputs) = fail("to do")
+
+fn fires(weights, bias, inputs) = fail("to do")
+
+fn layer(matrix, biases, inputs) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "neuron"
+  assert_eq(neuron([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neuron([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "a neuron that computes AND"
+  assert(fires([10, 10], -15, [1, 1]))
+  assert(not fires([10, 10], -15, [1, 0]))
+  assert(not fires([10, 10], -15, [0, 0]))
+end
+
+test "layer"
+  outputs = layer([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(outputs, fn(x) = round(x, 3)), [0.5, 0.993])
+end
+"#,
+            r#"# 练习 33 · 人工神经元  ★★☆
+#
+# 神经元把每个输入乘以一个权重，加上偏置后求和，再把和送入激活函数，例如
+# `sigmoid`，它给出 0 到 1 之间的数。
+#   sigmoid(0)                     # 0.5
+#   dot([1, 2], [3, 4])            # 11.0
+#
+# 题目
+#   - `neuron(weights, bias, inputs)`：sigmoid(weights · inputs + bias)；
+#   - `fires(weights, bias, inputs)`：神经元给出 0.5 或更大时为 true；
+#   - `layer(matrix, biases, inputs)`：一层神经元，矩阵的每一行（它的权重）
+#     和每个偏置对应一个神经元：给出它们的输出列表。
+#
+# 提示
+#   1. `dot` 给出加权和。
+#   2. `matmul(matrix, inputs)` 一次算出一层的所有加权和；`vector_add` 加上
+#      偏置；`map` 应用 `sigmoid`。
+#
+# 检查你的作业：  rythme exercise check 33-neurons.ry
+#           或：  rythme test 33-neurons.ry
+
+fn neuron(weights, bias, inputs) = fail("待完成")
+
+fn fires(weights, bias, inputs) = fail("待完成")
+
+fn layer(matrix, biases, inputs) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "神经元"
+  assert_eq(neuron([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neuron([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "计算“与”的神经元"
+  assert(fires([10, 10], -15, [1, 1]))
+  assert(not fires([10, 10], -15, [1, 0]))
+  assert(not fires([10, 10], -15, [0, 0]))
+end
+
+test "层"
+  outputs = layer([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(outputs, fn(x) = round(x, 3)), [0.5, 0.993])
+end
+"#,
+        ),
+        ("34-gradient-descent", "34-gradient-descent"),
+        (
+            r#"# Exercise 34 · Going down the slope  ★★☆
+#
+# A model learns by making its error smaller: it follows the slope of the
+# error downwards, one small step at a time. That is gradient descent.
+#   derivative(fn(x) = x * x, 3)                      # 6.0, the slope at 3
+#   gradient(fn([x, y]) = x * x + y * y, [1, 2])      # [2.0, 4.0]
+#
+# Statement
+#   - `step(f, x, rate)`: one step down from x: x - rate × (slope of f at x);
+#   - `descend(f, x, rate, steps)`: that many steps from x, one after the
+#     other; the point reached;
+#   - `descend_all(f, xs, rate, steps)`: the same with several numbers: each
+#     step is xs - rate × (gradient of f at xs).
+#
+# Hints
+#   1. `descend` calls itself with one step less, until 0 (or use `fold`
+#      over `1..steps`).
+#   2. `vector_sub` and `vector_scale` work on the list of numbers.
+#
+# Check your work:  rythme exercise check 34-gradient-descent.ry
+#              or:  rythme test 34-gradient-descent.ry
+
+fn step(f, x, rate) = fail("to do")
+
+fn descend(f, x, rate, steps) = fail("to do")
+
+fn descend_all(f, xs, rate, steps) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+fn parabola(x) = (x - 3) ** 2
+
+test "one step"
+  assert_eq(step(parabola, 0, 0.5), 3.0)
+  assert_eq(step(parabola, 1, 0.25), 2.0)
+end
+
+test "down to the bottom"
+  assert_eq(round(descend(parabola, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descend(parabola, 10, 0.1, 0), 10)
+end
+
+test "several numbers"
+  bowl = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descend_all(bowl, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end
+"#,
+            r#"# 练习 34 · 沿着斜坡往下走  ★★☆
+#
+# 模型通过让误差变小来学习：它沿着误差的斜坡往下走，每次走一小步。这就是
+# 梯度下降。
+#   derivative(fn(x) = x * x, 3)                      # 6.0，在 3 处的斜率
+#   gradient(fn([x, y]) = x * x + y * y, [1, 2])      # [2.0, 4.0]
+#
+# 题目
+#   - `step(f, x, rate)`：从 x 往下走一步：x - rate × (f 在 x 处的斜率)；
+#   - `descend(f, x, rate, steps)`：从 x 出发一步接一步地走这么多步；给出
+#     到达的点；
+#   - `descend_all(f, xs, rate, steps)`：多个数时也一样：每一步得到
+#     xs - rate × (f 在 xs 处的梯度)。
+#
+# 提示
+#   1. `descend` 用少一步的参数调用自己，直到 0（或者对 `1..steps` 用
+#      `fold`）。
+#   2. `vector_sub` 和 `vector_scale` 处理数字列表。
+#
+# 检查你的作业：  rythme exercise check 34-gradient-descent.ry
+#           或：  rythme test 34-gradient-descent.ry
+
+fn step(f, x, rate) = fail("待完成")
+
+fn descend(f, x, rate, steps) = fail("待完成")
+
+fn descend_all(f, xs, rate, steps) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+fn parabola(x) = (x - 3) ** 2
+
+test "一步"
+  assert_eq(step(parabola, 0, 0.5), 3.0)
+  assert_eq(step(parabola, 1, 0.25), 2.0)
+end
+
+test "走到最低处"
+  assert_eq(round(descend(parabola, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descend(parabola, 10, 0.1, 0), 10)
+end
+
+test "多个数"
+  bowl = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descend_all(bowl, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end
+"#,
+        ),
+        ("35-nearest-neighbours", "35-nearest-neighbours"),
+        (
+            r#"# Exercise 35 · Nearest neighbours  ★★★
+#
+# To guess the label of a new point, look at the k known examples closest to
+# it, and take the label most of them have. Each example is a record:
+#   {point: [1.0, 2.0], label: "red"}
+#
+# Statement
+#   - `neighbours(examples, point, k)`: the k examples nearest to the point,
+#     from the nearest;
+#   - `majority(labels)`: the label that comes most often (the first one to
+#     reach that count, in the order of the list, when several tie);
+#   - `classify(examples, point, k)`: the label most of the k nearest
+#     neighbours have.
+#
+# Hints
+#   1. `sort_by` with the distance (`norm(vector_sub(a, b))`), then `take`.
+#   2. `count(labels, fn(l) = l == label)` counts one label; `max_by` keeps
+#      the first of the largest.
+#
+# Check your work:  rythme exercise check 35-nearest-neighbours.ry
+#              or:  rythme test 35-nearest-neighbours.ry
+
+fn neighbours(examples, point, k) = fail("to do")
+
+fn majority(labels) = fail("to do")
+
+fn classify(examples, point, k) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+garden = [
+  {point: [1, 1], label: "red"},
+  {point: [1, 2], label: "red"},
+  {point: [2, 1], label: "red"},
+  {point: [8, 8], label: "blue"},
+  {point: [9, 8], label: "blue"},
+  {point: [5, 5], label: "blue"},
+]
+
+test "neighbours"
+  assert_eq(neighbours(garden, [0, 0], 2) |> map(fn(e) = e.point), [[1, 1], [1, 2]])
+  assert_eq(len(neighbours(garden, [0, 0], 10)), 6)
+end
+
+test "majority"
+  assert_eq(majority(["a", "b", "b", "c"]), "b")
+  assert_eq(majority(["x", "y"]), "x")
+end
+
+test "classify"
+  assert_eq(classify(garden, [2, 2], 3), "red")
+  assert_eq(classify(garden, [7, 7], 3), "blue")
+  assert_eq(classify(garden, [4, 4], 1), "blue")
+end
+"#,
+            r#"# 练习 35 · 最近邻  ★★★
+#
+# 要猜一个新点的标签，就看离它最近的 k 个已知样本，取其中大多数样本的标
+# 签。每个样本是一个记录：
+#   {point: [1.0, 2.0], label: "红"}
+#
+# 题目
+#   - `neighbours(examples, point, k)`：离该点最近的 k 个样本，从最近的
+#     开始；
+#   - `majority(labels)`：出现最多的标签（并列时，按列表顺序取最先达到这个
+#     次数的标签）；
+#   - `classify(examples, point, k)`：k 个最近邻中大多数的标签。
+#
+# 提示
+#   1. 用 `sort_by` 按距离排序（`norm(vector_sub(a, b))`），然后 `take`。
+#   2. `count(labels, fn(l) = l == label)` 数出一个标签的次数；`max_by`
+#      保留最大者中的第一个。
+#
+# 检查你的作业：  rythme exercise check 35-nearest-neighbours.ry
+#           或：  rythme test 35-nearest-neighbours.ry
+
+fn neighbours(examples, point, k) = fail("待完成")
+
+fn majority(labels) = fail("待完成")
+
+fn classify(examples, point, k) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+garden = [
+  {point: [1, 1], label: "红"},
+  {point: [1, 2], label: "红"},
+  {point: [2, 1], label: "红"},
+  {point: [8, 8], label: "蓝"},
+  {point: [9, 8], label: "蓝"},
+  {point: [5, 5], label: "蓝"},
+]
+
+test "邻居"
+  assert_eq(neighbours(garden, [0, 0], 2) |> map(fn(e) = e.point), [[1, 1], [1, 2]])
+  assert_eq(len(neighbours(garden, [0, 0], 10)), 6)
+end
+
+test "多数"
+  assert_eq(majority(["a", "b", "b", "c"]), "b")
+  assert_eq(majority(["x", "y"]), "x")
+end
+
+test "分类"
+  assert_eq(classify(garden, [2, 2], 3), "红")
+  assert_eq(classify(garden, [7, 7], 3), "蓝")
+  assert_eq(classify(garden, [4, 4], 1), "蓝")
+end
+"#,
+        ),
+        ("36-minimax", "36-minimax"),
+        (
+            r#"# Exercise 36 · Playing perfectly: minimax  ★★★
+#
+# A game of Nim: there are n matches on the table; each player in turn takes
+# 1, 2 or 3 of them, and whoever takes the last match wins. Minimax decides
+# who wins with perfect play by imagining every move: the player to move
+# wins if one of their moves leaves the other player in a losing position.
+#
+# Statement
+#   - `moves(n)`: the possible numbers of matches to take (1, 2 or 3, but no
+#     more than n);
+#   - `wins(n)`: true when the player to move can always win from n matches
+#     (with 0 matches left, the player to move has already lost);
+#   - `best_move(n)`: `Some(m)`, where m is the smallest move that wins, or
+#     `None` when every move loses.
+#
+# Hints
+#   1. `filter(1..3, ...)` keeps the moves allowed.
+#   2. `wins(n)`: is there `any` move after which the other player does
+#      not win?
+#   3. `find` gives the first element that fits, as an Option.
+#
+# Check your work:  rythme exercise check 36-minimax.ry
+#              or:  rythme test 36-minimax.ry
+
+fn moves(n) = fail("to do")
+
+fn wins(n) = fail("to do")
+
+fn best_move(n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "moves"
+  assert_eq(moves(10), [1, 2, 3])
+  assert_eq(moves(2), [1, 2])
+  assert_eq(moves(0), [])
+end
+
+test "who wins"
+  assert_eq(map(0..8, wins), [false, true, true, true, false, true, true, true, false])
+end
+
+test "best move"
+  assert_eq(best_move(5), Some(1))
+  assert_eq(best_move(7), Some(3))
+  assert_eq(best_move(8), None)
+end
+"#,
+            r#"# 练习 36 · 完美地下棋：极小化极大  ★★★
+#
+# 一局 Nim 游戏：桌上有 n 根火柴；两名玩家轮流拿走 1、2 或 3 根，拿走最后
+# 一根火柴的人获胜。极小化极大算法通过设想每一种走法来判断完美对局时谁会
+# 赢：如果轮到的玩家有一种走法能让对手陷入必输的局面，他就会赢。
+#
+# 题目
+#   - `moves(n)`：可以拿走的火柴数（1、2 或 3，但不超过 n）；
+#   - `wins(n)`：轮到的玩家面对 n 根火柴总能获胜时为 true（没有火柴时，
+#     轮到的玩家已经输了）；
+#   - `best_move(n)`：`Some(m)`，m 是能获胜的最小走法；如果每种走法都会
+#     输，则为 `None`。
+#
+# 提示
+#   1. `filter(1..3, ...)` 保留允许的走法。
+#   2. `wins(n)`：是否存在一种走法（`any`），走完后对手不能获胜？
+#   3. `find` 给出第一个符合条件的元素，作为 Option。
+#
+# 检查你的作业：  rythme exercise check 36-minimax.ry
+#           或：  rythme test 36-minimax.ry
+
+fn moves(n) = fail("待完成")
+
+fn wins(n) = fail("待完成")
+
+fn best_move(n) = fail("待完成")
+
+# --- 测试（请不要修改）---
+
+test "走法"
+  assert_eq(moves(10), [1, 2, 3])
+  assert_eq(moves(2), [1, 2])
+  assert_eq(moves(0), [])
+end
+
+test "谁赢"
+  assert_eq(map(0..8, wins), [false, true, true, true, false, true, true, true, false])
+end
+
+test "最佳走法"
+  assert_eq(best_move(5), Some(1))
+  assert_eq(best_move(7), Some(3))
+  assert_eq(best_move(8), None)
+end
+"#,
         ),
     ],
 }
