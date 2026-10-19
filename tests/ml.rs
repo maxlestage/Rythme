@@ -131,3 +131,43 @@ fn the_checker_knows_them() {
     let r = rythme(&["-e", "x = variance([1, 2]) + \"a\""]);
     assert!(r.stderr.contains("error[E005]"), "{}", r.stderr);
 }
+
+// ----- slopes -------------------------------------------------------------------
+
+#[test]
+fn derivatives_keep_their_sure_digits() {
+    ok(
+        "print(derivative(fn(x) = x * x, 3), derivative(sin, 0), derivative(exp, 1), derivative(fn(x) = x * x * x, 2), derivative(sqrt, 4))",
+        "6.0 1.0 2.718281829 12.0 0.25",
+    );
+    // At a minimum, at a corner, for a constant, and for tiny or huge slopes.
+    ok(
+        "print(derivative(fn(x) = x * x - 4 * x, 2), derivative(abs, 0), derivative(fn(x) = 5, 3), derivative(fn(x) = 1e-12 * x, 0), derivative(fn(x) = 1e12 * x * x, 1))",
+        "0.0 0.0 0.0 1e-12 2000000000000.0",
+    );
+    ok("print(derivative(sigmoid, 0), derivative(cos, 1), derivative(fn(x) = x * x, 0.1))", "0.25 -0.8414709848 0.2");
+}
+
+#[test]
+fn gradients() {
+    ok(
+        "print(gradient(fn([x, y]) = x * x + 3 * y, [2, 5]), gradient(fn(v) = dot(v, v), [1, 2, 3]), gradient(fn(v) = 1, []))",
+        "[4.0, 3.0] [2.0, 4.0, 6.0] []",
+    );
+    // Gradient descent on (x - 3)² + (y + 1)²: down to the minimum (3, -1).
+    ok(
+        "fn loss([x, y]) = (x - 3) ** 2 + (y + 1) ** 2\nfn descend(p, 0) = p\nfn descend(p, n) = descend(vector_sub(p, vector_scale(gradient(loss, p), 0.1)), n - 1)\nprint(map(descend([0, 0], 100), fn(v) = round(v, 6)))",
+        "[3.0, -1.0]",
+    );
+}
+
+#[test]
+fn mistakes_with_slopes() {
+    let r = fails("derivative(fn(x) = \"a\", 1)", "E005");
+    assert!(r.stderr.contains("the function given to `derivative` must return a number, but it returned Text \"a\""), "{}", r.stderr);
+    fails("derivative(fn(x, y) = x, 0)", "E004");
+    fails("gradient(fn(v) = v, [1])", "E005");
+    fails("gradient(fn(v) = 0, [\"a\"])", "E005");
+    // The function's own errors stay its own: sqrt below 0.
+    fails("derivative(sqrt, 0)", "E023");
+}

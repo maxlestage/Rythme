@@ -1350,6 +1350,16 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 need(a, 1, Expected::List)?;
                 arg(0).elem()
             }
+            "derivative" => {
+                need(a, 0, Expected::Function)?;
+                need(a, 1, Expected::Number)?;
+                Ty::Float
+            }
+            "gradient" => {
+                need(a, 0, Expected::Function)?;
+                need(a, 1, Expected::List)?;
+                Ty::list(Ty::Float)
+            }
             "train_test_split" => {
                 need(a, 0, Expected::List)?;
                 need(a, 1, Expected::Number)?;
@@ -1438,6 +1448,8 @@ pub fn callback(name: &str, index: usize, a: &[Ty]) -> Option<Callback> {
             Ty::Data(d) if d.kind() == RESULT => (vec![error_of(d)], None),
             _ => (vec![Ty::Any], None),
         },
+        ("derivative", 0) => (vec![Ty::Float], None),
+        ("gradient", 0) => (vec![Ty::list(Ty::Float)], None),
         ("zip_with", 2) => (vec![elem, a.get(1).cloned().unwrap_or(Ty::Any).elem()], None),
         _ => return None,
     };

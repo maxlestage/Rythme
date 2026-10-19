@@ -212,6 +212,8 @@ pub const BUILTINS: &[
     "random_normal",
     "random_choice_weighted",
     "train_test_split",
+    "derivative",
+    "gradient",
     "pi",
 ];
 
