@@ -173,12 +173,16 @@ impl Knowledge {
             if crate::modules::is_private(s) {
                 own.globals.remove(&s);
                 own.value_types.remove(&s);
+                own.written.remove(&s);
                 // A private name hides nothing of the file that uses it.
                 if let Some(g) = self.globals.get(&s) {
                     own.globals.insert(s, g.clone());
                 }
                 if let Some(t) = self.value_types.get(&s) {
                     own.value_types.insert(s, t.clone());
+                }
+                if let Some(w) = self.written.get(&s) {
+                    own.written.insert(s, w.clone());
                 }
                 own.private.insert(s, file.clone());
             }
