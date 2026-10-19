@@ -4117,6 +4117,8 @@ Created the project `hello`:
   hello/tests/greeting_test.ry
   hello/README.md
   hello/.gitignore
+  hello/AGENTS.md
+  hello/CLAUDE.md
 Next: `cd hello`, then `rythme run` to run it and `rythme test` to test it (see `rythme help projects`)
 $ cd hello
 $ rythme run

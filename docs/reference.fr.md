@@ -4292,6 +4292,8 @@ Projet `bonjour` créé :
   bonjour/tests/salutation_test.ry
   bonjour/README.md
   bonjour/.gitignore
+  bonjour/AGENTS.md
+  bonjour/CLAUDE.md
 Ensuite : `cd bonjour`, puis `rythme run` pour le lancer et `rythme test` pour le tester (voir `rythme help projects`)
 $ cd bonjour
 $ rythme run
