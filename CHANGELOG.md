@@ -12,6 +12,16 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Embedding
+
+- **Programs that embed Rythme can give records of functions** (`db.all(q)`,
+  `mw.cors(...)`, the way [Facile](https://github.com/maxlestage/Facile) does):
+  the checker knows the fields of a record found among the interpreter's
+  names, so calling one checks its number of arguments (E004), and a
+  misspelled one is reported (W005) with the closest field suggested. A
+  function given under the name of one of the language (`db.all`) is not
+  taken for it. `tests/embedding.rs` shows how.
+
 ### Language
 
 - **A symbol may end with `?`**, as in Ruby: `:even?` is one symbol. It was
