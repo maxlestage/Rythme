@@ -14,6 +14,24 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ### Language
 
+- **Types written in the code, optional and checked**:
+  `fn area(w: Int, h: Int) -> Int = w * h`, `total: Float = 0.0`,
+  `type Shape = Circle(radius: Float) | Dot`, `xs.map do |n: Int| ... end`.
+  The types are those of the messages (`Int`, `Float`, `Text`, `Bool`,
+  `Unit`, `Symbol`, `List(Int)` or `[Int]`, `Set(T)`, `Dict(K, V)`,
+  `Option(T)`, `Result(T, E)`, `Record`, `Function`), records with at least
+  some fields (`{name: Text}`), functions (`fn(Int) -> Bool`), the types of
+  the program (`Shape`, `geometry.Shape`) and type variables (`a`). Running
+  never looks at them. `rythme check` reports a value, an argument or a
+  result that surely has another type, and a type that does not exist, with
+  the new code **E027** (explained in every language); it also uses them: a
+  parameter has its type inside its function, a call gives the written type
+  of its result (`first_of(xs: List(a)) -> a`), across used files too. They
+  are read only where nothing could be written before: every program written
+  for 1.0 keeps its syntax tree (checked on the examples, the manual, the
+  tests and 260 000 generated programs). `rythme fmt`, hover and signature
+  help of the language server, `rythme doc`, the Tree-sitter, Helix, Zed
+  and VS Code grammars, `rythme help types` and the manual (4.10) know them.
 - **A symbol may end with `?`**, as in Ruby: `:even?` is one symbol. It was
   read as `:even` followed by the operator `?`, which the checker always
   refuses (E016) before running, so no program that ran changes meaning (a
