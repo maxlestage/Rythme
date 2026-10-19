@@ -1,4 +1,4 @@
-//! `--format json`: every document printed matches
+//! `--format json` and `rythme fix`: every document printed matches
 //! `docs/rythme-output.schema.json` (and the schema describes every field
 //! printed), and what tools rely on stays true: stable codes, ranges,
 //! fixes that correct the code, exit codes.
@@ -406,4 +406,98 @@ fn the_schema_knows_every_code_and_language() {
     for name in ["check", "run", "test", "fix_report", "explain_one", "explain_all", "help_all", "help_one"] {
         assert!(tops.contains(&format!("#/$defs/{name}").as_str()), "{name}");
     }
+}
+
+// ----- fix ----------------------------------------------------------------------------
+
+/// Code with habits from other languages, and the code `rythme fix` makes of it.
+const FIXED: &[(&str, &str)] = &[
+    ("print(true && false)\n", "print(true and false)\n"),
+    ("print(true || not false)\n", "print(true or not false)\n"),
+    ("print(!true)\n", "print(not true)\n"),
+    ("print(1 === 1)\n", "print(1 == 1)\n"),
+    ("print(1 <> 2)\n", "print(1 != 2)\n"),
+    ("let x = 1\nvar y = 2\nconst z = 3\nprint(x + y + z)\n", "x = 1\ny = 2\nz = 3\nprint(x + y + z)\n"),
+    ("def double(x)\n  x * 2\nend\nprint(double(2))\n", "fn double(x)\n  x * 2\nend\nprint(double(2))\n"),
+    ("fn f(x)\n  return x + 1\nend\nprint(f(1))\n", "fn f(x)\n  x + 1\nend\nprint(f(1))\n"),
+    ("x = 3\nprint(x > 2 ? \"big\" : \"small\")\n", "x = 3\nprint(if x > 2 then \"big\" else \"small\")\n"),
+    (
+        "x = 3\ny = if x > 2 then 1 elif x > 1 then 2 else 3\nprint(y)\n",
+        "x = 3\ny = if x > 2 then 1 else if x > 1 then 2 else 3\nprint(y)\n",
+    ),
+    ("n = 3\nprint(\"n = \" + n)\n", "n = 3\nprint(\"n = {n}\")\n"),
+    ("n = 3\nprint(n + \" items\")\n", "n = 3\nprint(\"{n} items\")\n"),
+    ("name = \"Ada\"\nprint(f\"hi {name}\")\n", "name = \"Ada\"\nprint(\"hi {name}\")\n"),
+    ("name = \"Ada\"\nprint(\"hi %s\" % name)\n", "name = \"Ada\"\nprint(\"hi {name}\")\n"),
+    ("f = x => x + 1\nprint(f(2))\n", "f = fn(x) = x + 1\nprint(f(2))\n"),
+    ("add = (a, b) => a + b\nprint(add(1, 2))\n", "add = fn(a, b) = a + b\nprint(add(1, 2))\n"),
+    ("f = lambda x: x * 2\nprint(f(2))\n", "f = fn(x) = x * 2\nprint(f(2))\n"),
+    ("print(True, False)\n", "print(true, false)\n"),
+    ("print(str(3))\n", "print(text(3))\n"),
+    ("xs = [1]\nprint(xs.append(2))\n", "xs = [1]\nprint(xs.push(2))\n"),
+    ("console.log(\"hi\")\n", "print(\"hi\")\n"),
+    ("x = 1\nif x > 0:\n  print(x)\nelse\n  print(0)\n", "x = 1\nif x > 0 then\n  print(x)\nelse\n  print(0)\n"),
+    ("fn area(r: float) = r * r\nprint(area(2.0))\n", "fn area(r: Float) = r * r\nprint(area(2.0))\n"),
+];
+
+#[test]
+fn fix_corrects_the_habits_of_other_languages() {
+    for (i, (before, after)) in FIXED.iter().enumerate() {
+        let dir = folder(&format!("fix{i}"), &[("a.ry", before)]);
+        let out = rythme_in(&dir, "en", &["fix", "a.ry"]);
+        let fixed = std::fs::read_to_string(dir.join("a.ry")).unwrap();
+        assert_eq!(fixed, *after, "fixing:\n{before}\nstdout:\n{}\nstderr:\n{}", out.stdout, out.stderr);
+        assert_eq!(out.code, 0, "fixing:\n{before}\n{}{}", out.stdout, out.stderr);
+        // The fixed code runs, and fixing again changes nothing.
+        let run = rythme_in(&dir, "en", &["a.ry"]);
+        assert_eq!(run.code, 0, "{after}\n{}", run.stderr);
+        let again = rythme_in(&dir, "en", &["fix", "a.ry"]);
+        assert_eq!(again.stdout.trim(), "a.ry: nothing to fix");
+        assert_eq!(std::fs::read_to_string(dir.join("a.ry")).unwrap(), *after);
+    }
+}
+
+#[test]
+fn fix_applies_guesses_only_when_asked() {
+    let dir = folder("guess", &[("a.ry", "print(pritn)\nx = null\nprint(x)\n")]);
+    let out = rythme_in(&dir, "en", &["fix", "a.ry"]);
+    assert_eq!(out.code, 1, "{}", out.stdout);
+    assert!(out.stdout.contains("a.ry: nothing to fix; 1 error(s) and 0 warning(s) left"), "{}", out.stdout);
+    let (doc, code) = json(&dir, "en", &["fix", "--all", "--dry-run", "--format", "json", "a.ry"], "fix_report");
+    assert_eq!(code, 1, "with --dry-run, a change to make is exit code 1");
+    let file = &doc.get("files").as_array()[0];
+    assert_eq!(file.get("changed"), &Json::Bool(true));
+    assert_eq!(file.get("written"), &Json::Bool(false));
+    assert_eq!(
+        file.get("diff").as_str(),
+        Some("--- a.ry\n+++ a.ry\n@@ -1,3 +1,3 @@\n-print(pritn)\n-x = null\n+print(print)\n+x = None\n print(x)\n")
+    );
+    assert_eq!(std::fs::read_to_string(dir.join("a.ry")).unwrap(), "print(pritn)\nx = null\nprint(x)\n", "--dry-run writes nothing");
+    let out = rythme_in(&dir, "en", &["fix", "--dry-run", "--all", "a.ry"]);
+    assert!(out.stdout.starts_with("--- a.ry\n+++ a.ry\n@@ -1,3 +1,3 @@\n-print(pritn)\n"), "{}", out.stdout);
+    assert!(out.stdout.contains("\na.ry: 2 fix(es) to apply; 0 error(s) and 1 warning(s) left"), "{}", out.stdout);
+
+    let (doc, code) = json(&dir, "en", &["fix", "--all", "--format", "json", "a.ry"], "fix_report");
+    assert_eq!(code, 0);
+    assert_eq!(doc.get("files").as_array()[0].get("applied").as_array().len(), 2);
+    assert_eq!(std::fs::read_to_string(dir.join("a.ry")).unwrap(), "print(print)\nx = None\nprint(x)\n");
+}
+
+#[test]
+fn fix_adds_a_missing_use() {
+    let dir = folder("use", &[("geometry.ry", "fn area(r) = r * r\n"), ("main.ry", "# Areas.\nprint(area(2))\n")]);
+    let out = rythme_in(&dir, "en", &["fix", "main.ry"]);
+    assert_eq!(out.code, 0, "{}{}", out.stdout, out.stderr);
+    assert_eq!(std::fs::read_to_string(dir.join("main.ry")).unwrap(), "use geometry\n# Areas.\nprint(geometry.area(2))\n");
+    assert_eq!(rythme_in(&dir, "en", &["main.ry"]).stdout, "4\n");
+}
+
+#[test]
+fn fix_needs_a_file() {
+    let dir = folder("fixusage", &[]);
+    assert_eq!(rythme_in(&dir, "en", &["fix"]).code, 2);
+    assert_eq!(rythme_in(&dir, "en", &["fix", "--bad", "a.ry"]).code, 2);
+    let out = rythme_in(&dir, "en", &["fix", "missing.ry"]);
+    assert_eq!(out.code, 1);
+    assert!(out.stderr.contains("error[E017]"), "{}", out.stderr);
 }

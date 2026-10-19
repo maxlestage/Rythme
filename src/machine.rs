@@ -1,5 +1,5 @@
 //! Output for programs: `--format json` of `rythme check`, `run`, `test`,
-//! `explain` and `help`, read by editors, scripts and AI assistants
+//! `fix`, `explain` and `help`, read by editors, scripts and AI assistants
 //! that fix their own code in a loop.
 //!
 //! Every document is one JSON object on the standard output, with
@@ -9,7 +9,7 @@
 //! such as `"error"` never change. `docs/rythme-output.schema.json`
 //! describes the documents, and `tests/machine.rs` checks them against it.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::builtins::{self, Builtin, BUILTINS};
 use crate::diagnostic::{self, Diagnostic, Fix, Severity};
@@ -519,4 +519,194 @@ pub fn help_command(name: Option<&str>) -> i32 {
     doc.push(("message".into(), help::unknown_topic(name).trim_end().into()));
     print(Json::Obj(doc));
     2
+}
+
+// ----- rythme fix -----------------------------------------------------------------------
+
+/// What fixing one file did.
+struct Fixed {
+    path: PathBuf,
+    before: String,
+    after: String,
+    applied: Vec<String>,
+    left: Vec<Diagnostic>,
+}
+
+/// Applies the fixes of a file again and again (each pass can reveal the
+/// next error) until none is left: at most this many passes.
+const MAX_PASSES: usize = 20;
+
+fn fix_file(path: &Path, all: bool) -> Result<Fixed, Box<Diagnostic>> {
+    let before = crate::driver::read_source(path)?;
+    let mut text = before.clone();
+    let mut applied = Vec::new();
+    let mut left;
+    let mut pass = 0;
+    loop {
+        let (diags, id) = diagnose_text(path, &text);
+        left = diags;
+        let Some(id) = id else { break };
+        let chosen = crate::fix::chosen(&left, id, all);
+        pass += 1;
+        if chosen.is_empty() || pass > MAX_PASSES {
+            break;
+        }
+        let edits: Vec<(usize, usize, String)> = chosen.iter().flat_map(|(_, e)| e.iter().cloned()).collect();
+        let next = crate::fix::apply(&text, &edits);
+        if next == text {
+            break;
+        }
+        applied.extend(chosen.into_iter().map(|(title, _)| title));
+        text = next;
+    }
+    Ok(Fixed { path: path.to_path_buf(), before, after: text, applied, left })
+}
+
+/// Checks a changed text of `path` as if it were the file (its `use` are
+/// found next to it): the text is checked from memory.
+fn diagnose_text(path: &Path, text: &str) -> (Vec<Diagnostic>, Option<u32>) {
+    let mut driver = Driver::new();
+    let shown = path.display().to_string();
+    let base = path.parent().map(Path::to_path_buf).unwrap_or_default();
+    let canon = path.canonicalize().ok();
+    driver.load_source(&shown, text, canon, &base);
+    let diags = diagnostic::take_kept();
+    // The id of the text: the last source registered under its name.
+    let id = (0..u32::MAX).take_while(|i| source::get(*i).is_some()).filter(|i| source::get(*i).is_some_and(|f| f.name == shown)).last();
+    (diags, id)
+}
+
+/// `rythme fix [--dry-run] [--all] [--format json] FILE...`: applies the
+/// safe fixes of the diagnostics (with `--all`, the guesses too) until none
+/// is left. `--dry-run` shows the changes as a diff without writing them.
+/// Exit code: 0 when the files have no errors left, 1 otherwise (and with
+/// `--dry-run`, 1 when something would change), 2 for a wrong use.
+pub fn fix_command(args: &[String]) -> i32 {
+    let mut args = args.to_vec();
+    let format = match take_format(&mut args) {
+        Ok(f) => f,
+        Err(code) => return code,
+    };
+    let dry = take_flag(&mut args, "--dry-run") | take_flag(&mut args, "--check");
+    let all = take_flag(&mut args, "--all");
+    if let Some(bad) = args.iter().find(|a| a.starts_with('-') && a.len() > 1) {
+        crate::io::err_line(&t!(
+            "unknown option `{bad}` for `rythme fix`; the options are: --dry-run, --all, --format json",
+            "option inconnue `{bad}` pour `rythme fix` ; les options sont : --dry-run, --all, --format json"
+        ));
+        return 2;
+    }
+    if args.is_empty() {
+        match crate::project::targets(crate::project::Cmd::Check) {
+            Some(Ok(files)) => args = files,
+            Some(Err(())) => return 1,
+            None => {
+                crate::io::err_line(&t!(
+                    "which file? Example: rythme fix hello.ry (or rythme fix --dry-run hello.ry to see the changes first)",
+                    "quel fichier ? Exemple : rythme fix bonjour.ry (ou rythme fix --dry-run bonjour.ry pour voir d'abord les changements)"
+                ));
+                return 2;
+            }
+        }
+    }
+    diagnostic::keep_shown();
+    let mut results = Vec::new();
+    let mut failed = false;
+    for name in &args {
+        let fixed = script(name).and_then(|p| fix_file(&p, all));
+        match fixed {
+            Ok(f) => {
+                if !dry && f.after != f.before {
+                    if let Err(e) = std::fs::write(&f.path, &f.after) {
+                        let shown = f.path.display();
+                        let d = Diagnostic::error("E017", t!("cannot write `{shown}`: {e}", "impossible d'écrire `{shown}` : {e}"));
+                        results.push(Err(d));
+                        failed = true;
+                        continue;
+                    }
+                }
+                failed |= f.left.iter().any(Diagnostic::is_error) || (dry && f.after != f.before);
+                results.push(Ok(f));
+            }
+            Err(d) => {
+                failed = true;
+                results.push(Err(*d));
+            }
+        }
+    }
+    let code = i32::from(failed);
+    if format == Format::Json {
+        let mut files = Vec::new();
+        let mut left_all = Vec::new();
+        for r in &results {
+            match r {
+                Ok(f) => {
+                    files.push(obj([
+                        ("file", f.path.display().to_string().into()),
+                        ("changed", (f.after != f.before).into()),
+                        ("written", (!dry && f.after != f.before).into()),
+                        ("applied", Json::Arr(f.applied.iter().map(|t| t.as_str().into()).collect())),
+                        (
+                            "diff",
+                            if f.after != f.before {
+                                crate::fix::diff(&f.path.display().to_string(), &f.before, &f.after).into()
+                            } else {
+                                Json::Null
+                            },
+                        ),
+                    ]));
+                    left_all.extend(f.left.iter().cloned());
+                }
+                Err(d) => left_all.push(d.clone()),
+            }
+        }
+        let (errors, warnings) = counts(&left_all);
+        print(with(
+            head("fix"),
+            vec![
+                ("ok", (code == 0).into()),
+                ("exit_code", i64::from(code).into()),
+                ("dry_run", dry.into()),
+                ("files", Json::Arr(files)),
+                ("summary", obj([("errors", errors.into()), ("warnings", warnings.into())])),
+                ("diagnostics", diagnostics_json(&left_all)),
+            ],
+        ));
+        return code;
+    }
+    let color = diagnostic::use_color();
+    for r in &results {
+        match r {
+            Err(d) => crate::io::err(&format!("{}\n", d.render(color))),
+            Ok(f) => {
+                let shown = f.path.display().to_string();
+                if dry {
+                    if f.after != f.before {
+                        crate::io::out(&crate::fix::diff(&shown, &f.before, &f.after));
+                    }
+                } else {
+                    for title in &f.applied {
+                        crate::io::out_line(&format!("  ✓ {title}"));
+                    }
+                }
+                let n = f.applied.len();
+                let (errors, warnings) = counts(&f.left);
+                let line = match (dry, n) {
+                    (_, 0) => t!("{shown}: nothing to fix", "{shown} : rien à corriger"),
+                    (true, _) => t!("{shown}: {n} fix(es) to apply", "{shown} : {n} correction(s) à appliquer"),
+                    (false, _) => t!("{shown}: {n} fix(es) applied", "{shown} : {n} correction(s) appliquée(s)"),
+                };
+                let rest = if errors + warnings > 0 {
+                    t!(
+                        "; {errors} error(s) and {warnings} warning(s) left: `rythme check {shown}`",
+                        " ; il reste {errors} erreur(s) et {warnings} avertissement(s) : `rythme check {shown}`"
+                    )
+                } else {
+                    String::new()
+                };
+                crate::io::out_line(&format!("{line}{rest}"));
+            }
+        }
+    }
+    code
 }
