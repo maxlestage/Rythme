@@ -811,6 +811,7 @@ Commands
   rythme file.ry            run a program
   rythme run --seed 42 f.ry run it with the same draws of random every time
   rythme check file.ry      find problems without running the program
+  rythme fix file.ry        apply the safe fixes of those problems (--dry-run: only show them)
   rythme test file.ry       run the tests of a file (or of a folder)
   rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
@@ -822,8 +823,10 @@ Commands
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
+  rythme help llms          the whole language in one text, for AI assistants
   rythme -e "code"          run a piece of code
   rythme lsp                language server, for editors (VS Code, Neovim...)
+  rythme mcp                server for AI assistants (Model Context Protocol)
   option --lang CODE        language of the messages: en, fr, es, de, pt, zh (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
@@ -865,6 +868,7 @@ Comandos
   rythme arquivo.ry         executar um programa
   rythme run --seed 42 f.ry executá-lo com os mesmos sorteios de random toda vez
   rythme check arquivo.ry   encontrar problemas sem executar o programa
+  rythme fix arquivo.ry     aplicar as correções seguras desses problemas (--dry-run: só mostrá-las)
   rythme test arquivo.ry    executar os testes de um arquivo (ou de uma pasta)
   rythme fmt arquivo.ry     dar ao código o seu layout oficial (--check: só verificar)
   rythme doc arquivo.ry     escrever a documentação dele, em Markdown (--html: uma página web)
@@ -876,8 +880,10 @@ Comandos
   rythme learn              visita guiada pela linguagem, passo a passo
   rythme help TEMA          ajuda sobre um tema ou uma função
   rythme explain E003       explicar um código de erro
+  rythme help llms          toda a linguagem em um texto, para os assistentes de IA
   rythme -e "código"        executar um trecho de código
   rythme lsp                servidor de linguagem, para editores (VS Code, Neovim...)
+  rythme mcp                servidor para os assistentes de IA (Model Context Protocol)
   opção --lang CÓDIGO       idioma das mensagens: en, fr, es, de, pt, zh (ou RYTHME_LANG)
 
 Temas (rythme help TEMA)

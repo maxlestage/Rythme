@@ -811,6 +811,7 @@ Commands
   rythme file.ry            run a program
   rythme run --seed 42 f.ry run it with the same draws of random every time
   rythme check file.ry      find problems without running the program
+  rythme fix file.ry        apply the safe fixes of those problems (--dry-run: only show them)
   rythme test file.ry       run the tests of a file (or of a folder)
   rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
@@ -822,8 +823,10 @@ Commands
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
+  rythme help llms          the whole language in one text, for AI assistants
   rythme -e "code"          run a piece of code
   rythme lsp                language server, for editors (VS Code, Neovim...)
+  rythme mcp                server for AI assistants (Model Context Protocol)
   option --lang CODE        language of the messages: en, fr, es, de, pt, zh (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
@@ -865,6 +868,7 @@ A specific function: rythme help map
   rythme file.ry            运行程序
   rythme run --seed 42 f.ry 每次都用相同的 random 抽取结果运行它
   rythme check file.ry      不运行程序，找出问题
+  rythme fix file.ry        应用这些问题的安全修正（--dry-run：只显示）
   rythme test file.ry       运行一个文件（或一个文件夹）的测试
   rythme fmt file.ry        把代码整理成官方格式（--check：只检查）
   rythme doc file.ry        生成它的文档，Markdown 格式（--html：网页）
@@ -876,8 +880,10 @@ A specific function: rythme help map
   rythme learn              一步一步的语言导览
   rythme help TOPIC         某个主题或函数的帮助
   rythme explain E003       解释错误代码
+  rythme help llms          整个语言写在一个文本里，供 AI 助手阅读
   rythme -e "code"          运行一段代码
   rythme lsp                语言服务器，供编辑器使用（VS Code、Neovim……）
+  rythme mcp                供 AI 助手使用的服务器（Model Context Protocol）
   选项 --lang CODE          消息的语言：en、fr、es、de、pt、zh（或 RYTHME_LANG）
 
 主题（rythme help TOPIC）
