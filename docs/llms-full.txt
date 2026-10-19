@@ -389,6 +389,7 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `partition(list, f)`: Splits a list in two: [elements where f is true, elements where f is false].
 - `group_by(list, key)`: Groups the elements in a record: the key is the text of what `key` returns, the value the list of matching elements.
 - `is_empty(x)`: Is the list, text, record, dict or set empty?
+- `zip_with(xs, ys, f)`: Calls f with the elements of two lists of the same length, one pair at a time, and gives the list of the results.
 
 ### Records
 
@@ -462,6 +463,44 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `lists_of(generator, max_length)`: A generator of lists of at most `max_length` elements (10 if not given), each made by `generator`.
 - `one_of(values)`: A generator that picks one of the values of a list.
 - `records_of(fields)`: A generator of records, with a generator for each field: `records_of({name: texts(), age: ints(0, 120)})`.
+
+### Machine learning: vectors, matrices, statistics
+
+- `tanh(x)`: Hyperbolic tangent: a smooth step from -1 to 1, used as the activation of neurons.
+- `sigmoid(x)`: The logistic function 1 / (1 + e^-x): a smooth step from 0 to 1, read as a probability.
+- `relu(x)`: The rectifier: x when it is positive, 0.0 otherwise.
+- `dot(xs, ys)`: Dot product of two vectors (lists of numbers) of the same length: the sum of the products of their numbers, one by one.
+- `norm(xs)`: Length of a vector: the square root of the sum of the squares of its numbers.
+- `vector_add(a, b)`: Adds two vectors, or two matrices, of the same shape, number by number.
+- `vector_sub(a, b)`: Subtracts two vectors, or two matrices, of the same shape, number by number.
+- `vector_mul(a, b)`: Multiplies two vectors, or two matrices, of the same shape, number by number (not the product of matrices: that is `matmul`).
+- `vector_scale(a, k)`: Multiplies every number of a vector, or of a matrix, by the number k.
+- `matmul(a, b)`: Product of two matrices (lists of rows): a matrix of r rows and n columns times a matrix of n rows and c columns gives r rows and c columns.
+- `transpose(m)`: Swaps the rows and the columns of a matrix.
+- `zeros(rows, columns)`: A vector of `rows` zeros, or with `columns`, a matrix full of zeros.
+- `ones(rows, columns)`: A vector of `rows` ones, or with `columns`, a matrix full of ones.
+- `identity_matrix(n)`: The identity matrix of n rows and n columns: ones on the diagonal, zeros elsewhere.
+- `shape(x)`: The shape of a vector or a matrix (of lists nested in lists): its length at each level, `[3]` for a vector of 3 numbers, `[2, 3]` for 2 rows of 3 numbers.
+- `stats(xs)`: A summary of a list of numbers, as a record: `count`, `mean` (the average), `median` (the middle value), `std_dev`, `min` and `max`.
+- `variance(xs)`: The variance of a list of numbers: the mean of the squares of their distances to their mean (of the whole population: divided by n).
+- `std_dev(xs)`: The standard deviation of a list of numbers: the square root of their variance, how far they usually are from their mean.
+- `percentile(xs, p)`: The number below which p percent of the numbers of the list are (p from 0 to 100), between the two closest ones when needed.
+- `argmax(xs)`: The position of the largest number of a list (the first one if several are equal).
+- `argmin(xs)`: The position of the smallest number of a list (the first one if several are equal).
+- `softmax(xs)`: Turns a list of scores into probabilities: each one becomes e^x divided by the sum of them all, so that they are between 0 and 1 and add up to 1, the largest score keeping the largest share.
+- `normalize(xs)`: Rescales a list of numbers from 0.0 (the smallest) to 1.0 (the largest), keeping their proportions.
+- `random_normal(mean, sd)`: A random decimal number drawn from the normal distribution (the bell curve) of this mean and standard deviation.
+- `random_choice_weighted(xs, weights)`: An element of the list chosen at random, each one with a chance in proportion to its weight (numbers of 0 or more, one per element).
+- `train_test_split(xs, share)`: Shuffles a list, then cuts it in two: a record `{train, test}`, where `train` holds this share of the elements (0.8: 80 percent) and `test` the rest.
+- `derivative(f, x)`: The slope of the function f at x (its derivative), computed from f(x + h) and f(x - h) for a tiny h: precise to about 9 significant digits for a smooth function.
+- `gradient(f, xs)`: The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`).
+- `plot(xs, ys)`: Draws the points (x, y) as a chart in text, 50 columns wide and 11 lines high, with the smallest and largest values on the axes; with one list, draws its numbers at the positions 0, 1, 2...
+- `histogram(xs, bars)`: Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each.
+
+### The web: HTTP requests
+
+- `http_get(url, headers)`: Fetches a web address (http:// or https://): `Ok(text of the answer)`, or `Err(message)` when there is no network, the address is wrong, the server answers with an error (404...) or does not answer within 30 seconds.
+- `http_post(url, body, headers)`: Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`.
 
 Ruby names, exactly the same functions: `puts` = `print`, `to_s` = `text`, `to_i` = `int`, `to_f` = `float`, `even?` = `is_even`, `odd?` = `is_odd`, `length` = `len`, `size` = `len`, `upcase` = `upper`, `downcase` = `lower`, `strip` = `trim`, `include?` = `contains`, `start_with?` = `starts_with`, `end_with?` = `ends_with`, `select` = `filter`, `reduce` = `fold`, `inject` = `fold`, `uniq` = `unique`, `each_slice` = `chunks`, `each_cons` = `windows`, `any?` = `any`, `all?` = `all`, `empty?` = `is_empty`, `key?` = `has`, `lstrip` = `trim_start`, `rstrip` = `trim_end`, `casecmp?` = `equals_ignore_case`.
 

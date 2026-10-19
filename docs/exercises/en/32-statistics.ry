@@ -1,0 +1,44 @@
+# Exercise 32 · Statistics on data  ★★☆
+#
+# Before learning from data, look at it. `stats(xs)` gives a record with the
+# count, the mean, the median, the standard deviation, the min and the max:
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).mean       # 5.0
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).std_dev    # 2.0
+#
+# Statement
+#   - `standardize(xs)`: each number becomes its distance to the mean,
+#     counted in standard deviations: (x - mean) / std_dev;
+#   - `outliers(xs)`: the numbers more than 2 standard deviations away from
+#     the mean, in their order;
+#   - `accuracy(predictions, answers)`: the share (from 0.0 to 1.0) of the
+#     predictions equal to the answer at the same position.
+#
+# Hints
+#   1. Compute `stats(xs)` once, give it a name, then `map`.
+#   2. `abs` gives the distance whatever the side.
+#   3. `zip(a, b)` pairs the elements; `count` counts those that are right.
+#
+# Check your work:  rythme exercise check 32-statistics.ry
+#              or:  rythme test 32-statistics.ry
+
+fn standardize(xs) = fail("to do")
+
+fn outliers(xs) = fail("to do")
+
+fn accuracy(predictions, answers) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "standardize"
+  assert_eq(standardize([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "outliers"
+  assert_eq(outliers([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(outliers([1, 2, 3]), [])
+end
+
+test "accuracy"
+  assert_eq(accuracy(["cat", "dog", "cat", "cat"], ["cat", "dog", "dog", "cat"]), 0.75)
+  assert_eq(accuracy([1, 0], [0, 1]), 0.0)
+end

@@ -11,8 +11,8 @@
   example shows its real output.
 - [**Teaching with Rythme**](teaching.md): why Rythme fits a course, a
   12-session course outline, exercises with automatic checking.
-- [**Exercises**](exercises/README.md): 30 graded exercises for a first
-  course, with hints and tests, built into `rythme exercise`.
+- [**Exercises**](exercises/README.md): 36 graded exercises for a first
+  course (six about AI), with hints and tests, built into `rythme exercise`.
 - **Inside the interpreter**: `rythme learn` (a guided tour),
   `rythme help` (topics and functions), `rythme help builtins` (every built-in
   function), `rythme explain E003` (any error code), `rythme help fmt` (the
@@ -39,8 +39,8 @@
 - [**Enseigner avec Rythme**](enseigner.md) : pourquoi Rythme convient à un
   cours, un plan de cours en 12 séances, des exercices corrigés
   automatiquement.
-- [**Exercices**](exercises/README.fr.md) : 30 exercices gradués pour un
-  premier cours, avec des indices et des tests, intégrés à `rythme exercise`.
+- [**Exercices**](exercises/README.fr.md) : 36 exercices gradués pour un
+  premier cours (dont six sur l'IA), avec des indices et des tests, intégrés à `rythme exercise`.
 - **Dans l'interpréteur** : `rythme learn` (une visite guidée),
   `rythme help` (sujets et fonctions), `rythme help builtins` (toutes les
   fonctions intégrées), `rythme explain E003` (n'importe quel code d'erreur),

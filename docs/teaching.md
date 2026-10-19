@@ -66,7 +66,7 @@ test "negative" = assert_eq(largest([-3, -1, -2]), -1)
 `rythme test exercise.ry` reports what passes and, for each failure, the
 expected and obtained values.
 
-Thirty such exercises are ready: [**the exercises**](exercises/README.md),
+Thirty-six such exercises are ready: [**the exercises**](exercises/README.md),
 graded from ★☆☆ to ★★★ and following the course above, each with a
 statement, hints and tests, in every language of the messages (English,
 French, Spanish, German, Portuguese, Chinese), with reference solutions for

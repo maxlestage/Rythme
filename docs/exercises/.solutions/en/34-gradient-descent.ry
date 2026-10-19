@@ -1,0 +1,28 @@
+# Exercise 34 · Going down the slope  ★★☆
+# Reference solution. Try the exercise before reading it!
+
+fn step(f, x, rate) = x - rate * derivative(f, x)
+
+fn descend(f, x, rate, 0) = x
+fn descend(f, x, rate, steps) = descend(f, step(f, x, rate), rate, steps - 1)
+
+fn descend_all(f, xs, rate, steps) = fold(1..steps, xs, fn(p, _) = vector_sub(p, vector_scale(gradient(f, p), rate)))
+
+# --- Tests (do not change them) ---
+
+fn parabola(x) = (x - 3) ** 2
+
+test "one step"
+  assert_eq(step(parabola, 0, 0.5), 3.0)
+  assert_eq(step(parabola, 1, 0.25), 2.0)
+end
+
+test "down to the bottom"
+  assert_eq(round(descend(parabola, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descend(parabola, 10, 0.1, 0), 10)
+end
+
+test "several numbers"
+  bowl = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descend_all(bowl, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end

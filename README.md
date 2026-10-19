@@ -208,7 +208,7 @@ cargo install --path .       # or install it in your PATH
 | `rythme help [topic]`       | help on a topic or a function                  |
 | `rythme explain E003`       | explain an error code                          |
 | `rythme learn`              | guided tour of the language                    |
-| `rythme exercise`           | [30 graded exercises](docs/exercises/README.md): `list`, `start 1`, `check FILE` |
+| `rythme exercise`           | [36 graded exercises](docs/exercises/README.md): `list`, `start 1`, `check FILE` |
 | `rythme steps fib.ry "fib(4)"` | the calculation step by step: `fib(4)` → `fib(3) + fib(2)` → ... |
 | `rythme debug fib.ry`       | the debugger: `break 12`, `run`, `next`, `step`, `where`, `print n * 2` ([manual](docs/reference.md#79-the-debugger-rythme-debug)) |
 | `rythme -e 'print(1 + 2)'`  | run a piece of code                            |
@@ -299,6 +299,17 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 | [`testing.ry`](examples/testing.ry) | `test` blocks |
 | [`modules/`](examples/modules) | `use geometry` then `geometry.area(2)`: a program in several files, private `_names` |
 | [`bonjour.ry`](examples/bonjour.ry) | names with accents |
+| [`linear_regression.ry`](examples/linear_regression.ry) | linear regression by gradient descent: gradient, scan, plot |
+| [`perceptron.ry`](examples/perceptron.ry) | a perceptron, the first artificial neuron: dot, vector_add, fold |
+| [`xor_network.ry`](examples/xor_network.ry) | a small neural network learns XOR: sigmoid, matmul, backpropagation |
+| [`kmeans.ry`](examples/kmeans.ry) | k-means: groups in points without labels, random_normal, argmin |
+| [`knn.ry`](examples/knn.ry) | k nearest neighbours: naming a fruit, train_test_split, norm |
+| [`naive_bayes.ry`](examples/naive_bayes.ry) | a naive Bayes classifier sorts spam: words, log, softmax |
+| [`markov.ry`](examples/markov.ry) | a Markov chain writes sentences: windows, group_by, random_choice_weighted |
+| [`tictactoe.ry`](examples/tictactoe.ry) | minimax plays tic-tac-toe perfectly: recursion, set_at, max_by |
+| [`pathfinding.ry`](examples/pathfinding.ry) | the shortest way through a maze: breadth-first search, dict, put |
+| [`genetic.ry`](examples/genetic.ry) | a genetic algorithm evolves a sentence: selection, crossover, mutation |
+| [`ask_claude.ry`](examples/ask_claude.ry) | asking a language model a question: http_post, to_json, parse_json, env (needs an API key) |
 
 ## Editors
 
@@ -334,7 +345,7 @@ learn it fast and fix their own mistakes:
 [`docs/teaching.md`](docs/teaching.md) proposes a course outline built on
 Rythme, and explains why it fits a first programming course and a
 functional programming course alike.
-[`docs/exercises/`](docs/exercises/README.md) holds 30 graded exercises, with
+[`docs/exercises/`](docs/exercises/README.md) holds 36 graded exercises (six about AI), with
 statements, hints, tests and solutions, that `rythme exercise` hands out and
 checks in every language of the messages.
 
@@ -354,7 +365,7 @@ mode) and is organised as a pipeline:
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
 | [`src/bigint.rs`](src/bigint.rs) | whole numbers beyond 64 bits, without a dependency |
 | [`src/dict.rs`](src/dict.rs) | the persistent ordered tree behind dictionaries and sets, and the order of their keys |
-| [`src/builtins.rs`](src/builtins.rs) | 178 built-in functions (and their Ruby names), documented in two languages, JSON and CSV included |
+| [`src/builtins.rs`](src/builtins.rs) | 211 built-in functions (and their Ruby names), documented in two languages, JSON, CSV, HTTP and machine learning included |
 | [`src/builtins/`](src/builtins) | dates, files and the system, dictionaries and sets, regexes and text tools, CSV, generators of property tests |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |

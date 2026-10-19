@@ -199,7 +199,11 @@ fn exercise_list_and_start() {
     let dir = temp_dir("start");
     let r = rythme_in(&dir, "en", &["exercise", "list"]);
     assert_eq!(r.code, 0);
-    assert!(r.stdout.contains("01  First values") && r.stdout.contains("30-testing.ry"), "{}", r.stdout);
+    assert!(
+        r.stdout.contains("01  First values") && r.stdout.contains("30-testing.ry") && r.stdout.contains("36-minimax.ry"),
+        "{}",
+        r.stdout
+    );
     let r = rythme_in(&dir, "fr", &["exercice"]);
     assert!(r.stdout.contains("01  Premières valeurs") && r.stdout.contains("30-tests.ry"), "{}", r.stdout);
     let r = rythme_in(&dir, "de", &["exercise", "list"]);
@@ -243,9 +247,9 @@ fn exercise_list_and_start() {
     assert_eq!(r.code, 0, "{}", r.stderr);
     assert!(std::fs::read_to_string(dir.join("01-values.ry")).unwrap().starts_with("# 练习 01 · 最初的值  ★☆☆\n"));
 
-    let r = rythme_in(&dir, "en", &["exercise", "start", "31"]);
+    let r = rythme_in(&dir, "en", &["exercise", "start", "37"]);
     assert_eq!(r.code, 2);
-    assert!(r.stderr.contains("from 1 to 30"), "{}", r.stderr);
+    assert!(r.stderr.contains("from 1 to 36"), "{}", r.stderr);
     let r = rythme_in(&dir, "en", &["exercise", "start", "recursoin"]);
     assert!(r.stderr.contains("did you mean `recursion`?"), "{}", r.stderr);
     let r = rythme_in(&dir, "en", &["exercise", "start", "rekursoin"]);
@@ -289,6 +293,11 @@ fn exercise_check_gives_friendly_feedback() {
     let solution = root().join(".solutions/fr/30-tests.ry");
     std::fs::copy(solution, dir.join("30-tests.ry")).unwrap();
     let r = rythme_in(&dir, "fr", &["exercise", "check", "30-tests.ry"]);
+    assert_eq!(r.code, 0, "{}", r.stdout);
+    assert!(r.stdout.contains("rythme exercise start 31"), "{}", r.stdout);
+    let solution = root().join(".solutions/fr/36-minimax.ry");
+    std::fs::copy(solution, dir.join("36-minimax.ry")).unwrap();
+    let r = rythme_in(&dir, "fr", &["exercise", "check", "36-minimax.ry"]);
     assert_eq!(r.code, 0, "{}", r.stdout);
     assert!(r.stdout.contains("C'était le dernier exercice"), "{}", r.stdout);
     let solution = root().join(".solutions/de/07-rekursion.ry");

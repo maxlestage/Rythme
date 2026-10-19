@@ -851,6 +851,7 @@ Topics (rythme help TOPIC)
   regex       searching, cutting and replacing with regular expressions
   csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
   random      chance, and the same draws again with a seed
+  ml          machine learning and AI: vectors, statistics, slopes, charts, HTTP
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
@@ -908,6 +909,7 @@ Temas (rythme help TEMA)
   regex       buscar, cortar y reemplazar con expresiones regulares
   csv         las tablas de las hojas de cálculo: csv_parse, csv_records, csv_format
   random      el azar, y los mismos sorteos otra vez con una semilla
+  ml          aprendizaje automático e IA: vectores, estadística, pendientes, gráficos, HTTP
   repl        el modo interactivo
   fmt         el formato oficial del código (rythme fmt)
   doc         la documentación sacada de los comentarios ## (rythme doc)
@@ -2666,9 +2668,11 @@ otros (`--seed random` elige una)."#,
         (
             r#"EXERCISES
 
-Rythme comes with 30 graded exercises for a first course, from the first
-values to recursion, lists, records, types, Option, Result and tests. Each one
-is a file with a statement, hints, the functions to write and their tests.
+Rythme comes with 36 graded exercises for a first course, from the first
+values to recursion, lists, records, types, Option, Result and tests, then six
+about artificial intelligence (31 to 36: vectors, statistics, a neuron,
+gradient descent, nearest neighbours, minimax). Each one is a file with a
+statement, hints, the functions to write and their tests.
 
   rythme exercise list              the exercises, from ★☆☆ (easy) to ★★★
   rythme exercise start 7           copies exercise 7 into the current folder
@@ -2681,10 +2685,12 @@ language of the messages (`rythme --lang es exercise start 7`); the folder
 docs/exercises of the repository of Rythme has them in English and French."#,
             r#"EJERCICIOS
 
-Rythme trae 30 ejercicios graduados para un primer curso, de los primeros
+Rythme trae 36 ejercicios graduados para un primer curso, de los primeros
 valores a la recursión, las listas, los registros, los tipos, Option, Result y
-las pruebas. Cada uno es un archivo con un enunciado, pistas, las funciones
-que escribir y sus pruebas.
+las pruebas, y luego seis sobre inteligencia artificial (31 a 36: vectores,
+estadística, una neurona, descenso de gradiente, vecinos más cercanos,
+minimax). Cada uno es un archivo con un enunciado, pistas, las funciones que
+escribir y sus pruebas.
 
   rythme exercise list              los ejercicios, de ★☆☆ (fácil) a ★★★
   rythme exercise start 7           copia el ejercicio 7 en la carpeta actual
@@ -8705,5 +8711,971 @@ Claude Desktop, Cursor y otros: consulta el manual, sección 7.10."#,
         ("here: `new_{w} = ...`, then use `new_{w}`; to repeat a step, use `fold`, `map` or a recursive function", "aquí: `nuevo_{w} = ...`, y luego usa `nuevo_{w}`; para repetir un paso, usa `fold`, `map` o una función recursiva"),
         ("the functions of numbers are built in: write `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... without `Math.`", "las funciones de los números están integradas: escribe `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... sin `Math.`"),
         ("Rythme has no generators: build the whole list (`map`, `filter`, `1..n`), or give a function to call", "Rythme no tiene generadores: construye toda la lista (`map`, `filter`, `1..n`), o pasa una función a la que llamar"),
+        // src/builtins/ml.rs: vectors, matrices, statistics, chance
+        (
+            "`{f}` expects a list of numbers as argument {pos}, but its element {k} is {got}",
+            "`{f}` espera una lista de números como argumento {pos}, pero su elemento {k} es {got}",
+        ),
+        (
+            "a text is not a number: `parse_float(text)` reads one",
+            "un texto no es un número: `parse_float(texto)` lee uno",
+        ),
+        (
+            "`{f}` expects a matrix (a list of rows, each a list of numbers) as argument {pos}, but its row {r} is {got}",
+            "`{f}` espera una matriz (una lista de filas, cada una una lista de números) como argumento {pos}, pero su fila {r} es {got}",
+        ),
+        (
+            "a matrix of 2 rows and 3 columns: [[1, 2, 3], [4, 5, 6]]",
+            "una matriz de 2 filas y 3 columnas: [[1, 2, 3], [4, 5, 6]]",
+        ),
+        (
+            "`{f}`: argument {pos} is not a matrix: its row 0 has {cols} number(s), but its row {r} has {n}",
+            "`{f}`: el argumento {pos} no es una matriz: su fila 0 tiene {cols} número(s), pero su fila {r} tiene {n}",
+        ),
+        ("every row of a matrix has the same length", "todas las filas de una matriz tienen la misma longitud"),
+        (
+            "`{f}` expects a matrix of numbers as argument {pos}, but its row {r} holds {got} at position {k}",
+            "`{f}` espera una matriz de números como argumento {pos}, pero su fila {r} contiene {got} en la posición {k}",
+        ),
+        ("a vector of {n} number(s)", "un vector de {n} número(s)"),
+        ("a {n}×{c} matrix", "una matriz {n}×{c}"),
+        ("a list of {n} element(s)", "una lista de {n} elemento(s)"),
+        (
+            "`{f}` needs two values of the same shape, but got {a} and {b}",
+            "`{f}` necesita dos valores de la misma forma, pero recibió {a} y {b}",
+        ),
+        (
+            "`shape(x)` gives the shape of a vector or a matrix: [3] or [2, 3]",
+            "`shape(x)` da la forma de un vector o de una matriz: [3] o [2, 3]",
+        ),
+        (
+            "`{f}`: these lists are nested more than {MAX_NESTING} levels deep: they are not a vector nor a matrix",
+            "`{f}`: estas listas están anidadas en más de {MAX_NESTING} niveles: no son ni un vector ni una matriz",
+        ),
+        (
+            "`{f}` works on vectors and matrices of numbers, but found {got} in them",
+            "`{f}` trabaja con vectores y matrices de números, pero encontró {got} en ellos",
+        ),
+        (
+            "`{f}` needs two vectors of the same length, but got a vector of {n} number(s) and a vector of {m}",
+            "`{f}` necesita dos vectores de la misma longitud, pero recibió un vector de {n} número(s) y un vector de {m}",
+        ),
+        (
+            "`zip_with` needs two lists of the same length, but got {n} and {m} element(s)",
+            "`zip_with` necesita dos listas de la misma longitud, pero recibió {n} y {m} elemento(s)",
+        ),
+        ("a {r}×{c} matrix", "una matriz {r}×{c}"),
+        ("a vector of {nr} number(s)", "un vector de {nr} número(s)"),
+        ("a {nr}×{nc} matrix", "una matriz {nr}×{nc}"),
+        (
+            "`matmul` cannot multiply {first} by {second}: the first one has {c} column(s), so the second one needs {c} row(s), not {nr}",
+            "`matmul` no puede multiplicar {first} por {second}: la matriz de la izquierda tiene {c} columna(s), así que la derecha necesita {c} fila(s), no {nr}",
+        ),
+        (
+            "`shape(x)` gives the shape of each one; `transpose(m)` swaps rows and columns",
+            "`shape(x)` da la forma de cada uno; `transpose(m)` intercambia filas y columnas",
+        ),
+        (
+            "`matmul`: these matrices are too large to multiply here (more than {} multiplications)",
+            "`matmul`: estas matrices son demasiado grandes para multiplicarlas aquí (más de {} multiplicaciones)",
+        ),
+        (
+            "`shape`: the elements of this list do not all have the same shape: element 0 is {a}, element {i} is {b}",
+            "`shape`: los elementos de esta lista no tienen todos la misma forma: el elemento 0 es {a}, el elemento {i} es {b}",
+        ),
+        ("`{f}` of an empty list", "`{f}` de una lista vacía"),
+        (
+            "`percentile` needs a percentage from 0 to 100, not {p}",
+            "`percentile` necesita un porcentaje de 0 a 100, no {p}",
+        ),
+        (
+            "`random_normal` needs a standard deviation of 0 or more, not {sd}",
+            "`random_normal` necesita una desviación típica de 0 o más, no {sd}",
+        ),
+        (
+            "`random_choice_weighted` needs one weight per element: {n} element(s), but {m} weight(s)",
+            "`random_choice_weighted` necesita un peso por elemento: {n} elemento(s), pero {m} peso(s)",
+        ),
+        (
+            "`random_choice_weighted`: the weight {i} is {w}; a weight is a number of 0 or more",
+            "`random_choice_weighted`: el peso {i} vale {w}; un peso es un número de 0 o más",
+        ),
+        (
+            "`random_choice_weighted` needs at least one weight above 0",
+            "`random_choice_weighted` necesita al menos un peso mayor que 0",
+        ),
+        (
+            "`train_test_split` needs a share from 0 to 1 for the training part (like 0.8), not {ratio}",
+            "`train_test_split` necesita una proporción de 0 a 1 para la parte de entrenamiento (como 0.8), no {ratio}",
+        ),
+        (
+            "Machine learning: vectors, matrices, statistics",
+            "Aprendizaje automático: vectores, matrices, estadística",
+        ),
+        (
+            "Hyperbolic tangent: a smooth step from -1 to 1, used as the activation of neurons.",
+            "Tangente hiperbólica: un escalón suave de -1 a 1, usado como activación de las neuronas.",
+        ),
+        (
+            "The logistic function 1 / (1 + e^-x): a smooth step from 0 to 1, read as a probability. Its slope is `sigmoid(x) * (1 - sigmoid(x))`.",
+            "La función logística 1 / (1 + e^-x): un escalón suave de 0 a 1, que se lee como una probabilidad. Su pendiente es `sigmoid(x) * (1 - sigmoid(x))`.",
+        ),
+        (
+            "The rectifier: x when it is positive, 0.0 otherwise. The usual activation of deep networks.",
+            "El rectificador: x cuando es positivo, 0.0 si no. La activación habitual de las redes profundas.",
+        ),
+        (
+            "Dot product of two vectors (lists of numbers) of the same length: the sum of the products of their numbers, one by one.",
+            "Producto escalar de dos vectores (listas de números) de la misma longitud: la suma de los productos de sus números, uno a uno.",
+        ),
+        (
+            "Length of a vector: the square root of the sum of the squares of its numbers.",
+            "Longitud de un vector: la raíz cuadrada de la suma de los cuadrados de sus números.",
+        ),
+        (
+            "Adds two vectors, or two matrices, of the same shape, number by number.",
+            "Suma dos vectores, o dos matrices, de la misma forma, número a número.",
+        ),
+        (
+            "Subtracts two vectors, or two matrices, of the same shape, number by number.",
+            "Resta dos vectores, o dos matrices, de la misma forma, número a número.",
+        ),
+        (
+            "Multiplies two vectors, or two matrices, of the same shape, number by number (not the product of matrices: that is `matmul`).",
+            "Multiplica dos vectores, o dos matrices, de la misma forma, número a número (no es el producto de matrices: ese es `matmul`).",
+        ),
+        (
+            "Multiplies every number of a vector, or of a matrix, by the number k.",
+            "Multiplica cada número de un vector, o de una matriz, por el número k.",
+        ),
+        (
+            "Calls f with the elements of two lists of the same length, one pair at a time, and gives the list of the results.",
+            "Llama a f con los elementos de dos listas de la misma longitud, un par cada vez, y da la lista de los resultados.",
+        ),
+        (
+            "Product of two matrices (lists of rows): a matrix of r rows and n columns times a matrix of n rows and c columns gives r rows and c columns. With a vector as `b`, gives a vector.",
+            "Producto de dos matrices (listas de filas): una matriz de r filas y n columnas por una matriz de n filas y c columnas da r filas y c columnas. Con un vector como `b`, da un vector.",
+        ),
+        ("Swaps the rows and the columns of a matrix.", "Intercambia las filas y las columnas de una matriz."),
+        (
+            "A vector of `rows` zeros, or with `columns`, a matrix full of zeros.",
+            "Un vector de `rows` ceros, o con `columns`, una matriz llena de ceros.",
+        ),
+        (
+            "A vector of `rows` ones, or with `columns`, a matrix full of ones.",
+            "Un vector de `rows` unos, o con `columns`, una matriz llena de unos.",
+        ),
+        (
+            "The identity matrix of n rows and n columns: ones on the diagonal, zeros elsewhere.",
+            "La matriz identidad de n filas y n columnas: unos en la diagonal, ceros en el resto.",
+        ),
+        (
+            "The shape of a vector or a matrix (of lists nested in lists): its length at each level, `[3]` for a vector of 3 numbers, `[2, 3]` for 2 rows of 3 numbers.",
+            "La forma de un vector o de una matriz (de listas anidadas en listas): su longitud en cada nivel, `[3]` para un vector de 3 números, `[2, 3]` para 2 filas de 3 números.",
+        ),
+        (
+            "A summary of a list of numbers, as a record: `count`, `mean` (the average), `median` (the middle value), `std_dev`, `min` and `max`. `stats(xs).mean` is the mean.",
+            "Un resumen de una lista de números, como registro: `count`, `mean` (la media), `median` (el valor del medio), `std_dev`, `min` y `max`. `stats(xs).mean` es la media.",
+        ),
+        (
+            "The variance of a list of numbers: the mean of the squares of their distances to their mean (of the whole population: divided by n).",
+            "La varianza de una lista de números: la media de los cuadrados de sus distancias a su media (de toda la población: dividida por n).",
+        ),
+        (
+            "The standard deviation of a list of numbers: the square root of their variance, how far they usually are from their mean.",
+            "La desviación típica de una lista de números: la raíz cuadrada de su varianza, lo lejos que suelen estar de su media.",
+        ),
+        (
+            "The number below which p percent of the numbers of the list are (p from 0 to 100), between the two closest ones when needed. `percentile(xs, 50)` is the median, the middle value.",
+            "El número por debajo del cual está el p por ciento de los números de la lista (p de 0 a 100), entre los dos más cercanos si hace falta. `percentile(xs, 50)` es la mediana, el valor del medio.",
+        ),
+        (
+            "The position of the largest number of a list (the first one if several are equal).",
+            "La posición del número más grande de una lista (el primero si varios son iguales).",
+        ),
+        (
+            "The position of the smallest number of a list (the first one if several are equal).",
+            "La posición del número más pequeño de una lista (el primero si varios son iguales).",
+        ),
+        (
+            "Turns a list of scores into probabilities: each one becomes e^x divided by the sum of them all, so that they are between 0 and 1 and add up to 1, the largest score keeping the largest share.",
+            "Convierte una lista de puntuaciones en probabilidades: cada una se vuelve e^x dividido por la suma de todas, de modo que estén entre 0 y 1 y sumen 1, y la mayor puntuación conserve la mayor parte.",
+        ),
+        (
+            "Rescales a list of numbers from 0.0 (the smallest) to 1.0 (the largest), keeping their proportions. When they are all equal, gives zeros.",
+            "Reescala una lista de números de 0.0 (el más pequeño) a 1.0 (el más grande), manteniendo sus proporciones. Cuando son todos iguales, da ceros.",
+        ),
+        (
+            "A random decimal number drawn from the normal distribution (the bell curve) of this mean and standard deviation. Follows `random_seed`.",
+            "Un número decimal al azar, sacado de la distribución normal (la campana) con esta media y esta desviación típica. Sigue a `random_seed`.",
+        ),
+        (
+            "An element of the list chosen at random, each one with a chance in proportion to its weight (numbers of 0 or more, one per element). Follows `random_seed`.",
+            "Un elemento de la lista elegido al azar, cada uno con una probabilidad proporcional a su peso (números de 0 o más, uno por elemento). Sigue a `random_seed`.",
+        ),
+        (
+            "Shuffles a list, then cuts it in two: a record `{train, test}`, where `train` holds this share of the elements (0.8: 80 percent) and `test` the rest. To learn on some examples and check on others. Follows `random_seed`.",
+            "Mezcla una lista y luego la corta en dos: un registro `{train, test}`, donde `train` contiene esta proporción de los elementos (0.8: el 80 por ciento) y `test` el resto. Para aprender con unos ejemplos y comprobar con otros. Sigue a `random_seed`.",
+        ),
+        // src/builtins/grad.rs: slopes
+        (
+            "the function given to `{f}` must return a number, but it returned {got}",
+            "la función dada a `{f}` debe devolver un número, pero devolvió {got}",
+        ),
+        (
+            "The slope of the function f at x (its derivative), computed from f(x + h) and f(x - h) for a tiny h: precise to about 9 significant digits for a smooth function. f takes one number and gives one.",
+            "La pendiente de la función f en x (su derivada), calculada a partir de f(x + h) y f(x - h) para un h diminuto: precisa a unas 9 cifras significativas para una función suave. f toma un número y da uno.",
+        ),
+        (
+            "The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`). f takes a list of numbers and gives one number. Going against it lowers f: the heart of gradient descent.",
+            "El gradiente de f en el punto xs: la lista de las pendientes de f según cada número de xs (ver `derivative`). f toma una lista de números y da un número. Ir en sentido contrario hace bajar f: el corazón del descenso de gradiente.",
+        ),
+        // src/builtins/plot.rs: charts as text
+        (
+            "`{f}` has nothing to draw: the list is empty, or holds no finite number",
+            "`{f}` no tiene nada que dibujar: la lista está vacía, o no contiene ningún número finito",
+        ),
+        ("`histogram` draws at most 100 bars, not {bins}", "`histogram` dibuja como mucho 100 barras, no {bins}"),
+        (
+            "Draws the points (x, y) as a chart in text, 50 columns wide and 11 lines high, with the smallest and largest values on the axes; with one list, draws its numbers at the positions 0, 1, 2... Gives a text: `print(plot(losses))`.",
+            "Dibuja los puntos (x, y) como un gráfico de texto, de 50 columnas de ancho y 11 líneas de alto, con los valores más pequeños y más grandes en los ejes; con una sola lista, dibuja sus números en las posiciones 0, 1, 2... Da un texto: `print(plot(perdidas))`.",
+        ),
+        (
+            "Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each. Gives a text: `print(histogram(heights))`.",
+            "Cuenta cuántos números caen en cada uno de los `bars` intervalos de igual anchura (10 si no se indica) y los dibuja como barras horizontales de texto, con el intervalo y la cuenta de cada una. Da un texto: `print(histogram(alturas))`.",
+        ),
+        // src/builtins/http.rs: HTTP requests
+        (
+            "`{f}`: the names and the values of the headers are texts, not {got}",
+            "`{f}`: los nombres y los valores de las cabeceras son textos, no {got}",
+        ),
+        (
+            r#"for example: {{"content-type": "application/json", "x-api-key": key}}"#,
+            r#"por ejemplo: {{"content-type": "application/json", "x-api-key": clave}}"#,
+        ),
+        (
+            "`{f}` is not available in the browser: the playground cannot make requests. Run the program on your computer: rythme file.ry",
+            "`{f}` no está disponible en el navegador: el playground no puede hacer peticiones. Ejecuta el programa en tu ordenador: rythme archivo.ry",
+        ),
+        (
+            r#"a web address starts with http:// or https://, not "{url}""#,
+            r#"una dirección web empieza por http:// o https://, no "{url}""#,
+        ),
+        (
+            "an address or a header cannot hold a line break or a control character, and a header name is a word without `:` or space",
+            "una dirección o una cabecera no puede contener un salto de línea ni un carácter de control, y el nombre de una cabecera es una palabra sin `:` ni espacio",
+        ),
+        ("the server answered {code}: {shown}{more}", "el servidor respondió {code}: {shown}{more}"),
+        (
+            "`{f}` needs the program `curl`, which comes with Windows 10, macOS and most Linux systems: install it (on Debian or Ubuntu: sudo apt install curl)",
+            "`{f}` necesita el programa `curl`, que viene con Windows 10, macOS y la mayoría de los sistemas Linux: instálalo (en Debian o Ubuntu: sudo apt install curl)",
+        ),
+        (
+            "server not found: {host} (no connection to the Internet, or a mistake in the address?)",
+            "servidor no encontrado: {host} (¿sin conexión a Internet, o un error en la dirección?)",
+        ),
+        ("could not connect to {host}: {said}", "no se pudo conectar con {host}: {said}"),
+        ("no answer from {host} in time (30 seconds)", "sin respuesta de {host} a tiempo (30 segundos)"),
+        (
+            "the secure connection (TLS) to {host} failed: {said}",
+            "la conexión segura (TLS) con {host} falló: {said}",
+        ),
+        ("the request to {host} failed: {said}", "la petición a {host} falló: {said}"),
+        ("The web: HTTP requests", "La web: peticiones HTTP"),
+        (
+            r#"Fetches a web address (http:// or https://): `Ok(text of the answer)`, or `Err(message)` when there is no network, the address is wrong, the server answers with an error (404...) or does not answer within 30 seconds. `headers` is a record of texts, like `{"accept": "application/json"}`. Uses the program curl; not available in the playground."#,
+            r#"Obtiene una dirección web (http:// o https://): `Ok(texto de la respuesta)`, o `Err(mensaje)` cuando no hay red, la dirección está mal, el servidor responde con un error (404...) o no responde en 30 segundos. `headers` es un registro de textos, como `{"accept": "application/json"}`. Usa el programa curl; no está disponible en el playground."#,
+        ),
+        (
+            r#"Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`. To call a web service or a language model: `http_post(url, to_json(request), {"content-type": "application/json"})`. Keep keys out of your code: read them with `env`."#,
+            r#"Envía un texto (a menudo JSON, hecho con `to_json`) a una dirección web y da `Ok(texto de la respuesta)` o `Err(mensaje)`, como `http_get`. Para llamar a un servicio web o a un modelo de lenguaje: `http_post(url, to_json(peticion), {"content-type": "application/json"})`. Deja las claves fuera de tu código: léelas con `env`."#,
+        ),
+        // docs/exercises: the exercises about artificial intelligence (31 to 36)
+        ("31-vectors", "31-vectores"),
+        (
+            r#"# Exercise 31 · Points as vectors  ★☆☆
+#
+# In machine learning, an example is a list of numbers: a vector. The
+# built-in functions `vector_add`, `vector_sub`, `vector_scale`, `dot` and
+# `norm` work on them, and always give Floats.
+#   vector_sub([5, 5], [1, 2])     # [4.0, 3.0]
+#   norm([3, 4])                   # 5.0
+#
+# Statement
+#   - `distance(a, b)`: the distance between the points a and b (the length
+#     of the vector from one to the other);
+#   - `midpoint(a, b)`: the point halfway between a and b;
+#   - `closest(points, p)`: the point of the list nearest to p.
+#
+# Hints
+#   1. `distance` is the `norm` of a difference.
+#   2. Halfway: add the two points, then scale by 0.5.
+#   3. `min_by(list, f)` gives the element for which f is the smallest.
+#
+# Check your work:  rythme exercise check 31-vectors.ry
+#              or:  rythme test 31-vectors.ry
+
+fn distance(a, b) = fail("to do")
+
+fn midpoint(a, b) = fail("to do")
+
+fn closest(points, p) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "distance"
+  assert_eq(distance([0, 0], [3, 4]), 5.0)
+  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+end
+
+test "midpoint"
+  assert_eq(midpoint([0, 0], [4, 2]), [2.0, 1.0])
+  assert_eq(midpoint([-1, 3], [1, 3]), [0.0, 3.0])
+end
+
+test "closest"
+  assert_eq(closest([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
+  assert_eq(closest([[2, 2]], [100, -100]), [2, 2])
+end
+"#,
+            r#"# Ejercicio 31 · Puntos como vectores  ★☆☆
+#
+# En aprendizaje automático, un ejemplo es una lista de números: un vector.
+# Las funciones integradas `vector_add`, `vector_sub`, `vector_scale`, `dot`
+# y `norm` trabajan con ellos, y siempre dan Floats.
+#   vector_sub([5, 5], [1, 2])     # [4.0, 3.0]
+#   norm([3, 4])                   # 5.0
+#
+# Enunciado
+#   - `distance(a, b)`: la distancia entre los puntos a y b (la longitud del
+#     vector que va de uno a otro);
+#   - `punto_medio(a, b)`: el punto a medio camino entre a y b;
+#   - `el_mas_cercano(puntos, p)`: el punto de la lista más cercano a p.
+#
+# Pistas
+#   1. `distance` es la `norm` de una diferencia.
+#   2. A medio camino: suma los dos puntos y multiplica por 0.5.
+#   3. `min_by(lista, f)` da el elemento para el que f es el más pequeño.
+#
+# Comprueba tu trabajo:  rythme exercise check 31-vectores.ry
+#                    o:  rythme test 31-vectores.ry
+
+fn distance(a, b) = fail("por hacer")
+
+fn punto_medio(a, b) = fail("por hacer")
+
+fn el_mas_cercano(puntos, p) = fail("por hacer")
+
+# --- Pruebas (no las cambies) ---
+
+test "distancia"
+  assert_eq(distance([0, 0], [3, 4]), 5.0)
+  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+end
+
+test "punto medio"
+  assert_eq(punto_medio([0, 0], [4, 2]), [2.0, 1.0])
+  assert_eq(punto_medio([-1, 3], [1, 3]), [0.0, 3.0])
+end
+
+test "el más cercano"
+  assert_eq(el_mas_cercano([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
+  assert_eq(el_mas_cercano([[2, 2]], [100, -100]), [2, 2])
+end
+"#,
+        ),
+        ("32-statistics", "32-estadistica"),
+        (
+            r#"# Exercise 32 · Statistics on data  ★★☆
+#
+# Before learning from data, look at it. `stats(xs)` gives a record with the
+# count, the mean, the median, the standard deviation, the min and the max:
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).mean       # 5.0
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).std_dev    # 2.0
+#
+# Statement
+#   - `standardize(xs)`: each number becomes its distance to the mean,
+#     counted in standard deviations: (x - mean) / std_dev;
+#   - `outliers(xs)`: the numbers more than 2 standard deviations away from
+#     the mean, in their order;
+#   - `accuracy(predictions, answers)`: the share (from 0.0 to 1.0) of the
+#     predictions equal to the answer at the same position.
+#
+# Hints
+#   1. Compute `stats(xs)` once, give it a name, then `map`.
+#   2. `abs` gives the distance whatever the side.
+#   3. `zip(a, b)` pairs the elements; `count` counts those that are right.
+#
+# Check your work:  rythme exercise check 32-statistics.ry
+#              or:  rythme test 32-statistics.ry
+
+fn standardize(xs) = fail("to do")
+
+fn outliers(xs) = fail("to do")
+
+fn accuracy(predictions, answers) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "standardize"
+  assert_eq(standardize([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "outliers"
+  assert_eq(outliers([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(outliers([1, 2, 3]), [])
+end
+
+test "accuracy"
+  assert_eq(accuracy(["cat", "dog", "cat", "cat"], ["cat", "dog", "dog", "cat"]), 0.75)
+  assert_eq(accuracy([1, 0], [0, 1]), 0.0)
+end
+"#,
+            r#"# Ejercicio 32 · Estadística sobre datos  ★★☆
+#
+# Antes de aprender de los datos, hay que mirarlos. `stats(xs)` da un
+# registro con la cantidad, la media, la mediana, la desviación típica, el
+# mínimo y el máximo:
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).mean       # 5.0
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).std_dev    # 2.0
+#
+# Enunciado
+#   - `estandarizar(xs)`: cada número se convierte en su distancia a la
+#     media, contada en desviaciones típicas: (x - media) / desviación;
+#   - `atipicos(xs)`: los números a más de 2 desviaciones típicas de la
+#     media, en su orden;
+#   - `exactitud(predicciones, respuestas)`: la proporción (de 0.0 a 1.0)
+#     de predicciones iguales a la respuesta en la misma posición.
+#
+# Pistas
+#   1. Calcula `stats(xs)` una vez, dale un nombre, y luego `map`.
+#   2. `abs` da la distancia sea cual sea el lado.
+#   3. `zip(a, b)` empareja los elementos; `count` cuenta los aciertos.
+#
+# Comprueba tu trabajo:  rythme exercise check 32-estadistica.ry
+#                    o:  rythme test 32-estadistica.ry
+
+fn estandarizar(xs) = fail("por hacer")
+
+fn atipicos(xs) = fail("por hacer")
+
+fn exactitud(predicciones, respuestas) = fail("por hacer")
+
+# --- Pruebas (no las cambies) ---
+
+test "estandarizar"
+  assert_eq(estandarizar([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "valores atípicos"
+  assert_eq(atipicos([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(atipicos([1, 2, 3]), [])
+end
+
+test "exactitud"
+  assert_eq(exactitud(["gato", "perro", "gato", "gato"], ["gato", "perro", "perro", "gato"]), 0.75)
+  assert_eq(exactitud([1, 0], [0, 1]), 0.0)
+end
+"#,
+        ),
+        ("33-neurons", "33-neuronas"),
+        (
+            r#"# Exercise 33 · An artificial neuron  ★★☆
+#
+# A neuron multiplies each input by a weight, adds them up with a bias, and
+# passes the sum through an activation function such as `sigmoid`, which
+# gives a number between 0 and 1.
+#   sigmoid(0)                     # 0.5
+#   dot([1, 2], [3, 4])            # 11.0
+#
+# Statement
+#   - `neuron(weights, bias, inputs)`: sigmoid(weights · inputs + bias);
+#   - `fires(weights, bias, inputs)`: true when the neuron gives 0.5 or more;
+#   - `layer(matrix, biases, inputs)`: a layer of neurons, one per row of the
+#     matrix (its weights) and per bias: the list of their outputs.
+#
+# Hints
+#   1. `dot` gives the weighted sum.
+#   2. `matmul(matrix, inputs)` computes every weighted sum of a layer at
+#      once; `vector_add` adds the biases; `map` applies `sigmoid`.
+#
+# Check your work:  rythme exercise check 33-neurons.ry
+#              or:  rythme test 33-neurons.ry
+
+fn neuron(weights, bias, inputs) = fail("to do")
+
+fn fires(weights, bias, inputs) = fail("to do")
+
+fn layer(matrix, biases, inputs) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "neuron"
+  assert_eq(neuron([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neuron([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "a neuron that computes AND"
+  assert(fires([10, 10], -15, [1, 1]))
+  assert(not fires([10, 10], -15, [1, 0]))
+  assert(not fires([10, 10], -15, [0, 0]))
+end
+
+test "layer"
+  outputs = layer([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(outputs, fn(x) = round(x, 3)), [0.5, 0.993])
+end
+"#,
+            r#"# Ejercicio 33 · Una neurona artificial  ★★☆
+#
+# Una neurona multiplica cada entrada por un peso, las suma con un sesgo, y
+# pasa la suma por una función de activación como `sigmoid`, que da un
+# número entre 0 y 1.
+#   sigmoid(0)                     # 0.5
+#   dot([1, 2], [3, 4])            # 11.0
+#
+# Enunciado
+#   - `neurona(pesos, sesgo, entradas)`: sigmoid(pesos · entradas + sesgo);
+#   - `se_activa(pesos, sesgo, entradas)`: true cuando la neurona da 0.5 o
+#     más;
+#   - `capa(matriz, sesgos, entradas)`: una capa de neuronas, una por fila
+#     de la matriz (sus pesos) y por sesgo: la lista de sus salidas.
+#
+# Pistas
+#   1. `dot` da la suma ponderada.
+#   2. `matmul(matriz, entradas)` calcula de una vez todas las sumas
+#      ponderadas de una capa; `vector_add` suma los sesgos; `map` aplica
+#      `sigmoid`.
+#
+# Comprueba tu trabajo:  rythme exercise check 33-neuronas.ry
+#                    o:  rythme test 33-neuronas.ry
+
+fn neurona(pesos, sesgo, entradas) = fail("por hacer")
+
+fn se_activa(pesos, sesgo, entradas) = fail("por hacer")
+
+fn capa(matriz, sesgos, entradas) = fail("por hacer")
+
+# --- Pruebas (no las cambies) ---
+
+test "neurona"
+  assert_eq(neurona([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neurona([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "una neurona que calcula Y"
+  assert(se_activa([10, 10], -15, [1, 1]))
+  assert(not se_activa([10, 10], -15, [1, 0]))
+  assert(not se_activa([10, 10], -15, [0, 0]))
+end
+
+test "capa"
+  salidas = capa([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(salidas, fn(x) = round(x, 3)), [0.5, 0.993])
+end
+"#,
+        ),
+        ("34-gradient-descent", "34-descenso-de-gradiente"),
+        (
+            r#"# Exercise 34 · Going down the slope  ★★☆
+#
+# A model learns by making its error smaller: it follows the slope of the
+# error downwards, one small step at a time. That is gradient descent.
+#   derivative(fn(x) = x * x, 3)                      # 6.0, the slope at 3
+#   gradient(fn([x, y]) = x * x + y * y, [1, 2])      # [2.0, 4.0]
+#
+# Statement
+#   - `step(f, x, rate)`: one step down from x: x - rate × (slope of f at x);
+#   - `descend(f, x, rate, steps)`: that many steps from x, one after the
+#     other; the point reached;
+#   - `descend_all(f, xs, rate, steps)`: the same with several numbers: each
+#     step is xs - rate × (gradient of f at xs).
+#
+# Hints
+#   1. `descend` calls itself with one step less, until 0 (or use `fold`
+#      over `1..steps`).
+#   2. `vector_sub` and `vector_scale` work on the list of numbers.
+#
+# Check your work:  rythme exercise check 34-gradient-descent.ry
+#              or:  rythme test 34-gradient-descent.ry
+
+fn step(f, x, rate) = fail("to do")
+
+fn descend(f, x, rate, steps) = fail("to do")
+
+fn descend_all(f, xs, rate, steps) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+fn parabola(x) = (x - 3) ** 2
+
+test "one step"
+  assert_eq(step(parabola, 0, 0.5), 3.0)
+  assert_eq(step(parabola, 1, 0.25), 2.0)
+end
+
+test "down to the bottom"
+  assert_eq(round(descend(parabola, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descend(parabola, 10, 0.1, 0), 10)
+end
+
+test "several numbers"
+  bowl = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descend_all(bowl, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end
+"#,
+            r#"# Ejercicio 34 · Bajar por la pendiente  ★★☆
+#
+# Un modelo aprende haciendo más pequeño su error: sigue la pendiente del
+# error hacia abajo, un pequeño paso cada vez. Es el descenso de gradiente.
+#   derivative(fn(x) = x * x, 3)                      # 6.0, la pendiente en 3
+#   gradient(fn([x, y]) = x * x + y * y, [1, 2])      # [2.0, 4.0]
+#
+# Enunciado
+#   - `paso(f, x, tasa)`: un paso hacia abajo desde x:
+#     x - tasa × (pendiente de f en x);
+#   - `descender(f, x, tasa, pasos)`: tantos pasos desde x, uno tras otro;
+#     el punto al que se llega;
+#   - `descender_todo(f, xs, tasa, pasos)`: lo mismo con varios números:
+#     cada paso da xs - tasa × (gradiente de f en xs).
+#
+# Pistas
+#   1. `descender` se llama a sí misma con un paso menos, hasta 0 (o usa
+#      `fold` sobre `1..pasos`).
+#   2. `vector_sub` y `vector_scale` trabajan con la lista de números.
+#
+# Comprueba tu trabajo:  rythme exercise check 34-descenso-de-gradiente.ry
+#                    o:  rythme test 34-descenso-de-gradiente.ry
+
+fn paso(f, x, tasa) = fail("por hacer")
+
+fn descender(f, x, tasa, pasos) = fail("por hacer")
+
+fn descender_todo(f, xs, tasa, pasos) = fail("por hacer")
+
+# --- Pruebas (no las cambies) ---
+
+fn parabola(x) = (x - 3) ** 2
+
+test "un paso"
+  assert_eq(paso(parabola, 0, 0.5), 3.0)
+  assert_eq(paso(parabola, 1, 0.25), 2.0)
+end
+
+test "hasta el fondo"
+  assert_eq(round(descender(parabola, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descender(parabola, 10, 0.1, 0), 10)
+end
+
+test "varios números"
+  cuenco = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descender_todo(cuenco, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end
+"#,
+        ),
+        ("35-nearest-neighbours", "35-vecinos-mas-cercanos"),
+        (
+            r#"# Exercise 35 · Nearest neighbours  ★★★
+#
+# To guess the label of a new point, look at the k known examples closest to
+# it, and take the label most of them have. Each example is a record:
+#   {point: [1.0, 2.0], label: "red"}
+#
+# Statement
+#   - `neighbours(examples, point, k)`: the k examples nearest to the point,
+#     from the nearest;
+#   - `majority(labels)`: the label that comes most often (the first one to
+#     reach that count, in the order of the list, when several tie);
+#   - `classify(examples, point, k)`: the label most of the k nearest
+#     neighbours have.
+#
+# Hints
+#   1. `sort_by` with the distance (`norm(vector_sub(a, b))`), then `take`.
+#   2. `count(labels, fn(l) = l == label)` counts one label; `max_by` keeps
+#      the first of the largest.
+#
+# Check your work:  rythme exercise check 35-nearest-neighbours.ry
+#              or:  rythme test 35-nearest-neighbours.ry
+
+fn neighbours(examples, point, k) = fail("to do")
+
+fn majority(labels) = fail("to do")
+
+fn classify(examples, point, k) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+garden = [
+  {point: [1, 1], label: "red"},
+  {point: [1, 2], label: "red"},
+  {point: [2, 1], label: "red"},
+  {point: [8, 8], label: "blue"},
+  {point: [9, 8], label: "blue"},
+  {point: [5, 5], label: "blue"},
+]
+
+test "neighbours"
+  assert_eq(neighbours(garden, [0, 0], 2) |> map(fn(e) = e.point), [[1, 1], [1, 2]])
+  assert_eq(len(neighbours(garden, [0, 0], 10)), 6)
+end
+
+test "majority"
+  assert_eq(majority(["a", "b", "b", "c"]), "b")
+  assert_eq(majority(["x", "y"]), "x")
+end
+
+test "classify"
+  assert_eq(classify(garden, [2, 2], 3), "red")
+  assert_eq(classify(garden, [7, 7], 3), "blue")
+  assert_eq(classify(garden, [4, 4], 1), "blue")
+end
+"#,
+            r#"# Ejercicio 35 · Los vecinos más cercanos  ★★★
+#
+# Para adivinar la etiqueta de un punto nuevo, mira los k ejemplos conocidos
+# más cercanos, y toma la etiqueta que tiene la mayoría. Cada ejemplo es un
+# registro:
+#   {punto: [1.0, 2.0], etiqueta: "rojo"}
+#
+# Enunciado
+#   - `vecinos(ejemplos, punto, k)`: los k ejemplos más cercanos al punto,
+#     del más cercano al menos cercano;
+#   - `mayoria(etiquetas)`: la etiqueta que más se repite (la primera en
+#     llegar a esa cantidad, en el orden de la lista, en caso de empate);
+#   - `clasificar(ejemplos, punto, k)`: la etiqueta que tiene la mayoría de
+#     los k vecinos más cercanos.
+#
+# Pistas
+#   1. `sort_by` con la distancia (`norm(vector_sub(a, b))`), y luego `take`.
+#   2. `count(etiquetas, fn(l) = l == etiqueta)` cuenta una etiqueta;
+#      `max_by` se queda con el primero de los mayores.
+#
+# Comprueba tu trabajo:  rythme exercise check 35-vecinos-mas-cercanos.ry
+#                    o:  rythme test 35-vecinos-mas-cercanos.ry
+
+fn vecinos(ejemplos, punto, k) = fail("por hacer")
+
+fn mayoria(etiquetas) = fail("por hacer")
+
+fn clasificar(ejemplos, punto, k) = fail("por hacer")
+
+# --- Pruebas (no las cambies) ---
+
+jardin = [
+  {punto: [1, 1], etiqueta: "rojo"},
+  {punto: [1, 2], etiqueta: "rojo"},
+  {punto: [2, 1], etiqueta: "rojo"},
+  {punto: [8, 8], etiqueta: "azul"},
+  {punto: [9, 8], etiqueta: "azul"},
+  {punto: [5, 5], etiqueta: "azul"},
+]
+
+test "vecinos"
+  assert_eq(vecinos(jardin, [0, 0], 2) |> map(fn(e) = e.punto), [[1, 1], [1, 2]])
+  assert_eq(len(vecinos(jardin, [0, 0], 10)), 6)
+end
+
+test "mayoría"
+  assert_eq(mayoria(["a", "b", "b", "c"]), "b")
+  assert_eq(mayoria(["x", "y"]), "x")
+end
+
+test "clasificar"
+  assert_eq(clasificar(jardin, [2, 2], 3), "rojo")
+  assert_eq(clasificar(jardin, [7, 7], 3), "azul")
+  assert_eq(clasificar(jardin, [4, 4], 1), "azul")
+end
+"#,
+        ),
+        ("36-minimax", "36-minimax"),
+        (
+            r#"# Exercise 36 · Playing perfectly: minimax  ★★★
+#
+# A game of Nim: there are n matches on the table; each player in turn takes
+# 1, 2 or 3 of them, and whoever takes the last match wins. Minimax decides
+# who wins with perfect play by imagining every move: the player to move
+# wins if one of their moves leaves the other player in a losing position.
+#
+# Statement
+#   - `moves(n)`: the possible numbers of matches to take (1, 2 or 3, but no
+#     more than n);
+#   - `wins(n)`: true when the player to move can always win from n matches
+#     (with 0 matches left, the player to move has already lost);
+#   - `best_move(n)`: `Some(m)`, where m is the smallest move that wins, or
+#     `None` when every move loses.
+#
+# Hints
+#   1. `filter(1..3, ...)` keeps the moves allowed.
+#   2. `wins(n)`: is there `any` move after which the other player does
+#      not win?
+#   3. `find` gives the first element that fits, as an Option.
+#
+# Check your work:  rythme exercise check 36-minimax.ry
+#              or:  rythme test 36-minimax.ry
+
+fn moves(n) = fail("to do")
+
+fn wins(n) = fail("to do")
+
+fn best_move(n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "moves"
+  assert_eq(moves(10), [1, 2, 3])
+  assert_eq(moves(2), [1, 2])
+  assert_eq(moves(0), [])
+end
+
+test "who wins"
+  assert_eq(map(0..8, wins), [false, true, true, true, false, true, true, true, false])
+end
+
+test "best move"
+  assert_eq(best_move(5), Some(1))
+  assert_eq(best_move(7), Some(3))
+  assert_eq(best_move(8), None)
+end
+"#,
+            r#"# Ejercicio 36 · Jugar perfectamente: el minimax  ★★★
+#
+# Una partida de Nim: hay n cerillas en la mesa; cada jugador, por turnos,
+# toma 1, 2 o 3, y quien toma la última cerilla gana. El minimax decide
+# quién gana jugando perfectamente imaginando todas las jugadas: el jugador
+# al que le toca gana si una de sus jugadas deja al otro en una posición
+# perdedora.
+#
+# Enunciado
+#   - `jugadas(n)`: las cantidades de cerillas que se pueden tomar (1, 2 o
+#     3, pero no más de n);
+#   - `gana(n)`: true cuando el jugador al que le toca puede ganar siempre
+#     con n cerillas (sin cerillas, el jugador al que le toca ya perdió);
+#   - `mejor_jugada(n)`: `Some(m)`, donde m es la jugada ganadora más
+#     pequeña, o `None` cuando todas las jugadas pierden.
+#
+# Pistas
+#   1. `filter(1..3, ...)` se queda con las jugadas permitidas.
+#   2. `gana(n)`: ¿hay alguna jugada (`any`) tras la cual el otro jugador no
+#      gana?
+#   3. `find` da el primer elemento que sirve, como Option.
+#
+# Comprueba tu trabajo:  rythme exercise check 36-minimax.ry
+#                    o:  rythme test 36-minimax.ry
+
+fn jugadas(n) = fail("por hacer")
+
+fn gana(n) = fail("por hacer")
+
+fn mejor_jugada(n) = fail("por hacer")
+
+# --- Pruebas (no las cambies) ---
+
+test "jugadas"
+  assert_eq(jugadas(10), [1, 2, 3])
+  assert_eq(jugadas(2), [1, 2])
+  assert_eq(jugadas(0), [])
+end
+
+test "quién gana"
+  assert_eq(map(0..8, gana), [false, true, true, true, false, true, true, true, false])
+end
+
+test "mejor jugada"
+  assert_eq(mejor_jugada(5), Some(1))
+  assert_eq(mejor_jugada(7), Some(3))
+  assert_eq(mejor_jugada(8), None)
+end
+"#,
+        ),
+        // src/help.rs: rythme help ml
+        (
+            r#"MACHINE LEARNING AND AI
+
+A vector is a list of numbers, a matrix a list of rows of the same length.
+These functions never change them: they give new lists, always of Floats.
+
+Vectors and matrices
+  dot([1, 2], [3, 4])            # 11.0
+  norm([3, 4])                   # 5.0, the length
+  vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # number by number
+  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  matmul(m, n)  matmul(m, v)     # product of matrices, or matrix by vector
+  transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
+  zip_with(xs, ys, f)            # f on the pairs, for anything else
+
+Neurons
+  sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # scores into probabilities
+
+Statistics
+  stats(xs)                      # {count, mean, median, std_dev, min, max}
+  variance(xs)  std_dev(xs)  percentile(xs, 90)  argmax(xs)  argmin(xs)
+  normalize(xs)                  # from 0.0 (smallest) to 1.0 (largest)
+
+Chance, the same on every run after random_seed(n)
+  random_normal(0, 1)  random_choice_weighted(xs, weights)
+  train_test_split(examples, 0.8)    # {train, test}
+
+Slopes, for gradient descent (central differences, about 9 digits)
+  derivative(fn(x) = x * x, 3)               # 6.0
+  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+
+Charts as text
+  print(plot(losses))  print(plot(xs, ys))  print(histogram(heights))
+
+The web and language models
+  http_get(url)  http_post(url, body, headers)   # Ok(text) or Err(message)
+  Keep API keys out of the code: env("ANTHROPIC_API_KEY"). The example
+  examples/ask_claude.ry asks Claude a question with http_post and JSON.
+
+A mistake of shape names both shapes ("cannot multiply a 2×3 matrix by a
+2×2 matrix"). Programs to read: the examples linear_regression, perceptron,
+xor_network, kmeans, knn, naive_bayes, markov, tictactoe, pathfinding and
+genetic; exercises 31 to 36 (rythme exercise list)."#,
+            r#"APRENDIZAJE AUTOMÁTICO E IA
+
+Un vector es una lista de números, una matriz una lista de filas de la misma
+longitud. Estas funciones nunca los cambian: dan listas nuevas, siempre de
+Floats.
+
+Vectores y matrices
+  dot([1, 2], [3, 4])            # 11.0
+  norm([3, 4])                   # 5.0, la longitud
+  vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # número a número
+  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  matmul(m, n)  matmul(m, v)     # producto de matrices, o matriz por vector
+  transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
+  zip_with(xs, ys, f)            # f sobre los pares, para todo lo demás
+
+Neuronas
+  sigmoid(x)  tanh(x)  relu(x)   softmax(puntuaciones)   # en probabilidades
+
+Estadística
+  stats(xs)                      # {count, mean, median, std_dev, min, max}
+  variance(xs)  std_dev(xs)  percentile(xs, 90)  argmax(xs)  argmin(xs)
+  normalize(xs)                  # de 0.0 (el más pequeño) a 1.0 (el más grande)
+
+El azar, el mismo en cada ejecución tras random_seed(n)
+  random_normal(0, 1)  random_choice_weighted(xs, pesos)
+  train_test_split(ejemplos, 0.8)    # {train, test}
+
+Pendientes, para el descenso de gradiente (diferencias centradas, unas 9 cifras)
+  derivative(fn(x) = x * x, 3)               # 6.0
+  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+
+Gráficos de texto
+  print(plot(perdidas))  print(plot(xs, ys))  print(histogram(alturas))
+
+La web y los modelos de lenguaje
+  http_get(url)  http_post(url, cuerpo, cabeceras)   # Ok(texto) o Err(mensaje)
+  Deja las claves de API fuera del código: env("ANTHROPIC_API_KEY"). El
+  ejemplo examples/ask_claude.ry hace una pregunta a Claude con http_post y
+  JSON.
+
+Un error de forma nombra las dos formas ("no puede multiplicar una matriz
+2×3 por una matriz 2×2"). Programas para leer: los ejemplos
+linear_regression, perceptron, xor_network, kmeans, knn, naive_bayes, markov,
+tictactoe, pathfinding y genetic; los ejercicios 31 a 36 (rythme exercise
+list)."#,
+        ),
     ],
 }

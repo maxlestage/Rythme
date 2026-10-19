@@ -149,7 +149,7 @@ fn manual_samples(manual: &str) -> Vec<(usize, String)> {
                 j += 1;
             }
             let code = lines[start..j].join("\n");
-            let outside = ["file", "random", "shuffle", "now(", "today(", "time(", "input(", "args(", "env(", "exit(", "use "];
+            let outside = ["file", "random", "shuffle", "now(", "today(", "time(", "input(", "args(", "env(", "exit(", "use ", "http_"];
             if !outside.iter().any(|w| code.contains(w)) {
                 out.push((start, code));
             }

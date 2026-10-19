@@ -107,10 +107,41 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   `rythme run --seed N file.ry` does it for the whole run. Same seed, same
   version of Rythme: same draws. Without a seed nothing changes.
   `rythme help random`, the manual (6, *Chance and seeds*, and 7.1).
-- 178 built-in functions. Names from other languages point to the new ones
-  (`parse_csv`, `DictReader`, `to_csv`, `srand`...). As the stability
-  promise says, a function of a program with one of these names stays its
-  own (W003).
+- **Numbers for machine learning**, over lists: vectors are lists of
+  numbers, matrices lists of rows. `dot`, `norm`, `vector_add`,
+  `vector_sub`, `vector_mul`, `vector_scale` (vectors or matrices of the same
+  shape), `zip_with`, `matmul` (by a matrix or a vector), `transpose`,
+  `zeros`, `ones`, `identity_matrix`, `shape`; `sigmoid`, `tanh`, `relu`,
+  `softmax`; `stats` (a record: count, mean, median, std_dev, min, max),
+  `variance`, `std_dev`, `percentile`, `argmax`, `argmin`, `normalize`;
+  `random_normal`, `random_choice_weighted` and `train_test_split`, which
+  follow `random_seed`. Computed in Rust (a product of 100×100 matrices
+  takes about 0.4 ms), given back as Floats. A mistake of shape names both
+  shapes; empty or ragged lists, `nan` and deep nesting never crash.
+  `mean`, `median` and `average`, which exercises and examples define, stay
+  free: `stats(xs).mean`, `percentile(xs, 50)`.
+- **Slopes**: `derivative(f, x)` and `gradient(f, xs)`, by central
+  differences, keeping only the digits the calculation makes sure of
+  (`derivative(fn(x) = x * x, 3)` is `6.0`).
+- **Charts as text**: `plot(ys)`, `plot(xs, ys)` and `histogram(xs, bars)`
+  give a text to print, lined up by display width, the same everywhere.
+- **HTTP requests**: `http_get(url, headers)` and `http_post(url, body,
+  headers)` give `Ok(text)` or `Err(message)` (no network, a wrong address,
+  an error status, a 30-second timeout, TLS). They run the program curl, as
+  `rythme install` runs git: no new dependency; the address, the headers and
+  the body go through its standard input, never its command line. In the
+  playground, an `Err` says they are not available.
+- `rythme help ml` (also `ai`, `ia`, `ki`...), the manual (6, *Machine
+  learning*, *Charts as text*, *The web*), `bench/ml.ry`, ten AI examples
+  (linear regression, perceptron, a network learning XOR, k-means, k nearest
+  neighbours, naive Bayes, a Markov chain, minimax, breadth-first search, a
+  genetic algorithm) and `examples/ask_claude.ry` (a language model asked
+  through its HTTP API, with a key read by `env`), and six AI exercises
+  (31 to 36) in every language of `rythme exercise`.
+- 211 built-in functions. Names from other languages point to the new ones
+  (`parse_csv`, `DictReader`, `to_csv`, `srand`, `median`, `stdev`, `eye`,
+  `randn`, `logistic`...). As the stability promise says, a function of a
+  program with one of these names stays its own (W003).
 
 ### Tools
 

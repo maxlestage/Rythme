@@ -2988,7 +2988,7 @@ with examples; the code may be written in lowercase.
 
 ## 6. Standard library
 
-The 178 built-in functions are always available, without `use`. Like the
+The 211 built-in functions are always available, without `use`. Like the
 keywords, their names are in English. `rythme help builtins` lists all of
 them by category, one line each; `rythme help NAME` (or `help(NAME)` in a
 program, or `:doc NAME` in the REPL) shows the documentation of one, with
@@ -3335,6 +3335,132 @@ and the generators `ints(min, max)`, `floats(min, max)`, `texts(max_length)`,
 `records_of(fields)` (see [4.8](#48-tests)). A generator is a record like
 `{generator: "ints", min: 1, max: 6}`; one that is not well made stops
 `check_all` and `sample` with E023.
+
+**Machine learning.** Vectors are lists of numbers, matrices lists of rows
+of the same length: the functions of this category take them as they are and
+give new lists, always of Floats (whole numbers of any size count as
+numbers). `dot`, `norm`, `vector_add`, `vector_sub` and `vector_mul` (number
+by number, on two vectors or two matrices of the same shape),
+`vector_scale(x, k)`, `zip_with(xs, ys, f)` (a list function: any `f` on the
+pairs), `matmul(a, b)` (a matrix by a matrix, or by a vector, which gives a
+vector), `transpose`, `zeros(n)` and `zeros(rows, columns)`, `ones`,
+`identity_matrix(n)`, `shape` (the length at each level: `[2, 3]` for 2 rows
+of 3 numbers); `sigmoid`, `tanh`, `relu`, `softmax`; `stats(xs)` (a record
+`{count, mean, median, std_dev, min, max}`), `variance` and `std_dev` (of
+the whole population: divided by n), `percentile(xs, p)` (p from 0 to 100,
+between the two closest numbers in proportion, as spreadsheets do),
+`argmax`, `argmin` (the first position of the largest or smallest number),
+`normalize` (from 0.0 for the smallest to 1.0 for the largest). The names
+`mean`, `median` and `average` are left to programs, which often define
+them: `stats(xs).mean` and `percentile(xs, 50)` give them.
+`random_normal(mean, sd)`, `random_choice_weighted(xs, weights)` and
+`train_test_split(xs, share)` (a record `{train, test}`, after a shuffle)
+follow `random_seed` like `random`.
+
+`derivative(f, x)` and `gradient(f, xs)` compute slopes by central
+differences, (f(x + h) − f(x − h)) / 2h with h = 0.00001 × max(1, |x|). The
+same formula with 2h estimates the error of the first one, and only the
+digits that it and the rounding of the values of f leave sure are kept:
+about 9 significant digits for a smooth function, so that
+`derivative(fn(x) = x * x, 3)` is `6.0` and `derivative(exp, 1)` is
+`2.718281829`. The slopes are numerical, not symbolic: f is called four
+times per number, and an error of f (`sqrt` below 0) is its own.
+
+```rythme
+w = [[1, 2], [3, 4]]
+print(matmul(w, [1, 1]), transpose(w), shape(w))
+print(stats([2, 4, 4, 4, 5, 5, 7, 9]))
+print(softmax([1, 2, 3]) |> map(fn(p) = round(p, 2)), argmax([0.1, 0.7, 0.2]))
+print(derivative(fn(x) = x ** 3, 2), gradient(fn([x, y]) = x * y, [3, 4]))
+```
+
+```text
+[3.0, 7.0] [[1.0, 3.0], [2.0, 4.0]] [2, 2]
+{count: 8, mean: 5.0, median: 4.5, std_dev: 2.0, min: 2.0, max: 9.0}
+[0.09, 0.24, 0.67] 1
+12.0 [4.0, 3.0]
+```
+
+Two values of different shapes stop the program with E023, and the message
+names both shapes; an element that is not a number is E005, with its
+position. No value makes these functions crash: empty and ragged lists are
+errors with a message, `nan` is never chosen by `argmax` or `argmin`, and
+lists nested more than 64 levels deep are refused.
+
+```rythme
+vector_add([1, 2, 3], [[1, 2], [3, 4]])
+```
+
+```text
+error[E023]: `vector_add` needs two values of the same shape, but got a vector of 3 number(s) and a 2×2 matrix
+ --> sample.ry:1:1
+  |
+1 | vector_add([1, 2, 3], [[1, 2], [3, 4]])
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: `shape(x)` gives the shape of a vector or a matrix: [3] or [2, 3]
+  = more about this error: `rythme explain E023`
+```
+
+**Charts as text.** `plot(ys)` draws the numbers of a list at the positions
+0, 1, 2..., and `plot(xs, ys)` the points (x, y), on a grid of 50 columns and
+11 lines, with the largest, middle and smallest values on the vertical axis
+and the extremes of x below; `histogram(xs, bars)` counts how many numbers
+fall in each of `bars` intervals of the same width (10 if not given) and
+draws a horizontal bar for each, in eighths of a column. Both give a text, to
+`print`: the same in a terminal, the playground and a test, the same numbers
+always giving the same drawing. Numbers that are not finite are left out; a
+list without any finite number is E023.
+
+```rythme
+heights = [1.52, 1.60, 1.63, 1.68, 1.70, 1.71, 1.75, 1.80, 1.66, 1.72]
+print(histogram(heights, 4))
+print(plot(map(0..20, fn(i) = 10 / (i + 1))))
+```
+
+```text
+1.52 – 1.59 │██████████ 1
+1.59 – 1.66 │██████████████████████████████ 3
+1.66 – 1.73 │████████████████████████████████████████ 4
+1.73 –  1.8 │████████████████████ 2
+  10 ┤•
+     │
+     │
+     │
+     │
+5.24 ┤  •
+     │
+     │     •
+     │       •  •
+     │            •  • •  • •
+0.48 ┤                         • • •  • •  • •  • •  • •
+     └──────────────────────────────────────────────────
+      0                                               20
+```
+
+**The web.** `http_get(url, headers)` and `http_post(url, body, headers)`
+give `Ok(text of the answer)`, or `Err(message)` when there is no network,
+the address is wrong, the server answers with an error status (the message
+starts with it: `the server answered 404: ...`), it does not answer within
+30 seconds (10 to connect), or the secure connection fails. `headers` is a
+record (or a dict) of texts, like `{"content-type": "application/json"}`;
+`body` is a text, often made with `to_json`. Only `http://` and `https://`
+addresses are accepted, redirections included. The requests are made by the
+program curl, which Windows 10 and later, macOS and most Linux systems have
+(otherwise, an `Err` says how to install it): the address, the headers and
+the body are given to it on its standard input, never on its command line,
+so that an API key stays out of the list of processes. Keep keys out of the
+code too: read them with `env`. In the playground, both give an `Err`.
+[`examples/ask_claude.ry`](../examples/ask_claude.ry) asks a question to a
+language model this way.
+
+```rythme
+print(http_get("ftp://example.com/data.csv"))
+```
+
+```text
+Err("a web address starts with http:// or https://, not \"ftp://example.com/data.csv\"")
+```
 
 **Ruby names.** Some functions have a second name, the one Ruby gives them.
 Each one is exactly the function it names (same arguments, same messages):

@@ -1,0 +1,53 @@
+# A small neural network learns XOR, which no single neuron can learn:
+# 2 inputs, 2 hidden neurons, 1 output, all with the sigmoid. It learns by
+# backpropagation: the error of the output is sent back through the
+# network, and every weight moves a little against its share of the error.
+
+data = [[[0, 0], [0]], [[0, 1], [1]], [[1, 0], [1]], [[1, 1], [0]]]
+
+# Random weights to start with: the same ones on every run. (With
+# `random_seed(2)`, the network gets stuck halfway: try it.)
+random_seed(1)
+
+fn random_matrix(rows, columns) = map(1..rows, fn(_) = map(1..columns, fn(_) = random_normal(0, 1)))
+
+start = {w1: random_matrix(2, 2), b1: [0, 0], w2: random_matrix(1, 2), b2: [0]}
+
+## The hidden layer and the output of the network for the inputs x.
+fn forward(net, x)
+  hidden = map(vector_add(matmul(net.w1, x), net.b1), sigmoid)
+  {hidden, output: map(vector_add(matmul(net.w2, hidden), net.b2), sigmoid)}
+end
+
+## The slope of the sigmoid, from its value s: s × (1 - s).
+fn slope(values) = map(values, fn(s) = s * (1 - s))
+
+## Every product a[i] × b[j]: how much each weight took part.
+fn outer(a, b) = map(a, fn(x) = vector_scale(b, x))
+
+rate = 2.0
+
+## One example: forward, then the errors backwards, then the new weights.
+fn learn(net, [x, target])
+  layers = forward(net, x)
+  out_error = vector_mul(vector_sub(layers.output, target), slope(layers.output))
+  hidden_error = vector_mul(matmul(transpose(net.w2), out_error), slope(layers.hidden))
+  {
+    w1: vector_sub(net.w1, vector_scale(outer(hidden_error, x), rate)),
+    b1: vector_sub(net.b1, vector_scale(hidden_error, rate)),
+    w2: vector_sub(net.w2, vector_scale(outer(out_error, layers.hidden), rate)),
+    b2: vector_sub(net.b2, vector_scale(out_error, rate)),
+  }
+end
+
+fn loss(net) = sum(data, fn([x, target]) = (forward(net, x).output[0] - target[0]) ** 2) / len(data)
+
+## Rounds over the four examples, showing the error from time to time.
+fn train(net, round)
+  if round % 200 == 0 then print("round {pad_left(round, 4)}: error {text(loss(net), 4)}") else ()
+  if round == 600 then net else train(fold(data, net, learn), round + 1)
+end
+
+net = train(start, 0)
+print()
+data |> each(fn([x, target]) = print("{x[0]} xor {x[1]} = {target[0]}, the network says {text(forward(net, x).output[0], 3)}"))

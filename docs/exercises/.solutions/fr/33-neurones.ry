@@ -1,0 +1,26 @@
+# Exercice 33 · Un neurone artificiel  ★★☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn neurone(poids, biais, entrees) = sigmoid(dot(poids, entrees) + biais)
+
+fn s_active(poids, biais, entrees) = neurone(poids, biais, entrees) >= 0.5
+
+fn couche(matrice, biais_de, entrees) = map(vector_add(matmul(matrice, entrees), biais_de), sigmoid)
+
+# --- Tests (ne les modifiez pas) ---
+
+test "neurone"
+  assert_eq(neurone([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neurone([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "un neurone qui calcule ET"
+  assert(s_active([10, 10], -15, [1, 1]))
+  assert(not s_active([10, 10], -15, [1, 0]))
+  assert(not s_active([10, 10], -15, [0, 0]))
+end
+
+test "couche"
+  sorties = couche([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(sorties, fn(x) = round(x, 3)), [0.5, 0.993])
+end

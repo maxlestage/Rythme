@@ -70,7 +70,7 @@ test "négatifs" = assert_eq(plus_grand([-3, -1, -2]), -1)
 `rythme test exercice.ry` indique ce qui réussit et, pour chaque échec, les
 valeurs attendue et obtenue.
 
-Trente exercices de ce genre sont prêts : [**les exercices**](exercises/README.fr.md),
+Trente-six exercices de ce genre sont prêts : [**les exercices**](exercises/README.fr.md),
 gradués de ★☆☆ à ★★★ et qui suivent le cours ci-dessus, chacun avec un
 énoncé, des indices et des tests, dans chaque langue des messages (français,
 anglais, espagnol, allemand, portugais, chinois), avec des solutions de

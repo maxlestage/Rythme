@@ -1263,6 +1263,133 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 need(a, 0, Expected::Record)?;
                 generator_ty(&["fields"])
             }
+            // ----- machine learning: numbers come back as Floats -----
+            "tanh" | "sigmoid" | "relu" => {
+                need(a, 0, Expected::Number)?;
+                Ty::Float
+            }
+            "dot" => {
+                need(a, 0, Expected::List)?;
+                need(a, 1, Expected::List)?;
+                Ty::Float
+            }
+            "norm" | "variance" | "std_dev" => {
+                need(a, 0, Expected::List)?;
+                Ty::Float
+            }
+            "stats" => {
+                need(a, 0, Expected::List)?;
+                let float = |k: &str| (Rc::from(k), Ty::Float);
+                Ty::record(
+                    vec![(Rc::from("count"), Ty::Int), float("mean"), float("median"), float("std_dev"), float("min"), float("max")],
+                    true,
+                )
+            }
+            // Numbers, vectors or matrices: lists of the same shape give a list.
+            "vector_add" | "vector_sub" | "vector_mul" => match (arg(0), arg(1)) {
+                (Ty::List(_), _) | (_, Ty::List(_)) => Ty::list(Ty::Any),
+                _ => Ty::Any,
+            },
+            "vector_scale" => {
+                need(a, 0, Expected::List)?;
+                need(a, 1, Expected::Number)?;
+                Ty::list(Ty::Any)
+            }
+            "zip_with" => {
+                need(a, 0, Expected::List)?;
+                need(a, 1, Expected::List)?;
+                need(a, 2, Expected::Function)?;
+                Ty::list(arg(2).ret())
+            }
+            "matmul" => {
+                need(a, 0, Expected::List)?;
+                need(a, 1, Expected::List)?;
+                Ty::list(Ty::Any)
+            }
+            "transpose" => {
+                need(a, 0, Expected::List)?;
+                Ty::list(Ty::list(Ty::Float))
+            }
+            "zeros" | "ones" => {
+                need(a, 0, Expected::Int)?;
+                need(a, 1, Expected::Int)?;
+                if n == 1 {
+                    Ty::list(Ty::Float)
+                } else {
+                    Ty::list(Ty::list(Ty::Float))
+                }
+            }
+            "identity_matrix" => {
+                need(a, 0, Expected::Int)?;
+                Ty::list(Ty::list(Ty::Float))
+            }
+            "shape" => {
+                need(a, 0, Expected::List)?;
+                Ty::list(Ty::Int)
+            }
+            "percentile" => {
+                need(a, 0, Expected::List)?;
+                need(a, 1, Expected::Number)?;
+                Ty::Float
+            }
+            "argmax" | "argmin" => {
+                need(a, 0, Expected::List)?;
+                Ty::Int
+            }
+            "softmax" | "normalize" => {
+                need(a, 0, Expected::List)?;
+                Ty::list(Ty::Float)
+            }
+            "random_normal" => {
+                need(a, 0, Expected::Number)?;
+                need(a, 1, Expected::Number)?;
+                Ty::Float
+            }
+            "random_choice_weighted" => {
+                need(a, 0, Expected::List)?;
+                need(a, 1, Expected::List)?;
+                arg(0).elem()
+            }
+            "derivative" => {
+                need(a, 0, Expected::Function)?;
+                need(a, 1, Expected::Number)?;
+                Ty::Float
+            }
+            "gradient" => {
+                need(a, 0, Expected::Function)?;
+                need(a, 1, Expected::List)?;
+                Ty::list(Ty::Float)
+            }
+            "plot" => {
+                need(a, 0, Expected::List)?;
+                need(a, 1, Expected::List)?;
+                Ty::Text
+            }
+            "histogram" => {
+                need(a, 0, Expected::List)?;
+                need(a, 1, Expected::Int)?;
+                Ty::Text
+            }
+            "http_get" => {
+                need(a, 0, Expected::Text)?;
+                need(a, 1, Expected::RecordOrDict)?;
+                Ty::result(Ty::Text, Ty::Text)
+            }
+            "http_post" => {
+                need(a, 0, Expected::Text)?;
+                need(a, 1, Expected::Text)?;
+                need(a, 2, Expected::RecordOrDict)?;
+                Ty::result(Ty::Text, Ty::Text)
+            }
+            "train_test_split" => {
+                need(a, 0, Expected::List)?;
+                need(a, 1, Expected::Number)?;
+                let part = match arg(0) {
+                    t @ Ty::List(_) => t,
+                    _ => Ty::list(Ty::Any),
+                };
+                Ty::record(vec![(Rc::from("train"), part.clone()), (Rc::from("test"), part)], true)
+            }
             _ => return Err(Outcome::Gives(Ty::Any)),
         })
     })();
@@ -1342,6 +1469,9 @@ pub fn callback(name: &str, index: usize, a: &[Ty]) -> Option<Callback> {
             Ty::Data(d) if d.kind() == RESULT => (vec![error_of(d)], None),
             _ => (vec![Ty::Any], None),
         },
+        ("derivative", 0) => (vec![Ty::Float], None),
+        ("gradient", 0) => (vec![Ty::list(Ty::Float)], None),
+        ("zip_with", 2) => (vec![elem, a.get(1).cloned().unwrap_or(Ty::Any).elem()], None),
         _ => return None,
     };
     Some(Callback { params, returns })

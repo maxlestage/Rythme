@@ -1,0 +1,35 @@
+# Asking a language model a question: Claude, by Anthropic, through its
+# Messages API, with `http_post`, `to_json` and `parse_json`. Nothing here is
+# built in: `ask_claude` is an ordinary function, errors are values.
+#
+# It needs an API key (https://console.anthropic.com). Keep it out of the
+# code: put it in an environment variable, then give the question after the
+# file name:
+#   export ANTHROPIC_API_KEY=sk-ant-...      (Windows: set ANTHROPIC_API_KEY=...)
+#   rythme ask_claude.ry "What is a perceptron, in two sentences?"
+# The key is read with `env` and sent in a header; it is never printed.
+# Without a question, the program only says how to use it.
+
+api = "https://api.anthropic.com/v1/messages"
+model = "claude-sonnet-5-5"
+
+## The text of the answer of Claude to `prompt`, or why there is none.
+fn ask_claude(prompt)
+  key = env("ANTHROPIC_API_KEY") |> ok_or("set the environment variable ANTHROPIC_API_KEY to your API key")?
+  request = {model, max_tokens: 1024, messages: [{role: "user", content: prompt}]}
+  headers = {"x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json"}
+  reply = http_post(api, to_json(request), headers)? |> parse_json?
+  if reply.stop_reason == "refusal" then
+    Err("Claude declined to answer this question")
+  else
+    reply.content |> filter(fn(part) = part["type"] == "text") |> map(fn(part) = part.text) |> join("") |> Ok
+end
+
+match args()
+  [] -> print("Usage: rythme ask_claude.ry \"your question\"   (with ANTHROPIC_API_KEY set)")
+  words ->
+    match ask_claude(join(words, " "))
+      Ok(answer) -> print(answer)
+      Err(why) -> print("No answer: {why}")
+    end
+end

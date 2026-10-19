@@ -1,0 +1,35 @@
+# Exercício 35 · Os vizinhos mais próximos  ★★★
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn vizinhos(exemplos, ponto, k) = exemplos |> sort_by(fn(e) = norm(vector_sub(e.ponto, ponto))) |> take(k)
+
+fn maioria(rotulos) = max_by(rotulos, fn(rotulo) = count(rotulos, fn(l) = l == rotulo))
+
+fn classificar(exemplos, ponto, k) = vizinhos(exemplos, ponto, k) |> map(fn(e) = e.rotulo) |> maioria
+
+# --- Testes (não os altere) ---
+
+jardim = [
+  {ponto: [1, 1], rotulo: "vermelho"},
+  {ponto: [1, 2], rotulo: "vermelho"},
+  {ponto: [2, 1], rotulo: "vermelho"},
+  {ponto: [8, 8], rotulo: "azul"},
+  {ponto: [9, 8], rotulo: "azul"},
+  {ponto: [5, 5], rotulo: "azul"},
+]
+
+test "vizinhos"
+  assert_eq(vizinhos(jardim, [0, 0], 2) |> map(fn(e) = e.ponto), [[1, 1], [1, 2]])
+  assert_eq(len(vizinhos(jardim, [0, 0], 10)), 6)
+end
+
+test "maioria"
+  assert_eq(maioria(["a", "b", "b", "c"]), "b")
+  assert_eq(maioria(["x", "y"]), "x")
+end
+
+test "classificar"
+  assert_eq(classificar(jardim, [2, 2], 3), "vermelho")
+  assert_eq(classificar(jardim, [7, 7], 3), "azul")
+  assert_eq(classificar(jardim, [4, 4], 1), "azul")
+end

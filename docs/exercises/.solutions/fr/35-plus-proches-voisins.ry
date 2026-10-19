@@ -1,0 +1,35 @@
+# Exercice 35 · Les plus proches voisins  ★★★
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn voisins(exemples, point, k) = exemples |> sort_by(fn(e) = norm(vector_sub(e.point, point))) |> take(k)
+
+fn majorite(etiquettes) = max_by(etiquettes, fn(etiquette) = count(etiquettes, fn(l) = l == etiquette))
+
+fn classer(exemples, point, k) = voisins(exemples, point, k) |> map(fn(e) = e.etiquette) |> majorite
+
+# --- Tests (ne les modifiez pas) ---
+
+jardin = [
+  {point: [1, 1], etiquette: "rouge"},
+  {point: [1, 2], etiquette: "rouge"},
+  {point: [2, 1], etiquette: "rouge"},
+  {point: [8, 8], etiquette: "bleu"},
+  {point: [9, 8], etiquette: "bleu"},
+  {point: [5, 5], etiquette: "bleu"},
+]
+
+test "voisins"
+  assert_eq(voisins(jardin, [0, 0], 2) |> map(fn(e) = e.point), [[1, 1], [1, 2]])
+  assert_eq(len(voisins(jardin, [0, 0], 10)), 6)
+end
+
+test "majorité"
+  assert_eq(majorite(["a", "b", "b", "c"]), "b")
+  assert_eq(majorite(["x", "y"]), "x")
+end
+
+test "classer"
+  assert_eq(classer(jardin, [2, 2], 3), "rouge")
+  assert_eq(classer(jardin, [7, 7], 3), "bleu")
+  assert_eq(classer(jardin, [4, 4], 1), "bleu")
+end

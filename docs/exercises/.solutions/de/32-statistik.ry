@@ -1,0 +1,30 @@
+# Übung 32 · Statistik über Daten  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn standardisieren(xs)
+  s = stats(xs)
+  map(xs, fn(x) = (x - s.mean) / s.std_dev)
+end
+
+fn ausreisser(xs)
+  s = stats(xs)
+  filter(xs, fn(x) = abs(x - s.mean) > 2 * s.std_dev)
+end
+
+fn genauigkeit(vorhersagen, antworten) = count(zip(vorhersagen, antworten), fn([p, a]) = p == a) / len(antworten)
+
+# --- Tests (nicht verändern) ---
+
+test "standardisieren"
+  assert_eq(standardisieren([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "Ausreißer"
+  assert_eq(ausreisser([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(ausreisser([1, 2, 3]), [])
+end
+
+test "Genauigkeit"
+  assert_eq(genauigkeit(["Katze", "Hund", "Katze", "Katze"], ["Katze", "Hund", "Hund", "Katze"]), 0.75)
+  assert_eq(genauigkeit([1, 0], [0, 1]), 0.0)
+end
