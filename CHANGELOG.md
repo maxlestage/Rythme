@@ -164,6 +164,28 @@ dit ce qu'une version 1.x peut changer ou non.*
   (`&mode=steps&step=3`, with `&expr=` for a selected piece of code), and the
   tour of *Learn* opens on the steps of `fib(4)`. Offline too, in the six
   languages of the site.
+- **Truly mobile first, as real phones show it**: nothing scrolls sideways any
+  more with the text enlarged (Android's font size, Safari's and Chrome's text
+  zoom), the page zoomed (down to a window of 180px), in landscape or with the
+  keyboard open. Every word may break where the layout needs it (titles and
+  buttons too), every one-column grid is `minmax(0, 1fr)` (a select, a field
+  or a long seed widened the page), the language menu hangs under the bar and
+  scrolls when the screen is short, the tools of the editor and the banners
+  wrap, runs of spaces in an output wrap, deep code lines keep room to wrap.
+  The editor's text is 16px on every touch screen, landscape included: iOS
+  zoomed into it at 14px and the page then scrolled sideways. Every control is
+  44px at least for a finger; the bar stops sticking on short screens,
+  titles shrink with the height in landscape, the editor fits above the
+  keyboard, and opening the playground no longer scrolls the page by itself.
+  The media queries only add room (`min-width`, `min-height`).
+  `tests/pwa/mobile.js` (run by CI) checks all of it on emulated phones, in
+  every language and page, with every menu and panel open.
+- **The installed app updates itself**: a new version found when the app opens
+  or comes back, before anything is touched, comes in by itself; so does a new
+  version waiting when the app goes to the background with no field being
+  edited, and at the next launch. The banner stays for the other cases, and
+  nothing reloads while something is being typed. Pages are revalidated with
+  the server by the service worker (GitHub Pages kept them 10 minutes).
 
 ## [1.0.0] - 2026-10-18
 
