@@ -1,6 +1,8 @@
 //! The reference manual shows real output: every ```rythme block followed by a
 //! ```text block is run, and must print exactly that text (docs/reference.md in
-//! English, docs/reference.fr.md in French).
+//! English, docs/reference.fr.md in French). A session of the debugger
+//! (`$ rythme debug fact.ry`, then the commands after its prompt `(debug) `)
+//! is typed again, and must print exactly the same.
 
 use std::fs::File;
 use std::path::PathBuf;
@@ -82,6 +84,11 @@ fn normalize(text: &str) -> String {
 }
 
 fn run(lang: &str, command: Option<&str>, name: &str, code: &str) -> String {
+    run_typing(lang, command, name, code, None)
+}
+
+/// Like `run`, with `input` typed on the standard input.
+fn run_typing(lang: &str, command: Option<&str>, name: &str, code: &str, input: Option<&str>) -> String {
     let dir = std::env::temp_dir().join(format!("rythme-manual-{}-{lang}-{}", std::process::id(), name.trim_end_matches(".ry")));
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join(name), format!("{code}\n")).unwrap();
@@ -95,7 +102,13 @@ fn run(lang: &str, command: Option<&str>, name: &str, code: &str) -> String {
         .args(&args)
         .current_dir(&dir)
         .env("NO_COLOR", "1")
-        .stdin(Stdio::null())
+        .stdin(match input {
+            Some(text) => {
+                std::fs::write(dir.join("input.txt"), text).unwrap();
+                Stdio::from(File::open(dir.join("input.txt")).unwrap())
+            }
+            None => Stdio::null(),
+        })
         .stdout(out.try_clone().unwrap())
         .stderr(out)
         .status()
@@ -133,11 +146,20 @@ fn check_manual(path: &str, lang: &str) {
         };
         // Another command (modules, arguments) or a transcript: checked by hand.
         let other_command = shown.before.split('`').skip(1).step_by(2).any(|code| code.starts_with("rythme "));
-        if (other_command && command.is_none()) || shown.text.starts_with("Rythme ") || shown.text.starts_with("$ ") {
+        // A session of the debugger: the commands typed after its prompt are typed again.
+        let debugger = shown.text.lines().next().and_then(|l| l.strip_prefix("$ rythme debug ")).map(str::trim);
+        if debugger.is_none() && ((other_command && command.is_none()) || shown.text.starts_with("Rythme ") || shown.text.starts_with("$ "))
+        {
             continue;
         }
         let name = file_name(&shown.text);
-        let got = run(lang, command, &name, &sample.text);
+        let got = match debugger {
+            Some(file) => {
+                let typed: String = shown.text.lines().filter_map(|l| l.strip_prefix("(debug) ")).map(|c| format!("{c}\n")).collect();
+                format!("$ rythme debug {file}\n{}", run_typing(lang, Some("debug"), &name, &sample.text, Some(&typed)))
+            }
+            None => run(lang, command, &name, &sample.text),
+        };
         checked += 1;
         if normalize(&got) != normalize(&shown.text) {
             failures.push(format!("{path}:{}: ({name})\n--- shown\n{}\n--- printed\n{got}", sample.line, shown.text));

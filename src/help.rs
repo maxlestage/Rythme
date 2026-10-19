@@ -237,6 +237,24 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "步骤",
         ],
     ),
+    (
+        "debug",
+        &[
+            "debugger",
+            "debogueur",
+            "débogueur",
+            "deboguer",
+            "déboguer",
+            "breakpoint",
+            "breakpoints",
+            "dap",
+            "depurador",
+            "depurar",
+            "debuggen",
+            "调试",
+            "调试器",
+        ],
+    ),
     ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide", "editores", "editoren", "编辑器"]),
     ("ruby", &["rb", "rubyist", "blocks", "blocs", "symbols", "symboles"]),
     (
@@ -278,6 +296,7 @@ Commands
   rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
   rythme steps file.ry      show the calculation step by step (fib(3) → fib(2) + fib(1) → ...)
+  rythme debug file.ry      pause the program where you want and look at its values
   rythme exercise           exercises checked automatically (list, start, check)
   rythme new NAME           create a project (rythme.toml, src/, tests/)
   rythme install            download the dependencies of the project
@@ -313,6 +332,7 @@ Topics (rythme help TOPIC)
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
   steps       the calculation shown step by step (rythme steps)
+  debug       the debugger: breakpoints, line by line, values (rythme debug)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
   ruby        coming from Ruby: blocks, symbols, method chains
   builtins    every built-in function
@@ -330,6 +350,7 @@ Commandes
   rythme fmt fichier.ry     mettre le code en forme (--check : vérifier seulement)
   rythme doc fichier.ry     écrire sa documentation, en Markdown (--html : une page web)
   rythme etapes fichier.ry  montrer le calcul étape par étape (fib(3) → fib(2) + fib(1) → ...)
+  rythme debug fichier.ry   mettre le programme en pause où vous voulez et regarder ses valeurs
   rythme exercise           exercices corrigés automatiquement (list, start, check)
   rythme new NOM            créer un projet (rythme.toml, src/, tests/)
   rythme install            télécharger les dépendances du projet
@@ -365,6 +386,7 @@ Sujets (rythme help SUJET)
   fmt         la mise en forme officielle du code (rythme fmt)
   doc         la documentation tirée des commentaires ## (rythme doc)
   steps       le calcul montré étape par étape (rythme etapes)
+  debug       le débogueur : points d'arrêt, ligne par ligne, valeurs (rythme debug)
   editors     Rythme dans votre éditeur (VS Code, Neovim, Helix...)
   ruby        venir de Ruby : blocs, symboles, enchaînements de méthodes
   builtins    toutes les fonctions intégrées
@@ -927,6 +949,7 @@ fn topic_texts(name: &str) -> (&'static str, &'static str) {
         "fmt" => (FMT_EN, FMT_FR),
         "doc" => (DOC_EN, DOC_FR),
         "steps" => (STEPS_EN, STEPS_FR),
+        "debug" => (DEBUG_EN, DEBUG_FR),
         "editors" => (EDITORS_EN, EDITORS_FR),
         "ruby" => (RUBY_EN, RUBY_FR),
         _ => ("", ""),
@@ -2448,6 +2471,90 @@ montré.
 
 En mode interactif : :etapes fib(4). Dans le playground : le bouton Étapes.
 En anglais : rythme steps."#;
+
+const DEBUG_EN: &str = r#"THE DEBUGGER: rythme debug
+
+`rythme debug` runs a program and pauses it where you ask, to look at the
+values of its names while it runs:
+
+  rythme debug factorial.ry          then type commands at the prompt (debug)
+
+  break 12         pause at line 12 (or at the next line with code)
+  break geo.ry:3   pause at line 3 of a file the program uses
+  break fact       pause each time the function fact starts
+  run              start the program (step: pause at its first line)
+  next             go to the next line, without entering the functions called
+  step             go to the next line, entering the functions called
+  finish           go on until this function gives its result, and show it
+  continue         go on until the next breakpoint
+  where            the calls in progress, with their arguments
+  frame 1          look at another call of where (print and locals use it)
+  print n * 2      the value of an expression, computed where the program is
+  locals           the names visible here and their values
+  list             the lines around the current one
+  delete 1         remove a breakpoint (breakpoints lists them)
+  quit             stop
+
+An empty line repeats next, step, finish or continue.
+
+Each pause shows the line, the call (fact(n = 2)) and the depth: how many
+calls are in progress, and how many of the same function when it calls
+itself. A call in tail position (the last thing a function does) takes the
+place of the frame of its caller: the debugger says so, and where shows it.
+
+print computes only values: the functions that print, read, write files or
+draw random numbers are refused there, so that looking never changes the
+program. When an error stops the program, the debugger pauses where it
+happened, so that you can look at the values before the message.
+
+In VS Code: the Rythme extension adds the debugger (Run > Start Debugging,
+or F5 on a .ry file): breakpoints in the margin, the values of the names,
+step over, step into, step out. Other editors can start `rythme dap`, which
+speaks the Debug Adapter Protocol.
+The function `debug(value)` is something else: it prints a value and gives it back."#;
+
+const DEBUG_FR: &str = r#"LE DÉBOGUEUR : rythme debug
+
+`rythme debug` lance un programme et le met en pause où vous le demandez,
+pour regarder les valeurs de ses noms pendant qu'il tourne :
+
+  rythme debug factorielle.ry        puis tapez des commandes à l'invite (debug)
+
+  break 12         faire une pause à la ligne 12 (ou à la suivante qui a du code)
+  break geo.ry:3   faire une pause à la ligne 3 d'un fichier que le programme utilise
+  break fact       faire une pause à chaque début de la fonction fact
+  run              lancer le programme (step : pause à sa première ligne)
+  next             aller à la ligne suivante, sans entrer dans les fonctions appelées
+  step             aller à la ligne suivante, en entrant dans les fonctions appelées
+  finish           continuer jusqu'à ce que cette fonction donne son résultat, et le montrer
+  continue         continuer jusqu'au prochain point d'arrêt
+  where            les appels en cours, avec leurs arguments
+  frame 1          regarder un autre appel de where (print et locals l'utilisent)
+  print n * 2      la valeur d'une expression, calculée là où est le programme
+  locals           les noms visibles ici et leurs valeurs
+  list             les lignes autour de la ligne courante
+  delete 1         enlever un point d'arrêt (breakpoints les liste)
+  quit             arrêter
+
+Une ligne vide répète next, step, finish ou continue.
+
+Chaque pause montre la ligne, l'appel (fact(n = 2)) et la profondeur :
+combien d'appels sont en cours, et combien de la même fonction quand elle
+s'appelle elle-même. Un appel terminal (la dernière chose que fait une
+fonction) prend la place du cadre de la fonction qui l'appelle : le
+débogueur le dit, et where le montre.
+
+print ne calcule que des valeurs : les fonctions qui affichent, lisent,
+écrivent des fichiers ou tirent au hasard y sont refusées, pour que regarder
+ne change jamais le programme. Quand une erreur arrête le programme, le
+débogueur fait une pause là où elle s'est produite, pour regarder les valeurs
+avant le message.
+
+Dans VS Code : l'extension Rythme ajoute le débogueur (Exécuter > Démarrer le
+débogage, ou F5 sur un fichier .ry) : points d'arrêt dans la marge, valeurs
+des noms, pas à pas principal, détaillé et sortant. Les autres éditeurs
+peuvent lancer `rythme dap`, qui parle le Debug Adapter Protocol.
+La fonction `debug(valeur)` est autre chose : elle affiche une valeur et la rend."#;
 
 const FMT_EN: &str = r#"FORMATTING: rythme fmt
 

@@ -815,6 +815,7 @@ Commands
   rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
   rythme steps file.ry      show the calculation step by step (fib(3) → fib(2) + fib(1) → ...)
+  rythme debug file.ry      pause the program where you want and look at its values
   rythme exercise           exercises checked automatically (list, start, check)
   rythme new NAME           create a project (rythme.toml, src/, tests/)
   rythme install            download the dependencies of the project
@@ -850,6 +851,7 @@ Topics (rythme help TOPIC)
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
   steps       the calculation shown step by step (rythme steps)
+  debug       the debugger: breakpoints, line by line, values (rythme debug)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
   ruby        coming from Ruby: blocks, symbols, method chains
   builtins    every built-in function
@@ -867,6 +869,7 @@ A specific function: rythme help map
   rythme fmt file.ry        把代码整理成官方格式（--check：只检查）
   rythme doc file.ry        生成它的文档，Markdown 格式（--html：网页）
   rythme steps file.ry      一步一步显示计算过程（fib(3) → fib(2) + fib(1) → ...）
+  rythme debug file.ry      在你想要的地方暂停程序，查看它的值
   rythme exercise           自动检查的练习（list、start、check）
   rythme new NAME           创建项目（rythme.toml、src/、tests/）
   rythme install            下载项目的依赖
@@ -902,6 +905,7 @@ A specific function: rythme help map
   fmt         代码的官方格式（rythme fmt）
   doc         根据 ## 注释生成文档（rythme doc）
   steps       一步一步显示计算过程（rythme steps）
+  debug       调试器：断点、逐行执行、查看值（rythme debug）
   editors     在你的编辑器中使用 Rythme（VS Code、Neovim、Helix……）
   ruby        从 Ruby 转过来：代码块、符号、方法链
   builtins    所有内置函数
@@ -8162,5 +8166,173 @@ rythme test --seed N (see rythme help tests)."#, r#"RANDOM：随机，以及再�
 
 属性测试（check_all、sample）有自己的种子：rythme test --seed N
 （见 rythme help tests）。"#),
+
+        // ----- the debugger (src/debug/, src/help.rs)
+        ("this file is not part of the program being debugged", "这个文件不属于正在调试的程序"),
+        ("top level", "顶层"),
+        (" [tail call, replaced {by}]", " [尾调用，取代了 {by}]"),
+        ("`{name}` gave {}", "`{name}` 得出 {}"),
+        ("error: {}", "错误：{}"),
+        ("Locals", "局部"),
+        ("Globals", "全局"),
+        ("result of {name}", "{name} 的结果"),
+        ("no source to give: the files are on the disk", "没有可提供的源代码：文件就在磁盘上"),
+        ("unknown request `{cmd}`", "未知的请求 `{cmd}`"),
+        ("the program is running: pause it first", "程序正在运行：请先暂停它"),
+        ("which program? Give its path in `program`, like \"${{file}}\"", r#"哪个程序？请在 `program` 中给出它的路径，例如 "${{file}}""#),
+        ("the program has errors: see the debug console", "程序有错误：请查看调试控制台"),
+        ("the program is not running: `{cmd}` has nothing to show", "程序没有在运行：`{cmd}` 没有可显示的内容"),
+        ("the program has ended: `{cmd}` has nothing to show", "程序已经结束：`{cmd}` 没有可显示的内容"),
+        ("`print` shows the value of one expression, like `print n * 2` or `print len(xs)`", "`print` 显示一个表达式的值，例如 `print n * 2` 或 `print len(xs)`"),
+        ("`{name}` has an effect: the debugger only computes values, without changing anything", "`{name}` 有副作用：调试器只计算值，不改变任何东西"),
+        ("no code where the program can pause on line {line} of {name} or after it", "{name} 的第 {line} 行及之后没有程序可以暂停的代码"),
+        ("no function named `{name}` in the program", "程序中没有名为 `{name}` 的函数"),
+        (": did you mean `{best}`?", "：你是不是想写 `{best}`？"),
+        (r#"Commands (short forms in parentheses):
+  break 12         pause at line 12 of the program (b)
+  break file.ry:3  pause at line 3 of another file of the program
+  break fact       pause each time the function fact starts
+  delete 2         remove breakpoint 2; delete alone removes them all (d)
+  breakpoints      list the breakpoints
+  run              start the program (r)
+  continue         go on until the next breakpoint (c)
+  next             go to the next line, without entering the functions called (n)
+  step             go to the next line, entering the functions called (s)
+  finish           go on until this function gives its result (f)
+  where            the calls in progress, with their arguments (w)
+  frame 2          look at the call number 2 of where (print and locals use it)
+  print n * 2      the value of an expression, computed in the current call (p)
+  locals           the names of the current call and their values (l)
+  list             the lines around the current one
+  help             this list (h)
+  quit             stop the program and the debugger (q)
+An empty line repeats next, step, finish or continue."#, r#"命令（括号里是简写）：
+  break 12         在程序的第 12 行暂停 (b)
+  break file.ry:3  在程序的另一个文件的第 3 行暂停
+  break fact       每次函数 fact 开始时暂停
+  delete 2         删除断点 2；只写 delete 会删除全部断点 (d)
+  breakpoints      列出断点
+  run              启动程序 (r)
+  continue         继续运行到下一个断点 (c)
+  next             走到下一行，不进入被调用的函数 (n)
+  step             走到下一行，进入被调用的函数 (s)
+  finish           继续运行，直到这个函数给出结果 (f)
+  where            正在进行的调用及其参数 (w)
+  frame 2          查看 where 列出的第 2 个调用（print 和 locals 会用它）
+  print n * 2      在当前调用中计算一个表达式的值 (p)
+  locals           当前调用的名字及其值 (l)
+  list             当前行周围的几行
+  help             这个列表 (h)
+  quit             停止程序和调试器 (q)
+空行会重复 next、step、finish 或 continue。"#),
+        ("unknown command `{word}`", "未知的命令 `{word}`"),
+        (" (`help` lists the commands)", "（`help` 列出所有命令）"),
+        ("break where? A line (`break 12`), a file and a line (`break geometry.ry:3`) or a function (`break fact`)", "在哪里 break？一行（`break 12`）、一个文件和一行（`break geometry.ry:3`）或一个函数（`break fact`）"),
+        ("no file `{name}` in the program (its files: {})", "程序中没有文件 `{name}`（它的文件：{}）"),
+        ("breakpoint {n} at {shown_at}", "断点 {n} 位于 {shown_at}"),
+        ("breakpoint {n} at {shown_at} (line {line} has no code where the program can pause)", "断点 {n} 位于 {shown_at}（第 {line} 行没有程序可以暂停的代码）"),
+        ("breakpoint {n} at the start of `{arg}`", "断点 {n} 位于 `{arg}` 的开头"),
+        ("`{arg}` is not a line number", "`{arg}` 不是行号"),
+        ("no breakpoints: add one with `break 12` or `break fact`", "没有断点：用 `break 12` 或 `break fact` 添加一个"),
+        ("start of `{name}`", "`{name}` 的开头"),
+        ("all breakpoints removed", "已删除全部断点"),
+        ("breakpoint {n} removed", "已删除断点 {n}"),
+        ("there is no breakpoint {n} (see `breakpoints`)", "没有断点 {n}（见 `breakpoints`）"),
+        ("delete which breakpoint? Give its number, like `delete 1`", "删除哪个断点？请给出它的编号，例如 `delete 1`"),
+        ("● breakpoint {}", "● 断点 {}"),
+        ("● breakpoint {n}: `{name}` starts", "● 断点 {n}：`{name}` 开始"),
+        ("✗ the program stops on an error: {msg}", "✗ 程序因错误而停止：{msg}"),
+        ("  look at the values with where, locals and print; continue shows the whole message", "  用 where、locals 和 print 查看各个值；continue 会显示完整的信息"),
+        (" · depth {depth}", " · 深度 {depth}"),
+        (" ({rec} calls of `{name}` in progress)", "（`{name}` 有 {rec} 个调用正在进行）"),
+        ("  (a call in tail position: it took the place of the frame of `{by}`)", "  （尾位置的调用：它取代了 `{by}` 的栈帧）"),
+        ("the program is already running: continue goes on, quit stops it", "程序已经在运行：continue 继续，quit 停止它"),
+        (" (replaced `{by}`: tail call)", "（取代了 `{by}`：尾调用）"),
+        ("`{name}` calls itself: {rec} calls in progress", "`{name}` 调用了自身：{rec} 个调用正在进行"),
+        ("which call? A number from 0 to {}, as `where` shows them", "哪个调用？一个从 0 到 {} 的编号，和 `where` 显示的一样"),
+        ("no names here yet", "这里还没有名字"),
+        ("print what? An expression, like `print n` or `print len(xs) * 2`", "print 什么？一个表达式，例如 `print n` 或 `print len(xs) * 2`"),
+        ("debugger stopped", "调试器已停止"),
+        ("the program is not running: `run` starts it (`step` pauses at its first line)", "程序没有在运行：`run` 启动它（`step` 会在第一行暂停）"),
+        ("which file? Example: rythme debug factorial.ry (see `rythme help debug`)", "哪个文件？例如：rythme debug factorial.ry（见 `rythme help debug`）"),
+        ("Debugging {shown}. Pause somewhere with `break 12` or `break function`, then `run`; `help` lists the commands.", "正在调试 {shown}。用 `break 12` 或 `break 函数名` 在某处暂停，然后输入 `run`；`help` 列出所有命令。"),
+        ("The program finished. `run` starts it again, `quit` leaves.", "程序已结束。`run` 重新启动它，`quit` 退出。"),
+        ("The program stopped on an error. `run` starts it again, `quit` leaves.", "程序因错误而停止。`run` 重新启动它，`quit` 退出。"),
+        (r#"THE DEBUGGER: rythme debug
+
+`rythme debug` runs a program and pauses it where you ask, to look at the
+values of its names while it runs:
+
+  rythme debug factorial.ry          then type commands at the prompt (debug)
+
+  break 12         pause at line 12 (or at the next line with code)
+  break geo.ry:3   pause at line 3 of a file the program uses
+  break fact       pause each time the function fact starts
+  run              start the program (step: pause at its first line)
+  next             go to the next line, without entering the functions called
+  step             go to the next line, entering the functions called
+  finish           go on until this function gives its result, and show it
+  continue         go on until the next breakpoint
+  where            the calls in progress, with their arguments
+  frame 1          look at another call of where (print and locals use it)
+  print n * 2      the value of an expression, computed where the program is
+  locals           the names visible here and their values
+  list             the lines around the current one
+  delete 1         remove a breakpoint (breakpoints lists them)
+  quit             stop
+
+An empty line repeats next, step, finish or continue.
+
+Each pause shows the line, the call (fact(n = 2)) and the depth: how many
+calls are in progress, and how many of the same function when it calls
+itself. A call in tail position (the last thing a function does) takes the
+place of the frame of its caller: the debugger says so, and where shows it.
+
+print computes only values: the functions that print, read, write files or
+draw random numbers are refused there, so that looking never changes the
+program. When an error stops the program, the debugger pauses where it
+happened, so that you can look at the values before the message.
+
+In VS Code: the Rythme extension adds the debugger (Run > Start Debugging,
+or F5 on a .ry file): breakpoints in the margin, the values of the names,
+step over, step into, step out. Other editors can start `rythme dap`, which
+speaks the Debug Adapter Protocol.
+The function `debug(value)` is something else: it prints a value and gives it back."#, r#"调试器：rythme debug
+
+`rythme debug` 运行一个程序，并在你指定的地方暂停它，让你在程序运行时查看
+它的名字的值：
+
+  rythme debug factorial.ry          然后在提示符 (debug) 后输入命令
+
+  break 12         在第 12 行暂停（或在下一个有代码的行）
+  break geo.ry:3   在程序使用的某个文件的第 3 行暂停
+  break fact       每次函数 fact 开始时暂停
+  run              启动程序（step：在第一行暂停）
+  next             走到下一行，不进入被调用的函数
+  step             走到下一行，进入被调用的函数
+  finish           继续运行，直到这个函数给出结果，并显示它
+  continue         继续运行到下一个断点
+  where            正在进行的调用及其参数
+  frame 1          查看 where 列出的另一个调用（print 和 locals 会用它）
+  print n * 2      在程序所在的位置计算一个表达式的值
+  locals           这里可见的名字及其值
+  list             当前行周围的几行
+  delete 1         删除一个断点（breakpoints 列出它们）
+  quit             停止
+
+空行会重复 next、step、finish 或 continue。
+
+每次暂停都会显示所在的行、调用（fact(n = 2)）和深度：有多少个调用正在进行，
+以及函数调用自身时，同一个函数有多少个调用。尾位置的调用（函数做的最后一件
+事）会取代调用者的栈帧：调试器会说明这一点，where 也会显示出来。
+
+print 只计算值：输出、读取、写文件或抽随机数的函数在这里会被拒绝，这样查看
+永远不会改变程序。当错误让程序停止时，调试器会在错误发生的地方暂停，让你在
+看到错误信息之前查看各个值。
+
+在 VS Code 中：Rythme 扩展加入了调试器（运行 > 启动调试，或在 .ry 文件上按
+F5）：在页边设置断点，查看名字的值，单步跳过、单步进入、单步跳出。其他编辑器
+可以启动 `rythme dap`，它使用 Debug Adapter Protocol。
+函数 `debug(值)` 是另一回事：它输出一个值并把它返回。"#),
     ],
 }

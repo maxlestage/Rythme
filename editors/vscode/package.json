@@ -12,9 +12,9 @@
   "engines": {
     "vscode": "^1.82.0"
   },
-  "categories": ["Programming Languages", "Snippets", "Linters"],
+  "categories": ["Programming Languages", "Snippets", "Linters", "Debuggers"],
   "main": "./extension.js",
-  "activationEvents": ["onLanguage:rythme"],
+  "activationEvents": ["onLanguage:rythme", "onDebugResolve:rythme", "onDebugInitialConfigurations"],
   "contributes": {
     "languages": [
       {
@@ -35,6 +35,35 @@
       {
         "language": "rythme",
         "path": "./snippets/rythme.json"
+      }
+    ],
+    "breakpoints": [{ "language": "rythme" }],
+    "debuggers": [
+      {
+        "type": "rythme",
+        "label": "Rythme",
+        "languages": ["rythme"],
+        "configurationAttributes": {
+          "launch": {
+            "required": ["program"],
+            "properties": {
+              "program": { "type": "string", "description": "%debug.program%", "default": "${file}" },
+              "args": { "type": "array", "items": { "type": "string" }, "description": "%debug.args%", "default": [] },
+              "stopOnEntry": { "type": "boolean", "description": "%debug.stopOnEntry%", "default": false },
+              "cwd": { "type": "string", "description": "%debug.cwd%", "default": "${fileDirname}" }
+            }
+          }
+        },
+        "initialConfigurations": [
+          { "type": "rythme", "request": "launch", "name": "%debug.name%", "program": "${file}", "cwd": "${fileDirname}" }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "%debug.snippet%",
+            "description": "%debug.snippet.description%",
+            "body": { "type": "rythme", "request": "launch", "name": "%debug.name%", "program": "^\"\\${file}\"", "cwd": "^\"\\${fileDirname}\"" }
+          }
+        ]
       }
     ],
     "configuration": {
@@ -72,6 +101,7 @@
       { "command": "rythme.restartServer", "title": "%command.restart%", "category": "Rythme" },
       { "command": "rythme.runFile", "title": "%command.run%", "category": "Rythme", "icon": "$(play)" },
       { "command": "rythme.testFile", "title": "%command.test%", "category": "Rythme", "icon": "$(beaker)" },
+      { "command": "rythme.debugFile", "title": "%command.debug%", "category": "Rythme", "icon": "$(debug-alt)" },
       { "command": "rythme.runTest", "title": "%command.runTest%", "category": "Rythme" },
       { "command": "rythme.explainError", "title": "%command.explain%", "category": "Rythme" },
       { "command": "rythme.showHelp", "title": "%command.help%", "category": "Rythme" }
@@ -80,16 +110,18 @@
       "commandPalette": [
         { "command": "rythme.runFile", "when": "editorLangId == rythme" },
         { "command": "rythme.testFile", "when": "editorLangId == rythme" },
+        { "command": "rythme.debugFile", "when": "editorLangId == rythme" },
         { "command": "rythme.runTest", "when": "false" }
       ],
       "editor/title/run": [
         { "command": "rythme.runFile", "when": "resourceLangId == rythme", "group": "navigation@1" },
-        { "command": "rythme.testFile", "when": "resourceLangId == rythme", "group": "navigation@2" }
+        { "command": "rythme.testFile", "when": "resourceLangId == rythme", "group": "navigation@2" },
+        { "command": "rythme.debugFile", "when": "resourceLangId == rythme", "group": "navigation@3" }
       ]
     }
   },
   "scripts": {
-    "check": "node --check extension.js && node test/load.js && node test/server.js",
+    "check": "node --check extension.js && node test/load.js && node test/server.js && node test/debug.js",
     "package": "npx @vscode/vsce package"
   },
   "dependencies": {
