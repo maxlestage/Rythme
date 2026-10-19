@@ -1,0 +1,27 @@
+# Linear regression by gradient descent: the line y = w·x + b that passes
+# closest to some points, found by going down the slope of its error, one
+# small step at a time. Nothing changes in place: each step gives new
+# parameters, and `scan` keeps all of them.
+
+# Hours of study, and the grade obtained (out of 20).
+hours = [1, 2, 3, 4, 5, 6, 7, 8]
+grades = [6.5, 8.0, 9.0, 11.5, 12.0, 14.5, 15.0, 17.5]
+
+## The mean squared error of the line [w, b] on the points.
+fn loss(line)
+  [w, b] = line
+  sum(zip_with(hours, grades, fn(x, y) = (w * x + b - y) ** 2)) / len(hours)
+end
+
+## One step down the slope: the gradient says where the error grows.
+fn step(params, _) = vector_sub(params, vector_scale(gradient(loss, params), 0.035))
+
+learning = scan(1..500, [0, 0], step)
+[w, b] = unwrap(last(learning))
+
+print("grade ≈ {round(w, 2)} × hours + {round(b, 2)}")
+print("error: {round(loss([0, 0]), 2)} at the start, {round(loss([w, b]), 3)} at the end")
+print("After 9 hours of study: {round(w * 9 + b, 1)} / 20")
+print()
+print("The error after each of the first 100 steps:")
+print(learning |> take(100) |> map(loss) |> plot)

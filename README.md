@@ -297,6 +297,17 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 | [`testing.ry`](examples/testing.ry) | `test` blocks |
 | [`modules/`](examples/modules) | `use geometry` then `geometry.area(2)`: a program in several files, private `_names` |
 | [`bonjour.ry`](examples/bonjour.ry) | names with accents |
+| [`linear_regression.ry`](examples/linear_regression.ry) | linear regression by gradient descent: gradient, scan, plot |
+| [`perceptron.ry`](examples/perceptron.ry) | a perceptron, the first artificial neuron: dot, vector_add, fold |
+| [`xor_network.ry`](examples/xor_network.ry) | a small neural network learns XOR: sigmoid, matmul, backpropagation |
+| [`kmeans.ry`](examples/kmeans.ry) | k-means: groups in points without labels, random_normal, argmin |
+| [`knn.ry`](examples/knn.ry) | k nearest neighbours: naming a fruit, train_test_split, norm |
+| [`naive_bayes.ry`](examples/naive_bayes.ry) | a naive Bayes classifier sorts spam: words, log, softmax |
+| [`markov.ry`](examples/markov.ry) | a Markov chain writes sentences: windows, group_by, random_choice_weighted |
+| [`tictactoe.ry`](examples/tictactoe.ry) | minimax plays tic-tac-toe perfectly: recursion, set_at, max_by |
+| [`pathfinding.ry`](examples/pathfinding.ry) | the shortest way through a maze: breadth-first search, dict, put |
+| [`genetic.ry`](examples/genetic.ry) | a genetic algorithm evolves a sentence: selection, crossover, mutation |
+| [`ask_claude.ry`](examples/ask_claude.ry) | asking a language model a question: http_post, to_json, parse_json, env (needs an API key) |
 
 ## Editors
 

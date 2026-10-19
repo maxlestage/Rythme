@@ -299,6 +299,17 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 | [`testing.ry`](examples/testing.ry) | les blocs `test` |
 | [`modules/`](examples/modules) | `use geometrie` puis `geometrie.aire(2)` : un programme en plusieurs fichiers, noms `_privés` |
 | [`bonjour.ry`](examples/bonjour.ry) | des noms avec des accents |
+| [`linear_regression.ry`](examples/linear_regression.ry) | régression linéaire par descente de gradient : gradient, scan, plot |
+| [`perceptron.ry`](examples/perceptron.ry) | un perceptron, le premier neurone artificiel : dot, vector_add, fold |
+| [`xor_network.ry`](examples/xor_network.ry) | un petit réseau de neurones apprend XOR : sigmoid, matmul, rétropropagation |
+| [`kmeans.ry`](examples/kmeans.ry) | k-moyennes : des groupes dans des points sans étiquettes, random_normal, argmin |
+| [`knn.ry`](examples/knn.ry) | k plus proches voisins : nommer un fruit, train_test_split, norm |
+| [`naive_bayes.ry`](examples/naive_bayes.ry) | un classifieur bayésien naïf trie les spams : words, log, softmax |
+| [`markov.ry`](examples/markov.ry) | une chaîne de Markov écrit des phrases : windows, group_by, random_choice_weighted |
+| [`tictactoe.ry`](examples/tictactoe.ry) | le minimax joue parfaitement au morpion : récursion, set_at, max_by |
+| [`pathfinding.ry`](examples/pathfinding.ry) | le plus court chemin dans un labyrinthe : parcours en largeur, dict, put |
+| [`genetic.ry`](examples/genetic.ry) | un algorithme génétique fait évoluer une phrase : sélection, croisement, mutation |
+| [`ask_claude.ry`](examples/ask_claude.ry) | poser une question à un modèle de langage : http_post, to_json, parse_json, env (une clé d'API est nécessaire) |
 
 ## Éditeurs
 

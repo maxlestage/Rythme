@@ -1,0 +1,28 @@
+# A Markov chain writes new sentences: it learns which words follow which
+# in a text, then walks from word to word, choosing each next word with the
+# chances it had in the text. An ancestor of today's language models, which
+# look at much more than the last word.
+
+story = "the cat sat on the mat . the dog sat on the log . the cat saw the dog .
+the dog saw a cat on the mat . a cat and a dog sat on a log ."
+
+tokens = split(story)
+
+## For each word, the words that came right after it, and how many times.
+followers = windows(tokens, 2)
+  |> group_by(fn([word, _]) = word)
+  |> map_values(fn(pairs) = pairs |> group_by(fn([_, next]) = next) |> map_values(len))
+
+print("After \"the\": {followers["the"]}")
+
+## A next word, drawn with the chances the text gives it.
+fn next_word(word)
+  choices = followers[word]
+  random_choice_weighted(keys(choices), values(choices))
+end
+
+## Words from `word` until the end of a sentence (or `n` more words).
+fn sentence(word, n) = if word == "." or n == 0 then [word] else [word, ..sentence(next_word(word), n - 1)]
+
+random_seed(5)
+1..5 |> each(fn(_) = print(join(sentence("the", 15), " ")))
