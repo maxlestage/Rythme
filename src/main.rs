@@ -95,8 +95,21 @@ fn cli(mut args: Vec<String>) -> i32 {
                 Ok(f) => f,
                 Err(code) => return code,
             };
-            if format == Format::Json {
-                return machine::help_command(rest.first().map(String::as_str));
+            if machine::take_flag(&mut rest, "--llms") {
+                rest.insert(0, "llms".into());
+            }
+            match rest.first().map(String::as_str) {
+                // The language for AI assistants, in one text (docs/llms-full.txt).
+                Some("llms" | "llms-full" | "llms-full.txt") => {
+                    rythme::io::out(&rythme::llms::full());
+                    return 0;
+                }
+                Some("llms.txt") => {
+                    rythme::io::out(&rythme::llms::index());
+                    return 0;
+                }
+                _ if format == Format::Json => return machine::help_command(rest.first().map(String::as_str)),
+                _ => {}
             }
             match rest.first() {
                 None => rythme::io::out(&help::overview()),
