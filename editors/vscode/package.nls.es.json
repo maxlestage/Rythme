@@ -15,5 +15,13 @@
   "command.test": "Ejecutar las pruebas de este archivo",
   "command.runTest": "Ejecutar una prueba de este archivo",
   "command.explain": "Explicar un código de error",
-  "command.help": "Ayuda sobre un tema o una función"
+  "command.help": "Ayuda sobre un tema o una función",
+  "command.debug": "Depurar este archivo",
+  "debug.program": "El programa Rythme que depurar (un archivo .ry).",
+  "debug.args": "Las palabras dadas al programa (lo que ve `args()`).",
+  "debug.stopOnEntry": "Hacer una pausa en la primera línea del programa.",
+  "debug.cwd": "La carpeta donde se ejecuta el programa.",
+  "debug.name": "Depurar este archivo Rythme",
+  "debug.snippet": "Rythme: depurar un archivo",
+  "debug.snippet.description": "Ejecuta un archivo .ry con el depurador de Rythme (`rythme dap`)."
 }

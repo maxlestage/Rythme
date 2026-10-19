@@ -28,7 +28,7 @@ function anything() {
 
 /** A `vscode` that records what the extension does. */
 function fakeVscode(config) {
-  const done = { commands: {}, messages: [], sent: [] };
+  const done = { commands: {}, messages: [], sent: [], adapters: {}, providers: {}, debugged: [] };
   const disposable = { dispose() {} };
   class EventEmitter {
     constructor() {
@@ -78,8 +78,38 @@ function fakeVscode(config) {
       executeCommand() {},
     },
     languages: { getDiagnostics: () => [] },
+    DebugAdapterExecutable: class {
+      constructor(command, args) {
+        Object.assign(this, { command, args });
+      }
+    },
+    debug: {
+      registerDebugAdapterDescriptorFactory: (type, factory) => {
+        done.adapters[type] = factory;
+        return disposable;
+      },
+      registerDebugConfigurationProvider: (type, provider) => {
+        done.providers[type] = provider;
+        return disposable;
+      },
+      startDebugging: (folder, config) => {
+        done.debugged.push(config);
+        return Promise.resolve(true);
+      },
+    },
   };
   return vscode;
+}
+
+/** The texts of package.json in every language, by file. */
+function nlsFiles() {
+  const fs = require('fs');
+  const dir = path.join(__dirname, '..');
+  const out = {};
+  for (const file of fs.readdirSync(dir).filter((f) => /^package\.nls(\.[\w-]+)?\.json$/.test(f))) {
+    out[file] = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+  }
+  return out;
 }
 
 /** Loads extension.js afresh, with these modules standing in for others. */
@@ -141,6 +171,38 @@ async function main() {
   assert.deepStrictEqual(vscode.done.sent, [`${bin} ${lang}test '/tmp/my tests.ry' --filter 'it'\\''s $HOME'`]);
   await vscode.done.commands['rythme.runFile']('file:///tmp/a.ry');
   assert.strictEqual(vscode.done.sent[1], `${bin} ${lang}/tmp/a.ry`);
+  // The debugger: `rythme dap` for the sessions of type `rythme`, F5 without
+  // launch.json on the open file, and the "Debug this file" button.
+  const adapter = vscode.done.adapters.rythme.createDebugAdapterDescriptor({});
+  assert.strictEqual(adapter.command, bin);
+  assert.deepStrictEqual(adapter.args, [...(process.env.RYTHME_LANG ? [] : ['--lang', 'fr']), 'dap']);
+  const provider = vscode.done.providers.rythme;
+  vscode.window.activeTextEditor = { document: { languageId: 'rythme', uri: { fsPath: '/tmp/fact.ry' } } };
+  assert.deepStrictEqual(provider.resolveDebugConfiguration(undefined, {}), {
+    type: 'rythme',
+    request: 'launch',
+    name: 'Déboguer ce fichier Rythme',
+    program: '/tmp/fact.ry',
+    cwd: '/tmp',
+  });
+  const given = { type: 'rythme', request: 'launch', name: 'x', program: '/a/b.ry', cwd: '/c' };
+  assert.deepStrictEqual(provider.resolveDebugConfiguration(undefined, { ...given }), given);
+  vscode.window.activeTextEditor = undefined;
+  assert.strictEqual(provider.resolveDebugConfiguration(undefined, {}), undefined);
+  await vscode.done.commands['rythme.debugFile']('file:///tmp/b.ry');
+  assert.deepStrictEqual(vscode.done.debugged, [
+    { type: 'rythme', request: 'launch', name: 'Déboguer ce fichier Rythme', program: '/tmp/b.ry', cwd: '/tmp' },
+  ]);
+  const manifest = require('../package.json');
+  const debuggerType = manifest.contributes.debuggers.find((d) => d.type === 'rythme');
+  assert.ok(debuggerType && debuggerType.languages.includes('rythme'), 'package.json contributes the debugger type `rythme`');
+  assert.deepStrictEqual(manifest.contributes.breakpoints, [{ language: 'rythme' }]);
+  assert.strictEqual(debuggerType.initialConfigurations[0].program, '${file}');
+  for (const [file, texts] of Object.entries(nlsFiles())) {
+    for (const key of ['command.debug', 'debug.program', 'debug.args', 'debug.stopOnEntry', 'debug.cwd', 'debug.name', 'debug.snippet']) {
+      assert.ok(texts[key], `${file} translates ${key}`);
+    }
+  }
   assert.strictEqual(withClient.quote('C:\\Users\\a b.ry', 'powershell'), "'C:\\Users\\a b.ry'");
   assert.strictEqual(withClient.quote('say "hi"', 'cmd'), '"say ""hi"""');
   await withClient.deactivate();

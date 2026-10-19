@@ -8,8 +8,52 @@ use std::io::Write;
 pub const ERR_START: char = '\u{1}';
 pub const ERR_END: char = '\u{2}';
 
+/// Where the output goes instead of the terminal: the text, and whether it
+/// is an error message.
+pub type Sink = Box<dyn Fn(&str, bool)>;
+
 thread_local! {
     static CAPTURE: RefCell<Option<String>> = const { RefCell::new(None) };
+    static SINK: RefCell<Option<Sink>> = const { RefCell::new(None) };
+    static NO_INPUT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// From now on, output goes to `sink` (the debugger of an editor, whose
+/// standard output carries its protocol).
+pub fn set_sink(sink: Sink) {
+    SINK.with(|s| *s.borrow_mut() = Some(sink));
+}
+
+fn sunk(text: &str, err: bool) -> bool {
+    SINK.with(|s| match s.borrow().as_ref() {
+        Some(sink) => {
+            sink(text, err);
+            true
+        }
+        None => false,
+    })
+}
+
+/// `sunk` for a line: the line break is added only when there is a sink.
+fn sunk_line(text: &str) -> bool {
+    SINK.with(|s| match s.borrow().as_ref() {
+        Some(sink) => {
+            sink(&format!("{text}\n"), false);
+            true
+        }
+        None => false,
+    })
+}
+
+/// From now on, the program reads no input: `input` finds its end (the
+/// standard input carries the protocol of the debugger).
+pub fn close_input() {
+    NO_INPUT.with(|n| n.set(true));
+}
+
+/// Is the input closed by `close_input`?
+pub fn input_closed() -> bool {
+    NO_INPUT.with(|n| n.get())
 }
 
 /// From now on, output is kept in a buffer instead of being printed.
@@ -45,7 +89,7 @@ fn stop_if_closed(result: std::io::Result<()>) {
 
 /// Writes text on the standard output.
 pub fn out(text: &str) {
-    if !captured(|b| b.push_str(text)) {
+    if !captured(|b| b.push_str(text)) && !sunk(text, false) {
         let stdout = std::io::stdout();
         let mut lock = stdout.lock();
         stop_if_closed(lock.write_all(text.as_bytes()).and_then(|_| lock.flush()));
@@ -56,7 +100,8 @@ pub fn out_line(text: &str) {
     if !captured(|b| {
         b.push_str(text);
         b.push('\n');
-    }) {
+    }) && !sunk_line(text)
+    {
         let stdout = std::io::stdout();
         let mut lock = stdout.lock();
         stop_if_closed(writeln!(lock, "{text}"));
@@ -70,7 +115,8 @@ pub fn err(text: &str) {
         b.push(ERR_START);
         b.push_str(text);
         b.push(ERR_END);
-    }) {
+    }) && !sunk(text, true)
+    {
         let _ = std::io::stdout().flush();
         let _ = std::io::stderr().write_all(text.as_bytes());
     }

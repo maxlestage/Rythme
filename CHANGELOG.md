@@ -45,6 +45,31 @@ dit ce qu'une version 1.x peut changer ou non.*
   promise says, a function of a program with one of these names stays its
   own (W003).
 
+### Tools
+
+- **A debugger: `rythme debug file.ry`.** Breakpoints on lines (`break 12`,
+  `break geometry.ry:3`; a line without code moves to the next one) and on
+  functions (`break fact`), `run`, `next`, `step`, `finish` (which shows the
+  result), `continue`, `where` (the calls in progress with their arguments,
+  `map` and the other built-in functions that call yours included), `frame`,
+  `print` (any expression, computed in the paused call with values only:
+  output, files, input, `exit` and chance are refused), `locals`, `list`,
+  `help`, `quit`. Each pause shows the depth and how many calls of the same
+  function are in progress; a call in tail position says that it replaced
+  the frame of its caller. An error pauses where it happens, before its
+  message. It works across files (`use`), blocks and local functions written
+  one after the other. Messages in the six languages; `rythme help debug`,
+  the manual (7.9, with a session checked by the tests).
+- **`rythme dap`**: the same debugger for editors, with the Debug Adapter
+  Protocol (launch, breakpoints on lines and functions, call stack, scopes
+  and values that open, evaluate, continue, next, step in, step out, pause).
+  The **VS Code extension** contributes the debugger type `rythme`: `F5` on a
+  `.ry` file, a *Debug this file* button, a default launch configuration.
+- Without the debugger, programs run at the same speed: the places where it
+  may pause are only added to the code of a program it runs, and calls are
+  followed through a check that the interpreter already makes (the
+  instructions counted on `bench/` differ by 0.0 to 1.2 %).
+
 ### Fixed
 
 - **`capitalize` uses the titlecase of Unicode** where it differs from the

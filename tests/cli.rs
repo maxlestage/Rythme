@@ -33,6 +33,7 @@ fn help_overview_and_topics() {
         "fmt",
         "doc",
         "steps",
+        "debug",
         "editors",
         "ruby",
         "builtins",

@@ -3456,7 +3456,9 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMAND] [ARGUMENTS...]
 | `exercise [list \| start NAME \| check FILE]` | `exercises`, `exercice`, `exercices` | the built-in exercises (see below) |
 | `steps FILE [EXPRESSION] [--max N] [--width N]` | `etapes`, `étapes` | shows the evaluation step by step (see [7.8](#78-step-by-step-rythme-steps)) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | runs the code given as an argument, and shows the value of its last expression unless it is `()`; `ARGS` are given to `args()` |
+| `debug FILE [ARGS...]` | `deboguer`, `déboguer` | runs the program under the debugger: breakpoints, line by line, values (see [7.9](#79-the-debugger-rythme-debug)) |
 | `lsp` | | the language server, started by an editor (see [7.5](#75-editors-and-the-language-server)) |
+| `dap` | | the debugger for editors, with the Debug Adapter Protocol (see [7.9](#79-the-debugger-rythme-debug)) |
 | `help [NAME]` | `aide`, `--help`, `-h` | the list of topics, or the help of a topic, a built-in function or an error code |
 | `explain [CODE]` | `expliquer` | the explanation of an error or warning code; without a code, the list of codes |
 | `learn` | `apprendre`, `tutorial`, `tutoriel` | the guided tour: the 13 topics in order, with a pause after each one when run in a terminal |
@@ -4150,6 +4152,142 @@ describe(t // 4)
 map([1, 2, 3], fn(x) = x * t)
   → [60, 120, 180]
 ```
+
+### 7.9 The debugger: `rythme debug`
+
+```text
+rythme debug FILE [ARGS...]
+rythme dap
+```
+
+`rythme debug` runs a program and **pauses** it where you ask, to look at
+the values of its names while it runs. It reads commands at the prompt
+`(debug)`; `help` lists them. Nothing runs before `run` (or `step`, which
+pauses at the first line), so breakpoints can be set first.
+
+| Command | Short | What it does |
+|---------|-------|--------------|
+| `break LINE`, `break FILE:LINE`, `break FUNCTION` | `b` | a breakpoint on a line of the program (or of a file it `use`s), or at the start of each call of a function; a line without code moves the breakpoint to the next line with code |
+| `delete [N]`, `breakpoints` | `d` | removes breakpoint `N` (all of them without `N`); lists them |
+| `run` | `r` | starts the program; after its end, starts it again (the files are read again) |
+| `continue` | `c` | goes on until the next breakpoint |
+| `next` | `n` | goes to the next place of this call or of its caller, without pausing in the functions it calls |
+| `step` | `s` | goes to the next place, also inside the functions called |
+| `finish` | `f` | goes on until this call gives its result, and shows it |
+| `where` | `w` | the calls in progress, innermost first, with their arguments and where they are |
+| `frame N` | | chooses the call `N` of `where` for `print`, `locals` and `list` |
+| `print EXPRESSION` | `p` | the value of an expression, computed in the chosen call, with its names |
+| `locals` | `l` | the names visible in the chosen call and their values (at the top level: the names of the program) |
+| `list` | | the lines around the current one |
+| `quit` | `q` | stops the program and the debugger (the end of the input too) |
+
+An empty line repeats `next`, `step`, `finish` or `continue`.
+
+- **Where it pauses.** The program may pause before each statement of a
+  block, at the start of each body of a function (its first statement when
+  it is a block), before the branch of `if` and the case of `match` that
+  were chosen, and before each top-level expression or definition, in every
+  file of the program. A pause shows the place, the call with its arguments
+  (`fact(n = 2)`), and the **depth**: the number of calls of the program's
+  functions in progress, with how many of them are the same function when it
+  calls itself. Places on the same line of the same call pause only once.
+- **Tail calls.** A call in tail position takes the place of the frame of its
+  caller (see [4.6](#46-recursion-and-tail-calls)): the pause says so, and
+  `where` shows the call it replaced and the place where the first one was
+  called. `next` then goes into it, since the caller is gone. Built-in
+  functions that call yours (`map`, `filter`, `fold`...) appear in `where`
+  too.
+- **Values only.** `print` evaluates any expression, with the local names of
+  the chosen call and the names of its file, but only with values: the
+  built-in functions that print, read the input, write or delete files, stop
+  the program or draw random numbers are refused there, and a calculation is
+  stopped after a million calls. Looking never changes the program.
+- **Errors.** When an error stops the program, the debugger pauses where it
+  happened, before the message, so that `where`, `locals` and `print` show
+  the values that led to it; `continue` then shows the message.
+- **The cost.** The places where the program may pause are only added to
+  the code of a program started by `rythme debug` or `rythme dap`: without
+  the debugger, programs run at the same speed (the benchmarks of `bench/`
+  differ by about 1 % at most).
+
+With this program, `fact.ry`:
+
+```rythme
+fn fact(0) = 1
+fn fact(n) = n * fact(n - 1)
+
+fn total([], acc) = acc
+fn total([x, ..rest], acc) = total(rest, acc + x)
+
+print(fact(3))
+print(total([10, 20], 0))
+```
+
+a session:
+
+```text
+$ rythme debug fact.ry
+Debugging fact.ry. Pause somewhere with `break 12` or `break function`, then `run`; `help` lists the commands.
+(debug) break 2
+breakpoint 1 at fact.ry:2
+(debug) run
+● breakpoint 1
+→ fact.ry:2  fact(n = 3) · depth 1
+  2 | fn fact(n) = n * fact(n - 1)
+(debug) continue
+● breakpoint 1
+→ fact.ry:2  fact(n = 2) · depth 2 (2 calls of `fact` in progress)
+  2 | fn fact(n) = n * fact(n - 1)
+(debug) where
+→ #0 fact(n = 2)  fact.ry:2
+  #1 fact(n = 3)  fact.ry:2
+  #2 top level  fact.ry:7
+`fact` calls itself: 2 calls in progress
+(debug) print n * 10
+20
+(debug) delete 1
+breakpoint 1 removed
+(debug) finish
+`fact` gave 2
+→ fact.ry:2  fact(n = 3) · depth 1
+  2 | fn fact(n) = n * fact(n - 1)
+(debug) break total
+breakpoint 2 at the start of `total`
+(debug) continue
+6
+● breakpoint 2: `total` starts
+→ fact.ry:5  total(arg1 = [10, 20], acc = 0) · depth 1
+  5 | fn total([x, ..rest], acc) = total(rest, acc + x)
+(debug) next
+● breakpoint 2: `total` starts
+→ fact.ry:5  total(arg1 = [20], acc = 10) · depth 1
+  (a call in tail position: it took the place of the frame of `total`)
+  5 | fn total([x, ..rest], acc) = total(rest, acc + x)
+(debug) locals
+  x = 20
+  rest = []
+  acc = 10
+(debug) delete
+all breakpoints removed
+(debug) continue
+30
+The program finished. `run` starts it again, `quit` leaves.
+(debug) quit
+debugger stopped
+```
+
+**In an editor.** `rythme dap` is the same debugger for editors: it speaks
+the [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/)
+on its standard input and output. The VS Code extension
+([`editors/vscode`](../editors/vscode)) uses it for the debugger type
+`rythme`: breakpoints in the margin (on lines and functions), *Run → Start
+Debugging* (`F5`) on a `.ry` file without any `launch.json`, the call stack,
+the values of the names (lists, records, variants and dictionaries open),
+watch expressions and the debug console (with the same rule: values only),
+step over, step into, step out, continue, pause. A launch configuration has
+`program`, and may have `args`, `cwd` and `stopOnEntry`. Under `rythme dap`,
+what the program prints goes to the debug console, and `input` finds the
+end of the input (the standard input carries the protocol).
 
 ---
 

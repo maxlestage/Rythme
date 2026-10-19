@@ -3607,7 +3607,9 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMANDE] [ARGUMENTS...]
 | `exercise [list \| start NOM \| check FICHIER]` | `exercises`, `exercice`, `exercices` | les exercices intégrés (voir plus bas) |
 | `steps FICHIER [EXPRESSION] [--max N] [--width N]` | `etapes`, `étapes` | montre l'évaluation étape par étape (voir [7.8](#78-étape-par-étape--rythme-etapes)) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | exécute le code donné en argument, et affiche la valeur de sa dernière expression sauf si c'est `()` ; `ARGS` est donné à `args()` |
+| `debug FICHIER [ARGS...]` | `deboguer`, `déboguer` | lance le programme avec le débogueur : points d'arrêt, ligne par ligne, valeurs (voir [7.9](#79-le-débogueur--rythme-debug)) |
 | `lsp` | | le serveur de langage, lancé par un éditeur (voir [7.5](#75-éditeurs-et-serveur-de-langage)) |
+| `dap` | | le débogueur pour les éditeurs, avec le Debug Adapter Protocol (voir [7.9](#79-le-débogueur--rythme-debug)) |
 | `help [NOM]` | `aide`, `--help`, `-h` | la liste des sujets, ou l'aide d'un sujet, d'une fonction intégrée ou d'un code d'erreur |
 | `explain [CODE]` | `expliquer` | l'explication d'un code d'erreur ou d'avertissement ; sans code, la liste des codes |
 | `learn` | `apprendre`, `tutorial`, `tutoriel` | la visite guidée : les 13 sujets dans l'ordre, avec une pause après chacun quand elle tourne dans un terminal |
@@ -4329,6 +4331,149 @@ describe(t // 4)
 map([1, 2, 3], fn(x) = x * t)
   → [60, 120, 180]
 ```
+
+### 7.9 Le débogueur : `rythme debug`
+
+```text
+rythme debug FICHIER [ARGS...]
+rythme dap
+```
+
+`rythme debug` lance un programme et le **met en pause** où vous le
+demandez, pour regarder les valeurs de ses noms pendant qu'il tourne. Il lit
+des commandes à l'invite `(debug)` ; `help` les liste. Rien ne tourne avant
+`run` (ou `step`, qui fait une pause à la première ligne) : on peut donc
+d'abord poser des points d'arrêt.
+
+| Commande | Courte | Ce qu'elle fait |
+|----------|--------|-----------------|
+| `break LIGNE`, `break FICHIER:LIGNE`, `break FONCTION` | `b` | un point d'arrêt sur une ligne du programme (ou d'un fichier qu'il utilise avec `use`), ou au début de chaque appel d'une fonction ; une ligne sans code déplace le point d'arrêt à la ligne suivante qui en a |
+| `delete [N]`, `breakpoints` | `d` | enlève le point d'arrêt `N` (tous sans `N`) ; les liste |
+| `run` | `r` | lance le programme ; après sa fin, le relance (les fichiers sont relus) |
+| `continue` | `c` | continue jusqu'au prochain point d'arrêt |
+| `next` | `n` | va à l'endroit suivant de cet appel ou de celui qui l'a fait, sans pause dans les fonctions qu'il appelle |
+| `step` | `s` | va à l'endroit suivant, aussi dans les fonctions appelées |
+| `finish` | `f` | continue jusqu'à ce que cet appel donne son résultat, et le montre |
+| `where` | `w` | les appels en cours, le plus profond d'abord, avec leurs arguments et l'endroit où ils sont |
+| `frame N` | | choisit l'appel `N` de `where` pour `print`, `locals` et `list` |
+| `print EXPRESSION` | `p` | la valeur d'une expression, calculée dans l'appel choisi, avec ses noms |
+| `locals` | `l` | les noms visibles dans l'appel choisi et leurs valeurs (au niveau principal : les noms du programme) |
+| `list` | | les lignes autour de la ligne courante |
+| `quit` | `q` | arrête le programme et le débogueur (la fin de l'entrée aussi) |
+
+Une ligne vide répète `next`, `step`, `finish` ou `continue`.
+
+- **Où il fait une pause.** Le programme peut faire une pause avant chaque
+  instruction d'un bloc, au début de chaque corps de fonction (sa première
+  instruction quand c'est un bloc), avant la branche de `if` et le cas de
+  `match` choisis, et avant chaque expression ou définition du niveau
+  principal, dans chaque fichier du programme. Une pause montre l'endroit,
+  l'appel avec ses arguments (`fact(n = 2)`) et la **profondeur** : le
+  nombre d'appels des fonctions du programme en cours, avec combien sont la
+  même fonction quand elle s'appelle elle-même. Les endroits d'une même
+  ligne d'un même appel ne font qu'une pause.
+- **Appels terminaux.** Un appel en position terminale prend la place du
+  cadre de la fonction qui l'appelle (voir
+  [4.6](#46-récursion-et-appels-terminaux)) : la pause le dit, et `where`
+  montre l'appel remplacé et l'endroit où le premier a été fait. `next` y
+  entre donc, puisque l'appelant n'est plus là. Les fonctions intégrées qui
+  appellent les vôtres (`map`, `filter`, `fold`...) apparaissent aussi dans
+  `where`.
+- **Des valeurs seulement.** `print` évalue n'importe quelle expression, avec
+  les noms locaux de l'appel choisi et les noms de son fichier, mais
+  seulement avec des valeurs : les fonctions intégrées qui affichent, lisent
+  l'entrée, écrivent ou suppriment des fichiers, arrêtent le programme ou
+  tirent au hasard y sont refusées, et un calcul est arrêté après un million
+  d'appels. Regarder ne change jamais le programme.
+- **Les erreurs.** Quand une erreur arrête le programme, le débogueur fait une
+  pause là où elle s'est produite, avant le message, pour que `where`,
+  `locals` et `print` montrent les valeurs qui y ont mené ; `continue` montre
+  ensuite le message.
+- **Le coût.** Les endroits où le programme peut faire une pause ne sont
+  ajoutés qu'au code d'un programme lancé par `rythme debug` ou `rythme dap` :
+  sans le débogueur, les programmes tournent à la même vitesse (les mesures
+  de `bench/` diffèrent d'environ 1 % au plus).
+
+Avec ce programme, `fact.ry` :
+
+```rythme
+fn fact(0) = 1
+fn fact(n) = n * fact(n - 1)
+
+fn total([], acc) = acc
+fn total([x, ..rest], acc) = total(rest, acc + x)
+
+print(fact(3))
+print(total([10, 20], 0))
+```
+
+une session :
+
+```text
+$ rythme debug fact.ry
+Débogage de fact.ry. Faites une pause quelque part avec `break 12` ou `break fonction`, puis `run` ; `help` liste les commandes.
+(debug) break 2
+point d'arrêt 1 à fact.ry:2
+(debug) run
+● point d'arrêt 1
+→ fact.ry:2  fact(n = 3) · profondeur 1
+  2 | fn fact(n) = n * fact(n - 1)
+(debug) continue
+● point d'arrêt 1
+→ fact.ry:2  fact(n = 2) · profondeur 2 (2 appels de `fact` en cours)
+  2 | fn fact(n) = n * fact(n - 1)
+(debug) where
+→ #0 fact(n = 2)  fact.ry:2
+  #1 fact(n = 3)  fact.ry:2
+  #2 niveau principal  fact.ry:7
+`fact` s'appelle lui-même : 2 appels en cours
+(debug) print n * 10
+20
+(debug) delete 1
+point d'arrêt 1 enlevé
+(debug) finish
+`fact` a donné 2
+→ fact.ry:2  fact(n = 3) · profondeur 1
+  2 | fn fact(n) = n * fact(n - 1)
+(debug) break total
+point d'arrêt 2 au début de `total`
+(debug) continue
+6
+● point d'arrêt 2 : `total` commence
+→ fact.ry:5  total(arg1 = [10, 20], acc = 0) · profondeur 1
+  5 | fn total([x, ..rest], acc) = total(rest, acc + x)
+(debug) next
+● point d'arrêt 2 : `total` commence
+→ fact.ry:5  total(arg1 = [20], acc = 10) · profondeur 1
+  (un appel terminal : il a pris la place du cadre de `total`)
+  5 | fn total([x, ..rest], acc) = total(rest, acc + x)
+(debug) locals
+  x = 20
+  rest = []
+  acc = 10
+(debug) delete
+tous les points d'arrêt sont enlevés
+(debug) continue
+30
+Le programme est terminé. `run` le relance, `quit` quitte.
+(debug) quit
+débogueur arrêté
+```
+
+**Dans un éditeur.** `rythme dap` est le même débogueur pour les éditeurs :
+il parle le [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/)
+sur son entrée et sa sortie standard. L'extension VS Code
+([`editors/vscode`](../editors/vscode)) l'utilise pour le type de débogueur
+`rythme` : points d'arrêt dans la marge (sur des lignes et des fonctions),
+*Exécuter → Démarrer le débogage* (`F5`) sur un fichier `.ry` sans aucun
+`launch.json`, la pile des appels, les valeurs des noms (listes,
+enregistrements, variantes et dictionnaires s'ouvrent), les expressions
+espionnées et la console de débogage (avec la même règle : des valeurs
+seulement), pas à pas principal, détaillé, sortant, continuer, pause. Une
+configuration de lancement a `program`, et peut avoir `args`, `cwd` et
+`stopOnEntry`. Sous `rythme dap`, ce que le programme affiche va dans la
+console de débogage, et `input` trouve la fin de l'entrée (l'entrée standard
+porte le protocole).
 
 ---
 

@@ -15,5 +15,13 @@
   "command.test": "Run the tests of this file",
   "command.runTest": "Run one test of this file",
   "command.explain": "Explain an error code",
-  "command.help": "Help on a topic or a function"
+  "command.help": "Help on a topic or a function",
+  "command.debug": "Debug this file",
+  "debug.program": "The Rythme program to debug (a .ry file).",
+  "debug.args": "The words given to the program (what `args()` sees).",
+  "debug.stopOnEntry": "Pause at the first line of the program.",
+  "debug.cwd": "The folder where the program runs.",
+  "debug.name": "Debug this Rythme file",
+  "debug.snippet": "Rythme: debug a file",
+  "debug.snippet.description": "Runs a .ry file under the Rythme debugger (`rythme dap`)."
 }
