@@ -30,6 +30,9 @@ pub mod llms;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod machine;
 pub mod manifest;
+// The server of the Model Context Protocol, for AI assistants (on the standard input and output).
+#[cfg(not(target_arch = "wasm32"))]
+pub mod mcp;
 // The language server talks on the standard input and output; the web playground has none.
 #[cfg(not(target_arch = "wasm32"))]
 pub mod lsp;

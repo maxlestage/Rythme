@@ -427,17 +427,12 @@ fn code_json(code: &str) -> Json {
 pub fn explain_command(code: Option<&str>) -> i32 {
     match code {
         None => {
-            let codes: Vec<Json> = help::CODES.iter().map(|c| code_json(c)).collect();
-            print(with(head("explain"), vec![("codes", Json::Arr(codes))]));
+            print(explain_json(None).unwrap_or(Json::Null));
             0
         }
-        Some(code) => match help::explain(code) {
-            Some(_) => {
-                let c = code.trim().to_uppercase();
-                let Json::Obj(fields) = code_json(&c) else { return 1 };
-                let mut doc = head("explain");
-                doc.extend(fields);
-                print(Json::Obj(doc));
+        Some(code) => match explain_json(Some(code)) {
+            Some(doc) => {
+                print(doc);
                 0
             }
             None => {
@@ -449,6 +444,20 @@ pub fn explain_command(code: Option<&str>) -> i32 {
                 2
             }
         },
+    }
+}
+
+/// The document of `rythme explain [CODE] --format json`; `None` for an unknown code.
+pub fn explain_json(code: Option<&str>) -> Option<Json> {
+    match code {
+        None => Some(with(head("explain"), vec![("codes", Json::Arr(help::CODES.iter().map(|c| code_json(c)).collect()))])),
+        Some(code) => {
+            help::explain(code)?;
+            let Json::Obj(fields) = code_json(&code.trim().to_uppercase()) else { return None };
+            let mut doc = head("explain");
+            doc.extend(fields);
+            Some(Json::Obj(doc))
+        }
     }
 }
 
@@ -476,13 +485,20 @@ fn keyword_json(word: &str) -> Option<Json> {
 /// `rythme help [NAME] --format json`: everything, or one built-in function,
 /// keyword, topic or code. An unknown name gives `"kind": "unknown"` and exit code 2.
 pub fn help_command(name: Option<&str>) -> i32 {
+    let (doc, code) = help_json(name);
+    print(doc);
+    code
+}
+
+/// The document of `rythme help [NAME] --format json`, and its exit code.
+pub fn help_json(name: Option<&str>) -> (Json, i32) {
     let Some(name) = name else {
         let topics: Vec<Json> = help::TOPICS
             .iter()
             .map(|(n, aliases)| obj([("name", (*n).into()), ("aliases", Json::Arr(aliases.iter().map(|a| (*a).into()).collect()))]))
             .collect();
         let aliases: Vec<Json> = builtins::ALIASES.iter().map(|a| obj([("name", a.name.into()), ("of", a.of.into())])).collect();
-        print(with(
+        let doc = with(
             head("help"),
             vec![
                 ("builtins", Json::Arr(BUILTINS.iter().map(builtin_json).collect())),
@@ -491,15 +507,14 @@ pub fn help_command(name: Option<&str>) -> i32 {
                 ("topics", Json::Arr(topics)),
                 ("codes", Json::Arr(help::CODES.iter().map(|c| code_json(c)).collect())),
             ],
-        ));
-        return 0;
+        );
+        return (doc, 0);
     };
     let one = |kind: &str, value: Json| {
         let mut doc = head("help");
         doc.push(("kind".into(), kind.into()));
         doc.push((kind.into(), value));
-        print(Json::Obj(doc));
-        0
+        (Json::Obj(doc), 0)
     };
     if let Some(b) = builtins::lookup(name) {
         return one("builtin", builtin_json(b));
@@ -517,8 +532,7 @@ pub fn help_command(name: Option<&str>) -> i32 {
     doc.push(("kind".into(), "unknown".into()));
     doc.push(("name".into(), name.into()));
     doc.push(("message".into(), help::unknown_topic(name).trim_end().into()));
-    print(Json::Obj(doc));
-    2
+    (Json::Obj(doc), 2)
 }
 
 // ----- rythme fix -----------------------------------------------------------------------

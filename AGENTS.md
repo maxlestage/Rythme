@@ -52,6 +52,7 @@ After a change to the interpreter: `bench/run.sh` before and after.
 | `src/suggest.rs` | "did you mean", names and keywords from other languages |
 | `src/lang.rs`, `src/i18n/*.rs` | languages: `t!(en, fr)` plus a catalog per other language |
 | `src/lsp/` | the language server; `src/debug/` the debugger (terminal and DAP) |
+| `src/mcp.rs` | `rythme mcp`, the Model Context Protocol server for AI assistants |
 | `src/llms.rs` | generates `docs/llms.txt` and `docs/llms-full.txt` |
 | `src/format.rs`, `doc.rs`, `steps.rs`, `testing.rs`, `project.rs`, `exercise.rs` | `fmt`, `doc`, `steps`, `test`, `new`/`install`, `exercise` |
 | `docs/reference.md`, `docs/reference.fr.md` | the manual (EN and FR); samples are run by `tests/manual.rs` |
