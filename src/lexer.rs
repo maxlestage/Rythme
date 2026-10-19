@@ -156,7 +156,10 @@ pub fn lex(src: &str, file: u32) -> Fallible<Lexed> {
     // Some editors (Notepad) start files with an invisible byte order mark.
     let pos = if src.starts_with('\u{FEFF}') { '\u{FEFF}'.len_utf8() } else { 0 };
     let mut lx = Lexer { src, pos, file, docs: HashMap::new(), pending_doc: Vec::new(), depth: 0 };
-    let tokens = lx.tokens(None)?;
+    let tokens = lx.tokens(None).map_err(|mut d| {
+        crate::fix::complete(&mut d);
+        d
+    })?;
     Ok(Lexed { tokens, docs: lx.docs })
 }
 
