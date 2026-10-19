@@ -8491,6 +8491,13 @@ Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把�
         (r#"Rythme texts put values in by themselves: write `"total: {{x}}"`, without `f` in front"#, r#"Rythme 的文本会自己插入值：写 `"total: {{x}}"`，前面不要 `f`"#),
         ("`--format` takes `json` or `text`, not `{v}`: `rythme check --format json file.ry`", "`--format` 只接受 `json` 或 `text`，不能是 `{v}`：`rythme check --format json file.ry`"),
         ("`--watch` does not go with `--format json`: run `rythme test --format json` again after each change", "`--watch` 不能和 `--format json` 一起用：每次修改后重新运行 `rythme test --format json`"),
+        ("unknown option `{bad}` for `rythme fix`; the options are: --dry-run, --all, --format json", "`rythme fix` 没有选项 `{bad}`；可用的选项有：--dry-run、--all、--format json"),
+        ("which file? Example: rythme fix hello.ry (or rythme fix --dry-run hello.ry to see the changes first)", "哪个文件？例如：rythme fix hello.ry（或者先用 rythme fix --dry-run hello.ry 查看改动）"),
+        ("cannot write `{shown}`: {e}", "无法写入 `{shown}`：{e}"),
+        ("{shown}: nothing to fix", "{shown}：没有要修正的地方"),
+        ("{shown}: {n} fix(es) to apply", "{shown}：有 {n} 处修正可以应用"),
+        ("{shown}: {n} fix(es) applied", "{shown}：已应用 {n} 处修正"),
+        ("; {errors} error(s) and {warnings} warning(s) left: `rythme check {shown}`", "；还剩 {errors} 个错误和 {warnings} 个警告：`rythme check {shown}`"),
         ("here: `new_{name} = {name} {op} {rest}`, then use `new_{name}`; to add up a list, use `sum(list)` or `fold`", "这里写：`new_{name} = {name} {op} {rest}`，然后使用 `new_{name}`；要对列表求和，用 `sum(list)` 或 `fold`"),
     ],
 }
