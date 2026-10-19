@@ -54,8 +54,9 @@ where
     best.map(|(_, c)| c.to_string())
 }
 
-/// Names from other languages and what to use in Rythme instead.
-pub fn alias_hint(name: &str) -> Option<String> {
+/// The built-in function of Rythme that a name from another language means:
+/// `upper` for `toUpperCase` (`+` for `concat`).
+pub fn rythme_name(name: &str) -> Option<&'static str> {
     let rythme = match name {
         "count_of" | "strlen" | "lenght" => "len",
         "println" | "echo" | "printf" | "console" | "printLn" | "say" | "afficher" => "print",
@@ -179,7 +180,12 @@ pub fn alias_hint(name: &str) -> Option<String> {
         "srand" | "set_seed" | "setSeed" | "randomSeed" | "seed_random" | "mt_srand" => "random_seed",
         _ => "",
     };
-    if !rythme.is_empty() {
+    (!rythme.is_empty()).then_some(rythme)
+}
+
+/// Names from other languages and what to use in Rythme instead.
+pub fn alias_hint(name: &str) -> Option<String> {
+    if let Some(rythme) = rythme_name(name) {
         if rythme == "+" {
             return Some(t!(
                 "to join two lists or two texts, use `+`: `[1, 2] + [3]`; for a list of lists, use `flatten`",

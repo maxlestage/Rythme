@@ -1780,9 +1780,9 @@ then handle them with `match` or pass them on with `?`. `fail(message)` stops th
         ("unknown option `{name}` for `rythme test`", "`rythme test` 的未知选项 `{name}`"),
         (
             r#"
-the options are: --filter NAME, --seed N, --watch (see `rythme help tests`)"#,
+the options are: --filter NAME, --seed N, --watch, --sandbox, --format json (see `rythme help tests`)"#,
             r#"
-可用的选项有：--filter NAME、--seed N、--watch（参见 `rythme help tests`）"#,
+可用的选项有：--filter NAME、--seed N、--watch、--sandbox、--format json（参见 `rythme help tests`）"#,
         ),
         ("which file or folder? Example: rythme test my_tests.ry, or rythme test . for the files of this folder", "哪个文件或文件夹？例如：rythme test my_tests.ry，或者用 rythme test . 测试这个文件夹中的文件"),
         ("Seed: {}", "种子：{}"),
@@ -8465,5 +8465,32 @@ Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把�
 写出的类型从来不是必需的，程序运行时也不会因此有任何不同；
 编辑器和 `rythme doc` 会显示它们。"#,
         ),
+        // src/fix.rs, src/machine.rs: fixes and output for programs
+        ("`{f}` is not available in the sandbox: a program run by a tool (`--sandbox`) cannot touch files or folders. Run it yourself: rythme file.ry", "`{f}` 在沙箱中不可用：由工具运行的程序（`--sandbox`）不能访问文件或文件夹。请自己运行它：rythme file.ry"),
+        ("Remove `{}`", "删除 `{}`"),
+        (r#""not equal" is written `!=`: `a != b`"#, "“不等于”写作 `!=`：`a != b`"),
+        ("an anonymous function is written `fn(x) = x * 2`", "匿名函数写作 `fn(x) = x * 2`"),
+        (
+            r#"on several lines, `if` is written:
+  if x > 0 then
+    "positive"
+  else if x == 0 then
+    "zero"
+  else
+    "negative"
+(no `end`; for several statements in a branch, use `do ... end`)"#,
+            r#"写成多行时，`if` 这样写：
+  if x > 0 then
+    "positive"
+  else if x == 0 then
+    "zero"
+  else
+    "negative"
+（没有 `end`；一个分支里有多条语句时，用 `do ... end`）"#,
+        ),
+        (r#"Rythme texts put values in by themselves: write `"total: {{x}}"`, without `f` in front"#, r#"Rythme 的文本会自己插入值：写 `"total: {{x}}"`，前面不要 `f`"#),
+        ("`--format` takes `json` or `text`, not `{v}`: `rythme check --format json file.ry`", "`--format` 只接受 `json` 或 `text`，不能是 `{v}`：`rythme check --format json file.ry`"),
+        ("`--watch` does not go with `--format json`: run `rythme test --format json` again after each change", "`--watch` 不能和 `--format json` 一起用：每次修改后重新运行 `rythme test --format json`"),
+        ("here: `new_{name} = {name} {op} {rest}`, then use `new_{name}`; to add up a list, use `sum(list)` or `fold`", "这里写：`new_{name} = {name} {op} {rest}`，然后使用 `new_{name}`；要对列表求和，用 `sum(list)` 或 `fold`"),
     ],
 }

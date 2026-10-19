@@ -9,6 +9,36 @@ pub enum Severity {
     Warning,
 }
 
+/// A change of the code that fixes a diagnostic: `rythme fix` applies the
+/// safe ones, `rythme check --format json` and the editors propose them all.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Fix {
+    /// What it does, in the language of the messages: "Replace with `and`".
+    pub title: String,
+    /// Each part of the code to replace, and its new text (empty to delete,
+    /// an empty span to insert). The parts do not overlap.
+    pub edits: Vec<(Span, String)>,
+    /// The fix gives exactly the program the author meant, with nothing else
+    /// to decide (`&&` → `and`). Otherwise it is a likely guess (a misspelt
+    /// name), to be read before it is applied.
+    pub safe: bool,
+}
+
+impl Fix {
+    /// Replaces the code of `span` by `new`.
+    pub fn replace(span: Span, new: impl Into<String>, safe: bool) -> Fix {
+        let new = new.into();
+        let title = if new.is_empty() {
+            let old = source::get(span.file).and_then(|f| f.text.get(span.start as usize..span.end as usize).map(str::to_string));
+            t!("Remove `{}`", "Supprimer `{}`", old.unwrap_or_default().trim())
+        } else {
+            let new = new.trim();
+            t!("Replace with `{new}`", "Remplacer par `{new}`")
+        };
+        Fix { title, edits: vec![(span, new)], safe }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Diagnostic {
     pub severity: Severity,
@@ -25,6 +55,8 @@ pub struct Diagnostic {
     pub trace_omitted: usize,
     /// The input ended too early: the REPL should ask for another line.
     pub incomplete: bool,
+    /// Changes of the code that fix it, when they are known (see [`Fix`]).
+    pub fixes: Vec<Fix>,
 }
 
 pub type Fallible<T> = Result<T, Box<Diagnostic>>;
@@ -45,6 +77,7 @@ impl Diagnostic {
             trace: Vec::new(),
             trace_omitted: 0,
             incomplete: false,
+            fixes: Vec::new(),
         }
     }
 
@@ -74,6 +107,11 @@ impl Diagnostic {
 
     pub fn secondary(mut self, span: Span, label: impl Into<String>) -> Self {
         self.secondary.push((span, label.into()));
+        self
+    }
+
+    pub fn fix(mut self, fix: Fix) -> Self {
+        self.fixes.push(fix);
         self
     }
 
@@ -293,6 +331,35 @@ impl Colors {
         } else {
             Colors { red: "", yellow: "", blue: "", green: "", bold: "", reset: "" }
         }
+    }
+}
+
+thread_local! {
+    static KEPT: std::cell::RefCell<Option<Vec<Diagnostic>>> = const { std::cell::RefCell::new(None) };
+}
+
+/// From now on, the diagnostics given to [`show`] are kept instead of
+/// printed (`--format json` prints them at the end, as JSON).
+pub fn keep_shown() {
+    KEPT.with(|k| *k.borrow_mut() = Some(Vec::new()));
+}
+
+/// The diagnostics kept since [`keep_shown`] (they are still kept after).
+pub fn take_kept() -> Vec<Diagnostic> {
+    KEPT.with(|k| k.borrow_mut().as_mut().map(std::mem::take).unwrap_or_default())
+}
+
+/// Shows a diagnostic on the error output, or keeps it (see [`keep_shown`]).
+pub fn show(d: &Diagnostic, color: bool) {
+    let kept = KEPT.with(|k| match k.borrow_mut().as_mut() {
+        Some(list) => {
+            list.push(d.clone());
+            true
+        }
+        None => false,
+    });
+    if !kept {
+        crate::io::err(&format!("{}\n", d.render(color)));
     }
 }
 

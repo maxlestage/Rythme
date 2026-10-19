@@ -1780,9 +1780,9 @@ und behandle sie dann mit `match` oder gib sie mit `?` weiter. `fail(message)` h
         ("unknown option `{name}` for `rythme test`", "unbekannte Option `{name}` für `rythme test`"),
         (
             r#"
-the options are: --filter NAME, --seed N, --watch (see `rythme help tests`)"#,
+the options are: --filter NAME, --seed N, --watch, --sandbox, --format json (see `rythme help tests`)"#,
             r#"
-die Optionen sind: --filter NAME, --seed N, --watch (siehe `rythme help tests`)"#,
+die Optionen sind: --filter NAME, --seed N, --watch, --sandbox, --format json (siehe `rythme help tests`)"#,
         ),
         ("which file or folder? Example: rythme test my_tests.ry, or rythme test . for the files of this folder", "welche Datei oder welcher Ordner? Beispiel: rythme test meine_tests.ry, oder rythme test . für die Dateien dieses Ordners"),
         ("Seed: {}", "Seed: {}"),
@@ -8665,5 +8665,32 @@ Die Typen
 Geschriebene Typen sind nie nötig und ändern nichts, wenn das Programm
 läuft; die Editoren und `rythme doc` zeigen sie."#,
         ),
+        // src/fix.rs, src/machine.rs: fixes and output for programs
+        ("`{f}` is not available in the sandbox: a program run by a tool (`--sandbox`) cannot touch files or folders. Run it yourself: rythme file.ry", "`{f}` ist in der Sandbox nicht verfügbar: Ein von einem Werkzeug gestartetes Programm (`--sandbox`) darf keine Dateien oder Ordner anfassen. Starte es selbst: rythme datei.ry"),
+        ("Remove `{}`", "`{}` entfernen"),
+        (r#""not equal" is written `!=`: `a != b`"#, "„ungleich“ schreibt man `!=`: `a != b`"),
+        ("an anonymous function is written `fn(x) = x * 2`", "eine anonyme Funktion schreibt man `fn(x) = x * 2`"),
+        (
+            r#"on several lines, `if` is written:
+  if x > 0 then
+    "positive"
+  else if x == 0 then
+    "zero"
+  else
+    "negative"
+(no `end`; for several statements in a branch, use `do ... end`)"#,
+            r#"über mehrere Zeilen schreibt man `if` so:
+  if x > 0 then
+    "positiv"
+  else if x == 0 then
+    "null"
+  else
+    "negativ"
+(ohne `end`; für mehrere Anweisungen in einem Zweig nimm `do ... end`)"#,
+        ),
+        (r#"Rythme texts put values in by themselves: write `"total: {{x}}"`, without `f` in front"#, r#"Texte in Rythme setzen Werte von selbst ein: schreib `"total: {{x}}"`, ohne `f` davor"#),
+        ("`--format` takes `json` or `text`, not `{v}`: `rythme check --format json file.ry`", "`--format` nimmt `json` oder `text`, nicht `{v}`: `rythme check --format json datei.ry`"),
+        ("`--watch` does not go with `--format json`: run `rythme test --format json` again after each change", "`--watch` passt nicht zu `--format json`: starte `rythme test --format json` nach jeder Änderung neu"),
+        ("here: `new_{name} = {name} {op} {rest}`, then use `new_{name}`; to add up a list, use `sum(list)` or `fold`", "hier: `neu_{name} = {name} {op} {rest}`, dann nimm `neu_{name}`; um eine Liste aufzusummieren, nimm `sum(liste)` oder `fold`"),
     ],
 }

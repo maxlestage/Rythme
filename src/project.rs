@@ -461,7 +461,7 @@ fn usage(msg: String) -> i32 {
 }
 
 fn report(d: &Diagnostic) {
-    crate::io::err(&format!("{}\n", d.render(crate::diagnostic::use_color())));
+    crate::diagnostic::show(d, crate::diagnostic::use_color());
 }
 
 /// The project of the current folder, or a message saying there is none.
