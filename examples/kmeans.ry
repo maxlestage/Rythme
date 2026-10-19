@@ -1,0 +1,40 @@
+# k-means: finding groups in points that come without labels. Start from k
+# centers, give each point to its nearest center, move each center to the
+# middle of its points, and again, until nothing moves.
+
+# Three clouds of 20 points around (2, 2), (8, 3) and (5, 8), drawn by chance
+# with a seed: the same points on every run.
+random_seed(7)
+clouds = [[2, 2], [8, 3], [5, 8]]
+points = clouds |> flat_map(fn([x, y]) = map(1..20, fn(_) = [random_normal(x, 0.8), random_normal(y, 0.8)]))
+
+fn distance(a, b) = norm(vector_sub(a, b))
+
+## The position of the center nearest to the point.
+fn nearest(centers, point) = argmin(map(centers, fn(c) = distance(c, point)))
+
+## The middle of some points: the mean of each coordinate.
+fn middle(group) = transpose(group) |> map(fn(column) = stats(column).mean)
+
+## The points nearest to each center.
+fn groups(centers) = enumerate(centers) |> map(fn([i, _]) = filter(points, fn(p) = nearest(centers, p) == i))
+
+## Each center moves to the middle of its points (or stays, if it has none).
+fn move(centers) = zip_with(centers, groups(centers), fn(center, group) = if group == [] then center else middle(group))
+
+fn k_means(centers, round) =
+  if move(centers) == centers or round == 50 then
+    {centers, round}
+  else
+    k_means(move(centers), round + 1)
+
+# The first three points as the first centers.
+found = k_means(take(points, 3), 1)
+print("Stable after {found.round} rounds:")
+
+zip(found.centers, groups(found.centers))
+  |> sort_by(fn([center, _]) = center)
+  |> each(fn([[x, y], group]) = print("  center ({text(x, 2)}, {text(y, 2)}): {len(group)} points"))
+
+print()
+print(plot(map(points, fn(p) = p[0]), map(points, fn(p) = p[1])))
