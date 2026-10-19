@@ -13,6 +13,7 @@ pub mod buffer;
 pub mod builtins;
 pub mod check;
 pub mod compile;
+pub mod debug;
 pub mod diagnostic;
 pub mod dict;
 pub mod doc;

@@ -97,6 +97,7 @@ irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex
 | `rythme explain E003`       | 解释错误代码                                     |
 | `rythme learn`              | 语言导览                                         |
 | `rythme steps fib.ry "fib(4)"` | 一步一步显示计算过程                          |
+| `rythme debug fib.ry`          | 调试器：断点、逐行执行、查看值                |
 
 在命令前加上 `--lang zh`、设置 `RYTHME_LANG=zh`，或者系统语言是中文时
 （`LANG=zh_CN.UTF-8`），消息会自动使用简体中文。关键字、内置函数的名字和命令

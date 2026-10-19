@@ -123,6 +123,9 @@ pub(super) fn input_lines(it: &mut Interp, _: &[Value], span: Span) -> Fallible<
         return Ok(e);
     }
     let mut lines = Vec::new();
+    if crate::io::input_closed() {
+        return Ok(it.ok(Value::list(lines)));
+    }
     for line in std::io::stdin().lock().split(b'\n') {
         match line {
             Ok(l) => {

@@ -98,6 +98,7 @@ Más opciones en el [README en inglés](README.md#install).
 | `rythme explain E003`       | explicar un código de error                      |
 | `rythme learn`              | visita guiada del lenguaje                       |
 | `rythme steps fib.ry "fib(4)"` | el cálculo paso a paso                        |
+| `rythme debug fib.ry`          | el depurador: puntos de interrupción, línea a línea, valores |
 
 Los mensajes están en español con `--lang es` antes del comando, con
 `RYTHME_LANG=es`, o automáticamente cuando el idioma del sistema es el español
