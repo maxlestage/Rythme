@@ -20,7 +20,9 @@ use crate::symbol::Sym;
 use crate::types::{self, Outcome, Ty, BOOL, DATA, DICT, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, SET, SYMBOL, TEXT, UNIT};
 use crate::value::{Record, Value};
 
+mod annot;
 mod needs;
+pub use annot::Written;
 pub use needs::Signature;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -72,6 +74,9 @@ pub struct Knowledge {
     /// Names defined by the other files of the folder, not used yet: the
     /// name, then how to use the file (`geometry`) and its file name.
     pub nearby: HashMap<Sym, (Rc<str>, Rc<str>)>,
+    /// The functions and constructors defined before whose code writes
+    /// types (`fn area(w: Int)`, `Circle(radius: Float)`).
+    pub written: HashMap<Sym, Rc<Written>>,
 }
 
 /// What the checker knows of a file used with a name.
@@ -114,7 +119,12 @@ impl Knowledge {
         for (s, v) in it.globals.iter().filter(|(s, _)| !s.is_stored()) {
             let info = match v {
                 Value::Builtin(b) => GlobalInfo { kind: GKind::Builtin, arity: Some((b.min, b.max)), sig: b.sig.to_string(), span: None },
-                Value::Func(c) => func_info(&c.def),
+                Value::Func(c) => {
+                    if let Some(w) = Written::of_fn(&c.def) {
+                        k.written.insert(*s, Rc::new(w));
+                    }
+                    func_info(&c.def)
+                }
                 Value::Ctor(c) => GlobalInfo {
                     kind: GKind::Ctor,
                     arity: Some((c.fields.len(), c.fields.len())),
@@ -163,12 +173,16 @@ impl Knowledge {
             if crate::modules::is_private(s) {
                 own.globals.remove(&s);
                 own.value_types.remove(&s);
+                own.written.remove(&s);
                 // A private name hides nothing of the file that uses it.
                 if let Some(g) = self.globals.get(&s) {
                     own.globals.insert(s, g.clone());
                 }
                 if let Some(t) = self.value_types.get(&s) {
                     own.value_types.insert(s, t.clone());
+                }
+                if let Some(w) = self.written.get(&s) {
+                    own.written.insert(s, w.clone());
                 }
                 own.private.insert(s, file.clone());
             }
@@ -201,6 +215,13 @@ impl Knowledge {
                     g.sig = format!("{name}.{}", g.sig);
                 }
                 self.globals.insert(q(s), g);
+                match module.written.get(&s) {
+                    Some(w) => {
+                        let module = Some(w.module.unwrap_or(name));
+                        self.written.insert(q(s), Rc::new(Written { name: format!("{name}.{}", w.name), module, ..(**w).clone() }))
+                    }
+                    None => self.written.remove(&q(s)),
+                };
                 match module.value_types.get(&s) {
                     Some(t) if !has_own_data(t) => self.value_types.insert(q(s), t.clone()),
                     _ => self.value_types.remove(&q(s)),
@@ -228,12 +249,17 @@ impl Knowledge {
                     if let Some(n) = def.name {
                         self.value_types.remove(&n);
                         self.globals.insert(n, func_info(def));
+                        match Written::of_fn(def) {
+                            Some(w) => self.written.insert(n, Rc::new(w)),
+                            None => self.written.remove(&n),
+                        };
                     }
                 }
                 Item::Stmt(Stmt::Let(p, _)) => {
                     let mut b = Vec::new();
                     p.bindings(&mut b);
                     for (s, sp) in b {
+                        self.written.remove(&s);
                         // Defined by two files: the value depends on the order they run in.
                         let again = self.globals.contains_key(&s);
                         match inferred.get(&s) {
@@ -252,6 +278,10 @@ impl Knowledge {
                         self.value_types.remove(&v.name);
                         self.ctors.insert(v.name, CtorMeta { type_name: t.name, arity: v.fields.len(), fields: v.fields.clone() });
                         self.globals.insert(v.name, ctor_info(v));
+                        match Written::of_variant(v) {
+                            Some(w) => self.written.insert(v.name, Rc::new(w)),
+                            None => self.written.remove(&v.name),
+                        };
                     }
                 }
                 _ => {}
@@ -264,12 +294,7 @@ fn ctor_info(v: &VariantDef) -> GlobalInfo {
     if v.fields.is_empty() {
         GlobalInfo { kind: GKind::CtorValue, arity: None, sig: v.name.name().to_string(), span: Some(v.span) }
     } else {
-        GlobalInfo {
-            kind: GKind::Ctor,
-            arity: Some((v.fields.len(), v.fields.len())),
-            sig: ctor_sig(v.name, &v.fields),
-            span: Some(v.span),
-        }
+        GlobalInfo { kind: GKind::Ctor, arity: Some((v.fields.len(), v.fields.len())), sig: v.signature(), span: Some(v.span) }
     }
 }
 
@@ -408,6 +433,8 @@ struct Checker<'a> {
     needs: needs::Needs,
     /// The types of the names defined, by place, when asked (`check_with_types`).
     name_types: Option<HashMap<Span, Ty>>,
+    /// The functions and constructors of this module whose code writes types.
+    own_written: HashMap<Sym, Rc<Written>>,
 }
 
 /// Built-in functions that only compute a value: no effect, no function of
@@ -491,6 +518,7 @@ impl<'a> Checker<'a> {
             builtin_types: HashMap::new(),
             needs: needs::Needs::default(),
             name_types: None,
+            own_written: HashMap::new(),
         };
         for item in items {
             match item {
@@ -515,6 +543,9 @@ impl<'a> Checker<'a> {
                         if self.declare_global(n, def.span, func_info(def), &mut first) {
                             self.gtypes.insert(n, Ty::func(Some((def.arity, def.arity)), Ty::Never, Some(def.signature().into())));
                             self.fn_defs.insert(n, def.clone());
+                            if let Some(w) = Written::of_fn(def) {
+                                self.own_written.insert(n, Rc::new(w));
+                            }
                         }
                     }
                 }
@@ -568,6 +599,9 @@ impl<'a> Checker<'a> {
                         }
                         self.declare_global(v.name, v.span, ctor_info(v), &mut first);
                         self.ctors.insert(v.name, CtorMeta { type_name: t.name, arity: v.fields.len(), fields: v.fields.clone() });
+                        if let Some(w) = Written::of_variant(v) {
+                            self.own_written.insert(v.name, Rc::new(w));
+                        }
                     }
                     self.types.insert(t.name, t.variants.iter().map(|v| v.name).collect());
                 }
@@ -710,6 +744,7 @@ impl<'a> Checker<'a> {
         // the values of the other top-level expressions are lost.
         let last_expr = items.iter().rposition(|it| matches!(it, Item::Stmt(Stmt::Expr(_))));
         self.needs.reporting = true;
+        self.check_written_types(items);
         for (i, item) in items.iter().enumerate() {
             if let Item::Stmt(Stmt::Expr(e)) = item {
                 if Some(i) != last_expr && !has_effect(e, &|name| self.may_call(name)) {
@@ -760,6 +795,7 @@ impl<'a> Checker<'a> {
 
     fn top_let(&mut self, p: &Pattern, e: &Expr) {
         let t = self.expr(e);
+        let t = self.written_value(p, e, &t);
         self.pattern(p);
         self.let_pattern(p, e, &t);
         let mut b = Vec::new();
@@ -1212,7 +1248,15 @@ impl<'a> Checker<'a> {
         let name = def.name.map(|n| n.to_string()).unwrap_or_default();
         // The types of the parameters, when the caller knows them; they reach
         // `check_with_types` (and the editor's hints) through `declare_local`.
-        let param_ty = |i: usize| params.and_then(|p| p.get(i).cloned()).unwrap_or(Ty::Any);
+        // Without them, the types written for the parameters, if any.
+        let ptys: Vec<Ty> = (0..def.arity)
+            .map(|i| match params.and_then(|p| p.get(i)) {
+                Some(t) if t.is_known() => t.clone(),
+                _ => self.written_param(def, i).unwrap_or(Ty::Any),
+            })
+            .collect();
+        let param_ty = |i: usize| ptys.get(i).cloned().unwrap_or(Ty::Any);
+        let speaks = !quiet && self.needs.specializing == 0;
         for (ci, clause) in def.clauses.iter().enumerate() {
             if let (Some(prev), false) = (catch_all, reported_unreachable) {
                 reported_unreachable = true;
@@ -1286,6 +1330,9 @@ impl<'a> Checker<'a> {
             let mut matches = true;
             for (i, p) in clause.params.iter().enumerate() {
                 let t = param_ty(i);
+                if let (Some(given), true) = (params.and_then(|g| g.get(i)), speaks) {
+                    self.written_received(p, given);
+                }
                 self.pattern(p);
                 p.bindings(&mut b);
                 self.binding_types(p, &t, &mut tys);
@@ -1332,6 +1379,9 @@ impl<'a> Checker<'a> {
                 _ => self.expr(&clause.body),
             };
             if matches {
+                if speaks {
+                    self.written_body(def, &clause.body, &body);
+                }
                 ret = ret.join(&body);
             } else if quiet {
                 self.diags.truncate(reported);
@@ -1360,9 +1410,13 @@ impl<'a> Checker<'a> {
             }
         }
         let early = self.early.pop().unwrap_or(Ty::Never);
+        if speaks {
+            self.written_early(def, &early);
+        }
         self.fn_depth -= 1;
         self.need_leave(def);
-        Ty::func(Some((def.arity, def.arity)), ret.join(&early), Some(def.signature().into()))
+        let ret = self.with_written_result(def, ret.join(&early));
+        Ty::func(Some((def.arity, def.arity)), ret, Some(def.signature().into()))
     }
 
     /// Checks the statements of a block and gives the type of its value.
@@ -1399,11 +1453,13 @@ impl<'a> Checker<'a> {
                         self.declare_local_fn(*name, p.span, true, Some(info), first, Some(def.clone()));
                         self.forget_local(def);
                         let t = self.func(def, None);
+                        let t = self.written_value(p, e, &t);
                         self.note_local_signature(def, &t);
                         self.set_local_type(*name, p.span, t);
                     } else {
                         let t = self.expr(e);
                         stops |= t == Ty::Never;
+                        let t = self.written_value(p, e, &t);
                         self.let_pattern(p, e, &t);
                         // A value that does not match the pattern stops the program.
                         let k = self.pattern_kinds(p);
@@ -1898,8 +1954,15 @@ impl<'a> Checker<'a> {
             (_, Res::Local(_, def)) => def.clone(),
             _ => None,
         };
+        // The types written for the parameters: an argument that does not fit is the error.
+        let written = if builtin.is_none() { self.written_of(name, res, def.as_deref()) } else { None };
+        let (wrong, vars) = match &written {
+            Some(w) if w.params.len() == n => self.written_args(w, &exprs, &tys),
+            _ => (false, HashMap::new()),
+        };
         // A pattern that no definition matches is the error, if there is one.
-        if !def.as_ref().is_some_and(|d| d.arity == n && !self.some_clause_accepts(d, &tys))
+        if !wrong
+            && !def.as_ref().is_some_and(|d| d.arity == n && !self.some_clause_accepts(d, &tys))
             && self.need_call(name, res, builtin, callee, &exprs, &tys, span)
         {
             return Ty::Never;
@@ -1922,18 +1985,28 @@ impl<'a> Checker<'a> {
                 if let (Some(c), Res::Global(g)) = (name, res) {
                     if g.kind == GKind::Ctor {
                         return match self.ctors.get(&c) {
-                            Some(m) => Ty::data(m.type_name, Some(vec![(c, tys)])),
+                            Some(m) => {
+                                // A field whose value is not known has the type written for it.
+                                let fields = match self.written_fields(c, n) {
+                                    Some(ws) => tys.into_iter().zip(ws).map(|(t, w)| if t.is_known() { t } else { w }).collect(),
+                                    None => tys,
+                                };
+                                Ty::data(m.type_name, Some(vec![(c, fields)]))
+                            }
                             None => f.ret.clone(),
                         };
                     }
                 }
                 if let Some(def) = def {
-                    if def.arity == n && !self.some_clause_accepts(&def, &tys) {
+                    if !wrong && def.arity == n && !self.some_clause_accepts(&def, &tys) {
                         self.no_clause(&def, &exprs, &tys, span);
                         return Ty::Never;
                     }
                 }
-                f.ret.clone()
+                match &written {
+                    Some(w) => self.written_result(w, &vars, f.ret.clone()),
+                    None => f.ret.clone(),
+                }
             }
             Ty::Any => Ty::Any,
             t => {
@@ -3133,14 +3206,19 @@ impl<'a> Checker<'a> {
     /// The types of the fields of a constructor pattern `name(...)`, for a
     /// value of type `t`.
     fn ctor_fields(&self, name: Sym, n: usize, t: &Ty) -> Vec<Ty> {
-        match t {
+        let fields = match t {
             Ty::Data(d) if self.in_type(d.name, name) => match d.fields_of(&name.name(), n) {
                 Some(fs) if fs.len() == n => fs,
                 Some(_) => vec![Ty::Any; n],
-                None => vec![Ty::Never; n],
+                None => return vec![Ty::Never; n],
             },
             Ty::Any => vec![Ty::Any; n],
-            _ => vec![Ty::Never; n],
+            _ => return vec![Ty::Never; n],
+        };
+        // A field whose type is not known has the type written for it, if any.
+        match self.written_fields(name, n) {
+            Some(ws) => fields.into_iter().zip(ws).map(|(t, w)| if t == Ty::Any { w } else { t }).collect(),
+            None => fields,
         }
     }
 

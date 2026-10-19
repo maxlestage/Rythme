@@ -345,7 +345,10 @@ et des messages en six langues. Son contenu est décrit dans
   sont certains, pour signaler avant l'exécution les opérations qui
   échoueraient à coup sûr ; il déduit aussi ce que doivent être les
   paramètres de chaque fonction, pour signaler les appels qui échouent à
-  coup sûr, et l'éditeur montre ces signatures au survol.
+  coup sûr, et l'éditeur montre ces signatures au survol. Les types peuvent
+  aussi être écrits là où ils aident à lire le code, et sont alors vérifiés
+  (`fn aire(l: Int, h: Int) -> Int`, `total: Float = 0.0`) ; ils ne sont
+  jamais obligatoires (voir `rythme help types`).
 - **Outils.** `rythme fmt` met le code en forme dans le style officiel (voir
   `rythme help fmt`), `rythme doc` écrit la documentation de fichiers et de
   dossiers à partir de leurs commentaires `##` (voir `rythme help doc`),

@@ -2175,6 +2175,8 @@ type Nom = Variante | Variante(champ, champ) | ...
   qu'au premier niveau.
 - On lit les champs avec `.champ` ou avec des motifs. Égalité et ordre : voir
   [2.11](#211-égalité) et [2.12](#212-ordre).
+- Le type d'un champ peut être écrit après son nom, pour le vérificateur :
+  `Cercle(rayon: Float)` (voir [4.10](#410-types-écrits)).
 - Les commentaires `##` écrits au-dessus d'un `type` le documentent : `help`
   les affiche pour chacun de ses constructeurs, après le nom du type.
 
@@ -2513,6 +2515,183 @@ erreur[E017]: `pong.ry` et `ping.ry` s'utilisent l'un l'autre
   |
   = aide: des fichiers ne peuvent pas s'utiliser l'un l'autre : déplacez ce dont les deux ont besoin dans un troisième fichier, utilisé par les deux
   = en savoir plus : `rythme explain E017`
+```
+
+### 4.10 Types écrits
+
+```text
+fn nom(parametre: Type, ...) -> Type = ...
+nom: Type = valeur
+type Nom = Variante(champ: Type, ...) | ...
+xs.map do |x: Type| ... end
+```
+
+Rythme trouve les types tout seul (voir
+[5.5](#55-la-vérification-avant-lexécution)), et n'a jamais besoin qu'ils
+soient écrits. On peut quand même les écrire là où ils aident à lire le
+code : `rythme check` (et chaque exécution, qui vérifie d'abord) les vérifie
+alors. L'exécution d'un programme ne les regarde jamais : en retirer un ne
+change rien.
+
+- **Où** : après un paramètre d'une fonction, d'une fonction anonyme ou d'un
+  bloc (`|x: Int|`) ; après un nom qui reçoit une valeur (`total: Float =
+  0.0`) ou un motif entre crochets (`[a, b]: List(Int) = xs`), qui reçoit
+  alors sa valeur tout de suite ; après un champ d'une variante
+  (`Cercle(rayon: Float)`) ; et après les paramètres d'une fonction pour son
+  résultat (`fn aire(r: Float) -> Float = ...`, avant une condition `if`).
+  Un type ne s'écrit jamais dans un cas de `match`.
+- **Les types** : `Int`, `Float`, `Text`, `Bool`, `Unit`, `Symbol` ;
+  `List(Int)` (ou `[Int]`), `Set(Text)`, `Dict(Text, Int)`, `Option(Int)`,
+  `Result(Int, Text)` ; `{nom: Text, age: Int}`, un enregistrement avec au
+  moins ces champs ; `fn(Int, Int) -> Bool`, une fonction ; les types définis
+  avec `type` (`Forme`, et `geometrie.Forme` pour un type de
+  `use geometrie`) ; et les **variables de type**, une lettre minuscule
+  (`a`, `t`), pour n'importe quel type, le même partout dans une définition.
+  `List`, `Set`, `Dict`, `Option`, `Result`, `Record` et `Function` seuls
+  contiennent n'importe quoi.
+- **Ce que fait le vérificateur** : une valeur qui a sûrement un autre type
+  est E027, là où elle est donnée : la valeur d'un nom, un argument (le
+  message nomme le paramètre et montre son type), le résultat d'une fonction
+  ou ce que son `?` peut renvoyer, une valeur donnée à un bloc dont le
+  paramètre a un type. Un nombre entier n'est pas un `Float` (écrivez
+  `2.0`). Un type qui n'existe pas, ou qui prend un mauvais nombre de types
+  (`List(Int, Text)`), est aussi E027, avec le nom Rythme de `int`,
+  `String`, `Array`... Comme partout dans le vérificateur, une valeur dont
+  le type n'est pas connu à coup sûr n'est jamais signalée.
+- **Ce qu'il en tire** : dans sa fonction, un paramètre a son type écrit,
+  si bien qu'une erreur y est trouvée avant même tout appel ; un appel
+  donne le type écrit du résultat, avec les variables de type trouvées dans
+  les arguments (`premier([1, 2])` est un Int) ; les champs d'un
+  constructeur ont leurs types écrits dans les motifs. Cela marche aussi à
+  travers les fichiers donnés à `use`.
+- Un `:` collé au type après le premier paramètre (`fn f(x:Int)`,
+  `do |x:Int|`) commence un type, comme après une `,` ; ailleurs `nom:mot`
+  reste un [symbole](#214-symbol) (`puts:ok`) : un nom et son type
+  s'écrivent donc `total: Float`.
+- `rythme fmt` les écrit `l: Int`, `-> Int`, `{nom: Text}` ; le survol du
+  serveur de langage, l'aide aux paramètres et `rythme doc` les montrent, et
+  les indications de types ne les répètent pas. `rythme help types` les
+  résume.
+
+```rythme
+## Une forme, avec les types de ses champs.
+type Forme = Cercle(rayon: Float) | Rect(largeur: Float, hauteur: Float)
+
+fn aire(forme: Forme) -> Float = match forme
+  Cercle(r) -> pi * r * r
+  Rect(l, h) -> l * h
+end
+
+fn premier(xs: List(a)) -> a = xs[0]
+
+formes: List(Forme) = [Cercle(1.0), Rect(2.0, 3.0)]
+total: Float = formes |> map(aire) |> sum
+print(round(total, 2), premier(["a", "b"]))
+print([1, 2, 3].map do |n: Int| n * 10 end)
+```
+
+```text
+9.14 a
+[10, 20, 30]
+```
+
+Trois erreurs, trouvées avant l'exécution :
+
+```rythme
+fn aire_rect(l: Int, h: Int) -> Int = l * h
+fn etiquette(n: Int) -> Text = n
+ratio: Float = 2
+print(aire_rect(2, "3"), etiquette(1), ratio)
+```
+
+`rythme check` :
+
+```text
+erreur[E027]: `etiquette` est écrite pour donner `Text`, mais donne une valeur de type Int
+ --> sample.ry:2:32
+  |
+2 | fn etiquette(n: Int) -> Text = n
+  |                                ^ pas `Text`
+  |
+2 | fn etiquette(n: Int) -> Text = n
+  |                         ---- le type écrit pour le résultat de `etiquette`
+  |
+  = aide: changez la valeur, ou le type écrit pour elle ; les types écrits dans le code sont vérifiés avant l'exécution, et ne sont jamais obligatoires (voir `rythme help types`)
+  = en savoir plus : `rythme explain E027`
+
+erreur[E027]: `ratio` est écrit `Float`, mais sa valeur est Int 2
+ --> sample.ry:3:16
+  |
+3 | ratio: Float = 2
+  |                ^ pas `Float`
+  |
+3 | ratio: Float = 2
+  |        ----- le type écrit pour `ratio`
+  |
+  = aide: un nombre entier est un Int, pas un Float : écrivez-le avec un point décimal (`2.0`), ou convertissez-le avec `float(...)`
+  = en savoir plus : `rythme explain E027`
+
+erreur[E027]: `aire_rect` attend `Int` pour `h`, mais reçoit Text "3"
+ --> sample.ry:4:20
+  |
+4 | print(aire_rect(2, "3"), etiquette(1), ratio)
+  |                    ^^^ pas `Int`
+  |
+1 | fn aire_rect(l: Int, h: Int) -> Int = l * h
+  |                         --- le type écrit pour `h`
+  |
+  = aide: changez la valeur, ou le type écrit pour elle ; les types écrits dans le code sont vérifiés avant l'exécution, et ne sont jamais obligatoires (voir `rythme help types`)
+  = en savoir plus : `rythme explain E027`
+
+✗ sample.ry : 3 erreur(s)
+```
+
+Une variable de type désigne un seul type dans un appel, et les types
+commencent par une majuscule :
+
+```rythme
+fn paire(a: t, b: t) -> List(t) = [a, b]
+fn premier(xs: List(a)) -> a = xs[0]
+fn moitie(n: int) = n / 2
+print(paire(1, "un"), premier([1, 2]) + "!", moitie(4))
+```
+
+`rythme check` :
+
+```text
+erreur[E027]: type inconnu `int`
+ --> sample.ry:3:14
+  |
+3 | fn moitie(n: int) = n / 2
+  |              ^^^
+  |
+  = note: les noms de types commencent par une majuscule ; une variable de type, qui désigne n'importe quel type, est une seule lettre minuscule, comme `a`
+  = aide: en Rythme, écrivez `Int`
+  = en savoir plus : `rythme explain E027`
+
+erreur[E027]: `t` ne peut pas être à la fois Int et Text dans cet appel à `paire`
+ --> sample.ry:4:16
+  |
+4 | print(paire(1, "un"), premier([1, 2]) + "!", moitie(4))
+  |                ^^^^ `t` est Text ici
+  |
+4 | print(paire(1, "un"), premier([1, 2]) + "!", moitie(4))
+  |             - `t` est Int ici
+  |
+  = note: une variable de type comme `t` désigne le même type partout dans les types écrits pour `paire`
+  = en savoir plus : `rythme explain E027`
+
+erreur[E005]: impossible d'utiliser `+` avec Int et Text
+ --> sample.ry:4:39
+  |
+4 | print(paire(1, "un"), premier([1, 2]) + "!", moitie(4))
+  |                                       ^ Int + Text "!"
+  |
+  = aide: pour construire un texte contenant une valeur, utilisez des accolades : "total : {x}"
+      ou convertissez d'abord la valeur : text(x)
+  = en savoir plus : `rythme explain E005`
+
+✗ sample.ry : 3 erreur(s)
 ```
 
 ---
@@ -2915,6 +3094,7 @@ minuscules.
 | E024 | Une valeur est perdue | une ligne calcule une valeur dont rien ne se sert |
 | E025 | Problème de projet ou de paquet | un `rythme.toml` ou un `rythme.lock` illisible, une dépendance non installée, ou `rythme install` qui ne peut pas en obtenir une (voir [7.7](#77-projets-et-paquets)) |
 | E026 | Regex invalide | une regex qui ne respecte pas une règle (une `(` jamais fermée, `*` sans rien à répéter, un `\q` inconnu...), ou un remplacement de `replace_all` avec un groupe qui n'existe pas |
+| E027 | Un type écrit ne correspond pas | une valeur qui a sûrement un autre type que celui écrit pour elle (`total: Float = 0`, un argument, un résultat), ou un type écrit qui n'existe pas ([4.10](#410-types-écrits)) |
 | W001 | Nom inutilisé | un nom local est défini mais jamais utilisé |
 | W002 | Cas oublié | un `match` ou une fonction à un paramètre ne traite pas toutes les valeurs possibles |
 | W003 | Fonction intégrée masquée | une définition du premier niveau prend le nom d'une fonction intégrée |
@@ -4494,14 +4674,18 @@ statement    = fn_def | binding | command | expression ;
 command      = NAME [ "?" ] expression { "," { NL } expression }
                [ "do" [ params ] block_end ] ;     (* 3.15 *)
 
-binding      = pattern_atom "=" expression ;
-fn_def       = "fn" NAME [ "?" ] "(" [ patterns ] ")" [ "if" expression ] body ;
+binding      = pattern_atom [ ":" type ] "=" expression ;
+fn_def       = "fn" NAME [ "?" ] "(" [ parameters ] ")" [ "->" type ]
+               [ "if" expression ] body ;
+parameters   = parameter { "," parameter } ;
+parameter    = pattern [ ":" type ] ;
 body         = "=" result
              | NL block_end ;
 result       = command | expression ;              (* 3.15 *)
 block_end    = { statement NL } [ statement ] "end" ;
 type_def     = "type" CTOR "=" [ "|" ] variant { "|" variant } ;
-variant      = CTOR [ "(" [ NAME { "," NAME } ] ")" ] ;
+variant      = CTOR [ "(" [ field { "," field } ] ")" ] ;
+field        = NAME [ ":" type ] ;
 test_def     = "test" PLAIN_TEXT body ;
 use_def      = "use" PLAIN_TEXT ;
 
@@ -4521,14 +4705,15 @@ postfix      = "(" [ arguments ] ")" | "[" expression "]" | "?"
              | "." MEMBER [ "(" [ arguments ] ")" ] | block ;
 block        = "do" [ params ] block_end
              | "{" params { statement NL } [ statement ] "}" ;
-params       = "|" [ pattern_atom { "," pattern_atom } ] "|" | "||" ;
+params       = "|" [ block_param { "," block_param } ] "|" | "||" ;
+block_param  = pattern_atom [ ":" type ] ;
 arguments    = expression { "," expression } ;
 
 primary      = INT | FLOAT | TEXT | SYMBOL | "true" | "false" | NAME | CTOR
              | "(" ")" | "(" expression ")"
              | "[" [ list_item { "," list_item } ] "]"
              | "{" [ record_item { "," record_item } ] "}"
-             | "fn" "(" [ patterns ] ")" body
+             | "fn" "(" [ parameters ] ")" [ "->" type ] body
              | "if" expression "then" result "else" result
              | "unless" expression "then" result "else" result
              | "match" expression NL case { NL case } NL "end"
@@ -4548,6 +4733,11 @@ pattern_atom = "_" | NAME
 list_patterns = ".." [ NAME ] [ "," ]
              | pattern [ "," [ list_patterns ] ] ;
 field_pattern = KEY ":" pattern | NAME | ".." ;
+
+type         = CTOR [ "(" type { "," type } ")" ] | NAME "." CTOR
+             | NAME | "[" type "]"
+             | "{" [ KEY ":" type { "," KEY ":" type } ] "}"
+             | "fn" "(" [ type { "," type } ] ")" "->" type ;   (* 4.10 *)
 
 MEMBER       = NAME [ "?" ] | CTOR | mot-clé | mot réservé ;
 SYMBOL       = ":" NAME [ "?" ] ;
@@ -4576,8 +4766,17 @@ Remarques :
 - `"unless"` : le mot commence un `unless` seulement comme décrit en
   [1.5](#15-mots-clés-et-mots-réservés) ; ailleurs c'est un NAME.
 - `SYMBOL` : `:` suivi directement d'un nom, sauf le `:` qui suit un nom de
-  champ après `{` ou `,` ([2.14](#214-symbol)) ; un `?` collé au nom fait
-  partie du symbole (`:pair?`), jamais l'opérateur `postfix`.
+  champ après `{` ou `,` ([2.14](#214-symbol)), et le `:` qui suit un nom
+  (autre que `unless`) juste après `(` ou après la `|` de `do |` et `{ |`
+  (`fn f(x:Int)`, un type) ; un `?` collé au nom fait partie du symbole
+  (`:pair?`), jamais l'opérateur `postfix`.
+- `binding` avec un type : une instruction qui commence par un NAME suivi
+  de `:` est un nom avec son type, et `=` doit suivre le type ; après un
+  motif entre crochets, `:` peut aussi venir avant `=`.
+- `fn_def`, `"fn"` dans `primary` : `->` après les paramètres n'est lu comme
+  le type du résultat que si `=`, un retour à la ligne ou (pour `fn_def`)
+  `if` suit le type ; sinon c'est E001 (`fn(x) -> x * 2` : les fonctions
+  utilisent `=`).
 - Dans `match`, la valeur examinée doit finir sur la ligne de `match`, et les
   cas peuvent être séparés par des lignes vides ; `end` peut suivre le dernier
   cas sur la même ligne. Dans les blocs, `end` peut suivre la dernière

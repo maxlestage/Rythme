@@ -8334,5 +8334,136 @@ print 只计算值：输出、读取、写文件或抽随机数的函数在这�
 F5）：在页边设置断点，查看名字的值，单步跳过、单步进入、单步跳出。其他编辑器
 可以启动 `rythme dap`，它使用 Debug Adapter Protocol。
 函数 `debug(值)` 是另一回事：它输出一个值并把它返回。"#),
+        // src/check/annot.rs, src/parser.rs: types written in the code
+        ("a whole number is an Int, not a Float: write it with a decimal point (`2.0`), or convert it with `float(...)`", "整数是 Int，不是 Float：写成带小数点的形式（`2.0`），或用 `float(...)` 转换"),
+        ("a decimal number is a Float, not an Int: convert it with `int(...)`, `round(...)` or `floor(...)`", "小数是 Float，不是 Int：用 `int(...)`、`round(...)` 或 `floor(...)` 转换"),
+        ("change the value, or the type written for it; types written in the code are checked before running, and are never needed (see `rythme help types`)", "修改这个值，或修改为它写的类型；代码中写的类型会在运行前检查，而且从来不是必需的（见 `rythme help types`）"),
+        ("`{name}` is written `{w}`, but its value is {what}", "`{name}` 写的类型是 `{w}`，但它的值是 {what}"),
+        ("the type written for `{name}`", "为 `{name}` 写的类型"),
+        ("this value is {what}, but the type written for it is `{w}`", "这个值是 {what}，但为它写的类型是 `{w}`"),
+        ("the type written here", "这里写的类型"),
+        ("not `{w}`", "不是 `{w}`"),
+        ("`{v}` cannot be both {a} and {b} in this call to `{f}`", "在这次对 `{f}` 的调用中，`{v}` 不能既是 {a} 又是 {b}"),
+        ("`{v}` is {b} here", "`{v}` 在这里是 {b}"),
+        ("`{v}` is {a} here", "`{v}` 在这里是 {a}"),
+        ("a type variable like `{v}` stands for the same type everywhere in the types written for `{f}`", "像 `{v}` 这样的类型变量，在为 `{f}` 写的所有类型中都代表同一个类型"),
+        ("`{f}` expects `{ws}` for `{param}`, but receives {what}", "`{f}` 的 `{param}` 应为 `{ws}`，但收到的是 {what}"),
+        ("not `{ws}`", "不是 `{ws}`"),
+        ("the type written for `{param}`", "为 `{param}` 写的类型"),
+        ("this function receives {what}, but `{param}` is written `{w}`", "这个函数收到的是 {what}，但 `{param}` 写的类型是 `{w}`"),
+        ("`{f}` is written to give `{w}`, but gives {what}", "`{f}` 写明应返回 `{w}`，但返回的是 {what}"),
+        ("the type written for the result of `{f}`", "为 `{f}` 的结果写的类型"),
+        ("`{f}` is written to give `{w}`, but its `?` may give back {what}", "`{f}` 写明应返回 `{w}`，但它的 `?` 可能返回 {what}"),
+        ("`?` gives back the `None` or `Err(...)` it stops on: write the result as an Option or a Result, like `-> Option(Int)`", "`?` 会返回它停下时遇到的 `None` 或 `Err(...)`：把结果写成 Option 或 Result，例如 `-> Option(Int)`"),
+        ("unknown type `{name}`", "未知类型 `{name}`"),
+        ("in Rythme, write `{best}`", "在 Rythme 中写作 `{best}`"),
+        ("the names of types start with an uppercase letter; a type variable, which stands for any type, is one lowercase letter, like `a`", "类型名以大写字母开头；类型变量代表任意类型，是单个小写字母，例如 `a`"),
+        ("`{name}` takes no type between parentheses", "`{name}` 的括号里不接受类型"),
+        ("write `{name}` alone", "只写 `{name}`"),
+        ("a type is one of Rythme's (`Int`, `Float`, `Text`, `Bool`, `List`, `Dict`...) or one defined with `type`", "类型是 Rythme 自带的（`Int`、`Float`、`Text`、`Bool`、`List`、`Dict`……）或用 `type` 定义的"),
+        ("`{name}` takes one type: `{example}`", "`{name}` 只接受一个类型：`{example}`"),
+        ("`{name}` takes two types: `{example}`", "`{name}` 接受两个类型：`{example}`"),
+        ("to write the type of `{name}`, put a space after `:`: `{name}: {ty} = ...`", "要写出 `{name}` 的类型，请在 `:` 后加一个空格：`{name}: {ty} = ...`"),
+        ("`=` and a value", "`=` 和一个值"),
+        ("a name with a written type is given its value right away: `total: Float = 0.0`", "写了类型的名字要立刻赋值：`total: Float = 0.0`"),
+        ("`,`", "`,`"),
+        ("to write the type of a parameter, put `:` right after its name, then a space: `x: {s}`", "要写出参数的类型，请把 `:` 紧跟在参数名后面，再加一个空格：`x: {s}`"),
+        ("`:` and the type of the field", "`:` 和字段的类型"),
+        ("`(`", "`(`"),
+        ("`->` and the type of the result", "`->` 和结果的类型"),
+        ("a type", "一个类型"),
+        ("to write the type of a field, write its name first: `Circle(radius: Float)`", "要写出字段的类型，请先写字段名：`Circle(radius: Float)`"),
+        ("a type is written like `Int`, `Text`, `List(Int)`, `[Int]`, `{{name: Text}}`, `fn(Int) -> Int` or `Shape`; see `rythme help types`", "类型的写法如 `Int`、`Text`、`List(Int)`、`[Int]`、`{{name: Text}}`、`fn(Int) -> Int` 或 `Shape`；见 `rythme help types`"),
+        (
+            r#"E027 — A type written in the code does not fit
+
+A type written in the code, after `:` or `->`, is a promise that
+`rythme check` verifies before running: a value that surely has another type
+is reported where it is given. The type must also exist.
+
+Wrong:   total: Float = 0              # 0 is an Int
+Right:   total: Float = 0.0
+Wrong:   fn area(w: Int, h: Int) -> Int = w * h
+         area(2, "3")                  # "3" is a Text
+Right:   area(2, 3)
+Wrong:   fn label(n: Int) -> Text = n  # gives an Int
+Right:   fn label(n: Int) -> Text = text(n)
+Wrong:   fn twice(x: int) = x * 2      # type names start with an uppercase letter
+Right:   fn twice(x: Int) = x * 2
+
+Written types are optional: removing one never changes what a program does.
+More: `rythme help types`."#,
+            r#"E027 — 代码中写出的类型不符
+
+在代码中 `:` 或 `->` 之后写出的类型，是一个承诺，`rythme check` 会在运行前
+检查它：一个肯定是其他类型的值，会在它被给出的地方被报告。类型本身也必须存在。
+
+错误：   total: Float = 0              # 0 是 Int
+正确：   total: Float = 0.0
+错误：   fn area(w: Int, h: Int) -> Int = w * h
+         area(2, "3")                  # "3" 是 Text
+正确：   area(2, 3)
+错误：   fn label(n: Int) -> Text = n  # 返回的是 Int
+正确：   fn label(n: Int) -> Text = text(n)
+错误：   fn twice(x: int) = x * 2      # 类型名以大写字母开头
+正确：   fn twice(x: Int) = x * 2
+
+写出的类型是可选的：去掉一个类型，永远不会改变程序的行为。
+更多：`rythme help types`。"#,
+        ),
+        (
+            r#"TYPES WRITTEN IN THE CODE (optional)
+
+Rythme finds the types by itself. You may also write them where they help
+to read the code; `rythme check` then verifies them (E027):
+  fn area(width: Int, height: Int) -> Int = width * height
+  total: Float = 0.0
+  type Shape = Circle(radius: Float) | Rect(width: Float, height: Float)
+  [1, 2].map do |n: Int| n * 2 end
+
+The types
+  Int  Float  Text  Bool  Unit  Symbol
+  List(Int) or [Int]   Set(Text)   Dict(Text, Int)
+  Option(Int)   Result(Int, Text)
+  {name: Text, age: Int}       a record with at least these fields
+  fn(Int, Int) -> Int          a function
+  Shape                        a type defined with `type` (geometry.Shape
+                               for a type of `use geometry`)
+  a                            any type: one lowercase letter, the same type
+                               everywhere in a definition
+  List, Dict, Set, Option, Result, Record, Function alone: any content
+
+  fn first_of(xs: List(a)) -> a = xs[0]
+  first_of([1, 2]) + 1         # the checker knows it is an Int
+
+Written types are never needed and change nothing when the program runs;
+the editors and `rythme doc` show them."#,
+            r#"在代码中写出的类型（可选）
+
+Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把类型写出来；
+`rythme check` 会检查它们（E027）：
+  fn area(width: Int, height: Int) -> Int = width * height
+  total: Float = 0.0
+  type Shape = Circle(radius: Float) | Rect(width: Float, height: Float)
+  [1, 2].map do |n: Int| n * 2 end
+
+类型
+  Int  Float  Text  Bool  Unit  Symbol
+  List(Int) 或 [Int]   Set(Text)   Dict(Text, Int)
+  Option(Int)   Result(Int, Text)
+  {name: Text, age: Int}       至少有这些字段的记录
+  fn(Int, Int) -> Int          一个函数
+  Shape                        用 `type` 定义的类型（`use geometry` 中的类型
+                               写作 geometry.Shape）
+  a                            任意类型：一个小写字母，在一个定义中处处
+                               代表同一个类型
+  单独的 List、Dict、Set、Option、Result、Record、Function：内容不限
+
+  fn first_of(xs: List(a)) -> a = xs[0]
+  first_of([1, 2]) + 1         # 检查器知道这是一个 Int
+
+写出的类型从来不是必需的，程序运行时也不会因此有任何不同；
+编辑器和 `rythme doc` 会显示它们。"#,
+        ),
     ],
 }

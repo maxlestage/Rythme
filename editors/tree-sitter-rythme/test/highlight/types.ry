@@ -1,0 +1,18 @@
+fn area(width: Int, h: List(a)) -> Float = 1.0
+#  ^ function
+#       ^ variable.parameter
+#              ^ type
+#                      ^ type
+#                           ^ type
+#                                ^ operator
+#                                   ^ type
+
+total: Float = 0.0
+#      ^ type
+
+type Shape = Circle(radius: Float) | Dot
+#                           ^ type
+
+ys = xs.map do |n: Int| n end
+#               ^ variable.parameter
+#                  ^ type

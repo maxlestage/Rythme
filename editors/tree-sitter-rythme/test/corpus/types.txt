@@ -1,0 +1,153 @@
+================================================================================
+Types written in the code
+================================================================================
+
+fn area(w: Int, h:Int) -> Int = w * h
+total: Float = 0.0
+type Shape = Circle(radius: Float) | Rect(w: Float, h) | Dot
+fn first_of(xs: List(a)) -> a
+  xs[0]
+end
+f = fn(x: [Int]) -> {name: Text, age: Int} = {name: "Ada", age: x[0]}
+g: fn(Int, Int) -> geo.Shape = make
+ys = xs.map do |n: Int| n * 2 end
+[a, b]: Dict(Text, Option(Int)) = pair
+fn sign(n: Int) -> Text if n < 0 = "negative"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    (identifier)
+    (parameters
+      (typed_parameter
+        (identifier)
+        (type_annotation
+          (type_name)))
+      (typed_parameter
+        (identifier)
+        (type_annotation
+          (type_name))))
+    (return_type
+      (type_name))
+    (binary_expression
+      (identifier)
+      (identifier)))
+  (definition
+    (identifier)
+    (type_annotation
+      (type_name))
+    (float))
+  (type_definition
+    (type_identifier)
+    (variant
+      (constructor)
+      (variant_fields
+        (typed_field
+          (identifier)
+          (type_annotation
+            (type_name)))))
+    (variant
+      (constructor)
+      (variant_fields
+        (typed_field
+          (identifier)
+          (type_annotation
+            (type_name)))
+        (identifier)))
+    (variant
+      (constructor)))
+  (function_definition
+    (identifier)
+    (parameters
+      (typed_parameter
+        (identifier)
+        (type_annotation
+          (generic_type
+            (type_name)
+            (type_variable)))))
+    (return_type
+      (type_variable))
+    (block
+      (index_expression
+        (identifier)
+        (integer))))
+  (definition
+    (identifier)
+    (lambda
+      (parameters
+        (typed_parameter
+          (identifier)
+          (type_annotation
+            (list_type
+              (type_name)))))
+      (return_type
+        (record_type
+          (field_type
+            (field_name)
+            (type_name))
+          (field_type
+            (field_name)
+            (type_name))))
+      (record
+        (record_field
+          (field_name)
+          (string
+            (string_content)))
+        (record_field
+          (field_name)
+          (index_expression
+            (identifier)
+            (integer))))))
+  (definition
+    (identifier)
+    (type_annotation
+      (function_type
+        (type_name)
+        (type_name)
+        (qualified_type
+          (module_name)
+          (type_name))))
+    (identifier))
+  (definition
+    (identifier)
+    (method_call
+      (identifier)
+      (field_name)
+      (do_block
+        (block_parameters
+          (typed_block_parameter
+            (identifier)
+            (type_annotation
+              (type_name))))
+        (block
+          (binary_expression
+            (identifier)
+            (integer))))))
+  (definition
+    (list_pattern
+      (identifier)
+      (identifier))
+    (type_annotation
+      (generic_type
+        (type_name)
+        (type_name)
+        (generic_type
+          (type_name)
+          (type_name))))
+    (identifier))
+  (function_definition
+    (identifier)
+    (parameters
+      (typed_parameter
+        (identifier)
+        (type_annotation
+          (type_name))))
+    (return_type
+      (type_name))
+    (guard
+      (binary_expression
+        (identifier)
+        (integer)))
+    (string
+      (string_content))))
