@@ -266,6 +266,14 @@ pub fn alias_hint(name: &str) -> Option<String> {
             "`n.times do |i| ... end` is written `(0..n - 1).each do |i| ... end`",
             "`n.times do |i| ... end` s'écrit `(0..n - 1).each do |i| ... end`"
         ),
+        "Math" | "math" => t!(
+            "the functions of numbers are built in: write `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... without `Math.`",
+            "les fonctions des nombres sont intégrées : écrivez `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... sans `Math.`"
+        ),
+        "yield" => t!(
+            "Rythme has no generators: build the whole list (`map`, `filter`, `1..n`), or give a function to call",
+            "Rythme n'a pas de générateurs : construisez toute la liste (`map`, `filter`, `1..n`), ou donnez une fonction à appeler"
+        ),
         "require" | "require_relative" => t!(
             "to use another file, write `use other_file`, then `other_file.name`",
             "pour utiliser un autre fichier, écrivez `use autre_fichier`, puis `autre_fichier.nom`"

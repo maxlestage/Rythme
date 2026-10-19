@@ -438,7 +438,47 @@ const FIXED: &[(&str, &str)] = &[
     ("console.log(\"hi\")\n", "print(\"hi\")\n"),
     ("x = 1\nif x > 0:\n  print(x)\nelse\n  print(0)\n", "x = 1\nif x > 0 then\n  print(x)\nelse\n  print(0)\n"),
     ("fn area(r: float) = r * r\nprint(area(2.0))\n", "fn area(r: Float) = r * r\nprint(area(2.0))\n"),
+    ("double = (x) -> x * 2\nprint(double(2))\n", "double = fn(x) = x * 2\nprint(double(2))\n"),
+    ("print([1, 2].map(|x| x * 2))\n", "print([1, 2].map(fn(x) = x * 2))\n"),
+    ("print([1, 2].map { x -> x * 2 })\n", "print([1, 2].map { |x| x * 2 })\n"),
+    ("x = 3.14159\nprint(f\"{x:.2f}\")\n", "x = 3.14159\nprint(\"{text(x, 2)}\")\n"),
+    ("print(Math.sqrt(4), math.abs(-1))\n", "print(sqrt(4), abs(-1))\n"),
+    (
+        "xs = [1, 2, 3]\nprint(xs[1:], xs[:2], xs[0:1], xs[-2:])\n",
+        "xs = [1, 2, 3]\nprint(drop(xs, 1), take(xs, 2), slice(xs, 0, 1), slice(xs, -2))\n",
+    ),
+    ("print(1 ~= 2)\n", "print(1 != 2)\n"),
+    ("p = {name = \"Ada\", age = 36}\nprint(p)\n", "p = {name: \"Ada\", age: 36}\nprint(p)\n"),
+    ("print([1, 2].reduce(:+))\n", "print([1, 2].sum)\n"),
 ];
+
+/// Habits from other languages that have no exact fix: the message says what to write.
+const HINTS: &[(&str, &str)] = &[
+    ("print(\"a\", end=\"\")\n", "Rythme has no named arguments (`name=value`)"),
+    ("print(round(2.5, digits=1))\n", "Rythme has no named arguments (`name=value`)"),
+    ("x = 1\nif x > 0 then print(x)\n", "when there is nothing to do otherwise, give the unit value: `if x > 0 then print(x) else ()`"),
+    ("n = 0\nn = n + 1\n", "here: `new_n = ...`, then use `new_n`"),
+    ("total = 0\ntotal += 5\n", "here: `new_total = total + 5`, then use `new_total`"),
+    ("print(yield)\n", "Rythme has no generators"),
+    ("x = 1\ncase x\nwhen 1 then 2\nend\n", "use `match`"),
+    ("print(\"%d items\" % 3)\n", "to put values in a text, use braces"),
+    ("if x > 2\n  1\nelse\n  2\nend\n", "on several lines, `if` is written:"),
+];
+
+#[test]
+fn messages_say_what_to_write_instead() {
+    let dir = folder("hints", &[]);
+    for (code, help) in HINTS {
+        std::fs::write(dir.join("a.ry"), code).unwrap();
+        let out = rythme_in(&dir, "en", &["check", "a.ry"]);
+        assert_eq!(out.code, 1, "{code}");
+        assert!(out.stderr.contains(help), "for:\n{code}\nexpected the help {help:?} in:\n{}", out.stderr);
+    }
+    // The misleading help about `==` is gone where `=` names an argument or a field.
+    std::fs::write(dir.join("a.ry"), "p = {name = 1}\n").unwrap();
+    let out = rythme_in(&dir, "en", &["check", "a.ry"]);
+    assert!(!out.stderr.contains("`==`") && out.stderr.contains("written with `:`"), "{}", out.stderr);
+}
 
 #[test]
 fn fix_corrects_the_habits_of_other_languages() {
