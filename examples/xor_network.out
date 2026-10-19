@@ -1,0 +1,9 @@
+round    0: error 0.3502
+round  200: error 0.1832
+round  400: error 0.0080
+round  600: error 0.0025
+
+0 xor 0 = 0, the network says 0.051
+0 xor 1 = 1, the network says 0.941
+1 xor 0 = 1, the network says 0.956
+1 xor 1 = 0, the network says 0.044

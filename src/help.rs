@@ -212,6 +212,26 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "种子",
         ],
     ),
+    (
+        "ml",
+        &[
+            "ai",
+            "ia",
+            "ki",
+            "machine-learning",
+            "apprentissage",
+            "apprentissage-automatique",
+            "aprendizaje",
+            "aprendizaje-automatico",
+            "maschinelles-lernen",
+            "aprendizado",
+            "aprendizado-de-maquina",
+            "neural",
+            "neurones",
+            "人工智能",
+            "机器学习",
+        ],
+    ),
     ("repl", &["interactive", "interactif", "interactivo", "interaktiv", "interativo", "交互"]),
     (
         "fmt",
@@ -311,6 +331,7 @@ Commands
   rythme file.ry            run a program
   rythme run --seed 42 f.ry run it with the same draws of random every time
   rythme check file.ry      find problems without running the program
+  rythme fix file.ry        apply the safe fixes of those problems (--dry-run: only show them)
   rythme test file.ry       run the tests of a file (or of a folder)
   rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
@@ -322,8 +343,10 @@ Commands
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
+  rythme help llms          the whole language in one text, for AI assistants
   rythme -e "code"          run a piece of code
   rythme lsp                language server, for editors (VS Code, Neovim...)
+  rythme mcp                server for AI assistants (Model Context Protocol)
   option --lang CODE        language of the messages: en, fr, es, de, pt, zh (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
@@ -347,6 +370,7 @@ Topics (rythme help TOPIC)
   regex       searching, cutting and replacing with regular expressions
   csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
   random      chance, and the same draws again with a seed
+  ml          machine learning and AI: vectors, statistics, slopes, charts, HTTP
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
@@ -365,6 +389,7 @@ Commandes
   rythme fichier.ry         lancer un programme
   rythme run --seed 42 f.ry le lancer avec les mêmes tirages de random à chaque fois
   rythme check fichier.ry   trouver les problèmes sans lancer le programme
+  rythme fix fichier.ry     appliquer les corrections sûres de ces problèmes (--dry-run : les montrer seulement)
   rythme test fichier.ry    lancer les tests d'un fichier (ou d'un dossier)
   rythme fmt fichier.ry     mettre le code en forme (--check : vérifier seulement)
   rythme doc fichier.ry     écrire sa documentation, en Markdown (--html : une page web)
@@ -376,8 +401,10 @@ Commandes
   rythme learn              visite guidée du langage, pas à pas
   rythme help SUJET         aide sur un sujet ou une fonction
   rythme explain E003       expliquer un code d'erreur
+  rythme help llms          tout le langage en un texte, pour les assistants d'IA
   rythme -e "code"          exécuter un morceau de code
   rythme lsp                serveur de langage, pour les éditeurs (VS Code, Neovim...)
+  rythme mcp                serveur pour les assistants d'IA (Model Context Protocol)
   option --lang CODE        langue des messages : en, fr, es, de, pt, zh (ou variable RYTHME_LANG)
 
 Sujets (rythme help SUJET)
@@ -401,6 +428,7 @@ Sujets (rythme help SUJET)
   regex       chercher, découper et remplacer avec des expressions régulières
   csv         les tableaux des tableurs : csv_parse, csv_records, csv_format
   random      le hasard, et les mêmes tirages à nouveau avec une graine
+  ml          apprentissage automatique et IA : vecteurs, statistiques, pentes, graphiques, HTTP
   repl        le mode interactif
   fmt         la mise en forme officielle du code (rythme fmt)
   doc         la documentation tirée des commentaires ## (rythme doc)
@@ -571,6 +599,11 @@ const KEYWORD_DOCS: &[(&str, &str, &str, &str, &str)] = &[
 
 /// The documentation of a keyword in the current language, with an example
 /// and the help topic that tells more.
+/// The keywords that have a documentation (`rythme help fn`), in order.
+pub fn keywords() -> impl Iterator<Item = &'static str> {
+    KEYWORD_DOCS.iter().map(|k| k.0)
+}
+
 pub fn keyword_doc(word: &str) -> Option<(&'static str, &'static str, &'static str)> {
     KEYWORD_DOCS.iter().find(|k| k.0 == word).map(|&(_, en, fr, example, topic)| (pick(en, fr), example, topic))
 }
@@ -967,6 +1000,7 @@ fn topic_texts(name: &str) -> (&'static str, &'static str) {
         "regex" => (REGEX_EN, REGEX_FR),
         "csv" => (CSV_EN, CSV_FR),
         "random" => (RANDOM_EN, RANDOM_FR),
+        "ml" => (ML_EN, ML_FR),
         "repl" => (REPL_EN, REPL_FR),
         "fmt" => (FMT_EN, FMT_FR),
         "doc" => (DOC_EN, DOC_FR),
@@ -1827,6 +1861,94 @@ Un autre séparateur : le dernier argument
 Un texte qui n'est pas du CSV valide donne Err, qui dit où (ligne et colonne) :
   csv_parse("a,b\"c")   # Err("ligne 1, colonne 4 : un guillemet au milieu d'un champ : ...")"#;
 
+const ML_EN: &str = r#"MACHINE LEARNING AND AI
+
+A vector is a list of numbers, a matrix a list of rows of the same length.
+These functions never change them: they give new lists, always of Floats.
+
+Vectors and matrices
+  dot([1, 2], [3, 4])            # 11.0
+  norm([3, 4])                   # 5.0, the length
+  vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # number by number
+  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  matmul(m, n)  matmul(m, v)     # product of matrices, or matrix by vector
+  transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
+  zip_with(xs, ys, f)            # f on the pairs, for anything else
+
+Neurons
+  sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # scores into probabilities
+
+Statistics
+  stats(xs)                      # {count, mean, median, std_dev, min, max}
+  variance(xs)  std_dev(xs)  percentile(xs, 90)  argmax(xs)  argmin(xs)
+  normalize(xs)                  # from 0.0 (smallest) to 1.0 (largest)
+
+Chance, the same on every run after random_seed(n)
+  random_normal(0, 1)  random_choice_weighted(xs, weights)
+  train_test_split(examples, 0.8)    # {train, test}
+
+Slopes, for gradient descent (central differences, about 9 digits)
+  derivative(fn(x) = x * x, 3)               # 6.0
+  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+
+Charts as text
+  print(plot(losses))  print(plot(xs, ys))  print(histogram(heights))
+
+The web and language models
+  http_get(url)  http_post(url, body, headers)   # Ok(text) or Err(message)
+  Keep API keys out of the code: env("ANTHROPIC_API_KEY"). The example
+  examples/ask_claude.ry asks Claude a question with http_post and JSON.
+
+A mistake of shape names both shapes ("cannot multiply a 2×3 matrix by a
+2×2 matrix"). Programs to read: the examples linear_regression, perceptron,
+xor_network, kmeans, knn, naive_bayes, markov, tictactoe, pathfinding and
+genetic; exercises 31 to 36 (rythme exercise list)."#;
+
+const ML_FR: &str = r#"APPRENTISSAGE AUTOMATIQUE ET IA
+
+Un vecteur est une liste de nombres, une matrice une liste de lignes de même
+longueur. Ces fonctions ne les changent jamais : elles donnent de nouvelles
+listes, toujours de Floats.
+
+Vecteurs et matrices
+  dot([1, 2], [3, 4])            # 11.0
+  norm([3, 4])                   # 5.0, la longueur
+  vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # nombre par nombre
+  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  matmul(m, n)  matmul(m, v)     # produit de matrices, ou matrice par vecteur
+  transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
+  zip_with(xs, ys, f)            # f sur les paires, pour tout le reste
+
+Neurones
+  sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # des scores aux probabilités
+
+Statistiques
+  stats(xs)                      # {count, mean, median, std_dev, min, max}
+  variance(xs)  std_dev(xs)  percentile(xs, 90)  argmax(xs)  argmin(xs)
+  normalize(xs)                  # de 0.0 (le plus petit) à 1.0 (le plus grand)
+
+Le hasard, le même à chaque lancement après random_seed(n)
+  random_normal(0, 1)  random_choice_weighted(xs, poids)
+  train_test_split(exemples, 0.8)    # {train, test}
+
+Des pentes, pour la descente de gradient (différences centrées, environ 9 chiffres)
+  derivative(fn(x) = x * x, 3)               # 6.0
+  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+
+Des graphiques en texte
+  print(plot(pertes))  print(plot(xs, ys))  print(histogram(tailles))
+
+Le web et les modèles de langage
+  http_get(url)  http_post(url, corps, en_tetes)   # Ok(texte) ou Err(message)
+  Gardez les clés d'API hors du code : env("ANTHROPIC_API_KEY"). L'exemple
+  examples/ask_claude.ry pose une question à Claude avec http_post et du JSON.
+
+Une erreur de forme nomme les deux formes (« impossible de multiplier une
+matrice 2×3 par une matrice 2×2 »). Des programmes à lire : les exemples
+linear_regression, perceptron, xor_network, kmeans, knn, naive_bayes, markov,
+tictactoe, pathfinding et genetic ; les exercices 31 à 36 (rythme exercise
+list)."#;
+
 const RANDOM_EN: &str = r#"RANDOM: CHANCE, AND THE SAME CHANCE AGAIN
 
   random()                   # a decimal number from 0 (included) to 1 (excluded)
@@ -2243,9 +2365,11 @@ mêmes valeurs reviennent à chaque lancement, et `--seed N` en essaie d'autres
 
 const EXERCISES_EN: &str = r#"EXERCISES
 
-Rythme comes with 30 graded exercises for a first course, from the first
-values to recursion, lists, records, types, Option, Result and tests. Each one
-is a file with a statement, hints, the functions to write and their tests.
+Rythme comes with 36 graded exercises for a first course, from the first
+values to recursion, lists, records, types, Option, Result and tests, then six
+about artificial intelligence (31 to 36: vectors, statistics, a neuron,
+gradient descent, nearest neighbours, minimax). Each one is a file with a
+statement, hints, the functions to write and their tests.
 
   rythme exercise list              the exercises, from ★☆☆ (easy) to ★★★
   rythme exercise start 7           copies exercise 7 into the current folder
@@ -2259,10 +2383,12 @@ docs/exercises of the repository of Rythme has them in English and French."#;
 
 const EXERCISES_FR: &str = r#"EXERCICES
 
-Rythme est livré avec 30 exercices gradués pour un premier cours, des
+Rythme est livré avec 36 exercices gradués pour un premier cours, des
 premières valeurs à la récursivité, aux listes, aux enregistrements, aux types,
-à Option, à Result et aux tests. Chacun est un fichier avec un énoncé, des
-indices, les fonctions à écrire et leurs tests.
+à Option, à Result et aux tests, puis six sur l'intelligence artificielle (31
+à 36 : vecteurs, statistiques, un neurone, descente de gradient, plus proches
+voisins, minimax). Chacun est un fichier avec un énoncé, des indices, les
+fonctions à écrire et leurs tests.
 
   rythme exercise list              les exercices, de ★☆☆ (facile) à ★★★
   rythme exercise start 7           copie l'exercice 7 dans le dossier actuel
@@ -2787,6 +2913,14 @@ les lignes qui commencent par `- ` forment une liste."#;
 /// Long explanation of an error or warning code.
 pub fn explain(code: &str) -> Option<String> {
     explanation(code).map(|(en, fr)| pick(en, fr).to_string())
+}
+
+/// The title of a code, from the first line of its explanation:
+/// "Syntax error" for `E001`.
+pub fn code_title(code: &str) -> Option<String> {
+    let text = explain(code)?;
+    let first = text.lines().next()?;
+    Some(first.split_once(" — ").map_or(first, |(_, t)| t).trim().to_string())
 }
 
 /// The explanation of an error code, in English and French.

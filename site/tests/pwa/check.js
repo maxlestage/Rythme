@@ -16,7 +16,7 @@ const { workspace, freePort, startServer, startExport, binary, checker } = requi
 
 const BIN = binary(process.argv[2]);
 const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
-const PAGES = ["", "learn/", "examples/", "playground/", "teach/"];
+const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "ai/"];
 // Every language of the site (src/i18n.rs), with the title of its offline page and the
 // word that starts the interpreter's error messages in it.
 const LANGS = ["fr", "en", "es", "de", "pt", "zh"];
@@ -388,6 +388,84 @@ async function seedOption(context, page, base) {
   await page.evaluate(() => { localStorage.removeItem("rythme-code"); localStorage.removeItem("rythme-seed"); });
 }
 
+// A clipboard made by hand, which keeps what is copied (`window.copied`), or refuses.
+const fakeClipboard = (page, refuse) => page.evaluate((no) => {
+  window.copied = [];
+  const writeText = async (text) => {
+    if (no) throw new Error("refused");
+    window.copied.push(text);
+  };
+  Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+}, refuse);
+
+// For AI assistants, offline: llms.txt and llms-full.txt; on the AI page, the copy
+// buttons of the configurations of the MCP server; in the playground, Copy for AI: the
+// program and what its last run gave (Run, Check, Test), as Markdown, with the address
+// of llms-full.txt; the output left out once the code is changed; without a clipboard,
+// the text in a field, selected; Escape closes the box.
+async function forAssistants(page, base) {
+  const full = await page.goto(`${base}/llms-full.txt`);
+  check(full && full.ok() && (await full.text()).startsWith("# Rythme"), "offline: /llms-full.txt");
+  const index = await page.goto(`${base}/llms.txt`);
+  const indexText = index && index.ok() ? await index.text() : "";
+  check(indexText.startsWith("# Rythme") && indexText.includes(`(${base}/llms-full.txt)`) && indexText.includes(`(${base}/en/learn/index.md)`), "offline: /llms.txt, with the addresses of the site", indexText.slice(0, 400));
+
+  await page.goto(`${base}/en/ai/`);
+  await fakeClipboard(page, false);
+  const button = page.locator('.snippet__copy[data-copy*="mcpServers"]');
+  await button.click();
+  await page.waitForFunction(() => window.copied.length === 1);
+  const mcp = await page.evaluate(() => window.copied[0]);
+  check(JSON.parse(mcp).mcpServers.rythme.command === "rythme" && (await button.textContent()) === "Copied", "offline AI page: the configuration of the MCP server is copied", mcp);
+
+  await page.goto(`${base}/en/playground/`);
+  await ran(page);
+  await fakeClipboard(page, false);
+  const intro = `Here is a Rythme program and what it gives. Rythme is a new language: its whole reference is at ${base}/llms-full.txt.`;
+  const copy = async () => {
+    const before = await page.evaluate(() => window.copied.length);
+    await page.click("#copy-ai");
+    await page.waitForFunction((n) => window.copied.length > n || !document.getElementById("ai-row").hidden, before);
+    return page.evaluate(() => ({
+      text: window.copied[window.copied.length - 1],
+      name: document.getElementById("file-name").textContent,
+      msg: document.getElementById("share-msg").textContent,
+      ui: JSON.parse(document.querySelector(".playground").dataset.ui),
+      expanded: document.getElementById("copy-ai").getAttribute("aria-expanded"),
+      row: !document.getElementById("ai-row").hidden,
+    }));
+  };
+  const program = "fn double(x) = x * 2\nprint(map([1, 2, 3], double))\n";
+  await setCode(page, program);
+  await runAndRead(page, "#run");
+  let got = await copy();
+  const fence = (kind, text) => `\`\`\`${kind}\n${text}\n\`\`\``;
+  let expected = `${intro}\n\n\`${got.name}\`:\n\n${fence("rythme", program.trimEnd())}\n\n\`rythme run ${got.name}\`:\n\n${fence("text", "[2, 4, 6]")}\n`;
+  check(got.text === expected && got.msg === got.ui.aiCopied && got.expanded === "true" && !got.row, "offline playground: Copy for AI copies the program and its output as Markdown", got);
+  await setCode(page, "fn double(x) = x * 2\nprint(doubel(2))\n");
+  await runAndRead(page, "#check");
+  got = await copy();
+  check(got.text.includes(`\`rythme check ${got.name}\`:\n\n\`\`\`text\nerror[E003]`) && !/[\u0001\u0002]/.test(got.text), "offline playground: Copy for AI after Check: the error", got.text);
+  await setCode(page, 'fn double(x) = x * 2\n\ntest "double" = assert_eq(double(2), 4)\n');
+  await runAndRead(page, "#test");
+  got = await copy();
+  check(got.text.includes(`\`rythme test ${got.name}\`:`) && got.text.includes("✓"), "offline playground: Copy for AI after Test: the tests", got.text);
+  await page.fill("#source", program);
+  got = await copy();
+  check(got.text === `${intro}\n\n\`${got.name}\`:\n\n${fence("rythme", program.trimEnd())}\n`, "offline playground: Copy for AI leaves out the output of other code", got.text);
+  await fakeClipboard(page, true);
+  got = await copy();
+  const field = await page.evaluate(() => {
+    const el = document.getElementById("ai-text");
+    return { value: el.value, focused: document.activeElement === el, selected: el.selectionStart === 0 && el.selectionEnd === el.value.length };
+  });
+  check(got.row && got.msg === got.ui.aiSelect && field.value.startsWith(intro) && field.value.includes("```rythme\n") && field.focused && field.selected,
+    "offline playground: without a clipboard, Copy for AI shows the text, selected", { got, field });
+  await page.keyboard.press("Escape");
+  check(await page.evaluate(() => document.getElementById("share-box").hidden && document.activeElement.id === "copy-ai" && document.getElementById("copy-ai").getAttribute("aria-expanded") === "false"),
+    "offline playground: Escape closes the box and gives the focus back to Copy for AI");
+}
+
 async function verify(mode) {
   console.log(`\n== ${mode === "server" ? "the server, at the root" : "the static export, behind /Rythme"}`);
   const dir = workspace();
@@ -537,6 +615,7 @@ async function verify(mode) {
   await shareLinks(context, page, base);
   await stepsLinks(context, page, base);
   await seedOption(context, page, base);
+  await forAssistants(page, base);
   // The playground of every language: its texts, and the interpreter's messages in the
   // language of the page.
   for (const lang of LANGS) {

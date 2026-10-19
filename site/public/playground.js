@@ -6,6 +6,8 @@
 // the program in a link (`#code=…`, in the link itself: nothing is sent anywhere).
 // Steps shows the calculation of one expression step by step, one step at a time.
 // Seed, next to Run, makes the same draws of `random` and `shuffle` on every run.
+// Copy for AI copies the program and its output as Markdown, for a chat with an
+// assistant.
 (() => {
   "use strict";
 
@@ -37,7 +39,7 @@
 
   const TOPICS = ["start", "syntax", "functions", "lists", "text", "records", "types", "match", "errors", "functional", "tests", "builtins"];
   const KEYWORDS = new Set(["fn", "if", "then", "else", "match", "end", "do", "type", "test", "use", "and", "or", "not", "true", "false", "unless"]);
-  const BUILTINS = new Set(("print debug text input input_lines type_of help assert assert_eq fail args options env exit time random random_seed abs min max sqrt pow floor ceil round int float sin cos tan asin acos atan log exp is_even is_odd gcd lcm len upper lower capitalize trim pad_left pad_right split join contains starts_with ends_with replace chars lines char_code char is_digit is_letter is_space repeat parse_int parse_float parse_json to_json trim_start trim_end words equals_ignore_case format_number matches find_first find_all captures captures_all named_captures split_by replace_all csv_parse csv_records csv_format map filter fold scan each sum product first last rest get push set_at insert_at remove_at reverse sort sort_by unique shuffle slice take drop take_while drop_while step_by chunks windows zip enumerate any all find count reject each_with_index index_of min_by max_by flatten flat_map partition group_by is_empty keys values entries from_entries has put remove map_values dict set union intersection difference is_subset unwrap unwrap_or is_some is_none is_ok is_err and_then ok_or map_err read_file write_file append_file file_exists file_info list_folder create_folder delete_file join_path split_path now today parse_date format_date is_date add_days add_seconds days_between seconds_between day_of_week days_in_month is_leap_year check_all sample ints floats texts bools lists_of one_of records_of pi").split(" "));
+  const BUILTINS = new Set(("print debug text input input_lines type_of help assert assert_eq fail args options env exit time random random_seed abs min max sqrt pow floor ceil round int float sin cos tan asin acos atan log exp is_even is_odd gcd lcm len upper lower capitalize trim pad_left pad_right split join contains starts_with ends_with replace chars lines char_code char is_digit is_letter is_space repeat parse_int parse_float parse_json to_json trim_start trim_end words equals_ignore_case format_number matches find_first find_all captures captures_all named_captures split_by replace_all csv_parse csv_records csv_format map filter fold scan each sum product first last rest get push set_at insert_at remove_at reverse sort sort_by unique shuffle slice take drop take_while drop_while step_by chunks windows zip enumerate any all find count reject each_with_index index_of min_by max_by flatten flat_map partition group_by is_empty keys values entries from_entries has put remove map_values dict set union intersection difference is_subset unwrap unwrap_or is_some is_none is_ok is_err and_then ok_or map_err read_file write_file append_file file_exists file_info list_folder create_folder delete_file join_path split_path now today parse_date format_date is_date add_days add_seconds days_between seconds_between day_of_week days_in_month is_leap_year check_all sample ints floats texts bools lists_of one_of records_of tanh sigmoid relu dot norm vector_add vector_sub vector_mul vector_scale zip_with matmul transpose zeros ones identity_matrix shape stats variance std_dev percentile argmax argmin softmax normalize random_normal random_choice_weighted train_test_split derivative gradient plot histogram http_get http_post pi").split(" "));
 
   const $ = (id) => document.getElementById(id);
   const source = $("source"), highlight = $("highlight"), gutter = $("gutter"), output = $("output");
@@ -69,6 +71,11 @@
   let runningMode = 0;
   // The seed of that run, or null.
   let runningSeed = null;
+  // The code of that run, and the expression of its steps.
+  let runningCode = "";
+  let runningExpr = "";
+  // What the last run gave, for Copy for AI: { mode, seed, expr, code, text }.
+  let lastRun = null;
 
   // ----- editor: highlighting, line numbers -----
   const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -296,6 +303,8 @@
     statusEl.className = "status";
     statusEl.textContent = UI.running;
     // Steps: the program, U+0000, then the expression to compute ("": the last one).
+    runningCode = source.value;
+    runningExpr = stepsExpr;
     const code = mode === 5 ? source.value + "\u0000" + stepsExpr : source.value;
     worker.postMessage({ id: runId, code, mode, lang, seed: runningSeed });
   }
@@ -308,8 +317,10 @@
     showStepper(stepping);
     seedUsed.hidden = runningSeed === null;
     seedUsed.textContent = runningSeed === null ? "" : UI.seedUsed(runningSeed);
+    const trap = result.trap ? UI.tooDeep + (/stack/i.test(result.trap) ? "" : "\n" + result.trap) : null;
+    lastRun = { mode: runningMode, seed: runningSeed, expr: runningExpr, code: runningCode, text: trap === null ? result.text : trap };
     if (result.trap) {
-      renderOutput("\u0001" + UI.tooDeep + (/stack/i.test(result.trap) ? "" : "\n" + result.trap) + "\u0002");
+      renderOutput("\u0001" + trap + "\u0002");
       statusEl.className = "status bad";
       statusEl.textContent = UI.failedIn(ms);
       newWorker();
@@ -1006,21 +1017,29 @@
   // Share: the link, copied (or handed to the share sheet of a phone), and shown in a
   // field to select by hand when the clipboard says no.
   const shareBtn = $("share"), shareBox = $("share-box"), shareMsg = $("share-msg"), shareRow = $("share-row"), shareLink = $("share-link");
+  // Copy for AI uses the same box: what happened, and the text when it must be copied
+  // by hand.
+  const aiBtn = $("copy-ai"), aiRow = $("ai-row"), aiText = $("ai-text");
   shareBtn.hidden = false;
+  aiBtn.hidden = false;
+  // The button that opened the box, which gets the focus back when it closes.
+  let opener = shareBtn;
 
-  function showShare(message, bad, link) {
+  function showShare(message, bad, link, text) {
     shareBox.hidden = false;
-    shareBtn.setAttribute("aria-expanded", "true");
+    for (const b of [shareBtn, aiBtn]) b.setAttribute("aria-expanded", String(b === opener));
     shareMsg.textContent = message;
     shareMsg.classList.toggle("bad", bad);
     shareRow.hidden = !link;
     if (link) shareLink.value = link;
+    aiRow.hidden = text === undefined;
+    if (text !== undefined) aiText.value = text;
   }
 
   function closeShare() {
     shareBox.hidden = true;
-    shareBtn.setAttribute("aria-expanded", "false");
-    shareBtn.focus();
+    for (const b of [shareBtn, aiBtn]) b.setAttribute("aria-expanded", "false");
+    opener.focus();
   }
 
   async function copyLink(link) {
@@ -1035,6 +1054,7 @@
   }
 
   shareBtn.addEventListener("click", async () => {
+    opener = shareBtn;
     const packed = await pack(source.value);
     if (packed.length > LINK_MAX) {
       const n = (x) => x.toLocaleString(document.documentElement.lang || lang);
@@ -1064,8 +1084,54 @@
   });
   $("share-copy").addEventListener("click", () => copyLink(shareLink.value));
   $("share-close").addEventListener("click", closeShare);
+  // Copy for AI: the program and what its last run gave, as Markdown for a chat with an
+  // assistant, after a line that gives the address of the whole language
+  // (llms-full.txt): the code fenced as rythme, the command run (as in a terminal) and
+  // its output or its errors fenced as text. The output is left out when the code was
+  // changed since. Everything happens here: it works offline.
+  function fenced(kind, text) {
+    const longest = Math.max(0, ...(text.match(/`+/g) || []).map((run) => run.length));
+    const ticks = "`".repeat(Math.max(3, longest + 1));
+    return `${ticks}${kind}\n${text.replace(/\n+$/, "")}\n${ticks}`;
+  }
+
+  function forAssistant() {
+    const llms = new URL(page.dataset.llms, location.href).href;
+    const code = source.value;
+    // The name shown above the editor: the example or the opened file.
+    const shown = ($("file-name").textContent || "").trim();
+    const fileName = /^[^\s/\\]{1,80}\.ry$/.test(shown) ? shown : "main.ry";
+    const parts = [UI.aiIntro.replace("{url}", llms), "", `\`${fileName}\`:`, "", fenced("rythme", code)];
+    if (lastRun && lastRun.code === code) {
+      const seed = lastRun.seed === null ? "" : ` --seed ${lastRun.seed}`;
+      const command = {
+        1: `rythme check ${fileName}`,
+        2: `rythme test${seed} ${fileName}`,
+        5: `rythme steps ${fileName}${lastRun.expr ? ` ${JSON.stringify(lastRun.expr)}` : ""}`,
+      }[lastRun.mode] || `rythme run${seed} ${fileName}`;
+      const text = lastRun.mode === 5 && lastRun.text.includes("\u0005") ? UI.stepsNone : lastRun.text;
+      const out = text.replace(/[\u0001\u0002\u0005]/g, "").replace(/\n+$/, "");
+      parts.push("", `\`${command}\`:`, "", fenced("text", out || UI.nothing));
+    }
+    return parts.join("\n") + "\n";
+  }
+
+  aiBtn.addEventListener("click", async () => {
+    opener = aiBtn;
+    const text = forAssistant();
+    try {
+      await navigator.clipboard.writeText(text);
+      showShare(UI.aiCopied, false, null);
+    } catch {
+      // No clipboard (refused, or an insecure page): the text, selected, to copy.
+      showShare(UI.aiSelect, false, null, text);
+      aiText.focus();
+      aiText.select();
+    }
+  });
+
   // Escape closes the box, from the box or from the button that opened it.
-  for (const el of [shareBox, shareBtn]) {
+  for (const el of [shareBox, shareBtn, aiBtn]) {
     el.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape" && !shareBox.hidden) closeShare();
     });

@@ -195,6 +195,7 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme`                    | mode interactif : tapez du code, voyez le résultat  |
 | `rythme bonjour.ry`         | lancer un programme (`rythme run bonjour.ry` marche aussi ; `rythme run --seed 42 bonjour.ry` : les mêmes tirages de `random` à chaque fois) |
 | `rythme check bonjour.ry`   | trouver les problèmes sans lancer le programme      |
+| `rythme fix bonjour.ry`     | appliquer les corrections sûres de ces problèmes (`--dry-run` : montrer seulement le diff) |
 | `rythme test bonjour.ry`    | lancer les tests écrits dans le fichier (aussi un dossier : `rythme test .`, avec `--filter NOM`, `--watch`) |
 | `rythme fmt bonjour.ry`     | mettre le code en forme dans le style officiel (aussi un dossier : `rythme fmt .`) |
 | `rythme fmt --check .`      | lister les fichiers à mettre en forme, sans les changer (pour l'intégration continue) |
@@ -204,11 +205,12 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme learn`              | visite guidée du langage                            |
 | `rythme new bonjour`        | un nouveau projet : `rythme.toml`, `src/`, `tests/` ; puis `rythme run`, `rythme test`... sans fichier |
 | `rythme install`            | télécharger les dépendances de `rythme.toml` (git ou dossiers), et écrire `rythme.lock` |
-| `rythme exercise`           | [30 exercices gradués](docs/exercises/README.fr.md) : `list`, `start 1`, `check FICHIER` |
+| `rythme exercise`           | [36 exercices gradués](docs/exercises/README.fr.md) : `list`, `start 1`, `check FICHIER` |
 | `rythme etapes fib.ry "fib(4)"` | le calcul étape par étape : `fib(4)` → `fib(3) + fib(2)` → ... |
 | `rythme debug fib.ry`       | le débogueur : `break 12`, `run`, `next`, `step`, `where`, `print n * 2` ([manuel](docs/reference.fr.md#79-le-débogueur--rythme-debug)) |
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
 | `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
+| `rythme mcp`                | serveur pour les assistants d'IA ([plus bas](#assistants-dia)) |
 
 Ajoutez `--lang` et une langue (`fr`, `en`, `es`, `de`, `pt` ou `zh`) avant la
 commande pour choisir la langue des messages, ou définissez `RYTHME_LANG`.
@@ -299,6 +301,17 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 | [`testing.ry`](examples/testing.ry) | les blocs `test` |
 | [`modules/`](examples/modules) | `use geometrie` puis `geometrie.aire(2)` : un programme en plusieurs fichiers, noms `_privés` |
 | [`bonjour.ry`](examples/bonjour.ry) | des noms avec des accents |
+| [`linear_regression.ry`](examples/linear_regression.ry) | régression linéaire par descente de gradient : gradient, scan, plot |
+| [`perceptron.ry`](examples/perceptron.ry) | un perceptron, le premier neurone artificiel : dot, vector_add, fold |
+| [`xor_network.ry`](examples/xor_network.ry) | un petit réseau de neurones apprend XOR : sigmoid, matmul, rétropropagation |
+| [`kmeans.ry`](examples/kmeans.ry) | k-moyennes : des groupes dans des points sans étiquettes, random_normal, argmin |
+| [`knn.ry`](examples/knn.ry) | k plus proches voisins : nommer un fruit, train_test_split, norm |
+| [`naive_bayes.ry`](examples/naive_bayes.ry) | un classifieur bayésien naïf trie les spams : words, log, softmax |
+| [`markov.ry`](examples/markov.ry) | une chaîne de Markov écrit des phrases : windows, group_by, random_choice_weighted |
+| [`tictactoe.ry`](examples/tictactoe.ry) | le minimax joue parfaitement au morpion : récursion, set_at, max_by |
+| [`pathfinding.ry`](examples/pathfinding.ry) | le plus court chemin dans un labyrinthe : parcours en largeur, dict, put |
+| [`genetic.ry`](examples/genetic.ry) | un algorithme génétique fait évoluer une phrase : sélection, croisement, mutation |
+| [`ask_claude.ry`](examples/ask_claude.ry) | poser une question à un modèle de langage : http_post, to_json, parse_json, env (une clé d'API est nécessaire) |
 
 ## Éditeurs
 
@@ -312,13 +325,31 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
   parle le Language Server Protocol peut lancer `rythme lsp` ; quelques
   lignes de configuration pour chacun sont dans [`editors/README.fr.md`](editors/README.fr.md).
 
+## Assistants d'IA
+
+Rythme est nouveau, les assistants d'IA ne le connaissent donc pas encore ;
+il est fait pour qu'ils l'apprennent vite et corrigent leurs propres erreurs :
+
+- `rythme help llms` affiche [tout le langage en un texte](docs/llms-full.txt)
+  (aussi [`docs/llms.txt`](docs/llms.txt)) : donnez-le d'abord à l'assistant.
+- `rythme check --format json`, `run`, `test`, `explain` et `help` affichent
+  un [JSON versionné](docs/rythme-output.schema.json) : codes stables,
+  endroits exacts, aide qui nomme la correction, et corrections sous forme
+  de modifications du texte ; `rythme fix` applique les corrections sûres.
+- `rythme mcp` est un serveur [Model Context Protocol](https://modelcontextprotocol.io)
+  (lancer dans un bac à sable, vérifier, tester, corriger, mettre en forme,
+  expliquer, aider) : `claude mcp add rythme -- rythme mcp` pour Claude Code ;
+  Claude Desktop, Cursor et VS Code dans le [manuel](docs/reference.fr.md#710-rythme-et-les-assistants-dia).
+- `rythme new` écrit un `AGENTS.md` pour les agents qui travaillent dans le
+  projet, et [`AGENTS.md`](AGENTS.md) guide ceux qui travaillent sur Rythme lui-même.
+
 ## Pour les enseignants
 
 [`docs/enseigner.md`](docs/enseigner.md) propose un plan de cours construit
 sur Rythme, et explique pourquoi il convient aussi bien à un premier cours de
 programmation qu'à un cours de programmation fonctionnelle.
-[`docs/exercises/`](docs/exercises/README.fr.md) contient 30 exercices
-gradués, avec énoncé, indices, tests et solutions, que `rythme exercise`
+[`docs/exercises/`](docs/exercises/README.fr.md) contient 36 exercices
+gradués (dont six sur l'IA), avec énoncé, indices, tests et solutions, que `rythme exercise`
 distribue et vérifie dans chaque langue des messages.
 
 ## État

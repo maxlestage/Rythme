@@ -225,6 +225,127 @@ pub const EXAMPLES: &[Example] = &[
             "带重音符号的名字",
         ]
     ),
+    example!(
+        "linear_regression",
+        [
+            "régression linéaire par descente de gradient : gradient, scan, plot",
+            "linear regression by gradient descent: gradient, scan, plot",
+            "regresión lineal por descenso de gradiente: gradient, scan, plot",
+            "lineare Regression mit Gradientenabstieg: gradient, scan, plot",
+            "regressão linear por descida do gradiente: gradient, scan, plot",
+            "用梯度下降做线性回归：gradient、scan、plot",
+        ]
+    ),
+    example!(
+        "perceptron",
+        [
+            "un perceptron, le premier neurone artificiel : dot, vector_add, fold",
+            "a perceptron, the first artificial neuron: dot, vector_add, fold",
+            "un perceptrón, la primera neurona artificial: dot, vector_add, fold",
+            "ein Perzeptron, das erste künstliche Neuron: dot, vector_add, fold",
+            "um perceptron, o primeiro neurônio artificial: dot, vector_add, fold",
+            "感知机，第一个人工神经元：dot、vector_add、fold",
+        ]
+    ),
+    example!(
+        "xor_network",
+        [
+            "un petit réseau de neurones apprend XOR : sigmoid, matmul, rétropropagation",
+            "a small neural network learns XOR: sigmoid, matmul, backpropagation",
+            "una pequeña red neuronal aprende XOR: sigmoid, matmul, retropropagación",
+            "ein kleines neuronales Netz lernt XOR: sigmoid, matmul, Backpropagation",
+            "uma pequena rede neural aprende XOR: sigmoid, matmul, retropropagação",
+            "一个小型神经网络学习 XOR：sigmoid、matmul、反向传播",
+        ]
+    ),
+    example!(
+        "kmeans",
+        [
+            "k-moyennes : des groupes dans des points sans étiquettes, random_normal, argmin",
+            "k-means: groups in points without labels, random_normal, argmin",
+            "k-medias: grupos en puntos sin etiquetas, random_normal, argmin",
+            "k-Means: Gruppen in Punkten ohne Beschriftung, random_normal, argmin",
+            "k-médias: grupos em pontos sem rótulos, random_normal, argmin",
+            "k 均值：在无标签的点中找出分组，random_normal、argmin",
+        ]
+    ),
+    example!(
+        "knn",
+        [
+            "k plus proches voisins : nommer un fruit, train_test_split, norm",
+            "k nearest neighbours: naming a fruit, train_test_split, norm",
+            "k vecinos más cercanos: nombrar una fruta, train_test_split, norm",
+            "k nächste Nachbarn: eine Frucht benennen, train_test_split, norm",
+            "k vizinhos mais próximos: nomear uma fruta, train_test_split, norm",
+            "k 近邻：识别水果，train_test_split、norm",
+        ]
+    ),
+    example!(
+        "naive_bayes",
+        [
+            "un classifieur bayésien naïf trie les spams : words, log, softmax",
+            "a naive Bayes classifier sorts spam: words, log, softmax",
+            "un clasificador bayesiano ingenuo separa el spam: words, log, softmax",
+            "ein naiver Bayes-Klassifikator sortiert Spam: words, log, softmax",
+            "um classificador bayesiano ingênuo separa o spam: words, log, softmax",
+            "朴素贝叶斯分类器筛选垃圾消息：words、log、softmax",
+        ]
+    ),
+    example!(
+        "markov",
+        [
+            "une chaîne de Markov écrit des phrases : windows, group_by, random_choice_weighted",
+            "a Markov chain writes sentences: windows, group_by, random_choice_weighted",
+            "una cadena de Markov escribe frases: windows, group_by, random_choice_weighted",
+            "eine Markow-Kette schreibt Sätze: windows, group_by, random_choice_weighted",
+            "uma cadeia de Markov escreve frases: windows, group_by, random_choice_weighted",
+            "马尔可夫链写句子：windows、group_by、random_choice_weighted",
+        ]
+    ),
+    example!(
+        "tictactoe",
+        [
+            "le minimax joue parfaitement au morpion : récursion, set_at, max_by",
+            "minimax plays tic-tac-toe perfectly: recursion, set_at, max_by",
+            "minimax juega perfectamente al tres en raya: recursión, set_at, max_by",
+            "Minimax spielt Tic-Tac-Toe perfekt: Rekursion, set_at, max_by",
+            "o minimax joga jogo da velha perfeitamente: recursão, set_at, max_by",
+            "极小化极大算法完美地下井字棋：递归、set_at、max_by",
+        ]
+    ),
+    example!(
+        "pathfinding",
+        [
+            "le plus court chemin dans un labyrinthe : parcours en largeur, dict, put",
+            "the shortest way through a maze: breadth-first search, dict, put",
+            "el camino más corto en un laberinto: búsqueda en anchura, dict, put",
+            "der kürzeste Weg durch ein Labyrinth: Breitensuche, dict, put",
+            "o caminho mais curto num labirinto: busca em largura, dict, put",
+            "迷宫中的最短路径：广度优先搜索、dict、put",
+        ]
+    ),
+    example!(
+        "genetic",
+        [
+            "un algorithme génétique fait évoluer une phrase : sélection, croisement, mutation",
+            "a genetic algorithm evolves a sentence: selection, crossover, mutation",
+            "un algoritmo genético hace evolucionar una frase: selección, cruce, mutación",
+            "ein genetischer Algorithmus entwickelt einen Satz: Selektion, Kreuzung, Mutation",
+            "um algoritmo genético faz evoluir uma frase: seleção, cruzamento, mutação",
+            "遗传算法让一句话进化：选择、交叉、变异",
+        ]
+    ),
+    example!(
+        "ask_claude",
+        [
+            "poser une question à un modèle de langage : http_post, to_json, parse_json, env (une clé d'API est nécessaire)",
+            "asking a language model a question: http_post, to_json, parse_json, env (needs an API key)",
+            "preguntar a un modelo de lenguaje: http_post, to_json, parse_json, env (necesita una clave de API)",
+            "einem Sprachmodell eine Frage stellen: http_post, to_json, parse_json, env (braucht einen API-Schlüssel)",
+            "fazer uma pergunta a um modelo de linguagem: http_post, to_json, parse_json, env (precisa de uma chave de API)",
+            "向语言模型提问：http_post、to_json、parse_json、env（需要 API 密钥）",
+        ]
+    ),
 ];
 
 pub fn find(name: &str) -> Option<&'static Example> {

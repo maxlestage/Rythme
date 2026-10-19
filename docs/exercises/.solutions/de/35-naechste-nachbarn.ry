@@ -1,0 +1,35 @@
+# Übung 35 · Die nächsten Nachbarn  ★★★
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn nachbarn(beispiele, punkt, k) = beispiele |> sort_by(fn(e) = norm(vector_sub(e.punkt, punkt))) |> take(k)
+
+fn mehrheit(etiketten) = max_by(etiketten, fn(etikett) = count(etiketten, fn(l) = l == etikett))
+
+fn einordnen(beispiele, punkt, k) = nachbarn(beispiele, punkt, k) |> map(fn(e) = e.etikett) |> mehrheit
+
+# --- Tests (nicht verändern) ---
+
+garten = [
+  {punkt: [1, 1], etikett: "rot"},
+  {punkt: [1, 2], etikett: "rot"},
+  {punkt: [2, 1], etikett: "rot"},
+  {punkt: [8, 8], etikett: "blau"},
+  {punkt: [9, 8], etikett: "blau"},
+  {punkt: [5, 5], etikett: "blau"},
+]
+
+test "Nachbarn"
+  assert_eq(nachbarn(garten, [0, 0], 2) |> map(fn(e) = e.punkt), [[1, 1], [1, 2]])
+  assert_eq(len(nachbarn(garten, [0, 0], 10)), 6)
+end
+
+test "Mehrheit"
+  assert_eq(mehrheit(["a", "b", "b", "c"]), "b")
+  assert_eq(mehrheit(["x", "y"]), "x")
+end
+
+test "einordnen"
+  assert_eq(einordnen(garten, [2, 2], 3), "rot")
+  assert_eq(einordnen(garten, [7, 7], 3), "blau")
+  assert_eq(einordnen(garten, [4, 4], 1), "blau")
+end

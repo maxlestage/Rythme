@@ -812,6 +812,7 @@ Commands
   rythme file.ry            run a program
   rythme run --seed 42 f.ry run it with the same draws of random every time
   rythme check file.ry      find problems without running the program
+  rythme fix file.ry        apply the safe fixes of those problems (--dry-run: only show them)
   rythme test file.ry       run the tests of a file (or of a folder)
   rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
@@ -823,8 +824,10 @@ Commands
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
+  rythme help llms          the whole language in one text, for AI assistants
   rythme -e "code"          run a piece of code
   rythme lsp                language server, for editors (VS Code, Neovim...)
+  rythme mcp                server for AI assistants (Model Context Protocol)
   option --lang CODE        language of the messages: en, fr, es, de, pt, zh (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
@@ -848,6 +851,7 @@ Topics (rythme help TOPIC)
   regex       searching, cutting and replacing with regular expressions
   csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
   random      chance, and the same draws again with a seed
+  ml          machine learning and AI: vectors, statistics, slopes, charts, HTTP
   repl        the interactive mode
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
@@ -866,6 +870,7 @@ Comandos
   rythme arquivo.ry         executar um programa
   rythme run --seed 42 f.ry executá-lo com os mesmos sorteios de random toda vez
   rythme check arquivo.ry   encontrar problemas sem executar o programa
+  rythme fix arquivo.ry     aplicar as correções seguras desses problemas (--dry-run: só mostrá-las)
   rythme test arquivo.ry    executar os testes de um arquivo (ou de uma pasta)
   rythme fmt arquivo.ry     dar ao código o seu layout oficial (--check: só verificar)
   rythme doc arquivo.ry     escrever a documentação dele, em Markdown (--html: uma página web)
@@ -877,8 +882,10 @@ Comandos
   rythme learn              visita guiada pela linguagem, passo a passo
   rythme help TEMA          ajuda sobre um tema ou uma função
   rythme explain E003       explicar um código de erro
+  rythme help llms          toda a linguagem em um texto, para os assistentes de IA
   rythme -e "código"        executar um trecho de código
   rythme lsp                servidor de linguagem, para editores (VS Code, Neovim...)
+  rythme mcp                servidor para os assistentes de IA (Model Context Protocol)
   opção --lang CÓDIGO       idioma das mensagens: en, fr, es, de, pt, zh (ou RYTHME_LANG)
 
 Temas (rythme help TEMA)
@@ -902,6 +909,7 @@ Temas (rythme help TEMA)
   regex       buscar, cortar e substituir com expressões regulares
   csv         as tabelas das planilhas: csv_parse, csv_records, csv_format
   random      o acaso, e os mesmos sorteios de novo com uma semente
+  ml          aprendizado de máquina e IA: vetores, estatística, inclinações, gráficos, HTTP
   repl        o modo interativo
   fmt         o layout oficial do código (rythme fmt)
   doc         documentação a partir dos comentários ## (rythme doc)
@@ -1781,9 +1789,9 @@ depois trate-os com `match` ou repasse-os com `?`. `fail(message)` para o progra
         ("unknown option `{name}` for `rythme test`", "opção desconhecida `{name}` para `rythme test`"),
         (
             r#"
-the options are: --filter NAME, --seed N, --watch (see `rythme help tests`)"#,
+the options are: --filter NAME, --seed N, --watch, --sandbox, --format json (see `rythme help tests`)"#,
             r#"
-as opções são: --filter NOME, --seed N, --watch (veja `rythme help tests`)"#,
+as opções são: --filter NOME, --seed N, --watch, --sandbox, --format json (veja `rythme help tests`)"#,
         ),
         ("which file or folder? Example: rythme test my_tests.ry, or rythme test . for the files of this folder", "qual arquivo ou pasta? Exemplo: rythme test meus_testes.ry, ou rythme test . para os arquivos desta pasta"),
         ("Seed: {}", "Semente: {}"),
@@ -2659,9 +2667,11 @@ o gerou: os mesmos valores voltam a cada execução, e `--seed N` testa outros
         (
             r#"EXERCISES
 
-Rythme comes with 30 graded exercises for a first course, from the first
-values to recursion, lists, records, types, Option, Result and tests. Each one
-is a file with a statement, hints, the functions to write and their tests.
+Rythme comes with 36 graded exercises for a first course, from the first
+values to recursion, lists, records, types, Option, Result and tests, then six
+about artificial intelligence (31 to 36: vectors, statistics, a neuron,
+gradient descent, nearest neighbours, minimax). Each one is a file with a
+statement, hints, the functions to write and their tests.
 
   rythme exercise list              the exercises, from ★☆☆ (easy) to ★★★
   rythme exercise start 7           copies exercise 7 into the current folder
@@ -2674,9 +2684,11 @@ language of the messages (`rythme --lang es exercise start 7`); the folder
 docs/exercises of the repository of Rythme has them in English and French."#,
             r#"EXERCÍCIOS
 
-O Rythme vem com 30 exercícios graduados para um primeiro curso, dos primeiros
-valores até recursão, listas, registros, tipos, Option, Result e testes. Cada
-um é um arquivo com um enunciado, dicas, as funções a escrever e os testes delas.
+O Rythme vem com 36 exercícios graduados para um primeiro curso, dos primeiros
+valores até recursão, listas, registros, tipos, Option, Result e testes, e
+depois seis sobre inteligência artificial (31 a 36: vetores, estatística, um
+neurônio, descida do gradiente, vizinhos mais próximos, minimax). Cada um é um
+arquivo com um enunciado, dicas, as funções a escrever e os testes delas.
 
   rythme exercise list              os exercícios, de ★☆☆ (fácil) a ★★★
   rythme exercise start 7           copia o exercício 7 para a pasta atual
@@ -8611,6 +8623,1027 @@ Os tipos
 
 Os tipos escritos nunca são obrigatórios e não mudam nada quando o programa
 roda; os editores e `rythme doc` os mostram."#,
+        ),
+        // src/fix.rs, src/machine.rs: fixes and output for programs
+        ("`{f}` is not available in the sandbox: a program run by a tool (`--sandbox`) cannot touch files or folders. Run it yourself: rythme file.ry", "`{f}` não está disponível na sandbox: um programa executado por uma ferramenta (`--sandbox`) não pode mexer em arquivos nem pastas. Execute-o você mesmo: rythme arquivo.ry"),
+        ("Remove `{}`", "Remover `{}`"),
+        (r#""not equal" is written `!=`: `a != b`"#, r#""diferente de" se escreve `!=`: `a != b`"#),
+        ("an anonymous function is written `fn(x) = x * 2`", "uma função anônima se escreve `fn(x) = x * 2`"),
+        (
+            r#"on several lines, `if` is written:
+  if x > 0 then
+    "positive"
+  else if x == 0 then
+    "zero"
+  else
+    "negative"
+(no `end`; for several statements in a branch, use `do ... end`)"#,
+            r#"em várias linhas, `if` se escreve:
+  if x > 0 then
+    "positivo"
+  else if x == 0 then
+    "zero"
+  else
+    "negativo"
+(sem `end`; para várias instruções em um ramo, use `do ... end`)"#,
+        ),
+        (r#"Rythme texts put values in by themselves: write `"total: {{x}}"`, without `f` in front"#, r#"os textos de Rythme inserem os valores sozinhos: escreva `"total: {{x}}"`, sem `f` na frente"#),
+        ("`--format` takes `json` or `text`, not `{v}`: `rythme check --format json file.ry`", "`--format` aceita `json` ou `text`, não `{v}`: `rythme check --format json arquivo.ry`"),
+        ("`--watch` does not go with `--format json`: run `rythme test --format json` again after each change", "`--watch` não combina com `--format json`: execute `rythme test --format json` de novo após cada mudança"),
+        ("unknown option `{bad}` for `rythme fix`; the options are: --dry-run, --all, --format json", "opção desconhecida `{bad}` para `rythme fix`; as opções são: --dry-run, --all, --format json"),
+        ("which file? Example: rythme fix hello.ry (or rythme fix --dry-run hello.ry to see the changes first)", "qual arquivo? Exemplo: rythme fix ola.ry (ou rythme fix --dry-run ola.ry para ver as mudanças antes)"),
+        ("cannot write `{shown}`: {e}", "não é possível escrever `{shown}`: {e}"),
+        ("{shown}: nothing to fix", "{shown}: nada a corrigir"),
+        ("{shown}: {n} fix(es) to apply", "{shown}: {n} correção(ões) a aplicar"),
+        ("{shown}: {n} fix(es) applied", "{shown}: {n} correção(ões) aplicada(s)"),
+        ("; {errors} error(s) and {warnings} warning(s) left: `rythme check {shown}`", "; restam {errors} erro(s) e {warnings} aviso(s): `rythme check {shown}`"),
+        ("here: `new_{name} = {name} {op} {rest}`, then use `new_{name}`; to add up a list, use `sum(list)` or `fold`", "aqui: `novo_{name} = {name} {op} {rest}`, depois use `novo_{name}`; para somar uma lista, use `sum(lista)` ou `fold`"),
+        // src/mcp.rs: the server for AI assistants
+        ("`rythme mcp` takes no argument, not `{bad}`", "`rythme mcp` não aceita argumentos, nem `{bad}`"),
+        (
+            r#"rythme mcp: a Model Context Protocol server for AI assistants, on the standard input and output.
+Its tools run (in a sandbox), check, test, format and fix Rythme code, and explain errors and functions.
+Add it to Claude Code: claude mcp add rythme -- rythme mcp
+Claude Desktop, Cursor and others: see the manual, section 7.10."#,
+            r#"rythme mcp: um servidor Model Context Protocol para assistentes de IA, na entrada e na saída padrão.
+Suas ferramentas executam (em uma sandbox), verificam, testam, formatam e corrigem código Rythme, e explicam erros e funções.
+Adicione ao Claude Code: claude mcp add rythme -- rythme mcp
+Claude Desktop, Cursor e outros: veja o manual, seção 7.10."#,
+        ),
+        ("the program was stopped after {seconds} seconds: it may never end (a recursion without a base case?)", "o programa foi interrompido após {seconds} segundos: talvez ele nunca termine (uma recursão sem caso base?)"),
+        ("the program was stopped: it took more than {mb} MB of memory", "o programa foi interrompido: ocupava mais de {mb} MB de memória"),
+        // src/fix.rs, src/suggest.rs: habits from other languages
+        ("an anonymous function is written `fn(x) = x * 2`; a block given to a call is written `xs.map do |x| x * 2 end` or `xs.map {{ |x| x * 2 }}`", "uma função anônima se escreve `fn(x) = x * 2`; um bloco dado a uma chamada se escreve `xs.map do |x| x * 2 end` ou `xs.map {{ |x| x * 2 }}`"),
+        ("the parameters of a block are written between bars: `xs.map {{ |x| x * 2 }}`", "os parâmetros de um bloco se escrevem entre barras: `xs.map {{ |x| x * 2 }}`"),
+        ("to add up a list, write `sum(xs)`; to combine its elements, `fold(xs, 0, fn(acc, x) = acc + x)`", "para somar uma lista, escreva `sum(xs)`; para combinar seus elementos, `fold(xs, 0, fn(acc, x) = acc + x)`"),
+        ("a part of a list or a text is taken with a function: `slice(xs, 1, 3)`, `drop(xs, 1)` (all but the first), `take(xs, 2)` (the first two)", "uma parte de uma lista ou de um texto se pega com uma função: `slice(xs, 1, 3)`, `drop(xs, 1)` (tudo menos o primeiro), `take(xs, 2)` (os dois primeiros)"),
+        ("the fields of a record are written with `:`: `{{{field}: value}}`", "os campos de um registro se escrevem com `:`: `{{{field}: valor}}`"),
+        ("Rythme has no named arguments (`name=value`): give the values in order, like `round(x, 2)` (`rythme help NAME` shows the order)", "Rythme não tem argumentos nomeados (`nome=valor`): dê os valores na ordem, como `round(x, 2)` (`rythme help NOME` mostra a ordem)"),
+        ("texts have no format specifiers like `{{x:.2f}}`: write `{{text(x, 2)}}` for 2 decimals, or use `format_number`", "os textos não têm especificadores de formato como `{{x:.2f}}`: escreva `{{text(x, 2)}}` para 2 casas decimais, ou use `format_number`"),
+        ("when there is nothing to do otherwise, give the unit value: `if x > 0 then print(x) else ()`", "quando não há nada a fazer no outro caso, dê o valor unidade: `if x > 0 then print(x) else ()`"),
+        ("here: `new_{w} = ...`, then use `new_{w}`; to repeat a step, use `fold`, `map` or a recursive function", "aqui: `novo_{w} = ...`, depois use `novo_{w}`; para repetir um passo, use `fold`, `map` ou uma função recursiva"),
+        ("the functions of numbers are built in: write `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... without `Math.`", "as funções dos números são integradas: escreva `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... sem `Math.`"),
+        ("Rythme has no generators: build the whole list (`map`, `filter`, `1..n`), or give a function to call", "Rythme não tem geradores: construa a lista inteira (`map`, `filter`, `1..n`), ou passe uma função para chamar"),
+        // src/builtins/ml.rs: vectors, matrices, statistics, chance
+        (
+            "`{f}` expects a list of numbers as argument {pos}, but its element {k} is {got}",
+            "`{f}` espera uma lista de números como argumento {pos}, mas o seu elemento {k} é {got}",
+        ),
+        (
+            "a text is not a number: `parse_float(text)` reads one",
+            "um texto não é um número: `parse_float(texto)` lê um",
+        ),
+        (
+            "`{f}` expects a matrix (a list of rows, each a list of numbers) as argument {pos}, but its row {r} is {got}",
+            "`{f}` espera uma matriz (uma lista de linhas, cada uma uma lista de números) como argumento {pos}, mas a sua linha {r} é {got}",
+        ),
+        (
+            "a matrix of 2 rows and 3 columns: [[1, 2, 3], [4, 5, 6]]",
+            "uma matriz de 2 linhas e 3 colunas: [[1, 2, 3], [4, 5, 6]]",
+        ),
+        (
+            "`{f}`: argument {pos} is not a matrix: its row 0 has {cols} number(s), but its row {r} has {n}",
+            "`{f}`: o argumento {pos} não é uma matriz: a sua linha 0 tem {cols} número(s), mas a sua linha {r} tem {n}",
+        ),
+        ("every row of a matrix has the same length", "todas as linhas de uma matriz têm o mesmo comprimento"),
+        (
+            "`{f}` expects a matrix of numbers as argument {pos}, but its row {r} holds {got} at position {k}",
+            "`{f}` espera uma matriz de números como argumento {pos}, mas a sua linha {r} contém {got} na posição {k}",
+        ),
+        ("a vector of {n} number(s)", "um vetor de {n} número(s)"),
+        ("a {n}×{c} matrix", "uma matriz {n}×{c}"),
+        ("a list of {n} element(s)", "uma lista de {n} elemento(s)"),
+        (
+            "`{f}` needs two values of the same shape, but got {a} and {b}",
+            "`{f}` precisa de dois valores com a mesma forma, mas recebeu {a} e {b}",
+        ),
+        (
+            "`shape(x)` gives the shape of a vector or a matrix: [3] or [2, 3]",
+            "`shape(x)` dá a forma de um vetor ou de uma matriz: [3] ou [2, 3]",
+        ),
+        (
+            "`{f}`: these lists are nested more than {MAX_NESTING} levels deep: they are not a vector nor a matrix",
+            "`{f}`: estas listas estão aninhadas em mais de {MAX_NESTING} níveis: não são nem um vetor nem uma matriz",
+        ),
+        (
+            "`{f}` works on vectors and matrices of numbers, but found {got} in them",
+            "`{f}` trabalha com vetores e matrizes de números, mas encontrou {got} neles",
+        ),
+        (
+            "`{f}` needs two vectors of the same length, but got a vector of {n} number(s) and a vector of {m}",
+            "`{f}` precisa de dois vetores com o mesmo comprimento, mas recebeu um vetor de {n} número(s) e um vetor de {m}",
+        ),
+        (
+            "`zip_with` needs two lists of the same length, but got {n} and {m} element(s)",
+            "`zip_with` precisa de duas listas com o mesmo comprimento, mas recebeu {n} e {m} elemento(s)",
+        ),
+        ("a {r}×{c} matrix", "uma matriz {r}×{c}"),
+        ("a vector of {nr} number(s)", "um vetor de {nr} número(s)"),
+        ("a {nr}×{nc} matrix", "uma matriz {nr}×{nc}"),
+        (
+            "`matmul` cannot multiply {first} by {second}: the first one has {c} column(s), so the second one needs {c} row(s), not {nr}",
+            "`matmul` não pode multiplicar {first} por {second}: a matriz da esquerda tem {c} coluna(s), então a da direita precisa de {c} linha(s), não {nr}",
+        ),
+        (
+            "`shape(x)` gives the shape of each one; `transpose(m)` swaps rows and columns",
+            "`shape(x)` dá a forma de cada um; `transpose(m)` troca linhas e colunas",
+        ),
+        (
+            "`matmul`: these matrices are too large to multiply here (more than {} multiplications)",
+            "`matmul`: estas matrizes são grandes demais para serem multiplicadas aqui (mais de {} multiplicações)",
+        ),
+        (
+            "`shape`: the elements of this list do not all have the same shape: element 0 is {a}, element {i} is {b}",
+            "`shape`: os elementos desta lista não têm todos a mesma forma: o elemento 0 é {a}, o elemento {i} é {b}",
+        ),
+        ("`{f}` of an empty list", "`{f}` de uma lista vazia"),
+        (
+            "`percentile` needs a percentage from 0 to 100, not {p}",
+            "`percentile` precisa de uma porcentagem de 0 a 100, não {p}",
+        ),
+        (
+            "`random_normal` needs a standard deviation of 0 or more, not {sd}",
+            "`random_normal` precisa de um desvio padrão de 0 ou mais, não {sd}",
+        ),
+        (
+            "`random_choice_weighted` needs one weight per element: {n} element(s), but {m} weight(s)",
+            "`random_choice_weighted` precisa de um peso por elemento: {n} elemento(s), mas {m} peso(s)",
+        ),
+        (
+            "`random_choice_weighted`: the weight {i} is {w}; a weight is a number of 0 or more",
+            "`random_choice_weighted`: o peso {i} vale {w}; um peso é um número de 0 ou mais",
+        ),
+        (
+            "`random_choice_weighted` needs at least one weight above 0",
+            "`random_choice_weighted` precisa de pelo menos um peso maior que 0",
+        ),
+        (
+            "`train_test_split` needs a share from 0 to 1 for the training part (like 0.8), not {ratio}",
+            "`train_test_split` precisa de uma proporção de 0 a 1 para a parte de treino (como 0.8), não {ratio}",
+        ),
+        (
+            "Machine learning: vectors, matrices, statistics",
+            "Aprendizado de máquina: vetores, matrizes, estatística",
+        ),
+        (
+            "Hyperbolic tangent: a smooth step from -1 to 1, used as the activation of neurons.",
+            "Tangente hiperbólica: um degrau suave de -1 a 1, usado como ativação dos neurônios.",
+        ),
+        (
+            "The logistic function 1 / (1 + e^-x): a smooth step from 0 to 1, read as a probability. Its slope is `sigmoid(x) * (1 - sigmoid(x))`.",
+            "A função logística 1 / (1 + e^-x): um degrau suave de 0 a 1, lido como uma probabilidade. A sua inclinação é `sigmoid(x) * (1 - sigmoid(x))`.",
+        ),
+        (
+            "The rectifier: x when it is positive, 0.0 otherwise. The usual activation of deep networks.",
+            "O retificador: x quando é positivo, 0.0 caso contrário. A ativação habitual das redes profundas.",
+        ),
+        (
+            "Dot product of two vectors (lists of numbers) of the same length: the sum of the products of their numbers, one by one.",
+            "Produto escalar de dois vetores (listas de números) com o mesmo comprimento: a soma dos produtos dos seus números, um a um.",
+        ),
+        (
+            "Length of a vector: the square root of the sum of the squares of its numbers.",
+            "Comprimento de um vetor: a raiz quadrada da soma dos quadrados dos seus números.",
+        ),
+        (
+            "Adds two vectors, or two matrices, of the same shape, number by number.",
+            "Soma dois vetores, ou duas matrizes, com a mesma forma, número a número.",
+        ),
+        (
+            "Subtracts two vectors, or two matrices, of the same shape, number by number.",
+            "Subtrai dois vetores, ou duas matrizes, com a mesma forma, número a número.",
+        ),
+        (
+            "Multiplies two vectors, or two matrices, of the same shape, number by number (not the product of matrices: that is `matmul`).",
+            "Multiplica dois vetores, ou duas matrizes, com a mesma forma, número a número (não é o produto de matrizes: esse é `matmul`).",
+        ),
+        (
+            "Multiplies every number of a vector, or of a matrix, by the number k.",
+            "Multiplica cada número de um vetor, ou de uma matriz, pelo número k.",
+        ),
+        (
+            "Calls f with the elements of two lists of the same length, one pair at a time, and gives the list of the results.",
+            "Chama f com os elementos de duas listas com o mesmo comprimento, um par de cada vez, e dá a lista dos resultados.",
+        ),
+        (
+            "Product of two matrices (lists of rows): a matrix of r rows and n columns times a matrix of n rows and c columns gives r rows and c columns. With a vector as `b`, gives a vector.",
+            "Produto de duas matrizes (listas de linhas): uma matriz de r linhas e n colunas vezes uma matriz de n linhas e c colunas dá r linhas e c colunas. Com um vetor como `b`, dá um vetor.",
+        ),
+        ("Swaps the rows and the columns of a matrix.", "Troca as linhas e as colunas de uma matriz."),
+        (
+            "A vector of `rows` zeros, or with `columns`, a matrix full of zeros.",
+            "Um vetor de `rows` zeros, ou com `columns`, uma matriz cheia de zeros.",
+        ),
+        (
+            "A vector of `rows` ones, or with `columns`, a matrix full of ones.",
+            "Um vetor de `rows` uns, ou com `columns`, uma matriz cheia de uns.",
+        ),
+        (
+            "The identity matrix of n rows and n columns: ones on the diagonal, zeros elsewhere.",
+            "A matriz identidade de n linhas e n colunas: uns na diagonal, zeros no resto.",
+        ),
+        (
+            "The shape of a vector or a matrix (of lists nested in lists): its length at each level, `[3]` for a vector of 3 numbers, `[2, 3]` for 2 rows of 3 numbers.",
+            "A forma de um vetor ou de uma matriz (de listas aninhadas em listas): o seu comprimento em cada nível, `[3]` para um vetor de 3 números, `[2, 3]` para 2 linhas de 3 números.",
+        ),
+        (
+            "A summary of a list of numbers, as a record: `count`, `mean` (the average), `median` (the middle value), `std_dev`, `min` and `max`. `stats(xs).mean` is the mean.",
+            "Um resumo de uma lista de números, como registro: `count`, `mean` (a média), `median` (o valor do meio), `std_dev`, `min` e `max`. `stats(xs).mean` é a média.",
+        ),
+        (
+            "The variance of a list of numbers: the mean of the squares of their distances to their mean (of the whole population: divided by n).",
+            "A variância de uma lista de números: a média dos quadrados das suas distâncias à média (de toda a população: dividida por n).",
+        ),
+        (
+            "The standard deviation of a list of numbers: the square root of their variance, how far they usually are from their mean.",
+            "O desvio padrão de uma lista de números: a raiz quadrada da sua variância, a distância habitual à média.",
+        ),
+        (
+            "The number below which p percent of the numbers of the list are (p from 0 to 100), between the two closest ones when needed. `percentile(xs, 50)` is the median, the middle value.",
+            "O número abaixo do qual estão p por cento dos números da lista (p de 0 a 100), entre os dois mais próximos se necessário. `percentile(xs, 50)` é a mediana, o valor do meio.",
+        ),
+        (
+            "The position of the largest number of a list (the first one if several are equal).",
+            "A posição do maior número de uma lista (o primeiro se vários forem iguais).",
+        ),
+        (
+            "The position of the smallest number of a list (the first one if several are equal).",
+            "A posição do menor número de uma lista (o primeiro se vários forem iguais).",
+        ),
+        (
+            "Turns a list of scores into probabilities: each one becomes e^x divided by the sum of them all, so that they are between 0 and 1 and add up to 1, the largest score keeping the largest share.",
+            "Transforma uma lista de pontuações em probabilidades: cada uma vira e^x dividido pela soma de todas, de modo que fiquem entre 0 e 1 e somem 1, e a maior pontuação fique com a maior parte.",
+        ),
+        (
+            "Rescales a list of numbers from 0.0 (the smallest) to 1.0 (the largest), keeping their proportions. When they are all equal, gives zeros.",
+            "Reescala uma lista de números de 0.0 (o menor) a 1.0 (o maior), mantendo as suas proporções. Quando são todos iguais, dá zeros.",
+        ),
+        (
+            "A random decimal number drawn from the normal distribution (the bell curve) of this mean and standard deviation. Follows `random_seed`.",
+            "Um número decimal aleatório, tirado da distribuição normal (a curva em sino) com esta média e este desvio padrão. Segue `random_seed`.",
+        ),
+        (
+            "An element of the list chosen at random, each one with a chance in proportion to its weight (numbers of 0 or more, one per element). Follows `random_seed`.",
+            "Um elemento da lista escolhido ao acaso, cada um com uma chance proporcional ao seu peso (números de 0 ou mais, um por elemento). Segue `random_seed`.",
+        ),
+        (
+            "Shuffles a list, then cuts it in two: a record `{train, test}`, where `train` holds this share of the elements (0.8: 80 percent) and `test` the rest. To learn on some examples and check on others. Follows `random_seed`.",
+            "Embaralha uma lista e depois a corta em duas: um registro `{train, test}`, em que `train` contém esta proporção dos elementos (0.8: 80 por cento) e `test` o resto. Para aprender com alguns exemplos e verificar com outros. Segue `random_seed`.",
+        ),
+        // src/builtins/grad.rs: slopes
+        (
+            "the function given to `{f}` must return a number, but it returned {got}",
+            "a função dada a `{f}` deve devolver um número, mas devolveu {got}",
+        ),
+        (
+            "The slope of the function f at x (its derivative), computed from f(x + h) and f(x - h) for a tiny h: precise to about 9 significant digits for a smooth function. f takes one number and gives one.",
+            "A inclinação da função f em x (a sua derivada), calculada a partir de f(x + h) e f(x - h) para um h minúsculo: precisa a cerca de 9 algarismos significativos para uma função suave. f recebe um número e dá um.",
+        ),
+        (
+            "The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`). f takes a list of numbers and gives one number. Going against it lowers f: the heart of gradient descent.",
+            "O gradiente de f no ponto xs: a lista das inclinações de f ao longo de cada número de xs (veja `derivative`). f recebe uma lista de números e dá um número. Ir no sentido contrário faz f baixar: o coração da descida do gradiente.",
+        ),
+        // src/builtins/plot.rs: charts as text
+        (
+            "`{f}` has nothing to draw: the list is empty, or holds no finite number",
+            "`{f}` não tem nada para desenhar: a lista está vazia, ou não contém nenhum número finito",
+        ),
+        ("`histogram` draws at most 100 bars, not {bins}", "`histogram` desenha no máximo 100 barras, não {bins}"),
+        (
+            "Draws the points (x, y) as a chart in text, 50 columns wide and 11 lines high, with the smallest and largest values on the axes; with one list, draws its numbers at the positions 0, 1, 2... Gives a text: `print(plot(losses))`.",
+            "Desenha os pontos (x, y) como um gráfico de texto, com 50 colunas de largura e 11 linhas de altura, com os menores e os maiores valores nos eixos; com uma só lista, desenha os seus números nas posições 0, 1, 2... Dá um texto: `print(plot(perdas))`.",
+        ),
+        (
+            "Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each. Gives a text: `print(histogram(heights))`.",
+            "Conta quantos números caem em cada um dos `bars` intervalos de mesma largura (10 se não for dado) e os desenha como barras horizontais de texto, com o intervalo e a contagem de cada uma. Dá um texto: `print(histogram(alturas))`.",
+        ),
+        // src/builtins/http.rs: HTTP requests
+        (
+            "`{f}`: the names and the values of the headers are texts, not {got}",
+            "`{f}`: os nomes e os valores dos cabeçalhos são textos, não {got}",
+        ),
+        (
+            r#"for example: {{"content-type": "application/json", "x-api-key": key}}"#,
+            r#"por exemplo: {{"content-type": "application/json", "x-api-key": chave}}"#,
+        ),
+        (
+            "`{f}` is not available in the browser: the playground cannot make requests. Run the program on your computer: rythme file.ry",
+            "`{f}` não está disponível no navegador: o playground não pode fazer requisições. Execute o programa no seu computador: rythme arquivo.ry",
+        ),
+        (
+            r#"a web address starts with http:// or https://, not "{url}""#,
+            r#"um endereço web começa com http:// ou https://, não "{url}""#,
+        ),
+        (
+            "an address or a header cannot hold a line break or a control character, and a header name is a word without `:` or space",
+            "um endereço ou um cabeçalho não pode conter quebra de linha nem caractere de controle, e o nome de um cabeçalho é uma palavra sem `:` nem espaço",
+        ),
+        ("the server answered {code}: {shown}{more}", "o servidor respondeu {code}: {shown}{more}"),
+        (
+            "`{f}` needs the program `curl`, which comes with Windows 10, macOS and most Linux systems: install it (on Debian or Ubuntu: sudo apt install curl)",
+            "`{f}` precisa do programa `curl`, que vem com o Windows 10, o macOS e a maioria dos sistemas Linux: instale-o (no Debian ou Ubuntu: sudo apt install curl)",
+        ),
+        (
+            "server not found: {host} (no connection to the Internet, or a mistake in the address?)",
+            "servidor não encontrado: {host} (sem conexão com a Internet, ou um erro no endereço?)",
+        ),
+        ("could not connect to {host}: {said}", "não foi possível conectar a {host}: {said}"),
+        ("no answer from {host} in time (30 seconds)", "sem resposta de {host} a tempo (30 segundos)"),
+        ("the secure connection (TLS) to {host} failed: {said}", "a conexão segura (TLS) com {host} falhou: {said}"),
+        ("the request to {host} failed: {said}", "a requisição para {host} falhou: {said}"),
+        ("The web: HTTP requests", "A web: requisições HTTP"),
+        (
+            r#"Fetches a web address (http:// or https://): `Ok(text of the answer)`, or `Err(message)` when there is no network, the address is wrong, the server answers with an error (404...) or does not answer within 30 seconds. `headers` is a record of texts, like `{"accept": "application/json"}`. Uses the program curl; not available in the playground."#,
+            r#"Busca um endereço web (http:// ou https://): `Ok(texto da resposta)`, ou `Err(mensagem)` quando não há rede, o endereço está errado, o servidor responde com um erro (404...) ou não responde em 30 segundos. `headers` é um registro de textos, como `{"accept": "application/json"}`. Usa o programa curl; não está disponível no playground."#,
+        ),
+        (
+            r#"Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`. To call a web service or a language model: `http_post(url, to_json(request), {"content-type": "application/json"})`. Keep keys out of your code: read them with `env`."#,
+            r#"Envia um texto (muitas vezes JSON, feito com `to_json`) a um endereço web e dá `Ok(texto da resposta)` ou `Err(mensagem)`, como `http_get`. Para chamar um serviço web ou um modelo de linguagem: `http_post(url, to_json(pedido), {"content-type": "application/json"})`. Mantenha as chaves fora do seu código: leia-as com `env`."#,
+        ),
+        // docs/exercises: the exercises about artificial intelligence (31 to 36)
+        ("31-vectors", "31-vetores"),
+        (
+            r#"# Exercise 31 · Points as vectors  ★☆☆
+#
+# In machine learning, an example is a list of numbers: a vector. The
+# built-in functions `vector_add`, `vector_sub`, `vector_scale`, `dot` and
+# `norm` work on them, and always give Floats.
+#   vector_sub([5, 5], [1, 2])     # [4.0, 3.0]
+#   norm([3, 4])                   # 5.0
+#
+# Statement
+#   - `distance(a, b)`: the distance between the points a and b (the length
+#     of the vector from one to the other);
+#   - `midpoint(a, b)`: the point halfway between a and b;
+#   - `closest(points, p)`: the point of the list nearest to p.
+#
+# Hints
+#   1. `distance` is the `norm` of a difference.
+#   2. Halfway: add the two points, then scale by 0.5.
+#   3. `min_by(list, f)` gives the element for which f is the smallest.
+#
+# Check your work:  rythme exercise check 31-vectors.ry
+#              or:  rythme test 31-vectors.ry
+
+fn distance(a, b) = fail("to do")
+
+fn midpoint(a, b) = fail("to do")
+
+fn closest(points, p) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "distance"
+  assert_eq(distance([0, 0], [3, 4]), 5.0)
+  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+end
+
+test "midpoint"
+  assert_eq(midpoint([0, 0], [4, 2]), [2.0, 1.0])
+  assert_eq(midpoint([-1, 3], [1, 3]), [0.0, 3.0])
+end
+
+test "closest"
+  assert_eq(closest([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
+  assert_eq(closest([[2, 2]], [100, -100]), [2, 2])
+end
+"#,
+            r#"# Exercício 31 · Pontos como vetores  ★☆☆
+#
+# Em aprendizado de máquina, um exemplo é uma lista de números: um vetor. As
+# funções embutidas `vector_add`, `vector_sub`, `vector_scale`, `dot` e
+# `norm` trabalham com eles, e sempre dão Floats.
+#   vector_sub([5, 5], [1, 2])     # [4.0, 3.0]
+#   norm([3, 4])                   # 5.0
+#
+# Enunciado
+#   - `distancia(a, b)`: a distância entre os pontos a e b (o comprimento
+#     do vetor que vai de um ao outro);
+#   - `ponto_medio(a, b)`: o ponto a meio caminho entre a e b;
+#   - `o_mais_proximo(pontos, p)`: o ponto da lista mais próximo de p.
+#
+# Dicas
+#   1. `distancia` é a `norm` de uma diferença.
+#   2. A meio caminho: some os dois pontos e multiplique por 0.5.
+#   3. `min_by(lista, f)` dá o elemento para o qual f é o menor.
+#
+# Confira seu trabalho:  rythme exercise check 31-vetores.ry
+#                   ou:  rythme test 31-vetores.ry
+
+fn distancia(a, b) = fail("a fazer")
+
+fn ponto_medio(a, b) = fail("a fazer")
+
+fn o_mais_proximo(pontos, p) = fail("a fazer")
+
+# --- Testes (não os altere) ---
+
+test "distância"
+  assert_eq(distancia([0, 0], [3, 4]), 5.0)
+  assert_eq(distancia([1, 1, 1], [1, 1, 1]), 0.0)
+end
+
+test "ponto médio"
+  assert_eq(ponto_medio([0, 0], [4, 2]), [2.0, 1.0])
+  assert_eq(ponto_medio([-1, 3], [1, 3]), [0.0, 3.0])
+end
+
+test "o mais próximo"
+  assert_eq(o_mais_proximo([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
+  assert_eq(o_mais_proximo([[2, 2]], [100, -100]), [2, 2])
+end
+"#,
+        ),
+        ("32-statistics", "32-estatistica"),
+        (
+            r#"# Exercise 32 · Statistics on data  ★★☆
+#
+# Before learning from data, look at it. `stats(xs)` gives a record with the
+# count, the mean, the median, the standard deviation, the min and the max:
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).mean       # 5.0
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).std_dev    # 2.0
+#
+# Statement
+#   - `standardize(xs)`: each number becomes its distance to the mean,
+#     counted in standard deviations: (x - mean) / std_dev;
+#   - `outliers(xs)`: the numbers more than 2 standard deviations away from
+#     the mean, in their order;
+#   - `accuracy(predictions, answers)`: the share (from 0.0 to 1.0) of the
+#     predictions equal to the answer at the same position.
+#
+# Hints
+#   1. Compute `stats(xs)` once, give it a name, then `map`.
+#   2. `abs` gives the distance whatever the side.
+#   3. `zip(a, b)` pairs the elements; `count` counts those that are right.
+#
+# Check your work:  rythme exercise check 32-statistics.ry
+#              or:  rythme test 32-statistics.ry
+
+fn standardize(xs) = fail("to do")
+
+fn outliers(xs) = fail("to do")
+
+fn accuracy(predictions, answers) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "standardize"
+  assert_eq(standardize([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "outliers"
+  assert_eq(outliers([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(outliers([1, 2, 3]), [])
+end
+
+test "accuracy"
+  assert_eq(accuracy(["cat", "dog", "cat", "cat"], ["cat", "dog", "dog", "cat"]), 0.75)
+  assert_eq(accuracy([1, 0], [0, 1]), 0.0)
+end
+"#,
+            r#"# Exercício 32 · Estatística sobre dados  ★★☆
+#
+# Antes de aprender com os dados, olhe para eles. `stats(xs)` dá um registro
+# com a quantidade, a média, a mediana, o desvio padrão, o mínimo e o
+# máximo:
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).mean       # 5.0
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).std_dev    # 2.0
+#
+# Enunciado
+#   - `padronizar(xs)`: cada número vira a sua distância à média, contada
+#     em desvios padrão: (x - média) / desvio padrão;
+#   - `atipicos(xs)`: os números a mais de 2 desvios padrão da média, na
+#     sua ordem;
+#   - `acuracia(previsoes, respostas)`: a proporção (de 0.0 a 1.0) das
+#     previsões iguais à resposta na mesma posição.
+#
+# Dicas
+#   1. Calcule `stats(xs)` uma vez, dê um nome a ele, e depois `map`.
+#   2. `abs` dá a distância seja qual for o lado.
+#   3. `zip(a, b)` junta os elementos em pares; `count` conta os acertos.
+#
+# Confira seu trabalho:  rythme exercise check 32-estatistica.ry
+#                   ou:  rythme test 32-estatistica.ry
+
+fn padronizar(xs) = fail("a fazer")
+
+fn atipicos(xs) = fail("a fazer")
+
+fn acuracia(previsoes, respostas) = fail("a fazer")
+
+# --- Testes (não os altere) ---
+
+test "padronizar"
+  assert_eq(padronizar([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "valores atípicos"
+  assert_eq(atipicos([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(atipicos([1, 2, 3]), [])
+end
+
+test "acurácia"
+  assert_eq(acuracia(["gato", "cachorro", "gato", "gato"], ["gato", "cachorro", "cachorro", "gato"]), 0.75)
+  assert_eq(acuracia([1, 0], [0, 1]), 0.0)
+end
+"#,
+        ),
+        ("33-neurons", "33-neuronios"),
+        (
+            r#"# Exercise 33 · An artificial neuron  ★★☆
+#
+# A neuron multiplies each input by a weight, adds them up with a bias, and
+# passes the sum through an activation function such as `sigmoid`, which
+# gives a number between 0 and 1.
+#   sigmoid(0)                     # 0.5
+#   dot([1, 2], [3, 4])            # 11.0
+#
+# Statement
+#   - `neuron(weights, bias, inputs)`: sigmoid(weights · inputs + bias);
+#   - `fires(weights, bias, inputs)`: true when the neuron gives 0.5 or more;
+#   - `layer(matrix, biases, inputs)`: a layer of neurons, one per row of the
+#     matrix (its weights) and per bias: the list of their outputs.
+#
+# Hints
+#   1. `dot` gives the weighted sum.
+#   2. `matmul(matrix, inputs)` computes every weighted sum of a layer at
+#      once; `vector_add` adds the biases; `map` applies `sigmoid`.
+#
+# Check your work:  rythme exercise check 33-neurons.ry
+#              or:  rythme test 33-neurons.ry
+
+fn neuron(weights, bias, inputs) = fail("to do")
+
+fn fires(weights, bias, inputs) = fail("to do")
+
+fn layer(matrix, biases, inputs) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "neuron"
+  assert_eq(neuron([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neuron([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "a neuron that computes AND"
+  assert(fires([10, 10], -15, [1, 1]))
+  assert(not fires([10, 10], -15, [1, 0]))
+  assert(not fires([10, 10], -15, [0, 0]))
+end
+
+test "layer"
+  outputs = layer([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(outputs, fn(x) = round(x, 3)), [0.5, 0.993])
+end
+"#,
+            r#"# Exercício 33 · Um neurônio artificial  ★★☆
+#
+# Um neurônio multiplica cada entrada por um peso, soma tudo com um viés, e
+# passa a soma por uma função de ativação como `sigmoid`, que dá um número
+# entre 0 e 1.
+#   sigmoid(0)                     # 0.5
+#   dot([1, 2], [3, 4])            # 11.0
+#
+# Enunciado
+#   - `neuronio(pesos, vies, entradas)`: sigmoid(pesos · entradas + vies);
+#   - `dispara(pesos, vies, entradas)`: true quando o neurônio dá 0.5 ou
+#     mais;
+#   - `camada(matriz, vieses, entradas)`: uma camada de neurônios, um por
+#     linha da matriz (seus pesos) e por viés: a lista das suas saídas.
+#
+# Dicas
+#   1. `dot` dá a soma ponderada.
+#   2. `matmul(matriz, entradas)` calcula de uma vez todas as somas
+#      ponderadas de uma camada; `vector_add` soma os vieses; `map` aplica
+#      `sigmoid`.
+#
+# Confira seu trabalho:  rythme exercise check 33-neuronios.ry
+#                   ou:  rythme test 33-neuronios.ry
+
+fn neuronio(pesos, vies, entradas) = fail("a fazer")
+
+fn dispara(pesos, vies, entradas) = fail("a fazer")
+
+fn camada(matriz, vieses, entradas) = fail("a fazer")
+
+# --- Testes (não os altere) ---
+
+test "neurônio"
+  assert_eq(neuronio([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neuronio([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "um neurônio que calcula E"
+  assert(dispara([10, 10], -15, [1, 1]))
+  assert(not dispara([10, 10], -15, [1, 0]))
+  assert(not dispara([10, 10], -15, [0, 0]))
+end
+
+test "camada"
+  saidas = camada([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(saidas, fn(x) = round(x, 3)), [0.5, 0.993])
+end
+"#,
+        ),
+        ("34-gradient-descent", "34-descida-do-gradiente"),
+        (
+            r#"# Exercise 34 · Going down the slope  ★★☆
+#
+# A model learns by making its error smaller: it follows the slope of the
+# error downwards, one small step at a time. That is gradient descent.
+#   derivative(fn(x) = x * x, 3)                      # 6.0, the slope at 3
+#   gradient(fn([x, y]) = x * x + y * y, [1, 2])      # [2.0, 4.0]
+#
+# Statement
+#   - `step(f, x, rate)`: one step down from x: x - rate × (slope of f at x);
+#   - `descend(f, x, rate, steps)`: that many steps from x, one after the
+#     other; the point reached;
+#   - `descend_all(f, xs, rate, steps)`: the same with several numbers: each
+#     step is xs - rate × (gradient of f at xs).
+#
+# Hints
+#   1. `descend` calls itself with one step less, until 0 (or use `fold`
+#      over `1..steps`).
+#   2. `vector_sub` and `vector_scale` work on the list of numbers.
+#
+# Check your work:  rythme exercise check 34-gradient-descent.ry
+#              or:  rythme test 34-gradient-descent.ry
+
+fn step(f, x, rate) = fail("to do")
+
+fn descend(f, x, rate, steps) = fail("to do")
+
+fn descend_all(f, xs, rate, steps) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+fn parabola(x) = (x - 3) ** 2
+
+test "one step"
+  assert_eq(step(parabola, 0, 0.5), 3.0)
+  assert_eq(step(parabola, 1, 0.25), 2.0)
+end
+
+test "down to the bottom"
+  assert_eq(round(descend(parabola, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descend(parabola, 10, 0.1, 0), 10)
+end
+
+test "several numbers"
+  bowl = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descend_all(bowl, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end
+"#,
+            r#"# Exercício 34 · Descer a ladeira  ★★☆
+#
+# Um modelo aprende tornando o seu erro menor: segue a inclinação do erro
+# para baixo, um pequeno passo de cada vez. É a descida do gradiente.
+#   derivative(fn(x) = x * x, 3)                      # 6.0, a inclinação em 3
+#   gradient(fn([x, y]) = x * x + y * y, [1, 2])      # [2.0, 4.0]
+#
+# Enunciado
+#   - `passo(f, x, taxa)`: um passo para baixo a partir de x:
+#     x - taxa × (inclinação de f em x);
+#   - `descer(f, x, taxa, passos)`: tantos passos a partir de x, um depois
+#     do outro; o ponto alcançado;
+#   - `descer_tudo(f, xs, taxa, passos)`: o mesmo com vários números: cada
+#     passo dá xs - taxa × (gradiente de f em xs).
+#
+# Dicas
+#   1. `descer` chama a si mesma com um passo a menos, até 0 (ou use `fold`
+#      sobre `1..passos`).
+#   2. `vector_sub` e `vector_scale` trabalham com a lista de números.
+#
+# Confira seu trabalho:  rythme exercise check 34-descida-do-gradiente.ry
+#                   ou:  rythme test 34-descida-do-gradiente.ry
+
+fn passo(f, x, taxa) = fail("a fazer")
+
+fn descer(f, x, taxa, passos) = fail("a fazer")
+
+fn descer_tudo(f, xs, taxa, passos) = fail("a fazer")
+
+# --- Testes (não os altere) ---
+
+fn parabola(x) = (x - 3) ** 2
+
+test "um passo"
+  assert_eq(passo(parabola, 0, 0.5), 3.0)
+  assert_eq(passo(parabola, 1, 0.25), 2.0)
+end
+
+test "até o fundo"
+  assert_eq(round(descer(parabola, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descer(parabola, 10, 0.1, 0), 10)
+end
+
+test "vários números"
+  tigela = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descer_tudo(tigela, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end
+"#,
+        ),
+        ("35-nearest-neighbours", "35-vizinhos-mais-proximos"),
+        (
+            r#"# Exercise 35 · Nearest neighbours  ★★★
+#
+# To guess the label of a new point, look at the k known examples closest to
+# it, and take the label most of them have. Each example is a record:
+#   {point: [1.0, 2.0], label: "red"}
+#
+# Statement
+#   - `neighbours(examples, point, k)`: the k examples nearest to the point,
+#     from the nearest;
+#   - `majority(labels)`: the label that comes most often (the first one to
+#     reach that count, in the order of the list, when several tie);
+#   - `classify(examples, point, k)`: the label most of the k nearest
+#     neighbours have.
+#
+# Hints
+#   1. `sort_by` with the distance (`norm(vector_sub(a, b))`), then `take`.
+#   2. `count(labels, fn(l) = l == label)` counts one label; `max_by` keeps
+#      the first of the largest.
+#
+# Check your work:  rythme exercise check 35-nearest-neighbours.ry
+#              or:  rythme test 35-nearest-neighbours.ry
+
+fn neighbours(examples, point, k) = fail("to do")
+
+fn majority(labels) = fail("to do")
+
+fn classify(examples, point, k) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+garden = [
+  {point: [1, 1], label: "red"},
+  {point: [1, 2], label: "red"},
+  {point: [2, 1], label: "red"},
+  {point: [8, 8], label: "blue"},
+  {point: [9, 8], label: "blue"},
+  {point: [5, 5], label: "blue"},
+]
+
+test "neighbours"
+  assert_eq(neighbours(garden, [0, 0], 2) |> map(fn(e) = e.point), [[1, 1], [1, 2]])
+  assert_eq(len(neighbours(garden, [0, 0], 10)), 6)
+end
+
+test "majority"
+  assert_eq(majority(["a", "b", "b", "c"]), "b")
+  assert_eq(majority(["x", "y"]), "x")
+end
+
+test "classify"
+  assert_eq(classify(garden, [2, 2], 3), "red")
+  assert_eq(classify(garden, [7, 7], 3), "blue")
+  assert_eq(classify(garden, [4, 4], 1), "blue")
+end
+"#,
+            r#"# Exercício 35 · Os vizinhos mais próximos  ★★★
+#
+# Para adivinhar o rótulo de um ponto novo, olhe os k exemplos conhecidos
+# mais próximos, e pegue o rótulo que a maioria tem. Cada exemplo é um
+# registro:
+#   {ponto: [1.0, 2.0], rotulo: "vermelho"}
+#
+# Enunciado
+#   - `vizinhos(exemplos, ponto, k)`: os k exemplos mais próximos do ponto,
+#     do mais próximo ao menos próximo;
+#   - `maioria(rotulos)`: o rótulo que mais aparece (o primeiro a chegar a
+#     essa quantidade, na ordem da lista, em caso de empate);
+#   - `classificar(exemplos, ponto, k)`: o rótulo que a maioria dos k
+#     vizinhos mais próximos tem.
+#
+# Dicas
+#   1. `sort_by` com a distância (`norm(vector_sub(a, b))`), e depois `take`.
+#   2. `count(rotulos, fn(l) = l == rotulo)` conta um rótulo; `max_by` fica
+#      com o primeiro dos maiores.
+#
+# Confira seu trabalho:  rythme exercise check 35-vizinhos-mais-proximos.ry
+#                   ou:  rythme test 35-vizinhos-mais-proximos.ry
+
+fn vizinhos(exemplos, ponto, k) = fail("a fazer")
+
+fn maioria(rotulos) = fail("a fazer")
+
+fn classificar(exemplos, ponto, k) = fail("a fazer")
+
+# --- Testes (não os altere) ---
+
+jardim = [
+  {ponto: [1, 1], rotulo: "vermelho"},
+  {ponto: [1, 2], rotulo: "vermelho"},
+  {ponto: [2, 1], rotulo: "vermelho"},
+  {ponto: [8, 8], rotulo: "azul"},
+  {ponto: [9, 8], rotulo: "azul"},
+  {ponto: [5, 5], rotulo: "azul"},
+]
+
+test "vizinhos"
+  assert_eq(vizinhos(jardim, [0, 0], 2) |> map(fn(e) = e.ponto), [[1, 1], [1, 2]])
+  assert_eq(len(vizinhos(jardim, [0, 0], 10)), 6)
+end
+
+test "maioria"
+  assert_eq(maioria(["a", "b", "b", "c"]), "b")
+  assert_eq(maioria(["x", "y"]), "x")
+end
+
+test "classificar"
+  assert_eq(classificar(jardim, [2, 2], 3), "vermelho")
+  assert_eq(classificar(jardim, [7, 7], 3), "azul")
+  assert_eq(classificar(jardim, [4, 4], 1), "azul")
+end
+"#,
+        ),
+        ("36-minimax", "36-minimax"),
+        (
+            r#"# Exercise 36 · Playing perfectly: minimax  ★★★
+#
+# A game of Nim: there are n matches on the table; each player in turn takes
+# 1, 2 or 3 of them, and whoever takes the last match wins. Minimax decides
+# who wins with perfect play by imagining every move: the player to move
+# wins if one of their moves leaves the other player in a losing position.
+#
+# Statement
+#   - `moves(n)`: the possible numbers of matches to take (1, 2 or 3, but no
+#     more than n);
+#   - `wins(n)`: true when the player to move can always win from n matches
+#     (with 0 matches left, the player to move has already lost);
+#   - `best_move(n)`: `Some(m)`, where m is the smallest move that wins, or
+#     `None` when every move loses.
+#
+# Hints
+#   1. `filter(1..3, ...)` keeps the moves allowed.
+#   2. `wins(n)`: is there `any` move after which the other player does
+#      not win?
+#   3. `find` gives the first element that fits, as an Option.
+#
+# Check your work:  rythme exercise check 36-minimax.ry
+#              or:  rythme test 36-minimax.ry
+
+fn moves(n) = fail("to do")
+
+fn wins(n) = fail("to do")
+
+fn best_move(n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "moves"
+  assert_eq(moves(10), [1, 2, 3])
+  assert_eq(moves(2), [1, 2])
+  assert_eq(moves(0), [])
+end
+
+test "who wins"
+  assert_eq(map(0..8, wins), [false, true, true, true, false, true, true, true, false])
+end
+
+test "best move"
+  assert_eq(best_move(5), Some(1))
+  assert_eq(best_move(7), Some(3))
+  assert_eq(best_move(8), None)
+end
+"#,
+            r#"# Exercício 36 · Jogar perfeitamente: o minimax  ★★★
+#
+# Uma partida de Nim: há n palitos na mesa; cada jogador, na sua vez, tira
+# 1, 2 ou 3, e quem tira o último palito ganha. O minimax decide quem ganha
+# jogando perfeitamente imaginando todas as jogadas: o jogador da vez ganha
+# se uma das suas jogadas deixa o outro numa posição perdedora.
+#
+# Enunciado
+#   - `jogadas(n)`: as quantidades de palitos que se pode tirar (1, 2 ou 3,
+#     mas não mais que n);
+#   - `ganha(n)`: true quando o jogador da vez sempre pode ganhar com n
+#     palitos (sem palitos, o jogador da vez já perdeu);
+#   - `melhor_jogada(n)`: `Some(m)`, onde m é a menor jogada que ganha, ou
+#     `None` quando todas as jogadas perdem.
+#
+# Dicas
+#   1. `filter(1..3, ...)` fica com as jogadas permitidas.
+#   2. `ganha(n)`: existe alguma jogada (`any`) depois da qual o outro
+#      jogador não ganha?
+#   3. `find` dá o primeiro elemento que serve, como Option.
+#
+# Confira seu trabalho:  rythme exercise check 36-minimax.ry
+#                   ou:  rythme test 36-minimax.ry
+
+fn jogadas(n) = fail("a fazer")
+
+fn ganha(n) = fail("a fazer")
+
+fn melhor_jogada(n) = fail("a fazer")
+
+# --- Testes (não os altere) ---
+
+test "jogadas"
+  assert_eq(jogadas(10), [1, 2, 3])
+  assert_eq(jogadas(2), [1, 2])
+  assert_eq(jogadas(0), [])
+end
+
+test "quem ganha"
+  assert_eq(map(0..8, ganha), [false, true, true, true, false, true, true, true, false])
+end
+
+test "melhor jogada"
+  assert_eq(melhor_jogada(5), Some(1))
+  assert_eq(melhor_jogada(7), Some(3))
+  assert_eq(melhor_jogada(8), None)
+end
+"#,
+        ),
+        // src/help.rs: rythme help ml
+        (
+            r#"MACHINE LEARNING AND AI
+
+A vector is a list of numbers, a matrix a list of rows of the same length.
+These functions never change them: they give new lists, always of Floats.
+
+Vectors and matrices
+  dot([1, 2], [3, 4])            # 11.0
+  norm([3, 4])                   # 5.0, the length
+  vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # number by number
+  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  matmul(m, n)  matmul(m, v)     # product of matrices, or matrix by vector
+  transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
+  zip_with(xs, ys, f)            # f on the pairs, for anything else
+
+Neurons
+  sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # scores into probabilities
+
+Statistics
+  stats(xs)                      # {count, mean, median, std_dev, min, max}
+  variance(xs)  std_dev(xs)  percentile(xs, 90)  argmax(xs)  argmin(xs)
+  normalize(xs)                  # from 0.0 (smallest) to 1.0 (largest)
+
+Chance, the same on every run after random_seed(n)
+  random_normal(0, 1)  random_choice_weighted(xs, weights)
+  train_test_split(examples, 0.8)    # {train, test}
+
+Slopes, for gradient descent (central differences, about 9 digits)
+  derivative(fn(x) = x * x, 3)               # 6.0
+  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+
+Charts as text
+  print(plot(losses))  print(plot(xs, ys))  print(histogram(heights))
+
+The web and language models
+  http_get(url)  http_post(url, body, headers)   # Ok(text) or Err(message)
+  Keep API keys out of the code: env("ANTHROPIC_API_KEY"). The example
+  examples/ask_claude.ry asks Claude a question with http_post and JSON.
+
+A mistake of shape names both shapes ("cannot multiply a 2×3 matrix by a
+2×2 matrix"). Programs to read: the examples linear_regression, perceptron,
+xor_network, kmeans, knn, naive_bayes, markov, tictactoe, pathfinding and
+genetic; exercises 31 to 36 (rythme exercise list)."#,
+            r#"APRENDIZADO DE MÁQUINA E IA
+
+Um vetor é uma lista de números, uma matriz uma lista de linhas com o mesmo
+comprimento. Estas funções nunca os alteram: dão listas novas, sempre de
+Floats.
+
+Vetores e matrizes
+  dot([1, 2], [3, 4])            # 11.0
+  norm([3, 4])                   # 5.0, o comprimento
+  vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # número a número
+  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  matmul(m, n)  matmul(m, v)     # produto de matrizes, ou matriz por vetor
+  transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
+  zip_with(xs, ys, f)            # f nos pares, para todo o resto
+
+Neurônios
+  sigmoid(x)  tanh(x)  relu(x)   softmax(pontuacoes)   # em probabilidades
+
+Estatística
+  stats(xs)                      # {count, mean, median, std_dev, min, max}
+  variance(xs)  std_dev(xs)  percentile(xs, 90)  argmax(xs)  argmin(xs)
+  normalize(xs)                  # de 0.0 (o menor) a 1.0 (o maior)
+
+O acaso, o mesmo em cada execução depois de random_seed(n)
+  random_normal(0, 1)  random_choice_weighted(xs, pesos)
+  train_test_split(exemplos, 0.8)    # {train, test}
+
+Inclinações, para a descida do gradiente (diferenças centrais, cerca de 9 algarismos)
+  derivative(fn(x) = x * x, 3)               # 6.0
+  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+
+Gráficos de texto
+  print(plot(perdas))  print(plot(xs, ys))  print(histogram(alturas))
+
+A web e os modelos de linguagem
+  http_get(url)  http_post(url, corpo, cabecalhos)   # Ok(texto) ou Err(mensagem)
+  Mantenha as chaves de API fora do código: env("ANTHROPIC_API_KEY"). O
+  exemplo examples/ask_claude.ry faz uma pergunta ao Claude com http_post e
+  JSON.
+
+Um erro de forma nomeia as duas formas ("não pode multiplicar uma matriz
+2×3 por uma matriz 2×2"). Programas para ler: os exemplos linear_regression,
+perceptron, xor_network, kmeans, knn, naive_bayes, markov, tictactoe,
+pathfinding e genetic; os exercícios 31 a 36 (rythme exercise list)."#,
         ),
     ],
 }

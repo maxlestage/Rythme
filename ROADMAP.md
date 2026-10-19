@@ -189,7 +189,32 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
     `rythme help random`), and the *Seed* option of the playground (every
     Run, Test and Steps with the same draws, kept with the draft, in sharing
     links as `&seed=N`; see [site/README.md](site/README.md#seed)).
-  - [ ] **HTTP requests.**
+  - [x] **HTTP requests**: `http_get` and `http_post`, `Ok(text)` or
+    `Err(message)`, through the program curl (no dependency; keys never on a
+    command line); an `Err` in the playground.
+- [x] **Rythme for AI assistants**: models learn the language fast, write
+  it, and fix their own mistakes without a person. Done: `--format json`
+  for `check`, `run`, `test`, `fix`, `explain` and `help` (versioned, with a
+  JSON Schema), fixes as text edits and `rythme fix`, `rythme help llms`
+  (`docs/llms.txt`, `docs/llms-full.txt`, generated and tested), the MCP
+  server `rythme mcp` (sandboxed, time and memory limited), `AGENTS.md` in
+  the repository and in new projects, and targeted messages for the habits
+  of other languages (manual 7.10). The website does not show it yet.
+- [x] **Artificial intelligence in class**: what a course needs to write
+  machine learning, neural networks, search, games and calls to language
+  models, pure and readable. Done: vectors and matrices over lists (`dot`,
+  `matmul`, `transpose`...), statistics (`stats`, `percentile`, `softmax`...),
+  activations, chance that follows `random_seed` (`random_normal`,
+  `train_test_split`...), numerical slopes (`derivative`, `gradient`), charts
+  as text (`plot`, `histogram`), HTTP (see above); `rythme help ml`, the
+  manual, ten examples and `examples/ask_claude.ry`, six exercises (31 to
+  36) in every language.
+  - [ ] Exact derivatives (automatic differentiation), if it can stay
+    invisible: dual numbers would have to go through every operation and
+    `print`.
+  - [ ] Faster numbers for large data (a compact list of Floats inside the
+    interpreter, invisible to programs), if courses need more than
+    thousands of examples.
 - [x] **Sharing in the playground**: a link to a program with its steps and its
   tests, for classrooms. Done: the Share button of the playground, a link that
   holds the program and its test mode (see [site/README.md](site/README.md#sharing-links)),

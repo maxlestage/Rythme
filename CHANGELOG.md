@@ -25,6 +25,54 @@ dit ce qu'une version 1.x peut changer ou non.*
   without W003: a web page's own `fn header(...)` hides the framework's
   `header` element on purpose. The language's own functions still warn.
 
+### Rythme and AI assistants
+
+AI assistants and coding agents can now learn Rythme, write it and fix their
+own mistakes in a loop (manual 7.10, README "AI assistants"):
+
+- **`--format json`** for `rythme check`, `run`, `test`, `fix`, `explain` and
+  `help`: one JSON document (`"version": 1`, described by
+  `docs/rythme-output.schema.json`) with each diagnostic's stable code,
+  severity, message in the chosen language, file, line/column and byte
+  ranges, labels, notes, help, call trace and fixes as text edits; the
+  output of the program for `run`, each test for `test`, every built-in
+  function (signature, doc, example, Ruby names, arity), keyword, topic and
+  code for `help` and `explain`. The messages for people stay the default.
+- **Fixes**: diagnostics carry the exact change when it is known (a misspelt
+  name, a missing `use`, `a ? b : c`, `&&`, `===`, `<>`, `let`, `def`,
+  `elif`, `return`, `lambda`, `=>`, `|x| ...`, `f"..."`, `"n = " + n`,
+  `"%s" % x`, `xs[1:]`, `Math.sqrt`, a missing `then`...), marked safe or a
+  guess. **`rythme fix FILE`** applies the safe ones until none is left
+  (`--dry-run` prints a diff, `--all` also applies the guesses); the
+  language server offers them all as quick fixes.
+- **`rythme help llms`** prints `docs/llms-full.txt`, the whole language in
+  one text for a model (rules, syntax by example, every built-in function,
+  habits from other languages, every code), and `rythme help llms.txt` its
+  index `docs/llms.txt`; both are generated from the sources and tested.
+- **`rythme mcp`**, a Model Context Protocol server (stdio): run in a
+  sandbox with a time and memory limit, check, test, fix, format, explain,
+  help, steps, and the reference as a resource. `rythme run --sandbox`,
+  `rythme test --sandbox` and `RYTHME_SANDBOX=1` keep a program away from
+  files, folders and environment variables.
+- **`AGENTS.md`** (and `CLAUDE.md`) for the agents of contributors, and in
+  every project made by `rythme new`.
+- **Messages for the habits of other languages**: named arguments, `n = n +
+  1`, `x += 1`, slices, `|x|` and `->` lambdas, Kotlin blocks, format
+  specifiers, `Math.`, `yield`, `case`/`when`, `{name = 1}`, an `if` without
+  `else` on one line... now say exactly what to write, in every language.
+- **The website for assistants**: `/llms.txt` (with the addresses of the
+  site) and `/llms-full.txt`, linked from every page and from `robots.txt`,
+  saved for offline use; every page with content also as clean Markdown
+  (`/en/learn/index.md`: the code fenced as `rythme`, run by the tests
+  through the real interpreter), advertised by a `<link rel="alternate">`;
+  structured data (JSON-LD: Rythme, its interpreter with version, license
+  and download, the code of *Learn* and of the examples); a page *For AI
+  assistants* (`/{lang}/ai/`, in the six languages) with the message to
+  paste, the MCP configurations for Claude Code, Claude Desktop, Cursor and
+  VS Code with copy buttons, the loop of `--format json` and `rythme fix`,
+  and `AGENTS.md`; and **Copy for AI** in the playground, which copies the
+  program and its output or errors as Markdown, ready for a chat.
+
 ### Language
 
 - **Types written in the code, optional and checked**:
@@ -71,10 +119,41 @@ dit ce qu'une version 1.x peut changer ou non.*
   `rythme run --seed N file.ry` does it for the whole run. Same seed, same
   version of Rythme: same draws. Without a seed nothing changes.
   `rythme help random`, the manual (6, *Chance and seeds*, and 7.1).
-- 178 built-in functions. Names from other languages point to the new ones
-  (`parse_csv`, `DictReader`, `to_csv`, `srand`...). As the stability
-  promise says, a function of a program with one of these names stays its
-  own (W003).
+- **Numbers for machine learning**, over lists: vectors are lists of
+  numbers, matrices lists of rows. `dot`, `norm`, `vector_add`,
+  `vector_sub`, `vector_mul`, `vector_scale` (vectors or matrices of the same
+  shape), `zip_with`, `matmul` (by a matrix or a vector), `transpose`,
+  `zeros`, `ones`, `identity_matrix`, `shape`; `sigmoid`, `tanh`, `relu`,
+  `softmax`; `stats` (a record: count, mean, median, std_dev, min, max),
+  `variance`, `std_dev`, `percentile`, `argmax`, `argmin`, `normalize`;
+  `random_normal`, `random_choice_weighted` and `train_test_split`, which
+  follow `random_seed`. Computed in Rust (a product of 100×100 matrices
+  takes about 0.4 ms), given back as Floats. A mistake of shape names both
+  shapes; empty or ragged lists, `nan` and deep nesting never crash.
+  `mean`, `median` and `average`, which exercises and examples define, stay
+  free: `stats(xs).mean`, `percentile(xs, 50)`.
+- **Slopes**: `derivative(f, x)` and `gradient(f, xs)`, by central
+  differences, keeping only the digits the calculation makes sure of
+  (`derivative(fn(x) = x * x, 3)` is `6.0`).
+- **Charts as text**: `plot(ys)`, `plot(xs, ys)` and `histogram(xs, bars)`
+  give a text to print, lined up by display width, the same everywhere.
+- **HTTP requests**: `http_get(url, headers)` and `http_post(url, body,
+  headers)` give `Ok(text)` or `Err(message)` (no network, a wrong address,
+  an error status, a 30-second timeout, TLS). They run the program curl, as
+  `rythme install` runs git: no new dependency; the address, the headers and
+  the body go through its standard input, never its command line. In the
+  playground, an `Err` says they are not available.
+- `rythme help ml` (also `ai`, `ia`, `ki`...), the manual (6, *Machine
+  learning*, *Charts as text*, *The web*), `bench/ml.ry`, ten AI examples
+  (linear regression, perceptron, a network learning XOR, k-means, k nearest
+  neighbours, naive Bayes, a Markov chain, minimax, breadth-first search, a
+  genetic algorithm) and `examples/ask_claude.ry` (a language model asked
+  through its HTTP API, with a key read by `env`), and six AI exercises
+  (31 to 36) in every language of `rythme exercise`.
+- 211 built-in functions. Names from other languages point to the new ones
+  (`parse_csv`, `DictReader`, `to_csv`, `srand`, `median`, `stdev`, `eye`,
+  `randn`, `logistic`...). As the stability promise says, a function of a
+  program with one of these names stays its own (W003).
 
 ### Tools
 

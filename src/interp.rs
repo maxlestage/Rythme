@@ -168,6 +168,9 @@ pub struct Interp {
     pub types: HashMap<Sym, Vec<Rc<CtorInfo>>>,
     pub tests: Vec<TestCase>,
     pub script_args: Vec<String>,
+    /// Run for a tool that must not touch the computer (`--sandbox`): no
+    /// files, folders or environment variables (see `builtins::system::in_browser`).
+    pub sandboxed: bool,
     /// Where the values of `check_all` and `sample` come from (`rythme test --seed N`).
     pub property_seed: u64,
     /// How the top-level names of the file being run are stored (see
@@ -256,6 +259,8 @@ impl Interp {
             types,
             tests: Vec::new(),
             script_args: Vec::new(),
+            // Set by the tools that run programs for others (`rythme mcp`), for every command.
+            sandboxed: !cfg!(target_arch = "wasm32") && std::env::var_os("RYTHME_SANDBOX").is_some_and(|v| v == "1"),
             property_seed: crate::builtins::property::DEFAULT_SEED,
             names: compile::Names::default(),
             depth: 0,

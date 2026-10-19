@@ -198,6 +198,7 @@ cargo install --path .       # or install it in your PATH
 | `rythme`                    | interactive mode: type code, see the result    |
 | `rythme hello.ry`           | run a program (`rythme run hello.ry` also works; `rythme run --seed 42 hello.ry`: the same draws of `random` every time) |
 | `rythme check hello.ry`     | find problems without running the program      |
+| `rythme fix hello.ry`       | apply the safe fixes of those problems (`--dry-run`: only show the diff) |
 | `rythme test hello.ry`      | run the tests written in the file (also a folder: `rythme test .`, with `--filter NAME`, `--watch`) |
 | `rythme fmt hello.ry`       | give the code its official layout (also a folder: `rythme fmt .`) |
 | `rythme fmt --check .`      | list the files to format, without changing them (for CI) |
@@ -207,11 +208,12 @@ cargo install --path .       # or install it in your PATH
 | `rythme help [topic]`       | help on a topic or a function                  |
 | `rythme explain E003`       | explain an error code                          |
 | `rythme learn`              | guided tour of the language                    |
-| `rythme exercise`           | [30 graded exercises](docs/exercises/README.md): `list`, `start 1`, `check FILE` |
+| `rythme exercise`           | [36 graded exercises](docs/exercises/README.md): `list`, `start 1`, `check FILE` |
 | `rythme steps fib.ry "fib(4)"` | the calculation step by step: `fib(4)` → `fib(3) + fib(2)` → ... |
 | `rythme debug fib.ry`       | the debugger: `break 12`, `run`, `next`, `step`, `where`, `print n * 2` ([manual](docs/reference.md#79-the-debugger-rythme-debug)) |
 | `rythme -e 'print(1 + 2)'`  | run a piece of code                            |
 | `rythme lsp`                | language server, started by your editor ([editors](editors)) |
+| `rythme mcp`                | server for AI assistants ([below](#ai-assistants)) |
 
 Add `--lang` and a language (`en`, `fr`, `es`, `de`, `pt` or `zh`) before the
 command to choose the language of the messages, or set `RYTHME_LANG`.
@@ -297,6 +299,17 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 | [`testing.ry`](examples/testing.ry) | `test` blocks |
 | [`modules/`](examples/modules) | `use geometry` then `geometry.area(2)`: a program in several files, private `_names` |
 | [`bonjour.ry`](examples/bonjour.ry) | names with accents |
+| [`linear_regression.ry`](examples/linear_regression.ry) | linear regression by gradient descent: gradient, scan, plot |
+| [`perceptron.ry`](examples/perceptron.ry) | a perceptron, the first artificial neuron: dot, vector_add, fold |
+| [`xor_network.ry`](examples/xor_network.ry) | a small neural network learns XOR: sigmoid, matmul, backpropagation |
+| [`kmeans.ry`](examples/kmeans.ry) | k-means: groups in points without labels, random_normal, argmin |
+| [`knn.ry`](examples/knn.ry) | k nearest neighbours: naming a fruit, train_test_split, norm |
+| [`naive_bayes.ry`](examples/naive_bayes.ry) | a naive Bayes classifier sorts spam: words, log, softmax |
+| [`markov.ry`](examples/markov.ry) | a Markov chain writes sentences: windows, group_by, random_choice_weighted |
+| [`tictactoe.ry`](examples/tictactoe.ry) | minimax plays tic-tac-toe perfectly: recursion, set_at, max_by |
+| [`pathfinding.ry`](examples/pathfinding.ry) | the shortest way through a maze: breadth-first search, dict, put |
+| [`genetic.ry`](examples/genetic.ry) | a genetic algorithm evolves a sentence: selection, crossover, mutation |
+| [`ask_claude.ry`](examples/ask_claude.ry) | asking a language model a question: http_post, to_json, parse_json, env (needs an API key) |
 
 ## Editors
 
@@ -309,12 +322,30 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
   speaks the Language Server Protocol can start `rythme lsp`; a few lines of
   configuration for each are in [`editors/README.md`](editors/README.md).
 
+## AI assistants
+
+Rythme is new, so AI assistants do not know it yet; it is built so that they
+learn it fast and fix their own mistakes:
+
+- `rythme help llms` prints [the whole language in one text](docs/llms-full.txt)
+  (also [`docs/llms.txt`](docs/llms.txt)): give it to the assistant first.
+- `rythme check --format json`, `run`, `test`, `explain` and `help` print
+  [versioned JSON](docs/rythme-output.schema.json): stable codes, exact
+  places, help that names the fix, and fixes as text edits;
+  `rythme fix` applies the safe ones.
+- `rythme mcp` is a [Model Context Protocol](https://modelcontextprotocol.io)
+  server (run in a sandbox, check, test, fix, format, explain, help):
+  `claude mcp add rythme -- rythme mcp` for Claude Code; Claude Desktop,
+  Cursor and VS Code in the [manual](docs/reference.md#710-rythme-and-ai-assistants).
+- `rythme new` writes an `AGENTS.md` for the agents working in the project,
+  and [`AGENTS.md`](AGENTS.md) guides those working on Rythme itself.
+
 ## For teachers
 
 [`docs/teaching.md`](docs/teaching.md) proposes a course outline built on
 Rythme, and explains why it fits a first programming course and a
 functional programming course alike.
-[`docs/exercises/`](docs/exercises/README.md) holds 30 graded exercises, with
+[`docs/exercises/`](docs/exercises/README.md) holds 36 graded exercises (six about AI), with
 statements, hints, tests and solutions, that `rythme exercise` hands out and
 checks in every language of the messages.
 
@@ -334,7 +365,7 @@ mode) and is organised as a pipeline:
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
 | [`src/bigint.rs`](src/bigint.rs) | whole numbers beyond 64 bits, without a dependency |
 | [`src/dict.rs`](src/dict.rs) | the persistent ordered tree behind dictionaries and sets, and the order of their keys |
-| [`src/builtins.rs`](src/builtins.rs) | 178 built-in functions (and their Ruby names), documented in two languages, JSON and CSV included |
+| [`src/builtins.rs`](src/builtins.rs) | 211 built-in functions (and their Ruby names), documented in two languages, JSON, CSV, HTTP and machine learning included |
 | [`src/builtins/`](src/builtins) | dates, files and the system, dictionaries and sets, regexes and text tools, CSV, generators of property tests |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |

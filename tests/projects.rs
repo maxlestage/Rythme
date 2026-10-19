@@ -146,7 +146,7 @@ fn a_new_project_runs_tests_checks_formats_and_documents_itself() {
             "pt" => ("src/saudacao.ry", "tests/saudacao_test.ry"),
             _ => ("src/greeting.ry", "tests/greeting_test.ry"),
         };
-        for f in ["rythme.toml", "src/main.ry", lib, test, "README.md", ".gitignore"] {
+        for f in ["rythme.toml", "src/main.ry", lib, test, "README.md", ".gitignore", "AGENTS.md", "CLAUDE.md"] {
             assert!(t.path("hello").join(f).is_file(), "{lang}: {f} is missing");
             assert!(r.stdout.contains(&format!("hello/{f}")), "{lang}: {}", r.stdout);
         }
@@ -190,6 +190,17 @@ fn a_new_project_runs_tests_checks_formats_and_documents_itself() {
         let r = t.rythme(lang, "hello", &["install"]);
         ok(&r);
         assert!(!t.path("hello/rythme.lock").exists());
+        // The loop that AGENTS.md teaches AI agents works in the project, without a file name.
+        let agents = t.read("hello/AGENTS.md");
+        assert!(agents.contains("This is **hello**") && agents.contains("rythme check --format json"), "{agents}");
+        for args in [&["check", "--format", "json"][..], &["test", "--format", "json"], &["run", "--format", "json"]] {
+            let r = t.rythme(lang, "hello", args);
+            ok(&r);
+            assert!(r.stdout.starts_with("{\"version\":1,") && r.stdout.contains("\"ok\":true"), "{args:?}: {}", r.stdout);
+        }
+        let r = t.rythme(lang, "hello", &["fix"]);
+        ok(&r);
+        assert_eq!(r.stdout.lines().count(), 3, "nothing to fix in each file: {}", r.stdout);
     }
 }
 

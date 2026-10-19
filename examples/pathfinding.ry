@@ -1,0 +1,59 @@
+# Finding the shortest way through a maze with a breadth-first search: from
+# the start, visit every square at distance 1, then every square at
+# distance 2, and so on, remembering where each square was reached from.
+# The first time the goal is reached, the way back is the shortest path.
+
+maze = [
+  "S . . # . . . .",
+  ". # . # . # # .",
+  ". # . . . # . .",
+  ". # # # . # . #",
+  ". . . # . . . G",
+]
+
+grid = map(maze, fn(row) = split(row))
+height = len(grid)
+width = len(grid[0])
+
+## What is on the square p = [row, column].
+fn at(p) = grid[p[0]][p[1]]
+
+fn find_square(mark) =
+  0..height - 1 |> flat_map(fn(r) = 0..width - 1 |> map(fn(c) = [r, c])) |> find(fn(p) = at(p) == mark) |> unwrap
+
+## The squares next to p (up, down, left, right) that are not walls.
+fn neighbours(p) =
+  [[-1, 0], [1, 0], [0, -1], [0, 1]]
+    |> map(fn(step) = zip_with(p, step, fn(a, b) = a + b))
+    |> filter(fn([r, c]) = r >= 0 and r < height and c >= 0 and c < width)
+    |> filter(fn(p) = at(p) != "#")
+
+## Breadth first: `queue` holds the squares to visit, in order; `came_from`
+## says from where each square seen was reached.
+fn search([], _, _) = None
+fn search([p, ..rest], came_from, goal) =
+  if p == goal then Some(came_from) else visit(neighbours(p) |> reject(fn(n) = has(came_from, n)), p, rest, came_from, goal)
+
+## The squares never seen go at the end of the queue.
+fn visit(new, p, rest, came_from, goal) = search(rest + new, fold(new, came_from, fn(seen, n) = put(seen, n, p)), goal)
+
+## The path from the start to p, by following `came_from` back.
+fn path_to(came_from, p) = match get(came_from, p)
+  Some(:start) -> [p]
+  Some(before) -> [..path_to(came_from, before), p]
+  None -> []
+end
+
+## The maze, with the path drawn as o.
+fn draw(path) =
+  0..height - 1
+    |> map(fn(r) = 0..width - 1 |> map(fn(c) = if at([r, c]) == "." and contains(path, [r, c]) then "o" else at([r, c])) |> join(" "))
+    |> join("\n")
+
+start = find_square("S")
+goal = find_square("G")
+
+match search([start], dict([[start, :start]]), goal)
+  None -> print("There is no way through.")
+  Some(came_from) -> print("The shortest path takes {len(path_to(came_from, goal)) - 1} steps:\n{draw(path_to(came_from, goal))}")
+end

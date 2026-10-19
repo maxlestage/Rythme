@@ -1,0 +1,26 @@
+# Übung 33 · Ein künstliches Neuron  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn neuron(gewichte, bias, eingaben) = sigmoid(dot(gewichte, eingaben) + bias)
+
+fn feuert(gewichte, bias, eingaben) = neuron(gewichte, bias, eingaben) >= 0.5
+
+fn schicht(matrix, biase, eingaben) = map(vector_add(matmul(matrix, eingaben), biase), sigmoid)
+
+# --- Tests (nicht verändern) ---
+
+test "Neuron"
+  assert_eq(neuron([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neuron([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "ein Neuron, das UND berechnet"
+  assert(feuert([10, 10], -15, [1, 1]))
+  assert(not feuert([10, 10], -15, [1, 0]))
+  assert(not feuert([10, 10], -15, [0, 0]))
+end
+
+test "Schicht"
+  ausgaben = schicht([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(ausgaben, fn(x) = round(x, 3)), [0.5, 0.993])
+end

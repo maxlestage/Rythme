@@ -315,4 +315,40 @@ pub struct Texts {
     pub theme_title: &'static str,
     /// In the order of `themes::THEMES`: Auto, Light, Dark, High contrast, Sepia, Tempo.
     pub theme_names: [&'static str; 6],
+    // For AI assistants (`/{lang}/ai/`): its name in the menu, its title and lead.
+    pub nav_ai: &'static str,
+    pub ai_title: &'static str,
+    pub ai_lead: &'static str,
+    /// Giving the language: llms-full.txt, llms.txt, the Markdown pages; the label of
+    /// the first message to paste into a chat, and that message (`{url}`: the address
+    /// of llms-full.txt).
+    pub ai_give_title: &'static str,
+    pub ai_give_lead: &'static str,
+    pub ai_give: [Item; 3],
+    pub ai_prompt_label: &'static str,
+    pub ai_prompt: &'static str,
+    /// The MCP server: where each configuration goes (Claude Code; Claude Desktop,
+    /// Cursor and `.mcp.json`; VS Code), and its tools.
+    pub ai_mcp_title: &'static str,
+    pub ai_mcp_lead: &'static str,
+    pub ai_mcp_where: [&'static str; 3],
+    pub ai_mcp_path: &'static str,
+    /// The loop of `--format json` and `rythme fix`: what each command of `ai::LOOP`
+    /// does.
+    pub ai_loop_title: &'static str,
+    pub ai_loop_lead: &'static str,
+    pub ai_loop: [&'static str; 5],
+    pub ai_agents_title: &'static str,
+    pub ai_agents_lead: &'static str,
+    pub ai_play_title: &'static str,
+    pub ai_play_lead: &'static str,
+    /// Copy for AI, in the playground: the button, its tooltip, what happened (copied,
+    /// to copy by hand), the label of the field that holds the text when the clipboard
+    /// says no, and the first line of the text (`{url}`: the address of llms-full.txt).
+    pub pg_ai: &'static str,
+    pub pg_ai_title: &'static str,
+    pub pg_ai_copied: &'static str,
+    pub pg_ai_select: &'static str,
+    pub pg_ai_label: &'static str,
+    pub pg_ai_intro: &'static str,
 }

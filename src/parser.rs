@@ -32,7 +32,11 @@ pub fn parse(lexed: Lexed) -> Fallible<Vec<Item>> {
         no_do: false,
         commands: HashSet::new(),
     };
-    p.program().map_err(|d| ternary(&p.toks, d))
+    p.program().map_err(|d| {
+        let mut d = ternary(&p.toks, d);
+        crate::fix::complete(&mut d);
+        d
+    })
 }
 
 /// Marks the name that starts `e` with the place where the code gives it a
@@ -132,7 +136,7 @@ fn ternary(toks: &[Token], d: Box<Diagnostic>) -> Box<Diagnostic> {
     let Some(q) = found.iter().copied().find(|&q| toks[q + 1].span.start > toks[q].span.end).or(found.first().copied()) else {
         return d;
     };
-    Diagnostic::error("E001", t!("Rythme has no `condition ? a : b`", "Rythme n'a pas de `condition ? a : b`"))
+    let d = Diagnostic::error("E001", t!("Rythme has no `condition ? a : b`", "Rythme n'a pas de `condition ? a : b`"))
         .at(toks[q].span)
         .label(t!("`?` does not choose between two values", "`?` ne choisit pas entre deux valeurs"))
         .help(t!(
@@ -142,8 +146,57 @@ fn ternary(toks: &[Token], d: Box<Diagnostic>) -> Box<Diagnostic> {
         .note(t!(
             "after a value, `?` takes it out of `Some(x)` or `Ok(x)` and stops on `None` or `Err(e)`; at the end of a name, it is part of the name (`even?`)",
             "après une valeur, `?` la sort de `Some(x)` ou `Ok(x)` et s'arrête sur `None` ou `Err(e)` ; à la fin d'un nom, il fait partie du nom (`even?`)"
-        ))
-        .boxed()
+        ));
+    match ternary_fix(&toks[start..end], q - start) {
+        Some(fix) => d.fix(fix).boxed(),
+        None => d.boxed(),
+    }
+}
+
+/// `cond ? a : b` on a line (`toks`, the `?` at `q`): `if cond then a else b`.
+fn ternary_fix(toks: &[Token], q: usize) -> Option<crate::diagnostic::Fix> {
+    // The condition: back from the `?` to an `=`, a `,`, an open bracket or the start of the line.
+    let mut depth = 0i32;
+    let mut first = q;
+    while first > 0 {
+        match toks[first - 1].tok {
+            Tok::RParen | Tok::RBracket | Tok::RBrace => depth += 1,
+            Tok::LParen | Tok::LBracket | Tok::LBrace if depth == 0 => break,
+            Tok::LParen | Tok::LBracket | Tok::LBrace => depth -= 1,
+            Tok::Eq | Tok::Comma | Tok::Arrow | Tok::Then | Tok::Else | Tok::PipeGt if depth == 0 => break,
+            _ => {}
+        }
+        first -= 1;
+    }
+    // The `:` and the end of the second value.
+    let mut depth = 0i32;
+    let mut colon = None;
+    let mut last = toks.len();
+    for (i, t) in toks.iter().enumerate().skip(q + 1) {
+        match t.tok {
+            Tok::LParen | Tok::LBracket | Tok::LBrace => depth += 1,
+            Tok::RParen | Tok::RBracket | Tok::RBrace if depth == 0 => {
+                last = i;
+                break;
+            }
+            Tok::RParen | Tok::RBracket | Tok::RBrace => depth -= 1,
+            Tok::Colon if depth == 0 && colon.is_none() => colon = Some(i),
+            Tok::Comma | Tok::Question if depth == 0 => {
+                last = i;
+                break;
+            }
+            _ => {}
+        }
+    }
+    let colon = colon?;
+    if first == q || colon == q + 1 || last <= colon + 1 {
+        return None;
+    }
+    let file = crate::source::get(toks[q].span.file)?;
+    let code = |a: usize, b: usize| file.text.get(toks[a].span.start as usize..toks[b - 1].span.end as usize).map(str::to_string);
+    let (cond, yes, no) = (code(first, q)?, code(q + 1, colon)?, code(colon + 1, last)?);
+    let span = Span::new(toks[q].span.file, toks[first].span.start as usize, toks[last - 1].span.end as usize);
+    Some(crate::diagnostic::Fix::replace(span, format!("if {cond} then {yes} else {no}"), true))
 }
 
 /// The names of the functions defined with a `?` at the end in this code:
@@ -789,13 +842,29 @@ impl Parser {
             }
             Tok::PlusEq | Tok::MinusEq | Tok::StarEq | Tok::SlashEq => {
                 let t = self.advance();
-                Err(Diagnostic::error(
+                let mut d = Diagnostic::error(
                     "E011",
                     t!("values cannot be changed in Rythme", "les valeurs ne peuvent pas être modifiées en Rythme"),
                 )
                 .at(t.span)
-                .help(immutable_help())
-                .boxed())
+                .help(immutable_help());
+                // `total += x`: the exact new name to write.
+                if let (ExprKind::Var(name), Some(file)) = (&e.kind, crate::source::get(t.span.file)) {
+                    let rest = file.text[t.span.end as usize..].lines().next().unwrap_or("").trim();
+                    let op = match t.tok {
+                        Tok::PlusEq => "+",
+                        Tok::MinusEq => "-",
+                        Tok::StarEq => "*",
+                        _ => "/",
+                    };
+                    if !rest.is_empty() {
+                        d = d.help(t!(
+                            "here: `new_{name} = {name} {op} {rest}`, then use `new_{name}`; to add up a list, use `sum(list)` or `fold`",
+                            "ici : `nouveau_{name} = {name} {op} {rest}`, puis utilisez `nouveau_{name}` ; pour additionner une liste, utilisez `sum(liste)` ou `fold`"
+                        ));
+                    }
+                }
+                Err(d.boxed())
             }
             _ => Ok(Stmt::Expr(e)),
         }

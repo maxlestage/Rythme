@@ -1193,6 +1193,7 @@ error[E019]: this `if` has no `else`
   |
   = help: in Rythme, `if` always gives a value, so it needs both cases:
         if age >= 18 then "adult" else "minor"
+  = help: when there is nothing to do otherwise, give the unit value: `if x > 0 then print(x) else ()`
   = more about this error: `rythme explain E019`
 ```
 
@@ -1787,6 +1788,7 @@ error[E011]: `total` is already defined
   | ----- first defined here
   |
   = help: values never change in Rythme: give the new value a new name, like `total2 = total + 1`
+  = help: here: `new_total = ...`, then use `new_total`; to repeat a step, use `fold`, `map` or a recursive function
   = more about this error: `rythme explain E011`
 ```
 
@@ -2986,7 +2988,7 @@ with examples; the code may be written in lowercase.
 
 ## 6. Standard library
 
-The 178 built-in functions are always available, without `use`. Like the
+The 211 built-in functions are always available, without `use`. Like the
 keywords, their names are in English. `rythme help builtins` lists all of
 them by category, one line each; `rythme help NAME` (or `help(NAME)` in a
 program, or `:doc NAME` in the REPL) shows the documentation of one, with
@@ -3334,6 +3336,132 @@ and the generators `ints(min, max)`, `floats(min, max)`, `texts(max_length)`,
 `{generator: "ints", min: 1, max: 6}`; one that is not well made stops
 `check_all` and `sample` with E023.
 
+**Machine learning.** Vectors are lists of numbers, matrices lists of rows
+of the same length: the functions of this category take them as they are and
+give new lists, always of Floats (whole numbers of any size count as
+numbers). `dot`, `norm`, `vector_add`, `vector_sub` and `vector_mul` (number
+by number, on two vectors or two matrices of the same shape),
+`vector_scale(x, k)`, `zip_with(xs, ys, f)` (a list function: any `f` on the
+pairs), `matmul(a, b)` (a matrix by a matrix, or by a vector, which gives a
+vector), `transpose`, `zeros(n)` and `zeros(rows, columns)`, `ones`,
+`identity_matrix(n)`, `shape` (the length at each level: `[2, 3]` for 2 rows
+of 3 numbers); `sigmoid`, `tanh`, `relu`, `softmax`; `stats(xs)` (a record
+`{count, mean, median, std_dev, min, max}`), `variance` and `std_dev` (of
+the whole population: divided by n), `percentile(xs, p)` (p from 0 to 100,
+between the two closest numbers in proportion, as spreadsheets do),
+`argmax`, `argmin` (the first position of the largest or smallest number),
+`normalize` (from 0.0 for the smallest to 1.0 for the largest). The names
+`mean`, `median` and `average` are left to programs, which often define
+them: `stats(xs).mean` and `percentile(xs, 50)` give them.
+`random_normal(mean, sd)`, `random_choice_weighted(xs, weights)` and
+`train_test_split(xs, share)` (a record `{train, test}`, after a shuffle)
+follow `random_seed` like `random`.
+
+`derivative(f, x)` and `gradient(f, xs)` compute slopes by central
+differences, (f(x + h) − f(x − h)) / 2h with h = 0.00001 × max(1, |x|). The
+same formula with 2h estimates the error of the first one, and only the
+digits that it and the rounding of the values of f leave sure are kept:
+about 9 significant digits for a smooth function, so that
+`derivative(fn(x) = x * x, 3)` is `6.0` and `derivative(exp, 1)` is
+`2.718281829`. The slopes are numerical, not symbolic: f is called four
+times per number, and an error of f (`sqrt` below 0) is its own.
+
+```rythme
+w = [[1, 2], [3, 4]]
+print(matmul(w, [1, 1]), transpose(w), shape(w))
+print(stats([2, 4, 4, 4, 5, 5, 7, 9]))
+print(softmax([1, 2, 3]) |> map(fn(p) = round(p, 2)), argmax([0.1, 0.7, 0.2]))
+print(derivative(fn(x) = x ** 3, 2), gradient(fn([x, y]) = x * y, [3, 4]))
+```
+
+```text
+[3.0, 7.0] [[1.0, 3.0], [2.0, 4.0]] [2, 2]
+{count: 8, mean: 5.0, median: 4.5, std_dev: 2.0, min: 2.0, max: 9.0}
+[0.09, 0.24, 0.67] 1
+12.0 [4.0, 3.0]
+```
+
+Two values of different shapes stop the program with E023, and the message
+names both shapes; an element that is not a number is E005, with its
+position. No value makes these functions crash: empty and ragged lists are
+errors with a message, `nan` is never chosen by `argmax` or `argmin`, and
+lists nested more than 64 levels deep are refused.
+
+```rythme
+vector_add([1, 2, 3], [[1, 2], [3, 4]])
+```
+
+```text
+error[E023]: `vector_add` needs two values of the same shape, but got a vector of 3 number(s) and a 2×2 matrix
+ --> sample.ry:1:1
+  |
+1 | vector_add([1, 2, 3], [[1, 2], [3, 4]])
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: `shape(x)` gives the shape of a vector or a matrix: [3] or [2, 3]
+  = more about this error: `rythme explain E023`
+```
+
+**Charts as text.** `plot(ys)` draws the numbers of a list at the positions
+0, 1, 2..., and `plot(xs, ys)` the points (x, y), on a grid of 50 columns and
+11 lines, with the largest, middle and smallest values on the vertical axis
+and the extremes of x below; `histogram(xs, bars)` counts how many numbers
+fall in each of `bars` intervals of the same width (10 if not given) and
+draws a horizontal bar for each, in eighths of a column. Both give a text, to
+`print`: the same in a terminal, the playground and a test, the same numbers
+always giving the same drawing. Numbers that are not finite are left out; a
+list without any finite number is E023.
+
+```rythme
+heights = [1.52, 1.60, 1.63, 1.68, 1.70, 1.71, 1.75, 1.80, 1.66, 1.72]
+print(histogram(heights, 4))
+print(plot(map(0..20, fn(i) = 10 / (i + 1))))
+```
+
+```text
+1.52 – 1.59 │██████████ 1
+1.59 – 1.66 │██████████████████████████████ 3
+1.66 – 1.73 │████████████████████████████████████████ 4
+1.73 –  1.8 │████████████████████ 2
+  10 ┤•
+     │
+     │
+     │
+     │
+5.24 ┤  •
+     │
+     │     •
+     │       •  •
+     │            •  • •  • •
+0.48 ┤                         • • •  • •  • •  • •  • •
+     └──────────────────────────────────────────────────
+      0                                               20
+```
+
+**The web.** `http_get(url, headers)` and `http_post(url, body, headers)`
+give `Ok(text of the answer)`, or `Err(message)` when there is no network,
+the address is wrong, the server answers with an error status (the message
+starts with it: `the server answered 404: ...`), it does not answer within
+30 seconds (10 to connect), or the secure connection fails. `headers` is a
+record (or a dict) of texts, like `{"content-type": "application/json"}`;
+`body` is a text, often made with `to_json`. Only `http://` and `https://`
+addresses are accepted, redirections included. The requests are made by the
+program curl, which Windows 10 and later, macOS and most Linux systems have
+(otherwise, an `Err` says how to install it): the address, the headers and
+the body are given to it on its standard input, never on its command line,
+so that an API key stays out of the list of processes. Keep keys out of the
+code too: read them with `env`. In the playground, both give an `Err`.
+[`examples/ask_claude.ry`](../examples/ask_claude.ry) asks a question to a
+language model this way.
+
+```rythme
+print(http_get("ftp://example.com/data.csv"))
+```
+
+```text
+Err("a web address starts with http:// or https://, not \"ftp://example.com/data.csv\"")
+```
+
 **Ruby names.** Some functions have a second name, the one Ruby gives them.
 Each one is exactly the function it names (same arguments, same messages):
 `rythme help upcase` says so, and `rythme help builtins` lists them by
@@ -3631,12 +3759,20 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMAND] [ARGUMENTS...]
 | `steps FILE [EXPRESSION] [--max N] [--width N]` | `etapes`, `étapes` | shows the evaluation step by step (see [7.8](#78-step-by-step-rythme-steps)) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | runs the code given as an argument, and shows the value of its last expression unless it is `()`; `ARGS` are given to `args()` |
 | `debug FILE [ARGS...]` | `deboguer`, `déboguer` | runs the program under the debugger: breakpoints, line by line, values (see [7.9](#79-the-debugger-rythme-debug)) |
+| `fix [--dry-run] [--all] [--format json] FILE...` | `corriger` | applies the safe fixes of the problems found, until none is left (see [7.10](#710-rythme-and-ai-assistants)) |
+| `mcp` | | the Model Context Protocol server, started by an AI assistant (see [7.10](#710-rythme-and-ai-assistants)) |
 | `lsp` | | the language server, started by an editor (see [7.5](#75-editors-and-the-language-server)) |
 | `dap` | | the debugger for editors, with the Debug Adapter Protocol (see [7.9](#79-the-debugger-rythme-debug)) |
 | `help [NAME]` | `aide`, `--help`, `-h` | the list of topics, or the help of a topic, a built-in function or an error code |
 | `explain [CODE]` | `expliquer` | the explanation of an error or warning code; without a code, the list of codes |
 | `learn` | `apprendre`, `tutorial`, `tutoriel` | the guided tour: the 13 topics in order, with a pause after each one when run in a terminal |
 | `version` | `--version`, `-V` | prints `rythme 1.0.0` |
+
+**For programs and AI assistants.** `check`, `run`, `test`, `fix`,
+`explain` and `help` accept `--format json`: one JSON document instead of
+the messages for people; `run` and `test` accept `--sandbox`; `rythme help
+llms` prints the whole language in one text (see
+[7.10](#710-rythme-and-ai-assistants)).
 
 **Finding the file.** A first argument that is not a command is taken as a
 file when it ends with `.ry` or names an existing file; if `name` does not
@@ -4117,6 +4253,8 @@ Created the project `hello`:
   hello/tests/greeting_test.ry
   hello/README.md
   hello/.gitignore
+  hello/AGENTS.md
+  hello/CLAUDE.md
 Next: `cd hello`, then `rythme run` to run it and `rythme test` to test it (see `rythme help projects`)
 $ cd hello
 $ rythme run
@@ -4462,6 +4600,182 @@ step over, step into, step out, continue, pause. A launch configuration has
 `program`, and may have `args`, `cwd` and `stopOnEntry`. Under `rythme dap`,
 what the program prints goes to the debug console, and `input` finds the
 end of the input (the standard input carries the protocol).
+
+### 7.10 Rythme and AI assistants
+
+AI assistants and coding agents (Claude, ChatGPT, Copilot, Cursor, Claude
+Code...) were trained before Rythme existed. Rythme gives them what they
+need to learn it fast, write it, and fix their own mistakes in a loop,
+without a person in between: the whole language in one text, output for
+programs, exact fixes, and a server they can call.
+
+**The language in one text.** `rythme help llms` prints
+[`docs/llms-full.txt`](llms-full.txt): the rules that differ from Python,
+JavaScript and Ruby, the syntax by example (each example with its output),
+every built-in function on one line, the keywords, a table of habits from
+other languages with the Rythme way, every error code, and the commands of
+the loop. `rythme help llms.txt` prints [`docs/llms.txt`](llms.txt), its
+index in the [llms.txt](https://llmstxt.org) format. Both are generated from
+the sources (the table of built-in functions, the keywords, the
+explanations of the codes) and a test fails when the files of `docs/` are
+not up to date; they are always in English. Give the first one to an
+assistant before asking it to write Rythme.
+
+**Output for programs: `--format json`.** `rythme check`, `run`, `test`,
+`fix`, `explain` and `help` accept `--format json` (anywhere after the
+command for `check`, `test`, `explain`, `help` and `fix`, before the file
+for `run`). They then print one JSON document on the standard output,
+instead of the messages for people, which stay the default:
+
+```sh
+$ rythme check --format json sum.ry
+```
+
+```json
+{"version": 1, "command": "check", "rythme": "1.0.0", "language": "en",
+ "ok": false, "exit_code": 1,
+ "files": [{"file": "sum.ry", "ok": false, "errors": 1, "warnings": 0}],
+ "summary": {"files": 1, "errors": 1, "warnings": 0, "fixable": 0},
+ "diagnostics": [{
+   "code": "E003", "severity": "error", "message": "unknown name `totl`",
+   "file": "sum.ry",
+   "range": {"start": {"line": 2, "column": 7, "offset": 29},
+             "end": {"line": 2, "column": 11, "offset": 33}},
+   "label": "not defined", "labels": [], "notes": [],
+   "help": ["did you mean `total`?"],
+   "fixes": [{"title": "Replace with `total`", "safe": false,
+              "edits": [{"file": "sum.ry", "range": {"...": "..."}, "new_text": "total"}]}],
+   "trace": [], "explain": "rythme explain E003"}]}
+```
+
+- Each **diagnostic** has its stable `code` (`null` for the few messages
+  without one), its `severity` (`"error"` or `"warning"`), the `message`, the
+  `label` written under the code and the other places (`labels`), `notes`,
+  `help` (what to write, often with code), the call `trace` of a runtime
+  error (innermost first) and `fixes`. A **range** has a `start` and an
+  `end` (not included), each with a `line` and a `column` counted from 1 (in
+  characters, as in the messages) and an `offset` in bytes from 0.
+- A **fix** is a list of `edits` (`range` and `new_text`) to apply together.
+  A `safe` fix gives exactly the program that was meant (`&&` → `and`,
+  `a ? b : c` → `if a then b else c`, a missing `use`); otherwise it is a
+  likely guess, such as a misspelt name.
+- `run` adds `stdout`, `stderr` (what `debug` wrote) and `seconds`, and its
+  `exit_code` is the program's (the code of `exit(code)` too). `test` gives
+  each test with `passed` and its `failure`, a `summary` with `passed`,
+  `failed`, `filtered_out` and `broken_files`, and the `seed`. `explain`
+  gives the `title` and the `explanation` of a code (of every code without
+  one); `help` gives every built-in function (`signature`, `doc`,
+  `example`, Ruby `aliases`, `min_args`, `max_args`), keyword, topic and
+  code, or one of them (`rythme help map --format json`).
+- The messages are in the language of the messages (`--lang`); the keys,
+  the codes and values such as `"error"` never change. `"version": 1`:
+  within it, fields are only ever added, never removed or changed in
+  meaning, so a reader must ignore the fields it does not know.
+  [`docs/rythme-output.schema.json`](rythme-output.schema.json) is the JSON
+  Schema of every document, and the tests check every document against it.
+- Exit codes are those of the command (see 7.1): 0 when the code has no
+  errors (warnings allowed) or every test passed, 1 otherwise, 2 for a wrong
+  use of the command (then a message for people on the error output, and no
+  JSON), or the code of `exit(code)` for `run`.
+
+**`rythme fix`.** `rythme fix FILE...` (in a project: every file of the
+project) applies the safe fixes, checks the file again and goes on until
+nothing is left to fix, since one syntax error can hide the next one. It
+prints each fix applied, then what is left. `--dry-run` prints the changes
+as a unified diff and writes nothing (exit code 1 when something would
+change, for scripts), `--all` also applies the guesses, and `--format json`
+reports the fixes `applied`, the `diff` and the diagnostics left. Running it
+again changes nothing. The same fixes are the quick fixes of the language
+server.
+
+```text
+$ cat habits.ry
+let x = 3
+print(x > 2 && x < 9)
+print(x > 2 ? "big" : "small")
+$ rythme fix habits.ry
+  ✓ Remove `let`
+  ✓ Replace with `and`
+  ✓ Replace with `if x > 2 then "big" else "small"`
+habits.ry: 3 fix(es) applied
+$ cat habits.ry
+x = 3
+print(x > 2 and x < 9)
+print(if x > 2 then "big" else "small")
+```
+
+**The sandbox.** `rythme run --sandbox` and `rythme test --sandbox` (or the
+variable `RYTHME_SANDBOX=1`, for every command) run a program that must not
+touch the computer: `read_file`, `write_file`, `list_folder` and the other
+functions of files give `Err` with a message, `file_exists` gives `false`,
+`env` gives `None`. The program still reads its standard input and its
+arguments.
+
+**In a project.** `rythme new` also writes an `AGENTS.md` (with a
+`CLAUDE.md` that points to it) telling an AI assistant how to work in the
+project: read `rythme help llms`, then loop on `rythme check --format
+json`, `rythme fix`, `rythme test --format json` and `rythme run --format
+json`, which all work at the root of the project without a file name.
+
+**The server for AI assistants: `rythme mcp`.** `rythme mcp` is a server of
+the [Model Context Protocol](https://modelcontextprotocol.io): an assistant
+starts it and talks to it with JSON-RPC, one message per line on its
+standard input and output (the *stdio* transport; versions 2025-06-18,
+2025-03-26 and 2024-11-05 of the protocol). Its tools:
+
+| Tool | What it does |
+|------|--------------|
+| `run` | checks and runs `code` (or a `file`) in the sandbox, with a `stdin`, `args`, a `seed` and a `timeout_seconds`; gives the document of `rythme run --format json` |
+| `check` | the document of `rythme check --format json` |
+| `test` | the document of `rythme test --format json`, with a `filter` |
+| `fix` | the fixed code, then the document of `rythme fix --format json` (`all` for the guesses too) |
+| `format` | the code with its official layout |
+| `explain` | the explanation of a code |
+| `help` | a built-in function, keyword, code or topic (all of them without a `name`) |
+| `steps` | the evaluation of an `expression` step by step |
+| `reference` | the whole language (`docs/llms-full.txt`) |
+
+`docs/llms-full.txt` and `docs/llms.txt` are also resources
+(`rythme://docs/llms-full.txt`). The tools that run code start `rythme`
+again for each call, in the sandbox, and stop it after 10 seconds (the
+`timeout_seconds` of the call, 60 at most) or, on Linux, above 512 MB of
+memory: a program that never ends never blocks the assistant. The messages
+are in the language of the server: `rythme --lang fr mcp`.
+
+To add it to **Claude Code**:
+
+```sh
+claude mcp add rythme -- rythme mcp
+```
+
+or, for everyone working on a project, a `.mcp.json` at its root (Claude
+Code), `.cursor/mcp.json` (**Cursor**) or `claude_desktop_config.json`
+(**Claude Desktop**, *Settings → Developer → Edit Config*):
+
+```json
+{
+  "mcpServers": {
+    "rythme": { "command": "rythme", "args": ["mcp"] }
+  }
+}
+```
+
+**VS Code** (GitHub Copilot) reads `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "rythme": { "type": "stdio", "command": "rythme", "args": ["mcp"] }
+  }
+}
+```
+
+If `rythme` is not on the `PATH` of the assistant, give its full path as
+`command`. `rythme mcp --help` repeats the command for Claude Code.
+
+**Contributing with an agent.** [`AGENTS.md`](../AGENTS.md), at the root
+of the repository, tells the agents of contributors how to build and test
+Rythme and what its conventions are.
 
 ---
 

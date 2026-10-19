@@ -1,0 +1,48 @@
+# Exercice 34 · Descendre la pente  ★★☆
+#
+# Un modèle apprend en rendant son erreur plus petite : il suit la pente de
+# l'erreur vers le bas, un petit pas à la fois. C'est la descente de
+# gradient.
+#   derivative(fn(x) = x * x, 3)                      # 6.0, la pente en 3
+#   gradient(fn([x, y]) = x * x + y * y, [1, 2])      # [2.0, 4.0]
+#
+# Énoncé
+#   - `pas(f, x, taux)` : un pas vers le bas depuis x :
+#     x - taux × (pente de f en x) ;
+#   - `descendre(f, x, taux, pas_restants)` : autant de pas depuis x, l'un
+#     après l'autre ; le point atteint ;
+#   - `descendre_tout(f, xs, taux, pas_restants)` : la même chose avec
+#     plusieurs nombres : chaque pas fait xs - taux × (gradient de f en xs).
+#
+# Indices
+#   1. `descendre` s'appelle avec un pas de moins, jusqu'à 0 (ou utilisez
+#      `fold` sur `1..pas_restants`).
+#   2. `vector_sub` et `vector_scale` travaillent sur la liste de nombres.
+#
+# Vérifiez votre travail :  rythme exercise check 34-descente-de-gradient.ry
+#                     ou :  rythme test 34-descente-de-gradient.ry
+
+fn pas(f, x, taux) = fail("à faire")
+
+fn descendre(f, x, taux, pas_restants) = fail("à faire")
+
+fn descendre_tout(f, xs, taux, pas_restants) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+fn parabole(x) = (x - 3) ** 2
+
+test "un pas"
+  assert_eq(pas(parabole, 0, 0.5), 3.0)
+  assert_eq(pas(parabole, 1, 0.25), 2.0)
+end
+
+test "jusqu'en bas"
+  assert_eq(round(descendre(parabole, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descendre(parabole, 10, 0.1, 0), 10)
+end
+
+test "plusieurs nombres"
+  cuvette = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descendre_tout(cuvette, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end

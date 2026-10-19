@@ -19,12 +19,20 @@ pub mod dict;
 pub mod doc;
 pub mod driver;
 pub mod exercise;
+pub mod fix;
 pub mod format;
 pub mod help;
 pub mod interp;
 pub mod io;
 pub mod lexer;
+pub mod llms;
+// Output for programs (`--format json`) and `rythme fix`, written with the JSON of the language server.
+#[cfg(not(target_arch = "wasm32"))]
+pub mod machine;
 pub mod manifest;
+// The server of the Model Context Protocol, for AI assistants (on the standard input and output).
+#[cfg(not(target_arch = "wasm32"))]
+pub mod mcp;
 // The language server talks on the standard input and output; the web playground has none.
 #[cfg(not(target_arch = "wasm32"))]
 pub mod lsp;

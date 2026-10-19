@@ -1,0 +1,26 @@
+# Exercício 36 · Jogar perfeitamente: o minimax  ★★★
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn jogadas(n) = filter(1..3, fn(m) = m <= n)
+
+fn ganha(n) = any(jogadas(n), fn(m) = not ganha(n - m))
+
+fn melhor_jogada(n) = find(jogadas(n), fn(m) = not ganha(n - m))
+
+# --- Testes (não os altere) ---
+
+test "jogadas"
+  assert_eq(jogadas(10), [1, 2, 3])
+  assert_eq(jogadas(2), [1, 2])
+  assert_eq(jogadas(0), [])
+end
+
+test "quem ganha"
+  assert_eq(map(0..8, ganha), [false, true, true, true, false, true, true, true, false])
+end
+
+test "melhor jogada"
+  assert_eq(melhor_jogada(5), Some(1))
+  assert_eq(melhor_jogada(7), Some(3))
+  assert_eq(melhor_jogada(8), None)
+end

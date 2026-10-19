@@ -1,11 +1,12 @@
 //! The `rythme` command.
 
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use rythme::diagnostic::Diagnostic;
-use rythme::driver::Driver;
+use rythme::driver::{find_script, Driver};
 use rythme::interp::Mode;
+use rythme::machine::{self, Format};
 use rythme::project::Cmd;
 use rythme::value::Value;
 use rythme::{help, lang, repl, suggest, t};
@@ -77,10 +78,39 @@ fn cli(mut args: Vec<String>) -> i32 {
         }
     }
     let Some(cmd) = args.first().cloned() else { return repl::run() };
-    let rest: Vec<String> = args[1..].to_vec();
+    let mut rest: Vec<String> = args[1..].to_vec();
+    // `--format json`, anywhere after these commands.
+    let format = match cmd.as_str() {
+        "check" | "verifier" | "vérifier" | "explain" | "expliquer" | "test" | "tester" => match machine::take_format(&mut rest) {
+            Ok(f) => f,
+            Err(code) => return code,
+        },
+        _ => Format::Text,
+    };
     match cmd.as_str() {
         "repl" => repl::run(),
         "help" | "aide" | "--help" | "-h" => {
+            let mut rest = rest;
+            let format = match machine::take_format(&mut rest) {
+                Ok(f) => f,
+                Err(code) => return code,
+            };
+            if machine::take_flag(&mut rest, "--llms") {
+                rest.insert(0, "llms".into());
+            }
+            match rest.first().map(String::as_str) {
+                // The language for AI assistants, in one text (docs/llms-full.txt).
+                Some("llms" | "llms-full" | "llms-full.txt") => {
+                    rythme::io::out(&rythme::llms::full());
+                    return 0;
+                }
+                Some("llms.txt") => {
+                    rythme::io::out(&rythme::llms::index());
+                    return 0;
+                }
+                _ if format == Format::Json => return machine::help_command(rest.first().map(String::as_str)),
+                _ => {}
+            }
             match rest.first() {
                 None => rythme::io::out(&help::overview()),
                 Some(name) => match help::topic(name) {
@@ -93,6 +123,7 @@ fn cli(mut args: Vec<String>) -> i32 {
             }
             0
         }
+        "explain" | "expliquer" if format == Format::Json => machine::explain_command(rest.first().map(String::as_str)),
         "explain" | "expliquer" => match rest.first() {
             None => {
                 rythme::io::out_line(&t!(
@@ -126,19 +157,30 @@ fn cli(mut args: Vec<String>) -> i32 {
             0
         }
         "run" | "lancer" => {
-            let (seed, rest) = match run_seed(&rest) {
+            let (opts, rest) = match run_options(&rest) {
                 Ok(found) => found,
                 Err(code) => return code,
             };
+            let run = |file: &str, args: Vec<String>| match opts.format {
+                Format::Json => machine::run_command(file, args, opts.seed, opts.sandbox),
+                Format::Text => run_file(file, args, opts.seed, opts.sandbox),
+            };
             match rest.first() {
-                Some(file) => run_file(file, rest[1..].to_vec(), seed),
-                None => in_project(Cmd::Run, |files| run_file(&files[0], Vec::new(), seed)).unwrap_or_else(|| {
+                Some(file) => run(file, rest[1..].to_vec()),
+                None => in_project(Cmd::Run, |files| run(&files[0], Vec::new())).unwrap_or_else(|| {
                     usage_error(t!("which file? Example: rythme run hello.ry", "quel fichier ? Exemple : rythme run bonjour.ry"))
                 }),
             }
         }
         // With no file, at the root of a project: the files of the project with tests.
+        "test" | "tester" if format == Format::Json => machine::test_command(&rest),
         "test" | "tester" => rythme::testing::command(&rest),
+        "check" | "verifier" | "vérifier" if format == Format::Json => match rest.first() {
+            Some(_) => machine::check_command(&rest),
+            None => in_project(Cmd::Check, machine::check_command).unwrap_or_else(|| {
+                usage_error(t!("which file? Example: rythme check hello.ry", "quel fichier ? Exemple : rythme check bonjour.ry"))
+            }),
+        },
         "check" | "verifier" | "vérifier" => match rest.first() {
             // Every file is checked, even after one with errors.
             Some(_) => rest.iter().map(|file| check_file(file)).fold(0, i32::max),
@@ -157,6 +199,8 @@ fn cli(mut args: Vec<String>) -> i32 {
         }
         "doc" | "documenter" => rythme::doc::command(&rest),
         "new" | "nouveau" => rythme::project::new_command(&rest),
+        "fix" | "corriger" => machine::fix_command(&rest),
+        "mcp" => rythme::mcp::run(&rest),
         "install" | "installer" => rythme::project::install_command(&rest),
         "exercise" | "exercises" | "exercice" | "exercices" => rythme::exercise::command(&rest),
         "steps" | "etapes" | "étapes" => rythme::steps::command(&rest),
@@ -169,11 +213,11 @@ fn cli(mut args: Vec<String>) -> i32 {
         },
         _ => {
             if cmd.ends_with(".ry") || Path::new(&cmd).exists() || Path::new(&format!("{cmd}.ry")).is_file() {
-                return run_file(&cmd, rest, None);
+                return run_file(&cmd, rest, None, false);
             }
             let commands = [
                 "run", "check", "test", "fmt", "doc", "help", "explain", "learn", "repl", "version", "lsp", "exercise", "new", "install",
-                "steps", "debug", "dap",
+                "steps", "debug", "dap", "fix", "mcp",
             ];
             let mut msg = t!("unknown command or file `{cmd}`", "commande ou fichier inconnu `{cmd}`");
             if let Some(best) = suggest::closest(&cmd, commands.iter().copied()) {
@@ -216,33 +260,6 @@ fn usage_error(msg: String) -> i32 {
     2
 }
 
-/// Finds the program file, adding `.ry` if needed.
-fn find_script(name: &str) -> Result<PathBuf, Box<Diagnostic>> {
-    let path = PathBuf::from(name);
-    if path.is_file() {
-        return Ok(path);
-    }
-    if path.is_dir() {
-        return Err(rythme::driver::folder_error(&path).boxed());
-    }
-    let with_ext = PathBuf::from(format!("{name}.ry"));
-    if path.extension().is_none() && with_ext.is_file() {
-        return Ok(with_ext);
-    }
-    let mut d = Diagnostic::error("E017", t!("file `{name}` not found", "fichier `{name}` introuvable"));
-    let dir = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
-    let wanted = path.file_name().map(|f| f.to_string_lossy().to_string()).unwrap_or_default();
-    let files: Vec<String> = std::fs::read_dir(dir)
-        .map(|entries| entries.flatten().map(|e| e.file_name().to_string_lossy().to_string()).filter(|n| n.ends_with(".ry")).collect())
-        .unwrap_or_default();
-    if let Some(best) = suggest::closest(&wanted, files.iter().map(|s| s.as_str())) {
-        d = d.help(t!("did you mean `{}`?", "vouliez-vous dire `{}` ?", dir.join(best).display()));
-    } else if let Ok(cwd) = std::env::current_dir() {
-        d = d.note(t!("current folder: {}", "dossier actuel : {}", cwd.display()));
-    }
-    Err(d.boxed())
-}
-
 /// `rythme run --seed N file.ry`: the seed of `random` and `shuffle`, given
 /// before the file (what follows the file is for the program), and the other words.
 fn run_seed(args: &[String]) -> Result<(Option<i64>, &[String]), i32> {
@@ -267,8 +284,46 @@ fn run_seed(args: &[String]) -> Result<(Option<i64>, &[String]), i32> {
     }
 }
 
-fn run_file(name: &str, script_args: Vec<String>, seed: Option<i64>) -> i32 {
+/// The options of `rythme run`, written before the file.
+struct RunOptions {
+    seed: Option<i64>,
+    format: Format,
+    /// `--sandbox`: no files, folders or environment variables (for tools).
+    sandbox: bool,
+}
+
+/// `rythme run [--seed N] [--format json] [--sandbox] file.ry ARGS...`: the
+/// options before the file, in any order, and the other words.
+fn run_options(args: &[String]) -> Result<(RunOptions, &[String]), i32> {
+    let mut opts = RunOptions { seed: None, format: Format::Text, sandbox: false };
+    let mut rest = args;
+    loop {
+        match rest.first().map(String::as_str) {
+            Some("--sandbox") => {
+                opts.sandbox = true;
+                rest = &rest[1..];
+            }
+            Some(first) if first == "--format" || first.starts_with("--format=") => {
+                let used = if first == "--format" { 2 } else { 1 };
+                let mut words = rest[..used.min(rest.len())].to_vec();
+                opts.format = machine::take_format(&mut words)?;
+                rest = &rest[used.min(rest.len())..];
+            }
+            _ => {
+                let (seed, after) = run_seed(rest)?;
+                if after.len() == rest.len() {
+                    return Ok((opts, rest));
+                }
+                opts.seed = seed;
+                rest = after;
+            }
+        }
+    }
+}
+
+fn run_file(name: &str, script_args: Vec<String>, seed: Option<i64>, sandbox: bool) -> i32 {
     let mut driver = Driver::new();
+    driver.interp.sandboxed = sandbox;
     if let Some(seed) = seed {
         driver.interp.seed_random(seed);
     }
