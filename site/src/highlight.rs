@@ -6,7 +6,7 @@ use paquets::prelude::*;
 pub const KEYWORDS: &[&str] =
     &["fn", "if", "then", "else", "match", "end", "do", "type", "test", "use", "and", "or", "not", "true", "false", "unless"];
 
-pub const BUILTINS: &[&str] = &[
+pub const BUILTINS: &[
     "print",
     "debug",
     "text",
@@ -185,6 +185,33 @@ pub const BUILTINS: &[&str] = &[
     "lists_of",
     "one_of",
     "records_of",
+    "tanh",
+    "sigmoid",
+    "relu",
+    "dot",
+    "norm",
+    "vector_add",
+    "vector_sub",
+    "vector_mul",
+    "vector_scale",
+    "zip_with",
+    "matmul",
+    "transpose",
+    "zeros",
+    "ones",
+    "identity_matrix",
+    "shape",
+    "stats",
+    "variance",
+    "std_dev",
+    "percentile",
+    "argmax",
+    "argmin",
+    "softmax",
+    "normalize",
+    "random_normal",
+    "random_choice_weighted",
+    "train_test_split",
     "pi",
 ];
 
