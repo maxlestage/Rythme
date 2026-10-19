@@ -1248,6 +1248,7 @@ erreur[E019]: ce `if` n'a pas de `else`
   |
   = aide: en Rythme, `if` donne toujours une valeur, il lui faut donc les deux cas :
         if age >= 18 then "majeur" else "mineur"
+  = aide: quand il n'y a rien à faire sinon, donnez la valeur unité : `if x > 0 then print(x) else ()`
   = en savoir plus : `rythme explain E019`
 ```
 
@@ -1864,6 +1865,7 @@ erreur[E011]: `total` est déjà défini
   | ----- défini une première fois ici
   |
   = aide: les valeurs ne changent jamais en Rythme : donnez un nouveau nom à la nouvelle valeur, comme `total2 = total + 1`
+  = aide: ici : `nouveau_total = ...`, puis utilisez `nouveau_total` ; pour répéter une étape, utilisez `fold`, `map` ou une fonction récursive
   = en savoir plus : `rythme explain E011`
 ```
 

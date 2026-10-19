@@ -117,24 +117,35 @@ fn line_around(text: &str, at: usize) -> (usize, usize) {
 }
 
 /// Adds the help and the fix that the text around a diagnostic gives, when
-/// it has none: called on every error of the parser and of the checker.
+/// it has none: called on every error of the lexer, the parser and the checker.
 pub fn complete(d: &mut Diagnostic) {
     let Some(span) = d.span else { return };
     let Some(file) = source::get(span.file) else { return };
     let text: &str = &file.text;
     let (s, e) = (span.start as usize, span.end as usize);
-    let Some(w) = text.get(s..e) else { return };
-    if !text.is_char_boundary(s) || !text.is_char_boundary(e) {
+    if e > text.len() || !text.is_char_boundary(s) || !text.is_char_boundary(e) || s > e {
         return;
     }
+    let w = &text[s..e];
     let sp = |a: usize, b: usize| Span::new(span.file, a, b);
     let (before, after) = (&text[..s], &text[e..]);
+    let named_value = after.trim_start().starts_with('=') && !after.trim_start().starts_with("==");
     match d.code {
         "E001" => {
             if w == ">" && before.ends_with('<') {
-                d.helps.push(t!("\"not equal\" is written `!=`: `a != b`", "« différent de » s'écrit `!=` : `a != b`"));
-            } else if w == "=>" || (w == "," && arrow_after(text, s)) {
+                d.helps.push(not_equal_help());
+            } else if w == "=>" || (w == "," && arrow_after(text, s)) || (w == "->" && arrow_fix(text, s, e, sp).is_some()) {
                 d.helps.push(t!("an anonymous function is written `fn(x) = x * 2`", "une fonction anonyme s'écrit `fn(x) = x * 2`"));
+            } else if w == "|" {
+                d.helps.push(t!(
+                    "an anonymous function is written `fn(x) = x * 2`; a block given to a call is written `xs.map do |x| x * 2 end` or `xs.map {{ |x| x * 2 }}`",
+                    "une fonction anonyme s'écrit `fn(x) = x * 2` ; un bloc donné à un appel s'écrit `xs.map do |x| x * 2 end` ou `xs.map {{ |x| x * 2 }}`"
+                ));
+            } else if w == "{" && kotlin_block(after).is_some() {
+                d.helps.push(t!(
+                    "the parameters of a block are written between bars: `xs.map {{ |x| x * 2 }}`",
+                    "les paramètres d'un bloc s'écrivent entre barres : `xs.map {{ |x| x * 2 }}`"
+                ));
             } else if f_prefix(w, before) {
                 d.helps.push(f_string_help());
             } else if missing_then(text, s, w) {
@@ -142,9 +153,55 @@ pub fn complete(d: &mut Diagnostic) {
                     "on several lines, `if` is written:\n  if x > 0 then\n    \"positive\"\n  else if x == 0 then\n    \"zero\"\n  else\n    \"negative\"\n(no `end`; for several statements in a branch, use `do ... end`)",
                     "sur plusieurs lignes, `if` s'écrit :\n  if x > 0 then\n    \"positif\"\n  else if x == 0 then\n    \"zéro\"\n  else\n    \"négatif\"\n(sans `end` ; pour plusieurs instructions dans une branche, utilisez `do ... end`)"
                 ));
+            } else if w == ":" && (open_bracket(text, s) == Some('[') || after.starts_with(['+', '*'])) {
+                // Not a block: a slice, or a symbol of Ruby.
+                let block = t!(
+                    "Rythme does not use `:` to start a block; see `rythme help syntax`",
+                    "Rythme n'utilise pas `:` pour commencer un bloc ; voir `rythme help syntax`"
+                );
+                d.helps.retain(|h| *h != block);
+                d.helps.push(if after.starts_with(['+', '*']) {
+                    t!(
+                        "to add up a list, write `sum(xs)`; to combine its elements, `fold(xs, 0, fn(acc, x) = acc + x)`",
+                        "pour additionner une liste, écrivez `sum(xs)` ; pour combiner ses éléments, `fold(xs, 0, fn(acc, x) = acc + x)`"
+                    )
+                } else {
+                    t!(
+                        "a part of a list or a text is taken with a function: `slice(xs, 1, 3)`, `drop(xs, 1)` (all but the first), `take(xs, 2)` (the first two)",
+                        "une partie d'une liste ou d'un texte se prend avec une fonction : `slice(xs, 1, 3)`, `drop(xs, 1)` (tout sauf le premier), `take(xs, 2)` (les deux premiers)"
+                    )
+                });
+            } else if let Some(field) = record_equal(text, s, w) {
+                d.helps.retain(|h| !h.contains("`==`"));
+                d.helps.push(t!(
+                    "the fields of a record are written with `:`: `{{{field}: value}}`",
+                    "les champs d'un enregistrement s'écrivent avec `:` : `{{{field}: valeur}}`"
+                ));
+            } else if (named_value || (w == "=" && before.trim_end().ends_with(is_name_char))) && open_bracket(text, s) == Some('(') {
+                d.helps.retain(|h| !h.contains("`==`"));
+                d.helps.push(t!(
+                    "Rythme has no named arguments (`name=value`): give the values in order, like `round(x, 2)` (`rythme help NAME` shows the order)",
+                    "Rythme n'a pas d'arguments nommés (`nom=valeur`) : donnez les valeurs dans l'ordre, comme `round(x, 2)` (`rythme help NOM` montre l'ordre)"
+                ));
+            } else if starts_line(text, s, &["case ", "when "]) {
+                d.helps.extend(suggest::foreign_keyword_hint("switch"));
             }
         }
         "E003" if w == "f" && after.starts_with('"') => d.helps.push(f_string_help()),
+        "E018" if w == "~" && after.starts_with('=') => d.helps.push(not_equal_help()),
+        "E018" if format_spec(text, s).is_some() => d.helps.push(t!(
+            "texts have no format specifiers like `{{x:.2f}}`: write `{{text(x, 2)}}` for 2 decimals, or use `format_number`",
+            "les textes n'ont pas de spécificateurs de format comme `{{x:.2f}}` : écrivez `{{text(x, 2)}}` pour 2 décimales, ou utilisez `format_number`"
+        )),
+        "E019" if one_line_if(text, s) => d.helps.push(t!(
+            "when there is nothing to do otherwise, give the unit value: `if x > 0 then print(x) else ()`",
+            "quand il n'y a rien à faire sinon, donnez la valeur unité : `if x > 0 then print(x) else ()`"
+        )),
+        // `n = n + 1`: a new name for the new value.
+        "E011" if !d.secondary.is_empty() && redefined_from_itself(text, e, w) => d.helps.push(t!(
+            "here: `new_{w} = ...`, then use `new_{w}`; to repeat a step, use `fold`, `map` or a recursive function",
+            "ici : `nouveau_{w} = ...`, puis utilisez `nouveau_{w}` ; pour répéter une étape, utilisez `fold`, `map` ou une fonction récursive"
+        )),
         _ => {}
     }
     if !d.fixes.is_empty() {
@@ -156,14 +213,31 @@ pub fn complete(d: &mut Diagnostic) {
             let renamed = suggest::alias_hint(w).is_some_and(|h| d.helps.contains(&h));
             name_fix(w, before, after, span, renamed)
         }
+        "E018" if w == "~" && after.starts_with('=') => Some(Fix::replace(sp(s, e + 1), "!=", true)),
+        "E018" => format_spec(text, s).map(|(a, b, new)| Fix::replace(sp(a, b), new, true)),
         // `if a then b elif c then d else e`: the `elif` is shown as a second place.
-        "E019" => d.secondary.iter().find_map(|(at, _)| {
-            let word = text.get(at.start as usize..at.end as usize)?;
-            matches!(word, "elif" | "elsif").then(|| Fix::replace(*at, "else if", true))
-        }),
+        "E019" => d
+            .secondary
+            .iter()
+            .find_map(|(at, _)| {
+                let word = text.get(at.start as usize..at.end as usize)?;
+                matches!(word, "elif" | "elsif").then(|| Fix::replace(*at, "else if", true))
+            })
+            .or_else(|| {
+                // `if x then print(x)` on one line: `else ()`, a guess (the value may be used).
+                one_line_if(text, s).then(|| {
+                    let (_, end) = line_around(text, s);
+                    let at = text[..end].trim_end().len();
+                    Fix::replace(sp(at, at), " else ()", false)
+                })
+            }),
         _ => None,
     };
     d.fixes.extend(fix);
+}
+
+fn not_equal_help() -> String {
+    t!("\"not equal\" is written `!=`: `a != b`", "« différent de » s'écrit `!=` : `a != b`")
 }
 
 fn f_string_help() -> String {
@@ -176,6 +250,81 @@ fn f_string_help() -> String {
 /// `f"..."`: a Python format text, its `f` right before the text `w`.
 fn f_prefix(w: &str, before: &str) -> bool {
     w.starts_with('"') && before.ends_with('f') && !before[..before.len() - 1].ends_with(is_name_char)
+}
+
+/// Does the line of `at` start with one of these words?
+fn starts_line(text: &str, at: usize, words: &[&str]) -> bool {
+    let (start, end) = line_around(text, at);
+    let line = text[start..end].trim_start();
+    words.iter().any(|w| line.starts_with(w)) || {
+        // Or the line before (`case x` then `when 1 then ...`).
+        let prev = text[..start.saturating_sub(1)].rsplit('\n').next().unwrap_or("").trim_start();
+        start > 0 && words.iter().any(|w| prev.starts_with(w))
+    }
+}
+
+/// The bracket that is open at `at`: `(`, `[` or `{` (texts are not skipped:
+/// good enough for a help).
+fn open_bracket(text: &str, at: usize) -> Option<char> {
+    let mut depth = 0;
+    for c in text[..at].chars().rev() {
+        match c {
+            ')' | ']' | '}' => depth += 1,
+            '(' | '[' | '{' if depth == 0 => return Some(c),
+            '(' | '[' | '{' => depth -= 1,
+            _ => {}
+        }
+    }
+    None
+}
+
+/// `{name = "Ada"}`: the `=` at `at` gives a field a value, in a record.
+fn record_equal(text: &str, at: usize, w: &str) -> Option<String> {
+    if w != "=" || text[at + 1..].starts_with('=') || open_bracket(text, at) != Some('{') {
+        return None;
+    }
+    let head = text[..at].trim_end();
+    let start = head.rfind(|c: char| !is_name_char(c)).map_or(0, |i| i + 1);
+    let field = &head[start..];
+    let lead = head[..start].trim_end();
+    (!field.is_empty() && (lead.ends_with('{') || lead.ends_with(','))).then(|| field.to_string())
+}
+
+/// `{ x -> x * 2 }`: the parameters of a Kotlin block, after its `{`.
+fn kotlin_block(after: &str) -> Option<(&str, usize)> {
+    let arrow = after.find("->")?;
+    let params = after[..arrow].trim();
+    let ok = !params.is_empty() && params.chars().all(|c| is_name_char(c) || c == ',' || c == ' ') && !after[..arrow].contains('\n');
+    ok.then_some((params, arrow + 2))
+}
+
+/// An `if` with `then` and without `else`, alone on the line of `at`.
+fn one_line_if(text: &str, at: usize) -> bool {
+    let (start, end) = line_around(text, at);
+    let line = &text[start..end];
+    let words: Vec<&str> = line.split_whitespace().collect();
+    text[at..].starts_with("if") && words.contains(&"then") && !words.contains(&"else") && !line.trim_end().ends_with("then")
+}
+
+/// `name = ... name ...` after the name `w` that ends at `end`: the new value
+/// is computed from the old one.
+fn redefined_from_itself(text: &str, end: usize, w: &str) -> bool {
+    let rest = text[end..].lines().next().unwrap_or("").trim_start();
+    let Some(value) = rest.strip_prefix('=').filter(|v| !v.starts_with('=')) else { return false };
+    value.split(|c: char| !is_name_char(c)).any(|word| word == w)
+}
+
+/// `{x:.2f}` in a text, where the lexer stops at `at`: the start and end of
+/// the braces, and what to write instead (`{text(x, 2)}`).
+fn format_spec(text: &str, at: usize) -> Option<(usize, usize, String)> {
+    let open = text[..at].rfind('{')?;
+    let close = at + text[at..].find('}')?;
+    let inside = &text[open + 1..close];
+    let (expr, spec) = inside.split_once(':')?;
+    let digits = spec.strip_prefix('.')?.strip_suffix('f')?;
+    let expr = expr.trim();
+    let ok = !expr.is_empty() && !expr.contains(['"', '{', '\n']) && !digits.is_empty() && digits.chars().all(|c| c.is_ascii_digit());
+    ok.then(|| (open, close + 1, format!("{{text({expr}, {digits})}}")))
 }
 
 /// The line of `at` starts an `if` (or an `else if`, an `unless`) and has no
@@ -200,8 +349,30 @@ fn syntax_fix(text: &str, s: usize, e: usize, w: &str, sp: impl Fn(usize, usize)
         }
         // `===` and `!==`: one `=` too many.
         "=" if before.ends_with("==") || before.ends_with("!=") => Fix::replace(sp(s, e), "", true),
+        "=" if record_equal(text, s, w).is_some() => Fix::replace(sp(before.trim_end().len(), e), ":", true),
         ">" if before.ends_with('<') => Fix::replace(sp(s - 1, e), "!=", true),
-        "=>" => return arrow_fix(text, s, e, sp),
+        "=>" | "->" => return arrow_fix(text, s, e, sp),
+        // `|x| x * 2`, the closures of Rust: `fn(x) = x * 2`.
+        "|" => {
+            let (_, end) = line_around(text, s);
+            let close = e + text[e..end].find('|')?;
+            let params = text[e..close].trim();
+            if !params.chars().all(|c| is_name_char(c) || c == ',' || c == ' ') {
+                return None;
+            }
+            Fix::replace(sp(s, close + 1), format!("fn({params}) ="), true)
+        }
+        "{" => {
+            let (params, len) = kotlin_block(after)?;
+            Fix::replace(sp(s, e + len), format!("{{ |{params}|"), true)
+        }
+        // `xs.reduce(:+)`: `xs.sum`.
+        ":" if after.starts_with("+)") && (before.ends_with(".reduce(") || before.ends_with(".inject(")) => {
+            // `.reduce(` and `.inject(` have the same length.
+            Fix::replace(sp(s - ".reduce(".len(), e + 2), ".sum", true)
+        }
+        // `xs[1:]`: `drop(xs, 1)`, `xs[:2]`: `take(xs, 2)`, `xs[1:3]`: `slice(xs, 1, 3)`.
+        ":" if open_bracket(text, s) == Some('[') => return slice_fix(text, s, sp),
         "let" | "var" | "const" => Fix::replace(sp(s, e + spaces_after), "", true),
         "def" | "function" => Fix::replace(sp(s, e), "fn", true),
         "elif" | "elsif" => Fix::replace(sp(s, e), "else if", true),
@@ -242,13 +413,36 @@ fn syntax_fix(text: &str, s: usize, e: usize, w: &str, sp: impl Fn(usize, usize)
     })
 }
 
+/// `xs[a:b]` with the `:` at `at`: `slice`, `take` or `drop`.
+fn slice_fix(text: &str, at: usize, sp: impl Fn(usize, usize) -> Span) -> Option<Fix> {
+    let open = text[..at].rfind('[')?;
+    let close = at + text[at..].find(']')?;
+    let head = &text[..open];
+    let start = head.rfind(|c: char| !(is_name_char(c) || c == '.')).map_or(0, |i| i + 1);
+    let list = &head[start..];
+    let (a, b) = (text[open + 1..at].trim(), text[at + 1..close].trim());
+    let simple = |x: &str| x.chars().all(|c| is_name_char(c) || c == '-' || c == ' ' || c == '+' || c == '*');
+    if list.is_empty() || list.starts_with('.') || !simple(a) || !simple(b) {
+        return None;
+    }
+    let new = match (a.is_empty(), b.is_empty()) {
+        (true, true) => list.to_string(),
+        (true, false) if !b.starts_with('-') => format!("take({list}, {b})"),
+        (true, false) => format!("slice({list}, 0, {b})"),
+        (false, true) if !a.starts_with('-') => format!("drop({list}, {a})"),
+        (false, true) => format!("slice({list}, {a})"),
+        (false, false) => format!("slice({list}, {a}, {b})"),
+    };
+    Some(Fix::replace(sp(start, close + 1), new, true))
+}
+
 /// The `=>` of `(a, b) => ...` after the byte `at`, on its line.
 fn arrow_after(text: &str, at: usize) -> bool {
     let (_, end) = line_around(text, at);
     text[at..end].contains("=>")
 }
 
-/// `x => x + 1` and `(a, b) => a + b`: `fn(x) = x + 1`.
+/// `x => x + 1` and `(a, b) => a + b` (or with `->`): `fn(x) = x + 1`.
 fn arrow_fix(text: &str, s: usize, e: usize, sp: impl Fn(usize, usize) -> Span) -> Option<Fix> {
     let head = text[..s].trim_end();
     if text[e..].trim_start().starts_with('{') {
@@ -283,11 +477,18 @@ fn name_fix(w: &str, before: &str, after: &str, span: Span, renamed: bool) -> Op
         "NULL" | "Nil" | "undefined" | "nullptr" | "Nothing" => Fix::replace(span, "None", false),
         "f" if after.starts_with('"') => Fix::replace(span, "", true),
         "console" if after.starts_with(".log(") => Fix::replace(Span { end: span.end + 4, ..span }, "print", true),
+        // `Math.sqrt(2)`: the functions of numbers are built in.
+        "Math" | "math" if after.starts_with('.') && after[1..].starts_with(|c: char| c.is_ascii_lowercase()) => {
+            let name: String = after[1..].chars().take_while(|&c| is_name_char(c)).collect();
+            crate::builtins::lookup(&name)?;
+            Fix::replace(Span { end: span.end + 1, ..span }, "", true)
+        }
         _ if renamed && !after.starts_with('.') => {
             let new = suggest::rythme_name(w).filter(|n| *n != "+")?;
-            // Called (`str(3)`, `xs.append(4)`): the function of Rythme is meant.
+            // Called (`str(3)`, `xs.append(4)`): the function of Rythme is meant
+            // (but `printf("%d", n)` needs more than a new name).
             let called = after.trim_start().starts_with('(') || before.ends_with('.');
-            Fix::replace(span, new, called)
+            Fix::replace(span, new, called && !matches!(w, "printf" | "sprintf"))
         }
         _ => return None,
     })
