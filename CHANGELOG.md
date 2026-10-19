@@ -12,6 +12,19 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Embedding
+
+- **Programs that embed Rythme can give records of functions** (`db.all(q)`,
+  `mw.cors(...)`, the way [Facile](https://github.com/maxlestage/Facile) does):
+  the checker knows the fields of a record found among the interpreter's
+  names, so calling one checks its number of arguments (E004), and a
+  misspelled one is reported (W005) with the closest field suggested. A
+  function given under the name of one of the language (`db.all`) is not
+  taken for it. `tests/embedding.rs` shows how.
+- **A function given by the embedding program may be defined again**
+  without W003: a web page's own `fn header(...)` hides the framework's
+  `header` element on purpose. The language's own functions still warn.
+
 ### Language
 
 - **Types written in the code, optional and checked**:
