@@ -4,7 +4,8 @@
 // a call, go to definition, references, renaming, an outline, quick fixes,
 // the types of names, "Run" and "Run test" above the code (the server asks
 // for the commands `rythme.runFile`, `rythme.testFile` and `rythme.runTest`,
-// carried out here), the names of the workspace, folding.
+// carried out here), the names of the workspace, folding. And the debugger:
+// `rythme dap` for the debug sessions of type `rythme`.
 
 'use strict';
 
@@ -354,6 +355,71 @@ async function showHelp() {
   await showCommandOutput(topic ? ['help', topic] : ['help'], topic ? `rythme help ${topic}` : 'rythme help');
 }
 
+/**
+ * The debugger: VS Code starts `rythme dap` (the Debug Adapter Protocol on
+ * its standard input and output) for the debug sessions of type `rythme`.
+ */
+const debugAdapterFactory = {
+  createDebugAdapterDescriptor() {
+    return new vscode.DebugAdapterExecutable(program(), [...langArgs(), 'dap']);
+  },
+};
+
+/** The name of the configuration made when there is no launch.json. */
+function debugName() {
+  return t(
+    'Debug this Rythme file',
+    'Déboguer ce fichier Rythme',
+    'Depurar este archivo Rythme',
+    'Diese Rythme-Datei debuggen',
+    'Depurar este arquivo Rythme',
+    '调试此 Rythme 文件'
+  );
+}
+
+/**
+ * Completes a debug configuration: F5 without launch.json debugs the open
+ * .ry file; a configuration needs a program.
+ */
+const debugConfigurationProvider = {
+  resolveDebugConfiguration(folder, config) {
+    if (!config.type && !config.request && !config.name) {
+      const editor = vscode.window.activeTextEditor;
+      if (editor && editor.document.languageId === 'rythme') {
+        config = { type: 'rythme', request: 'launch', name: debugName(), program: editor.document.uri.fsPath };
+      }
+    }
+    if (!config.program) {
+      vscode.window.showInformationMessage(t(
+          'Open a Rythme file (.ry) first.',
+          "Ouvrez d'abord un fichier Rythme (.ry).",
+          'Abre antes un archivo de Rythme (.ry).',
+          'Öffne zuerst eine Rythme-Datei (.ry).',
+          'Abra antes um arquivo do Rythme (.ry).',
+          '请先打开一个 Rythme 文件（.ry）。'
+        ));
+      return undefined;
+    }
+    if (!config.cwd) {
+      config.cwd = path.dirname(config.program);
+    }
+    return config;
+  },
+};
+
+/** "Debug this file": saves the file and starts the debugger on it. */
+async function debugFile(target) {
+  const doc = await documentToRun(target);
+  if (!doc) {
+    return debugConfigurationProvider.resolveDebugConfiguration(undefined, { type: 'rythme' });
+  }
+  if ((doc.isUntitled || doc.isDirty) && !(await doc.save())) {
+    return undefined;
+  }
+  const file = doc.uri.fsPath;
+  return vscode.debug.startDebugging(undefined, { type: 'rythme', request: 'launch', name: debugName(), program: file, cwd: path.dirname(file) });
+}
+
 async function activate(context) {
   output = vscode.window.createOutputChannel('Rythme');
   watcher = vscode.workspace.createFileSystemWatcher('**/*.ry');
@@ -374,6 +440,9 @@ async function activate(context) {
     ),
     vscode.commands.registerCommand('rythme.explainError', explainError),
     vscode.commands.registerCommand('rythme.showHelp', showHelp),
+    vscode.commands.registerCommand('rythme.debugFile', debugFile),
+    vscode.debug.registerDebugAdapterDescriptorFactory('rythme', debugAdapterFactory),
+    vscode.debug.registerDebugConfigurationProvider('rythme', debugConfigurationProvider),
     vscode.workspace.onDidChangeConfiguration((e) => {
       // The language is sent to the running server; another program needs a new one.
       if (e.affectsConfiguration('rythme.path')) {
@@ -388,4 +457,4 @@ function deactivate() {
   return stopServer();
 }
 
-module.exports = { activate, deactivate, quote, testFilter };
+module.exports = { activate, deactivate, quote, testFilter, debugAdapterFactory, debugConfigurationProvider };

@@ -52,7 +52,26 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "集合",
         ],
     ),
-    ("types", &["type", "tipos", "typen", "typ", "类型"]),
+    (
+        "types",
+        &[
+            "type",
+            "tipos",
+            "typen",
+            "typ",
+            "类型",
+            "annotations",
+            "annotation",
+            "written-types",
+            "types-ecrits",
+            "types-écrits",
+            "anotaciones",
+            "annotationen",
+            "anotacoes",
+            "anotações",
+            "类型注解",
+        ],
+    ),
     ("match", &["patterns", "motifs", "patrones", "muster", "padroes", "padrões", "模式", "匹配"]),
     ("errors", &["erreurs", "option", "result", "?", "errores", "fehler", "erros", "错误"]),
     (
@@ -237,6 +256,24 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "步骤",
         ],
     ),
+    (
+        "debug",
+        &[
+            "debugger",
+            "debogueur",
+            "débogueur",
+            "deboguer",
+            "déboguer",
+            "breakpoint",
+            "breakpoints",
+            "dap",
+            "depurador",
+            "depurar",
+            "debuggen",
+            "调试",
+            "调试器",
+        ],
+    ),
     ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide", "editores", "editoren", "编辑器"]),
     ("ruby", &["rb", "rubyist", "blocks", "blocs", "symbols", "symboles"]),
     (
@@ -278,6 +315,7 @@ Commands
   rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
   rythme steps file.ry      show the calculation step by step (fib(3) → fib(2) + fib(1) → ...)
+  rythme debug file.ry      pause the program where you want and look at its values
   rythme exercise           exercises checked automatically (list, start, check)
   rythme new NAME           create a project (rythme.toml, src/, tests/)
   rythme install            download the dependencies of the project
@@ -313,6 +351,7 @@ Topics (rythme help TOPIC)
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
   steps       the calculation shown step by step (rythme steps)
+  debug       the debugger: breakpoints, line by line, values (rythme debug)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
   ruby        coming from Ruby: blocks, symbols, method chains
   builtins    every built-in function
@@ -330,6 +369,7 @@ Commandes
   rythme fmt fichier.ry     mettre le code en forme (--check : vérifier seulement)
   rythme doc fichier.ry     écrire sa documentation, en Markdown (--html : une page web)
   rythme etapes fichier.ry  montrer le calcul étape par étape (fib(3) → fib(2) + fib(1) → ...)
+  rythme debug fichier.ry   mettre le programme en pause où vous voulez et regarder ses valeurs
   rythme exercise           exercices corrigés automatiquement (list, start, check)
   rythme new NOM            créer un projet (rythme.toml, src/, tests/)
   rythme install            télécharger les dépendances du projet
@@ -365,6 +405,7 @@ Sujets (rythme help SUJET)
   fmt         la mise en forme officielle du code (rythme fmt)
   doc         la documentation tirée des commentaires ## (rythme doc)
   steps       le calcul montré étape par étape (rythme etapes)
+  debug       le débogueur : points d'arrêt, ligne par ligne, valeurs (rythme debug)
   editors     Rythme dans votre éditeur (VS Code, Neovim, Helix...)
   ruby        venir de Ruby : blocs, symboles, enchaînements de méthodes
   builtins    toutes les fonctions intégrées
@@ -405,6 +446,9 @@ pub fn topic(name: &str) -> Option<String> {
         return Some(builtins_list());
     }
     let mut text = topic_text(t).to_string();
+    if t == "types" {
+        text.push_str(&format!("\n\n{}", pick(WRITTEN_EN, WRITTEN_FR)));
+    }
     if let Some(b) = builtin {
         // `text` is both a topic and a function: show both.
         text.push_str(&format!("\n\n{}\n{}", t!("The function:", "La fonction :"), builtin_doc(b)));
@@ -927,6 +971,7 @@ fn topic_texts(name: &str) -> (&'static str, &'static str) {
         "fmt" => (FMT_EN, FMT_FR),
         "doc" => (DOC_EN, DOC_FR),
         "steps" => (STEPS_EN, STEPS_FR),
+        "debug" => (DEBUG_EN, DEBUG_FR),
         "editors" => (EDITORS_EN, EDITORS_FR),
         "ruby" => (RUBY_EN, RUBY_FR),
         _ => ("", ""),
@@ -1862,6 +1907,61 @@ If you forget a shape, `rythme check` tells you which one.
 A type can contain itself (trees...):
   type Tree = Leaf | Node(left, value, right)"#;
 
+/// After the topic `types`: the types written in the code.
+const WRITTEN_EN: &str = r#"TYPES WRITTEN IN THE CODE (optional)
+
+Rythme finds the types by itself. You may also write them where they help
+to read the code; `rythme check` then verifies them (E027):
+  fn area(width: Int, height: Int) -> Int = width * height
+  total: Float = 0.0
+  type Shape = Circle(radius: Float) | Rect(width: Float, height: Float)
+  [1, 2].map do |n: Int| n * 2 end
+
+The types
+  Int  Float  Text  Bool  Unit  Symbol
+  List(Int) or [Int]   Set(Text)   Dict(Text, Int)
+  Option(Int)   Result(Int, Text)
+  {name: Text, age: Int}       a record with at least these fields
+  fn(Int, Int) -> Int          a function
+  Shape                        a type defined with `type` (geometry.Shape
+                               for a type of `use geometry`)
+  a                            any type: one lowercase letter, the same type
+                               everywhere in a definition
+  List, Dict, Set, Option, Result, Record, Function alone: any content
+
+  fn first_of(xs: List(a)) -> a = xs[0]
+  first_of([1, 2]) + 1         # the checker knows it is an Int
+
+Written types are never needed and change nothing when the program runs;
+the editors and `rythme doc` show them."#;
+
+const WRITTEN_FR: &str = r#"TYPES ÉCRITS DANS LE CODE (facultatifs)
+
+Rythme trouve les types tout seul. Vous pouvez aussi les écrire là où ils
+aident à lire le code ; `rythme check` les vérifie alors (E027) :
+  fn aire(largeur: Int, hauteur: Int) -> Int = largeur * hauteur
+  total: Float = 0.0
+  type Forme = Cercle(rayon: Float) | Rect(largeur: Float, hauteur: Float)
+  [1, 2].map do |n: Int| n * 2 end
+
+Les types
+  Int  Float  Text  Bool  Unit  Symbol
+  List(Int) ou [Int]   Set(Text)   Dict(Text, Int)
+  Option(Int)   Result(Int, Text)
+  {nom: Text, age: Int}        un enregistrement avec au moins ces champs
+  fn(Int, Int) -> Int          une fonction
+  Forme                        un type défini avec `type` (geometrie.Forme
+                               pour un type de `use geometrie`)
+  a                            n'importe quel type : une lettre minuscule, le
+                               même type partout dans une définition
+  List, Dict, Set, Option, Result, Record, Function seuls : contenu quelconque
+
+  fn premier(xs: List(a)) -> a = xs[0]
+  premier([1, 2]) + 1          # le vérificateur sait que c'est un Int
+
+Les types écrits ne sont jamais obligatoires et ne changent rien quand le
+programme tourne ; les éditeurs et `rythme doc` les montrent."#;
+
 const TYPES_FR: &str = r#"VOS PROPRES TYPES
 
 Un type liste les formes possibles d'une valeur :
@@ -2448,6 +2548,90 @@ montré.
 
 En mode interactif : :etapes fib(4). Dans le playground : le bouton Étapes.
 En anglais : rythme steps."#;
+
+const DEBUG_EN: &str = r#"THE DEBUGGER: rythme debug
+
+`rythme debug` runs a program and pauses it where you ask, to look at the
+values of its names while it runs:
+
+  rythme debug factorial.ry          then type commands at the prompt (debug)
+
+  break 12         pause at line 12 (or at the next line with code)
+  break geo.ry:3   pause at line 3 of a file the program uses
+  break fact       pause each time the function fact starts
+  run              start the program (step: pause at its first line)
+  next             go to the next line, without entering the functions called
+  step             go to the next line, entering the functions called
+  finish           go on until this function gives its result, and show it
+  continue         go on until the next breakpoint
+  where            the calls in progress, with their arguments
+  frame 1          look at another call of where (print and locals use it)
+  print n * 2      the value of an expression, computed where the program is
+  locals           the names visible here and their values
+  list             the lines around the current one
+  delete 1         remove a breakpoint (breakpoints lists them)
+  quit             stop
+
+An empty line repeats next, step, finish or continue.
+
+Each pause shows the line, the call (fact(n = 2)) and the depth: how many
+calls are in progress, and how many of the same function when it calls
+itself. A call in tail position (the last thing a function does) takes the
+place of the frame of its caller: the debugger says so, and where shows it.
+
+print computes only values: the functions that print, read, write files or
+draw random numbers are refused there, so that looking never changes the
+program. When an error stops the program, the debugger pauses where it
+happened, so that you can look at the values before the message.
+
+In VS Code: the Rythme extension adds the debugger (Run > Start Debugging,
+or F5 on a .ry file): breakpoints in the margin, the values of the names,
+step over, step into, step out. Other editors can start `rythme dap`, which
+speaks the Debug Adapter Protocol.
+The function `debug(value)` is something else: it prints a value and gives it back."#;
+
+const DEBUG_FR: &str = r#"LE DÉBOGUEUR : rythme debug
+
+`rythme debug` lance un programme et le met en pause où vous le demandez,
+pour regarder les valeurs de ses noms pendant qu'il tourne :
+
+  rythme debug factorielle.ry        puis tapez des commandes à l'invite (debug)
+
+  break 12         faire une pause à la ligne 12 (ou à la suivante qui a du code)
+  break geo.ry:3   faire une pause à la ligne 3 d'un fichier que le programme utilise
+  break fact       faire une pause à chaque début de la fonction fact
+  run              lancer le programme (step : pause à sa première ligne)
+  next             aller à la ligne suivante, sans entrer dans les fonctions appelées
+  step             aller à la ligne suivante, en entrant dans les fonctions appelées
+  finish           continuer jusqu'à ce que cette fonction donne son résultat, et le montrer
+  continue         continuer jusqu'au prochain point d'arrêt
+  where            les appels en cours, avec leurs arguments
+  frame 1          regarder un autre appel de where (print et locals l'utilisent)
+  print n * 2      la valeur d'une expression, calculée là où est le programme
+  locals           les noms visibles ici et leurs valeurs
+  list             les lignes autour de la ligne courante
+  delete 1         enlever un point d'arrêt (breakpoints les liste)
+  quit             arrêter
+
+Une ligne vide répète next, step, finish ou continue.
+
+Chaque pause montre la ligne, l'appel (fact(n = 2)) et la profondeur :
+combien d'appels sont en cours, et combien de la même fonction quand elle
+s'appelle elle-même. Un appel terminal (la dernière chose que fait une
+fonction) prend la place du cadre de la fonction qui l'appelle : le
+débogueur le dit, et where le montre.
+
+print ne calcule que des valeurs : les fonctions qui affichent, lisent,
+écrivent des fichiers ou tirent au hasard y sont refusées, pour que regarder
+ne change jamais le programme. Quand une erreur arrête le programme, le
+débogueur fait une pause là où elle s'est produite, pour regarder les valeurs
+avant le message.
+
+Dans VS Code : l'extension Rythme ajoute le débogueur (Exécuter > Démarrer le
+débogage, ou F5 sur un fichier .ry) : points d'arrêt dans la marge, valeurs
+des noms, pas à pas principal, détaillé et sortant. Les autres éditeurs
+peuvent lancer `rythme dap`, qui parle le Debug Adapter Protocol.
+La fonction `debug(valeur)` est autre chose : elle affiche une valeur et la rend."#;
 
 const FMT_EN: &str = r#"FORMATTING: rythme fmt
 
@@ -3219,6 +3403,44 @@ les accolades \{ et \} ("[0-9]\{4\}"). `rythme help regex` montre tout ce
 qu'une regex peut dire. Quand la regex est écrite dans le code,
 `rythme check` trouve l'erreur avant de lancer le programme."#,
         ),
+        "E027" => (
+            r#"E027 — A type written in the code does not fit
+
+A type written in the code, after `:` or `->`, is a promise that
+`rythme check` verifies before running: a value that surely has another type
+is reported where it is given. The type must also exist.
+
+Wrong:   total: Float = 0              # 0 is an Int
+Right:   total: Float = 0.0
+Wrong:   fn area(w: Int, h: Int) -> Int = w * h
+         area(2, "3")                  # "3" is a Text
+Right:   area(2, 3)
+Wrong:   fn label(n: Int) -> Text = n  # gives an Int
+Right:   fn label(n: Int) -> Text = text(n)
+Wrong:   fn twice(x: int) = x * 2      # type names start with an uppercase letter
+Right:   fn twice(x: Int) = x * 2
+
+Written types are optional: removing one never changes what a program does.
+More: `rythme help types`."#,
+            r#"E027 — Un type écrit dans le code ne correspond pas
+
+Un type écrit dans le code, après `:` ou `->`, est une promesse que
+`rythme check` vérifie avant l'exécution : une valeur qui a sûrement un
+autre type est signalée là où elle est donnée. Le type doit aussi exister.
+
+Faux :   total: Float = 0              # 0 est un Int
+Juste :  total: Float = 0.0
+Faux :   fn aire(l: Int, h: Int) -> Int = l * h
+         aire(2, "3")                  # "3" est un Text
+Juste :  aire(2, 3)
+Faux :   fn etiquette(n: Int) -> Text = n   # donne un Int
+Juste :  fn etiquette(n: Int) -> Text = text(n)
+Faux :   fn double(x: int) = x * 2     # les noms de types commencent par une majuscule
+Juste :  fn double(x: Int) = x * 2
+
+Les types écrits sont facultatifs : en retirer un ne change jamais ce que
+fait un programme. Plus : `rythme help types`."#,
+        ),
         "E024" => (
             r#"E024 — A value is lost
 
@@ -3511,6 +3733,7 @@ Ou donnez un autre nom au paramètre : fn double(n) = n * 2"#,
 #[doc(hidden)]
 pub fn fixed_texts() -> Vec<&'static str> {
     let mut texts: Vec<&'static str> = TOPICS.iter().map(|(name, _)| topic_texts(name).0).filter(|t| !t.is_empty()).collect();
+    texts.push(WRITTEN_EN);
     texts.extend(CODES.iter().filter_map(|c| explanation(c)).map(|(en, _)| en));
     texts.extend(KEYWORD_DOCS.iter().map(|k| k.1));
     texts.extend(BUILTINS.iter().map(|b| b.en));
@@ -3521,6 +3744,6 @@ pub fn fixed_texts() -> Vec<&'static str> {
 
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
-    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "E025", "E026", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008",
-    "W009", "W010", "W011",
+    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "E025", "E026", "E027", "W001", "W002", "W003", "W004", "W005", "W006", "W007",
+    "W008", "W009", "W010", "W011",
 ];

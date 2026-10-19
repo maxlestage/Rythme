@@ -15,5 +15,13 @@
   "command.test": "运行这个文件的测试",
   "command.runTest": "运行这个文件中的一个测试",
   "command.explain": "解释错误代码",
-  "command.help": "某个主题或函数的帮助"
+  "command.help": "某个主题或函数的帮助",
+  "command.debug": "调试此文件",
+  "debug.program": "要调试的 Rythme 程序（一个 .ry 文件）。",
+  "debug.args": "传给程序的词（`args()` 看到的内容）。",
+  "debug.stopOnEntry": "在程序的第一行暂停。",
+  "debug.cwd": "程序运行所在的文件夹。",
+  "debug.name": "调试此 Rythme 文件",
+  "debug.snippet": "Rythme：调试一个文件",
+  "debug.snippet.description": "用 Rythme 的调试器（`rythme dap`）运行一个 .ry 文件。"
 }

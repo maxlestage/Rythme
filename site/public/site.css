@@ -590,6 +590,40 @@ select {
 .actions #run, .actions #stop { order: -1; grid-column: 1 / -1; }
 .kbd { display: none; font: 500 11px var(--mono); opacity: 0.75; }
 @media (hover: hover) and (pointer: fine) { .kbd { display: inline; } }
+/* The Seed option: a `details` among the actions, whose button shows the seed in use;
+   its panel hangs under the toolbar, never wider than it. */
+.toolbar { position: relative; }
+.seed { min-width: 0; }
+.seed[hidden] { display: none; }
+.seed__toggle { display: flex; width: 100%; min-width: 0; padding: 8px 10px; list-style: none; user-select: none; }
+.seed__toggle::-webkit-details-marker { display: none; }
+.seed__toggle::marker { content: ""; }
+.seed[open] .seed__toggle { border-color: var(--accent); }
+.seed__name { flex: none; }
+.seed__value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 13px var(--mono); color: var(--accent); }
+.seed__value:empty { display: none; }
+.seed__panel {
+  position: absolute; left: 0; right: 0; top: calc(100% + 8px); z-index: 40;
+  display: grid; gap: 8px; padding: 14px;
+  background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+/* Closed, the panel has no box at all (rather than a hidden one that keeps the colors of
+   the theme it was last drawn in). */
+.seed:not([open]) .seed__panel { display: none; }
+.seed__label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-weight: 600; }
+.seed__row { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.seed__row input {
+  flex: 1 1 8em; min-width: 0; min-height: 44px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink);
+  border-radius: 10px; padding: 8px 12px; font: 16px var(--mono);
+}
+.seed__row input::placeholder { color: var(--ink-soft); opacity: 1; }
+.seed__row .btn { flex: none; min-height: 44px; }
+.seed__hint { font-size: 13px; color: var(--ink-soft); }
+.seed-used { margin-left: auto; font: 500 12px var(--mono); color: var(--accent); white-space: nowrap; }
+.seed-used[hidden] { display: none; }
+@media (min-width: 720px) {
+  .seed__panel { left: auto; width: min(26rem, 100%); }
+}
 @media (min-width: 720px) {
   .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; }
   .picker select { flex: none; min-width: 200px; }

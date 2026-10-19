@@ -320,7 +320,11 @@ impl Gen<'_> {
                     format!("{name}({})", self.args(n, d))
                 }
             },
-            8 => format!("fn({}) = {}", self.rng.pick(&["v", "a, b", "", "[h, ..t]", "_"]), self.expr(d)),
+            8 => format!(
+                "fn({}) = {}",
+                self.rng.pick(&["v", "a, b", "", "[h, ..t]", "_", "v: Int", "v: List(a)", "a: Text, b"]),
+                self.expr(d)
+            ),
             9 => format!("if {} then {} else {}", self.expr(d), self.expr(d), self.expr(d)),
             10 => {
                 let mut s = format!("match {}\n", self.expr(d));
@@ -359,7 +363,7 @@ impl Gen<'_> {
             }
             // The Ruby style: blocks, method chains, `unless`, symbols, names ending with `?`.
             20 => match self.rng.below(4) {
-                0 => format!("{}.map do |v| {} end", self.expr(d), self.expr(d)),
+                0 => format!("{}.map do |v{}| {} end", self.expr(d), self.typed(), self.expr(d)),
                 1 => format!("{}.select {{ |v| {} }}", self.expr(d), self.expr(d)),
                 2 => format!("each({}) do |v|\n  {}\nend", self.expr(d), self.expr(d)),
                 _ => format!("{}.reduce(0) do |a, b| {} end", self.expr(d), self.expr(d)),
@@ -371,6 +375,35 @@ impl Gen<'_> {
                 _ => self.rng.pick(&[":ok", ":error", "even?(2)", "[:a, :b]"]).into(),
             },
             _ => self.atom(),
+        }
+    }
+
+    /// A written type (`total: Float = 0.0`): right, wrong, or that does not exist.
+    fn ty(&mut self, depth: usize) -> String {
+        let leaf =
+            ["Int", "Float", "Text", "Bool", "Unit", "Symbol", "List", "Record", "Function", "T", "Tree", "U", "a", "b", "int", "Strng"];
+        if depth == 0 || self.rng.chance(40) {
+            return self.rng.pick(&leaf).into();
+        }
+        let d = depth - 1;
+        match self.rng.below(8) {
+            0 => format!("List({})", self.ty(d)),
+            1 => format!("[{}]", self.ty(d)),
+            2 => format!("Option({})", self.ty(d)),
+            3 => format!("Result({}, {})", self.ty(d), self.ty(d)),
+            4 => format!("Dict({}, {})", self.ty(d), self.ty(d)),
+            5 => format!("{{name: {}, age: {}}}", self.ty(d), self.ty(d)),
+            6 => format!("fn({}) -> {}", self.ty(d), self.ty(d)),
+            _ => format!("{}({})", self.rng.pick(&["Set", "Int", "List", "T"]), self.ty(d)),
+        }
+    }
+
+    /// `: Type` after a name, sometimes.
+    fn typed(&mut self) -> String {
+        if self.rng.chance(30) {
+            format!(": {}", self.ty(2))
+        } else {
+            String::new()
         }
     }
 
@@ -397,17 +430,19 @@ impl Gen<'_> {
             0..=2 => {
                 let name = format!("f{}", self.fns.len());
                 let arity = self.rng.below(3);
-                let params: Vec<String> = (0..arity).map(|i| ["p", "q", "w"][i].to_string()).collect();
+                let params: Vec<String> = (0..arity).map(|i| format!("{}{}", ["p", "q", "w"][i], self.typed())).collect();
                 self.fns.push((name.clone(), arity));
+                let ret = if self.rng.chance(25) { format!(" -> {}", self.ty(2)) } else { String::new() };
                 let body = self.expr(3);
                 if arity == 1 && self.rng.chance(40) {
                     // One definition per case, then a recursive general case.
                     let base = self.pattern(1);
                     format!("fn {name}({base}) = {}\nfn {name}(p) = {name}(p - 1)", self.expr(2))
                 } else if self.rng.chance(30) {
-                    format!("fn {name}({})\n  {} = {}\n  {}\nend", params.join(", "), self.name(), self.expr(2), body)
+                    let (v, t) = (self.name(), self.typed());
+                    format!("fn {name}({}){ret}\n  {v}{t} = {}\n  {}\nend", params.join(", "), self.expr(2), body)
                 } else {
-                    format!("fn {name}({}) = {body}", params.join(", "))
+                    format!("fn {name}({}){ret} = {body}", params.join(", "))
                 }
             }
             3 | 4 => format!("print({})", self.expr(3)),
@@ -441,7 +476,10 @@ impl Gen<'_> {
                 }
                 _ => format!("xs.each do |v| puts v, {} end", self.expr(2)),
             },
-            6 => format!("{} = {}", self.name(), self.expr(3)),
+            6 => {
+                let (v, t) = (self.name(), self.typed());
+                format!("{v}{t} = {}", self.expr(3))
+            }
             7 => {
                 let name = self.name();
                 format!("test \"{name}\" = {}", self.expr(2))
@@ -453,7 +491,7 @@ impl Gen<'_> {
 
     fn program(&mut self) -> String {
         let mut s = String::from(PREAMBLE);
-        s.push_str("type T = A | B(v) | C(v, w)\ntype Tree = Leaf | Node(l, v, r)\n");
+        s.push_str("type T = A | B(v) | C(v, w)\ntype Tree = Leaf | Node(l, v, r)\ntype U = D(d: Int) | E(e: List(a), f: T)\n");
         for _ in 0..1 + self.rng.below(6) {
             s.push_str(&self.item());
             s.push('\n');

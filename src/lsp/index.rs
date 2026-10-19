@@ -211,8 +211,7 @@ impl Indexer<'_> {
                         let vname = v.name.name();
                         let vspan = name_at_start(self.text, v.span, &vname);
                         let mut d = Self::new_def(vname.clone(), DefKind::Ctor, vspan, v.span, true);
-                        let fields: Vec<String> = v.fields.iter().map(|f| f.name().to_string()).collect();
-                        d.sig = Some(if fields.is_empty() { vname.to_string() } else { format!("{vname}({})", fields.join(", ")) });
+                        d.sig = Some(v.signature());
                         d.owner = Some(name.clone());
                         d.doc = t.doc.clone();
                         let idx = self.add(d);
@@ -393,7 +392,11 @@ impl Indexer<'_> {
             for (s, sp, punned) in binds {
                 if !seen.contains(&s) {
                     seen.push(s);
-                    self.local(s, sp, DefKind::Param, visible, clause.span, punned);
+                    let idx = self.local(s, sp, DefKind::Param, visible, clause.span, punned);
+                    // `w: Int`: the parameter with its written type.
+                    if let Some(t) = clause.params.iter().find(|p| p.span == sp).and_then(|p| p.ty.as_ref()) {
+                        self.out.defs[idx as usize].sig = Some(format!("{s}: {t}"));
+                    }
                 }
             }
             if let Some(g) = &clause.guard {

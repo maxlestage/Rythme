@@ -57,6 +57,17 @@ pub enum Kind {
     Range(Box<Node>, Box<Node>),
 }
 
+/// What the debugger needs to know at a place where it may pause.
+pub struct StopInfo {
+    /// The local names visible here, with the slot of their value in the
+    /// frame, in the order they were given. The names captured by a closure
+    /// are in `FnCode::capture_names`.
+    pub names: Vec<(Sym, u32)>,
+    /// How the top-level names of the file are stored (to evaluate an
+    /// expression there).
+    pub file_names: Names,
+}
+
 pub enum Part {
     Lit(Rc<str>),
     Expr(Node),
@@ -101,6 +112,12 @@ pub enum Stmt {
     /// Local functions written one after the other: the slot of each named
     /// one, with its position in the group.
     Group(Vec<(u32, u32)>, Rc<[Sibling]>),
+    /// A place where the debugger may pause, shown at the span (only in code
+    /// prepared for `rythme debug`: see `function_for`). A body or a branch
+    /// that is not a block becomes a block that starts with it: the
+    /// interpreter runs it with the other statements, and the rest of the
+    /// code is the same as without a debugger.
+    Stop(Rc<StopInfo>, Span),
 }
 
 /// One of several local functions written one after the other in a block:
@@ -142,6 +159,8 @@ pub struct FnCode {
     pub self_slot: Option<u32>,
     /// Where a new closure takes the values it captures, in the frame that creates it.
     pub captures: Vec<Capture>,
+    /// The names of the captured values, in the same order (for the debugger).
+    pub capture_names: Vec<Sym>,
     pub clauses: Vec<ClauseCode>,
     /// One definition whose parameters are plain names, without guard: no
     /// pattern to try when it is called.
@@ -214,13 +233,40 @@ pub type Names = Rc<SymMap<Sym>>;
 
 /// Prepares a function of the program (it captures nothing).
 pub fn function(def: &FnDef, names: &Names) -> FnCode {
-    Compiler { names: names.clone(), ..Compiler::default() }.func(def, None, Vec::new(), Vec::new())
+    function_for(def, names, false)
+}
+
+/// Like [`function`]; with `debug`, the code has the places where the
+/// debugger may pause (`Stmt::Stop`). Without it, the code has none and runs
+/// as fast as ever.
+pub fn function_for(def: &FnDef, names: &Names, debug: bool) -> FnCode {
+    Compiler { names: names.clone(), debug, ..Compiler::default() }.func(def, None, Vec::new(), Vec::new())
 }
 
 /// Prepares an expression that runs outside of any function.
 pub fn top(e: &Expr, names: &Names) -> Code {
-    let mut c = Compiler { names: names.clone(), ..Compiler::default() };
+    top_for(e, names, false)
+}
+
+/// Like [`top`], with the places where the debugger may pause when `debug`.
+pub fn top_for(e: &Expr, names: &Names, debug: bool) -> Code {
+    let mut c = Compiler { names: names.clone(), debug, ..Compiler::default() };
     c.funcs.push(Func::new(0));
+    let node = c.expr(e);
+    let node = c.stop(node, e.span);
+    let f = c.funcs.pop().unwrap();
+    Code { node, slots: f.max as usize }
+}
+
+/// Prepares an expression that sees the local names `locals`, whose values
+/// are in the first slots of its frame, in this order (the debugger's
+/// `print`, in a paused function).
+pub fn with_locals(e: &Expr, names: &Names, locals: &[Sym]) -> Code {
+    let mut c = Compiler { names: names.clone(), ..Compiler::default() };
+    c.funcs.push(Func::new(locals.len() as u32));
+    for (i, &s) in locals.iter().enumerate() {
+        c.bind(s, i as u32);
+    }
     let node = c.expr(e);
     let f = c.funcs.pop().unwrap();
     Code { node, slots: f.max as usize }
@@ -250,6 +296,7 @@ struct Func {
     self_slot: Option<u32>,
     self_used: bool,
     captures: Vec<Capture>,
+    capture_names: Vec<Sym>,
 }
 
 impl Func {
@@ -262,6 +309,7 @@ impl Func {
             self_slot: None,
             self_used: false,
             captures: Vec::new(),
+            capture_names: Vec::new(),
         }
     }
 }
@@ -272,19 +320,21 @@ struct Compiler {
     /// The same names as `funcs`, all functions together, for messages.
     scope: Scope,
     names: Names,
+    /// Add the places where the debugger may pause.
+    debug: bool,
 }
 
 impl Compiler {
     /// Prepares a function that captures at least `captures` and sees the
     /// functions of its group, `siblings`.
-    fn func(&mut self, def: &FnDef, self_name: Option<Sym>, captures: Vec<Capture>, siblings: Vec<(Sym, u32)>) -> FnCode {
+    fn func(&mut self, def: &FnDef, self_name: Option<Sym>, captures: Vec<(Capture, Sym)>, siblings: Vec<(Sym, u32)>) -> FnCode {
         let arity = def.arity;
         let outer = self.scope.clone();
         let self_slot = self_name.map(|_| arity as u32);
         let first_free = arity as u32 + u32::from(self_slot.is_some());
         let mut f = Func::new(first_free);
         f.self_slot = self_slot;
-        f.captures = captures;
+        (f.captures, f.capture_names) = captures.into_iter().unzip();
         f.siblings = siblings;
         self.funcs.push(f);
         let mut clauses = Vec::with_capacity(def.clauses.len());
@@ -309,6 +359,7 @@ impl Compiler {
             }
             let guard = clause.guard.as_ref().map(|g| self.expr(g));
             let body = self.expr(&clause.body);
+            let body = self.stop(body, clause.body.span);
             clauses.push(ClauseCode { tests, guard, body });
         }
         let f = self.funcs.pop().unwrap();
@@ -320,6 +371,7 @@ impl Compiler {
             slots: f.max as usize,
             self_slot: if f.self_used { self_slot } else { None },
             captures: f.captures,
+            capture_names: f.capture_names,
             clauses,
             simple,
         }
@@ -381,6 +433,7 @@ impl Compiler {
             Some(i) => i,
             None => {
                 f.captures.push(capture);
+                f.capture_names.push(sym);
                 f.captures.len() - 1
             }
         };
@@ -519,7 +572,14 @@ impl Compiler {
             ExprKind::Unary(op, x) => Kind::Unary(*op, self.boxed(x)),
             ExprKind::Binary(op @ (BinOp::And | BinOp::Or), l, r, _) => Kind::Logic(*op, self.boxed(l), self.boxed(r)),
             ExprKind::Binary(op, l, r, span) => Kind::Binary(*op, self.boxed(l), self.boxed(r), *span),
-            ExprKind::If(c, a, b) => Kind::If(self.boxed(c), self.boxed(a), self.boxed(b)),
+            ExprKind::If(c, a, b) => {
+                let c = self.boxed(c);
+                let then = self.expr(a);
+                let then = self.stop(then, a.span);
+                let other = self.expr(b);
+                let other = self.stop(other, b.span);
+                Kind::If(c, Box::new(then), Box::new(other))
+            }
             ExprKind::Match(subject, arms) => {
                 let subject = self.boxed(subject);
                 let arms = arms
@@ -529,6 +589,7 @@ impl Compiler {
                         let pat = self.pattern(&arm.pat);
                         let guard = arm.guard.as_ref().map(|g| self.expr(g));
                         let body = self.expr(&arm.body);
+                        let body = self.stop(body, arm.body.span);
                         self.restore(mark);
                         Arm { pat, guard, body }
                     })
@@ -540,6 +601,41 @@ impl Compiler {
             ExprKind::Range(a, b) => Kind::Range(self.boxed(a), self.boxed(b)),
         };
         Node { kind, span: e.span }
+    }
+
+    /// With `debug`, a place where the debugger may pause before `node`
+    /// runs, shown at `at` (a body, a branch): `{ stop; node }`. A block
+    /// pauses at its own statements instead.
+    fn stop(&self, node: Node, at: Span) -> Node {
+        if !self.debug || matches!(node.kind, Kind::Block(..)) {
+            return node;
+        }
+        let span = node.span;
+        Node { kind: Kind::Block(vec![self.stop_here(at)], Some(Box::new(node))), span }
+    }
+
+    /// With `debug`, adds to the statements of a block a place where the
+    /// debugger may pause before the next one.
+    fn stop_before(&self, out: &mut Vec<Stmt>, at: Span) {
+        if self.debug {
+            out.push(self.stop_here(at));
+        }
+    }
+
+    /// A place where the debugger may pause, with the local names visible now.
+    fn stop_here(&self, at: Span) -> Stmt {
+        let f = self.funcs.last().expect("a function being prepared");
+        let mut names: Vec<(Sym, u32)> = Vec::new();
+        for &(sym, loc) in &f.names {
+            // The function itself is not one of its values.
+            let Loc::Local(slot) = loc else { continue };
+            if f.self_slot == Some(slot) {
+                continue;
+            }
+            names.retain(|(s, _)| *s != sym);
+            names.push((sym, slot));
+        }
+        Stmt::Stop(Rc::new(StopInfo { names, file_names: self.names.clone() }), at)
     }
 
     fn block(&mut self, stmts: &[AstStmt]) -> Kind {
@@ -555,27 +651,35 @@ impl Compiler {
                         stmts[i..].iter().map_while(|s| if let AstStmt::Fn(d) = s { Some(d) } else { None }).collect();
                     out.push(self.group(&defs));
                 }
-                AstStmt::Let(p, x) => out.push(match (&p.kind, &x.kind) {
+                AstStmt::Let(p, x) => match (&p.kind, &x.kind) {
                     // `name = fn(...) = ...` can call itself by its name.
                     (PatKind::Bind(name), ExprKind::Lambda(def)) => {
                         let code = self.func(def, Some(*name), Vec::new(), Vec::new());
                         let slot = self.new_slot();
                         self.bind(*name, slot);
-                        Stmt::Fn(slot, def.clone(), Rc::new(code))
+                        out.push(Stmt::Fn(slot, def.clone(), Rc::new(code)));
                     }
                     (PatKind::Bind(name), _) => {
+                        self.stop_before(&mut out, p.span.to(x.span));
                         let value = self.expr(x);
                         let slot = self.new_slot();
                         self.bind(*name, slot);
-                        Stmt::Set(slot, value)
+                        out.push(Stmt::Set(slot, value));
                     }
                     _ => {
+                        self.stop_before(&mut out, p.span.to(x.span));
                         let value = self.expr(x);
-                        Stmt::Let(self.pattern(p), value, p.span)
+                        out.push(Stmt::Let(self.pattern(p), value, p.span));
                     }
-                }),
-                AstStmt::Expr(x) if i + 1 == stmts.len() => last = Some(self.boxed(x)),
-                AstStmt::Expr(x) => out.push(Stmt::Expr(self.expr(x))),
+                },
+                AstStmt::Expr(x) if i + 1 == stmts.len() => {
+                    self.stop_before(&mut out, x.span);
+                    last = Some(self.boxed(x));
+                }
+                AstStmt::Expr(x) => {
+                    self.stop_before(&mut out, x.span);
+                    out.push(Stmt::Expr(self.expr(x)));
+                }
                 AstStmt::Fn(def) => {
                     let code = self.func(def, def.name, Vec::new(), Vec::new());
                     if let Some(name) = def.name {
@@ -606,15 +710,17 @@ impl Compiler {
             // Each one sees itself as a function of the group too (behind its
             // parameters): calling it then makes no new closure.
             let code = self.func(def, None, captures, names.clone());
-            captures = code.captures.clone();
+            captures = code.captures.iter().copied().zip(code.capture_names.iter().copied()).collect();
             codes.push(code);
         }
+        let (captures, capture_names): (Vec<Capture>, Vec<Sym>) = captures.into_iter().unzip();
         self.scope = outer;
         let group: Rc<[Sibling]> = defs
             .iter()
             .zip(codes)
             .map(|(def, mut code)| {
                 code.captures = captures.clone();
+                code.capture_names = capture_names.clone();
                 Sibling { def: Rc::clone(def), code: Rc::new(code) }
             })
             .collect();

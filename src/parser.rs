@@ -672,7 +672,22 @@ impl Parser {
             Some(Stmt::Expr(Expr { kind: ExprKind::Var(s), .. })) => Some(s.name().to_string()),
             _ => None,
         };
+        // `total:Float = 0.0`, read as the call `total(:Float)`.
+        let glued = match stmt {
+            Some(Stmt::Expr(Expr { kind: ExprKind::Call(f, args), .. })) => match (&f.kind, args.as_slice()) {
+                (ExprKind::Var(name), [Expr { kind: ExprKind::Symbol(ty), span, .. }]) if span.start == f.span.end => Some((*name, *ty)),
+                _ => None,
+            },
+            _ => None,
+        };
         match (&callee, &tok.tok) {
+            (_, Tok::Eq) if glued.is_some() => {
+                let (name, ty) = glued.unwrap();
+                d = d.help(t!(
+                    "to write the type of `{name}`, put a space after `:`: `{name}: {ty} = ...`",
+                    "pour écrire le type de `{name}`, mettez une espace après `:` : `{name}: {ty} = ...`"
+                ));
+            }
             (None, _) if self.after_command() => d = d.help(commas_help()),
             (Some(name), t) if starts_expression(t) => {
                 d = d.help(t!(
@@ -727,6 +742,13 @@ impl Parser {
             Tok::Reserved(s) => return Err(self.reserved_error(s, tok.span)),
             _ => {}
         }
+        // `total: Float = 0.0`: a name, its type, then its value.
+        if let (Tok::Ident(s), Some(Tok::Colon)) = (&tok.tok, self.toks.get(self.pos + 1).map(|t| &t.tok)) {
+            let kind = if &*s.name() == "_" { PatKind::Wildcard } else { PatKind::Bind(*s) };
+            self.advance();
+            let pat = self.typed(Pattern::new(kind, tok.span))?;
+            return self.typed_value(pat);
+        }
         if let Some(first) = command_at(&self.toks, self.pos, &self.preds, &self.values) {
             return Ok(Stmt::Expr(self.command(first)?));
         }
@@ -742,6 +764,10 @@ impl Parser {
                 ));
                 d
             })?;
+            if matches!(self.raw(), Tok::Colon) {
+                let pat = self.typed(pat)?;
+                return self.typed_value(pat);
+            }
             if !matches!(self.raw(), Tok::Eq) {
                 return Err(self.unexpected(t!("`=`", "`=`")));
             }
@@ -773,6 +799,22 @@ impl Parser {
             }
             _ => Ok(Stmt::Expr(e)),
         }
+    }
+
+    /// `= value` after a name or a pattern and its type: `total: Float = 0.0`.
+    fn typed_value(&mut self, pat: Pattern) -> Fallible<Stmt> {
+        if !matches!(self.raw(), Tok::Eq) {
+            let mut d = self.unexpected(t!("`=` and a value", "`=` et une valeur"));
+            d.helps.push(t!(
+                "a name with a written type is given its value right away: `total: Float = 0.0`",
+                "un nom avec un type écrit reçoit sa valeur tout de suite : `total: Float = 0.0`"
+            ));
+            return Err(d);
+        }
+        self.advance();
+        self.skip_newlines();
+        let value = self.expr()?;
+        Ok(Stmt::Let(pat, value))
     }
 
     /// A call without parentheses (see [`command_at`]): `print x, y`, then
@@ -868,7 +910,8 @@ impl Parser {
             }
             i += 1;
         }
-        matches!(self.toks[i + 1].tok, Tok::Eq)
+        // `[a, b]: List(Int) = xs`: with its type.
+        matches!(self.toks[i + 1].tok, Tok::Eq | Tok::Colon)
     }
 
     /// `{name, ..others}`: the other fields cannot be given a name.
@@ -1001,7 +1044,7 @@ impl Parser {
                 return Err(d.boxed());
             }
         };
-        Ok(Pattern { kind, span })
+        Ok(Pattern::new(kind, span))
     }
 
     fn block(&mut self, opener: Span, what: &str) -> Fallible<Vec<Stmt>> {
@@ -1064,7 +1107,11 @@ impl Parser {
             return Err(d);
         }
         self.advance();
-        let params = self.comma_list(&Tok::RParen, |p| p.pattern())?;
+        let params = self.comma_list(&Tok::RParen, |p| {
+            let pat = p.pattern()?;
+            p.typed(pat)
+        })?;
+        let ret = self.result_type(named);
         let guard = if named && matches!(self.raw(), Tok::If) {
             self.advance();
             Some(self.expr()?)
@@ -1101,7 +1148,144 @@ impl Parser {
             }
         };
         let arity = params.len();
-        Ok(FnDef { name, clauses: vec![Rc::new(Clause { params, guard, body, span: head })], arity, doc, span: name_span })
+        Ok(FnDef { name, clauses: vec![Rc::new(Clause { params, guard, body, span: head, ret })], arity, doc, span: name_span })
+    }
+
+    // ----- written types -----------------------------------------------
+
+    /// A parameter, or a pattern before `=`, and its type when one is
+    /// written after `:`: `w: Int`.
+    fn typed(&mut self, mut pat: Pattern) -> Fallible<Pattern> {
+        match self.peek() {
+            Tok::Colon => {
+                self.advance();
+                pat.ty = Some(Rc::new(self.type_expr()?));
+            }
+            // `|n :Int|`: the `:` touches the type, which makes a symbol.
+            Tok::Symbol(s) => {
+                let s = *s;
+                let mut d = self.unexpected(t!("`,`", "`,`"));
+                d.helps.clear();
+                d.helps.push(t!(
+                    "to write the type of a parameter, put `:` right after its name, then a space: `x: {s}`",
+                    "pour écrire le type d'un paramètre, mettez `:` juste après son nom, puis une espace : `x: {s}`"
+                ));
+                return Err(d);
+            }
+            _ => {}
+        }
+        Ok(pat)
+    }
+
+    /// `-> Int` after the parameters of a function: the type of its result,
+    /// when `=`, a new line or (for a named function) `if` follows it.
+    /// Otherwise nothing is read, and `fn(x) -> x * 2` keeps its message
+    /// (functions use `=`).
+    fn result_type(&mut self, named: bool) -> Option<Rc<TypeExpr>> {
+        if !matches!(self.raw(), Tok::Arrow) {
+            return None;
+        }
+        let (pos, last) = (self.pos, self.last);
+        self.advance();
+        if let Ok(t) = self.type_expr() {
+            if matches!(self.raw(), Tok::Eq | Tok::Newline) || (named && matches!(self.raw(), Tok::If)) {
+                return Some(Rc::new(t));
+            }
+        }
+        (self.pos, self.last) = (pos, last);
+        None
+    }
+
+    /// A written type: `Int`, `List(Int)`, `[Int]`, `{name: Text}`,
+    /// `fn(Int) -> Int`, `Shape`, `geo.Shape`, or a type variable `a`.
+    fn type_expr(&mut self) -> Fallible<TypeExpr> {
+        self.deeper(|p| p.type_inner())
+    }
+
+    fn type_inner(&mut self) -> Fallible<TypeExpr> {
+        let tok = self.peek_token();
+        let span = tok.span;
+        let kind = match tok.tok {
+            Tok::Ctor(s) => {
+                self.advance();
+                self.type_args(s)?
+            }
+            // `geo.Shape`: a type of the file used as `geo`.
+            Tok::Ident(m)
+                if matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Dot))
+                    && matches!(self.toks.get(self.pos + 2).map(|t| &t.tok), Some(Tok::Ctor(_))) =>
+            {
+                self.advance();
+                self.advance();
+                let Tok::Ctor(s) = self.advance().tok else { unreachable!() };
+                self.type_args(Sym::new(&format!("{m}.{s}")))?
+            }
+            Tok::Ident(s) => {
+                self.advance();
+                TypeKind::Var(s)
+            }
+            Tok::LBracket => {
+                self.advance();
+                let inner = self.nested(false, |p| {
+                    let t = p.type_expr()?;
+                    if !p.eat(&Tok::RBracket) {
+                        return Err(p.unexpected(t!("`]`", "`]`")));
+                    }
+                    Ok(t)
+                })?;
+                TypeKind::List(Box::new(inner))
+            }
+            Tok::LBrace => {
+                self.advance();
+                let fields = self.comma_list(&Tok::RBrace, |p| {
+                    let t = p.advance();
+                    let Some(key) = field_key(&t.tok) else {
+                        let mut d = p.unexpected_token(&t, t!("a field name", "un nom de champ"));
+                        d.helps.push(type_help());
+                        return Err(d);
+                    };
+                    if !p.eat(&Tok::Colon) {
+                        let mut d = p.unexpected(t!("`:` and the type of the field", "`:` et le type du champ"));
+                        d.helps.push(type_help());
+                        return Err(d);
+                    }
+                    Ok((key, p.type_expr()?))
+                })?;
+                TypeKind::Record(fields)
+            }
+            Tok::Fn => {
+                self.advance();
+                if !self.eat(&Tok::LParen) {
+                    let mut d = self.unexpected(t!("`(`", "`(`"));
+                    d.helps.push(type_help());
+                    return Err(d);
+                }
+                let params = self.comma_list(&Tok::RParen, |p| p.type_expr())?;
+                if !self.eat(&Tok::Arrow) {
+                    let mut d = self.unexpected(t!("`->` and the type of the result", "`->` et le type du résultat"));
+                    d.helps.push(type_help());
+                    return Err(d);
+                }
+                let ret = self.type_expr()?;
+                TypeKind::Func(params, Box::new(ret))
+            }
+            _ => {
+                let mut d = self.unexpected(t!("a type", "un type"));
+                d.helps.push(type_help());
+                return Err(d);
+            }
+        };
+        Ok(TypeExpr { kind, span: span.to(self.last) })
+    }
+
+    /// `List(Int)`: the types a type name takes, between parentheses.
+    fn type_args(&mut self, name: Sym) -> Fallible<TypeKind> {
+        let mut args = Vec::new();
+        if matches!(self.raw(), Tok::LParen) {
+            self.advance();
+            args = self.comma_list(&Tok::RParen, |p| p.type_expr())?;
+        }
+        Ok(TypeKind::Named(name, args))
     }
 
     fn type_def(&mut self) -> Fallible<Item> {
@@ -1156,19 +1340,31 @@ impl Parser {
                 fields = self.comma_list(&Tok::RParen, |p| {
                     let t = p.advance();
                     match t.tok {
-                        Tok::Ident(s) => Ok(s),
+                        // `Circle(radius: Float)`: the type of the field may be written.
+                        Tok::Ident(s) if matches!(p.peek(), Tok::Colon) => {
+                            p.advance();
+                            Ok((s, Some(Rc::new(p.type_expr()?))))
+                        }
+                        Tok::Ident(s) => Ok((s, None)),
                         _ => {
                             let mut d = p.unexpected_token(&t, t!("a field name", "un nom de champ"));
                             d.helps.push(t!(
                                 "fields are named in lowercase: `Circle(radius)`",
                                 "les champs se nomment en minuscules : `Cercle(rayon)`"
                             ));
+                            if matches!(t.tok, Tok::Ctor(_)) {
+                                d.helps.push(t!(
+                                    "to write the type of a field, write its name first: `Circle(radius: Float)`",
+                                    "pour écrire le type d'un champ, écrivez d'abord son nom : `Cercle(rayon: Float)`"
+                                ));
+                            }
                             Err(d)
                         }
                     }
                 })?;
             }
-            variants.push(VariantDef { name: vname, fields, span: t.span.to(self.last) });
+            let (fields, types) = fields.into_iter().unzip();
+            variants.push(VariantDef { name: vname, fields, span: t.span.to(self.last), types });
             if matches!(self.past_newlines(), Tok::Bar) {
                 self.skip_newlines();
                 self.advance();
@@ -1473,7 +1669,8 @@ impl Parser {
                             if p.eat(&Tok::Bar) {
                                 return Ok(params);
                             }
-                            params.push(p.deeper(|p| p.pattern_atom())?);
+                            let param = p.deeper(|p| p.pattern_atom())?;
+                            params.push(p.typed(param)?);
                             if p.eat(&Tok::Comma) {
                                 continue;
                             }
@@ -1498,7 +1695,7 @@ impl Parser {
             let arity = params.len();
             let def = FnDef {
                 name: None,
-                clauses: vec![Rc::new(Clause { params, guard: None, body, span: head })],
+                clauses: vec![Rc::new(Clause { params, guard: None, body, span: head, ret: None })],
                 arity,
                 doc: None,
                 span: open.span,
@@ -2137,7 +2334,7 @@ impl Parser {
             span = span.to(p.span);
             alts.push(p);
         }
-        Ok(Pattern { kind: PatKind::Or(alts), span })
+        Ok(Pattern::new(PatKind::Or(alts), span))
     }
 
     /// A pattern, a range of numbers `1..9`, or a text that starts with a
@@ -2157,7 +2354,7 @@ impl Parser {
                     }
                 };
                 let hi = range_bound(&second)?;
-                Ok(Pattern { kind: PatKind::Range(lo, hi), span: first.span.to(second.span) })
+                Ok(Pattern::new(PatKind::Range(lo, hi), first.span.to(second.span)))
             }
             Tok::Plus => {
                 let plus = self.advance();
@@ -2185,7 +2382,7 @@ impl Parser {
                     .boxed());
                 }
                 let span = first.span.to(rest.span);
-                Ok(Pattern { kind: PatKind::Prefix(start, Box::new(rest)), span })
+                Ok(Pattern::new(PatKind::Prefix(start, Box::new(rest)), span))
             }
             _ => Ok(first),
         }
@@ -2208,9 +2405,9 @@ impl Parser {
                 if matches!(self.raw(), Tok::LParen) {
                     self.advance();
                     let args = self.comma_list(&Tok::RParen, |p| p.pattern())?;
-                    return Ok(Pattern { kind: PatKind::Ctor(s, args), span: span.to(self.last) });
+                    return Ok(Pattern::new(PatKind::Ctor(s, args), span.to(self.last)));
                 }
-                return Ok(Pattern { kind: PatKind::Ctor(s, Vec::new()), span: span.to(self.last) });
+                return Ok(Pattern::new(PatKind::Ctor(s, Vec::new()), span.to(self.last)));
             }
             Tok::Ident(s) => {
                 self.advance();
@@ -2225,7 +2422,7 @@ impl Parser {
                 if matches!(self.raw(), Tok::LParen) {
                     self.advance();
                     let args = self.comma_list(&Tok::RParen, |p| p.pattern())?;
-                    return Ok(Pattern { kind: PatKind::Ctor(s, args), span: span.to(self.last) });
+                    return Ok(Pattern::new(PatKind::Ctor(s, args), span.to(self.last)));
                 }
                 PatKind::Ctor(s, Vec::new())
             }
@@ -2254,7 +2451,7 @@ impl Parser {
                     Tok::Float(f) => PatKind::Float(-f),
                     _ => return Err(self.unexpected_token(&t, t!("a number", "un nombre"))),
                 };
-                return Ok(Pattern { kind, span: span.to(t.span) });
+                return Ok(Pattern::new(kind, span.to(t.span)));
             }
             Tok::True | Tok::False => {
                 self.advance();
@@ -2284,7 +2481,7 @@ impl Parser {
                 self.advance();
                 return self.nested(false, |p| {
                     if p.eat(&Tok::RParen) {
-                        return Ok(Pattern { kind: PatKind::Unit, span: span.to(p.last) });
+                        return Ok(Pattern::new(PatKind::Unit, span.to(p.last)));
                     }
                     let inner = p.pattern()?;
                     if !p.eat(&Tok::RParen) {
@@ -2334,7 +2531,7 @@ impl Parser {
                     if !p.eat(&Tok::RBracket) {
                         return Err(p.unexpected(t!("`,` or `]`", "`,` ou `]`")));
                     }
-                    Ok(Pattern { kind: PatKind::List(elems, rest), span: span.to(p.last) })
+                    Ok(Pattern::new(PatKind::List(elems, rest), span.to(p.last)))
                 });
             }
             Tok::LBrace => {
@@ -2355,12 +2552,12 @@ impl Parser {
                         return Ok(Some((key, p.pattern()?)));
                     }
                     match t.tok {
-                        Tok::Ident(s) => Ok(Some((key, Pattern { kind: PatKind::Bind(s), span: t.span }))),
+                        Tok::Ident(s) => Ok(Some((key, Pattern::new(PatKind::Bind(s), t.span)))),
                         Tok::Reserved(s) => Err(p.reserved_error(s, t.span)),
                         _ => Err(p.unexpected(t!("`:` and a pattern", "`:` et un motif"))),
                     }
                 })?;
-                return Ok(Pattern { kind: PatKind::Record(fields.into_iter().flatten().collect()), span: span.to(self.last) });
+                return Ok(Pattern::new(PatKind::Record(fields.into_iter().flatten().collect()), span.to(self.last)));
             }
             Tok::Reserved(s) => return Err(self.reserved_error(s, span)),
             _ => {
@@ -2372,7 +2569,7 @@ impl Parser {
                 return Err(d);
             }
         };
-        Ok(Pattern { kind, span })
+        Ok(Pattern::new(kind, span))
     }
 }
 
@@ -2482,6 +2679,13 @@ fn prefix_help() -> String {
     t!(
         "a text that starts with a text is written `\"Mr \" + name`: `name` is the rest of the text",
         "un texte qui commence par un texte s'écrit `\"M. \" + nom` : `nom` est le reste du texte"
+    )
+}
+
+fn type_help() -> String {
+    t!(
+        "a type is written like `Int`, `Text`, `List(Int)`, `[Int]`, `{{name: Text}}`, `fn(Int) -> Int` or `Shape`; see `rythme help types`",
+        "un type s'écrit comme `Int`, `Text`, `List(Int)`, `[Int]`, `{{nom: Text}}`, `fn(Int) -> Int` ou `Forme` ; voir `rythme help types`"
     )
 }
 

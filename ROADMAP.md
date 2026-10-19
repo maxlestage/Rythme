@@ -161,13 +161,22 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
 
 - **A bytecode virtual machine**, for programs several times faster that
   print exactly the same thing.
-- **Types written by hand where they help**: optional, checked by
+- [x] **Types written by hand where they help**: optional, checked by
   `rythme check`, built on the inference that exists; code without them
-  stays as it is.
+  stays as it is. Done: `fn area(w: Int, h: Int) -> Int`, `total: Float =
+  0.0`, `Circle(radius: Float)`, `do |n: Int|`, with type variables (`a`);
+  E027 for a value that surely does not fit or a type that does not exist;
+  every 1.0 program keeps its syntax tree (manual 4.10, `rythme help types`).
 - **A package index**: finding and sharing packages by name, beside the
   dependencies from a repository or a folder of `rythme.toml`.
-- **A debugger in the editors** (breakpoints, values of the names), building
-  on `rythme steps` and the language server.
+- [x] **A debugger in the editors** (breakpoints, values of the names), building
+  on `rythme steps` and the language server. Done: `rythme debug file.ry`
+  in a terminal (breakpoints on lines and functions, `next`, `step`,
+  `finish`, `where` with the arguments and the depth of recursion, `print`
+  of any expression with values only, `locals`, a pause on errors, tail
+  calls shown as such; `rythme help debug`), and `rythme dap`, the Debug
+  Adapter Protocol, used by the VS Code extension for the debugger type
+  `rythme`. Without the debugger, programs run at the same speed.
 - **More languages of the messages**, and the guide for teachers translated
   where it is not yet.
 - **More of the library**: CSV, HTTP requests, `random` with a seed that a
@@ -177,7 +186,9 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
     column; `rythme help csv`).
   - [x] **A seed for `random`**: `random_seed(n)` and `rythme run --seed N`
     (same seed, same version: same draws of `random` and `shuffle`;
-    `rythme help random`). *Still open:* a seed option in the playground.
+    `rythme help random`), and the *Seed* option of the playground (every
+    Run, Test and Steps with the same draws, kept with the draft, in sharing
+    links as `&seed=N`; see [site/README.md](site/README.md#seed)).
   - [ ] **HTTP requests.**
 - [x] **Sharing in the playground**: a link to a program with its steps and its
   tests, for classrooms. Done: the Share button of the playground, a link that

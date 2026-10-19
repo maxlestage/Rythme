@@ -1382,7 +1382,7 @@ fn input(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let mut line = Vec::new();
     // At the end of the input, an empty text would let a program that asks
     // again and again run forever.
-    if !matches!(std::io::stdin().lock().read_until(b'\n', &mut line), Ok(n) if n > 0) {
+    if crate::io::input_closed() || !matches!(std::io::stdin().lock().read_until(b'\n', &mut line), Ok(n) if n > 0) {
         if !a.is_empty() {
             crate::io::out("\n");
         }

@@ -182,8 +182,17 @@ pub struct Interp {
     spare: Vec<Value>,
     /// Top-level names of the running file that are not defined yet.
     pending: SymMap<Span>,
-    /// Calls that may still be made (see `set_step_limit`).
-    steps_left: u64,
+    /// Calls that may still be made (see `set_step_limit`). A debugger keeps
+    /// it at 0, so that each call goes through `call_hook`.
+    pub(crate) steps_left: u64,
+    /// The debugger watching the program (`rythme debug`, `rythme dap`).
+    pub(crate) debugger: Option<Box<crate::debug::Session>>,
+    /// A debugger watches: the code is prepared with the places where it may
+    /// pause, and built-in functions keep one stack (see `call_builtin`).
+    pub(crate) watched: bool,
+    /// The debugger evaluates an expression: built-in functions with an
+    /// effect (output, files, input) are refused.
+    pub(crate) pure_only: bool,
     rng: u64,
     some: Rc<CtorInfo>,
     none_info: Rc<CtorInfo>,
@@ -255,6 +264,9 @@ impl Interp {
             spare: Vec::new(),
             pending: SymMap::default(),
             steps_left: u64::MAX,
+            debugger: None,
+            watched: false,
+            pure_only: false,
             rng: seed,
             some,
             none_info,
@@ -320,7 +332,7 @@ impl Interp {
 
     /// The calls allowed by `set_step_limit` are all made.
     pub fn out_of_steps(&self) -> bool {
-        self.steps_left == 0
+        self.steps_left == 0 && !self.watched
     }
 
     pub fn random_u64(&mut self) -> u64 {
@@ -371,8 +383,8 @@ impl Interp {
 
     pub fn define_fn(&mut self, def: &Rc<FnDef>) {
         if let Some(name) = def.name {
-            let clo =
-                Closure { def: def.clone(), code: Rc::new(compile::function(def, &self.names)), captured: Vec::new(), siblings: None };
+            let code = compile::function_for(def, &self.names, self.watched);
+            let clo = Closure { def: def.clone(), code: Rc::new(code), captured: Vec::new(), siblings: None };
             self.globals.insert(self.stored(name), Value::Func(Rc::new(clo)));
         }
     }
@@ -445,9 +457,14 @@ impl Interp {
     /// Evaluates an expression outside of any function.
     pub fn eval_top(&mut self, e: &Expr) -> Fallible<Value> {
         self.depth = 0;
-        let code = compile::top(e, &self.names);
+        let code = compile::top_for(e, &self.names, self.watched);
         let base = self.push_frame(code.slots);
-        let r = self.eval(&code.node, &Frame::top(base));
+        let mut r = self.eval(&code.node, &Frame::top(base));
+        if self.watched {
+            if let Err(Flow::Err(d)) = r {
+                r = Err(Flow::Err(self.error_hook(d)));
+            }
+        }
         self.end_top(base);
         match r {
             Ok(v) => Ok(v),
@@ -471,6 +488,22 @@ impl Interp {
         };
         self.end_top(base);
         r
+    }
+
+    /// Evaluates prepared code whose first slots hold `values`, on top of
+    /// the running frames (the debugger's `print`).
+    pub(crate) fn eval_code(&mut self, code: &compile::Code, values: Vec<Value>) -> Fallible<Value> {
+        let base = self.stack.len();
+        let n = values.len();
+        self.stack.extend(values);
+        self.stack.resize_with(base + code.slots.max(n), || Value::Unit);
+        let r = self.eval(&code.node, &Frame::top(base));
+        self.pop_to(base);
+        match r {
+            Ok(v) => Ok(v),
+            Err(Flow::Err(d)) => Err(d),
+            Err(Flow::Return(_)) => Err(question_outside(code.node.span)),
+        }
     }
 
     /// Removes the frame of a top-level expression. Back at the top level,
@@ -896,6 +929,7 @@ impl Interp {
                     let f = self.closure(def, code, fr);
                     set(&mut self.stack[fr.base + *slot as usize], f);
                 }
+                compile::Stmt::Stop(info, at) => self.debug_stop(*at, info, fr.base),
                 compile::Stmt::Group(slots, group) => {
                     // They all capture the same values.
                     let captured = self.captures(&group[0].code, fr);
@@ -1130,7 +1164,10 @@ impl Interp {
         }
         self.depth += 1;
         let mut test = None;
-        let r = self.call_loop(f, member, base, argc, span, &mut test);
+        let mut r = self.call_loop(f, member, base, argc, span, &mut test);
+        if self.steps_left == 0 {
+            r = self.return_hook(r);
+        }
         self.depth -= 1;
         self.pop_to(base);
         match test {
@@ -1153,9 +1190,10 @@ impl Interp {
     ) -> Fallible<Value> {
         loop {
             if self.steps_left == 0 {
-                return Err(out_of_steps(span));
+                self.call_hook(&f, member, base, span)?;
+            } else {
+                self.steps_left -= 1;
             }
-            self.steps_left -= 1;
             match f {
                 Value::Func(clo) => {
                     // A function of its group runs with the same closure.
@@ -1211,6 +1249,9 @@ impl Interp {
                         }
                         Err(Flow::Return(v)) => return Ok(*v),
                         Err(Flow::Err(mut d)) => {
+                            if self.steps_left == 0 {
+                                d = self.error_hook(d);
+                            }
                             add_frame(&mut d, def, span);
                             return Err(d);
                         }
@@ -1247,6 +1288,9 @@ impl Interp {
         if argc < b.min || argc > b.max {
             return Err(builtin_arity_error(b, argc, span));
         }
+        if self.watched {
+            return self.call_builtin_watched(b, base, span);
+        }
         // The builtin reads its arguments where they are, and the
         // functions it calls (`map`...) get a stack of their own.
         let spare = std::mem::take(&mut self.spare);
@@ -1256,6 +1300,68 @@ impl Interp {
         spare.clear();
         self.spare = spare;
         r
+    }
+
+    /// Calls a builtin while a debugger watches: on the same stack, so that
+    /// the debugger sees every frame while a function given to `map` runs.
+    #[cold]
+    #[inline(never)]
+    fn call_builtin_watched(&mut self, b: &'static crate::builtins::Builtin, base: usize, span: Span) -> Fallible<Value> {
+        if self.pure_only && crate::debug::has_effect(b.name) {
+            return Err(crate::debug::effect_refused(b.name, span));
+        }
+        let args = self.stack[base..].to_vec();
+        (b.func)(self, &args, span)
+    }
+
+    // ----- the debugger ------------------------------------------------
+
+    /// A place where the debugger may pause (only in code prepared for it).
+    #[cold]
+    #[inline(never)]
+    fn debug_stop(&mut self, at: Span, info: &Rc<compile::StopInfo>, base: usize) {
+        crate::debug::stop(self, at, info, base)
+    }
+
+    /// No more calls allowed (see `set_step_limit`), or a debugger watches
+    /// each call: `f` starts with its arguments from `base` on.
+    #[cold]
+    #[inline(never)]
+    fn call_hook(&mut self, f: &Value, member: Option<u32>, base: usize, span: Span) -> Fallible<()> {
+        if self.debugger.is_none() {
+            return Err(out_of_steps(span));
+        }
+        crate::debug::call(self, f, member, base, span)
+    }
+
+    /// A call watched by a debugger returns.
+    #[cold]
+    #[inline(never)]
+    fn return_hook(&mut self, r: Fallible<Value>) -> Fallible<Value> {
+        if self.debugger.is_none() {
+            return r;
+        }
+        crate::debug::returned(self, r)
+    }
+
+    /// An error stops the program watched by a debugger: it may pause there.
+    #[cold]
+    #[inline(never)]
+    fn error_hook(&mut self, d: Box<Diagnostic>) -> Box<Diagnostic> {
+        if self.debugger.is_none() {
+            return d;
+        }
+        crate::debug::error(self, d)
+    }
+
+    /// The values of the stack (the frames of the running functions).
+    pub(crate) fn stack_values(&self) -> &[Value] {
+        &self.stack
+    }
+
+    /// How many calls are in progress.
+    pub(crate) fn call_depth(&self) -> usize {
+        self.depth
     }
 
     /// Builds a value of a type (`Some(x)`, `Circle(r)`) from the `argc`

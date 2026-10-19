@@ -499,6 +499,11 @@ impl Driver {
         crate::testing::run_and_summarize(self, &options)
     }
 
+    /// The files loaded so far, as modules (the debugger finds its lines there).
+    pub fn modules(&self) -> Vec<Rc<Module>> {
+        self.modules.values().cloned().collect()
+    }
+
     /// The files loaded so far: the program and the files it uses.
     pub fn loaded_files(&self) -> Vec<PathBuf> {
         let mut files: Vec<PathBuf> = self.modules.keys().map(|(p, _)| p.clone()).collect();
