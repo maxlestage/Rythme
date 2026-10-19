@@ -371,7 +371,10 @@ messages in six languages. What it contains is in
   conversions), and `rythme check` infers their types when they are certain,
   to report before running the operations that would always fail; it also
   infers what the parameters of each function must be, to report the calls
-  that always fail, and the editor shows these signatures on hover.
+  that always fail, and the editor shows these signatures on hover. Types
+  may also be written where they help to read the code, and are then checked
+  (`fn area(w: Int, h: Int) -> Int`, `total: Float = 0.0`); they are never
+  needed (see `rythme help types`).
 - **Tooling.** `rythme fmt` formats the code in the official style (see
   `rythme help fmt`), `rythme doc` writes the documentation of files and
   folders from their `##` comments (see `rythme help doc`), `rythme new` and

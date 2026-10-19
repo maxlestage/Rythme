@@ -12,6 +12,7 @@
     { "include": "#constants" },
     { "include": "#symbols" },
     { "include": "#numbers" },
+    { "include": "#types" },
     { "include": "#constructors" },
     { "include": "#calls" },
     { "include": "#operators" }
@@ -112,11 +113,16 @@
             "1": { "name": "keyword.control.rythme" },
             "2": { "name": "punctuation.section.block.begin.rythme" },
             "3": { "name": "punctuation.definition.parameters.begin.rythme" },
-            "4": { "name": "variable.parameter.rythme" },
+            "4": { "name": "variable.parameter.rythme", "patterns": [{ "include": "#types" }] },
             "5": { "name": "punctuation.definition.parameters.end.rythme" }
           }
         }
       ]
+    },
+    "types": {
+      "comment": "The names of Rythme's types, written in the code after `:` or `->` (`w: Int`, `-> List(a)`); the types of the program look like constructors.",
+      "name": "support.type.rythme",
+      "match": "\\b(?:Int|Float|Text|Bool|Unit|Symbol|List|Set|Dict|Option|Result|Record|Function)\\b"
     },
     "constructors": {
       "name": "entity.name.type.constructor.rythme",

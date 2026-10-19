@@ -161,9 +161,12 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
 
 - **A bytecode virtual machine**, for programs several times faster that
   print exactly the same thing.
-- **Types written by hand where they help**: optional, checked by
+- [x] **Types written by hand where they help**: optional, checked by
   `rythme check`, built on the inference that exists; code without them
-  stays as it is.
+  stays as it is. Done: `fn area(w: Int, h: Int) -> Int`, `total: Float =
+  0.0`, `Circle(radius: Float)`, `do |n: Int|`, with type variables (`a`);
+  E027 for a value that surely does not fit or a type that does not exist;
+  every 1.0 program keeps its syntax tree (manual 4.10, `rythme help types`).
 - **A package index**: finding and sharing packages by name, beside the
   dependencies from a repository or a folder of `rythme.toml`.
 - **A debugger in the editors** (breakpoints, values of the names), building
