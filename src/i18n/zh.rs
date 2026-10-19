@@ -8465,5 +8465,175 @@ Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把�
 写出的类型从来不是必需的，程序运行时也不会因此有任何不同；
 编辑器和 `rythme doc` 会显示它们。"#,
         ),
+        // src/builtins/ml.rs: vectors, matrices, statistics, chance
+        (
+            "`{f}` expects a list of numbers as argument {pos}, but its element {k} is {got}",
+            "`{f}` 的第 {pos} 个参数应为数字列表，但其元素 {k} 是 {got}",
+        ),
+        ("a text is not a number: `parse_float(text)` reads one", "文本不是数字：`parse_float(text)` 可以读取数字"),
+        (
+            "`{f}` expects a matrix (a list of rows, each a list of numbers) as argument {pos}, but its row {r} is {got}",
+            "`{f}` 的第 {pos} 个参数应为矩阵（由行组成的列表，每行是一个数字列表），但其第 {r} 行是 {got}",
+        ),
+        ("a matrix of 2 rows and 3 columns: [[1, 2, 3], [4, 5, 6]]", "一个 2 行 3 列的矩阵：[[1, 2, 3], [4, 5, 6]]"),
+        (
+            "`{f}`: argument {pos} is not a matrix: its row 0 has {cols} number(s), but its row {r} has {n}",
+            "`{f}`：第 {pos} 个参数不是矩阵：第 0 行有 {cols} 个数字，而第 {r} 行有 {n} 个",
+        ),
+        ("every row of a matrix has the same length", "矩阵的每一行长度都相同"),
+        (
+            "`{f}` expects a matrix of numbers as argument {pos}, but its row {r} holds {got} at position {k}",
+            "`{f}` 的第 {pos} 个参数应为数字矩阵，但其第 {r} 行在位置 {k} 上是 {got}",
+        ),
+        ("a vector of {n} number(s)", "一个含 {n} 个数字的向量"),
+        ("a {n}×{c} matrix", "一个 {n}×{c} 矩阵"),
+        ("a list of {n} element(s)", "一个含 {n} 个元素的列表"),
+        ("`{f}` needs two values of the same shape, but got {a} and {b}", "`{f}` 需要两个形状相同的值，但收到的是 {a} 和 {b}"),
+        ("`shape(x)` gives the shape of a vector or a matrix: [3] or [2, 3]", "`shape(x)` 给出向量或矩阵的形状：[3] 或 [2, 3]"),
+        (
+            "`{f}`: these lists are nested more than {MAX_NESTING} levels deep: they are not a vector nor a matrix",
+            "`{f}`：这些列表嵌套超过 {MAX_NESTING} 层：它们既不是向量也不是矩阵",
+        ),
+        ("`{f}` works on vectors and matrices of numbers, but found {got} in them", "`{f}` 处理数字向量和矩阵，但在其中发现了 {got}"),
+        (
+            "`{f}` needs two vectors of the same length, but got a vector of {n} number(s) and a vector of {m}",
+            "`{f}` 需要两个长度相同的向量，但收到一个含 {n} 个数字的向量和一个含 {m} 个数字的向量",
+        ),
+        (
+            "`zip_with` needs two lists of the same length, but got {n} and {m} element(s)",
+            "`zip_with` 需要两个长度相同的列表，但收到的是 {n} 个和 {m} 个元素",
+        ),
+        ("a {r}×{c} matrix", "一个 {r}×{c} 矩阵"),
+        ("a vector of {nr} number(s)", "一个含 {nr} 个数字的向量"),
+        ("a {nr}×{nc} matrix", "一个 {nr}×{nc} 矩阵"),
+        (
+            "`matmul` cannot multiply {first} by {second}: the first one has {c} column(s), so the second one needs {c} row(s), not {nr}",
+            "`matmul` 无法将 {first} 乘以 {second}：左边的矩阵有 {c} 列，所以右边需要 {c} 行，而不是 {nr} 行",
+        ),
+        (
+            "`shape(x)` gives the shape of each one; `transpose(m)` swaps rows and columns",
+            "`shape(x)` 给出各自的形状；`transpose(m)` 交换行和列",
+        ),
+        (
+            "`matmul`: these matrices are too large to multiply here (more than {} multiplications)",
+            "`matmul`：这些矩阵太大，无法在此相乘（超过 {} 次乘法）",
+        ),
+        (
+            "`shape`: the elements of this list do not all have the same shape: element 0 is {a}, element {i} is {b}",
+            "`shape`：此列表的元素形状不全相同：元素 0 是 {a}，元素 {i} 是 {b}",
+        ),
+        ("`{f}` of an empty list", "空列表的 `{f}`"),
+        ("`percentile` needs a percentage from 0 to 100, not {p}", "`percentile` 需要 0 到 100 之间的百分比，而不是 {p}"),
+        (
+            "`random_normal` needs a standard deviation of 0 or more, not {sd}",
+            "`random_normal` 需要大于或等于 0 的标准差，而不是 {sd}",
+        ),
+        (
+            "`random_choice_weighted` needs one weight per element: {n} element(s), but {m} weight(s)",
+            "`random_choice_weighted` 需要每个元素一个权重：有 {n} 个元素，但有 {m} 个权重",
+        ),
+        (
+            "`random_choice_weighted`: the weight {i} is {w}; a weight is a number of 0 or more",
+            "`random_choice_weighted`：权重 {i} 是 {w}；权重必须是大于或等于 0 的数",
+        ),
+        ("`random_choice_weighted` needs at least one weight above 0", "`random_choice_weighted` 至少需要一个大于 0 的权重"),
+        (
+            "`train_test_split` needs a share from 0 to 1 for the training part (like 0.8), not {ratio}",
+            "`train_test_split` 需要 0 到 1 之间的训练部分比例（如 0.8），而不是 {ratio}",
+        ),
+        ("Machine learning: vectors, matrices, statistics", "机器学习：向量、矩阵、统计"),
+        (
+            "Hyperbolic tangent: a smooth step from -1 to 1, used as the activation of neurons.",
+            "双曲正切：从 -1 到 1 的平滑阶跃，用作神经元的激活函数。",
+        ),
+        (
+            "The logistic function 1 / (1 + e^-x): a smooth step from 0 to 1, read as a probability. Its slope is `sigmoid(x) * (1 - sigmoid(x))`.",
+            "逻辑函数 1 / (1 + e^-x)：从 0 到 1 的平滑阶跃，可视为概率。它的斜率是 `sigmoid(x) * (1 - sigmoid(x))`。",
+        ),
+        (
+            "The rectifier: x when it is positive, 0.0 otherwise. The usual activation of deep networks.",
+            "整流函数：x 为正时取 x，否则取 0.0。深度网络常用的激活函数。",
+        ),
+        (
+            "Dot product of two vectors (lists of numbers) of the same length: the sum of the products of their numbers, one by one.",
+            "两个长度相同的向量（数字列表）的点积：逐个相乘后求和。",
+        ),
+        ("Length of a vector: the square root of the sum of the squares of its numbers.", "向量的长度：各数平方和的平方根。"),
+        ("Adds two vectors, or two matrices, of the same shape, number by number.", "将两个形状相同的向量或矩阵逐个数字相加。"),
+        ("Subtracts two vectors, or two matrices, of the same shape, number by number.", "将两个形状相同的向量或矩阵逐个数字相减。"),
+        (
+            "Multiplies two vectors, or two matrices, of the same shape, number by number (not the product of matrices: that is `matmul`).",
+            "将两个形状相同的向量或矩阵逐个数字相乘（不是矩阵乘积：那是 `matmul`）。",
+        ),
+        ("Multiplies every number of a vector, or of a matrix, by the number k.", "将向量或矩阵中的每个数乘以数 k。"),
+        (
+            "Calls f with the elements of two lists of the same length, one pair at a time, and gives the list of the results.",
+            "用两个长度相同的列表的元素逐对调用 f，并给出结果列表。",
+        ),
+        (
+            "Product of two matrices (lists of rows): a matrix of r rows and n columns times a matrix of n rows and c columns gives r rows and c columns. With a vector as `b`, gives a vector.",
+            "两个矩阵（行的列表）的乘积：r 行 n 列的矩阵乘以 n 行 c 列的矩阵，得到 r 行 c 列。若 `b` 是向量，则得到向量。",
+        ),
+        ("Swaps the rows and the columns of a matrix.", "交换矩阵的行和列。"),
+        (
+            "A vector of `rows` zeros, or with `columns`, a matrix full of zeros.",
+            "由 `rows` 个零组成的向量；给出 `columns` 时，得到全为零的矩阵。",
+        ),
+        (
+            "A vector of `rows` ones, or with `columns`, a matrix full of ones.",
+            "由 `rows` 个一组成的向量；给出 `columns` 时，得到全为一的矩阵。",
+        ),
+        (
+            "The identity matrix of n rows and n columns: ones on the diagonal, zeros elsewhere.",
+            "n 行 n 列的单位矩阵：对角线上为一，其余为零。",
+        ),
+        (
+            "The shape of a vector or a matrix (of lists nested in lists): its length at each level, `[3]` for a vector of 3 numbers, `[2, 3]` for 2 rows of 3 numbers.",
+            "向量或矩阵（嵌套列表）的形状：每一层的长度，含 3 个数字的向量为 `[3]`，2 行各 3 个数字为 `[2, 3]`。",
+        ),
+        (
+            "A summary of a list of numbers, as a record: `count`, `mean` (the average), `median` (the middle value), `std_dev`, `min` and `max`. `stats(xs).mean` is the mean.",
+            "数字列表的摘要，以记录形式给出：`count`、`mean`（平均值）、`median`（中间的值）、`std_dev`、`min` 和 `max`。`stats(xs).mean` 即平均值。",
+        ),
+        (
+            "The variance of a list of numbers: the mean of the squares of their distances to their mean (of the whole population: divided by n).",
+            "数字列表的方差：各数与平均值之差的平方的平均值（总体方差：除以 n）。",
+        ),
+        (
+            "The standard deviation of a list of numbers: the square root of their variance, how far they usually are from their mean.",
+            "数字列表的标准差：方差的平方根，表示各数通常离平均值有多远。",
+        ),
+        (
+            "The number below which p percent of the numbers of the list are (p from 0 to 100), between the two closest ones when needed. `percentile(xs, 50)` is the median, the middle value.",
+            "列表中有 p% 的数字小于该数（p 从 0 到 100），必要时取两个最接近的数之间的值。`percentile(xs, 50)` 是中位数，即中间的值。",
+        ),
+        (
+            "The position of the largest number of a list (the first one if several are equal).",
+            "列表中最大数的位置（若有多个相等，取第一个）。",
+        ),
+        (
+            "The position of the smallest number of a list (the first one if several are equal).",
+            "列表中最小数的位置（若有多个相等，取第一个）。",
+        ),
+        (
+            "Turns a list of scores into probabilities: each one becomes e^x divided by the sum of them all, so that they are between 0 and 1 and add up to 1, the largest score keeping the largest share.",
+            "把一组分数变成概率：每个分数变为 e^x 除以所有分数的 e^x 之和，使它们介于 0 和 1 之间且总和为 1，分数最高者占比最大。",
+        ),
+        (
+            "Rescales a list of numbers from 0.0 (the smallest) to 1.0 (the largest), keeping their proportions. When they are all equal, gives zeros.",
+            "把数字列表按比例缩放到 0.0（最小值）到 1.0（最大值）之间。若全部相等，则得到零。",
+        ),
+        (
+            "A random decimal number drawn from the normal distribution (the bell curve) of this mean and standard deviation. Follows `random_seed`.",
+            "按给定平均值和标准差的正态分布（钟形曲线）随机抽取一个小数。遵循 `random_seed`。",
+        ),
+        (
+            "An element of the list chosen at random, each one with a chance in proportion to its weight (numbers of 0 or more, one per element). Follows `random_seed`.",
+            "随机选取列表中的一个元素，每个元素被选中的机会与其权重成正比（权重为大于或等于 0 的数，每个元素一个）。遵循 `random_seed`。",
+        ),
+        (
+            "Shuffles a list, then cuts it in two: a record `{train, test}`, where `train` holds this share of the elements (0.8: 80 percent) and `test` the rest. To learn on some examples and check on others. Follows `random_seed`.",
+            "打乱列表，然后切成两部分：记录 `{train, test}`，其中 `train` 含有这一比例的元素（0.8：80%），`test` 含其余元素。用一部分样本学习，用另一部分检验。遵循 `random_seed`。",
+        ),
     ],
 }

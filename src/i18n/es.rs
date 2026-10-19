@@ -8638,5 +8638,211 @@ Los tipos
 Los tipos escritos nunca son obligatorios y no cambian nada al ejecutar el
 programa; los editores y `rythme doc` los muestran."#,
         ),
+        // src/builtins/ml.rs: vectors, matrices, statistics, chance
+        (
+            "`{f}` expects a list of numbers as argument {pos}, but its element {k} is {got}",
+            "`{f}` espera una lista de números como argumento {pos}, pero su elemento {k} es {got}",
+        ),
+        (
+            "a text is not a number: `parse_float(text)` reads one",
+            "un texto no es un número: `parse_float(texto)` lee uno",
+        ),
+        (
+            "`{f}` expects a matrix (a list of rows, each a list of numbers) as argument {pos}, but its row {r} is {got}",
+            "`{f}` espera una matriz (una lista de filas, cada una una lista de números) como argumento {pos}, pero su fila {r} es {got}",
+        ),
+        (
+            "a matrix of 2 rows and 3 columns: [[1, 2, 3], [4, 5, 6]]",
+            "una matriz de 2 filas y 3 columnas: [[1, 2, 3], [4, 5, 6]]",
+        ),
+        (
+            "`{f}`: argument {pos} is not a matrix: its row 0 has {cols} number(s), but its row {r} has {n}",
+            "`{f}`: el argumento {pos} no es una matriz: su fila 0 tiene {cols} número(s), pero su fila {r} tiene {n}",
+        ),
+        ("every row of a matrix has the same length", "todas las filas de una matriz tienen la misma longitud"),
+        (
+            "`{f}` expects a matrix of numbers as argument {pos}, but its row {r} holds {got} at position {k}",
+            "`{f}` espera una matriz de números como argumento {pos}, pero su fila {r} contiene {got} en la posición {k}",
+        ),
+        ("a vector of {n} number(s)", "un vector de {n} número(s)"),
+        ("a {n}×{c} matrix", "una matriz {n}×{c}"),
+        ("a list of {n} element(s)", "una lista de {n} elemento(s)"),
+        (
+            "`{f}` needs two values of the same shape, but got {a} and {b}",
+            "`{f}` necesita dos valores de la misma forma, pero recibió {a} y {b}",
+        ),
+        (
+            "`shape(x)` gives the shape of a vector or a matrix: [3] or [2, 3]",
+            "`shape(x)` da la forma de un vector o de una matriz: [3] o [2, 3]",
+        ),
+        (
+            "`{f}`: these lists are nested more than {MAX_NESTING} levels deep: they are not a vector nor a matrix",
+            "`{f}`: estas listas están anidadas en más de {MAX_NESTING} niveles: no son ni un vector ni una matriz",
+        ),
+        (
+            "`{f}` works on vectors and matrices of numbers, but found {got} in them",
+            "`{f}` trabaja con vectores y matrices de números, pero encontró {got} en ellos",
+        ),
+        (
+            "`{f}` needs two vectors of the same length, but got a vector of {n} number(s) and a vector of {m}",
+            "`{f}` necesita dos vectores de la misma longitud, pero recibió un vector de {n} número(s) y un vector de {m}",
+        ),
+        (
+            "`zip_with` needs two lists of the same length, but got {n} and {m} element(s)",
+            "`zip_with` necesita dos listas de la misma longitud, pero recibió {n} y {m} elemento(s)",
+        ),
+        ("a {r}×{c} matrix", "una matriz {r}×{c}"),
+        ("a vector of {nr} number(s)", "un vector de {nr} número(s)"),
+        ("a {nr}×{nc} matrix", "una matriz {nr}×{nc}"),
+        (
+            "`matmul` cannot multiply {first} by {second}: the first one has {c} column(s), so the second one needs {c} row(s), not {nr}",
+            "`matmul` no puede multiplicar {first} por {second}: la matriz de la izquierda tiene {c} columna(s), así que la derecha necesita {c} fila(s), no {nr}",
+        ),
+        (
+            "`shape(x)` gives the shape of each one; `transpose(m)` swaps rows and columns",
+            "`shape(x)` da la forma de cada uno; `transpose(m)` intercambia filas y columnas",
+        ),
+        (
+            "`matmul`: these matrices are too large to multiply here (more than {} multiplications)",
+            "`matmul`: estas matrices son demasiado grandes para multiplicarlas aquí (más de {} multiplicaciones)",
+        ),
+        (
+            "`shape`: the elements of this list do not all have the same shape: element 0 is {a}, element {i} is {b}",
+            "`shape`: los elementos de esta lista no tienen todos la misma forma: el elemento 0 es {a}, el elemento {i} es {b}",
+        ),
+        ("`{f}` of an empty list", "`{f}` de una lista vacía"),
+        (
+            "`percentile` needs a percentage from 0 to 100, not {p}",
+            "`percentile` necesita un porcentaje de 0 a 100, no {p}",
+        ),
+        (
+            "`random_normal` needs a standard deviation of 0 or more, not {sd}",
+            "`random_normal` necesita una desviación típica de 0 o más, no {sd}",
+        ),
+        (
+            "`random_choice_weighted` needs one weight per element: {n} element(s), but {m} weight(s)",
+            "`random_choice_weighted` necesita un peso por elemento: {n} elemento(s), pero {m} peso(s)",
+        ),
+        (
+            "`random_choice_weighted`: the weight {i} is {w}; a weight is a number of 0 or more",
+            "`random_choice_weighted`: el peso {i} vale {w}; un peso es un número de 0 o más",
+        ),
+        (
+            "`random_choice_weighted` needs at least one weight above 0",
+            "`random_choice_weighted` necesita al menos un peso mayor que 0",
+        ),
+        (
+            "`train_test_split` needs a share from 0 to 1 for the training part (like 0.8), not {ratio}",
+            "`train_test_split` necesita una proporción de 0 a 1 para la parte de entrenamiento (como 0.8), no {ratio}",
+        ),
+        (
+            "Machine learning: vectors, matrices, statistics",
+            "Aprendizaje automático: vectores, matrices, estadística",
+        ),
+        (
+            "Hyperbolic tangent: a smooth step from -1 to 1, used as the activation of neurons.",
+            "Tangente hiperbólica: un escalón suave de -1 a 1, usado como activación de las neuronas.",
+        ),
+        (
+            "The logistic function 1 / (1 + e^-x): a smooth step from 0 to 1, read as a probability. Its slope is `sigmoid(x) * (1 - sigmoid(x))`.",
+            "La función logística 1 / (1 + e^-x): un escalón suave de 0 a 1, que se lee como una probabilidad. Su pendiente es `sigmoid(x) * (1 - sigmoid(x))`.",
+        ),
+        (
+            "The rectifier: x when it is positive, 0.0 otherwise. The usual activation of deep networks.",
+            "El rectificador: x cuando es positivo, 0.0 si no. La activación habitual de las redes profundas.",
+        ),
+        (
+            "Dot product of two vectors (lists of numbers) of the same length: the sum of the products of their numbers, one by one.",
+            "Producto escalar de dos vectores (listas de números) de la misma longitud: la suma de los productos de sus números, uno a uno.",
+        ),
+        (
+            "Length of a vector: the square root of the sum of the squares of its numbers.",
+            "Longitud de un vector: la raíz cuadrada de la suma de los cuadrados de sus números.",
+        ),
+        (
+            "Adds two vectors, or two matrices, of the same shape, number by number.",
+            "Suma dos vectores, o dos matrices, de la misma forma, número a número.",
+        ),
+        (
+            "Subtracts two vectors, or two matrices, of the same shape, number by number.",
+            "Resta dos vectores, o dos matrices, de la misma forma, número a número.",
+        ),
+        (
+            "Multiplies two vectors, or two matrices, of the same shape, number by number (not the product of matrices: that is `matmul`).",
+            "Multiplica dos vectores, o dos matrices, de la misma forma, número a número (no es el producto de matrices: ese es `matmul`).",
+        ),
+        (
+            "Multiplies every number of a vector, or of a matrix, by the number k.",
+            "Multiplica cada número de un vector, o de una matriz, por el número k.",
+        ),
+        (
+            "Calls f with the elements of two lists of the same length, one pair at a time, and gives the list of the results.",
+            "Llama a f con los elementos de dos listas de la misma longitud, un par cada vez, y da la lista de los resultados.",
+        ),
+        (
+            "Product of two matrices (lists of rows): a matrix of r rows and n columns times a matrix of n rows and c columns gives r rows and c columns. With a vector as `b`, gives a vector.",
+            "Producto de dos matrices (listas de filas): una matriz de r filas y n columnas por una matriz de n filas y c columnas da r filas y c columnas. Con un vector como `b`, da un vector.",
+        ),
+        ("Swaps the rows and the columns of a matrix.", "Intercambia las filas y las columnas de una matriz."),
+        (
+            "A vector of `rows` zeros, or with `columns`, a matrix full of zeros.",
+            "Un vector de `rows` ceros, o con `columns`, una matriz llena de ceros.",
+        ),
+        (
+            "A vector of `rows` ones, or with `columns`, a matrix full of ones.",
+            "Un vector de `rows` unos, o con `columns`, una matriz llena de unos.",
+        ),
+        (
+            "The identity matrix of n rows and n columns: ones on the diagonal, zeros elsewhere.",
+            "La matriz identidad de n filas y n columnas: unos en la diagonal, ceros en el resto.",
+        ),
+        (
+            "The shape of a vector or a matrix (of lists nested in lists): its length at each level, `[3]` for a vector of 3 numbers, `[2, 3]` for 2 rows of 3 numbers.",
+            "La forma de un vector o de una matriz (de listas anidadas en listas): su longitud en cada nivel, `[3]` para un vector de 3 números, `[2, 3]` para 2 filas de 3 números.",
+        ),
+        (
+            "A summary of a list of numbers, as a record: `count`, `mean` (the average), `median` (the middle value), `std_dev`, `min` and `max`. `stats(xs).mean` is the mean.",
+            "Un resumen de una lista de números, como registro: `count`, `mean` (la media), `median` (el valor del medio), `std_dev`, `min` y `max`. `stats(xs).mean` es la media.",
+        ),
+        (
+            "The variance of a list of numbers: the mean of the squares of their distances to their mean (of the whole population: divided by n).",
+            "La varianza de una lista de números: la media de los cuadrados de sus distancias a su media (de toda la población: dividida por n).",
+        ),
+        (
+            "The standard deviation of a list of numbers: the square root of their variance, how far they usually are from their mean.",
+            "La desviación típica de una lista de números: la raíz cuadrada de su varianza, lo lejos que suelen estar de su media.",
+        ),
+        (
+            "The number below which p percent of the numbers of the list are (p from 0 to 100), between the two closest ones when needed. `percentile(xs, 50)` is the median, the middle value.",
+            "El número por debajo del cual está el p por ciento de los números de la lista (p de 0 a 100), entre los dos más cercanos si hace falta. `percentile(xs, 50)` es la mediana, el valor del medio.",
+        ),
+        (
+            "The position of the largest number of a list (the first one if several are equal).",
+            "La posición del número más grande de una lista (el primero si varios son iguales).",
+        ),
+        (
+            "The position of the smallest number of a list (the first one if several are equal).",
+            "La posición del número más pequeño de una lista (el primero si varios son iguales).",
+        ),
+        (
+            "Turns a list of scores into probabilities: each one becomes e^x divided by the sum of them all, so that they are between 0 and 1 and add up to 1, the largest score keeping the largest share.",
+            "Convierte una lista de puntuaciones en probabilidades: cada una se vuelve e^x dividido por la suma de todas, de modo que estén entre 0 y 1 y sumen 1, y la mayor puntuación conserve la mayor parte.",
+        ),
+        (
+            "Rescales a list of numbers from 0.0 (the smallest) to 1.0 (the largest), keeping their proportions. When they are all equal, gives zeros.",
+            "Reescala una lista de números de 0.0 (el más pequeño) a 1.0 (el más grande), manteniendo sus proporciones. Cuando son todos iguales, da ceros.",
+        ),
+        (
+            "A random decimal number drawn from the normal distribution (the bell curve) of this mean and standard deviation. Follows `random_seed`.",
+            "Un número decimal al azar, sacado de la distribución normal (la campana) con esta media y esta desviación típica. Sigue a `random_seed`.",
+        ),
+        (
+            "An element of the list chosen at random, each one with a chance in proportion to its weight (numbers of 0 or more, one per element). Follows `random_seed`.",
+            "Un elemento de la lista elegido al azar, cada uno con una probabilidad proporcional a su peso (números de 0 o más, uno por elemento). Sigue a `random_seed`.",
+        ),
+        (
+            "Shuffles a list, then cuts it in two: a record `{train, test}`, where `train` holds this share of the elements (0.8: 80 percent) and `test` the rest. To learn on some examples and check on others. Follows `random_seed`.",
+            "Mezcla una lista y luego la corta en dos: un registro `{train, test}`, donde `train` contiene esta proporción de los elementos (0.8: el 80 por ciento) y `test` el resto. Para aprender con unos ejemplos y comprobar con otros. Sigue a `random_seed`.",
+        ),
     ],
 }
