@@ -99,6 +99,21 @@ fn has_own_data(t: &Ty) -> bool {
     }
 }
 
+/// The type of a value that a program embedding Rythme defines: its
+/// built-in functions take the number of arguments they say, and the
+/// records it gives have exactly their fields. A function it adds under
+/// the name of one of the language (`db.all`) is not the language's.
+fn host_value_type(v: &Value) -> Ty {
+    match v {
+        Value::Builtin(b) if crate::builtins::lookup(b.name).is_some_and(|own| std::ptr::eq(own, *b)) => types::builtin_value(b),
+        Value::Builtin(b) => Ty::func(Some((b.min, b.max)), Ty::Any, Some(Rc::from(b.sig))),
+        Value::Record(r) => {
+            Ty::Record(Rc::new(types::RecordTy { fields: r.iter().map(|(k, x)| (k.clone(), host_value_type(x))).collect(), exact: true }))
+        }
+        _ => Ty::Any,
+    }
+}
+
 fn func_info(def: &FnDef) -> GlobalInfo {
     GlobalInfo { kind: GKind::Func, arity: Some((def.arity, def.arity)), sig: def.signature(), span: Some(def.span) }
 }
@@ -125,6 +140,12 @@ impl Knowledge {
                     GlobalInfo { kind: GKind::CtorValue, arity: None, sig: s.name().to_string(), span: None }
                 }
                 Value::Float(_) if &*s.name() == "pi" => GlobalInfo { kind: GKind::Builtin, arity: None, sig: "pi".into(), span: None },
+                // A record given by a program that embeds Rythme (`db.all(q)`):
+                // its fields are known, so a misspelled one is reported.
+                Value::Record(_) => {
+                    k.value_types.insert(*s, host_value_type(v));
+                    GlobalInfo { kind: GKind::Value, arity: None, sig: String::new(), span: None }
+                }
                 _ => GlobalInfo { kind: GKind::Value, arity: None, sig: String::new(), span: None },
             };
             k.globals.insert(*s, info);
@@ -2252,7 +2273,11 @@ impl<'a> Checker<'a> {
                     for a in args {
                         self.expr(a);
                     }
-                    self.unknown_method(name, name_span);
+                    let fields: Vec<Rc<str>> = match &rt {
+                        Ty::Record(r) => r.fields.iter().map(|(k, _)| k.clone()).collect(),
+                        _ => Vec::new(),
+                    };
+                    self.unknown_method_of(name, name_span, &fields);
                     Ty::Never
                 }
             },
@@ -2311,11 +2336,22 @@ impl<'a> Checker<'a> {
     }
 
     fn unknown_method(&mut self, name: Sym, name_span: Span) {
+        self.unknown_method_of(name, name_span, &[]);
+    }
+
+    /// Like `unknown_method`, for a record with exactly these fields: the
+    /// closest of them is suggested first.
+    fn unknown_method_of(&mut self, name: Sym, name_span: Span, fields: &[Rc<str>]) {
         let shown = name.name();
         let mut d = Diagnostic::warning("W005", t!("there is no function named `{shown}`", "il n'existe pas de fonction nommée `{shown}`"))
             .at(name_span)
             .label(t!("unknown", "inconnue"));
-        if let Some(h) = suggest::alias_hint(&shown) {
+        if let Some(best) = suggest::closest(&shown, fields.iter().map(|s| &**s)) {
+            d = d.help(t!(
+                "did you mean `.{best}`? (a field of this record)",
+                "vouliez-vous dire `.{best}` ? (un champ de cet enregistrement)"
+            ));
+        } else if let Some(h) = suggest::alias_hint(&shown) {
             d = d.help(h);
         } else {
             let names: Vec<Rc<str>> = self.own.keys().chain(self.know.globals.keys()).map(|s| s.name()).collect();
