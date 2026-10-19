@@ -62,7 +62,36 @@ async fn exports_every_page_behind_the_base_path() {
     }
     assert!(std::fs::read_to_string(out.join("sitemap.xml")).unwrap().contains("<loc>https://example.com/Rythme/en/learn/</loc>"));
     installable(&out);
+    for_assistants(&out);
     let _ = std::fs::remove_dir_all(&out);
+}
+
+/// For AI assistants, on GitHub Pages too: `llms.txt` and `llms-full.txt` at the root of
+/// the base path, every page with content as Markdown next to its HTML, and every
+/// address of the site they give (on `SITE_URL`) is a file of the export.
+fn for_assistants(out: &Path) {
+    let index = std::fs::read_to_string(out.join("llms.txt")).unwrap();
+    assert!(index.contains("](https://example.com/Rythme/llms-full.txt)"), "{index}");
+    assert_eq!(std::fs::read_to_string(out.join("llms-full.txt")).unwrap(), rythme_site::ai::LLMS_FULL);
+    let robots = std::fs::read_to_string(out.join("robots.txt")).unwrap();
+    assert!(robots.contains("https://example.com/Rythme/llms.txt"), "{robots}");
+    let mut texts = vec![("llms.txt".to_owned(), index)];
+    for route in Route::all().filter(|r| r.page.has_markdown()) {
+        let file = route.markdown_path().trim_start_matches('/').to_owned();
+        let text = std::fs::read_to_string(out.join(&file)).unwrap_or_else(|e| panic!("{file}: {e}"));
+        let html = std::fs::read_to_string(out.join(format!("{}index.html", route.path().trim_start_matches('/')))).unwrap();
+        assert!(html.contains(&format!(r#"type="text/markdown" href="/Rythme{}""#, route.markdown_path())), "{file}");
+        texts.push((file, text));
+    }
+    for (file, text) in texts {
+        for (at, _) in text.match_indices("https://example.com/") {
+            let url: String =
+                text[at..].chars().take_while(|c| c.is_ascii_graphic() && !matches!(c, ')' | '>' | ' ' | '\n' | '#')).collect();
+            let url = url.trim_end_matches([':', '.', ',']);
+            assert!(url.starts_with("https://example.com/Rythme/"), "{file}: {url}");
+            assert!(file_of(out, &url["https://example.com".len()..]).is_file(), "{file}: {url}");
+        }
+    }
 }
 
 /// The file of the export served at `url` (behind `/Rythme`).

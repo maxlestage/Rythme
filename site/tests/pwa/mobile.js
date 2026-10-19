@@ -22,7 +22,7 @@ const { SITE, workspace, freePort, startServer, startExport, binary, checker } =
 const BIN = binary(process.argv[2]);
 const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
 const LANGS = ["fr", "en", "es", "de", "pt", "zh"];
-const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "offline/", "nothing-here/"];
+const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "ai/", "offline/", "nothing-here/"];
 const SHOTS = process.env.MOBILE_SHOTS || null;
 
 // The phones: portrait and landscape, the page zoomed (a narrower window, as Chrome on
@@ -150,8 +150,8 @@ async function pages(browser, base, mode) {
 
 // 2. Every menu and panel open: the burger menu (with the theme picker), the language
 // menu, the banners of the app, and in the playground the Seed option, the box of a
-// shared link, the steps of a calculation, long output lines and a long error, a topic
-// of the help.
+// shared link, the text of Copy for AI to copy by hand, the steps of a calculation,
+// long output lines and a long error, a topic of the help.
 async function panels(browser, base, mode) {
   const failed = [];
   const long = "a_long_word_without_spaces_that_goes_on_and_on_".repeat(4);
@@ -201,6 +201,13 @@ async function panels(browser, base, mode) {
       await measure(page, device, `/${lang}/playground/ shared link`);
       await page.click(".topic >> nth=3");
       await measure(page, device, `/${lang}/playground/ help`);
+      // Copy for AI when the clipboard says no: the Markdown in a field, to copy by hand.
+      await page.evaluate(() => {
+        Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: () => Promise.reject(new Error("refused")) } });
+      });
+      await page.click("#copy-ai");
+      await page.waitForFunction(() => !document.getElementById("ai-row").hidden);
+      await measure(page, device, `/${lang}/playground/ Copy for AI, by hand`);
       await visit(page, `${base}/${lang}/playground/#code=${encodeURIComponent(steps)}&mode=steps&step=4`, device);
       await measure(page, device, `/${lang}/playground/ steps`);
       await visit(page, `${base}/${lang}/playground/#code=${encodeURIComponent(`fn f(x) = x +\nprint(${long} + 1)\n`)}`, device);
