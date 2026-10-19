@@ -548,6 +548,35 @@ impl Gen {
         e
     }
 
+    /// A written type, spaced at random.
+    fn ty(&mut self) -> String {
+        if self.depth > 3 || self.rng.chance(40) {
+            return self.pick(&["Int", "Float", "Text", "a", "Shape", "geo.Shape"]).to_string();
+        }
+        self.depth += 1;
+        let (a, b) = (self.ty(), self.ty());
+        let t = match self.rng.below(6) {
+            0 => format!("List({a})"),
+            1 => format!("[ {a} ]"),
+            2 => format!("Dict({a},{b})"),
+            3 => format!("{{name :{a}, age: {b}}}"),
+            4 => format!("fn({a}, {b})->{a}"),
+            _ => format!("Result( {a} , {b} )"),
+        };
+        self.depth -= 1;
+        t
+    }
+
+    /// `: Type`, sometimes, with the spaces of someone in a hurry.
+    fn typed(&mut self) -> String {
+        if self.rng.chance(35) {
+            let t = self.ty();
+            format!("{}{t}", self.pick(&[": ", " : ", ":  "]))
+        } else {
+            String::new()
+        }
+    }
+
     fn comment(&mut self) -> &'static str {
         if self.rng.chance(20) {
             "  # a comment"
@@ -559,7 +588,25 @@ impl Gen {
     fn program(&mut self) -> String {
         let mut out = String::new();
         for _ in 0..1 + self.rng.below(5) {
-            let item = match self.rng.below(12) {
+            let item = match self.rng.below(13) {
+                // Types written in the code.
+                12 => {
+                    let (t1, t2, r, e, a) = (self.typed(), self.typed(), self.typed(), self.expr(), self.expr());
+                    let ret = if self.rng.chance(50) { format!("{}-> {}", self.pick(&[" ", ""]), self.ty()) } else { String::new() };
+                    match self.rng.below(4) {
+                        0 => format!("fn typed(x{t1}, y{t2}){ret} = {e}"),
+                        1 => format!("total{r} = {e}{}", self.comment()),
+                        2 => format!(
+                            "type Shape =
+  | Circle(radius{t1})
+  | Rect(w{t2}, h)"
+                        ),
+                        _ => format!(
+                            "f = fn(v{t1}){ret} = {e}
+ys = xs.map do |v{t2}| {a} end"
+                        ),
+                    }
+                }
                 0 => {
                     let (e, c) = (self.expr(), self.comment());
                     format!("fn g(x, y) = {e}{c}")

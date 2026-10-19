@@ -14,6 +14,24 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ### Language
 
+- **Types written in the code, optional and checked**:
+  `fn area(w: Int, h: Int) -> Int = w * h`, `total: Float = 0.0`,
+  `type Shape = Circle(radius: Float) | Dot`, `xs.map do |n: Int| ... end`.
+  The types are those of the messages (`Int`, `Float`, `Text`, `Bool`,
+  `Unit`, `Symbol`, `List(Int)` or `[Int]`, `Set(T)`, `Dict(K, V)`,
+  `Option(T)`, `Result(T, E)`, `Record`, `Function`), records with at least
+  some fields (`{name: Text}`), functions (`fn(Int) -> Bool`), the types of
+  the program (`Shape`, `geometry.Shape`) and type variables (`a`). Running
+  never looks at them. `rythme check` reports a value, an argument or a
+  result that surely has another type, and a type that does not exist, with
+  the new code **E027** (explained in every language); it also uses them: a
+  parameter has its type inside its function, a call gives the written type
+  of its result (`first_of(xs: List(a)) -> a`), across used files too. They
+  are read only where nothing could be written before: every program written
+  for 1.0 keeps its syntax tree (checked on the examples, the manual, the
+  tests and 260 000 generated programs). `rythme fmt`, hover and signature
+  help of the language server, `rythme doc`, the Tree-sitter, Helix, Zed
+  and VS Code grammars, `rythme help types` and the manual (4.10) know them.
 - **A symbol may end with `?`**, as in Ruby: `:even?` is one symbol. It was
   read as `:even` followed by the operator `?`, which the checker always
   refuses (E016) before running, so no program that ran changes meaning (a
@@ -44,6 +62,31 @@ dit ce qu'une version 1.x peut changer ou non.*
   (`parse_csv`, `DictReader`, `to_csv`, `srand`...). As the stability
   promise says, a function of a program with one of these names stays its
   own (W003).
+
+### Tools
+
+- **A debugger: `rythme debug file.ry`.** Breakpoints on lines (`break 12`,
+  `break geometry.ry:3`; a line without code moves to the next one) and on
+  functions (`break fact`), `run`, `next`, `step`, `finish` (which shows the
+  result), `continue`, `where` (the calls in progress with their arguments,
+  `map` and the other built-in functions that call yours included), `frame`,
+  `print` (any expression, computed in the paused call with values only:
+  output, files, input, `exit` and chance are refused), `locals`, `list`,
+  `help`, `quit`. Each pause shows the depth and how many calls of the same
+  function are in progress; a call in tail position says that it replaced
+  the frame of its caller. An error pauses where it happens, before its
+  message. It works across files (`use`), blocks and local functions written
+  one after the other. Messages in the six languages; `rythme help debug`,
+  the manual (7.9, with a session checked by the tests).
+- **`rythme dap`**: the same debugger for editors, with the Debug Adapter
+  Protocol (launch, breakpoints on lines and functions, call stack, scopes
+  and values that open, evaluate, continue, next, step in, step out, pause).
+  The **VS Code extension** contributes the debugger type `rythme`: `F5` on a
+  `.ry` file, a *Debug this file* button, a default launch configuration.
+- Without the debugger, programs run at the same speed: the places where it
+  may pause are only added to the code of a program it runs, and calls are
+  followed through a check that the interpreter already makes (the
+  instructions counted on `bench/` differ by 0.0 to 1.2 %).
 
 ### Fixed
 
@@ -105,6 +148,14 @@ dit ce qu'une version 1.x peut changer ou non.*
   long for a link are refused with a message. Opening a link shows the program
   without replacing the saved draft until it is changed, with a notice and
   *Back to my draft*. In the six languages of the site.
+- **A seed in the playground**: *Seed*, next to Run, takes a whole number:
+  every run then makes the same draws of `random` and `shuffle` (like
+  `rythme run --seed N`), and Test the same values of `check_all` and
+  `sample` too (like `rythme test --seed N`). Empty, the draws change as
+  before. A dice picks a new seed; the seed is kept with the draft, shown in
+  the head of the output, and *Share* puts it in the link (`&seed=42`), so a
+  teacher's link gives every student the same draws. In the six languages of
+  the site.
 - **Steps in the playground, and links that open on them**: *Steps* shows the
   calculation of the last expression (or of the selected code) one step at a
   time, with *Previous* and *Next*, a slider and the keyboard, the step before,

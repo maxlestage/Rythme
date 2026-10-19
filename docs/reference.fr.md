@@ -2175,6 +2175,8 @@ type Nom = Variante | Variante(champ, champ) | ...
   qu'au premier niveau.
 - On lit les champs avec `.champ` ou avec des motifs. Égalité et ordre : voir
   [2.11](#211-égalité) et [2.12](#212-ordre).
+- Le type d'un champ peut être écrit après son nom, pour le vérificateur :
+  `Cercle(rayon: Float)` (voir [4.10](#410-types-écrits)).
 - Les commentaires `##` écrits au-dessus d'un `type` le documentent : `help`
   les affiche pour chacun de ses constructeurs, après le nom du type.
 
@@ -2513,6 +2515,183 @@ erreur[E017]: `pong.ry` et `ping.ry` s'utilisent l'un l'autre
   |
   = aide: des fichiers ne peuvent pas s'utiliser l'un l'autre : déplacez ce dont les deux ont besoin dans un troisième fichier, utilisé par les deux
   = en savoir plus : `rythme explain E017`
+```
+
+### 4.10 Types écrits
+
+```text
+fn nom(parametre: Type, ...) -> Type = ...
+nom: Type = valeur
+type Nom = Variante(champ: Type, ...) | ...
+xs.map do |x: Type| ... end
+```
+
+Rythme trouve les types tout seul (voir
+[5.5](#55-la-vérification-avant-lexécution)), et n'a jamais besoin qu'ils
+soient écrits. On peut quand même les écrire là où ils aident à lire le
+code : `rythme check` (et chaque exécution, qui vérifie d'abord) les vérifie
+alors. L'exécution d'un programme ne les regarde jamais : en retirer un ne
+change rien.
+
+- **Où** : après un paramètre d'une fonction, d'une fonction anonyme ou d'un
+  bloc (`|x: Int|`) ; après un nom qui reçoit une valeur (`total: Float =
+  0.0`) ou un motif entre crochets (`[a, b]: List(Int) = xs`), qui reçoit
+  alors sa valeur tout de suite ; après un champ d'une variante
+  (`Cercle(rayon: Float)`) ; et après les paramètres d'une fonction pour son
+  résultat (`fn aire(r: Float) -> Float = ...`, avant une condition `if`).
+  Un type ne s'écrit jamais dans un cas de `match`.
+- **Les types** : `Int`, `Float`, `Text`, `Bool`, `Unit`, `Symbol` ;
+  `List(Int)` (ou `[Int]`), `Set(Text)`, `Dict(Text, Int)`, `Option(Int)`,
+  `Result(Int, Text)` ; `{nom: Text, age: Int}`, un enregistrement avec au
+  moins ces champs ; `fn(Int, Int) -> Bool`, une fonction ; les types définis
+  avec `type` (`Forme`, et `geometrie.Forme` pour un type de
+  `use geometrie`) ; et les **variables de type**, une lettre minuscule
+  (`a`, `t`), pour n'importe quel type, le même partout dans une définition.
+  `List`, `Set`, `Dict`, `Option`, `Result`, `Record` et `Function` seuls
+  contiennent n'importe quoi.
+- **Ce que fait le vérificateur** : une valeur qui a sûrement un autre type
+  est E027, là où elle est donnée : la valeur d'un nom, un argument (le
+  message nomme le paramètre et montre son type), le résultat d'une fonction
+  ou ce que son `?` peut renvoyer, une valeur donnée à un bloc dont le
+  paramètre a un type. Un nombre entier n'est pas un `Float` (écrivez
+  `2.0`). Un type qui n'existe pas, ou qui prend un mauvais nombre de types
+  (`List(Int, Text)`), est aussi E027, avec le nom Rythme de `int`,
+  `String`, `Array`... Comme partout dans le vérificateur, une valeur dont
+  le type n'est pas connu à coup sûr n'est jamais signalée.
+- **Ce qu'il en tire** : dans sa fonction, un paramètre a son type écrit,
+  si bien qu'une erreur y est trouvée avant même tout appel ; un appel
+  donne le type écrit du résultat, avec les variables de type trouvées dans
+  les arguments (`premier([1, 2])` est un Int) ; les champs d'un
+  constructeur ont leurs types écrits dans les motifs. Cela marche aussi à
+  travers les fichiers donnés à `use`.
+- Un `:` collé au type après le premier paramètre (`fn f(x:Int)`,
+  `do |x:Int|`) commence un type, comme après une `,` ; ailleurs `nom:mot`
+  reste un [symbole](#214-symbol) (`puts:ok`) : un nom et son type
+  s'écrivent donc `total: Float`.
+- `rythme fmt` les écrit `l: Int`, `-> Int`, `{nom: Text}` ; le survol du
+  serveur de langage, l'aide aux paramètres et `rythme doc` les montrent, et
+  les indications de types ne les répètent pas. `rythme help types` les
+  résume.
+
+```rythme
+## Une forme, avec les types de ses champs.
+type Forme = Cercle(rayon: Float) | Rect(largeur: Float, hauteur: Float)
+
+fn aire(forme: Forme) -> Float = match forme
+  Cercle(r) -> pi * r * r
+  Rect(l, h) -> l * h
+end
+
+fn premier(xs: List(a)) -> a = xs[0]
+
+formes: List(Forme) = [Cercle(1.0), Rect(2.0, 3.0)]
+total: Float = formes |> map(aire) |> sum
+print(round(total, 2), premier(["a", "b"]))
+print([1, 2, 3].map do |n: Int| n * 10 end)
+```
+
+```text
+9.14 a
+[10, 20, 30]
+```
+
+Trois erreurs, trouvées avant l'exécution :
+
+```rythme
+fn aire_rect(l: Int, h: Int) -> Int = l * h
+fn etiquette(n: Int) -> Text = n
+ratio: Float = 2
+print(aire_rect(2, "3"), etiquette(1), ratio)
+```
+
+`rythme check` :
+
+```text
+erreur[E027]: `etiquette` est écrite pour donner `Text`, mais donne une valeur de type Int
+ --> sample.ry:2:32
+  |
+2 | fn etiquette(n: Int) -> Text = n
+  |                                ^ pas `Text`
+  |
+2 | fn etiquette(n: Int) -> Text = n
+  |                         ---- le type écrit pour le résultat de `etiquette`
+  |
+  = aide: changez la valeur, ou le type écrit pour elle ; les types écrits dans le code sont vérifiés avant l'exécution, et ne sont jamais obligatoires (voir `rythme help types`)
+  = en savoir plus : `rythme explain E027`
+
+erreur[E027]: `ratio` est écrit `Float`, mais sa valeur est Int 2
+ --> sample.ry:3:16
+  |
+3 | ratio: Float = 2
+  |                ^ pas `Float`
+  |
+3 | ratio: Float = 2
+  |        ----- le type écrit pour `ratio`
+  |
+  = aide: un nombre entier est un Int, pas un Float : écrivez-le avec un point décimal (`2.0`), ou convertissez-le avec `float(...)`
+  = en savoir plus : `rythme explain E027`
+
+erreur[E027]: `aire_rect` attend `Int` pour `h`, mais reçoit Text "3"
+ --> sample.ry:4:20
+  |
+4 | print(aire_rect(2, "3"), etiquette(1), ratio)
+  |                    ^^^ pas `Int`
+  |
+1 | fn aire_rect(l: Int, h: Int) -> Int = l * h
+  |                         --- le type écrit pour `h`
+  |
+  = aide: changez la valeur, ou le type écrit pour elle ; les types écrits dans le code sont vérifiés avant l'exécution, et ne sont jamais obligatoires (voir `rythme help types`)
+  = en savoir plus : `rythme explain E027`
+
+✗ sample.ry : 3 erreur(s)
+```
+
+Une variable de type désigne un seul type dans un appel, et les types
+commencent par une majuscule :
+
+```rythme
+fn paire(a: t, b: t) -> List(t) = [a, b]
+fn premier(xs: List(a)) -> a = xs[0]
+fn moitie(n: int) = n / 2
+print(paire(1, "un"), premier([1, 2]) + "!", moitie(4))
+```
+
+`rythme check` :
+
+```text
+erreur[E027]: type inconnu `int`
+ --> sample.ry:3:14
+  |
+3 | fn moitie(n: int) = n / 2
+  |              ^^^
+  |
+  = note: les noms de types commencent par une majuscule ; une variable de type, qui désigne n'importe quel type, est une seule lettre minuscule, comme `a`
+  = aide: en Rythme, écrivez `Int`
+  = en savoir plus : `rythme explain E027`
+
+erreur[E027]: `t` ne peut pas être à la fois Int et Text dans cet appel à `paire`
+ --> sample.ry:4:16
+  |
+4 | print(paire(1, "un"), premier([1, 2]) + "!", moitie(4))
+  |                ^^^^ `t` est Text ici
+  |
+4 | print(paire(1, "un"), premier([1, 2]) + "!", moitie(4))
+  |             - `t` est Int ici
+  |
+  = note: une variable de type comme `t` désigne le même type partout dans les types écrits pour `paire`
+  = en savoir plus : `rythme explain E027`
+
+erreur[E005]: impossible d'utiliser `+` avec Int et Text
+ --> sample.ry:4:39
+  |
+4 | print(paire(1, "un"), premier([1, 2]) + "!", moitie(4))
+  |                                       ^ Int + Text "!"
+  |
+  = aide: pour construire un texte contenant une valeur, utilisez des accolades : "total : {x}"
+      ou convertissez d'abord la valeur : text(x)
+  = en savoir plus : `rythme explain E005`
+
+✗ sample.ry : 3 erreur(s)
 ```
 
 ---
@@ -2915,6 +3094,7 @@ minuscules.
 | E024 | Une valeur est perdue | une ligne calcule une valeur dont rien ne se sert |
 | E025 | Problème de projet ou de paquet | un `rythme.toml` ou un `rythme.lock` illisible, une dépendance non installée, ou `rythme install` qui ne peut pas en obtenir une (voir [7.7](#77-projets-et-paquets)) |
 | E026 | Regex invalide | une regex qui ne respecte pas une règle (une `(` jamais fermée, `*` sans rien à répéter, un `\q` inconnu...), ou un remplacement de `replace_all` avec un groupe qui n'existe pas |
+| E027 | Un type écrit ne correspond pas | une valeur qui a sûrement un autre type que celui écrit pour elle (`total: Float = 0`, un argument, un résultat), ou un type écrit qui n'existe pas ([4.10](#410-types-écrits)) |
 | W001 | Nom inutilisé | un nom local est défini mais jamais utilisé |
 | W002 | Cas oublié | un `match` ou une fonction à un paramètre ne traite pas toutes les valeurs possibles |
 | W003 | Fonction intégrée masquée | une définition du premier niveau prend le nom d'une fonction intégrée |
@@ -3607,7 +3787,9 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMANDE] [ARGUMENTS...]
 | `exercise [list \| start NOM \| check FICHIER]` | `exercises`, `exercice`, `exercices` | les exercices intégrés (voir plus bas) |
 | `steps FICHIER [EXPRESSION] [--max N] [--width N]` | `etapes`, `étapes` | montre l'évaluation étape par étape (voir [7.8](#78-étape-par-étape--rythme-etapes)) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | exécute le code donné en argument, et affiche la valeur de sa dernière expression sauf si c'est `()` ; `ARGS` est donné à `args()` |
+| `debug FICHIER [ARGS...]` | `deboguer`, `déboguer` | lance le programme avec le débogueur : points d'arrêt, ligne par ligne, valeurs (voir [7.9](#79-le-débogueur--rythme-debug)) |
 | `lsp` | | le serveur de langage, lancé par un éditeur (voir [7.5](#75-éditeurs-et-serveur-de-langage)) |
+| `dap` | | le débogueur pour les éditeurs, avec le Debug Adapter Protocol (voir [7.9](#79-le-débogueur--rythme-debug)) |
 | `help [NOM]` | `aide`, `--help`, `-h` | la liste des sujets, ou l'aide d'un sujet, d'une fonction intégrée ou d'un code d'erreur |
 | `explain [CODE]` | `expliquer` | l'explication d'un code d'erreur ou d'avertissement ; sans code, la liste des codes |
 | `learn` | `apprendre`, `tutorial`, `tutoriel` | la visite guidée : les 13 sujets dans l'ordre, avec une pause après chacun quand elle tourne dans un terminal |
@@ -4330,6 +4512,149 @@ map([1, 2, 3], fn(x) = x * t)
   → [60, 120, 180]
 ```
 
+### 7.9 Le débogueur : `rythme debug`
+
+```text
+rythme debug FICHIER [ARGS...]
+rythme dap
+```
+
+`rythme debug` lance un programme et le **met en pause** où vous le
+demandez, pour regarder les valeurs de ses noms pendant qu'il tourne. Il lit
+des commandes à l'invite `(debug)` ; `help` les liste. Rien ne tourne avant
+`run` (ou `step`, qui fait une pause à la première ligne) : on peut donc
+d'abord poser des points d'arrêt.
+
+| Commande | Courte | Ce qu'elle fait |
+|----------|--------|-----------------|
+| `break LIGNE`, `break FICHIER:LIGNE`, `break FONCTION` | `b` | un point d'arrêt sur une ligne du programme (ou d'un fichier qu'il utilise avec `use`), ou au début de chaque appel d'une fonction ; une ligne sans code déplace le point d'arrêt à la ligne suivante qui en a |
+| `delete [N]`, `breakpoints` | `d` | enlève le point d'arrêt `N` (tous sans `N`) ; les liste |
+| `run` | `r` | lance le programme ; après sa fin, le relance (les fichiers sont relus) |
+| `continue` | `c` | continue jusqu'au prochain point d'arrêt |
+| `next` | `n` | va à l'endroit suivant de cet appel ou de celui qui l'a fait, sans pause dans les fonctions qu'il appelle |
+| `step` | `s` | va à l'endroit suivant, aussi dans les fonctions appelées |
+| `finish` | `f` | continue jusqu'à ce que cet appel donne son résultat, et le montre |
+| `where` | `w` | les appels en cours, le plus profond d'abord, avec leurs arguments et l'endroit où ils sont |
+| `frame N` | | choisit l'appel `N` de `where` pour `print`, `locals` et `list` |
+| `print EXPRESSION` | `p` | la valeur d'une expression, calculée dans l'appel choisi, avec ses noms |
+| `locals` | `l` | les noms visibles dans l'appel choisi et leurs valeurs (au niveau principal : les noms du programme) |
+| `list` | | les lignes autour de la ligne courante |
+| `quit` | `q` | arrête le programme et le débogueur (la fin de l'entrée aussi) |
+
+Une ligne vide répète `next`, `step`, `finish` ou `continue`.
+
+- **Où il fait une pause.** Le programme peut faire une pause avant chaque
+  instruction d'un bloc, au début de chaque corps de fonction (sa première
+  instruction quand c'est un bloc), avant la branche de `if` et le cas de
+  `match` choisis, et avant chaque expression ou définition du niveau
+  principal, dans chaque fichier du programme. Une pause montre l'endroit,
+  l'appel avec ses arguments (`fact(n = 2)`) et la **profondeur** : le
+  nombre d'appels des fonctions du programme en cours, avec combien sont la
+  même fonction quand elle s'appelle elle-même. Les endroits d'une même
+  ligne d'un même appel ne font qu'une pause.
+- **Appels terminaux.** Un appel en position terminale prend la place du
+  cadre de la fonction qui l'appelle (voir
+  [4.6](#46-récursion-et-appels-terminaux)) : la pause le dit, et `where`
+  montre l'appel remplacé et l'endroit où le premier a été fait. `next` y
+  entre donc, puisque l'appelant n'est plus là. Les fonctions intégrées qui
+  appellent les vôtres (`map`, `filter`, `fold`...) apparaissent aussi dans
+  `where`.
+- **Des valeurs seulement.** `print` évalue n'importe quelle expression, avec
+  les noms locaux de l'appel choisi et les noms de son fichier, mais
+  seulement avec des valeurs : les fonctions intégrées qui affichent, lisent
+  l'entrée, écrivent ou suppriment des fichiers, arrêtent le programme ou
+  tirent au hasard y sont refusées, et un calcul est arrêté après un million
+  d'appels. Regarder ne change jamais le programme.
+- **Les erreurs.** Quand une erreur arrête le programme, le débogueur fait une
+  pause là où elle s'est produite, avant le message, pour que `where`,
+  `locals` et `print` montrent les valeurs qui y ont mené ; `continue` montre
+  ensuite le message.
+- **Le coût.** Les endroits où le programme peut faire une pause ne sont
+  ajoutés qu'au code d'un programme lancé par `rythme debug` ou `rythme dap` :
+  sans le débogueur, les programmes tournent à la même vitesse (les mesures
+  de `bench/` diffèrent d'environ 1 % au plus).
+
+Avec ce programme, `fact.ry` :
+
+```rythme
+fn fact(0) = 1
+fn fact(n) = n * fact(n - 1)
+
+fn total([], acc) = acc
+fn total([x, ..rest], acc) = total(rest, acc + x)
+
+print(fact(3))
+print(total([10, 20], 0))
+```
+
+une session :
+
+```text
+$ rythme debug fact.ry
+Débogage de fact.ry. Faites une pause quelque part avec `break 12` ou `break fonction`, puis `run` ; `help` liste les commandes.
+(debug) break 2
+point d'arrêt 1 à fact.ry:2
+(debug) run
+● point d'arrêt 1
+→ fact.ry:2  fact(n = 3) · profondeur 1
+  2 | fn fact(n) = n * fact(n - 1)
+(debug) continue
+● point d'arrêt 1
+→ fact.ry:2  fact(n = 2) · profondeur 2 (2 appels de `fact` en cours)
+  2 | fn fact(n) = n * fact(n - 1)
+(debug) where
+→ #0 fact(n = 2)  fact.ry:2
+  #1 fact(n = 3)  fact.ry:2
+  #2 niveau principal  fact.ry:7
+`fact` s'appelle lui-même : 2 appels en cours
+(debug) print n * 10
+20
+(debug) delete 1
+point d'arrêt 1 enlevé
+(debug) finish
+`fact` a donné 2
+→ fact.ry:2  fact(n = 3) · profondeur 1
+  2 | fn fact(n) = n * fact(n - 1)
+(debug) break total
+point d'arrêt 2 au début de `total`
+(debug) continue
+6
+● point d'arrêt 2 : `total` commence
+→ fact.ry:5  total(arg1 = [10, 20], acc = 0) · profondeur 1
+  5 | fn total([x, ..rest], acc) = total(rest, acc + x)
+(debug) next
+● point d'arrêt 2 : `total` commence
+→ fact.ry:5  total(arg1 = [20], acc = 10) · profondeur 1
+  (un appel terminal : il a pris la place du cadre de `total`)
+  5 | fn total([x, ..rest], acc) = total(rest, acc + x)
+(debug) locals
+  x = 20
+  rest = []
+  acc = 10
+(debug) delete
+tous les points d'arrêt sont enlevés
+(debug) continue
+30
+Le programme est terminé. `run` le relance, `quit` quitte.
+(debug) quit
+débogueur arrêté
+```
+
+**Dans un éditeur.** `rythme dap` est le même débogueur pour les éditeurs :
+il parle le [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/)
+sur son entrée et sa sortie standard. L'extension VS Code
+([`editors/vscode`](../editors/vscode)) l'utilise pour le type de débogueur
+`rythme` : points d'arrêt dans la marge (sur des lignes et des fonctions),
+*Exécuter → Démarrer le débogage* (`F5`) sur un fichier `.ry` sans aucun
+`launch.json`, la pile des appels, les valeurs des noms (listes,
+enregistrements, variantes et dictionnaires s'ouvrent), les expressions
+espionnées et la console de débogage (avec la même règle : des valeurs
+seulement), pas à pas principal, détaillé, sortant, continuer, pause. Une
+configuration de lancement a `program`, et peut avoir `args`, `cwd` et
+`stopOnEntry`. Sous `rythme dap`, ce que le programme affiche va dans la
+console de débogage, et `input` trouve la fin de l'entrée (l'entrée standard
+porte le protocole).
+
 ---
 
 ## Annexe A. Grammaire
@@ -4349,14 +4674,18 @@ statement    = fn_def | binding | command | expression ;
 command      = NAME [ "?" ] expression { "," { NL } expression }
                [ "do" [ params ] block_end ] ;     (* 3.15 *)
 
-binding      = pattern_atom "=" expression ;
-fn_def       = "fn" NAME [ "?" ] "(" [ patterns ] ")" [ "if" expression ] body ;
+binding      = pattern_atom [ ":" type ] "=" expression ;
+fn_def       = "fn" NAME [ "?" ] "(" [ parameters ] ")" [ "->" type ]
+               [ "if" expression ] body ;
+parameters   = parameter { "," parameter } ;
+parameter    = pattern [ ":" type ] ;
 body         = "=" result
              | NL block_end ;
 result       = command | expression ;              (* 3.15 *)
 block_end    = { statement NL } [ statement ] "end" ;
 type_def     = "type" CTOR "=" [ "|" ] variant { "|" variant } ;
-variant      = CTOR [ "(" [ NAME { "," NAME } ] ")" ] ;
+variant      = CTOR [ "(" [ field { "," field } ] ")" ] ;
+field        = NAME [ ":" type ] ;
 test_def     = "test" PLAIN_TEXT body ;
 use_def      = "use" PLAIN_TEXT ;
 
@@ -4376,14 +4705,15 @@ postfix      = "(" [ arguments ] ")" | "[" expression "]" | "?"
              | "." MEMBER [ "(" [ arguments ] ")" ] | block ;
 block        = "do" [ params ] block_end
              | "{" params { statement NL } [ statement ] "}" ;
-params       = "|" [ pattern_atom { "," pattern_atom } ] "|" | "||" ;
+params       = "|" [ block_param { "," block_param } ] "|" | "||" ;
+block_param  = pattern_atom [ ":" type ] ;
 arguments    = expression { "," expression } ;
 
 primary      = INT | FLOAT | TEXT | SYMBOL | "true" | "false" | NAME | CTOR
              | "(" ")" | "(" expression ")"
              | "[" [ list_item { "," list_item } ] "]"
              | "{" [ record_item { "," record_item } ] "}"
-             | "fn" "(" [ patterns ] ")" body
+             | "fn" "(" [ parameters ] ")" [ "->" type ] body
              | "if" expression "then" result "else" result
              | "unless" expression "then" result "else" result
              | "match" expression NL case { NL case } NL "end"
@@ -4403,6 +4733,11 @@ pattern_atom = "_" | NAME
 list_patterns = ".." [ NAME ] [ "," ]
              | pattern [ "," [ list_patterns ] ] ;
 field_pattern = KEY ":" pattern | NAME | ".." ;
+
+type         = CTOR [ "(" type { "," type } ")" ] | NAME "." CTOR
+             | NAME | "[" type "]"
+             | "{" [ KEY ":" type { "," KEY ":" type } ] "}"
+             | "fn" "(" [ type { "," type } ] ")" "->" type ;   (* 4.10 *)
 
 MEMBER       = NAME [ "?" ] | CTOR | mot-clé | mot réservé ;
 SYMBOL       = ":" NAME [ "?" ] ;
@@ -4431,8 +4766,17 @@ Remarques :
 - `"unless"` : le mot commence un `unless` seulement comme décrit en
   [1.5](#15-mots-clés-et-mots-réservés) ; ailleurs c'est un NAME.
 - `SYMBOL` : `:` suivi directement d'un nom, sauf le `:` qui suit un nom de
-  champ après `{` ou `,` ([2.14](#214-symbol)) ; un `?` collé au nom fait
-  partie du symbole (`:pair?`), jamais l'opérateur `postfix`.
+  champ après `{` ou `,` ([2.14](#214-symbol)), et le `:` qui suit un nom
+  (autre que `unless`) juste après `(` ou après la `|` de `do |` et `{ |`
+  (`fn f(x:Int)`, un type) ; un `?` collé au nom fait partie du symbole
+  (`:pair?`), jamais l'opérateur `postfix`.
+- `binding` avec un type : une instruction qui commence par un NAME suivi
+  de `:` est un nom avec son type, et `=` doit suivre le type ; après un
+  motif entre crochets, `:` peut aussi venir avant `=`.
+- `fn_def`, `"fn"` dans `primary` : `->` après les paramètres n'est lu comme
+  le type du résultat que si `=`, un retour à la ligne ou (pour `fn_def`)
+  `if` suit le type ; sinon c'est E001 (`fn(x) -> x * 2` : les fonctions
+  utilisent `=`).
 - Dans `match`, la valeur examinée doit finir sur la ligne de `match`, et les
   cas peuvent être séparés par des lignes vides ; `end` peut suivre le dernier
   cas sur la même ligne. Dans les blocs, `end` peut suivre la dernière

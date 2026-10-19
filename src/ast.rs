@@ -162,36 +162,72 @@ pub struct FnDef {
 }
 
 impl FnDef {
-    /// `name(a, b)`, built from the parameters of the first clause.
+    /// The type written for parameter `i`, in the first definition that has one.
+    pub fn param_type(&self, i: usize) -> Option<&Rc<TypeExpr>> {
+        self.clauses.iter().find_map(|c| c.params.get(i).and_then(|p| p.ty.as_ref()))
+    }
+
+    /// The type written for the result, in the first definition that has one.
+    pub fn ret_type(&self) -> Option<&Rc<TypeExpr>> {
+        self.clauses.iter().find_map(|c| c.ret.as_ref())
+    }
+
+    /// `name(a, b)`, built from the parameters of the first clause; with
+    /// the types written in the code, if any: `area(w: Int, h: Int) -> Int`.
     pub fn signature(&self) -> String {
         let name = self.name.map(|n| n.name().to_string()).unwrap_or_else(|| "fn".to_string());
         let params: Vec<String> = self.clauses[0]
             .params
             .iter()
             .enumerate()
-            .map(|(i, p)| match &p.kind {
-                PatKind::Bind(s) => s.name().to_string(),
-                _ => {
+            .map(|(i, p)| {
+                let shown = match &p.kind {
+                    PatKind::Bind(s) => s.name().to_string(),
                     // Use a name from another clause if one has it.
-                    for c in &self.clauses {
-                        if let PatKind::Bind(s) = &c.params[i].kind {
-                            return s.name().to_string();
-                        }
-                    }
-                    format!("arg{}", i + 1)
+                    _ => self
+                        .clauses
+                        .iter()
+                        .find_map(|c| match &c.params[i].kind {
+                            PatKind::Bind(s) => Some(s.name().to_string()),
+                            _ => None,
+                        })
+                        .unwrap_or_else(|| format!("arg{}", i + 1)),
+                };
+                match self.param_type(i) {
+                    Some(t) => format!("{shown}: {t}"),
+                    None => shown,
                 }
             })
             .collect();
-        format!("{name}({})", params.join(", "))
+        match self.ret_type() {
+            Some(r) => format!("{name}({}) -> {r}", params.join(", ")),
+            None => format!("{name}({})", params.join(", ")),
+        }
     }
 }
 
-#[derive(Debug)]
 pub struct Clause {
     pub params: Vec<Pattern>,
     pub guard: Option<Expr>,
     pub body: Expr,
+    /// From `fn` to the `=` (or the end of the line): the name, the
+    /// parameters, the type of the result and the guard.
     pub span: Span,
+    /// The type of the result, when it is written: `fn area(r) -> Float = ...`.
+    pub ret: Option<Rc<TypeExpr>>,
+}
+
+/// Like a derived `Debug`, with the type of the result only when it is
+/// written: the trees of programs without written types stay the same.
+impl std::fmt::Debug for Clause {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut d = f.debug_struct("Clause");
+        d.field("params", &self.params).field("guard", &self.guard).field("body", &self.body).field("span", &self.span);
+        if let Some(ret) = &self.ret {
+            d.field("ret", ret);
+        }
+        d.finish()
+    }
 }
 
 #[derive(Debug)]
@@ -202,11 +238,104 @@ pub struct TypeDef {
     pub span: Span,
 }
 
-#[derive(Debug)]
 pub struct VariantDef {
     pub name: Sym,
     pub fields: Vec<Sym>,
     pub span: Span,
+    /// The type written for each field (`Circle(radius: Float)`), if any.
+    pub types: Vec<Option<Rc<TypeExpr>>>,
+}
+
+/// Like a derived `Debug`, with the types of the fields only when some are
+/// written: the trees of programs without written types stay the same.
+impl std::fmt::Debug for VariantDef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut d = f.debug_struct("VariantDef");
+        d.field("name", &self.name).field("fields", &self.fields).field("span", &self.span);
+        if self.types.iter().any(Option::is_some) {
+            d.field("types", &self.types);
+        }
+        d.finish()
+    }
+}
+
+impl VariantDef {
+    /// `Circle(radius)`, or `Circle(radius: Float)` with the types written.
+    pub fn signature(&self) -> String {
+        if self.fields.is_empty() {
+            return self.name.to_string();
+        }
+        let fields: Vec<String> = self
+            .fields
+            .iter()
+            .enumerate()
+            .map(|(i, f)| match self.types.get(i).and_then(Option::as_ref) {
+                Some(t) => format!("{f}: {t}"),
+                None => f.to_string(),
+            })
+            .collect();
+        format!("{}({})", self.name, fields.join(", "))
+    }
+}
+
+/// A type written in the code, after `:` or `->`: `Int`, `List(Text)`,
+/// `[Int]`, `{name: Text}`, `fn(Int) -> Bool`, `Shape`, `geo.Shape`, or a
+/// type variable, `a`. It only tells the checker what is meant: running the
+/// program never looks at it.
+#[derive(Clone, Debug)]
+pub struct TypeExpr {
+    pub kind: TypeKind,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug)]
+pub enum TypeKind {
+    /// `Int`, `List(Int)`, `Dict(Text, Int)`, `Shape`, `geo.Shape`: a name,
+    /// with the types it takes.
+    Named(Sym, Vec<TypeExpr>),
+    /// `a`: any type, the same one everywhere in a definition.
+    Var(Sym),
+    /// `[Int]`: the same as `List(Int)`.
+    List(Box<TypeExpr>),
+    /// `{name: Text, age: Int}`: a record with at least these fields.
+    Record(Vec<(Rc<str>, TypeExpr)>),
+    /// `fn(Int, Int) -> Int`.
+    Func(Vec<TypeExpr>, Box<TypeExpr>),
+}
+
+/// As `rythme fmt` writes it: `List(Int)`, `{name: Text}`, `fn(Int) -> Int`.
+impl std::fmt::Display for TypeExpr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let list = |ts: &[TypeExpr]| ts.iter().map(|t| t.to_string()).collect::<Vec<_>>().join(", ");
+        match &self.kind {
+            TypeKind::Named(n, args) if args.is_empty() => write!(f, "{n}"),
+            TypeKind::Named(n, args) => write!(f, "{n}({})", list(args)),
+            TypeKind::Var(v) => write!(f, "{v}"),
+            TypeKind::List(t) => write!(f, "[{t}]"),
+            TypeKind::Record(fields) => {
+                let fs: Vec<String> = fields.iter().map(|(k, t)| format!("{k}: {t}")).collect();
+                write!(f, "{{{}}}", fs.join(", "))
+            }
+            TypeKind::Func(params, ret) => write!(f, "fn({}) -> {ret}", list(params)),
+        }
+    }
+}
+
+impl TypeExpr {
+    /// Calls `f` on this type and on every type inside it.
+    pub fn each(&self, f: &mut dyn FnMut(&TypeExpr)) {
+        f(self);
+        match &self.kind {
+            TypeKind::Named(_, args) => args.iter().for_each(|a| a.each(f)),
+            TypeKind::Var(_) => {}
+            TypeKind::List(t) => t.each(f),
+            TypeKind::Record(fields) => fields.iter().for_each(|(_, t)| t.each(f)),
+            TypeKind::Func(params, ret) => {
+                params.iter().for_each(|p| p.each(f));
+                ret.each(f);
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -242,10 +371,26 @@ impl std::fmt::Debug for Use {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Pattern {
     pub kind: PatKind,
     pub span: Span,
+    /// The type written after it, for a parameter or a name given a value:
+    /// `fn area(w: Int)`, `total: Float = 0.0`. Only the checker reads it.
+    pub ty: Option<Rc<TypeExpr>>,
+}
+
+/// Like a derived `Debug`, with the written type only when there is one: the
+/// trees of programs without written types stay the same.
+impl std::fmt::Debug for Pattern {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut d = f.debug_struct("Pattern");
+        d.field("kind", &self.kind).field("span", &self.span);
+        if let Some(t) = &self.ty {
+            d.field("ty", t);
+        }
+        d.finish()
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -273,6 +418,11 @@ pub enum PatKind {
 }
 
 impl Pattern {
+    /// A pattern without a written type.
+    pub fn new(kind: PatKind, span: Span) -> Pattern {
+        Pattern { kind, span, ty: None }
+    }
+
     /// Names bound by this pattern, with their position.
     pub fn bindings(&self, out: &mut Vec<(Sym, Span)>) {
         match &self.kind {

@@ -206,6 +206,7 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme install`            | télécharger les dépendances de `rythme.toml` (git ou dossiers), et écrire `rythme.lock` |
 | `rythme exercise`           | [30 exercices gradués](docs/exercises/README.fr.md) : `list`, `start 1`, `check FICHIER` |
 | `rythme etapes fib.ry "fib(4)"` | le calcul étape par étape : `fib(4)` → `fib(3) + fib(2)` → ... |
+| `rythme debug fib.ry`       | le débogueur : `break 12`, `run`, `next`, `step`, `where`, `print n * 2` ([manuel](docs/reference.fr.md#79-le-débogueur--rythme-debug)) |
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
 | `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
 
@@ -344,7 +345,10 @@ et des messages en six langues. Son contenu est décrit dans
   sont certains, pour signaler avant l'exécution les opérations qui
   échoueraient à coup sûr ; il déduit aussi ce que doivent être les
   paramètres de chaque fonction, pour signaler les appels qui échouent à
-  coup sûr, et l'éditeur montre ces signatures au survol.
+  coup sûr, et l'éditeur montre ces signatures au survol. Les types peuvent
+  aussi être écrits là où ils aident à lire le code, et sont alors vérifiés
+  (`fn aire(l: Int, h: Int) -> Int`, `total: Float = 0.0`) ; ils ne sont
+  jamais obligatoires (voir `rythme help types`).
 - **Outils.** `rythme fmt` met le code en forme dans le style officiel (voir
   `rythme help fmt`), `rythme doc` écrit la documentation de fichiers et de
   dossiers à partir de leurs commentaires `##` (voir `rythme help doc`),

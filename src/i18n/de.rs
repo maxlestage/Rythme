@@ -815,6 +815,7 @@ Commands
   rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
   rythme steps file.ry      show the calculation step by step (fib(3) → fib(2) + fib(1) → ...)
+  rythme debug file.ry      pause the program where you want and look at its values
   rythme exercise           exercises checked automatically (list, start, check)
   rythme new NAME           create a project (rythme.toml, src/, tests/)
   rythme install            download the dependencies of the project
@@ -850,6 +851,7 @@ Topics (rythme help TOPIC)
   fmt         the official layout of the code (rythme fmt)
   doc         documentation from the ## comments (rythme doc)
   steps       the calculation shown step by step (rythme steps)
+  debug       the debugger: breakpoints, line by line, values (rythme debug)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
   ruby        coming from Ruby: blocks, symbols, method chains
   builtins    every built-in function
@@ -867,6 +869,7 @@ Befehle
   rythme fmt datei.ry       dem Code sein offizielles Layout geben (--check: nur prüfen)
   rythme doc datei.ry       seine Dokumentation schreiben, in Markdown (--html: eine Webseite)
   rythme steps datei.ry     die Rechnung Schritt für Schritt zeigen (fib(3) → fib(2) + fib(1) → ...)
+  rythme debug datei.ry     das Programm anhalten, wo du willst, und seine Werte ansehen
   rythme exercise           automatisch geprüfte Übungen (list, start, check)
   rythme new NAME           ein Projekt anlegen (rythme.toml, src/, tests/)
   rythme install            die Abhängigkeiten des Projekts herunterladen
@@ -902,6 +905,7 @@ Themen (rythme help THEMA)
   fmt         das offizielle Layout des Codes (rythme fmt)
   doc         Dokumentation aus den ##-Kommentaren (rythme doc)
   steps       die Rechnung Schritt für Schritt (rythme steps)
+  debug       der Debugger: Haltepunkte, Zeile für Zeile, Werte (rythme debug)
   editors     Rythme in deinem Editor (VS Code, Neovim, Helix...)
   ruby        von Ruby kommend: Blöcke, Symbole, Methodenketten
   builtins    alle eingebauten Funktionen
@@ -8356,5 +8360,310 @@ dann nicht von den Tests davor ab.
 
 Die Eigenschaftstests (check_all, sample) haben ihren eigenen Startwert:
 rythme test --seed N (siehe rythme help tests)."#),
+
+        // ----- the debugger (src/debug/, src/help.rs)
+        ("this file is not part of the program being debugged", "diese Datei gehört nicht zum Programm, das debuggt wird"),
+        ("top level", "oberste Ebene"),
+        (" [tail call, replaced {by}]", " [Endaufruf, hat {by} ersetzt]"),
+        ("`{name}` gave {}", "`{name}` ergab {}"),
+        ("error: {}", "Fehler: {}"),
+        ("Locals", "Lokal"),
+        ("Globals", "Global"),
+        ("result of {name}", "Ergebnis von {name}"),
+        ("no source to give: the files are on the disk", "keine Quelle zu geben: die Dateien liegen auf der Festplatte"),
+        ("unknown request `{cmd}`", "unbekannte Anfrage `{cmd}`"),
+        ("the program is running: pause it first", "das Programm läuft: halte es zuerst an"),
+        ("which program? Give its path in `program`, like \"${{file}}\"", r#"welches Programm? Gib seinen Pfad in `program` an, wie "${{file}}""#),
+        ("the program has errors: see the debug console", "das Programm hat Fehler: siehe die Debugkonsole"),
+        ("the program is not running: `{cmd}` has nothing to show", "das Programm läuft nicht: `{cmd}` hat nichts zu zeigen"),
+        ("the program has ended: `{cmd}` has nothing to show", "das Programm ist beendet: `{cmd}` hat nichts zu zeigen"),
+        ("`print` shows the value of one expression, like `print n * 2` or `print len(xs)`", "`print` zeigt den Wert eines Ausdrucks, wie `print n * 2` oder `print len(xs)`"),
+        ("`{name}` has an effect: the debugger only computes values, without changing anything", "`{name}` hat eine Wirkung: der Debugger berechnet nur Werte, ohne etwas zu verändern"),
+        ("no code where the program can pause on line {line} of {name} or after it", "kein Code, an dem das Programm anhalten kann, in Zeile {line} von {name} oder danach"),
+        ("no function named `{name}` in the program", "keine Funktion namens `{name}` im Programm"),
+        (": did you mean `{best}`?", ": meintest du `{best}`?"),
+        (r#"Commands (short forms in parentheses):
+  break 12         pause at line 12 of the program (b)
+  break file.ry:3  pause at line 3 of another file of the program
+  break fact       pause each time the function fact starts
+  delete 2         remove breakpoint 2; delete alone removes them all (d)
+  breakpoints      list the breakpoints
+  run              start the program (r)
+  continue         go on until the next breakpoint (c)
+  next             go to the next line, without entering the functions called (n)
+  step             go to the next line, entering the functions called (s)
+  finish           go on until this function gives its result (f)
+  where            the calls in progress, with their arguments (w)
+  frame 2          look at the call number 2 of where (print and locals use it)
+  print n * 2      the value of an expression, computed in the current call (p)
+  locals           the names of the current call and their values (l)
+  list             the lines around the current one
+  help             this list (h)
+  quit             stop the program and the debugger (q)
+An empty line repeats next, step, finish or continue."#, r#"Befehle (Kurzformen in Klammern):
+  break 12         in Zeile 12 des Programms anhalten (b)
+  break file.ry:3  in Zeile 3 einer anderen Datei des Programms anhalten
+  break fact       jedes Mal anhalten, wenn die Funktion fact beginnt
+  delete 2         Haltepunkt 2 entfernen; delete allein entfernt alle (d)
+  breakpoints      die Haltepunkte auflisten
+  run              das Programm starten (r)
+  continue         bis zum nächsten Haltepunkt weiterlaufen (c)
+  next             zur nächsten Zeile, ohne in die aufgerufenen Funktionen zu gehen (n)
+  step             zur nächsten Zeile, auch in die aufgerufenen Funktionen hinein (s)
+  finish           weiterlaufen, bis diese Funktion ihr Ergebnis gibt (f)
+  where            die laufenden Aufrufe, mit ihren Argumenten (w)
+  frame 2          den Aufruf Nummer 2 von where ansehen (print und locals nutzen ihn)
+  print n * 2      der Wert eines Ausdrucks, berechnet im aktuellen Aufruf (p)
+  locals           die Namen des aktuellen Aufrufs und ihre Werte (l)
+  list             die Zeilen um die aktuelle herum
+  help             diese Liste (h)
+  quit             das Programm und den Debugger beenden (q)
+Eine leere Zeile wiederholt next, step, finish oder continue."#),
+        ("unknown command `{word}`", "unbekannter Befehl `{word}`"),
+        (" (`help` lists the commands)", " (`help` listet die Befehle auf)"),
+        ("break where? A line (`break 12`), a file and a line (`break geometry.ry:3`) or a function (`break fact`)", "break wo? Eine Zeile (`break 12`), eine Datei und eine Zeile (`break geometrie.ry:3`) oder eine Funktion (`break fact`)"),
+        ("no file `{name}` in the program (its files: {})", "keine Datei `{name}` im Programm (seine Dateien: {})"),
+        ("breakpoint {n} at {shown_at}", "Haltepunkt {n} bei {shown_at}"),
+        ("breakpoint {n} at {shown_at} (line {line} has no code where the program can pause)", "Haltepunkt {n} bei {shown_at} (Zeile {line} hat keinen Code, an dem das Programm anhalten kann)"),
+        ("breakpoint {n} at the start of `{arg}`", "Haltepunkt {n} am Anfang von `{arg}`"),
+        ("`{arg}` is not a line number", "`{arg}` ist keine Zeilennummer"),
+        ("no breakpoints: add one with `break 12` or `break fact`", "keine Haltepunkte: füge einen mit `break 12` oder `break fact` hinzu"),
+        ("start of `{name}`", "Anfang von `{name}`"),
+        ("all breakpoints removed", "alle Haltepunkte entfernt"),
+        ("breakpoint {n} removed", "Haltepunkt {n} entfernt"),
+        ("there is no breakpoint {n} (see `breakpoints`)", "es gibt keinen Haltepunkt {n} (siehe `breakpoints`)"),
+        ("delete which breakpoint? Give its number, like `delete 1`", "welchen Haltepunkt entfernen? Gib seine Nummer an, wie `delete 1`"),
+        ("● breakpoint {}", "● Haltepunkt {}"),
+        ("● breakpoint {n}: `{name}` starts", "● Haltepunkt {n}: `{name}` beginnt"),
+        ("✗ the program stops on an error: {msg}", "✗ das Programm stoppt wegen eines Fehlers: {msg}"),
+        ("  look at the values with where, locals and print; continue shows the whole message", "  sieh dir die Werte mit where, locals und print an; continue zeigt die ganze Meldung"),
+        (" · depth {depth}", " · Tiefe {depth}"),
+        (" ({rec} calls of `{name}` in progress)", " ({rec} Aufrufe von `{name}` laufen)"),
+        ("  (a call in tail position: it took the place of the frame of `{by}`)", "  (ein Aufruf in Endposition: er hat den Platz des Rahmens von `{by}` eingenommen)"),
+        ("the program is already running: continue goes on, quit stops it", "das Programm läuft schon: continue macht weiter, quit beendet es"),
+        (" (replaced `{by}`: tail call)", " (hat `{by}` ersetzt: Endaufruf)"),
+        ("`{name}` calls itself: {rec} calls in progress", "`{name}` ruft sich selbst auf: {rec} Aufrufe laufen"),
+        ("which call? A number from 0 to {}, as `where` shows them", "welcher Aufruf? Eine Zahl von 0 bis {}, wie `where` sie zeigt"),
+        ("no names here yet", "hier gibt es noch keine Namen"),
+        ("print what? An expression, like `print n` or `print len(xs) * 2`", "print was? Ein Ausdruck, wie `print n` oder `print len(xs) * 2`"),
+        ("debugger stopped", "Debugger beendet"),
+        ("the program is not running: `run` starts it (`step` pauses at its first line)", "das Programm läuft nicht: `run` startet es (`step` hält in seiner ersten Zeile an)"),
+        ("which file? Example: rythme debug factorial.ry (see `rythme help debug`)", "welche Datei? Beispiel: rythme debug fakultaet.ry (siehe `rythme help debug`)"),
+        ("Debugging {shown}. Pause somewhere with `break 12` or `break function`, then `run`; `help` lists the commands.", "{shown} wird debuggt. Halte irgendwo an mit `break 12` oder `break funktion`, dann `run`; `help` listet die Befehle auf."),
+        ("The program finished. `run` starts it again, `quit` leaves.", "Das Programm ist fertig. `run` startet es noch einmal, `quit` beendet."),
+        ("The program stopped on an error. `run` starts it again, `quit` leaves.", "Das Programm wurde durch einen Fehler gestoppt. `run` startet es noch einmal, `quit` beendet."),
+        (r#"THE DEBUGGER: rythme debug
+
+`rythme debug` runs a program and pauses it where you ask, to look at the
+values of its names while it runs:
+
+  rythme debug factorial.ry          then type commands at the prompt (debug)
+
+  break 12         pause at line 12 (or at the next line with code)
+  break geo.ry:3   pause at line 3 of a file the program uses
+  break fact       pause each time the function fact starts
+  run              start the program (step: pause at its first line)
+  next             go to the next line, without entering the functions called
+  step             go to the next line, entering the functions called
+  finish           go on until this function gives its result, and show it
+  continue         go on until the next breakpoint
+  where            the calls in progress, with their arguments
+  frame 1          look at another call of where (print and locals use it)
+  print n * 2      the value of an expression, computed where the program is
+  locals           the names visible here and their values
+  list             the lines around the current one
+  delete 1         remove a breakpoint (breakpoints lists them)
+  quit             stop
+
+An empty line repeats next, step, finish or continue.
+
+Each pause shows the line, the call (fact(n = 2)) and the depth: how many
+calls are in progress, and how many of the same function when it calls
+itself. A call in tail position (the last thing a function does) takes the
+place of the frame of its caller: the debugger says so, and where shows it.
+
+print computes only values: the functions that print, read, write files or
+draw random numbers are refused there, so that looking never changes the
+program. When an error stops the program, the debugger pauses where it
+happened, so that you can look at the values before the message.
+
+In VS Code: the Rythme extension adds the debugger (Run > Start Debugging,
+or F5 on a .ry file): breakpoints in the margin, the values of the names,
+step over, step into, step out. Other editors can start `rythme dap`, which
+speaks the Debug Adapter Protocol.
+The function `debug(value)` is something else: it prints a value and gives it back."#, r#"DER DEBUGGER: rythme debug
+
+`rythme debug` führt ein Programm aus und hält es an, wo du willst, damit du
+die Werte seiner Namen ansehen kannst, während es läuft:
+
+  rythme debug fakultaet.ry          dann Befehle an der Eingabeaufforderung (debug) tippen
+
+  break 12         in Zeile 12 anhalten (oder in der nächsten Zeile mit Code)
+  break geo.ry:3   in Zeile 3 einer Datei anhalten, die das Programm benutzt
+  break fact       jedes Mal anhalten, wenn die Funktion fact beginnt
+  run              das Programm starten (step: in seiner ersten Zeile anhalten)
+  next             zur nächsten Zeile, ohne in die aufgerufenen Funktionen zu gehen
+  step             zur nächsten Zeile, auch in die aufgerufenen Funktionen hinein
+  finish           weiterlaufen, bis diese Funktion ihr Ergebnis gibt, und es zeigen
+  continue         bis zum nächsten Haltepunkt weiterlaufen
+  where            die laufenden Aufrufe, mit ihren Argumenten
+  frame 1          einen anderen Aufruf von where ansehen (print und locals nutzen ihn)
+  print n * 2      der Wert eines Ausdrucks, berechnet dort, wo das Programm ist
+  locals           die hier sichtbaren Namen und ihre Werte
+  list             die Zeilen um die aktuelle herum
+  delete 1         einen Haltepunkt entfernen (breakpoints listet sie auf)
+  quit             beenden
+
+Eine leere Zeile wiederholt next, step, finish oder continue.
+
+Jede Pause zeigt die Zeile, den Aufruf (fact(n = 2)) und die Tiefe: wie viele
+Aufrufe laufen, und wie viele derselben Funktion, wenn sie sich selbst
+aufruft. Ein Aufruf in Endposition (das Letzte, was eine Funktion tut) nimmt
+den Platz des Rahmens seines Aufrufers ein: der Debugger sagt es, und where
+zeigt es.
+
+print berechnet nur Werte: die Funktionen, die ausgeben, lesen, Dateien
+schreiben oder Zufallszahlen ziehen, werden dort abgelehnt, damit das
+Ansehen das Programm nie verändert. Wenn ein Fehler das Programm stoppt, hält
+der Debugger dort an, wo er passiert ist, damit du die Werte vor der
+Meldung ansehen kannst.
+
+In VS Code: die Rythme-Erweiterung bringt den Debugger mit (Ausführen >
+Debugging starten, oder F5 in einer .ry-Datei): Haltepunkte am Rand, die Werte
+der Namen, Prozedurschritt, Einzelschritt, Rücksprung. Andere Editoren können
+`rythme dap` starten, das das Debug Adapter Protocol spricht.
+Die Funktion `debug(wert)` ist etwas anderes: sie gibt einen Wert aus und gibt ihn zurück."#),
+        // src/check/annot.rs, src/parser.rs: types written in the code
+        ("a whole number is an Int, not a Float: write it with a decimal point (`2.0`), or convert it with `float(...)`", "eine ganze Zahl ist ein Int, kein Float: schreib sie mit Dezimalpunkt (`2.0`) oder wandle sie mit `float(...)` um"),
+        ("a decimal number is a Float, not an Int: convert it with `int(...)`, `round(...)` or `floor(...)`", "eine Dezimalzahl ist ein Float, kein Int: wandle sie mit `int(...)`, `round(...)` oder `floor(...)` um"),
+        ("change the value, or the type written for it; types written in the code are checked before running, and are never needed (see `rythme help types`)", "ändere den Wert oder den Typ, der dafür geschrieben ist; im Code geschriebene Typen werden vor dem Ausführen geprüft und sind nie nötig (siehe `rythme help types`)"),
+        ("`{name}` is written `{w}`, but its value is {what}", "`{name}` ist als `{w}` geschrieben, aber sein Wert ist {what}"),
+        ("the type written for `{name}`", "der für `{name}` geschriebene Typ"),
+        ("this value is {what}, but the type written for it is `{w}`", "dieser Wert ist {what}, aber der dafür geschriebene Typ ist `{w}`"),
+        ("the type written here", "der hier geschriebene Typ"),
+        ("not `{w}`", "nicht `{w}`"),
+        ("`{v}` cannot be both {a} and {b} in this call to `{f}`", "`{v}` kann in diesem Aufruf von `{f}` nicht zugleich {a} und {b} sein"),
+        ("`{v}` is {b} here", "`{v}` ist hier {b}"),
+        ("`{v}` is {a} here", "`{v}` ist hier {a}"),
+        ("a type variable like `{v}` stands for the same type everywhere in the types written for `{f}`", "eine Typvariable wie `{v}` steht überall in den für `{f}` geschriebenen Typen für denselben Typ"),
+        ("`{f}` expects `{ws}` for `{param}`, but receives {what}", "`{f}` erwartet `{ws}` für `{param}`, bekommt aber {what}"),
+        ("not `{ws}`", "nicht `{ws}`"),
+        ("the type written for `{param}`", "der für `{param}` geschriebene Typ"),
+        ("this function receives {what}, but `{param}` is written `{w}`", "diese Funktion bekommt {what}, aber `{param}` ist als `{w}` geschrieben"),
+        ("`{f}` is written to give `{w}`, but gives {what}", "`{f}` soll laut geschriebenem Typ `{w}` liefern, liefert aber {what}"),
+        ("the type written for the result of `{f}`", "der für das Ergebnis von `{f}` geschriebene Typ"),
+        ("`{f}` is written to give `{w}`, but its `?` may give back {what}", "`{f}` soll laut geschriebenem Typ `{w}` liefern, aber ihr `?` kann {what} zurückgeben"),
+        ("`?` gives back the `None` or `Err(...)` it stops on: write the result as an Option or a Result, like `-> Option(Int)`", "`?` gibt das `None` oder `Err(...)` zurück, bei dem es anhält: schreib das Ergebnis als Option oder Result, etwa `-> Option(Int)`"),
+        ("unknown type `{name}`", "unbekannter Typ `{name}`"),
+        ("in Rythme, write `{best}`", "in Rythme schreibt man `{best}`"),
+        ("the names of types start with an uppercase letter; a type variable, which stands for any type, is one lowercase letter, like `a`", "Typnamen beginnen mit einem Großbuchstaben; eine Typvariable, die für einen beliebigen Typ steht, ist ein einzelner Kleinbuchstabe, etwa `a`"),
+        ("`{name}` takes no type between parentheses", "`{name}` nimmt keinen Typ in Klammern"),
+        ("write `{name}` alone", "schreib `{name}` allein"),
+        ("a type is one of Rythme's (`Int`, `Float`, `Text`, `Bool`, `List`, `Dict`...) or one defined with `type`", "ein Typ ist einer von Rythme (`Int`, `Float`, `Text`, `Bool`, `List`, `Dict`...) oder ein mit `type` definierter"),
+        ("`{name}` takes one type: `{example}`", "`{name}` nimmt genau einen Typ: `{example}`"),
+        ("`{name}` takes two types: `{example}`", "`{name}` nimmt zwei Typen: `{example}`"),
+        ("to write the type of `{name}`, put a space after `:`: `{name}: {ty} = ...`", "um den Typ von `{name}` zu schreiben, setz ein Leerzeichen nach `:`: `{name}: {ty} = ...`"),
+        ("`=` and a value", "`=` und ein Wert"),
+        ("a name with a written type is given its value right away: `total: Float = 0.0`", "ein Name mit geschriebenem Typ bekommt seinen Wert sofort: `total: Float = 0.0`"),
+        ("`,`", "`,`"),
+        ("to write the type of a parameter, put `:` right after its name, then a space: `x: {s}`", "um den Typ eines Parameters zu schreiben, setz `:` direkt hinter seinen Namen, dann ein Leerzeichen: `x: {s}`"),
+        ("`:` and the type of the field", "`:` und der Typ des Felds"),
+        ("`(`", "`(`"),
+        ("`->` and the type of the result", "`->` und der Typ des Ergebnisses"),
+        ("a type", "ein Typ"),
+        ("to write the type of a field, write its name first: `Circle(radius: Float)`", "um den Typ eines Felds zu schreiben, schreib zuerst seinen Namen: `Kreis(radius: Float)`"),
+        ("a type is written like `Int`, `Text`, `List(Int)`, `[Int]`, `{{name: Text}}`, `fn(Int) -> Int` or `Shape`; see `rythme help types`", "ein Typ wird geschrieben wie `Int`, `Text`, `List(Int)`, `[Int]`, `{{name: Text}}`, `fn(Int) -> Int` oder `Form`; siehe `rythme help types`"),
+        (
+            r#"E027 — A type written in the code does not fit
+
+A type written in the code, after `:` or `->`, is a promise that
+`rythme check` verifies before running: a value that surely has another type
+is reported where it is given. The type must also exist.
+
+Wrong:   total: Float = 0              # 0 is an Int
+Right:   total: Float = 0.0
+Wrong:   fn area(w: Int, h: Int) -> Int = w * h
+         area(2, "3")                  # "3" is a Text
+Right:   area(2, 3)
+Wrong:   fn label(n: Int) -> Text = n  # gives an Int
+Right:   fn label(n: Int) -> Text = text(n)
+Wrong:   fn twice(x: int) = x * 2      # type names start with an uppercase letter
+Right:   fn twice(x: Int) = x * 2
+
+Written types are optional: removing one never changes what a program does.
+More: `rythme help types`."#,
+            r#"E027 — Ein im Code geschriebener Typ passt nicht
+
+Ein im Code geschriebener Typ, nach `:` oder `->`, ist ein Versprechen, das
+`rythme check` vor dem Ausführen prüft: ein Wert, der sicher einen anderen
+Typ hat, wird dort gemeldet, wo er übergeben wird. Den Typ muss es auch geben.
+
+Falsch:  summe: Float = 0              # 0 ist ein Int
+Richtig: summe: Float = 0.0
+Falsch:  fn flaeche(b: Int, h: Int) -> Int = b * h
+         flaeche(2, "3")               # "3" ist ein Text
+Richtig: flaeche(2, 3)
+Falsch:  fn etikett(n: Int) -> Text = n     # liefert ein Int
+Richtig: fn etikett(n: Int) -> Text = text(n)
+Falsch:  fn doppelt(x: int) = x * 2    # Typnamen beginnen mit einem Großbuchstaben
+Richtig: fn doppelt(x: Int) = x * 2
+
+Geschriebene Typen sind freiwillig: einen zu entfernen ändert nie, was ein
+Programm tut. Mehr: `rythme help types`."#,
+        ),
+        (
+            r#"TYPES WRITTEN IN THE CODE (optional)
+
+Rythme finds the types by itself. You may also write them where they help
+to read the code; `rythme check` then verifies them (E027):
+  fn area(width: Int, height: Int) -> Int = width * height
+  total: Float = 0.0
+  type Shape = Circle(radius: Float) | Rect(width: Float, height: Float)
+  [1, 2].map do |n: Int| n * 2 end
+
+The types
+  Int  Float  Text  Bool  Unit  Symbol
+  List(Int) or [Int]   Set(Text)   Dict(Text, Int)
+  Option(Int)   Result(Int, Text)
+  {name: Text, age: Int}       a record with at least these fields
+  fn(Int, Int) -> Int          a function
+  Shape                        a type defined with `type` (geometry.Shape
+                               for a type of `use geometry`)
+  a                            any type: one lowercase letter, the same type
+                               everywhere in a definition
+  List, Dict, Set, Option, Result, Record, Function alone: any content
+
+  fn first_of(xs: List(a)) -> a = xs[0]
+  first_of([1, 2]) + 1         # the checker knows it is an Int
+
+Written types are never needed and change nothing when the program runs;
+the editors and `rythme doc` show them."#,
+            r#"IM CODE GESCHRIEBENE TYPEN (freiwillig)
+
+Rythme findet die Typen selbst. Du kannst sie auch dort schreiben, wo sie
+beim Lesen des Codes helfen; `rythme check` prüft sie dann (E027):
+  fn flaeche(breite: Int, hoehe: Int) -> Int = breite * hoehe
+  summe: Float = 0.0
+  type Form = Kreis(radius: Float) | Rechteck(breite: Float, hoehe: Float)
+  [1, 2].map do |n: Int| n * 2 end
+
+Die Typen
+  Int  Float  Text  Bool  Unit  Symbol
+  List(Int) oder [Int]   Set(Text)   Dict(Text, Int)
+  Option(Int)   Result(Int, Text)
+  {name: Text, alter: Int}     ein Record mit mindestens diesen Feldern
+  fn(Int, Int) -> Int          eine Funktion
+  Form                         ein mit `type` definierter Typ (geometrie.Form
+                               für einen Typ von `use geometrie`)
+  a                            ein beliebiger Typ: ein Kleinbuchstabe, überall
+                               in einer Definition derselbe Typ
+  List, Dict, Set, Option, Result, Record, Function allein: beliebiger Inhalt
+
+  fn erstes(xs: List(a)) -> a = xs[0]
+  erstes([1, 2]) + 1           # die Prüfung weiß, dass es ein Int ist
+
+Geschriebene Typen sind nie nötig und ändern nichts, wenn das Programm
+läuft; die Editoren und `rythme doc` zeigen sie."#,
+        ),
     ],
 }

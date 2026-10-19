@@ -100,6 +100,7 @@ Weitere Möglichkeiten in der [englischen README](README.md#install).
 | `rythme explain E003`       | einen Fehlercode erklären                         |
 | `rythme learn`              | geführte Tour durch die Sprache                   |
 | `rythme steps fib.ry "fib(4)"` | die Rechnung Schritt für Schritt              |
+| `rythme debug fib.ry`          | der Debugger: Haltepunkte, Zeile für Zeile, Werte |
 
 Die Meldungen sind auf Deutsch mit `--lang de` vor dem Befehl, mit
 `RYTHME_LANG=de`, oder automatisch, wenn die Sprache des Systems Deutsch ist

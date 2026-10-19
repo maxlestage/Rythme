@@ -223,6 +223,16 @@ pub struct Texts {
     pub pg_share_close: &'static str,
     pub pg_shared_note: &'static str,
     pub pg_shared_back: &'static str,
+    /// The Seed option next to Run: its button and tooltip, the label of its field,
+    /// the placeholder of the empty field, the dice button, the hint; and what the
+    /// head of the output shows after a run with a seed (`{seed}` is replaced).
+    pub pg_seed: &'static str,
+    pub pg_seed_title: &'static str,
+    pub pg_seed_label: &'static str,
+    pub pg_seed_random: &'static str,
+    pub pg_seed_new: &'static str,
+    pub pg_seed_hint: &'static str,
+    pub pg_seed_used: &'static str,
     // Playground: what `playground.js` writes while it runs (`{ms}` and `{n}` are
     // replaced)
     pub pg_loading: &'static str,

@@ -545,11 +545,22 @@ impl<'a> Shaper<'a> {
         if *self.raw() == Tok::Fn && matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Ident(_))) {
             return self.fn_def(true);
         }
-        if parser::command_at(self.toks, self.pos, &self.preds, &self.values).is_some() {
+        // Like the parser: `total: Float = 0.0`.
+        let typed = matches!(self.raw(), Tok::Ident(_)) && matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Colon));
+        if !typed && parser::command_at(self.toks, self.pos, &self.preds, &self.values).is_some() {
             return self.command();
         }
         // Like the parser: `[first, ..] = list`, `{name, ..} = person`, `Some(x) = value`.
-        let first = if self.pattern_before_eq() { self.pattern()? } else { self.expr()? };
+        let first = if typed {
+            self.advance()?
+        } else if self.pattern_before_eq() {
+            self.pattern()?
+        } else {
+            self.expr()?
+        };
+        if *self.raw() == Tok::Colon {
+            self.typed(first)?;
+        }
         if *self.raw() == Tok::Eq {
             let eq = self.advance()?;
             self.set(eq, Indent::Inner(first));
@@ -623,7 +634,7 @@ impl<'a> Shaper<'a> {
             }
             i += 1;
         }
-        matches!(self.toks.get(i + 1).map(|t| &t.tok), Some(Tok::Eq))
+        matches!(self.toks.get(i + 1).map(|t| &t.tok), Some(Tok::Eq | Tok::Colon))
     }
 
     /// The statements of a block, up to `end`, one level deeper than the line of `anchor`.
@@ -673,6 +684,9 @@ impl<'a> Shaper<'a> {
                     while *p.peek() != Tok::Bar {
                         let param = p.pattern_atom()?;
                         p.set(param, Indent::Inner(open));
+                        if *p.peek() == Tok::Colon {
+                            p.typed(param)?;
+                        }
                         if *p.peek() == Tok::Comma {
                             p.take(Role::Comma)?;
                         } else if *p.peek() != Tok::Bar {
@@ -730,7 +744,14 @@ impl<'a> Shaper<'a> {
             return None;
         }
         let open = self.take(Role::Call)?;
-        self.comma_list(open, &Tok::RParen, Self::pattern)?;
+        self.comma_list(open, &Tok::RParen, Self::param)?;
+        // `-> Int`: the type of the result (the parser accepts `->` only there).
+        if *self.raw() == Tok::Arrow {
+            let arrow = self.advance()?;
+            self.set(arrow, Indent::Inner(f));
+            let t = self.ty()?;
+            self.set(t, Indent::Inner(f));
+        }
         if named && *self.raw() == Tok::If {
             let k = self.advance()?;
             self.set(k, Indent::Inner(f));
@@ -772,7 +793,7 @@ impl<'a> Shaper<'a> {
             self.set(v, Indent::Inner(k));
             if *self.raw() == Tok::LParen {
                 let open = self.take(Role::Call)?;
-                self.comma_list(open, &Tok::RParen, Self::advance)?;
+                self.comma_list(open, &Tok::RParen, Self::field)?;
             }
             variants.push((bar, v));
             if *self.past_newlines() != Tok::Bar {
@@ -785,6 +806,104 @@ impl<'a> Shaper<'a> {
         }
         self.s.types.push(variants);
         Some(k)
+    }
+
+    /// A parameter, and its type if one is written: `w: Int`.
+    fn param(&mut self) -> Option<usize> {
+        let first = self.pattern()?;
+        if *self.peek() == Tok::Colon {
+            self.typed(first)?;
+        }
+        Some(first)
+    }
+
+    /// A field of a variant, and its type if one is written: `radius: Float`.
+    fn field(&mut self) -> Option<usize> {
+        let name = self.advance()?;
+        if *self.peek() == Tok::Colon {
+            self.typed(name)?;
+        }
+        Some(name)
+    }
+
+    /// `: Type` after the piece `first`.
+    fn typed(&mut self, first: usize) -> Option<()> {
+        let colon = self.take(Role::Colon)?;
+        self.set(colon, Indent::Inner(first));
+        let t = self.ty()?;
+        self.set(t, Indent::Inner(first));
+        Some(())
+    }
+
+    /// A written type, as in the parser: `Int`, `List(Int)`, `geo.Shape`,
+    /// `a`, `[Int]`, `{name: Text}`, `fn(Int) -> Int`.
+    fn ty(&mut self) -> Option<usize> {
+        match self.peek() {
+            Tok::Ctor(_) => {
+                let name = self.advance()?;
+                if *self.raw() == Tok::LParen {
+                    let open = self.take(Role::Call)?;
+                    self.comma_list(open, &Tok::RParen, Self::ty)?;
+                }
+                Some(name)
+            }
+            Tok::Ident(_)
+                if self.toks.get(self.pos + 1).is_some_and(|t| t.tok == Tok::Dot)
+                    && self.toks.get(self.pos + 2).is_some_and(|t| matches!(t.tok, Tok::Ctor(_))) =>
+            {
+                let m = self.advance()?;
+                self.take(Role::Dot)?;
+                self.advance()?;
+                if *self.raw() == Tok::LParen {
+                    let open = self.take(Role::Call)?;
+                    self.comma_list(open, &Tok::RParen, Self::ty)?;
+                }
+                Some(m)
+            }
+            Tok::Ident(_) => self.advance(),
+            Tok::LBracket => {
+                let open = self.take(Role::Open)?;
+                self.with_sig(false, |p| {
+                    let t = p.ty()?;
+                    p.set(t, Indent::Inner(open));
+                    p.s.body_start[t] = true;
+                    if *p.peek() != Tok::RBracket {
+                        return None;
+                    }
+                    p.close(open)
+                })?;
+                Some(open)
+            }
+            Tok::LBrace => {
+                let open = self.take(Role::Open)?;
+                self.comma_list(open, &Tok::RBrace, |p| {
+                    let key = p.advance()?;
+                    if *p.peek() != Tok::Colon {
+                        return None;
+                    }
+                    p.typed(key)?;
+                    Some(key)
+                })?;
+                Some(open)
+            }
+            Tok::Fn => {
+                let f = self.advance()?;
+                if *self.peek() != Tok::LParen {
+                    return None;
+                }
+                let open = self.take(Role::Call)?;
+                self.comma_list(open, &Tok::RParen, Self::ty)?;
+                if *self.peek() != Tok::Arrow {
+                    return None;
+                }
+                let arrow = self.advance()?;
+                self.set(arrow, Indent::Inner(f));
+                let ret = self.ty()?;
+                self.set(ret, Indent::Inner(f));
+                Some(f)
+            }
+            _ => None,
+        }
     }
 
     fn test_def(&mut self) -> Option<usize> {

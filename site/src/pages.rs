@@ -716,6 +716,7 @@ pub fn playground_ui(t: &Texts) -> String {
         ("shareBroken", t.pg_share_broken),
         ("stepsOf", t.pg_steps_of),
         ("stepsNone", t.pg_steps_none),
+        ("seedUsed", t.pg_seed_used),
     ];
     let pairs: Vec<String> = fields.iter().map(|(k, v)| format!("{}:{}", json_string(k), json_string(v))).collect();
     format!("{{{}}}", pairs.join(","))
@@ -798,6 +799,7 @@ pub fn playground(ctx: &Ctx) -> Page {
                         .attr("title", t.pg_format_title)
                         .text(t.pg_format),
                 )
+                .child(seed_option(t))
                 .child(
                     button()
                         .class("btn btn--primary")
@@ -882,6 +884,7 @@ pub fn playground(ctx: &Ctx) -> Page {
                     div()
                         .class("panel__head")
                         .child(span().class("file").id("output-title").text(t.pg_output))
+                        .child(span().class("seed-used").id("seed-used").attr("hidden", ""))
                         .child(span().class("status").id("status").attr("role", "status")),
                 )
                 .child(pre().class("output output--live").id("output").attr("tabindex", "0"))
@@ -931,6 +934,55 @@ pub fn playground(ctx: &Ctx) -> Page {
         .child(p().class("note").text(t.pg_offline));
     layout(ctx, &format!("{} — Rythme", t.pg_title), t.pg_lead, content)
         .head(format!(r#"<script src="{}" defer=""></script>"#, ctx.asset("/playground.js")))
+}
+
+/// The Seed option, next to Run (a `details`, shown by `playground.js`): empty, the
+/// draws of `random` and `shuffle` change from run to run; a whole number, every run
+/// makes the same draws (`rythme run --seed N`; with Test, `rythme test --seed N`).
+/// The dice picks a new seed and runs. The seed stays in this browser, and travels
+/// with *Share* (`&seed=N`).
+fn seed_option(t: &Texts) -> Element {
+    details()
+        .class("seed")
+        .id("seed-option")
+        .attr("hidden", "")
+        .child(
+            summary()
+                .class("btn seed__toggle")
+                .attr("title", t.pg_seed_title)
+                .child(span().class("seed__name").text(t.pg_seed))
+                .child(span().class("seed__value").id("seed-shown")),
+        )
+        .child(
+            div()
+                .class("seed__panel")
+                .child(label().class("seed__label").attr("for", "seed").text(t.pg_seed_label))
+                .child(
+                    div()
+                        .class("seed__row")
+                        .child(
+                            input()
+                                .id("seed")
+                                .attr("type", "text")
+                                .attr("inputmode", "numeric")
+                                .attr("pattern", "[0-9]*")
+                                .attr("maxlength", "15")
+                                .attr("spellcheck", "false")
+                                .attr("autocomplete", "off")
+                                .attr("placeholder", t.pg_seed_random)
+                                .attr("aria-describedby", "seed-hint"),
+                        )
+                        .child(
+                            button()
+                                .class("btn btn--sm")
+                                .attr("type", "button")
+                                .id("seed-new")
+                                .child(span().attr("aria-hidden", "true").text("⚄"))
+                                .child(span().text(t.pg_seed_new)),
+                        ),
+                )
+                .child(p().class("seed__hint").id("seed-hint").text(t.pg_seed_hint)),
+        )
 }
 
 /// Shown by `playground.js` when the program comes from a link (`#code=…`): the draft
@@ -1102,6 +1154,11 @@ mod tests {
             "shared-note",
             "shared-text",
             "shared-back",
+            "seed-option",
+            "seed-shown",
+            "seed",
+            "seed-new",
+            "seed-used",
         ] {
             assert!(js.contains(&format!("$(\"{id}\")")), "playground.js does not use #{id}");
             assert!(page.contains(&format!("id=\"{id}\"")), "the playground has no #{id}");

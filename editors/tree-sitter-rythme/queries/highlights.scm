@@ -74,11 +74,24 @@
 (block_parameters
   (identifier) @variable.parameter)
 
+; `fn area(w: Int)`, `do |n: Int|`
+(typed_parameter
+  pattern: (identifier) @variable.parameter)
+
+(typed_block_parameter
+  pattern: (identifier) @variable.parameter)
+
 ; Types and constructors
 
 (type_identifier) @type.definition
 
 (constructor) @constructor
+
+; Types written in the code: `w: Int`, `-> List(a)`
+[
+  (type_name)
+  (type_variable)
+] @type
 
 ; Fields
 

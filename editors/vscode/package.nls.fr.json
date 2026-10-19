@@ -15,5 +15,13 @@
   "command.test": "Lancer les tests de ce fichier",
   "command.runTest": "Lancer un test de ce fichier",
   "command.explain": "Expliquer un code d'erreur",
-  "command.help": "Aide sur un sujet ou une fonction"
+  "command.help": "Aide sur un sujet ou une fonction",
+  "command.debug": "Déboguer ce fichier",
+  "debug.program": "Le programme Rythme à déboguer (un fichier .ry).",
+  "debug.args": "Les mots donnés au programme (ce que voit `args()`).",
+  "debug.stopOnEntry": "Faire une pause à la première ligne du programme.",
+  "debug.cwd": "Le dossier où le programme s'exécute.",
+  "debug.name": "Déboguer ce fichier Rythme",
+  "debug.snippet": "Rythme : déboguer un fichier",
+  "debug.snippet.description": "Lance un fichier .ry avec le débogueur de Rythme (`rythme dap`)."
 }

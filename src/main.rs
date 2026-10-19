@@ -161,6 +161,8 @@ fn cli(mut args: Vec<String>) -> i32 {
         "exercise" | "exercises" | "exercice" | "exercices" => rythme::exercise::command(&rest),
         "steps" | "etapes" | "étapes" => rythme::steps::command(&rest),
         "lsp" => rythme::lsp::run(&rest, chosen),
+        "debug" | "deboguer" | "déboguer" => rythme::debug::term::command(&rest),
+        "dap" => rythme::debug::dap::command(&rest),
         "-e" | "eval" => match rest.first() {
             Some(code) => eval_code(code, rest[1..].to_vec()),
             None => usage_error(t!("which code? Example: rythme -e 'print(1 + 2)'", "quel code ? Exemple : rythme -e 'print(1 + 2)'")),
@@ -171,7 +173,7 @@ fn cli(mut args: Vec<String>) -> i32 {
             }
             let commands = [
                 "run", "check", "test", "fmt", "doc", "help", "explain", "learn", "repl", "version", "lsp", "exercise", "new", "install",
-                "steps",
+                "steps", "debug", "dap",
             ];
             let mut msg = t!("unknown command or file `{cmd}`", "commande ou fichier inconnu `{cmd}`");
             if let Some(best) = suggest::closest(&cmd, commands.iter().copied()) {
