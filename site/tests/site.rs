@@ -341,9 +341,18 @@ async fn the_theme_picker_and_its_script() {
         assert_eq!(html.matches("<script>").count(), 1, "{path}: one inline script");
         let csp = res.header("content-security-policy").unwrap_or_default();
         assert!(csp.contains(&hash), "{path}: {csp}");
-        for inline in ContentSecurityPolicy::hashes_for_inline_scripts(&html) {
+        // Every script that runs is allowed by its hash; the structured data (JSON-LD) is
+        // not a script that runs: the policy leaves it out, and the browser reads it.
+        let (scripts, data) = split_json_ld(&html);
+        for inline in ContentSecurityPolicy::hashes_for_inline_scripts(&scripts) {
             assert!(csp.contains(&inline), "{path}: {inline}");
         }
+        for block in data {
+            let hash = ContentSecurityPolicy::hashes_for_inline_scripts(&format!("<script>{block}</script>")).pop().unwrap();
+            assert!(!csp.contains(&hash), "{path}: the JSON-LD needs no hash");
+        }
+        let scripts_src = csp.split(';').find(|d| d.trim().starts_with("script-src")).unwrap_or_default();
+        assert!(!scripts_src.contains("unsafe-inline"), "{path}: {csp}");
         // The picker: hidden without JavaScript, a button for computers, a fieldset of
         // radio buttons with their labels in the language of the page.
         assert!(html.contains(r#"<li class="nav__item--theme" hidden="">"#), "{path}");
@@ -361,6 +370,20 @@ async fn the_theme_picker_and_its_script() {
             assert!(html.contains(&format!(r#"<span class="theme__name">{}</span>"#, theme.name(t))), "{path}: {id}");
         }
     }
+}
+
+/// The page without its JSON-LD blocks, and the text of those blocks.
+fn split_json_ld(html: &str) -> (String, Vec<String>) {
+    const OPEN: &str = r#"<script type="application/ld+json">"#;
+    let (mut rest, mut scripts, mut data) = (html, String::new(), Vec::new());
+    while let Some(start) = rest.find(OPEN) {
+        scripts.push_str(&rest[..start]);
+        let end = rest[start..].find("</script>").expect("a closed JSON-LD block") + start;
+        data.push(rest[start + OPEN.len()..end].to_owned());
+        rest = &rest[end + "</script>".len()..];
+    }
+    scripts.push_str(rest);
+    (scripts, data)
 }
 
 /// The calculation that a step of the tour opens on (`&mode=steps&expr=…`) is shown

@@ -5,7 +5,9 @@
 //! What a static host cannot do is replaced: `/` picks the language in the browser
 //! instead of a redirection, and `404.html` is the French "not found" page. GitHub
 //! Pages serves `sw.js` with a short cache rather than `no-cache`: browsers check a
-//! service worker past their HTTP cache anyway.
+//! service worker past their HTTP cache anyway. The Markdown of the pages
+//! (`index.md`) and `llms.txt` are files like the others; GitHub Pages gives them their
+//! types (`text/markdown`, `text/plain`).
 
 use std::io;
 use std::path::Path;
@@ -56,6 +58,10 @@ pub async fn export(out: &Path, base_path: &str, site_url: Option<String>) -> io
 
     for route in Route::all() {
         write(&format!("{}index.html", route.path()), get(route.path(), 200).await?.as_bytes())?;
+        // The page as Markdown, for AI assistants: `/{lang}/learn/index.md`.
+        if route.page.has_markdown() {
+            write(&route.markdown_path(), get(route.markdown_path(), 200).await?.as_bytes())?;
+        }
     }
     write("404.html", get("/fr/404/".into(), 404).await?.as_bytes())?;
     // The installable app: the offline pages and the manifests of every language, and
@@ -66,7 +72,7 @@ pub async fn export(out: &Path, base_path: &str, site_url: Option<String>) -> io
         let manifest = crate::pwa::manifest_path(lang);
         write(&manifest, get(manifest.clone(), 200).await?.as_bytes())?;
     }
-    for file in ["/examples.json", "/sitemap.xml", "/robots.txt", "/sw.js"] {
+    for file in ["/examples.json", "/sitemap.xml", "/robots.txt", "/sw.js", crate::ai::LLMS_PATH, crate::ai::LLMS_FULL_PATH] {
         write(file, get(file.into(), 200).await?.as_bytes())?;
     }
     write("index.html", language_picker().as_bytes())?;
