@@ -45,7 +45,7 @@ fn the_index_follows_the_llms_txt_format() {
         assert!(url.starts_with("https://github.com/maxlestage/Rythme/"), "{url}");
         // The links point to files of the repository.
         let path = url.trim_start_matches("https://github.com/maxlestage/Rythme/blob/master/").split('#').next().unwrap();
-        assert!(Path::new(env!("CARGO_MANIFEST_DIR")).join(path).exists() || path == "AGENTS.md", "{path} does not exist");
+        assert!(Path::new(env!("CARGO_MANIFEST_DIR")).join(path).exists(), "{path} does not exist");
     }
 }
 
