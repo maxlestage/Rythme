@@ -641,6 +641,9 @@ impl<'a> Checker<'a> {
                 match g.kind {
                     // A Ruby name (`size`) may be given to something else.
                     GKind::Builtin if crate::builtins::alias_of(&s.name()).is_some() => {}
+                    // A function given by the program that embeds Rythme (a
+                    // web framework's `header`) may be defined again freely.
+                    GKind::Builtin if builtin_name(g).and_then(crate::builtins::lookup).is_none() => {}
                     GKind::Builtin => self.diags.push(
                         // `pi` is a value, not a function.
                         Diagnostic::warning("W003", match g.arity {

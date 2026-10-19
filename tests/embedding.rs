@@ -74,3 +74,34 @@ fn the_number_of_arguments_of_a_host_function_is_checked() {
     let (messages, _) = run("db.insert(:tasks)");
     assert!(messages.contains("E004"), "{messages}");
 }
+
+static TAG: Builtin = Builtin {
+    name: "header",
+    sig: "header(children)",
+    min: 0,
+    max: 1,
+    cat: Category::Basics,
+    en: "An HTML element.",
+    fr: "Un élément HTML.",
+    example: "",
+    func: rows,
+};
+
+#[test]
+fn a_host_function_may_be_defined_again() {
+    rythme::io::capture();
+    let mut d = Driver::new();
+    d.color = false;
+    d.interp.globals.insert(Sym::new("header"), Value::Builtin(&TAG));
+    let m = d.load_source("host.ry", "fn header(title) = \"# {title}\"\nheader(\"Accueil\")", None, Path::new("."));
+    let value = m.and_then(|m| d.execute(&m, Mode::Run).ok().flatten()).map(|v| v.repr());
+    let messages = rythme::io::take_captured();
+    assert_eq!(messages, "", "no W003 for a function of the host");
+    assert_eq!(value.as_deref(), Some("\"# Accueil\""));
+    // The language's own functions still warn.
+    rythme::io::capture();
+    let mut d = Driver::new();
+    d.color = false;
+    let _ = d.load_source("host.ry", "fn len(x) = 0\nlen(1)", None, Path::new("."));
+    assert!(rythme::io::take_captured().contains("W003"));
+}
