@@ -356,6 +356,7 @@ pub fn analyze_all(items: &[Item], know: &Knowledge, repl: bool, signatures: boo
     }
     c.walk(items);
     c.top_signatures();
+    c.diags.iter_mut().for_each(crate::fix::complete);
     Analysis { diagnostics: c.diags, signatures: c.needs.signatures.unwrap_or_default(), types: c.name_types.unwrap_or_default() }
 }
 
@@ -1151,7 +1152,7 @@ impl<'a> Checker<'a> {
                     "`{m}.{x}?` est une fonction de `{file}`, mais sans `(` juste après, `?` est l'opérateur : appelez-la, `{m}.{x}?(...)`, ou donnez-la comme `fn(v) = {m}.{x}?(v)`"
                 ));
             } else if let Some(best) = suggest::closest(&x.name(), candidates.iter().map(|n| &**n)) {
-                d = d.help(t!("did you mean `{m}.{best}`?", "vouliez-vous dire `{m}.{best}` ?"));
+                d = crate::fix::guess(d.help(t!("did you mean `{m}.{best}`?", "vouliez-vous dire `{m}.{best}` ?")), span, &x.name(), &best);
             } else if meta.names.is_empty() {
                 d = d.note(t!(
                     "`{file}` defines nothing that other files can use",
@@ -1206,15 +1207,14 @@ impl<'a> Checker<'a> {
             return;
         }
         if let Some((stem, file)) = self.know.nearby.get(&s).filter(|_| later.is_none()) {
-            self.diags.push(
-                Diagnostic::error("E003", t!("unknown name `{name}`", "nom inconnu `{name}`"))
-                    .at(span)
-                    .label(t!("not defined here", "non défini ici"))
-                    .help(t!(
-                        "`{name}` is defined in `{file}`: add `use {stem}` at the top of the file, then write `{stem}.{name}`",
-                        "`{name}` est défini dans `{file}` : ajoutez `use {stem}` en haut du fichier, puis écrivez `{stem}.{name}`"
-                    )),
-            );
+            let d = Diagnostic::error("E003", t!("unknown name `{name}`", "nom inconnu `{name}`"))
+                .at(span)
+                .label(t!("not defined here", "non défini ici"))
+                .help(t!(
+                    "`{name}` is defined in `{file}`: add `use {stem}` at the top of the file, then write `{stem}.{name}`",
+                    "`{name}` est défini dans `{file}` : ajoutez `use {stem}` en haut du fichier, puis écrivez `{stem}.{name}`"
+                ));
+            self.diags.push(crate::fix::add_use(d, span, stem, &name));
             return;
         }
         let mut d =
@@ -1239,7 +1239,7 @@ impl<'a> Checker<'a> {
             let wanted_ctor = s.is_ctor();
             let candidates = names.iter().filter(|n| n.chars().next().is_some_and(|c| c.is_uppercase()) == wanted_ctor);
             if let Some(best) = suggest::closest(&name, candidates.map(|n| &**n)) {
-                d = d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?"));
+                d = crate::fix::guess(d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?")), span, &name, &best);
             } else if wanted_ctor {
                 d = d.help(t!(
                     "to create your own kind of value, define a type: `type Name = {name}(field) | Other`",
@@ -2432,7 +2432,7 @@ impl<'a> Checker<'a> {
         } else {
             let names: Vec<Rc<str>> = self.own.keys().chain(self.know.globals.keys()).map(|s| s.name()).collect();
             if let Some(best) = suggest::closest(&shown, names.iter().map(|s| &**s)) {
-                d = d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?"));
+                d = crate::fix::guess(d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?")), name_span, &shown, &best);
             }
         }
         self.diags.push(d.note(t!(
@@ -2490,7 +2490,7 @@ impl<'a> Checker<'a> {
                             .at(span)
                             .label(t!("unknown field", "champ inconnu"));
                     if let Some(best) = suggest::closest(name, r.fields.iter().map(|(k, _)| &**k)) {
-                        d = d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?"));
+                        d = crate::fix::guess(d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?")), span, name, &best);
                     }
                     if r.fields.is_empty() {
                         d = d.note(t!("the record is empty: {{}}", "l'enregistrement est vide : {{}}"));
@@ -2524,6 +2524,7 @@ impl<'a> Checker<'a> {
                         "did you mean `.{best}`? (`value.{best}` calls `{best}(value)`)",
                         "vouliez-vous dire `.{best}` ? (`valeur.{best}` appelle `{best}(valeur)`)"
                     ));
+                    d = crate::fix::guess(d, span, name, &best);
                 }
                 self.diags.push(d);
                 Ty::Never
@@ -2596,7 +2597,7 @@ impl<'a> Checker<'a> {
         .at(span)
         .label(t!("unknown field", "champ inconnu"));
         if let Some(best) = suggest::closest(name, names.iter().map(|s| &**s)) {
-            diag = diag.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?"));
+            diag = crate::fix::guess(diag.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?")), span, name, &best);
         }
         let shown: Vec<String> = names.iter().map(|f| format!("`{f}`")).collect();
         diag = match (ctors.as_slice(), shown.is_empty()) {
@@ -2681,7 +2682,7 @@ impl<'a> Checker<'a> {
                             Diagnostic::error("E010", t!("this record has no field `{k}`", "cet enregistrement n'a pas de champ `{k}`"))
                                 .at(b.span);
                         if let Some(best) = suggest::closest(k, r.fields.iter().map(|(f, _)| &**f)) {
-                            d = d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?"));
+                            d = crate::fix::guess(d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?")), b.span, k, &best);
                         }
                         self.diags.push(d.help(t!(
                             "use `get(record, key)` to receive an Option instead",
@@ -2909,6 +2910,17 @@ impl<'a> Checker<'a> {
                 "to build a text with a value inside, use braces: \"total: {{x}}\"\nor convert the value first: text(x)",
                 "pour construire un texte contenant une valeur, utilisez des accolades : \"total : {{x}}\"\nou convertissez d'abord la valeur : text(x)"
             ));
+            if let (Some(l), Some(r)) = (l, r) {
+                let is_text = |e: &Expr| matches!(e.kind, ExprKind::Text(_) | ExprKind::Template(_));
+                if is_text(l) != is_text(r) {
+                    d = crate::fix::concat(d, l.span, is_text(l), r.span);
+                }
+            }
+        } else if op == BinOp::Mod && text(lt) {
+            d = d.help(suggest::alias_hint("format").unwrap_or_default());
+            if let (Some(l @ Expr { kind: ExprKind::Text(_), .. }), Some(r)) = (l, r) {
+                d = crate::fix::percent(d, l.span, r.span);
+            }
         } else if op == BinOp::Add && (list(lt) || list(rt)) {
             d = d.help(t!(
                 "to add one element to a list, use `push(list, x)` or `[..list, x]`",
@@ -3113,7 +3125,7 @@ impl<'a> Checker<'a> {
                         } else if let Some(best) =
                             suggest::closest(&n, self.ctors.keys().map(|k| k.name()).collect::<Vec<_>>().iter().map(|s| &**s))
                         {
-                            d = d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?"));
+                            d = crate::fix::guess(d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?")), p.span, &n, &best);
                         } else {
                             d = d.help(t!(
                                 "constructors are defined with `type`: `type Name = {n}(field) | Other`",

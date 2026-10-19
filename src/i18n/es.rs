@@ -812,6 +812,7 @@ Commands
   rythme file.ry            run a program
   rythme run --seed 42 f.ry run it with the same draws of random every time
   rythme check file.ry      find problems without running the program
+  rythme fix file.ry        apply the safe fixes of those problems (--dry-run: only show them)
   rythme test file.ry       run the tests of a file (or of a folder)
   rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
@@ -823,8 +824,10 @@ Commands
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
+  rythme help llms          the whole language in one text, for AI assistants
   rythme -e "code"          run a piece of code
   rythme lsp                language server, for editors (VS Code, Neovim...)
+  rythme mcp                server for AI assistants (Model Context Protocol)
   option --lang CODE        language of the messages: en, fr, es, de, pt, zh (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
@@ -866,6 +869,7 @@ Comandos
   rythme archivo.ry         ejecutar un programa
   rythme run --seed 42 f.ry ejecutarlo con los mismos sorteos de random cada vez
   rythme check archivo.ry   encontrar problemas sin ejecutar el programa
+  rythme fix archivo.ry     aplicar las correcciones seguras de esos problemas (--dry-run: solo mostrarlas)
   rythme test archivo.ry    ejecutar las pruebas de un archivo (o de una carpeta)
   rythme fmt archivo.ry     dar al código su formato oficial (--check: solo comprobar)
   rythme doc archivo.ry     escribir su documentación, en Markdown (--html: una página web)
@@ -877,8 +881,10 @@ Comandos
   rythme learn              visita guiada del lenguaje, paso a paso
   rythme help TEMA          ayuda sobre un tema o una función
   rythme explain E003       explicar un código de error
+  rythme help llms          todo el lenguaje en un texto, para los asistentes de IA
   rythme -e "código"        ejecutar un trozo de código
   rythme lsp                servidor de lenguaje, para los editores (VS Code, Neovim...)
+  rythme mcp                servidor para los asistentes de IA (Model Context Protocol)
   opción --lang CÓDIGO      idioma de los mensajes: en, fr, es, de, pt, zh (o variable RYTHME_LANG)
 
 Temas (rythme help TEMA)
@@ -1781,9 +1787,9 @@ y luego trátalos con `match` o pásalos hacia arriba con `?`. `fail(mensaje)` d
         ("unknown option `{name}` for `rythme test`", "opción desconocida `{name}` para `rythme test`"),
         (
             r#"
-the options are: --filter NAME, --seed N, --watch (see `rythme help tests`)"#,
+the options are: --filter NAME, --seed N, --watch, --sandbox, --format json (see `rythme help tests`)"#,
             r#"
-las opciones son: --filter NOMBRE, --seed N, --watch (consulta `rythme help tests`)"#,
+las opciones son: --filter NOMBRE, --seed N, --watch, --sandbox, --format json (consulta `rythme help tests`)"#,
         ),
         ("which file or folder? Example: rythme test my_tests.ry, or rythme test . for the files of this folder", "¿qué archivo o carpeta? Ejemplo: rythme test mis_pruebas.ry, o rythme test . para los archivos de esta carpeta"),
         ("Seed: {}", "Semilla: {}"),
@@ -8639,5 +8645,65 @@ Los tipos
 Los tipos escritos nunca son obligatorios y no cambian nada al ejecutar el
 programa; los editores y `rythme doc` los muestran."#,
         ),
+        // src/fix.rs, src/machine.rs: fixes and output for programs
+        ("`{f}` is not available in the sandbox: a program run by a tool (`--sandbox`) cannot touch files or folders. Run it yourself: rythme file.ry", "`{f}` no está disponible en el entorno aislado: un programa ejecutado por una herramienta (`--sandbox`) no puede tocar archivos ni carpetas. Ejecútalo tú mismo: rythme archivo.ry"),
+        ("Remove `{}`", "Quitar `{}`"),
+        (r#""not equal" is written `!=`: `a != b`"#, "«distinto de» se escribe `!=`: `a != b`"),
+        ("an anonymous function is written `fn(x) = x * 2`", "una función anónima se escribe `fn(x) = x * 2`"),
+        (
+            r#"on several lines, `if` is written:
+  if x > 0 then
+    "positive"
+  else if x == 0 then
+    "zero"
+  else
+    "negative"
+(no `end`; for several statements in a branch, use `do ... end`)"#,
+            r#"en varias líneas, `if` se escribe:
+  if x > 0 then
+    "positivo"
+  else if x == 0 then
+    "cero"
+  else
+    "negativo"
+(sin `end`; para varias instrucciones en una rama, usa `do ... end`)"#,
+        ),
+        (r#"Rythme texts put values in by themselves: write `"total: {{x}}"`, without `f` in front"#, r#"los textos de Rythme insertan los valores por sí solos: escribe `"total: {{x}}"`, sin `f` delante"#),
+        ("`--format` takes `json` or `text`, not `{v}`: `rythme check --format json file.ry`", "`--format` admite `json` o `text`, no `{v}`: `rythme check --format json archivo.ry`"),
+        ("`--watch` does not go with `--format json`: run `rythme test --format json` again after each change", "`--watch` no va con `--format json`: vuelve a ejecutar `rythme test --format json` después de cada cambio"),
+        ("unknown option `{bad}` for `rythme fix`; the options are: --dry-run, --all, --format json", "opción desconocida `{bad}` para `rythme fix`; las opciones son: --dry-run, --all, --format json"),
+        ("which file? Example: rythme fix hello.ry (or rythme fix --dry-run hello.ry to see the changes first)", "¿qué archivo? Ejemplo: rythme fix hola.ry (o rythme fix --dry-run hola.ry para ver antes los cambios)"),
+        ("cannot write `{shown}`: {e}", "no se puede escribir `{shown}`: {e}"),
+        ("{shown}: nothing to fix", "{shown}: nada que corregir"),
+        ("{shown}: {n} fix(es) to apply", "{shown}: {n} corrección(es) por aplicar"),
+        ("{shown}: {n} fix(es) applied", "{shown}: {n} corrección(es) aplicada(s)"),
+        ("; {errors} error(s) and {warnings} warning(s) left: `rythme check {shown}`", "; quedan {errors} error(es) y {warnings} advertencia(s): `rythme check {shown}`"),
+        ("here: `new_{name} = {name} {op} {rest}`, then use `new_{name}`; to add up a list, use `sum(list)` or `fold`", "aquí: `nuevo_{name} = {name} {op} {rest}`, y luego usa `nuevo_{name}`; para sumar una lista, usa `sum(lista)` o `fold`"),
+        // src/mcp.rs: the server for AI assistants
+        ("`rythme mcp` takes no argument, not `{bad}`", "`rythme mcp` no admite argumentos, y no `{bad}`"),
+        (
+            r#"rythme mcp: a Model Context Protocol server for AI assistants, on the standard input and output.
+Its tools run (in a sandbox), check, test, format and fix Rythme code, and explain errors and functions.
+Add it to Claude Code: claude mcp add rythme -- rythme mcp
+Claude Desktop, Cursor and others: see the manual, section 7.10."#,
+            r#"rythme mcp: un servidor Model Context Protocol para asistentes de IA, en la entrada y la salida estándar.
+Sus herramientas ejecutan (en un entorno aislado), verifican, prueban, formatean y corrigen código Rythme, y explican errores y funciones.
+Añádelo a Claude Code: claude mcp add rythme -- rythme mcp
+Claude Desktop, Cursor y otros: consulta el manual, sección 7.10."#,
+        ),
+        ("the program was stopped after {seconds} seconds: it may never end (a recursion without a base case?)", "el programa se detuvo después de {seconds} segundos: puede que no termine nunca (¿una recursión sin caso base?)"),
+        ("the program was stopped: it took more than {mb} MB of memory", "el programa se detuvo: ocupaba más de {mb} MB de memoria"),
+        // src/fix.rs, src/suggest.rs: habits from other languages
+        ("an anonymous function is written `fn(x) = x * 2`; a block given to a call is written `xs.map do |x| x * 2 end` or `xs.map {{ |x| x * 2 }}`", "una función anónima se escribe `fn(x) = x * 2`; un bloque dado a una llamada se escribe `xs.map do |x| x * 2 end` o `xs.map {{ |x| x * 2 }}`"),
+        ("the parameters of a block are written between bars: `xs.map {{ |x| x * 2 }}`", "los parámetros de un bloque se escriben entre barras: `xs.map {{ |x| x * 2 }}`"),
+        ("to add up a list, write `sum(xs)`; to combine its elements, `fold(xs, 0, fn(acc, x) = acc + x)`", "para sumar una lista, escribe `sum(xs)`; para combinar sus elementos, `fold(xs, 0, fn(acc, x) = acc + x)`"),
+        ("a part of a list or a text is taken with a function: `slice(xs, 1, 3)`, `drop(xs, 1)` (all but the first), `take(xs, 2)` (the first two)", "una parte de una lista o de un texto se toma con una función: `slice(xs, 1, 3)`, `drop(xs, 1)` (todo menos el primero), `take(xs, 2)` (los dos primeros)"),
+        ("the fields of a record are written with `:`: `{{{field}: value}}`", "los campos de un registro se escriben con `:`: `{{{field}: valor}}`"),
+        ("Rythme has no named arguments (`name=value`): give the values in order, like `round(x, 2)` (`rythme help NAME` shows the order)", "Rythme no tiene argumentos con nombre (`nombre=valor`): da los valores en orden, como `round(x, 2)` (`rythme help NOMBRE` muestra el orden)"),
+        ("texts have no format specifiers like `{{x:.2f}}`: write `{{text(x, 2)}}` for 2 decimals, or use `format_number`", "los textos no tienen especificadores de formato como `{{x:.2f}}`: escribe `{{text(x, 2)}}` para 2 decimales, o usa `format_number`"),
+        ("when there is nothing to do otherwise, give the unit value: `if x > 0 then print(x) else ()`", "cuando no hay nada que hacer en el otro caso, da el valor unidad: `if x > 0 then print(x) else ()`"),
+        ("here: `new_{w} = ...`, then use `new_{w}`; to repeat a step, use `fold`, `map` or a recursive function", "aquí: `nuevo_{w} = ...`, y luego usa `nuevo_{w}`; para repetir un paso, usa `fold`, `map` o una función recursiva"),
+        ("the functions of numbers are built in: write `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... without `Math.`", "las funciones de los números están integradas: escribe `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... sin `Math.`"),
+        ("Rythme has no generators: build the whole list (`map`, `filter`, `1..n`), or give a function to call", "Rythme no tiene generadores: construye toda la lista (`map`, `filter`, `1..n`), o pasa una función a la que llamar"),
     ],
 }

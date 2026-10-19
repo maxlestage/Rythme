@@ -461,7 +461,7 @@ fn usage(msg: String) -> i32 {
 }
 
 fn report(d: &Diagnostic) {
-    crate::io::err(&format!("{}\n", d.render(crate::diagnostic::use_color())));
+    crate::diagnostic::show(d, crate::diagnostic::use_color());
 }
 
 /// The project of the current folder, or a message saying there is none.
@@ -701,8 +701,67 @@ entry = "src/main.ry"
     );
     let lib_path = pick("src/greeting.ry", "src/salutation.ry");
     let test_path = pick("tests/greeting_test.ry", "tests/salutation_test.ry");
-    vec![(MANIFEST, toml), ("src/main.ry", main), (lib_path, lib), (test_path, test), ("README.md", readme), (".gitignore", ignore)]
+    vec![
+        (MANIFEST, toml),
+        ("src/main.ry", main),
+        (lib_path, lib),
+        (test_path, test),
+        ("README.md", readme),
+        (".gitignore", ignore),
+        ("AGENTS.md", AGENTS.replace("{name}", name)),
+        ("CLAUDE.md", "See [AGENTS.md](AGENTS.md).\n\n@AGENTS.md\n".to_string()),
+    ]
 }
+
+/// The `AGENTS.md` of a new project: how an AI coding agent works in a
+/// Rythme project. In English, the language these tools read best, whatever
+/// the language of the messages.
+pub const AGENTS: &str = r#"# AGENTS.md
+
+This is **{name}**, a project in [Rythme](https://github.com/maxlestage/Rythme),
+a small, purely functional language. AI assistants do not know Rythme well:
+before writing code, read the whole language in one text with
+
+```sh
+rythme help llms
+```
+
+(also at https://github.com/maxlestage/Rythme/blob/master/docs/llms-full.txt).
+Rythme is not Python, JavaScript or Ruby: no loops (use `map`, `filter`,
+`fold`, `each` or recursion), values never change (no `+=`, no `x = ...`
+twice), no `return` (the last expression is the result), no null (`Some`,
+`None`), no exceptions (`Ok`, `Err`, `?`), and `if` always has an `else`.
+Never guess a function name: `rythme help NAME` or `rythme help builtins`.
+
+## The loop
+
+After each change, until there is nothing left:
+
+```sh
+rythme check --format json        # every error and warning, as JSON, without running
+rythme fix                        # apply the safe fixes it found (--dry-run to see them first)
+rythme test --format json         # run the tests of tests/
+rythme run --format json          # run src/main.ry; its output and errors as JSON
+```
+
+Each diagnostic has a stable `code` (`rythme explain E003` explains it), a
+`range`, a `help` that names the fix in code, and often `fixes` with exact
+text edits. Read the help before changing the code. `rythme fmt` gives the
+code its official layout.
+
+## The project
+
+- `rythme.toml`: the name, the version, the entry point and the dependencies
+  (`rythme install` downloads them).
+- `src/main.ry`: the program; the other files of `src/` are modules: for
+  `src/shapes.ry`, write `use shapes`, then `shapes.area(2)`. Names starting
+  with `_` stay private to their file.
+- `tests/`: tests, written `test "name" = assert_eq(actual, expected)`; add
+  one for each new function.
+
+`rythme mcp` gives these commands to AI assistants through the Model Context
+Protocol: `claude mcp add rythme -- rythme mcp` for Claude Code.
+"#;
 
 // ----- commands without a file, at the root of a project -----------------------------
 

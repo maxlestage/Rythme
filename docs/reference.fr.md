@@ -1248,6 +1248,7 @@ erreur[E019]: ce `if` n'a pas de `else`
   |
   = aide: en Rythme, `if` donne toujours une valeur, il lui faut donc les deux cas :
         if age >= 18 then "majeur" else "mineur"
+  = aide: quand il n'y a rien à faire sinon, donnez la valeur unité : `if x > 0 then print(x) else ()`
   = en savoir plus : `rythme explain E019`
 ```
 
@@ -1864,6 +1865,7 @@ erreur[E011]: `total` est déjà défini
   | ----- défini une première fois ici
   |
   = aide: les valeurs ne changent jamais en Rythme : donnez un nouveau nom à la nouvelle valeur, comme `total2 = total + 1`
+  = aide: ici : `nouveau_total = ...`, puis utilisez `nouveau_total` ; pour répéter une étape, utilisez `fold`, `map` ou une fonction récursive
   = en savoir plus : `rythme explain E011`
 ```
 
@@ -3788,12 +3790,20 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMANDE] [ARGUMENTS...]
 | `steps FICHIER [EXPRESSION] [--max N] [--width N]` | `etapes`, `étapes` | montre l'évaluation étape par étape (voir [7.8](#78-étape-par-étape--rythme-etapes)) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | exécute le code donné en argument, et affiche la valeur de sa dernière expression sauf si c'est `()` ; `ARGS` est donné à `args()` |
 | `debug FICHIER [ARGS...]` | `deboguer`, `déboguer` | lance le programme avec le débogueur : points d'arrêt, ligne par ligne, valeurs (voir [7.9](#79-le-débogueur--rythme-debug)) |
+| `fix [--dry-run] [--all] [--format json] FICHIER...` | `corriger` | applique les corrections sûres des problèmes trouvés, jusqu'à ce qu'il n'en reste plus (voir [7.10](#710-rythme-et-les-assistants-dia)) |
+| `mcp` | | le serveur Model Context Protocol, lancé par un assistant d'IA (voir [7.10](#710-rythme-et-les-assistants-dia)) |
 | `lsp` | | le serveur de langage, lancé par un éditeur (voir [7.5](#75-éditeurs-et-serveur-de-langage)) |
 | `dap` | | le débogueur pour les éditeurs, avec le Debug Adapter Protocol (voir [7.9](#79-le-débogueur--rythme-debug)) |
 | `help [NOM]` | `aide`, `--help`, `-h` | la liste des sujets, ou l'aide d'un sujet, d'une fonction intégrée ou d'un code d'erreur |
 | `explain [CODE]` | `expliquer` | l'explication d'un code d'erreur ou d'avertissement ; sans code, la liste des codes |
 | `learn` | `apprendre`, `tutorial`, `tutoriel` | la visite guidée : les 13 sujets dans l'ordre, avec une pause après chacun quand elle tourne dans un terminal |
 | `version` | `--version`, `-V` | affiche `rythme 1.0.0` |
+
+**Pour les programmes et les assistants d'IA.** `check`, `run`, `test`,
+`fix`, `explain` et `help` acceptent `--format json` : un seul document JSON
+au lieu des messages pour les personnes ; `run` et `test` acceptent
+`--sandbox` ; `rythme help llms` affiche tout le langage en un texte (voir
+[7.10](#710-rythme-et-les-assistants-dia)).
 
 **Trouver le fichier.** Un premier argument qui n'est pas une commande est
 pris pour un fichier quand il finit par `.ry` ou qu'il désigne un fichier
@@ -4292,6 +4302,8 @@ Projet `bonjour` créé :
   bonjour/tests/salutation_test.ry
   bonjour/README.md
   bonjour/.gitignore
+  bonjour/AGENTS.md
+  bonjour/CLAUDE.md
 Ensuite : `cd bonjour`, puis `rythme run` pour le lancer et `rythme test` pour le tester (voir `rythme help projects`)
 $ cd bonjour
 $ rythme run
@@ -4654,6 +4666,196 @@ configuration de lancement a `program`, et peut avoir `args`, `cwd` et
 `stopOnEntry`. Sous `rythme dap`, ce que le programme affiche va dans la
 console de débogage, et `input` trouve la fin de l'entrée (l'entrée standard
 porte le protocole).
+
+### 7.10 Rythme et les assistants d'IA
+
+Les assistants d'IA et les agents de programmation (Claude, ChatGPT,
+Copilot, Cursor, Claude Code...) ont été entraînés avant que Rythme existe.
+Rythme leur donne de quoi l'apprendre vite, l'écrire, et corriger leurs
+propres erreurs en boucle, sans personne entre les deux : tout le langage en
+un texte, une sortie pour les programmes, des corrections exactes, et un
+serveur qu'ils peuvent appeler.
+
+**Le langage en un texte.** `rythme help llms` affiche
+[`docs/llms-full.txt`](llms-full.txt) : les règles qui diffèrent de Python,
+JavaScript et Ruby, la syntaxe par l'exemple (chaque exemple avec ce qu'il
+affiche), chaque fonction intégrée sur une ligne, les mots-clés, un tableau
+des habitudes des autres langages avec la manière de Rythme, chaque code
+d'erreur, et les commandes de la boucle. `rythme help llms.txt` affiche
+[`docs/llms.txt`](llms.txt), son index au format
+[llms.txt](https://llmstxt.org). Les deux sont produits à partir des sources
+(la table des fonctions intégrées, les mots-clés, les explications des codes)
+et un test échoue quand les fichiers de `docs/` ne sont pas à jour ; ils sont
+toujours en anglais. Donnez le premier à un assistant avant de lui demander
+d'écrire du Rythme.
+
+**Une sortie pour les programmes : `--format json`.** `rythme check`, `run`,
+`test`, `fix`, `explain` et `help` acceptent `--format json` (n'importe où
+après la commande pour `check`, `test`, `explain`, `help` et `fix`, avant le
+fichier pour `run`). Ils affichent alors un seul document JSON sur la sortie
+standard, au lieu des messages pour les personnes, qui restent le défaut :
+
+```sh
+$ rythme check --format json somme.ry
+```
+
+```json
+{"version": 1, "command": "check", "rythme": "1.0.0", "language": "fr",
+ "ok": false, "exit_code": 1,
+ "files": [{"file": "somme.ry", "ok": false, "errors": 1, "warnings": 0}],
+ "summary": {"files": 1, "errors": 1, "warnings": 0, "fixable": 0},
+ "diagnostics": [{
+   "code": "E003", "severity": "error", "message": "nom inconnu `totl`",
+   "file": "somme.ry",
+   "range": {"start": {"line": 2, "column": 7, "offset": 29},
+             "end": {"line": 2, "column": 11, "offset": 33}},
+   "label": "non défini", "labels": [], "notes": [],
+   "help": ["vouliez-vous dire `total` ?"],
+   "fixes": [{"title": "Remplacer par `total`", "safe": false,
+              "edits": [{"file": "somme.ry", "range": {"...": "..."}, "new_text": "total"}]}],
+   "trace": [], "explain": "rythme explain E003"}]}
+```
+
+- Chaque **diagnostic** a son `code` stable (`null` pour les rares messages
+  sans code), sa gravité `severity` (`"error"` ou `"warning"`), le message
+  `message`, l'étiquette `label` écrite sous le code et les autres endroits
+  (`labels`), les notes `notes`, l'aide `help` (quoi écrire, souvent avec du
+  code), les appels `trace` d'une erreur à l'exécution (le plus récent
+  d'abord) et les corrections `fixes`. Un **intervalle** `range` a un début
+  `start` et une fin `end` (non comprise), chacun avec une ligne `line` et
+  une colonne `column` comptées à partir de 1 (en caractères, comme dans les
+  messages) et une position `offset` en octets à partir de 0.
+- Une **correction** est une liste de modifications `edits` (`range` et
+  `new_text`) à appliquer ensemble. Une correction sûre (`safe`) donne
+  exactement le programme voulu (`&&` → `and`, `a ? b : c` →
+  `if a then b else c`, un `use` manquant) ; sinon c'est une proposition
+  probable, comme un nom mal écrit.
+- `run` ajoute `stdout`, `stderr` (ce que `debug` a écrit) et `seconds`, et
+  son `exit_code` est celui du programme (le code de `exit(code)` aussi).
+  `test` donne chaque test avec `passed` et son échec `failure`, un résumé
+  `summary` avec `passed`, `failed`, `filtered_out` et `broken_files`, et la
+  graine `seed`. `explain` donne le titre `title` et l'explication
+  `explanation` d'un code (de tous les codes sans code donné) ; `help` donne
+  chaque fonction intégrée (`signature`, `doc`, `example`, ses noms Ruby
+  `aliases`, `min_args`, `max_args`), mot-clé, sujet et code, ou l'un d'eux
+  (`rythme help map --format json`).
+- Les messages sont dans la langue des messages (`--lang`) ; les clés, les
+  codes et les valeurs comme `"error"` ne changent jamais.
+  `"version": 1` : dans cette version, des champs peuvent seulement être
+  ajoutés, jamais retirés ni changés de sens ; un lecteur doit donc ignorer
+  les champs qu'il ne connaît pas.
+  [`docs/rythme-output.schema.json`](rythme-output.schema.json) est le
+  schéma JSON de chaque document, et les tests vérifient chaque document
+  avec lui.
+- Les codes de sortie sont ceux de la commande (voir 7.1) : 0 quand le code
+  n'a pas d'erreur (avertissements permis) ou que chaque test réussit, 1
+  sinon, 2 pour une mauvaise utilisation de la commande (avec alors un
+  message pour les personnes sur la sortie d'erreur, et pas de JSON), ou le
+  code de `exit(code)` pour `run`.
+
+**`rythme fix`.** `rythme fix FICHIER...` (dans un projet : chaque fichier
+du projet) applique les corrections sûres, vérifie à nouveau le fichier et
+continue jusqu'à ce qu'il n'y ait plus rien à corriger, car une erreur de
+syntaxe peut en cacher une autre. Il affiche chaque correction appliquée,
+puis ce qui reste. `--dry-run` affiche les changements sous forme de diff
+unifié sans rien écrire (code de sortie 1 quand quelque chose changerait,
+pour les scripts), `--all` applique aussi les propositions, et `--format
+json` donne les corrections appliquées (`applied`), le `diff` et les
+diagnostics qui restent. Le relancer ne change rien. Les mêmes corrections
+sont les corrections rapides du serveur de langage.
+
+```text
+$ cat habitudes.ry
+let x = 3
+print(x > 2 && x < 9)
+print(x > 2 ? "grand" : "petit")
+$ rythme fix habitudes.ry
+  ✓ Supprimer `let`
+  ✓ Remplacer par `and`
+  ✓ Remplacer par `if x > 2 then "grand" else "petit"`
+habitudes.ry : 3 correction(s) appliquée(s)
+$ cat habitudes.ry
+x = 3
+print(x > 2 and x < 9)
+print(if x > 2 then "grand" else "petit")
+```
+
+**Le bac à sable.** `rythme run --sandbox` et `rythme test --sandbox` (ou la
+variable `RYTHME_SANDBOX=1`, pour toutes les commandes) lancent un programme
+qui ne doit pas toucher à l'ordinateur : `read_file`, `write_file`,
+`list_folder` et les autres fonctions des fichiers donnent `Err` avec un
+message, `file_exists` donne `false`, `env` donne `None`. Le programme lit
+toujours son entrée standard et ses arguments.
+
+**Dans un projet.** `rythme new` écrit aussi un `AGENTS.md` (avec un
+`CLAUDE.md` qui y renvoie) qui dit à un assistant d'IA comment travailler
+dans le projet : lire `rythme help llms`, puis boucler sur `rythme check
+--format json`, `rythme fix`, `rythme test --format json` et `rythme run
+--format json`, qui marchent tous à la racine du projet sans nom de fichier.
+Il est en anglais, la langue que ces outils lisent le mieux.
+
+**Le serveur pour les assistants d'IA : `rythme mcp`.** `rythme mcp` est un
+serveur du [Model Context Protocol](https://modelcontextprotocol.io) : un
+assistant le démarre et lui parle en JSON-RPC, un message par ligne sur son
+entrée et sa sortie standard (le transport *stdio* ; versions 2025-06-18,
+2025-03-26 et 2024-11-05 du protocole). Ses outils :
+
+| Outil | Ce qu'il fait |
+|-------|---------------|
+| `run` | vérifie et lance `code` (ou un fichier `file`) dans le bac à sable, avec une entrée `stdin`, des arguments `args`, une graine `seed` et une limite `timeout_seconds` ; donne le document de `rythme run --format json` |
+| `check` | le document de `rythme check --format json` |
+| `test` | le document de `rythme test --format json`, avec un filtre `filter` |
+| `fix` | le code corrigé, puis le document de `rythme fix --format json` (`all` pour les propositions aussi) |
+| `format` | le code avec sa mise en forme officielle |
+| `explain` | l'explication d'un code |
+| `help` | une fonction intégrée, un mot-clé, un code ou un sujet (tous sans `name`) |
+| `steps` | l'évaluation d'une expression `expression` étape par étape |
+| `reference` | tout le langage (`docs/llms-full.txt`) |
+
+`docs/llms-full.txt` et `docs/llms.txt` sont aussi des ressources
+(`rythme://docs/llms-full.txt`). Les outils qui lancent du code relancent
+`rythme` à chaque appel, dans le bac à sable, et l'arrêtent après 10
+secondes (le `timeout_seconds` de l'appel, 60 au plus) ou, sous Linux,
+au-delà de 512 Mo de mémoire : un programme qui ne finit jamais ne bloque
+jamais l'assistant. Les messages sont dans la langue du serveur :
+`rythme --lang fr mcp`.
+
+Pour l'ajouter à **Claude Code** :
+
+```sh
+claude mcp add rythme -- rythme mcp
+```
+
+ou, pour tous ceux qui travaillent sur un projet, un `.mcp.json` à sa racine
+(Claude Code), `.cursor/mcp.json` (**Cursor**) ou
+`claude_desktop_config.json` (**Claude Desktop**, *Settings → Developer →
+Edit Config*) :
+
+```json
+{
+  "mcpServers": {
+    "rythme": { "command": "rythme", "args": ["--lang", "fr", "mcp"] }
+  }
+}
+```
+
+**VS Code** (GitHub Copilot) lit `.vscode/mcp.json` :
+
+```json
+{
+  "servers": {
+    "rythme": { "type": "stdio", "command": "rythme", "args": ["mcp"] }
+  }
+}
+```
+
+Si `rythme` n'est pas dans le `PATH` de l'assistant, donnez son chemin
+complet comme `command`. `rythme mcp --help` rappelle la commande pour
+Claude Code.
+
+**Contribuer avec un agent.** [`AGENTS.md`](../AGENTS.md), à la racine du
+dépôt, dit aux agents des contributeurs comment construire et tester Rythme
+et quelles sont ses conventions.
 
 ---
 

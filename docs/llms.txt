@@ -1,0 +1,25 @@
+# Rythme
+
+> Rythme is a small, purely functional programming language with help everywhere: simpler than Python, safe like Rust (no null, no exceptions, values never change), with Rust-style error messages that name the fix. Version 1.0.0. Models do not know it yet: read `llms-full.txt` (the whole language in one file) before writing Rythme, then check the code with `rythme check --format json` and fix it until it is clean.
+
+How to work with Rythme as an AI assistant:
+
+- Read the full reference first: everything differs from Python, JavaScript and Ruby in small ways (no loops, no `return`, no mutation, `if` always has `else`).
+- After writing code, run `rythme check --format json FILE.ry`: each diagnostic has a stable code, a place, help in words and code, and often fixes as text edits.
+- `rythme fix FILE.ry` applies the safe fixes; `rythme explain CODE` explains a code; `rythme help NAME --format json` documents a built-in function.
+- Run `rythme test --format json` and `rythme run --format json FILE.ry`; repeat until there are no errors.
+- `rythme mcp` is a Model Context Protocol server with these tools (run in a sandbox, check, test, format, fix, explain, help, steps).
+
+## Docs
+
+- [Rythme for language models, complete](https://github.com/maxlestage/Rythme/blob/master/docs/llms-full.txt): the syntax, every construct with an example, every built-in function, common mistakes from other languages and every error code, in one file
+- [Reference manual](https://github.com/maxlestage/Rythme/blob/master/docs/reference.md): the precise definition of the language and its tools
+- [Rythme and AI assistants](https://github.com/maxlestage/Rythme/blob/master/docs/reference.md#710-rythme-and-ai-assistants): JSON output, `rythme fix`, the MCP server and how to add it to Claude Code, Claude Desktop or Cursor
+- [JSON output schema](https://github.com/maxlestage/Rythme/blob/master/docs/rythme-output.schema.json): the documents printed by `--format json`
+
+## Optional
+
+- [README](https://github.com/maxlestage/Rythme/blob/master/README.md): what Rythme is, installation
+- [Exercises](https://github.com/maxlestage/Rythme/blob/master/docs/exercises/README.md): 30 graded exercises with tests
+- [Examples](https://github.com/maxlestage/Rythme/blob/master/examples): small complete programs
+- [AGENTS.md](https://github.com/maxlestage/Rythme/blob/master/AGENTS.md): how to work on Rythme itself (the interpreter, in Rust)

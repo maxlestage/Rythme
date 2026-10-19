@@ -20,6 +20,10 @@
   the interactive mode.
 - [**Editors**](../editors/README.md): the language server, `rythme lsp`, in
   VS Code, Neovim, Helix, Zed, Emacs...
+- **For AI assistants**: [`llms-full.txt`](llms-full.txt), the whole
+  language in one text (`rythme help llms`), its index
+  [`llms.txt`](llms.txt), the [JSON output](rythme-output.schema.json) of
+  `--format json`, and `rythme mcp` ([manual, 7.10](reference.md#710-rythme-and-ai-assistants)).
 - [**Examples**](../examples): small complete programs, each with its expected
   output.
 - [**Contributing**](../CONTRIBUTING.md): how the interpreter is organised and
@@ -45,6 +49,10 @@
   `--lang fr` (ou définissez `RYTHME_LANG=fr`) pour tout avoir en français.
 - [**Éditeurs**](../editors/README.fr.md) : le serveur de langage,
   `rythme lsp`, dans VS Code, Neovim, Helix, Zed, Emacs...
+- **Pour les assistants d'IA** : [`llms-full.txt`](llms-full.txt), tout le
+  langage en un texte (`rythme help llms`, en anglais), son index
+  [`llms.txt`](llms.txt), la [sortie JSON](rythme-output.schema.json) de
+  `--format json`, et `rythme mcp` ([manuel, 7.10](reference.fr.md#710-rythme-et-les-assistants-dia)).
 - [**Exemples**](../examples) : de petits programmes complets, chacun avec ce
   qu'il doit afficher.
 - [**Contribuer**](../CONTRIBUTING.md) (en anglais) : l'organisation de

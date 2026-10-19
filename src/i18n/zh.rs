@@ -812,6 +812,7 @@ Commands
   rythme file.ry            run a program
   rythme run --seed 42 f.ry run it with the same draws of random every time
   rythme check file.ry      find problems without running the program
+  rythme fix file.ry        apply the safe fixes of those problems (--dry-run: only show them)
   rythme test file.ry       run the tests of a file (or of a folder)
   rythme fmt file.ry        give the code its official layout (--check: only check)
   rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
@@ -823,8 +824,10 @@ Commands
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
+  rythme help llms          the whole language in one text, for AI assistants
   rythme -e "code"          run a piece of code
   rythme lsp                language server, for editors (VS Code, Neovim...)
+  rythme mcp                server for AI assistants (Model Context Protocol)
   option --lang CODE        language of the messages: en, fr, es, de, pt, zh (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
@@ -866,6 +869,7 @@ A specific function: rythme help map
   rythme file.ry            运行程序
   rythme run --seed 42 f.ry 每次都用相同的 random 抽取结果运行它
   rythme check file.ry      不运行程序，找出问题
+  rythme fix file.ry        应用这些问题的安全修正（--dry-run：只显示）
   rythme test file.ry       运行一个文件（或一个文件夹）的测试
   rythme fmt file.ry        把代码整理成官方格式（--check：只检查）
   rythme doc file.ry        生成它的文档，Markdown 格式（--html：网页）
@@ -877,8 +881,10 @@ A specific function: rythme help map
   rythme learn              一步一步的语言导览
   rythme help TOPIC         某个主题或函数的帮助
   rythme explain E003       解释错误代码
+  rythme help llms          整个语言写在一个文本里，供 AI 助手阅读
   rythme -e "code"          运行一段代码
   rythme lsp                语言服务器，供编辑器使用（VS Code、Neovim……）
+  rythme mcp                供 AI 助手使用的服务器（Model Context Protocol）
   选项 --lang CODE          消息的语言：en、fr、es、de、pt、zh（或 RYTHME_LANG）
 
 主题（rythme help TOPIC）
@@ -1781,9 +1787,9 @@ then handle them with `match` or pass them on with `?`. `fail(message)` stops th
         ("unknown option `{name}` for `rythme test`", "`rythme test` 的未知选项 `{name}`"),
         (
             r#"
-the options are: --filter NAME, --seed N, --watch (see `rythme help tests`)"#,
+the options are: --filter NAME, --seed N, --watch, --sandbox, --format json (see `rythme help tests`)"#,
             r#"
-可用的选项有：--filter NAME、--seed N、--watch（参见 `rythme help tests`）"#,
+可用的选项有：--filter NAME、--seed N、--watch、--sandbox、--format json（参见 `rythme help tests`）"#,
         ),
         ("which file or folder? Example: rythme test my_tests.ry, or rythme test . for the files of this folder", "哪个文件或文件夹？例如：rythme test my_tests.ry，或者用 rythme test . 测试这个文件夹中的文件"),
         ("Seed: {}", "种子：{}"),
@@ -8466,5 +8472,65 @@ Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把�
 写出的类型从来不是必需的，程序运行时也不会因此有任何不同；
 编辑器和 `rythme doc` 会显示它们。"#,
         ),
+        // src/fix.rs, src/machine.rs: fixes and output for programs
+        ("`{f}` is not available in the sandbox: a program run by a tool (`--sandbox`) cannot touch files or folders. Run it yourself: rythme file.ry", "`{f}` 在沙箱中不可用：由工具运行的程序（`--sandbox`）不能访问文件或文件夹。请自己运行它：rythme file.ry"),
+        ("Remove `{}`", "删除 `{}`"),
+        (r#""not equal" is written `!=`: `a != b`"#, "“不等于”写作 `!=`：`a != b`"),
+        ("an anonymous function is written `fn(x) = x * 2`", "匿名函数写作 `fn(x) = x * 2`"),
+        (
+            r#"on several lines, `if` is written:
+  if x > 0 then
+    "positive"
+  else if x == 0 then
+    "zero"
+  else
+    "negative"
+(no `end`; for several statements in a branch, use `do ... end`)"#,
+            r#"写成多行时，`if` 这样写：
+  if x > 0 then
+    "positive"
+  else if x == 0 then
+    "zero"
+  else
+    "negative"
+（没有 `end`；一个分支里有多条语句时，用 `do ... end`）"#,
+        ),
+        (r#"Rythme texts put values in by themselves: write `"total: {{x}}"`, without `f` in front"#, r#"Rythme 的文本会自己插入值：写 `"total: {{x}}"`，前面不要 `f`"#),
+        ("`--format` takes `json` or `text`, not `{v}`: `rythme check --format json file.ry`", "`--format` 只接受 `json` 或 `text`，不能是 `{v}`：`rythme check --format json file.ry`"),
+        ("`--watch` does not go with `--format json`: run `rythme test --format json` again after each change", "`--watch` 不能和 `--format json` 一起用：每次修改后重新运行 `rythme test --format json`"),
+        ("unknown option `{bad}` for `rythme fix`; the options are: --dry-run, --all, --format json", "`rythme fix` 没有选项 `{bad}`；可用的选项有：--dry-run、--all、--format json"),
+        ("which file? Example: rythme fix hello.ry (or rythme fix --dry-run hello.ry to see the changes first)", "哪个文件？例如：rythme fix hello.ry（或者先用 rythme fix --dry-run hello.ry 查看改动）"),
+        ("cannot write `{shown}`: {e}", "无法写入 `{shown}`：{e}"),
+        ("{shown}: nothing to fix", "{shown}：没有要修正的地方"),
+        ("{shown}: {n} fix(es) to apply", "{shown}：有 {n} 处修正可以应用"),
+        ("{shown}: {n} fix(es) applied", "{shown}：已应用 {n} 处修正"),
+        ("; {errors} error(s) and {warnings} warning(s) left: `rythme check {shown}`", "；还剩 {errors} 个错误和 {warnings} 个警告：`rythme check {shown}`"),
+        ("here: `new_{name} = {name} {op} {rest}`, then use `new_{name}`; to add up a list, use `sum(list)` or `fold`", "这里写：`new_{name} = {name} {op} {rest}`，然后使用 `new_{name}`；要对列表求和，用 `sum(list)` 或 `fold`"),
+        // src/mcp.rs: the server for AI assistants
+        ("`rythme mcp` takes no argument, not `{bad}`", "`rythme mcp` 不接受参数，`{bad}` 也不行"),
+        (
+            r#"rythme mcp: a Model Context Protocol server for AI assistants, on the standard input and output.
+Its tools run (in a sandbox), check, test, format and fix Rythme code, and explain errors and functions.
+Add it to Claude Code: claude mcp add rythme -- rythme mcp
+Claude Desktop, Cursor and others: see the manual, section 7.10."#,
+            r#"rythme mcp：面向 AI 助手的 Model Context Protocol 服务器，使用标准输入和输出。
+它的工具可以运行（在沙箱中）、检查、测试、格式化和修正 Rythme 代码，并解释错误和函数。
+添加到 Claude Code：claude mcp add rythme -- rythme mcp
+Claude Desktop、Cursor 等：见手册第 7.10 节。"#,
+        ),
+        ("the program was stopped after {seconds} seconds: it may never end (a recursion without a base case?)", "程序在 {seconds} 秒后被停止：它可能永远不会结束（递归缺少基本情况？）"),
+        ("the program was stopped: it took more than {mb} MB of memory", "程序被停止：它占用了超过 {mb} MB 的内存"),
+        // src/fix.rs, src/suggest.rs: habits from other languages
+        ("an anonymous function is written `fn(x) = x * 2`; a block given to a call is written `xs.map do |x| x * 2 end` or `xs.map {{ |x| x * 2 }}`", "匿名函数写作 `fn(x) = x * 2`；传给调用的代码块写作 `xs.map do |x| x * 2 end` 或 `xs.map {{ |x| x * 2 }}`"),
+        ("the parameters of a block are written between bars: `xs.map {{ |x| x * 2 }}`", "代码块的参数写在两条竖线之间：`xs.map {{ |x| x * 2 }}`"),
+        ("to add up a list, write `sum(xs)`; to combine its elements, `fold(xs, 0, fn(acc, x) = acc + x)`", "要对列表求和，写 `sum(xs)`；要组合它的元素，写 `fold(xs, 0, fn(acc, x) = acc + x)`"),
+        ("a part of a list or a text is taken with a function: `slice(xs, 1, 3)`, `drop(xs, 1)` (all but the first), `take(xs, 2)` (the first two)", "取列表或文本的一部分要用函数：`slice(xs, 1, 3)`、`drop(xs, 1)`（去掉第一个）、`take(xs, 2)`（前两个）"),
+        ("the fields of a record are written with `:`: `{{{field}: value}}`", "记录的字段用 `:` 写：`{{{field}: value}}`"),
+        ("Rythme has no named arguments (`name=value`): give the values in order, like `round(x, 2)` (`rythme help NAME` shows the order)", "Rythme 没有命名参数（`name=value`）：按顺序给出值，比如 `round(x, 2)`（`rythme help NAME` 会显示顺序）"),
+        ("texts have no format specifiers like `{{x:.2f}}`: write `{{text(x, 2)}}` for 2 decimals, or use `format_number`", "文本没有 `{{x:.2f}}` 这样的格式说明符：保留两位小数写 `{{text(x, 2)}}`，或者用 `format_number`"),
+        ("when there is nothing to do otherwise, give the unit value: `if x > 0 then print(x) else ()`", "如果否则时什么也不用做，就给出单元值：`if x > 0 then print(x) else ()`"),
+        ("here: `new_{w} = ...`, then use `new_{w}`; to repeat a step, use `fold`, `map` or a recursive function", "这里写：`new_{w} = ...`，然后使用 `new_{w}`；要重复一个步骤，用 `fold`、`map` 或递归函数"),
+        ("the functions of numbers are built in: write `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... without `Math.`", "数字相关的函数是内置的：直接写 `sqrt(x)`、`abs(x)`、`floor(x)`、`pi`……不需要 `Math.`"),
+        ("Rythme has no generators: build the whole list (`map`, `filter`, `1..n`), or give a function to call", "Rythme 没有生成器：直接构造整个列表（`map`、`filter`、`1..n`），或者传入一个要调用的函数"),
     ],
 }

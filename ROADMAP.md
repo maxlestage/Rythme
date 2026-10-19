@@ -190,6 +190,14 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
     Run, Test and Steps with the same draws, kept with the draft, in sharing
     links as `&seed=N`; see [site/README.md](site/README.md#seed)).
   - [ ] **HTTP requests.**
+- [x] **Rythme for AI assistants**: models learn the language fast, write
+  it, and fix their own mistakes without a person. Done: `--format json`
+  for `check`, `run`, `test`, `fix`, `explain` and `help` (versioned, with a
+  JSON Schema), fixes as text edits and `rythme fix`, `rythme help llms`
+  (`docs/llms.txt`, `docs/llms-full.txt`, generated and tested), the MCP
+  server `rythme mcp` (sandboxed, time and memory limited), `AGENTS.md` in
+  the repository and in new projects, and targeted messages for the habits
+  of other languages (manual 7.10). The website does not show it yet.
 - [x] **Sharing in the playground**: a link to a program with its steps and its
   tests, for classrooms. Done: the Share button of the playground, a link that
   holds the program and its test mode (see [site/README.md](site/README.md#sharing-links)),

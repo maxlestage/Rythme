@@ -1075,6 +1075,30 @@ pub fn code_actions(cx: &Ctx, a: &Analysis, start: usize, end: usize) -> Json {
             continue;
         }
         let Some(written) = a.text.get(s..e) else { continue };
+        // The fixes the checker knows (see `crate::fix`), when all their edits are in this file.
+        let known: Vec<&crate::diagnostic::Fix> =
+            d.fixes.iter().filter(|f| !f.edits.is_empty() && f.edits.iter().all(|(sp, _)| sp.file == a.module.file)).collect();
+        for fix in &known {
+            let edits: Vec<Json> = fix
+                .edits
+                .iter()
+                .map(|(sp, new)| {
+                    let range = range_in(&a.text, &a.lines, sp.start as usize, sp.end as usize, cx.enc);
+                    obj([("range", range), ("newText", new.as_str().into())])
+                })
+                .collect();
+            let changes = Json::Obj(vec![(a.uri.clone(), Json::Arr(edits))]);
+            out.push(obj([
+                ("title", fix.title.as_str().into()),
+                ("kind", "quickfix".into()),
+                ("diagnostics", Json::Arr(vec![diagnostic_json(cx, a, d)])),
+                ("isPreferred", true.into()),
+                ("edit", obj([("changes", changes)])),
+            ]));
+        }
+        if !known.is_empty() {
+            continue;
+        }
         for h in &d.helps {
             if let Some(file) = proposed_use(h) {
                 let at = new_use_offset(a);
