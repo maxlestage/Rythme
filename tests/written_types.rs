@@ -308,6 +308,11 @@ fn types_written_in_used_files_are_checked_too() {
     let r = rythme(&["check", dir.join("plain.ry").to_str().unwrap()]);
     assert!(r.stderr.contains("`twice` expects `Int` for `x`, but receives Float 2.5"), "{}", r.stderr);
     assert_eq!(r.stderr.matches("error[").count(), 1, "{}", r.stderr);
+    // The types of a private name stay in its file.
+    std::fs::write(dir.join("tools.ry"), "fn _clean(x: Int) -> Int = x\nfn cleaned(x: Int) -> Int = _clean(x)\n").unwrap();
+    std::fs::write(dir.join("own.ry"), "use \"tools.ry\"\n\nfn _clean(t) = trim(t)\nprint(_clean(\" a \"), cleaned(1))\n").unwrap();
+    let r = rythme(&[dir.join("own.ry").to_str().unwrap()]);
+    assert_eq!((r.code, r.stdout.as_str()), (0, "a 1\n"), "{}", r.stderr);
 }
 
 #[test]
