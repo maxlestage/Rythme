@@ -6,7 +6,7 @@ use paquets::prelude::*;
 pub const KEYWORDS: &[&str] =
     &["fn", "if", "then", "else", "match", "end", "do", "type", "test", "use", "and", "or", "not", "true", "false", "unless"];
 
-pub const BUILTINS: &[
+pub const BUILTINS: &[&str] = &[
     "print",
     "debug",
     "text",
