@@ -1,0 +1,346 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/maxlestage/Rythme/blob/master/docs/rythme-output.schema.json",
+  "title": "Rythme machine-readable output, version 1",
+  "description": "The JSON documents printed by `rythme check|run|test|fix|explain|help --format json`. Within version 1, fields are only added, never removed or changed in meaning; readers must ignore fields they do not know. Messages, labels, help, titles and documentation are in the language of the messages (`--lang`); codes, keys and enumerated values never change.",
+  "anyOf": [
+    { "$ref": "#/$defs/check" },
+    { "$ref": "#/$defs/run" },
+    { "$ref": "#/$defs/test" },
+    { "$ref": "#/$defs/fix_report" },
+    { "$ref": "#/$defs/explain_one" },
+    { "$ref": "#/$defs/explain_all" },
+    { "$ref": "#/$defs/help_all" },
+    { "$ref": "#/$defs/help_one" }
+  ],
+  "$defs": {
+    "head": {
+      "type": "object",
+      "required": ["version", "command", "rythme", "language"],
+      "properties": {
+        "version": { "const": 1, "description": "The version of these documents." },
+        "command": { "enum": ["check", "run", "test", "fix", "explain", "help"] },
+        "rythme": { "type": "string", "description": "The version of Rythme, like \"1.0.0\"." },
+        "language": { "enum": ["en", "fr", "es", "de", "pt", "zh"], "description": "The language of the messages." }
+      }
+    },
+    "position": {
+      "type": "object",
+      "required": ["line", "column", "offset"],
+      "properties": {
+        "line": { "type": "integer", "minimum": 1, "description": "Line, from 1." },
+        "column": { "type": "integer", "minimum": 1, "description": "Column, from 1, counted in Unicode characters (as in the messages)." },
+        "offset": { "type": "integer", "minimum": 0, "description": "Offset in bytes of UTF-8 from the start of the file, from 0." }
+      }
+    },
+    "range": {
+      "type": ["object", "null"],
+      "required": ["start", "end"],
+      "description": "A part of a file; the end is not included. null when the problem has no place in a file.",
+      "properties": {
+        "start": { "$ref": "#/$defs/position" },
+        "end": { "$ref": "#/$defs/position" }
+      }
+    },
+    "edit": {
+      "type": "object",
+      "required": ["file", "range", "new_text"],
+      "description": "Replace the text of `range` in `file` by `new_text` (an empty range inserts, an empty text deletes).",
+      "properties": {
+        "file": { "type": "string" },
+        "range": { "$ref": "#/$defs/range" },
+        "new_text": { "type": "string" }
+      }
+    },
+    "fix": {
+      "type": "object",
+      "required": ["title", "safe", "edits"],
+      "properties": {
+        "title": { "type": "string", "description": "What the fix does: \"Replace with `and`\"." },
+        "safe": { "type": "boolean", "description": "true: it gives exactly the program that was meant (`rythme fix` applies it). false: a likely guess, like a misspelt name (`rythme fix --all`)." },
+        "edits": { "type": "array", "items": { "$ref": "#/$defs/edit" }, "description": "Edits that do not overlap, all to apply together." }
+      }
+    },
+    "label": {
+      "type": "object",
+      "required": ["file", "range", "message"],
+      "properties": {
+        "file": { "type": "string" },
+        "range": { "$ref": "#/$defs/range" },
+        "message": { "type": "string" }
+      }
+    },
+    "frame": {
+      "type": "object",
+      "required": ["function", "file", "range"],
+      "description": "A call that led to a runtime error, innermost first.",
+      "properties": {
+        "function": { "type": ["string", "null"], "description": "null for an anonymous function." },
+        "file": { "type": "string" },
+        "range": { "$ref": "#/$defs/range" }
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": ["code", "severity", "message", "file", "range", "label", "labels", "notes", "help", "fixes", "trace", "explain"],
+      "properties": {
+        "code": { "type": ["string", "null"], "pattern": "^[EW][0-9]{3}$", "description": "E001...E027 (errors), W001...W011 (warnings): stable. `rythme explain CODE`." },
+        "severity": { "enum": ["error", "warning"] },
+        "message": { "type": "string" },
+        "file": { "type": ["string", "null"] },
+        "range": { "$ref": "#/$defs/range" },
+        "label": { "type": ["string", "null"], "description": "What is written under the range in the message." },
+        "labels": { "type": "array", "items": { "$ref": "#/$defs/label" }, "description": "Other places that matter." },
+        "notes": { "type": "array", "items": { "type": "string" } },
+        "help": { "type": "array", "items": { "type": "string" }, "description": "How to fix it, in words and code." },
+        "fixes": { "type": "array", "items": { "$ref": "#/$defs/fix" } },
+        "trace": { "type": "array", "items": { "$ref": "#/$defs/frame" } },
+        "explain": { "type": ["string", "null"], "description": "The command that explains the code in detail." }
+      }
+    },
+    "diagnostics": { "type": "array", "items": { "$ref": "#/$defs/diagnostic" } },
+    "check": {
+      "allOf": [{ "$ref": "#/$defs/head" }],
+      "type": "object",
+      "required": ["ok", "exit_code", "files", "summary", "diagnostics"],
+      "properties": {
+        "command": { "const": "check" },
+        "ok": { "type": "boolean", "description": "No errors (warnings allowed)." },
+        "exit_code": { "enum": [0, 1] },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["file", "ok", "errors", "warnings"],
+            "properties": {
+              "file": { "type": "string" },
+              "ok": { "type": "boolean" },
+              "errors": { "type": "integer", "minimum": 0 },
+              "warnings": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "summary": {
+          "type": "object",
+          "required": ["files", "errors", "warnings", "fixable"],
+          "properties": {
+            "files": { "type": "integer", "minimum": 0 },
+            "errors": { "type": "integer", "minimum": 0 },
+            "warnings": { "type": "integer", "minimum": 0 },
+            "fixable": { "type": "integer", "minimum": 0, "description": "Diagnostics with a safe fix: `rythme fix` applies them." }
+          }
+        },
+        "diagnostics": { "$ref": "#/$defs/diagnostics" }
+      }
+    },
+    "run": {
+      "allOf": [{ "$ref": "#/$defs/head" }],
+      "type": "object",
+      "required": ["file", "ok", "exit_code", "stdout", "stderr", "seconds", "summary", "diagnostics"],
+      "properties": {
+        "command": { "const": "run" },
+        "file": { "type": "string" },
+        "ok": { "type": "boolean" },
+        "exit_code": { "type": "integer", "minimum": 0, "maximum": 255, "description": "0, 1 after an error, or the code given to exit(code)." },
+        "stdout": { "type": "string", "description": "What the program printed." },
+        "stderr": { "type": "string", "description": "What the program wrote on the error output (`debug`), without the diagnostics." },
+        "seconds": { "type": "number", "minimum": 0 },
+        "summary": {
+          "type": "object",
+          "required": ["errors", "warnings"],
+          "properties": {
+            "errors": { "type": "integer", "minimum": 0 },
+            "warnings": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "diagnostics": { "$ref": "#/$defs/diagnostics" }
+      }
+    },
+    "test": {
+      "allOf": [{ "$ref": "#/$defs/head" }],
+      "type": "object",
+      "required": ["ok", "exit_code", "seed", "summary", "files", "tests", "diagnostics"],
+      "properties": {
+        "command": { "const": "test" },
+        "ok": { "type": "boolean" },
+        "exit_code": { "enum": [0, 1] },
+        "seed": { "type": "integer", "minimum": 0, "description": "The seed of the property tests: `rythme test --seed N` gives the same values again." },
+        "summary": {
+          "type": "object",
+          "required": ["files", "tests", "passed", "failed", "filtered_out", "broken_files", "errors", "warnings", "seconds"],
+          "properties": {
+            "files": { "type": "integer", "minimum": 0 },
+            "tests": { "type": "integer", "minimum": 0 },
+            "passed": { "type": "integer", "minimum": 0 },
+            "failed": { "type": "integer", "minimum": 0 },
+            "filtered_out": { "type": "integer", "minimum": 0 },
+            "broken_files": { "type": "integer", "minimum": 0, "description": "Files with errors: their tests could not run." },
+            "errors": { "type": "integer", "minimum": 0 },
+            "warnings": { "type": "integer", "minimum": 0 },
+            "seconds": { "type": "number", "minimum": 0 }
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["file", "ok", "broken", "tests", "failed", "filtered_out"],
+            "properties": {
+              "file": { "type": "string" },
+              "ok": { "type": "boolean" },
+              "broken": { "type": "boolean" },
+              "tests": { "type": "integer", "minimum": 0 },
+              "failed": { "type": "integer", "minimum": 0 },
+              "filtered_out": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "tests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "file", "range", "passed", "seconds", "failure"],
+            "properties": {
+              "name": { "type": "string" },
+              "file": { "type": ["string", "null"] },
+              "range": { "$ref": "#/$defs/range" },
+              "passed": { "type": "boolean" },
+              "seconds": { "type": "number", "minimum": 0 },
+              "failure": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/diagnostic" }] }
+            }
+          }
+        },
+        "diagnostics": { "$ref": "#/$defs/diagnostics" }
+      }
+    },
+    "fix_report": {
+      "allOf": [{ "$ref": "#/$defs/head" }],
+      "type": "object",
+      "required": ["ok", "exit_code", "dry_run", "files", "summary", "diagnostics"],
+      "properties": {
+        "command": { "const": "fix" },
+        "ok": { "type": "boolean", "description": "No errors are left (and, with --dry-run, nothing would change)." },
+        "exit_code": { "enum": [0, 1] },
+        "dry_run": { "type": "boolean" },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["file", "changed", "written", "applied", "diff"],
+            "properties": {
+              "file": { "type": "string" },
+              "changed": { "type": "boolean" },
+              "written": { "type": "boolean" },
+              "applied": { "type": "array", "items": { "type": "string" }, "description": "The titles of the fixes applied, in order." },
+              "diff": { "type": ["string", "null"], "description": "A unified diff of the changes." }
+            }
+          }
+        },
+        "summary": {
+          "type": "object",
+          "required": ["errors", "warnings"],
+          "properties": {
+            "errors": { "type": "integer", "minimum": 0 },
+            "warnings": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "diagnostics": { "$ref": "#/$defs/diagnostics", "description": "What is left after the fixes." }
+      }
+    },
+    "code": {
+      "type": "object",
+      "required": ["code", "severity", "title", "explanation"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[EW][0-9]{3}$" },
+        "severity": { "enum": ["error", "warning"] },
+        "title": { "type": "string" },
+        "explanation": { "type": "string" }
+      }
+    },
+    "explain_one": {
+      "allOf": [{ "$ref": "#/$defs/head" }, { "$ref": "#/$defs/code" }],
+      "type": "object",
+      "properties": { "command": { "const": "explain" } }
+    },
+    "explain_all": {
+      "allOf": [{ "$ref": "#/$defs/head" }],
+      "type": "object",
+      "required": ["codes"],
+      "properties": {
+        "command": { "const": "explain" },
+        "codes": { "type": "array", "items": { "$ref": "#/$defs/code" } }
+      }
+    },
+    "builtin": {
+      "type": "object",
+      "required": ["name", "signature", "category", "category_title", "doc", "example", "aliases", "min_args", "max_args"],
+      "properties": {
+        "name": { "type": "string" },
+        "signature": { "type": "string", "description": "Like \"map(list, f)\"." },
+        "category": { "enum": ["basics", "numbers", "text", "lists", "records", "dicts", "options", "files", "dates", "tests", "ml", "web"] },
+        "category_title": { "type": "string" },
+        "doc": { "type": "string" },
+        "example": { "type": "string" },
+        "aliases": { "type": "array", "items": { "type": "string" }, "description": "Its Ruby names: the same function." },
+        "min_args": { "type": "integer", "minimum": 0 },
+        "max_args": { "type": ["integer", "null"], "minimum": 0, "description": "null: any number." }
+      }
+    },
+    "keyword": {
+      "type": "object",
+      "required": ["word", "doc", "example", "topic"],
+      "properties": {
+        "word": { "type": "string" },
+        "doc": { "type": "string" },
+        "example": { "type": "string" },
+        "topic": { "type": "string", "description": "`rythme help TOPIC` tells more." }
+      }
+    },
+    "help_all": {
+      "allOf": [{ "$ref": "#/$defs/head" }],
+      "type": "object",
+      "required": ["builtins", "aliases", "keywords", "topics", "codes"],
+      "properties": {
+        "command": { "const": "help" },
+        "builtins": { "type": "array", "items": { "$ref": "#/$defs/builtin" } },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "of"],
+            "properties": { "name": { "type": "string" }, "of": { "type": "string" } }
+          }
+        },
+        "keywords": { "type": "array", "items": { "$ref": "#/$defs/keyword" } },
+        "topics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "aliases"],
+            "properties": { "name": { "type": "string" }, "aliases": { "type": "array", "items": { "type": "string" } } }
+          }
+        },
+        "codes": { "type": "array", "items": { "$ref": "#/$defs/code" } }
+      }
+    },
+    "help_one": {
+      "allOf": [{ "$ref": "#/$defs/head" }],
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "command": { "const": "help" },
+        "kind": { "enum": ["builtin", "keyword", "code", "topic", "unknown"] },
+        "builtin": { "$ref": "#/$defs/builtin" },
+        "keyword": { "$ref": "#/$defs/keyword" },
+        "code": { "$ref": "#/$defs/code" },
+        "topic": {
+          "type": "object",
+          "required": ["name", "text"],
+          "properties": { "name": { "type": "string" }, "text": { "type": "string" } }
+        },
+        "name": { "type": "string", "description": "With kind \"unknown\": the name asked for." },
+        "message": { "type": "string", "description": "With kind \"unknown\": what to do instead (exit code 2)." }
+      }
+    }
+  }
+}

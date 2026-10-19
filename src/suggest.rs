@@ -54,8 +54,9 @@ where
     best.map(|(_, c)| c.to_string())
 }
 
-/// Names from other languages and what to use in Rythme instead.
-pub fn alias_hint(name: &str) -> Option<String> {
+/// The built-in function of Rythme that a name from another language means:
+/// `upper` for `toUpperCase` (`+` for `concat`).
+pub fn rythme_name(name: &str) -> Option<&'static str> {
     let rythme = match name {
         "count_of" | "strlen" | "lenght" => "len",
         "println" | "echo" | "printf" | "console" | "printLn" | "say" | "afficher" => "print",
@@ -176,10 +177,27 @@ pub fn alias_hint(name: &str) -> Option<String> {
         "parse_csv" | "read_csv" | "csv_read" | "csv_reader" | "parseCSV" | "parseCsv" | "csv_decode" => "csv_parse",
         "DictReader" | "dict_reader" | "csv_dicts" | "csv_rows" | "read_csv_records" => "csv_records",
         "to_csv" | "write_csv" | "csv_write" | "csv_writer" | "toCSV" | "generate_csv" | "csv_encode" => "csv_format",
+        "summary" | "describe" | "statistics" | "mittelwert" | "promedio" => "stats",
+        "median" | "mediane" | "médiane" | "mediana" | "quantile" | "quantiles" => "percentile",
+        "std" | "stdev" | "pstdev" | "stddev" | "standard_deviation" | "ecart_type" => "std_dev",
+        "pvariance" | "variance_of" => "variance",
+        "eye" | "identity_mat" => "identity_matrix",
+        "mmul" | "matrix_multiply" | "matrix_product" | "mat_mul" | "matmult" => "matmul",
+        "dot_product" | "vdot" => "dot",
+        "magnitude" | "length_of_vector" => "norm",
+        "logistic" | "expit" => "sigmoid",
+        "randn" | "gauss" | "normalvariate" | "random_gauss" => "random_normal",
+        "choices" | "weighted_choice" | "random_weighted" => "random_choice_weighted",
+        "train_test" | "split_train_test" => "train_test_split",
         "srand" | "set_seed" | "setSeed" | "randomSeed" | "seed_random" | "mt_srand" => "random_seed",
         _ => "",
     };
-    if !rythme.is_empty() {
+    (!rythme.is_empty()).then_some(rythme)
+}
+
+/// Names from other languages and what to use in Rythme instead.
+pub fn alias_hint(name: &str) -> Option<String> {
+    if let Some(rythme) = rythme_name(name) {
         if rythme == "+" {
             return Some(t!(
                 "to join two lists or two texts, use `+`: `[1, 2] + [3]`; for a list of lists, use `flatten`",
@@ -259,6 +277,14 @@ pub fn alias_hint(name: &str) -> Option<String> {
         "times" => t!(
             "`n.times do |i| ... end` is written `(0..n - 1).each do |i| ... end`",
             "`n.times do |i| ... end` s'écrit `(0..n - 1).each do |i| ... end`"
+        ),
+        "Math" | "math" => t!(
+            "the functions of numbers are built in: write `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... without `Math.`",
+            "les fonctions des nombres sont intégrées : écrivez `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... sans `Math.`"
+        ),
+        "yield" => t!(
+            "Rythme has no generators: build the whole list (`map`, `filter`, `1..n`), or give a function to call",
+            "Rythme n'a pas de générateurs : construisez toute la liste (`map`, `filter`, `1..n`), ou donnez une fonction à appeler"
         ),
         "require" | "require_relative" => t!(
             "to use another file, write `use other_file`, then `other_file.name`",

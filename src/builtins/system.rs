@@ -9,6 +9,13 @@ use super::*;
 /// In the browser, the error of `f`, which needs files (or the input when
 /// `input`); `None` elsewhere.
 pub(crate) fn in_browser(it: &mut Interp, f: &str, input: bool) -> Option<Value> {
+    if it.sandboxed && !input {
+        let msg = t!(
+            "`{f}` is not available in the sandbox: a program run by a tool (`--sandbox`) cannot touch files or folders. Run it yourself: rythme file.ry",
+            "`{f}` n'est pas disponible dans le bac à sable : un programme lancé par un outil (`--sandbox`) ne peut pas toucher aux fichiers ni aux dossiers. Lancez-le vous-même : rythme fichier.ry"
+        );
+        return Some(it.err(text_value(msg)));
+    }
     if !cfg!(target_arch = "wasm32") {
         return None;
     }

@@ -1,0 +1,35 @@
+# Exercise 35 · Nearest neighbours  ★★★
+# Reference solution. Try the exercise before reading it!
+
+fn neighbours(examples, point, k) = examples |> sort_by(fn(e) = norm(vector_sub(e.point, point))) |> take(k)
+
+fn majority(labels) = max_by(labels, fn(label) = count(labels, fn(l) = l == label))
+
+fn classify(examples, point, k) = neighbours(examples, point, k) |> map(fn(e) = e.label) |> majority
+
+# --- Tests (do not change them) ---
+
+garden = [
+  {point: [1, 1], label: "red"},
+  {point: [1, 2], label: "red"},
+  {point: [2, 1], label: "red"},
+  {point: [8, 8], label: "blue"},
+  {point: [9, 8], label: "blue"},
+  {point: [5, 5], label: "blue"},
+]
+
+test "neighbours"
+  assert_eq(neighbours(garden, [0, 0], 2) |> map(fn(e) = e.point), [[1, 1], [1, 2]])
+  assert_eq(len(neighbours(garden, [0, 0], 10)), 6)
+end
+
+test "majority"
+  assert_eq(majority(["a", "b", "b", "c"]), "b")
+  assert_eq(majority(["x", "y"]), "x")
+end
+
+test "classify"
+  assert_eq(classify(garden, [2, 2], 3), "red")
+  assert_eq(classify(garden, [7, 7], 3), "blue")
+  assert_eq(classify(garden, [4, 4], 1), "blue")
+end

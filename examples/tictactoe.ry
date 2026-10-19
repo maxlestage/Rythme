@@ -1,0 +1,65 @@
+# Minimax plays tic-tac-toe perfectly: to choose a move, it imagines every
+# game that can follow, supposing that the other player always answers with
+# their best move, and keeps the move that ends best for itself.
+
+# A board is a list of 9 squares: :x, :o, or :empty.
+lines_of_three = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
+
+fn winner(board) =
+  lines_of_three
+    |> find(fn([a, b, c]) = board[a] != :empty and board[a] == board[b] and board[b] == board[c])
+    |> map(fn([a, _, _]) = board[a])
+
+fn free(board) = enumerate(board) |> filter(fn([_, s]) = s == :empty) |> map(fn([i, _]) = i)
+
+fn other(:x) = :o
+fn other(:o) = :x
+
+## How the game ends with perfect play, for :x: 1 (wins), 0 (draw) or -1 (loses).
+fn score(board, player) =
+  match winner(board)
+    Some(:x) -> 1
+    Some(_) -> -1
+    None ->
+      if free(board) == [] then
+        0
+      else
+        free(board) |> map(fn(i) = score(set_at(board, i, player), other(player))) |> best(player)
+  end
+
+fn best(scores, :x) = max(scores)
+fn best(scores, :o) = min(scores)
+
+## The square where `player` plays best.
+fn choose(board, player) =
+  free(board)
+    |> map(fn(i) = [i, score(set_at(board, i, player), other(player))])
+    |> best_move(player)
+
+fn best_move(moves, :x) = unwrap(first(max_by(moves, fn([_, s]) = s)))
+fn best_move(moves, :o) = unwrap(first(min_by(moves, fn([_, s]) = s)))
+
+fn symbol(:x) = "X"
+fn symbol(:o) = "O"
+fn symbol(:empty) = "."
+
+## The boards from this one to the end, both players playing perfectly.
+fn play(board, player) =
+  if winner(board) != None or free(board) == [] then
+    [board]
+  else
+    [board, ..play(set_at(board, choose(board, player), player), other(player))]
+
+# X to play. Where? Minimax finds a move that threatens two lines at once.
+start = [:x, :o, :empty, :empty, :x, :empty, :empty, :empty, :o]
+game = play(start, :x)
+
+# The boards side by side, row by row.
+0..2 |> each(fn(row) = print(game |> map(fn(b) = slice(b, row * 3, row * 3 + 3) |> map(symbol) |> join(" ")) |> join("   ")))
+print()
+
+print(match winner(unwrap(last(game)))
+  Some(:x) -> "X wins."
+  Some(_) -> "O wins."
+  None -> "A draw."
+end)

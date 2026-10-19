@@ -1,0 +1,45 @@
+# Exercice 31 · Des points comme vecteurs  ★☆☆
+#
+# En apprentissage automatique, un exemple est une liste de nombres : un
+# vecteur. Les fonctions intégrées `vector_add`, `vector_sub`,
+# `vector_scale`, `dot` et `norm` travaillent dessus, et donnent toujours
+# des Floats.
+#   vector_sub([5, 5], [1, 2])     # [4.0, 3.0]
+#   norm([3, 4])                   # 5.0
+#
+# Énoncé
+#   - `distance(a, b)` : la distance entre les points a et b (la longueur
+#     du vecteur qui va de l'un à l'autre) ;
+#   - `milieu(a, b)` : le point à mi-chemin entre a et b ;
+#   - `le_plus_proche(points, p)` : le point de la liste le plus proche de p.
+#
+# Indices
+#   1. `distance` est la `norm` d'une différence.
+#   2. À mi-chemin : additionnez les deux points, puis multipliez par 0.5.
+#   3. `min_by(liste, f)` donne l'élément pour lequel f est le plus petit.
+#
+# Vérifiez votre travail :  rythme exercise check 31-vecteurs.ry
+#                     ou :  rythme test 31-vecteurs.ry
+
+fn distance(a, b) = fail("à faire")
+
+fn milieu(a, b) = fail("à faire")
+
+fn le_plus_proche(points, p) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "distance"
+  assert_eq(distance([0, 0], [3, 4]), 5.0)
+  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+end
+
+test "milieu"
+  assert_eq(milieu([0, 0], [4, 2]), [2.0, 1.0])
+  assert_eq(milieu([-1, 3], [1, 3]), [0.0, 3.0])
+end
+
+test "le plus proche"
+  assert_eq(le_plus_proche([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
+  assert_eq(le_plus_proche([[2, 2]], [100, -100]), [2, 2])
+end

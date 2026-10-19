@@ -1,0 +1,26 @@
+# 练习 36 · 完美地下棋：极小化极大  ★★★
+# 参考答案。请先自己做这个练习，再来看它！
+
+fn moves(n) = filter(1..3, fn(m) = m <= n)
+
+fn wins(n) = any(moves(n), fn(m) = not wins(n - m))
+
+fn best_move(n) = find(moves(n), fn(m) = not wins(n - m))
+
+# --- 测试（请不要修改）---
+
+test "走法"
+  assert_eq(moves(10), [1, 2, 3])
+  assert_eq(moves(2), [1, 2])
+  assert_eq(moves(0), [])
+end
+
+test "谁赢"
+  assert_eq(map(0..8, wins), [false, true, true, true, false, true, true, true, false])
+end
+
+test "最佳走法"
+  assert_eq(best_move(5), Some(1))
+  assert_eq(best_move(7), Some(3))
+  assert_eq(best_move(8), None)
+end

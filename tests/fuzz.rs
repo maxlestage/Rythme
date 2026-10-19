@@ -756,7 +756,7 @@ fn tame(src: String) -> String {
 /// Built-in functions that touch the world outside of the program are
 /// replaced: no files or folders, no keyboard, no `exit`, no output, no
 /// clock (`time`, `now` and `today` give fixed values), no environment
-/// variables, no command line (`args` and `options` see no words).
+/// variables, no command line (`args` and `options` see no words), no network.
 fn sandbox() -> &'static Vec<&'static Builtin> {
     static SANDBOX: OnceLock<Vec<&'static Builtin>> = OnceLock::new();
     fn quiet(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
@@ -805,7 +805,21 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
     fn fixed_today(_: &mut Interp, _: &[Value], _: Span) -> Fallible<Value> {
         Ok(moment(&[("year", 2024), ("month", 2), ("day", 29)]))
     }
-    let fakes: [(&str, builtins::BuiltinFn); 19] = [
+    /// The draws of chance from a fixed seed: the interpreter and the stepper agree.
+    fn seeded(name: &str, it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+        it.seed_random(7);
+        (builtins::lookup(name).unwrap().func)(it, a, span)
+    }
+    fn normal(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+        seeded("random_normal", it, a, span)
+    }
+    fn weighted(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+        seeded("random_choice_weighted", it, a, span)
+    }
+    fn split(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+        seeded("train_test_split", it, a, span)
+    }
+    let fakes: [(&str, builtins::BuiltinFn); 24] = [
         ("print", quiet),
         ("debug", same),
         ("input", empty_text),
@@ -825,6 +839,11 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
         ("delete_file", no_file),
         ("now", fixed_now),
         ("today", fixed_today),
+        ("random_normal", normal),
+        ("random_choice_weighted", weighted),
+        ("train_test_split", split),
+        ("http_get", no_file),
+        ("http_post", no_file),
     ];
     SANDBOX.get_or_init(|| {
         fakes

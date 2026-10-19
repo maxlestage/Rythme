@@ -1,0 +1,28 @@
+# Ejercicio 34 · Bajar por la pendiente  ★★☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn paso(f, x, tasa) = x - tasa * derivative(f, x)
+
+fn descender(f, x, tasa, 0) = x
+fn descender(f, x, tasa, pasos) = descender(f, paso(f, x, tasa), tasa, pasos - 1)
+
+fn descender_todo(f, xs, tasa, pasos) = fold(1..pasos, xs, fn(p, _) = vector_sub(p, vector_scale(gradient(f, p), tasa)))
+
+# --- Pruebas (no las cambies) ---
+
+fn parabola(x) = (x - 3) ** 2
+
+test "un paso"
+  assert_eq(paso(parabola, 0, 0.5), 3.0)
+  assert_eq(paso(parabola, 1, 0.25), 2.0)
+end
+
+test "hasta el fondo"
+  assert_eq(round(descender(parabola, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descender(parabola, 10, 0.1, 0), 10)
+end
+
+test "varios números"
+  cuenco = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descender_todo(cuenco, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end

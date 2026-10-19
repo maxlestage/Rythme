@@ -53,6 +53,33 @@ pub fn folder_error(path: &Path) -> Diagnostic {
     d
 }
 
+/// Finds the program file, adding `.ry` if needed.
+pub fn find_script(name: &str) -> Result<PathBuf, Box<Diagnostic>> {
+    let path = PathBuf::from(name);
+    if path.is_file() {
+        return Ok(path);
+    }
+    if path.is_dir() {
+        return Err(folder_error(&path).boxed());
+    }
+    let with_ext = PathBuf::from(format!("{name}.ry"));
+    if path.extension().is_none() && with_ext.is_file() {
+        return Ok(with_ext);
+    }
+    let mut d = Diagnostic::error("E017", t!("file `{name}` not found", "fichier `{name}` introuvable"));
+    let dir = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
+    let wanted = path.file_name().map(|f| f.to_string_lossy().to_string()).unwrap_or_default();
+    let files: Vec<String> = std::fs::read_dir(dir)
+        .map(|entries| entries.flatten().map(|e| e.file_name().to_string_lossy().to_string()).filter(|n| n.ends_with(".ry")).collect())
+        .unwrap_or_default();
+    if let Some(best) = suggest::closest(&wanted, files.iter().map(|s| s.as_str())) {
+        d = d.help(t!("did you mean `{}`?", "vouliez-vous dire `{}` ?", dir.join(best).display()));
+    } else if let Ok(cwd) = std::env::current_dir() {
+        d = d.note(t!("current folder: {}", "dossier actuel : {}", cwd.display()));
+    }
+    Err(d.boxed())
+}
+
 /// Reads a source file, explaining in the user's language why it cannot be read.
 pub fn read_source(path: &Path) -> Result<String, Box<Diagnostic>> {
     let shown = path.display();
@@ -166,7 +193,7 @@ impl Driver {
             Severity::Error => self.errors += 1,
             Severity::Warning => self.warnings += 1,
         }
-        crate::io::err(&format!("{}\n", d.render(self.color)));
+        crate::diagnostic::show(d, self.color);
     }
 
     pub fn parse(&mut self, name: &str, src: &str) -> Result<Vec<Item>, Box<Diagnostic>> {

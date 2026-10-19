@@ -296,6 +296,25 @@ fn every_problem_at_once_with_help_and_related_places() {
 }
 
 #[test]
+fn quick_fixes_for_habits_of_other_languages() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/habits.ry";
+    let diags = lsp.open(u, "x = 3\nprint(x > 2 && x < 5)\n");
+    assert_eq!(diags[0].get("code").as_str(), Some("E001"));
+    let params = format!(
+        r#"{{"textDocument":{{"uri":{}}},"range":{{"start":{{"line":1,"character":13}},"end":{{"line":1,"character":13}}}},"context":{{"diagnostics":[]}}}}"#,
+        s(u)
+    );
+    let actions = lsp.result("textDocument/codeAction", &params);
+    let fix = &actions.as_array()[0];
+    assert_eq!(fix.get("title").as_str(), Some("Replace with `and`"));
+    let edit = &fix.get_path(&["edit", "changes", u]).as_array()[0];
+    assert_eq!(edit.get("newText").as_str(), Some("and"));
+    assert_eq!(range(edit), (1, 12, 1, 14));
+    assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
 fn messages_follow_the_editor_language() {
     // The language of the editor...
     let (mut lsp, _) = Lsp::start("", r#"{"processId":null,"locale":"fr-CA","capabilities":{}}"#);

@@ -1,0 +1,619 @@
+# Rythme 1.0.0: the complete language for AI assistants
+
+> Rythme is a small, purely functional language: values never change, there are no loops, no `return`, no null and no exceptions, and `if` always has an `else`. Files end with `.ry`; `rythme file.ry` runs one. This file is the whole language in one text: read it all before writing Rythme. Every example here runs as shown (`rythme help llms` prints this file; it is generated from the sources of Rythme and tested).
+
+Work in a loop: write the code, run `rythme check --format json file.ry`, apply the fixes it gives (or `rythme fix file.ry`), read the help of each diagnostic, run `rythme test --format json`, and repeat until there are no errors. Never guess a function name: they are all listed below.
+
+## The rules that differ from Python, JavaScript and Ruby
+
+1. No loops. Work on whole lists with `map`, `filter`, `fold`, `each`, `sum`, ranges (`1..10`), or write a recursive function. `for`, `while`, `break` do not exist.
+2. Values never change. A name is given a value once in a scope (`x = 1`, then `x = 2` is error E011). No `+=`, no `x++`, no `xs[0] = 1`. Functions such as `push(xs, 4)`, `put(record, "k", v)` or `set_at(xs, 0, 9)` give a new value and leave the old one as it was: give the result a name.
+3. No `return`: the last expression of a function is its result. To stop early with an error, give back `Err(...)` and use `?`.
+4. No null: a value that may be missing is `Some(x)` or `None` (an Option); an operation that may fail gives `Ok(x)` or `Err(message)` (a Result). Handle them with `match`, `unwrap_or`, or `?`.
+5. No exceptions: errors are values (`Err(...)`); `fail("message")` stops the whole program.
+6. `if` is an expression and always has an `else`: `if x > 0 then "positive" else "other"`. Chain with `else if` (not `elif`). For several statements in a branch, use `do ... end`.
+7. Functions: `fn name(x) = expression` on one line, or `fn name(x)` with the body on the next lines, finished by `end`. Anonymous: `fn(x) = x * 2`. Not `def`, `function`, `lambda` or `=>`.
+8. Texts are written with `"` and put values in with braces: `"total: {x}"`. No f-strings, no `%` or `.format`, and `"a" + 1` is an error: write `"a{1}"` or `"a" + text(1)`.
+9. Logic is written with words: `and`, `or`, `not`. Equality: `==` and `!=` (not `===`, `<>`). Booleans are `true` and `false` (lowercase).
+10. No braces or colons for blocks: a function body, `match`, `do` and blocks given to calls end with `end`.
+11. `value.f(args)` calls `f(value, args)`: `xs.map(f)` is `map(xs, f)`, `"hi".upper()` is `upper("hi")`, `xs.len` is `len(xs)`. Pipes too: `xs |> map(f)`.
+12. Choose by shape with `match value ... end` and cases `pattern -> result`.
+13. Records are `{name: "Ada", age: 36}`; read with `p.name`; a changed copy is `{..p, age: 37}`. Your own types: `type Shape = Circle(radius) | Rect(w, h)`. No classes, no `self`, no `new`.
+14. Tests are part of the language: `test "name" = assert_eq(actual, expected)`, run by `rythme test`.
+15. Several files: `use geometry` (the file `geometry.ry`), then `geometry.area(2)`. Names starting with `_` stay private to their file. No `import`.
+16. Comments start with `#`; `##` above a function or a type documents it.
+
+## The language by example
+
+Each example is a whole program; the block after it is what it prints.
+
+### Values, names and texts
+
+```rythme
+name = "Ada"
+age = 36
+print("Hello, {name}! Next year: {age + 1}")
+big = 2 ** 100
+print(big, 7 / 2, 7 // 2, 7 % 2)
+print(type_of(3.5), type_of("x"), type_of([1]), type_of(:ok))
+```
+
+```text
+Hello, Ada! Next year: 37
+1267650600228229401496703205376 3.5 3 1
+Float Text List Symbol
+```
+
+Whole numbers (`Int`) have no limit; `/` gives a `Float`, `//` a whole division. Texts are `Text`, with `{...}` inside to insert any expression (`\{` for a brace). A text may span several lines.
+
+### Functions
+
+```rythme
+fn square(x) = x * x
+fn describe(n)
+  kind = if n % 2 == 0 then "even" else "odd"
+  "{n} is {kind}"
+end
+print(square(4), describe(7))
+fn fib(0) = 0
+fn fib(1) = 1
+fn fib(n) = fib(n - 1) + fib(n - 2)
+fn sign(n) if n < 0 = "negative"
+fn sign(0) = "zero"
+fn sign(_) = "positive"
+print(fib(10), sign(-3), sign(0))
+double = fn(x) = x * 2
+print(double(21))
+fn adult?(person) = person.age >= 18
+print(adult?({age: 20}))
+```
+
+```text
+16 7 is odd
+55 negative zero
+42
+true
+```
+
+Several definitions of a function are tried in order (patterns as parameters, `if` for a condition). A name may end with `?`.
+
+### Lists, pipes and blocks
+
+```rythme
+xs = [3, 1, 2]
+print(xs[0], xs[-1], len(xs), xs + [9], [0, ..xs])
+print(xs |> map(fn(x) = x * 10) |> sort)
+print(xs.filter(fn(x) = x > 1).sum)
+print(fold(xs, 0, fn(acc, x) = acc + x))
+print(1..5, (1..10).step_by(3))
+squares = xs.map do |x| x * x end
+print(squares)
+xs.each do |x|
+  print("item {x}")
+end
+print(xs.select { |x| x >= 2 })
+```
+
+```text
+3 2 3 [3, 1, 2, 9] [0, 3, 1, 2]
+[10, 20, 30]
+5
+6
+[1, 2, 3, 4, 5] [1, 4, 7, 10]
+[9, 1, 4]
+item 3
+item 1
+item 2
+[3, 2]
+```
+
+`x |> f(y)` is `f(x, y)`. A block `do |x| ... end` (or `{ |x| ... }`) is a function given as the last argument.
+
+### Conditions, `match` and patterns
+
+```rythme
+fn size(n) = if n < 10 then "small" else if n < 100 then "medium" else "large"
+print(size(5), size(50), size(500))
+fn describe(x) = match x
+  0 -> "zero"
+  1 | 2 | 3 -> "small"
+  4..9 -> "a few"
+  n if n < 0 -> "negative"
+  _ -> "many"
+end
+print(describe(2), describe(7), describe(-1), describe(40))
+fn first_two(list) = match list
+  [] -> "empty"
+  [x] -> "only {x}"
+  [x, y, ..rest] -> "{x} and {y}, then {len(rest)} more"
+end
+print(first_two([]), first_two([1]), first_two([1, 2, 3, 4]))
+fn greet(name)
+  if name == "" then
+    "nobody"
+  else
+    "hi {name}"
+end
+print(greet("Bo"))
+```
+
+```text
+small medium large
+small a few negative many
+empty only 1 1 and 2, then 2 more
+hi Bo
+```
+
+### Records and your own types
+
+```rythme
+ada = {name: "Ada", born: 1815}
+older = {..ada, born: 1816}
+print(ada.name, older, keys(ada))
+{name, born} = ada
+print("{name} was born in {born}")
+type Shape = Circle(radius) | Rect(width, height)
+fn area(shape) = match shape
+  Circle(r) -> 3 * r * r
+  Rect(w, h) -> w * h
+end
+print([Circle(1), Rect(2, 3)] |> map(area))
+print(Circle(2).radius)
+```
+
+```text
+Ada {name: "Ada", born: 1816} ["name", "born"]
+Ada was born in 1815
+[3, 6]
+2
+```
+
+`rythme check` reports a `match` that forgets a shape.
+
+### Errors are values: Option, Result and `?`
+
+```rythme
+fn divide(a, b) = if b == 0 then Err("division by zero") else Ok(a / b)
+match divide(10, 4)
+  Ok(x) -> print("result: {x}")
+  Err(e) -> print("error: {e}")
+end
+fn average(a, b)
+  x = parse_float(a)?
+  y = parse_float(b)?
+  Ok((x + y) / 2)
+end
+print(average("1", "2"), average("1", "x"))
+print(unwrap_or(first([]), 0), get([1, 2], 5), parse_int("42"))
+```
+
+```text
+result: 2.5
+Ok(1.5) Err("\"x\" is not a number")
+0 None Ok(42)
+```
+
+`?` takes the value out of `Ok(x)` or `Some(x)`, or stops the function and gives back the `Err`/`None`.
+
+### Several steps, recursion
+
+```rythme
+total = do
+  a = 10
+  b = 20
+  a + b
+end
+print(total)
+fn count_down(0) = "liftoff"
+fn count_down(n) = count_down(n - 1)
+print(count_down(100000))
+fn sum_to(n, acc) = if n == 0 then acc else sum_to(n - 1, acc + n)
+print(sum_to(1000, 0))
+```
+
+```text
+30
+liftoff
+500500
+```
+
+A recursive call as the very last step can repeat without limit.
+
+### Tests
+
+```rythme
+fn add(a, b) = a + b
+test "adds" = assert_eq(add(1, 2), 3)
+test "several checks"
+  assert_eq(add(0, 0), 0)
+  assert(add(1, 1) > 1, "positive")
+end
+print(add(2, 2))
+```
+
+```text
+4
+```
+
+`rythme test file.ry` (or `rythme test` in a project, or `rythme test folder/`) runs the tests; running the file does not.
+
+### Several files and projects
+
+In `geometry.ry`: `fn area(r) = r * r` (names starting with `_` stay private). In `main.ry`: `use geometry` then `print(geometry.area(2))`. Also `use shapes/circle` (a folder) and `use "lib.ry" as l`. `rythme new name` creates a project (`rythme.toml`, `src/main.ry`, `tests/`); `rythme run`, `rythme test` and `rythme check` then work without a file name.
+
+### Written types (optional)
+
+`fn area(width: Int, height: Int) -> Int = width * height`, `total: Float = 0.0`, `List(Int)` or `[Int]`, `Option(Text)`, `Result(Int, Text)`, `{name: Text}`, `fn(Int) -> Int`. They are never needed; `rythme check` verifies them (E027).
+
+### Input and output
+
+`print(a, b)` (or `puts`) writes a line; `input("prompt")` reads one; `input_lines()` reads all of the standard input; `args()` and `options()` give the command line; `read_file(path)` and `write_file(path, text)` give a `Result`; `exit(code)` stops.
+
+## Built-in functions
+
+Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y)`. One line each: signature, then what it does. `rythme help NAME` shows the details and an example.
+
+### Basics
+
+- `print(value, ...)`: Shows values on the screen, separated by spaces, then goes to the next line.
+- `debug(value)`: Shows a value with its position in the code (on the error output) and returns it unchanged.
+- `text(value, decimals)`: Converts any value to text.
+- `input(prompt)`: Shows the prompt, then reads a line typed on the keyboard and returns it as text.
+- `input_lines()`: Reads all the lines of the standard input, until its end: `Ok(list of texts)`, or `Err(message)` if it cannot be read.
+- `type_of(value)`: Returns the name of the type of a value: "Int", "Float", "Text", "Bool", "List", "Record", "Function", "Unit" (for `()`), "Symbol" (for `:ok`), "Option", "Result", or the name of your own type.
+- `help(value)`: Shows help: about a function (`help(map)`), a topic (`help("lists")`), or what you can do with a value (`help([1, 2])`).
+- `assert(condition, message)`: Stops with an error if the condition is false.
+- `assert_eq(actual, expected)`: Stops with an error showing both values if they are different.
+- `fail(message)`: Stops the program with an error message.
+- `args()`: Returns the list of the words given after the file name on the command line.
+- `options(words)`: Reads the options of the command line (the words of `args()`, or the list given) into a record, in a Result: `--name=value` gives the text `value`, `--name` and `-n` give `true`, a `-` in a name becomes `_`, and the other words are in the field `args` (all of them after `--`).
+- `env(name)`: The value of an environment variable of the system, as an Option: `Some(text)`, or `None` if it is not set.
+- `exit(code)`: Stops the program immediately.
+- `time()`: Returns the current time in seconds (a Float), counted from 1 January 1970.
+- `random(a, b), random(list)`: random() gives a decimal number between 0 and 1; random(a, b) a whole number from a to b (included); random(list) a random element.
+- `random_seed(n)`: Makes the draws of `random` and `shuffle` that follow the same on every run: the same seed (a whole number) gives the same draws, with the same version of Rythme.
+
+### Numbers
+
+- `abs(x)`: Absolute value: the number without its sign.
+- `min(a, b, ...)`: The smallest of the values, or of the elements of a list.
+- `max(a, b, ...)`: The largest of the values, or of the elements of a list.
+- `sqrt(x)`: Square root.
+- `pow(x, n)`: x to the power n (same as `x ** n`).
+- `floor(x)`: Rounds down to a whole number.
+- `ceil(x)`: Rounds up to a whole number.
+- `round(x, digits)`: Rounds to the nearest whole number, or to the given number of decimal digits.
+- `int(x)`: Converts to a whole number (Int): decimals are cut, texts are read.
+- `float(x)`: Converts to a decimal number (Float).
+- `sin(x)`: Sine (x in radians).
+- `cos(x)`: Cosine (x in radians).
+- `tan(x)`: Tangent (x in radians).
+- `asin(x)`: Arc sine: the angle (in radians) whose sine is x, for x from -1 to 1.
+- `acos(x)`: Arc cosine: the angle (in radians) whose cosine is x, for x from -1 to 1.
+- `atan(y, x)`: Arc tangent: the angle (in radians) whose tangent is y.
+- `log(x, base)`: Logarithm: natural (base e) by default, or in the given base.
+- `exp(x)`: e to the power x.
+- `is_even(n)`: Is the whole number even?
+- `is_odd(n)`: Is the whole number odd?
+- `gcd(a, b)`: Greatest common divisor of two whole numbers: the largest number that divides both.
+- `lcm(a, b)`: Least common multiple of two whole numbers: the smallest number divisible by both.
+- `pi`: the number π (a value, not a function)
+
+### Text
+
+- `len(x)`: Length of a text (in characters), a list, a record, a dict or a set.
+- `upper(text)`: The text in uppercase.
+- `lower(text)`: The text in lowercase.
+- `capitalize(text)`: The text with its first character in uppercase (the rest is unchanged).
+- `trim(text)`: The text without spaces and line breaks at the start and the end.
+- `pad_left(text, width, fill)`: Adds `fill` (a space by default) before the text until it is `width` characters long: numbers line up in columns.
+- `pad_right(text, width, fill)`: Adds `fill` (a space by default) after the text until it is `width` characters long.
+- `split(text, separator)`: Cuts a text into a list of texts.
+- `join(list, separator)`: Glues the elements of a list into one text, with the separator between them.
+- `contains(x, item)`: Does the text contain this piece of text? Does the list (or the set) contain this element? Does the record have this field, or the dict this key?
+- `starts_with(text, start)`: Does the text start with this piece of text?
+- `ends_with(text, end)`: Does the text end with this piece of text?
+- `replace(text, old, new)`: Replaces every occurrence of `old` by `new`.
+- `chars(text)`: The list of the characters of a text.
+- `lines(text)`: The list of the lines of a text.
+- `char_code(char)`: The number of a character (its Unicode code point).
+- `char(code)`: The character with this number (Unicode code point): the opposite of `char_code`.
+- `is_digit(text)`: Is the text made only of digits from 0 to 9 (and not empty)?
+- `is_letter(text)`: Is the text made only of letters, accented ones included (and not empty)?
+- `is_space(text)`: Is the text made only of spaces, tabs and line breaks (and not empty)?
+- `repeat(x, n)`: A text or a list repeated n times.
+- `parse_int(text)`: Reads a whole number from a text: `Ok(number)`, or `Err(message)` if the text is not a number.
+- `parse_float(text)`: Reads a decimal number from a text: `Ok(number)` or `Err(message)`.
+- `parse_json(text)`: Reads a JSON text: `Ok(value)`, or `Err(message)` if the text is not valid JSON.
+- `to_json(value, indent)`: Writes a value as JSON text: records become objects, lists arrays, and `None` null.
+- `trim_start(text)`: The text without spaces and line breaks at the start.
+- `trim_end(text)`: The text without spaces and line breaks at the end.
+- `words(text)`: The list of the words of a text: letters and digits, accents included, with `'` or `-` inside a word.
+- `equals_ignore_case(a, b)`: Are the two texts the same when uppercase and lowercase letters count as equal?
+- `format_number(x, decimals, language)`: Writes a number for people: thousands separated, with exactly `decimals` decimals if given, in the style of a language: "en" (1,234.5, by default), "fr" (1 234,5), "de", "es", "it", "nl" or "pt" (1.234,5).
+- `matches(text, regex)`: Does the whole text match the regex (a regular expression: see `rythme help regex`)? To look for the regex anywhere in the text, use `find_first`.
+- `find_first(text, regex)`: The first piece of the text that matches the regex, as an Option: `Some(piece)`, or `None` if there is none.
+- `find_all(text, regex)`: Every piece of the text that matches the regex, from left to right.
+- `captures(text, regex)`: The first match of the regex, as an Option of a list: the whole piece, then the text of each group `(...)`, in order ("" for a group that matched nothing).
+- `captures_all(text, regex)`: Like `captures`, for every match: a list of lists.
+- `named_captures(text, regex)`: The first match of a regex with named groups `(?<name>...)`, as an Option of a record: one field for each name.
+- `split_by(text, regex)`: Cuts a text at every piece that matches the regex.
+- `replace_all(text, regex, new)`: Replaces every piece that matches the regex.
+- `csv_parse(text, separator)`: Reads a CSV table (a spreadsheet saved as text): `Ok(list of rows)`, each row a list of texts, or `Err(message)` saying at which line and column the text is not valid CSV.
+- `csv_records(text, separator)`: Reads a CSV table whose first line names the columns: `Ok(list of records)`, one record for each other line, with one field for each column, in their order, holding a text.
+- `csv_format(rows, separator)`: Writes rows as a CSV text, each one on its line, ended by a line break.
+
+### Lists
+
+- `map(list, f)`: Applies the function f to each element and returns the list of the results.
+- `filter(list, f)`: Keeps only the elements for which f returns true.
+- `fold(list, start, f)`: Combines all the elements into one value: starts with `start`, then computes f(result, element) for each element.
+- `scan(list, start, f)`: Like fold, but gives the list of every intermediate result: running totals, for example.
+- `each(list, f)`: Calls f on each element, for its effect (like printing).
+- `sum(list, f)`: The sum of the numbers of a list; with f, the sum of f(x) for each element.
+- `product(list)`: The product of the numbers of a list.
+- `first(list, n)`: The first element of a list (or character of a text), as an Option: `Some(x)`, or `None` if there is none.
+- `last(list, n)`: The last element of a list (or character of a text), as an Option.
+- `rest(list)`: The list (or text) without its first element.
+- `get(x, key)`: The element at a position of a list or text, the field of a record, or the value of a key of a dict, as an Option (never an error).
+- `push(list, x)`: A new list with x added at the end; or a new set with x added.
+- `set_at(list, i, x)`: A new list where the element at position i is replaced by x.
+- `insert_at(list, i, x)`: A new list with x inserted so that it is at position i (-1 adds it at the end).
+- `remove_at(list, i)`: A new list without the element at position i.
+- `reverse(x)`: The list or text in reverse order.
+- `sort(list)`: The list sorted from smallest to largest (numbers, texts in alphabetical order...).
+- `sort_by(list, key)`: Sorts the list by the value that the function `key` gives for each element.
+- `unique(list)`: The list without duplicates (the first occurrence is kept).
+- `shuffle(list)`: The elements of the list in a random order.
+- `slice(x, start, end)`: The part of a list or text from position `start` (included) to `end` (excluded).
+- `take(x, n)`: The first n elements of a list or text.
+- `drop(x, n)`: The list or text without its first n elements.
+- `take_while(x, f)`: The first elements of a list (or characters of a text), as long as f is true for them.
+- `drop_while(x, f)`: The list (or text) without its first elements for which f is true.
+- `step_by(x, n)`: One element out of n of a list (or text), starting with the first.
+- `chunks(x, n)`: Cuts a list (or text) into pieces of n elements; the last piece may be shorter.
+- `windows(x, n)`: Every group of n neighbouring elements of a list (or text), in order: handy to compare each element with the next one.
+- `zip(a, b)`: Pairs the elements of two lists: [[a1, b1], [a2, b2], ...].
+- `enumerate(list)`: Pairs each element with its position: [[0, x0], [1, x1], ...].
+- `any(list, f)`: Is f true for at least one element?
+- `all(list, f)`: Is f true for every element?
+- `find(list, f)`: The first element for which f is true, as an Option.
+- `count(list, f)`: How many elements make f true; without f, how many elements there are.
+- `reject(list, f)`: The elements for which f is false: the opposite of `filter`.
+- `each_with_index(list, f)`: Calls f(element, position) for each element, in order (positions start at 0).
+- `index_of(x, item)`: The position of an element in a list (or of a piece of text in a text), as an Option.
+- `min_by(list, key)`: The element for which the function `key` gives the smallest value (the first one if there are several).
+- `max_by(list, key)`: The element for which the function `key` gives the largest value (the first one if there are several).
+- `flatten(list)`: Joins a list of lists into one list.
+- `flat_map(list, f)`: Like map, when f returns a list: the lists are joined.
+- `partition(list, f)`: Splits a list in two: [elements where f is true, elements where f is false].
+- `group_by(list, key)`: Groups the elements in a record: the key is the text of what `key` returns, the value the list of matching elements.
+- `is_empty(x)`: Is the list, text, record, dict or set empty?
+- `zip_with(xs, ys, f)`: Calls f with the elements of two lists of the same length, one pair at a time, and gives the list of the results.
+
+### Records
+
+- `keys(record)`: The list of the field names of a record, or of the keys of a dict (in order).
+- `values(record)`: The list of the values of a record or of a dict (in the order of its keys), or of the elements of a set (in order).
+- `entries(record)`: The list of the [name, value] pairs of a record, or of the [key, value] pairs of a dict.
+- `from_entries(list)`: Builds a record from a list of [name, value] pairs: the opposite of `entries`.
+- `has(record, name)`: Does the record have this field? Does the dict have this key, or the set this element?
+- `put(record, name, value)`: A new record with the field set to the value (added or replaced); or a new dict with the key set to the value.
+- `remove(record, name)`: A new record without this field; or a new dict without this key, or a new set without this element.
+- `map_values(record, f)`: A new record (or dict) where f is applied to every value; the names (or keys) stay the same.
+
+### Dictionaries and sets
+
+- `dict(pairs)`: A dictionary: keys of any kind (but functions), each with a value, kept in the order of the keys.
+- `set(list)`: A set: values (but functions) without repetition, kept in order.
+- `union(a, b)`: The elements of two sets together; or the pairs of two dicts, where the value of b wins for a key in both.
+- `intersection(a, b)`: The elements of the set a that are also in b; or the pairs of the dict a whose key is in b.
+- `difference(a, b)`: The elements of the set a that are not in b; or the pairs of the dict a whose key is not in b.
+- `is_subset(a, b)`: Is every element of the set a also in the set b?
+
+### Option and Result
+
+- `unwrap(x)`: The value inside `Some(x)` or `Ok(x)`.
+- `unwrap_or(x, default)`: The value inside `Some(x)` or `Ok(x)`, or the default value for `None` or `Err(e)`.
+- `is_some(option)`: Is it `Some(...)`?
+- `is_none(option)`: Is it `None`?
+- `is_ok(result)`: Is it `Ok(...)`?
+- `is_err(result)`: Is it `Err(...)`?
+- `and_then(x, f)`: Chains steps that may fail: for `Some(x)` or `Ok(x)`, gives f(x), which must be an Option or a Result; `None` and `Err(e)` stay as they are.
+- `ok_or(option, error)`: Turns an Option into a Result: `Some(x)` gives `Ok(x)`, and `None` gives `Err(error)`.
+- `map_err(result, f)`: For `Err(e)`, gives `Err(f(e))`; `Ok(x)` stays as it is.
+- `Some(x)`, `None`, `Ok(x)`, `Err(e)`: build an Option or a Result
+
+### Files
+
+- `read_file(path)`: Reads a whole text file: `Ok(text)`, or `Err(message)` if it cannot be read.
+- `write_file(path, text)`: Writes a text in a file (replacing its content): `Ok(())` or `Err(message)`.
+- `append_file(path, text)`: Adds a text at the end of a file, creating the file if needed: `Ok(())` or `Err(message)`.
+- `file_exists(path)`: Does this file (or folder) exist? Always `false` in the browser.
+- `file_info(path)`: What is known about a file or a folder: `Ok({is_folder, size})`, with its size in bytes (0 for a folder), or `Err(message)` if it does not exist or cannot be read.
+- `list_folder(path)`: The names of the files and folders inside a folder, in alphabetical order: `Ok(list of texts)`, or `Err(message)`.
+- `create_folder(path)`: Creates a folder, and the folders around it that are missing: `Ok(())`, also when it already exists, or `Err(message)`.
+- `delete_file(path)`: Deletes one file (never a folder: that is an error): `Ok(())` or `Err(message)`.
+- `join_path(parts)`: Joins the parts of a path with `/`, which works on Linux, macOS and Windows (with `\` if the parts already use only `\`).
+- `split_path(path)`: The parts of a path, split at each `/` or `\`; the first part of an absolute path is its root (`/`, `C:\`...).
+
+### Dates and times
+
+- `now()`: The date and time now, where the program runs: a record {year, month, day, hour, minute, second, offset}, where `offset` is the number of minutes the local time is ahead of UTC (0 when the system does not tell).
+- `today()`: The date of today, where the program runs: a record {year, month, day}.
+- `parse_date(text)`: Reads a date written as ISO 8601 ("2024-02-29", "2024-02-29T13:05:00", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date.
+- `format_date(date)`: Writes a date as ISO 8601: "2024-02-29", with the time if the date has one, and `Z` or the offset if it has one.
+- `is_date(value)`: Is the value a valid date: a record {year, month, day} (with `hour`, `minute`, `second`, `offset` if needed) for a day that exists?
+- `add_days(date, n)`: The date n days later (or earlier, when n is negative), at the same time of day.
+- `add_seconds(date, n)`: The date and time n seconds later (or earlier, when n is negative).
+- `days_between(a, b)`: The number of whole days from date a to date b: negative when b is before a.
+- `seconds_between(a, b)`: The number of seconds from date a to date b, taking their offsets into account: negative when b is before a.
+- `day_of_week(date)`: The day of the week of a date, from 1 (Monday) to 7 (Sunday), as in ISO 8601.
+- `days_in_month(year, month)`: The number of days of a month (from 1 to 12) of a year: 28 to 31.
+- `is_leap_year(year)`: Does the year have a 29 February? Every 4 years, except every 100 years, except every 400 years.
+
+### Property tests
+
+- `check_all(property, generator, cases)`: Checks that a property holds for many values made by a generator (100, or `cases`): the function is called with each value and must give `true` (or `()`, `Some(...)`, `Ok(...)`).
+- `sample(generator, n)`: A list of `n` values (10 if not given) made by a generator, to see what `check_all` will try.
+- `ints(min, max)`: A generator of whole numbers from `min` to `max` (from -1000 to 1000 if not given), often near 0 and at the edges.
+- `floats(min, max)`: A generator of decimal numbers from `min` to `max` (from -1000.0 to 1000.0 if not given).
+- `texts(max_length)`: A generator of texts of at most `max_length` characters (20 if not given): letters mostly, with digits, spaces, punctuation and accents.
+- `bools()`: A generator of `true` and `false`.
+- `lists_of(generator, max_length)`: A generator of lists of at most `max_length` elements (10 if not given), each made by `generator`.
+- `one_of(values)`: A generator that picks one of the values of a list.
+- `records_of(fields)`: A generator of records, with a generator for each field: `records_of({name: texts(), age: ints(0, 120)})`.
+
+### Machine learning: vectors, matrices, statistics
+
+- `tanh(x)`: Hyperbolic tangent: a smooth step from -1 to 1, used as the activation of neurons.
+- `sigmoid(x)`: The logistic function 1 / (1 + e^-x): a smooth step from 0 to 1, read as a probability.
+- `relu(x)`: The rectifier: x when it is positive, 0.0 otherwise.
+- `dot(xs, ys)`: Dot product of two vectors (lists of numbers) of the same length: the sum of the products of their numbers, one by one.
+- `norm(xs)`: Length of a vector: the square root of the sum of the squares of its numbers.
+- `vector_add(a, b)`: Adds two vectors, or two matrices, of the same shape, number by number.
+- `vector_sub(a, b)`: Subtracts two vectors, or two matrices, of the same shape, number by number.
+- `vector_mul(a, b)`: Multiplies two vectors, or two matrices, of the same shape, number by number (not the product of matrices: that is `matmul`).
+- `vector_scale(a, k)`: Multiplies every number of a vector, or of a matrix, by the number k.
+- `matmul(a, b)`: Product of two matrices (lists of rows): a matrix of r rows and n columns times a matrix of n rows and c columns gives r rows and c columns.
+- `transpose(m)`: Swaps the rows and the columns of a matrix.
+- `zeros(rows, columns)`: A vector of `rows` zeros, or with `columns`, a matrix full of zeros.
+- `ones(rows, columns)`: A vector of `rows` ones, or with `columns`, a matrix full of ones.
+- `identity_matrix(n)`: The identity matrix of n rows and n columns: ones on the diagonal, zeros elsewhere.
+- `shape(x)`: The shape of a vector or a matrix (of lists nested in lists): its length at each level, `[3]` for a vector of 3 numbers, `[2, 3]` for 2 rows of 3 numbers.
+- `stats(xs)`: A summary of a list of numbers, as a record: `count`, `mean` (the average), `median` (the middle value), `std_dev`, `min` and `max`.
+- `variance(xs)`: The variance of a list of numbers: the mean of the squares of their distances to their mean (of the whole population: divided by n).
+- `std_dev(xs)`: The standard deviation of a list of numbers: the square root of their variance, how far they usually are from their mean.
+- `percentile(xs, p)`: The number below which p percent of the numbers of the list are (p from 0 to 100), between the two closest ones when needed.
+- `argmax(xs)`: The position of the largest number of a list (the first one if several are equal).
+- `argmin(xs)`: The position of the smallest number of a list (the first one if several are equal).
+- `softmax(xs)`: Turns a list of scores into probabilities: each one becomes e^x divided by the sum of them all, so that they are between 0 and 1 and add up to 1, the largest score keeping the largest share.
+- `normalize(xs)`: Rescales a list of numbers from 0.0 (the smallest) to 1.0 (the largest), keeping their proportions.
+- `random_normal(mean, sd)`: A random decimal number drawn from the normal distribution (the bell curve) of this mean and standard deviation.
+- `random_choice_weighted(xs, weights)`: An element of the list chosen at random, each one with a chance in proportion to its weight (numbers of 0 or more, one per element).
+- `train_test_split(xs, share)`: Shuffles a list, then cuts it in two: a record `{train, test}`, where `train` holds this share of the elements (0.8: 80 percent) and `test` the rest.
+- `derivative(f, x)`: The slope of the function f at x (its derivative), computed from f(x + h) and f(x - h) for a tiny h: precise to about 9 significant digits for a smooth function.
+- `gradient(f, xs)`: The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`).
+- `plot(xs, ys)`: Draws the points (x, y) as a chart in text, 50 columns wide and 11 lines high, with the smallest and largest values on the axes; with one list, draws its numbers at the positions 0, 1, 2...
+- `histogram(xs, bars)`: Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each.
+
+### The web: HTTP requests
+
+- `http_get(url, headers)`: Fetches a web address (http:// or https://): `Ok(text of the answer)`, or `Err(message)` when there is no network, the address is wrong, the server answers with an error (404...) or does not answer within 30 seconds.
+- `http_post(url, body, headers)`: Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`.
+
+Ruby names, exactly the same functions: `puts` = `print`, `to_s` = `text`, `to_i` = `int`, `to_f` = `float`, `even?` = `is_even`, `odd?` = `is_odd`, `length` = `len`, `size` = `len`, `upcase` = `upper`, `downcase` = `lower`, `strip` = `trim`, `include?` = `contains`, `start_with?` = `starts_with`, `end_with?` = `ends_with`, `select` = `filter`, `reduce` = `fold`, `inject` = `fold`, `uniq` = `unique`, `each_slice` = `chunks`, `each_cons` = `windows`, `any?` = `any`, `all?` = `all`, `empty?` = `is_empty`, `key?` = `has`, `lstrip` = `trim_start`, `rstrip` = `trim_end`, `casecmp?` = `equals_ignore_case`.
+
+## Keywords
+
+- `fn`: Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.
+- `if`: Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.
+- `then`: Separates the condition of an `if` from the value it gives when the condition is true.
+- `else`: Gives the value of an `if` when the condition is false. It is always required; `else if` chains several conditions.
+- `unless`: The opposite of `if`: `unless condition then a else b` gives `b` when the condition is true, `a` otherwise. Like `if`, it always has an `else`.
+- `match`: Chooses according to the shape of a value: one case per line, `pattern -> result`, finished by `end`. Cases are tried in order, and `rythme check` warns about forgotten cases.
+- `end`: Closes a block: a function written on several lines, a `match`, a `do` or a `test`.
+- `do`: Groups several steps inside an expression, up to `end`. The last line gives the value. After a call, `do |x| ... end` is a block: a function given as the last argument.
+- `type`: Defines your own type and its variants. Each variant is a constructor, with or without fields.
+- `test`: Defines a test, next to the code. `rythme test file.ry` runs the tests of the file.
+- `use`: Uses another file through its name: `use geometry`, then `geometry.area(2)`. The path is relative to the folder of the file that contains `use`.
+- `and`: True when both conditions are true. The second one is computed only if the first one is true.
+- `or`: True when at least one of the conditions is true. The second one is computed only if the first one is false.
+- `not`: Inverts a condition: `not true` is `false`.
+- `true`: One of the two values of the type Bool.
+- `false`: One of the two values of the type Bool.
+
+Reserved because other languages use them (each gives a message saying what to write instead): `for`, `while`, `return`, `break`, `continue`, `let`, `var`, `const`, `def`, `function`, `class`, `elif`, `elsif`, `import`, `try`, `catch`, `except`, `raise`, `throw`, `null`, `nil`, `lambda`, `switch`.
+
+## Habits from other languages, and the Rythme way
+
+| Wrong (other languages) | Right in Rythme |
+|---|---|
+| `for x in xs: print(x)` / `xs.forEach(...)` | `xs.each do \|x\| print(x) end` or `each(xs, fn(x) = print(x))` |
+| `for i in range(10)` | `(0..9).each do \|i\| ... end` (`1..10` includes both ends) |
+| `total = 0; for x in xs: total += x` | `total = sum(xs)` or `fold(xs, 0, fn(acc, x) = acc + x)` |
+| `while n > 0: ...` | a recursive function: `fn countdown(n) = if n == 0 then ... else countdown(n - 1)` |
+| `x = x + 1` (again in the same scope), `x += 1`, `x++` | a new name: `next_x = x + 1` |
+| `xs.append(4)` / `xs.push(4)` alone on a line | `ys = push(xs, 4)` (the result is a new list; W008 warns when it is lost) |
+| `xs[0] = 9`, `p.age = 37` | `set_at(xs, 0, 9)`, `{..p, age: 37}` |
+| `return x` | `x` as the last line of the function |
+| `def f(x):` / `function f(x) {` / `const f = (x) => ...` | `fn f(x) = ...` or `fn f(x)` ... `end` |
+| `lambda x: x * 2` / `x => x * 2` | `fn(x) = x * 2` |
+| `null`, `nil`, `None` as "nothing", `undefined` | `None` (with `Some(x)`): an Option |
+| `try: ... except: ...`, `throw` | `Ok(x)` / `Err(e)` and `match`, `?`; `fail("...")` stops the program |
+| `if x > 0:` / `if (x > 0) { ... }` | `if x > 0 then ... else ...` |
+| `elif` / `elsif` | `else if` |
+| `a ? b : c` | `if a then b else c` |
+| `&&`, `\|\|`, `!x` | `and`, `or`, `not x` |
+| `===`, `<>` | `==`, `!=` |
+| `True`, `False` | `true`, `false` |
+| `f"hi {name}"`, `"hi %s" % name`, `"hi " + name + "!"` with numbers | `"hi {name}"` |
+| `len(xs)` / `xs.length` / `xs.size()` | `len(xs)` or `xs.len` (`length` and `size` work too) |
+| `str(3)` / `String(3)` / `3.toString()` | `text(3)` |
+| `int("3")` that may fail | `parse_int("3")` gives `Ok(3)` or `Err(...)`; `int(3.7)` cuts a number |
+| `s.toUpperCase()`, `s.strip()` | `upper(s)`, `trim(s)` (`upcase`, `strip` work too) |
+| `", ".join(xs)` | `join(xs, ", ")` |
+| `s.split(",")` | `split(s, ",")` |
+| `d["key"]` on a missing key, `d.get("k", 0)` | `get(d, "key")` gives an Option: `unwrap_or(get(d, "key"), 0)` |
+| `{"a": 1}` as a dictionary with any keys | a record `{a: 1}` for names, or `dict([["a", 1]])` |
+| `class Point: ...` | `type Point = Point(x, y)` or a record `{x: 1, y: 2}` |
+| `import math` / `require "x"` | `use math` (a file `math.ry`), then `math.f(...)` |
+| `print("a", end="")` | `print("a")` writes a line; build the text first |
+| `switch x { case 1: ... }` | `match x` with `1 -> ...` cases, then `end` |
+| `{ ... }` for a block | `do ... end` |
+
+## Error and warning codes
+
+Every diagnostic has a stable code; `rythme explain CODE` gives the long explanation with a wrong and a right example. Errors stop the program (or `rythme check`); warnings do not.
+
+- E001: Syntax error
+- E002: Text never closed
+- E003: Unknown name
+- E004: Wrong number of arguments
+- E005: Wrong kind of value
+- E006: No case matches
+- E007: Index out of range
+- E008: Division by zero
+- E009: Not a function
+- E010: Unknown field
+- E011: Already defined
+- E012: Number too large (no longer given)
+- E013: unwrap found no value
+- E014: Too many nested calls
+- E015: Assertion failed
+- E016: Wrong use of ?
+- E017: File problem
+- E018: Unexpected character
+- E019: if without else
+- E020: Missing end
+- E021: Program stopped by fail
+- E022: Impossible conversion
+- E023: Invalid value
+- E024: A value is lost
+- E025: Project or package problem
+- E026: Invalid regex
+- E027: A type written in the code does not fit
+- W001: Unused name
+- W002: Forgotten case
+- W003: Built-in function hidden
+- W004: Case never reached
+- W005: Unknown function after a dot
+- W006: Comparison always false
+- W007: Test that can never fail
+- W008: Result lost
+- W009: A function shown instead of its value
+- W010: Ranges that overlap
+- W011: Index or subtraction instead of a call
+
+## Commands for the loop
+
+- `rythme file.ry [args]` or `rythme run file.ry`: check, then run. Add `--format json` for one JSON document with `stdout`, `stderr`, `exit_code` and the `diagnostics`; `--sandbox` keeps the program away from files, folders and environment variables.
+- `rythme check --format json file.ry ...`: every error and warning, without running. Each diagnostic: `code` (stable), `severity`, `message`, `file`, `range` (lines and columns from 1, end excluded), `labels`, `notes`, `help` (what to write), `fixes` (`title`, `safe`, `edits` with `range` and `new_text`). Exit code 0 when there are no errors.
+- `rythme fix file.ry`: applies the safe fixes until none is left; `--dry-run` shows the diff; `--all` also applies the guesses (misspelt names).
+- `rythme test --format json [file.ry | folder]`: each test with `passed` and its `failure`.
+- `rythme explain E003` (`--format json`): the long explanation of a code.
+- `rythme help map` (`--format json`): the documentation of a built-in function, a keyword or a topic; `rythme help builtins` lists them all.
+- `rythme fmt file.ry`: the official layout. `rythme steps file.ry "expr"`: the evaluation step by step.
+- `rythme mcp`: the same tools for AI assistants, as a Model Context Protocol server (stdio).
+
+Exit codes: 0 success, 1 an error in the program or a failed test, 2 a wrong use of the command, or the code given to `exit(code)`.

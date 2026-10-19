@@ -11,8 +11,8 @@
   example shows its real output.
 - [**Teaching with Rythme**](teaching.md): why Rythme fits a course, a
   12-session course outline, exercises with automatic checking.
-- [**Exercises**](exercises/README.md): 30 graded exercises for a first
-  course, with hints and tests, built into `rythme exercise`.
+- [**Exercises**](exercises/README.md): 36 graded exercises for a first
+  course (six about AI), with hints and tests, built into `rythme exercise`.
 - **Inside the interpreter**: `rythme learn` (a guided tour),
   `rythme help` (topics and functions), `rythme help builtins` (every built-in
   function), `rythme explain E003` (any error code), `rythme help fmt` (the
@@ -20,6 +20,10 @@
   the interactive mode.
 - [**Editors**](../editors/README.md): the language server, `rythme lsp`, in
   VS Code, Neovim, Helix, Zed, Emacs...
+- **For AI assistants**: [`llms-full.txt`](llms-full.txt), the whole
+  language in one text (`rythme help llms`), its index
+  [`llms.txt`](llms.txt), the [JSON output](rythme-output.schema.json) of
+  `--format json`, and `rythme mcp` ([manual, 7.10](reference.md#710-rythme-and-ai-assistants)).
 - [**Examples**](../examples): small complete programs, each with its expected
   output.
 - [**Contributing**](../CONTRIBUTING.md): how the interpreter is organised and
@@ -35,8 +39,8 @@
 - [**Enseigner avec Rythme**](enseigner.md) : pourquoi Rythme convient à un
   cours, un plan de cours en 12 séances, des exercices corrigés
   automatiquement.
-- [**Exercices**](exercises/README.fr.md) : 30 exercices gradués pour un
-  premier cours, avec des indices et des tests, intégrés à `rythme exercise`.
+- [**Exercices**](exercises/README.fr.md) : 36 exercices gradués pour un
+  premier cours (dont six sur l'IA), avec des indices et des tests, intégrés à `rythme exercise`.
 - **Dans l'interpréteur** : `rythme learn` (une visite guidée),
   `rythme help` (sujets et fonctions), `rythme help builtins` (toutes les
   fonctions intégrées), `rythme explain E003` (n'importe quel code d'erreur),
@@ -45,6 +49,10 @@
   `--lang fr` (ou définissez `RYTHME_LANG=fr`) pour tout avoir en français.
 - [**Éditeurs**](../editors/README.fr.md) : le serveur de langage,
   `rythme lsp`, dans VS Code, Neovim, Helix, Zed, Emacs...
+- **Pour les assistants d'IA** : [`llms-full.txt`](llms-full.txt), tout le
+  langage en un texte (`rythme help llms`, en anglais), son index
+  [`llms.txt`](llms.txt), la [sortie JSON](rythme-output.schema.json) de
+  `--format json`, et `rythme mcp` ([manuel, 7.10](reference.fr.md#710-rythme-et-les-assistants-dia)).
 - [**Exemples**](../examples) : de petits programmes complets, chacun avec ce
   qu'il doit afficher.
 - [**Contribuer**](../CONTRIBUTING.md) (en anglais) : l'organisation de

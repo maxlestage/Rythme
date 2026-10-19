@@ -1,0 +1,45 @@
+# Exercice 32 · Des statistiques sur des données  ★★☆
+#
+# Avant d'apprendre à partir de données, on les regarde. `stats(xs)` donne
+# un enregistrement avec le nombre de valeurs, la moyenne, la médiane,
+# l'écart type, le minimum et le maximum :
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).mean       # 5.0
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).std_dev    # 2.0
+#
+# Énoncé
+#   - `centrer_reduire(xs)` : chaque nombre devient sa distance à la
+#     moyenne, comptée en écarts types : (x - moyenne) / écart type ;
+#   - `valeurs_aberrantes(xs)` : les nombres à plus de 2 écarts types de la
+#     moyenne, dans leur ordre ;
+#   - `exactitude(predictions, reponses)` : la part (de 0.0 à 1.0) des
+#     prédictions égales à la réponse à la même position.
+#
+# Indices
+#   1. Calculez `stats(xs)` une fois, donnez-lui un nom, puis `map`.
+#   2. `abs` donne la distance quel que soit le côté.
+#   3. `zip(a, b)` associe les éléments ; `count` compte ceux qui sont justes.
+#
+# Vérifiez votre travail :  rythme exercise check 32-statistiques.ry
+#                     ou :  rythme test 32-statistiques.ry
+
+fn centrer_reduire(xs) = fail("à faire")
+
+fn valeurs_aberrantes(xs) = fail("à faire")
+
+fn exactitude(predictions, reponses) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "centrer et réduire"
+  assert_eq(centrer_reduire([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "valeurs aberrantes"
+  assert_eq(valeurs_aberrantes([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(valeurs_aberrantes([1, 2, 3]), [])
+end
+
+test "exactitude"
+  assert_eq(exactitude(["chat", "chien", "chat", "chat"], ["chat", "chien", "chien", "chat"]), 0.75)
+  assert_eq(exactitude([1, 0], [0, 1]), 0.0)
+end
