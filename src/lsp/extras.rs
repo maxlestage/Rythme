@@ -106,6 +106,9 @@ struct Tree {
     lambda_heads: HashMap<Span, u32>,
     /// The symbols written in the code (`:ok`), in expressions and patterns.
     symbols: Vec<Span>,
+    /// Names and functions whose type is written in the code (`total:
+    /// Float`, `fn area(r) -> Float`): no hint repeats it.
+    written: HashSet<Span>,
 }
 
 impl Tree {
@@ -147,6 +150,9 @@ impl Tree {
                 self.node(p.span.to(e.span));
                 self.fold(p.span.to(e.span));
                 if matches!(p.kind, PatKind::Bind(_)) {
+                    if p.ty.is_some() || matches!(&e.kind, ExprKind::Lambda(def) if def.ret_type().is_some()) {
+                        self.written.insert(p.span);
+                    }
                     if is_literal(e) {
                         self.literal.insert(p.span);
                     }
@@ -165,6 +171,9 @@ impl Tree {
     }
 
     fn func(&mut self, def: &FnDef) {
+        if def.ret_type().is_some() {
+            self.written.insert(def.span);
+        }
         if let (Some(first), Some(last)) = (def.clauses.first(), def.clauses.last()) {
             let all = first.span.to(last.body.span);
             self.node(all);
@@ -178,6 +187,9 @@ impl Tree {
             }
             self.node(c.span);
             for p in &c.params {
+                if p.ty.is_some() {
+                    self.written.insert(p.span);
+                }
                 self.pattern(p);
             }
             if let Some(g) = &c.guard {
@@ -330,6 +342,9 @@ pub fn inlay_hints(cx: &Ctx, a: &Analysis, start: usize, end: usize) -> Json {
     };
     let mut hints: Vec<(usize, String, bool)> = Vec::new();
     for d in defs {
+        if tree.written.contains(&d.span) {
+            continue;
+        }
         let t = types.get(&d.span);
         // What a function gives back: the type the checker is sure of, or else the inferred one.
         let ret = || t.and_then(|t| type_label(&t.ret())).or_else(|| signatures.get(&d.span).and_then(|s| s.ret.clone()));

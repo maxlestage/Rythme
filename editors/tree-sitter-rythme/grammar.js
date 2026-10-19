@@ -22,6 +22,11 @@
  * subtraction and an index when the code gives `x` and `xs` values; this
  * grammar always reads them as calls (`rythme fmt` writes the others
  * `x - 1` and `xs[0]`).
+ *
+ * Types may be written in the code, for the checker: after a parameter, a
+ * name given a value or a field of a variant (`w: Int`, `total: Float =
+ * 0.0`, `Circle(radius: Float)`), and after the parameters of a function
+ * for its result (`fn area(r) -> Float = ...`).
  */
 
 /// <reference types="tree-sitter-cli/dsl" />
@@ -129,7 +134,10 @@ module.exports = grammar({
 
     variant: $ => seq(field('name', $.constructor), optional($.variant_fields)),
 
-    variant_fields: $ => seq('(', commaSep($.identifier), ')'),
+    variant_fields: $ => seq('(', commaSep(choice($.identifier, $.typed_field)), ')'),
+
+    /** `radius: Float`: a field and its written type. */
+    typed_field: $ => seq(field('name', $.identifier), field('type', $.type_annotation)),
 
     test_definition: $ => seq('test', field('name', $.string), $._body),
 
@@ -140,11 +148,18 @@ module.exports = grammar({
         'fn',
         field('name', choice($.identifier, $.predicate)),
         field('parameters', $.parameters),
+        optional(field('return_type', $.return_type)),
         optional(field('guard', $.guard)),
         $._body,
       ),
 
-    parameters: $ => seq('(', commaSep($._pattern), ')'),
+    parameters: $ => seq('(', commaSep(choice($._pattern, $.typed_parameter)), ')'),
+
+    /** `w: Int`: a parameter and its written type. */
+    typed_parameter: $ => seq(field('pattern', $._pattern), field('type', $.type_annotation)),
+
+    /** `-> Int`: the written type of the result of a function. */
+    return_type: $ => seq('->', field('type', $._type)),
 
     guard: $ => seq('if', $._expression),
 
@@ -160,7 +175,43 @@ module.exports = grammar({
 
     block: $ => seq(lines($, $._statement), 'end'),
 
-    definition: $ => seq(field('pattern', $._pattern), '=', field('value', $._expression)),
+    definition: $ =>
+      seq(field('pattern', $._pattern), optional(field('type', $.type_annotation)), '=', field('value', $._expression)),
+
+    // ----- written types ----------------------------------------------------
+
+    /** `: Int`, after a name. */
+    type_annotation: $ => seq(':', $._type),
+
+    /** `Int`, `Shape`, `List(Int)`... and `a`, a type variable: any type, the same one everywhere in a definition. */
+    _type: $ =>
+      choice(
+        alias($.constructor, $.type_name),
+        $.generic_type,
+        $.qualified_type,
+        alias($.identifier, $.type_variable),
+        $.list_type,
+        $.record_type,
+        $.function_type,
+      ),
+
+    /** `List(Int)`, `Dict(Text, Int)`. */
+    generic_type: $ => seq(field('name', alias($.constructor, $.type_name)), '(', commaSep($._type), ')'),
+
+    /** `geo.Shape`: a type of the file used as `geo`. */
+    qualified_type: $ =>
+      seq(field('module', alias($.identifier, $.module_name)), '.', field('name', alias($.constructor, $.type_name))),
+
+    /** `[Int]`. */
+    list_type: $ => seq('[', $._type, ']'),
+
+    /** `{name: Text, age: Int}`. */
+    record_type: $ => seq('{', commaSep($.field_type), '}'),
+
+    field_type: $ => seq(field('key', $._field_key), ':', field('type', $._type)),
+
+    /** `fn(Int, Int) -> Bool`. */
+    function_type: $ => seq('fn', '(', commaSep($._type), ')', '->', field('result', $._type)),
 
     // ----- expressions ----------------------------------------------------
 
@@ -237,10 +288,13 @@ module.exports = grammar({
 
     brace_block: $ => seq('{', field('parameters', $.block_parameters), lines($, $._statement), '}'),
 
-    block_parameters: $ => choice('||', seq('|', commaSep($._block_parameter), '|')),
+    block_parameters: $ => choice('||', seq('|', commaSep(choice($._block_parameter, $.typed_block_parameter)), '|')),
 
     _block_parameter: $ =>
       choice($.identifier, $.constructor_pattern, $.list_pattern, $.record_pattern, $.parenthesized_pattern, $.unit_pattern),
+
+    /** `|n: Int|`. */
+    typed_block_parameter: $ => seq(field('pattern', $._block_parameter), field('type', $.type_annotation)),
 
     arguments: $ => seq('(', commaSep($._expression), ')'),
 
@@ -324,7 +378,10 @@ module.exports = grammar({
     do_expression: $ => seq('do', field('body', $.block)),
 
     lambda: $ =>
-      prec.right(PREC.lambda, seq('fn', field('parameters', $.parameters), $._body)),
+      prec.right(
+        PREC.lambda,
+        seq('fn', field('parameters', $.parameters), optional(field('return_type', $.return_type)), $._body),
+      ),
 
     // ----- patterns -------------------------------------------------------
 

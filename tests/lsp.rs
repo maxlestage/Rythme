@@ -470,6 +470,46 @@ fn signature_help_counts_the_arguments() {
 }
 
 #[test]
+fn written_types_in_hover_signature_help_hints_and_problems() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/written.ry";
+    let text = "## Sums some numbers.\nfn total(xs: List(Int), start: Int) -> Int = start + sum(xs)\ntype Shape = Circle(radius: Float) | Dot\nlimit: Int = 10\nprint(total([1], limit), Circle(1.0))\nx = total([2], \n";
+    lsp.open(u, text);
+    // The function, with its written types, and what the checker infers says the same.
+    let h = hover_text(&lsp.at("textDocument/hover", u, 4, 8));
+    assert!(h.contains("fn total(xs: List(Int), start: Int) -> Int") && h.contains("Sums some numbers."), "{h}");
+    // A parameter, with its type.
+    let h = hover_text(&lsp.at("textDocument/hover", u, 1, 25));
+    assert!(h.contains("start: Int") && h.contains("parameter of `total`"), "{h}");
+    // A constructor, with the types of its fields.
+    let h = hover_text(&lsp.at("textDocument/hover", u, 4, 26));
+    assert!(h.contains("Circle(radius: Float)"), "{h}");
+    // Signature help: one parameter per name, even with brackets in the types.
+    let sig = lsp.at("textDocument/signatureHelp", u, 5, 15);
+    let first = &sig.get("signatures").as_array()[0];
+    let label = first.get("label").as_str().unwrap().to_string();
+    assert_eq!(label, "total(xs: List(Int), start: Int) -> Int");
+    let params: Vec<&str> = first
+        .get("parameters")
+        .as_array()
+        .iter()
+        .map(|p| &label[p.get("label").as_array()[0].as_u64().unwrap() as usize..p.get("label").as_array()[1].as_u64().unwrap() as usize])
+        .collect();
+    assert_eq!(params, ["xs: List(Int)", "start: Int"]);
+    assert_eq!(sig.get("activeParameter").as_u64(), Some(1));
+    // No hint repeats a written type.
+    lsp.change(u, 2, "fn total(xs: List(Int), start: Int) -> Int = start + sum(xs)\nlimit: Int = len([1, 2])\nother = len([1])\nprint(total([1], limit), other)\n");
+    let found = hints(&mut lsp, u);
+    assert_eq!(found, [(2, 5, ": Int".to_string())], "{found:?}");
+    // A value that does not fit its written type is a problem, in the editor too.
+    let diags = lsp.change(u, 3, "limit: Text = 10\nprint(limit)\n");
+    assert_eq!(diags.len(), 1);
+    assert_eq!(diags[0].get("code").as_str(), Some("E027"));
+    assert!(diags[0].get("message").as_str().unwrap().contains("`limit` is written `Text`, but its value is Int 10"), "{}", diags[0]);
+    assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
 fn signature_help_for_calls_without_parentheses() {
     let (mut lsp, _) = Lsp::start("en", INIT);
     let u = "file:///nowhere/command.ry";

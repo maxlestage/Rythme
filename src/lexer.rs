@@ -295,7 +295,7 @@ impl<'a> Lexer<'a> {
                     Tok::RBrace
                 }
                 ',' => Tok::Comma,
-                ':' if self.peek().is_some_and(is_ident_start) && !key_before(&toks, interpolation) => {
+                ':' if self.peek().is_some_and(is_ident_start) && !key_before(&toks, interpolation) && !param_before(&toks) => {
                     while self.peek().is_some_and(is_ident_continue) {
                         self.bump();
                     }
@@ -741,6 +741,24 @@ fn key_before(toks: &[Token], interpolation: bool) -> bool {
         (Some(last), Some(before)) => key(last) && matches!(before, Tok::LBrace | Tok::Comma),
         // `"{name:value}"`: the `{` of the text comes before.
         (Some(last), None) => key(last) && interpolation,
+        _ => false,
+    }
+}
+
+/// `fn area(w:Int, h:Int)`, `do |n:Int|`: a `:` after the first name inside
+/// `(`, or inside the `|` that opens the parameters of a block, starts a
+/// written type, as after a `,` (see `key_before`), not a symbol: a name
+/// followed by a symbol never parses there (`f(x :a)`), except `unless`,
+/// which starts an expression: `(unless :ok == x then a else b)`.
+fn param_before(toks: &[Token]) -> bool {
+    let mut before = toks.iter().rev().filter(|t| t.tok != Tok::Newline);
+    let (Some(name), Some(open)) = (before.next(), before.next()) else { return false };
+    if !matches!(&name.tok, Tok::Ident(s) if &*s.name() != "unless") {
+        return false;
+    }
+    match open.tok {
+        Tok::LParen => true,
+        Tok::Bar => matches!(before.next().map(|t| &t.tok), Some(Tok::Do | Tok::LBrace)),
         _ => false,
     }
 }

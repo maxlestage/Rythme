@@ -104,7 +104,7 @@ pub(super) struct Needs {
     /// The last walk, which reports problems.
     pub(super) reporting: bool,
     /// How many functions are being checked again with the arguments of a call.
-    specializing: usize,
+    pub(super) specializing: usize,
     /// The next function checked is checked with the arguments of a call:
     /// its definitions that do not match them say nothing.
     quiet: bool,
@@ -163,7 +163,7 @@ impl fmt::Display for Signature {
 }
 
 /// The names of the parameters of a function, as in [`FnDef::signature`].
-fn param_names(def: &FnDef) -> Vec<String> {
+pub(super) fn param_names(def: &FnDef) -> Vec<String> {
     (0..def.arity)
         .map(|i| {
             def.clauses
@@ -741,10 +741,22 @@ impl Checker<'_> {
     }
 
     /// The signature of a function that needs this; `ret`: what it gives, if known.
+    /// The types written in the code come first.
     fn signature_of(&self, def: &FnDef, needs: &[Kinds], ret: Option<&Ty>) -> Signature {
-        let params =
-            param_names(def).into_iter().zip(needs).enumerate().map(|(i, (n, k))| (n, kinds_text(*k, self.data_type_of(def, i)))).collect();
-        Signature { name: def.name.map(|n| n.to_string()).unwrap_or_else(|| "fn".into()), params, ret: ret.and_then(type_text) }
+        let params = param_names(def)
+            .into_iter()
+            .zip(needs)
+            .enumerate()
+            .map(|(i, (n, k))| match def.param_type(i) {
+                Some(t) => (n, Some(t.to_string())),
+                None => (n, kinds_text(*k, self.data_type_of(def, i))),
+            })
+            .collect();
+        let ret = match def.ret_type() {
+            Some(t) => Some(t.to_string()),
+            None => ret.and_then(type_text),
+        };
+        Signature { name: def.name.map(|n| n.to_string()).unwrap_or_else(|| "fn".into()), params, ret }
     }
 
     /// The type of the values of the kinds a parameter needs.

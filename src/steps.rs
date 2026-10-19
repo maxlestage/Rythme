@@ -559,14 +559,14 @@ impl<'a> Stepper<'a> {
                 if def.name.is_some() {
                     stmts.push(Stmt::Fn(def.clone()));
                 } else {
-                    stmts.push(Stmt::Let(Pattern { kind: PatKind::Bind(*name), span }, e(ExprKind::Lambda(def.clone()))));
+                    stmts.push(Stmt::Let(Pattern::new(PatKind::Bind(*name), span), e(ExprKind::Lambda(def.clone()))));
                 }
             }
             stmts.push(Stmt::Expr(e(ExprKind::List(defs.iter().map(|(n, _)| ListItem::One(e(ExprKind::Var(*n)))).collect()))));
             e(ExprKind::Block(stmts))
         };
-        let params = env.iter().map(|(s, _)| Pattern { kind: PatKind::Bind(*s), span }).collect();
-        let clause = Rc::new(Clause { params, guard: None, body, span });
+        let params = env.iter().map(|(s, _)| Pattern::new(PatKind::Bind(*s), span)).collect();
+        let clause = Rc::new(Clause { params, guard: None, body, span, ret: None });
         let maker = FnDef { name: None, clauses: vec![clause], arity: env.len(), doc: None, span };
         let code = compile::function(&maker, &self.it.names);
         let maker = Closure { def: Rc::new(maker), code: Rc::new(code), captured: Vec::new(), siblings: None };

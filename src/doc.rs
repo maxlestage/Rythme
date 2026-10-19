@@ -209,18 +209,8 @@ impl Docs {
         for item in &items {
             match item {
                 Item::Type(t) => {
-                    let variants: Vec<String> = t
-                        .variants
-                        .iter()
-                        .map(|v| {
-                            let fields: Vec<String> = v.fields.iter().map(|f| f.name().to_string()).collect();
-                            if fields.is_empty() {
-                                v.name.name().to_string()
-                            } else {
-                                format!("{}({})", v.name.name(), fields.join(", "))
-                            }
-                        })
-                        .collect();
+                    // With the types written for the fields, if any: `Circle(radius: Float)`.
+                    let variants: Vec<String> = t.variants.iter().map(|v| v.signature()).collect();
                     let one_line = format!("type {} = {}", t.name.name(), variants.join(" | "));
                     let code = if one_line.chars().count() <= 80 {
                         one_line
