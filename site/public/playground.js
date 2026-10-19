@@ -279,8 +279,15 @@
     stepsBtn.disabled = on;
   }
 
+  // A run asked by a tap or a key (not the one of the page opening) brings its output
+  // into view on a phone; the page does not jump by itself.
+  let lastGesture = -Infinity;
+  for (const type of ["pointerdown", "keydown"]) document.addEventListener(type, () => { lastGesture = performance.now(); }, true);
+  let runAsked = false;
+
   function execute(mode) {
     if (!wasmModule) return;
+    runAsked = performance.now() - lastGesture < 2000;
     runId += 1;
     runningMode = mode;
     // Check runs nothing: no draws.
@@ -312,7 +319,7 @@
     statusEl.className = failed ? "status bad" : "status good";
     statusEl.textContent = failed ? UI.failedIn(ms) : UI.ranIn(ms);
     // On a phone the output is under the editor: bring it into view.
-    if (window.matchMedia("(max-width: 959px)").matches && document.activeElement !== source) {
+    if (runAsked && !window.matchMedia("(min-width: 960px)").matches && document.activeElement !== source) {
       (stepping ? stepper : output).scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }
@@ -1115,6 +1122,28 @@
   }
 
   start();
+
+  // The keyboard of a phone: while it is open (the visible part of the screen is much
+  // shorter than without it, at the same width: iOS and Chrome shrink the visual
+  // viewport, other browsers the window), the editor is no taller than the part of the
+  // screen left above it (`--keyboard-free`, see site.css), so the line being typed
+  // stays in sight.
+  const vv = window.visualViewport;
+  if (vv) {
+    let tallest = { width: 0, height: 0 };
+    const fit = () => {
+      const typing = document.activeElement === source;
+      if (vv.width !== tallest.width) tallest = { width: vv.width, height: 0 };
+      if (!typing || vv.height > tallest.height) tallest.height = Math.max(tallest.height, vv.height);
+      const open = typing && vv.height < tallest.height * 0.8;
+      document.documentElement.classList.toggle("keyboard", open);
+      if (open) document.documentElement.style.setProperty("--keyboard-free", `${Math.round(vv.height)}px`);
+    };
+    fit();
+    vv.addEventListener("resize", fit);
+    source.addEventListener("focus", fit);
+    source.addEventListener("blur", fit);
+  }
 
   // A link pasted in the address bar while the playground is open changes only the
   // fragment: the page stays, the program of the link comes in.

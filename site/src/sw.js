@@ -93,7 +93,9 @@ async function lang(url) {
 async function page(event, url) {
   const cache = await caches.open(CACHE);
   // Saved without its query: `?text=…` of a shared text is the same playground.
-  const network = fetch(event.request).then(async (response) => {
+  // Revalidated with the server, never from the HTTP cache (GitHub Pages keeps pages 10
+  // minutes): a new deployment shows at once, and its new worker is found at once.
+  const network = fetch(event.request, { cache: "no-cache" }).then(async (response) => {
     if (complete(response)) await cache.put(url.pathname, response.clone());
     return response;
   });

@@ -70,8 +70,8 @@ French, English, Spanish, German, Portuguese (Brazilian, "você") and Chinese
 - **The language menu.** In the bar, a button with the code of the language opens the
   list of languages, each named in itself (a `details`: it works without JavaScript;
   `site.js` closes it with Escape, which gives the focus back to the button, a click
-  elsewhere, or the focus leaving it). It hangs under the button, never wider than the
-  screen: at 320px the bar keeps one line. The footer lists every language.
+  elsewhere, or the focus leaving it). It hangs under the bar, on the right, never
+  wider nor taller than the screen (it scrolls): at 320px the bar keeps one line. The footer lists every language.
 - **The playground** gives the interpreter the language of the page (its position in
   `LANGUAGES`, `Lang::interpreter`, checked by the tests), so its messages, its help
   and its steps are in that language; its own texts come from `src/i18n/` (`data-ui`).
@@ -122,9 +122,15 @@ behind `BASE_PATH`.
   Content-Security-Policy lets it fetch them; the pages keep theirs.
 - **Updates**: a new deployment changes the version, so the browser installs the new
   worker in the background (at each visit, and when the app comes back to the
-  foreground). It waits: a banner, "A new version is available — Reload", lets the
-  visitor choose when; nothing reloads on its own, so nobody loses what they were
-  typing. Once activated, the new worker deletes the old caches.
+  foreground); pages are revalidated with the server (`no-cache`), so a new version
+  is seen at once. An installed app is rarely closed, so the new worker does not wait
+  for a "next launch" that may never come: it comes in by itself (the page reloads)
+  when it is ready before the visitor has touched anything since the app opened or
+  came back, and when the app goes to the background with no field being edited and
+  no program running; a new page opened while it waits takes it too. Otherwise a
+  banner, "A new version is available — Reload", lets the visitor choose when; nothing
+  reloads while something is being typed, and the playground keeps its draft in any
+  case. Once activated, the new worker deletes the old caches.
 - **Install**: an "Install app" button in the menu when the browser offers it
   (`beforeinstallprompt`: Chrome, Edge…), hidden once installed; on iPhone and iPad,
   a hint (Share, then "Add to Home Screen") until it is closed, never in the app. The
@@ -247,8 +253,10 @@ is installable, works offline (every page in every language, the playground runs
 checks, tests and formats, with its messages in the language of the page), shows the
 offline page, and offers a new version, both with the server and with the static
 export; and that no page scrolls sideways, in every language and theme, with the
-contrast of each, and that the language menu fits the screen (`layout.js`). The `browser` job of CI runs
-both.
+contrast of each, and that the language menu fits the screen (`layout.js`); and that
+real phones never scroll sideways either, text enlarged, page zoomed, in landscape,
+keyboard open and every menu open, with fields at 16px and targets at 44px
+(`mobile.js`). The `browser` job of CI runs all three.
 
 ## Themes and layout
 
@@ -276,16 +284,46 @@ by its hash, the policy stays strict. Its tabs follow each other (`storage` even
 | Sepia | 13.13:1 | 5.17:1 |
 | Tempo | 16.46:1 | 5.64:1 |
 
-**No horizontal scrolling**, at any width from 320px, and no element wider than the
-screen: code blocks wrap line by line, each wrapped line two columns under its own
-indentation (`highlight.rs` writes one block per line with its `--indent`); the
-playground's editor wraps too (the field and its colors under it share the same
-width and reserved scrollbar gutter, and each line number takes the height of its
-line); the tables of the home page and of the guide become cards on phones, each
-cell with the title of its column (`data-label`); long words, addresses and commands
-break. Nothing is hidden with `overflow-x: hidden`.
+**No horizontal scrolling**, at any width, and no element wider than the screen:
+code blocks wrap line by line, each wrapped line two columns under its own
+indentation (`highlight.rs` writes one block per line with its `--indent`, the hang
+at most a third of the screen), runs of spaces wrap too (`break-spaces`); the
+playground's editor wraps (the field and its colors under it share the same width and
+reserved scrollbar gutter, and each line number takes the height of its line); the
+tables of the home page and of the guide become cards on phones, each cell with the
+title of its column (`data-label`). Nothing is hidden with `overflow-x: hidden`.
 
-`tests/pwa/layout.js` checks all of it in Chromium (see [`tests/pwa/`](tests/pwa/README.md)).
+**Mobile first, as real phones show it.** A phone is not only a narrow window: the
+system's font size enlarges the text (Android's Chrome zooms the page, so a phone of
+360px at 200% is a window of 180px; iOS Safari and Chrome have their text zoom, every
+text bigger in the same boxes), landscape leaves 390px of height, the keyboard half of
+it, and iOS zooms into a field whose text is under 16px, after which the page scrolls
+sideways. So:
+
+- the base rules are for a phone; media queries only add room (`min-width`,
+  `min-height`), never `max-width`;
+- every word may break where the layout needs it (`overflow-wrap: anywhere` on the
+  body: titles, buttons, labels), and every one-column grid is `minmax(0, 1fr)` (a
+  grid column otherwise grows to the widest field, select or seed, and widens the
+  page); selects and fields have `min-width: 0`; rows of buttons wrap;
+- sizes follow the text (`em`, `rem`, `ch`, `min()`, `clamp()`), never a fixed width
+  wider than a small phone; heights use `svh`/`dvh` (with a `vh` fallback);
+- every field is 16px or more on touch screens, landscape and tablets included (the
+  editor is 14px only with a mouse and no touch screen);
+- every control is 44×44px or more for a finger (smaller only with `pointer: fine`);
+  nothing is shown only on hover;
+- the bar sticks to the top only when the screen is 520px high or more; the menu
+  panel and the language list start under its real bottom (`--bar-bottom`, measured
+  by `site.js`: it wraps when the text is enlarged), the language list hangs under the
+  bar and scrolls when the screen is short; titles shrink with the height too, so a
+  phone in landscape shows the playground's tools and editor;
+- the playground: Run in sight when it opens, the page never scrolls by itself (only
+  a run asked by a tap brings its output into view), and with the keyboard open the
+  editor is no taller than the part of the screen above it (`--keyboard-free`, from
+  the visual viewport).
+
+`tests/pwa/layout.js` checks the widths and themes in Chromium, `tests/pwa/mobile.js`
+the phones (see [`tests/pwa/`](tests/pwa/README.md)).
 
 ## Heroku
 

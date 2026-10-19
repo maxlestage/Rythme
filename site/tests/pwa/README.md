@@ -43,8 +43,13 @@ run works on a copy of `public/` in a temporary folder and checks:
    playground shows its texts and the interpreter's messages in that language; the
    language menu (it lists every language) and the burger menu; an unknown page
    shows the offline page of its language;
-5. a new version deployed while the playground is open: the banner, no reload on
-   its own, *Reload* brings the new version and the old cache is gone;
+5. a new version deployed while the playground is open and being typed in: the
+   banner, no reload on its own, *Reload* brings the new version and the old cache is
+   gone; found before anything is touched (the app opening or coming back), it comes
+   in by itself with the code kept; touched, the banner, then the app going to the
+   background takes it; a field being edited when the app leaves: no reload, and the
+   next launch (a new page) takes the waiting version by itself, leaving the page
+   being edited alone;
 6. no console error and no Content-Security-Policy violation on any page.
 
 The exit code is the number of failed checks.
@@ -61,8 +66,9 @@ blocked. It checks:
 1. no horizontal scrolling: every page in every language (home, learn, examples,
    playground, teach, offline, 404), at 320, 360, 375, 390, 414, 600, 768, 1024,
    1280, 1440 and 1920px, in each of the six themes: the document is no wider than
-   the window, no element sticks out of it, none scrolls sideways, and the bar keeps
-   one line;
+   the window, no element sticks out of it, none scrolls sideways, the bar keeps
+   one line, and under 700px every text field is at 16px or more (iOS zooms into a
+   smaller one, and the page then scrolls sideways);
 2. the language menu of the bar, open in every language at 320, 375, 768 and
    1280px: it lists every language and stays inside the screen; Enter opens it,
    Escape closes it and gives the focus back to its button, a click elsewhere closes
@@ -90,6 +96,44 @@ blocked. It checks:
    the system; an unknown stored value falls back to Auto.
 
 `serve.js` starts the site for both scripts.
+
+## `mobile.js`: as real phones show it
+
+```sh
+NODE_PATH=/path/to/node_modules node tests/pwa/mobile.js target/release/rythme-site
+MOBILE_SHOTS=/some/folder NODE_PATH=… node tests/pwa/mobile.js …   # with screenshots
+```
+
+Chromium emulating phones (`isMobile`, `hasTouch`: the meta viewport applies, and an
+element wider than the screen widens the window, which the phone then zooms out), the
+same two deployments, service workers blocked. Before them, it reads `site.css`:
+media queries only add room (`min-width`, `min-height`), no width of `100vw`, nothing
+shown only on hover, no text kept on one line unless its overflow is hidden. Then:
+
+1. every page in every language on twelve phones: 320, 360, 375, 390 and 412px
+   portrait, 844×390 and 915×412 landscape, the page zoomed (150% of 390px, 200% of
+   412 and of 360px: windows of 260, 206 and 180px, as Chrome on Android does with the
+   system's font size) and the text alone enlarged (150% at 320px, 200% at 390px: every
+   font size times that, as WebKit's text zoom does): the window as wide as the screen
+   (not zoomed out), the document no wider, `scrollBy` does not move sideways, no
+   element sticks out or scrolls sideways, and every text field (shown or not) at 16px
+   or more, else iOS zooms into it; the playground opens with Run in sight and the
+   page not scrolled;
+2. every menu and panel open, in every language, at 320 and 390px, in landscape, at
+   200% page zoom and 200% text: the burger menu (under the real bottom of the bar,
+   with the theme picker), the language menu (inside the screen, reachable), the
+   banners of the app all shown, and in the playground the Seed option with a seed of
+   15 digits and long output lines, the box of a shared link, a topic of the help, the
+   steps of a calculation, a long error;
+3. the keyboard, at 390×844 and 844×390: the visible height shrinks, the editor fits
+   above it while typing, nothing scrolls sideways, and it gets its height back once
+   closed;
+4. every control (links outside running text, buttons, fields, the options of the
+   theme picker) at 44×44px or more, in French, English, German and Chinese, with the
+   menu closed and open.
+
+The pages are visited at a human pace: the server answers 100 requests a second to
+one visitor.
 
 ## `images.js`: icons and screenshots
 
