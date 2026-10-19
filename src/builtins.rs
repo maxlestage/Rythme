@@ -30,6 +30,18 @@ pub mod csv;
 mod text_tools;
 use csv::{csv_format, csv_parse, csv_records};
 use text_tools::{equals_ignore_case, format_number, trim_end, trim_start, words};
+mod grad;
+mod http;
+use http::{http_get, http_post};
+mod ml;
+mod plot;
+use grad::{derivative, gradient};
+use ml::{
+    argmax, argmin, dot, identity_matrix, matmul, norm, normalize, ones, percentile, random_choice_weighted, random_normal, relu, shape,
+    sigmoid, softmax, stats, std_dev, tanh, train_test_split, transpose, variance, vector_add, vector_mul, vector_scale, vector_sub, zeros,
+    zip_with,
+};
+use plot::{histogram, plot};
 
 pub type BuiltinFn = fn(&mut Interp, &[Value], Span) -> Fallible<Value>;
 
@@ -45,10 +57,12 @@ pub enum Category {
     Files,
     Dates,
     Tests,
+    Ml,
+    Web,
 }
 
 impl Category {
-    pub const ALL: [Category; 10] = [
+    pub const ALL: [Category; 12] = [
         Category::Basics,
         Category::Numbers,
         Category::Text,
@@ -59,6 +73,8 @@ impl Category {
         Category::Files,
         Category::Dates,
         Category::Tests,
+        Category::Ml,
+        Category::Web,
     ];
 
     pub fn title(self) -> String {
@@ -73,6 +89,10 @@ impl Category {
             Category::Files => t!("Files", "Fichiers"),
             Category::Dates => t!("Dates and times", "Dates et heures"),
             Category::Tests => t!("Property tests", "Tests de propriétés"),
+            Category::Ml => {
+                t!("Machine learning: vectors, matrices, statistics", "Apprentissage automatique : vecteurs, matrices, statistiques")
+            }
+            Category::Web => t!("The web: HTTP requests", "Le web : requêtes HTTP"),
         }
     }
 }
@@ -829,6 +849,139 @@ pub static BUILTINS: &[Builtin] = &[
        "Un générateur d'enregistrements, avec un générateur pour chaque champ : `records_of({name: texts(), age: ints(0, 120)})`. Pratique pour donner plusieurs valeurs à `check_all`.",
        "records_of({x: bools()})   # {generator: \"records_of\", fields: {x: {generator: \"bools\"}}}"),
 
+    // ----- Machine learning -----
+    b!("tanh", "tanh(x)", 1, 1, Ml, tanh,
+       "Hyperbolic tangent: a smooth step from -1 to 1, used as the activation of neurons.",
+       "Tangente hyperbolique : une marche douce de -1 à 1, utilisée comme activation des neurones.",
+       "tanh(0)                    # 0.0\ntanh(1)                    # 0.7615941559557649"),
+    b!("sigmoid", "sigmoid(x)", 1, 1, Ml, sigmoid,
+       "The logistic function 1 / (1 + e^-x): a smooth step from 0 to 1, read as a probability. Its slope is `sigmoid(x) * (1 - sigmoid(x))`.",
+       "La fonction logistique 1 / (1 + e^-x) : une marche douce de 0 à 1, lue comme une probabilité. Sa pente est `sigmoid(x) * (1 - sigmoid(x))`.",
+       "sigmoid(0)                 # 0.5\nsigmoid(2)                 # 0.8807970779778823"),
+    b!("relu", "relu(x)", 1, 1, Ml, relu,
+       "The rectifier: x when it is positive, 0.0 otherwise. The usual activation of deep networks.",
+       "Le redresseur : x quand il est positif, 0.0 sinon. L'activation habituelle des réseaux profonds.",
+       "relu(3)                    # 3.0\nrelu(-2)                   # 0.0"),
+    b!("dot", "dot(xs, ys)", 2, 2, Ml, dot,
+       "Dot product of two vectors (lists of numbers) of the same length: the sum of the products of their numbers, one by one.",
+       "Produit scalaire de deux vecteurs (listes de nombres) de même longueur : la somme des produits de leurs nombres, un à un.",
+       "dot([1, 2, 3], [4, 5, 6])  # 32.0"),
+    b!("norm", "norm(xs)", 1, 1, Ml, norm,
+       "Length of a vector: the square root of the sum of the squares of its numbers.",
+       "Longueur d'un vecteur : la racine carrée de la somme des carrés de ses nombres.",
+       "norm([3, 4])               # 5.0"),
+    b!("vector_add", "vector_add(a, b)", 2, 2, Ml, vector_add,
+       "Adds two vectors, or two matrices, of the same shape, number by number.",
+       "Additionne deux vecteurs, ou deux matrices, de même forme, nombre par nombre.",
+       "vector_add([1, 2], [10, 20])   # [11.0, 22.0]\nvector_add([[1], [2]], [[3], [4]])   # [[4.0], [6.0]]"),
+    b!("vector_sub", "vector_sub(a, b)", 2, 2, Ml, vector_sub,
+       "Subtracts two vectors, or two matrices, of the same shape, number by number.",
+       "Soustrait deux vecteurs, ou deux matrices, de même forme, nombre par nombre.",
+       "vector_sub([5, 5], [1, 2])     # [4.0, 3.0]"),
+    b!("vector_mul", "vector_mul(a, b)", 2, 2, Ml, vector_mul,
+       "Multiplies two vectors, or two matrices, of the same shape, number by number (not the product of matrices: that is `matmul`).",
+       "Multiplie deux vecteurs, ou deux matrices, de même forme, nombre par nombre (pas le produit de matrices : c'est `matmul`).",
+       "vector_mul([1, 2, 3], [2, 2, 2])   # [2.0, 4.0, 6.0]"),
+    b!("vector_scale", "vector_scale(a, k)", 2, 2, Ml, vector_scale,
+       "Multiplies every number of a vector, or of a matrix, by the number k.",
+       "Multiplie chaque nombre d'un vecteur, ou d'une matrice, par le nombre k.",
+       "vector_scale([1, 2], 0.5)      # [0.5, 1.0]"),
+    b!("zip_with", "zip_with(xs, ys, f)", 3, 3, Lists, zip_with,
+       "Calls f with the elements of two lists of the same length, one pair at a time, and gives the list of the results.",
+       "Appelle f avec les éléments de deux listes de même longueur, une paire à la fois, et donne la liste des résultats.",
+       "zip_with([1, 2], [10, 20], fn(a, b) = a + b)   # [11, 22]"),
+    b!("matmul", "matmul(a, b)", 2, 2, Ml, matmul,
+       "Product of two matrices (lists of rows): a matrix of r rows and n columns times a matrix of n rows and c columns gives r rows and c columns. With a vector as `b`, gives a vector.",
+       "Produit de deux matrices (listes de lignes) : une matrice de r lignes et n colonnes fois une matrice de n lignes et c colonnes donne r lignes et c colonnes. Avec un vecteur comme `b`, donne un vecteur.",
+       "matmul([[1, 2], [3, 4]], [[5], [6]])   # [[17.0], [39.0]]\nmatmul([[1, 2], [3, 4]], [1, 1])       # [3.0, 7.0]"),
+    b!("transpose", "transpose(m)", 1, 1, Ml, transpose,
+       "Swaps the rows and the columns of a matrix.",
+       "Échange les lignes et les colonnes d'une matrice.",
+       "transpose([[1, 2, 3], [4, 5, 6]])   # [[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]]"),
+    b!("zeros", "zeros(rows, columns)", 1, 2, Ml, zeros,
+       "A vector of `rows` zeros, or with `columns`, a matrix full of zeros.",
+       "Un vecteur de `rows` zéros, ou avec `columns`, une matrice remplie de zéros.",
+       "zeros(3)                   # [0.0, 0.0, 0.0]\nzeros(2, 2)                # [[0.0, 0.0], [0.0, 0.0]]"),
+    b!("ones", "ones(rows, columns)", 1, 2, Ml, ones,
+       "A vector of `rows` ones, or with `columns`, a matrix full of ones.",
+       "Un vecteur de `rows` uns, ou avec `columns`, une matrice remplie de uns.",
+       "ones(2, 3)                 # [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]"),
+    b!("identity_matrix", "identity_matrix(n)", 1, 1, Ml, identity_matrix,
+       "The identity matrix of n rows and n columns: ones on the diagonal, zeros elsewhere.",
+       "La matrice identité de n lignes et n colonnes : des uns sur la diagonale, des zéros ailleurs.",
+       "identity_matrix(2)         # [[1.0, 0.0], [0.0, 1.0]]"),
+    b!("shape", "shape(x)", 1, 1, Ml, shape,
+       "The shape of a vector or a matrix (of lists nested in lists): its length at each level, `[3]` for a vector of 3 numbers, `[2, 3]` for 2 rows of 3 numbers.",
+       "La forme d'un vecteur ou d'une matrice (de listes imbriquées dans des listes) : sa longueur à chaque niveau, `[3]` pour un vecteur de 3 nombres, `[2, 3]` pour 2 lignes de 3 nombres.",
+       "shape([1, 2, 3])           # [3]\nshape([[1, 2, 3], [4, 5, 6]])   # [2, 3]"),
+    b!("stats", "stats(xs)", 1, 1, Ml, stats,
+       "A summary of a list of numbers, as a record: `count`, `mean` (the average), `median` (the middle value), `std_dev`, `min` and `max`. `stats(xs).mean` is the mean.",
+       "Un résumé d'une liste de nombres, sous forme d'enregistrement : `count`, `mean` (la moyenne), `median` (la valeur du milieu), `std_dev`, `min` et `max`. `stats(xs).mean` est la moyenne.",
+       "stats([1, 2, 3, 4])         # {count: 4, mean: 2.5, median: 2.5, std_dev: 1.118033988749895, min: 1.0, max: 4.0}\nstats([3, 1, 2]).median     # 2.0"),
+    b!("variance", "variance(xs)", 1, 1, Ml, variance,
+       "The variance of a list of numbers: the mean of the squares of their distances to their mean (of the whole population: divided by n).",
+       "La variance d'une liste de nombres : la moyenne des carrés de leurs écarts à leur moyenne (de toute la population : divisée par n).",
+       "variance([2, 4, 4, 4, 5, 5, 7, 9])   # 4.0"),
+    b!("std_dev", "std_dev(xs)", 1, 1, Ml, std_dev,
+       "The standard deviation of a list of numbers: the square root of their variance, how far they usually are from their mean.",
+       "L'écart type d'une liste de nombres : la racine carrée de leur variance, la distance habituelle à leur moyenne.",
+       "std_dev([2, 4, 4, 4, 5, 5, 7, 9])    # 2.0"),
+    b!("percentile", "percentile(xs, p)", 2, 2, Ml, percentile,
+       "The number below which p percent of the numbers of the list are (p from 0 to 100), between the two closest ones when needed. `percentile(xs, 50)` is the median, the middle value.",
+       "Le nombre sous lequel se trouvent p pour cent des nombres de la liste (p de 0 à 100), entre les deux plus proches si besoin. `percentile(xs, 50)` est la médiane, la valeur du milieu.",
+       "percentile([3, 1, 2], 50)  # 2.0\npercentile([1, 2, 3, 4], 50)   # 2.5\npercentile([1, 2, 3, 4], 100)  # 4.0"),
+    b!("argmax", "argmax(xs)", 1, 1, Ml, argmax,
+       "The position of the largest number of a list (the first one if several are equal).",
+       "La position du plus grand nombre d'une liste (le premier si plusieurs sont égaux).",
+       "argmax([3, 9, 2, 9])       # 1"),
+    b!("argmin", "argmin(xs)", 1, 1, Ml, argmin,
+       "The position of the smallest number of a list (the first one if several are equal).",
+       "La position du plus petit nombre d'une liste (le premier si plusieurs sont égaux).",
+       "argmin([3, 9, 2, 9])       # 2"),
+    b!("softmax", "softmax(xs)", 1, 1, Ml, softmax,
+       "Turns a list of scores into probabilities: each one becomes e^x divided by the sum of them all, so that they are between 0 and 1 and add up to 1, the largest score keeping the largest share.",
+       "Change une liste de scores en probabilités : chacun devient e^x divisé par la somme de tous, de sorte qu'ils soient entre 0 et 1 et fassent 1 au total, le plus grand score gardant la plus grande part.",
+       "softmax([0, 0])            # [0.5, 0.5]\nsoftmax([1, 2, 3])         # [0.09003057317038046, 0.24472847105479764, 0.6652409557748218]"),
+    b!("normalize", "normalize(xs)", 1, 1, Ml, normalize,
+       "Rescales a list of numbers from 0.0 (the smallest) to 1.0 (the largest), keeping their proportions. When they are all equal, gives zeros.",
+       "Ramène une liste de nombres entre 0.0 (le plus petit) et 1.0 (le plus grand), en gardant leurs proportions. Quand ils sont tous égaux, donne des zéros.",
+       "normalize([10, 15, 20])    # [0.0, 0.5, 1.0]"),
+    b!("random_normal", "random_normal(mean, sd)", 2, 2, Ml, random_normal,
+       "A random decimal number drawn from the normal distribution (the bell curve) of this mean and standard deviation. Follows `random_seed`.",
+       "Un nombre décimal au hasard, tiré selon la loi normale (la courbe en cloche) de cette moyenne et de cet écart type. Suit `random_seed`.",
+       "random_seed(1)\nrandom_normal(0, 1)        # ..."),
+    b!("random_choice_weighted", "random_choice_weighted(xs, weights)", 2, 2, Ml, random_choice_weighted,
+       "An element of the list chosen at random, each one with a chance in proportion to its weight (numbers of 0 or more, one per element). Follows `random_seed`.",
+       "Un élément de la liste choisi au hasard, chacun avec une chance proportionnelle à son poids (des nombres positifs ou nuls, un par élément). Suit `random_seed`.",
+       "random_choice_weighted([\"a\", \"b\"], [0, 1])   # \"b\""),
+    b!("train_test_split", "train_test_split(xs, share)", 2, 2, Ml, train_test_split,
+       "Shuffles a list, then cuts it in two: a record `{train, test}`, where `train` holds this share of the elements (0.8: 80 percent) and `test` the rest. To learn on some examples and check on others. Follows `random_seed`.",
+       "Mélange une liste, puis la coupe en deux : un enregistrement `{train, test}`, où `train` contient cette part des éléments (0.8 : 80 pour cent) et `test` le reste. Pour apprendre sur certains exemples et vérifier sur d'autres. Suit `random_seed`.",
+       "train_test_split([1, 2, 3, 4, 5], 0.8).train |> len   # 4"),
+    b!("derivative", "derivative(f, x)", 2, 2, Ml, derivative,
+       "The slope of the function f at x (its derivative), computed from f(x + h) and f(x - h) for a tiny h: precise to about 9 significant digits for a smooth function. f takes one number and gives one.",
+       "La pente de la fonction f en x (sa dérivée), calculée à partir de f(x + h) et f(x - h) pour un h minuscule : précise à environ 9 chiffres significatifs pour une fonction régulière. f prend un nombre et en donne un.",
+       "derivative(fn(x) = x * x, 3)   # 6.0\nderivative(sin, 0)         # 1.0"),
+    b!("gradient", "gradient(f, xs)", 2, 2, Ml, gradient,
+       "The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`). f takes a list of numbers and gives one number. Going against it lowers f: the heart of gradient descent.",
+       "Le gradient de f au point xs : la liste des pentes de f le long de chaque nombre de xs (voir `derivative`). f prend une liste de nombres et donne un nombre. Aller en sens inverse fait baisser f : le cœur de la descente de gradient.",
+       "gradient(fn([x, y]) = x * x + 3 * y, [2, 5])   # [4.0, 3.0]"),
+    b!("plot", "plot(xs, ys)", 1, 2, Ml, plot,
+       "Draws the points (x, y) as a chart in text, 50 columns wide and 11 lines high, with the smallest and largest values on the axes; with one list, draws its numbers at the positions 0, 1, 2... Gives a text: `print(plot(losses))`.",
+       "Dessine les points (x, y) sous forme de graphique en texte, de 50 colonnes de large et 11 lignes de haut, avec les plus petites et les plus grandes valeurs sur les axes ; avec une seule liste, dessine ses nombres aux positions 0, 1, 2... Donne un texte : `print(plot(pertes))`.",
+       "plot([1, 4, 9]) |> lines |> len   # 13"),
+    b!("histogram", "histogram(xs, bars)", 1, 2, Ml, histogram,
+       "Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each. Gives a text: `print(histogram(heights))`.",
+       "Compte combien de nombres tombent dans chacun des `bars` intervalles de même largeur (10 sinon) et les dessine en barres horizontales de texte, avec l'intervalle et le compte de chacune. Donne un texte : `print(histogram(tailles))`.",
+       "histogram([1, 2, 2, 3], 2) |> lines   # [\"1 – 2 │█████████████▎ 1\", \"2 – 3 │████████████████████████████████████████ 3\"]"),
+    b!("http_get", "http_get(url, headers)", 1, 2, Web, http_get,
+       "Fetches a web address (http:// or https://): `Ok(text of the answer)`, or `Err(message)` when there is no network, the address is wrong, the server answers with an error (404...) or does not answer within 30 seconds. `headers` is a record of texts, like `{\"accept\": \"application/json\"}`. Uses the program curl; not available in the playground.",
+       "Récupère une adresse web (http:// ou https://) : `Ok(texte de la réponse)`, ou `Err(message)` quand il n'y a pas de réseau, que l'adresse est fausse, que le serveur répond par une erreur (404...) ou ne répond pas en 30 secondes. `headers` est un enregistrement de textes, comme `{\"accept\": \"application/json\"}`. Utilise le programme curl ; pas disponible dans le playground.",
+       "match http_get(\"https://example.com\")\n  Ok(page) -> print(len(page), \"characters\")\n  Err(e) -> print(\"Error: {e}\")\nend"),
+    b!("http_post", "http_post(url, body, headers)", 2, 3, Web, http_post,
+       "Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`. To call a web service or a language model: `http_post(url, to_json(request), {\"content-type\": \"application/json\"})`. Keep keys out of your code: read them with `env`.",
+       "Envoie un texte (souvent du JSON, fait avec `to_json`) à une adresse web et donne `Ok(texte de la réponse)` ou `Err(message)`, comme `http_get`. Pour appeler un service web ou un modèle de langage : `http_post(url, to_json(requete), {\"content-type\": \"application/json\"})`. Gardez les clés hors de votre code : lisez-les avec `env`.",
+       "headers = {\"content-type\": \"application/json\"}\nhttp_post(\"https://httpbin.org/post\", to_json({n: 1}), headers)"),
 ];
 
 // ----- argument helpers --------------------------------------------------

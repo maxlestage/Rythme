@@ -2,9 +2,10 @@
 
 *[Version française →](README.fr.md)*
 
-Thirty graded exercises for a first programming course, from the first
+Thirty-six graded exercises for a first programming course, from the first
 values to recursion, lists, pipelines, records, types and `match`, `Option`
-and `Result`, and tests. Each exercise is one `.ry` file, in
+and `Result`, and tests, then six about artificial intelligence: vectors,
+statistics, neurons, gradient descent, nearest neighbours and minimax. Each exercise is one `.ry` file, in
 [English](en) and in [French](fr), with:
 
 - a **statement** and **hints**, in comments at the top;
@@ -70,13 +71,20 @@ installing anything, copy an exercise into the playground of the
 | 28 | [Passing errors on with `?`](en/28-question-mark.ry) | `?` | ★★★ |
 | 29 | [A small project: counting words](en/29-word-counts.ry) | everything together | ★★★ |
 | 30 | [Tests find bugs](en/30-testing.ry) | reading test failures, fixing bugs, writing a test | ★★★ |
+| 31 | [Points as vectors](en/31-vectors.ry) | `norm`, `vector_sub`, `vector_scale`, `min_by` | ★☆☆ |
+| 32 | [Statistics on data](en/32-statistics.ry) | `stats`, standardizing, outliers, accuracy | ★★☆ |
+| 33 | [An artificial neuron](en/33-neurons.ry) | `dot`, `sigmoid`, `matmul`, a layer | ★★☆ |
+| 34 | [Going down the slope](en/34-gradient-descent.ry) | `derivative`, `gradient`, gradient descent | ★★☆ |
+| 35 | [Nearest neighbours](en/35-nearest-neighbours.ry) | `sort_by` a distance, a vote, classifying | ★★★ |
+| 36 | [Playing perfectly: minimax](en/36-minimax.ry) | a game tree, `any`, `find`, recursion | ★★★ |
 
 ## For teachers
 
 - The exercises follow the [course outline](../teaching.md#a-possible-course-12-sessions):
   01–06 for sessions 1 to 3, 07–10 for recursion, 11–19 for lists and
   higher-order functions, 20–21 for records, 22–25 for types, 26–28 for
-  errors as values, 29–30 for tests and a small project.
+  errors as values, 29–30 for tests and a small project; 31–36 make a
+  short unit on artificial intelligence, after lists and records.
 - Reference solutions are in the hidden folder
   [`.solutions/`](.solutions) (`en/`, `fr/`, `es/`, `de/`, `pt/`, `zh/`),
   with the same tests: the

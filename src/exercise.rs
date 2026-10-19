@@ -69,6 +69,12 @@ pub const EXERCISES: &[Exercise] = exercises![
     ("28-question-mark", "28-point-d-interrogation"),
     ("29-word-counts", "29-compter-les-mots"),
     ("30-testing", "30-tests"),
+    ("31-vectors", "31-vecteurs"),
+    ("32-statistics", "32-statistiques"),
+    ("33-neurons", "33-neurones"),
+    ("34-gradient-descent", "34-descente-de-gradient"),
+    ("35-nearest-neighbours", "35-plus-proches-voisins"),
+    ("36-minimax", "36-minimax"),
 ];
 
 /// The line that starts the tests of an exercise, in English and French.

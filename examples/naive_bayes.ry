@@ -1,0 +1,42 @@
+# A naive Bayes classifier sorts messages into "spam" and "ham" (the good
+# ones) from the words they use. It counts how often each word comes in
+# each kind of message, then, for a new message, multiplies the chances of
+# its words, as if they were independent: the naive part.
+
+messages = [
+  ["spam", "win money now"],
+  ["spam", "free money for you"],
+  ["spam", "claim your free prize now"],
+  ["spam", "win a free trip"],
+  ["ham", "are we still meeting today"],
+  ["ham", "can you send me the notes"],
+  ["ham", "lunch today with the team"],
+  ["ham", "the meeting moved to friday"],
+]
+
+kinds = ["spam", "ham"]
+vocabulary = messages |> flat_map(fn([_, text]) = words(text)) |> unique
+
+## How many times each word comes in the messages of a kind.
+fn counts(kind) =
+  messages |> filter(fn([k, _]) = k == kind) |> flat_map(fn([_, text]) = words(text)) |> group_by(fn(w) = w)
+
+## For each kind: the counts of its words, and how many words it has in all.
+model = kinds |> map(fn(kind) = {words: counts(kind), total: sum(values(counts(kind)), len)})
+
+## The logarithm of the chance of a word in a kind. Adding 1 to every count
+## (Laplace smoothing) gives a small chance to words never seen.
+fn log_chance(m, word) = log((len(unwrap_or(get(m.words, word), [])) + 1) / (m.total + len(vocabulary)))
+
+## The score of a message for each kind: the logarithms are added, which is
+## multiplying the chances without numbers too small for a Float.
+fn scores(text) = model |> map(fn(m) = log(1 / len(kinds)) + sum(words(lower(text)), fn(w) = log_chance(m, w)))
+
+## The most likely kind of a message, and its chance.
+fn verdict(text)
+  chances = softmax(scores(text))
+  best = argmax(chances)
+  "{pad_right(text, 28)} → {kinds[best]} ({round(chances[best] * 100)} %)"
+end
+
+["free money", "meeting with the team today", "win a prize", "send me the money"] |> each(fn(text) = print(verdict(text)))

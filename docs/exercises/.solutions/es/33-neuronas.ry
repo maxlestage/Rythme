@@ -1,0 +1,26 @@
+# Ejercicio 33 · Una neurona artificial  ★★☆
+# Solución de referencia. ¡Intenta hacer el ejercicio antes de leerla!
+
+fn neurona(pesos, sesgo, entradas) = sigmoid(dot(pesos, entradas) + sesgo)
+
+fn se_activa(pesos, sesgo, entradas) = neurona(pesos, sesgo, entradas) >= 0.5
+
+fn capa(matriz, sesgos, entradas) = map(vector_add(matmul(matriz, entradas), sesgos), sigmoid)
+
+# --- Pruebas (no las cambies) ---
+
+test "neurona"
+  assert_eq(neurona([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neurona([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "una neurona que calcula Y"
+  assert(se_activa([10, 10], -15, [1, 1]))
+  assert(not se_activa([10, 10], -15, [1, 0]))
+  assert(not se_activa([10, 10], -15, [0, 0]))
+end
+
+test "capa"
+  salidas = capa([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(salidas, fn(x) = round(x, 3)), [0.5, 0.993])
+end

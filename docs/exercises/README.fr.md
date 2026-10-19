@@ -2,10 +2,11 @@
 
 *[English version →](README.md)*
 
-Trente exercices gradués pour un premier cours de programmation, des
+Trente-six exercices gradués pour un premier cours de programmation, des
 premières valeurs à la récursivité, aux listes, aux tuyaux, aux
 enregistrements, aux types et à `match`, à `Option` et `Result`, et aux
-tests. Chaque exercice est un fichier `.ry`, en [français](fr) et en
+tests, puis six sur l'intelligence artificielle : vecteurs, statistiques,
+neurones, descente de gradient, plus proches voisins et minimax. Chaque exercice est un fichier `.ry`, en [français](fr) et en
 [anglais](en), avec :
 
 - un **énoncé** et des **indices**, en commentaires en haut ;
@@ -74,6 +75,12 @@ rien installer, copiez un exercice dans le playground du
 | 28 | [Transmettre les erreurs avec `?`](fr/28-point-d-interrogation.ry) | `?` | ★★★ |
 | 29 | [Un petit projet : compter les mots](fr/29-compter-les-mots.ry) | tout ensemble | ★★★ |
 | 30 | [Les tests trouvent les bugs](fr/30-tests.ry) | lire les échecs des tests, corriger des bugs, écrire un test | ★★★ |
+| 31 | [Des points comme vecteurs](fr/31-vecteurs.ry) | `norm`, `vector_sub`, `vector_scale`, `min_by` | ★☆☆ |
+| 32 | [Des statistiques sur des données](fr/32-statistiques.ry) | `stats`, centrer et réduire, valeurs aberrantes, exactitude | ★★☆ |
+| 33 | [Un neurone artificiel](fr/33-neurones.ry) | `dot`, `sigmoid`, `matmul`, une couche | ★★☆ |
+| 34 | [Descendre la pente](fr/34-descente-de-gradient.ry) | `derivative`, `gradient`, descente de gradient | ★★☆ |
+| 35 | [Les plus proches voisins](fr/35-plus-proches-voisins.ry) | `sort_by` sur une distance, un vote, classer | ★★★ |
+| 36 | [Jouer parfaitement : le minimax](fr/36-minimax.ry) | un arbre de jeu, `any`, `find`, la récursivité | ★★★ |
 
 ## Pour les enseignants
 
@@ -81,7 +88,8 @@ rien installer, copiez un exercice dans le playground du
   01–06 pour les séances 1 à 3, 07–10 pour la récursivité, 11–19 pour les
   listes et les fonctions d'ordre supérieur, 20–21 pour les enregistrements,
   22–25 pour les types, 26–28 pour les erreurs comme valeurs, 29–30 pour les
-  tests et un petit projet.
+  tests et un petit projet ; 31–36 forment une courte séquence sur
+  l'intelligence artificielle, après les listes et les enregistrements.
 - Les solutions de référence sont dans le dossier caché
   [`.solutions/`](.solutions) (`fr/`, `en/`, `es/`, `de/`, `pt/`, `zh/`),
   avec les mêmes tests : les

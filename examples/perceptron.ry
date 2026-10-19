@@ -1,0 +1,37 @@
+# A perceptron, the first artificial neuron (Rosenblatt, 1958). It learns to
+# separate two kinds of points with a straight line: after each mistake, it
+# moves its weights a little towards the right answer.
+
+# Points [x, y], with the answer 1 when the point is above the line
+# y = x + 0.5, and 0 below (the perceptron is never told about this line).
+examples = [
+  [[0.0, 1.0], 1], [[0.5, 1.5], 1], [[1.0, 2.0], 1], [[2.0, 3.0], 1], [[2.5, 3.5], 1],
+  [[1.5, 1.0], 0], [[2.0, 1.0], 0], [[3.0, 2.5], 0], [[0.5, 0.2], 0], [[1.0, 0.0], 0],
+]
+
+## 1 if the weighted sum of the inputs (and of 1, for the bias) is positive.
+fn predict(weights, point) = if dot(weights, [..point, 1]) > 0 then 1 else 0
+
+## The perceptron rule: no change when right, a step towards the point when wrong.
+fn learn(weights, [point, answer]) =
+  vector_add(weights, vector_scale([..point, 1], 0.1 * (answer - predict(weights, point))))
+
+fn mistakes(weights) = count(examples, fn([point, answer]) = predict(weights, point) != answer)
+
+## Rounds over all the examples, until a round without a mistake.
+fn train(weights, round) =
+  if mistakes(weights) == 0 or round > 100 then
+    {weights, round}
+  else
+    train(fold(examples, weights, learn), round + 1)
+
+result = train([0, 0, 0], 0)
+print("Learned in {result.round} rounds: weights {map(result.weights, fn(w) = round(w, 2))}")
+print("New points: [1, 3] → {predict(result.weights, [1, 3])}, [3, 1] → {predict(result.weights, [3, 1])}")
+
+# What the neuron answers for x from 0 to 4 (left to right) and y from 4 to
+# 0 (top to bottom): + for 1, · for 0.
+fn mark(x, y) = if predict(result.weights, [x, y]) == 1 then "+" else "·"
+
+grid = reverse(0..4) |> map(fn(y) = 0..8 |> map(fn(x) = mark(x / 2, y)) |> join(" "))
+each(grid, fn(line) = print(line))

@@ -1,0 +1,45 @@
+# Exercise 33 · An artificial neuron  ★★☆
+#
+# A neuron multiplies each input by a weight, adds them up with a bias, and
+# passes the sum through an activation function such as `sigmoid`, which
+# gives a number between 0 and 1.
+#   sigmoid(0)                     # 0.5
+#   dot([1, 2], [3, 4])            # 11.0
+#
+# Statement
+#   - `neuron(weights, bias, inputs)`: sigmoid(weights · inputs + bias);
+#   - `fires(weights, bias, inputs)`: true when the neuron gives 0.5 or more;
+#   - `layer(matrix, biases, inputs)`: a layer of neurons, one per row of the
+#     matrix (its weights) and per bias: the list of their outputs.
+#
+# Hints
+#   1. `dot` gives the weighted sum.
+#   2. `matmul(matrix, inputs)` computes every weighted sum of a layer at
+#      once; `vector_add` adds the biases; `map` applies `sigmoid`.
+#
+# Check your work:  rythme exercise check 33-neurons.ry
+#              or:  rythme test 33-neurons.ry
+
+fn neuron(weights, bias, inputs) = fail("to do")
+
+fn fires(weights, bias, inputs) = fail("to do")
+
+fn layer(matrix, biases, inputs) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "neuron"
+  assert_eq(neuron([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neuron([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "a neuron that computes AND"
+  assert(fires([10, 10], -15, [1, 1]))
+  assert(not fires([10, 10], -15, [1, 0]))
+  assert(not fires([10, 10], -15, [0, 0]))
+end
+
+test "layer"
+  outputs = layer([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(outputs, fn(x) = round(x, 3)), [0.5, 0.993])
+end

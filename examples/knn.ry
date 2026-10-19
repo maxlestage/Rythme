@@ -1,0 +1,36 @@
+# k nearest neighbours: to name a new fruit, look at the k known fruits that
+# resemble it most, and take the name most of them have. No training: the
+# examples are the model.
+
+# Weight (g), diameter (cm) and name of some fruits.
+fruits = [
+  [150, 7.0, "apple"], [170, 7.5, "apple"], [140, 6.8, "apple"], [160, 7.2, "apple"], [180, 7.8, "apple"],
+  [130, 6.0, "orange"], [200, 8.5, "orange"], [210, 8.8, "orange"], [190, 8.2, "orange"], [220, 9.0, "orange"],
+  [60, 4.5, "lemon"], [70, 5.0, "lemon"], [80, 5.2, "lemon"], [65, 4.8, "lemon"], [75, 5.5, "lemon"],
+]
+
+# Grams and centimetres are not on the same scale: each column is brought
+# between 0 and 1, so that both count the same.
+columns = transpose(map(fruits, fn([w, d, _]) = [w, d]))
+lows = map(columns, fn(c) = min(c))
+highs = map(columns, fn(c) = max(c))
+fn scaled(features) = zip_with(features, zip(lows, highs), fn(x, [lo, hi]) = (x - lo) / (hi - lo))
+
+examples = map(fruits, fn([w, d, name]) = {features: scaled([w, d]), name})
+
+## The name most of the k nearest examples have.
+fn classify(known, features, k)
+  nearest = known |> sort_by(fn(e) = norm(vector_sub(e.features, features))) |> take(k)
+  votes = nearest |> group_by(fn(e) = e.name) |> entries
+  votes |> max_by(fn([_, voters]) = len(voters)) |> first |> unwrap
+end
+
+# How well does it do on fruits it has not seen? A third of them are kept
+# aside, the same ones on every run.
+random_seed(4)
+parts = train_test_split(examples, 0.67)
+right = count(parts.test, fn(e) = classify(parts.train, e.features, 3) == e.name)
+print("On {len(parts.test)} unseen fruits: {right} right")
+
+for_sale = [[155, 7.1], [205, 8.6], [72, 5.1], [120, 6.5]]
+for_sale |> each(fn([w, d]) = print("{w} g, {d} cm: {classify(examples, scaled([w, d]), 3)}"))

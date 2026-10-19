@@ -1,0 +1,25 @@
+# Exercise 31 · Points as vectors  ★☆☆
+# Reference solution. Try the exercise before reading it!
+
+fn distance(a, b) = norm(vector_sub(a, b))
+
+fn midpoint(a, b) = vector_scale(vector_add(a, b), 0.5)
+
+fn closest(points, p) = min_by(points, fn(q) = distance(q, p))
+
+# --- Tests (do not change them) ---
+
+test "distance"
+  assert_eq(distance([0, 0], [3, 4]), 5.0)
+  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+end
+
+test "midpoint"
+  assert_eq(midpoint([0, 0], [4, 2]), [2.0, 1.0])
+  assert_eq(midpoint([-1, 3], [1, 3]), [0.0, 3.0])
+end
+
+test "closest"
+  assert_eq(closest([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
+  assert_eq(closest([[2, 2]], [100, -100]), [2, 2])
+end

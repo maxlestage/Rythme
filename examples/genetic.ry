@@ -1,0 +1,37 @@
+# A genetic algorithm evolves a sentence: a population of random texts,
+# where the texts closest to the target have more children. A child takes
+# each letter from one of its two parents (crossover), and sometimes a
+# letter changes by chance (mutation). Nobody tells it how to spell.
+
+target = "HELLO RYTHME"
+letters = chars("ABCDEFGHIJKLMNOPQRSTUVWXYZ ")
+size = 30
+
+## How many letters are right: what the selection rewards.
+fn fitness(candidate) = count(zip(chars(candidate), chars(target)), fn([a, b]) = a == b)
+
+fn random_text() = 1..len(target) |> map(fn(_) = random(letters)) |> join("")
+
+## Each letter from one parent or the other; 1 time in 30, a random letter.
+fn child(mother, father) =
+  zip(chars(mother), chars(father))
+    |> map(fn([m, f]) = if random() < 1 / 30 then random(letters) else random([m, f]))
+    |> join("")
+
+## Parents are drawn with a chance that grows with the square of their
+## fitness (plus 1, so that everyone has one); the best text stays as it is.
+fn next_generation(population)
+  weights = map(population, fn(t) = (fitness(t) + 1) ** 2)
+  parent = fn(_) = random_choice_weighted(population, weights)
+  best = max_by(population, fitness)
+  [best, ..map(2..size, fn(i) = child(parent(i), parent(i)))]
+end
+
+fn evolve(population, generation)
+  if generation % 10 == 0 then print("generation {pad_left(generation, 3)}: {max_by(population, fitness)}") else ()
+  if contains(population, target) or generation == 300 then generation else evolve(next_generation(population), generation + 1)
+end
+
+random_seed(30)
+found = evolve(map(1..size, fn(_) = random_text()), 0)
+print("\"{target}\" after {found} generations, among {format_number(len(letters) ** len(target))} possible texts.")

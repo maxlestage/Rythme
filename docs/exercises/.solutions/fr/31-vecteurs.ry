@@ -1,0 +1,25 @@
+# Exercice 31 · Des points comme vecteurs  ★☆☆
+# Solution de référence. Essayez l'exercice avant de la lire !
+
+fn distance(a, b) = norm(vector_sub(a, b))
+
+fn milieu(a, b) = vector_scale(vector_add(a, b), 0.5)
+
+fn le_plus_proche(points, p) = min_by(points, fn(q) = distance(q, p))
+
+# --- Tests (ne les modifiez pas) ---
+
+test "distance"
+  assert_eq(distance([0, 0], [3, 4]), 5.0)
+  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+end
+
+test "milieu"
+  assert_eq(milieu([0, 0], [4, 2]), [2.0, 1.0])
+  assert_eq(milieu([-1, 3], [1, 3]), [0.0, 3.0])
+end
+
+test "le plus proche"
+  assert_eq(le_plus_proche([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
+  assert_eq(le_plus_proche([[2, 2]], [100, -100]), [2, 2])
+end

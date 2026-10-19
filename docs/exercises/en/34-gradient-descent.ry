@@ -1,0 +1,46 @@
+# Exercise 34 · Going down the slope  ★★☆
+#
+# A model learns by making its error smaller: it follows the slope of the
+# error downwards, one small step at a time. That is gradient descent.
+#   derivative(fn(x) = x * x, 3)                      # 6.0, the slope at 3
+#   gradient(fn([x, y]) = x * x + y * y, [1, 2])      # [2.0, 4.0]
+#
+# Statement
+#   - `step(f, x, rate)`: one step down from x: x - rate × (slope of f at x);
+#   - `descend(f, x, rate, steps)`: that many steps from x, one after the
+#     other; the point reached;
+#   - `descend_all(f, xs, rate, steps)`: the same with several numbers: each
+#     step is xs - rate × (gradient of f at xs).
+#
+# Hints
+#   1. `descend` calls itself with one step less, until 0 (or use `fold`
+#      over `1..steps`).
+#   2. `vector_sub` and `vector_scale` work on the list of numbers.
+#
+# Check your work:  rythme exercise check 34-gradient-descent.ry
+#              or:  rythme test 34-gradient-descent.ry
+
+fn step(f, x, rate) = fail("to do")
+
+fn descend(f, x, rate, steps) = fail("to do")
+
+fn descend_all(f, xs, rate, steps) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+fn parabola(x) = (x - 3) ** 2
+
+test "one step"
+  assert_eq(step(parabola, 0, 0.5), 3.0)
+  assert_eq(step(parabola, 1, 0.25), 2.0)
+end
+
+test "down to the bottom"
+  assert_eq(round(descend(parabola, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descend(parabola, 10, 0.1, 0), 10)
+end
+
+test "several numbers"
+  bowl = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descend_all(bowl, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end
