@@ -2243,9 +2243,11 @@ mêmes valeurs reviennent à chaque lancement, et `--seed N` en essaie d'autres
 
 const EXERCISES_EN: &str = r#"EXERCISES
 
-Rythme comes with 30 graded exercises for a first course, from the first
-values to recursion, lists, records, types, Option, Result and tests. Each one
-is a file with a statement, hints, the functions to write and their tests.
+Rythme comes with 36 graded exercises for a first course, from the first
+values to recursion, lists, records, types, Option, Result and tests, then six
+about artificial intelligence (31 to 36: vectors, statistics, a neuron,
+gradient descent, nearest neighbours, minimax). Each one is a file with a
+statement, hints, the functions to write and their tests.
 
   rythme exercise list              the exercises, from ★☆☆ (easy) to ★★★
   rythme exercise start 7           copies exercise 7 into the current folder
@@ -2259,10 +2261,12 @@ docs/exercises of the repository of Rythme has them in English and French."#;
 
 const EXERCISES_FR: &str = r#"EXERCICES
 
-Rythme est livré avec 30 exercices gradués pour un premier cours, des
+Rythme est livré avec 36 exercices gradués pour un premier cours, des
 premières valeurs à la récursivité, aux listes, aux enregistrements, aux types,
-à Option, à Result et aux tests. Chacun est un fichier avec un énoncé, des
-indices, les fonctions à écrire et leurs tests.
+à Option, à Result et aux tests, puis six sur l'intelligence artificielle (31
+à 36 : vecteurs, statistiques, un neurone, descente de gradient, plus proches
+voisins, minimax). Chacun est un fichier avec un énoncé, des indices, les
+fonctions à écrire et leurs tests.
 
   rythme exercise list              les exercices, de ★☆☆ (facile) à ★★★
   rythme exercise start 7           copie l'exercice 7 dans le dossier actuel

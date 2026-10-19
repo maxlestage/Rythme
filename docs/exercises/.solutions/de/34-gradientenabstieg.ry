@@ -1,0 +1,28 @@
+# Übung 34 · Den Hang hinunter  ★★☆
+# Musterlösung. Versuche dich zuerst selbst an der Übung!
+
+fn schritt(f, x, rate) = x - rate * derivative(f, x)
+
+fn absteigen(f, x, rate, 0) = x
+fn absteigen(f, x, rate, schritte) = absteigen(f, schritt(f, x, rate), rate, schritte - 1)
+
+fn alle_absteigen(f, xs, rate, schritte) = fold(1..schritte, xs, fn(p, _) = vector_sub(p, vector_scale(gradient(f, p), rate)))
+
+# --- Tests (nicht verändern) ---
+
+fn parabel(x) = (x - 3) ** 2
+
+test "ein Schritt"
+  assert_eq(schritt(parabel, 0, 0.5), 3.0)
+  assert_eq(schritt(parabel, 1, 0.25), 2.0)
+end
+
+test "bis ganz unten"
+  assert_eq(round(absteigen(parabel, 0, 0.1, 100), 4), 3.0)
+  assert_eq(absteigen(parabel, 10, 0.1, 0), 10)
+end
+
+test "mehrere Zahlen"
+  schale = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(alle_absteigen(schale, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end

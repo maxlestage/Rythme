@@ -1,0 +1,26 @@
+# 练习 33 · 人工神经元  ★★☆
+# 参考答案。请先自己做这个练习，再来看它！
+
+fn neuron(weights, bias, inputs) = sigmoid(dot(weights, inputs) + bias)
+
+fn fires(weights, bias, inputs) = neuron(weights, bias, inputs) >= 0.5
+
+fn layer(matrix, biases, inputs) = map(vector_add(matmul(matrix, inputs), biases), sigmoid)
+
+# --- 测试（请不要修改）---
+
+test "神经元"
+  assert_eq(neuron([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neuron([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "计算“与”的神经元"
+  assert(fires([10, 10], -15, [1, 1]))
+  assert(not fires([10, 10], -15, [1, 0]))
+  assert(not fires([10, 10], -15, [0, 0]))
+end
+
+test "层"
+  outputs = layer([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(outputs, fn(x) = round(x, 3)), [0.5, 0.993])
+end

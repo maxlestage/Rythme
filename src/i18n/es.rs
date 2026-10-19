@@ -2659,9 +2659,11 @@ otros (`--seed random` elige una)."#,
         (
             r#"EXERCISES
 
-Rythme comes with 30 graded exercises for a first course, from the first
-values to recursion, lists, records, types, Option, Result and tests. Each one
-is a file with a statement, hints, the functions to write and their tests.
+Rythme comes with 36 graded exercises for a first course, from the first
+values to recursion, lists, records, types, Option, Result and tests, then six
+about artificial intelligence (31 to 36: vectors, statistics, a neuron,
+gradient descent, nearest neighbours, minimax). Each one is a file with a
+statement, hints, the functions to write and their tests.
 
   rythme exercise list              the exercises, from ★☆☆ (easy) to ★★★
   rythme exercise start 7           copies exercise 7 into the current folder
@@ -2674,10 +2676,12 @@ language of the messages (`rythme --lang es exercise start 7`); the folder
 docs/exercises of the repository of Rythme has them in English and French."#,
             r#"EJERCICIOS
 
-Rythme trae 30 ejercicios graduados para un primer curso, de los primeros
+Rythme trae 36 ejercicios graduados para un primer curso, de los primeros
 valores a la recursión, las listas, los registros, los tipos, Option, Result y
-las pruebas. Cada uno es un archivo con un enunciado, pistas, las funciones
-que escribir y sus pruebas.
+las pruebas, y luego seis sobre inteligencia artificial (31 a 36: vectores,
+estadística, una neurona, descenso de gradiente, vecinos más cercanos,
+minimax). Cada uno es un archivo con un enunciado, pistas, las funciones que
+escribir y sus pruebas.
 
   rythme exercise list              los ejercicios, de ★☆☆ (fácil) a ★★★
   rythme exercise start 7           copia el ejercicio 7 en la carpeta actual
@@ -8916,6 +8920,603 @@ programa; los editores y `rythme doc` los muestran."#,
         (
             r#"Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`. To call a web service or a language model: `http_post(url, to_json(request), {"content-type": "application/json"})`. Keep keys out of your code: read them with `env`."#,
             r#"Envía un texto (a menudo JSON, hecho con `to_json`) a una dirección web y da `Ok(texto de la respuesta)` o `Err(mensaje)`, como `http_get`. Para llamar a un servicio web o a un modelo de lenguaje: `http_post(url, to_json(peticion), {"content-type": "application/json"})`. Deja las claves fuera de tu código: léelas con `env`."#,
+        ),
+        // docs/exercises: the exercises about artificial intelligence (31 to 36)
+        ("31-vectors", "31-vectores"),
+        (
+            r#"# Exercise 31 · Points as vectors  ★☆☆
+#
+# In machine learning, an example is a list of numbers: a vector. The
+# built-in functions `vector_add`, `vector_sub`, `vector_scale`, `dot` and
+# `norm` work on them, and always give Floats.
+#   vector_sub([5, 5], [1, 2])     # [4.0, 3.0]
+#   norm([3, 4])                   # 5.0
+#
+# Statement
+#   - `distance(a, b)`: the distance between the points a and b (the length
+#     of the vector from one to the other);
+#   - `midpoint(a, b)`: the point halfway between a and b;
+#   - `closest(points, p)`: the point of the list nearest to p.
+#
+# Hints
+#   1. `distance` is the `norm` of a difference.
+#   2. Halfway: add the two points, then scale by 0.5.
+#   3. `min_by(list, f)` gives the element for which f is the smallest.
+#
+# Check your work:  rythme exercise check 31-vectors.ry
+#              or:  rythme test 31-vectors.ry
+
+fn distance(a, b) = fail("to do")
+
+fn midpoint(a, b) = fail("to do")
+
+fn closest(points, p) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "distance"
+  assert_eq(distance([0, 0], [3, 4]), 5.0)
+  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+end
+
+test "midpoint"
+  assert_eq(midpoint([0, 0], [4, 2]), [2.0, 1.0])
+  assert_eq(midpoint([-1, 3], [1, 3]), [0.0, 3.0])
+end
+
+test "closest"
+  assert_eq(closest([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
+  assert_eq(closest([[2, 2]], [100, -100]), [2, 2])
+end
+"#,
+            r#"# Ejercicio 31 · Puntos como vectores  ★☆☆
+#
+# En aprendizaje automático, un ejemplo es una lista de números: un vector.
+# Las funciones integradas `vector_add`, `vector_sub`, `vector_scale`, `dot`
+# y `norm` trabajan con ellos, y siempre dan Floats.
+#   vector_sub([5, 5], [1, 2])     # [4.0, 3.0]
+#   norm([3, 4])                   # 5.0
+#
+# Enunciado
+#   - `distance(a, b)`: la distancia entre los puntos a y b (la longitud del
+#     vector que va de uno a otro);
+#   - `punto_medio(a, b)`: el punto a medio camino entre a y b;
+#   - `el_mas_cercano(puntos, p)`: el punto de la lista más cercano a p.
+#
+# Pistas
+#   1. `distance` es la `norm` de una diferencia.
+#   2. A medio camino: suma los dos puntos y multiplica por 0.5.
+#   3. `min_by(lista, f)` da el elemento para el que f es el más pequeño.
+#
+# Comprueba tu trabajo:  rythme exercise check 31-vectores.ry
+#                    o:  rythme test 31-vectores.ry
+
+fn distance(a, b) = fail("por hacer")
+
+fn punto_medio(a, b) = fail("por hacer")
+
+fn el_mas_cercano(puntos, p) = fail("por hacer")
+
+# --- Pruebas (no las cambies) ---
+
+test "distancia"
+  assert_eq(distance([0, 0], [3, 4]), 5.0)
+  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+end
+
+test "punto medio"
+  assert_eq(punto_medio([0, 0], [4, 2]), [2.0, 1.0])
+  assert_eq(punto_medio([-1, 3], [1, 3]), [0.0, 3.0])
+end
+
+test "el más cercano"
+  assert_eq(el_mas_cercano([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
+  assert_eq(el_mas_cercano([[2, 2]], [100, -100]), [2, 2])
+end
+"#,
+        ),
+        ("32-statistics", "32-estadistica"),
+        (
+            r#"# Exercise 32 · Statistics on data  ★★☆
+#
+# Before learning from data, look at it. `stats(xs)` gives a record with the
+# count, the mean, the median, the standard deviation, the min and the max:
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).mean       # 5.0
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).std_dev    # 2.0
+#
+# Statement
+#   - `standardize(xs)`: each number becomes its distance to the mean,
+#     counted in standard deviations: (x - mean) / std_dev;
+#   - `outliers(xs)`: the numbers more than 2 standard deviations away from
+#     the mean, in their order;
+#   - `accuracy(predictions, answers)`: the share (from 0.0 to 1.0) of the
+#     predictions equal to the answer at the same position.
+#
+# Hints
+#   1. Compute `stats(xs)` once, give it a name, then `map`.
+#   2. `abs` gives the distance whatever the side.
+#   3. `zip(a, b)` pairs the elements; `count` counts those that are right.
+#
+# Check your work:  rythme exercise check 32-statistics.ry
+#              or:  rythme test 32-statistics.ry
+
+fn standardize(xs) = fail("to do")
+
+fn outliers(xs) = fail("to do")
+
+fn accuracy(predictions, answers) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "standardize"
+  assert_eq(standardize([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "outliers"
+  assert_eq(outliers([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(outliers([1, 2, 3]), [])
+end
+
+test "accuracy"
+  assert_eq(accuracy(["cat", "dog", "cat", "cat"], ["cat", "dog", "dog", "cat"]), 0.75)
+  assert_eq(accuracy([1, 0], [0, 1]), 0.0)
+end
+"#,
+            r#"# Ejercicio 32 · Estadística sobre datos  ★★☆
+#
+# Antes de aprender de los datos, hay que mirarlos. `stats(xs)` da un
+# registro con la cantidad, la media, la mediana, la desviación típica, el
+# mínimo y el máximo:
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).mean       # 5.0
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).std_dev    # 2.0
+#
+# Enunciado
+#   - `estandarizar(xs)`: cada número se convierte en su distancia a la
+#     media, contada en desviaciones típicas: (x - media) / desviación;
+#   - `atipicos(xs)`: los números a más de 2 desviaciones típicas de la
+#     media, en su orden;
+#   - `exactitud(predicciones, respuestas)`: la proporción (de 0.0 a 1.0)
+#     de predicciones iguales a la respuesta en la misma posición.
+#
+# Pistas
+#   1. Calcula `stats(xs)` una vez, dale un nombre, y luego `map`.
+#   2. `abs` da la distancia sea cual sea el lado.
+#   3. `zip(a, b)` empareja los elementos; `count` cuenta los aciertos.
+#
+# Comprueba tu trabajo:  rythme exercise check 32-estadistica.ry
+#                    o:  rythme test 32-estadistica.ry
+
+fn estandarizar(xs) = fail("por hacer")
+
+fn atipicos(xs) = fail("por hacer")
+
+fn exactitud(predicciones, respuestas) = fail("por hacer")
+
+# --- Pruebas (no las cambies) ---
+
+test "estandarizar"
+  assert_eq(estandarizar([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "valores atípicos"
+  assert_eq(atipicos([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(atipicos([1, 2, 3]), [])
+end
+
+test "exactitud"
+  assert_eq(exactitud(["gato", "perro", "gato", "gato"], ["gato", "perro", "perro", "gato"]), 0.75)
+  assert_eq(exactitud([1, 0], [0, 1]), 0.0)
+end
+"#,
+        ),
+        ("33-neurons", "33-neuronas"),
+        (
+            r#"# Exercise 33 · An artificial neuron  ★★☆
+#
+# A neuron multiplies each input by a weight, adds them up with a bias, and
+# passes the sum through an activation function such as `sigmoid`, which
+# gives a number between 0 and 1.
+#   sigmoid(0)                     # 0.5
+#   dot([1, 2], [3, 4])            # 11.0
+#
+# Statement
+#   - `neuron(weights, bias, inputs)`: sigmoid(weights · inputs + bias);
+#   - `fires(weights, bias, inputs)`: true when the neuron gives 0.5 or more;
+#   - `layer(matrix, biases, inputs)`: a layer of neurons, one per row of the
+#     matrix (its weights) and per bias: the list of their outputs.
+#
+# Hints
+#   1. `dot` gives the weighted sum.
+#   2. `matmul(matrix, inputs)` computes every weighted sum of a layer at
+#      once; `vector_add` adds the biases; `map` applies `sigmoid`.
+#
+# Check your work:  rythme exercise check 33-neurons.ry
+#              or:  rythme test 33-neurons.ry
+
+fn neuron(weights, bias, inputs) = fail("to do")
+
+fn fires(weights, bias, inputs) = fail("to do")
+
+fn layer(matrix, biases, inputs) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "neuron"
+  assert_eq(neuron([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neuron([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "a neuron that computes AND"
+  assert(fires([10, 10], -15, [1, 1]))
+  assert(not fires([10, 10], -15, [1, 0]))
+  assert(not fires([10, 10], -15, [0, 0]))
+end
+
+test "layer"
+  outputs = layer([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(outputs, fn(x) = round(x, 3)), [0.5, 0.993])
+end
+"#,
+            r#"# Ejercicio 33 · Una neurona artificial  ★★☆
+#
+# Una neurona multiplica cada entrada por un peso, las suma con un sesgo, y
+# pasa la suma por una función de activación como `sigmoid`, que da un
+# número entre 0 y 1.
+#   sigmoid(0)                     # 0.5
+#   dot([1, 2], [3, 4])            # 11.0
+#
+# Enunciado
+#   - `neurona(pesos, sesgo, entradas)`: sigmoid(pesos · entradas + sesgo);
+#   - `se_activa(pesos, sesgo, entradas)`: true cuando la neurona da 0.5 o
+#     más;
+#   - `capa(matriz, sesgos, entradas)`: una capa de neuronas, una por fila
+#     de la matriz (sus pesos) y por sesgo: la lista de sus salidas.
+#
+# Pistas
+#   1. `dot` da la suma ponderada.
+#   2. `matmul(matriz, entradas)` calcula de una vez todas las sumas
+#      ponderadas de una capa; `vector_add` suma los sesgos; `map` aplica
+#      `sigmoid`.
+#
+# Comprueba tu trabajo:  rythme exercise check 33-neuronas.ry
+#                    o:  rythme test 33-neuronas.ry
+
+fn neurona(pesos, sesgo, entradas) = fail("por hacer")
+
+fn se_activa(pesos, sesgo, entradas) = fail("por hacer")
+
+fn capa(matriz, sesgos, entradas) = fail("por hacer")
+
+# --- Pruebas (no las cambies) ---
+
+test "neurona"
+  assert_eq(neurona([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neurona([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "una neurona que calcula Y"
+  assert(se_activa([10, 10], -15, [1, 1]))
+  assert(not se_activa([10, 10], -15, [1, 0]))
+  assert(not se_activa([10, 10], -15, [0, 0]))
+end
+
+test "capa"
+  salidas = capa([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(salidas, fn(x) = round(x, 3)), [0.5, 0.993])
+end
+"#,
+        ),
+        ("34-gradient-descent", "34-descenso-de-gradiente"),
+        (
+            r#"# Exercise 34 · Going down the slope  ★★☆
+#
+# A model learns by making its error smaller: it follows the slope of the
+# error downwards, one small step at a time. That is gradient descent.
+#   derivative(fn(x) = x * x, 3)                      # 6.0, the slope at 3
+#   gradient(fn([x, y]) = x * x + y * y, [1, 2])      # [2.0, 4.0]
+#
+# Statement
+#   - `step(f, x, rate)`: one step down from x: x - rate × (slope of f at x);
+#   - `descend(f, x, rate, steps)`: that many steps from x, one after the
+#     other; the point reached;
+#   - `descend_all(f, xs, rate, steps)`: the same with several numbers: each
+#     step is xs - rate × (gradient of f at xs).
+#
+# Hints
+#   1. `descend` calls itself with one step less, until 0 (or use `fold`
+#      over `1..steps`).
+#   2. `vector_sub` and `vector_scale` work on the list of numbers.
+#
+# Check your work:  rythme exercise check 34-gradient-descent.ry
+#              or:  rythme test 34-gradient-descent.ry
+
+fn step(f, x, rate) = fail("to do")
+
+fn descend(f, x, rate, steps) = fail("to do")
+
+fn descend_all(f, xs, rate, steps) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+fn parabola(x) = (x - 3) ** 2
+
+test "one step"
+  assert_eq(step(parabola, 0, 0.5), 3.0)
+  assert_eq(step(parabola, 1, 0.25), 2.0)
+end
+
+test "down to the bottom"
+  assert_eq(round(descend(parabola, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descend(parabola, 10, 0.1, 0), 10)
+end
+
+test "several numbers"
+  bowl = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descend_all(bowl, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end
+"#,
+            r#"# Ejercicio 34 · Bajar por la pendiente  ★★☆
+#
+# Un modelo aprende haciendo más pequeño su error: sigue la pendiente del
+# error hacia abajo, un pequeño paso cada vez. Es el descenso de gradiente.
+#   derivative(fn(x) = x * x, 3)                      # 6.0, la pendiente en 3
+#   gradient(fn([x, y]) = x * x + y * y, [1, 2])      # [2.0, 4.0]
+#
+# Enunciado
+#   - `paso(f, x, tasa)`: un paso hacia abajo desde x:
+#     x - tasa × (pendiente de f en x);
+#   - `descender(f, x, tasa, pasos)`: tantos pasos desde x, uno tras otro;
+#     el punto al que se llega;
+#   - `descender_todo(f, xs, tasa, pasos)`: lo mismo con varios números:
+#     cada paso da xs - tasa × (gradiente de f en xs).
+#
+# Pistas
+#   1. `descender` se llama a sí misma con un paso menos, hasta 0 (o usa
+#      `fold` sobre `1..pasos`).
+#   2. `vector_sub` y `vector_scale` trabajan con la lista de números.
+#
+# Comprueba tu trabajo:  rythme exercise check 34-descenso-de-gradiente.ry
+#                    o:  rythme test 34-descenso-de-gradiente.ry
+
+fn paso(f, x, tasa) = fail("por hacer")
+
+fn descender(f, x, tasa, pasos) = fail("por hacer")
+
+fn descender_todo(f, xs, tasa, pasos) = fail("por hacer")
+
+# --- Pruebas (no las cambies) ---
+
+fn parabola(x) = (x - 3) ** 2
+
+test "un paso"
+  assert_eq(paso(parabola, 0, 0.5), 3.0)
+  assert_eq(paso(parabola, 1, 0.25), 2.0)
+end
+
+test "hasta el fondo"
+  assert_eq(round(descender(parabola, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descender(parabola, 10, 0.1, 0), 10)
+end
+
+test "varios números"
+  cuenco = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descender_todo(cuenco, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end
+"#,
+        ),
+        ("35-nearest-neighbours", "35-vecinos-mas-cercanos"),
+        (
+            r#"# Exercise 35 · Nearest neighbours  ★★★
+#
+# To guess the label of a new point, look at the k known examples closest to
+# it, and take the label most of them have. Each example is a record:
+#   {point: [1.0, 2.0], label: "red"}
+#
+# Statement
+#   - `neighbours(examples, point, k)`: the k examples nearest to the point,
+#     from the nearest;
+#   - `majority(labels)`: the label that comes most often (the first one to
+#     reach that count, in the order of the list, when several tie);
+#   - `classify(examples, point, k)`: the label most of the k nearest
+#     neighbours have.
+#
+# Hints
+#   1. `sort_by` with the distance (`norm(vector_sub(a, b))`), then `take`.
+#   2. `count(labels, fn(l) = l == label)` counts one label; `max_by` keeps
+#      the first of the largest.
+#
+# Check your work:  rythme exercise check 35-nearest-neighbours.ry
+#              or:  rythme test 35-nearest-neighbours.ry
+
+fn neighbours(examples, point, k) = fail("to do")
+
+fn majority(labels) = fail("to do")
+
+fn classify(examples, point, k) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+garden = [
+  {point: [1, 1], label: "red"},
+  {point: [1, 2], label: "red"},
+  {point: [2, 1], label: "red"},
+  {point: [8, 8], label: "blue"},
+  {point: [9, 8], label: "blue"},
+  {point: [5, 5], label: "blue"},
+]
+
+test "neighbours"
+  assert_eq(neighbours(garden, [0, 0], 2) |> map(fn(e) = e.point), [[1, 1], [1, 2]])
+  assert_eq(len(neighbours(garden, [0, 0], 10)), 6)
+end
+
+test "majority"
+  assert_eq(majority(["a", "b", "b", "c"]), "b")
+  assert_eq(majority(["x", "y"]), "x")
+end
+
+test "classify"
+  assert_eq(classify(garden, [2, 2], 3), "red")
+  assert_eq(classify(garden, [7, 7], 3), "blue")
+  assert_eq(classify(garden, [4, 4], 1), "blue")
+end
+"#,
+            r#"# Ejercicio 35 · Los vecinos más cercanos  ★★★
+#
+# Para adivinar la etiqueta de un punto nuevo, mira los k ejemplos conocidos
+# más cercanos, y toma la etiqueta que tiene la mayoría. Cada ejemplo es un
+# registro:
+#   {punto: [1.0, 2.0], etiqueta: "rojo"}
+#
+# Enunciado
+#   - `vecinos(ejemplos, punto, k)`: los k ejemplos más cercanos al punto,
+#     del más cercano al menos cercano;
+#   - `mayoria(etiquetas)`: la etiqueta que más se repite (la primera en
+#     llegar a esa cantidad, en el orden de la lista, en caso de empate);
+#   - `clasificar(ejemplos, punto, k)`: la etiqueta que tiene la mayoría de
+#     los k vecinos más cercanos.
+#
+# Pistas
+#   1. `sort_by` con la distancia (`norm(vector_sub(a, b))`), y luego `take`.
+#   2. `count(etiquetas, fn(l) = l == etiqueta)` cuenta una etiqueta;
+#      `max_by` se queda con el primero de los mayores.
+#
+# Comprueba tu trabajo:  rythme exercise check 35-vecinos-mas-cercanos.ry
+#                    o:  rythme test 35-vecinos-mas-cercanos.ry
+
+fn vecinos(ejemplos, punto, k) = fail("por hacer")
+
+fn mayoria(etiquetas) = fail("por hacer")
+
+fn clasificar(ejemplos, punto, k) = fail("por hacer")
+
+# --- Pruebas (no las cambies) ---
+
+jardin = [
+  {punto: [1, 1], etiqueta: "rojo"},
+  {punto: [1, 2], etiqueta: "rojo"},
+  {punto: [2, 1], etiqueta: "rojo"},
+  {punto: [8, 8], etiqueta: "azul"},
+  {punto: [9, 8], etiqueta: "azul"},
+  {punto: [5, 5], etiqueta: "azul"},
+]
+
+test "vecinos"
+  assert_eq(vecinos(jardin, [0, 0], 2) |> map(fn(e) = e.punto), [[1, 1], [1, 2]])
+  assert_eq(len(vecinos(jardin, [0, 0], 10)), 6)
+end
+
+test "mayoría"
+  assert_eq(mayoria(["a", "b", "b", "c"]), "b")
+  assert_eq(mayoria(["x", "y"]), "x")
+end
+
+test "clasificar"
+  assert_eq(clasificar(jardin, [2, 2], 3), "rojo")
+  assert_eq(clasificar(jardin, [7, 7], 3), "azul")
+  assert_eq(clasificar(jardin, [4, 4], 1), "azul")
+end
+"#,
+        ),
+        ("36-minimax", "36-minimax"),
+        (
+            r#"# Exercise 36 · Playing perfectly: minimax  ★★★
+#
+# A game of Nim: there are n matches on the table; each player in turn takes
+# 1, 2 or 3 of them, and whoever takes the last match wins. Minimax decides
+# who wins with perfect play by imagining every move: the player to move
+# wins if one of their moves leaves the other player in a losing position.
+#
+# Statement
+#   - `moves(n)`: the possible numbers of matches to take (1, 2 or 3, but no
+#     more than n);
+#   - `wins(n)`: true when the player to move can always win from n matches
+#     (with 0 matches left, the player to move has already lost);
+#   - `best_move(n)`: `Some(m)`, where m is the smallest move that wins, or
+#     `None` when every move loses.
+#
+# Hints
+#   1. `filter(1..3, ...)` keeps the moves allowed.
+#   2. `wins(n)`: is there `any` move after which the other player does
+#      not win?
+#   3. `find` gives the first element that fits, as an Option.
+#
+# Check your work:  rythme exercise check 36-minimax.ry
+#              or:  rythme test 36-minimax.ry
+
+fn moves(n) = fail("to do")
+
+fn wins(n) = fail("to do")
+
+fn best_move(n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "moves"
+  assert_eq(moves(10), [1, 2, 3])
+  assert_eq(moves(2), [1, 2])
+  assert_eq(moves(0), [])
+end
+
+test "who wins"
+  assert_eq(map(0..8, wins), [false, true, true, true, false, true, true, true, false])
+end
+
+test "best move"
+  assert_eq(best_move(5), Some(1))
+  assert_eq(best_move(7), Some(3))
+  assert_eq(best_move(8), None)
+end
+"#,
+            r#"# Ejercicio 36 · Jugar perfectamente: el minimax  ★★★
+#
+# Una partida de Nim: hay n cerillas en la mesa; cada jugador, por turnos,
+# toma 1, 2 o 3, y quien toma la última cerilla gana. El minimax decide
+# quién gana jugando perfectamente imaginando todas las jugadas: el jugador
+# al que le toca gana si una de sus jugadas deja al otro en una posición
+# perdedora.
+#
+# Enunciado
+#   - `jugadas(n)`: las cantidades de cerillas que se pueden tomar (1, 2 o
+#     3, pero no más de n);
+#   - `gana(n)`: true cuando el jugador al que le toca puede ganar siempre
+#     con n cerillas (sin cerillas, el jugador al que le toca ya perdió);
+#   - `mejor_jugada(n)`: `Some(m)`, donde m es la jugada ganadora más
+#     pequeña, o `None` cuando todas las jugadas pierden.
+#
+# Pistas
+#   1. `filter(1..3, ...)` se queda con las jugadas permitidas.
+#   2. `gana(n)`: ¿hay alguna jugada (`any`) tras la cual el otro jugador no
+#      gana?
+#   3. `find` da el primer elemento que sirve, como Option.
+#
+# Comprueba tu trabajo:  rythme exercise check 36-minimax.ry
+#                    o:  rythme test 36-minimax.ry
+
+fn jugadas(n) = fail("por hacer")
+
+fn gana(n) = fail("por hacer")
+
+fn mejor_jugada(n) = fail("por hacer")
+
+# --- Pruebas (no las cambies) ---
+
+test "jugadas"
+  assert_eq(jugadas(10), [1, 2, 3])
+  assert_eq(jugadas(2), [1, 2])
+  assert_eq(jugadas(0), [])
+end
+
+test "quién gana"
+  assert_eq(map(0..8, gana), [false, true, true, true, false, true, true, true, false])
+end
+
+test "mejor jugada"
+  assert_eq(mejor_jugada(5), Some(1))
+  assert_eq(mejor_jugada(7), Some(3))
+  assert_eq(mejor_jugada(8), None)
+end
+"#,
         ),
     ],
 }

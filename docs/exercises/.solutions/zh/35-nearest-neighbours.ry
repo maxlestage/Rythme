@@ -1,0 +1,35 @@
+# 练习 35 · 最近邻  ★★★
+# 参考答案。请先自己做这个练习，再来看它！
+
+fn neighbours(examples, point, k) = examples |> sort_by(fn(e) = norm(vector_sub(e.point, point))) |> take(k)
+
+fn majority(labels) = max_by(labels, fn(label) = count(labels, fn(l) = l == label))
+
+fn classify(examples, point, k) = neighbours(examples, point, k) |> map(fn(e) = e.label) |> majority
+
+# --- 测试（请不要修改）---
+
+garden = [
+  {point: [1, 1], label: "红"},
+  {point: [1, 2], label: "红"},
+  {point: [2, 1], label: "红"},
+  {point: [8, 8], label: "蓝"},
+  {point: [9, 8], label: "蓝"},
+  {point: [5, 5], label: "蓝"},
+]
+
+test "邻居"
+  assert_eq(neighbours(garden, [0, 0], 2) |> map(fn(e) = e.point), [[1, 1], [1, 2]])
+  assert_eq(len(neighbours(garden, [0, 0], 10)), 6)
+end
+
+test "多数"
+  assert_eq(majority(["a", "b", "b", "c"]), "b")
+  assert_eq(majority(["x", "y"]), "x")
+end
+
+test "分类"
+  assert_eq(classify(garden, [2, 2], 3), "红")
+  assert_eq(classify(garden, [7, 7], 3), "蓝")
+  assert_eq(classify(garden, [4, 4], 1), "蓝")
+end

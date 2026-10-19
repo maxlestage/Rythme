@@ -1,0 +1,28 @@
+# Exercício 34 · Descer a ladeira  ★★☆
+# Solução de referência. Tente fazer o exercício antes de lê-la!
+
+fn passo(f, x, taxa) = x - taxa * derivative(f, x)
+
+fn descer(f, x, taxa, 0) = x
+fn descer(f, x, taxa, passos) = descer(f, passo(f, x, taxa), taxa, passos - 1)
+
+fn descer_tudo(f, xs, taxa, passos) = fold(1..passos, xs, fn(p, _) = vector_sub(p, vector_scale(gradient(f, p), taxa)))
+
+# --- Testes (não os altere) ---
+
+fn parabola(x) = (x - 3) ** 2
+
+test "um passo"
+  assert_eq(passo(parabola, 0, 0.5), 3.0)
+  assert_eq(passo(parabola, 1, 0.25), 2.0)
+end
+
+test "até o fundo"
+  assert_eq(round(descer(parabola, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descer(parabola, 10, 0.1, 0), 10)
+end
+
+test "vários números"
+  tigela = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descer_tudo(tigela, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end

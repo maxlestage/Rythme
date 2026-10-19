@@ -1,0 +1,56 @@
+# Exercice 35 · Les plus proches voisins  ★★★
+#
+# Pour deviner l'étiquette d'un nouveau point, on regarde les k exemples
+# connus les plus proches, et on prend l'étiquette que la plupart ont. Chaque
+# exemple est un enregistrement :
+#   {point: [1.0, 2.0], etiquette: "rouge"}
+#
+# Énoncé
+#   - `voisins(exemples, point, k)` : les k exemples les plus proches du
+#     point, du plus proche au moins proche ;
+#   - `majorite(etiquettes)` : l'étiquette qui revient le plus souvent (la
+#     première à atteindre ce nombre, dans l'ordre de la liste, en cas
+#     d'égalité) ;
+#   - `classer(exemples, point, k)` : l'étiquette qu'ont la plupart des k
+#     plus proches voisins.
+#
+# Indices
+#   1. `sort_by` avec la distance (`norm(vector_sub(a, b))`), puis `take`.
+#   2. `count(etiquettes, fn(l) = l == etiquette)` compte une étiquette ;
+#      `max_by` garde le premier des plus grands.
+#
+# Vérifiez votre travail :  rythme exercise check 35-plus-proches-voisins.ry
+#                     ou :  rythme test 35-plus-proches-voisins.ry
+
+fn voisins(exemples, point, k) = fail("à faire")
+
+fn majorite(etiquettes) = fail("à faire")
+
+fn classer(exemples, point, k) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+jardin = [
+  {point: [1, 1], etiquette: "rouge"},
+  {point: [1, 2], etiquette: "rouge"},
+  {point: [2, 1], etiquette: "rouge"},
+  {point: [8, 8], etiquette: "bleu"},
+  {point: [9, 8], etiquette: "bleu"},
+  {point: [5, 5], etiquette: "bleu"},
+]
+
+test "voisins"
+  assert_eq(voisins(jardin, [0, 0], 2) |> map(fn(e) = e.point), [[1, 1], [1, 2]])
+  assert_eq(len(voisins(jardin, [0, 0], 10)), 6)
+end
+
+test "majorité"
+  assert_eq(majorite(["a", "b", "b", "c"]), "b")
+  assert_eq(majorite(["x", "y"]), "x")
+end
+
+test "classer"
+  assert_eq(classer(jardin, [2, 2], 3), "rouge")
+  assert_eq(classer(jardin, [7, 7], 3), "bleu")
+  assert_eq(classer(jardin, [4, 4], 1), "bleu")
+end

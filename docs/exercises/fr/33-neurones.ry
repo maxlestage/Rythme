@@ -1,0 +1,48 @@
+# Exercice 33 · Un neurone artificiel  ★★☆
+#
+# Un neurone multiplie chaque entrée par un poids, les additionne avec un
+# biais, et passe la somme dans une fonction d'activation comme `sigmoid`,
+# qui donne un nombre entre 0 et 1.
+#   sigmoid(0)                     # 0.5
+#   dot([1, 2], [3, 4])            # 11.0
+#
+# Énoncé
+#   - `neurone(poids, biais, entrees)` : sigmoid(poids · entrees + biais) ;
+#   - `s_active(poids, biais, entrees)` : true quand le neurone donne 0.5 ou
+#     plus ;
+#   - `couche(matrice, biais_de, entrees)` : une couche de neurones, un par
+#     ligne de la matrice (ses poids) et par biais : la liste de leurs
+#     sorties.
+#
+# Indices
+#   1. `dot` donne la somme pondérée.
+#   2. `matmul(matrice, entrees)` calcule d'un coup toutes les sommes
+#      pondérées d'une couche ; `vector_add` ajoute les biais ; `map`
+#      applique `sigmoid`.
+#
+# Vérifiez votre travail :  rythme exercise check 33-neurones.ry
+#                     ou :  rythme test 33-neurones.ry
+
+fn neurone(poids, biais, entrees) = fail("à faire")
+
+fn s_active(poids, biais, entrees) = fail("à faire")
+
+fn couche(matrice, biais_de, entrees) = fail("à faire")
+
+# --- Tests (ne les modifiez pas) ---
+
+test "neurone"
+  assert_eq(neurone([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neurone([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "un neurone qui calcule ET"
+  assert(s_active([10, 10], -15, [1, 1]))
+  assert(not s_active([10, 10], -15, [1, 0]))
+  assert(not s_active([10, 10], -15, [0, 0]))
+end
+
+test "couche"
+  sorties = couche([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(sorties, fn(x) = round(x, 3)), [0.5, 0.993])
+end

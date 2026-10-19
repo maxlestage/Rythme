@@ -204,7 +204,7 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme learn`              | visite guidée du langage                            |
 | `rythme new bonjour`        | un nouveau projet : `rythme.toml`, `src/`, `tests/` ; puis `rythme run`, `rythme test`... sans fichier |
 | `rythme install`            | télécharger les dépendances de `rythme.toml` (git ou dossiers), et écrire `rythme.lock` |
-| `rythme exercise`           | [30 exercices gradués](docs/exercises/README.fr.md) : `list`, `start 1`, `check FICHIER` |
+| `rythme exercise`           | [36 exercices gradués](docs/exercises/README.fr.md) : `list`, `start 1`, `check FICHIER` |
 | `rythme etapes fib.ry "fib(4)"` | le calcul étape par étape : `fib(4)` → `fib(3) + fib(2)` → ... |
 | `rythme debug fib.ry`       | le débogueur : `break 12`, `run`, `next`, `step`, `where`, `print n * 2` ([manuel](docs/reference.fr.md#79-le-débogueur--rythme-debug)) |
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
@@ -328,8 +328,8 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 [`docs/enseigner.md`](docs/enseigner.md) propose un plan de cours construit
 sur Rythme, et explique pourquoi il convient aussi bien à un premier cours de
 programmation qu'à un cours de programmation fonctionnelle.
-[`docs/exercises/`](docs/exercises/README.fr.md) contient 30 exercices
-gradués, avec énoncé, indices, tests et solutions, que `rythme exercise`
+[`docs/exercises/`](docs/exercises/README.fr.md) contient 36 exercices
+gradués (dont six sur l'IA), avec énoncé, indices, tests et solutions, que `rythme exercise`
 distribue et vérifie dans chaque langue des messages.
 
 ## État
