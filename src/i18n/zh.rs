@@ -8659,5 +8659,42 @@ Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把�
             "Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each. Gives a text: `print(histogram(heights))`.",
             "统计落入 `bars` 个等宽区间（默认 10 个）中每个区间的数的个数，并画成水平的文本条形，标出每个区间及其计数。返回文本：`print(histogram(heights))`。",
         ),
+        // src/builtins/http.rs: HTTP requests
+        ("`{f}`: the names and the values of the headers are texts, not {got}", "`{f}`：请求头的名称和值都是文本，而不是 {got}"),
+        (
+            r#"for example: {{"content-type": "application/json", "x-api-key": key}}"#,
+            r#"例如：{{"content-type": "application/json", "x-api-key": key}}"#,
+        ),
+        (
+            "`{f}` is not available in the browser: the playground cannot make requests. Run the program on your computer: rythme file.ry",
+            "`{f}` 在浏览器中不可用：playground 无法发出请求。请在你的电脑上运行程序：rythme file.ry",
+        ),
+        (r#"a web address starts with http:// or https://, not "{url}""#, r#"网址以 http:// 或 https:// 开头，而不是 "{url}""#),
+        (
+            "an address or a header cannot hold a line break or a control character, and a header name is a word without `:` or space",
+            "网址或请求头不能包含换行符或控制字符，请求头名称是不含 `:` 和空格的单词",
+        ),
+        ("the server answered {code}: {shown}{more}", "服务器返回 {code}：{shown}{more}"),
+        (
+            "`{f}` needs the program `curl`, which comes with Windows 10, macOS and most Linux systems: install it (on Debian or Ubuntu: sudo apt install curl)",
+            "`{f}` 需要 `curl` 程序，Windows 10、macOS 和大多数 Linux 系统都自带它：请安装（Debian 或 Ubuntu 上：sudo apt install curl）",
+        ),
+        (
+            "server not found: {host} (no connection to the Internet, or a mistake in the address?)",
+            "找不到服务器：{host}（没有连接互联网，还是地址写错了？）",
+        ),
+        ("could not connect to {host}: {said}", "无法连接到 {host}：{said}"),
+        ("no answer from {host} in time (30 seconds)", "{host} 未能及时响应（30 秒）"),
+        ("the secure connection (TLS) to {host} failed: {said}", "与 {host} 的安全连接（TLS）失败：{said}"),
+        ("the request to {host} failed: {said}", "对 {host} 的请求失败：{said}"),
+        ("The web: HTTP requests", "网络：HTTP 请求"),
+        (
+            r#"Fetches a web address (http:// or https://): `Ok(text of the answer)`, or `Err(message)` when there is no network, the address is wrong, the server answers with an error (404...) or does not answer within 30 seconds. `headers` is a record of texts, like `{"accept": "application/json"}`. Uses the program curl; not available in the playground."#,
+            r#"获取一个网址（http:// 或 https://）：返回 `Ok(响应文本)`；当没有网络、地址错误、服务器返回错误（404……）或 30 秒内没有响应时，返回 `Err(消息)`。`headers` 是由文本组成的记录，如 `{"accept": "application/json"}`。使用 curl 程序；在 playground 中不可用。"#,
+        ),
+        (
+            r#"Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`. To call a web service or a language model: `http_post(url, to_json(request), {"content-type": "application/json"})`. Keep keys out of your code: read them with `env`."#,
+            r#"把文本（通常是用 `to_json` 生成的 JSON）发送到一个网址，像 `http_get` 一样返回 `Ok(响应文本)` 或 `Err(消息)`。调用网络服务或语言模型：`http_post(url, to_json(request), {"content-type": "application/json"})`。不要把密钥写进代码：用 `env` 读取。"#,
+        ),
     ],
 }

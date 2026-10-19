@@ -1370,6 +1370,17 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 need(a, 1, Expected::Int)?;
                 Ty::Text
             }
+            "http_get" => {
+                need(a, 0, Expected::Text)?;
+                need(a, 1, Expected::RecordOrDict)?;
+                Ty::result(Ty::Text, Ty::Text)
+            }
+            "http_post" => {
+                need(a, 0, Expected::Text)?;
+                need(a, 1, Expected::Text)?;
+                need(a, 2, Expected::RecordOrDict)?;
+                Ty::result(Ty::Text, Ty::Text)
+            }
             "train_test_split" => {
                 need(a, 0, Expected::List)?;
                 need(a, 1, Expected::Number)?;
