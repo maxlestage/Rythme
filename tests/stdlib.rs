@@ -35,6 +35,8 @@ const EFFECTS: &[&str] = &[
     "delete_file",
     "now",
     "today",
+    "http_get",
+    "http_post",
 ];
 
 /// Runs a program inside this process and returns what it printed, or the error.

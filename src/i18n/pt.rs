@@ -8844,5 +8844,48 @@ roda; os editores e `rythme doc` os mostram."#,
             "Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each. Gives a text: `print(histogram(heights))`.",
             "Conta quantos números caem em cada um dos `bars` intervalos de mesma largura (10 se não for dado) e os desenha como barras horizontais de texto, com o intervalo e a contagem de cada uma. Dá um texto: `print(histogram(alturas))`.",
         ),
+        // src/builtins/http.rs: HTTP requests
+        (
+            "`{f}`: the names and the values of the headers are texts, not {got}",
+            "`{f}`: os nomes e os valores dos cabeçalhos são textos, não {got}",
+        ),
+        (
+            r#"for example: {{"content-type": "application/json", "x-api-key": key}}"#,
+            r#"por exemplo: {{"content-type": "application/json", "x-api-key": chave}}"#,
+        ),
+        (
+            "`{f}` is not available in the browser: the playground cannot make requests. Run the program on your computer: rythme file.ry",
+            "`{f}` não está disponível no navegador: o playground não pode fazer requisições. Execute o programa no seu computador: rythme arquivo.ry",
+        ),
+        (
+            r#"a web address starts with http:// or https://, not "{url}""#,
+            r#"um endereço web começa com http:// ou https://, não "{url}""#,
+        ),
+        (
+            "an address or a header cannot hold a line break or a control character, and a header name is a word without `:` or space",
+            "um endereço ou um cabeçalho não pode conter quebra de linha nem caractere de controle, e o nome de um cabeçalho é uma palavra sem `:` nem espaço",
+        ),
+        ("the server answered {code}: {shown}{more}", "o servidor respondeu {code}: {shown}{more}"),
+        (
+            "`{f}` needs the program `curl`, which comes with Windows 10, macOS and most Linux systems: install it (on Debian or Ubuntu: sudo apt install curl)",
+            "`{f}` precisa do programa `curl`, que vem com o Windows 10, o macOS e a maioria dos sistemas Linux: instale-o (no Debian ou Ubuntu: sudo apt install curl)",
+        ),
+        (
+            "server not found: {host} (no connection to the Internet, or a mistake in the address?)",
+            "servidor não encontrado: {host} (sem conexão com a Internet, ou um erro no endereço?)",
+        ),
+        ("could not connect to {host}: {said}", "não foi possível conectar a {host}: {said}"),
+        ("no answer from {host} in time (30 seconds)", "sem resposta de {host} a tempo (30 segundos)"),
+        ("the secure connection (TLS) to {host} failed: {said}", "a conexão segura (TLS) com {host} falhou: {said}"),
+        ("the request to {host} failed: {said}", "a requisição para {host} falhou: {said}"),
+        ("The web: HTTP requests", "A web: requisições HTTP"),
+        (
+            r#"Fetches a web address (http:// or https://): `Ok(text of the answer)`, or `Err(message)` when there is no network, the address is wrong, the server answers with an error (404...) or does not answer within 30 seconds. `headers` is a record of texts, like `{"accept": "application/json"}`. Uses the program curl; not available in the playground."#,
+            r#"Busca um endereço web (http:// ou https://): `Ok(texto da resposta)`, ou `Err(mensagem)` quando não há rede, o endereço está errado, o servidor responde com um erro (404...) ou não responde em 30 segundos. `headers` é um registro de textos, como `{"accept": "application/json"}`. Usa o programa curl; não está disponível no playground."#,
+        ),
+        (
+            r#"Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`. To call a web service or a language model: `http_post(url, to_json(request), {"content-type": "application/json"})`. Keep keys out of your code: read them with `env`."#,
+            r#"Envia um texto (muitas vezes JSON, feito com `to_json`) a um endereço web e dá `Ok(texto da resposta)` ou `Err(mensagem)`, como `http_get`. Para chamar um serviço web ou um modelo de linguagem: `http_post(url, to_json(pedido), {"content-type": "application/json"})`. Mantenha as chaves fora do seu código: leia-as com `env`."#,
+        ),
     ],
 }

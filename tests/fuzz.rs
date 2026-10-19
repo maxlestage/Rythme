@@ -756,7 +756,7 @@ fn tame(src: String) -> String {
 /// Built-in functions that touch the world outside of the program are
 /// replaced: no files or folders, no keyboard, no `exit`, no output, no
 /// clock (`time`, `now` and `today` give fixed values), no environment
-/// variables, no command line (`args` and `options` see no words).
+/// variables, no command line (`args` and `options` see no words), no network.
 fn sandbox() -> &'static Vec<&'static Builtin> {
     static SANDBOX: OnceLock<Vec<&'static Builtin>> = OnceLock::new();
     fn quiet(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
@@ -819,7 +819,7 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
     fn split(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         seeded("train_test_split", it, a, span)
     }
-    let fakes: [(&str, builtins::BuiltinFn); 22] = [
+    let fakes: [(&str, builtins::BuiltinFn); 24] = [
         ("print", quiet),
         ("debug", same),
         ("input", empty_text),
@@ -842,6 +842,8 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
         ("random_normal", normal),
         ("random_choice_weighted", weighted),
         ("train_test_split", split),
+        ("http_get", no_file),
+        ("http_post", no_file),
     ];
     SANDBOX.get_or_init(|| {
         fakes

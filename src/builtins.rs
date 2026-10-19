@@ -31,6 +31,8 @@ mod text_tools;
 use csv::{csv_format, csv_parse, csv_records};
 use text_tools::{equals_ignore_case, format_number, trim_end, trim_start, words};
 mod grad;
+mod http;
+use http::{http_get, http_post};
 mod ml;
 mod plot;
 use grad::{derivative, gradient};
@@ -56,10 +58,11 @@ pub enum Category {
     Dates,
     Tests,
     Ml,
+    Web,
 }
 
 impl Category {
-    pub const ALL: [Category; 11] = [
+    pub const ALL: [Category; 12] = [
         Category::Basics,
         Category::Numbers,
         Category::Text,
@@ -71,6 +74,7 @@ impl Category {
         Category::Dates,
         Category::Tests,
         Category::Ml,
+        Category::Web,
     ];
 
     pub fn title(self) -> String {
@@ -88,6 +92,7 @@ impl Category {
             Category::Ml => {
                 t!("Machine learning: vectors, matrices, statistics", "Apprentissage automatique : vecteurs, matrices, statistiques")
             }
+            Category::Web => t!("The web: HTTP requests", "Le web : requêtes HTTP"),
         }
     }
 }
@@ -969,6 +974,14 @@ pub static BUILTINS: &[Builtin] = &[
        "Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each. Gives a text: `print(histogram(heights))`.",
        "Compte combien de nombres tombent dans chacun des `bars` intervalles de même largeur (10 sinon) et les dessine en barres horizontales de texte, avec l'intervalle et le compte de chacune. Donne un texte : `print(histogram(tailles))`.",
        "histogram([1, 2, 2, 3], 2) |> lines   # [\"1 – 2 │█████████████▎ 1\", \"2 – 3 │████████████████████████████████████████ 3\"]"),
+    b!("http_get", "http_get(url, headers)", 1, 2, Web, http_get,
+       "Fetches a web address (http:// or https://): `Ok(text of the answer)`, or `Err(message)` when there is no network, the address is wrong, the server answers with an error (404...) or does not answer within 30 seconds. `headers` is a record of texts, like `{\"accept\": \"application/json\"}`. Uses the program curl; not available in the playground.",
+       "Récupère une adresse web (http:// ou https://) : `Ok(texte de la réponse)`, ou `Err(message)` quand il n'y a pas de réseau, que l'adresse est fausse, que le serveur répond par une erreur (404...) ou ne répond pas en 30 secondes. `headers` est un enregistrement de textes, comme `{\"accept\": \"application/json\"}`. Utilise le programme curl ; pas disponible dans le playground.",
+       "match http_get(\"https://example.com\")\n  Ok(page) -> print(len(page), \"characters\")\n  Err(e) -> print(\"Error: {e}\")\nend"),
+    b!("http_post", "http_post(url, body, headers)", 2, 3, Web, http_post,
+       "Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`. To call a web service or a language model: `http_post(url, to_json(request), {\"content-type\": \"application/json\"})`. Keep keys out of your code: read them with `env`.",
+       "Envoie un texte (souvent du JSON, fait avec `to_json`) à une adresse web et donne `Ok(texte de la réponse)` ou `Err(message)`, comme `http_get`. Pour appeler un service web ou un modèle de langage : `http_post(url, to_json(requete), {\"content-type\": \"application/json\"})`. Gardez les clés hors de votre code : lisez-les avec `env`.",
+       "headers = {\"content-type\": \"application/json\"}\nhttp_post(\"https://httpbin.org/post\", to_json({n: 1}), headers)"),
 ];
 
 // ----- argument helpers --------------------------------------------------

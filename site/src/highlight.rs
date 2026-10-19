@@ -216,6 +216,8 @@ pub const BUILTINS: &[
     "gradient",
     "plot",
     "histogram",
+    "http_get",
+    "http_post",
     "pi",
 ];
 

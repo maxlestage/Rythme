@@ -516,6 +516,8 @@ pub(crate) fn has_effect(name: &str) -> bool {
             | "random_normal"
             | "random_choice_weighted"
             | "train_test_split"
+            | "http_get"
+            | "http_post"
     )
 }
 
