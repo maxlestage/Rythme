@@ -8817,5 +8817,18 @@ roda; os editores e `rythme doc` os mostram."#,
             "Shuffles a list, then cuts it in two: a record `{train, test}`, where `train` holds this share of the elements (0.8: 80 percent) and `test` the rest. To learn on some examples and check on others. Follows `random_seed`.",
             "Embaralha uma lista e depois a corta em duas: um registro `{train, test}`, em que `train` contém esta proporção dos elementos (0.8: 80 por cento) e `test` o resto. Para aprender com alguns exemplos e verificar com outros. Segue `random_seed`.",
         ),
+        // src/builtins/grad.rs: slopes
+        (
+            "the function given to `{f}` must return a number, but it returned {got}",
+            "a função dada a `{f}` deve devolver um número, mas devolveu {got}",
+        ),
+        (
+            "The slope of the function f at x (its derivative), computed from f(x + h) and f(x - h) for a tiny h: precise to about 9 significant digits for a smooth function. f takes one number and gives one.",
+            "A inclinação da função f em x (a sua derivada), calculada a partir de f(x + h) e f(x - h) para um h minúsculo: precisa a cerca de 9 algarismos significativos para uma função suave. f recebe um número e dá um.",
+        ),
+        (
+            "The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`). f takes a list of numbers and gives one number. Going against it lowers f: the heart of gradient descent.",
+            "O gradiente de f no ponto xs: a lista das inclinações de f ao longo de cada número de xs (veja `derivative`). f recebe uma lista de números e dá um número. Ir no sentido contrário faz f baixar: o coração da descida do gradiente.",
+        ),
     ],
 }

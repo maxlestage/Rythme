@@ -30,7 +30,9 @@ pub mod csv;
 mod text_tools;
 use csv::{csv_format, csv_parse, csv_records};
 use text_tools::{equals_ignore_case, format_number, trim_end, trim_start, words};
+mod grad;
 mod ml;
+use grad::{derivative, gradient};
 use ml::{
     argmax, argmin, dot, identity_matrix, matmul, norm, normalize, ones, percentile, random_choice_weighted, random_normal, relu, shape,
     sigmoid, softmax, stats, std_dev, tanh, train_test_split, transpose, variance, vector_add, vector_mul, vector_scale, vector_sub, zeros,
@@ -949,6 +951,14 @@ pub static BUILTINS: &[Builtin] = &[
        "Shuffles a list, then cuts it in two: a record `{train, test}`, where `train` holds this share of the elements (0.8: 80 percent) and `test` the rest. To learn on some examples and check on others. Follows `random_seed`.",
        "Mélange une liste, puis la coupe en deux : un enregistrement `{train, test}`, où `train` contient cette part des éléments (0.8 : 80 pour cent) et `test` le reste. Pour apprendre sur certains exemples et vérifier sur d'autres. Suit `random_seed`.",
        "train_test_split([1, 2, 3, 4, 5], 0.8).train |> len   # 4"),
+    b!("derivative", "derivative(f, x)", 2, 2, Ml, derivative,
+       "The slope of the function f at x (its derivative), computed from f(x + h) and f(x - h) for a tiny h: precise to about 9 significant digits for a smooth function. f takes one number and gives one.",
+       "La pente de la fonction f en x (sa dérivée), calculée à partir de f(x + h) et f(x - h) pour un h minuscule : précise à environ 9 chiffres significatifs pour une fonction régulière. f prend un nombre et en donne un.",
+       "derivative(fn(x) = x * x, 3)   # 6.0\nderivative(sin, 0)         # 1.0"),
+    b!("gradient", "gradient(f, xs)", 2, 2, Ml, gradient,
+       "The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`). f takes a list of numbers and gives one number. Going against it lowers f: the heart of gradient descent.",
+       "Le gradient de f au point xs : la liste des pentes de f le long de chaque nombre de xs (voir `derivative`). f prend une liste de nombres et donne un nombre. Aller en sens inverse fait baisser f : le cœur de la descente de gradient.",
+       "gradient(fn([x, y]) = x * x + 3 * y, [2, 5])   # [4.0, 3.0]"),
 ];
 
 // ----- argument helpers --------------------------------------------------

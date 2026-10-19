@@ -8635,5 +8635,18 @@ Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把�
             "Shuffles a list, then cuts it in two: a record `{train, test}`, where `train` holds this share of the elements (0.8: 80 percent) and `test` the rest. To learn on some examples and check on others. Follows `random_seed`.",
             "打乱列表，然后切成两部分：记录 `{train, test}`，其中 `train` 含有这一比例的元素（0.8：80%），`test` 含其余元素。用一部分样本学习，用另一部分检验。遵循 `random_seed`。",
         ),
+        // src/builtins/grad.rs: slopes
+        (
+            "the function given to `{f}` must return a number, but it returned {got}",
+            "传给 `{f}` 的函数必须返回数字，但它返回了 {got}",
+        ),
+        (
+            "The slope of the function f at x (its derivative), computed from f(x + h) and f(x - h) for a tiny h: precise to about 9 significant digits for a smooth function. f takes one number and gives one.",
+            "函数 f 在 x 处的斜率（导数），由很小的 h 下的 f(x + h) 和 f(x - h) 计算得出：对光滑函数约有 9 位有效数字。f 接受一个数并返回一个数。",
+        ),
+        (
+            "The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`). f takes a list of numbers and gives one number. Going against it lowers f: the heart of gradient descent.",
+            "f 在点 xs 处的梯度：f 沿 xs 中每个数方向的斜率列表（见 `derivative`）。f 接受一个数字列表并返回一个数。沿其反方向前进会使 f 减小：这就是梯度下降的核心。",
+        ),
     ],
 }
