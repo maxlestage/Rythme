@@ -200,6 +200,7 @@ fn cli(mut args: Vec<String>) -> i32 {
         "doc" | "documenter" => rythme::doc::command(&rest),
         "new" | "nouveau" => rythme::project::new_command(&rest),
         "fix" | "corriger" => machine::fix_command(&rest),
+        "mcp" => rythme::mcp::run(&rest),
         "install" | "installer" => rythme::project::install_command(&rest),
         "exercise" | "exercises" | "exercice" | "exercices" => rythme::exercise::command(&rest),
         "steps" | "etapes" | "étapes" => rythme::steps::command(&rest),
@@ -216,7 +217,7 @@ fn cli(mut args: Vec<String>) -> i32 {
             }
             let commands = [
                 "run", "check", "test", "fmt", "doc", "help", "explain", "learn", "repl", "version", "lsp", "exercise", "new", "install",
-                "steps", "debug", "dap", "fix",
+                "steps", "debug", "dap", "fix", "mcp",
             ];
             let mut msg = t!("unknown command or file `{cmd}`", "commande ou fichier inconnu `{cmd}`");
             if let Some(best) = suggest::closest(&cmd, commands.iter().copied()) {

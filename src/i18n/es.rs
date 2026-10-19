@@ -8672,5 +8672,19 @@ programa; los editores y `rythme doc` los muestran."#,
         ("{shown}: {n} fix(es) applied", "{shown}: {n} corrección(es) aplicada(s)"),
         ("; {errors} error(s) and {warnings} warning(s) left: `rythme check {shown}`", "; quedan {errors} error(es) y {warnings} advertencia(s): `rythme check {shown}`"),
         ("here: `new_{name} = {name} {op} {rest}`, then use `new_{name}`; to add up a list, use `sum(list)` or `fold`", "aquí: `nuevo_{name} = {name} {op} {rest}`, y luego usa `nuevo_{name}`; para sumar una lista, usa `sum(lista)` o `fold`"),
+        // src/mcp.rs: the server for AI assistants
+        ("`rythme mcp` takes no argument, not `{bad}`", "`rythme mcp` no admite argumentos, y no `{bad}`"),
+        (
+            r#"rythme mcp: a Model Context Protocol server for AI assistants, on the standard input and output.
+Its tools run (in a sandbox), check, test, format and fix Rythme code, and explain errors and functions.
+Add it to Claude Code: claude mcp add rythme -- rythme mcp
+Claude Desktop, Cursor and others: see the manual, section 7.10."#,
+            r#"rythme mcp: un servidor Model Context Protocol para asistentes de IA, en la entrada y la salida estándar.
+Sus herramientas ejecutan (en un entorno aislado), verifican, prueban, formatean y corrigen código Rythme, y explican errores y funciones.
+Añádelo a Claude Code: claude mcp add rythme -- rythme mcp
+Claude Desktop, Cursor y otros: consulta el manual, sección 7.10."#,
+        ),
+        ("the program was stopped after {seconds} seconds: it may never end (a recursion without a base case?)", "el programa se detuvo después de {seconds} segundos: puede que no termine nunca (¿una recursión sin caso base?)"),
+        ("the program was stopped: it took more than {mb} MB of memory", "el programa se detuvo: ocupaba más de {mb} MB de memoria"),
     ],
 }

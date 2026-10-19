@@ -259,7 +259,8 @@ impl Interp {
             types,
             tests: Vec::new(),
             script_args: Vec::new(),
-            sandboxed: false,
+            // Set by the tools that run programs for others (`rythme mcp`), for every command.
+            sandboxed: !cfg!(target_arch = "wasm32") && std::env::var_os("RYTHME_SANDBOX").is_some_and(|v| v == "1"),
             property_seed: crate::builtins::property::DEFAULT_SEED,
             names: compile::Names::default(),
             depth: 0,

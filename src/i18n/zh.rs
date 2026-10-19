@@ -8499,5 +8499,19 @@ Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把�
         ("{shown}: {n} fix(es) applied", "{shown}：已应用 {n} 处修正"),
         ("; {errors} error(s) and {warnings} warning(s) left: `rythme check {shown}`", "；还剩 {errors} 个错误和 {warnings} 个警告：`rythme check {shown}`"),
         ("here: `new_{name} = {name} {op} {rest}`, then use `new_{name}`; to add up a list, use `sum(list)` or `fold`", "这里写：`new_{name} = {name} {op} {rest}`，然后使用 `new_{name}`；要对列表求和，用 `sum(list)` 或 `fold`"),
+        // src/mcp.rs: the server for AI assistants
+        ("`rythme mcp` takes no argument, not `{bad}`", "`rythme mcp` 不接受参数，`{bad}` 也不行"),
+        (
+            r#"rythme mcp: a Model Context Protocol server for AI assistants, on the standard input and output.
+Its tools run (in a sandbox), check, test, format and fix Rythme code, and explain errors and functions.
+Add it to Claude Code: claude mcp add rythme -- rythme mcp
+Claude Desktop, Cursor and others: see the manual, section 7.10."#,
+            r#"rythme mcp：面向 AI 助手的 Model Context Protocol 服务器，使用标准输入和输出。
+它的工具可以运行（在沙箱中）、检查、测试、格式化和修正 Rythme 代码，并解释错误和函数。
+添加到 Claude Code：claude mcp add rythme -- rythme mcp
+Claude Desktop、Cursor 等：见手册第 7.10 节。"#,
+        ),
+        ("the program was stopped after {seconds} seconds: it may never end (a recursion without a base case?)", "程序在 {seconds} 秒后被停止：它可能永远不会结束（递归缺少基本情况？）"),
+        ("the program was stopped: it took more than {mb} MB of memory", "程序被停止：它占用了超过 {mb} MB 的内存"),
     ],
 }
