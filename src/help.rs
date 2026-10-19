@@ -52,7 +52,26 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "集合",
         ],
     ),
-    ("types", &["type", "tipos", "typen", "typ", "类型"]),
+    (
+        "types",
+        &[
+            "type",
+            "tipos",
+            "typen",
+            "typ",
+            "类型",
+            "annotations",
+            "annotation",
+            "written-types",
+            "types-ecrits",
+            "types-écrits",
+            "anotaciones",
+            "annotationen",
+            "anotacoes",
+            "anotações",
+            "类型注解",
+        ],
+    ),
     ("match", &["patterns", "motifs", "patrones", "muster", "padroes", "padrões", "模式", "匹配"]),
     ("errors", &["erreurs", "option", "result", "?", "errores", "fehler", "erros", "错误"]),
     (
@@ -405,6 +424,9 @@ pub fn topic(name: &str) -> Option<String> {
         return Some(builtins_list());
     }
     let mut text = topic_text(t).to_string();
+    if t == "types" {
+        text.push_str(&format!("\n\n{}", pick(WRITTEN_EN, WRITTEN_FR)));
+    }
     if let Some(b) = builtin {
         // `text` is both a topic and a function: show both.
         text.push_str(&format!("\n\n{}\n{}", t!("The function:", "La fonction :"), builtin_doc(b)));
@@ -1862,6 +1884,61 @@ If you forget a shape, `rythme check` tells you which one.
 A type can contain itself (trees...):
   type Tree = Leaf | Node(left, value, right)"#;
 
+/// After the topic `types`: the types written in the code.
+const WRITTEN_EN: &str = r#"TYPES WRITTEN IN THE CODE (optional)
+
+Rythme finds the types by itself. You may also write them where they help
+to read the code; `rythme check` then verifies them (E027):
+  fn area(width: Int, height: Int) -> Int = width * height
+  total: Float = 0.0
+  type Shape = Circle(radius: Float) | Rect(width: Float, height: Float)
+  [1, 2].map do |n: Int| n * 2 end
+
+The types
+  Int  Float  Text  Bool  Unit  Symbol
+  List(Int) or [Int]   Set(Text)   Dict(Text, Int)
+  Option(Int)   Result(Int, Text)
+  {name: Text, age: Int}       a record with at least these fields
+  fn(Int, Int) -> Int          a function
+  Shape                        a type defined with `type` (geometry.Shape
+                               for a type of `use geometry`)
+  a                            any type: one lowercase letter, the same type
+                               everywhere in a definition
+  List, Dict, Set, Option, Result, Record, Function alone: any content
+
+  fn first_of(xs: List(a)) -> a = xs[0]
+  first_of([1, 2]) + 1         # the checker knows it is an Int
+
+Written types are never needed and change nothing when the program runs;
+the editors and `rythme doc` show them."#;
+
+const WRITTEN_FR: &str = r#"TYPES ÉCRITS DANS LE CODE (facultatifs)
+
+Rythme trouve les types tout seul. Vous pouvez aussi les écrire là où ils
+aident à lire le code ; `rythme check` les vérifie alors (E027) :
+  fn aire(largeur: Int, hauteur: Int) -> Int = largeur * hauteur
+  total: Float = 0.0
+  type Forme = Cercle(rayon: Float) | Rect(largeur: Float, hauteur: Float)
+  [1, 2].map do |n: Int| n * 2 end
+
+Les types
+  Int  Float  Text  Bool  Unit  Symbol
+  List(Int) ou [Int]   Set(Text)   Dict(Text, Int)
+  Option(Int)   Result(Int, Text)
+  {nom: Text, age: Int}        un enregistrement avec au moins ces champs
+  fn(Int, Int) -> Int          une fonction
+  Forme                        un type défini avec `type` (geometrie.Forme
+                               pour un type de `use geometrie`)
+  a                            n'importe quel type : une lettre minuscule, le
+                               même type partout dans une définition
+  List, Dict, Set, Option, Result, Record, Function seuls : contenu quelconque
+
+  fn premier(xs: List(a)) -> a = xs[0]
+  premier([1, 2]) + 1          # le vérificateur sait que c'est un Int
+
+Les types écrits ne sont jamais obligatoires et ne changent rien quand le
+programme tourne ; les éditeurs et `rythme doc` les montrent."#;
+
 const TYPES_FR: &str = r#"VOS PROPRES TYPES
 
 Un type liste les formes possibles d'une valeur :
@@ -3219,6 +3296,44 @@ les accolades \{ et \} ("[0-9]\{4\}"). `rythme help regex` montre tout ce
 qu'une regex peut dire. Quand la regex est écrite dans le code,
 `rythme check` trouve l'erreur avant de lancer le programme."#,
         ),
+        "E027" => (
+            r#"E027 — A type written in the code does not fit
+
+A type written in the code, after `:` or `->`, is a promise that
+`rythme check` verifies before running: a value that surely has another type
+is reported where it is given. The type must also exist.
+
+Wrong:   total: Float = 0              # 0 is an Int
+Right:   total: Float = 0.0
+Wrong:   fn area(w: Int, h: Int) -> Int = w * h
+         area(2, "3")                  # "3" is a Text
+Right:   area(2, 3)
+Wrong:   fn label(n: Int) -> Text = n  # gives an Int
+Right:   fn label(n: Int) -> Text = text(n)
+Wrong:   fn twice(x: int) = x * 2      # type names start with an uppercase letter
+Right:   fn twice(x: Int) = x * 2
+
+Written types are optional: removing one never changes what a program does.
+More: `rythme help types`."#,
+            r#"E027 — Un type écrit dans le code ne correspond pas
+
+Un type écrit dans le code, après `:` ou `->`, est une promesse que
+`rythme check` vérifie avant l'exécution : une valeur qui a sûrement un
+autre type est signalée là où elle est donnée. Le type doit aussi exister.
+
+Faux :   total: Float = 0              # 0 est un Int
+Juste :  total: Float = 0.0
+Faux :   fn aire(l: Int, h: Int) -> Int = l * h
+         aire(2, "3")                  # "3" est un Text
+Juste :  aire(2, 3)
+Faux :   fn etiquette(n: Int) -> Text = n   # donne un Int
+Juste :  fn etiquette(n: Int) -> Text = text(n)
+Faux :   fn double(x: int) = x * 2     # les noms de types commencent par une majuscule
+Juste :  fn double(x: Int) = x * 2
+
+Les types écrits sont facultatifs : en retirer un ne change jamais ce que
+fait un programme. Plus : `rythme help types`."#,
+        ),
         "E024" => (
             r#"E024 — A value is lost
 
@@ -3511,6 +3626,7 @@ Ou donnez un autre nom au paramètre : fn double(n) = n * 2"#,
 #[doc(hidden)]
 pub fn fixed_texts() -> Vec<&'static str> {
     let mut texts: Vec<&'static str> = TOPICS.iter().map(|(name, _)| topic_texts(name).0).filter(|t| !t.is_empty()).collect();
+    texts.push(WRITTEN_EN);
     texts.extend(CODES.iter().filter_map(|c| explanation(c)).map(|(en, _)| en));
     texts.extend(KEYWORD_DOCS.iter().map(|k| k.1));
     texts.extend(BUILTINS.iter().map(|b| b.en));
@@ -3521,6 +3637,6 @@ pub fn fixed_texts() -> Vec<&'static str> {
 
 pub const CODES: &[&str] = &[
     "E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010", "E011", "E012", "E013", "E014", "E015", "E016", "E017",
-    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "E025", "E026", "W001", "W002", "W003", "W004", "W005", "W006", "W007", "W008",
-    "W009", "W010", "W011",
+    "E018", "E019", "E020", "E021", "E022", "E023", "E024", "E025", "E026", "E027", "W001", "W002", "W003", "W004", "W005", "W006", "W007",
+    "W008", "W009", "W010", "W011",
 ];

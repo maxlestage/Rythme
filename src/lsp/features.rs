@@ -285,7 +285,7 @@ fn def_markdown(a: &Analysis, id: DefId, def: &Def) -> String {
         }
         DefKind::Value => parts.push(code_block(&snippet(def.full, 100))),
         DefKind::Param => {
-            parts.push(code_block(&def.name));
+            parts.push(code_block(def.sig.as_deref().unwrap_or(&def.name)));
             parts.push(match &def.owner {
                 Some(f) => t!("parameter of `{f}`", "paramètre de `{f}`"),
                 None => t!("parameter of an anonymous function", "paramètre d'une fonction anonyme"),
@@ -800,22 +800,70 @@ fn use_completion(cx: &Ctx, a: &Analysis, offset: usize, quote: Option<usize>) -
 
 /// The parameters of a signature like `map(list, f)`, as byte ranges of the label.
 fn params_of(label: &str) -> Vec<(usize, usize)> {
-    let (Some(open), Some(close)) = (label.find('('), label.rfind(')')) else { return Vec::new() };
+    let Some(open) = label.find('(') else { return Vec::new() };
+    // The `)` that closes it: written types have brackets too (`xs: List(Int)`).
+    let mut depth = 0usize;
+    let mut close = None;
+    for (i, c) in label[open..].char_indices() {
+        match c {
+            '(' | '[' | '{' => depth += 1,
+            ')' | ']' | '}' => {
+                depth = depth.saturating_sub(1);
+                if depth == 0 {
+                    close = Some(open + i);
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+    let Some(close) = close else { return Vec::new() };
     if close <= open + 1 {
         return Vec::new();
     }
     let mut out = Vec::new();
     let mut start = open + 1;
+    let mut depth = 0usize;
     for (i, c) in label[open + 1..close].char_indices() {
-        if c == ',' {
-            out.push((start, open + 1 + i));
-            start = open + 1 + i + 1;
-            while label[start..].starts_with(' ') {
-                start += 1;
+        match c {
+            '(' | '[' | '{' => depth += 1,
+            ')' | ']' | '}' => depth = depth.saturating_sub(1),
+            ',' if depth == 0 => {
+                out.push((start, open + 1 + i));
+                start = open + 1 + i + 1;
+                while label[start..].starts_with(' ') {
+                    start += 1;
+                }
             }
+            _ => {}
         }
     }
     out.push((start, close));
+    out
+}
+
+/// The forms of a signature: a built-in may show several (`random(a, b),
+/// random(list)`); a function of the program shows one, whose written types
+/// may hold `), ` too (`f(xs: List(Int), n: Int)`).
+fn forms_of(label: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut depth = 0usize;
+    let mut start = 0;
+    let bytes = label.as_bytes();
+    for (i, c) in label.char_indices() {
+        match c {
+            '(' | '[' | '{' => depth += 1,
+            ')' | ']' | '}' => {
+                depth = depth.saturating_sub(1);
+                if c == ')' && depth == 0 && bytes.get(i + 1) == Some(&b',') && bytes.get(i + 2) == Some(&b' ') {
+                    out.push(label[start..=i].to_string());
+                    start = i + 3;
+                }
+            }
+            _ => {}
+        }
+    }
+    out.push(label[start..].to_string());
     out
 }
 
@@ -856,7 +904,7 @@ pub fn signature_help(cx: &Ctx, a: &Analysis, offset: usize) -> Json {
         _ => return Json::Null,
     };
     // A built-in may show several forms: `random(a, b), random(list)`.
-    let forms: Vec<String> = label.split("), ").map(|f| if f.ends_with(')') { f.to_string() } else { format!("{f})") }).collect();
+    let forms = forms_of(&label);
     let given = call.commas + usize::from(call.first_given);
     // The first form with room for the arguments given, else the longest.
     let chosen = forms

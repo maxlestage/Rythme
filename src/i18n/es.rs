@@ -8330,5 +8330,137 @@ de las pruebas anteriores.
 
 Las pruebas de propiedades (check_all, sample) tienen su propia semilla:
 rythme test --seed N (ver rythme help tests)."#),
+        // src/check/annot.rs, src/parser.rs: types written in the code
+        ("a whole number is an Int, not a Float: write it with a decimal point (`2.0`), or convert it with `float(...)`", "un número entero es un Int, no un Float: escríbelo con punto decimal (`2.0`), o conviértelo con `float(...)`"),
+        ("a decimal number is a Float, not an Int: convert it with `int(...)`, `round(...)` or `floor(...)`", "un número decimal es un Float, no un Int: conviértelo con `int(...)`, `round(...)` o `floor(...)`"),
+        ("change the value, or the type written for it; types written in the code are checked before running, and are never needed (see `rythme help types`)", "cambia el valor, o el tipo escrito para él; los tipos escritos en el código se comprueban antes de ejecutar, y nunca son obligatorios (consulta `rythme help types`)"),
+        ("`{name}` is written `{w}`, but its value is {what}", "`{name}` está escrito `{w}`, pero su valor es {what}"),
+        ("the type written for `{name}`", "el tipo escrito para `{name}`"),
+        ("this value is {what}, but the type written for it is `{w}`", "este valor es {what}, pero el tipo escrito para él es `{w}`"),
+        ("the type written here", "el tipo escrito aquí"),
+        ("not `{w}`", "no es `{w}`"),
+        ("`{v}` cannot be both {a} and {b} in this call to `{f}`", "`{v}` no puede ser a la vez {a} y {b} en esta llamada a `{f}`"),
+        ("`{v}` is {b} here", "`{v}` es {b} aquí"),
+        ("`{v}` is {a} here", "`{v}` es {a} aquí"),
+        ("a type variable like `{v}` stands for the same type everywhere in the types written for `{f}`", "una variable de tipo como `{v}` representa el mismo tipo en todos los tipos escritos para `{f}`"),
+        ("`{f}` expects `{ws}` for `{param}`, but receives {what}", "`{f}` espera `{ws}` para `{param}`, pero recibe {what}"),
+        ("not `{ws}`", "no es `{ws}`"),
+        ("the type written for `{param}`", "el tipo escrito para `{param}`"),
+        ("this function receives {what}, but `{param}` is written `{w}`", "esta función recibe {what}, pero `{param}` está escrito `{w}`"),
+        ("`{f}` is written to give `{w}`, but gives {what}", "`{f}` está escrita para dar `{w}`, pero da {what}"),
+        ("the type written for the result of `{f}`", "el tipo escrito para el resultado de `{f}`"),
+        ("`{f}` is written to give `{w}`, but its `?` may give back {what}", "`{f}` está escrita para dar `{w}`, pero su `?` puede devolver {what}"),
+        ("`?` gives back the `None` or `Err(...)` it stops on: write the result as an Option or a Result, like `-> Option(Int)`", "`?` devuelve el `None` o el `Err(...)` en el que se detiene: escribe el resultado como un Option o un Result, como `-> Option(Int)`"),
+        ("unknown type `{name}`", "tipo desconocido `{name}`"),
+        ("in Rythme, write `{best}`", "en Rythme, escribe `{best}`"),
+        ("the names of types start with an uppercase letter; a type variable, which stands for any type, is one lowercase letter, like `a`", "los nombres de los tipos empiezan con mayúscula; una variable de tipo, que representa cualquier tipo, es una sola letra minúscula, como `a`"),
+        ("`{name}` takes no type between parentheses", "`{name}` no lleva ningún tipo entre paréntesis"),
+        ("write `{name}` alone", "escribe `{name}` solo"),
+        ("a type is one of Rythme's (`Int`, `Float`, `Text`, `Bool`, `List`, `Dict`...) or one defined with `type`", "un tipo es uno de los de Rythme (`Int`, `Float`, `Text`, `Bool`, `List`, `Dict`...) o uno definido con `type`"),
+        ("`{name}` takes one type: `{example}`", "`{name}` lleva un solo tipo: `{example}`"),
+        ("`{name}` takes two types: `{example}`", "`{name}` lleva dos tipos: `{example}`"),
+        ("to write the type of `{name}`, put a space after `:`: `{name}: {ty} = ...`", "para escribir el tipo de `{name}`, pon un espacio después de `:`: `{name}: {ty} = ...`"),
+        ("`=` and a value", "`=` y un valor"),
+        ("a name with a written type is given its value right away: `total: Float = 0.0`", "un nombre con un tipo escrito recibe su valor enseguida: `total: Float = 0.0`"),
+        ("`,`", "`,`"),
+        ("to write the type of a parameter, put `:` right after its name, then a space: `x: {s}`", "para escribir el tipo de un parámetro, pon `:` justo después de su nombre, y luego un espacio: `x: {s}`"),
+        ("`:` and the type of the field", "`:` y el tipo del campo"),
+        ("`(`", "`(`"),
+        ("`->` and the type of the result", "`->` y el tipo del resultado"),
+        ("a type", "un tipo"),
+        ("to write the type of a field, write its name first: `Circle(radius: Float)`", "para escribir el tipo de un campo, escribe primero su nombre: `Circulo(radio: Float)`"),
+        ("a type is written like `Int`, `Text`, `List(Int)`, `[Int]`, `{{name: Text}}`, `fn(Int) -> Int` or `Shape`; see `rythme help types`", "un tipo se escribe como `Int`, `Text`, `List(Int)`, `[Int]`, `{{nombre: Text}}`, `fn(Int) -> Int` o `Forma`; consulta `rythme help types`"),
+        (
+            r#"E027 — A type written in the code does not fit
+
+A type written in the code, after `:` or `->`, is a promise that
+`rythme check` verifies before running: a value that surely has another type
+is reported where it is given. The type must also exist.
+
+Wrong:   total: Float = 0              # 0 is an Int
+Right:   total: Float = 0.0
+Wrong:   fn area(w: Int, h: Int) -> Int = w * h
+         area(2, "3")                  # "3" is a Text
+Right:   area(2, 3)
+Wrong:   fn label(n: Int) -> Text = n  # gives an Int
+Right:   fn label(n: Int) -> Text = text(n)
+Wrong:   fn twice(x: int) = x * 2      # type names start with an uppercase letter
+Right:   fn twice(x: Int) = x * 2
+
+Written types are optional: removing one never changes what a program does.
+More: `rythme help types`."#,
+            r#"E027 — Un tipo escrito en el código no corresponde
+
+Un tipo escrito en el código, después de `:` o `->`, es una promesa que
+`rythme check` comprueba antes de ejecutar: un valor que seguro tiene otro
+tipo se señala allí donde se da. El tipo también debe existir.
+
+Mal:     total: Float = 0              # 0 es un Int
+Bien:    total: Float = 0.0
+Mal:     fn area(an: Int, al: Int) -> Int = an * al
+         area(2, "3")                  # "3" es un Text
+Bien:    area(2, 3)
+Mal:     fn etiqueta(n: Int) -> Text = n    # da un Int
+Bien:    fn etiqueta(n: Int) -> Text = text(n)
+Mal:     fn doble(x: int) = x * 2      # los nombres de tipos empiezan con mayúscula
+Bien:    fn doble(x: Int) = x * 2
+
+Los tipos escritos son opcionales: quitar uno nunca cambia lo que hace un
+programa. Más: `rythme help types`."#,
+        ),
+        (
+            r#"TYPES WRITTEN IN THE CODE (optional)
+
+Rythme finds the types by itself. You may also write them where they help
+to read the code; `rythme check` then verifies them (E027):
+  fn area(width: Int, height: Int) -> Int = width * height
+  total: Float = 0.0
+  type Shape = Circle(radius: Float) | Rect(width: Float, height: Float)
+  [1, 2].map do |n: Int| n * 2 end
+
+The types
+  Int  Float  Text  Bool  Unit  Symbol
+  List(Int) or [Int]   Set(Text)   Dict(Text, Int)
+  Option(Int)   Result(Int, Text)
+  {name: Text, age: Int}       a record with at least these fields
+  fn(Int, Int) -> Int          a function
+  Shape                        a type defined with `type` (geometry.Shape
+                               for a type of `use geometry`)
+  a                            any type: one lowercase letter, the same type
+                               everywhere in a definition
+  List, Dict, Set, Option, Result, Record, Function alone: any content
+
+  fn first_of(xs: List(a)) -> a = xs[0]
+  first_of([1, 2]) + 1         # the checker knows it is an Int
+
+Written types are never needed and change nothing when the program runs;
+the editors and `rythme doc` show them."#,
+            r#"TIPOS ESCRITOS EN EL CÓDIGO (opcionales)
+
+Rythme encuentra los tipos por sí solo. También puedes escribirlos donde
+ayudan a leer el código; `rythme check` los comprueba entonces (E027):
+  fn area(ancho: Int, alto: Int) -> Int = ancho * alto
+  total: Float = 0.0
+  type Forma = Circulo(radio: Float) | Rect(ancho: Float, alto: Float)
+  [1, 2].map do |n: Int| n * 2 end
+
+Los tipos
+  Int  Float  Text  Bool  Unit  Symbol
+  List(Int) o [Int]    Set(Text)   Dict(Text, Int)
+  Option(Int)   Result(Int, Text)
+  {nombre: Text, edad: Int}    un registro con al menos estos campos
+  fn(Int, Int) -> Int          una función
+  Forma                        un tipo definido con `type` (geometria.Forma
+                               para un tipo de `use geometria`)
+  a                            cualquier tipo: una letra minúscula, el mismo
+                               tipo en toda una definición
+  List, Dict, Set, Option, Result, Record, Function solos: cualquier contenido
+
+  fn primero(xs: List(a)) -> a = xs[0]
+  primero([1, 2]) + 1          # el comprobador sabe que es un Int
+
+Los tipos escritos nunca son obligatorios y no cambian nada al ejecutar el
+programa; los editores y `rythme doc` los muestran."#,
+        ),
     ],
 }
