@@ -341,6 +341,49 @@ async function stepsLayout(browser, base, mode) {
   await context.close();
 }
 
+// The Seed option in every language: open, with the longest seed, after a run that
+// shows it in the head of the output; no horizontal scroll at any width, in any theme,
+// the panel inside the screen, and its texts at the contrast of each theme.
+async function seedLayout(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 320, height: 800 } });
+  const page = await context.newPage();
+  const failed = [];
+  for (const lang of LANGS) {
+    await page.goto(`${base}/${lang}/playground/#code=${encodeURIComponent("print(shuffle([1, 2, 3]))\n")}&seed=999999999999999`);
+    await ran(page);
+    await page.evaluate(() => { document.getElementById("seed-option").open = true; });
+    const shown = await page.evaluate(() => ({
+      field: document.getElementById("seed").value,
+      used: !document.getElementById("seed-used").hidden && document.getElementById("seed-used").textContent.includes("999999999999999"),
+      panel: getComputedStyle(document.querySelector(".seed__panel")).display !== "none",
+    }));
+    if (shown.field !== "999999999999999" || !shown.used || !shown.panel) failed.push(`/${lang}/: the seed is not shown: ${JSON.stringify(shown)}`);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      for (const width of [320, 360, 390, 768, 1280]) {
+        await page.setViewportSize({ width, height: 800 });
+        await settle(page);
+        const m = await page.evaluate(measure);
+        if (m.scrollWidth > m.clientWidth || m.wide.length || m.scrollers.length) failed.push(`/${lang}/ ${theme} ${width}px: ${JSON.stringify(m)}`);
+        const inside = await page.evaluate(() => {
+          const r = document.querySelector(".seed__panel").getBoundingClientRect();
+          const t = document.querySelector(".seed__toggle").getBoundingClientRect();
+          return r.left >= 0 && r.right <= document.documentElement.clientWidth && t.right <= document.documentElement.clientWidth;
+        });
+        if (!inside) failed.push(`/${lang}/ ${theme} ${width}px: the seed option sticks out`);
+        if (theme !== "auto" && (width === 320 || width === 1280)) {
+          await page.waitForTimeout(300);
+          const result = await page.evaluate(contrast, MIN_CONTRAST[theme] || 4.5);
+          if (result.bad.length) failed.push(`/${lang}/ ${theme} ${width}px: contrast ${result.bad.join("; ")}`);
+        }
+      }
+    }
+    await page.setViewportSize({ width: 320, height: 800 });
+  }
+  check(failed.length === 0, `${mode}: the Seed option fits and reads well in every language, theme and width`, `\n    ${failed.slice(0, 20).join("\n    ")}`);
+  await context.close();
+}
+
 async function themes(browser, base, mode) {
   // The contrast of every theme: its palette, then the text as drawn on every page.
   const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 390, height: 800 } });
@@ -471,6 +514,7 @@ async function verify(mode) {
     await editorWraps(browser, base);
     await shareLayout(browser, base, mode);
     await stepsLayout(browser, base, mode);
+    await seedLayout(browser, base, mode);
     await themes(browser, base, mode);
   } finally {
     await browser.close();

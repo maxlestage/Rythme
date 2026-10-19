@@ -6,10 +6,12 @@ let module = null;
 const imports = { env: { rythme_now: () => Date.now(), rythme_offset: (ms) => -new Date(ms).getTimezoneOffset() } };
 
 // mode: 0 = run, 1 = check, 2 = test, 4 = steps, 5 = the steps of one expression. Error messages come wrapped in U+0001 … U+0002.
-// The language of the messages is its position in rythme::lang::LANGUAGES.
+// The language of the messages is its position in rythme::lang::LANGUAGES. `seed`: the
+// seed of the draws (a whole number), or null for draws that change from run to run.
 const LANGS = ["en", "fr", "es", "de", "pt", "zh"];
-function callInterpreter(instance, code, mode, lang) {
+function callInterpreter(instance, code, mode, lang, seed) {
   const e = instance.exports;
+  e.rythme_seed(seed === null || seed === undefined ? -1 : seed);
   const bytes = new TextEncoder().encode(code);
   const ptr = e.rythme_alloc(bytes.length);
   new Uint8Array(e.memory.buffer, ptr, bytes.length).set(bytes);
@@ -27,7 +29,7 @@ onmessage = async (msg) => {
   try {
     // A fresh instance each time: a program that ran out of stack leaves nothing behind.
     const instance = await WebAssembly.instantiate(module, imports);
-    const text = callInterpreter(instance, d.code, d.mode, d.lang);
+    const text = callInterpreter(instance, d.code, d.mode, d.lang, d.seed);
     postMessage({ id: d.id, text, ms: performance.now() - start });
   } catch (err) {
     postMessage({ id: d.id, trap: String(err), ms: performance.now() - start });

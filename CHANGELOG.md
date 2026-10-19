@@ -105,6 +105,14 @@ dit ce qu'une version 1.x peut changer ou non.*
   long for a link are refused with a message. Opening a link shows the program
   without replacing the saved draft until it is changed, with a notice and
   *Back to my draft*. In the six languages of the site.
+- **A seed in the playground**: *Seed*, next to Run, takes a whole number:
+  every run then makes the same draws of `random` and `shuffle` (like
+  `rythme run --seed N`), and Test the same values of `check_all` and
+  `sample` too (like `rythme test --seed N`). Empty, the draws change as
+  before. A dice picks a new seed; the seed is kept with the draft, shown in
+  the head of the output, and *Share* puts it in the link (`&seed=42`), so a
+  teacher's link gives every student the same draws. In the six languages of
+  the site.
 - **Steps in the playground, and links that open on them**: *Steps* shows the
   calculation of the last expression (or of the selected code) one step at a
   time, with *Previous* and *Next*, a slider and the keyboard, the step before,

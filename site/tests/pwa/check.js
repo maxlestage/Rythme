@@ -286,6 +286,108 @@ async function stepsLinks(context, page, base) {
   await page.evaluate(() => { localStorage.removeItem("rythme-code"); });
 }
 
+// The Seed option, offline: empty, the draws change from run to run; a number, every
+// run makes the same draws (Test too, with check_all's values), shown in the head of
+// the output and kept after a reload; the dice picks another; Share puts it in the
+// link, which reproduces the draws in another page without changing the seed saved
+// there, until the program is changed.
+async function seedOption(context, page, base) {
+  const DRAWS = "print(random(1, 1000000), random(1, 1000000))\nprint(shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))\n";
+  const TESTS = 'test "draws" = assert_eq([random(1, 1000000), sample(ints(0, 1000000), 1)[0]], [])\n';
+  // The field, typed into (the option opened first).
+  const fillSeed = async (p, value) => {
+    await p.evaluate(() => { document.getElementById("seed-option").open = true; });
+    await p.fill("#seed", value);
+  };
+  const seedState = (p) => p.evaluate(() => ({
+    field: document.getElementById("seed").value,
+    shown: document.getElementById("seed-shown").textContent,
+    used: document.getElementById("seed-used").hidden ? null : document.getElementById("seed-used").textContent,
+    saved: localStorage.getItem("rythme-seed"),
+  }));
+  // The welcome program first: Run runs the program (not the tests of testing.ry).
+  await page.goto(`${base}/en/playground/#example=welcome`);
+  await ran(page);
+  check(await page.isVisible("#seed-option") && !(await page.isVisible("#seed")), "seed: the option is shown, closed");
+  await setCode(page, DRAWS);
+  const free = [];
+  for (let i = 0; i < 3; i++) free.push(await runAndRead(page, "#run"));
+  check(new Set(free).size > 1 && (await seedState(page)).used === null, "seed: empty, the draws change from run to run", free);
+
+  await page.click(".seed__toggle");
+  check(await page.isVisible("#seed") && (await page.getAttribute("#seed", "placeholder")) === "random", "seed: the option opens on its field");
+  await fillSeed(page, "4x2");
+  let state = await seedState(page);
+  check(state.field === "42" && state.shown === "42" && state.saved === "42", "seed: only digits, shown on the button and saved", state);
+  const first = await runAndRead(page, "#run");
+  const second = await runAndRead(page, "#run");
+  state = await seedState(page);
+  check(first === second && !free.includes(first) && state.used === "seed 42", "seed: 42, two runs make the same draws, said in the head of the output", { first, second, state });
+  // A click elsewhere (Run) closed it; Escape too, from its field.
+  check(!(await page.isVisible("#seed")), "seed: a click elsewhere closes the option");
+  await page.click(".seed__toggle");
+  await page.focus("#seed");
+  await page.keyboard.press("Escape");
+  check(!(await page.isVisible("#seed")) && (await page.evaluate(() => document.activeElement.classList.contains("seed__toggle"))), "seed: Escape closes the option and gives the focus back");
+  await page.reload();
+  await ran(page);
+  state = await seedState(page);
+  check(state.field === "42" && (await page.textContent("#output")) === first, "seed: kept after a reload, with the same draws", state);
+
+  // Test: the same draws, and the same values of check_all and sample (the times of
+  // the summary aside).
+  const timeless = (s) => s.replace(/\(\d+(\.\d+)? m?s\)/g, "");
+  await setCode(page, TESTS);
+  const tested = timeless(await runAndRead(page, "#test"));
+  check(/✗/.test(tested) && tested === timeless(await runAndRead(page, "#test")) && (await seedState(page)).used === "seed 42", "seed: Test makes the same draws each time", tested);
+  await fillSeed(page, "7");
+  check(timeless(await runAndRead(page, "#test")) !== tested, "seed: another seed, other draws in the tests");
+  // Check runs nothing: no seed in the head of the output.
+  await runAndRead(page, "#check");
+  check((await seedState(page)).used === null, "seed: not shown after Check");
+
+  // The dice: another seed, and a run with it.
+  await setCode(page, DRAWS);
+  await page.evaluate(() => { document.getElementById("seed-option").open = true; document.getElementById("status").className = "status"; });
+  await page.click("#seed-new");
+  await ran(page);
+  state = await seedState(page);
+  check(/^\d+$/.test(state.field) && state.field !== "7" && state.saved === state.field && state.used === `seed ${state.field}`, "seed: the dice picks a new seed and runs", state);
+  await fillSeed(page, "42");
+  check((await runAndRead(page, "#run")) === first, "seed: back to 42, the same draws as before");
+
+  // Share: the seed travels in the link, before the mode.
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: new URL(base).origin });
+  const link = await share(page);
+  check(/#code=[01]:[\w-]+&seed=42$/.test(link), "seed: Share puts the seed in the link", link);
+  await page.keyboard.press("Escape");
+  await fillSeed(page, "");
+  const other = await context.newPage();
+  await open(other, link);
+  state = await seedState(other);
+  check((await other.textContent("#output")) === first && state.field === "42" && state.used === "seed 42" && state.saved === "", "seed: the link reproduces the draws, without changing the seed saved here", state);
+  const again = await runAndRead(other, "#run");
+  check(again === first, "seed: and every run of the link too");
+  await other.click("#shared-back");
+  await ran(other);
+  check((await seedState(other)).field === "", "seed: Back to my draft brings its seed back (none)");
+  // A link of the tests with a seed, made by hand: the seed comes before the mode.
+  await open(other, `${base}/en/playground/#code=${encodeURIComponent(TESTS)}&seed=42&mode=test`);
+  check(timeless(await other.textContent("#output")) === tested, "seed: a test link with a seed reproduces the draws", await other.textContent("#output"));
+  // A link without seed: draws that change, even with a seed saved here.
+  await fillSeed(page, "42");
+  await open(other, `${base}/en/playground/#code=${encodeURIComponent(DRAWS)}`);
+  const unseeded = [await other.textContent("#output"), await runAndRead(other, "#run"), await runAndRead(other, "#run")];
+  check(new Set(unseeded).size > 1 && (await seedState(other)).field === "" && (await seedState(other)).saved === "42", "seed: a link without seed, draws that change; the saved seed is kept", unseeded);
+  // Changing the seed of a link makes its program the draft, with that seed.
+  await fillSeed(other, "5");
+  state = await seedState(other);
+  check(state.saved === "5" && !(await noteShown(other)) && (await draftOf(other)) === DRAWS, "seed: changing the seed of a link makes it the draft", state);
+  await other.close();
+  await fillSeed(page, "");
+  await page.evaluate(() => { localStorage.removeItem("rythme-code"); localStorage.removeItem("rythme-seed"); });
+}
+
 async function verify(mode) {
   console.log(`\n== ${mode === "server" ? "the server, at the root" : "the static export, behind /Rythme"}`);
   const dir = workspace();
@@ -434,6 +536,7 @@ async function verify(mode) {
   check((await page.textContent("#output")).includes("partagé") && !page.url().includes("?"), "offline playground: a shared text opens in the playground");
   await shareLinks(context, page, base);
   await stepsLinks(context, page, base);
+  await seedOption(context, page, base);
   // The playground of every language: its texts, and the interpreter's messages in the
   // language of the page.
   for (const lang of LANGS) {

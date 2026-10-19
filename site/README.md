@@ -144,7 +144,8 @@ alike.
 
 - **Format.** `#code=1:` then the program compressed with deflate (raw, RFC 1951),
   or `#code=0:` then the program as it is (UTF-8), both in URL-safe base64; *Share*
-  takes the shorter. `&mode=test` follows when Run runs the tests (`testing.ry`),
+  takes the shorter. `&seed=N` follows when the program runs with a seed (see
+  [Seed](#seed)), then `&mode=test` when Run runs the tests (`testing.ry`),
   `&mode=steps&step=N` when the steps of a calculation are shown (see below), with
   `&expr=…` (percent-encoded) when they are the steps of a selected piece of code.
   `#code=` followed by anything else is the program percent-encoded: the links of
@@ -202,6 +203,34 @@ the keys and the slider, shares from the steps (the mode, the step and the selec
 code travel), and checks the selection, what is printed, an error, a program without
 expression and the link of *Learn*; `layout.js` shows long and nested steps in every
 language, theme and width.
+
+### Seed
+
+*Seed*, next to Run, makes the draws of `random` and `shuffle` repeatable: empty,
+they change from run to run, as before; a whole number (up to 15 digits), every Run,
+Test and Steps makes the same draws, like `rythme run --seed N`, and Test also the
+same values of `check_all` and `sample`, like `rythme test --seed N` (same seed and
+same version of Rythme: same draws). Check runs nothing and uses none.
+
+- **The option.** A `details` among the buttons (shown by `playground.js`), whose
+  button shows the seed in use; its panel, under the toolbar, holds a labelled
+  field (digits only, `inputmode="numeric"`), the dice (*New seed*: a new seed, and
+  a run with it) and a hint. Enter in the field runs; Escape or a click elsewhere
+  closes it. After a run with a seed, the head of the output says it ("seed 42").
+- **The interpreter.** `rythme_seed(seed)` (`playground/src/lib.rs`), called by the
+  worker before each `rythme_run`: a whole number from 0 to 2^53, or -1 for none.
+  It seeds `random` (`Interp::seed_random`) and, for the tests, `property_seed`.
+- **Saved and shared.** The seed is kept in `localStorage` (`rythme-seed`) with
+  the draft. *Share* adds `&seed=N` to the link; a link shows its own seed (none
+  without `seed`), without touching the one saved here, until the program or the
+  seed is changed (then both become the draft) or *Back to my draft*.
+
+`tests/pwa/check.js` runs a program of draws offline: without seed the output
+changes, with 42 it does not (after a reload too), Test gives the same failures
+with the same seed and others with another, the dice, Share (`&seed=42`), the link
+in another page (the same draws, the saved seed untouched), a test link with a
+seed, a link without one, and a change of seed on a link; `layout.js` shows the
+open option with the longest seed in every language, theme and width.
 
 On GitHub Pages, `sw.js` comes with a cache of 10 minutes rather than `no-cache`:
 browsers check service workers past their HTTP cache (`updateViaCache: "none"`).
