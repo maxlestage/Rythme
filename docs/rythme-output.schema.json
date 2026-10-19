@@ -277,7 +277,7 @@
       "properties": {
         "name": { "type": "string" },
         "signature": { "type": "string", "description": "Like \"map(list, f)\"." },
-        "category": { "enum": ["basics", "numbers", "text", "lists", "records", "dicts", "options", "files", "dates", "tests"] },
+        "category": { "enum": ["basics", "numbers", "text", "lists", "records", "dicts", "options", "files", "dates", "tests", "ml", "web"] },
         "category_title": { "type": "string" },
         "doc": { "type": "string" },
         "example": { "type": "string" },
