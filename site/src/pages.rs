@@ -437,7 +437,7 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
     // chosen, with its color for the browser's bar. Then the browser side, in Rust
     // compiled to WebAssembly (`client.rs`): the playground's bundle on its page, the
     // site's elsewhere.
-    let bundle = Bundle::Site;
+    let bundle = if route.page == PageKind::Playground { Bundle::Playground } else { Bundle::Site };
     let head = format!(
         concat!(
             r#"<meta name="color-scheme" content="light dark"/>"#,
@@ -719,7 +719,8 @@ pub fn examples(ctx: &Ctx) -> Page {
 
 // ----- Playground -------------------------------------------------------------------------
 
-/// The texts that `playground.js` writes while it runs, as a JSON object (`data-ui`).
+/// The texts that the playground writes while it runs (`client/src/playground/`), as a
+/// JSON object (`data-ui`).
 pub fn playground_ui(t: &Texts) -> String {
     let fields = [
         ("loading", t.pg_loading),
@@ -755,7 +756,7 @@ pub fn playground_ui(t: &Texts) -> String {
 
 /// The steps of a calculation, shown one at a time in the place of the output (Steps,
 /// or a link with `&mode=steps`): the previous step and the next, a slider, the step
-/// before (faint) and the step itself, what it printed. `playground.js` fills it; a
+/// before (faint) and the step itself, what it printed. The browser side fills it; a
 /// live region says each step.
 fn stepper(t: &Texts) -> Element {
     let nav = div()
@@ -962,8 +963,7 @@ pub fn playground(ctx: &Ctx) -> Page {
         .class("page page--wide playground")
         .attr("data-lang", ctx.lang().code())
         .attr("data-ui", playground_ui(t))
-        .attr("data-wasm", ctx.asset("/rythme.wasm"))
-        .attr("data-worker", ctx.asset("/playground-worker.js"))
+        .attr("data-worker", crate::client::worker_url(&ctx.version))
         .attr("data-examples", link("/examples.json"))
         .attr("data-llms", link(crate::ai::LLMS_FULL_PATH))
         .child(page_head(t.pg_title, t.pg_lead))
@@ -976,10 +976,9 @@ pub fn playground(ctx: &Ctx) -> Page {
         .child(p().class("note").text(t.pg_limits))
         .child(p().class("note").text(t.pg_offline));
     layout(ctx, &format!("{} — Rythme", t.pg_title), t.pg_lead, content)
-        .head(format!(r#"<script src="{}" defer=""></script>"#, ctx.asset("/playground.js")))
 }
 
-/// The Seed option, next to Run (a `details`, shown by `playground.js`): empty, the
+/// The Seed option, next to Run (a `details`, shown by the browser side): empty, the
 /// draws of `random` and `shuffle` change from run to run; a whole number, every run
 /// makes the same draws (`rythme run --seed N`; with Test, `rythme test --seed N`).
 /// The dice picks a new seed and runs. The seed stays in this browser, and travels
@@ -1028,7 +1027,7 @@ fn seed_option(t: &Texts) -> Element {
         )
 }
 
-/// Shown by `playground.js` when the program comes from a link (`#code=…`): the draft
+/// Shown by the browser side when the program comes from a link (`#code=…`): the draft
 /// saved in this browser is kept until the program is changed; the button brings it
 /// back.
 fn shared_note(t: &Texts) -> Element {
@@ -1041,7 +1040,7 @@ fn shared_note(t: &Texts) -> Element {
         .child(button().class("btn btn--sm").attr("type", "button").id("shared-back").text(t.pg_shared_back))
 }
 
-/// The link made by Share (`playground.js`): what happened to it (copied, shared, to
+/// The link made by Share (the browser side): what happened to it (copied, shared, to
 /// copy by hand, too long), and the link itself in a field, ready to select.
 fn share_box(t: &Texts) -> Element {
     div()
@@ -1267,17 +1266,18 @@ mod tests {
         assert_eq!(percent_encode("f(x)*2"), "f(x)*2");
     }
 
-    /// Every text given to `playground.js` (`data-ui`) is used by it, the texts of
-    /// sharing too; and the elements it looks for are in the page.
+    /// Every text given to the playground's code (`data-ui`, read by
+    /// `client/src/playground/`) is used by it, the texts of sharing too; and the
+    /// elements it looks for are in the page.
     #[test]
-    fn the_playground_script_finds_its_texts_and_elements() {
-        let js = include_str!("../public/playground.js");
+    fn the_playground_code_finds_its_texts_and_elements() {
+        let code = include_str!("../client/src/playground/mod.rs");
         let ui = playground_ui(Lang::En.texts());
         let keys: Vec<&str> =
             ui.trim_matches(['{', '}']).split("\",\"").map(|pair| pair.trim_matches('"').split('"').next().unwrap()).collect();
         assert!(keys.contains(&"shareTooLong") && keys.contains(&"shareBroken"), "{keys:?}");
         for key in keys {
-            assert!(js.contains(&format!("UI.{key}")) || js.contains(&format!("TEXTS.{key}")), "playground.js does not use {key}");
+            assert!(code.contains(&format!("\"{key}\"")), "the playground does not use {key}");
         }
         let page =
             playground(&Ctx { route: Route::new(Lang::En, PageKind::Playground), origin: String::new(), version: String::new() }).render();
@@ -1301,7 +1301,7 @@ mod tests {
             "ai-row",
             "ai-text",
         ] {
-            assert!(js.contains(&format!("$(\"{id}\")")), "playground.js does not use #{id}");
+            assert!(code.contains(&format!("(\"{id}\")")), "the playground does not use #{id}");
             assert!(page.contains(&format!("id=\"{id}\"")), "the playground has no #{id}");
         }
     }

@@ -34,7 +34,8 @@ async fn exports_every_page_behind_the_base_path() {
     }
     let playground = std::fs::read_to_string(out.join("fr/playground/index.html")).unwrap();
     assert!(playground.contains(r#"data-examples="/Rythme/examples.json""#));
-    assert!(playground.contains(r#"data-wasm="/Rythme/rythme.wasm?v="#));
+    assert!(playground.contains(r#"data-worker="/Rythme/pkg/worker.js?v="#));
+    assert!(playground.contains(r#"<script type="module">import init from "/Rythme/pkg/playground.js?v="#));
     let root = std::fs::read_to_string(out.join("index.html")).unwrap();
     assert!(root.contains(r#"data-base="/Rythme""#));
     assert!(root.contains(r#"url=/Rythme/fr/"#));
@@ -54,7 +55,6 @@ async fn exports_every_page_behind_the_base_path() {
         "robots.txt",
         "site.css",
         "pkg/worker.js",
-        "playground.js",
         "assets/logo.svg",
         "sw.js",
         "favicon.ico",

@@ -277,16 +277,15 @@ fn carets_stay_aligned_with_chinese_text() {
     assert_eq!(padded("español", 10), "español   ");
 }
 
-/// The playground passes the position of a language in `LANGUAGES`: its lists
-/// must follow that order.
+/// The playground passes the position of a language in `LANGUAGES`: the site's
+/// (Rust, `site/client`) finds it in that very list, by the code of the page.
 #[test]
 fn the_playground_knows_every_language_in_order() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let codes = LANGUAGES.iter().map(|l| format!("{:?}", l.code)).collect::<Vec<_>>().join(", ");
-    for file in ["site/public/playground.js", "site/public/playground-worker.js"] {
-        let source = std::fs::read_to_string(root.join(file)).unwrap();
-        assert!(source.contains(&format!("[{codes}]")), "{file} must list the languages as [{codes}]");
-    }
+    let file = "site/client/src/playground/mod.rs";
+    let source = std::fs::read_to_string(root.join(file)).unwrap();
+    assert!(source.contains("rythme::lang::Lang::all().position(|l| l.code() == lang_code)"), "{file} must find the language in LANGUAGES");
+    assert!(LANGUAGES.iter().map(|l| l.code).eq(Lang::all().map(|l| l.code())), "Lang::all() follows LANGUAGES");
 }
 
 /// The language is found from its code, from a locale, and is listed.
