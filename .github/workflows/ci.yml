@@ -110,9 +110,17 @@ jobs:
       - name: Format, lint and test
         working-directory: site
         run: |
-          cargo fmt --check
+          cargo fmt --all --check
           cargo clippy --all-targets -- -D warnings
           cargo test
+      - name: The browser side (site/client), natively and as each of its bundles
+        working-directory: site
+        run: |
+          cargo clippy -p rythme-site-client --all-targets --features playground,sw,host-imports -- -D warnings
+          for bundle in page playground sw; do
+            cargo clippy -p rythme-site-client --target wasm32-unknown-unknown --features "$bundle" -- -D warnings
+          done
+          cargo test -p rythme-site-client --features playground,sw
       - name: Build as Heroku does (RustConfig)
         run: ./heroku-build.sh
       - name: Start as Heroku does (Procfile) and check the pages
@@ -122,7 +130,13 @@ jobs:
           for path in /en/ /fr/ /en/learn/ /fr/examples/ /en/playground/ /examples.json /sitemap.xml /site.css; do
             curl -fsS -o /dev/null -w "%{http_code} $path\n" "localhost:5000$path"
           done
-          curl -fsS -o /dev/null -w '%{content_type}\n' localhost:5000/rythme.wasm | grep application/wasm
+          # The browser side: its bundles, the playground's worker, the service worker.
+          for path in /pkg/site_bg.wasm /pkg/playground_bg.wasm /pkg/sw_bg.wasm; do
+            curl -fsS -o /dev/null -w '%{content_type}\n' "localhost:5000$path" | grep application/wasm
+          done
+          for path in /pkg/site.js /pkg/playground.js /pkg/worker.js /sw.js /pkg/sw.js /pkg/sw_wasm.js; do
+            curl -fsS -o /dev/null -w '%{content_type}\n' "localhost:5000$path" | grep javascript
+          done
 
   browser:
     name: Website in Chromium (layout, phones, themes, offline app)
@@ -177,5 +191,8 @@ jobs:
           for path in /en/ /fr/ /en/playground/ /examples.json; do
             curl -fsS -o /dev/null -w "%{http_code} $path\n" "localhost:5000$path"
           done
-          curl -fsS -o /dev/null -w '%{content_type}\n' localhost:5000/rythme.wasm | grep application/wasm
+          for path in /pkg/site_bg.wasm /pkg/playground_bg.wasm /pkg/sw_bg.wasm; do
+            curl -fsS -o /dev/null -w '%{content_type}\n' "localhost:5000$path" | grep application/wasm
+          done
+          curl -fsS -o /dev/null -w '%{content_type}\n' localhost:5000/pkg/sw_wasm.js | grep javascript
           docker logs site

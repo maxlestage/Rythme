@@ -10,7 +10,7 @@
 
 const fs = require("fs");
 const { launch } = require("./browser");
-const { workspace, freePort, startServer, startExport, binary, checker } = require("./serve");
+const { workspace, freePort, startServer, startExport, binary, checker, started } = require("./serve");
 
 const BIN = binary(process.argv[2]);
 const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
@@ -164,6 +164,7 @@ async function noHorizontalScroll(browser, base, mode) {
       await page.setViewportSize({ width: WIDTHS[0], height: 800 });
       await page.goto(url);
       await page.evaluate(() => document.fonts.ready);
+      await started(page);
       if (p === "playground/") await ran(page);
       for (const theme of THEMES) {
         await setTheme(page, theme);
@@ -198,6 +199,7 @@ async function languageMenu(browser, base, mode) {
   const page = await context.newPage();
   for (const lang of LANGS) {
     await page.goto(`${base}/${lang}/learn/`);
+    await started(page);
     for (const width of [320, 375, 768, 1280]) {
       await page.setViewportSize({ width, height: 800 });
       await page.evaluate(() => { document.querySelector(".lang--bar").open = true; });
@@ -219,6 +221,7 @@ async function languageMenu(browser, base, mode) {
   }
   await page.setViewportSize({ width: 390, height: 800 });
   await page.goto(`${base}/de/`);
+  await started(page);
   await page.focus(".lang--bar summary");
   await page.keyboard.press("Enter");
   const opened = await page.evaluate(() => document.querySelector(".lang--bar").open);
@@ -479,6 +482,7 @@ async function themes(browser, base, mode) {
     const ctx = await browser.newContext({ serviceWorkers: "block", viewport: { width, height: 800 }, colorScheme: "light" });
     const tab = await ctx.newPage();
     await tab.goto(`${base}/fr/`);
+    await started(tab);
     const wide = width >= 860;
     if (wide) {
       await tab.focus("#theme-toggle");
@@ -512,6 +516,7 @@ async function themes(browser, base, mode) {
     }
     // Kept for the next page, the other language, and a new visit.
     await tab.goto(`${base}/en/learn/`);
+    await started(tab);
     const kept = await tab.evaluate(() => ({ theme: document.documentElement.dataset.theme, checked: document.querySelector("#theme-panel input:checked").value }));
     check(kept.theme === "dark" && kept.checked === "dark", `${width}px: the theme is kept from page to page`, kept);
     await ctx.close();

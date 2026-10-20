@@ -36,7 +36,7 @@ jobs:
             git config --global credential.https://github.com.helper \
               '!f() { test "$1" = get && echo username=x-access-token && echo "password=$REPOS_TOKEN"; }; f'
           fi
-      - name: Interpreter for the playground (WebAssembly)
+      - name: The browser side, with the interpreter (Rust compiled to WebAssembly)
         run: site/build.sh
       - name: Static export
         working-directory: site

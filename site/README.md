@@ -2,7 +2,10 @@
 
 The website of Rythme, written in Rust with [Paquets](https://paquets-90dfc06b6fea.herokuapp.com/):
 the server is a `paquets::App`, the pages are `paquets::Page`s built with active views,
-rendered on the server with their SEO tags and a strict Content-Security-Policy.
+rendered on the server with their SEO tags and a strict Content-Security-Policy. What
+the pages do in the browser is Rust too, compiled to WebAssembly: the menus, the
+themes, the installable app and its service worker, the playground and its
+interpreter (see [Architecture: what is Rust where](#architecture-what-is-rust-where)).
 In the six languages of the interpreter (see [Languages](#languages)), mobile first.
 It installs as an app and works offline (see
 [The installable app](#the-installable-app)), has color themes and never scrolls
@@ -32,8 +35,12 @@ Markdown and structured data (see [For AI assistants](#for-ai-assistants)).
 | Server and routes | `src/server.rs`, `src/routes.rs` |
 | Rythme code colors, code blocks that wrap line by line | `src/highlight.rs` |
 | Color themes: names, `theme-color`, the inline script of the head | `src/themes.rs` (colors in `public/site.css`) |
-| Styles (mobile first), menu, playground | `public/site.css`, `public/site.js`, `public/playground.js` |
-| Manifests, service worker | `src/pwa.rs`, `src/sw.js` |
+| Styles (mobile first) | `public/site.css` |
+| The browser side: menus, themes, the installable app | `client/src/layout.rs` |
+| The playground: editor, runs, steps, links, Copy for AI; its worker | `client/src/playground/` |
+| What the browser side shares with the server, tested natively | `client/src/{highlight,messages,steps,share,assistant,editor}.rs` |
+| Manifests, service worker | `src/pwa.rs`, `client/src/sw.rs` |
+| The lines that start the browser side, the workers' scripts | `src/client.rs` |
 | `llms.txt`, the MCP configurations, the AI page's commands | `src/ai.rs` (the page itself in `src/pages.rs`) |
 | The pages as Markdown | `src/markdown.rs` |
 | Structured data (JSON-LD) | `src/structured.rs`, written by `src/json.rs` (the manifests too) |
@@ -47,14 +54,76 @@ when deploying, besides `public/`.
 From this folder:
 
 ```sh
-rustup target add wasm32-unknown-unknown
-./build.sh                 # public/rythme.wasm, the interpreter for the playground
+./build.sh                 # public/pkg/: the browser side, compiled to WebAssembly
 cargo run --release        # http://localhost:3000 (PORT on Heroku)
 ```
 
-Paquets is fetched from its git repository. Without `public/rythme.wasm` the site works,
-except the playground. `SITE_URL` sets the public address used in canonical and Open
-Graph links (taken from each request otherwise).
+`./build.sh` needs the `wasm32-unknown-unknown` target of Rust and `wasm-bindgen-cli` at
+exactly the version of the `wasm-bindgen` crate in `Cargo.lock` (0.2.129): it installs
+whichever is missing (`cargo install wasm-bindgen-cli --version 0.2.129 --locked`, a few
+minutes, once). Paquets is fetched from its git repository. Without `public/pkg/` the
+server serves every page, but they do nothing in the browser (no playground, no menu on
+a phone): the server says so when it starts. `SITE_URL` sets the public address used in
+canonical and Open Graph links (taken from each request otherwise).
+
+## Architecture: what is Rust where
+
+Everything is Rust, on both sides, in two crates of one workspace:
+
+| Side | Crate | What it does |
+|---|---|---|
+| Server | `rythme-site` (`src/`) | the Paquets app: the pages (active views rendered on the server), their Markdown, the manifests, the sitemap, the static export; the few lines that start the browser side (`src/client.rs`) and what the service worker must know (`src/pwa.rs`) |
+| Browser | `rythme-site-client` (`client/`) | what the pages do, compiled to WebAssembly in three bundles; its parts that need no browser are plain Rust, shared with the server (the colors of Rythme code, the words of the interpreter's messages) and tested natively |
+
+`./build.sh` builds the three bundles into `public/pkg/`, each from a feature of
+`client/`, with the glue that wasm-bindgen writes:
+
+| Bundle | Loaded by | What it does |
+|---|---|---|
+| `site.js`, `site_bg.wasm` (feature `page`) | every page, and `/` of the static export | `client/src/layout.rs`: the burger menu, the language menu and its cookie, the copy buttons, the theme picker, the service worker and its updates, the install button, the hint for iOS, the language of `/` |
+| `playground.js`, `playground_bg.wasm` (feature `playground`) | the playground (after the first: its menus work while these 3 MB arrive), and its worker | `client/src/playground/`: the editor, Run, Check, Test, Format, the steps, Seed, Share, Copy for AI, the files; the interpreter itself (`rythme-playground`, `../playground`), run in a web worker made from the same bundle (`playground/worker.rs`) so that *Stop* can end a program that never stops |
+| `sw.js`, `sw_bg.wasm` (feature `sw`) | the service worker | `client/src/sw.rs`: the files saved, the pages offline, the updates |
+
+**The only JavaScript**, each piece because a browser needs it:
+
+1. *The glue that wasm-bindgen writes* (`public/pkg/*.js`): generated from the Rust
+   (the bindings of the Web APIs it uses), never edited.
+2. *The line that starts a bundle*, `import init from "…/pkg/site.js?v=…";init(…)`,
+   inline in the head of each page with a preload of its WebAssembly, as Paquets writes
+   it for its islands (`client::Bundle`), allowed by its hash in the
+   Content-Security-Policy: a browser runs WebAssembly only when a script asks for it.
+3. *`/pkg/worker.js`*, the same line for the playground's worker, written by the
+   server: a worker starts from a script file, never from inline code.
+4. *`/sw.js` and `/pkg/sw_wasm.js`*, written by the server: the service worker loads its
+   glue and its WebAssembly (in base64, compiled at once with `initSync`), then calls
+   `serve({…})` with the version, the base path, the URLs to save, the offline pages and
+   the fonts. A service worker must have its listeners when its script ends: it cannot
+   wait for a download.
+5. *The theme before the first paint* (`themes::head_script`, one line): the theme kept
+   in `localStorage` as `data-theme`, its `theme-color`, and the class `js` when the
+   browser runs WebAssembly. WebAssembly only runs once downloaded and compiled, after
+   the first paint, and a cookie read by the server would not reach the static export
+   (GitHub Pages has no server) nor the pages the service worker saved: without it, a
+   dark theme would flash white at every page.
+
+No JavaScript file is written by hand. **Content-Security-Policy**: Paquets' own,
+`script-src 'self' 'wasm-unsafe-eval'` and the hashes of the two inline scripts (2 and
+5); no `'unsafe-inline'`, no `'unsafe-eval'`. `'wasm-unsafe-eval'` lets a page compile
+WebAssembly, and only that (`eval` stays forbidden): the browser side cannot run
+without it. The workers' scripts have a policy of their own (`server::WORKER_POLICY`).
+
+**The interpreter's clock.** The interpreter asks its host for the time as two
+WebAssembly imports of the module `env` (`rythme::io`). In the playground's bundle they
+are Rust (`playground/worker.rs`), and a step of `./build.sh`
+(`client/src/bin/host_imports.rs`, with walrus, the library wasm-bindgen itself uses)
+turns the imports into calls to those functions, so that no JavaScript module `env` is
+needed.
+
+**When it starts.** The server renders everything a visitor sees; the bundle starts
+once downloaded and compiled, a few milliseconds after the page's `load` event (the
+old `site.js` ran just before it). The first thing it does is to show the burger
+menu: the browser tests wait for that (`started` in `tests/pwa/serve.js`) before they
+use the page.
 
 ## Languages
 
@@ -76,8 +145,8 @@ French, English, Spanish, German, Portuguese (Brazilian, "você") and Chinese
   (`zh-TW` and `pt-PT` go to `zh` and `pt`), else French; the static export does the
   same in the browser.
 - **The language menu.** In the bar, a button with the code of the language opens the
-  list of languages, each named in itself (a `details`: it works without JavaScript;
-  `site.js` closes it with Escape, which gives the focus back to the button, a click
+  list of languages, each named in itself (a `details`: it works without a script;
+  the browser side closes it with Escape, which gives the focus back to the button, a click
   elsewhere, or the focus leaving it). It hangs under the bar, on the right, never
   wider nor taller than the screen (it scrolls): at 320px the bar keeps one line. The footer lists every language.
 - **The playground** gives the interpreter the language of the page (its position in
@@ -114,12 +183,12 @@ behind `BASE_PATH`.
   playground opens them through `launchQueue`, Chrome and Edge on computers) and a
   `share_target` (a text shared with the app opens in the playground:
   `?title=…&text=…&url=…`). Browsers that do not know a field ignore it.
-- **Service worker** (`/sw.js`, `no-cache`): `src/sw.js` with the constants the
-  server writes: the version (a hash of everything it saves: the pages as rendered,
-  the files, the manifests), the base path and the list of URLs to save at install:
-  every page in every language, the offline pages, `site.css`, `site.js`,
-  `playground.js`, `playground-worker.js` and `rythme.wasm` at their `?v=` version,
-  `examples.json`, the manifests and the icons. Versioned files come from the cache
+- **Service worker** (`/sw.js`, `no-cache`): `client/src/sw.rs`, compiled to
+  WebAssembly, with what the server gives it: the version (a hash of everything it
+  saves: the pages as rendered, the files, the manifests), the base path and the list
+  of URLs to save at install: every page in every language, the offline pages,
+  `site.css`, the bundles of the pages (with the interpreter) and the playground's
+  worker at their `?v=` version, `examples.json`, the manifests and the icons. Versioned files come from the cache
   without asking the network; other files of the site from the cache, refreshed in
   the background; pages from the network first, from the cache after 3 seconds or
   without network, else the offline page of their language (`/` goes to the home
@@ -167,8 +236,8 @@ alike.
   `pages::steps_link`), which stay readable in the address bar.
 - **Compression.** The browser's `CompressionStream("deflate-raw")`; without it, the
   plain form. To read a link, `DecompressionStream`, else a small inflate written in
-  `playground.js` (stored, fixed and dynamic blocks). No library, no inline script:
-  the Content-Security-Policy does not change.
+  Rust (`client/src/share.rs`: stored, fixed and dynamic blocks). No library, no
+  inline script: the Content-Security-Policy does not change.
 - **Copying.** The Clipboard API; when it says no, the link is shown selected in a
   field to copy by hand (the field is always there, with *Copy* and *Close*;
   Escape closes it). On a phone (`pointer: coarse`) with the Web Share API, the
@@ -206,7 +275,7 @@ wrap like code blocks, under their indentation; the colors are the editor's.
 - **The interpreter.** Mode 5 of `rythme_run` (`playground/src/lib.rs`): the program,
   U+0000, then the selected code (empty: the last expression). It answers with the
   text of `rythme steps` (lines up to 400 characters rather than 100), or U+0005 when
-  there is no expression to show; `playground.js` cuts it into steps.
+  there is no expression to show; `client/src/steps.rs` cuts it into steps.
 - **Links.** Run, Check and Test bring the output back. *Share* from the steps makes
   a link with `&mode=steps&step=N` (and `&expr=…`), which opens on that step;
   without `step`, on the first one. One step of *Learn* (`pages::TOUR_STEPS`) opens
@@ -226,13 +295,14 @@ Test and Steps makes the same draws, like `rythme run --seed N`, and Test also t
 same values of `check_all` and `sample`, like `rythme test --seed N` (same seed and
 same version of Rythme: same draws). Check runs nothing and uses none.
 
-- **The option.** A `details` among the buttons (shown by `playground.js`), whose
+- **The option.** A `details` among the buttons (shown by the browser side), whose
   button shows the seed in use; its panel, under the toolbar, holds a labelled
   field (digits only, `inputmode="numeric"`), the dice (*New seed*: a new seed, and
   a run with it) and a hint. Enter in the field runs; Escape or a click elsewhere
   closes it. After a run with a seed, the head of the output says it ("seed 42").
-- **The interpreter.** `rythme_seed(seed)` (`playground/src/lib.rs`), called by the
-  worker before each `rythme_run`: a whole number from 0 to 2^53, or -1 for none.
+- **The interpreter.** `rythme_playground::run(code, mode, language, seed)`
+  (`playground/src/lib.rs`), called by the worker: a whole number from 0 to 2^53, or
+  none.
   It seeds `random` (`Interp::seed_random`) and, for the tests, `property_seed`.
 - **Saved and shared.** The seed is kept in `localStorage` (`rythme-seed`) with
   the draft. *Share* adds `&seed=N` to the link; a link shows its own seed (none
@@ -247,7 +317,8 @@ seed, a link without one, and a change of seed on a link; `layout.js` shows the
 open option with the longest seed in every language, theme and width.
 
 On GitHub Pages, `sw.js` comes with a cache of 10 minutes rather than `no-cache`:
-browsers check service workers past their HTTP cache (`updateViaCache: "none"`).
+browsers check service workers past their HTTP cache (`updateViaCache: "imports"`: the
+script itself always, its versioned imports from the HTTP cache).
 
 ### Checking it in a browser
 
@@ -322,7 +393,7 @@ sideways. So:
   nothing is shown only on hover;
 - the bar sticks to the top only when the screen is 520px high or more; the menu
   panel and the language list start under its real bottom (`--bar-bottom`, measured
-  by `site.js`: it wraps when the text is enlarged), the language list hangs under the
+  by the browser side: it wraps when the text is enlarged), the language list hangs under the
   bar and scrolls when the screen is short; titles shrink with the height too, so a
   phone in landscape shows the playground's tools and editor;
 - the playground: Run in sight when it opens, the page never scrolls by itself (only
@@ -373,7 +444,7 @@ of the manual).
   (with the address of `llms-full.txt`), the configurations of `rythme mcp` for
   Claude Code, Claude Desktop, Cursor and VS Code (`src/ai.rs`, the same text as the
   manual: a test checks it), the commands of the loop and what `rythme fix` does,
-  `rythme new` and its `AGENTS.md`. Each text to copy has its button (`site.js`, as
+  `rythme new` and its `AGENTS.md`. Each text to copy has its button (the browser side, as
   the commands of the home page) and wraps like code: nothing scrolls sideways.
 - **Copy for AI**, in the playground, next to *Share*: the program and what its last
   run gave as Markdown, after a line in the language of the page that gives the
@@ -399,7 +470,7 @@ The repository deploys this site, with its playground, on Heroku in two ways:
 | Docker | `heroku.yml`, `Dockerfile` | `container` |
 
 `heroku-build.sh` (run by the buildpack once Rust is installed, or by hand from the
-repository) compiles `playground/` to `site/public/rythme.wasm`, then the server to
+repository) builds the browser side into `site/public/pkg/` (`site/build.sh`), then the server to
 `site/target/release/rythme-site`; the `Procfile` starts it from `site/`. The
 `Dockerfile` does the same in an image of about 120 MB, run as a non-root user.
 The server listens on `PORT`, set by Heroku.
@@ -439,12 +510,21 @@ source (with "Deploy from a branch", GitHub shows the README instead).
 ## Checks
 
 ```sh
-cargo fmt --check
+cargo fmt --all --check
 cargo clippy --all-targets -- -D warnings
 cargo test
+# The browser side: natively, then as each of its bundles.
+cargo clippy -p rythme-site-client --all-targets --features playground,sw,host-imports -- -D warnings
+for bundle in page playground sw; do
+  cargo clippy -p rythme-site-client --target wasm32-unknown-unknown --features $bundle -- -D warnings
+done
+cargo test -p rythme-site-client --features playground,sw
 ```
 
-The tests render every page in every language through Paquets' test client (status,
+The tests of `client/` check what needs no browser: the colors of the code, the lines of
+the messages, the steps, base64 and the inflate of the links (with blocks made by zlib),
+Copy for AI, the indentation of the editor and the names of files, the fonts the
+service worker keeps. The tests render every page in every language through Paquets' test client (status,
 `lang`, canonical and `hreflang` links, burger menu, CSP), check the redirections, the
 404 page, the sitemap and `/examples.json`, that every program of `examples/` is listed,
 and run every piece of code the site shows through the real interpreter, in the language

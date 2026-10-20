@@ -3,10 +3,18 @@
 //! bar for each (`theme-color`: the paper of the theme) and writes the inline script of
 //! the head that applies the visitor's choice before the first paint. Paquets allows
 //! that script in the Content-Security-Policy by its hash, like any inline script.
+//!
+//! It is the one piece of the site's behavior written in JavaScript, and it has to be:
+//! the browser side is Rust compiled to WebAssembly (`client/`), and WebAssembly only
+//! runs once downloaded and compiled, after the page is painted; a theme applied then
+//! would flash. A cookie read by the server would not do either: the static export
+//! (GitHub Pages) has no server, and the service worker saves the pages once for every
+//! theme. The rest of the picker (its button, the choice, the other tabs) is Rust
+//! (`client/src/layout.rs`).
 
 use crate::i18n::Texts;
 
-/// The key of `localStorage` that keeps the chosen theme (read by `site.js` too).
+/// The key of `localStorage` that keeps the chosen theme (read by the browser side too).
 pub const STORAGE_KEY: &str = "rythme-theme";
 
 /// A theme: its id (`data-theme`, the value kept), and the color of the browser's bar.
@@ -43,15 +51,15 @@ impl Theme {
     }
 }
 
-/// The inline script of the head, run before the page is painted: `js` on <html> (the
-/// menu folds behind the burger only when `site.js` can open it), then the theme kept
-/// in `localStorage`, if it is one, as `data-theme`, and its color for the browser's
-/// bar. Storage may be blocked: Auto then.
+/// The inline script of the head, run before the page is painted: `js` on <html> when
+/// the browser runs WebAssembly (the menu folds behind the burger only when the browser
+/// side can open it), then the theme kept in `localStorage`, if it is one, as
+/// `data-theme`, and its color for the browser's bar. Storage may be blocked: Auto then.
 pub fn head_script() -> String {
     let colors: Vec<String> = THEMES.iter().filter(|t| t.id != AUTO).map(|t| format!("{}:\"{}\"", t.id, t.color)).collect();
     format!(
         concat!(
-            "(function(d){{d.classList.add(\"js\");try{{var t=localStorage.getItem(\"{key}\"),c={{{colors}}};",
+            "(function(d){{if(typeof WebAssembly==\"object\")d.classList.add(\"js\");try{{var t=localStorage.getItem(\"{key}\"),c={{{colors}}};",
             "if(t&&Object.prototype.hasOwnProperty.call(c,t)){{d.setAttribute(\"data-theme\",t);",
             "var m=document.querySelectorAll('meta[name=\"theme-color\"]');for(var i=0;i<m.length;i++)m[i].setAttribute(\"content\",c[t])}}",
             "}}catch(e){{}}}})(document.documentElement)",
