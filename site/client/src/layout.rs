@@ -69,7 +69,8 @@ impl Menu {
 /// wraps on two lines when the text is enlarged, and scrolls away on a short screen.
 fn measure_bar() {
     if let Some(bar) = dom::query::<Element>(".bar") {
-        let bottom = bar.get_bounding_client_rect().bottom().round().max(0.0);
+        // Whole pixels, as integers: no formatting of floats in the bundle.
+        let bottom = bar.get_bounding_client_rect().bottom().round().max(0.0) as i64;
         let _ = dom::root().style().set_property("--bar-bottom", &format!("{bottom}px"));
     }
 }
@@ -506,7 +507,7 @@ pub fn pick_language() {
         let languages: Vec<String> = navigator.languages().iter().filter_map(|l| l.as_string()).collect();
         let languages = if languages.is_empty() { vec![navigator.language().unwrap_or_default()] } else { languages };
         languages.into_iter().find_map(|l| {
-            let short: String = l.chars().take(2).collect::<String>().to_lowercase();
+            let short: String = l.chars().take(2).collect::<String>().to_ascii_lowercase();
             codes.iter().find(|k| short.len() == 2 && **k == short).cloned()
         })
     };

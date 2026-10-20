@@ -847,7 +847,11 @@ impl Playground {
         *self.opener.borrow_mut() = self.share.clone();
         let packed = links::pack(&self.source.value()).await;
         if packed.len() > LINK_MAX {
-            let lang = dom::root().get_attribute("lang").filter(|l| !l.is_empty()).unwrap_or_default();
+            let lang = dom::root()
+                .get_attribute("lang")
+                .filter(|l| !l.is_empty())
+                .or_else(|| self.page.get_attribute("data-lang"))
+                .unwrap_or_else(|| "en".into());
             let n = |x: usize| String::from(js_sys::Number::from(x as f64).to_locale_string(&lang));
             let message = self.t.get("shareTooLong").replace("{n}", &n(packed.len())).replace("{max}", &n(LINK_MAX));
             self.show_share(&message, true, None, None);
