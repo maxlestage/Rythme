@@ -17,7 +17,7 @@
 const fs = require("fs");
 const path = require("path");
 const { launch } = require("./browser");
-const { SITE, workspace, freePort, startServer, startExport, binary, checker } = require("./serve");
+const { SITE, workspace, freePort, startServer, startExport, binary, checker, started } = require("./serve");
 
 const BIN = binary(process.argv[2]);
 const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
@@ -113,6 +113,7 @@ async function visit(page, url, device) {
   lastVisit = Date.now();
   await page.goto(url);
   await page.evaluate(() => document.fonts.ready);
+  await started(page);
   if (/playground\/(#|$)/.test(url)) await ran(page).catch(async (err) => {
     const state = await page.evaluate(() => `${document.getElementById("status").className} "${document.getElementById("status").textContent}" ${document.body.className} output="${document.getElementById("output").textContent.slice(0, 80)}" buttons=${document.getElementById("run").disabled} ${typeof WebAssembly}`) + " errors: " + page.errors.join(" | ");
     throw new Error(`${url} on ${device.name}: ${state}: ${err.message}`);

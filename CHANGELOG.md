@@ -278,6 +278,16 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   edited, and at the next launch. The banner stays for the other cases, and
   nothing reloads while something is being typed. Pages are revalidated with
   the server by the service worker (GitHub Pages kept them 10 minutes).
+- **The website is Rust in the browser too**: its menus, themes, installable
+  app, service worker and playground were hand-written JavaScript (about 1,700
+  lines); they are now Rust compiled to WebAssembly (`site/client`), and the
+  playground runs the interpreter from Rust, in a web worker, rather than
+  through the C functions of `rythme.wasm`. Same pages, same behavior, same
+  strict Content-Security-Policy (`'wasm-unsafe-eval'` for WebAssembly); the
+  only JavaScript left is what wasm-bindgen generates, the lines that start
+  the bundles, and the one line that applies the theme before the first paint.
+  Building the site needs `wasm-bindgen-cli` 0.2.129 (`site/build.sh`
+  installs it).
 
 ## [1.0.0] - 2026-10-18
 

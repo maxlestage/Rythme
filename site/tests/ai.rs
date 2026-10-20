@@ -345,7 +345,7 @@ async fn the_ai_page() {
             assert!(html.contains(cmd), "{lang:?}: {cmd}");
         }
         assert!(t.ai_prompt.contains("{url}") && t.pg_ai_intro.contains("{url}"), "{lang:?}");
-        // Copy for AI in the playground: hidden until playground.js shows it, with the
+        // Copy for AI in the playground: hidden until the browser side shows it, with the
         // address of llms-full.txt and its texts.
         let playground = get(&client, &format!("/{code}/playground/")).await.2;
         assert!(

@@ -1,17 +1,20 @@
-# The website of Rythme (site/, a Paquets app) with its playground: the interpreter
-# compiled to WebAssembly, run in the browser. Heroku builds it with the emk/rust
-# buildpack (RustConfig, Procfile); this image is the other way: the container
-# stack (heroku.yml), or any Docker host.
+# The website of Rythme (site/, a Paquets app): its server, and its browser side in
+# Rust compiled to WebAssembly (with the interpreter for the playground). Heroku builds
+# it with the emk/rust buildpack (RustConfig, Procfile); this image is the other way:
+# the container stack (heroku.yml), or any Docker host.
 #
 #   docker build -t rythme-site . && docker run --rm -p 8080:8080 rythme-site
 
 FROM rust:1-slim-bookworm AS build
-RUN rustup target add wasm32-unknown-unknown
+# The browser side is compiled to WebAssembly, and its glue written by wasm-bindgen-cli
+# at the version of the wasm-bindgen crate in site/Cargo.lock (site/build.sh checks it).
+RUN rustup target add wasm32-unknown-unknown \
+    && cargo install wasm-bindgen-cli --version 0.2.129 --locked
 WORKDIR /src
 COPY . .
-# The playground: the interpreter compiled to WebAssembly.
-RUN cd playground && cargo build --release \
-    && cp target/wasm32-unknown-unknown/release/rythme_playground.wasm ../site/public/rythme.wasm
+# The browser side: site/public/pkg/.
+RUN site/build.sh
+
 # The server (the examples are built into it).
 RUN cd site && cargo build --release --bin rythme-site && cp target/release/rythme-site /server
 

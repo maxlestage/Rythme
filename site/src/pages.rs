@@ -3,6 +3,7 @@
 
 use paquets::prelude::*;
 
+use crate::client::Bundle;
 use crate::examples::{EXAMPLES, json_string};
 use crate::highlight::{code_block, code_inline, diagnostic, plain_block};
 use crate::i18n::{Lang, Texts};
@@ -20,7 +21,7 @@ pub struct Ctx {
     pub route: Route,
     /// Absolute origin of the site, for canonical and Open Graph URLs.
     pub origin: String,
-    /// Short hash of `site.css` and `site.js`, for `?v=` in their links.
+    /// Short hash of `site.css` and of the browser side, for `?v=` in their links.
     pub version: String,
 }
 
@@ -70,7 +71,7 @@ fn section_head(id: &str, title: &str, lead: &str) -> Element {
         .child(p().class("lead").text(lead.to_owned()))
 }
 
-/// A shell command with a copy button (made to work by `site.js`).
+/// A shell command with a copy button (made to work by the browser side, `client/`).
 fn command(t: &Texts, text: &str) -> Element {
     div()
         .class("command")
@@ -143,7 +144,7 @@ fn lang_links(ctx: &Ctx) -> [Element; crate::i18n::COUNT] {
 }
 
 /// The language switch of the bar: a compact menu (`details`, which opens without
-/// JavaScript; `site.js` closes it with Escape or a click elsewhere) whose button shows
+/// script; the browser side closes it with Escape or a click elsewhere) whose button shows
 /// the code of the language.
 fn lang_menu(ctx: &Ctx) -> Element {
     let t = ctx.t();
@@ -236,7 +237,7 @@ fn theme_icon() -> Element {
         .child(path().attr("fill", "currentColor").attr("d", "M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 1.5v11a5.5 5.5 0 0 1 0-11Z"))
 }
 
-/// The color themes (`themes.rs`), shown by `site.js`: real radio buttons in a
+/// The color themes (`themes.rs`), shown by the browser side: real radio buttons in a
 /// `fieldset`, so the arrow keys choose and screen readers announce "Theme, 3 of 6".
 /// In the menu of a phone the choices are listed; on a computer they open from a button
 /// of the bar.
@@ -280,7 +281,7 @@ fn theme_picker(t: &Texts) -> Element {
     )
 }
 
-/// The banners of the installed app, shown by `site.js`: a new version is ready, and on
+/// The banners of the installed app, shown by the browser side: a new version is ready, and on
 /// iPhone and iPad how to install the site.
 fn notices(t: &Texts) -> Element {
     div()
@@ -337,7 +338,7 @@ fn site_header(ctx: &Ctx) -> Element {
                         .child(li().class("nav__item--github").child(external(
                             a().class("nav__link nav__link--github").href(REPO).child(github_icon()).child(span().text("GitHub")),
                         )))
-                        // Shown by `site.js` when the browser offers to install the site.
+                        // Shown by the browser side when the browser offers to install the site.
                         .child(
                             li().class("nav__item--app").attr("hidden", "").child(
                                 button()
@@ -432,8 +433,14 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
             .push_str(&format!(r#"<link rel="alternate" type="text/markdown" href="{}" title="Markdown"/>"#, crate::markdown::href(route)));
     }
     // Before the first paint (`themes::head_script`): `js` on <html>, the menu folds
-    // behind the burger only when the script that opens it can run; and the theme
-    // chosen, with its color for the browser's bar.
+    // behind the burger only when the code that opens it can run; and the theme
+    // chosen, with its color for the browser's bar. Then the browser side, in Rust
+    // compiled to WebAssembly (`client.rs`): the site's bundle, and on the playground
+    // its own too (with the interpreter: the menus work before it has arrived).
+    let mut client = Bundle::Site.head(&ctx.version);
+    if route.page == PageKind::Playground {
+        client.push_str(&Bundle::Playground.head(&ctx.version));
+    }
     let head = format!(
         concat!(
             r#"<meta name="color-scheme" content="light dark"/>"#,
@@ -452,9 +459,9 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
             r#"<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>"#,
             r#"{alternates}"#,
             r#"<script>{theme}</script>"#,
-            r#"<script src="{js}" defer=""></script>"#,
+            r#"{client}"#,
         ),
-        js = ctx.asset("/site.js"),
+        client = client,
         alternates = alternates,
         theme = themes::head_script(),
         icon = link(pwa::LOGO),
@@ -464,7 +471,7 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
         manifest = link(&pwa::manifest_path(lang)),
         apple = link(pwa::APPLE_ICON),
     );
-    // `site.js` registers the service worker from these.
+    // The browser side registers the service worker from these.
     let body = div()
         .class("site")
         .attr("data-sw", link("/sw.js"))
@@ -715,7 +722,8 @@ pub fn examples(ctx: &Ctx) -> Page {
 
 // ----- Playground -------------------------------------------------------------------------
 
-/// The texts that `playground.js` writes while it runs, as a JSON object (`data-ui`).
+/// The texts that the playground writes while it runs (`client/src/playground/`), as a
+/// JSON object (`data-ui`).
 pub fn playground_ui(t: &Texts) -> String {
     let fields = [
         ("loading", t.pg_loading),
@@ -751,7 +759,7 @@ pub fn playground_ui(t: &Texts) -> String {
 
 /// The steps of a calculation, shown one at a time in the place of the output (Steps,
 /// or a link with `&mode=steps`): the previous step and the next, a slider, the step
-/// before (faint) and the step itself, what it printed. `playground.js` fills it; a
+/// before (faint) and the step itself, what it printed. The browser side fills it; a
 /// live region says each step.
 fn stepper(t: &Texts) -> Element {
     let nav = div()
@@ -958,8 +966,7 @@ pub fn playground(ctx: &Ctx) -> Page {
         .class("page page--wide playground")
         .attr("data-lang", ctx.lang().code())
         .attr("data-ui", playground_ui(t))
-        .attr("data-wasm", ctx.asset("/rythme.wasm"))
-        .attr("data-worker", ctx.asset("/playground-worker.js"))
+        .attr("data-worker", crate::client::worker_url(&ctx.version))
         .attr("data-examples", link("/examples.json"))
         .attr("data-llms", link(crate::ai::LLMS_FULL_PATH))
         .child(page_head(t.pg_title, t.pg_lead))
@@ -972,10 +979,9 @@ pub fn playground(ctx: &Ctx) -> Page {
         .child(p().class("note").text(t.pg_limits))
         .child(p().class("note").text(t.pg_offline));
     layout(ctx, &format!("{} — Rythme", t.pg_title), t.pg_lead, content)
-        .head(format!(r#"<script src="{}" defer=""></script>"#, ctx.asset("/playground.js")))
 }
 
-/// The Seed option, next to Run (a `details`, shown by `playground.js`): empty, the
+/// The Seed option, next to Run (a `details`, shown by the browser side): empty, the
 /// draws of `random` and `shuffle` change from run to run; a whole number, every run
 /// makes the same draws (`rythme run --seed N`; with Test, `rythme test --seed N`).
 /// The dice picks a new seed and runs. The seed stays in this browser, and travels
@@ -1024,7 +1030,7 @@ fn seed_option(t: &Texts) -> Element {
         )
 }
 
-/// Shown by `playground.js` when the program comes from a link (`#code=…`): the draft
+/// Shown by the browser side when the program comes from a link (`#code=…`): the draft
 /// saved in this browser is kept until the program is changed; the button brings it
 /// back.
 fn shared_note(t: &Texts) -> Element {
@@ -1037,7 +1043,7 @@ fn shared_note(t: &Texts) -> Element {
         .child(button().class("btn btn--sm").attr("type", "button").id("shared-back").text(t.pg_shared_back))
 }
 
-/// The link made by Share (`playground.js`): what happened to it (copied, shared, to
+/// The link made by Share (the browser side): what happened to it (copied, shared, to
 /// copy by hand, too long), and the link itself in a field, ready to select.
 fn share_box(t: &Texts) -> Element {
     div()
@@ -1108,7 +1114,7 @@ pub fn teach(ctx: &Ctx) -> Page {
 // ----- For AI assistants --------------------------------------------------------------------
 
 /// A piece of text to copy as it is (a configuration, a message for a chat): its name,
-/// where it goes, a copy button (made to work by `site.js`) and the text, which wraps.
+/// where it goes, a copy button (made to work by the browser side) and the text, which wraps.
 fn snippet(t: &Texts, name: &str, place: Option<&str>, text: &str) -> Element {
     let head = div().class("snippet__head").child(span().class("snippet__name file").text(name.to_owned()));
     let head = match place {
@@ -1263,17 +1269,18 @@ mod tests {
         assert_eq!(percent_encode("f(x)*2"), "f(x)*2");
     }
 
-    /// Every text given to `playground.js` (`data-ui`) is used by it, the texts of
-    /// sharing too; and the elements it looks for are in the page.
+    /// Every text given to the playground's code (`data-ui`, read by
+    /// `client/src/playground/`) is used by it, the texts of sharing too; and the
+    /// elements it looks for are in the page.
     #[test]
-    fn the_playground_script_finds_its_texts_and_elements() {
-        let js = include_str!("../public/playground.js");
+    fn the_playground_code_finds_its_texts_and_elements() {
+        let code = include_str!("../client/src/playground/mod.rs");
         let ui = playground_ui(Lang::En.texts());
         let keys: Vec<&str> =
             ui.trim_matches(['{', '}']).split("\",\"").map(|pair| pair.trim_matches('"').split('"').next().unwrap()).collect();
         assert!(keys.contains(&"shareTooLong") && keys.contains(&"shareBroken"), "{keys:?}");
         for key in keys {
-            assert!(js.contains(&format!("UI.{key}")) || js.contains(&format!("TEXTS.{key}")), "playground.js does not use {key}");
+            assert!(code.contains(&format!("\"{key}\"")), "the playground does not use {key}");
         }
         let page =
             playground(&Ctx { route: Route::new(Lang::En, PageKind::Playground), origin: String::new(), version: String::new() }).render();
@@ -1297,7 +1304,7 @@ mod tests {
             "ai-row",
             "ai-text",
         ] {
-            assert!(js.contains(&format!("$(\"{id}\")")), "playground.js does not use #{id}");
+            assert!(code.contains(&format!("(\"{id}\")")), "the playground does not use #{id}");
             assert!(page.contains(&format!("id=\"{id}\"")), "the playground has no #{id}");
         }
     }

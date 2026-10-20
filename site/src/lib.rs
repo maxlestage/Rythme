@@ -5,6 +5,7 @@
 //! Markdown, structured data, and a page that tells how to give them Rythme.
 
 pub mod ai;
+pub mod client;
 pub mod examples;
 pub mod export;
 pub mod highlight;

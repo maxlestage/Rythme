@@ -233,8 +233,8 @@ pub struct Texts {
     pub pg_seed_new: &'static str,
     pub pg_seed_hint: &'static str,
     pub pg_seed_used: &'static str,
-    // Playground: what `playground.js` writes while it runs (`{ms}` and `{n}` are
-    // replaced)
+    // Playground: what its code (`client/src/playground/`) writes while it runs
+    // (`{ms}` and `{n}` are replaced)
     pub pg_loading: &'static str,
     pub pg_load_failed: &'static str,
     pub pg_running: &'static str,
