@@ -3,6 +3,7 @@
 
 use paquets::prelude::*;
 
+use crate::client::Bundle;
 use crate::examples::{EXAMPLES, json_string};
 use crate::highlight::{code_block, code_inline, diagnostic, plain_block};
 use crate::i18n::{Lang, Texts};
@@ -20,7 +21,7 @@ pub struct Ctx {
     pub route: Route,
     /// Absolute origin of the site, for canonical and Open Graph URLs.
     pub origin: String,
-    /// Short hash of `site.css` and `site.js`, for `?v=` in their links.
+    /// Short hash of `site.css` and of the browser side, for `?v=` in their links.
     pub version: String,
 }
 
@@ -70,7 +71,7 @@ fn section_head(id: &str, title: &str, lead: &str) -> Element {
         .child(p().class("lead").text(lead.to_owned()))
 }
 
-/// A shell command with a copy button (made to work by `site.js`).
+/// A shell command with a copy button (made to work by the browser side, `client/`).
 fn command(t: &Texts, text: &str) -> Element {
     div()
         .class("command")
@@ -143,7 +144,7 @@ fn lang_links(ctx: &Ctx) -> [Element; crate::i18n::COUNT] {
 }
 
 /// The language switch of the bar: a compact menu (`details`, which opens without
-/// JavaScript; `site.js` closes it with Escape or a click elsewhere) whose button shows
+/// script; the browser side closes it with Escape or a click elsewhere) whose button shows
 /// the code of the language.
 fn lang_menu(ctx: &Ctx) -> Element {
     let t = ctx.t();
@@ -236,7 +237,7 @@ fn theme_icon() -> Element {
         .child(path().attr("fill", "currentColor").attr("d", "M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 1.5v11a5.5 5.5 0 0 1 0-11Z"))
 }
 
-/// The color themes (`themes.rs`), shown by `site.js`: real radio buttons in a
+/// The color themes (`themes.rs`), shown by the browser side: real radio buttons in a
 /// `fieldset`, so the arrow keys choose and screen readers announce "Theme, 3 of 6".
 /// In the menu of a phone the choices are listed; on a computer they open from a button
 /// of the bar.
@@ -280,7 +281,7 @@ fn theme_picker(t: &Texts) -> Element {
     )
 }
 
-/// The banners of the installed app, shown by `site.js`: a new version is ready, and on
+/// The banners of the installed app, shown by the browser side: a new version is ready, and on
 /// iPhone and iPad how to install the site.
 fn notices(t: &Texts) -> Element {
     div()
@@ -337,7 +338,7 @@ fn site_header(ctx: &Ctx) -> Element {
                         .child(li().class("nav__item--github").child(external(
                             a().class("nav__link nav__link--github").href(REPO).child(github_icon()).child(span().text("GitHub")),
                         )))
-                        // Shown by `site.js` when the browser offers to install the site.
+                        // Shown by the browser side when the browser offers to install the site.
                         .child(
                             li().class("nav__item--app").attr("hidden", "").child(
                                 button()
@@ -432,8 +433,11 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
             .push_str(&format!(r#"<link rel="alternate" type="text/markdown" href="{}" title="Markdown"/>"#, crate::markdown::href(route)));
     }
     // Before the first paint (`themes::head_script`): `js` on <html>, the menu folds
-    // behind the burger only when the script that opens it can run; and the theme
-    // chosen, with its color for the browser's bar.
+    // behind the burger only when the code that opens it can run; and the theme
+    // chosen, with its color for the browser's bar. Then the browser side, in Rust
+    // compiled to WebAssembly (`client.rs`): the playground's bundle on its page, the
+    // site's elsewhere.
+    let bundle = Bundle::Site;
     let head = format!(
         concat!(
             r#"<meta name="color-scheme" content="light dark"/>"#,
@@ -452,9 +456,9 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
             r#"<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>"#,
             r#"{alternates}"#,
             r#"<script>{theme}</script>"#,
-            r#"<script src="{js}" defer=""></script>"#,
+            r#"{client}"#,
         ),
-        js = ctx.asset("/site.js"),
+        client = bundle.head(&ctx.version),
         alternates = alternates,
         theme = themes::head_script(),
         icon = link(pwa::LOGO),
@@ -464,7 +468,7 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
         manifest = link(&pwa::manifest_path(lang)),
         apple = link(pwa::APPLE_ICON),
     );
-    // `site.js` registers the service worker from these.
+    // The browser side registers the service worker from these.
     let body = div()
         .class("site")
         .attr("data-sw", link("/sw.js"))
@@ -1108,7 +1112,7 @@ pub fn teach(ctx: &Ctx) -> Page {
 // ----- For AI assistants --------------------------------------------------------------------
 
 /// A piece of text to copy as it is (a configuration, a message for a chat): its name,
-/// where it goes, a copy button (made to work by `site.js`) and the text, which wraps.
+/// where it goes, a copy button (made to work by the browser side) and the text, which wraps.
 fn snippet(t: &Texts, name: &str, place: Option<&str>, text: &str) -> Element {
     let head = div().class("snippet__head").child(span().class("snippet__name file").text(name.to_owned()));
     let head = match place {

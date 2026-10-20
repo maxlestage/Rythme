@@ -22,6 +22,9 @@ async fn exports_every_page_behind_the_base_path() {
         let path = route.path();
         assert!(html.contains(&format!(r#"<link rel="canonical" href="https://example.com/Rythme{path}"/>"#)), "{path}");
         assert!(html.contains("/Rythme/site.css?v="), "{path}");
+        // The browser side, behind the base path too.
+        assert!(html.contains(r#"<script type="module">import init from "/Rythme/pkg/"#), "{path}");
+        assert!(html.contains(r#"init({module_or_path:"/Rythme/pkg/"#), "{path}");
         // No link escapes the base path.
         for attr in [r#"href="/"#, r#"src="/"#] {
             for (at, _) in html.match_indices(attr) {
@@ -33,10 +36,13 @@ async fn exports_every_page_behind_the_base_path() {
     assert!(playground.contains(r#"data-examples="/Rythme/examples.json""#));
     assert!(playground.contains(r#"data-wasm="/Rythme/rythme.wasm?v="#));
     let root = std::fs::read_to_string(out.join("index.html")).unwrap();
-    assert!(root.contains(r#"var b="/Rythme""#));
+    assert!(root.contains(r#"data-base="/Rythme""#));
     assert!(root.contains(r#"url=/Rythme/fr/"#));
-    // `/` picks any language of the site, and links them all.
-    assert!(root.contains("=(fr|en|es|de|pt|zh)(?:;|$)") && root.contains(r#"k=" fr en es de pt zh ""#), "{root}");
+    // `/` picks any language of the site (the browser side, which it loads), and links
+    // them all.
+    assert!(root.contains(r#"data-pick-language="fr en es de pt zh""#), "{root}");
+    assert!(root.contains(r#"<script type="module">import init from "/Rythme/pkg/site.js?v="#), "{root}");
+    assert!(!root.contains("<script>"), "no inline script but the bundle's start: {root}");
     for lang in Lang::ALL {
         assert!(root.contains(&format!(r#"<a href="/Rythme/{}/" hreflang="{}""#, lang.code(), lang.tag())), "{lang:?}");
     }
@@ -47,7 +53,7 @@ async fn exports_every_page_behind_the_base_path() {
         "sitemap.xml",
         "robots.txt",
         "site.css",
-        "site.js",
+        "pkg/worker.js",
         "playground.js",
         "assets/logo.svg",
         "sw.js",

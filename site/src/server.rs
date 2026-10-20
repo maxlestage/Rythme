@@ -1,9 +1,9 @@
 //! The server: a `paquets::App` with the pages in every language and their Markdown,
 //! the examples for the playground, the sitemap and `robots.txt`, `llms.txt` and
 //! `llms-full.txt` for AI assistants (`ai.rs`), the manifests and the service worker of
-//! the installable app (`pwa.rs`). Static files (styles, scripts, the
-//! interpreter compiled to WebAssembly) come from `public/`, found by Paquets in the
-//! current directory.
+//! the installable app (`pwa.rs`), and the scripts that start the browser side
+//! (`client.rs`). Static files (styles, the browser side compiled to WebAssembly by
+//! `./build.sh`) come from `public/`, found by Paquets in the current directory.
 
 use std::io;
 use std::path::{Path, PathBuf};
@@ -11,24 +11,28 @@ use std::sync::Arc;
 
 use paquets::prelude::*;
 
+use crate::client::{self, PAGE_FILES, SW_FILES};
 use crate::i18n::{Lang, pick_lang};
 use crate::pages::{self, Ctx};
 use crate::routes::{Page as PageKind, Route, base, link};
 
-/// The styles, scripts and interpreter of `public/`, linked with `?v=` and their version.
-pub const ASSETS: [&str; 5] = ["/site.css", "/site.js", "/playground.js", "/playground-worker.js", "/rythme.wasm"];
+/// The styles and the browser side of `public/`, linked with `?v=` and their version.
+pub const ASSETS: [&str; 6] = ["/site.css", PAGE_FILES[0], PAGE_FILES[1], "/playground.js", "/playground-worker.js", "/rythme.wasm"];
 
-/// The cookie that remembers the language chosen with the switch (set by `site.js`).
+/// The cookie that remembers the language chosen with the switch (set by the browser
+/// side, `client/src/layout.rs`).
 pub const LANG_COOKIE: &str = "rythme-lang";
 
 pub struct Site {
     /// The public address, with the base path (`SITE_URL`); `None`: taken from each
     /// request.
     pub site_url: Option<String>,
-    /// Short hash of the styles and scripts, for `?v=` in their links.
+    /// Short hash of the styles and of the browser side, for `?v=` in their links.
     pub version: String,
     /// The service worker, with the version of everything it saves.
     pub worker: String,
+    /// The WebAssembly of the service worker, as a script (`client::SW_WASM_PATH`).
+    pub worker_wasm: String,
 }
 
 /// The `site/` folder: `SITE_DIR`, the current directory when it has `public/`, else
@@ -55,12 +59,14 @@ impl Site {
     /// Reads the static files of `site_dir()/public` to version their links.
     pub fn load(site_url: Option<String>) -> Site {
         let public = site_dir().join("public");
+        let read = |file: &str| std::fs::read(public.join(file.trim_start_matches('/'))).unwrap_or_default();
         let mut bytes = Vec::new();
-        for file in ASSETS {
-            bytes.extend(std::fs::read(public.join(file.trim_start_matches('/'))).unwrap_or_default());
+        for file in ASSETS.iter().chain(&SW_FILES) {
+            bytes.extend(read(file));
         }
         let site_url = site_url.map(|u| u.trim().trim_end_matches('/').to_owned()).filter(|u| !u.is_empty());
-        let mut site = Site { site_url, version: version(&bytes), worker: String::new() };
+        let worker_wasm = client::service_worker_wasm(&read(SW_FILES[1]));
+        let mut site = Site { site_url, version: version(&bytes), worker: String::new(), worker_wasm };
         site.worker = crate::pwa::worker(&site);
         site
     }
@@ -175,16 +181,37 @@ fn manifest(site: &Site, req: &Request) -> Response {
 }
 
 /// `/sw.js`: the service worker, checked by the browser at each visit. Its own policy
-/// lets it fetch the Google Fonts the pages use, to keep them offline.
+/// lets it run its WebAssembly and fetch the Google Fonts the pages use, to keep them
+/// offline.
 fn service_worker(site: &Site, _req: &Request) -> Response {
+    script(site.worker.clone())
+}
+
+/// A script of the browser side written by the server (`client.rs`), checked by the
+/// browser at each visit, like the service worker.
+fn script(body: String) -> Response {
     Response::new()
         .header("content-type", "text/javascript; charset=utf-8")
         .header("cache-control", "no-cache")
-        .header(
-            "content-security-policy",
-            "default-src 'self'; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; object-src 'none'",
-        )
-        .send(site.worker.clone())
+        .header("content-security-policy", WORKER_POLICY)
+        .send(body)
+}
+
+/// The policy of the workers: their scripts and WebAssembly from the site, and the
+/// Google Fonts that the service worker keeps for offline pages.
+pub const WORKER_POLICY: &str = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; object-src 'none'";
+
+/// `/pkg/worker.js`: the playground's worker, which runs the programs.
+fn playground_worker(site: &Site, _req: &Request) -> Response {
+    script(client::worker_script(&site.version))
+}
+
+/// `/pkg/sw_wasm.js`: the WebAssembly of the service worker.
+fn worker_wasm(site: &Site, req: &Request) -> Response {
+    if site.worker_wasm.is_empty() {
+        return not_found(site, req);
+    }
+    script(site.worker_wasm.clone())
 }
 
 /// `/examples.json`: the programs of the playground's menu.
@@ -247,6 +274,8 @@ pub fn app(site: Arc<Site>) -> App {
     route(&mut app, crate::ai::LLMS_PATH, &site, llms);
     route(&mut app, crate::ai::LLMS_FULL_PATH, &site, llms_full);
     route(&mut app, "/sw.js", &site, service_worker);
+    route(&mut app, client::WORKER_PATH, &site, playground_worker);
+    route(&mut app, client::SW_WASM_PATH, &site, worker_wasm);
     route(&mut app, "/:lang/manifest.webmanifest", &site, manifest);
     for path in ["/:lang", "/:lang/:page"] {
         route(&mut app, path, &site, page);
@@ -266,8 +295,8 @@ pub fn run() -> io::Result<()> {
     if dir != Path::new(".") {
         std::env::set_current_dir(&dir)?;
     }
-    if !Path::new("public/rythme.wasm").is_file() {
-        println!("   public/rythme.wasm is missing: run ./build.sh for the playground");
+    if !Path::new("public/pkg/site_bg.wasm").is_file() {
+        println!("   public/pkg/ is missing: run ./build.sh for the browser side (menus, playground, offline app)");
     }
     app(Arc::new(Site::load(std::env::var("SITE_URL").ok()))).run()
 }

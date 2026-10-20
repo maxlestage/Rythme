@@ -1,0 +1,108 @@
+[package]
+name = "rythme-site-client"
+version = "1.0.0"
+edition = "2024"
+publish = false
+license = "MIT"
+description = "The browser side of the Rythme website, in Rust compiled to WebAssembly: the menus, the themes, the installable app, the playground and its interpreter, the service worker."
+
+# Three bundles are built from this crate (see ../build.sh), each with its feature:
+# `page` for every page, `playground` for the playground (its page and its worker),
+# `sw` for the service worker. Without a feature, only the parts that do not need a
+# browser are compiled: the site's tests use them natively.
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+page = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:js-sys", "dep:web-sys"]
+playground = ["page", "dep:rythme", "dep:rythme-playground"]
+sw = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:js-sys", "dep:web-sys"]
+
+[dependencies]
+# The interpreter itself, run in the page and in its worker.
+rythme = { path = "../..", optional = true }
+rythme-playground = { path = "../../playground", default-features = false, optional = true }
+# Rust in the browser: the bindings of JavaScript and of the Web APIs. The version of
+# wasm-bindgen is the one of wasm-bindgen-cli in ../build.sh (they must match).
+wasm-bindgen = { version = "=0.2.129", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+js-sys = { version = "0.3", optional = true }
+web-sys = { version = "0.3", optional = true, features = [
+  "AddEventListenerOptions",
+  "Blob",
+  "BlobPropertyBag",
+  "Cache",
+  "CacheQueryOptions",
+  "CacheStorage",
+  "Clients",
+  "CssStyleDeclaration",
+  "DedicatedWorkerGlobalScope",
+  "Document",
+  "DocumentFragment",
+  "DomRect",
+  "DomTokenList",
+  "Element",
+  "ErrorEvent",
+  "Event",
+  "EventTarget",
+  "ExtendableEvent",
+  "ExtendableMessageEvent",
+  "FetchEvent",
+  "File",
+  "FileList",
+  "FocusEvent",
+  "FontFaceSet",
+  "Headers",
+  "History",
+  "HtmlAnchorElement",
+  "HtmlButtonElement",
+  "HtmlCollection",
+  "HtmlDetailsElement",
+  "HtmlDocument",
+  "HtmlElement",
+  "HtmlFormElement",
+  "HtmlInputElement",
+  "HtmlOptionElement",
+  "HtmlOptionsCollection",
+  "HtmlSelectElement",
+  "HtmlTextAreaElement",
+  "KeyboardEvent",
+  "Location",
+  "MediaQueryList",
+  "MessageEvent",
+  "Navigator",
+  "Node",
+  "NodeList",
+  "Performance",
+  "ReadableStream",
+  "RegistrationOptions",
+  "Request",
+  "RequestCache",
+  "RequestInit",
+  "RequestMode",
+  "ResizeObserver",
+  "Response",
+  "ResponseInit",
+  "ResponseType",
+  "ScrollBehavior",
+  "ScrollIntoViewOptions",
+  "ScrollLogicalPosition",
+  "ServiceWorker",
+  "ServiceWorkerContainer",
+  "ServiceWorkerGlobalScope",
+  "ServiceWorkerRegistration",
+  "ServiceWorkerState",
+  "ServiceWorkerUpdateViaCache",
+  "Storage",
+  "StorageEvent",
+  "Url",
+  "UrlSearchParams",
+  "VisibilityState",
+  "VisualViewport",
+  "Window",
+  "Worker",
+  "WorkerGlobalScope",
+  "WorkerNavigator",
+  "WorkerOptions",
+  "WorkerType",
+] }
