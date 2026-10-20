@@ -89,6 +89,16 @@ function binary(arg) {
   return bin;
 }
 
+// The behavior of the pages is Rust compiled to WebAssembly: it starts once its bundle
+// is downloaded and compiled, which can be just after the `load` event that `goto`
+// waits for. Its first act is to show the burger menu: wait for that.
+function started(page) {
+  return page.waitForFunction(() => {
+    const burger = document.querySelector(".burger");
+    return !!burger && !burger.hidden;
+  }, null, { timeout: 20000 });
+}
+
 // A check that prints its result and counts the failures.
 function checker() {
   const state = { failures: 0 };
@@ -100,4 +110,4 @@ function checker() {
   return state;
 }
 
-module.exports = { SITE, sleep, freePort, workspace, startServer, startExport, binary, checker };
+module.exports = { SITE, sleep, freePort, workspace, startServer, startExport, binary, checker, started };
