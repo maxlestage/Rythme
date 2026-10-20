@@ -259,7 +259,7 @@ async fn lang(url: &Url, c: &Config) -> String {
     languages
         .iter()
         .filter_map(|l| l.as_string())
-        .map(|l| l.chars().take(2).collect::<String>().to_lowercase())
+        .map(|l| l.chars().take(2).collect::<String>().to_ascii_lowercase())
         .find(|l| c.offline_page(l).is_some())
         .unwrap_or_else(|| "fr".into())
 }
