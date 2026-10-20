@@ -120,8 +120,14 @@ async fn the_service_worker_saves_only_urls_that_exist() {
     for route in Route::all().chain(Lang::ALL.map(|l| Route::new(l, Page::Offline))) {
         assert!(precache.contains(&route.path()), "{}", route.path());
     }
-    for file in ["/site.css", "/site.js", "/playground.js", "/playground-worker.js"] {
+    for file in ["/site.css", "/playground.js", "/playground-worker.js"] {
         assert!(precache.contains(&format!("{file}?v={}", site.version)), "{file}");
+    }
+    // The browser side, once built (`./build.sh`).
+    for file in ["/pkg/site.js", "/pkg/site_bg.wasm"] {
+        if std::path::Path::new("public").join(&file[1..]).is_file() {
+            assert!(precache.contains(&format!("{file}?v={}", site.version)), "{file}");
+        }
     }
     if std::path::Path::new("public/rythme.wasm").is_file() {
         assert!(precache.contains(&format!("/rythme.wasm?v={}", site.version)));
@@ -153,7 +159,7 @@ async fn the_service_worker_saves_only_urls_that_exist() {
 #[tokio::test]
 async fn a_new_version_makes_a_new_worker() {
     let site = Site::load(None);
-    let other = Site { site_url: None, version: "0000000000".into(), worker: String::new() };
+    let other = Site { site_url: None, version: "0000000000".into(), worker: String::new(), worker_wasm: String::new() };
     let worker = rythme_site::pwa::worker(&other);
     assert_ne!(constant(&worker, "VERSION"), constant(&site.worker, "VERSION"));
     assert!(worker.contains("/site.css?v=0000000000"));

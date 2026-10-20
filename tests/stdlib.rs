@@ -152,7 +152,7 @@ fn listed(file: &str) -> Vec<String> {
 #[test]
 fn every_builtin_is_colored_by_the_site_and_the_playground() {
     let expected: Vec<String> = BUILTINS.iter().map(|b| b.name.to_owned()).collect();
-    for file in ["site/src/highlight.rs", "site/public/playground.js", "playground/web/index.html"] {
+    for file in ["site/client/src/highlight.rs", "site/public/playground.js", "playground/web/index.html"] {
         assert_eq!(listed(file), expected, "{file} must list the built-in functions in the order of BUILTINS");
     }
 }

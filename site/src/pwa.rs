@@ -124,14 +124,17 @@ pub fn manifest(lang: Lang) -> String {
 }
 
 /// Every URL the service worker saves when it installs: every page in every language
-/// with the offline pages, the styles, scripts and interpreter at their current version,
-/// the examples, the manifests and the icons. Only files that exist (`rythme.wasm` is
-/// built by `./build.sh`).
+/// with the offline pages, the styles and the browser side (with the interpreter) at
+/// their current version, the playground's worker, the examples, the manifests and the
+/// icons. Only files that exist (`public/pkg/` is built by `./build.sh`).
 pub fn precache(site: &Site) -> Vec<String> {
     let public = site_dir().join("public");
     let exists = |path: &str| public.join(path.trim_start_matches('/')).is_file();
     let mut urls: Vec<String> = Route::all().chain(Lang::ALL.map(|l| Route::new(l, Page::Offline))).map(|r| r.href()).collect();
     urls.extend(ASSETS.iter().filter(|a| exists(a)).map(|a| format!("{}?v={}", link(a), site.version)));
+    if exists(crate::client::PAGE_FILES[3]) {
+        urls.push(crate::client::worker_url(&site.version));
+    }
     urls.push(link("/examples.json"));
     // The whole language for AI assistants, linked by the AI page: offline too.
     urls.extend([crate::ai::LLMS_PATH, crate::ai::LLMS_FULL_PATH].map(link));

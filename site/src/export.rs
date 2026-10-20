@@ -3,7 +3,9 @@
 //! (`app.test()`), so both are identical.
 //!
 //! What a static host cannot do is replaced: `/` picks the language in the browser
-//! instead of a redirection, and `404.html` is the French "not found" page. GitHub
+//! (the browser side, `client/src/layout.rs`) instead of a redirection, and `404.html`
+//! is the French "not found" page. The scripts that the server writes for the browser
+//! side (the playground's worker, the WebAssembly of the service worker) are files. GitHub
 //! Pages serves `sw.js` with a short cache rather than `no-cache`: browsers check a
 //! service worker past their HTTP cache anyway. The Markdown of the pages
 //! (`index.md`) and `llms.txt` are files like the others; GitHub Pages gives them their
@@ -13,9 +15,10 @@ use std::io;
 use std::path::Path;
 use std::sync::Arc;
 
+use crate::client::{self, Bundle};
 use crate::i18n::Lang;
 use crate::routes::{Page, Route, base, link, set_base};
-use crate::server::{LANG_COOKIE, Site, app, site_dir};
+use crate::server::{Site, app, site_dir};
 
 /// Writes the site into `out`, links behind `base_path` (`""` or `/Rythme`), absolute
 /// URLs (canonical, sitemap, Open Graph) on `site_url`. Returns the number of files.
@@ -23,13 +26,16 @@ pub async fn export(out: &Path, base_path: &str, site_url: Option<String>) -> io
     set_base(base_path);
     let out = std::path::absolute(out)?;
     let public = std::path::absolute(site_dir().join("public"))?;
-    if !public.join("rythme.wasm").is_file() {
-        eprintln!("warning: public/rythme.wasm is missing: run ./build.sh for the playground");
+    if !public.join("pkg/site_bg.wasm").is_file() {
+        eprintln!("warning: public/pkg/ is missing: run ./build.sh for the browser side (menus, playground, offline app)");
     }
     let site_url = site_url.filter(|u| !u.trim().is_empty()).unwrap_or_else(|| format!("https://maxlestage.github.io{}", base()));
     // Site::load reads the static files from the site folder to version their links.
     std::env::set_current_dir(public.parent().unwrap_or(Path::new(".")))?;
-    let mut app = app(Arc::new(Site::load(Some(site_url))));
+    let site = Arc::new(Site::load(Some(site_url)));
+    let version = site.version.clone();
+    let worker_wasm = !site.worker_wasm.is_empty();
+    let mut app = app(site);
     // Static files have no server to protect, and the export asks for every page at
     // once (the rate limit would stop it).
     app.security(None);
@@ -72,19 +78,26 @@ pub async fn export(out: &Path, base_path: &str, site_url: Option<String>) -> io
         let manifest = crate::pwa::manifest_path(lang);
         write(&manifest, get(manifest.clone(), 200).await?.as_bytes())?;
     }
-    for file in ["/examples.json", "/sitemap.xml", "/robots.txt", "/sw.js", crate::ai::LLMS_PATH, crate::ai::LLMS_FULL_PATH] {
+    for file in
+        ["/examples.json", "/sitemap.xml", "/robots.txt", "/sw.js", crate::ai::LLMS_PATH, crate::ai::LLMS_FULL_PATH, client::WORKER_PATH]
+    {
         write(file, get(file.into(), 200).await?.as_bytes())?;
     }
-    write("index.html", language_picker().as_bytes())?;
+    if worker_wasm {
+        write(client::SW_WASM_PATH, get(client::SW_WASM_PATH.into(), 200).await?.as_bytes())?;
+    }
+    write("index.html", language_picker(&version).as_bytes())?;
     // GitHub Pages: serve the files as they are, without Jekyll.
     write(".nojekyll", b"")?;
     copy_dir(&public, &mut write)?;
     Ok(written)
 }
 
-/// `/` on a static host: goes to the language chosen with the switch, else the
-/// browser's, else French; links every language without JavaScript.
-pub fn language_picker() -> String {
+/// `/` on a static host: the browser side goes to the language chosen with the switch
+/// (the cookie `rythme-lang`), else the browser's, else French (`data-pick-language`
+/// lists the languages, `data-base` is the base path); the page links every language,
+/// and goes to French without WebAssembly.
+pub fn language_picker(version: &str) -> String {
     let fr = link("/fr/");
     let links: Vec<String> = Lang::ALL
         .iter()
@@ -95,19 +108,14 @@ pub fn language_picker() -> String {
         concat!(
             r#"<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>"#,
             r#"<meta name="viewport" content="width=device-width, initial-scale=1"/>"#,
-            r#"<title>Rythme</title><link rel="canonical" href="{fr}"/>"#,
-            r#"<script>(function(){{var b="{base}",k=" {list} ",c=(document.cookie.match(/(?:^|; ){cookie}=({alt})(?:;|$)/)||[])[1];"#,
-            r#"var l=navigator.languages||[navigator.language||""];"#,
-            r#"for(var i=0;i<l.length&&!c;i++){{var x=String(l[i]).slice(0,2).toLowerCase();if(x.length==2&&k.indexOf(" "+x+" ")>=0)c=x}}"#,
-            r#"location.replace(b+"/"+(c||"fr")+"/")}})()</script>"#,
+            r#"<title>Rythme</title><link rel="canonical" href="{fr}"/>{client}"#,
             r#"<noscript><meta http-equiv="refresh" content="0; url={fr}"/></noscript>"#,
-            r#"</head><body><p>{links}</p></body></html>"#,
+            r#"</head><body data-pick-language="{list}" data-base="{base}"><p>{links}</p></body></html>"#,
         ),
         fr = fr,
+        client = Bundle::Site.head(version),
         base = base(),
         list = codes.join(" "),
-        alt = codes.join("|"),
-        cookie = LANG_COOKIE,
         links = links.join(" · "),
     )
 }

@@ -6,13 +6,18 @@ publish = false
 license = "MIT"
 description = "The website of Rythme, written with Paquets: home, playground, examples and guide, in six languages."
 
-# Standalone crate, with its own workspace: the interpreter does not depend on it.
+# Standalone crate, with its own workspace: the interpreter does not depend on it. The
+# browser side of the site, in Rust too, is compiled to WebAssembly from `client/`.
 [workspace]
+members = ["client"]
 
 [dependencies]
 # Pages rendered on the server by active, served by vitesse behind securite.
 paquets = { git = "https://github.com/maxlestage/Paquets", default-features = false }
 pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+# The parts of the browser side that the server shares (the colors of Rythme code, the
+# words of the interpreter's messages), compiled natively, without the browser.
+rythme-site-client = { path = "client" }
 # The runtime of the static export.
 tokio = { version = "1", features = ["rt-multi-thread"] }
 
@@ -26,3 +31,11 @@ serde_json = "1"
 [profile.release]
 lto = "thin"
 codegen-units = 1
+
+# The bundles of the browser (client/, built by ./build.sh): as small as possible.
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+panic = "abort"
+strip = true

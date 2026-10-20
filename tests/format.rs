@@ -227,6 +227,7 @@ fn corpus() -> Vec<(String, String)> {
     let mut rs = Vec::new();
     files(&root().join("tests"), "rs", &mut rs);
     files(&root().join("site/src"), "rs", &mut rs);
+    files(&root().join("site/client/src"), "rs", &mut rs);
     files(&root().join("src"), "rs", &mut rs);
     for p in rs {
         for (k, s) in rust_strings(&std::fs::read_to_string(&p).unwrap()).into_iter().enumerate() {

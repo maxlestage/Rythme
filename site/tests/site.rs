@@ -36,7 +36,10 @@ async fn every_page_renders_in_both_languages() {
         // The burger menu and the navigation.
         assert!(html.contains(r#"class="burger""#), "{path}");
         assert!(html.contains(r#"aria-controls="nav""#), "{path}");
-        assert!(html.contains("/site.js?v="), "{path}");
+        // The browser side: Rust compiled to WebAssembly, started by one line allowed by
+        // its hash (and the WebAssembly by 'wasm-unsafe-eval').
+        assert!(html.contains(r#"<script type="module">import init from "/pkg/"#), "{path}");
+
         let csp = res.header("content-security-policy").unwrap_or_default().to_owned();
         assert!(csp.contains("'wasm-unsafe-eval'"), "{path}: {csp}");
         assert!(csp.contains("'sha256-"), "{path}: {csp}");

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Builds the website of Rythme (site/) with its playground, the interpreter compiled
-# to WebAssembly, as the Dockerfile does: run on Heroku by RustConfig once the
-# emk/rust buildpack has installed Rust. Works by hand too, from the repository:
-# ./heroku-build.sh. The Procfile starts site/target/release/rythme-site.
+# Builds the website of Rythme (site/), as the Dockerfile does: its browser side (Rust
+# compiled to WebAssembly, with the interpreter for the playground) and its server. Run
+# on Heroku by RustConfig once the emk/rust buildpack has installed Rust; works by hand
+# too, from the repository: ./heroku-build.sh. The Procfile starts
+# site/target/release/rythme-site.
 set -euo pipefail
 
 # Cargo fetches the site's git dependencies (Paquets and the repositories it uses)
@@ -25,12 +26,11 @@ if [ -n "${CARGO_TARGET_DIR:-}" ]; then
   export CARGO_TARGET_DIR
 fi
 
-echo "-----> Building the playground (the interpreter in WebAssembly)"
-rustup target add wasm32-unknown-unknown
-(cd playground && cargo build --release)
-cp "${CARGO_TARGET_DIR:-playground/target}/wasm32-unknown-unknown/release/rythme_playground.wasm" \
-  site/public/rythme.wasm
-echo "       site/public/rythme.wasm ready"
+echo "-----> Building the browser side (Rust compiled to WebAssembly)"
+# site/build.sh installs the wasm32 target and wasm-bindgen-cli (the version of
+# site/Cargo.lock) when they are missing: a few minutes, once, then cached.
+site/build.sh
+echo "       site/public/pkg/ ready"
 
 echo "-----> Building the server"
 (cd site && cargo build --release --bin rythme-site)
