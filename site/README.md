@@ -80,8 +80,8 @@ Everything is Rust, on both sides, in two crates of one workspace:
 
 | Bundle | Loaded by | What it does |
 |---|---|---|
-| `site.js`, `site_bg.wasm` (feature `page`) | every page but the playground, and `/` of the static export | `client/src/layout.rs`: the burger menu, the language menu and its cookie, the copy buttons, the theme picker, the service worker and its updates, the install button, the hint for iOS, the language of `/` |
-| `playground.js`, `playground_bg.wasm` (feature `playground`) | the playground, and its worker | the same, and `client/src/playground/`: the editor, Run, Check, Test, Format, the steps, Seed, Share, Copy for AI, the files; the interpreter itself (`rythme-playground`, `../playground`), run in a web worker made from the same bundle (`playground/worker.rs`) so that *Stop* can end a program that never stops |
+| `site.js`, `site_bg.wasm` (feature `page`) | every page, and `/` of the static export | `client/src/layout.rs`: the burger menu, the language menu and its cookie, the copy buttons, the theme picker, the service worker and its updates, the install button, the hint for iOS, the language of `/` |
+| `playground.js`, `playground_bg.wasm` (feature `playground`) | the playground (after the first: its menus work while these 3 MB arrive), and its worker | `client/src/playground/`: the editor, Run, Check, Test, Format, the steps, Seed, Share, Copy for AI, the files; the interpreter itself (`rythme-playground`, `../playground`), run in a web worker made from the same bundle (`playground/worker.rs`) so that *Stop* can end a program that never stops |
 | `sw.js`, `sw_bg.wasm` (feature `sw`) | the service worker | `client/src/sw.rs`: the files saved, the pages offline, the updates |
 
 **The only JavaScript**, each piece because a browser needs it:

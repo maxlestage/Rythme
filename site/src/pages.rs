@@ -435,9 +435,12 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
     // Before the first paint (`themes::head_script`): `js` on <html>, the menu folds
     // behind the burger only when the code that opens it can run; and the theme
     // chosen, with its color for the browser's bar. Then the browser side, in Rust
-    // compiled to WebAssembly (`client.rs`): the playground's bundle on its page, the
-    // site's elsewhere.
-    let bundle = if route.page == PageKind::Playground { Bundle::Playground } else { Bundle::Site };
+    // compiled to WebAssembly (`client.rs`): the site's bundle, and on the playground
+    // its own too (with the interpreter: the menus work before it has arrived).
+    let mut client = Bundle::Site.head(&ctx.version);
+    if route.page == PageKind::Playground {
+        client.push_str(&Bundle::Playground.head(&ctx.version));
+    }
     let head = format!(
         concat!(
             r#"<meta name="color-scheme" content="light dark"/>"#,
@@ -458,7 +461,7 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
             r#"<script>{theme}</script>"#,
             r#"{client}"#,
         ),
-        client = bundle.head(&ctx.version),
+        client = client,
         alternates = alternates,
         theme = themes::head_script(),
         icon = link(pwa::LOGO),
