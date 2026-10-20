@@ -95,11 +95,14 @@ async fn the_manifests_are_served_and_complete() {
     assert_eq!(client.get("/it/manifest.webmanifest").await.status(), 404);
 }
 
-/// The list of a `const NAME = [...]` of the service worker.
+/// A value of what the server gives the service worker (`wasm_bindgen.serve({...})`,
+/// see `client.rs`): `version`, `base`, `precache`, `offline`, `fonts`.
 fn constant(js: &str, name: &str) -> Value {
-    let start = js.find(&format!("const {name} = ")).unwrap_or_else(|| panic!("{name}")) + name.len() + 9;
-    let end = start + js[start..].find(";\n").unwrap();
-    serde_json::from_str(&js[start..end]).unwrap_or_else(|e| panic!("{name}: {e}"))
+    const CALL: &str = "wasm_bindgen.serve(";
+    let start = js.find(CALL).unwrap_or_else(|| panic!("no serve in {js}")) + CALL.len();
+    let end = start + js[start..].find(");\n").unwrap();
+    let config: Value = serde_json::from_str(&js[start..end]).unwrap_or_else(|e| panic!("{e}: {js}"));
+    config[name].clone()
 }
 
 #[tokio::test]
@@ -110,12 +113,15 @@ async fn the_service_worker_saves_only_urls_that_exist() {
     assert_eq!(res.header("content-type"), Some("text/javascript; charset=utf-8"));
     assert_eq!(res.header("cache-control"), Some("no-cache"));
     let js = res.text();
-    assert!(!js.contains("__"), "every placeholder is replaced");
-    assert_eq!(constant(&js, "BASE"), "");
-    let version = constant(&js, "VERSION");
-    assert_eq!(version.as_str().unwrap().len(), 10);
-    let precache: Vec<String> = constant(&js, "PRECACHE").as_array().unwrap().iter().map(|u| u.as_str().unwrap().to_owned()).collect();
+    // The bundle of the worker, its WebAssembly (as a script, compiled at once), then
+    // what the server knows.
     let site = Site::load(None);
+    assert!(js.starts_with(&format!(r#"importScripts("/pkg/sw.js?v={v}","/pkg/sw_wasm.js?v={v}");"#, v = site.version)), "{js}");
+    assert_eq!(constant(&js, "base"), "");
+    let version = constant(&js, "version");
+    assert_eq!(version.as_str().unwrap().len(), 10);
+    let precache: Vec<String> = constant(&js, "precache").as_array().unwrap().iter().map(|u| u.as_str().unwrap().to_owned()).collect();
+    assert_eq!(constant(&js, "fonts"), rythme_site::pages::FONTS);
     // Every page in both languages, the offline pages, the files of the playground.
     for route in Route::all().chain(Lang::ALL.map(|l| Route::new(l, Page::Offline))) {
         assert!(precache.contains(&route.path()), "{}", route.path());
@@ -146,7 +152,7 @@ async fn the_service_worker_saves_only_urls_that_exist() {
     for url in &precache {
         assert_eq!(client.get(url).await.status(), 200, "{url}");
     }
-    let offline = constant(&js, "OFFLINE");
+    let offline = constant(&js, "offline");
     for lang in Lang::ALL {
         assert_eq!(offline[lang.code()], Route::new(lang, Page::Offline).path());
     }
@@ -157,8 +163,25 @@ async fn a_new_version_makes_a_new_worker() {
     let site = Site::load(None);
     let other = Site { site_url: None, version: "0000000000".into(), worker: String::new(), worker_wasm: String::new() };
     let worker = rythme_site::pwa::worker(&other);
-    assert_ne!(constant(&worker, "VERSION"), constant(&site.worker, "VERSION"));
+    assert_ne!(constant(&worker, "version"), constant(&site.worker, "version"));
     assert!(worker.contains("/site.css?v=0000000000"));
+}
+
+/// The WebAssembly of the service worker, as a script that compiles it at once (a
+/// service worker must have its listeners when its script ends): there once built.
+#[tokio::test]
+async fn the_service_worker_has_its_webassembly() {
+    let client = client().await;
+    let res = client.get("/pkg/sw_wasm.js").await;
+    if !std::path::Path::new("public/pkg/sw_bg.wasm").is_file() {
+        assert_eq!(res.status(), 404);
+        return;
+    }
+    assert_eq!(res.status(), 200);
+    assert_eq!(res.header("content-type"), Some("text/javascript; charset=utf-8"));
+    let js = res.text();
+    assert!(js.starts_with(r#"wasm_bindgen.initSync({module:Uint8Array.from(atob("AGFzbQ"#), "{}", &js[..80]);
+    assert!(res.header("content-security-policy").unwrap_or_default().contains("'wasm-unsafe-eval'"));
 }
 
 #[tokio::test]
