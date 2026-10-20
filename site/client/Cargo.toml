@@ -17,11 +17,21 @@ crate-type = ["cdylib", "rlib"]
 page = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:js-sys", "dep:web-sys"]
 playground = ["page", "dep:rythme", "dep:rythme-playground"]
 sw = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:js-sys", "dep:web-sys"]
+# The step of the build that gives the interpreter its clock (src/bin/host_imports.rs).
+host-imports = ["dep:walrus"]
+
+[[bin]]
+name = "host-imports"
+path = "src/bin/host_imports.rs"
+required-features = ["host-imports"]
 
 [dependencies]
 # The interpreter itself, run in the page and in its worker.
 rythme = { path = "../..", optional = true }
 rythme-playground = { path = "../../playground", default-features = false, optional = true }
+# Reads and writes WebAssembly, for host-imports (a step of the build, run natively; the
+# library that wasm-bindgen-cli itself uses).
+walrus = { version = "0.27", optional = true }
 # Rust in the browser: the bindings of JavaScript and of the Web APIs. The version of
 # wasm-bindgen is the one of wasm-bindgen-cli in ../build.sh (they must match).
 wasm-bindgen = { version = "=0.2.129", optional = true }
@@ -95,6 +105,7 @@ web-sys = { version = "0.3", optional = true, features = [
   "ServiceWorkerUpdateViaCache",
   "Storage",
   "StorageEvent",
+  "Text",
   "Url",
   "UrlSearchParams",
   "VisibilityState",

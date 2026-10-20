@@ -120,17 +120,13 @@ async fn the_service_worker_saves_only_urls_that_exist() {
     for route in Route::all().chain(Lang::ALL.map(|l| Route::new(l, Page::Offline))) {
         assert!(precache.contains(&route.path()), "{}", route.path());
     }
-    for file in ["/site.css", "/playground.js", "/playground-worker.js"] {
-        assert!(precache.contains(&format!("{file}?v={}", site.version)), "{file}");
-    }
-    // The browser side, once built (`./build.sh`).
-    for file in ["/pkg/site.js", "/pkg/site_bg.wasm"] {
-        if std::path::Path::new("public").join(&file[1..]).is_file() {
+    assert!(precache.contains(&format!("/site.css?v={}", site.version)));
+    // The browser side, once built (`./build.sh`): the bundles of the pages, with the
+    // interpreter, and the playground's worker.
+    if std::path::Path::new("public/pkg/playground_bg.wasm").is_file() {
+        for file in ["/pkg/site.js", "/pkg/site_bg.wasm", "/pkg/playground.js", "/pkg/playground_bg.wasm", "/pkg/worker.js"] {
             assert!(precache.contains(&format!("{file}?v={}", site.version)), "{file}");
         }
-    }
-    if std::path::Path::new("public/rythme.wasm").is_file() {
-        assert!(precache.contains(&format!("/rythme.wasm?v={}", site.version)));
     }
     // The AI page links llms-full.txt and llms.txt: offline too.
     for file in [

@@ -17,7 +17,7 @@ use crate::pages::{self, Ctx};
 use crate::routes::{Page as PageKind, Route, base, link};
 
 /// The styles and the browser side of `public/`, linked with `?v=` and their version.
-pub const ASSETS: [&str; 6] = ["/site.css", PAGE_FILES[0], PAGE_FILES[1], "/playground.js", "/playground-worker.js", "/rythme.wasm"];
+pub const ASSETS: [&str; 5] = ["/site.css", PAGE_FILES[0], PAGE_FILES[1], PAGE_FILES[2], PAGE_FILES[3]];
 
 /// The cookie that remembers the language chosen with the switch (set by the browser
 /// side, `client/src/layout.rs`).

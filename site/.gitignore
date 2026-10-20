@@ -1,5 +1,4 @@
 /target
 # Built by ./build.sh
-/public/rythme.wasm
 /public/pkg
 /dist

@@ -3,9 +3,7 @@
 # WebAssembly, with the glue that wasm-bindgen writes, in three bundles:
 #   site        every page: menus, themes, the installable app
 #   playground  the playground: the same, its editor and the interpreter
-#   sw          the service worker
-# And, for the time being, the interpreter of the JavaScript playground
-# (public/rythme.wasm). The examples are built into the server itself.
+# The examples are built into the server itself.
 #
 # Needs the wasm32-unknown-unknown target of Rust and wasm-bindgen-cli at exactly the
 # version of the wasm-bindgen crate in Cargo.lock: both are installed when missing.
@@ -23,18 +21,20 @@ if [ "$(wasm-bindgen --version 2> /dev/null)" != "wasm-bindgen $version" ]; then
 fi
 
 target="${CARGO_TARGET_DIR:-target}"
+out="$target/wasm32-unknown-unknown/wasm-release"
 mkdir -p public/pkg
-for bundle in site:page:web; do
+for bundle in site:page:web playground:playground:web; do
   name=${bundle%%:*}
   rest=${bundle#*:}
   feature=${rest%%:*}
   kind=${rest#*:}
   cargo build -p rythme-site-client --lib --target wasm32-unknown-unknown --profile wasm-release --features "$feature"
-  wasm-bindgen --target "$kind" --no-typescript --out-dir public/pkg --out-name "$name" \
-    "$target/wasm32-unknown-unknown/wasm-release/rythme_site_client.wasm"
+  cp "$out/rythme_site_client.wasm" "$out/$name.wasm"
+  if [ "$name" = playground ]; then
+    # The interpreter's clock, from the bundle itself (see client/src/bin/host_imports.rs).
+    cargo run --release -p rythme-site-client --features host-imports --bin host-imports -- "$out/$name.wasm"
+  fi
+  wasm-bindgen --target "$kind" --no-typescript --out-dir public/pkg "$out/$name.wasm"
 done
-
-(cd ../playground && cargo build --release)
-cp "${CARGO_TARGET_DIR:-../playground/target}/wasm32-unknown-unknown/release/rythme_playground.wasm" public/rythme.wasm
 
 echo "public/pkg/ ready: cargo run --release"

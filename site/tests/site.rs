@@ -66,7 +66,7 @@ async fn the_pages_hold_their_content() {
         assert!(playground.contains(r#"id="source""#));
         assert!(playground.contains(r#"id="format""#) && playground.contains(t.pg_format), "the Format button");
         assert!(playground.contains(r#"id="steps""#) && playground.contains(t.pg_steps), "the Steps button");
-        // Share: its button (shown by playground.js), the box of the link with its
+        // Share: its button (shown by the browser side), the box of the link with its
         // labelled field, the notice of a program opened from a link and its button.
         let attr = |s: &str| s.replace('\'', "&#x27;");
         assert!(playground.contains(r#"id="share""#) && playground.contains(&attr(t.pg_share_title)), "the Share button");
@@ -91,8 +91,9 @@ async fn the_pages_hold_their_content() {
             assert!(playground.contains(&attr(text).replace('"', "&quot;")), "{lang:?}: {text}");
         }
         assert!(t.pg_share_too_long.contains("{n}") && t.pg_share_too_long.contains("{max}"), "{lang:?}");
-        assert!(playground.contains("/playground.js?v="));
-        assert!(playground.contains(r#"data-wasm="/rythme.wasm?v="#));
+        // The playground's own bundle, with the interpreter, and its worker.
+        assert!(playground.contains(r#"<script type="module">import init from "/pkg/playground.js?v="#));
+        assert!(playground.contains(r#"data-worker="/pkg/worker.js?v="#));
         // The steps of a calculation, one at a time: hidden until Steps (or a link with
         // `&mode=steps`), with its buttons, its labelled slider, its keys and a live
         // region, in the language of the page.
@@ -111,7 +112,7 @@ async fn the_pages_hold_their_content() {
             assert!(playground.contains(&attr(text).replace('"', "&quot;")), "{lang:?}: {text}");
         }
         assert!(t.pg_steps_of.contains("{n}") && t.pg_steps_of.contains("{total}"), "{lang:?}");
-        // The Seed option next to Run: hidden until playground.js shows it, a labelled
+        // The Seed option next to Run: hidden until the browser side shows it, a labelled
         // field for digits described by its hint, the dice, and the seed in the head of
         // the output, in the language of the page.
         assert!(playground.contains(r#"<details class="seed" id="seed-option" hidden="">"#), "{lang:?}");
@@ -142,7 +143,7 @@ async fn the_pages_hold_their_content() {
         assert!(learn.contains(&format!(r#"class="tour__try tour__try--steps" href="{steps}""#)), "{lang:?}: {steps}");
         assert!(learn.contains(&format!("→ {}: {expr}", attr(t.learn_steps))), "{lang:?}");
         assert_eq!(learn.matches("tour__try--steps").count(), 1);
-        // The texts that playground.js writes, in the language of the page.
+        // The texts that the playground writes, in the language of the page.
         assert!(playground.contains("data-ui=\""));
         assert!(playground.contains(&t.pg_loading.replace('\'', "&#x27;")), "{lang:?}");
         assert!(playground.contains(&format!(r#"data-lang="{}""#, lang.code())));
@@ -265,20 +266,22 @@ fn the_languages_are_the_interpreters() {
         assert_eq!(interpreter_lang(lang).code(), lang.code(), "{lang:?}");
     }
     assert_eq!(rythme::lang::Lang::all().count(), Lang::ALL.len());
-    // `playground.js` and its worker pass the language by its position.
-    let codes: Vec<String> = rythme::lang::Lang::all().map(|l| format!("{:?}", l.code())).collect();
-    let list = format!("[{}]", codes.join(", "));
-    for file in ["public/playground.js", "public/playground-worker.js"] {
-        let js = std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(file)).unwrap();
-        assert!(js.contains(&list), "{file}: {list}");
-    }
+    // The playground gives its worker the language by its position, found in the
+    // interpreter's own list.
+    let code = std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("client/src/playground/mod.rs")).unwrap();
+    assert!(
+        code.contains("rythme::lang::Lang::all().position(|l| l.code() == lang_code)"),
+        "the playground finds the position of its language"
+    );
 }
 
 /// The words that start the interpreter's messages, in every language: the site colors
-/// them (`highlight.rs`), the playground too (`playground.js`).
+/// them (`highlight.rs`), the playground too, with the same lists
+/// (`rythme_site_client::messages`).
 #[test]
 fn every_word_of_the_messages_is_known() {
-    let js = std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("public/playground.js")).unwrap();
+    use rythme_site_client::messages;
+    assert_eq!((messages::ERROR_WORDS, messages::WARNING_WORDS, messages::HELP_WORDS), (ERROR_WORDS, WARNING_WORDS, HELP_WORDS));
     for lang in rythme::lang::Lang::all() {
         for (en, fr, words) in
             [("error", "erreur", &ERROR_WORDS[..]), ("warning", "avertissement", &WARNING_WORDS[..]), ("help", "aide", &HELP_WORDS[..])]
@@ -290,8 +293,6 @@ fn every_word_of_the_messages_is_known() {
                 other => rythme::lang::translation(other, en).unwrap_or(en),
             };
             assert!(words.contains(&word), "{}: {word}", lang.code());
-            let list = words.join("|");
-            assert!(js.contains(&format!("\"{list}\"")), "playground.js: {list}");
         }
     }
 }
