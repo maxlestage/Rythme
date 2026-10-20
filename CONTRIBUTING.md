@@ -142,9 +142,9 @@ Language {
   empty translation counts as missing, so the catalog can be filled little by
   little; add the code to `COMPLETE` once it is done. The code picks the
   language for `--lang it`, `RYTHME_LANG` and `LANG=it_IT.UTF-8`, and the
-  playground's language number is its position in `LANGUAGES` (add the code
-  to the lists of `site/public/playground.js` and `playground-worker.js`, a
-  test checks them). Add it to the VS Code setting too (`package.json` and
+  playground's language number is its position in `LANGUAGES` (the site's
+  playground, in Rust, finds it there by itself; a test checks it). Add it
+  to the VS Code setting too (`package.json` and
   `package.nls.*.json`), and to the topic names of `help::TOPICS`. Keywords,
   built-in names and commands stay in English in every language.
 - **Writing translations.** Keep every `{name}`, `{}`, backtick and example of
@@ -175,9 +175,9 @@ in `help::CODES` (a test checks it), and its translation in each catalog.
 3. Write `docs/llms-full.txt` again (`cargo run -- help llms >
    docs/llms-full.txt`: `tests/llms.rs` checks it is up to date). Add its
    name to the VS Code grammar (`editors/vscode/syntaxes`), to
-   `site/src/highlight.rs`, `site/public/playground.js` and
-   `playground/web/index.html`, in the order of `BUILTINS`; tests check that
-   the lists match.
+   `site/client/src/highlight.rs` (the pages of the site and its playground)
+   and `playground/web/index.html`, in the order of `BUILTINS`; tests check
+   that the lists match.
 4. If other languages call it differently (`padStart`, `rjust`...), add the
    names to `suggest::alias_hint`, and test the edge cases (empty values,
    negative positions, accents) in `tests/stdlib.rs`.
