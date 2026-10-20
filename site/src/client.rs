@@ -3,10 +3,10 @@
 //! knows those files and writes the few lines that start them: a browser runs
 //! WebAssembly only when a script asks for it.
 //!
-//! - every page but the playground loads `pkg/site.js` and `pkg/site_bg.wasm` (the
-//!   menus, the themes, the installable app); the playground loads
-//!   `pkg/playground.js` and `pkg/playground_bg.wasm` (the same, its editor and the
-//!   interpreter). The page starts its bundle with one line, `import init from …;
+//! - every page loads `pkg/site.js` and `pkg/site_bg.wasm` (the menus, the themes, the
+//!   installable app); the playground loads `pkg/playground.js` and
+//!   `pkg/playground_bg.wasm` too (its editor and the interpreter: 3 MB, while its
+//!   menus already work). The page starts each bundle with one line, `import init from …;
 //!   init(…)`, the line that Paquets writes for its islands, allowed by its hash in
 //!   the Content-Security-Policy;
 //! - the playground runs programs in a web worker made from the same bundle, so that a

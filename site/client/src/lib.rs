@@ -5,13 +5,13 @@
 //!
 //! Bundles come out of it (`../build.sh`), each with its feature:
 //!
-//! - `page` (`pkg/site.js`, `pkg/site_bg.wasm`), loaded by every page but the
-//!   playground: the burger menu, the language menu, the copy buttons, the color
+//! - `page` (`pkg/site.js`, `pkg/site_bg.wasm`), loaded by every page, the
+//!   playground too: the burger menu, the language menu, the copy buttons, the color
 //!   themes, the installable app (the service worker, the "new version" banner, the
 //!   install button and the hint for iOS), and the choice of a language at `/` of the
 //!   static export ([`layout`]);
 //! - `playground` (`pkg/playground.js`, `pkg/playground_bg.wasm`), loaded by the
-//!   playground: the same, its editor, and the interpreter itself, which runs in a web
+//!   playground after the first: its editor, and the interpreter itself, which runs in a web
 //!   worker made from the same bundle so that a program that never stops can be
 //!   stopped (`playground`);
 //! - `sw` (`pkg/sw.js`, `pkg/sw_bg.wasm`): the service worker that keeps the site
@@ -48,11 +48,14 @@ mod sw;
 
 /// Runs when the bundle is loaded (`init()` of the glue that wasm-bindgen writes): in a
 /// page, its behavior; in the playground's worker, the interpreter waiting for programs.
+/// The playground's page loads both bundles: the small one makes its menus work at
+/// once, while the big one, with the interpreter, downloads.
 #[cfg(feature = "page")]
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub fn start() {
     use wasm_bindgen::JsCast;
     if js_sys::global().is_instance_of::<web_sys::Window>() {
+        #[cfg(not(feature = "playground"))]
         layout::start();
         #[cfg(feature = "playground")]
         playground::start();
