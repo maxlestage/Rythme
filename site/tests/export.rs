@@ -135,10 +135,17 @@ fn installable(out: &Path) {
         assert!(home.contains(r#"data-sw="/Rythme/sw.js" data-scope="/Rythme/""#), "{code}");
     }
     let worker = std::fs::read_to_string(out.join("sw.js")).unwrap();
-    assert!(worker.contains(r#"const BASE = "/Rythme";"#));
-    let start = worker.find("const PRECACHE = ").unwrap() + 17;
-    let end = start + worker[start..].find(";\n").unwrap();
-    let precache: Vec<String> = serde_json::from_str(&worker[start..end]).unwrap();
+    // Its bundle and what the server knows, behind the base path too.
+    assert!(worker.starts_with(r#"importScripts("/Rythme/pkg/sw.js?v="#), "{worker}");
+    assert!(worker.contains(r#","/Rythme/pkg/sw_wasm.js?v="#), "{worker}");
+    let start = worker.find("wasm_bindgen.serve(").unwrap() + 19;
+    let end = start + worker[start..].find(");\n").unwrap();
+    let config: Value = serde_json::from_str(&worker[start..end]).unwrap();
+    assert_eq!(config["base"], "/Rythme");
+    let precache: Vec<String> = serde_json::from_value(config["precache"].clone()).unwrap();
+    if out.join("pkg/sw_bg.wasm").is_file() {
+        assert!(out.join("pkg/sw_wasm.js").is_file());
+    }
     assert!(precache.contains(&"/Rythme/fr/playground/".to_owned()));
     for url in &precache {
         assert!(file_of(out, url).is_file(), "{url}");

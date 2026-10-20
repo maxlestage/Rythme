@@ -3,6 +3,7 @@
 # WebAssembly, with the glue that wasm-bindgen writes, in three bundles:
 #   site        every page: menus, themes, the installable app
 #   playground  the playground: the same, its editor and the interpreter
+#   sw          the service worker
 # The examples are built into the server itself.
 #
 # Needs the wasm32-unknown-unknown target of Rust and wasm-bindgen-cli at exactly the
@@ -23,7 +24,7 @@ fi
 target="${CARGO_TARGET_DIR:-target}"
 out="$target/wasm32-unknown-unknown/wasm-release"
 mkdir -p public/pkg
-for bundle in site:page:web playground:playground:web; do
+for bundle in site:page:web playground:playground:web sw:sw:no-modules; do
   name=${bundle%%:*}
   rest=${bundle#*:}
   feature=${rest%%:*}

@@ -8,7 +8,7 @@
 //! only `id`, resolved against the origin, is written with the base path.
 
 use crate::i18n::Lang;
-use crate::json::{Json, js_string, s};
+use crate::json::{Json, s};
 use crate::pages::{self, Ctx};
 use crate::routes::{Page, Route, base, link};
 use crate::server::{ASSETS, Site, site_dir, version};
@@ -144,10 +144,13 @@ pub fn precache(site: &Site) -> Vec<String> {
     urls
 }
 
-/// The service worker (`src/sw.js` with its constants). Its version is a hash of
-/// everything it saves (the pages as rendered, the files, the manifests): each
-/// deployment that changes one of them installs a new worker, which shows the visitors
-/// the "new version" banner and, once activated, deletes the old caches.
+/// The service worker: its bundle (`client/src/sw.rs`, compiled to WebAssembly), given
+/// what only the server knows (`sw.js`, see `client.rs`): the version, the base path,
+/// the URLs to save, the offline page of each language and the Google Fonts of the
+/// pages. Its version is a hash of everything it saves (the pages as rendered, the
+/// files, the manifests): each deployment that changes one of them installs a new
+/// worker, which shows the visitors the "new version" banner and, once activated,
+/// deletes the old caches.
 pub fn worker(site: &Site) -> String {
     let origin = site.site_url.clone().unwrap_or_else(|| format!("http://localhost{}", base()));
     let mut parts: Vec<Vec<u8>> = vec![
@@ -167,15 +170,15 @@ pub fn worker(site: &Site) -> String {
     for file in ICONS.iter().map(|i| i.0).chain([APPLE_ICON, FAVICON, LOGO]) {
         parts.push(std::fs::read(public.join(file.trim_start_matches('/'))).unwrap_or_default());
     }
-    let list = |urls: &[String]| format!("[{}]", urls.iter().map(|u| js_string(u)).collect::<Vec<_>>().join(", "));
-    let offline: Vec<String> =
-        Lang::ALL.iter().map(|l| format!("{}: {}", js_string(l.code()), js_string(&Route::new(*l, Page::Offline).href()))).collect();
-    include_str!("sw.js")
-        .replace("__VERSION__", &js_string(&version(&parts.concat())))
-        .replace("__BASE__", &js_string(base()))
-        .replace("__PRECACHE__", &list(&precache(site)))
-        .replace("__OFFLINE__", &format!("{{ {} }}", offline.join(", ")))
-        .replace("__FONTS__", &js_string(pages::FONTS))
+    let offline = Lang::ALL.iter().map(|l| (l.code(), s(Route::new(*l, Page::Offline).href()))).collect();
+    let config = Json::Obj(vec![
+        ("version", s(version(&parts.concat()))),
+        ("base", s(base())),
+        ("precache", Json::Arr(precache(site).into_iter().map(s).collect())),
+        ("offline", Json::Obj(offline)),
+        ("fonts", s(pages::FONTS)),
+    ]);
+    crate::client::service_worker(&site.version, &config.to_string())
 }
 
 #[cfg(test)]

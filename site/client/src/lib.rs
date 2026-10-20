@@ -13,7 +13,9 @@
 //! - `playground` (`pkg/playground.js`, `pkg/playground_bg.wasm`), loaded by the
 //!   playground: the same, its editor, and the interpreter itself, which runs in a web
 //!   worker made from the same bundle so that a program that never stops can be
-//!   stopped (`playground`).
+//!   stopped (`playground`);
+//! - `sw` (`pkg/sw.js`, `pkg/sw_bg.wasm`): the service worker that keeps the site
+//!   offline and brings its new versions (`sw`).
 //!
 //! The parts that need no browser are plain Rust, compiled without any feature: the
 //! colors of Rythme code ([`highlight`], which the server uses too), the classes of the
@@ -41,10 +43,12 @@ mod js;
 pub mod layout;
 #[cfg(feature = "playground")]
 mod playground;
+#[cfg(feature = "sw")]
+mod sw;
 
 /// Runs when the bundle is loaded (`init()` of the glue that wasm-bindgen writes): in a
 /// page, its behavior; in the playground's worker, the interpreter waiting for programs.
-#[cfg(all(target_arch = "wasm32", feature = "page"))]
+#[cfg(feature = "page")]
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub fn start() {
     use wasm_bindgen::JsCast;
@@ -56,4 +60,12 @@ pub fn start() {
         #[cfg(feature = "playground")]
         playground::worker::start();
     }
+}
+
+/// The service worker: `sw.js`, written by the server, loads this bundle, then calls
+/// `serve` with what the server knows (the version, the files to save…).
+#[cfg(feature = "sw")]
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub fn serve(config: wasm_bindgen::JsValue) {
+    sw::serve(&config);
 }
