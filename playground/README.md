@@ -32,6 +32,9 @@ in the repository settings (Settings → Pages → Source: GitHub Actions).
   that the page can color them. The modes of `rythme_run`: 0 runs, 1 checks,
   2 tests, 3 formats like `rythme fmt` (the result is the formatted code, or
   the error messages); the Format button and Shift+Alt+F use mode 3.
+- `run(code, mode, language, seed)` does the same for Rust callers: the website's
+  playground (`site/client`, Rust compiled to WebAssembly) links this crate with
+  its `c-api` feature off and calls it directly.
 - Programs run in a Web Worker: a program that never stops can be stopped.
 - The browser's call stack is small, so nested (non-tail) calls are limited
   to 600 here; tail calls have no limit. The installed `rythme` allows several
