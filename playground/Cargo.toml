@@ -7,7 +7,15 @@ license = "MIT"
 publish = false
 
 [lib]
-crate-type = ["cdylib"]
+# cdylib: the WebAssembly module of the standalone page (web/); rlib: the same
+# interpreter for the website, whose Rust client (site/client) calls `run` directly.
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["c-api"]
+# The functions the page of web/ calls (`rythme_alloc`, `rythme_run`…); the website
+# turns them off.
+c-api = []
 
 [dependencies]
 rythme = { path = ".." }
