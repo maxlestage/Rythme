@@ -12,7 +12,7 @@
 const fs = require("fs");
 const path = require("path");
 const { launch } = require("./browser");
-const { workspace, freePort, startServer, startExport, binary, checker } = require("./serve");
+const { workspace, freePort, startServer, startExport, binary, checker, started } = require("./serve");
 
 const BIN = binary(process.argv[2]);
 const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
@@ -487,9 +487,11 @@ async function verify(mode) {
   });
   const ios = await iphone.newPage();
   await ios.goto(`${base}/fr/`);
+  await started(ios);
   check(await ios.isVisible("#ios-hint"), "iOS: the hint to add the site to the home screen is shown");
   await ios.click("#ios-hint-close");
   await ios.reload();
+  await started(ios);
   check(!(await ios.isVisible("#ios-hint")), "iOS: once closed, the hint stays closed");
   // On a phone, Share hands the link to the share sheet (Web Share API, made by hand:
   // headless Chromium has none).
@@ -542,6 +544,7 @@ async function verify(mode) {
   const install = await page.evaluate(() => !document.getElementById("app-install").closest("li").hidden);
   console.log(`  info the install button is ${install ? "shown (beforeinstallprompt fired)" : "hidden (no beforeinstallprompt in this browser)"}`);
   // Headless Chromium never offers to install: the same event, made by hand.
+  await started(page);
   await page.evaluate(() => {
     const offer = new Event("beforeinstallprompt", { cancelable: true });
     offer.prompt = () => { window.prompted = true; };

@@ -5,6 +5,11 @@ run by `cargo test`: they need Node.js, Playwright and its Chromium
 (`npm install playwright && npx playwright install chromium`, anywhere; `NODE_PATH`
 tells Node where). They use `HTTPS_PROXY` when it is set, for the Google Fonts.
 
+The behavior of the pages is Rust compiled to WebAssembly (`client/`): it starts once
+its bundle is downloaded and compiled, which can be just after the `load` event that
+Playwright's `goto` waits for. The scripts wait for it (`started` in `serve.js`: the
+burger menu shown, the first thing it does) before they use a page.
+
 ## `check.js`: the whole app, in a real browser
 
 ```sh
