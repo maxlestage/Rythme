@@ -251,9 +251,16 @@ fn every_command_has_a_help_in_every_language() {
     std::fs::write(&file, "print(args())\n").unwrap();
     let r = rythme(&["run", file.to_str().unwrap(), "--help"]);
     assert_eq!(r.stdout.trim(), "[\"--help\"]", "{}", r.stderr);
+    let tested = dir.join("tested.ry");
+    std::fs::write(&tested, "test \"its arguments\" = assert_eq(args(), [\"--help\"])\n").unwrap();
+    let r = rythme(&["test", tested.to_str().unwrap(), "--", "--help"]);
+    assert_eq!(r.code, 0, "{}{}", r.stdout, r.stderr);
+    assert!(!r.stdout.starts_with("rythme test"), "{}", r.stdout);
     let _ = std::fs::remove_dir_all(&dir);
-    // `rythme help` names the tools.
+    // `rythme help` names the tools, and `rythme help CMD` shows the usage of a command.
     assert!(rythme(&["help"]).stdout.contains("rythme completions SHELL"));
+    assert!(rythme(&["help", "check"]).stdout.starts_with("rythme check"));
+    assert!(rythme(&["help", "upgrade"]).stdout.starts_with("rythme upgrade"));
 }
 
 #[test]

@@ -470,6 +470,11 @@ pub fn topic(name: &str) -> Option<String> {
         if let Some(text) = keyword_help(name.trim()) {
             return Some(text);
         }
+        // `rythme help run`: the usage of the command.
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(text) = crate::cli::usage(name.trim()) {
+            return Some(text);
+        }
     }
     let t = canonical_topic(name)?;
     if t == "builtins" {

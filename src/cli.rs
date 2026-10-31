@@ -315,7 +315,8 @@ pub fn command_help(cmd: &str, rest: &[String]) -> Option<i32> {
     let asks = |w: &String| w == "--help" || w == "-h";
     let wanted = match c.usage {
         Usage::Own => false,
-        Usage::Anywhere => rest.iter().any(asks),
+        // After `--`, the words are the program's (`rythme test file.ry -- --help`).
+        Usage::Anywhere => rest.iter().take_while(|w| w.as_str() != "--").any(asks),
         Usage::BeforeFile => rest.iter().take_while(|w| w.starts_with('-') && w.as_str() != "-").any(asks),
     };
     if !wanted {
