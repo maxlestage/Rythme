@@ -10110,7 +10110,7 @@ Within 1.x, a program that runs keeps running, with the same output.
 各个版本及其变化：https://github.com/maxlestage/Rythme/releases
 在 1.x 版本中，能运行的程序会一直能运行，并且输出相同。
 "#),
-        ("unknown shell `{s}`", "未知的 shell `{s}`"),
+        ("unknown shell `{s}`.", "未知的 shell `{s}`。"),
         ("which shell?", "哪个 shell？"),
         (r#"{what} Write one of bash, zsh, fish, powershell, like `rythme completions bash`
 see `rythme completions --help`"#, r#"{what} 请写 bash、zsh、fish、powershell 之一，例如 `rythme completions bash`
@@ -10161,5 +10161,6 @@ see `rythme completions --help`"#, r#"{what} 请写 bash、zsh、fish、powershe
   --verify FILE...  the index's own check of its entries (packages/NAME.toml)"#, r#"  检查 rythme.toml、版本的标签（例如 v1.2.0）、rythme check
   和 rythme test，然后打印条目以及提交 pull request 的步骤。
   --verify 文件...  索引自己对条目的检查（packages/名称.toml）"#),
+        (r#"the argument `{shown}` is not valid UTF-8: Rythme reads only names and words written in UTF-8; rename the file, or give the program its input another way"#, r#"参数 `{shown}` 不是有效的 UTF-8：Rythme 只读取用 UTF-8 书写的名称和单词；请重命名该文件，或用其他方式给程序提供输入"#),
     ],
 }

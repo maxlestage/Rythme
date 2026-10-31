@@ -15,7 +15,19 @@ use rythme::{help, lang, repl, suggest, t};
 const STACK_SIZE: usize = 1 << 30;
 
 fn main() {
-    let args: Vec<String> = std::env::args().skip(1).collect();
+    // A word that is not UTF-8 (a file name made on another system) cannot
+    // become a text of Rythme: said plainly, instead of the panic of `env::args`.
+    let args: Vec<String> = match std::env::args_os().skip(1).map(|a| a.into_string()).collect::<Result<_, _>>() {
+        Ok(args) => args,
+        Err(bad) => {
+            lang::set(lang::detect());
+            let shown = bad.to_string_lossy();
+            std::process::exit(usage_error(t!(
+                "the argument `{shown}` is not valid UTF-8: Rythme reads only names and words written in UTF-8; rename the file, or give the program its input another way",
+                "l'argument `{shown}` n'est pas de l'UTF-8 valide : Rythme ne lit que des noms et des mots écrits en UTF-8 ; renommez le fichier, ou donnez son entrée au programme autrement"
+            )));
+        }
+    };
     std::panic::set_hook(Box::new(|info| {
         // Written directly: the hook must never fail, even if the error output is closed.
         let _ = writeln!(

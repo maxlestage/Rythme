@@ -1549,6 +1549,14 @@ pub fn wrong_return(f: &str, wanted: Kinds, got: &str, span: Span) -> Box<Diagno
             ),
             span,
         ),
+        // `sum(list, f)`: the error of the run time is about the numbers to add (E023).
+        NUMBER => invalid(
+            t!(
+                "the function given to `{f}` must return a number, but it returned {got}",
+                "la fonction donnée à `{f}` doit renvoyer un nombre, mais elle a renvoyé {got}"
+            ),
+            span,
+        ),
         TEXT => Diagnostic::error(
             "E005",
             t!(
