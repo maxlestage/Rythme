@@ -136,7 +136,7 @@ impl Interp {
     /// functions of the program, and for the tools.
     pub(crate) fn call_value(&mut self, f: Value, argc: usize, span: Span) -> Fallible<Value> {
         let args = self.stack.len() - argc;
-        let r = self.call_member(f, None, args, argc, span);
+        let r = self.call_fast(f, None, args, argc, span);
         // What is left above holds no memory: no need to free it value by value.
         self.pop_to(args);
         r
