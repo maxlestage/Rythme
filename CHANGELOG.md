@@ -12,6 +12,26 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Speed
+
+- **A bytecode virtual machine runs programs** instead of the interpreter
+  that walked the syntax tree: functions are compiled once to instructions
+  on registers (`src/vm/`), and the programs of `bench/` run 1.1 to 2
+  times faster, printing exactly the same (output, errors with their
+  places and traces, what the debugger and `rythme steps` show, the draws
+  of `random_seed`). Every program of the repository and thousands of
+  generated ones print the same as with 1.0.
+- The limit of nested calls (E014) is now the same for every function:
+  917 504 with `rythme` (it was about 900 000, fewer for functions that do
+  more in each call), still 600 in the playground, which needs less of the
+  browser's stack.
+
+### Fixed
+
+- `rythme fix` and the suggestions for `x => ...` and `{name = ...}` no
+  longer stop with an internal error when a character of several bytes
+  comes right before the name (found by fuzzing).
+
 ### Embedding
 
 - **Programs that embed Rythme can give records of functions** (`db.all(q)`,
