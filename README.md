@@ -406,7 +406,8 @@ messages in six languages. What it contains is in
   infers what the parameters of each function must be, to report the calls
   that always fail, and the editor shows these signatures on hover. Types
   may also be written where they help to read the code, and are then checked
-  (`fn area(w: Int, h: Int) -> Int`, `total: Float = 0.0`); they are never
+  (`fn area(w: Int, h: Int) -> Int`, `total: Float = 0.0`, `type Tree(a) =
+  Leaf | Node(left: Tree(a), value: a, right: Tree(a))`); they are never
   needed (see `rythme help types`).
 - **Tooling.** `rythme fmt` formats the code in the official style (see
   `rythme help fmt`), `rythme doc` writes the documentation of files and

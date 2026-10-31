@@ -2178,7 +2178,10 @@ type Nom = Variante | Variante(champ, champ) | ...
 - On lit les champs avec `.champ` ou avec des motifs. Égalité et ordre : voir
   [2.11](#211-égalité) et [2.12](#212-ordre).
 - Le type d'un champ peut être écrit après son nom, pour le vérificateur :
-  `Cercle(rayon: Float)` (voir [4.10](#410-types-écrits)).
+  `Cercle(rayon: Float)`, et un type peut prendre des types, écrits comme
+  des variables de type après son nom : `type Arbre(a) = Feuille |
+  Noeud(gauche: Arbre(a), valeur: a, droite: Arbre(a))` (voir
+  [4.10](#410-types-écrits)).
 - Les commentaires `##` écrits au-dessus d'un `type` le documentent : `help`
   les affiche pour chacun de ses constructeurs, après le nom du type.
 
@@ -2525,6 +2528,7 @@ erreur[E017]: `pong.ry` et `ping.ry` s'utilisent l'un l'autre
 fn nom(parametre: Type, ...) -> Type = ...
 nom: Type = valeur
 type Nom = Variante(champ: Type, ...) | ...
+type Nom(a, b) = Variante(champ: a, ...) | ...
 xs.map do |x: Type| ... end
 ```
 
@@ -2547,10 +2551,12 @@ change rien.
   `Result(Int, Text)` ; `{nom: Text, age: Int}`, un enregistrement avec au
   moins ces champs ; `fn(Int, Int) -> Bool`, une fonction ; les types définis
   avec `type` (`Forme`, et `geometrie.Forme` pour un type de
-  `use geometrie`) ; et les **variables de type**, une lettre minuscule
-  (`a`, `t`), pour n'importe quel type, le même partout dans une définition.
-  `List`, `Set`, `Dict`, `Option`, `Result`, `Record` et `Function` seuls
-  contiennent n'importe quoi.
+  `use geometrie`), avec les types qu'ils prennent quand ils ont des
+  paramètres (`Arbre(Int)`, plus bas) ; et les **variables de type**, une
+  lettre minuscule (`a`, `t`), pour n'importe quel type, le même partout
+  dans une définition. `List`, `Set`, `Dict`, `Option`, `Result`, `Record`
+  et `Function` seuls contiennent n'importe quoi, comme un type à paramètres
+  écrit seul (`Arbre`).
 - **Ce que fait le vérificateur** : une valeur qui a sûrement un autre type
   est E027, là où elle est donnée : la valeur d'un nom, un argument (le
   message nomme le paramètre et montre son type), le résultat d'une fonction
@@ -2692,6 +2698,124 @@ erreur[E005]: impossible d'utiliser `+` avec Int et Text
   = aide: pour construire un texte contenant une valeur, utilisez des accolades : "total : {x}"
       ou convertissez d'abord la valeur : text(x)
   = en savoir plus : `rythme explain E005`
+
+✗ sample.ry : 3 erreur(s)
+```
+
+**Types à paramètres.** Un type défini avec `type` peut prendre des types,
+comme `List` : ses **paramètres**, des variables de type écrites entre
+parenthèses après son nom, servent dans les types de ses champs. Un type
+écrit lui donne alors ses types : `Arbre(Int)` est un `Arbre` dont les
+valeurs sont des Int, `Paire(Text, Int)` une paire d'un Text et d'un Int.
+
+- Un paramètre est une lettre minuscule, écrite une fois (sinon E027) ; dans
+  un type à paramètres, une variable de type écrite dans un champ est l'un
+  d'eux (E027 : `type Boite(a) = Boite(valeur: b)`). Dans un type sans
+  paramètres, une variable de type dans un champ désigne toujours n'importe
+  quel type.
+- Un type à paramètres prend tous ses types ou aucun (`Arbre` seul contient
+  n'importe quoi) ; un autre nombre (`Arbre(Int, Text)`, ou `Forme(Int)` pour
+  un type sans paramètres) est E027.
+- Le vérificateur s'en sert comme de ceux de `List` : une valeur d'un autre
+  type (`Noeud(Feuille, "deux", Feuille)` donné pour un `Arbre(Int)`) est
+  E027, et le message montre son type, `Arbre(Text)` ; un constructeur tient
+  une variable de type à un seul type (`Noeud(Feuille, 1, Noeud(Feuille, "x",
+  Feuille))` est E027) ; un appel donne les types trouvés dans ses arguments
+  (`premier_de(Paire(1, "x"))` est un Int) ; dans un cas `Noeud(g, v, d)`
+  d'un `Arbre(Int)`, `v` est un Int. Cela marche aussi à travers les fichiers
+  donnés à `use` (`geometrie.Arbre(Int)`).
+- Les champs gardent leurs noms : `Noeud(gauche: Arbre(a), valeur: a,
+  droite: Arbre(a))`. Un mot en minuscules seul dans une variante est le nom
+  d'un champ, dans tout programme, et les valeurs se lisent par ces noms
+  (`noeud.valeur`).
+- **Pourquoi une lettre.** Dans une fonction, une variable de type ne se
+  déclare pas (`fn premier(xs: List(a)) -> a`) : un mot en minuscules écrit
+  comme type est donc lu comme ce qu'il est le plus souvent, un type nommé
+  comme dans un autre langage (`int`, `string`, `list`), et `rythme check`
+  donne son nom en Rythme. Un nom plus long pour une variable de type ne
+  pourrait pas être distingué d'une telle erreur.
+- L'exécution ne regarde jamais les paramètres : `type Arbre(a)` s'exécute
+  exactement comme `type Arbre`. Dans le REPL, un type d'une ligne
+  précédente prend n'importe quels types (seul l'interpréteur le connaît
+  là) ; `help(Noeud)` montre les types des champs et les paramètres du type.
+
+```rythme
+## Un arbre binaire : ses valeurs ont le type `a`.
+type Arbre(a) = Feuille | Noeud(gauche: Arbre(a), valeur: a, droite: Arbre(a))
+
+fn inserer(t: Arbre(Int), x: Int) -> Arbre(Int) = match t
+  Feuille -> Noeud(Feuille, x, Feuille)
+  Noeud(g, v, d) if x < v -> Noeud(inserer(g, x), v, d)
+  Noeud(g, v, d) -> Noeud(g, v, inserer(d, x))
+end
+
+fn en_liste(t: Arbre(a)) -> List(a) = match t
+  Feuille -> []
+  Noeud(g, v, d) -> en_liste(g) + [v] + en_liste(d)
+end
+
+arbre = [5, 2, 8, 1].reduce(Feuille) do |t, x| inserer(t, x) end
+print(en_liste(arbre), arbre.valeur)
+help(Noeud)
+```
+
+```text
+[1, 2, 5, 8] 5
+Noeud(gauche: Arbre(a), valeur: a, droite: Arbre(a))
+  Un constructeur du type `Arbre(a)`.
+  Un arbre binaire : ses valeurs ont le type `a`.
+```
+
+Les erreurs, trouvées avant l'exécution :
+
+```rythme
+type Arbre(a) = Feuille | Noeud(gauche: Arbre(a), valeur: a, droite: Arbre(a))
+type Paire(a, b) = Paire(premier: a, second: b)
+
+fn total(t: Arbre(Int)) -> Int = match t
+  Feuille -> 0
+  Noeud(g, v, d) -> total(g) + v + total(d)
+end
+
+fn premier_de(p: Paire(a, b)) -> a = p.premier
+fn taille(t: Arbre(Int, Text)) -> Int = 0
+
+print(total(Noeud(Feuille, "deux", Feuille)))
+print(premier_de(Paire(1, "un")) + "!")
+```
+
+`rythme check` :
+
+```text
+erreur[E027]: `Arbre` prend un seul type : `Arbre(Int)`
+  --> sample.ry:10:14
+   |
+10 | fn taille(t: Arbre(Int, Text)) -> Int = 0
+   |              ^^^^^^^^^^^^^^^^
+   |
+   = en savoir plus : `rythme explain E027`
+
+erreur[E027]: `total` attend `Arbre(Int)` pour `t`, mais reçoit une valeur de type Arbre(Text)
+  --> sample.ry:12:13
+   |
+12 | print(total(Noeud(Feuille, "deux", Feuille)))
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ pas `Arbre(Int)`
+   |
+ 4 | fn total(t: Arbre(Int)) -> Int = match t
+   |             ---------- le type écrit pour `t`
+   |
+   = aide: changez la valeur, ou le type écrit pour elle ; les types écrits dans le code sont vérifiés avant l'exécution, et ne sont jamais obligatoires (voir `rythme help types`)
+   = en savoir plus : `rythme explain E027`
+
+erreur[E005]: impossible d'utiliser `+` avec Int et Text
+  --> sample.ry:13:34
+   |
+13 | print(premier_de(Paire(1, "un")) + "!")
+   |                                  ^ Int + Text "!"
+   |
+   = aide: pour construire un texte contenant une valeur, utilisez des accolades : "total : {x}"
+       ou convertissez d'abord la valeur : text(x)
+   = en savoir plus : `rythme explain E005`
 
 ✗ sample.ry : 3 erreur(s)
 ```
@@ -4698,7 +4822,9 @@ Une ligne vide répète `next`, `step`, `finish` ou `continue`.
   l'appel avec ses arguments (`fact(n = 2)`) et la **profondeur** : le
   nombre d'appels des fonctions du programme en cours, avec combien sont la
   même fonction quand elle s'appelle elle-même. Les endroits d'une même
-  ligne d'un même appel ne font qu'une pause.
+  ligne d'un même appel ne font qu'une pause. Un paramètre que chaque
+  définition écrit comme un motif est montré par le motif de la définition
+  qui s'exécute : `total([x, ..rest] = [10, 20], acc = 0)`.
 - **Appels terminaux.** Un appel en position terminale prend la place du
   cadre de la fonction qui l'appelle (voir
   [4.6](#46-récursion-et-appels-terminaux)) : la pause le dit, et `where`
@@ -4767,11 +4893,11 @@ point d'arrêt 2 au début de `total`
 (debug) continue
 6
 ● point d'arrêt 2 : `total` commence
-→ fact.ry:5  total(arg1 = [10, 20], acc = 0) · profondeur 1
+→ fact.ry:5  total([x, ..rest] = [10, 20], acc = 0) · profondeur 1
   5 | fn total([x, ..rest], acc) = total(rest, acc + x)
 (debug) next
 ● point d'arrêt 2 : `total` commence
-→ fact.ry:5  total(arg1 = [20], acc = 10) · profondeur 1
+→ fact.ry:5  total([x, ..rest] = [20], acc = 10) · profondeur 1
   (un appel terminal : il a pris la place du cadre de `total`)
   5 | fn total([x, ..rest], acc) = total(rest, acc + x)
 (debug) locals
@@ -5020,7 +5146,7 @@ body         = "=" result
              | NL block_end ;
 result       = command | expression ;              (* 3.15 *)
 block_end    = { statement NL } [ statement ] "end" ;
-type_def     = "type" CTOR "=" [ "|" ] variant { "|" variant } ;
+type_def     = "type" CTOR [ "(" NAME { "," NAME } ")" ] "=" [ "|" ] variant { "|" variant } ;
 variant      = CTOR [ "(" [ field { "," field } ] ")" ] ;
 field        = NAME [ ":" type ] ;
 test_def     = "test" PLAIN_TEXT body ;
