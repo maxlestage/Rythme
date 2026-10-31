@@ -225,7 +225,9 @@ impl Checker<'_> {
     /// (`type Tree(a)`), found in the fields of the constructors it may have
     /// been built with: a type of the program with parameters only.
     fn params_in(&self, d: &DataTy) -> Option<(&[Sym], Vars)> {
-        let params = self.type_params.get(&d.name).filter(|_| self.is_program_type(d.name))?;
+        // A type defined again (in the REPL): its values may come from either definition.
+        let known = self.is_program_type(d.name) && !self.types_defined_again.contains(&d.name);
+        let params = self.type_params.get(&d.name).filter(|_| known)?;
         let mut found = Vars::new();
         for (c, fields) in d.ctors.iter().flatten() {
             let Some(w) = self.written_ctor(*c).filter(|w| w.params.len() == fields.len()) else { continue };

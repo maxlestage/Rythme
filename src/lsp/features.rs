@@ -807,7 +807,7 @@ fn type_place(text: &str, start: usize) -> Option<TypePlace> {
         module = Some(m.name().to_string());
         n -= 2;
     }
-    if !starts_type(&t, n) {
+    if !starts_type(&t, n, 0) {
         return None;
     }
     let params = type_def_around(&t, n).map(|k| type_params_after(&t, k)).unwrap_or_default();
@@ -816,42 +816,48 @@ fn type_place(text: &str, start: usize) -> Option<TypePlace> {
 
 type Toks<'a> = [(&'a Tok, bool)];
 
-/// May a written type start right after the first `n` tokens?
-fn starts_type(t: &Toks, n: usize) -> bool {
+/// May a written type start right after the first `n` tokens? (`depth`:
+/// how many types it is inside, looked at so far; absurdly deep code is not
+/// followed.)
+fn starts_type(t: &Toks, n: usize, depth: usize) -> bool {
     let Some(prev) = n.checked_sub(1).map(|i| t[i].0) else { return false };
+    if depth > 100 {
+        return false;
+    }
+    let depth = depth + 1;
     match prev {
-        Tok::Colon => colon_starts_type(t, n - 1),
+        Tok::Colon => colon_starts_type(t, n - 1, depth),
         Tok::Arrow => n >= 2 && *t[n - 2].0 == Tok::RParen && opening(t, n - 2).is_some_and(|o| fn_parens(t, o)),
-        Tok::LBracket => starts_type(t, n - 1),
-        Tok::LParen => n >= 2 && args_of_type(t, n - 1),
-        Tok::Comma => opening(t, n - 1).is_some_and(|o| *t[o].0 == Tok::LParen && args_of_type(t, o)),
+        Tok::LBracket => starts_type(t, n - 1, depth),
+        Tok::LParen => n >= 2 && args_of_type(t, n - 1, depth),
+        Tok::Comma => opening(t, n - 1).is_some_and(|o| *t[o].0 == Tok::LParen && args_of_type(t, o, depth)),
         _ => false,
     }
 }
 
 /// Are the brackets opened at `o` those of the types a type takes (`List(`,
 /// `geo.Tree(`) or of a function type (`fn(`), written where a type goes?
-fn args_of_type(t: &Toks, o: usize) -> bool {
+fn args_of_type(t: &Toks, o: usize, depth: usize) -> bool {
     match o.checked_sub(1).map(|i| t[i].0) {
         Some(Tok::Ctor(_)) => {
             let name = o - 1;
-            starts_type(t, name)
-                || (name >= 2 && *t[name - 1].0 == Tok::Dot && matches!(t[name - 2].0, Tok::Ident(_)) && starts_type(t, name - 2))
+            starts_type(t, name, depth)
+                || (name >= 2 && *t[name - 1].0 == Tok::Dot && matches!(t[name - 2].0, Tok::Ident(_)) && starts_type(t, name - 2, depth))
         }
-        Some(Tok::Fn) => starts_type(t, o - 1),
+        Some(Tok::Fn) => starts_type(t, o - 1, depth),
         _ => false,
     }
 }
 
 /// Does the `:` at `c` start a type?
-fn colon_starts_type(t: &Toks, c: usize) -> bool {
+fn colon_starts_type(t: &Toks, c: usize, depth: usize) -> bool {
     match opening(t, c) {
         // The parameters of a function, or the fields of a variant.
         Some(o) if *t[o].0 == Tok::LParen => {
             fn_parens(t, o) || (o >= 1 && matches!(t[o - 1].0, Tok::Ctor(_)) && type_def_at(t, o - 1).is_some())
         }
         // `{name: Text}`, written where a type goes.
-        Some(o) if *t[o].0 == Tok::LBrace => starts_type(t, o) || block_params(t, c),
+        Some(o) if *t[o].0 == Tok::LBrace => starts_type(t, o, depth) || block_params(t, c),
         Some(_) => false,
         // `total: Float = ...` at the start of a line, or the parameters of a block.
         None => (c >= 1 && matches!(t[c - 1].0, Tok::Ident(_)) && t[c - 1].1) || block_params(t, c),
