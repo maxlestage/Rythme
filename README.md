@@ -4,7 +4,7 @@
 programming language, with help everywhere.**
 Programs are files ending in `.ry`. The interpreter is written in Rust.
 
-*[Version française →](README.fr.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md) · [中文 →](README.zh.md)*
+*[Version française →](README.fr.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md) · [中文 →](README.zh.md) · [In italiano →](README.it.md) · [日本語 →](README.ja.md)*
 
 **Documentation:** the [reference manual](docs/reference.md) (the whole
 language, precisely), the [guide for teachers](docs/teaching.md), and
@@ -74,9 +74,9 @@ puts total                 # 20
     the mouse, completion, go to definition, rename (`rythme lsp`, the
     language server, for VS Code, Neovim, Helix, Emacs...).
   - Every message, every piece of documentation exists in **English, French,
-    Spanish, German, Portuguese and Chinese** (`--lang fr`, `--lang es`,
-    `--lang de`, `--lang pt`, `--lang zh`, or automatically from your system
-    language).
+    Spanish, German, Portuguese, Chinese, Italian and Japanese** (`--lang fr`,
+    `--lang es`, `--lang de`, `--lang pt`, `--lang zh`, `--lang it`, `--lang ja`,
+    or automatically from your system language).
 
 Here is what a mistake looks like:
 
@@ -110,13 +110,13 @@ error[E001]: `for` is not used in Rythme
 The website <https://maxlestage.github.io/Rythme/> has a playground that runs
 the real interpreter, compiled to WebAssembly ([`playground/`](playground)):
 edit code, run it, check it, run tests, format it, read the help, in English,
-French, Spanish, German, Portuguese or Chinese, without installing anything. The website also installs as an app
+French, Spanish, German, Portuguese, Chinese, Italian or Japanese, without installing anything. The website also installs as an app
 (a Progressive Web App) and works offline, playground included. Its menu offers color
 themes (Auto, Light, Dark, High contrast, Sepia, Tempo), and no page scrolls
 sideways, from a 320px phone to a wide screen.
 
 The [`site/`](site) folder is the website of Rythme (home, tour of the
-language, examples, playground and guide for teachers, in six languages),
+language, examples, playground and guide for teachers, in eight languages),
 written in Rust with Paquets.
 
 ### Deploy the website on Heroku
@@ -218,7 +218,7 @@ cargo install --path .       # or install it in your PATH
 | `rythme test --help`        | the usage and the options of any command, in your language |
 | `rythme completions bash`   | completion of the commands for bash, zsh, fish or PowerShell; `rythme man`: the manual page |
 
-Add `--lang` and a language (`en`, `fr`, `es`, `de`, `pt` or `zh`) before the
+Add `--lang` and a language (`en`, `fr`, `es`, `de`, `pt`, `zh`, `it` or `ja`) before the
 command to choose the language of the messages, or set `RYTHME_LANG`.
 
 ## The language in two minutes
@@ -352,7 +352,8 @@ functional programming course alike: exercises checked and graded
 automatically, the playground and the debugger in class, and a policy for
 AI assistants. It also exists in [French](docs/enseigner.md),
 [Spanish](docs/teaching.es.md), [German](docs/teaching.de.md),
-[Portuguese](docs/teaching.pt.md) and [Chinese](docs/teaching.zh.md).
+[Portuguese](docs/teaching.pt.md), [Chinese](docs/teaching.zh.md),
+[Italian](docs/teaching.it.md) and [Japanese](docs/teaching.ja.md).
 [`docs/exercises/`](docs/exercises/README.md) holds 36 graded exercises (six about AI), with
 statements, hints, tests and solutions, that `rythme exercise` hands out and
 checks in every language of the messages.
@@ -374,7 +375,7 @@ mode) and is organised as a pipeline:
 | [`src/interp.rs`](src/interp.rs) | the interpreter: names of the program, calls, what the tools need |
 | [`src/bigint.rs`](src/bigint.rs) | whole numbers beyond 64 bits, without a dependency |
 | [`src/dict.rs`](src/dict.rs) | the persistent ordered tree behind dictionaries and sets, and the order of their keys |
-| [`src/builtins.rs`](src/builtins.rs) | 283 built-in functions (and their Ruby names), documented in six languages, JSON, CSV, HTTP and machine learning included ([compared with Ruby, Python and Elixir](docs/stdlib-audit.md)) |
+| [`src/builtins.rs`](src/builtins.rs) | 283 built-in functions (and their Ruby names), documented in eight languages, JSON, CSV, HTTP and machine learning included ([compared with Ruby, Python and Elixir](docs/stdlib-audit.md)) |
 | [`src/builtins/`](src/builtins) | dates, files and the system, dictionaries and sets, regexes and text tools, CSV, generators of property tests |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
@@ -397,7 +398,7 @@ formatter, the language server and the commands, fuzzing included.
 
 Rythme 1.0 is a complete, tested language: the interpreter, the checker, the
 formatter, the language server, the editors, the playground, the manual and
-messages in six languages. What it contains is in
+messages in eight languages. What it contains is in
 [`CHANGELOG.md`](CHANGELOG.md); ideas for what comes next are at the end of
 [`ROADMAP.md`](ROADMAP.md#after-10). Honest limits:
 
@@ -430,7 +431,7 @@ messages in six languages. What it contains is in
   documentation inside every editor (see `rythme help editors`). The web
   playground runs the interpreter compiled to WebAssembly.
 - **Languages.** Messages exist in English, French, Spanish, German,
-  Portuguese and simplified Chinese; adding a language means writing one
+  Portuguese, simplified Chinese, Italian and Japanese; adding a language means writing one
   catalog file, `src/i18n/<code>.rs`, which a test checks against every text
   of the program (see [CONTRIBUTING](CONTRIBUTING.md#messages-in-every-language)).
   Contributions are welcome.

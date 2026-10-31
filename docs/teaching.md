@@ -1,6 +1,6 @@
 # Teaching with Rythme
 
-*[Version française →](enseigner.md) · [En español →](teaching.es.md) · [Auf Deutsch →](teaching.de.md) · [Em português →](teaching.pt.md) · [中文 →](teaching.zh.md)*
+*[Version française →](enseigner.md) · [En español →](teaching.es.md) · [Auf Deutsch →](teaching.de.md) · [Em português →](teaching.pt.md) · [中文 →](teaching.zh.md) · [In italiano →](teaching.it.md) · [日本語 →](teaching.ja.md)*
 
 Rythme was designed for the classroom: a small language, with messages that
 teach, so that students spend their time on ideas rather than on syntax.
@@ -228,7 +228,8 @@ students can start on any computer, tablet or phone.
 ## In your students' language
 
 - Every message, help topic, explanation and page of `rythme learn` exists
-  in English, French, Spanish, German, Portuguese and Chinese. Rythme
+  in English, French, Spanish, German, Portuguese, Chinese, Italian and
+  Japanese. Rythme
   follows the language of the system; `--lang es` or the variable
   `RYTHME_LANG=es` choose another one.
 - Keywords, names of functions and commands stay the same in every

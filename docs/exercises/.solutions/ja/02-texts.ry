@@ -1,0 +1,32 @@
+# 練習問題 02 · テキスト  ★☆☆
+# 参考解答。読む前に、まず自分で練習問題に挑戦してください！
+
+## `name` へのあいさつ。
+fn greet(name) = "こんにちは、{name}！"
+
+## 大文字にしたテキストに "!" を付けたもの。
+fn shout(text) = upper(text) + "!"
+
+## 人のイニシャル。それぞれの後にドットを付ける。
+fn initials(first, last) = "{first[0]}.{last[0]}."
+
+## 人を紹介する文。
+fn introduce(name, age) = "{name} は {age} 歳です。"
+
+# --- テスト（変更しないでください）---
+
+test "あいさつ" = assert_eq(greet("Ada"), "こんにちは、Ada！")
+
+test "別の人へのあいさつ" = assert_eq(greet("Alan"), "こんにちは、Alan！")
+
+test "大声"
+  assert_eq(shout("hello"), "HELLO!")
+  assert_eq(shout("Stop"), "STOP!")
+end
+
+test "イニシャル"
+  assert_eq(initials("Ada", "Lovelace"), "A.L.")
+  assert_eq(initials("grace", "hopper"), "g.h.")
+end
+
+test "紹介" = assert_eq(introduce("Ada", 36), "Ada は 36 歳です。")

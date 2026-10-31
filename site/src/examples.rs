@@ -23,7 +23,7 @@ impl Example {
     }
 }
 
-/// `example!(name, [fr, en, es, de, pt, zh])`.
+/// `example!(name, [fr, en, es, de, pt, zh, it, ja])`.
 macro_rules! example {
     ($name:literal, $about:expr) => {
         Example {
@@ -46,6 +46,8 @@ pub const EXAMPLES: &[Example] = &[
             "das klassische erste Programm",
             "o clássico primeiro programa",
             "经典的第一个程序",
+            "il classico primo programma",
+            "定番の最初のプログラム",
         ]
     ),
     example!(
@@ -57,6 +59,8 @@ pub const EXAMPLES: &[Example] = &[
             "match auf einer Liste, Bereiche, each",
             "match em uma lista, intervalos, each",
             "对列表做 match、区间、each",
+            "match su una lista, intervalli, each",
+            "リストに対する match、範囲、each",
         ]
     ),
     example!(
@@ -68,6 +72,8 @@ pub const EXAMPLES: &[Example] = &[
             "Definitionen pro Fall, Endaufrufe, ##-Dokumentation",
             "definições por caso, chamadas de cauda, documentação ##",
             "按情况定义、尾调用、## 文档",
+            "definizioni per caso, chiamate in coda, documentazione ##",
+            "ケースごとの定義、末尾呼び出し、## ドキュメント",
         ]
     ),
     example!(
@@ -79,6 +85,8 @@ pub const EXAMPLES: &[Example] = &[
             "eigene Typen, Wächter, sort_by",
             "seus próprios tipos, guardas, sort_by",
             "自定义类型、守卫、sort_by",
+            "i tuoi tipi, guardie, sort_by",
+            "独自の型、ガード、sort_by",
         ]
     ),
     example!(
@@ -90,6 +98,8 @@ pub const EXAMPLES: &[Example] = &[
             "Listenmuster, filter, + auf Listen",
             "padrões de listas, filter, + em listas",
             "列表模式、filter、列表上的 +",
+            "pattern sulle liste, filter, + sulle liste",
+            "リストのパターン、filter、リストの +",
         ]
     ),
     example!(
@@ -101,6 +111,8 @@ pub const EXAMPLES: &[Example] = &[
             "Textverarbeitung, group_by, Records",
             "processamento de texto, group_by, registros",
             "文本处理、group_by、记录",
+            "elaborazione di testi, group_by, record",
+            "テキスト処理、group_by、レコード",
         ]
     ),
     example!(
@@ -112,6 +124,8 @@ pub const EXAMPLES: &[Example] = &[
             "die Caesar-Verschlüsselung: char_code, char, Buchstaben zählen",
             "a cifra de César: char_code, char, contar letras",
             "凯撒密码：char_code、char、统计字母",
+            "il cifrario di Cesare: char_code, char, contare le lettere",
+            "シーザー暗号：char_code、char、文字を数える",
         ]
     ),
     example!(
@@ -123,6 +137,8 @@ pub const EXAMPLES: &[Example] = &[
             "Option, Result und ?",
             "Option, Result e ?",
             "Option、Result 和 ?",
+            "Option, Result e ?",
+            "Option、Result、?",
         ]
     ),
     example!(
@@ -134,6 +150,8 @@ pub const EXAMPLES: &[Example] = &[
             "Records, Aktualisierung, Gruppierung, Durchschnitte",
             "registros, atualização, agrupamentos, médias",
             "记录、记录更新、分组、平均值",
+            "record, aggiornamento di record, raggruppamenti, medie",
+            "レコード、レコードの更新、グループ分け、平均",
         ]
     ),
     example!(
@@ -145,6 +163,8 @@ pub const EXAMPLES: &[Example] = &[
             "der Ruby-Stil: do |x| ... end-Blöcke, Methodenketten, Namen mit ? am Ende, unless, Symbole",
             "o estilo Ruby: blocos do |x| ... end, encadeamento de métodos, nomes terminados em ?, unless, símbolos",
             "Ruby 风格：do |x| ... end 块、方法链、以 ? 结尾的名字、unless、符号",
+            "lo stile Ruby: blocchi do |x| ... end, catene di metodi, nomi che finiscono con ?, unless, simboli",
+            "Ruby 風の書き方：do |x| ... end ブロック、メソッドチェーン、? で終わる名前、unless、シンボル",
         ]
     ),
     example!(
@@ -156,6 +176,8 @@ pub const EXAMPLES: &[Example] = &[
             "ein Bericht: scan, mit pad_left ausgerichtete Spalten, windows, chunks, JSON",
             "um relatório: scan, colunas alinhadas com pad_left, windows, chunks, JSON",
             "一份报表：scan、用 pad_left 对齐的列、windows、chunks、JSON",
+            "un resoconto: scan, colonne allineate con pad_left, windows, chunks, JSON",
+            "レポート：scan、pad_left でそろえた列、windows、chunks、JSON",
         ]
     ),
     example!(
@@ -167,6 +189,8 @@ pub const EXAMPLES: &[Example] = &[
             "Daten: das Blatt eines Monats, ISO-8601-Texte, days_between, add_days",
             "datas: a página de um mês, textos ISO 8601, days_between, add_days",
             "日期：一个月的日历页、ISO 8601 文本、days_between、add_days",
+            "date: la pagina di un mese, testi ISO 8601, days_between, add_days",
+            "日付：1 か月のカレンダー、ISO 8601 のテキスト、days_between、add_days",
         ]
     ),
     example!(
@@ -178,6 +202,8 @@ pub const EXAMPLES: &[Example] = &[
             "ein Protokoll mit Regex lesen: named_captures, matches, find_all, replace_all, format_number",
             "ler um log com regex: named_captures, matches, find_all, replace_all, format_number",
             "用正则表达式读日志：named_captures、matches、find_all、replace_all、format_number",
+            "leggere un log con le regex: named_captures, matches, find_all, replace_all, format_number",
+            "正規表現でログを読む：named_captures、matches、find_all、replace_all、format_number",
         ]
     ),
     example!(
@@ -189,6 +215,8 @@ pub const EXAMPLES: &[Example] = &[
             "Noten aus einer Tabellenkalkulation: csv_records mit „;“, csv_format, eine wiederholbare Ziehung mit random_seed",
             "notas de uma planilha: csv_records com “;”, csv_format, um sorteio repetível com random_seed",
             "电子表格里的成绩：用“;”的 csv_records、csv_format、用 random_seed 可重复的抽签",
+            "voti da un foglio di calcolo: csv_records con `;`, csv_format, un'estrazione ripetibile con random_seed",
+            "表計算ソフトの成績：`;` 区切りの csv_records、csv_format、random_seed による再現できる抽選",
         ]
     ),
     example!(
@@ -200,6 +228,8 @@ pub const EXAMPLES: &[Example] = &[
             "eine Tabelle mit format-Angaben und center, tally, most_common, sort_by_desc, ein Datumsmuster, word_wrap",
             "uma tabela escrita com especificações de format e center, tally, most_common, sort_by_desc, um padrão de data, word_wrap",
             "用 format 格式说明和 center 写出的表格、tally、most_common、sort_by_desc、日期模式、word_wrap",
+            "una tabella scritta con specifiche di formato e center, tally, most_common, sort_by_desc, un modello di data, word_wrap",
+            "書式指定と center で書いた表、tally、most_common、sort_by_desc、日付のパターン、word_wrap",
         ]
     ),
     example!(
@@ -211,6 +241,8 @@ pub const EXAMPLES: &[Example] = &[
             "ein rekursiver Typ: binärer Suchbaum",
             "um tipo recursivo: árvore binária de busca",
             "递归类型：二叉搜索树",
+            "un tipo ricorsivo: albero binario di ricerca",
+            "再帰的な型：二分探索木",
         ]
     ),
     example!(
@@ -222,9 +254,14 @@ pub const EXAMPLES: &[Example] = &[
             "ein rekursives Sieb, all, and",
             "um crivo recursivo, all, and",
             "递归筛法、all、and",
+            "un crivello ricorsivo, all, and",
+            "再帰的なふるい、all、and",
         ]
     ),
-    example!("testing", ["les blocs test", "test blocks", "los bloques test", "test-Blöcke", "os blocos test", "test 块"]),
+    example!(
+        "testing",
+        ["les blocs test", "test blocks", "los bloques test", "test-Blöcke", "os blocos test", "test 块", "blocchi test", "test ブロック",]
+    ),
     example!(
         "bonjour",
         [
@@ -234,6 +271,8 @@ pub const EXAMPLES: &[Example] = &[
             "Namen mit Akzenten",
             "nomes com acentos",
             "带重音符号的名字",
+            "nomi con accenti",
+            "アクセント付きの名前",
         ]
     ),
     example!(
@@ -245,6 +284,8 @@ pub const EXAMPLES: &[Example] = &[
             "lineare Regression mit Gradientenabstieg: gradient, scan, plot",
             "regressão linear por descida do gradiente: gradient, scan, plot",
             "用梯度下降做线性回归：gradient、scan、plot",
+            "regressione lineare con la discesa del gradiente: gradient, scan, plot",
+            "勾配降下法による線形回帰：gradient、scan、plot",
         ]
     ),
     example!(
@@ -256,6 +297,8 @@ pub const EXAMPLES: &[Example] = &[
             "ein Perzeptron, das erste künstliche Neuron: dot, vector_add, fold",
             "um perceptron, o primeiro neurônio artificial: dot, vector_add, fold",
             "感知机，第一个人工神经元：dot、vector_add、fold",
+            "un percettrone, il primo neurone artificiale: dot, vector_add, fold",
+            "パーセプトロン、最初の人工ニューロン：dot、vector_add、fold",
         ]
     ),
     example!(
@@ -267,6 +310,8 @@ pub const EXAMPLES: &[Example] = &[
             "ein kleines neuronales Netz lernt XOR: sigmoid, matmul, Backpropagation",
             "uma pequena rede neural aprende XOR: sigmoid, matmul, retropropagação",
             "一个小型神经网络学习 XOR：sigmoid、matmul、反向传播",
+            "una piccola rete neurale impara lo XOR: sigmoid, matmul, retropropagazione",
+            "小さなニューラルネットワークが XOR を学ぶ：sigmoid、matmul、誤差逆伝播法",
         ]
     ),
     example!(
@@ -278,6 +323,8 @@ pub const EXAMPLES: &[Example] = &[
             "k-Means: Gruppen in Punkten ohne Beschriftung, random_normal, argmin",
             "k-médias: grupos em pontos sem rótulos, random_normal, argmin",
             "k 均值：在无标签的点中找出分组，random_normal、argmin",
+            "k-means: gruppi in punti senza etichette, random_normal, argmin",
+            "k 平均法：ラベルのない点のグループ、random_normal、argmin",
         ]
     ),
     example!(
@@ -289,6 +336,8 @@ pub const EXAMPLES: &[Example] = &[
             "k nächste Nachbarn: eine Frucht benennen, train_test_split, norm",
             "k vizinhos mais próximos: nomear uma fruta, train_test_split, norm",
             "k 近邻：识别水果，train_test_split、norm",
+            "k vicini più prossimi: dare un nome a un frutto, train_test_split, norm",
+            "k 近傍法：果物の名前を当てる、train_test_split、norm",
         ]
     ),
     example!(
@@ -300,6 +349,8 @@ pub const EXAMPLES: &[Example] = &[
             "ein naiver Bayes-Klassifikator sortiert Spam: words, log, softmax",
             "um classificador bayesiano ingênuo separa o spam: words, log, softmax",
             "朴素贝叶斯分类器筛选垃圾消息：words、log、softmax",
+            "un classificatore bayesiano ingenuo riconosce lo spam: words, log, softmax",
+            "ナイーブベイズ分類器でスパムを見分ける：words、log、softmax",
         ]
     ),
     example!(
@@ -311,6 +362,8 @@ pub const EXAMPLES: &[Example] = &[
             "eine Markow-Kette schreibt Sätze: windows, group_by, random_choice_weighted",
             "uma cadeia de Markov escreve frases: windows, group_by, random_choice_weighted",
             "马尔可夫链写句子：windows、group_by、random_choice_weighted",
+            "una catena di Markov scrive frasi: windows, group_by, random_choice_weighted",
+            "マルコフ連鎖が文を書く：windows、group_by、random_choice_weighted",
         ]
     ),
     example!(
@@ -322,6 +375,8 @@ pub const EXAMPLES: &[Example] = &[
             "Minimax spielt Tic-Tac-Toe perfekt: Rekursion, set_at, max_by",
             "o minimax joga jogo da velha perfeitamente: recursão, set_at, max_by",
             "极小化极大算法完美地下井字棋：递归、set_at、max_by",
+            "minimax gioca a tris alla perfezione: ricorsione, set_at, max_by",
+            "ミニマックスが三目並べを完璧に指す：再帰、set_at、max_by",
         ]
     ),
     example!(
@@ -333,6 +388,8 @@ pub const EXAMPLES: &[Example] = &[
             "der kürzeste Weg durch ein Labyrinth: Breitensuche, dict, put",
             "o caminho mais curto num labirinto: busca em largura, dict, put",
             "迷宫中的最短路径：广度优先搜索、dict、put",
+            "la strada più corta in un labirinto: ricerca in ampiezza, dict, put",
+            "迷路の最短経路：幅優先探索、dict、put",
         ]
     ),
     example!(
@@ -344,6 +401,8 @@ pub const EXAMPLES: &[Example] = &[
             "ein genetischer Algorithmus entwickelt einen Satz: Selektion, Kreuzung, Mutation",
             "um algoritmo genético faz evoluir uma frase: seleção, cruzamento, mutação",
             "遗传算法让一句话进化：选择、交叉、变异",
+            "un algoritmo genetico fa evolvere una frase: selezione, incrocio, mutazione",
+            "遺伝的アルゴリズムが文を進化させる：選択、交叉、突然変異",
         ]
     ),
     example!(
@@ -355,6 +414,8 @@ pub const EXAMPLES: &[Example] = &[
             "einem Sprachmodell eine Frage stellen: http_post, to_json, parse_json, env (braucht einen API-Schlüssel)",
             "fazer uma pergunta a um modelo de linguagem: http_post, to_json, parse_json, env (precisa de uma chave de API)",
             "向语言模型提问：http_post、to_json、parse_json、env（需要 API 密钥）",
+            "fare una domanda a un modello linguistico: http_post, to_json, parse_json, env (serve una chiave API)",
+            "言語モデルに質問する：http_post、to_json、parse_json、env（API キーが必要）",
         ]
     ),
 ];

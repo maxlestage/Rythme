@@ -46,14 +46,45 @@ mod more;
 
 /// Topic names, in the order of the guided tour, with their aliases in the other languages.
 pub const TOPICS: &[(&str, &[&str])] = &[
-    ("start", &["intro", "debut", "début", "commencer", "inicio", "empezar", "einstieg", "anfang", "comecar", "começar", "开始", "入门"]),
-    ("syntax", &["syntaxe", "sintaxis", "sintaxe", "语法"]),
-    ("functions", &["fonctions", "fn", "funciones", "funktionen", "funcoes", "funções", "函数"]),
-    ("lists", &["listes", "list", "liste", "listas", "listen", "列表"]),
-    ("text", &["texte", "texts", "textes", "string", "texto", "textos", "文本"]),
+    (
+        "start",
+        &[
+            "intro",
+            "debut",
+            "début",
+            "commencer",
+            "inicio",
+            "empezar",
+            "einstieg",
+            "anfang",
+            "comecar",
+            "começar",
+            "开始",
+            "入门",
+            "inizio",
+            "iniziare",
+            "はじめに",
+            "入門",
+        ],
+    ),
+    ("syntax", &["syntaxe", "sintaxis", "sintaxe", "语法", "sintassi", "構文"]),
+    ("functions", &["fonctions", "fn", "funciones", "funktionen", "funcoes", "funções", "函数", "funzioni", "関数"]),
+    ("lists", &["listes", "list", "liste", "listas", "listen", "列表", "lista", "リスト"]),
+    ("text", &["texte", "texts", "textes", "string", "texto", "textos", "文本", "testo", "testi", "テキスト", "文字列"]),
     (
         "records",
-        &["enregistrements", "record", "enregistrement", "registros", "registro", "datensatz", "datensaetze", "datensätze", "记录"],
+        &[
+            "enregistrements",
+            "record",
+            "enregistrement",
+            "registros",
+            "registro",
+            "datensatz",
+            "datensaetze",
+            "datensätze",
+            "记录",
+            "レコード",
+        ],
     ),
     (
         "dicts",
@@ -83,6 +114,11 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "dicionário",
             "字典",
             "集合",
+            "dizionari",
+            "dizionario",
+            "insiemi",
+            "insieme",
+            "辞書",
         ],
     ),
     (
@@ -103,20 +139,72 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "anotacoes",
             "anotações",
             "类型注解",
+            "tipi",
+            "tipo",
+            "型",
         ],
     ),
-    ("match", &["patterns", "motifs", "patrones", "muster", "padroes", "padrões", "模式", "匹配"]),
-    ("errors", &["erreurs", "option", "result", "?", "errores", "fehler", "erros", "错误"]),
+    ("match", &["patterns", "motifs", "patrones", "muster", "padroes", "padrões", "模式", "匹配", "パターン"]),
+    ("errors", &["erreurs", "option", "result", "?", "errores", "fehler", "erros", "错误", "errori", "エラー"]),
     (
         "functional",
-        &["fonctionnel", "loops", "boucles", "funcional", "bucles", "funktional", "schleifen", "lacos", "laços", "函数式", "循环"],
+        &[
+            "fonctionnel",
+            "loops",
+            "boucles",
+            "funcional",
+            "bucles",
+            "funktional",
+            "schleifen",
+            "lacos",
+            "laços",
+            "函数式",
+            "循环",
+            "funzionale",
+            "cicli",
+            "関数型",
+            "ループ",
+        ],
     ),
-    ("tests", &["test", "pruebas", "prueba", "testes", "teste", "测试"]),
+    ("tests", &["test", "pruebas", "prueba", "testes", "teste", "测试", "テスト"]),
     (
         "exercises",
-        &["exercices", "exercise", "exercice", "ejercicios", "ejercicio", "uebungen", "übungen", "exercicios", "exercícios", "练习"],
+        &[
+            "exercices",
+            "exercise",
+            "exercice",
+            "ejercicios",
+            "ejercicio",
+            "uebungen",
+            "übungen",
+            "exercicios",
+            "exercícios",
+            "练习",
+            "esercizi",
+            "esercizio",
+            "練習問題",
+            "練習",
+        ],
     ),
-    ("modules", &["use", "files", "fichiers", "modulos", "módulos", "archivos", "module", "dateien", "arquivos", "模块", "文件"]),
+    (
+        "modules",
+        &[
+            "use",
+            "files",
+            "fichiers",
+            "modulos",
+            "módulos",
+            "archivos",
+            "module",
+            "dateien",
+            "arquivos",
+            "模块",
+            "文件",
+            "moduli",
+            "モジュール",
+            "ファイル",
+        ],
+    ),
     (
         "system",
         &[
@@ -140,6 +228,9 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "pastas",
             "caminhos",
             "系统",
+            "cartelle",
+            "percorsi",
+            "システム",
         ],
     ),
     (
@@ -161,6 +252,9 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "projetos",
             "projeto",
             "项目",
+            "progetti",
+            "progetto",
+            "プロジェクト",
         ],
     ),
     (
@@ -182,6 +276,9 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "pacote",
             "包",
             "软件包",
+            "pacchetti",
+            "pacchetto",
+            "パッケージ",
         ],
     ),
     (
@@ -205,6 +302,8 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "horas",
             "日期",
             "时间",
+            "日付",
+            "日時",
         ],
     ),
     (
@@ -223,6 +322,7 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "expressões-regulares",
             "正则表达式",
             "正则",
+            "正規表現",
         ],
     ),
     (
@@ -256,6 +356,8 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "semente",
             "随机",
             "种子",
+            "caso",
+            "乱数",
         ],
     ),
     (
@@ -276,9 +378,10 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "neurones",
             "人工智能",
             "机器学习",
+            "機械学習",
         ],
     ),
-    ("repl", &["interactive", "interactif", "interactivo", "interaktiv", "interativo", "交互"]),
+    ("repl", &["interactive", "interactif", "interactivo", "interaktiv", "interativo", "交互", "対話モード"]),
     (
         "fmt",
         &[
@@ -294,11 +397,24 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "formatacao",
             "formatação",
             "格式化",
+            "整形",
         ],
     ),
     (
         "doc",
-        &["documentation", "documenter", "docs", "documentacion", "documentación", "dokumentation", "documentacao", "documentação", "文档"],
+        &[
+            "documentation",
+            "documenter",
+            "docs",
+            "documentacion",
+            "documentación",
+            "dokumentation",
+            "documentacao",
+            "documentação",
+            "文档",
+            "documentazione",
+            "ドキュメント",
+        ],
     ),
     (
         "steps",
@@ -320,6 +436,8 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "passos",
             "passo-a-passo",
             "步骤",
+            "passi",
+            "ステップ",
         ],
     ),
     (
@@ -338,9 +456,14 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "debuggen",
             "调试",
             "调试器",
+            "デバッガー",
+            "デバッグ",
         ],
     ),
-    ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide", "editores", "editoren", "编辑器"]),
+    (
+        "editors",
+        &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide", "editores", "editoren", "编辑器", "エディター"],
+    ),
     ("ruby", &["rb", "rubyist", "blocks", "blocs", "symbols", "symboles"]),
     (
         "builtins",
@@ -358,6 +481,8 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "funcoes-embutidas",
             "funções-embutidas",
             "内置函数",
+            "predefinite",
+            "組み込み関数",
         ],
     ),
 ];
@@ -394,7 +519,7 @@ Commands
   rythme -e "code"          run a piece of code
   rythme lsp                language server, for editors (VS Code, Neovim...)
   rythme mcp                server for AI assistants (Model Context Protocol)
-  option --lang CODE        language of the messages: en, fr, es, de, pt, zh (or RYTHME_LANG)
+  option --lang CODE        language of the messages: en, fr, es, de, pt, zh, it, ja (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
   start       the language in one minute
@@ -454,7 +579,7 @@ Commandes
   rythme -e "code"          exécuter un morceau de code
   rythme lsp                serveur de langage, pour les éditeurs (VS Code, Neovim...)
   rythme mcp                serveur pour les assistants d'IA (Model Context Protocol)
-  option --lang CODE        langue des messages : en, fr, es, de, pt, zh (ou variable RYTHME_LANG)
+  option --lang CODE        langue des messages : en, fr, es, de, pt, zh, it, ja (ou variable RYTHME_LANG)
 
 Sujets (rythme help SUJET)
   start       le langage en une minute
@@ -2716,7 +2841,7 @@ starts by itself:
 
 VS Code
   the extension in editors/vscode: colors, snippets and the language server.
-  Settings: rythme.path (the program), rythme.language (en, fr, es, de, pt, zh or auto).
+  Settings: rythme.path (the program), rythme.language (en, fr, es, de, pt, zh, it, ja or auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   every editor that speaks the Language Server Protocol: tell it to start
@@ -2730,7 +2855,7 @@ Zed
 Colors in Neovim, Helix and Zed
   the Tree-sitter grammar in editors/tree-sitter-rythme (see editors/README.md).
 
-The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh) or
+The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh, it, ja) or
 RYTHME_LANG chooses it: rythme --lang fr lsp"#;
 
 const EDITORS_FR: &str = r#"RYTHME DANS VOTRE ÉDITEUR
@@ -2748,7 +2873,7 @@ serveur de langage, que l'éditeur lance tout seul :
 
 VS Code
   l'extension dans editors/vscode : couleurs, extraits de code et serveur de
-  langage. Réglages : rythme.path (le programme), rythme.language (en, fr, es, de, pt, zh ou auto).
+  langage. Réglages : rythme.path (le programme), rythme.language (en, fr, es, de, pt, zh, it, ja ou auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   tout éditeur qui parle le Language Server Protocol : demandez-lui de lancer
@@ -2763,7 +2888,7 @@ Zed
 Couleurs dans Neovim, Helix et Zed
   la grammaire Tree-sitter dans editors/tree-sitter-rythme (voir editors/README.fr.md).
 
-La langue des messages suit celle de l'éditeur, sauf si `--lang` (en, fr, es, de, pt, zh) ou
+La langue des messages suit celle de l'éditeur, sauf si `--lang` (en, fr, es, de, pt, zh, it, ja) ou
 RYTHME_LANG la choisit : rythme --lang fr lsp"#;
 
 const REPL_EN: &str = r#"THE INTERACTIVE MODE
@@ -2777,7 +2902,7 @@ Definitions are kept from one line to the next. If a line is not finished
 Commands
   :help           this help              :quit          leave (or Ctrl-D)
   :doc map        help on a name         :load f.ry     load a file
-  :reset          forget everything      :lang fr       change the language (en, fr, es, de, pt, zh)
+  :reset          forget everything      :lang fr       change the language (en, fr, es, de, pt, zh, it, ja)
   :learn          guided tour            :explain E003  explain an error
   :steps fib(4)   show the calculation step by step
 The Tab key completes names."#;
@@ -2794,7 +2919,7 @@ suivante.
 Commandes
   :help           cette aide             :quit          quitter (ou Ctrl-D)
   :doc map        aide sur un nom        :load f.ry     charger un fichier
-  :reset          tout oublier           :lang en       changer de langue (en, fr, es, de, pt, zh)
+  :reset          tout oublier           :lang en       changer de langue (en, fr, es, de, pt, zh, it, ja)
   :learn          visite guidée          :explain E003  expliquer une erreur
   :etapes fib(4)  montrer le calcul étape par étape
 La touche Tab complète les noms."#;

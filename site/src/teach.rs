@@ -15,13 +15,15 @@ const REPO: &str = "https://github.com/maxlestage/Rythme";
 
 /// Each guide: its language, its file in `docs/` and its text. English first: the
 /// guide of the languages that have none.
-const GUIDES: [(Lang, &str, &str); 6] = [
+const GUIDES: [(Lang, &str, &str); 8] = [
     (Lang::En, "teaching.md", include_str!("../../docs/teaching.md")),
     (Lang::Fr, "enseigner.md", include_str!("../../docs/enseigner.md")),
     (Lang::Es, "teaching.es.md", include_str!("../../docs/teaching.es.md")),
     (Lang::De, "teaching.de.md", include_str!("../../docs/teaching.de.md")),
     (Lang::Pt, "teaching.pt.md", include_str!("../../docs/teaching.pt.md")),
     (Lang::Zh, "teaching.zh.md", include_str!("../../docs/teaching.zh.md")),
+    (Lang::It, "teaching.it.md", include_str!("../../docs/teaching.it.md")),
+    (Lang::Ja, "teaching.ja.md", include_str!("../../docs/teaching.ja.md")),
 ];
 
 /// The language of the guide shown on the page of `lang`: its own when it has one,

@@ -4220,20 +4220,20 @@ suggestion.
 **Options.** `--lang` et `--no-color` doivent venir **avant** la commande ;
 tout ce qui suit le nom du fichier va au programme (pour `rythme test`, ce
 qui vient après `--`). `--lang` accepte toute
-valeur qui commence par le code d'une langue, `en`, `fr`, `es`, `de`, `pt` ou
-`zh` (`--lang es`, `--lang=en`, `--lang pt_BR`) ; une autre valeur, ou
+valeur qui commence par le code d'une langue, `en`, `fr`, `es`, `de`, `pt`,
+`zh`, `it` ou `ja` (`--lang es`, `--lang=en`, `--lang pt_BR`) ; une autre valeur, ou
 `--lang` sans valeur, est signalée, avec le code de sortie 2.
 
 **Langues des messages.** Chaque message, sujet d'aide, explication d'un code
 et page de `rythme learn` existe en anglais, en français, en espagnol
 (`--lang es`), en allemand (`--lang de`), en portugais du Brésil
-(`--lang pt`) et en chinois simplifié (`--lang zh`) ; les mots-clés, les noms des fonctions intégrées et les
+(`--lang pt`), en chinois simplifié (`--lang zh`), en italien (`--lang it`) et en japonais (`--lang ja`) ; les mots-clés, les noms des fonctions intégrées et les
 commandes restent les mêmes dans toutes les langues. Les fichiers écrits par
 `rythme new` et les exercices de `rythme exercise` suivent aussi la langue. Les textes des
 autres langues sont rangés dans des catalogues (`src/i18n/`) ; CONTRIBUTING.md
-explique comment en ajouter une. En chinois, le code de l'aide reste écrit
+explique comment en ajouter une. En chinois, en italien et en japonais, le code de l'aide reste écrit
 comme en anglais (seuls ses commentaires sont traduits), et les `^` sous une
-erreur restent alignés : les caractères chinois prennent deux colonnes du
+erreur restent alignés : les caractères chinois et japonais prennent deux colonnes du
 terminal, dans le code comme dans les messages.
 
 **Exercices.** `rythme exercise` (ou `rythme exercise list`) liste les 36
@@ -4264,8 +4264,11 @@ noms français ou alternatifs : `syntaxe`, `fonctions`, `listes`, `texte`,
 noms allemands : `funktionen`, `listen`, `typen`, `muster`, `fehler`,
 `übungen`, `projekte`, `datum`, `schritte`..., des noms portugais : `sintaxe`,
 `funções`, `listas`, `tipos`, `padrões`, `erros`, `testes`, `exercícios`,
-`projetos`, `datas`, `passos`..., et des noms chinois : `语法`, `函数`, `列表`,
-`文本`, `记录`, `字典`, `类型`, `模式`, `错误`, `测试`, `练习`, `项目`, `日期`...
+`projetos`, `datas`, `passos`..., des noms chinois : `语法`, `函数`, `列表`,
+`文本`, `记录`, `字典`, `类型`, `模式`, `错误`, `测试`, `练习`, `项目`, `日期`..., des
+noms italiens : `sintassi`, `funzioni`, `liste`, `testo`, `tipi`, `errori`,
+`esercizi`, `progetti`, `pacchetti`, `passi`..., et des noms japonais : `構文`,
+`関数`, `リスト`, `テキスト`, `型`, `エラー`, `テスト`, `練習問題`, `プロジェクト`, `日付`...
 
 **Codes de sortie.**
 
@@ -4318,8 +4321,8 @@ $ rythme help lenght
 Aucune aide trouvée pour `lenght`.
 en Rythme, cela s'appelle `len`
 Voyez la liste des sujets avec `rythme help`.
-$ rythme --lang it bonjour.ry
-langue inconnue `it` : écrivez `--lang` et l'une de en, fr, es, de, pt, zh, comme `rythme --lang fr bonjour.ry`
+$ rythme --lang ru bonjour.ry
+langue inconnue `ru` : écrivez `--lang` et l'une de en, fr, es, de, pt, zh, it, ja, comme `rythme --lang fr bonjour.ry`
 ```
 
 Les trois dernières se terminent avec le code 2 (la dernière est écrite dans
@@ -4727,8 +4730,9 @@ E025, avec l'aide `essayez rythme new mon_app` (code de sortie 2). Un
 dossier qui existe déjà et n'est pas vide n'est jamais touché (code de
 sortie 1). Les fichiers sont écrits dans la langue des messages
 (`src/greeting.ry` en anglais, `src/saludo.ry` en espagnol, `src/gruss.ry`
-en allemand, `src/saudacao.ry` en portugais ; en chinois, les noms restent
-ceux de l'anglais et les textes sont en chinois).
+en allemand, `src/saudacao.ry` en portugais ; en chinois, en italien et en
+japonais, les noms restent ceux de l'anglais et les textes sont dans la langue
+des messages).
 
 **`rythme.toml`.** Chaque valeur est un texte entre guillemets ; `#`
 commence un commentaire.

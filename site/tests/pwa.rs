@@ -44,6 +44,7 @@ fn images(manifest: &Value) -> Vec<(String, String, String)> {
 #[tokio::test]
 async fn the_manifests_are_served_and_complete() {
     let client = client().await;
+    let mut seen = std::collections::HashSet::new();
     for lang in Lang::ALL {
         let t = lang.texts();
         let code = lang.code();
@@ -81,9 +82,13 @@ async fn the_manifests_are_served_and_complete() {
         assert_eq!(resolve(&path, m["share_target"]["action"].as_str().unwrap()), playground);
         assert_eq!(m["share_target"]["method"], "GET");
         assert_eq!(m["share_target"]["params"]["text"], "text");
-        // Every image exists, with the type and the size the manifest gives.
+        // Every image exists, with the type and the size the manifest gives (each one
+        // fetched once: the manifests share their icons, and the server limits bursts).
         for (src, sizes, mime) in images(&m) {
             let url = resolve(&path, &src);
+            if !seen.insert(url.clone()) {
+                continue;
+            }
             let res = client.get(&url).await;
             assert_eq!(res.status(), 200, "{url}");
             assert_eq!(res.header("content-type"), Some(mime.as_str()), "{url}");
@@ -92,7 +97,7 @@ async fn the_manifests_are_served_and_complete() {
             }
         }
     }
-    assert_eq!(client.get("/it/manifest.webmanifest").await.status(), 404);
+    assert_eq!(client.get("/ru/manifest.webmanifest").await.status(), 404);
 }
 
 /// A value of what the server gives the service worker (`wasm_bindgen.serve({...})`,

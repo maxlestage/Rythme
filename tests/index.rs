@@ -692,6 +692,8 @@ fn messages_of_the_index_in_every_language() {
         ("de", "Fehler[E025]: kein Paket `nothing` im Paketindex", "0 Paket(e) in "),
         ("pt", "erro[E025]: nenhum pacote `nothing` no índice de pacotes", "0 pacote(s) em "),
         ("zh", "错误[E025]: 包索引中没有包 `nothing`", " 中有 0 个包"),
+        ("it", "errore[E025]: nessun pacchetto `nothing` nell'indice dei pacchetti", "0 pacchetto/i in "),
+        ("ja", "エラー[E025]: パッケージインデックスにパッケージ `nothing` はない", " にパッケージが 0 個"),
     ];
     for (lang, error, count) in wanted {
         let r = t.rythme(lang, "", &["info", "nothing"]);

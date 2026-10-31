@@ -1,0 +1,49 @@
+# 練習問題 27 · 失敗するかもしれない操作：Result  ★★☆
+# 参考解答。読む前に、まず自分で練習問題に挑戦してください！
+
+fn checked_divide(_, 0) = Err("ゼロ除算")
+fn checked_divide(a, b) = Ok(a / b)
+
+fn parse_age(text) = match parse_int(text)
+  Err(_) -> Err("数ではない")
+  Ok(n) if n < 0 -> Err("年齢は負にならない")
+  Ok(n) if n > 150 -> Err("年齢が大きすぎる")
+  Ok(n) -> Ok(n)
+end
+
+fn describe(result) = match result
+  Ok(value) -> "成功：{value}"
+  Err(message) -> "エラー：{message}"
+end
+
+fn check_code(code) =
+  if len(code) < 8 then Err("短すぎる")
+  else if not any(chars(code), is_digit) then Err("数字がない")
+  else Ok(code)
+
+# --- テスト（変更しないでください）---
+
+test "チェック付きの割り算"
+  assert_eq(checked_divide(9, 3), Ok(3))
+  assert_eq(checked_divide(1, 0), Err("ゼロ除算"))
+end
+
+test "年齢を読む"
+  assert_eq(parse_age("36"), Ok(36))
+  assert_eq(parse_age(" 7 "), Ok(7))
+  assert_eq(parse_age("七"), Err("数ではない"))
+  assert_eq(parse_age("-1"), Err("年齢は負にならない"))
+  assert_eq(parse_age("200"), Err("年齢が大きすぎる"))
+end
+
+test "説明"
+  assert_eq(describe(Ok(42)), "成功：42")
+  assert_eq(describe(Err("年齢が大きすぎる")), "エラー：年齢が大きすぎる")
+  assert_eq(describe(parse_age("-5")), "エラー：年齢は負にならない")
+end
+
+test "コードのチェック"
+  assert_eq(check_code("rythme2024"), Ok("rythme2024"))
+  assert_eq(check_code("abc1"), Err("短すぎる"))
+  assert_eq(check_code("functional"), Err("数字がない"))
+end

@@ -21,7 +21,7 @@ const { SITE, workspace, freePort, startServer, startExport, binary, checker, st
 
 const BIN = binary(process.argv[2]);
 const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
-const LANGS = ["fr", "en", "es", "de", "pt", "zh"];
+const LANGS = ["fr", "en", "es", "de", "pt", "zh", "it", "ja"];
 const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "ai/", "offline/", "nothing-here/"];
 const SHOTS = process.env.MOBILE_SHOTS || null;
 
@@ -139,7 +139,7 @@ async function pages(browser, base, mode) {
           const run = await page.evaluate(() => ({ y: window.scrollY, run: document.getElementById("run").getBoundingClientRect().bottom, h: window.innerHeight }));
           if (run.y !== 0 || run.run > run.h) failed.push(`${device.name} /${lang}/${p}: Run is not in sight when the playground opens (${JSON.stringify(run)})`);
         }
-        if (SHOTS && ["fr", "en", "zh"].includes(lang)) {
+        if (SHOTS && ["fr", "en", "zh", "ja"].includes(lang)) {
           await page.screenshot({ path: path.join(SHOTS, `${device.name.replace(/[^\w]+/g, "-")}-${lang}-${(p || "home/").replace(/\/$/, "")}.png`) });
         }
       }
@@ -255,7 +255,7 @@ async function targets(browser, base, mode) {
   const failed = [];
   const device = byName("390");
   const { context, page } = await open(browser, device);
-  for (const lang of ["fr", "en", "de", "zh"]) {
+  for (const lang of ["fr", "en", "de", "zh", "ja"]) {
     for (const p of PAGES) {
       await visit(page, `${base}/${lang}/${p}`, device);
       for (const menu of [false, true]) {

@@ -1,6 +1,6 @@
 //! The website of Rythme, written with Paquets: the home page, the tour of the
 //! language, the examples, the playground (the interpreter compiled to WebAssembly)
-//! and the guide for teachers, in six languages; installable, and offline once
+//! and the guide for teachers, in eight languages; installable, and offline once
 //! visited. Made to be read by AI assistants too: `/llms.txt`, every page as
 //! Markdown, structured data, and a page that tells how to give them Rythme.
 

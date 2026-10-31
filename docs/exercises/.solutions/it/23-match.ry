@@ -1,0 +1,53 @@
+# Esercizio 23 · Scegliere con `match`  ★★☆
+# Soluzione di riferimento. Prova a fare l'esercizio prima di leggerla!
+
+type Light = Green | Orange | Red
+
+fn next_light(light) = match light
+  Green -> Orange
+  Orange -> Red
+  Red -> Green
+end
+
+fn can_go(light) = match light
+  Green -> true
+  _ -> false
+end
+
+fn describe(list) = match list
+  [] -> "vuota"
+  [x] -> "uno: {x}"
+  [a, b] -> "due: {a} e {b}"
+  [first, ..] -> "molti, a partire da {first}"
+end
+
+fn greeting(person) = match person
+  {title, last} -> "Ciao, {title} {last}"
+  {name} -> "Ciao, {name}"
+end
+
+# --- Test (non cambiarli) ---
+
+test "luce successiva"
+  assert_eq(next_light(Green), Orange)
+  assert_eq(next_light(Orange), Red)
+  assert_eq(next_light(Red), Green)
+end
+
+test "si può passare"
+  assert_eq(can_go(Green), true)
+  assert_eq(can_go(Orange), false)
+  assert_eq(can_go(Red), false)
+end
+
+test "descrivi"
+  assert_eq(describe([]), "vuota")
+  assert_eq(describe([7]), "uno: 7")
+  assert_eq(describe([1, 2]), "due: 1 e 2")
+  assert_eq(describe([5, 6, 7]), "molti, a partire da 5")
+end
+
+test "saluto"
+  assert_eq(greeting({title: "Dr", last: "Hopper", name: "Grace"}), "Ciao, Dr Hopper")
+  assert_eq(greeting({name: "Grace"}), "Ciao, Grace")
+end

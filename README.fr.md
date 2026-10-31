@@ -4,7 +4,7 @@
 programmation purement fonctionnel, avec de l'aide partout.**
 Les programmes sont des fichiers qui finissent par `.ry`. L'interpréteur est écrit en Rust.
 
-*[English version →](README.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md) · [中文 →](README.zh.md)*
+*[English version →](README.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md) · [中文 →](README.zh.md) · [In italiano →](README.it.md) · [日本語 →](README.ja.md)*
 
 **Documentation :** le [manuel de référence](docs/reference.fr.md) (tout le
 langage, avec précision), le [guide pour les enseignants](docs/enseigner.md),
@@ -79,9 +79,9 @@ puts total                 # 20
     sous la souris, la complétion, aller à la définition, renommer
     (`rythme lsp`, le serveur de langage, pour VS Code, Neovim, Helix, Emacs...).
   - Chaque message, chaque documentation existe en **français, en anglais, en
-    espagnol, en allemand, en portugais et en chinois** (`--lang fr`,
-    `--lang es`, `--lang de`, `--lang pt`, `--lang zh`, ou automatiquement
-    selon la langue du système).
+    espagnol, en allemand, en portugais, en chinois, en italien et en japonais**
+    (`--lang fr`, `--lang es`, `--lang de`, `--lang pt`, `--lang zh`,
+    `--lang it`, `--lang ja`, ou automatiquement selon la langue du système).
 
 Voici à quoi ressemble une erreur :
 
@@ -102,7 +102,7 @@ erreur[E005]: impossible d'utiliser `+` avec Text et Int
 Le site <https://maxlestage.github.io/Rythme/> a un playground qui fait
 tourner le vrai interpréteur, compilé en WebAssembly ([`playground/`](playground)) :
 modifier du code, le lancer, le vérifier, lancer des tests, le mettre en
-forme, lire l'aide, en français, anglais, espagnol, allemand, portugais ou chinois,
+forme, lire l'aide, en français, anglais, espagnol, allemand, portugais, chinois, italien ou japonais,
 sans rien installer. Le site
 s'installe aussi comme une application (une Progressive Web App) et fonctionne
 hors ligne, playground compris. Son menu propose des thèmes de couleurs
@@ -110,7 +110,7 @@ hors ligne, playground compris. Son menu propose des thèmes de couleurs
 de côté, d'un téléphone de 320 px à un grand écran.
 
 Le dossier [`site/`](site) est le site web de Rythme (accueil, visite du
-langage, exemples, playground et guide pour les enseignants, en six
+langage, exemples, playground et guide pour les enseignants, en huit
 langues), écrit en Rust avec Paquets.
 
 ### Déployer le site sur Heroku
@@ -215,7 +215,7 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme test --help`        | l'utilisation et les options de n'importe quelle commande, dans votre langue |
 | `rythme completions bash`   | complétion des commandes pour bash, zsh, fish ou PowerShell ; `rythme man` : la page de manuel |
 
-Ajoutez `--lang` et une langue (`fr`, `en`, `es`, `de`, `pt` ou `zh`) avant la
+Ajoutez `--lang` et une langue (`fr`, `en`, `es`, `de`, `pt`, `zh`, `it` ou `ja`) avant la
 commande pour choisir la langue des messages, ou définissez `RYTHME_LANG`.
 
 ## Le langage en deux minutes
@@ -355,8 +355,9 @@ programmation qu'à un cours de programmation fonctionnelle : des exercices
 corrigés et notés automatiquement, le playground et le débogueur en cours,
 et une politique pour les assistants d'IA. Il existe aussi en
 [anglais](docs/teaching.md), en [espagnol](docs/teaching.es.md), en
-[allemand](docs/teaching.de.md), en [portugais](docs/teaching.pt.md) et en
-[chinois](docs/teaching.zh.md).
+[allemand](docs/teaching.de.md), en [portugais](docs/teaching.pt.md), en
+[chinois](docs/teaching.zh.md), en [italien](docs/teaching.it.md) et en
+[japonais](docs/teaching.ja.md).
 [`docs/exercises/`](docs/exercises/README.fr.md) contient 36 exercices
 gradués (dont six sur l'IA), avec énoncé, indices, tests et solutions, que `rythme exercise`
 distribue et vérifie dans chaque langue des messages.
@@ -365,7 +366,7 @@ distribue et vérifie dans chaque langue des messages.
 
 Rythme 1.0 est un langage complet et testé : l'interpréteur, le vérificateur,
 le formateur, le serveur de langage, les éditeurs, le bac à sable, le manuel
-et des messages en six langues. Son contenu est décrit dans
+et des messages en huit langues. Son contenu est décrit dans
 [`CHANGELOG.md`](CHANGELOG.md) ; des idées pour la suite sont à la fin de
 [`ROADMAP.md`](ROADMAP.md#after-10). Les limites, honnêtement :
 
@@ -402,7 +403,7 @@ et des messages en six langues. Son contenu est décrit dans
   `rythme help editors`). Le bac à sable en ligne fait tourner l'interpréteur
   compilé en WebAssembly.
 - **Langues.** Les messages existent en anglais, en français, en espagnol, en
-  allemand, en portugais et en chinois simplifié ; ajouter une langue consiste
+  allemand, en portugais, en chinois simplifié, en italien et en japonais ; ajouter une langue consiste
   à écrire un fichier de catalogue, `src/i18n/<code>.rs`, qu'un test compare à
   tous les textes du programme (voir
   [CONTRIBUTING](CONTRIBUTING.md#messages-in-every-language)). Les
