@@ -221,7 +221,7 @@ pub fn render(lang: Lang) -> Rendered {
 }
 
 /// Text in a double-quoted attribute.
-fn escape_attr(text: &str) -> String {
+pub(crate) fn escape_attr(text: &str) -> String {
     text.replace('&', "&amp;").replace('"', "&quot;").replace('<', "&lt;").replace('>', "&gt;")
 }
 

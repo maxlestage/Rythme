@@ -39,6 +39,8 @@ async fn exports_every_page_behind_the_base_path() {
     let root = std::fs::read_to_string(out.join("index.html")).unwrap();
     assert!(root.contains(r#"data-base="/Rythme""#));
     assert!(root.contains(r#"url=/Rythme/fr/"#));
+    // Described for search engines, like every page.
+    assert!(root.contains(r#"<meta name="description" content="Rythme est un langage"#), "{root}");
     // `/` picks any language of the site (the browser side, which it loads), and links
     // them all.
     assert!(root.contains(r#"data-pick-language="fr en es de pt zh""#), "{root}");
