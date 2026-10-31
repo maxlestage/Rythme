@@ -2024,11 +2024,10 @@ an argument, an operand (`n * fact(n - 1)`), a condition, or followed by `?`
 is not in tail position.
 
 Other calls nest, and nesting is limited by the stack: beyond a limit, the
-program stops with E014. The limit depends on the function; with the
-`rythme` command it is several hundred thousand nested calls (about 900 000
-for `total` below, more than 400 000 even for a function that does much more
-in each call), and 600 in the web playground. The list functions (`map`,
-`fold`...) do not nest.
+program stops with E014. With the `rythme` command the limit is 917 504
+nested calls, whatever the function (a little fewer when the calls go
+through functions such as `map` that call the function given to them), and
+600 in the web playground. The list functions (`map`, `fold`...) do not nest.
 
 ```rythme
 fn count_down(0, acc) = acc
@@ -2045,7 +2044,7 @@ print(total(1..5000000))
 
 ```text
 1000000 false
-error[E014]: too many nested calls (917503 calls in progress)
+error[E014]: too many nested calls (917504 calls in progress)
  --> 44-tail.ry:9:29
   |
 9 | fn total([x, ..rest]) = x + total(rest)               # not a tail call: + comes after
@@ -2059,11 +2058,11 @@ error[E014]: too many nested calls (917503 calls in progress)
       or use `fold`, `map`, `filter`, which have no limit.
   = call trace (most recent first):
       in `total` (×40) called at 44-tail.ry:9:29
-      … and 917463 more calls
+      … and 917464 more calls
   = more about this error: `rythme explain E014`
 ```
 
-(The number of calls in progress varies with the function and the machine.)
+(The number of calls in progress may change with the version of Rythme.)
 
 ### 4.7 Types
 
@@ -4918,7 +4917,7 @@ Notes:
 | nesting of brackets, blocks and other constructs in the code | 256 levels | E001 |
 | depth of an expression: each operator, call, index or field is one level, so `1 + 1 + ...` holds at most 1000 numbers | 1000 levels | E001 |
 | texts nested in `{...}` of texts | 32 levels | E001 |
-| nested (non-tail) calls | depends on the function and on the stack: several hundred thousand with `rythme` (about 900 000 for a simple recursion), 600 in the playground | E014 |
+| nested (non-tail) calls | 917 504 with `rythme` (a little fewer through functions like `map`), 600 in the playground | E014 |
 | steps of `rythme steps`: shown for each expression; in all; depth of an expression being evaluated | 200 (`--max`); 10 000 000; 10 000 levels, 1 200 in the playground | — |
 | digits of `round(x, digits)` | clamped to −15...15 | — |
 | decimals of `text(x, decimals)` | 0 to 100 | E023 |

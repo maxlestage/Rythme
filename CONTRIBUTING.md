@@ -27,8 +27,8 @@ lexer, the parser or the interpreter, run a longer session:
 ## How the interpreter is organised
 
 ```
-source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs ─▶ interp.rs
-               tokens       syntax tree   errors        slots         values
+source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs ─▶ vm/gen.rs ─▶ vm/run.rs
+               tokens       syntax tree   errors        slots     instructions    values
                                           before running
 ```
 
@@ -47,11 +47,27 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
   the types of expressions to report operations that would fail every time
   they run. A type only says what is certain: when the checker is not sure,
   it says nothing, because a correct program must never be rejected.
-- `compile.rs` prepares the syntax tree for `interp.rs`: each local name
-  becomes a numbered slot of the frame of its function, or a value captured
-  by a closure, so that running never searches for a local name. After a
-  change to the interpreter, run `bench/run.sh` before and after: the
-  programs of `bench/` print a checksum of their work and their best time.
+- `compile.rs` prepares the syntax tree: each local name becomes a numbered
+  slot of the frame of its function, or a value captured by a closure, so
+  that running never searches for a local name. `vm/gen.rs` then turns this
+  tree into the instructions of the virtual machine (`vm/mod.rs`): each one
+  names the registers it reads and writes (`n - 1` is one instruction that
+  reads `n` where it is), and the common cases have their own (a comparison
+  that jumps, a constructor pattern of names, a call of a name that surely
+  exists). `vm/run.rs` runs them: a call of a function of the program runs
+  its instructions in `exec`, a call in tail position goes on in the same
+  frame (`call_loop`), and the hooks of the debugger and the limit of calls
+  are met at the same moments as in the tree-walking interpreter of 1.0, so
+  that programs print exactly the same. Its only `unsafe` code reads the
+  registers of the running frame through a pointer: the rules it relies on
+  are written at the top of the file, `Chunk::check` validates every chunk,
+  and `cargo +nightly miri test --lib vm` checks it. `interp.rs` keeps the
+  names of the program (with a stamp that changes when they change, so that
+  an instruction can keep the value of a name), the calls made by built-in
+  functions (`call_value`) and what the tools need. After a change to the
+  interpreter, run `bench/run.sh` before and after (on a quiet machine, or
+  compare instructions with `valgrind --tool=callgrind`): the programs of
+  `bench/` print a checksum of their work and their best time.
 - `buffer.rs` holds the memory of texts and lists: a value made by adding at
   the end of another one (`acc + "x"`, `push(xs, x)`, `[..xs, x]`) is written
   in the room left after it, when nothing else was written there, so that
@@ -77,10 +93,11 @@ source text ─▶ lexer.rs ─▶ parser.rs ─▶ check.rs ─▶ compile.rs �
   `builtins/property.rs`.
 - `debug/` is the debugger: `rythme debug` in a terminal (`term.rs`) and
   `rythme dap` for editors (`dap.rs`). `compile.rs` adds the places where it
-  may pause (`Stmt::Stop`) only to the code of a program it runs, and the
-  interpreter follows the calls through hooks on paths it already takes
-  (`call_hook`, `return_hook`, `error_hook`), so that programs without it run
-  as fast as before: check with `bench/run.sh` after a change there.
+  may pause (`Stmt::Stop`, the instruction `Op::Stop`) only to the code of a
+  program it runs, and the virtual machine follows the calls through hooks
+  on paths it already takes (`call_hook`, `return_hook`, `error_hook`), so
+  that programs without it run as fast as before: check with `bench/run.sh`
+  after a change there.
   `tests/debug.rs` types sessions, speaks the protocol, and runs every
   example step by step.
 - `doc.rs` is `rythme doc`: the documentation of files and folders, from

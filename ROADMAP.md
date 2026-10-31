@@ -159,8 +159,13 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 Ideas, not promises: each one would be weighed against the rules above, and
 none may break the [stability promise](README.md#stability-promise) of 1.x.
 
-- **A bytecode virtual machine**, for programs several times faster that
-  print exactly the same thing.
+- [x] **A bytecode virtual machine**, for programs several times faster that
+  print exactly the same thing. Done: functions are compiled to register
+  instructions (`src/vm/`), with instructions of their own for the common
+  cases and a cache of the names of the program; the programs of `bench/`
+  run 1.1 to 2 times faster than with 1.0 and print the same.
+  - [ ] Faster still: values of 16 bytes instead of 24, a compact list of
+    Floats (see below), and calls that do not go through a Rust call each.
 - [x] **Types written by hand where they help**: optional, checked by
   `rythme check`, built on the inference that exists; code without them
   stays as it is. Done: `fn area(w: Int, h: Int) -> Int`, `total: Float =
