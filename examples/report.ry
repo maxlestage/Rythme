@@ -1,0 +1,35 @@
+# A sales report: tables with `format` and `center`, counts with `tally`
+# and `most_common`, a date written with a pattern, a paragraph wrapped.
+
+sales = [
+  {item: "tea", city: "Lyon", amount: 12.5},
+  {item: "coffee", city: "Paris", amount: 30},
+  {item: "tea", city: "Paris", amount: 7.25},
+  {item: "cocoa", city: "Lyon", amount: 18},
+  {item: "coffee", city: "Lille", amount: 1250.5},
+]
+
+## One line of the table: each cell written with its format spec.
+fn row(cells) = cells |> map(fn([value, spec]) = format(value, spec)) |> join(" | ")
+
+print(center(" Sales ", 33, "="))
+print(row([["item", "<8"], ["city", "<6"], ["amount", ">13"]]))
+
+sales.each do |s|
+  print(row([[s.item, "<8"], [s.city, "<6"], [s.amount, ">13,.2f"]]))
+end
+
+total = sum(sales, fn(s) = s.amount)
+print(row([["total", "<8"], ["", "<6"], [total, ">13,.2f"]]))
+print("")
+
+print("Most sold:", most_common(map(sales, fn(s) = s.item), 2))
+print("Sales by city:", tally(map(sales, fn(s) = s.city)))
+best = sort_by_desc(sales, fn(s) = s.amount) |> first |> map(fn(s) = "{s.item} in {s.city}")
+print("Best sale:", unwrap_or(best, "none"))
+print("Share of coffee:", format(sum(filter(sales, fn(s) = s.item == "coffee"), fn(s) = s.amount) / total, ".1%"))
+
+closed = {year: 2024, month: 1, day: 31}
+print("Next report:", format_date(add_months(closed, 1), "%A %d %B %Y"))
+print("")
+print(word_wrap("Every function used here is pure: it gives a new value and changes nothing, so the report can be tested like the rest of the program.", 33))

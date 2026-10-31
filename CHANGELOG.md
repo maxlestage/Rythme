@@ -211,13 +211,67 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   genetic algorithm) and `examples/ask_model.ry` (a language model asked
   through its HTTP API, with a key read by `env`), and six AI exercises
   (31 to 36) in every language of `rythme exercise`.
-- 211 built-in functions. Names from other languages point to the new ones
+- **The library, completed** after an audit against Ruby's core, Python's
+  builtins, `itertools`, `statistics` and `string`, and Elixir's `Enum`,
+  `String` and `Map` ([`docs/stdlib-audit.md`](docs/stdlib-audit.md)): 72
+  new functions, all pure.
+  - Text: `center`, `format(value, spec)` (the format specs of Python:
+    `".2f"`, `">8"`, `"08,.2f"`, `"#x"`, `".1%"`...), `replace_first`,
+    `occurrences`, `last_index_of`, `remove_prefix`, `remove_suffix`,
+    `capitalize_words`, `snake_case`, `camel_case`, `kebab_case`,
+    `swap_case`, `is_upper`, `is_lower`, `bytes`, `split_once`, `word_wrap`,
+    `edit_distance`, `inspect`, `print_error`.
+  - Numbers: `constrain` (Ruby's `clamp`), `divmod`, `binomial` (exact),
+    `digits`, `to_base` and `from_base` (bases 2 to 36, any size),
+    `is_positive`, `is_negative`, `is_zero`, `is_nan`, `is_finite`.
+  - Lists: `find_index`, `update_at`, `rotate_by`, `intersperse`,
+    `interleave`, `tally`, `count_by`, `most_common`, `unique_by`,
+    `sort_desc`, `sort_by_desc`, `chunk_by`, `split_at`, `combinations`,
+    `permutations`, `cartesian_product` (bounded: E023 beyond 10 million
+    elements), `unzip`, `iterate`, `unfold`, `filter_map`; `zip` takes two
+    lists or more.
+  - Records and dicts: `dig`, `merge_with`, `invert`, `select_keys`,
+    `reject_keys`, `map_keys`, `update(x, key, default, f)`; sets:
+    `symmetric_difference`, `is_disjoint`.
+  - Option and Result: `unwrap_or_else`, `expect`, `all_ok`.
+  - Dates: `add_months`, `day_of_year`, and patterns for `format_date` and
+    `parse_date` (`%Y %m %d %H %M %S %y %B %b %A %a %I %p %j %z %%`).
+  - The web and statistics: `base64_encode`, `base64_decode`, `url_encode`,
+    `url_decode`, `linspace`, `correlation`, `covariance`.
+  - 26 more Ruby names: `clamp`, `swapcase`, `ljust`, `rjust`, `ord`, `chr`,
+    `delete_prefix`, `delete_suffix`, `rindex`, `detect`, `collect`,
+    `rotate`, `combination`, `permutation`, `transform_values`,
+    `transform_keys`, `each_pair`, `to_h`, `warn`, `positive?`,
+    `negative?`, `zero?`, `nan?`, `finite?`, `subset?`, `disjoint?`.
+  - Each one is known to the checker (an argument that never fits is
+    reported before running), documented with an example run by the tests,
+    in the six languages, in `rythme help` (a block at the end of the topics
+    `lists`, `text`, `dicts`, `errors` and `dates`), the manual (6, *More of
+    the library*), the lists of the site, the playground and VS Code, and
+    `docs/llms-full.txt`. Names that the examples and the exercises define
+    (`is_prime`, `mean`, `median`, `clamp`, `merge`, `title_case`,
+    `frequencies`, `factorial`, `sign`...) were left free.
+- 283 built-in functions. Names from other languages point to the new ones
   (`parse_csv`, `DictReader`, `to_csv`, `srand`, `median`, `stdev`, `eye`,
-  `randn`, `logistic`...). As the stability promise says, a function of a
-  program with one of these names stays its own (W003).
+  `randn`, `logistic`, `removeprefix`, `Counter`, `levenshtein`, `btoa`,
+  `encodeURIComponent`, `strptime`...). As the stability promise says, a
+  function of a program with one of these names stays its own (W003).
 
 ### Tools
 
+- **`rythme CMD --help`** (or `-h`) for every command: its usage, its
+  options and its exit codes, in the six languages (before the file for
+  `run`, `steps`, `debug` and `-e`, whose following words belong to the
+  program).
+- **`rythme run -`** and `rythme -` run the program read from the standard
+  input; **`rythme check FOLDER`** checks every `.ry` file of a folder.
+- **`rythme completions bash|zsh|fish|powershell`** writes a completion
+  script (commands, options, topics of `help`, codes of `explain`,
+  languages, `.ry` files), and **`rythme man`** the manual page, in roff.
+- **`rythme version --verbose`** adds the system, the languages, the numbers
+  of functions and codes, and the version of the JSON output;
+  **`rythme upgrade`** says which command installs the latest version,
+  guessed from where Rythme is installed (nothing is downloaded).
 - **A debugger: `rythme debug file.ry`.** Breakpoints on lines (`break 12`,
   `break geometry.ry:3`; a line without code moves to the next one) and on
   functions (`break fact`), `run`, `next`, `step`, `finish` (which shows the

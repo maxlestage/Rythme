@@ -454,6 +454,8 @@ impl DataTy {
 
 // ----- built-in functions -------------------------------------------------
 
+mod stdlib;
+
 /// What the checker knows of a call to a built-in function.
 pub enum Outcome {
     /// The call gives a value of this type (when it does not stop).
@@ -938,9 +940,10 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 Ty::list(same_list_or_text(&arg(0)))
             }
             "zip" => {
-                need(a, 0, Expected::List)?;
-                need(a, 1, Expected::List)?;
-                Ty::list(Ty::list(arg(0).elem().join(&arg(1).elem())))
+                for i in 0..n.max(2) {
+                    need(a, i, Expected::List)?;
+                }
+                Ty::list(Ty::list(a.iter().fold(Ty::Never, |acc, t| acc.join(&t.elem()))))
             }
             "enumerate" => {
                 need(a, 0, Expected::List)?;
@@ -1177,10 +1180,12 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
             "today" => date_ty(false, true),
             "parse_date" => {
                 need(a, 0, Expected::Text)?;
+                need(a, 1, Expected::Text)?;
                 Ty::result(date_ty(false, false), Ty::Text)
             }
             "format_date" => {
                 need(a, 0, Expected::Date)?;
+                need(a, 1, Expected::Text)?;
                 Ty::Text
             }
             "is_date" => Ty::Bool,
@@ -1390,7 +1395,7 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 };
                 Ty::record(vec![(Rc::from("train"), part.clone()), (Rc::from("test"), part)], true)
             }
-            _ => return Err(Outcome::Gives(Ty::Any)),
+            _ => return stdlib::call(name, a),
         })
     })();
     match gives {
@@ -1472,7 +1477,7 @@ pub fn callback(name: &str, index: usize, a: &[Ty]) -> Option<Callback> {
         ("derivative", 0) => (vec![Ty::Float], None),
         ("gradient", 0) => (vec![Ty::list(Ty::Float)], None),
         ("zip_with", 2) => (vec![elem, a.get(1).cloned().unwrap_or(Ty::Any).elem()], None),
-        _ => return None,
+        _ => return stdlib::callback(name, index, a),
     };
     Some(Callback { params, returns })
 }

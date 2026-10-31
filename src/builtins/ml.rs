@@ -722,3 +722,58 @@ pub(super) fn train_test_split(it: &mut Interp, a: &[Value], span: Span) -> Fall
     r.set(Rc::from("test"), Value::list(test));
     Ok(Value::Record(Rc::new(r)))
 }
+
+// ----- evenly spaced numbers, and two variables together --------------------
+
+pub(super) fn linspace(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let start = number(a, 0, "linspace", span)?;
+    let end = number(a, 1, "linspace", span)?;
+    let n = count_arg(a, 2, "linspace", span)?;
+    if n > MAX_LIST {
+        return Err(too_big(true, span));
+    }
+    let step = if n > 1 { (end - start) / (n - 1) as f64 } else { 0.0 };
+    // The last one is exactly `end`, whatever the rounding of the steps.
+    Ok(Value::list((0..n).map(|i| Value::Float(if i + 1 == n && n > 1 { end } else { start + step * i as f64 })).collect()))
+}
+
+/// Two samples of the same length, at least two numbers each.
+fn paired(a: &[Value], f: &str, span: Span) -> Fallible<(Vec<f64>, Vec<f64>)> {
+    list(a, 0, f, span)?;
+    list(a, 1, f, span)?;
+    let (x, y) = (vector(a, 0, f, span)?, vector(a, 1, f, span)?);
+    same_length(f, &x, &y, span)?;
+    if x.len() < 2 {
+        return Err(invalid(
+            t!("`{f}` needs at least two numbers in each list", "`{f}` a besoin d'au moins deux nombres dans chaque liste"),
+            span,
+        ));
+    }
+    Ok((x, y))
+}
+
+/// The covariance of two samples, divided by n like `variance`.
+fn covariance_of(x: &[f64], y: &[f64]) -> f64 {
+    let (mx, my) = (mean_of(x), mean_of(y));
+    total(x.iter().zip(y).map(|(p, q)| (p - mx) * (q - my))) / x.len() as f64
+}
+
+pub(super) fn covariance(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let (x, y) = paired(a, "covariance", span)?;
+    Ok(Value::Float(covariance_of(&x, &y)))
+}
+
+pub(super) fn correlation(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let (x, y) = paired(a, "correlation", span)?;
+    let (sx, sy) = (variance_of(&x).sqrt(), variance_of(&y).sqrt());
+    if sx == 0.0 || sy == 0.0 {
+        return Err(invalid(
+            t!(
+                "`correlation` needs numbers that vary: one of the lists has all its numbers equal",
+                "`correlation` a besoin de nombres qui varient : l'une des listes a tous ses nombres égaux"
+            ),
+            span,
+        ));
+    }
+    Ok(Value::Float((covariance_of(&x, &y) / (sx * sy)).clamp(-1.0, 1.0)))
+}
