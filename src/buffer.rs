@@ -215,6 +215,27 @@ impl Text {
         let cap = if grows { len.max(16).saturating_mul(2) } else { len };
         Text::with([self.as_bytes(), tail.as_bytes()], cap, true)
     }
+
+    /// A text with room for `cap` bytes in all, to add to (the pieces of
+    /// `"... {x} ..."`).
+    pub fn with_room(s: &str, cap: usize) -> Text {
+        Text::with([s.as_bytes(), &[]], cap.max(s.len()), true)
+    }
+
+    /// This text becomes itself followed by `tail` (see `concat`): in the room
+    /// after it when it can, which the other texts sharing its memory do not see.
+    pub fn push_str(&mut self, tail: &str) {
+        let head = self.head();
+        let used = head.used.get();
+        if used == self.len && head.cap - used >= tail.len() {
+            // SAFETY: as in `concat`: the room is allocated and no text sees it.
+            unsafe { std::ptr::copy_nonoverlapping(tail.as_ptr(), self.data().add(used), tail.len()) };
+            head.used.set(used + tail.len());
+            self.len += tail.len();
+        } else {
+            *self = self.concat(tail);
+        }
+    }
 }
 
 impl Clone for Text {
