@@ -9,6 +9,8 @@
   "config.language.de": "德语。",
   "config.language.pt": "葡萄牙语。",
   "config.language.zh": "简体中文。",
+  "config.language.it": "意大利语。",
+  "config.language.ja": "日语。",
   "config.trace": "在 *Rythme* 输出中显示与语言服务器交换的消息，用于排查问题。",
   "command.restart": "重启语言服务器",
   "command.run": "运行这个文件",

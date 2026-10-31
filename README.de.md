@@ -4,7 +4,7 @@
 Programmiersprache, mit Hilfe überall.**
 Programme sind Dateien, die auf `.ry` enden. Der Interpreter ist in Rust geschrieben.
 
-*[English version →](README.md) · [Version française →](README.fr.md) · [En español →](README.es.md) · [Em português →](README.pt.md) · [中文 →](README.zh.md)*
+*[English version →](README.md) · [Version française →](README.fr.md) · [En español →](README.es.md) · [Em português →](README.pt.md) · [中文 →](README.zh.md) · [In italiano →](README.it.md) · [日本語 →](README.ja.md)*
 
 Diese README ist eine Zusammenfassung. Die Meldungen, die Hilfe und die
 Erklärungen von Rythme gibt es auf Deutsch (`--lang de`), ebenso den

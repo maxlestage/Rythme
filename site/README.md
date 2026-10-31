@@ -6,7 +6,7 @@ rendered on the server with their SEO tags and a strict Content-Security-Policy.
 the pages do in the browser is Rust too, compiled to WebAssembly: the menus, the
 themes, the installable app and its service worker, the playground and its
 interpreter (see [Architecture: what is Rust where](#architecture-what-is-rust-where)).
-In the six languages of the interpreter (see [Languages](#languages)), mobile first.
+In the eight languages of the interpreter (see [Languages](#languages)), mobile first.
 It installs as an app and works offline (see
 [The installable app](#the-installable-app)), has color themes and never scrolls
 sideways (see [Themes and layout](#themes-and-layout)), and is quick on a slow phone:
@@ -196,8 +196,8 @@ for it.
   the network goes to the interpreter first.
 - **Small bundles.** The profile `wasm-release` of `Cargo.toml`: `opt-level = "z"`,
   fat LTO, one codegen unit, `panic = "abort"`, stripped; `wasm-opt -Oz` if installed.
-  The interpreter is mostly its own texts: 1.6 MB of its 3.2 MB are its messages and
-  its help in six languages.
+  The interpreter is mostly its own texts: its messages and its help in eight
+  languages (the playground's bundle is 4.5 MB, 1.0 MB in Brotli).
 - **Considered, not done.** Inlining the critical CSS: `site.css` is 11 KB in Brotli,
   fetched while the page arrives, and inlining it would grow every page and every copy
   the service worker keeps. Loading the playground's bundle later: its page needs it
@@ -206,8 +206,8 @@ for it.
 
 ## Languages
 
-French, English, Spanish, German, Portuguese (Brazilian, "você") and Chinese
-(simplified): the languages of the interpreter (`LANGUAGES` in `src/lang.rs`).
+French, English, Spanish, German, Portuguese (Brazilian, "você"), Chinese
+(simplified), Italian and Japanese: the languages of the interpreter (`LANGUAGES` in `src/lang.rs`).
 
 - **Texts.** `src/i18n.rs` has `Lang` and the `Texts` structure; each language is a
   `Texts` constant in `src/i18n/<code>.rs`. Everything else that depends on the

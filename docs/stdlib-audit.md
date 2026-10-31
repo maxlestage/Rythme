@@ -187,7 +187,7 @@ whole, bounded (E023 beyond 50 million elements).
 ## What the tools gained
 
 Outside of the library, the same audit looked at the `rythme` command
-itself: `rythme CMD --help` for every command in the six languages, `rythme
+itself: `rythme CMD --help` for every command in the eight languages, `rythme
 run -` (the program on the standard input), `rythme check FOLDER`, `rythme
 completions bash|zsh|fish|powershell`, `rythme man`, `rythme version
 --verbose` and `rythme upgrade` were added. `rythme fmt --check` already had

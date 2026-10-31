@@ -3,7 +3,7 @@
 **比 Python 和 Ruby 更简单，和 Ruby 一样好用：一门纯函数式编程语言，处处都有帮助。**
 程序是以 `.ry` 结尾的文件。解释器用 Rust 编写。
 
-*[English version →](README.md) · [Version française →](README.fr.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md)*
+*[English version →](README.md) · [Version française →](README.fr.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md) · [In italiano →](README.it.md) · [日本語 →](README.ja.md)*
 
 这份 README 是一个概要。Rythme 的消息、帮助和错误解释都有简体中文版
 （`--lang zh`），[教师指南](docs/teaching.zh.md)也有中文版；完整的
