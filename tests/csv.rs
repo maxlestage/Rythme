@@ -321,7 +321,7 @@ fn help_on_csv_and_random() {
     assert!(r.stdout.contains("random_seed(n)"), "{}", r.stdout);
     let r = rythme(&["help"]);
     assert!(r.stdout.contains("  csv ") && r.stdout.contains("  random ") && r.stdout.contains("--seed"), "{}", r.stdout);
-    for lang in ["es", "de", "pt", "zh"] {
+    for lang in ["es", "de", "pt", "zh", "it", "ja"] {
         let r = rythme_lang(lang, &["help", "csv"]);
         assert!(r.stdout.starts_with("CSV"), "{lang}: {}", r.stdout);
         assert!(!r.stdout.contains("THE TABLES"), "{lang}: not translated");

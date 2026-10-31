@@ -12,6 +12,26 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Italian and Japanese
+
+Rythme now speaks eight languages: Italian (`--lang it`, `it_IT`) and
+Japanese (`--lang ja`, `ja_JP`) join English, French, Spanish, German,
+Portuguese and Chinese.
+
+- Every message, help page, explanation of a code, documentation of a
+  function, page of `rythme learn`, file of `rythme new` and exercise of
+  `rythme exercise` (with its reference solution) in both languages; the
+  topics of `rythme help` under their Italian and Japanese names
+  (`rythme help liste`, `rythme help リスト`). Japanese characters take two
+  columns: the `^` stay under the code.
+- The website in both languages (`/it/`, `/ja/`), with its playground, its
+  examples and the guide for teachers (`docs/teaching.it.md`,
+  `docs/teaching.ja.md`); `README.it.md` and `README.ja.md`; the VS Code
+  extension (`package.nls.it.json`, `package.nls.ja.json`, and `it`, `ja` for
+  `rythme.language`); `"it"` and `"ja"` for `language` in the JSON output.
+- The playground's WebAssembly grows by about 0.85 MB (0.15 MB in Brotli)
+  with the two catalogs.
+
 ### The package index
 
 Packages are found and shared by name, beside the dependencies from git or

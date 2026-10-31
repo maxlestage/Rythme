@@ -9,6 +9,8 @@
   "config.language.de": "Deutsch.",
   "config.language.pt": "Portugiesisch.",
   "config.language.zh": "Chinesisch (vereinfacht).",
+  "config.language.it": "Italienisch.",
+  "config.language.ja": "Japanisch.",
   "config.trace": "Zeigt die mit dem Sprachserver ausgetauschten Nachrichten in der Ausgabe *Rythme*, um ein Problem zu suchen.",
   "command.restart": "Sprachserver neu starten",
   "command.run": "Diese Datei ausführen",

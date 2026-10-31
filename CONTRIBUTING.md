@@ -118,7 +118,7 @@ Every text shown to users is written in English and French where it is used:
 t!("unknown name `{name}`", "nom inconnu `{name}`")
 ```
 
-The other languages (Spanish, German, Portuguese and Chinese today) have a
+The other languages (Spanish, German, Portuguese, Chinese, Italian and Japanese today) have a
 **catalog**, `src/i18n/<code>.rs`:
 each English text of the program with its translation, compiled into the
 program. Fixed texts that are not formatted (help pages, explanations of

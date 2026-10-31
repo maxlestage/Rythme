@@ -1,0 +1,29 @@
+# Esercizio 17 · Pipeline  ★★☆
+# Soluzione di riferimento. Prova a fare l'esercizio prima di leggerla!
+
+fn sum_of_odd_squares(n) = 1..n |> filter(is_odd) |> map(fn(x) = x * x) |> sum
+
+fn top_three(scores) = scores |> sort |> reverse |> take(3)
+
+fn shout_words(sentence) = sentence |> split |> map(upper) |> join(" ")
+
+fn initials_of(sentence) = sentence |> split |> map(fn(w) = upper(w[0])) |> join("")
+
+# --- Test (non cambiarli) ---
+
+test "somma dei quadrati dispari"
+  assert_eq(sum_of_odd_squares(5), 35)
+  assert_eq(sum_of_odd_squares(1), 1)
+end
+
+test "i tre migliori"
+  assert_eq(top_three([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(top_three([4]), [4])
+end
+
+test "parole gridate" = assert_eq(shout_words("hello  world"), "HELLO WORLD")
+
+test "iniziali"
+  assert_eq(initials_of("portable network graphics"), "PNG")
+  assert_eq(initials_of("Rythme"), "R")
+end

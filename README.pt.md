@@ -4,7 +4,7 @@
 programação puramente funcional, com ajuda em todo lugar.**
 Os programas são arquivos que terminam em `.ry`. O interpretador é escrito em Rust.
 
-*[English version →](README.md) · [Version française →](README.fr.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [中文 →](README.zh.md)*
+*[English version →](README.md) · [Version française →](README.fr.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [中文 →](README.zh.md) · [In italiano →](README.it.md) · [日本語 →](README.ja.md)*
 
 Este README é um resumo. As mensagens, a ajuda e as explicações do Rythme
 existem em português (`--lang pt`), assim como o

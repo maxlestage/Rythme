@@ -23,7 +23,7 @@
         "version": { "const": 1, "description": "The version of these documents." },
         "command": { "enum": ["check", "run", "test", "fix", "explain", "help", "search", "info"] },
         "rythme": { "type": "string", "description": "The version of Rythme, like \"1.0.0\"." },
-        "language": { "enum": ["en", "fr", "es", "de", "pt", "zh"], "description": "The language of the messages." }
+        "language": { "enum": ["en", "fr", "es", "de", "pt", "zh", "it", "ja"], "description": "The language of the messages." }
       }
     },
     "position": {

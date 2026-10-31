@@ -1,6 +1,6 @@
 # 用 Rythme 教学
 
-*[English version →](teaching.md) · [Version française →](enseigner.md) · [En español →](teaching.es.md) · [Auf Deutsch →](teaching.de.md) · [Em português →](teaching.pt.md)*
+*[English version →](teaching.md) · [Version française →](enseigner.md) · [En español →](teaching.es.md) · [Auf Deutsch →](teaching.de.md) · [Em português →](teaching.pt.md) · [In italiano →](teaching.it.md) · [日本語 →](teaching.ja.md)*
 
 Rythme 是为课堂设计的：一门小语言，配上会教人的消息，让学生把时间花在思想上，而不是语法上。本指南涵盖一门课需要的内容：课程大纲、自动检查和评分的练习、展示代码如何运行的方法，以及对待 AI 助手的规则。
 
@@ -152,7 +152,7 @@ fib(4)
 
 ## 使用学生的语言
 
-- 每条消息、每个帮助主题、每个解释和 `rythme learn` 的每一页都有英语、法语、西班牙语、德语、葡萄牙语和中文版本。Rythme 跟随系统的语言；`--lang es` 或环境变量 `RYTHME_LANG=es` 可以选择另一种。
+- 每条消息、每个帮助主题、每个解释和 `rythme learn` 的每一页都有英语、法语、西班牙语、德语、葡萄牙语、中文、意大利语和日语版本。Rythme 跟随系统的语言；`--lang es` 或环境变量 `RYTHME_LANG=es` 可以选择另一种。
 - 关键字、函数名和命令在每种语言中都相同：一个班写的程序在哪里都能运行，`rythme help` 也接受各种语言的主题名（`rythme help 列表`）。
 - 练习也跟随语言：`rythme --lang de exercise start 7` 会写出德语的 `07-rekursion.ry`。
 - 网站、在线试玩和本指南都有同样的这些语言版本。

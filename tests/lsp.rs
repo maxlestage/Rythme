@@ -1411,6 +1411,8 @@ fn csv_and_random_seed_in_the_editor() {
         ("de", "Liest eine CSV-Tabelle"),
         ("pt", "Lê uma tabela CSV"),
         ("zh", "读取一个 CSV 表格"),
+        ("it", "Legge una tabella CSV"),
+        ("ja", "CSV の表"),
     ] {
         let (mut lsp, _) = Lsp::start(lang, INIT);
         lsp.open(u, "x = csv_parse(\"a\")\n");

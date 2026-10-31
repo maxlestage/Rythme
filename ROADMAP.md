@@ -231,7 +231,7 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
     the checker, documented and translated; names the exercises define stay
     free.
 - [x] **A command line that feels finished**: `--help` for every command in
-  the six languages, `rythme run -` (the standard input), `rythme check
+  the eight languages, `rythme run -` (the standard input), `rythme check
   FOLDER`, `rythme completions bash|zsh|fish|powershell`, `rythme man`,
   `rythme version --verbose` and `rythme upgrade`.
 - [x] **Rythme for AI assistants**: models learn the language fast, write

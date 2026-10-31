@@ -829,7 +829,7 @@ Commands
   rythme -e "code"          run a piece of code
   rythme lsp                language server, for editors (VS Code, Neovim...)
   rythme mcp                server for AI assistants (Model Context Protocol)
-  option --lang CODE        language of the messages: en, fr, es, de, pt, zh (or RYTHME_LANG)
+  option --lang CODE        language of the messages: en, fr, es, de, pt, zh, it, ja (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
   start       the language in one minute
@@ -889,7 +889,7 @@ Comandos
   rythme -e "código"        executar um trecho de código
   rythme lsp                servidor de linguagem, para editores (VS Code, Neovim...)
   rythme mcp                servidor para os assistentes de IA (Model Context Protocol)
-  opção --lang CÓDIGO       idioma das mensagens: en, fr, es, de, pt, zh (ou RYTHME_LANG)
+  opção --lang CÓDIGO       idioma das mensagens: en, fr, es, de, pt, zh, it, ja (ou RYTHME_LANG)
 
 Temas (rythme help TEMA)
   start       a linguagem em um minuto
@@ -3054,7 +3054,7 @@ Definitions are kept from one line to the next. If a line is not finished
 Commands
   :help           this help              :quit          leave (or Ctrl-D)
   :doc map        help on a name         :load f.ry     load a file
-  :reset          forget everything      :lang fr       change the language (en, fr, es, de, pt, zh)
+  :reset          forget everything      :lang fr       change the language (en, fr, es, de, pt, zh, it, ja)
   :learn          guided tour            :explain E003  explain an error
   :steps fib(4)   show the calculation step by step
 The Tab key completes names."#,
@@ -3069,7 +3069,7 @@ terminada (parêntese aberto, bloco sem `end`...), ela continua na linha seguint
 Comandos
   :help           esta ajuda             :quit          sair (ou Ctrl-D)
   :doc map        ajuda sobre um nome    :load f.ry     carregar um arquivo
-  :reset          esquecer tudo          :lang pt       mudar o idioma (en, fr, es, de, pt, zh)
+  :reset          esquecer tudo          :lang pt       mudar o idioma (en, fr, es, de, pt, zh, it, ja)
   :learn          visita guiada          :explain E003  explicar um erro
   :steps fib(4)   mostrar o cálculo passo a passo
 A tecla Tab completa os nomes."#,
@@ -3296,7 +3296,7 @@ starts by itself:
 
 VS Code
   the extension in editors/vscode: colors, snippets and the language server.
-  Settings: rythme.path (the program), rythme.language (en, fr, es, de, pt, zh or auto).
+  Settings: rythme.path (the program), rythme.language (en, fr, es, de, pt, zh, it, ja or auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   every editor that speaks the Language Server Protocol: tell it to start
@@ -3310,7 +3310,7 @@ Zed
 Colors in Neovim, Helix and Zed
   the Tree-sitter grammar in editors/tree-sitter-rythme (see editors/README.md).
 
-The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh) or
+The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh, it, ja) or
 RYTHME_LANG chooses it: rythme --lang fr lsp"#,
             r#"O RYTHME NO SEU EDITOR
 
@@ -3326,7 +3326,7 @@ dobra de código. Isso é o servidor de linguagem, que o editor inicia sozinho:
 
 VS Code
   a extensão em editors/vscode: cores, snippets e o servidor de linguagem.
-  Configurações: rythme.path (o programa), rythme.language (en, fr, es, de, pt, zh ou auto).
+  Configurações: rythme.path (o programa), rythme.language (en, fr, es, de, pt, zh, it, ja ou auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   todo editor que fala o Language Server Protocol: diga a ele para iniciar
@@ -3340,7 +3340,7 @@ Zed
 Cores no Neovim, no Helix e no Zed
   a gramática Tree-sitter em editors/tree-sitter-rythme (veja editors/README.md).
 
-O idioma das mensagens segue o do editor, a não ser que `--lang` (en, fr, es, de, pt, zh)
+O idioma das mensagens segue o do editor, a não ser que `--lang` (en, fr, es, de, pt, zh, it, ja)
 ou RYTHME_LANG o escolha: rythme --lang pt lsp"#,
         ),
         (

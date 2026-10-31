@@ -1,0 +1,49 @@
+# Esercizio 26 · Un valore che può mancare: Option  ★★☆
+# Soluzione di riferimento. Prova a fare l'esercizio prima di leggerla!
+
+fn safe_divide(_, 0) = None
+fn safe_divide(a, b) = Some(a / b)
+
+fn find_age(people, name) = people |> find(fn(p) = p.name == name) |> map(fn(p) = p.age)
+
+fn age_or_unknown(people, name) = match find_age(people, name)
+  Some(age) -> text(age)
+  None -> "sconosciuta"
+end
+
+fn first_long_word(words) = find(words, fn(w) = len(w) > 5)
+
+fn add_options(a, b) = match [a, b]
+  [Some(x), Some(y)] -> Some(x + y)
+  _ -> None
+end
+
+# --- Test (non cambiarli) ---
+
+people = [{name: "Ada", age: 36}, {name: "Alan", age: 41}]
+
+test "divisione sicura"
+  assert_eq(safe_divide(10, 4), Some(2.5))
+  assert_eq(safe_divide(1, 0), None)
+end
+
+test "trova l'età"
+  assert_eq(find_age(people, "Alan"), Some(41))
+  assert_eq(find_age(people, "Grace"), None)
+end
+
+test "età o sconosciuta"
+  assert_eq(age_or_unknown(people, "Ada"), "36")
+  assert_eq(age_or_unknown(people, "Grace"), "sconosciuta")
+end
+
+test "prima parola lunga"
+  assert_eq(first_long_word(["a", "functional", "language"]), Some("functional"))
+  assert_eq(first_long_word(["short", "words"]), None)
+end
+
+test "somma di Option"
+  assert_eq(add_options(Some(2), Some(3)), Some(5))
+  assert_eq(add_options(Some(2), None), None)
+  assert_eq(add_options(None, None), None)
+end
