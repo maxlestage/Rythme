@@ -1,5 +1,5 @@
-//! The languages of the site: French, English, Spanish, German, Portuguese (Brazilian)
-//! and Chinese (simplified), the languages of the interpreter (`rythme::lang`). The
+//! The languages of the site: French, English, Spanish, German, Portuguese (Brazilian),
+//! Chinese (simplified), Italian and Japanese, the languages of the interpreter (`rythme::lang`). The
 //! language of a page comes from its URL (`/fr/…`, `/zh/…`).
 //!
 //! Each language is a [`Texts`] constant in `i18n/<code>.rs`, and every value that
@@ -10,6 +10,8 @@ mod de;
 mod en;
 mod es;
 mod fr;
+mod it;
+mod ja;
 mod pt;
 mod zh;
 
@@ -17,11 +19,13 @@ pub use de::DE;
 pub use en::EN;
 pub use es::ES;
 pub use fr::FR;
+pub use it::IT;
+pub use ja::JA;
 pub use pt::PT;
 pub use zh::ZH;
 
 /// The number of languages.
-pub const COUNT: usize = 6;
+pub const COUNT: usize = 8;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub enum Lang {
@@ -31,46 +35,48 @@ pub enum Lang {
     De,
     Pt,
     Zh,
+    It,
+    Ja,
 }
 
 impl Lang {
     /// In the order of the selector, and of every array given to [`Lang::pick`].
-    pub const ALL: [Lang; COUNT] = [Lang::Fr, Lang::En, Lang::Es, Lang::De, Lang::Pt, Lang::Zh];
+    pub const ALL: [Lang; COUNT] = [Lang::Fr, Lang::En, Lang::Es, Lang::De, Lang::Pt, Lang::Zh, Lang::It, Lang::Ja];
 
     /// The code of the addresses, of the cookie and of `rythme --lang`.
     pub fn code(self) -> &'static str {
-        self.pick(["fr", "en", "es", "de", "pt", "zh"])
+        self.pick(["fr", "en", "es", "de", "pt", "zh", "it", "ja"])
     }
 
     /// The BCP 47 tag of the pages (`lang`, `hreflang`, the manifests): Brazilian
     /// Portuguese, and Chinese in simplified characters, so that browsers pick the
     /// right glyphs.
     pub fn tag(self) -> &'static str {
-        self.pick(["fr", "en", "es", "de", "pt-BR", "zh-Hans"])
+        self.pick(["fr", "en", "es", "de", "pt-BR", "zh-Hans", "it", "ja"])
     }
 
     /// The name of the language, in the language itself.
     pub fn name(self) -> &'static str {
-        self.pick(["Français", "English", "Español", "Deutsch", "Português", "中文"])
+        self.pick(["Français", "English", "Español", "Deutsch", "Português", "中文", "Italiano", "日本語"])
     }
 
     /// The Open Graph locale.
     pub fn locale(self) -> &'static str {
-        self.pick(["fr_FR", "en_US", "es_ES", "de_DE", "pt_BR", "zh_CN"])
+        self.pick(["fr_FR", "en_US", "es_ES", "de_DE", "pt_BR", "zh_CN", "it_IT", "ja_JP"])
     }
 
     /// The position of the language in `rythme::lang::LANGUAGES`: the language of the
     /// messages of the playground's interpreter (the tests check it).
     pub fn interpreter(self) -> usize {
-        self.pick([1, 0, 2, 3, 4, 5])
+        self.pick([1, 0, 2, 3, 4, 5, 6, 7])
     }
 
-    /// Picks the value of this language in `[fr, en, es, de, pt, zh]`.
+    /// Picks the value of this language in `[fr, en, es, de, pt, zh, it, ja]`.
     pub fn pick<T: Copy>(self, values: [T; COUNT]) -> T {
         values[self as usize]
     }
 
-    /// `fr`, `en`, `es`, `de`, `pt` or `zh` exactly.
+    /// `fr`, `en`, `es`, `de`, `pt`, `zh`, `it` or `ja` exactly.
     pub fn parse(code: &str) -> Option<Lang> {
         Lang::ALL.into_iter().find(|l| l.code() == code)
     }
@@ -81,7 +87,7 @@ impl Lang {
     }
 
     pub fn texts(self) -> &'static Texts {
-        self.pick([&FR, &EN, &ES, &DE, &PT, &ZH])
+        self.pick([&FR, &EN, &ES, &DE, &PT, &ZH, &IT, &JA])
     }
 }
 

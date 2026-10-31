@@ -92,7 +92,7 @@ async fn the_manifests_are_served_and_complete() {
             }
         }
     }
-    assert_eq!(client.get("/it/manifest.webmanifest").await.status(), 404);
+    assert_eq!(client.get("/ru/manifest.webmanifest").await.status(), 404);
 }
 
 /// A value of what the server gives the service worker (`wasm_bindgen.serve({...})`,

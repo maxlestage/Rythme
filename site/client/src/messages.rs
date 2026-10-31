@@ -5,9 +5,9 @@
 /// The words that start the interpreter's messages, in every language of
 /// `rythme::lang::LANGUAGES` (the site's tests check that none is missing). The server
 /// colors the messages of its pages with them too.
-pub const ERROR_WORDS: [&str; 5] = ["error", "erreur", "Fehler", "erro", "错误"];
-pub const WARNING_WORDS: [&str; 6] = ["warning", "avertissement", "advertencia", "Warnung", "aviso", "警告"];
-pub const HELP_WORDS: [&str; 6] = ["help", "aide", "ayuda", "Hilfe", "ajuda", "帮助"];
+pub const ERROR_WORDS: [&str; 7] = ["error", "erreur", "Fehler", "erro", "错误", "errore", "エラー"];
+pub const WARNING_WORDS: [&str; 7] = ["warning", "avertissement", "advertencia", "Warnung", "aviso", "警告", "avviso"];
+pub const HELP_WORDS: [&str; 8] = ["help", "aide", "ayuda", "Hilfe", "ajuda", "帮助", "aiuto", "ヘルプ"];
 
 /// A piece of the output: a text with its class (`None`: plain text), or the code of
 /// an error (`E003`), shown as a button that explains it.

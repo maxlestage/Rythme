@@ -146,7 +146,7 @@ mod tests {
     #[test]
     fn unknown_paths() {
         assert_eq!(Route::parse("/"), None);
-        assert_eq!(Route::parse("/it/"), None);
+        assert_eq!(Route::parse("/ru/"), None);
         assert_eq!(Route::parse("/zh/learn/"), Some(Route::new(Lang::Zh, Page::Learn)));
         assert_eq!(Route::parse("/fr/nothing/").map(|r| r.page), Some(Page::NotFound));
         assert_eq!(Route::parse("/en/learn/more/").map(|r| r.page), Some(Page::NotFound));
@@ -163,7 +163,7 @@ mod tests {
             "/en/offline/index.md",
             "/en/nothing/index.md",
             "/en/learn/index.html",
-            "/it/index.md",
+            "/ru/index.md",
             "/en//learn/index.md",
         ] {
             assert_eq!(Route::parse_markdown(path), None, "{path}");

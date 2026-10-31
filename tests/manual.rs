@@ -196,6 +196,8 @@ fn the_guides_for_teachers_show_real_output() {
         ("teaching.de.md", "de"),
         ("teaching.pt.md", "pt"),
         ("teaching.zh.md", "zh"),
+        ("teaching.it.md", "it"),
+        ("teaching.ja.md", "ja"),
     ] {
         check_samples(&format!("{}/docs/{file}", env!("CARGO_MANIFEST_DIR")), lang, 2);
     }

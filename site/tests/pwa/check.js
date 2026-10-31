@@ -19,12 +19,12 @@ const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
 const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "ai/"];
 // Every language of the site (src/i18n.rs), with the title of its offline page and the
 // word that starts the interpreter's error messages in it.
-const LANGS = ["fr", "en", "es", "de", "pt", "zh"];
+const LANGS = ["fr", "en", "es", "de", "pt", "zh", "it", "ja"];
 const OFFLINE_TITLE = {
   fr: "Vous êtes hors ligne", en: "You are offline", es: "No tienes conexión",
-  de: "Du bist offline", pt: "Você está sem conexão", zh: "你已离线",
+  de: "Du bist offline", pt: "Você está sem conexão", zh: "你已离线", it: "Sei offline", ja: "オフラインです",
 };
-const ERROR_WORD = { fr: "erreur", en: "error", es: "error", de: "Fehler", pt: "erro", zh: "错误" };
+const ERROR_WORD = { fr: "erreur", en: "error", es: "error", de: "Fehler", pt: "erro", zh: "错误", it: "errore", ja: "エラー" };
 
 const checks = checker();
 const check = checks.check;
