@@ -2089,7 +2089,9 @@ type Name = Variant | Variant(field, field) | ...
 - `##` comments written above a `type` document it: `help` shows them for
   each of its constructors, after the name of the type.
 - The type of a field may be written after its name, for the checker:
-  `Circle(radius: Float)` (see [4.10](#410-written-types)).
+  `Circle(radius: Float)`, and a type may take types, written as type
+  variables after its name: `type Tree(a) = Leaf | Node(left: Tree(a),
+  value: a, right: Tree(a))` (see [4.10](#410-written-types)).
 
 ```rythme
 ## A shape to draw.
@@ -2421,6 +2423,7 @@ error[E017]: `pong.ry` and `ping.ry` use each other
 fn name(parameter: Type, ...) -> Type = ...
 name: Type = value
 type Name = Variant(field: Type, ...) | ...
+type Name(a, b) = Variant(field: a, ...) | ...
 xs.map do |x: Type| ... end
 ```
 
@@ -2440,10 +2443,12 @@ changes nothing.
   `List(Int)` (or `[Int]`), `Set(Text)`, `Dict(Text, Int)`, `Option(Int)`,
   `Result(Int, Text)`; `{name: Text, age: Int}`, a record with at least
   these fields; `fn(Int, Int) -> Bool`, a function; the types defined with
-  `type` (`Shape`, and `geometry.Shape` for a type of `use geometry`); and
+  `type` (`Shape`, and `geometry.Shape` for a type of `use geometry`), with
+  the types they take when they have parameters (`Tree(Int)`, below); and
   **type variables**, one lowercase letter (`a`, `t`), for any type, the
   same one everywhere in a definition. `List`, `Set`, `Dict`, `Option`,
-  `Result`, `Record` and `Function` alone hold anything.
+  `Result`, `Record` and `Function` alone hold anything, and so does a type
+  with parameters written alone (`Tree`).
 - **What the checker does**: a value that surely has another type is E027,
   where it is given: the value of a name, an argument (the message names
   the parameter and shows its type), the result of a function or what its
@@ -2582,6 +2587,120 @@ error[E005]: cannot use `+` with Int and Text
   = help: to build a text with a value inside, use braces: "total: {x}"
       or convert the value first: text(x)
   = more about this error: `rythme explain E005`
+
+✗ sample.ry: 3 error(s)
+```
+
+**Types with parameters.** A type defined with `type` may take types, as
+`List` does: its **parameters**, type variables written between parentheses
+after its name, stand in the types of its fields. A written type then gives
+it its types: `Tree(Int)` is a `Tree` whose values are Ints, `Pair(Text,
+Int)` a pair of a Text and an Int.
+
+- A parameter is one lowercase letter, written once (E027 otherwise); in a
+  type with parameters, a type variable written in a field is one of them
+  (E027: `type Box(a) = Box(value: b)`). In a type without parameters, a
+  type variable in a field still means any type.
+- A type with parameters takes all its types or none (`Tree` alone holds
+  anything); another number (`Tree(Int, Text)`, or `Shape(Int)` for a type
+  without parameters) is E027.
+- The checker uses them as it uses those of `List`: a value of another type
+  (`Node(Leaf, "two", Leaf)` given for a `Tree(Int)`) is E027, and the
+  message shows its type, `Tree(Text)`; a constructor keeps a type variable
+  to one type (`Node(Leaf, 1, Node(Leaf, "x", Leaf))` is E027); a call gives
+  the types found in its arguments (`first_of(Pair(1, "x"))` is an Int); in a
+  case `Node(l, v, r)` of a `Tree(Int)`, `v` is an Int. This works across
+  files given to `use` too (`geometry.Tree(Int)`).
+- The fields keep their names: `Node(left: Tree(a), value: a, right:
+  Tree(a))`. A lowercase word alone in a variant is the name of a field, in
+  every program, and the values are read by these names (`node.value`).
+- **Why one letter.** In a function, a type variable is not declared
+  (`fn first_of(xs: List(a)) -> a`), so a lowercase word written as a type is
+  read as what it most often is, a type named as in another language (`int`,
+  `string`, `list`), and `rythme check` gives its Rythme name. A longer name
+  for a type variable could not be told apart from such a mistake.
+- Running never looks at the parameters: `type Tree(a)` runs exactly like
+  `type Tree`. In the REPL, a type of an earlier line takes any types (only
+  the interpreter knows it there); `help(Node)` shows the types of the fields
+  and the parameters of the type.
+
+```rythme
+## A binary tree: its values have the type `a`.
+type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+
+fn insert(t: Tree(Int), x: Int) -> Tree(Int) = match t
+  Leaf -> Node(Leaf, x, Leaf)
+  Node(l, v, r) if x < v -> Node(insert(l, x), v, r)
+  Node(l, v, r) -> Node(l, v, insert(r, x))
+end
+
+fn to_list(t: Tree(a)) -> List(a) = match t
+  Leaf -> []
+  Node(l, v, r) -> to_list(l) + [v] + to_list(r)
+end
+
+tree = [5, 2, 8, 1].reduce(Leaf) do |t, x| insert(t, x) end
+print(to_list(tree), tree.value)
+help(Node)
+```
+
+```text
+[1, 2, 5, 8] 5
+Node(left: Tree(a), value: a, right: Tree(a))
+  A constructor of the type `Tree(a)`.
+  A binary tree: its values have the type `a`.
+```
+
+The mistakes, found before running:
+
+```rythme
+type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+type Pair(a, b) = Pair(first: a, second: b)
+
+fn total(t: Tree(Int)) -> Int = match t
+  Leaf -> 0
+  Node(l, v, r) -> total(l) + v + total(r)
+end
+
+fn first_of(p: Pair(a, b)) -> a = p.first
+fn size(t: Tree(Int, Text)) -> Int = 0
+
+print(total(Node(Leaf, "two", Leaf)))
+print(first_of(Pair(1, "one")) + "!")
+```
+
+`rythme check`:
+
+```text
+error[E027]: `Tree` takes one type: `Tree(Int)`
+  --> sample.ry:10:12
+   |
+10 | fn size(t: Tree(Int, Text)) -> Int = 0
+   |            ^^^^^^^^^^^^^^^
+   |
+   = more about this error: `rythme explain E027`
+
+error[E027]: `total` expects `Tree(Int)` for `t`, but receives a value of type Tree(Text)
+  --> sample.ry:12:13
+   |
+12 | print(total(Node(Leaf, "two", Leaf)))
+   |             ^^^^^^^^^^^^^^^^^^^^^^^ not `Tree(Int)`
+   |
+ 4 | fn total(t: Tree(Int)) -> Int = match t
+   |             --------- the type written for `t`
+   |
+   = help: change the value, or the type written for it; types written in the code are checked before running, and are never needed (see `rythme help types`)
+   = more about this error: `rythme explain E027`
+
+error[E005]: cannot use `+` with Int and Text
+  --> sample.ry:13:32
+   |
+13 | print(first_of(Pair(1, "one")) + "!")
+   |                                ^ Int + Text "!"
+   |
+   = help: to build a text with a value inside, use braces: "total: {x}"
+       or convert the value first: text(x)
+   = more about this error: `rythme explain E005`
 
 ✗ sample.ry: 3 error(s)
 ```
@@ -4503,6 +4622,9 @@ An empty line repeats `next`, `step`, `finish` or `continue`.
   (`fact(n = 2)`), and the **depth**: the number of calls of the program's
   functions in progress, with how many of them are the same function when it
   calls itself. Places on the same line of the same call pause only once.
+  A parameter that every definition writes as a pattern is shown by the
+  pattern of the definition that runs: `total([x, ..rest] = [10, 20], acc =
+  0)`.
 - **Tail calls.** A call in tail position takes the place of the frame of its
   caller (see [4.6](#46-recursion-and-tail-calls)): the pause says so, and
   `where` shows the call it replaced and the place where the first one was
@@ -4568,11 +4690,11 @@ breakpoint 2 at the start of `total`
 (debug) continue
 6
 ● breakpoint 2: `total` starts
-→ fact.ry:5  total(arg1 = [10, 20], acc = 0) · depth 1
+→ fact.ry:5  total([x, ..rest] = [10, 20], acc = 0) · depth 1
   5 | fn total([x, ..rest], acc) = total(rest, acc + x)
 (debug) next
 ● breakpoint 2: `total` starts
-→ fact.ry:5  total(arg1 = [20], acc = 10) · depth 1
+→ fact.ry:5  total([x, ..rest] = [20], acc = 10) · depth 1
   (a call in tail position: it took the place of the frame of `total`)
   5 | fn total([x, ..rest], acc) = total(rest, acc + x)
 (debug) locals
@@ -4804,7 +4926,7 @@ body         = "=" result
              | NL block_end ;
 result       = command | expression ;              (* 3.15 *)
 block_end    = { statement NL } [ statement ] "end" ;
-type_def     = "type" CTOR "=" [ "|" ] variant { "|" variant } ;
+type_def     = "type" CTOR [ "(" NAME { "," NAME } ")" ] "=" [ "|" ] variant { "|" variant } ;
 variant      = CTOR [ "(" [ field { "," field } ] ")" ] ;
 field        = NAME [ ":" type ] ;
 test_def     = "test" PLAIN_TEXT body ;

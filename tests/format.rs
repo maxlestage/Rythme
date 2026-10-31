@@ -552,11 +552,12 @@ impl Gen {
     /// A written type, spaced at random.
     fn ty(&mut self) -> String {
         if self.depth > 3 || self.rng.chance(40) {
-            return self.pick(&["Int", "Float", "Text", "a", "Shape", "geo.Shape"]).to_string();
+            return self.pick(&["Int", "Float", "Text", "a", "Shape", "geo.Shape", "Tree"]).to_string();
         }
         self.depth += 1;
         let (a, b) = (self.ty(), self.ty());
-        let t = match self.rng.below(6) {
+        let t = match self.rng.below(7) {
+            6 => format!("Pair( {a},{b} )"),
             0 => format!("List({a})"),
             1 => format!("[ {a} ]"),
             2 => format!("Dict({a},{b})"),
@@ -594,7 +595,14 @@ impl Gen {
                 12 => {
                     let (t1, t2, r, e, a) = (self.typed(), self.typed(), self.typed(), self.expr(), self.expr());
                     let ret = if self.rng.chance(50) { format!("{}-> {}", self.pick(&[" ", ""]), self.ty()) } else { String::new() };
-                    match self.rng.below(4) {
+                    match self.rng.below(5) {
+                        // A type with parameters.
+                        4 => format!(
+                            "type Pair{}( a,{}b ) ={}Two(first{t1}, second :b)\n  | One(x :a)",
+                            self.pick(&["", " "]),
+                            self.pick(&["", " ", "\n  "]),
+                            self.pick(&[" ", "\n  | "])
+                        ),
                         0 => format!("fn typed(x{t1}, y{t2}){ret} = {e}"),
                         1 => format!("total{r} = {e}{}", self.comment()),
                         2 => format!(

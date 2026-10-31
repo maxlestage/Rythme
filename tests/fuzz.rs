@@ -380,13 +380,16 @@ impl Gen<'_> {
 
     /// A written type (`total: Float = 0.0`): right, wrong, or that does not exist.
     fn ty(&mut self, depth: usize) -> String {
-        let leaf =
-            ["Int", "Float", "Text", "Bool", "Unit", "Symbol", "List", "Record", "Function", "T", "Tree", "U", "a", "b", "int", "Strng"];
+        let leaf = [
+            "Int", "Float", "Text", "Bool", "Unit", "Symbol", "List", "Record", "Function", "T", "Tree", "U", "W", "a", "b", "int", "Strng",
+        ];
         if depth == 0 || self.rng.chance(40) {
             return self.rng.pick(&leaf).into();
         }
         let d = depth - 1;
-        match self.rng.below(8) {
+        match self.rng.below(9) {
+            // A type with parameters: `W(Int)`, or a wrong number of types.
+            8 => format!("W({})", if self.rng.chance(80) { self.ty(d) } else { format!("{}, {}", self.ty(d), self.ty(d)) }),
             0 => format!("List({})", self.ty(d)),
             1 => format!("[{}]", self.ty(d)),
             2 => format!("Option({})", self.ty(d)),
@@ -485,6 +488,19 @@ impl Gen<'_> {
                 format!("test \"{name}\" = {}", self.expr(2))
             }
             8 => format!("[{}, {}] = {}", self.name(), self.name(), self.expr(2)),
+            // A type with parameters, right or wrong, and a value of it.
+            9 if self.rng.chance(40) => {
+                self.fresh += 1;
+                let n = self.fresh;
+                let params = self.rng.pick(&["a", "a, b", "a", "x", "item", "a, a", ""]);
+                let p = self.rng.pick(&["a", "b", "x"]);
+                let t = self.ty(1);
+                format!(
+                    "type G{n}({params}) = G{n}a | G{n}b(x: {p}, y: {t}, z: G{n}({p}))\nprint(G{n}b({}, {}, G{n}a))",
+                    self.expr(1),
+                    self.expr(1)
+                )
+            }
             _ => self.expr(3),
         }
     }
@@ -492,6 +508,7 @@ impl Gen<'_> {
     fn program(&mut self) -> String {
         let mut s = String::from(PREAMBLE);
         s.push_str("type T = A | B(v) | C(v, w)\ntype Tree = Leaf | Node(l, v, r)\ntype U = D(d: Int) | E(e: List(a), f: T)\n");
+        s.push_str("type W(a) = W0 | W1(w: a, ws: W(a))\n");
         for _ in 0..1 + self.rng.below(6) {
             s.push_str(&self.item());
             s.push('\n');
@@ -1178,6 +1195,9 @@ fn inputs_found_by_fuzzing() {
         // `fail` with an empty message gave an error without any text.
         "fail(\"\")",
         "fail(\"\\n\")",
+        // The fixes of `x => ...` and `xs[a:b]` cut a name after a character of several bytes.
+        "test \"\\n\" &&é/ ! \"a{}b\" x_1 \"a\" unwrap / ( \"unclosed (👍pow => g 日本 ? type x  1\t",
+        "x = 3\ny = -2.5\nn = 0\nxs = [1, 2, 3]\ns = \"héllo 👍[1, 2, 3\"\nr = {name: \"Ada\", age: 36}\no = Soname: \"Ada\", age: 36}\no = Some(1)\ntype T = A | B(v) | C(v, w)\ntype Tree = Leaf | Node(l, v, r)\ntype U = D(d: Int) | E(e: List(a), f: T)\ntype W(a) = W0 | W1(w: a, ws: W(a))\n[v1, v2] = [-()]\nprint([1, \"a\"])\ntest \"v3\" = unless xs % \"a,b,,c\" then not 2 else o |> text\nv4 = \"b\"[s]\nputs -\"a,b,,c\"\nputs [index_of(\"b\", C(2, \"z\")) |> reverse]\nv5 = match n |> map(fn(v) = v) >= s\n  Err({\"my key\": k}) -> 8\n  {name} -> -1\n  [B(_), ..] -> (if 2.0 then B(1) else xs)\n  B(A | ()) -> \"a {- \"b\"} b\"\nend\n",
     ] {
         survives(src);
     }

@@ -2,14 +2,45 @@
 //! a guided tour, in English and in French (and in the languages of
 //! `src/i18n/`, see [`crate::lang`]).
 
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::io::{BufRead, IsTerminal, Write};
 
+use crate::ast::Item;
 use crate::builtins::{self, Builtin, Category, BUILTINS};
 use crate::interp::{Interp, Wrap};
 use crate::lang::pick;
 use crate::source;
 use crate::suggest;
+use crate::symbol::Sym;
 use crate::value::Value;
+
+thread_local! {
+    /// The constructors of the program that is running whose code writes
+    /// types (`Circle(radius: Float)`) or whose type has parameters
+    /// (`type Tree(a)`), by the name the interpreter stores each one under:
+    /// their signature and their type, for `help(Circle)`.
+    static WRITTEN: RefCell<HashMap<Sym, (String, String)>> = RefCell::new(HashMap::new());
+}
+
+/// Notes the types written for the constructors of a module about to run
+/// (`stored`: the name the interpreter stores a name of the module under),
+/// so that `help(Circle)` shows them. Running never looks at them.
+pub fn note_types(items: &[Item], stored: impl Fn(Sym) -> Sym) {
+    WRITTEN.with(|w| {
+        let mut w = w.borrow_mut();
+        for item in items {
+            let Item::Type(t) = item else { continue };
+            for v in &t.variants {
+                if t.params.is_empty() && v.types.iter().all(Option::is_none) {
+                    w.remove(&stored(v.name));
+                } else {
+                    w.insert(stored(v.name), (v.signature(), t.header()));
+                }
+            }
+        }
+    });
+}
 
 /// Topic names, in the order of the guided tour, with their aliases in the other languages.
 pub const TOPICS: &[(&str, &[&str])] = &[
@@ -357,7 +388,7 @@ Topics (rythme help TOPIC)
   text        texts
   records     records {{name: value}}
   dicts       dictionaries and sets: dict(...), set(...)
-  types       your own types
+  types       your own types, and types written in the code
   match       choosing according to the shape of a value
   errors      Option, Result and ?
   functional  no loops: what to do instead
@@ -415,7 +446,7 @@ Sujets (rythme help SUJET)
   text        textes
   records     enregistrements {{nom: valeur}}
   dicts       dictionnaires et ensembles : dict(...), set(...)
-  types       vos propres types
+  types       vos propres types, et les types écrits dans le code
   match       choisir selon la forme d'une valeur
   errors      Option, Result et ?
   functional  pas de boucles : comment faire à la place
@@ -719,13 +750,15 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
         }
         Value::Ctor(c) => {
             let fields: Vec<String> = c.fields.iter().map(|f| f.to_string()).collect();
-            let mut out = t!(
-                "{}({})\n  A constructor of the type `{}`.\n",
-                "{}({})\n  Un constructeur du type `{}`.\n",
-                c.name,
-                fields.join(", "),
-                c.type_name
-            );
+            // With the types written for its fields (`Circle(radius: Float)`),
+            // and the parameters of its type (`Tree(a)`).
+            let written = WRITTEN.with(|w| w.borrow().get(&c.id).cloned()).and_then(|(sig, ty)| {
+                let inside = sig.strip_prefix(&format!("{}(", c.name))?.strip_suffix(')')?.to_string();
+                Some((inside, ty))
+            });
+            let (fields, ty) = written.unwrap_or_else(|| (fields.join(", "), c.type_name.to_string()));
+            let mut out =
+                t!("{}({})\n  A constructor of the type `{}`.\n", "{}({})\n  Un constructeur du type `{}`.\n", c.name, fields, ty);
             push_type_doc(&mut out, c);
             out
         }
@@ -788,6 +821,15 @@ pub fn learn() {
     for (i, name) in order.iter().enumerate() {
         crate::io::out_line(&format!("── {}/{} ──\n", i + 1, order.len()));
         crate::io::out_line(topic_text(name).trim_end());
+        if *name == "types" {
+            crate::io::out_line(&format!(
+                "\n{}",
+                t!(
+                    "Types may also be written in the code, where they help to read it:\n  fn area(s: Shape) -> Float\n`rythme check` verifies them; they are never needed (rythme help types).",
+                    "Les types peuvent aussi être écrits dans le code, là où ils aident à le lire :\n  fn aire(f: Forme) -> Float\n`rythme check` les vérifie ; ils ne sont jamais obligatoires (rythme help types)."
+                )
+            ));
+        }
         if interactive && i + 1 < order.len() {
             crate::io::out(&format!("\n{}", t!("[Enter] next   [q] quit > ", "[Entrée] suite   [q] quitter > ")));
             let _ = std::io::stdout().flush();
@@ -1127,6 +1169,11 @@ Several steps inside an expression
 Your own types
   type Shape = Circle(radius) | Rect(width, height)
 
+Types written in the code (optional, checked by rythme check)
+  fn area(w: Int, h: Int) -> Int = w * h
+  total: Float = 0.0
+  type Box(a) = Box(value: a)    a type that takes a type: Box(Int), Box(Text)
+
 Tests and other files
   test "double works" = assert_eq(double(2), 4)
   use geometry                   then geometry.area(2)
@@ -1199,6 +1246,11 @@ Plusieurs étapes dans une expression
 
 Vos propres types
   type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+
+Types écrits dans le code (facultatifs, vérifiés par rythme check)
+  fn aire(l: Int, h: Int) -> Int = l * h
+  total: Float = 0.0
+  type Boite(a) = Boite(valeur: a)   un type qui prend un type : Boite(Int), Boite(Text)
 
 Tests et autres fichiers
   test "double marche" = assert_eq(double(2), 4)
@@ -2047,12 +2099,26 @@ The types
   fn(Int, Int) -> Int          a function
   Shape                        a type defined with `type` (geometry.Shape
                                for a type of `use geometry`)
+  Tree(Int)                    a type defined with parameters, with its types
   a                            any type: one lowercase letter, the same type
                                everywhere in a definition
   List, Dict, Set, Option, Result, Record, Function alone: any content
+  (Tree alone too)
 
   fn first_of(xs: List(a)) -> a = xs[0]
   first_of([1, 2]) + 1         # the checker knows it is an Int
+
+Types with parameters: a type can take types, like List(Int)
+  type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+  type Pair(a, b) = Pair(first: a, second: b)
+
+  fn depth(t: Tree(a)) -> Int = ...      a Tree of anything
+  fn total(t: Tree(Int)) -> Int = ...    a Tree of whole numbers
+  total(Node(Leaf, "two", Leaf))         E027: this is a Tree(Text)
+
+A type variable is one letter: a lowercase word, like `int` or `string`, is
+taken for a type named as in another language, and `rythme check` gives its
+Rythme name.
 
 Written types are never needed and change nothing when the program runs;
 the editors and `rythme doc` show them."#;
@@ -2074,12 +2140,26 @@ Les types
   fn(Int, Int) -> Int          une fonction
   Forme                        un type défini avec `type` (geometrie.Forme
                                pour un type de `use geometrie`)
+  Arbre(Int)                   un type défini avec des paramètres, et ses types
   a                            n'importe quel type : une lettre minuscule, le
                                même type partout dans une définition
   List, Dict, Set, Option, Result, Record, Function seuls : contenu quelconque
+  (Arbre seul aussi)
 
   fn premier(xs: List(a)) -> a = xs[0]
   premier([1, 2]) + 1          # le vérificateur sait que c'est un Int
+
+Types avec paramètres : un type peut prendre des types, comme List(Int)
+  type Arbre(a) = Feuille | Noeud(gauche: Arbre(a), valeur: a, droite: Arbre(a))
+  type Paire(a, b) = Paire(premier: a, second: b)
+
+  fn profondeur(t: Arbre(a)) -> Int = ...   un Arbre de n'importe quoi
+  fn total(t: Arbre(Int)) -> Int = ...      un Arbre de nombres entiers
+  total(Noeud(Feuille, "deux", Feuille))    E027 : c'est un Arbre(Text)
+
+Une variable de type est une lettre : un mot en minuscules, comme `int` ou
+`string`, est pris pour un type nommé comme dans un autre langage, et
+`rythme check` donne son nom en Rythme.
 
 Les types écrits ne sont jamais obligatoires et ne changent rien quand le
 programme tourne ; les éditeurs et `rythme doc` les montrent."#;
@@ -3553,6 +3633,8 @@ Wrong:   fn label(n: Int) -> Text = n  # gives an Int
 Right:   fn label(n: Int) -> Text = text(n)
 Wrong:   fn twice(x: int) = x * 2      # type names start with an uppercase letter
 Right:   fn twice(x: Int) = x * 2
+Wrong:   fn depth(t: Tree(Int, Text))  # type Tree(a) takes one type
+Right:   fn depth(t: Tree(Int))
 
 Written types are optional: removing one never changes what a program does.
 More: `rythme help types`."#,
@@ -3571,6 +3653,8 @@ Faux :   fn etiquette(n: Int) -> Text = n   # donne un Int
 Juste :  fn etiquette(n: Int) -> Text = text(n)
 Faux :   fn double(x: int) = x * 2     # les noms de types commencent par une majuscule
 Juste :  fn double(x: Int) = x * 2
+Faux :   fn profondeur(t: Arbre(Int, Text))  # type Arbre(a) prend un seul type
+Juste :  fn profondeur(t: Arbre(Int))
 
 Les types écrits sont facultatifs : en retirer un ne change jamais ce que
 fait un programme. Plus : `rythme help types`."#,

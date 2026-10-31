@@ -838,7 +838,7 @@ Topics (rythme help TOPIC)
   text        texts
   records     records {{name: value}}
   dicts       dictionaries and sets: dict(...), set(...)
-  types       your own types
+  types       your own types, and types written in the code
   match       choosing according to the shape of a value
   errors      Option, Result and ?
   functional  no loops: what to do instead
@@ -896,7 +896,7 @@ Temas (rythme help TEMA)
   text        textos
   records     registros {{name: value}}
   dicts       dicionários e conjuntos: dict(...), set(...)
-  types       os seus próprios tipos
+  types       os seus próprios tipos, e os tipos escritos no código
   match       escolher de acordo com a forma de um valor
   errors      Option, Result e ?
   functional  sem laços: o que fazer em vez disso
@@ -1931,6 +1931,11 @@ Several steps inside an expression
 Your own types
   type Shape = Circle(radius) | Rect(width, height)
 
+Types written in the code (optional, checked by rythme check)
+  fn area(w: Int, h: Int) -> Int = w * h
+  total: Float = 0.0
+  type Box(a) = Box(value: a)    a type that takes a type: Box(Int), Box(Text)
+
 Tests and other files
   test "double works" = assert_eq(double(2), 4)
   use geometry                   then geometry.area(2)
@@ -2002,6 +2007,11 @@ Várias etapas dentro de uma expressão
 
 Os seus próprios tipos
   type Shape = Circle(radius) | Rect(width, height)
+
+Tipos escritos no código (opcionais, verificados pelo rythme check)
+  fn area(w: Int, h: Int) -> Int = w * h
+  total: Float = 0.0
+  type Box(a) = Box(value: a)    um tipo que recebe um tipo: Box(Int), Box(Text)
 
 Testes e outros arquivos
   test "dobro funciona" = assert_eq(dobro(2), 4)
@@ -8548,6 +8558,8 @@ Wrong:   fn label(n: Int) -> Text = n  # gives an Int
 Right:   fn label(n: Int) -> Text = text(n)
 Wrong:   fn twice(x: int) = x * 2      # type names start with an uppercase letter
 Right:   fn twice(x: Int) = x * 2
+Wrong:   fn depth(t: Tree(Int, Text))  # type Tree(a) takes one type
+Right:   fn depth(t: Tree(Int))
 
 Written types are optional: removing one never changes what a program does.
 More: `rythme help types`."#,
@@ -8566,6 +8578,8 @@ Errado:  fn rotulo(n: Int) -> Text = n      # dá um Int
 Certo:   fn rotulo(n: Int) -> Text = text(n)
 Errado:  fn dobro(x: int) = x * 2      # os nomes de tipos começam com maiúscula
 Certo:   fn dobro(x: Int) = x * 2
+Errado:  fn profundidade(t: Arvore(Int, Text))  # type Arvore(a) recebe um só tipo
+Certo:   fn profundidade(t: Arvore(Int))
 
 Os tipos escritos são opcionais: tirar um nunca muda o que um programa faz.
 Mais: `rythme help types`."#,
@@ -8588,12 +8602,26 @@ The types
   fn(Int, Int) -> Int          a function
   Shape                        a type defined with `type` (geometry.Shape
                                for a type of `use geometry`)
+  Tree(Int)                    a type defined with parameters, with its types
   a                            any type: one lowercase letter, the same type
                                everywhere in a definition
   List, Dict, Set, Option, Result, Record, Function alone: any content
+  (Tree alone too)
 
   fn first_of(xs: List(a)) -> a = xs[0]
   first_of([1, 2]) + 1         # the checker knows it is an Int
+
+Types with parameters: a type can take types, like List(Int)
+  type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+  type Pair(a, b) = Pair(first: a, second: b)
+
+  fn depth(t: Tree(a)) -> Int = ...      a Tree of anything
+  fn total(t: Tree(Int)) -> Int = ...    a Tree of whole numbers
+  total(Node(Leaf, "two", Leaf))         E027: this is a Tree(Text)
+
+A type variable is one letter: a lowercase word, like `int` or `string`, is
+taken for a type named as in another language, and `rythme check` gives its
+Rythme name.
 
 Written types are never needed and change nothing when the program runs;
 the editors and `rythme doc` show them."#,
@@ -8614,12 +8642,26 @@ Os tipos
   fn(Int, Int) -> Int          uma função
   Forma                        um tipo definido com `type` (geometria.Forma
                                para um tipo de `use geometria`)
+  Arvore(Int)                  um tipo definido com parâmetros, com seus tipos
   a                            qualquer tipo: uma letra minúscula, o mesmo
                                tipo em toda uma definição
   List, Dict, Set, Option, Result, Record, Function sozinhos: qualquer conteúdo
+  (Arvore sozinho também)
 
   fn primeiro(xs: List(a)) -> a = xs[0]
   primeiro([1, 2]) + 1         # o verificador sabe que é um Int
+
+Tipos com parâmetros: um tipo pode receber tipos, como List(Int)
+  type Arvore(a) = Folha | No(esquerda: Arvore(a), valor: a, direita: Arvore(a))
+  type Par(a, b) = Par(primeiro: a, segundo: b)
+
+  fn profundidade(t: Arvore(a)) -> Int = ...   uma Arvore de qualquer coisa
+  fn total(t: Arvore(Int)) -> Int = ...        uma Arvore de números inteiros
+  total(No(Folha, "dois", Folha))              E027: isto é uma Arvore(Text)
+
+Uma variável de tipo é uma letra: uma palavra em minúsculas, como `int` ou
+`string`, é tomada por um tipo nomeado como em outra linguagem, e
+`rythme check` dá o nome dele em Rythme.
 
 Os tipos escritos nunca são obrigatórios e não mudam nada quando o programa
 roda; os editores e `rythme doc` os mostram."#,
@@ -9645,5 +9687,41 @@ Um erro de forma nomeia as duas formas ("não pode multiplicar uma matriz
 perceptron, xor_network, kmeans, knn, naive_bayes, markov, tictactoe,
 pathfinding e genetic; os exercícios 31 a 36 (rythme exercise list)."#,
         ),
+        // Types with parameters: src/check/annot.rs, src/help.rs, src/lsp/features.rs, src/parser.rs
+        ("the type variable `{name}` appears twice in `{ty}`", "a variável de tipo `{name}` aparece duas vezes em `{ty}`"),
+        ("give each one its own letter: `type Pair(a, b)`", "dê a cada uma a sua própria letra: `type Par(a, b)`"),
+        ("`{name}` cannot be a type variable: a type variable is one lowercase letter", "`{name}` não pode ser uma variável de tipo: uma variável de tipo é uma só letra minúscula"),
+        ("write one letter, like `{letter}`, here and in the fields", "escreva uma letra, como `{letter}`, aqui e nos campos"),
+        ("`{v}` is not a parameter of `{ty}`", "`{v}` não é um parâmetro de `{ty}`"),
+        ("not among `{header}`", "não está entre `{header}`"),
+        ("add it to the parameters of the type: `type {with} = ...`", "acrescente-a aos parâmetros do tipo: `type {with} = ...`"),
+        ("`{name}` takes {count} types: `{example}`", "`{name}` recebe {count} tipos: `{example}`"),
+        (
+            r#"Types may also be written in the code, where they help to read it:
+  fn area(s: Shape) -> Float
+`rythme check` verifies them; they are never needed (rythme help types)."#,
+            r#"Os tipos também podem ser escritos no código, onde ajudam a lê-lo:
+  fn area(f: Forma) -> Float
+`rythme check` os verifica; nunca são obrigatórios (rythme help types)."#,
+        ),
+        ("A whole number, as large as needed: `42`, `-7`.", "Um número inteiro, tão grande quanto for preciso: `42`, `-7`."),
+        ("A decimal number: `3.14`, `2.0`.", "Um número decimal: `3.14`, `2.0`."),
+        ("A text: `\"hello\"`.", "Um texto: `\"olá\"`."),
+        ("`true` or `false`.", "`true` ou `false`."),
+        ("`()`: what a function gives when it gives nothing, like `print`.", "`()`: o que uma função dá quando não dá nada, como `print`."),
+        ("A value that is only its name: `:ok`, `:error`.", "Um valor que é só o seu nome: `:ok`, `:error`."),
+        ("A list whose elements all have the type between parentheses; `List` alone: any list.", "Uma lista cujos elementos têm todos o tipo entre parênteses; `List` sozinho: qualquer lista."),
+        ("A set of values of this type: `set([1, 2])`.", "Um conjunto de valores deste tipo: `set([1, 2])`."),
+        ("A dictionary: keys of the first type, values of the second.", "Um dicionário: chaves do primeiro tipo, valores do segundo."),
+        ("`Some(value)` or `None`: a value that may be missing.", "`Some(valor)` ou `None`: um valor que pode faltar."),
+        ("`Ok(value)` or `Err(error)`: the result of what may fail.", "`Ok(valor)` ou `Err(erro)`: o resultado do que pode falhar."),
+        ("Any record; `{{name: Text}}` is a record with at least these fields.", "Qualquer registro; `{{name: Text}}` é um registro com pelo menos estes campos."),
+        ("Any function; `fn(Int) -> Int` is a function with these types.", "Qualquer função; `fn(Int) -> Int` é uma função com estes tipos."),
+        ("A type of Rythme: `rythme help types`", "Um tipo do Rythme: `rythme help types`"),
+        ("type variable", "variável de tipo"),
+        ("used file", "arquivo usado"),
+        ("a type variable, like `a`", "uma variável de tipo, como `a`"),
+        ("a type without parameters is written without parentheses: `type {name} = ...`", "um tipo sem parâmetros se escreve sem parênteses: `type {name} = ...`"),
+        ("the parameters of a type are type variables, one lowercase letter each: `type Box(a) = Box(value: a)`", "os parâmetros de um tipo são variáveis de tipo, de uma letra minúscula cada: `type Caixa(a) = Caixa(valor: a)`"),
     ],
 }

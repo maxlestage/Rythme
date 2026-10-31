@@ -3,6 +3,7 @@
 
 use std::collections::HashSet;
 use std::path::Path;
+use std::rc::Rc;
 
 use super::analysis::Analysis;
 use super::index::{Def, DefId, DefKind, Occ, Target};
@@ -11,7 +12,7 @@ use super::scan::{self, Place};
 use super::text::{Encoding, LineIndex, Pos};
 use crate::builtins::{self, Builtin, BUILTINS};
 use crate::diagnostic::{Diagnostic, Severity};
-use crate::lexer::{KEYWORDS, RESERVED};
+use crate::lexer::{Tok, KEYWORDS, RESERVED};
 use crate::source::{self, Span};
 use crate::types::Ty;
 use crate::{help, suggest};
@@ -187,7 +188,7 @@ fn receiver_type(before_dot: &str) -> Option<Ty> {
         ']' if opener('[', ']') => Some(Ty::list(Ty::Any)),
         '}' if opener('{', '}') => Some(Ty::record(Vec::new(), false)),
         c if c.is_ascii_digit() => {
-            let word = &s[s.rfind(|c: char| !scan::is_name_char(c) && c != '.').map_or(0, |i| i + 1)..];
+            let word = &s[run_start(s, |c| scan::is_name_char(c) || c == '.')..];
             if word.starts_with(|c: char| c.is_ascii_digit()) {
                 Some(if word.contains('.') { Ty::Float } else { Ty::Int })
             } else {
@@ -195,10 +196,16 @@ fn receiver_type(before_dot: &str) -> Option<Ty> {
             }
         }
         _ => {
-            let start = s.rfind(|c: char| !scan::is_name_char(c)).map_or(0, |i| i + 1);
+            let start = run_start(s, scan::is_name_char);
             (start > 0 && s[..start].ends_with(':') && !s[..start - 1].ends_with(':')).then_some(Ty::Symbol)
         }
     }
+}
+
+/// Where the characters that `keep` accepts at the end of `text` start:
+/// after the last other one, which may take several bytes (`👍`).
+fn run_start(text: &str, keep: impl Fn(char) -> bool) -> usize {
+    text.char_indices().rev().find(|(_, c)| !keep(*c)).map_or(0, |(i, c)| i + c.len_utf8())
 }
 
 /// Can the built-in function `name` take a value of type `t` first?
@@ -240,6 +247,77 @@ fn prelude_markdown(name: &str) -> String {
         ),
     };
     format!("{}\n\n{doc}\n\n`rythme help errors`", code_block(sig))
+}
+
+/// A type of Rythme, as written in the code: `Int`, `List(Int)`...
+fn type_markdown(name: &str) -> String {
+    let (sig, doc) = match name {
+        "Int" => {
+            ("Int", t!("A whole number, as large as needed: `42`, `-7`.", "Un nombre entier, aussi grand que nécessaire : `42`, `-7`."))
+        }
+        "Float" => ("Float", t!("A decimal number: `3.14`, `2.0`.", "Un nombre décimal : `3.14`, `2.0`.")),
+        "Text" => ("Text", t!("A text: `\"hello\"`.", "Un texte : `\"bonjour\"`.")),
+        "Bool" => ("Bool", t!("`true` or `false`.", "`true` ou `false`.")),
+        "Unit" => (
+            "Unit",
+            t!(
+                "`()`: what a function gives when it gives nothing, like `print`.",
+                "`()` : ce que donne une fonction qui ne donne rien, comme `print`."
+            ),
+        ),
+        "Symbol" => {
+            ("Symbol", t!("A value that is only its name: `:ok`, `:error`.", "Une valeur qui n'est que son nom : `:ok`, `:error`."))
+        }
+        "List" => (
+            "List(Int)  [Int]",
+            t!(
+                "A list whose elements all have the type between parentheses; `List` alone: any list.",
+                "Une liste dont les éléments ont tous le type entre parenthèses ; `List` seul : n'importe quelle liste."
+            ),
+        ),
+        "Set" => ("Set(Text)", t!("A set of values of this type: `set([1, 2])`.", "Un ensemble de valeurs de ce type : `set([1, 2])`.")),
+        "Dict" => (
+            "Dict(Text, Int)",
+            t!(
+                "A dictionary: keys of the first type, values of the second.",
+                "Un dictionnaire : des clés du premier type, des valeurs du second."
+            ),
+        ),
+        "Option" => (
+            "Option(Int)",
+            t!("`Some(value)` or `None`: a value that may be missing.", "`Some(valeur)` ou `None` : une valeur qui peut manquer."),
+        ),
+        "Result" => (
+            "Result(Int, Text)",
+            t!(
+                "`Ok(value)` or `Err(error)`: the result of what may fail.",
+                "`Ok(valeur)` ou `Err(erreur)` : le résultat de ce qui peut échouer."
+            ),
+        ),
+        "Record" => (
+            "Record  {name: Text}",
+            t!(
+                "Any record; `{{name: Text}}` is a record with at least these fields.",
+                "N'importe quel enregistrement ; `{{name: Text}}` est un enregistrement avec au moins ces champs."
+            ),
+        ),
+        _ => (
+            "Function  fn(Int) -> Int",
+            t!(
+                "Any function; `fn(Int) -> Int` is a function with these types.",
+                "N'importe quelle fonction ; `fn(Int) -> Int` est une fonction de ces types."
+            ),
+        ),
+    };
+    format!(
+        "{}
+
+{doc}
+
+{}",
+        code_block(sig),
+        t!("A type of Rythme: `rythme help types`", "Un type de Rythme : `rythme help types`")
+    )
 }
 
 fn keyword_markdown(word: &str) -> Option<String> {
@@ -309,7 +387,12 @@ fn def_markdown(a: &Analysis, id: DefId, def: &Def) -> String {
         DefKind::Type => parts.push(code_block(&snippet(def.full, 200))),
         DefKind::Ctor => {
             parts.push(code_block(def.sig.as_deref().unwrap_or(&def.name)));
-            if let Some(t) = &def.owner {
+            if let Some(owner) = &def.owner {
+                // `Tree(a)`: the type with its parameters.
+                let header = a
+                    .module_of(id.file)
+                    .and_then(|m| m.index.defs.iter().find(|d| d.kind == DefKind::Type && d.name == *owner).and_then(|d| d.sig.clone()));
+                let t = header.unwrap_or_else(|| owner.to_string());
                 parts.push(t!("constructor of the type `{t}`", "constructeur du type `{t}`"));
             }
         }
@@ -342,6 +425,7 @@ fn target_markdown(a: &Analysis, occ: &Occ) -> Option<String> {
         }
         Target::Pi => format!("{}\n\n{}", code_block("pi = 3.141592653589793"), t!("The number π.", "Le nombre π.")),
         Target::Prelude(name) => prelude_markdown(name),
+        Target::Type(name) => type_markdown(name),
         Target::Unknown => return None,
     };
     if occ.method {
@@ -483,6 +567,8 @@ mod kind {
     pub const FOLDER: u32 = 19;
     pub const ENUM_MEMBER: u32 = 20;
     pub const CONSTANT: u32 = 21;
+    pub const STRUCT: u32 = 22;
+    pub const TYPE_PARAMETER: u32 = 25;
 }
 
 fn item(label: &str, kind: u32, detail: Option<String>, doc: Option<String>, sort: &str, cx: &Ctx) -> Json {
@@ -596,12 +682,15 @@ pub fn completion(cx: &Ctx, a: &Analysis, offset: usize, trigger: Option<&str>) 
         Place::Code => {}
     }
     let start = scan::word_at(text, offset).map_or(offset, |(s, _)| s.min(offset));
+    if let Some(place) = type_place(text, start) {
+        return type_completion(cx, a, &place);
+    }
     let before = text[..start].trim_end_matches([' ', '\t']);
     let after_dot = before.ends_with('.') && !before.ends_with("..") && start == before.len();
     if after_dot {
         // `geometry.`: the definitions of the file used as `geometry`.
         let head = &before[..before.len() - 1];
-        let m = &head[head.rfind(|c: char| !scan::is_name_char(c)).map_or(0, |i| i + 1)..];
+        let m = &head[run_start(head, scan::is_name_char)..];
         if a.module.named.iter().any(|(n, _)| &*n.name() == m) {
             let mut items = Vec::new();
             let mut defs: Vec<(DefId, &Def)> = a
@@ -682,6 +771,243 @@ pub fn completion(cx: &Ctx, a: &Analysis, offset: usize, trigger: Option<&str>) 
             it.set("insertText", body.into());
             it.set("insertTextFormat", 2u32.into());
             items.push(it);
+        }
+    }
+    Json::Arr(items)
+}
+
+/// Where a written type is being typed: after `:` or `->`, between the
+/// brackets of `List(`... (see [`type_place`]).
+struct TypePlace {
+    /// After `geometry.`: a type of the file used as `geometry`.
+    module: Option<String>,
+    /// In the fields of `type Tree(a) = ...`: its type variables.
+    params: Vec<String>,
+}
+
+/// Is a written type being typed at `start` (the start of the word under
+/// the cursor)? Read from the tokens before it, the way the parser reads
+/// types: after the `:` of a parameter, of a name given a value, of a field
+/// of a variant or of a record type, after the `->` of a function, and
+/// inside the brackets of a type.
+fn type_place(text: &str, start: usize) -> Option<TypePlace> {
+    let toks = crate::lexer::lex(&text[..start], u32::MAX).ok()?.tokens;
+    // Without new lines and the end, each token knows if it starts a line.
+    let mut t: Vec<(&Tok, bool)> = Vec::new();
+    let mut line_start = true;
+    for tok in &toks {
+        match tok.tok {
+            Tok::Newline => line_start = true,
+            Tok::Eof => {}
+            _ => {
+                t.push((&tok.tok, line_start));
+                line_start = false;
+            }
+        }
+    }
+    let mut n = t.len();
+    let mut module = None;
+    // `geometry.`: a type of that file, if a type may start before the name.
+    if n >= 2 && *t[n - 1].0 == Tok::Dot {
+        let Tok::Ident(m) = t[n - 2].0 else { return None };
+        module = Some(m.name().to_string());
+        n -= 2;
+    }
+    if !starts_type(&t, n, 0) {
+        return None;
+    }
+    let params = type_def_around(&t, n).map(|k| type_params_after(&t, k)).unwrap_or_default();
+    Some(TypePlace { module, params })
+}
+
+type Toks<'a> = [(&'a Tok, bool)];
+
+/// May a written type start right after the first `n` tokens? (`depth`:
+/// how many types it is inside, looked at so far; absurdly deep code is not
+/// followed.)
+fn starts_type(t: &Toks, n: usize, depth: usize) -> bool {
+    let Some(prev) = n.checked_sub(1).map(|i| t[i].0) else { return false };
+    if depth > 100 {
+        return false;
+    }
+    let depth = depth + 1;
+    match prev {
+        Tok::Colon => colon_starts_type(t, n - 1, depth),
+        Tok::Arrow => n >= 2 && *t[n - 2].0 == Tok::RParen && opening(t, n - 2).is_some_and(|o| fn_parens(t, o)),
+        Tok::LBracket => starts_type(t, n - 1, depth),
+        Tok::LParen => n >= 2 && args_of_type(t, n - 1, depth),
+        Tok::Comma => opening(t, n - 1).is_some_and(|o| *t[o].0 == Tok::LParen && args_of_type(t, o, depth)),
+        _ => false,
+    }
+}
+
+/// Are the brackets opened at `o` those of the types a type takes (`List(`,
+/// `geo.Tree(`) or of a function type (`fn(`), written where a type goes?
+fn args_of_type(t: &Toks, o: usize, depth: usize) -> bool {
+    match o.checked_sub(1).map(|i| t[i].0) {
+        Some(Tok::Ctor(_)) => {
+            let name = o - 1;
+            starts_type(t, name, depth)
+                || (name >= 2 && *t[name - 1].0 == Tok::Dot && matches!(t[name - 2].0, Tok::Ident(_)) && starts_type(t, name - 2, depth))
+        }
+        Some(Tok::Fn) => starts_type(t, o - 1, depth),
+        _ => false,
+    }
+}
+
+/// Does the `:` at `c` start a type?
+fn colon_starts_type(t: &Toks, c: usize, depth: usize) -> bool {
+    match opening(t, c) {
+        // The parameters of a function, or the fields of a variant.
+        Some(o) if *t[o].0 == Tok::LParen => {
+            fn_parens(t, o) || (o >= 1 && matches!(t[o - 1].0, Tok::Ctor(_)) && type_def_at(t, o - 1).is_some())
+        }
+        // `{name: Text}`, written where a type goes.
+        Some(o) if *t[o].0 == Tok::LBrace => starts_type(t, o, depth) || block_params(t, c),
+        Some(_) => false,
+        // `total: Float = ...` at the start of a line, or the parameters of a block.
+        None => (c >= 1 && matches!(t[c - 1].0, Tok::Ident(_)) && t[c - 1].1) || block_params(t, c),
+    }
+}
+
+/// Is the `:` at `c` in the parameters of a block, `do |x: ` or `{ |a, b: `?
+fn block_params(t: &Toks, c: usize) -> bool {
+    let mut i = c;
+    while i > 0 {
+        i -= 1;
+        match t[i].0 {
+            Tok::Bar => return i >= 1 && matches!(t[i - 1].0, Tok::Do | Tok::LBrace),
+            Tok::Ident(_) | Tok::Comma | Tok::Colon | Tok::Ctor(_) | Tok::Dot => {}
+            _ => return false,
+        }
+    }
+    false
+}
+
+/// Are the brackets opened at `o` those of the parameters of a function
+/// (`fn area(`, `fn adult?(`, `fn(`)?
+fn fn_parens(t: &Toks, o: usize) -> bool {
+    match o.checked_sub(1).map(|i| t[i].0) {
+        Some(Tok::Fn) => true,
+        Some(Tok::Ident(_)) => o >= 2 && *t[o - 2].0 == Tok::Fn,
+        Some(Tok::Question) => o >= 3 && matches!(t[o - 2].0, Tok::Ident(_)) && *t[o - 3].0 == Tok::Fn,
+        _ => false,
+    }
+}
+
+/// The innermost bracket still open before the token `i`.
+fn opening(t: &Toks, i: usize) -> Option<usize> {
+    let mut depth = 0usize;
+    for j in (0..i).rev() {
+        match t[j].0 {
+            Tok::RParen | Tok::RBracket | Tok::RBrace => depth += 1,
+            Tok::LParen | Tok::LBracket | Tok::LBrace if depth == 0 => return Some(j),
+            Tok::LParen | Tok::LBracket | Tok::LBrace => depth -= 1,
+            _ => {}
+        }
+    }
+    None
+}
+
+/// The `type` keyword of the definition whose variant is at `v`, if `v` is
+/// the name of a variant.
+fn type_def_at(t: &Toks, v: usize) -> Option<usize> {
+    let mut i = v;
+    loop {
+        match t[i].0 {
+            Tok::Type => return Some(i),
+            // The fields of the variants before, and the parameters of the type.
+            Tok::RParen => i = opening(t, i)?,
+            Tok::Ctor(_) | Tok::Bar | Tok::Eq => {}
+            _ => return None,
+        }
+        i = i.checked_sub(1)?;
+    }
+}
+
+/// The `type` keyword of the definition whose fields are open after the
+/// first `n` tokens (`type Pair(a, b) = Pair(first: `), if any.
+fn type_def_around(t: &Toks, n: usize) -> Option<usize> {
+    let mut o = opening(t, n)?;
+    loop {
+        if *t[o].0 == Tok::LParen && o >= 1 && matches!(t[o - 1].0, Tok::Ctor(_)) {
+            if let Some(k) = type_def_at(t, o - 1) {
+                return Some(k);
+            }
+        }
+        o = opening(t, o)?;
+    }
+}
+
+/// The type variables of `type Tree(a, b)`, whose `type` is at `k`.
+fn type_params_after(t: &Toks, k: usize) -> Vec<String> {
+    let mut out = Vec::new();
+    if t.get(k + 2).is_some_and(|x| *x.0 == Tok::LParen) {
+        for x in &t[k + 3..] {
+            match x.0 {
+                Tok::Ident(p) => out.push(p.name().to_string()),
+                Tok::Comma => {}
+                _ => break,
+            }
+        }
+    }
+    out
+}
+
+/// The types that may be written here: Rythme's, the program's, those of
+/// the used files, and the type variables of the type being defined.
+fn type_completion(cx: &Ctx, a: &Analysis, place: &TypePlace) -> Json {
+    let mut items = Vec::new();
+    let mut seen: HashSet<String> = HashSet::new();
+    if let Some(m) = &place.module {
+        let mut found: Vec<(String, DefId)> = a
+            .module
+            .dep_types
+            .iter()
+            .filter_map(|(s, id)| s.split_module().filter(|(n, _)| &*n.name() == m).map(|(_, own)| (own.name().to_string(), *id)))
+            .collect();
+        found.sort_by(|x, y| x.0.cmp(&y.0));
+        for (name, id) in found {
+            if let Some(d) = a.def(id) {
+                if seen.insert(name.clone()) {
+                    items.push(item(&name, kind::ENUM, d.sig.clone(), Some(def_markdown(a, id, d)), "0", cx));
+                }
+            }
+        }
+        return Json::Arr(items);
+    }
+    for p in &place.params {
+        if seen.insert(p.clone()) {
+            items.push(item(p, kind::TYPE_PARAMETER, Some(t!("type variable", "variable de type")), None, "0", cx));
+        }
+    }
+    let ix = a.index();
+    for (_, idx) in &ix.types {
+        if let Some(d) = ix.def(*idx) {
+            if seen.insert(d.name.to_string()) {
+                items.push(item(&d.name, kind::ENUM, d.sig.clone(), Some(def_markdown(a, DefId { file: ix.file, idx: *idx }, d)), "1", cx));
+            }
+        }
+    }
+    let mut deps: Vec<(Rc<str>, DefId)> =
+        a.module.dep_types.iter().filter(|(s, _)| s.split_module().is_none()).map(|(s, id)| (s.name(), *id)).collect();
+    deps.sort_by(|x, y| x.0.cmp(&y.0));
+    for (_, id) in deps {
+        if let Some(d) = a.def(id) {
+            if seen.insert(d.name.to_string()) {
+                items.push(item(&d.name, kind::ENUM, d.sig.clone(), Some(def_markdown(a, id, d)), "2", cx));
+            }
+        }
+    }
+    for t in super::index::TYPES {
+        if seen.insert(t.to_string()) {
+            items.push(item(t, kind::STRUCT, None, Some(type_markdown(t)), "3", cx));
+        }
+    }
+    // `geometry`, for `geometry.Shape`.
+    for (n, _) in &a.module.named {
+        if seen.insert(n.to_string()) {
+            items.push(item(&n.name(), kind::MODULE, Some(t!("used file", "fichier utilisé")), None, "4", cx));
         }
     }
     Json::Arr(items)

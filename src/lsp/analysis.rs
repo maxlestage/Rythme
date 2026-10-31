@@ -68,6 +68,8 @@ pub struct Module {
     pub use_diags: Vec<Diagnostic>,
     /// The top-level names of the used files, as the checker sees them.
     pub dep_defs: HashMap<Sym, DefId>,
+    /// The types the used files define (`geometry.Shape` for a file used with a name).
+    pub dep_types: HashMap<Sym, DefId>,
     pub index: Index,
     /// The signatures the checker infers for its functions, by the place of
     /// their definition: `fn area(side: Int|Float) -> Int|Float`.
@@ -225,11 +227,15 @@ impl<'a> Loader<'a> {
             }
         }
         let mut tops: HashMap<Sym, DefId> = HashMap::new();
+        let mut dep_types: HashMap<Sym, DefId> = HashMap::new();
         for m in &order {
             for (s, idx) in &m.index.tops {
                 if !modules::is_private(*s) {
                     tops.insert(*s, DefId { file: m.file, idx: *idx });
                 }
+            }
+            for (s, idx) in &m.index.types {
+                dep_types.insert(*s, DefId { file: m.file, idx: *idx });
             }
         }
         // `geometry.area` for the files used with a name, and the files they use without one.
@@ -241,9 +247,12 @@ impl<'a> Loader<'a> {
                         tops.insert(Sym::new(&format!("{n}.{s}")), DefId { file: d.file, idx: *idx });
                     }
                 }
+                for (s, idx) in &d.index.types {
+                    dep_types.insert(Sym::new(&format!("{n}.{s}")), DefId { file: d.file, idx: *idx });
+                }
             }
         }
-        let index = guard(|| index::build(&items, file, text, &tops)).unwrap_or_default();
+        let index = guard(|| index::build(&items, file, text, &tops, &dep_types)).unwrap_or_default();
         Module {
             path: path.map(Path::to_path_buf),
             uri: uri.to_string(),
@@ -258,6 +267,7 @@ impl<'a> Loader<'a> {
             diags,
             use_diags,
             dep_defs: tops,
+            dep_types,
             index,
             signatures,
             types,
@@ -291,6 +301,7 @@ impl<'a> Loader<'a> {
                     diags: vec![d],
                     use_diags: Vec::new(),
                     dep_defs: HashMap::new(),
+                    dep_types: HashMap::new(),
                     index: Index { file, ..Index::default() },
                     signatures: HashMap::new(),
                     types: HashMap::new(),
