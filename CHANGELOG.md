@@ -309,6 +309,20 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   parameters (`constructor of the type `Tree(a)``), and so does
   `help(Node)` in a program.
 
+### Documentation
+
+- **The guide for teachers, up to date and in six languages**: grading a
+  class with `rythme test --sandbox --format json` (and a Rythme program
+  that turns the results into grades), the playground for students without
+  an installation, `rythme steps` and the debugger to show how code runs,
+  the messages in the students' language, the AI unit (exercises 31 to 36),
+  types written in the code, and a policy for AI assistants in class.
+  [`docs/teaching.md`](docs/teaching.md) and
+  [`docs/enseigner.md`](docs/enseigner.md) are translated into Spanish,
+  German, Portuguese and Chinese (`docs/teaching.es.md`, `.de.md`, `.pt.md`,
+  `.zh.md`); the website shows each language its own guide, and each README
+  links its own. The tests run the samples of every guide in its language.
+
 ### Fixed
 
 - **`capitalize` uses the titlecase of Unicode** where it differs from the

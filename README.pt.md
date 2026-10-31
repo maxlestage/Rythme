@@ -7,9 +7,10 @@ Os programas são arquivos que terminam em `.ry`. O interpretador é escrito em 
 *[English version →](README.md) · [Version française →](README.fr.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [中文 →](README.zh.md)*
 
 Este README é um resumo. As mensagens, a ajuda e as explicações do Rythme
-existem em português (`--lang pt`); a documentação completa está em inglês e
-em francês: o [manual de referência](docs/reference.md) e o
-[guia para professores](docs/teaching.md). O site e o playground também estão
+existem em português (`--lang pt`), assim como o
+[guia para professores](docs/teaching.pt.md); o
+[manual de referência](docs/reference.md) completo está em inglês e em
+francês. O site e o playground também estão
 em português: <https://maxlestage.github.io/Rythme/pt/>.
 
 ```rythme
