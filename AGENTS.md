@@ -63,10 +63,10 @@ After a change to the interpreter: `bench/run.sh` before and after.
 
 ## Conventions
 
-- **Every user-facing text in six languages.** Write
+- **Every user-facing text in eight languages.** Write
   `t!("English {x}", "Français {x}")` at the call (or `lang::pick(en, fr)` for
   fixed texts), then add the translation of the English text to each catalog
-  `src/i18n/{es,de,pt,zh}.rs`. `tests/i18n.rs` fails on a missing or stale
+  `src/i18n/{es,de,pt,zh,it,ja}.rs`. `tests/i18n.rs` fails on a missing or stale
   entry; `RYTHME_I18N_MISSING=missing.rs cargo test --test i18n` writes the
   missing ones with the French text as a guide. Changing an English text
   means changing its key in every catalog.

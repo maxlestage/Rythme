@@ -19,7 +19,7 @@ pub const IT: Texts = Texts {
     hero_lead: "Rythme è puramente funzionale: i valori non cambiano mai, tutto è una funzione, e non ci sono cicli, né null, né eccezioni. E l'interprete spiega ogni errore, in italiano, inglese, francese, spagnolo, tedesco, portoghese, cinese o giapponese.",
     cta_try: "Provalo nel browser",
     cta_install: "Installa",
-    hero_code: "# I valori non cambiano mai. Tutto è una funzione.\nfn square(x) = x * x\n\n[1, 2, 3, 4]\n  |> filter(is_even)      # tieni i numeri pari\n  |> map(square)          # eleva ognuno al quadrato\n  |> sum                  # sommali\n  |> print\n",
+    hero_code: "# Valori immutabili. Tutto è funzione.\nfn square(x) = x * x\n\n[1, 2, 3, 4]\n  |> filter(is_even)      # solo i pari\n  |> map(square)          # al quadrato\n  |> sum                  # la somma\n  |> print\n",
     hero_output: "Output",
     why_title: "Perché Rythme?",
     why_lead: "Meno concetti da imparare, meno bug da inseguire, e aiuto a ogni passo.",
