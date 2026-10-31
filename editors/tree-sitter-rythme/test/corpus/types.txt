@@ -151,3 +151,84 @@ fn sign(n: Int) -> Text if n < 0 = "negative"
         (integer)))
     (string
       (string_content))))
+
+================================================================================
+Types with parameters
+================================================================================
+
+type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+type Pair(a, b) =
+  | Pair(first: a, second: b)
+fn depth(t: Tree(a)) -> Int = 0
+p: Pair(Int, geo.Shape) = Pair(1, s)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (type_definition
+    (type_identifier)
+    (type_parameters
+      (type_variable))
+    (variant
+      (constructor))
+    (variant
+      (constructor)
+      (variant_fields
+        (typed_field
+          (identifier)
+          (type_annotation
+            (generic_type
+              (type_name)
+              (type_variable))))
+        (typed_field
+          (identifier)
+          (type_annotation
+            (type_variable)))
+        (typed_field
+          (identifier)
+          (type_annotation
+            (generic_type
+              (type_name)
+              (type_variable)))))))
+  (type_definition
+    (type_identifier)
+    (type_parameters
+      (type_variable)
+      (type_variable))
+    (variant
+      (constructor)
+      (variant_fields
+        (typed_field
+          (identifier)
+          (type_annotation
+            (type_variable)))
+        (typed_field
+          (identifier)
+          (type_annotation
+            (type_variable))))))
+  (function_definition
+    (identifier)
+    (parameters
+      (typed_parameter
+        (identifier)
+        (type_annotation
+          (generic_type
+            (type_name)
+            (type_variable)))))
+    (return_type
+      (type_name))
+    (integer))
+  (definition
+    (identifier)
+    (type_annotation
+      (generic_type
+        (type_name)
+        (type_name)
+        (qualified_type
+          (module_name)
+          (type_name))))
+    (call
+      (constructor)
+      (arguments
+        (integer)
+        (identifier)))))

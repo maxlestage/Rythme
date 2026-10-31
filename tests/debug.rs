@@ -83,12 +83,12 @@ fn breakpoints_where_print_finish_and_tail_calls() {
             // `finish`: the result, where the function was called.
             "(debug) finish\n`fact` gave 2\n→ main.ry:2  fact(n = 3) · depth 1\n",
             "breakpoint 2 at the start of `total`",
-            "6\n● breakpoint 2: `total` starts\n→ main.ry:5  total(arg1 = [1, 2, 3], acc = 0) · depth 1\n",
+            "6\n● breakpoint 2: `total` starts\n→ main.ry:5  total([x, ..rest] = [1, 2, 3], acc = 0) · depth 1\n",
             // A call in tail position takes the place of its caller.
-            "(debug) next\n● breakpoint 2: `total` starts\n→ main.ry:5  total(arg1 = [2, 3], acc = 1) · depth 1\n  (a call in tail position: it took the place of the frame of `total`)\n",
-            "(debug) where\n→ #0 total(arg1 = [2, 3], acc = 1)  main.ry:5 (replaced `total`: tail call)\n  #1 top level  main.ry:8\n",
+            "(debug) next\n● breakpoint 2: `total` starts\n→ main.ry:5  total([x, ..rest] = [2, 3], acc = 1) · depth 1\n  (a call in tail position: it took the place of the frame of `total`)\n",
+            "(debug) where\n→ #0 total([x, ..rest] = [2, 3], acc = 1)  main.ry:5 (replaced `total`: tail call)\n  #1 top level  main.ry:8\n",
             // An empty line repeats `continue`.
-            "total(arg1 = [], acc = 6)",
+            "total([] = [], acc = 6)",
             "6\nThe program finished. `run` starts it again, `quit` leaves.\n(debug) quit\ndebugger stopped\n",
         ],
     );

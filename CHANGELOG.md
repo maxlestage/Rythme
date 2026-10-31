@@ -93,6 +93,26 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   tests and 260 000 generated programs). `rythme fmt`, hover and signature
   help of the language server, `rythme doc`, the Tree-sitter, Helix, Zed
   and VS Code grammars, `rythme help types` and the manual (4.10) know them.
+- **Types with parameters**: `type Tree(a) = Leaf | Node(left: Tree(a),
+  value: a, right: Tree(a))`, `type Pair(a, b) = Pair(first: a, second: b)`,
+  then `fn total(t: Tree(Int)) -> Int` or `p: Pair(Text, Int) = ...`. The
+  parameters are type variables (one lowercase letter: a longer word stays
+  a type named as in another language, which `rythme check` renames), used
+  in the types of the fields; running never looks at them. `rythme check`
+  reports, with E027, a value whose contents surely have another type
+  (`Node(Leaf, "two", Leaf)` for a `Tree(Int)`, shown as `Tree(Text)`), a
+  constructor whose type variable gets two types, a wrong number of types
+  (`Tree(Int, Text)`), and parameters that are not one letter, written twice
+  or missing (`type Box(a) = Box(value: b)`); it uses them as it uses those
+  of `List`: the fields of a `Tree(Int)` are Ints in patterns, a call gives
+  the types found in its arguments (`fn first_of(p: Pair(a, b)) -> a`),
+  across used files too. `Tree` alone holds anything. Read only where `=`
+  was the only thing allowed after the name of a type: every program of the
+  repository, the manual and 457 000 generated programs (292 000 that parse)
+  keep exactly the same syntax tree. `rythme fmt`, `rythme doc`, the
+  Tree-sitter (regenerated) and VS Code grammars, `rythme help types`,
+  `rythme help syntax`, `rythme learn`, E027's explanation and the manual
+  (4.10, Appendix A) know them.
 - **A symbol may end with `?`**, as in Ruby: `:even?` is one symbol. It was
   read as `:even` followed by the operator `?`, which the checker always
   refuses (E016) before running, so no program that ran changes meaning (a
@@ -179,6 +199,20 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   may pause are only added to the code of a program it runs, and calls are
   followed through a check that the interpreter already makes (the
   instructions counted on `bench/` differ by 0.0 to 1.2 %).
+- **The debugger names the parameters written as patterns** by their
+  pattern in the definition that runs: `total([x, ..rest] = [1, 2], acc =
+  0)` instead of `total(arg1 = [1, 2], acc = 0)`, in `where`, the pauses,
+  `locals` and the call stack of `rythme dap`.
+- **The language server completes the names of types** where a type is
+  written: after the `:` of a parameter, of a name given a value, of a field
+  of a variant or of a block's parameter, after `->`, inside `List(` or
+  `Dict(Text, `, after `geometry.` for the types of a used file, with the
+  type variables of the type being defined; it shows what a type of Rythme
+  is, or the definition of a type of the program, on hover, goes to that
+  definition, renames it and colors it (semantic tokens). The hover of a
+  constructor shows the types of its fields and its type with its
+  parameters (`constructor of the type `Tree(a)``), and so does
+  `help(Node)` in a program.
 
 ### Fixed
 

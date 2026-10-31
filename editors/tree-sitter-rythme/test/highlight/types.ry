@@ -16,3 +16,10 @@ type Shape = Circle(radius: Float) | Dot
 ys = xs.map do |n: Int| n end
 #               ^ variable.parameter
 #                  ^ type
+
+type Tree(a) = Leaf | Node(left: Tree(a), value: a)
+#    ^ type.definition
+#         ^ type
+#                                ^ type
+#                                     ^ type
+#                                                ^ type

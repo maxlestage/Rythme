@@ -230,12 +230,40 @@ impl std::fmt::Debug for Clause {
     }
 }
 
-#[derive(Debug)]
 pub struct TypeDef {
     pub name: Sym,
+    /// The type variables it takes, with where each is written:
+    /// `type Tree(a) = ...`. Only the checker reads them.
+    pub params: Vec<(Sym, Span)>,
     pub variants: Vec<VariantDef>,
     pub doc: Option<Rc<str>>,
+    /// From `type` to its name.
     pub span: Span,
+}
+
+/// Like a derived `Debug`, with the parameters only when there are some:
+/// the trees of programs without them stay the same.
+impl std::fmt::Debug for TypeDef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut d = f.debug_struct("TypeDef");
+        d.field("name", &self.name);
+        if !self.params.is_empty() {
+            d.field("params", &self.params);
+        }
+        d.field("variants", &self.variants).field("doc", &self.doc).field("span", &self.span);
+        d.finish()
+    }
+}
+
+impl TypeDef {
+    /// `Tree(a)` with its parameters, or `Shape`.
+    pub fn header(&self) -> String {
+        if self.params.is_empty() {
+            return self.name.to_string();
+        }
+        let params: Vec<String> = self.params.iter().map(|(p, _)| p.to_string()).collect();
+        format!("{}({})", self.name, params.join(", "))
+    }
 }
 
 pub struct VariantDef {
@@ -279,9 +307,9 @@ impl VariantDef {
 }
 
 /// A type written in the code, after `:` or `->`: `Int`, `List(Text)`,
-/// `[Int]`, `{name: Text}`, `fn(Int) -> Bool`, `Shape`, `geo.Shape`, or a
-/// type variable, `a`. It only tells the checker what is meant: running the
-/// program never looks at it.
+/// `[Int]`, `{name: Text}`, `fn(Int) -> Bool`, `Shape`, `Tree(Int)`,
+/// `geo.Shape`, or a type variable, `a`. It only tells the checker what is
+/// meant: running the program never looks at it.
 #[derive(Clone, Debug)]
 pub struct TypeExpr {
     pub kind: TypeKind,
@@ -290,8 +318,8 @@ pub struct TypeExpr {
 
 #[derive(Clone, Debug)]
 pub enum TypeKind {
-    /// `Int`, `List(Int)`, `Dict(Text, Int)`, `Shape`, `geo.Shape`: a name,
-    /// with the types it takes.
+    /// `Int`, `List(Int)`, `Dict(Text, Int)`, `Shape`, `Tree(Int)`,
+    /// `geo.Shape`: a name, with the types it takes.
     Named(Sym, Vec<TypeExpr>),
     /// `a`: any type, the same one everywhere in a definition.
     Var(Sym),

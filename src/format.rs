@@ -775,6 +775,11 @@ impl<'a> Shaper<'a> {
     fn type_def(&mut self) -> Option<usize> {
         let k = self.advance()?;
         self.advance()?;
+        // `type Tree(a)`: its type variables, written like the types a type takes.
+        if *self.raw() == Tok::LParen {
+            let open = self.take(Role::Call)?;
+            self.comma_list(open, &Tok::RParen, Self::ty)?;
+        }
         if *self.peek() != Tok::Eq {
             return None;
         }
