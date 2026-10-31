@@ -9,6 +9,9 @@
   expressions, definitions, errors and their codes, standard library, command
   line, interactive mode, playground, formatter and language server. Every
   example shows its real output.
+- [**The standard library, compared**](stdlib-audit.md): each operation that
+  Ruby, Python and Elixir offer, and its Rythme function (or why there is
+  none).
 - [**Teaching with Rythme**](teaching.md): why Rythme fits a course, a
   12-session course outline, exercises with automatic checking.
 - [**Exercises**](exercises/README.md): 36 graded exercises for a first
@@ -36,6 +39,9 @@
   expressions, définitions, erreurs et leurs codes, bibliothèque standard,
   ligne de commande, mode interactif, playground, mise en forme et serveur de
   langage. Chaque exemple montre ce qu'il affiche réellement.
+- [**La bibliothèque standard, comparée**](stdlib-audit.md) (en anglais) :
+  chaque opération de Ruby, Python et Elixir, et sa fonction en Rythme (ou
+  pourquoi il n'y en a pas).
 - [**Enseigner avec Rythme**](enseigner.md) : pourquoi Rythme convient à un
   cours, un plan de cours en 12 séances, des exercices corrigés
   automatiquement.

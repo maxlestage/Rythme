@@ -211,6 +211,8 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
 | `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
 | `rythme mcp`                | serveur pour les assistants d'IA ([plus bas](#assistants-dia)) |
+| `rythme test --help`        | l'utilisation et les options de n'importe quelle commande, dans votre langue |
+| `rythme completions bash`   | complétion des commandes pour bash, zsh, fish ou PowerShell ; `rythme man` : la page de manuel |
 
 Ajoutez `--lang` et une langue (`fr`, `en`, `es`, `de`, `pt` ou `zh`) avant la
 commande pour choisir la langue des messages, ou définissez `RYTHME_LANG`.
