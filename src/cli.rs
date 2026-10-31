@@ -487,14 +487,20 @@ complete -o filenames -F _rythme rythme
     )
 }
 
-/// A text between single quotes for zsh, fish and PowerShell.
-fn quoted(s: &str) -> String {
-    s.replace('\'', "''").replace(':', "\\:")
+/// A description between single quotes for zsh's `_describe`: a quote
+/// closes, is escaped and opens again; a colon would end the name.
+fn zsh_quoted(s: &str) -> String {
+    s.replace('\'', "'\\''").replace(':', "\\:")
+}
+
+/// A text between single quotes for fish.
+fn fish_quoted(s: &str) -> String {
+    s.replace('\\', "\\\\").replace('\'', "\\'")
 }
 
 fn zsh() -> String {
     let commands: Vec<String> =
-        COMMANDS.iter().map(|c| format!("    '{}:{}'", c.name.replace('-', "\\-"), quoted(&about(c.name)))).collect();
+        COMMANDS.iter().map(|c| format!("    '{}:{}'", c.name.replace('-', "\\-"), zsh_quoted(&about(c.name)))).collect();
     let mut cases = String::new();
     for c in COMMANDS.iter().filter(|c| !c.options.is_empty() || c.name == "help" || c.name == "explain") {
         let words: Vec<&str> = match c.name {
@@ -543,16 +549,17 @@ fn fish() -> String {
     let mut out = String::from(
         "# Completion of the rythme command for fish, made by `rythme completions fish`.\n# Install: rythme completions fish > ~/.config/fish/completions/rythme.fish\ncomplete -c rythme -f\n",
     );
-    let names = command_names().join(" ");
+    // `-e` is an option for fish, not a command to complete.
+    let names = command_names().into_iter().filter(|n| !n.starts_with('-')).collect::<Vec<_>>().join(" ");
     out.push_str(&format!(
         "complete -c rythme -l lang -x -a '{}'\ncomplete -c rythme -l no-color\ncomplete -c rythme -s h -l help\ncomplete -c rythme -l version\n",
         languages().join(" ")
     ));
-    for c in COMMANDS {
+    for c in COMMANDS.iter().filter(|c| !c.name.starts_with('-')) {
         out.push_str(&format!(
             "complete -c rythme -n 'not __fish_seen_subcommand_from {names}' -a '{}' -d '{}'\n",
             c.name,
-            quoted(&about(c.name)).replace("\\:", ":")
+            fish_quoted(&about(c.name))
         ));
         let words: Vec<&str> = match c.name {
             "help" => topics(),
