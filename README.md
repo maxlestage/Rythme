@@ -214,6 +214,8 @@ cargo install --path .       # or install it in your PATH
 | `rythme -e 'print(1 + 2)'`  | run a piece of code                            |
 | `rythme lsp`                | language server, started by your editor ([editors](editors)) |
 | `rythme mcp`                | server for AI assistants ([below](#ai-assistants)) |
+| `rythme test --help`        | the usage and the options of any command, in your language |
+| `rythme completions bash`   | completion of the commands for bash, zsh, fish or PowerShell; `rythme man`: the manual page |
 
 Add `--lang` and a language (`en`, `fr`, `es`, `de`, `pt` or `zh`) before the
 command to choose the language of the messages, or set `RYTHME_LANG`.
@@ -365,7 +367,7 @@ mode) and is organised as a pipeline:
 | [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
 | [`src/bigint.rs`](src/bigint.rs) | whole numbers beyond 64 bits, without a dependency |
 | [`src/dict.rs`](src/dict.rs) | the persistent ordered tree behind dictionaries and sets, and the order of their keys |
-| [`src/builtins.rs`](src/builtins.rs) | 211 built-in functions (and their Ruby names), documented in two languages, JSON, CSV, HTTP and machine learning included |
+| [`src/builtins.rs`](src/builtins.rs) | 283 built-in functions (and their Ruby names), documented in six languages, JSON, CSV, HTTP and machine learning included ([compared with Ruby, Python and Elixir](docs/stdlib-audit.md)) |
 | [`src/builtins/`](src/builtins) | dates, files and the system, dictionaries and sets, regexes and text tools, CSV, generators of property tests |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |

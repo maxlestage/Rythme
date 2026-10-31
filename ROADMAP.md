@@ -192,6 +192,18 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
   - [x] **HTTP requests**: `http_get` and `http_post`, `Ok(text)` or
     `Err(message)`, through the program curl (no dependency; keys never on a
     command line); an `Err` in the playground.
+  - [x] **The library, completed**: an audit against Ruby's core, Python's
+    builtins, `itertools`, `statistics` and `string`, and Elixir's `Enum`,
+    `String` and `Map` ([`docs/stdlib-audit.md`](docs/stdlib-audit.md)),
+    then 72 pure functions where Rythme had a gap (`format` with Python's
+    specs, `tally`, `combinations`, `dig`, `update`, `all_ok`,
+    `add_months`, date patterns, Base64...) and 26 Ruby names, each known to
+    the checker, documented and translated; names the exercises define stay
+    free.
+- [x] **A command line that feels finished**: `--help` for every command in
+  the six languages, `rythme run -` (the standard input), `rythme check
+  FOLDER`, `rythme completions bash|zsh|fish|powershell`, `rythme man`,
+  `rythme version --verbose` and `rythme upgrade`.
 - [x] **Rythme for AI assistants**: models learn the language fast, write
   it, and fix their own mistakes without a person. Done: `--format json`
   for `check`, `run`, `test`, `fix`, `explain` and `help` (versioned, with a
