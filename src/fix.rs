@@ -14,6 +14,17 @@ fn is_name_char(c: char) -> bool {
     c.is_alphanumeric() || c == '_'
 }
 
+/// Where the name at the end of `text` starts.
+fn name_start(text: &str) -> usize {
+    run_start(text, is_name_char)
+}
+
+/// Where the characters that `keep` accepts at the end of `text` start:
+/// after the last other one, which may take several bytes (`👍`).
+fn run_start(text: &str, keep: impl Fn(char) -> bool) -> usize {
+    text.char_indices().rev().find(|(_, c)| !keep(*c)).map_or(0, |(i, c)| i + c.len_utf8())
+}
+
 /// The last place inside `span` where the name `word` is written.
 pub fn word_in(span: Span, word: &str) -> Option<Span> {
     let f = source::get(span.file)?;
@@ -284,7 +295,7 @@ fn record_equal(text: &str, at: usize, w: &str) -> Option<String> {
         return None;
     }
     let head = text[..at].trim_end();
-    let start = head.rfind(|c: char| !is_name_char(c)).map_or(0, |i| i + 1);
+    let start = name_start(head);
     let field = &head[start..];
     let lead = head[..start].trim_end();
     (!field.is_empty() && (lead.ends_with('{') || lead.ends_with(','))).then(|| field.to_string())
@@ -418,7 +429,7 @@ fn slice_fix(text: &str, at: usize, sp: impl Fn(usize, usize) -> Span) -> Option
     let open = text[..at].rfind('[')?;
     let close = at + text[at..].find(']')?;
     let head = &text[..open];
-    let start = head.rfind(|c: char| !(is_name_char(c) || c == '.')).map_or(0, |i| i + 1);
+    let start = run_start(head, |c| is_name_char(c) || c == '.');
     let list = &head[start..];
     let (a, b) = (text[open + 1..at].trim(), text[at + 1..close].trim());
     let simple = |x: &str| x.chars().all(|c| is_name_char(c) || c == '-' || c == ' ' || c == '+' || c == '*');
@@ -455,7 +466,7 @@ fn arrow_fix(text: &str, s: usize, e: usize, sp: impl Fn(usize, usize) -> Span) 
         }
         (open, inner[open + 1..].trim())
     } else {
-        let start = head.rfind(|c: char| !is_name_char(c)).map_or(0, |i| i + 1);
+        let start = name_start(head);
         let name = &head[start..];
         if name.is_empty() || head[..start].trim_end().ends_with(|c: char| is_name_char(c) || c == '.') {
             return None;

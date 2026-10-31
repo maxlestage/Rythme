@@ -188,7 +188,7 @@ fn receiver_type(before_dot: &str) -> Option<Ty> {
         ']' if opener('[', ']') => Some(Ty::list(Ty::Any)),
         '}' if opener('{', '}') => Some(Ty::record(Vec::new(), false)),
         c if c.is_ascii_digit() => {
-            let word = &s[s.rfind(|c: char| !scan::is_name_char(c) && c != '.').map_or(0, |i| i + 1)..];
+            let word = &s[run_start(s, |c| scan::is_name_char(c) || c == '.')..];
             if word.starts_with(|c: char| c.is_ascii_digit()) {
                 Some(if word.contains('.') { Ty::Float } else { Ty::Int })
             } else {
@@ -196,10 +196,16 @@ fn receiver_type(before_dot: &str) -> Option<Ty> {
             }
         }
         _ => {
-            let start = s.rfind(|c: char| !scan::is_name_char(c)).map_or(0, |i| i + 1);
+            let start = run_start(s, scan::is_name_char);
             (start > 0 && s[..start].ends_with(':') && !s[..start - 1].ends_with(':')).then_some(Ty::Symbol)
         }
     }
+}
+
+/// Where the characters that `keep` accepts at the end of `text` start:
+/// after the last other one, which may take several bytes (`👍`).
+fn run_start(text: &str, keep: impl Fn(char) -> bool) -> usize {
+    text.char_indices().rev().find(|(_, c)| !keep(*c)).map_or(0, |(i, c)| i + c.len_utf8())
 }
 
 /// Can the built-in function `name` take a value of type `t` first?
@@ -684,7 +690,7 @@ pub fn completion(cx: &Ctx, a: &Analysis, offset: usize, trigger: Option<&str>) 
     if after_dot {
         // `geometry.`: the definitions of the file used as `geometry`.
         let head = &before[..before.len() - 1];
-        let m = &head[head.rfind(|c: char| !scan::is_name_char(c)).map_or(0, |i| i + 1)..];
+        let m = &head[run_start(head, scan::is_name_char)..];
         if a.module.named.iter().any(|(n, _)| &*n.name() == m) {
             let mut items = Vec::new();
             let mut defs: Vec<(DefId, &Def)> = a
