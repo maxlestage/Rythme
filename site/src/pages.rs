@@ -440,6 +440,13 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
     let mut client = Bundle::Site.head(&ctx.version);
     if route.page == PageKind::Playground {
         client.push_str(&Bundle::Playground.head(&ctx.version));
+        // What the first run needs once the interpreter is there, fetched while it
+        // downloads and kept by the browser until then: the examples of the menu, the
+        // worker's script. (A preload not used within seconds of `load` is reported in
+        // the console: on a slow network, the interpreter takes longer than that.)
+        for url in [link("/examples.json"), crate::client::worker_url(&ctx.version)] {
+            client.push_str(&format!(r#"<link rel="prefetch" href="{url}"/>"#));
+        }
     }
     let head = format!(
         concat!(
@@ -1234,11 +1241,20 @@ const VIEWPORT: &str = r#"<meta name="viewport" content="width=device-width, ini
 const VIEWPORT_COVER: &str = r#"<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>"#;
 
 /// The response of a page: its HTML with the viewport of the installed app, and its
-/// Content-Security-Policy (Paquets computes it from the same page).
-pub fn respond(page: impl Fn() -> Page) -> Response {
+/// Content-Security-Policy (Paquets computes it from the same page). A page found has
+/// an `ETag` (a hash of its HTML): the browser, or the service worker, that has it
+/// already gets `304 Not Modified` instead of the page again.
+pub fn respond(req: &Request, page: impl Fn() -> Page) -> Response {
     let res = page().into_response();
     let html = page().render().replacen(VIEWPORT, VIEWPORT_COVER, 1);
-    let out = Response::new().status(res.status_code()).html(html);
+    let found = res.status_code() == StatusCode::OK;
+    // Weak: the same page is sent compressed in several ways.
+    let etag = format!("W/\"{}\"", crate::server::version(html.as_bytes()));
+    let fresh = found && req.header("if-none-match").is_some_and(|tags| tags.split(',').any(|t| t.trim() == etag));
+    let mut out = if fresh { Response::new().status(304) } else { Response::new().status(res.status_code()).html(html) };
+    if found {
+        out = out.header("etag", etag);
+    }
     match res.get_header("content-security-policy") {
         Some(csp) => out.header("content-security-policy", csp.to_owned()),
         None => out,

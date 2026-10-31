@@ -112,11 +112,12 @@
      them (macOS and iOS, Windows, Android and Linux), before the generic families. */
   --cjk: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC", "WenQuanYi Micro Hei", "WenQuanYi Zen Hei";
   --gutter: 16px;
-  --bar-h: 60px;
+  /* The height of the bar: compact on a short screen, 60px from 520px of height. */
+  --bar-h: 48px;
   --radius: 12px;
   --code-size: 13.5px;
-  /* The bottom of the bar, measured by site.js (it may wrap on two lines when the text
-     is enlarged, or scroll away in landscape): the menu panel starts there. */
+  /* The bottom of the bar, measured by the browser side (it may wrap on two lines when the text
+     is enlarged, or scroll away while the keyboard is open): the menu panel starts there. */
   --bar-bottom: calc(var(--bar-h) + env(safe-area-inset-top));
 }
 /* Chinese pages: the Latin fonts first (code, names, numbers), then a Chinese one;
@@ -215,10 +216,13 @@ ul, ol { margin: 0; padding: 0; }
 
 /* Under the status bar of the installed app (`viewport-fit=cover`), the bar keeps its
    content in the safe area. */
-.bar { position: relative; top: 0; z-index: 50; border-bottom: 1px solid var(--rule); padding-top: env(safe-area-inset-top); }
-/* The bar stays at the top while scrolling, unless the screen is too short for it: a
-   phone in landscape, above all with its keyboard open, keeps its height for the page. */
-@media (min-height: 520px) { .bar { position: sticky; } }
+.bar { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--rule); padding-top: env(safe-area-inset-top); }
+/* The bar stays at the top while scrolling, so the burger is always at hand. A short
+   screen (a phone in landscape) gets it compact (`--bar-h`, the logo smaller); the
+   keyboard open (the playground's editor, `.keyboard`), it scrolls away with the page,
+   which keeps the whole height above the keyboard for the editor. */
+.keyboard .bar { position: relative; }
+@media (min-height: 520px) { :root { --bar-h: 60px; } }
 /* The blur sits on a layer of its own: on the bar itself it would become the
    containing block of the fixed menu panel and shrink it to the bar's height. */
 .bar::before {
@@ -236,7 +240,8 @@ ul, ol { margin: 0; padding: 0; }
   display: inline-flex; align-items: center; gap: 10px; margin-right: auto;
   color: var(--ink); text-decoration: none; min-height: 44px;
 }
-.brand__word { font: 800 24px/1 var(--display); letter-spacing: -0.02em; }
+.brand__word { font: 800 21px/1 var(--display); letter-spacing: -0.02em; }
+@media (min-height: 520px) { .brand__word { font-size: 24px; } }
 
 /* Without JavaScript the links simply wrap under the logo. */
 .nav { order: 3; width: 100%; }
@@ -698,7 +703,7 @@ select {
 /* 16px in the editor on phones and tablets: iOS zooms into a field with a smaller text
    (in landscape too), and the page then scrolls sideways. Its height follows the
    screen: the small one (`svh`, with the browser's bars shown), and with the keyboard
-   open the part of the screen left above it (`--keyboard-free`, set by playground.js
+   open the part of the screen left above it (`--keyboard-free`, set by the playground
    from the visual viewport), so that the line being typed stays in sight. */
 .editor {
   --code-size: 16px; position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr);
@@ -707,7 +712,7 @@ select {
 .keyboard .editor { height: max(8rem, min(35rem, var(--keyboard-free, 55svh) - 1rem)); }
 /* The editor wraps long lines: the field (transparent) and its colors under it wrap
    the same way, at the same width (the same reserved scrollbar gutter); each line of
-   the colors is a block, and `playground.js` gives each line number the height of its
+   the colors is a block, and the playground gives each line number the height of its
    line, so that numbers stay level with wrapped lines. */
 .gutter {
   font: var(--code-size)/1.6 var(--mono); color: var(--tok-com); text-align: right; padding: 14px 8px 14px 10px;

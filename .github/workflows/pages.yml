@@ -1,7 +1,10 @@
 name: Website
 
 # Publishes the website (site/, written with Paquets) on GitHub Pages, exported to
-# static files behind /Rythme. Needs, once, in Settings → Pages → Source: "GitHub Actions".
+# static files behind /Rythme. Needs, once, in Settings → Pages → Source: "GitHub Actions"
+# (the job summary says whether it is set). With "Deploy from a branch", GitHub also
+# builds the README with Jekyll at each push, and whichever deployment ends last wins:
+# the deployment then waits for GitHub's own, so that the site is always the last.
 
 on:
   push:
@@ -12,6 +15,8 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  # To find GitHub's own build of the branch ("pages build and deployment").
+  actions: read
 
 concurrency:
   group: pages
@@ -55,5 +60,38 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: The source of Pages, and GitHub's own build of the branch
+        # `build_type` is "workflow" when the source is GitHub Actions: nothing to wait
+        # for. "legacy" (Deploy from a branch): wait for the run "pages build and
+        # deployment" of this commit to end (10 minutes at most), then deploy after it.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          build_type=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .build_type 2> /dev/null || echo "")
+          if [ "$build_type" = workflow ]; then
+            echo "GitHub Pages: OK, its source is GitHub Actions (this workflow deploys the site)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          case "$build_type" in
+            legacy) source="Deploy from a branch" ;;
+            "") source="unknown (it could not be read)" ;;
+            *) source=$build_type ;;
+          esac
+          message="The source of GitHub Pages is \"$source\", not GitHub Actions: in Settings → Pages → Source, choose \"GitHub Actions\", or GitHub's build of the README may replace the site."
+          echo "Warning: $message" >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning title=GitHub Pages source::$message"
+          [ "$build_type" = legacy ] || exit 0
+          for attempt in $(seq 1 60); do
+            # How many runs of GitHub's build for this commit, and how many not ended.
+            counts=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&per_page=100" \
+              --jq '[.workflow_runs[] | select(.name == "pages build and deployment")] | "\(length) \(map(select(.status != "completed")) | length)"' || echo "")
+            read -r total running <<< "${counts:-? ?}"
+            echo "pages build and deployment of $GITHUB_SHA: ${total} run(s), ${running} not ended"
+            [ "$total" != "?" ] && [ "$total" -gt 0 ] && [ "$running" -eq 0 ] && break
+            # It starts at the push, minutes before this job: none after a minute means
+            # there is none for this commit.
+            [ "$total" = 0 ] && [ "$attempt" -ge 6 ] && break
+            sleep 10
+          done
       - id: deployment
         uses: actions/deploy-pages@v4
