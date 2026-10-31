@@ -4042,19 +4042,19 @@ else is an unknown command, with a suggestion.
 **Options.** `--lang` and `--no-color` must come **before** the command;
 anything after the file name goes to the program (for `rythme test`, what
 comes after `--`). `--lang` accepts any value
-that starts with the code of a language, `en`, `fr`, `es`, `de`, `pt` or `zh`
+that starts with the code of a language, `en`, `fr`, `es`, `de`, `pt`, `zh`, `it` or `ja`
 (`--lang es`, `--lang=en`, `--lang pt_BR`); another value, or `--lang` without
 a value, is reported, with exit code 2.
 
 **Languages of the messages.** Every message, help topic, explanation of a
 code and page of `rythme learn` exists in English, French, Spanish
-(`--lang es`), German (`--lang de`), Brazilian Portuguese (`--lang pt`) and
-simplified Chinese (`--lang zh`); the keywords, the names of the built-in functions and the
+(`--lang es`), German (`--lang de`), Brazilian Portuguese (`--lang pt`),
+simplified Chinese (`--lang zh`), Italian (`--lang it`) and Japanese (`--lang ja`); the keywords, the names of the built-in functions and the
 commands stay the same in every language. The files written by `rythme new`
 and the exercises of `rythme exercise` follow the language too. The texts of other languages are kept in
 catalogs (`src/i18n/`); CONTRIBUTING.md explains how to add one. In
-Chinese, the code in the help stays as written in English (only its comments
-are translated), and the `^` under a mistake stay aligned: Chinese characters
+Chinese, Italian and Japanese, the code in the help stays as written in English (only its comments
+are translated), and the `^` under a mistake stay aligned: Chinese and Japanese characters
 take two columns of the terminal, in the code as in the messages.
 
 **Exercises.** `rythme exercise` (or `rythme exercise list`) lists the 36
@@ -4084,8 +4084,11 @@ names: `sintaxis`, `funciones`, `listas`, `registros`, `tipos`, `patrones`,
 names: `funktionen`, `listen`, `typen`, `muster`, `fehler`, `übungen`,
 `projekte`, `datum`, `schritte`..., Portuguese names: `sintaxe`, `funções`,
 `listas`, `tipos`, `padrões`, `erros`, `testes`, `exercícios`, `projetos`,
-`datas`, `passos`..., and Chinese names: `语法`, `函数`, `列表`, `文本`,
-`记录`, `字典`, `类型`, `模式`, `错误`, `测试`, `练习`, `项目`, `日期`...
+`datas`, `passos`..., Chinese names: `语法`, `函数`, `列表`, `文本`,
+`记录`, `字典`, `类型`, `模式`, `错误`, `测试`, `练习`, `项目`, `日期`..., Italian
+names: `sintassi`, `funzioni`, `liste`, `testo`, `tipi`, `errori`, `esercizi`,
+`progetti`, `pacchetti`, `passi`..., and Japanese names: `構文`, `関数`,
+`リスト`, `テキスト`, `型`, `エラー`, `テスト`, `練習問題`, `プロジェクト`, `日付`...
 
 **Exit codes.**
 
@@ -4137,8 +4140,8 @@ $ rythme help lenght
 No help found for `lenght`.
 in Rythme, this is called `len`
 See the list of topics with `rythme help`.
-$ rythme --lang it hello.ry
-unknown language `it`: write `--lang` and one of en, fr, es, de, pt, zh, like `rythme --lang fr hello.ry`
+$ rythme --lang ru hello.ry
+unknown language `ru`: write `--lang` and one of en, fr, es, de, pt, zh, it, ja, like `rythme --lang fr hello.ry`
 ```
 
 The last three exit with code 2 (the last one is written in the language of
@@ -4533,8 +4536,8 @@ E025, with the help `try rythme new my_app` (exit code 2). A folder that
 already exists and is not empty is never touched (exit code 1). The files
 are written in the language of the messages (`src/salutation.ry` in
 French, `src/saludo.ry` in Spanish, `src/gruss.ry` in German,
-`src/saudacao.ry` in Portuguese; in Chinese the names stay those of English
-and the texts are in Chinese).
+`src/saudacao.ry` in Portuguese; in Chinese, Italian and Japanese the names stay
+those of English and the texts are in the language of the messages).
 
 **`rythme.toml`.** Every value is a text in quotes; `#` starts a comment.
 

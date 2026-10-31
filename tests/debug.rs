@@ -276,6 +276,21 @@ fn sessions_in_every_language() {
             ],
         ),
         ("zh", &["正在调试 main.ry。", "断点 1 位于 main.ry:2", "· 深度 1", "顶层", "`fact` 得出 6", "调试器已停止"]),
+        (
+            "it",
+            &[
+                "Debug di main.ry.",
+                "punto di interruzione 1 in main.ry:2",
+                "· profondità 1",
+                "livello principale",
+                "`fact` ha dato 6",
+                "debugger fermato",
+            ],
+        ),
+        (
+            "ja",
+            &["main.ry をデバッグ中。", "ブレークポイント 1：main.ry:2", "· 深さ 1", "最上位", "`fact` の結果は 6", "デバッガーを停止した"],
+        ),
     ];
     for (lang, wanted) in cases {
         let (out, code) = session(lang, &[("main.ry", FACT)], input);

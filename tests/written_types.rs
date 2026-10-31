@@ -320,7 +320,7 @@ fn messages_in_every_language() {
     let file = temp_file("lang.ry", "total: Float = 0\n");
     let fr = rythme_lang("fr", &["check", file.to_str().unwrap()]).stderr;
     assert!(fr.contains("`total` est écrit `Float`, mais sa valeur est Int 0"), "{fr}");
-    for lang in ["es", "de", "pt", "zh"] {
+    for lang in ["es", "de", "pt", "zh", "it", "ja"] {
         let out = rythme_lang(lang, &["check", file.to_str().unwrap()]).stderr;
         assert!(out.contains("E027") && !out.contains("is written"), "{lang}: {out}");
     }

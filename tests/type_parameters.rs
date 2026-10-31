@@ -250,7 +250,7 @@ fn messages_in_every_language() {
     let fr = rythme_lang("fr", &["check", file.to_str().unwrap()]).stderr;
     assert!(fr.contains("`Tree` prend un seul type : `Tree(Int)`"), "{fr}");
     let file = temp_file("lang.ry", "type Box(a) = Box(value: b)\nprint(Box(1))\n");
-    for lang in ["es", "de", "pt", "zh"] {
+    for lang in ["es", "de", "pt", "zh", "it", "ja"] {
         let out = rythme_lang(lang, &["check", file.to_str().unwrap()]).stderr;
         assert!(out.contains("E027") && !out.contains("is not a parameter"), "{lang}: {out}");
     }

@@ -242,6 +242,10 @@ fn every_command_has_a_help_in_every_language() {
     assert!(r.stdout.contains("lancer les tests d'un fichier ou d'un dossier"), "{}", r.stdout);
     let r = common::rythme_lang("zh", &["run", "--help"]);
     assert!(r.stdout.contains("运行程序"), "{}", r.stdout);
+    let r = common::rythme_lang("it", &["run", "--help"]);
+    assert!(r.stdout.contains("esegue un programma"), "{}", r.stdout);
+    let r = common::rythme_lang("ja", &["run", "--help"]);
+    assert!(r.stdout.contains("プログラムを実行する"), "{}", r.stdout);
     // Aliases in French, and options before the help.
     assert!(rythme(&["lancer", "--seed", "--help"]).stdout.starts_with("rythme run"));
     assert!(rythme(&["fmt", "--check", "--help"]).stdout.starts_with("rythme fmt"));
