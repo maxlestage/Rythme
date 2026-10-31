@@ -60,7 +60,8 @@ How to work with Rythme as an AI assistant:
 ## Optional
 
 - [README]({REPO}/README.md): what Rythme is, installation
-- [Exercises]({REPO}/docs/exercises/README.md): 30 graded exercises with tests
+- [Exercises]({REPO}/docs/exercises/README.md): 36 graded exercises with tests
+- [Teaching with Rythme]({REPO}/docs/teaching.md): a course outline, exercises checked and graded automatically (`rythme test --format json`), and a policy for AI assistants in class
 - [Examples]({REPO}/examples): small complete programs
 - [AGENTS.md]({REPO}/AGENTS.md): how to work on Rythme itself (the interpreter, in Rust)
 "#,

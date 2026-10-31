@@ -351,7 +351,12 @@ il est fait pour qu'ils l'apprennent vite et corrigent leurs propres erreurs :
 
 [`docs/enseigner.md`](docs/enseigner.md) propose un plan de cours construit
 sur Rythme, et explique pourquoi il convient aussi bien à un premier cours de
-programmation qu'à un cours de programmation fonctionnelle.
+programmation qu'à un cours de programmation fonctionnelle : des exercices
+corrigés et notés automatiquement, le playground et le débogueur en cours,
+et une politique pour les assistants d'IA. Il existe aussi en
+[anglais](docs/teaching.md), en [espagnol](docs/teaching.es.md), en
+[allemand](docs/teaching.de.md), en [portugais](docs/teaching.pt.md) et en
+[chinois](docs/teaching.zh.md).
 [`docs/exercises/`](docs/exercises/README.fr.md) contient 36 exercices
 gradués (dont six sur l'IA), avec énoncé, indices, tests et solutions, que `rythme exercise`
 distribue et vérifie dans chaque langue des messages.
