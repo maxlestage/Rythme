@@ -174,8 +174,21 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
     fields, the debugger naming parameters written as patterns. Type
     variables stay one letter: a lowercase word written as a type is taken
     for a type named as in another language (manual 4.10).
-- **A package index**: finding and sharing packages by name, beside the
-  dependencies from a repository or a folder of `rythme.toml`.
+- [x] **A package index**: finding and sharing packages by name, beside the
+  dependencies from a repository or a folder of `rythme.toml`. Done, with no
+  server: the index is a public git repository with one file per package
+  (`packages/NAME.toml`, its versions with their tags, commits and
+  checksums), copied into `RYTHME_HOME/index` and read without a network;
+  `rythme search`, `info` (both with `--format json`), `add NAME[@RANGE]`
+  (`{ version = "^1.2.0" }` in `rythme.toml`, the exact commit and checksum
+  in `rythme.lock`), `update` within the ranges of semantic versioning, and
+  `publish`, which checks a package and prints its entry and the steps of a
+  pull request, never sending anything (`--verify` for the index's own
+  checks). Names, addresses (https, ssh, file) and checksums are checked,
+  git runs without hooks, and nothing of a package runs when it is
+  installed (manual 7.11, `rythme help packages`). Left to the owner:
+  creating `https://github.com/maxlestage/rythme-index` from
+  [`packaging/index-template/`](packaging/index-template).
 - [x] **A debugger in the editors** (breakpoints, values of the names), building
   on `rythme steps` and the language server. Done: `rythme debug file.ry`
   in a terminal (breakpoints on lines and functions, `next`, `step`,

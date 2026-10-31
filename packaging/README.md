@@ -59,6 +59,14 @@ with `winget validate --manifest <folder>` and `winget install --manifest
 `cargo publish --dry-run` builds it. Then `cargo login` and `cargo publish`.
 Afterwards: `cargo install rythme`.
 
+## The package index
+
+`rythme search`, `add` and `publish` use the package index
+`https://github.com/maxlestage/rythme-index` by default. It is not created
+by any workflow: the owner creates it once from
+[`index-template/`](index-template) (its README says how: copy the README
+and the workflow that checks pull requests, not the example entry).
+
 ## VS Code
 
 Once: a publisher named `rythme` on the
@@ -128,6 +136,14 @@ avec `winget validate --manifest <dossier>` et `winget install --manifest
 `examples/`, les README ; pas le site, le bac à sable ni les éditeurs) ;
 `cargo publish --dry-run` le construit. Puis `cargo login` et `cargo publish`.
 Ensuite : `cargo install rythme`.
+
+## L'index des paquets
+
+`rythme search`, `add` et `publish` utilisent par défaut l'index des paquets
+`https://github.com/maxlestage/rythme-index`. Aucun workflow ne le crée : le
+propriétaire le crée une fois à partir de [`index-template/`](index-template)
+(son README dit comment : copier le README et le workflow qui vérifie les
+pull requests, pas l'entrée d'exemple).
 
 ## VS Code
 
