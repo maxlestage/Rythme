@@ -26,7 +26,8 @@
  * Types may be written in the code, for the checker: after a parameter, a
  * name given a value or a field of a variant (`w: Int`, `total: Float =
  * 0.0`, `Circle(radius: Float)`), and after the parameters of a function
- * for its result (`fn area(r) -> Float = ...`).
+ * for its result (`fn area(r) -> Float = ...`). A type may take type
+ * variables: `type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))`.
  */
 
 /// <reference types="tree-sitter-cli/dsl" />
@@ -126,11 +127,16 @@ module.exports = grammar({
       seq(
         'type',
         field('name', alias($.constructor, $.type_identifier)),
+        optional(field('parameters', $.type_parameters)),
         '=',
         optional('|'),
         $.variant,
         repeat(seq('|', $.variant)),
       ),
+
+    /** `(a, b)` in `type Pair(a, b) = ...`: the type variables of the type. */
+    type_parameters: $ =>
+      seq('(', alias($.identifier, $.type_variable), repeat(seq(',', alias($.identifier, $.type_variable))), optional(','), ')'),
 
     variant: $ => seq(field('name', $.constructor), optional($.variant_fields)),
 

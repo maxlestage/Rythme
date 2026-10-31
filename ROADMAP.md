@@ -167,6 +167,13 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
   0.0`, `Circle(radius: Float)`, `do |n: Int|`, with type variables (`a`);
   E027 for a value that surely does not fit or a type that does not exist;
   every 1.0 program keeps its syntax tree (manual 4.10, `rythme help types`).
+  - [x] **Types with parameters**: `type Tree(a) = Leaf | Node(left:
+    Tree(a), value: a, right: Tree(a))`, then `Tree(Int)` in written types,
+    checked (E027) and used like `List(Int)`; type names completed and
+    explained by the language server, `help(Node)` with the types of the
+    fields, the debugger naming parameters written as patterns. Type
+    variables stay one letter: a lowercase word written as a type is taken
+    for a type named as in another language (manual 4.10).
 - **A package index**: finding and sharing packages by name, beside the
   dependencies from a repository or a folder of `rythme.toml`.
 - [x] **A debugger in the editors** (breakpoints, values of the names), building

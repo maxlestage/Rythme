@@ -51,10 +51,14 @@
           }
         },
         {
-          "match": "\\b(type)\\s+([\\p{Lu}][\\p{L}\\p{N}_]*)",
+          "comment": "`type Shape`, and the type variables of `type Tree(a)`.",
+          "match": "\\b(type)\\s+([\\p{Lu}][\\p{L}\\p{N}_]*)(?:(\\()([^()=]*)(\\)))?",
           "captures": {
             "1": { "name": "keyword.declaration.type.rythme" },
-            "2": { "name": "entity.name.type.rythme" }
+            "2": { "name": "entity.name.type.rythme" },
+            "3": { "name": "punctuation.section.parens.begin.rythme" },
+            "4": { "patterns": [{ "name": "entity.name.type.parameter.rythme", "match": "\\b[\\p{Ll}_][\\p{L}\\p{N}_]*\\b" }] },
+            "5": { "name": "punctuation.section.parens.end.rythme" }
           }
         },
         {
