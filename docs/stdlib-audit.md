@@ -90,7 +90,7 @@ whole, bounded (E023 beyond 50 million elements).
 | min, max by a key | `min_by`, `max_by`, `minmax` | `min(key=)`, `max(key=)` | `min_by`, `max_by` | `min_by`, `max_by`, `argmin`, `argmax` |
 | sort, by a key, from the largest | `sort`, `sort_by`, `sort.reverse` | `sorted(key=, reverse=)` | `sort`, `sort_by`, `sort(:desc)` | `sort`, `sort_by`, **new** `sort_desc`, `sort_by_desc` |
 | sort with a comparison | `sort { \|a, b\| }` | `cmp_to_key` | `sort(fun)` | *absent*: a key (`sort_by`) covers it, lists compare in order |
-| unique, by a key | `uniq`, `uniq { }` | `dict.fromkeys`, | `uniq`, `uniq_by` | `unique`, **new** `unique_by` (and `uniq`) |
+| unique, by a key | `uniq`, `uniq { }` | `dict.fromkeys` | `uniq`, `uniq_by` | `unique`, **new** `unique_by` (and `uniq`) |
 | count each value | `tally`, `tally_by` | `collections.Counter` | `frequencies`, `frequencies_by` | **new** `tally`, `count_by`, `most_common` |
 | group | `group_by`, `partition` | `itertools.groupby` (runs) | `group_by`, `split_with` | `group_by`, `partition`, **new** `chunk_by` (runs) |
 | first, last, rest | `first`, `last`, `drop(1)` | `[0]`, `[-1]`, `[1:]` | `List.first`, `List.last`, `tl` | `first`, `last`, `rest`, `get` (Options) |
