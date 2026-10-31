@@ -646,8 +646,45 @@ pub fn jumps(op: BinOp, when: bool) -> u8 {
 
 #[cfg(test)]
 mod tests {
+    use crate::interp::{Interp, Mode};
+
     #[test]
     fn instructions_stay_small() {
         assert!(std::mem::size_of::<super::Op>() <= 16, "{}", std::mem::size_of::<super::Op>());
+    }
+
+    /// The value of the last line of `code`, or its error (with its code).
+    fn run(code: &str) -> String {
+        let file = crate::source::add("vm.ry", code);
+        let items = crate::parser::parse(crate::lexer::lex(code, file).unwrap()).unwrap();
+        let mut it = Interp::new();
+        match it.exec_items(&items, Mode::Run) {
+            Ok(v) => v.map(|v| v.repr()).unwrap_or_default(),
+            Err(d) => format!("error[{}] {}", d.code, d.trace.len()),
+        }
+    }
+
+    /// Programs that go through every kind of instruction: run under Miri
+    /// (`cargo +nightly miri test --lib vm`), they check the unsafe code of `run`.
+    #[test]
+    fn programs_run_through_the_registers() {
+        let cases = [
+            ("fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)\nfib(12)", "144"),
+            ("fn count(0, acc) = acc\nfn count(n, acc) = count(n - 1, acc + 1)\ncount(300, 0)", "300"),
+            ("fn add(n) = fn(x) = x + n\nmap([1, 2, 3], add(10))", "[11, 12, 13]"),
+            ("type T = L | N(l, v, r)\nfn ins(L, x) = N(L, x, L)\nfn ins(N(l, v, r), x) = if x < v then N(ins(l, x), v, r) else N(l, v, ins(r, x))\nfn sum(L) = 0\nfn sum(N(l, v, r)) = sum(l) + v + sum(r)\nsum(fold([5, 3, 8, 1], L, ins))", "17"),
+            ("r = {a: 1, b: [2]}\ns = {..r, a: r.a + 1, c: \"x{r.b}\"}\n[s, s.c, s[\"a\"]]", "[{a: 2, b: [2], c: \"x[2]\"}, \"x[2]\", 2]"),
+            ("fn f(xs)\n  [a, ..rest] = xs\n  m = match a\n    0 -> \"zero\"\n    k if k > 1 -> \"big {k}\"\n    _ -> \"one\"\n  end\n  [m, ..rest, len(rest)]\nend\nf([2, 7, 9])", "[\"big 2\", 7, 9, 2]"),
+            ("fn even(0) = true\nfn even(n) = odd(n - 1)\nfn odd(0) = false\nfn odd(n) = even(n - 1)\n[even(10), odd(7), not even(3)]", "[true, true, true]"),
+            ("fn g(n)\n  fn a(0) = 0\n  fn a(k) = b(k - 1) + 1\n  fn b(k) = a(k)\n  a(n)\nend\n[g(20), 1..3, [1, 2].sum, \"ab\".upper()]", "[20, [1, 2, 3], 3, \"AB\"]"),
+            ("fn h(x) = Some(x)?\nfn k(x) = None?\n[h(1), k(2)]", "[1, None]"),
+            ("fn bad(n) = n + \"a\"\nfn outer(n) = 1 + bad(n)\nouter(1)", "error[E005] 2"),
+            ("fn deep(n) = 1 + deep(n + 1)\ndeep(0)", "error[E014] 40"),
+        ];
+        // More stack than the budget of nested calls (4 MB), as `rythme` has.
+        let runs = std::thread::Builder::new().stack_size(64 << 20).spawn(move || cases.map(|(code, _)| run(code))).unwrap();
+        for ((code, expected), got) in cases.iter().zip(runs.join().unwrap()) {
+            assert_eq!(&got, expected, "{code}");
+        }
     }
 }
