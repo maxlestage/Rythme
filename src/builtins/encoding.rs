@@ -39,7 +39,7 @@ pub(super) fn base64_decode(it: &mut Interp, a: &[Value], span: Span) -> Fallibl
             }
         }
     }
-    if values.len() % 4 == 1 || (digits.len() != body.len() && digits.len() % 4 != 0) {
+    if values.len() % 4 == 1 || (digits.len() != body.len() && !digits.len().is_multiple_of(4)) {
         return Ok(it.err(text_value(t!("this Base64 text is cut short", "ce texte Base64 est coupé"))));
     }
     let mut bytes = Vec::with_capacity(values.len() * 3 / 4);
