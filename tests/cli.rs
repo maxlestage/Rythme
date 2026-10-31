@@ -235,7 +235,7 @@ fn every_command_has_a_help_in_every_language() {
             assert!(r.stdout.contains("--lang CODE"), "{cmd} {flag}:\n{}", r.stdout);
         }
     }
-    for cmd in ["version", "completions", "man", "upgrade"] {
+    for cmd in ["version", "completions", "man", "upgrade", "search", "info", "add", "update", "publish"] {
         assert!(rythme(&[cmd, "--help"]).stdout.starts_with(&format!("rythme {cmd}")), "{cmd}");
     }
     let r = common::rythme_lang("fr", &["test", "--help"]);

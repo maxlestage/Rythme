@@ -10344,5 +10344,32 @@ veja `rythme completions --help`"#),
         ("See also", "Veja também"),
         ("no .ry file in `{a}`", "nenhum arquivo .ry em `{a}`"),
         ("the standard input cannot be read: {e}", "não é possível ler a entrada padrão: {e}"),
+        // src/cli.rs: the commands of the package index
+        ("search the package index", "procurar no índice de pacotes"),
+        ("what the index says of a package: its versions, repository and license", "o que o índice diz de um pacote: suas versões, seu repositório e sua licença"),
+        ("add a package of the index to the project, then install it", "adicionar um pacote do índice ao projeto e depois instalá-lo"),
+        ("take the newest versions that the ranges of rythme.toml allow", "usar as versões mais recentes que os intervalos de rythme.toml permitem"),
+        ("check a package and print its entry for the index (sends nothing)", "verificar um pacote e mostrar sua entrada para o índice (não envia nada)"),
+        (r#"  --update        download the newest copy of the index first
+  --format json   the packages found as JSON
+  Without words, every package of the index."#, r#"  --update        baixar primeiro a cópia mais recente do índice
+  --format json   os pacotes encontrados em JSON
+  Sem palavras, todos os pacotes do índice."#),
+        (r#"  --update        download the newest copy of the index first
+  --format json   the entry of the package as JSON"#, r#"  --update        baixar primeiro a cópia mais recente do índice
+  --format json   a entrada do pacote em JSON"#),
+        (r#"  NAME@RANGE      a range of versions, like mathlib@1.2; without a range,
+                  the newest version
+  rythme.toml gets the range, rythme.lock the exact commit and its checksum."#, r#"  NOME@INTERVALO  um intervalo de versões, como mathlib@1.2; sem intervalo,
+                  a versão mais recente
+  rythme.toml recebe o intervalo, rythme.lock o commit exato e sua soma de verificação."#),
+        (r#"  Without names, every dependency. rythme.toml does not change;
+  rythme.lock gets the new versions."#, r#"  Sem nomes, todas as dependências. rythme.toml não muda;
+  rythme.lock recebe as novas versões."#),
+        (r#"  Checks rythme.toml, the tag of the version (like v1.2.0), rythme check
+  and rythme test, then prints the entry and the steps of a pull request.
+  --verify FILE...  the index's own check of its entries (packages/NAME.toml)"#, r#"  Verifica rythme.toml, a tag da versão (como v1.2.0), rythme check
+  e rythme test, e depois mostra a entrada e os passos de um pull request.
+  --verify ARQUIVO...  a verificação das entradas pelo próprio índice (packages/NOME.toml)"#),
     ],
 }
