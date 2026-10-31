@@ -52,7 +52,7 @@ fn target_at(a: &Analysis, offset: usize) -> Result<(DefId, usize, usize), Strin
             "`{name}` is a built-in function: it cannot be renamed",
             "`{name}` est une fonction intégrée : elle ne peut pas être renommée"
         )),
-        Target::Pi | Target::Prelude(_) => {
+        Target::Pi | Target::Prelude(_) | Target::Type(_) => {
             Err(t!("`{name}` is part of Rythme: it cannot be renamed", "`{name}` fait partie de Rythme : il ne peut pas être renommé"))
         }
         Target::Unknown => {

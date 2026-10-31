@@ -103,7 +103,7 @@ impl Cache {
         let id = ids.register(&format!("workspace:{}", path.display()), &short_name(&uri), &text);
         let syms = match lexer::lex(&text, id).and_then(parser::parse) {
             Ok(items) => {
-                let ix = super::analysis::guard(|| index::build(&items, id, &text, &HashMap::new())).unwrap_or_default();
+                let ix = super::analysis::guard(|| index::build(&items, id, &text, &HashMap::new(), &HashMap::new())).unwrap_or_default();
                 symbols_of(&ix, &uri, &text, enc)
             }
             Err(_) => Vec::new(),
