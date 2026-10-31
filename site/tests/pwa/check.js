@@ -582,6 +582,17 @@ async function verify(mode) {
   check(/\[1, 9, 25\]/.test(await page.$eval("#output", (e) => e.textContent)), "offline playground: the welcome program runs");
   await setCode(page, "fn double(x) = x * 2\nprint(map([1, 2, 3], double))\n");
   check((await runAndRead(page, "#run")).includes("[2, 4, 6]"), "offline playground: Run");
+  // A program that never stops (tail calls have no limit): Stop ends its worker, and
+  // the next one, given the interpreter the page compiled, runs at once.
+  await setCode(page, "fn spin(n) = spin(n + 1)\nspin(0)\n");
+  await page.click("#run");
+  await page.waitForTimeout(1000);
+  const spinning = await page.evaluate(() => document.body.classList.contains("running") && !document.getElementById("stop").hidden);
+  await page.click("#stop");
+  const stopped = await page.evaluate(() => ({ running: document.body.classList.contains("running"), status: document.getElementById("status").textContent, ui: JSON.parse(document.querySelector(".playground").dataset.ui).stopped }));
+  check(spinning && !stopped.running && stopped.status === stopped.ui, "offline playground: Stop ends a program that never stops", { spinning, stopped });
+  await setCode(page, "print(6 * 7)\n");
+  check((await runAndRead(page, "#run")).includes("42"), "offline playground: after Stop, the next program runs");
   await setCode(page, "fn double(x) = x * 2\nprint(doubel(2))\n");
   check(/error\[/.test(await runAndRead(page, "#check")), "offline playground: Check finds the error");
   await setCode(page, 'fn double(x) = x * 2\n\ntest "double" = assert_eq(double(2), 4)\n\ntest "wrong" = assert_eq(double(2), 5)\n');

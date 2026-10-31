@@ -7,6 +7,7 @@ const fs = require("fs");
 const http = require("http");
 const os = require("os");
 const path = require("path");
+const zlib = require("zlib");
 const { execFileSync, spawn } = require("child_process");
 
 const SITE = path.join(__dirname, "..", "..");
@@ -55,7 +56,7 @@ const TYPES = {
 };
 
 // The static export behind /Rythme, served like GitHub Pages does (types, 404.html,
-// a cache of 10 minutes).
+// a cache of 10 minutes, an ETag, gzip for every text and the WebAssembly).
 async function startExport(bin, dir, port) {
   const dist = path.join(dir, "dist");
   fs.rmSync(dist, { recursive: true, force: true });
@@ -72,8 +73,18 @@ async function startExport(bin, dir, port) {
     if (!file || !file.startsWith(dist) || !fs.existsSync(file)) {
       return res.writeHead(404, { "content-type": TYPES[".html"] }).end(fs.readFileSync(path.join(dist, "404.html")));
     }
-    res.writeHead(200, { "content-type": TYPES[path.extname(file)] || "application/octet-stream", "cache-control": "max-age=600" });
-    res.end(fs.readFileSync(file));
+    const type = TYPES[path.extname(file)] || "application/octet-stream";
+    const stat = fs.statSync(file);
+    const etag = `W/"${Math.floor(stat.mtimeMs).toString(16)}-${stat.size.toString(16)}"`;
+    const headers = { "content-type": type, "cache-control": "max-age=600", vary: "Accept-Encoding", etag };
+    if (req.headers["if-none-match"] === etag) return res.writeHead(304, headers).end();
+    let body = fs.readFileSync(file);
+    if (!type.startsWith("image/png") && /\bgzip\b/.test(req.headers["accept-encoding"] || "")) {
+      body = zlib.gzipSync(body);
+      headers["content-encoding"] = "gzip";
+    }
+    res.writeHead(200, headers);
+    res.end(body);
   });
   await new Promise((resolve) => server.listen(port, resolve));
   return { stop: () => new Promise((resolve) => { server.close(resolve); server.closeAllConnections(); }) };

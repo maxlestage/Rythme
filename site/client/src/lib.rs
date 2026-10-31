@@ -21,10 +21,11 @@
 //! colors of Rythme code ([`highlight`], which the server uses too), the classes of the
 //! interpreter's messages ([`messages`]), the steps of a calculation ([`steps`]), the
 //! links that hold a program ([`share`]), the text of *Copy for AI* ([`assistant`])
-//! and the indentation and file names of the editor ([`editor`]). The site's tests run
-//! them natively.
+//! and the indentation and file names of the editor ([`editor`]), which files are sent
+//! compressed ([`compression`]). The site's tests run them natively.
 
 pub mod assistant;
+pub mod compression;
 pub mod editor;
 pub mod highlight;
 pub mod messages;

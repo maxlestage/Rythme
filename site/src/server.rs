@@ -19,6 +19,10 @@ use crate::routes::{Page as PageKind, Route, base, link};
 /// The styles and the browser side of `public/`, linked with `?v=` and their version.
 pub const ASSETS: [&str; 5] = ["/site.css", PAGE_FILES[0], PAGE_FILES[1], PAGE_FILES[2], PAGE_FILES[3]];
 
+/// Every file linked with `?v=`: the assets, the scripts the server writes for the
+/// workers. Asked at the current version, browsers keep them a year (`compress.rs`).
+pub const VERSIONED: [&str; 7] = [ASSETS[0], ASSETS[1], ASSETS[2], ASSETS[3], ASSETS[4], client::WORKER_PATH, client::SW_WASM_PATH];
+
 /// The cookie that remembers the language chosen with the switch (set by the browser
 /// side, `client/src/layout.rs`).
 pub const LANG_COOKIE: &str = "rythme-lang";
@@ -119,7 +123,7 @@ fn page(site: &Site, req: &Request) -> Response {
         return Redirect::permanent(format!("{}/{query}", link(path))).into_response();
     }
     let ctx = site.ctx(req, route);
-    pages::respond(|| pages::render(&ctx)).header("cache-control", "no-cache")
+    pages::respond(req, || pages::render(&ctx)).header("cache-control", "no-cache")
 }
 
 /// `/{lang}/learn/index.md`: a page as Markdown, for AI assistants. Its HTML page is
@@ -166,7 +170,7 @@ fn llms_full(_site: &Site, _req: &Request) -> Response {
 fn not_found(site: &Site, req: &Request) -> Response {
     let lang = Route::parse(req.path()).map_or_else(|| visitor_lang(req), |r| r.lang);
     let ctx = site.ctx(req, Route::new(lang, PageKind::NotFound));
-    pages::respond(|| pages::not_found(&ctx))
+    pages::respond(req, || pages::not_found(&ctx))
 }
 
 /// `/{lang}/manifest.webmanifest`: the manifest of the app in that language.
@@ -267,6 +271,11 @@ fn route(app: &mut App, path: &str, site: &Arc<Site>, handler: fn(&Site, &Reques
 /// The application, ready to run or to test.
 pub fn app(site: Arc<Site>) -> App {
     let mut app = App::new();
+    // The compressed copies of the files of `public/` and the cache of the versioned
+    // ones, then everything else compressed on the fly (`compress.rs`).
+    let precompressed = crate::compress::Precompressed::scan(&site_dir().join("public"));
+    app.middleware(crate::compress::files(site.clone(), precompressed));
+    app.middleware(middleware::compress());
     route(&mut app, "/", &site, root);
     route(&mut app, "/examples.json", &site, examples_json);
     route(&mut app, "/sitemap.xml", &site, sitemap);

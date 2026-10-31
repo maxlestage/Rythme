@@ -67,6 +67,11 @@ async fn exports_every_page_behind_the_base_path() {
         assert!(out.join(file).is_file(), "{file}");
     }
     assert!(std::fs::read_to_string(out.join("sitemap.xml")).unwrap().contains("<loc>https://example.com/Rythme/en/learn/</loc>"));
+    // The compressed copies that ./build.sh writes for the server stay out: GitHub Pages
+    // compresses by itself.
+    for copy in ["site.css.br", "site.css.gz", "pkg/playground_bg.wasm.br", "pkg/site.js.gz"] {
+        assert!(!out.join(copy).exists(), "{copy}");
+    }
     installable(&out);
     for_assistants(&out);
     let _ = std::fs::remove_dir_all(&out);

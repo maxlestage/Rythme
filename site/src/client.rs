@@ -10,8 +10,9 @@
 //!   init(…)`, the line that Paquets writes for its islands, allowed by its hash in
 //!   the Content-Security-Policy;
 //! - the playground runs programs in a web worker made from the same bundle, so that a
-//!   program that never stops can be stopped: `/pkg/worker.js` is that same line (a
-//!   worker starts from a script file, never from inline code);
+//!   program that never stops can be stopped: `/pkg/worker.js` is that same line, with
+//!   the module the page has compiled (a worker starts from a script file, never from
+//!   inline code; the interpreter is compiled once);
 //! - the service worker is the `sw` bundle: `/sw.js` loads its glue and its WebAssembly
 //!   (`/pkg/sw_wasm.js`, the bytes of `pkg/sw_bg.wasm` in base64, compiled at once:
 //!   a service worker must have its listeners when its script ends, so it cannot wait
@@ -85,9 +86,16 @@ pub fn worker_url(version: &str) -> String {
     format!("{}?v={version}", link(WORKER_PATH))
 }
 
-/// `/pkg/worker.js`: the playground's bundle, started in the worker.
+/// `/pkg/worker.js`: the playground's bundle, started in the worker with the module that
+/// the page has compiled already, its first message (`playground/mod.rs`); without one
+/// (`null`: a browser that cannot pass it), the worker downloads and compiles the bundle.
 pub fn worker_script(version: &str) -> String {
-    Bundle::Playground.start(version)
+    let b = Bundle::Playground;
+    format!(
+        "import init from {};addEventListener(\"message\",e=>init({{module_or_path:e.data instanceof WebAssembly.Module?e.data:{}}}),{{once:true}});",
+        js_string(&b.js(version)),
+        js_string(&b.wasm(version))
+    )
 }
 
 /// `/sw.js`: the service worker's bundle, loaded at once, then `serve(config)`.
@@ -128,6 +136,10 @@ mod tests {
         assert_eq!(Bundle::Site.start("abc"), r#"import init from "/pkg/site.js?v=abc";init({module_or_path:"/pkg/site_bg.wasm?v=abc"});"#);
         assert!(Bundle::Playground.head("v").ends_with(r#"<script type="module">import init from "/pkg/playground.js?v=v";init({module_or_path:"/pkg/playground_bg.wasm?v=v"});</script>"#));
         assert_eq!(service_worker("v", "{}"), "importScripts(\"/pkg/sw.js?v=v\",\"/pkg/sw_wasm.js?v=v\");wasm_bindgen.serve({});\n");
+        assert_eq!(
+            worker_script("v"),
+            r#"import init from "/pkg/playground.js?v=v";addEventListener("message",e=>init({module_or_path:e.data instanceof WebAssembly.Module?e.data:"/pkg/playground_bg.wasm?v=v"}),{once:true});"#
+        );
     }
 
     #[test]
