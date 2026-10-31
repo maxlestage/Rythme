@@ -241,6 +241,8 @@ print(add(2, 2))
 
 In `geometry.ry`: `fn area(r) = r * r` (names starting with `_` stay private). In `main.ry`: `use geometry` then `print(geometry.area(2))`. Also `use shapes/circle` (a folder) and `use "lib.ry" as l`. `rythme new name` creates a project (`rythme.toml`, `src/main.ry`, `tests/`); `rythme run`, `rythme test` and `rythme check` then work without a file name.
 
+Packages: `rythme search WORDS` finds them in the package index, `rythme add NAME` adds one to `rythme.toml` (`NAME = { version = "^1.2.0" }`) and installs it; then `use NAME/file` uses its file `src/file.ry`. Never invent a package: search first (`rythme search --format json WORDS`).
+
 ### Written types (optional)
 
 `fn area(width: Int, height: Int) -> Int = width * height`, `total: Float = 0.0`, `List(Int)` or `[Int]`, `Option(Text)`, `Result(Int, Text)`, `{name: Text}`, `fn(Int) -> Int`. They are never needed; `rythme check` verifies them (E027). A type may take types: `type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))`, then `fn total(t: Tree(Int)) -> Int`; fields keep their names, and a type variable is one lowercase letter (`a`, never `item` or `T`).

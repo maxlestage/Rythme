@@ -94,6 +94,7 @@ Más opciones en el [README en inglés](README.md#install).
 | `rythme test hola.ry`       | ejecutar las pruebas escritas en el archivo      |
 | `rythme fmt hola.ry`        | dar al código su formato oficial                 |
 | `rythme new hola`           | un proyecto nuevo: `rythme.toml`, `src/`, `tests/` |
+| `rythme add mathlib`        | añadir un paquete del [índice de paquetes](docs/reference.md#711-the-package-index) (`rythme search PALABRAS` los encuentra) |
 | `rythme help [tema]`        | ayuda sobre un tema o una función (`rythme help listas`) |
 | `rythme explain E003`       | explicar un código de error                      |
 | `rythme learn`              | visita guiada del lenguaje                       |

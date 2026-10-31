@@ -1,0 +1,77 @@
+# The checks of each pull request on the package index of Rythme: the
+# entries it adds or changes are verified with `rythme publish --verify`
+# (form, names, commits, tags, checksums, and the rythme.toml of each
+# version), and an entry may only grow: the lines of a published version
+# never change, except to add `yanked = "..."`. The code of the packages
+# never runs here: Rythme only reads their files.
+
+name: Check the entries
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rythme
+        # From its repository, so that `rythme publish --verify` is there;
+        # with a release that has it, the installer is faster:
+        #   curl -fsSL https://raw.githubusercontent.com/maxlestage/Rythme/master/install.sh | sh
+        run: cargo install --locked --git https://github.com/maxlestage/Rythme rythme
+
+      - name: The entries that changed
+        id: changed
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="${{ github.event.before }}"
+          fi
+          if ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            # The first push: every entry.
+            base="$(git hash-object -t tree /dev/null)"
+          fi
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          git diff --name-only --diff-filter=ACMR "$base" HEAD -- 'packages/*.toml' > changed.txt
+          echo "Entries to verify:"; cat changed.txt
+
+      - name: Published versions never change
+        shell: bash
+        run: |
+          base="${{ steps.changed.outputs.base }}"
+          # Lines taken away from an entry (a deleted file too) are refused;
+          # adding lines (a new version, or `yanked = "..."`) is fine.
+          removed="$(git diff --unified=0 "$base" HEAD -- packages/ | grep -E '^-[^-]' || true)"
+          if [ -n "$removed" ]; then
+            echo "These lines of published entries were changed or removed:"
+            echo "$removed"
+            echo "A published version never changes: add a new version instead, or withdraw one with yanked = \"why\"."
+            exit 1
+          fi
+          # Only files of packages/ named after a package.
+          bad="$(git diff --name-only "$base" HEAD -- packages/ | grep -Ev '^packages/[a-z_][a-z0-9_]*\.toml$' || true)"
+          if [ -n "$bad" ]; then
+            echo "Files that are not entries (packages/NAME.toml, NAME in lower case):"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Verify the entries
+        shell: bash
+        run: |
+          if [ -s changed.txt ]; then
+            xargs rythme publish --verify < changed.txt
+          else
+            echo "No entry changed."
+          fi

@@ -96,6 +96,7 @@ Weitere Möglichkeiten in der [englischen README](README.md#install).
 | `rythme test hallo.ry`      | die Tests in der Datei ausführen                  |
 | `rythme fmt hallo.ry`       | dem Code sein offizielles Layout geben            |
 | `rythme new hallo`          | ein neues Projekt: `rythme.toml`, `src/`, `tests/` |
+| `rythme add mathlib`        | ein Paket aus dem [Paketindex](docs/reference.md#711-the-package-index) hinzufügen (`rythme search WÖRTER` findet sie) |
 | `rythme help [thema]`       | Hilfe zu einem Thema oder einer Funktion (`rythme help listen`) |
 | `rythme explain E003`       | einen Fehlercode erklären                         |
 | `rythme learn`              | geführte Tour durch die Sprache                   |

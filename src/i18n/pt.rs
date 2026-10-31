@@ -821,6 +821,7 @@ Commands
   rythme exercise           exercises checked automatically (list, start, check)
   rythme new NAME           create a project (rythme.toml, src/, tests/)
   rythme install            download the dependencies of the project
+  rythme add NAME           add a package of the index to the project (rythme search WORDS finds them)
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
@@ -847,6 +848,7 @@ Topics (rythme help TOPIC)
   modules     using several files
   system      files, folders, paths, options, input, exit codes
   projects    projects and packages: rythme new, rythme.toml, rythme install
+  packages    the package index: rythme search, add, update, publish
   dates       dates and times: now(), today(), calendar, ISO 8601
   regex       searching, cutting and replacing with regular expressions
   csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
@@ -879,6 +881,7 @@ Comandos
   rythme exercise           exercícios verificados automaticamente (list, start, check)
   rythme new NOME           criar um projeto (rythme.toml, src/, tests/)
   rythme install            baixar as dependências do projeto
+  rythme add NOME           adicionar um pacote do índice ao projeto (rythme search PALAVRAS os encontra)
   rythme learn              visita guiada pela linguagem, passo a passo
   rythme help TEMA          ajuda sobre um tema ou uma função
   rythme explain E003       explicar um código de erro
@@ -905,6 +908,7 @@ Temas (rythme help TEMA)
   modules     usar vários arquivos
   system      arquivos, pastas, caminhos, opções, entrada, códigos de saída
   projects    projetos e pacotes: rythme new, rythme.toml, rythme install
+  packages    o índice de pacotes: rythme search, add, update, publish
   dates       datas e horas: now(), today(), calendário, ISO 8601
   regex       buscar, cortar e substituir com expressões regulares
   csv         as tabelas das planilhas: csv_parse, csv_records, csv_format
@@ -1287,13 +1291,13 @@ As definições dele são usadas pelo nome `{n}`: `{n}.name`"#,
         ("add a line like `name = \"hello\"` at the top", "adicione uma linha como `name = \"ola\"` no início"),
         ("`{shown}` has no `version`", "`{shown}` não tem `version`"),
         ("add a line like `version = \"0.1.0\"` at the top", "adicione uma linha como `version = \"0.1.0\"` no início"),
-        ("write `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (or `commit = \"...\"`), or `{name} = {{ path = \"../folder\" }}`", "escreva `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (ou `commit = \"...\"`), ou `{name} = {{ path = \"../pasta\" }}`"),
+        ("write `{name} = {{ version = \"^1.0.0\" }}` (from the package index), `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (or `commit = \"...\"`), or `{name} = {{ path = \"../folder\" }}`", "escreva `{name} = {{ version = \"^1.0.0\" }}` (do índice de pacotes), `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (ou `commit = \"...\"`), ou `{name} = {{ path = \"../pasta\" }}`"),
         ("call it `{b}`", "chame-o de `{b}`"),
         ("the project `{own}` cannot depend on itself", "o projeto `{own}` não pode depender de si mesmo"),
         ("`use {own}/file` already reaches its own files", "`use {own}/file` já alcança os próprios arquivos dele"),
         ("the dependency `{name}` is written as a table", "a dependência `{name}` é escrita como uma tabela"),
         ("the dependency `{name}` has both `git` and `path`", "a dependência `{name}` tem `git` e `path` ao mesmo tempo"),
-        ("the dependency `{name}` needs `git` or `path`", "a dependência `{name}` precisa de `git` ou de `path`"),
+        ("the dependency `{name}` needs `version`, `git` or `path`", "a dependência `{name}` precisa de `version`, de `git` ou de `path`"),
         ("`tag` and `commit` are for a dependency from git, not from a folder", "`tag` e `commit` são para uma dependência vinda do git, não de uma pasta"),
         ("`{c}` is not a commit", "`{c}` não é um commit"),
         ("give a `tag` or a `commit`, not both", "dê uma `tag` ou um `commit`, não os dois"),
@@ -2871,7 +2875,8 @@ same code. Then:
   use hello/greeting        # a file of the project itself, from tests/
 
 A file next to the one that contains `use` comes first. Packages from git
-are kept in ~/.rythme/packages (or RYTHME_HOME/packages)."#,
+are kept in ~/.rythme/packages (or RYTHME_HOME/packages). Finding packages
+by name and sharing yours: `rythme help packages`."#,
             r#"PROJETOS E PACOTES
 
   rythme new hello        # uma pasta hello/ com um projeto novo:
@@ -2902,7 +2907,8 @@ mesmo código. Depois:
   use hello/saudacao        # um arquivo do próprio projeto, a partir de tests/
 
 Um arquivo ao lado daquele que contém `use` vem primeiro. Os pacotes do git
-ficam guardados em ~/.rythme/packages (ou RYTHME_HOME/packages)."#,
+ficam guardados em ~/.rythme/packages (ou RYTHME_HOME/packages). Encontrar pacotes
+pelo nome e compartilhar os seus: `rythme help packages`."#,
         ),
         (
             r#"DATES AND TIMES
@@ -4056,8 +4062,10 @@ Para mostrar um valor, mostre-o com print:  print(x + 1)"#,
             r#"E025 — Project or package problem
 
 The `rythme.toml` of the project (or the `rythme.lock` written by
-`rythme install`) cannot be read, a dependency is not installed, or
-`rythme install` cannot download one. A `rythme.toml` looks like this:
+`rythme install`) cannot be read, a dependency is not installed,
+`rythme install` cannot download one, or the package index (`rythme
+search`, `add`, `publish`) cannot be read or does not have what was asked.
+A `rythme.toml` looks like this:
 
   name = "hello"                 # a Rythme name in lower case
   version = "0.1.0"              # three numbers
@@ -4066,16 +4074,19 @@ The `rythme.toml` of the project (or the `rythme.lock` written by
   [dependencies]
   mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
   tools = { path = "../tools" }
+  geometry = { version = "^1.2.0" }   # from the package index
 
 Every value is a text, in quotes. A dependency from git needs a fixed
 version, a `tag` or a `commit`, and the program `git`
 (https://git-scm.com). After a change of `[dependencies]`, run
-`rythme install` in the folder of the project. More: `rythme help projects`."#,
+`rythme install` in the folder of the project. More: `rythme help projects`
+and `rythme help packages`."#,
             r#"E025 — Problema de projeto ou de pacote
 
 O `rythme.toml` do projeto (ou o `rythme.lock` escrito por `rythme install`) não
-pode ser lido, uma dependência não está instalada, ou `rythme install` não
-consegue baixar uma. Um `rythme.toml` é assim:
+pode ser lido, uma dependência não está instalada, `rythme install` não
+consegue baixar uma, ou o índice de pacotes (`rythme search`, `add`,
+`publish`) não pode ser lido ou não tem o que foi pedido. Um `rythme.toml` é assim:
 
   name = "hello"                 # um nome do Rythme em minúsculas
   version = "0.1.0"              # três números
@@ -4084,11 +4095,12 @@ consegue baixar uma. Um `rythme.toml` é assim:
   [dependencies]
   mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
   tools = { path = "../tools" }
+  geometry = { version = "^1.2.0" }   # do índice de pacotes
 
 Cada valor é um texto, entre aspas. Uma dependência do git precisa de uma versão
 fixa, uma `tag` ou um `commit`, e do programa `git` (https://git-scm.com).
 Depois de mudar `[dependencies]`, execute `rythme install` na pasta do projeto.
-Mais: `rythme help projects`."#,
+Mais: `rythme help projects` e `rythme help packages`."#,
         ),
         (
             r#"E026 — Invalid regex
@@ -9723,5 +9735,255 @@ pathfinding e genetic; os exercícios 31 a 36 (rythme exercise list)."#,
         ("a type variable, like `a`", "uma variável de tipo, como `a`"),
         ("a type without parameters is written without parentheses: `type {name} = ...`", "um tipo sem parâmetros se escreve sem parênteses: `type {name} = ...`"),
         ("the parameters of a type are type variables, one lowercase letter each: `type Box(a) = Box(value: a)`", "os parâmetros de um tipo são variáveis de tipo, de uma letra minúscula cada: `type Caixa(a) = Caixa(valor: a)`"),
+        // src/index.rs, src/packages.rs, src/project.rs, src/manifest.rs, src/help.rs: the package index
+        ("the address is empty", "o endereço está vazio"),
+        ("`{a}` is not an address that Rythme accepts: no spaces, and no `-` at the start", "`{a}` não é um endereço que o Rythme aceite: sem espaços, e sem `-` no começo"),
+        ("Rythme downloads packages only with `https://`, `ssh://` or from this computer (`file://`), not with `{other}`", "O Rythme só baixa pacotes com `https://`, `ssh://` ou deste computador (`file://`), não com `{other}`"),
+        ("`{a}` is not the address of a repository: write `https://...`, `ssh://...` or `file://...`", "`{a}` não é o endereço de um repositório: escreva `https://...`, `ssh://...` ou `file://...`"),
+        ("set by `index` in `rythme.toml`", "definido por `index` no `rythme.toml`"),
+        ("set by the variable RYTHME_INDEX", "definido pela variável RYTHME_INDEX"),
+        ("`{url}` is not a package index: it has no folder `packages`", "`{url}` não é um índice de pacotes: não tem a pasta `packages`"),
+        ("an index holds one file per package, like `packages/mathlib.toml` (see `rythme help packages`)", "um índice tem um arquivo por pacote, como `packages/mathlib.toml` (veja `rythme help packages`)"),
+        ("an unknown day", "um dia desconhecido"),
+        ("cannot update the package index from `{url}`: using the copy of {date}", "não é possível atualizar o índice de pacotes a partir de `{url}`: a cópia de {date} é usada"),
+        ("cannot download the package index from `{url}`", "não é possível baixar o índice de pacotes de `{url}`"),
+        ("check the connection to the network, or give another index with the variable RYTHME_INDEX (an address or a folder); dependencies from git or from a folder work without the index", "verifique a conexão com a rede, ou indique outro índice com a variável RYTHME_INDEX (um endereço ou uma pasta); as dependências do git ou de uma pasta funcionam sem o índice"),
+        ("no package `{name}` in the package index", "nenhum pacote `{name}` no índice de pacotes"),
+        ("`rythme search WORDS` finds packages by the words of their name and description", "`rythme search PALAVRAS` encontra pacotes pelas palavras do nome e da descrição"),
+        ("the index: {place}", "o índice: {place}"),
+        ("{url} (copy of {date})", "{url} (cópia de {date})"),
+        ("{} (withdrawn)", "{} (retirada)"),
+        ("none", "nenhuma"),
+        ("no version of `{name}` in the package index fits `{range}`", "nenhuma versão de `{name}` do índice de pacotes cabe em `{range}`"),
+        ("its versions: {}", "as versões dele: {}"),
+        ("for the newest one, write `{name} = {{ version = \"^{v}\" }}`", "para a mais recente, escreva `{name} = {{ version = \"^{v}\" }}`"),
+        ("every version of `{name}` was withdrawn", "todas as versões de `{name}` foram retiradas"),
+        ("`{shown}` is too large for an entry of the package index", "`{shown}` é grande demais para uma entrada do índice de pacotes"),
+        ("`{key}` is a list of texts", "`{key}` é uma lista de textos"),
+        ("this entry of the package index is for `{found}`, but its file is named for `{name}`", "esta entrada do índice de pacotes é para `{found}`, mas o arquivo dela tem o nome de `{name}`"),
+        ("the entry of `{name}` has no `repository`", "a entrada de `{name}` não tem `repository`"),
+        ("the entry of `{name}` has no `{key}`", "a entrada de `{name}` não tem `{key}`"),
+        ("each version is written under `[[version]]`", "cada versão é escrita sob `[[version]]`"),
+        ("this version of `{name}` has no `{k}`", "esta versão de `{name}` não tem `{k}`"),
+        ("`{commit}` is not a full commit: 40 hexadecimal digits in lower case", "`{commit}` não é um commit completo: 40 dígitos hexadecimais em minúsculas"),
+        ("`{checksum}` is not a checksum: `sha256:` and 64 hexadecimal digits, as `rythme publish` writes it", "`{checksum}` não é uma soma de verificação: `sha256:` e 64 dígitos hexadecimais, como `rythme publish` a escreve"),
+        ("`{t}` is not a tag", "`{t}` não é uma tag"),
+        ("the version {v} is written twice", "a versão {v} está escrita duas vezes"),
+        ("the entry of `{name}` has no version", "a entrada de `{name}` não tem nenhuma versão"),
+        ("expected `,` or `]` here", "era esperado `,` ou `]` aqui"),
+        ("a list is written on one line: `[\"math\", \"vectors\"]`", "uma lista é escrita em uma linha: `[\"matematica\", \"vetores\"]`"),
+        ("like `{key} = {example}`", "como `{key} = {example}`"),
+        ("write `\"^1.2.0\"` (1.2.0 or a newer compatible version, below 2.0.0), `\"~1.2.0\"` (1.2.x), `\"=1.2.0\"` (exactly this one) or `\">=1.2.0, <1.5.0\"`", "escreva `\"^1.2.0\"` (1.2.0 ou uma versão compatível mais recente, abaixo de 2.0.0), `\"~1.2.0\"` (1.2.x), `\"=1.2.0\"` (exatamente esta) ou `\">=1.2.0, <1.5.0\"`"),
+        ("for a version from the package index, write `{name} = {{ version = \"{v}\" }}`", "para uma versão do índice de pacotes, escreva `{name} = {{ version = \"{v}\" }}`"),
+        ("a dependency comes from the package index (`version`), from git (`git`) or from a folder (`path`): give only one", "uma dependência vem do índice de pacotes (`version`), do git (`git`) ou de uma pasta (`path`): indique só um"),
+        ("`{v}` is not a range of versions", "`{v}` não é um intervalo de versões"),
+        (
+            r#"unknown option `{bad}` for `rythme {command}`
+see `rythme help packages`"#,
+            r#"opção desconhecida `{bad}` para `rythme {command}`
+veja `rythme help packages`"#,
+        ),
+        ("{bad} file(s) of the package index could not be read", "{bad} arquivo(s) do índice de pacotes não puderam ser lidos"),
+        ("{n} package(s) in {place}", "{n} pacote(s) em {place}"),
+        ("No package found for `{query}` in {place}", "Nenhum pacote encontrado para `{query}` em {place}"),
+        ("{n} package(s) found for `{query}` in {place}", "{n} pacote(s) encontrado(s) para `{query}` em {place}"),
+        ("More about one: `rythme info {name}`; add it to a project: `rythme add {name}`", "Mais sobre um deles: `rythme info {name}`; adicioná-lo a um projeto: `rythme add {name}`"),
+        ("`rythme search --update{words}` searches the newest copy of the index", "`rythme search --update{words}` procura na cópia mais recente do índice"),
+        ("which package? Example: rythme info mathlib", "qual pacote? Exemplo: rythme info mathlib"),
+        ("repository", "repositório"),
+        ("license", "licença"),
+        ("keywords", "palavras-chave"),
+        ("authors", "autores"),
+        ("versions", "versões"),
+        ("  {v} was withdrawn: {}", "  {v} foi retirada: {}"),
+        ("Add it to a project: `rythme add {name}` (writes `{name} = {{ version = \"^{v}\" }}` in rythme.toml)", "Adicioná-lo a um projeto: `rythme add {name}` (escreve `{name} = {{ version = \"^{v}\" }}` no rythme.toml)"),
+        ("Every version of this package was withdrawn.", "Todas as versões deste pacote foram retiradas."),
+        ("which package? Example: rythme add mathlib (or rythme add mathlib@1.2)", "qual pacote? Exemplo: rythme add mathlib (ou rythme add mathlib@1.2)"),
+        ("cannot read `{}`: {e}", "não é possível ler `{}`: {e}"),
+        ("`{range_text}` is not a range of versions", "`{range_text}` não é um intervalo de versões"),
+        ("`{name}` came from {from}: it now comes from the package index", "`{name}` vinha de {from}: agora vem do índice de pacotes"),
+        ("`rythme.toml` was left as it was", "o `rythme.toml` foi deixado como estava"),
+        ("Added `{line}` to rythme.toml ({version})", "Adicionado `{line}` ao rythme.toml ({version})"),
+        ("  use it with `use {name}/FILE` (see `rythme info {name}`)", "  use-o com `use {name}/ARQUIVO` (veja `rythme info {name}`)"),
+        ("which entries? Example: rythme publish --verify packages/mathlib.toml", "quais entradas? Exemplo: rythme publish --verify packages/mathlib.toml"),
+        (
+            r#"`rythme publish` takes no argument (`{a}`): it checks the package of the current folder
+see `rythme help packages`"#,
+            r#"`rythme publish` não recebe argumentos (`{a}`): ele verifica o pacote da pasta atual
+veja `rythme help packages`"#,
+        ),
+        ("`rythme.toml` has no `{key}`", "o `rythme.toml` não tem `{key}`"),
+        ("the package index shows it, and needs it", "o índice de pacotes mostra isso, e precisa disso"),
+        ("add a line like `{example}` at the top", "adicione uma linha como `{example}` no começo"),
+        ("Checking `{name}` {version} before it goes into the package index", "Verificando `{name}` {version} antes de entrar no índice de pacotes"),
+        ("`{version}` is not a version of semantic versioning", "`{version}` não é uma versão do versionamento semântico"),
+        ("like `version = \"1.2.0\"`, without zeros at the start of a number", "como `version = \"1.2.0\"`, sem zeros no começo de um número"),
+        ("description = \"What `{name}` is for, in one sentence\"", "description = \"Para que serve `{name}`, em uma frase\""),
+        ("the `description` is too long: one sentence, at most 200 characters", "a `description` é longa demais: uma frase, no máximo 200 caracteres"),
+        ("YOU", "SEU-NOME"),
+        ("`{k}` is not a keyword: a word in lower case, at most 24 characters", "`{k}` não é uma palavra-chave: uma palavra em minúsculas, no máximo 24 caracteres"),
+        ("at most 5 keywords", "no máximo 5 palavras-chave"),
+        ("a published package cannot use a folder of this computer: `{dep_name}` comes from `{p}`", "um pacote publicado não pode usar uma pasta deste computador: `{dep_name}` vem de `{p}`"),
+        ("publish `{dep_name}` too, then write `{dep_name} = {{ version = \"^...\" }}`", "publique também `{dep_name}`, e depois escreva `{dep_name} = {{ version = \"^...\" }}`"),
+        ("`{name}` is not in a git repository", "`{name}` não está em um repositório git"),
+        ("the package index gives the commit of each version: a package is published from its git repository", "o índice de pacotes dá o commit de cada versão: um pacote é publicado a partir do repositório git dele"),
+        ("`git init`, `git add .`, `git commit`, then push it to its `repository`", "`git init`, `git add .`, `git commit`, e depois envie para o `repository` dele"),
+        ("`rythme.toml` must be at the root of its git repository", "o `rythme.toml` precisa estar na raiz do repositório git dele"),
+        ("the root of the repository: {top}", "a raiz do repositório: {top}"),
+        ("give the package a repository of its own", "dê ao pacote um repositório próprio"),
+        ("some changes are not committed", "algumas mudanças não foram confirmadas (commit)"),
+        ("for example: {}", "por exemplo: {}"),
+        ("commit them (`git add`, `git commit`), or set them aside, then tag the commit", "confirme-as (`git add`, `git commit`), ou deixe-as de lado, e depois marque o commit com uma tag"),
+        ("no tag `v{version}` for the version {version}", "nenhuma tag `v{version}` para a versão {version}"),
+        ("tag the commit and push the tag: `git tag v{version}`, then `git push origin v{version}`", "marque o commit com a tag e envie a tag: `git tag v{version}`, depois `git push origin v{version}`"),
+        ("the tag `{t}` is not the current commit", "a tag `{t}` não é o commit atual"),
+        ("what is checked must be what is published", "o que é verificado precisa ser o que é publicado"),
+        ("publish from the tag (`git checkout {t}`), or move the tag to this commit (`git tag --force {t}`) before pushing it", "publique a partir da tag (`git checkout {t}`), ou mova a tag para este commit (`git tag --force {t}`) antes de enviá-la"),
+        ("Running `rythme check`", "Executando `rythme check`"),
+        ("`rythme check` found errors", "`rythme check` encontrou erros"),
+        ("fix them first: a package must pass `rythme check`", "corrija-os primeiro: um pacote precisa passar no `rythme check`"),
+        ("Running `rythme test`", "Executando `rythme test`"),
+        ("`rythme test` failed", "`rythme test` falhou"),
+        ("fix them first: a package must pass its tests", "corrija-os primeiro: um pacote precisa passar nos testes dele"),
+        ("the name `{name}` is already taken in the package index", "o nome `{name}` já está em uso no índice de pacotes"),
+        ("by the repository {repo}", "pelo repositório {repo}"),
+        ("choose another `name` for your package", "escolha outro `name` para o seu pacote"),
+        ("the version {version} of `{name}` is already in the package index", "a versão {version} de `{name}` já está no índice de pacotes"),
+        ("a published version never changes: raise `version` in `rythme.toml`, commit and tag again", "uma versão publicada nunca muda: aumente `version` no `rythme.toml`, confirme e marque com uma tag de novo"),
+        ("cannot read the package index `{url}`: it will check the name and the version itself", "não é possível ler o índice de pacotes `{url}`: ele mesmo vai verificar o nome e a versão"),
+        ("the tag `{t}` is not in {repo}", "a tag `{t}` não está em {repo}"),
+        ("push it: `git push origin {t}`", "envie-a: `git push origin {t}`"),
+        ("the tag `{t}` of {repo} is not this commit", "a tag `{t}` de {repo} não é este commit"),
+        ("push the tag again: `git push --force origin {t}`", "envie a tag de novo: `git push --force origin {t}`"),
+        ("cannot reach {repo} to check that the tag `{t}` is there", "não é possível acessar {repo} para verificar que a tag `{t}` está lá"),
+        ("cannot read the files of the commit `{commit}`", "não é possível ler os arquivos do commit `{commit}`"),
+        ("✓ `{name}` {version} is ready for the package index.", "✓ `{name}` {version} está pronto para o índice de pacotes."),
+        ("Rythme never publishes anything by itself: a version goes into the index with a pull request on its repository, {}.", "O Rythme nunca publica nada sozinho: uma versão entra no índice com um pull request no repositório dele, {}."),
+        ("1. Fork the repository of the index and clone your fork. Create the file {file} with:", "1. Faça um fork do repositório do índice e clone o seu fork. Crie o arquivo {file} com:"),
+        ("1. Fork the repository of the index and clone your fork. Add at the end of {file}:", "1. Faça um fork do repositório do índice e clone o seu fork. Adicione no final de {file}:"),
+        ("2. Commit it on a branch of your fork and push it:", "2. Confirme em um branch do seu fork e envie-o:"),
+        ("3. Open a pull request on {}: its checks run `rythme publish --verify {file}`, then a maintainer merges it.", "3. Abra um pull request em {}: as verificações dele executam `rythme publish --verify {file}`, e depois um mantenedor faz o merge."),
+        (
+            r#"
+{problems} problem(s) to fix before publishing: nothing was sent anywhere"#,
+            r#"
+{problems} problema(s) para corrigir antes de publicar: nada foi enviado para lugar nenhum"#,
+        ),
+        ("`{f}` is not an entry of the index: `packages/NAME.toml`", "`{f}` não é uma entrada do índice: `packages/NOME.toml`"),
+        ("✓ {f}: `{stem}`, {count} version(s) verified", "✓ {f}: `{stem}`, {count} versão(ões) verificada(s)"),
+        ("✗ {f}", "✗ {f}"),
+        ("{v}: the commit `{commit}` is not in `{url}`", "{v}: o commit `{commit}` não está em `{url}`"),
+        ("{v}: the tag `{tag}` of `{url}` is not the commit `{commit}`", "{v}: a tag `{tag}` de `{url}` não é o commit `{commit}`"),
+        ("{v}: the files of the commit do not have the checksum of the entry", "{v}: os arquivos do commit não têm a soma de verificação da entrada"),
+        (
+            r#"expected: {}
+found:    {found}"#,
+            r#"esperada:   {}
+encontrada: {found}"#,
+        ),
+        ("`rythme publish` in the package, at its tag, writes the right one", "`rythme publish` no pacote, na tag dele, escreve a correta"),
+        ("{v}: the commit has no `rythme.toml` at its root", "{v}: o commit não tem `rythme.toml` na raiz"),
+        ("{v}: the `rythme.toml` of the commit says `{found_name}` {found_version}", "{v}: o `rythme.toml` do commit diz `{found_name}` {found_version}"),
+        ("{v}: the dependency `{dep_name}` is a folder of the computer of the author", "{v}: a dependência `{dep_name}` é uma pasta do computador do autor"),
+        ("the package index, version {range}", "o índice de pacotes, versão {range}"),
+        ("the commit `{commit}` of `{name}` {version} does not exist in `{url}`", "o commit `{commit}` de `{name}` {version} não existe em `{url}`"),
+        ("the package index gives this commit for this version", "o índice de pacotes dá este commit para esta versão"),
+        ("tell the authors of `{name}`: the history of their repository may have been rewritten", "avise os autores de `{name}`: o histórico do repositório deles pode ter sido reescrito"),
+        ("cannot read the files of `{name}` {version}", "não é possível ler os arquivos de `{name}` {version}"),
+        ("the files of `{name}` {version} do not match the checksum of the package index", "os arquivos de `{name}` {version} não correspondem à soma de verificação do índice de pacotes"),
+        ("nothing was installed, and nothing of the package ran", "nada foi instalado, e nada do pacote foi executado"),
+        ("do not use this version; tell the maintainers of the package index", "não use esta versão; avise os mantenedores do índice de pacotes"),
+        ("Updating the dependencies of `{name}`", "Atualizando as dependências de `{name}`"),
+        ("{range} from the index, commit {short} ({how})", "{range} do índice, commit {short} ({how})"),
+        ("the package index gives `{dep_name}` {wanted}, but its `rythme.toml` says `{found}` {version}", "o índice de pacotes dá `{dep_name}` {wanted}, mas o `rythme.toml` dele diz `{found}` {version}"),
+        ("tell the maintainers of the package index", "avise os mantenedores do índice de pacotes"),
+        ("`rythme update` takes the names of dependencies, not `{bad}`: `rythme update` (all of them) or `rythme update mathlib`", "`rythme update` recebe nomes de dependências, não `{bad}`: `rythme update` (todas) ou `rythme update mathlib`"),
+        ("`{a}` is not a dependency of `{}`", "`{a}` não é uma dependência de `{}`"),
+        ("did you mean `rythme update {best}`?", "você quis dizer `rythme update {best}`?"),
+        ("`rythme add {a}` adds it from the package index", "`rythme add {a}` o adiciona a partir do índice de pacotes"),
+        ("Everything was already up to date", "Tudo já estava atualizado"),
+        ("Updated:", "Atualizado:"),
+        ("{} {} (new)", "{} {} (novo)"),
+        (
+            r#"THE PACKAGE INDEX
+
+  rythme search vectors      # the packages whose name, description or keywords say it
+  rythme info mathlib        # its description, repository, license, versions
+  rythme add mathlib         # adds `mathlib = { version = "^1.2.0" }` to rythme.toml,
+                             #   then installs it (rythme.lock keeps the exact commit)
+  rythme add mathlib@1.1     # a range of versions of your choice
+  rythme update              # the newest version in the range of each dependency
+  rythme publish             # checks your package, then says how to add it
+
+A dependency from the index gives a range of versions:
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 or newer, below 2.0.0 (the default)
+  geometry = { version = "~0.3.1" }   # 0.3.x, from 0.3.1
+  tools = { version = "=1.0.0" }      # exactly this one
+
+`rythme install` takes the version of rythme.lock while it is in the range,
+and `rythme update` the newest one; a withdrawn version is never chosen.
+
+The index is a git repository, one file per package (packages/NAME.toml):
+its name, description, repository, license, keywords, and for each version
+its tag, its commit and the checksum of its files. Rythme keeps a copy in
+~/.rythme/index and reads it without a network: `rythme search --update`
+gets the newest one. Another index: `index = "..."` in rythme.toml, or the
+variable RYTHME_INDEX (an address, or a folder of this computer); by
+default https://github.com/maxlestage/rythme-index.
+
+Safety: names are Rythme names (no `/`, no `..`), addresses use https, ssh
+or file://, git runs without hooks, the files of each version must have the
+checksum of the index, and nothing of a package runs when it is installed.
+
+Publishing: tag the version (git tag v1.2.0, git push origin v1.2.0), then
+`rythme publish` checks rythme.toml (description, license, repository),
+`rythme check`, `rythme test` and the tag, and prints the entry to add to
+the index with a pull request. Rythme never sends anything by itself."#,
+            r#"O ÍNDICE DE PACOTES
+
+  rythme search vetores      # os pacotes cujo nome, descrição ou palavras-chave dizem isso
+  rythme info mathlib        # a descrição, o repositório, a licença e as versões dele
+  rythme add mathlib         # adiciona `mathlib = { version = "^1.2.0" }` ao rythme.toml,
+                             #   e depois o instala (o rythme.lock guarda o commit exato)
+  rythme add mathlib@1.1     # um intervalo de versões à sua escolha
+  rythme update              # a versão mais recente do intervalo de cada dependência
+  rythme publish             # verifica o seu pacote, e depois diz como adicioná-lo
+
+Uma dependência do índice dá um intervalo de versões:
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 ou mais recente, abaixo de 2.0.0 (o padrão)
+  geometria = { version = "~0.3.1" }  # 0.3.x, a partir de 0.3.1
+  ferramentas = { version = "=1.0.0" }  # exatamente esta
+
+`rythme install` pega a versão do rythme.lock enquanto ela estiver no
+intervalo, e `rythme update` a mais recente; uma versão retirada nunca é
+escolhida.
+
+O índice é um repositório git, um arquivo por pacote (packages/NOME.toml):
+o nome, a descrição, o repositório, a licença, as palavras-chave, e para
+cada versão a tag, o commit e a soma de verificação dos arquivos dela. O
+Rythme guarda uma cópia em ~/.rythme/index e a lê sem rede:
+`rythme search --update` pega a mais recente. Outro índice:
+`index = "..."` no rythme.toml, ou a variável RYTHME_INDEX (um endereço, ou
+uma pasta deste computador); por padrão
+https://github.com/maxlestage/rythme-index.
+
+Segurança: os nomes são nomes do Rythme (sem `/`, sem `..`), os endereços
+usam https, ssh ou file://, o git roda sem hooks, os arquivos de cada versão
+precisam ter a soma de verificação do índice, e nada de um pacote roda
+quando ele é instalado.
+
+Publicar: marque a versão com uma tag (git tag v1.2.0, git push origin
+v1.2.0), depois `rythme publish` verifica o rythme.toml (description,
+license, repository), `rythme check`, `rythme test` e a tag, e mostra a
+entrada a adicionar ao índice com um pull request. O Rythme nunca envia
+nada sozinho."#,
+        ),
+        ("The index is the folder {url}, where Rythme writes nothing.", "O índice é a pasta {url}, onde o Rythme não escreve nada."),
+        ("Create its file {file} with:", "Crie o arquivo {file} dele com:"),
+        ("Add at the end of its file {file}:", "Adicione no final do arquivo {file} dele:"),
     ],
 }

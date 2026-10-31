@@ -205,6 +205,7 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme learn`              | visite guidée du langage                            |
 | `rythme new bonjour`        | un nouveau projet : `rythme.toml`, `src/`, `tests/` ; puis `rythme run`, `rythme test`... sans fichier |
 | `rythme install`            | télécharger les dépendances de `rythme.toml` (git ou dossiers), et écrire `rythme.lock` |
+| `rythme search vecteurs`    | trouver des paquets dans l'[index des paquets](docs/reference.fr.md#711-lindex-des-paquets) ; `rythme add mathlib` en ajoute un au projet, `rythme update` prend les versions les plus récentes, `rythme publish` partage les vôtres |
 | `rythme exercise`           | [36 exercices gradués](docs/exercises/README.fr.md) : `list`, `start 1`, `check FICHIER` |
 | `rythme etapes fib.ry "fib(4)"` | le calcul étape par étape : `fib(4)` → `fib(3) + fib(2)` → ... |
 | `rythme debug fib.ry`       | le débogueur : `break 12`, `run`, `next`, `step`, `where`, `print n * 2` ([manuel](docs/reference.fr.md#79-le-débogueur--rythme-debug)) |
@@ -385,7 +386,9 @@ et des messages en six langues. Son contenu est décrit dans
   `rythme help fmt`), `rythme doc` écrit la documentation de fichiers et de
   dossiers à partir de leurs commentaires `##` (voir `rythme help doc`),
   `rythme new` et `rythme install` créent des projets avec leurs dépendances
-  (voir `rythme help projets`), et le serveur de langage (`rythme lsp`)
+  (voir `rythme help projets`), `rythme search`, `add` et `publish` trouvent
+  et partagent des paquets grâce à un index des paquets qui n'a besoin d'aucun
+  serveur (voir `rythme help paquets`), et le serveur de langage (`rythme lsp`)
   apporte les erreurs et la documentation dans tous les éditeurs (voir
   `rythme help editors`). Le bac à sable en ligne fait tourner l'interpréteur
   compilé en WebAssembly.
