@@ -533,7 +533,7 @@ fn publish() -> Result<i32, Box<Diagnostic>> {
             "comme `version = \"1.2.0\"`, sans zéros au début d'un nombre"
         )));
     }
-    let origin = project::git_safe(&["remote", "get-url", "origin"], &root).ok().filter(|u| index::check_address(u, false).is_ok());
+    let origin = project::git(&["remote", "get-url", "origin"], &root).ok().filter(|u| index::check_address(u, false).is_ok());
     match &m.description {
         None => missing_key(
             &mut problems,
@@ -606,7 +606,7 @@ fn publish() -> Result<i32, Box<Diagnostic>> {
     // git: the package at the root of a repository, everything committed, a tag on the commit.
     let mut commit = None;
     let mut tag = None;
-    match project::git_safe(&["rev-parse", "--show-toplevel"], &root) {
+    match project::git(&["rev-parse", "--show-toplevel"], &root) {
         Err(project::GitError::Missing) => return Err(project::git_missing()),
         Err(_) => {
             let d = Diagnostic::error("E025", t!("`{name}` is not in a git repository", "`{name}` n'est pas dans un dépôt git"))
@@ -631,7 +631,7 @@ fn publish() -> Result<i32, Box<Diagnostic>> {
                 .help(t!("give the package a repository of its own", "donnez au paquet un dépôt à lui"));
                 problems.add(d);
             }
-            let status = project::git_safe(&["status", "--porcelain"], &root).unwrap_or_default();
+            let status = project::git(&["status", "--porcelain"], &root).unwrap_or_default();
             if !status.is_empty() {
                 let files: Vec<&str> = status.lines().take(5).map(|l| l.get(3..).unwrap_or(l)).collect();
                 let d = Diagnostic::error("E025", t!("some changes are not committed", "des changements ne sont pas validés (commit)"))
@@ -642,9 +642,9 @@ fn publish() -> Result<i32, Box<Diagnostic>> {
                     ));
                 problems.add(d);
             }
-            let head = project::git_safe(&["rev-parse", "HEAD"], &root).ok();
+            let head = project::git(&["rev-parse", "HEAD"], &root).ok();
             let found = [format!("v{version}"), version.clone()].into_iter().find_map(|t| {
-                let c = project::git_safe(&["rev-parse", "--verify", "--quiet", &format!("refs/tags/{t}^{{commit}}")], &root).ok()?;
+                let c = project::git(&["rev-parse", "--verify", "--quiet", &format!("refs/tags/{t}^{{commit}}")], &root).ok()?;
                 Some((t, c))
             });
             match found {

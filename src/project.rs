@@ -351,7 +351,9 @@ fn plain(s: &str) -> String {
     s.to_string()
 }
 
-fn git(args: &[&str], dir: &Path) -> Result<String, GitError> {
+/// git as the user would run it: for the dependencies written in `rythme.toml`
+/// and the user's own repository (what comes from the index uses [`git_safe`]).
+pub(crate) fn git(args: &[&str], dir: &Path) -> Result<String, GitError> {
     run_git(args, dir, false).map(|out| String::from_utf8_lossy(&out).trim().to_string())
 }
 
