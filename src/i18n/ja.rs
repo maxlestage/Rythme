@@ -1791,7 +1791,7 @@ then handle them with `match` or pass them on with `?`. `fail(message)` stops th
         (", {left_out} left out by the filter", "、フィルターで除外 {left_out}"),
         (", {broken} file(s) with errors", "、エラーのあるファイル {broken}"),
         ("No test name contains {}.", "{} を含む名前のテストはありません。"),
-        (" or ", " または"),
+        (" or ", " または "),
         ("{red}✗{reset} {}: the file has errors, so its tests could not run", "{red}✗{reset} {}：ファイルにエラーがあるため、テストを実行できなかった"),
         (
             r#"No file with tests in {}. Write a test in a `.ry` file like this:
@@ -8160,8 +8160,8 @@ end
         // src/builtins.rs
         ("Makes the draws of `random` and `shuffle` that follow the same on every run: the same seed (a whole number) gives the same draws, with the same version of Rythme. For tests and classes; `rythme run --seed N file.ry` does the same from the command line.", "この後の `random` と `shuffle` の結果を、毎回の実行で同じにします：同じシード（整数）からは、同じバージョンの Rythme なら同じ結果が出ます。テストや授業向けです。`rythme run --seed N file.ry` はコマンドラインから同じことをします。"),
         ("Reads a CSV table (a spreadsheet saved as text): `Ok(list of rows)`, each row a list of texts, or `Err(message)` saying at which line and column the text is not valid CSV. A field between quotes may hold separators, line breaks and quotes (written twice). The separator is \",\" unless given: \";\" for French spreadsheets, \"\\t\" for tabs. See `rythme help csv`.", "CSV の表（テキストとして保存した表計算ファイル）を読みます：`Ok(行のリスト)`（各行はテキストのリスト）、または CSV として正しくない行と列を示す `Err(message)`。引用符で囲んだフィールドには区切り文字、改行、引用符（2 回書く）を入れられます。区切り文字は指定しなければ \",\" です：フランスの表計算ソフトなら \";\"、タブなら \"\\t\"。`rythme help csv` を参照してください。"),
-        ("Reads a CSV table whose first line names the columns: `Ok(list of records)`, one record for each other line, with one field for each column, in their order, holding a text. `Err(message)` when the text is not valid CSV, when a line does not have as many fields as the header, or when two columns have the same name. To get numbers, use `parse_int` or `parse_float` on the fields.", ""),
-        ("Writes rows as a CSV text, each one on its line, ended by a line break. The rows are lists of fields, or records: then a first line names their fields. A field is a text, a number or a Bool, put between quotes only when it needs them (a separator, a quote or a line break inside). The separator is \",\" unless given.", ""),
+        ("Reads a CSV table whose first line names the columns: `Ok(list of records)`, one record for each other line, with one field for each column, in their order, holding a text. `Err(message)` when the text is not valid CSV, when a line does not have as many fields as the header, or when two columns have the same name. To get numbers, use `parse_int` or `parse_float` on the fields.", "1 行目が列の名前になっている CSV の表を読みます：`Ok(レコードのリスト)`。残りの各行が 1 つのレコードになり、列ごとに順番どおり 1 つのフィールドがあって、テキストを持ちます。テキストが CSV として正しくないとき、行のフィールドの数が見出しと違うとき、2 つの列が同じ名前のときは `Err(message)`。数が欲しければ、フィールドに `parse_int` や `parse_float` を使います。"),
+        ("Writes rows as a CSV text, each one on its line, ended by a line break. The rows are lists of fields, or records: then a first line names their fields. A field is a text, a number or a Bool, put between quotes only when it needs them (a separator, a quote or a line break inside). The separator is \",\" unless given.", "行を CSV テキストとして書きます。各行は 1 行に書き、改行で終えます。行はフィールドのリストか、レコードです（レコードなら、1 行目にフィールドの名前を書く）。フィールドはテキスト、数、Bool のどれかで、必要なとき（中に区切り文字、引用符、改行があるとき）だけ引用符で囲みます。区切り文字は指定しなければ \",\" です。"),
         // src/help.rs
         (
             r#"CSV: THE TABLES OF SPREADSHEETS
@@ -8200,7 +8200,42 @@ Another separator: the last argument
 
 A text that is not valid CSV gives Err, which says where (line and column):
   csv_parse("a,b\"c")   # Err("line 1, column 4: a quote in the middle of a field: ...")"#,
-            "",
+            r#"CSV：表計算ソフトの表
+
+CSV テキストは表です：1 行が 1 つの行で、フィールドはカンマで区切ります。
+どの表計算ソフト（LibreOffice、Excel、Google スプレッドシートなど）でも
+開いて保存できます。
+
+  csv_parse("name,age\nAda,36")              # Ok([["name", "age"], ["Ada", "36"]])
+  csv_records("name,age\nAda,36")            # Ok([{name: "Ada", age: "36"}])
+  csv_format([["name", "age"], ["Ada", 36]]) # "name,age\nAda,36\n"
+  csv_format([{name: "Ada", age: 36}])       # 同じテキスト：レコードなら見出しが付く
+
+ファイルと使う
+  match read_file("grades.csv").and_then(csv_records)
+    Ok(rows) -> print(len(rows), "人の生徒")
+    Err(e) -> print("エラー：{e}")
+  end
+  write_file("copy.csv", csv_format(rows))
+
+規則（RFC 4180）
+  引用符で囲んだフィールドには、カンマ、改行、引用符（2 回書く）を入れられます：
+  "say ""hi""" はフィールド  say "hi"  です。csv_format は必要な場所にだけ
+  引用符を付けます。
+  行は \n か \r\n（Windows）で終わります。最後の行は改行がなくてもかまいません。
+  空の行は飛ばされ、空白はファイルのまま残ります。
+  フィールドはすべてテキストです：parse_int(r.age) や parse_float(r.price) で数になります。
+  csv_records：1 行目が列の名前で、それがレコードのフィールドになります
+  （r.name。空白を含む名前なら get(r, "first name")）。どの行も見出しと
+  同じ数のフィールドを持たなければなりません。
+
+別の区切り文字：最後の引数
+  ";"（カンマが小数点になるフランス語の表計算ソフト）、"\t"（タブ）、"|" など
+  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
+  csv_format(rows, ";")
+
+CSV として正しくないテキストは Err になり、場所（行と列）を示します：
+  csv_parse("a,b\"c")   # Err("1 行 4 列：フィールドの途中に引用符がある：...")"#,
         ),
         (
             r#"RANDOM: CHANCE, AND THE SAME CHANCE AGAIN
@@ -8229,29 +8264,54 @@ the tests before it.
 
 The property tests (check_all, sample) have their own seed:
 rythme test --seed N (see rythme help tests)."#,
-            "",
+            r#"RANDOM：乱数と、同じ乱数の再現
+
+  random()                   # 0（含む）から 1（含まない）までの小数
+  random(1, 6)               # 1 から 6 まで（両端を含む）の整数
+  random(["a", "b", "c"])    # リストの要素の 1 つ
+  shuffle([1, 2, 3])         # リストをランダムな順にしたもの
+
+実行するたびに違う値が出ます。同じ結果をもう一度出すには（テスト、全員が
+同じゲームを見る授業、もう一度見つけたい誤りなど）、シードを与えます：
+
+  random_seed(42)                  # プログラムの中で：この後の結果
+  rythme run --seed 42 game.ry     # コマンドラインから：実行全体
+
+同じバージョンの Rythme なら、同じシードからは同じ結果が同じ順に出ます
+（別のバージョンでは違う値が出ることがあります）。シードがなければ何も
+変わらず、実行のたびに違う結果になります。
+
+テストでは、最初に random_seed を呼びます：そうすれば、その結果は前の
+テストに左右されません。
+  test "サイコロの目は 1 から 6 の間"
+    random_seed(7)
+    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+  end
+
+プロパティテスト（check_all、sample）には専用のシードがあります：
+rythme test --seed N（rythme help tests を参照）。"#,
         ),
         // ----- the debugger (src/debug/, src/help.rs)
-        ("this file is not part of the program being debugged", ""),
-        ("top level", ""),
-        (" [tail call, replaced {by}]", ""),
-        ("`{name}` gave {}", ""),
-        ("error: {}", ""),
-        ("Locals", ""),
-        ("Globals", ""),
-        ("result of {name}", ""),
-        ("no source to give: the files are on the disk", ""),
-        ("unknown request `{cmd}`", ""),
-        ("the program is running: pause it first", ""),
-        ("which program? Give its path in `program`, like \"${{file}}\"", ""),
-        ("the program has errors: see the debug console", ""),
-        ("the program is not running: `{cmd}` has nothing to show", ""),
-        ("the program has ended: `{cmd}` has nothing to show", ""),
-        ("`print` shows the value of one expression, like `print n * 2` or `print len(xs)`", ""),
-        ("`{name}` has an effect: the debugger only computes values, without changing anything", ""),
-        ("no code where the program can pause on line {line} of {name} or after it", ""),
-        ("no function named `{name}` in the program", ""),
-        (": did you mean `{best}`?", ""),
+        ("this file is not part of the program being debugged", "このファイルはデバッグ中のプログラムの一部ではない"),
+        ("top level", "最上位"),
+        (" [tail call, replaced {by}]", " [末尾呼び出し、{by} を置き換えた]"),
+        ("`{name}` gave {}", "`{name}` の結果は {}"),
+        ("error: {}", "エラー：{}"),
+        ("Locals", "ローカル"),
+        ("Globals", "グローバル"),
+        ("result of {name}", "{name} の結果"),
+        ("no source to give: the files are on the disk", "渡すソースはない：ファイルはディスク上にある"),
+        ("unknown request `{cmd}`", "不明なリクエスト `{cmd}`"),
+        ("the program is running: pause it first", "プログラムは実行中：先に一時停止する"),
+        ("which program? Give its path in `program`, like \"${{file}}\"", "どのプログラム？ `program` にそのパスを指定する。例：\"${{file}}\""),
+        ("the program has errors: see the debug console", "プログラムにエラーがある：デバッグコンソールを参照"),
+        ("the program is not running: `{cmd}` has nothing to show", "プログラムは実行されていない：`{cmd}` で表示するものがない"),
+        ("the program has ended: `{cmd}` has nothing to show", "プログラムは終了した：`{cmd}` で表示するものがない"),
+        ("`print` shows the value of one expression, like `print n * 2` or `print len(xs)`", "`print` は 1 つの式の値を表示する。例：`print n * 2` や `print len(xs)`"),
+        ("`{name}` has an effect: the debugger only computes values, without changing anything", "`{name}` には効果がある：デバッガーは何も変えずに値を計算するだけ"),
+        ("no code where the program can pause on line {line} of {name} or after it", "{name} の {line} 行目以降に、プログラムが一時停止できるコードがない"),
+        ("no function named `{name}` in the program", "プログラムに `{name}` という名前の関数はない"),
+        (": did you mean `{best}`?", "：もしかして `{best}`？"),
         (
             r#"Commands (short forms in parentheses):
   break 12         pause at line 12 of the program (b)
@@ -8272,41 +8332,59 @@ rythme test --seed N (see rythme help tests)."#,
   help             this list (h)
   quit             stop the program and the debugger (q)
 An empty line repeats next, step, finish or continue."#,
-            "",
+            r#"コマンド（括弧内は短縮形）：
+  break 12         プログラムの 12 行目で一時停止する（b）
+  break file.ry:3  プログラムの別のファイルの 3 行目で一時停止する
+  break fact       関数 fact が始まるたびに一時停止する
+  delete 2         ブレークポイント 2 を削除する。delete だけならすべて削除する（d）
+  breakpoints      ブレークポイントを一覧する
+  run              プログラムを開始する（r）
+  continue         次のブレークポイントまで進む（c）
+  next             呼び出した関数には入らずに次の行へ進む（n）
+  step             呼び出した関数に入って次の行へ進む（s）
+  finish           この関数が結果を返すまで進む（f）
+  where            実行中の呼び出しとその引数（w）
+  frame 2          where の 2 番の呼び出しを見る（print と locals がそれを使う）
+  print n * 2      現在の呼び出しで計算した式の値（p）
+  locals           現在の呼び出しの名前とその値（l）
+  list             現在の行の周りの行
+  help             この一覧（h）
+  quit             プログラムとデバッガーを止める（q）
+空の行は next、step、finish、continue を繰り返す。"#,
         ),
-        ("unknown command `{word}`", ""),
-        (" (`help` lists the commands)", ""),
-        ("break where? A line (`break 12`), a file and a line (`break geometry.ry:3`) or a function (`break fact`)", ""),
-        ("no file `{name}` in the program (its files: {})", ""),
-        ("breakpoint {n} at {shown_at}", ""),
-        ("breakpoint {n} at {shown_at} (line {line} has no code where the program can pause)", ""),
-        ("breakpoint {n} at the start of `{arg}`", ""),
-        ("`{arg}` is not a line number", ""),
-        ("no breakpoints: add one with `break 12` or `break fact`", ""),
-        ("start of `{name}`", ""),
-        ("all breakpoints removed", ""),
-        ("breakpoint {n} removed", ""),
-        ("there is no breakpoint {n} (see `breakpoints`)", ""),
-        ("delete which breakpoint? Give its number, like `delete 1`", ""),
-        ("● breakpoint {}", ""),
-        ("● breakpoint {n}: `{name}` starts", ""),
-        ("✗ the program stops on an error: {msg}", ""),
-        ("  look at the values with where, locals and print; continue shows the whole message", ""),
-        (" · depth {depth}", ""),
-        (" ({rec} calls of `{name}` in progress)", ""),
-        ("  (a call in tail position: it took the place of the frame of `{by}`)", ""),
-        ("the program is already running: continue goes on, quit stops it", ""),
-        (" (replaced `{by}`: tail call)", ""),
-        ("`{name}` calls itself: {rec} calls in progress", ""),
-        ("which call? A number from 0 to {}, as `where` shows them", ""),
-        ("no names here yet", ""),
-        ("print what? An expression, like `print n` or `print len(xs) * 2`", ""),
-        ("debugger stopped", ""),
-        ("the program is not running: `run` starts it (`step` pauses at its first line)", ""),
-        ("which file? Example: rythme debug factorial.ry (see `rythme help debug`)", ""),
-        ("Debugging {shown}. Pause somewhere with `break 12` or `break function`, then `run`; `help` lists the commands.", ""),
-        ("The program finished. `run` starts it again, `quit` leaves.", ""),
-        ("The program stopped on an error. `run` starts it again, `quit` leaves.", ""),
+        ("unknown command `{word}`", "不明なコマンド `{word}`"),
+        (" (`help` lists the commands)", "（`help` でコマンドを一覧できる）"),
+        ("break where? A line (`break 12`), a file and a line (`break geometry.ry:3`) or a function (`break fact`)", "どこで止める？ 行（`break 12`）、ファイルと行（`break geometry.ry:3`）、関数（`break fact`）のどれか"),
+        ("no file `{name}` in the program (its files: {})", "プログラムにファイル `{name}` はない（プログラムのファイル：{}）"),
+        ("breakpoint {n} at {shown_at}", "ブレークポイント {n}：{shown_at}"),
+        ("breakpoint {n} at {shown_at} (line {line} has no code where the program can pause)", "ブレークポイント {n}：{shown_at}（{line} 行目にはプログラムが一時停止できるコードがない）"),
+        ("breakpoint {n} at the start of `{arg}`", "ブレークポイント {n}：`{arg}` の開始時"),
+        ("`{arg}` is not a line number", "`{arg}` は行番号ではない"),
+        ("no breakpoints: add one with `break 12` or `break fact`", "ブレークポイントはない：`break 12` や `break fact` で加える"),
+        ("start of `{name}`", "`{name}` の開始時"),
+        ("all breakpoints removed", "すべてのブレークポイントを削除した"),
+        ("breakpoint {n} removed", "ブレークポイント {n} を削除した"),
+        ("there is no breakpoint {n} (see `breakpoints`)", "ブレークポイント {n} はない（`breakpoints` を参照）"),
+        ("delete which breakpoint? Give its number, like `delete 1`", "どのブレークポイントを削除する？ 番号を指定する。例：`delete 1`"),
+        ("● breakpoint {}", "● ブレークポイント {}"),
+        ("● breakpoint {n}: `{name}` starts", "● ブレークポイント {n}：`{name}` の開始"),
+        ("✗ the program stops on an error: {msg}", "✗ プログラムがエラーで止まる：{msg}"),
+        ("  look at the values with where, locals and print; continue shows the whole message", "  where、locals、print で値を見る。continue でメッセージ全体を表示する"),
+        (" · depth {depth}", " · 深さ {depth}"),
+        (" ({rec} calls of `{name}` in progress)", "（`{name}` の呼び出しが {rec} 個実行中）"),
+        ("  (a call in tail position: it took the place of the frame of `{by}`)", "  （末尾位置の呼び出し：`{by}` の呼び出しの場所を引き継いだ）"),
+        ("the program is already running: continue goes on, quit stops it", "プログラムはすでに実行中：continue で続け、quit で止める"),
+        (" (replaced `{by}`: tail call)", "（`{by}` を置き換えた：末尾呼び出し）"),
+        ("`{name}` calls itself: {rec} calls in progress", "`{name}` は自分自身を呼んでいる：{rec} 個の呼び出しが実行中"),
+        ("which call? A number from 0 to {}, as `where` shows them", "どの呼び出し？ `where` が示す 0 から {} までの番号"),
+        ("no names here yet", "ここにはまだ名前がない"),
+        ("print what? An expression, like `print n` or `print len(xs) * 2`", "何を表示する？ 式を書く。例：`print n` や `print len(xs) * 2`"),
+        ("debugger stopped", "デバッガーを停止した"),
+        ("the program is not running: `run` starts it (`step` pauses at its first line)", "プログラムは実行されていない：`run` で開始する（`step` なら最初の行で一時停止する）"),
+        ("which file? Example: rythme debug factorial.ry (see `rythme help debug`)", "どのファイル？ 例：rythme debug factorial.ry（`rythme help debug` を参照）"),
+        ("Debugging {shown}. Pause somewhere with `break 12` or `break function`, then `run`; `help` lists the commands.", "{shown} をデバッグ中。`break 12` や `break function` で止める場所を決めてから `run`。`help` でコマンドを一覧できます。"),
+        ("The program finished. `run` starts it again, `quit` leaves.", "プログラムが終了しました。`run` でもう一度開始、`quit` で終了します。"),
+        ("The program stopped on an error. `run` starts it again, `quit` leaves.", "プログラムがエラーで止まりました。`run` でもう一度開始、`quit` で終了します。"),
         (
             r#"THE DEBUGGER: rythme debug
 
@@ -8348,48 +8426,87 @@ or F5 on a .ry file): breakpoints in the margin, the values of the names,
 step over, step into, step out. Other editors can start `rythme dap`, which
 speaks the Debug Adapter Protocol.
 The function `debug(value)` is something else: it prints a value and gives it back."#,
-            "",
+            r#"デバッガー：rythme debug
+
+`rythme debug` はプログラムを実行し、指定した場所で一時停止して、実行中の
+名前の値を調べられるようにします：
+
+  rythme debug factorial.ry          その後プロンプト (debug) でコマンドを入力
+
+  break 12         12 行目で一時停止する（またはコードのある次の行で）
+  break geo.ry:3   プログラムが使うファイルの 3 行目で一時停止する
+  break fact       関数 fact が始まるたびに一時停止する
+  run              プログラムを開始する（step なら最初の行で一時停止）
+  next             呼び出した関数には入らずに次の行へ進む
+  step             呼び出した関数に入って次の行へ進む
+  finish           この関数が結果を返すまで進み、それを表示する
+  continue         次のブレークポイントまで進む
+  where            実行中の呼び出しとその引数
+  frame 1          where の別の呼び出しを見る（print と locals がそれを使う）
+  print n * 2      プログラムのいる場所で計算した式の値
+  locals           ここで見える名前とその値
+  list             現在の行の周りの行
+  delete 1         ブレークポイントを削除する（breakpoints で一覧）
+  quit             止める
+
+空の行は next、step、finish、continue を繰り返します。
+
+一時停止するたびに、行、呼び出し（fact(n = 2)）、深さが表示されます：深さは
+実行中の呼び出しの数と、関数が自分自身を呼ぶときの同じ関数の呼び出しの数
+です。末尾位置の呼び出し（関数が最後に行う処理）は呼び出し元の場所を
+引き継ぎます：デバッガーはそれを伝え、where にも表示されます。
+
+print は値を計算するだけです：表示、読み込み、ファイルの書き込み、乱数を
+行う関数はそこでは拒否されるので、調べてもプログラムは決して変わりません。
+エラーでプログラムが止まると、デバッガーはそれが起きた場所で一時停止する
+ので、メッセージの前に値を調べられます。
+
+VS Code では：Rythme 拡張機能がデバッガーを追加します（実行 > デバッグの開始、
+または .ry ファイルで F5）：余白のブレークポイント、名前の値、ステップ
+オーバー、ステップイン、ステップアウト。他のエディターは Debug Adapter
+Protocol を話す `rythme dap` を起動できます。
+関数 `debug(value)` は別物です：値を表示し、それを返します。"#,
         ),
         // src/check/annot.rs, src/parser.rs: types written in the code
-        ("a whole number is an Int, not a Float: write it with a decimal point (`2.0`), or convert it with `float(...)`", ""),
-        ("a decimal number is a Float, not an Int: convert it with `int(...)`, `round(...)` or `floor(...)`", ""),
-        ("change the value, or the type written for it; types written in the code are checked before running, and are never needed (see `rythme help types`)", ""),
-        ("`{name}` is written `{w}`, but its value is {what}", ""),
-        ("the type written for `{name}`", ""),
-        ("this value is {what}, but the type written for it is `{w}`", ""),
-        ("the type written here", ""),
-        ("not `{w}`", ""),
-        ("`{v}` cannot be both {a} and {b} in this call to `{f}`", ""),
-        ("`{v}` is {b} here", ""),
-        ("`{v}` is {a} here", ""),
-        ("a type variable like `{v}` stands for the same type everywhere in the types written for `{f}`", ""),
-        ("`{f}` expects `{ws}` for `{param}`, but receives {what}", ""),
-        ("not `{ws}`", ""),
-        ("the type written for `{param}`", ""),
-        ("this function receives {what}, but `{param}` is written `{w}`", ""),
-        ("`{f}` is written to give `{w}`, but gives {what}", ""),
-        ("the type written for the result of `{f}`", ""),
-        ("`{f}` is written to give `{w}`, but its `?` may give back {what}", ""),
-        ("`?` gives back the `None` or `Err(...)` it stops on: write the result as an Option or a Result, like `-> Option(Int)`", ""),
-        ("unknown type `{name}`", ""),
-        ("in Rythme, write `{best}`", ""),
-        ("the names of types start with an uppercase letter; a type variable, which stands for any type, is one lowercase letter, like `a`", ""),
-        ("`{name}` takes no type between parentheses", ""),
-        ("write `{name}` alone", ""),
-        ("a type is one of Rythme's (`Int`, `Float`, `Text`, `Bool`, `List`, `Dict`...) or one defined with `type`", ""),
-        ("`{name}` takes one type: `{example}`", ""),
-        ("`{name}` takes two types: `{example}`", ""),
-        ("to write the type of `{name}`, put a space after `:`: `{name}: {ty} = ...`", ""),
-        ("`=` and a value", ""),
-        ("a name with a written type is given its value right away: `total: Float = 0.0`", ""),
-        ("`,`", ""),
-        ("to write the type of a parameter, put `:` right after its name, then a space: `x: {s}`", ""),
-        ("`:` and the type of the field", ""),
-        ("`(`", ""),
-        ("`->` and the type of the result", ""),
-        ("a type", ""),
-        ("to write the type of a field, write its name first: `Circle(radius: Float)`", ""),
-        ("a type is written like `Int`, `Text`, `List(Int)`, `[Int]`, `{{name: Text}}`, `fn(Int) -> Int` or `Shape`; see `rythme help types`", ""),
+        ("a whole number is an Int, not a Float: write it with a decimal point (`2.0`), or convert it with `float(...)`", "整数は Float ではなく Int：小数点を付けて書く（`2.0`）か、`float(...)` で変換する"),
+        ("a decimal number is a Float, not an Int: convert it with `int(...)`, `round(...)` or `floor(...)`", "小数は Int ではなく Float：`int(...)`、`round(...)`、`floor(...)` のどれかで変換する"),
+        ("change the value, or the type written for it; types written in the code are checked before running, and are never needed (see `rythme help types`)", "値か、それに書いた型を変える。コードに書く型は実行前にチェックされ、決して必須ではない（`rythme help types` を参照）"),
+        ("`{name}` is written `{w}`, but its value is {what}", "`{name}` は `{w}` と書かれているが、値は {what}"),
+        ("the type written for `{name}`", "`{name}` に書いた型"),
+        ("this value is {what}, but the type written for it is `{w}`", "この値は {what} だが、書かれた型は `{w}`"),
+        ("the type written here", "ここに書いた型"),
+        ("not `{w}`", "`{w}` ではない"),
+        ("`{v}` cannot be both {a} and {b} in this call to `{f}`", "`{f}` のこの呼び出しで、`{v}` が {a} と {b} の両方になることはできない"),
+        ("`{v}` is {b} here", "ここでは `{v}` は {b}"),
+        ("`{v}` is {a} here", "ここでは `{v}` は {a}"),
+        ("a type variable like `{v}` stands for the same type everywhere in the types written for `{f}`", "`{v}` のような型変数は、`{f}` に書いた型の中のどこでも同じ型を表す"),
+        ("`{f}` expects `{ws}` for `{param}`, but receives {what}", "`{f}` は `{param}` に `{ws}` を期待しているが、受け取ったのは {what}"),
+        ("not `{ws}`", "`{ws}` ではない"),
+        ("the type written for `{param}`", "`{param}` に書いた型"),
+        ("this function receives {what}, but `{param}` is written `{w}`", "この関数が受け取るのは {what} だが、`{param}` は `{w}` と書かれている"),
+        ("`{f}` is written to give `{w}`, but gives {what}", "`{f}` は `{w}` を返すと書かれているが、返すのは {what}"),
+        ("the type written for the result of `{f}`", "`{f}` の結果に書いた型"),
+        ("`{f}` is written to give `{w}`, but its `?` may give back {what}", "`{f}` は `{w}` を返すと書かれているが、その `?` は {what} を返すことがある"),
+        ("`?` gives back the `None` or `Err(...)` it stops on: write the result as an Option or a Result, like `-> Option(Int)`", "`?` は止まったときの `None` や `Err(...)` を返す：結果を Option か Result として書く。例：`-> Option(Int)`"),
+        ("unknown type `{name}`", "不明な型 `{name}`"),
+        ("in Rythme, write `{best}`", "Rythme では `{best}` と書く"),
+        ("the names of types start with an uppercase letter; a type variable, which stands for any type, is one lowercase letter, like `a`", "型の名前は大文字で始まる。任意の型を表す型変数は、`a` のような小文字 1 文字"),
+        ("`{name}` takes no type between parentheses", "`{name}` は括弧に入れた型を取らない"),
+        ("write `{name}` alone", "`{name}` だけを書く"),
+        ("a type is one of Rythme's (`Int`, `Float`, `Text`, `Bool`, `List`, `Dict`...) or one defined with `type`", "型は Rythme のもの（`Int`、`Float`、`Text`、`Bool`、`List`、`Dict` など）か、`type` で定義したもの"),
+        ("`{name}` takes one type: `{example}`", "`{name}` は型を 1 つ取る：`{example}`"),
+        ("`{name}` takes two types: `{example}`", "`{name}` は型を 2 つ取る：`{example}`"),
+        ("to write the type of `{name}`, put a space after `:`: `{name}: {ty} = ...`", "`{name}` の型を書くには、`:` の後に空白を入れる：`{name}: {ty} = ...`"),
+        ("`=` and a value", "`=` と値"),
+        ("a name with a written type is given its value right away: `total: Float = 0.0`", "型を書いた名前にはすぐに値を与える：`total: Float = 0.0`"),
+        ("`,`", "`,`"),
+        ("to write the type of a parameter, put `:` right after its name, then a space: `x: {s}`", "引数の型を書くには、名前の直後に `:`、その後に空白を入れる：`x: {s}`"),
+        ("`:` and the type of the field", "`:` とフィールドの型"),
+        ("`(`", "`(`"),
+        ("`->` and the type of the result", "`->` と結果の型"),
+        ("a type", "型"),
+        ("to write the type of a field, write its name first: `Circle(radius: Float)`", "フィールドの型を書くには、先にその名前を書く：`Circle(radius: Float)`"),
+        ("a type is written like `Int`, `Text`, `List(Int)`, `[Int]`, `{{name: Text}}`, `fn(Int) -> Int` or `Shape`; see `rythme help types`", "型は `Int`、`Text`、`List(Int)`、`[Int]`、`{{name: Text}}`、`fn(Int) -> Int`、`Shape` のように書く。`rythme help types` を参照"),
         (
             r#"E027 — A type written in the code does not fit
 
@@ -8411,7 +8528,26 @@ Right:   fn depth(t: Tree(Int))
 
 Written types are optional: removing one never changes what a program does.
 More: `rythme help types`."#,
-            "",
+            r#"E027 — コードに書いた型が合わない
+
+`:` や `->` の後にコードに書いた型は、`rythme check` が実行前に確かめる
+約束です：確実に別の型を持つ値は、それが与えられた場所で報告されます。
+型は存在するものでなければなりません。
+
+誤り：   total: Float = 0              # 0 は Int
+正しい： total: Float = 0.0
+誤り：   fn area(w: Int, h: Int) -> Int = w * h
+         area(2, "3")                  # "3" は Text
+正しい： area(2, 3)
+誤り：   fn label(n: Int) -> Text = n  # Int を返す
+正しい： fn label(n: Int) -> Text = text(n)
+誤り：   fn twice(x: int) = x * 2      # 型名は大文字で始まる
+正しい： fn twice(x: Int) = x * 2
+誤り：   fn depth(t: Tree(Int, Text))  # type Tree(a) は型を 1 つ取る
+正しい： fn depth(t: Tree(Int))
+
+書いた型は省略できます：取り除いてもプログラムの動作は決して変わりません。
+詳しくは `rythme help types`。"#,
         ),
         (
             r#"TYPES WRITTEN IN THE CODE (optional)
@@ -8454,13 +8590,51 @@ Rythme name.
 
 Written types are never needed and change nothing when the program runs;
 the editors and `rythme doc` show them."#,
-            "",
+            r#"コードに書く型（省略可）
+
+Rythme は型を自分で見つけます。コードが読みやすくなる場所に型を書くことも
+でき、そのときは `rythme check` がそれを確かめます（E027）：
+  fn area(width: Int, height: Int) -> Int = width * height
+  total: Float = 0.0
+  type Shape = Circle(radius: Float) | Rect(width: Float, height: Float)
+  [1, 2].map do |n: Int| n * 2 end
+
+型
+  Int  Float  Text  Bool  Unit  Symbol
+  List(Int) or [Int]   Set(Text)   Dict(Text, Int)
+  Option(Int)   Result(Int, Text)
+  {name: Text, age: Int}       少なくともこれらのフィールドを持つレコード
+  fn(Int, Int) -> Int          関数
+  Shape                        `type` で定義した型（`use geometry` の型なら
+                               geometry.Shape）
+  Tree(Int)                    パラメーター付きで定義した型と、その型
+  a                            任意の型：小文字 1 文字。定義の中では
+                               どこでも同じ型
+  List、Dict、Set、Option、Result、Record、Function だけなら：中身は任意
+  （Tree だけでも同じ）
+
+  fn first_of(xs: List(a)) -> a = xs[0]
+  first_of([1, 2]) + 1         # チェッカーは Int だとわかる
+
+型パラメーター付きの型：List(Int) のように、型が型を取れる
+  type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+  type Pair(a, b) = Pair(first: a, second: b)
+
+  fn depth(t: Tree(a)) -> Int = ...      何でも入る Tree
+  fn total(t: Tree(Int)) -> Int = ...    整数の Tree
+  total(Node(Leaf, "two", Leaf))         E027：これは Tree(Text)
+
+型変数は 1 文字です：`int` や `string` のような小文字の単語は、他の言語の
+名前で書いた型とみなされ、`rythme check` が Rythme での名前を教えます。
+
+書いた型は決して必須ではなく、実行時には何も変えません。エディターと
+`rythme doc` がそれを表示します。"#,
         ),
         // src/fix.rs, src/machine.rs: fixes and output for programs
-        ("`{f}` is not available in the sandbox: a program run by a tool (`--sandbox`) cannot touch files or folders. Run it yourself: rythme file.ry", ""),
-        ("Remove `{}`", ""),
-        ("\"not equal\" is written `!=`: `a != b`", ""),
-        ("an anonymous function is written `fn(x) = x * 2`", ""),
+        ("`{f}` is not available in the sandbox: a program run by a tool (`--sandbox`) cannot touch files or folders. Run it yourself: rythme file.ry", "`{f}` はサンドボックスでは使えない：ツールが実行するプログラム（`--sandbox`）はファイルにもフォルダーにも触れられない。自分で実行する：rythme file.ry"),
+        ("Remove `{}`", "`{}` を取り除く"),
+        ("\"not equal\" is written `!=`: `a != b`", "「等しくない」は `!=` と書く：`a != b`"),
+        ("an anonymous function is written `fn(x) = x * 2`", "無名関数は `fn(x) = x * 2` と書く"),
         (
             r#"on several lines, `if` is written:
   if x > 0 then
@@ -8470,128 +8644,138 @@ the editors and `rythme doc` show them."#,
   else
     "negative"
 (no `end`; for several statements in a branch, use `do ... end`)"#,
-            "",
+            r#"複数行の `if` は次のように書く：
+  if x > 0 then
+    "正"
+  else if x == 0 then
+    "ゼロ"
+  else
+    "負"
+（`end` はない。分岐に複数の文を書くなら `do ... end` を使う）"#,
         ),
-        ("Rythme texts put values in by themselves: write `\"total: {{x}}\"`, without `f` in front", ""),
-        ("`--format` takes `json` or `text`, not `{v}`: `rythme check --format json file.ry`", ""),
-        ("`--watch` does not go with `--format json`: run `rythme test --format json` again after each change", ""),
-        ("unknown option `{bad}` for `rythme fix`; the options are: --dry-run, --all, --format json", ""),
-        ("which file? Example: rythme fix hello.ry (or rythme fix --dry-run hello.ry to see the changes first)", ""),
-        ("cannot write `{shown}`: {e}", ""),
-        ("{shown}: nothing to fix", ""),
-        ("{shown}: {n} fix(es) to apply", ""),
-        ("{shown}: {n} fix(es) applied", ""),
-        ("; {errors} error(s) and {warnings} warning(s) left: `rythme check {shown}`", ""),
-        ("here: `new_{name} = {name} {op} {rest}`, then use `new_{name}`; to add up a list, use `sum(list)` or `fold`", ""),
+        ("Rythme texts put values in by themselves: write `\"total: {{x}}\"`, without `f` in front", "Rythme のテキストは値を自分で埋め込む：前に `f` を付けずに `\"total: {{x}}\"` と書く"),
+        ("`--format` takes `json` or `text`, not `{v}`: `rythme check --format json file.ry`", "`--format` が取るのは `json` か `text`（`{v}` は不可）：`rythme check --format json file.ry`"),
+        ("`--watch` does not go with `--format json`: run `rythme test --format json` again after each change", "`--watch` は `--format json` と一緒に使えない：変更のたびに `rythme test --format json` をもう一度実行する"),
+        ("unknown option `{bad}` for `rythme fix`; the options are: --dry-run, --all, --format json", "`rythme fix` に不明なオプション `{bad}`。オプションは --dry-run、--all、--format json"),
+        ("which file? Example: rythme fix hello.ry (or rythme fix --dry-run hello.ry to see the changes first)", "どのファイル？ 例：rythme fix hello.ry（先に変更を見るなら rythme fix --dry-run hello.ry）"),
+        ("cannot write `{shown}`: {e}", "`{shown}` を書き込めない：{e}"),
+        ("{shown}: nothing to fix", "{shown}：修正するものはない"),
+        ("{shown}: {n} fix(es) to apply", "{shown}：適用する修正が {n} 件"),
+        ("{shown}: {n} fix(es) applied", "{shown}：修正を {n} 件適用した"),
+        ("; {errors} error(s) and {warnings} warning(s) left: `rythme check {shown}`", "。残りはエラー {errors} 件、警告 {warnings} 件：`rythme check {shown}`"),
+        ("here: `new_{name} = {name} {op} {rest}`, then use `new_{name}`; to add up a list, use `sum(list)` or `fold`", "ここでは：`new_{name} = {name} {op} {rest}` と書き、`new_{name}` を使う。リストを合計するには `sum(list)` か `fold` を使う"),
         // src/mcp.rs: the server for AI assistants
-        ("`rythme mcp` takes no argument, not `{bad}`", ""),
+        ("`rythme mcp` takes no argument, not `{bad}`", "`rythme mcp` は引数を取らない（`{bad}` は不可）"),
         (
             r#"rythme mcp: a Model Context Protocol server for AI assistants, on the standard input and output.
 Its tools run (in a sandbox), check, test, format and fix Rythme code, and explain errors and functions.
 Add it to AI assistants: rythme mcp
 desktop assistants, Cursor and others: see the manual, section 7.10."#,
-            "",
+            r#"rythme mcp：標準入出力を使う、AI アシスタント向けの Model Context Protocol サーバーです。
+そのツールは Rythme のコードを（サンドボックスで）実行し、チェック、テスト、整形、修正を行い、エラーと関数を説明します。
+AI assistants に追加するには：rythme mcp
+desktop assistants、Cursor などはマニュアルの 7.10 節を参照してください。"#,
         ),
-        ("the program was stopped after {seconds} seconds: it may never end (a recursion without a base case?)", ""),
-        ("the program was stopped: it took more than {mb} MB of memory", ""),
+        ("the program was stopped after {seconds} seconds: it may never end (a recursion without a base case?)", "{seconds} 秒でプログラムを止めた：終わらないのかもしれない（基底ケースのない再帰？）"),
+        ("the program was stopped: it took more than {mb} MB of memory", "プログラムを止めた：{mb} MB を超えるメモリを使った"),
         // src/fix.rs, src/suggest.rs: habits from other languages
-        ("an anonymous function is written `fn(x) = x * 2`; a block given to a call is written `xs.map do |x| x * 2 end` or `xs.map {{ |x| x * 2 }}`", ""),
-        ("the parameters of a block are written between bars: `xs.map {{ |x| x * 2 }}`", ""),
-        ("to add up a list, write `sum(xs)`; to combine its elements, `fold(xs, 0, fn(acc, x) = acc + x)`", ""),
-        ("a part of a list or a text is taken with a function: `slice(xs, 1, 3)`, `drop(xs, 1)` (all but the first), `take(xs, 2)` (the first two)", ""),
-        ("the fields of a record are written with `:`: `{{{field}: value}}`", ""),
-        ("Rythme has no named arguments (`name=value`): give the values in order, like `round(x, 2)` (`rythme help NAME` shows the order)", ""),
-        ("texts have no format specifiers like `{{x:.2f}}`: write `{{text(x, 2)}}` for 2 decimals, or use `format_number`", ""),
-        ("when there is nothing to do otherwise, give the unit value: `if x > 0 then print(x) else ()`", ""),
-        ("here: `new_{w} = ...`, then use `new_{w}`; to repeat a step, use `fold`, `map` or a recursive function", ""),
-        ("the functions of numbers are built in: write `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... without `Math.`", ""),
-        ("Rythme has no generators: build the whole list (`map`, `filter`, `1..n`), or give a function to call", ""),
+        ("an anonymous function is written `fn(x) = x * 2`; a block given to a call is written `xs.map do |x| x * 2 end` or `xs.map {{ |x| x * 2 }}`", "無名関数は `fn(x) = x * 2` と書く。呼び出しに渡すブロックは `xs.map do |x| x * 2 end` か `xs.map {{ |x| x * 2 }}` と書く"),
+        ("the parameters of a block are written between bars: `xs.map {{ |x| x * 2 }}`", "ブロックの引数は縦棒で囲んで書く：`xs.map {{ |x| x * 2 }}`"),
+        ("to add up a list, write `sum(xs)`; to combine its elements, `fold(xs, 0, fn(acc, x) = acc + x)`", "リストを合計するには `sum(xs)`、要素をまとめるには `fold(xs, 0, fn(acc, x) = acc + x)` と書く"),
+        ("a part of a list or a text is taken with a function: `slice(xs, 1, 3)`, `drop(xs, 1)` (all but the first), `take(xs, 2)` (the first two)", "リストやテキストの一部は関数で取る：`slice(xs, 1, 3)`、`drop(xs, 1)`（最初以外すべて）、`take(xs, 2)`（最初の 2 つ）"),
+        ("the fields of a record are written with `:`: `{{{field}: value}}`", "レコードのフィールドは `:` で書く：`{{{field}: value}}`"),
+        ("Rythme has no named arguments (`name=value`): give the values in order, like `round(x, 2)` (`rythme help NAME` shows the order)", "Rythme に名前付き引数（`name=value`）はない：`round(x, 2)` のように値を順に渡す（順番は `rythme help NAME` で確認できる）"),
+        ("texts have no format specifiers like `{{x:.2f}}`: write `{{text(x, 2)}}` for 2 decimals, or use `format_number`", "テキストに `{{x:.2f}}` のような書式指定はない：小数点以下 2 桁なら `{{text(x, 2)}}` と書くか、`format_number` を使う"),
+        ("when there is nothing to do otherwise, give the unit value: `if x > 0 then print(x) else ()`", "それ以外に何もすることがないときは、unit 値を与える：`if x > 0 then print(x) else ()`"),
+        ("here: `new_{w} = ...`, then use `new_{w}`; to repeat a step, use `fold`, `map` or a recursive function", "ここでは：`new_{w} = ...` と書き、`new_{w}` を使う。ステップを繰り返すには `fold`、`map`、再帰関数のどれかを使う"),
+        ("the functions of numbers are built in: write `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... without `Math.`", "数の関数は組み込み：`Math.` を付けずに `sqrt(x)`、`abs(x)`、`floor(x)`、`pi` などと書く"),
+        ("Rythme has no generators: build the whole list (`map`, `filter`, `1..n`), or give a function to call", "Rythme にこの種のジェネレーターはない：リスト全体を作る（`map`、`filter`、`1..n`）か、呼び出す関数を渡す"),
         // src/builtins/ml.rs: vectors, matrices, statistics, chance
-        ("`{f}` expects a list of numbers as argument {pos}, but its element {k} is {got}", ""),
-        ("a text is not a number: `parse_float(text)` reads one", ""),
-        ("`{f}` expects a matrix (a list of rows, each a list of numbers) as argument {pos}, but its row {r} is {got}", ""),
-        ("a matrix of 2 rows and 3 columns: [[1, 2, 3], [4, 5, 6]]", ""),
-        ("`{f}`: argument {pos} is not a matrix: its row 0 has {cols} number(s), but its row {r} has {n}", ""),
-        ("every row of a matrix has the same length", ""),
-        ("`{f}` expects a matrix of numbers as argument {pos}, but its row {r} holds {got} at position {k}", ""),
-        ("a vector of {n} number(s)", ""),
-        ("a {n}×{c} matrix", ""),
-        ("a list of {n} element(s)", ""),
-        ("`{f}` needs two values of the same shape, but got {a} and {b}", ""),
-        ("`shape(x)` gives the shape of a vector or a matrix: [3] or [2, 3]", ""),
-        ("`{f}`: these lists are nested more than {MAX_NESTING} levels deep: they are not a vector nor a matrix", ""),
-        ("`{f}` works on vectors and matrices of numbers, but found {got} in them", ""),
-        ("`{f}` needs two vectors of the same length, but got a vector of {n} number(s) and a vector of {m}", ""),
-        ("`zip_with` needs two lists of the same length, but got {n} and {m} element(s)", ""),
-        ("a {r}×{c} matrix", ""),
-        ("a vector of {nr} number(s)", ""),
-        ("a {nr}×{nc} matrix", ""),
-        ("`matmul` cannot multiply {first} by {second}: the first one has {c} column(s), so the second one needs {c} row(s), not {nr}", ""),
-        ("`shape(x)` gives the shape of each one; `transpose(m)` swaps rows and columns", ""),
-        ("`matmul`: these matrices are too large to multiply here (more than {} multiplications)", ""),
-        ("`shape`: the elements of this list do not all have the same shape: element 0 is {a}, element {i} is {b}", ""),
-        ("`{f}` of an empty list", ""),
-        ("`percentile` needs a percentage from 0 to 100, not {p}", ""),
-        ("`random_normal` needs a standard deviation of 0 or more, not {sd}", ""),
-        ("`random_choice_weighted` needs one weight per element: {n} element(s), but {m} weight(s)", ""),
-        ("`random_choice_weighted`: the weight {i} is {w}; a weight is a number of 0 or more", ""),
-        ("`random_choice_weighted` needs at least one weight above 0", ""),
-        ("`train_test_split` needs a share from 0 to 1 for the training part (like 0.8), not {ratio}", ""),
-        ("Machine learning: vectors, matrices, statistics", ""),
-        ("Hyperbolic tangent: a smooth step from -1 to 1, used as the activation of neurons.", ""),
-        ("The logistic function 1 / (1 + e^-x): a smooth step from 0 to 1, read as a probability. Its slope is `sigmoid(x) * (1 - sigmoid(x))`.", ""),
-        ("The rectifier: x when it is positive, 0.0 otherwise. The usual activation of deep networks.", ""),
-        ("Dot product of two vectors (lists of numbers) of the same length: the sum of the products of their numbers, one by one.", ""),
-        ("Length of a vector: the square root of the sum of the squares of its numbers.", ""),
-        ("Adds two vectors, or two matrices, of the same shape, number by number.", ""),
-        ("Subtracts two vectors, or two matrices, of the same shape, number by number.", ""),
-        ("Multiplies two vectors, or two matrices, of the same shape, number by number (not the product of matrices: that is `matmul`).", ""),
-        ("Multiplies every number of a vector, or of a matrix, by the number k.", ""),
-        ("Calls f with the elements of two lists of the same length, one pair at a time, and gives the list of the results.", ""),
-        ("Product of two matrices (lists of rows): a matrix of r rows and n columns times a matrix of n rows and c columns gives r rows and c columns. With a vector as `b`, gives a vector.", ""),
-        ("Swaps the rows and the columns of a matrix.", ""),
-        ("A vector of `rows` zeros, or with `columns`, a matrix full of zeros.", ""),
-        ("A vector of `rows` ones, or with `columns`, a matrix full of ones.", ""),
-        ("The identity matrix of n rows and n columns: ones on the diagonal, zeros elsewhere.", ""),
-        ("The shape of a vector or a matrix (of lists nested in lists): its length at each level, `[3]` for a vector of 3 numbers, `[2, 3]` for 2 rows of 3 numbers.", ""),
-        ("A summary of a list of numbers, as a record: `count`, `mean` (the average), `median` (the middle value), `std_dev`, `min` and `max`. `stats(xs).mean` is the mean.", ""),
-        ("The variance of a list of numbers: the mean of the squares of their distances to their mean (of the whole population: divided by n).", ""),
-        ("The standard deviation of a list of numbers: the square root of their variance, how far they usually are from their mean.", ""),
-        ("The number below which p percent of the numbers of the list are (p from 0 to 100), between the two closest ones when needed. `percentile(xs, 50)` is the median, the middle value.", ""),
-        ("The position of the largest number of a list (the first one if several are equal).", ""),
-        ("The position of the smallest number of a list (the first one if several are equal).", ""),
-        ("Turns a list of scores into probabilities: each one becomes e^x divided by the sum of them all, so that they are between 0 and 1 and add up to 1, the largest score keeping the largest share.", ""),
-        ("Rescales a list of numbers from 0.0 (the smallest) to 1.0 (the largest), keeping their proportions. When they are all equal, gives zeros.", ""),
-        ("A random decimal number drawn from the normal distribution (the bell curve) of this mean and standard deviation. Follows `random_seed`.", ""),
-        ("An element of the list chosen at random, each one with a chance in proportion to its weight (numbers of 0 or more, one per element). Follows `random_seed`.", ""),
-        ("Shuffles a list, then cuts it in two: a record `{train, test}`, where `train` holds this share of the elements (0.8: 80 percent) and `test` the rest. To learn on some examples and check on others. Follows `random_seed`.", ""),
+        ("`{f}` expects a list of numbers as argument {pos}, but its element {k} is {got}", "`{f}` の第 {pos} 引数には数のリストが必要だが、その要素 {k} は {got}"),
+        ("a text is not a number: `parse_float(text)` reads one", "テキストは数ではない：`parse_float(text)` で数を読む"),
+        ("`{f}` expects a matrix (a list of rows, each a list of numbers) as argument {pos}, but its row {r} is {got}", "`{f}` の第 {pos} 引数には行列（各行が数のリストである行のリスト）が必要だが、その行 {r} は {got}"),
+        ("a matrix of 2 rows and 3 columns: [[1, 2, 3], [4, 5, 6]]", "2 行 3 列の行列：[[1, 2, 3], [4, 5, 6]]"),
+        ("`{f}`: argument {pos} is not a matrix: its row 0 has {cols} number(s), but its row {r} has {n}", "`{f}`：第 {pos} 引数は行列ではない：行 0 の数は {cols} 個だが、行 {r} は {n} 個"),
+        ("every row of a matrix has the same length", "行列の行はすべて同じ長さ"),
+        ("`{f}` expects a matrix of numbers as argument {pos}, but its row {r} holds {got} at position {k}", "`{f}` の第 {pos} 引数には数の行列が必要だが、その行 {r} の位置 {k} に {got} がある"),
+        ("a vector of {n} number(s)", "{n} 個の数のベクトル"),
+        ("a {n}×{c} matrix", "{n}×{c} の行列"),
+        ("a list of {n} element(s)", "{n} 個の要素のリスト"),
+        ("`{f}` needs two values of the same shape, but got {a} and {b}", "`{f}` には同じ形の 2 つの値が必要だが、受け取ったのは{a}と{b}"),
+        ("`shape(x)` gives the shape of a vector or a matrix: [3] or [2, 3]", "`shape(x)` はベクトルや行列の形を返す：[3] や [2, 3]"),
+        ("`{f}`: these lists are nested more than {MAX_NESTING} levels deep: they are not a vector nor a matrix", "`{f}`：これらのリストは {MAX_NESTING} 段を超えて入れ子になっている：ベクトルでも行列でもない"),
+        ("`{f}` works on vectors and matrices of numbers, but found {got} in them", "`{f}` は数のベクトルと行列に使えるが、中に {got} があった"),
+        ("`{f}` needs two vectors of the same length, but got a vector of {n} number(s) and a vector of {m}", "`{f}` には同じ長さの 2 つのベクトルが必要だが、受け取ったのは {n} 個の数のベクトルと {m} 個の数のベクトル"),
+        ("`zip_with` needs two lists of the same length, but got {n} and {m} element(s)", "`zip_with` には同じ長さの 2 つのリストが必要だが、受け取った要素は {n} 個と {m} 個"),
+        ("a {r}×{c} matrix", "{r}×{c} の行列"),
+        ("a vector of {nr} number(s)", "{nr} 個の数のベクトル"),
+        ("a {nr}×{nc} matrix", "{nr}×{nc} の行列"),
+        ("`matmul` cannot multiply {first} by {second}: the first one has {c} column(s), so the second one needs {c} row(s), not {nr}", "`matmul` は{first}に{second}を掛けられない：1 つ目の列は {c} 個なので、2 つ目の行は {c} 個必要（{nr} 個ではなく）"),
+        ("`shape(x)` gives the shape of each one; `transpose(m)` swaps rows and columns", "`shape(x)` でそれぞれの形がわかる。`transpose(m)` は行と列を入れ替える"),
+        ("`matmul`: these matrices are too large to multiply here (more than {} multiplications)", "`matmul`：これらの行列はここで掛けるには大きすぎる（{} 回を超える掛け算）"),
+        ("`shape`: the elements of this list do not all have the same shape: element 0 is {a}, element {i} is {b}", "`shape`：このリストの要素がすべて同じ形ではない：要素 0 は{a}、要素 {i} は{b}"),
+        ("`{f}` of an empty list", "空のリストの `{f}`"),
+        ("`percentile` needs a percentage from 0 to 100, not {p}", "`percentile` には 0 から 100 までの百分率が必要（{p} は不可）"),
+        ("`random_normal` needs a standard deviation of 0 or more, not {sd}", "`random_normal` には 0 以上の標準偏差が必要（{sd} は不可）"),
+        ("`random_choice_weighted` needs one weight per element: {n} element(s), but {m} weight(s)", "`random_choice_weighted` には要素ごとに 1 つの重みが必要：要素は {n} 個だが、重みは {m} 個"),
+        ("`random_choice_weighted`: the weight {i} is {w}; a weight is a number of 0 or more", "`random_choice_weighted`：重み {i} は {w}。重みは 0 以上の数"),
+        ("`random_choice_weighted` needs at least one weight above 0", "`random_choice_weighted` には 0 より大きい重みが少なくとも 1 つ必要"),
+        ("`train_test_split` needs a share from 0 to 1 for the training part (like 0.8), not {ratio}", "`train_test_split` には訓練用の割合として 0 から 1 までの値（0.8 など）が必要（{ratio} は不可）"),
+        ("Machine learning: vectors, matrices, statistics", "機械学習：ベクトル、行列、統計"),
+        ("Hyperbolic tangent: a smooth step from -1 to 1, used as the activation of neurons.", "双曲線正接：-1 から 1 へのなめらかな段差で、ニューロンの活性化関数に使います。"),
+        ("The logistic function 1 / (1 + e^-x): a smooth step from 0 to 1, read as a probability. Its slope is `sigmoid(x) * (1 - sigmoid(x))`.", "ロジスティック関数 1 / (1 + e^-x)：0 から 1 へのなめらかな段差で、確率として読みます。その傾きは `sigmoid(x) * (1 - sigmoid(x))` です。"),
+        ("The rectifier: x when it is positive, 0.0 otherwise. The usual activation of deep networks.", "整流関数：x が正なら x、そうでなければ 0.0。深いネットワークでよく使う活性化関数です。"),
+        ("Dot product of two vectors (lists of numbers) of the same length: the sum of the products of their numbers, one by one.", "同じ長さの 2 つのベクトル（数のリスト）の内積：数どうしの積を 1 つずつ足したもの。"),
+        ("Length of a vector: the square root of the sum of the squares of its numbers.", "ベクトルの長さ：数の 2 乗の和の平方根。"),
+        ("Adds two vectors, or two matrices, of the same shape, number by number.", "同じ形の 2 つのベクトル（または行列）を、数ごとに足します。"),
+        ("Subtracts two vectors, or two matrices, of the same shape, number by number.", "同じ形の 2 つのベクトル（または行列）を、数ごとに引きます。"),
+        ("Multiplies two vectors, or two matrices, of the same shape, number by number (not the product of matrices: that is `matmul`).", "同じ形の 2 つのベクトル（または行列）を、数ごとに掛けます（行列の積ではありません：それは `matmul`）。"),
+        ("Multiplies every number of a vector, or of a matrix, by the number k.", "ベクトル（または行列）のすべての数に数 k を掛けます。"),
+        ("Calls f with the elements of two lists of the same length, one pair at a time, and gives the list of the results.", "同じ長さの 2 つのリストの要素を 1 組ずつ f に渡して呼び、結果のリストを返します。"),
+        ("Product of two matrices (lists of rows): a matrix of r rows and n columns times a matrix of n rows and c columns gives r rows and c columns. With a vector as `b`, gives a vector.", "2 つの行列（行のリスト）の積：r 行 n 列の行列と n 行 c 列の行列の積は r 行 c 列になります。`b` がベクトルなら、ベクトルを返します。"),
+        ("Swaps the rows and the columns of a matrix.", "行列の行と列を入れ替えます。"),
+        ("A vector of `rows` zeros, or with `columns`, a matrix full of zeros.", "`rows` 個の 0 のベクトル。`columns` を指定すると、0 で埋めた行列。"),
+        ("A vector of `rows` ones, or with `columns`, a matrix full of ones.", "`rows` 個の 1 のベクトル。`columns` を指定すると、1 で埋めた行列。"),
+        ("The identity matrix of n rows and n columns: ones on the diagonal, zeros elsewhere.", "n 行 n 列の単位行列：対角線上が 1、それ以外が 0。"),
+        ("The shape of a vector or a matrix (of lists nested in lists): its length at each level, `[3]` for a vector of 3 numbers, `[2, 3]` for 2 rows of 3 numbers.", "ベクトルや行列（リストの中に入れ子にしたリスト）の形：各段の長さで、3 つの数のベクトルなら `[3]`、3 つの数の行が 2 つなら `[2, 3]`。"),
+        ("A summary of a list of numbers, as a record: `count`, `mean` (the average), `median` (the middle value), `std_dev`, `min` and `max`. `stats(xs).mean` is the mean.", "数のリストのまとめをレコードで返します：`count`、`mean`（平均）、`median`（中央値）、`std_dev`、`min`、`max`。`stats(xs).mean` が平均です。"),
+        ("The variance of a list of numbers: the mean of the squares of their distances to their mean (of the whole population: divided by n).", "数のリストの分散：平均からの距離の 2 乗の平均（母集団全体として n で割る）。"),
+        ("The standard deviation of a list of numbers: the square root of their variance, how far they usually are from their mean.", "数のリストの標準偏差：分散の平方根で、数がふつう平均からどれだけ離れているかを表します。"),
+        ("The number below which p percent of the numbers of the list are (p from 0 to 100), between the two closest ones when needed. `percentile(xs, 50)` is the median, the middle value.", "リストの数の p パーセントがそれより小さくなる数（p は 0 から 100）。必要なら近い 2 つの数の間の値になります。`percentile(xs, 50)` は中央値です。"),
+        ("The position of the largest number of a list (the first one if several are equal).", "リストのいちばん大きい数の位置（等しいものが複数あれば最初のもの）。"),
+        ("The position of the smallest number of a list (the first one if several are equal).", "リストのいちばん小さい数の位置（等しいものが複数あれば最初のもの）。"),
+        ("Turns a list of scores into probabilities: each one becomes e^x divided by the sum of them all, so that they are between 0 and 1 and add up to 1, the largest score keeping the largest share.", "点数のリストを確率に変えます：それぞれ e^x を全体の和で割った値になるので、0 から 1 の間にあって合計は 1 になり、最大の点数が最大の割合を保ちます。"),
+        ("Rescales a list of numbers from 0.0 (the smallest) to 1.0 (the largest), keeping their proportions. When they are all equal, gives zeros.", "数のリストを、比率を保ったまま 0.0（最小）から 1.0（最大）の範囲に直します。すべて等しければ 0 を返します。"),
+        ("A random decimal number drawn from the normal distribution (the bell curve) of this mean and standard deviation. Follows `random_seed`.", "この平均と標準偏差の正規分布（釣り鐘型の曲線）から引いたランダムな小数。`random_seed` に従います。"),
+        ("An element of the list chosen at random, each one with a chance in proportion to its weight (numbers of 0 or more, one per element). Follows `random_seed`.", "重み（0 以上の数で要素ごとに 1 つ）に比例した確率でランダムに選んだリストの要素。`random_seed` に従います。"),
+        ("Shuffles a list, then cuts it in two: a record `{train, test}`, where `train` holds this share of the elements (0.8: 80 percent) and `test` the rest. To learn on some examples and check on others. Follows `random_seed`.", "リストをシャッフルしてから 2 つに切ります：レコード `{train, test}` で、`train` は要素のこの割合（0.8 なら 80 パーセント）を、`test` は残りを持ちます。一部の例で学習し、別の例で確かめるためのものです。`random_seed` に従います。"),
         // src/builtins/grad.rs: slopes
-        ("the function given to `{f}` must return a number, but it returned {got}", ""),
-        ("The slope of the function f at x (its derivative), computed from f(x + h) and f(x - h) for a tiny h: precise to about 9 significant digits for a smooth function. f takes one number and gives one.", ""),
-        ("The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`). f takes a list of numbers and gives one number. Going against it lowers f: the heart of gradient descent.", ""),
+        ("the function given to `{f}` must return a number, but it returned {got}", "`{f}` に渡す関数は数を返さなければならないが、{got} を返した"),
+        ("The slope of the function f at x (its derivative), computed from f(x + h) and f(x - h) for a tiny h: precise to about 9 significant digits for a smooth function. f takes one number and gives one.", "x における関数 f の傾き（導関数）。ごく小さい h について f(x + h) と f(x - h) から計算します：なめらかな関数なら有効数字約 9 桁の精度です。f は数を 1 つ取り、数を 1 つ返します。"),
+        ("The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`). f takes a list of numbers and gives one number. Going against it lowers f: the heart of gradient descent.", "点 xs における f の勾配：xs の各数の方向の f の傾きのリスト（`derivative` を参照）。f は数のリストを取り、数を 1 つ返します。勾配と逆に進むと f が小さくなります：勾配降下法の中心です。"),
         // src/builtins/plot.rs: charts as text
-        ("`{f}` has nothing to draw: the list is empty, or holds no finite number", ""),
-        ("`histogram` draws at most 100 bars, not {bins}", ""),
-        ("Draws the points (x, y) as a chart in text, 50 columns wide and 11 lines high, with the smallest and largest values on the axes; with one list, draws its numbers at the positions 0, 1, 2... Gives a text: `print(plot(losses))`.", ""),
-        ("Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each. Gives a text: `print(histogram(heights))`.", ""),
+        ("`{f}` has nothing to draw: the list is empty, or holds no finite number", "`{f}` に描くものがない：リストが空か、有限の数が含まれていない"),
+        ("`histogram` draws at most 100 bars, not {bins}", "`histogram` が描く棒は最大 100 本（{bins} は不可）"),
+        ("Draws the points (x, y) as a chart in text, 50 columns wide and 11 lines high, with the smallest and largest values on the axes; with one list, draws its numbers at the positions 0, 1, 2... Gives a text: `print(plot(losses))`.", "点 (x, y) を、幅 50 列、高さ 11 行のテキストのグラフとして描き、軸に最小値と最大値を示します。リストが 1 つなら、その数を位置 0, 1, 2... に描きます。テキストを返します：`print(plot(losses))`。"),
+        ("Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each. Gives a text: `print(histogram(heights))`.", "同じ幅の `bars` 個（指定しなければ 10 個）の区間それぞれに入る数を数え、区間と個数を添えたテキストの横棒として描きます。テキストを返します：`print(histogram(heights))`。"),
         // src/builtins/http.rs: HTTP requests
-        ("`{f}`: the names and the values of the headers are texts, not {got}", ""),
-        ("for example: {{\"content-type\": \"application/json\", \"x-api-key\": key}}", ""),
-        ("`{f}` is not available in the browser: the playground cannot make requests. Run the program on your computer: rythme file.ry", ""),
-        ("a web address starts with http:// or https://, not \"{url}\"", ""),
-        ("an address or a header cannot hold a line break or a control character, and a header name is a word without `:` or space", ""),
-        ("the server answered {code}: {shown}{more}", ""),
-        ("`{f}` needs the program `curl`, which comes with Windows 10, macOS and most Linux systems: install it (on Debian or Ubuntu: sudo apt install curl)", ""),
-        ("server not found: {host} (no connection to the Internet, or a mistake in the address?)", ""),
-        ("could not connect to {host}: {said}", ""),
-        ("no answer from {host} in time (30 seconds)", ""),
-        ("the secure connection (TLS) to {host} failed: {said}", ""),
-        ("the request to {host} failed: {said}", ""),
-        ("The web: HTTP requests", ""),
-        ("Fetches a web address (http:// or https://): `Ok(text of the answer)`, or `Err(message)` when there is no network, the address is wrong, the server answers with an error (404...) or does not answer within 30 seconds. `headers` is a record of texts, like `{\"accept\": \"application/json\"}`. Uses the program curl; not available in the playground.", ""),
-        ("Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`. To call a web service or a language model: `http_post(url, to_json(request), {\"content-type\": \"application/json\"})`. Keep keys out of your code: read them with `env`.", ""),
+        ("`{f}`: the names and the values of the headers are texts, not {got}", "`{f}`：ヘッダーの名前と値はテキスト（{got} は不可）"),
+        ("for example: {{\"content-type\": \"application/json\", \"x-api-key\": key}}", "例：{{\"content-type\": \"application/json\", \"x-api-key\": key}}"),
+        ("`{f}` is not available in the browser: the playground cannot make requests. Run the program on your computer: rythme file.ry", "`{f}` はブラウザーでは使えない：プレイグラウンドはリクエストを送れない。自分のコンピューターでプログラムを実行する：rythme file.ry"),
+        ("a web address starts with http:// or https://, not \"{url}\"", "Web アドレスは http:// か https:// で始まる（\"{url}\" は不可）"),
+        ("an address or a header cannot hold a line break or a control character, and a header name is a word without `:` or space", "アドレスやヘッダーに改行や制御文字は入れられない。ヘッダー名は `:` も空白も含まない単語"),
+        ("the server answered {code}: {shown}{more}", "サーバーの応答は {code}：{shown}{more}"),
+        ("`{f}` needs the program `curl`, which comes with Windows 10, macOS and most Linux systems: install it (on Debian or Ubuntu: sudo apt install curl)", "`{f}` にはプログラム `curl` が必要（Windows 10、macOS、たいていの Linux に付属）：インストールする（Debian や Ubuntu なら sudo apt install curl）"),
+        ("server not found: {host} (no connection to the Internet, or a mistake in the address?)", "サーバーが見つからない：{host}（インターネットに接続していないか、アドレスの誤り？）"),
+        ("could not connect to {host}: {said}", "{host} に接続できない：{said}"),
+        ("no answer from {host} in time (30 seconds)", "{host} から時間内（30 秒）に応答がない"),
+        ("the secure connection (TLS) to {host} failed: {said}", "{host} への安全な接続（TLS）に失敗した：{said}"),
+        ("the request to {host} failed: {said}", "{host} へのリクエストに失敗した：{said}"),
+        ("The web: HTTP requests", "Web：HTTP リクエスト"),
+        ("Fetches a web address (http:// or https://): `Ok(text of the answer)`, or `Err(message)` when there is no network, the address is wrong, the server answers with an error (404...) or does not answer within 30 seconds. `headers` is a record of texts, like `{\"accept\": \"application/json\"}`. Uses the program curl; not available in the playground.", "Web アドレス（http:// か https://）を取得します：`Ok(応答のテキスト)`、またはネットワークがない、アドレスが違う、サーバーがエラー（404 など）を返す、30 秒以内に応答しないときは `Err(message)`。`headers` は `{\"accept\": \"application/json\"}` のようなテキストのレコードです。プログラム curl を使います。プレイグラウンドでは使えません。"),
+        ("Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`. To call a web service or a language model: `http_post(url, to_json(request), {\"content-type\": \"application/json\"})`. Keep keys out of your code: read them with `env`.", "テキスト（多くは `to_json` で作った JSON）を Web アドレスに送り、`http_get` と同じく `Ok(応答のテキスト)` か `Err(message)` を返します。Web サービスや言語モデルを呼ぶには：`http_post(url, to_json(request), {\"content-type\": \"application/json\"})`。キーはコードに書かず、`env` で読みます。"),
         // docs/exercises: the exercises about artificial intelligence (31 to 36)
-        ("31-vectors", ""),
+        ("31-vectors", "31-vectors"),
         (
             r#"# Exercise 31 · Points as vectors  ★☆☆
 #
@@ -8638,9 +8822,52 @@ test "closest"
   assert_eq(closest([[2, 2]], [100, -100]), [2, 2])
 end
 "#,
-            "",
+            r#"# 練習問題 31 · ベクトルとしての点  ★☆☆
+#
+# 機械学習では、1 つの例は数のリスト、つまりベクトルです。組み込み関数
+# `vector_add`、`vector_sub`、`vector_scale`、`dot`、`norm` はそれを扱い、
+# 常に Float を返します。
+#   vector_sub([5, 5], [1, 2])     # [4.0, 3.0]
+#   norm([3, 4])                   # 5.0
+#
+# 問題
+#   - `distance(a, b)`：点 a と b の距離（一方から他方へのベクトルの長さ）
+#   - `midpoint(a, b)`：a と b のちょうど中間の点
+#   - `closest(points, p)`：リストのうち p にいちばん近い点
+#
+# ヒント
+#   1. `distance` は差の `norm` です。
+#   2. 中間：2 つの点を足してから 0.5 倍します。
+#   3. `min_by(list, f)` は f が最小になる要素を返します。
+#
+# 答えをチェックする：  rythme exercise check 31-vectors.ry
+#             または：  rythme test 31-vectors.ry
+
+fn distance(a, b) = fail("未完成")
+
+fn midpoint(a, b) = fail("未完成")
+
+fn closest(points, p) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "距離"
+  assert_eq(distance([0, 0], [3, 4]), 5.0)
+  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+end
+
+test "中点"
+  assert_eq(midpoint([0, 0], [4, 2]), [2.0, 1.0])
+  assert_eq(midpoint([-1, 3], [1, 3]), [0.0, 3.0])
+end
+
+test "いちばん近い点"
+  assert_eq(closest([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
+  assert_eq(closest([[2, 2]], [100, -100]), [2, 2])
+end
+"#,
         ),
-        ("32-statistics", ""),
+        ("32-statistics", "32-statistics"),
         (
             r#"# Exercise 32 · Statistics on data  ★★☆
 #
@@ -8687,9 +8914,52 @@ test "accuracy"
   assert_eq(accuracy([1, 0], [0, 1]), 0.0)
 end
 "#,
-            "",
+            r#"# 練習問題 32 · データの統計  ★★☆
+#
+# データから学ぶ前に、データを見てみましょう。`stats(xs)` は、個数、平均、
+# 中央値、標準偏差、最小値、最大値を持つレコードを返します：
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).mean       # 5.0
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).std_dev    # 2.0
+#
+# 問題
+#   - `standardize(xs)`：各数を、平均からの距離を標準偏差の単位で数えたもの
+#     にする：(x - mean) / std_dev
+#   - `outliers(xs)`：平均から標準偏差の 2 倍より離れている数を順番どおりに
+#   - `accuracy(predictions, answers)`：同じ位置の答えと等しい予測の割合
+#     （0.0 から 1.0）
+#
+# ヒント
+#   1. `stats(xs)` を 1 回計算して名前を付け、それから `map` します。
+#   2. `abs` はどちら側でも距離を返します。
+#   3. `zip(a, b)` は要素を組にします。`count` で正しいものを数えます。
+#
+# 答えをチェックする：  rythme exercise check 32-statistics.ry
+#             または：  rythme test 32-statistics.ry
+
+fn standardize(xs) = fail("未完成")
+
+fn outliers(xs) = fail("未完成")
+
+fn accuracy(predictions, answers) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "標準化"
+  assert_eq(standardize([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+end
+
+test "外れ値"
+  assert_eq(outliers([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
+  assert_eq(outliers([1, 2, 3]), [])
+end
+
+test "正解率"
+  assert_eq(accuracy(["cat", "dog", "cat", "cat"], ["cat", "dog", "dog", "cat"]), 0.75)
+  assert_eq(accuracy([1, 0], [0, 1]), 0.0)
+end
+"#,
         ),
-        ("33-neurons", ""),
+        ("33-neurons", "33-neurons"),
         (
             r#"# Exercise 33 · An artificial neuron  ★★☆
 #
@@ -8737,9 +9007,53 @@ test "layer"
   assert_eq(map(outputs, fn(x) = round(x, 3)), [0.5, 0.993])
 end
 "#,
-            "",
+            r#"# 練習問題 33 · 人工ニューロン  ★★☆
+#
+# ニューロンは各入力に重みを掛けて、バイアスとともに足し合わせ、その和を
+# `sigmoid` のような活性化関数に通します。`sigmoid` は 0 から 1 の数を返します。
+#   sigmoid(0)                     # 0.5
+#   dot([1, 2], [3, 4])            # 11.0
+#
+# 問題
+#   - `neuron(weights, bias, inputs)`：sigmoid(weights · inputs + bias)
+#   - `fires(weights, bias, inputs)`：ニューロンが 0.5 以上を返すとき true
+#   - `layer(matrix, biases, inputs)`：行列の行（重み）とバイアスごとに 1 つの
+#     ニューロンを持つ層：それらの出力のリスト
+#
+# ヒント
+#   1. `dot` は重み付きの和を返します。
+#   2. `matmul(matrix, inputs)` は層の重み付きの和を一度にすべて計算します。
+#      `vector_add` でバイアスを足し、`map` で `sigmoid` を適用します。
+#
+# 答えをチェックする：  rythme exercise check 33-neurons.ry
+#             または：  rythme test 33-neurons.ry
+
+fn neuron(weights, bias, inputs) = fail("未完成")
+
+fn fires(weights, bias, inputs) = fail("未完成")
+
+fn layer(matrix, biases, inputs) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "ニューロン"
+  assert_eq(neuron([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neuron([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "AND を計算するニューロン"
+  assert(fires([10, 10], -15, [1, 1]))
+  assert(not fires([10, 10], -15, [1, 0]))
+  assert(not fires([10, 10], -15, [0, 0]))
+end
+
+test "層"
+  outputs = layer([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(outputs, fn(x) = round(x, 3)), [0.5, 0.993])
+end
+"#,
         ),
-        ("34-gradient-descent", ""),
+        ("34-gradient-descent", "34-gradient-descent"),
         (
             r#"# Exercise 34 · Going down the slope  ★★☆
 #
@@ -8788,9 +9102,54 @@ test "several numbers"
   assert_eq(map(descend_all(bowl, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
 end
 "#,
-            "",
+            r#"# 練習問題 34 · 坂を下る  ★★☆
+#
+# モデルは誤差を小さくすることで学びます：誤差の傾きに沿って、小さな一歩
+# ずつ下っていきます。それが勾配降下法です。
+#   derivative(fn(x) = x * x, 3)                      # 6.0、3 での傾き
+#   gradient(fn([x, y]) = x * x + y * y, [1, 2])      # [2.0, 4.0]
+#
+# 問題
+#   - `step(f, x, rate)`：x から一歩下る：x - rate × (x における f の傾き)
+#   - `descend(f, x, rate, steps)`：x からその回数だけ続けて進んだ、到達点
+#   - `descend_all(f, xs, rate, steps)`：複数の数で同じこと：各ステップは
+#     xs - rate × (xs における f の勾配)
+#
+# ヒント
+#   1. `descend` は 0 になるまでステップを 1 つ減らして自分自身を呼びます
+#      （または `1..steps` で `fold` を使う）。
+#   2. `vector_sub` と `vector_scale` は数のリストを扱います。
+#
+# 答えをチェックする：  rythme exercise check 34-gradient-descent.ry
+#             または：  rythme test 34-gradient-descent.ry
+
+fn step(f, x, rate) = fail("未完成")
+
+fn descend(f, x, rate, steps) = fail("未完成")
+
+fn descend_all(f, xs, rate, steps) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+fn parabola(x) = (x - 3) ** 2
+
+test "一歩"
+  assert_eq(step(parabola, 0, 0.5), 3.0)
+  assert_eq(step(parabola, 1, 0.25), 2.0)
+end
+
+test "底まで"
+  assert_eq(round(descend(parabola, 0, 0.1, 100), 4), 3.0)
+  assert_eq(descend(parabola, 10, 0.1, 0), 10)
+end
+
+test "複数の数"
+  bowl = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descend_all(bowl, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+end
+"#,
         ),
-        ("35-nearest-neighbours", ""),
+        ("35-nearest-neighbours", "35-nearest-neighbours"),
         (
             r#"# Exercise 35 · Nearest neighbours  ★★★
 #
@@ -8847,9 +9206,61 @@ test "classify"
   assert_eq(classify(garden, [4, 4], 1), "blue")
 end
 "#,
-            "",
+            r#"# 練習問題 35 · 最近傍法  ★★★
+#
+# 新しい点のラベルを推測するには、それにいちばん近い k 個の既知の例を見て、
+# その多くが持つラベルを選びます。各例はレコードです：
+#   {point: [1.0, 2.0], label: "red"}
+#
+# 問題
+#   - `neighbours(examples, point, k)`：点にいちばん近い k 個の例を近い順に
+#   - `majority(labels)`：最も多く出てくるラベル（同数が複数あれば、リストの
+#     順でその回数に最初に達したもの）
+#   - `classify(examples, point, k)`：k 個の最近傍の多くが持つラベル
+#
+# ヒント
+#   1. 距離（`norm(vector_sub(a, b))`）で `sort_by` してから `take`。
+#   2. `count(labels, fn(l) = l == label)` で 1 つのラベルを数えます。`max_by`
+#      は最大のもののうち最初のものを残します。
+#
+# 答えをチェックする：  rythme exercise check 35-nearest-neighbours.ry
+#             または：  rythme test 35-nearest-neighbours.ry
+
+fn neighbours(examples, point, k) = fail("未完成")
+
+fn majority(labels) = fail("未完成")
+
+fn classify(examples, point, k) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+garden = [
+  {point: [1, 1], label: "red"},
+  {point: [1, 2], label: "red"},
+  {point: [2, 1], label: "red"},
+  {point: [8, 8], label: "blue"},
+  {point: [9, 8], label: "blue"},
+  {point: [5, 5], label: "blue"},
+]
+
+test "近傍"
+  assert_eq(neighbours(garden, [0, 0], 2) |> map(fn(e) = e.point), [[1, 1], [1, 2]])
+  assert_eq(len(neighbours(garden, [0, 0], 10)), 6)
+end
+
+test "多数決"
+  assert_eq(majority(["a", "b", "b", "c"]), "b")
+  assert_eq(majority(["x", "y"]), "x")
+end
+
+test "分類"
+  assert_eq(classify(garden, [2, 2], 3), "red")
+  assert_eq(classify(garden, [7, 7], 3), "blue")
+  assert_eq(classify(garden, [4, 4], 1), "blue")
+end
+"#,
         ),
-        ("36-minimax", ""),
+        ("36-minimax", "36-minimax"),
         (
             r#"# Exercise 36 · Playing perfectly: minimax  ★★★
 #
@@ -8899,7 +9310,52 @@ test "best move"
   assert_eq(best_move(8), None)
 end
 "#,
-            "",
+            r#"# 練習問題 36 · 完璧に遊ぶ：ミニマックス  ★★★
+#
+# ニムのゲーム：テーブルにマッチが n 本あり、各プレイヤーは順番に 1、2、3 本の
+# どれかを取り、最後のマッチを取った人が勝ちです。ミニマックスはすべての手を
+# 想像して、完璧に遊んだときにだれが勝つかを決めます：手番のプレイヤーは、
+# 相手を負けの局面に追い込む手が 1 つでもあれば勝ちます。
+#
+# 問題
+#   - `moves(n)`：取れるマッチの本数（1、2、3 のどれかで、n 以下）
+#   - `wins(n)`：マッチが n 本のとき、手番のプレイヤーが必ず勝てるなら true
+#     （マッチが 0 本なら、手番のプレイヤーはすでに負けている）
+#   - `best_move(n)`：勝てる手のうち最小の m を `Some(m)` で、どの手でも
+#     負けるなら `None`
+#
+# ヒント
+#   1. `filter(1..3, ...)` で許される手を残します。
+#   2. `wins(n)`：その後で相手が勝てなくなる手が 1 つでも（`any`）あるか？
+#   3. `find` は当てはまる最初の要素を Option で返します。
+#
+# 答えをチェックする：  rythme exercise check 36-minimax.ry
+#             または：  rythme test 36-minimax.ry
+
+fn moves(n) = fail("未完成")
+
+fn wins(n) = fail("未完成")
+
+fn best_move(n) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "手"
+  assert_eq(moves(10), [1, 2, 3])
+  assert_eq(moves(2), [1, 2])
+  assert_eq(moves(0), [])
+end
+
+test "だれが勝つか"
+  assert_eq(map(0..8, wins), [false, true, true, true, false, true, true, true, false])
+end
+
+test "最善の手"
+  assert_eq(best_move(5), Some(1))
+  assert_eq(best_move(7), Some(3))
+  assert_eq(best_move(8), None)
+end
+"#,
         ),
         // src/help.rs: rythme help ml
         (
@@ -8945,207 +9401,254 @@ A mistake of shape names both shapes ("cannot multiply a 2×3 matrix by a
 2×2 matrix"). Programs to read: the examples linear_regression, perceptron,
 xor_network, kmeans, knn, naive_bayes, markov, tictactoe, pathfinding and
 genetic; exercises 31 to 36 (rythme exercise list)."#,
-            "",
+            r#"機械学習と AI
+
+ベクトルは数のリスト、行列は同じ長さの行のリストです。これらの関数は
+それを変えず、常に Float の新しいリストを返します。
+
+ベクトルと行列
+  dot([1, 2], [3, 4])            # 11.0
+  norm([3, 4])                   # 5.0、長さ
+  vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # 数ごとに
+  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  matmul(m, n)  matmul(m, v)     # 行列の積、または行列とベクトルの積
+  transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
+  zip_with(xs, ys, f)            # 組ごとに f。それ以外のすべてに
+
+ニューロン
+  sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # 点数を確率に
+
+統計
+  stats(xs)                      # {count, mean, median, std_dev, min, max}
+  variance(xs)  std_dev(xs)  percentile(xs, 90)  argmax(xs)  argmin(xs)
+  normalize(xs)                  # 0.0（最小）から 1.0（最大）へ
+
+乱数（random_seed(n) の後は毎回同じ）
+  random_normal(0, 1)  random_choice_weighted(xs, weights)
+  train_test_split(examples, 0.8)    # {train, test}
+
+傾き（勾配降下法のため。中心差分で約 9 桁）
+  derivative(fn(x) = x * x, 3)               # 6.0
+  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+
+テキストのグラフ
+  print(plot(losses))  print(plot(xs, ys))  print(histogram(heights))
+
+Web と言語モデル
+  http_get(url)  http_post(url, body, headers)   # Ok(テキスト) か Err(message)
+  API キーはコードに書かない：env("API_KEY")。例
+  examples/ask_model.ry は http_post と JSON で assistant に質問します。
+
+形の誤りは両方の形を示します（「2×3 の行列に 2×2 の行列を掛けられない」）。
+読んでみるプログラム：例 linear_regression、perceptron、xor_network、kmeans、
+knn、naive_bayes、markov、tictactoe、pathfinding、genetic。練習問題 31〜36
+（rythme exercise list）。"#,
         ),
         // Types with parameters: src/check/annot.rs, src/help.rs, src/lsp/features.rs, src/parser.rs
-        ("the type variable `{name}` appears twice in `{ty}`", ""),
-        ("give each one its own letter: `type Pair(a, b)`", ""),
-        ("`{name}` cannot be a type variable: a type variable is one lowercase letter", ""),
-        ("write one letter, like `{letter}`, here and in the fields", ""),
-        ("`{v}` is not a parameter of `{ty}`", ""),
-        ("not among `{header}`", ""),
-        ("add it to the parameters of the type: `type {with} = ...`", ""),
-        ("`{name}` takes {count} types: `{example}`", ""),
+        ("the type variable `{name}` appears twice in `{ty}`", "型変数 `{name}` が `{ty}` に 2 回出てくる"),
+        ("give each one its own letter: `type Pair(a, b)`", "それぞれに別の文字を付ける：`type Pair(a, b)`"),
+        ("`{name}` cannot be a type variable: a type variable is one lowercase letter", "`{name}` は型変数にできない：型変数は小文字 1 文字"),
+        ("write one letter, like `{letter}`, here and in the fields", "`{letter}` のような 1 文字を、こことフィールドに書く"),
+        ("`{v}` is not a parameter of `{ty}`", "`{v}` は `{ty}` のパラメーターではない"),
+        ("not among `{header}`", "`{header}` の中にない"),
+        ("add it to the parameters of the type: `type {with} = ...`", "型のパラメーターに加える：`type {with} = ...`"),
+        ("`{name}` takes {count} types: `{example}`", "`{name}` は型を {count} 個取る：`{example}`"),
         (
             r#"Types may also be written in the code, where they help to read it:
   fn area(s: Shape) -> Float
 `rythme check` verifies them; they are never needed (rythme help types)."#,
-            "",
+            r#"型は、読みやすくなる場所ではコードに書くこともできます：
+  fn area(s: Shape) -> Float
+`rythme check` がそれを確かめます。決して必須ではありません（rythme help types）。"#,
         ),
-        ("A whole number, as large as needed: `42`, `-7`.", ""),
-        ("A decimal number: `3.14`, `2.0`.", ""),
-        ("A text: `\"hello\"`.", ""),
-        ("`true` or `false`.", ""),
-        ("`()`: what a function gives when it gives nothing, like `print`.", ""),
-        ("A value that is only its name: `:ok`, `:error`.", ""),
-        ("A list whose elements all have the type between parentheses; `List` alone: any list.", ""),
-        ("A set of values of this type: `set([1, 2])`.", ""),
-        ("A dictionary: keys of the first type, values of the second.", ""),
-        ("`Some(value)` or `None`: a value that may be missing.", ""),
-        ("`Ok(value)` or `Err(error)`: the result of what may fail.", ""),
-        ("Any record; `{{name: Text}}` is a record with at least these fields.", ""),
-        ("Any function; `fn(Int) -> Int` is a function with these types.", ""),
-        ("A type of Rythme: `rythme help types`", ""),
-        ("type variable", ""),
-        ("used file", ""),
-        ("a type variable, like `a`", ""),
-        ("a type without parameters is written without parentheses: `type {name} = ...`", ""),
-        ("the parameters of a type are type variables, one lowercase letter each: `type Box(a) = Box(value: a)`", ""),
+        ("A whole number, as large as needed: `42`, `-7`.", "必要なだけ大きくなる整数：`42`、`-7`。"),
+        ("A decimal number: `3.14`, `2.0`.", "小数：`3.14`、`2.0`。"),
+        ("A text: `\"hello\"`.", "テキスト：`\"hello\"`。"),
+        ("`true` or `false`.", "`true` か `false`。"),
+        ("`()`: what a function gives when it gives nothing, like `print`.", "`()`：`print` のように、何も返さない関数が返すもの。"),
+        ("A value that is only its name: `:ok`, `:error`.", "名前だけの値：`:ok`、`:error`。"),
+        ("A list whose elements all have the type between parentheses; `List` alone: any list.", "要素がすべて括弧の中の型であるリスト。`List` だけなら任意のリスト。"),
+        ("A set of values of this type: `set([1, 2])`.", "この型の値の集合：`set([1, 2])`。"),
+        ("A dictionary: keys of the first type, values of the second.", "辞書：キーは 1 つ目の型、値は 2 つ目の型。"),
+        ("`Some(value)` or `None`: a value that may be missing.", "`Some(value)` か `None`：ないかもしれない値。"),
+        ("`Ok(value)` or `Err(error)`: the result of what may fail.", "`Ok(value)` か `Err(error)`：失敗するかもしれないものの結果。"),
+        ("Any record; `{{name: Text}}` is a record with at least these fields.", "任意のレコード。`{{name: Text}}` は少なくともこれらのフィールドを持つレコード。"),
+        ("Any function; `fn(Int) -> Int` is a function with these types.", "任意の関数。`fn(Int) -> Int` はこれらの型の関数。"),
+        ("A type of Rythme: `rythme help types`", "Rythme の型：`rythme help types`"),
+        ("type variable", "型変数"),
+        ("used file", "使っているファイル"),
+        ("a type variable, like `a`", "`a` のような型変数"),
+        ("a type without parameters is written without parentheses: `type {name} = ...`", "パラメーターのない型は括弧なしで書く：`type {name} = ...`"),
+        ("the parameters of a type are type variables, one lowercase letter each: `type Box(a) = Box(value: a)`", "型のパラメーターは型変数で、それぞれ小文字 1 文字：`type Box(a) = Box(value: a)`"),
         // src/index.rs, src/packages.rs, src/project.rs, src/manifest.rs, src/help.rs: the package index
-        ("the address is empty", ""),
-        ("`{a}` is not an address that Rythme accepts: no spaces, and no `-` at the start", ""),
-        ("Rythme downloads packages only with `https://`, `ssh://` or from this computer (`file://`), not with `{other}`", ""),
-        ("`{a}` is not the address of a repository: write `https://...`, `ssh://...` or `file://...`", ""),
-        ("set by `index` in `rythme.toml`", ""),
-        ("set by the variable RYTHME_INDEX", ""),
-        ("`{url}` is not a package index: it has no folder `packages`", ""),
-        ("an index holds one file per package, like `packages/mathlib.toml` (see `rythme help packages`)", ""),
-        ("an unknown day", ""),
-        ("cannot update the package index from `{url}`: using the copy of {date}", ""),
-        ("cannot download the package index from `{url}`", ""),
-        ("check the connection to the network, or give another index with the variable RYTHME_INDEX (an address or a folder); dependencies from git or from a folder work without the index", ""),
-        ("no package `{name}` in the package index", ""),
-        ("`rythme search WORDS` finds packages by the words of their name and description", ""),
-        ("the index: {place}", ""),
-        ("{url} (copy of {date})", ""),
-        ("{} (withdrawn)", ""),
-        ("none", ""),
-        ("no version of `{name}` in the package index fits `{range}`", ""),
-        ("its versions: {}", ""),
-        ("for the newest one, write `{name} = {{ version = \"^{v}\" }}`", ""),
-        ("every version of `{name}` was withdrawn", ""),
-        ("`{shown}` is too large for an entry of the package index", ""),
-        ("`{key}` is a list of texts", ""),
-        ("this entry of the package index is for `{found}`, but its file is named for `{name}`", ""),
-        ("the entry of `{name}` has no `repository`", ""),
-        ("the entry of `{name}` has no `{key}`", ""),
-        ("each version is written under `[[version]]`", ""),
-        ("this version of `{name}` has no `{k}`", ""),
-        ("`{commit}` is not a full commit: 40 hexadecimal digits in lower case", ""),
-        ("`{checksum}` is not a checksum: `sha256:` and 64 hexadecimal digits, as `rythme publish` writes it", ""),
-        ("`{t}` is not a tag", ""),
-        ("the version {v} is written twice", ""),
-        ("the entry of `{name}` has no version", ""),
-        ("expected `,` or `]` here", ""),
-        ("a list is written on one line: `[\"math\", \"vectors\"]`", ""),
-        ("like `{key} = {example}`", ""),
-        ("write `\"^1.2.0\"` (1.2.0 or a newer compatible version, below 2.0.0), `\"~1.2.0\"` (1.2.x), `\"=1.2.0\"` (exactly this one) or `\">=1.2.0, <1.5.0\"`", ""),
-        ("for a version from the package index, write `{name} = {{ version = \"{v}\" }}`", ""),
-        ("a dependency comes from the package index (`version`), from git (`git`) or from a folder (`path`): give only one", ""),
-        ("`{v}` is not a range of versions", ""),
+        ("the address is empty", "アドレスが空"),
+        ("`{a}` is not an address that Rythme accepts: no spaces, and no `-` at the start", "`{a}` は Rythme が受け付けるアドレスではない：空白なし、先頭に `-` なし"),
+        ("Rythme downloads packages only with `https://`, `ssh://` or from this computer (`file://`), not with `{other}`", "Rythme がパッケージをダウンロードするのは `https://`、`ssh://`、このコンピューター（`file://`）からだけ（`{other}` は不可）"),
+        ("`{a}` is not the address of a repository: write `https://...`, `ssh://...` or `file://...`", "`{a}` はリポジトリのアドレスではない：`https://...`、`ssh://...`、`file://...` のどれかを書く"),
+        ("set by `index` in `rythme.toml`", "`rythme.toml` の `index` で設定"),
+        ("set by the variable RYTHME_INDEX", "環境変数 RYTHME_INDEX で設定"),
+        ("`{url}` is not a package index: it has no folder `packages`", "`{url}` はパッケージインデックスではない：フォルダー `packages` がない"),
+        ("an index holds one file per package, like `packages/mathlib.toml` (see `rythme help packages`)", "インデックスにはパッケージごとに 1 つのファイルがある。例：`packages/mathlib.toml`（`rythme help packages` を参照）"),
+        ("an unknown day", "不明な日"),
+        ("cannot update the package index from `{url}`: using the copy of {date}", "`{url}` からパッケージインデックスを更新できない：{date} のコピーを使う"),
+        ("cannot download the package index from `{url}`", "`{url}` からパッケージインデックスをダウンロードできない"),
+        ("check the connection to the network, or give another index with the variable RYTHME_INDEX (an address or a folder); dependencies from git or from a folder work without the index", "ネットワークの接続を確かめるか、環境変数 RYTHME_INDEX で別のインデックス（アドレスかフォルダー）を指定する。git やフォルダーからの依存関係はインデックスなしで使える"),
+        ("no package `{name}` in the package index", "パッケージインデックスにパッケージ `{name}` はない"),
+        ("`rythme search WORDS` finds packages by the words of their name and description", "`rythme search WORDS` は名前と説明の単語でパッケージを探す"),
+        ("the index: {place}", "インデックス：{place}"),
+        ("{url} (copy of {date})", "{url}（{date} のコピー）"),
+        ("{} (withdrawn)", "{}（取り下げ済み）"),
+        ("none", "なし"),
+        ("no version of `{name}` in the package index fits `{range}`", "パッケージインデックスに `{range}` に合う `{name}` のバージョンはない"),
+        ("its versions: {}", "バージョン：{}"),
+        ("for the newest one, write `{name} = {{ version = \"^{v}\" }}`", "最新のものなら `{name} = {{ version = \"^{v}\" }}` と書く"),
+        ("every version of `{name}` was withdrawn", "`{name}` のすべてのバージョンが取り下げられている"),
+        ("`{shown}` is too large for an entry of the package index", "`{shown}` はパッケージインデックスの項目には大きすぎる"),
+        ("`{key}` is a list of texts", "`{key}` はテキストのリスト"),
+        ("this entry of the package index is for `{found}`, but its file is named for `{name}`", "パッケージインデックスのこの項目は `{found}` のものだが、ファイル名は `{name}` のもの"),
+        ("the entry of `{name}` has no `repository`", "`{name}` の項目に `repository` がない"),
+        ("the entry of `{name}` has no `{key}`", "`{name}` の項目に `{key}` がない"),
+        ("each version is written under `[[version]]`", "各バージョンは `[[version]]` の下に書く"),
+        ("this version of `{name}` has no `{k}`", "`{name}` のこのバージョンに `{k}` がない"),
+        ("`{commit}` is not a full commit: 40 hexadecimal digits in lower case", "`{commit}` は完全なコミットではない：小文字の 16 進数 40 桁"),
+        ("`{checksum}` is not a checksum: `sha256:` and 64 hexadecimal digits, as `rythme publish` writes it", "`{checksum}` はチェックサムではない：`rythme publish` が書くように `sha256:` と 16 進数 64 桁"),
+        ("`{t}` is not a tag", "`{t}` はタグではない"),
+        ("the version {v} is written twice", "バージョン {v} が 2 回書かれている"),
+        ("the entry of `{name}` has no version", "`{name}` の項目にバージョンがない"),
+        ("expected `,` or `]` here", "ここには `,` か `]` が必要"),
+        ("a list is written on one line: `[\"math\", \"vectors\"]`", "リストは 1 行で書く：`[\"math\", \"vectors\"]`"),
+        ("like `{key} = {example}`", "例：`{key} = {example}`"),
+        ("write `\"^1.2.0\"` (1.2.0 or a newer compatible version, below 2.0.0), `\"~1.2.0\"` (1.2.x), `\"=1.2.0\"` (exactly this one) or `\">=1.2.0, <1.5.0\"`", "`\"^1.2.0\"`（1.2.0 か、2.0.0 未満の互換性のある新しいバージョン）、`\"~1.2.0\"`（1.2.x）、`\"=1.2.0\"`（ちょうどこれ）、`\">=1.2.0, <1.5.0\"` のどれかを書く"),
+        ("for a version from the package index, write `{name} = {{ version = \"{v}\" }}`", "パッケージインデックスのバージョンなら `{name} = {{ version = \"{v}\" }}` と書く"),
+        ("a dependency comes from the package index (`version`), from git (`git`) or from a folder (`path`): give only one", "依存関係はパッケージインデックス（`version`）、git（`git`）、フォルダー（`path`）のどれか 1 つから取る：1 つだけ指定する"),
+        ("`{v}` is not a range of versions", "`{v}` はバージョンの範囲ではない"),
         (
             r#"unknown option `{bad}` for `rythme {command}`
 see `rythme help packages`"#,
-            "",
+            r#"`rythme {command}` に不明なオプション `{bad}`
+`rythme help packages` を参照"#,
         ),
-        ("{bad} file(s) of the package index could not be read", ""),
-        ("{n} package(s) in {place}", ""),
-        ("No package found for `{query}` in {place}", ""),
-        ("{n} package(s) found for `{query}` in {place}", ""),
-        ("More about one: `rythme info {name}`; add it to a project: `rythme add {name}`", ""),
-        ("`rythme search --update{words}` searches the newest copy of the index", ""),
-        ("which package? Example: rythme info mathlib", ""),
-        ("repository", ""),
-        ("license", ""),
-        ("keywords", ""),
-        ("authors", ""),
-        ("versions", ""),
-        ("  {v} was withdrawn: {}", ""),
-        ("Add it to a project: `rythme add {name}` (writes `{name} = {{ version = \"^{v}\" }}` in rythme.toml)", ""),
-        ("Every version of this package was withdrawn.", ""),
-        ("which package? Example: rythme add mathlib (or rythme add mathlib@1.2)", ""),
-        ("cannot read `{}`: {e}", ""),
-        ("`{range_text}` is not a range of versions", ""),
-        ("`{name}` came from {from}: it now comes from the package index", ""),
-        ("`rythme.toml` was left as it was", ""),
-        ("Added `{line}` to rythme.toml ({version})", ""),
-        ("  use it with `use {name}/FILE` (see `rythme info {name}`)", ""),
-        ("which entries? Example: rythme publish --verify packages/mathlib.toml", ""),
+        ("{bad} file(s) of the package index could not be read", "パッケージインデックスの {bad} 個のファイルを読めなかった"),
+        ("{n} package(s) in {place}", "{place} にパッケージが {n} 個"),
+        ("No package found for `{query}` in {place}", "{place} に `{query}` のパッケージは見つかりませんでした"),
+        ("{n} package(s) found for `{query}` in {place}", "{place} で `{query}` のパッケージが {n} 個見つかりました"),
+        ("More about one: `rythme info {name}`; add it to a project: `rythme add {name}`", "詳しくは `rythme info {name}`、プロジェクトに加えるには `rythme add {name}`"),
+        ("`rythme search --update{words}` searches the newest copy of the index", "`rythme search --update{words}` はインデックスの最新のコピーを検索する"),
+        ("which package? Example: rythme info mathlib", "どのパッケージ？ 例：rythme info mathlib"),
+        ("repository", "リポジトリ"),
+        ("license", "ライセンス"),
+        ("keywords", "キーワード"),
+        ("authors", "作者"),
+        ("versions", "バージョン"),
+        ("  {v} was withdrawn: {}", "  {v} は取り下げられた：{}"),
+        ("Add it to a project: `rythme add {name}` (writes `{name} = {{ version = \"^{v}\" }}` in rythme.toml)", "プロジェクトに加えるには：`rythme add {name}`（rythme.toml に `{name} = {{ version = \"^{v}\" }}` を書く）"),
+        ("Every version of this package was withdrawn.", "このパッケージのすべてのバージョンが取り下げられています。"),
+        ("which package? Example: rythme add mathlib (or rythme add mathlib@1.2)", "どのパッケージ？ 例：rythme add mathlib（または rythme add mathlib@1.2）"),
+        ("cannot read `{}`: {e}", "`{}` を読めない：{e}"),
+        ("`{range_text}` is not a range of versions", "`{range_text}` はバージョンの範囲ではない"),
+        ("`{name}` came from {from}: it now comes from the package index", "`{name}` は {from} からだったが、今はパッケージインデックスから取る"),
+        ("`rythme.toml` was left as it was", "`rythme.toml` はそのままにした"),
+        ("Added `{line}` to rythme.toml ({version})", "rythme.toml に `{line}` を加えました（{version}）"),
+        ("  use it with `use {name}/FILE` (see `rythme info {name}`)", "  `use {name}/FILE` で使う（`rythme info {name}` を参照）"),
+        ("which entries? Example: rythme publish --verify packages/mathlib.toml", "どの項目？ 例：rythme publish --verify packages/mathlib.toml"),
         (
             r#"`rythme publish` takes no argument (`{a}`): it checks the package of the current folder
 see `rythme help packages`"#,
-            "",
+            r#"`rythme publish` は引数を取らない（`{a}`）：現在のフォルダーのパッケージをチェックする
+`rythme help packages` を参照"#,
         ),
-        ("`rythme.toml` has no `{key}`", ""),
-        ("the package index shows it, and needs it", ""),
-        ("add a line like `{example}` at the top", ""),
-        ("Checking `{name}` {version} before it goes into the package index", ""),
-        ("`{version}` is not a version of semantic versioning", ""),
-        ("like `version = \"1.2.0\"`, without zeros at the start of a number", ""),
-        ("description = \"What `{name}` is for, in one sentence\"", ""),
-        ("the `description` is too long: one sentence, at most 200 characters", ""),
-        ("YOU", ""),
-        ("`{k}` is not a keyword: a word in lower case, at most 24 characters", ""),
-        ("at most 5 keywords", ""),
-        ("a published package cannot use a folder of this computer: `{dep_name}` comes from `{p}`", ""),
-        ("publish `{dep_name}` too, then write `{dep_name} = {{ version = \"^...\" }}`", ""),
-        ("`{name}` is not in a git repository", ""),
-        ("the package index gives the commit of each version: a package is published from its git repository", ""),
-        ("`git init`, `git add .`, `git commit`, then push it to its `repository`", ""),
-        ("`rythme.toml` must be at the root of its git repository", ""),
-        ("the root of the repository: {top}", ""),
-        ("give the package a repository of its own", ""),
-        ("some changes are not committed", ""),
-        ("for example: {}", ""),
-        ("commit them (`git add`, `git commit`), or set them aside, then tag the commit", ""),
-        ("no tag `v{version}` for the version {version}", ""),
-        ("tag the commit and push the tag: `git tag v{version}`, then `git push origin v{version}`", ""),
-        ("the tag `{t}` is not the current commit", ""),
-        ("what is checked must be what is published", ""),
-        ("publish from the tag (`git checkout {t}`), or move the tag to this commit (`git tag --force {t}`) before pushing it", ""),
-        ("Running `rythme check`", ""),
-        ("`rythme check` found errors", ""),
-        ("fix them first: a package must pass `rythme check`", ""),
-        ("Running `rythme test`", ""),
-        ("`rythme test` failed", ""),
-        ("fix them first: a package must pass its tests", ""),
-        ("the name `{name}` is already taken in the package index", ""),
-        ("by the repository {repo}", ""),
-        ("choose another `name` for your package", ""),
-        ("the version {version} of `{name}` is already in the package index", ""),
-        ("a published version never changes: raise `version` in `rythme.toml`, commit and tag again", ""),
-        ("cannot read the package index `{url}`: it will check the name and the version itself", ""),
-        ("the tag `{t}` is not in {repo}", ""),
-        ("push it: `git push origin {t}`", ""),
-        ("the tag `{t}` of {repo} is not this commit", ""),
-        ("push the tag again: `git push --force origin {t}`", ""),
-        ("cannot reach {repo} to check that the tag `{t}` is there", ""),
-        ("cannot read the files of the commit `{commit}`", ""),
-        ("✓ `{name}` {version} is ready for the package index.", ""),
-        ("Rythme never publishes anything by itself: a version goes into the index with a pull request on its repository, {}.", ""),
-        ("1. Fork the repository of the index and clone your fork. Create the file {file} with:", ""),
-        ("1. Fork the repository of the index and clone your fork. Add at the end of {file}:", ""),
-        ("2. Commit it on a branch of your fork and push it:", ""),
-        ("3. Open a pull request on {}: its checks run `rythme publish --verify {file}`, then a maintainer merges it.", ""),
+        ("`rythme.toml` has no `{key}`", "`rythme.toml` に `{key}` がない"),
+        ("the package index shows it, and needs it", "パッケージインデックスはそれを表示し、それを必要とする"),
+        ("add a line like `{example}` at the top", "先頭に `{example}` のような行を加える"),
+        ("Checking `{name}` {version} before it goes into the package index", "パッケージインデックスに入れる前に `{name}` {version} をチェック中"),
+        ("`{version}` is not a version of semantic versioning", "`{version}` はセマンティックバージョニングのバージョンではない"),
+        ("like `version = \"1.2.0\"`, without zeros at the start of a number", "例：`version = \"1.2.0\"`（数の先頭に 0 を付けない）"),
+        ("description = \"What `{name}` is for, in one sentence\"", "description = \"`{name}` の用途を 1 文で\""),
+        ("the `description` is too long: one sentence, at most 200 characters", "`description` が長すぎる：1 文で、最大 200 文字"),
+        ("YOU", "あなた"),
+        ("`{k}` is not a keyword: a word in lower case, at most 24 characters", "`{k}` はキーワードではない：小文字の単語で、最大 24 文字"),
+        ("at most 5 keywords", "キーワードは最大 5 個"),
+        ("a published package cannot use a folder of this computer: `{dep_name}` comes from `{p}`", "公開するパッケージはこのコンピューターのフォルダーを使えない：`{dep_name}` は `{p}` から取っている"),
+        ("publish `{dep_name}` too, then write `{dep_name} = {{ version = \"^...\" }}`", "`{dep_name}` も公開してから、`{dep_name} = {{ version = \"^...\" }}` と書く"),
+        ("`{name}` is not in a git repository", "`{name}` は git リポジトリの中にない"),
+        ("the package index gives the commit of each version: a package is published from its git repository", "パッケージインデックスは各バージョンのコミットを示す：パッケージはその git リポジトリから公開する"),
+        ("`git init`, `git add .`, `git commit`, then push it to its `repository`", "`git init`、`git add .`、`git commit` の後、その `repository` にプッシュする"),
+        ("`rythme.toml` must be at the root of its git repository", "`rythme.toml` は git リポジトリのルートになければならない"),
+        ("the root of the repository: {top}", "リポジトリのルート：{top}"),
+        ("give the package a repository of its own", "パッケージ専用のリポジトリを用意する"),
+        ("some changes are not committed", "コミットされていない変更がある"),
+        ("for example: {}", "例：{}"),
+        ("commit them (`git add`, `git commit`), or set them aside, then tag the commit", "それらをコミットする（`git add`、`git commit`）か、退避してから、コミットにタグを付ける"),
+        ("no tag `v{version}` for the version {version}", "バージョン {version} のタグ `v{version}` がない"),
+        ("tag the commit and push the tag: `git tag v{version}`, then `git push origin v{version}`", "コミットにタグを付けてプッシュする：`git tag v{version}` の後に `git push origin v{version}`"),
+        ("the tag `{t}` is not the current commit", "タグ `{t}` は現在のコミットではない"),
+        ("what is checked must be what is published", "チェックするものと公開するものは同じでなければならない"),
+        ("publish from the tag (`git checkout {t}`), or move the tag to this commit (`git tag --force {t}`) before pushing it", "タグから公開する（`git checkout {t}`）か、プッシュする前にタグをこのコミットに移す（`git tag --force {t}`）"),
+        ("Running `rythme check`", "`rythme check` を実行中"),
+        ("`rythme check` found errors", "`rythme check` がエラーを見つけた"),
+        ("fix them first: a package must pass `rythme check`", "先に直す：パッケージは `rythme check` を通らなければならない"),
+        ("Running `rythme test`", "`rythme test` を実行中"),
+        ("`rythme test` failed", "`rythme test` が失敗した"),
+        ("fix them first: a package must pass its tests", "先に直す：パッケージは自分のテストに成功しなければならない"),
+        ("the name `{name}` is already taken in the package index", "名前 `{name}` はパッケージインデックスですでに使われている"),
+        ("by the repository {repo}", "リポジトリ {repo} によって"),
+        ("choose another `name` for your package", "パッケージに別の `name` を選ぶ"),
+        ("the version {version} of `{name}` is already in the package index", "`{name}` のバージョン {version} はすでにパッケージインデックスにある"),
+        ("a published version never changes: raise `version` in `rythme.toml`, commit and tag again", "公開したバージョンは決して変わらない：`rythme.toml` の `version` を上げ、もう一度コミットしてタグを付ける"),
+        ("cannot read the package index `{url}`: it will check the name and the version itself", "パッケージインデックス `{url}` を読めない：名前とバージョンはインデックス側でチェックされる"),
+        ("the tag `{t}` is not in {repo}", "タグ `{t}` は {repo} にない"),
+        ("push it: `git push origin {t}`", "プッシュする：`git push origin {t}`"),
+        ("the tag `{t}` of {repo} is not this commit", "{repo} のタグ `{t}` はこのコミットではない"),
+        ("push the tag again: `git push --force origin {t}`", "タグをもう一度プッシュする：`git push --force origin {t}`"),
+        ("cannot reach {repo} to check that the tag `{t}` is there", "タグ `{t}` があるか確かめるために {repo} に接続できない"),
+        ("cannot read the files of the commit `{commit}`", "コミット `{commit}` のファイルを読めない"),
+        ("✓ `{name}` {version} is ready for the package index.", "✓ `{name}` {version} はパッケージインデックスに入れる準備ができました。"),
+        ("Rythme never publishes anything by itself: a version goes into the index with a pull request on its repository, {}.", "Rythme が自分で何かを公開することはありません：バージョンはインデックスのリポジトリへのプルリクエストで入ります（{}）。"),
+        ("1. Fork the repository of the index and clone your fork. Create the file {file} with:", "1. インデックスのリポジトリをフォークし、そのフォークをクローンします。ファイル {file} を次の内容で作ります："),
+        ("1. Fork the repository of the index and clone your fork. Add at the end of {file}:", "1. インデックスのリポジトリをフォークし、そのフォークをクローンします。{file} の末尾に次を加えます："),
+        ("2. Commit it on a branch of your fork and push it:", "2. フォークのブランチにコミットしてプッシュします："),
+        ("3. Open a pull request on {}: its checks run `rythme publish --verify {file}`, then a maintainer merges it.", "3. {} にプルリクエストを出します：そのチェックで `rythme publish --verify {file}` が実行され、メンテナーがマージします。"),
         (
             r#"
 {problems} problem(s) to fix before publishing: nothing was sent anywhere"#,
-            "",
+            r#"
+公開する前に直す問題が {problems} 件：何も送信していない"#,
         ),
-        ("`{f}` is not an entry of the index: `packages/NAME.toml`", ""),
-        ("✓ {f}: `{stem}`, {count} version(s) verified", ""),
-        ("✗ {f}", ""),
-        ("{v}: the commit `{commit}` is not in `{url}`", ""),
-        ("{v}: the tag `{tag}` of `{url}` is not the commit `{commit}`", ""),
-        ("{v}: the files of the commit do not have the checksum of the entry", ""),
+        ("`{f}` is not an entry of the index: `packages/NAME.toml`", "`{f}` はインデックスの項目ではない：`packages/NAME.toml`"),
+        ("✓ {f}: `{stem}`, {count} version(s) verified", "✓ {f}：`{stem}`、{count} 個のバージョンを確認"),
+        ("✗ {f}", "✗ {f}"),
+        ("{v}: the commit `{commit}` is not in `{url}`", "{v}：コミット `{commit}` は `{url}` にない"),
+        ("{v}: the tag `{tag}` of `{url}` is not the commit `{commit}`", "{v}：`{url}` のタグ `{tag}` はコミット `{commit}` ではない"),
+        ("{v}: the files of the commit do not have the checksum of the entry", "{v}：コミットのファイルのチェックサムが項目のものと違う"),
         (
             r#"expected: {}
 found:    {found}"#,
-            "",
+            r#"期待値：{}
+実際：  {found}"#,
         ),
-        ("`rythme publish` in the package, at its tag, writes the right one", ""),
-        ("{v}: the commit has no `rythme.toml` at its root", ""),
-        ("{v}: the `rythme.toml` of the commit says `{found_name}` {found_version}", ""),
-        ("{v}: the dependency `{dep_name}` is a folder of the computer of the author", ""),
-        ("the package index, version {range}", ""),
-        ("the commit `{commit}` of `{name}` {version} does not exist in `{url}`", ""),
-        ("the package index gives this commit for this version", ""),
-        ("tell the authors of `{name}`: the history of their repository may have been rewritten", ""),
-        ("cannot read the files of `{name}` {version}", ""),
-        ("the files of `{name}` {version} do not match the checksum of the package index", ""),
-        ("nothing was installed, and nothing of the package ran", ""),
-        ("do not use this version; tell the maintainers of the package index", ""),
-        ("Updating the dependencies of `{name}`", ""),
-        ("{range} from the index, commit {short} ({how})", ""),
-        ("the package index gives `{dep_name}` {wanted}, but its `rythme.toml` says `{found}` {version}", ""),
-        ("tell the maintainers of the package index", ""),
-        ("`rythme update` takes the names of dependencies, not `{bad}`: `rythme update` (all of them) or `rythme update mathlib`", ""),
-        ("`{a}` is not a dependency of `{}`", ""),
-        ("did you mean `rythme update {best}`?", ""),
-        ("`rythme add {a}` adds it from the package index", ""),
-        ("Everything was already up to date", ""),
-        ("Updated:", ""),
-        ("{} {} (new)", ""),
+        ("`rythme publish` in the package, at its tag, writes the right one", "パッケージでそのタグに対して `rythme publish` を実行すれば、正しい値が書かれる"),
+        ("{v}: the commit has no `rythme.toml` at its root", "{v}：コミットのルートに `rythme.toml` がない"),
+        ("{v}: the `rythme.toml` of the commit says `{found_name}` {found_version}", "{v}：コミットの `rythme.toml` は `{found_name}` {found_version} となっている"),
+        ("{v}: the dependency `{dep_name}` is a folder of the computer of the author", "{v}：依存関係 `{dep_name}` は作者のコンピューターのフォルダー"),
+        ("the package index, version {range}", "パッケージインデックス、バージョン {range}"),
+        ("the commit `{commit}` of `{name}` {version} does not exist in `{url}`", "`{name}` {version} のコミット `{commit}` は `{url}` にない"),
+        ("the package index gives this commit for this version", "パッケージインデックスはこのバージョンにこのコミットを示している"),
+        ("tell the authors of `{name}`: the history of their repository may have been rewritten", "`{name}` の作者に伝える：リポジトリの履歴が書き換えられたのかもしれない"),
+        ("cannot read the files of `{name}` {version}", "`{name}` {version} のファイルを読めない"),
+        ("the files of `{name}` {version} do not match the checksum of the package index", "`{name}` {version} のファイルがパッケージインデックスのチェックサムと合わない"),
+        ("nothing was installed, and nothing of the package ran", "何もインストールしておらず、パッケージのものは何も実行していない"),
+        ("do not use this version; tell the maintainers of the package index", "このバージョンは使わない。パッケージインデックスのメンテナーに伝える"),
+        ("Updating the dependencies of `{name}`", "`{name}` の依存関係を更新中"),
+        ("{range} from the index, commit {short} ({how})", "インデックスの {range}、コミット {short}（{how}）"),
+        ("the package index gives `{dep_name}` {wanted}, but its `rythme.toml` says `{found}` {version}", "パッケージインデックスは `{dep_name}` {wanted} を示しているが、その `rythme.toml` は `{found}` {version} となっている"),
+        ("tell the maintainers of the package index", "パッケージインデックスのメンテナーに伝える"),
+        ("`rythme update` takes the names of dependencies, not `{bad}`: `rythme update` (all of them) or `rythme update mathlib`", "`rythme update` が取るのは依存関係の名前（`{bad}` は不可）：`rythme update`（すべて）か `rythme update mathlib`"),
+        ("`{a}` is not a dependency of `{}`", "`{a}` は `{}` の依存関係ではない"),
+        ("did you mean `rythme update {best}`?", "もしかして `rythme update {best}`？"),
+        ("`rythme add {a}` adds it from the package index", "`rythme add {a}` でパッケージインデックスから加えられる"),
+        ("Everything was already up to date", "すべてすでに最新でした"),
+        ("Updated:", "更新："),
+        ("{} {} (new)", "{} {}（新規）"),
         (
             r#"THE PACKAGE INDEX
 
@@ -9183,133 +9686,171 @@ Publishing: tag the version (git tag v1.2.0, git push origin v1.2.0), then
 `rythme publish` checks rythme.toml (description, license, repository),
 `rythme check`, `rythme test` and the tag, and prints the entry to add to
 the index with a pull request. Rythme never sends anything by itself."#,
-            "",
+            r#"パッケージインデックス
+
+  rythme search vectors      # 名前、説明、キーワードにそれを含むパッケージ
+  rythme info mathlib        # 説明、リポジトリ、ライセンス、バージョン
+  rythme add mathlib         # rythme.toml に `mathlib = { version = "^1.2.0" }` を加え、
+                             #   インストールする（rythme.lock が正確なコミットを保持）
+  rythme add mathlib@1.1     # 好きなバージョンの範囲で
+  rythme update              # 各依存関係の範囲内で最新のバージョンに
+  rythme publish             # パッケージをチェックし、追加の方法を示す
+
+インデックスからの依存関係はバージョンの範囲を指定します：
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 以上、2.0.0 未満（デフォルト）
+  geometry = { version = "~0.3.1" }   # 0.3.1 以上の 0.3.x
+  tools = { version = "=1.0.0" }      # ちょうどこれ
+
+`rythme install` は範囲内である限り rythme.lock のバージョンを使い、
+`rythme update` は最新のものを使います。取り下げられたバージョンは決して
+選ばれません。
+
+インデックスは git リポジトリで、パッケージごとに 1 つのファイル
+（packages/NAME.toml）があり、名前、説明、リポジトリ、ライセンス、
+キーワードと、バージョンごとのタグ、コミット、ファイルのチェックサムを
+持ちます。Rythme はそのコピーを ~/.rythme/index に保管し、ネットワークなしで
+読みます：`rythme search --update` で最新のものを取得します。別の
+インデックスを使うには rythme.toml に `index = "..."`、または環境変数
+RYTHME_INDEX（アドレスか、このコンピューターのフォルダー）。デフォルトは
+https://github.com/maxlestage/rythme-index です。
+
+安全性：名前は Rythme の名前（`/` も `..` もなし）、アドレスは https、ssh、
+file:// を使い、git はフックなしで実行され、各バージョンのファイルは
+インデックスのチェックサムと一致しなければならず、パッケージのものは
+インストール時に何も実行されません。
+
+公開：バージョンにタグを付けます（git tag v1.2.0、git push origin v1.2.0）。
+次に `rythme publish` が rythme.toml（description、license、repository）、
+`rythme check`、`rythme test`、タグをチェックし、プルリクエストでインデックスに
+加える項目を表示します。Rythme が自分で何かを送ることはありません。"#,
         ),
-        ("The index is the folder {url}, where Rythme writes nothing.", ""),
-        ("Create its file {file} with:", ""),
-        ("Add at the end of its file {file}:", ""),
-        ("the pattern \"{pattern}\" has an unknown directive `%{c}`", ""),
-        ("the directives are %Y (year), %m (month), %d (day), %H (hour), %M (minute), %S (second), %y (year in 2 digits), %B and %b (month name), %A and %a (day name), %I and %p (12-hour clock), %j (day of the year), %z (offset) and %% (a %)", ""),
-        ("\"{text}\" does not follow the pattern \"{pattern}\"", ""),
-        ("the hour must go from 1 to 12 with AM or PM, not {}", ""),
-        ("the day of the year must go from 1 to {len}, not {n}", ""),
-        ("`{c}` is not a Base64 character", ""),
-        ("this Base64 text is cut short", ""),
-        ("the decoded bytes are not a text (UTF-8)", ""),
-        ("a `%` must be followed by two hexadecimal digits, like `%20`", ""),
-        ("`{f}` would give {count} lists: too many (at most {MAX_COMBINED} elements in all)", ""),
-        ("the number of combinations grows very fast: try with a shorter list, or fewer elements in each one", ""),
-        ("`unzip` needs a list of lists, but its element {k} is {}", ""),
-        ("the function given to `unfold` must return `Some([value, next])` or `None`, but it returned Some({})", ""),
-        ("`{f}` needs at least two numbers in each list", ""),
-        ("`correlation` needs numbers that vary: one of the lists has all its numbers equal", ""),
-        ("`{f}` cannot compare {} and {}", ""),
-        ("the value and its bounds must be of the same kind: all numbers, or all texts...", ""),
-        ("`constrain`: the lower bound {} is above the upper bound {}", ""),
-        ("`binomial` needs a number of 0 or more, not {n}", ""),
-        ("`expect` found `None`: there is no value", ""),
-        ("`expect` found an error: {}", ""),
-        ("`all_ok` needs a list of Results (Ok or Err), but its element {k} is {}", ""),
-        ("to keep the values of a list of Options, use `filter_map(list, fn(x) = x)`", ""),
-        ("`format` cannot use \"{spec}\": {why}", ""),
-        ("a spec is written [[fill]align][sign][#][0][width][,][.precision][type]: \">8\" (8 wide, on the right), \"^8\" (centered), \"08.2f\" (2 decimals, zeros before), \",d\" (thousands), \".1%\" (a percentage), \"x\" (hexadecimal), \"b\" (binary), \"e\" (exponent)", ""),
-        ("the width is at most {MAX_WIDTH}", ""),
-        ("the precision is at most {MAX_PRECISION}", ""),
-        ("a number must follow the `.`", ""),
-        ("`{c}` is not a type of format", ""),
-        ("this is not a format spec", ""),
-        ("`{kind}` cannot write {what}", ""),
-        ("a whole number", ""),
-        ("a whole number has no decimals: write a type like `f` for them", ""),
-        ("`,` groups decimal digits only: use `_`", ""),
-        ("a decimal number", ""),
-        ("signs, `#`, `0` and `,` are for numbers", ""),
-        ("`{f}`: the base must go from 2 to 36, not {b}", ""),
-        ("\"{s}\" is not a whole number in base {radix}", ""),
-        ("`digits` needs a number of 0 or more, not {}", ""),
-        ("`{f}`: the text to look for is empty", ""),
-        ("`{f}` cannot replace an empty text", ""),
-        ("`edit_distance` compares texts of at most {MAX_DISTANCE_WORK} pairs of characters, not {} by {}", ""),
-        ("to count a piece of text in a text, use `occurrences(text, piece)`", ""),
-        ("to count the elements equal to a value, use `occurrences(list, x)`", ""),
-        ("the value comes first, then the spec: `format(42, \"05\")`; to put values in a text, use braces", ""),
-        ("return `Some(x)` to keep x, or `None` to leave the element out", ""),
-        ("return `Some([value, next])` to go on, or `None` to stop", ""),
-        ("Pairs the elements of two lists (or more: one element of each list in every group): [[a1, b1], [a2, b2], ...]. It stops at the end of the shortest list.", ""),
-        ("Reads a date written as ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date. With a pattern like \"%d/%m/%Y\" (the directives of `format_date`), reads a date written that way.", ""),
-        ("Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one. With a pattern, writes it the way `strftime` does: %Y year, %m month, %d day, %H hour, %M minute, %S second, %y year in two digits, %B and %b the month, %A and %a the day of the week (in English), %I and %p the 12-hour clock, %j the day of the year, %z the offset, %% a %.", ""),
-        ("The text that shows a value the way the REPL and `debug` show it: a text between quotes, with its special characters written as escapes. `text` gives a text as it is.", ""),
-        ("Shows values on the error output (stderr), separated by spaces, then goes to the next line: for messages that must not mix with the results of a program, which go to the standard output.", ""),
-        ("The value kept between two bounds: `low` if it is below, `high` if it is above, itself otherwise. For numbers, texts... any values that can be compared.", ""),
-        ("The whole quotient and the remainder of a division at once: `[a // b, a % b]`.", ""),
-        ("The binomial coefficient \"n choose k\": the number of ways to choose k elements among n, exact even when it is very large.", ""),
-        ("The digits of a whole number (0 or more), the most significant first, in base 10 or in the base given (from 2 to 36).", ""),
-        ("Writes a whole number in a base from 2 to 36, with the digits 0 to 9 then the letters a to z.", ""),
-        ("Reads a whole number written in a base from 2 to 36: `Ok(number)`, or `Err(message)` if the text is not a number in this base. `0x`, `0o` and `0b` may come before a number in base 16, 8 and 2.", ""),
-        ("Is the number greater than 0?", ""),
-        ("Is the number less than 0?", ""),
-        ("Is the number 0 (or 0.0)?", ""),
-        ("Is the decimal number `nan` (\"not a number\")? It is never equal to anything, not even to itself.", ""),
-        ("Is the number finite: neither an infinity nor `nan`? Whole numbers always are.", ""),
-        ("Adds `fill` (a space by default) on both sides of the text until it is `width` characters long: titles and cells of tables stay centered. A character left over goes to the right.", ""),
-        ("Writes a value following a format spec, like Python's `format`: \".2f\" for 2 decimals, \">8\" to fill 8 characters on the right (\"<\" on the left, \"^\" centered), \"08.2f\" with zeros before, \",\" with the thousands separated, \"%\" as a percentage, \"x\", \"o\" and \"b\" in hexadecimal, octal and binary (\"#\" adds 0x, 0o, 0b), \"e\" with an exponent. To put values in a text, use braces.", ""),
-        ("Replaces the first occurrence of `old` by `new`, and only that one.", ""),
-        ("How many times an element is in a list, or a piece of text in a text (pieces that do not overlap).", ""),
-        ("The position of the last occurrence of an element in a list, or of a piece of text in a text: `Some(position)`, or `None` if it is not there.", ""),
-        ("The text without this start, if it starts with it; otherwise the text unchanged.", ""),
-        ("The text without this end, if it ends with it; otherwise the text unchanged.", ""),
-        ("The text with the first character of each word in uppercase (the rest is unchanged). Words are separated by spaces.", ""),
-        ("Writes a name in snake_case: its words in lowercase, joined by `_`. Reads names written in any style: camelCase, PascalCase, kebab-case, with spaces...", ""),
-        ("Writes a name in camelCase: its words glued together, each with an uppercase first letter but the first word.", ""),
-        ("Writes a name in kebab-case: its words in lowercase, joined by `-`, as in web addresses.", ""),
-        ("The text with its uppercase letters in lowercase, and its lowercase letters in uppercase.", ""),
-        ("Has the text letters, all of them in uppercase? (The other characters do not count.)", ""),
-        ("Has the text letters, all of them in lowercase? (The other characters do not count.)", ""),
-        ("The bytes of a text in UTF-8, as whole numbers from 0 to 255: an accented letter takes two of them, an emoji four.", ""),
-        ("Cuts a text in two at the first separator: `Some([before, after])`, or `None` if the separator is not there. For lines like `key=value`.", ""),
-        ("Cuts the lines of a text between words so that none is longer than `width` characters (a longer word stays whole on its own line).", ""),
-        ("The edit distance (Levenshtein) between two texts: the fewest characters to add, remove or replace to go from one to the other. For spelling checkers, and to find the closest word.", ""),
-        ("The position of the first element for which f is true: `Some(position)`, or `None` if there is none.", ""),
-        ("The list with the element at position i replaced by f(element). A negative position counts from the end.", ""),
-        ("The list or text turned by n places to the left (1 by default): the first elements go to the end. A negative n turns it to the right.", ""),
-        ("The list with `x` between every two elements.", ""),
-        ("The elements of two lists taken in turn, one from each; what is left of the longer list comes at the end.", ""),
-        ("Counts how many times each value is in a list: a dict from each value to its count (like Python's `Counter`).", ""),
-        ("Counts the elements by the key that f gives them: a dict from each key to how many elements have it.", ""),
-        ("The values that come most often, with their counts: a list of `[value, count]` pairs, the most frequent first (on a tie, the one seen first). With n, only the first n.", ""),
-        ("The list without the elements whose key (given by f) was already seen: the first element of each key stays.", ""),
-        ("The list sorted from the largest to the smallest.", ""),
-        ("The list sorted by the key that the function gives, from the largest key to the smallest; elements with the same key keep their order.", ""),
-        ("Cuts a list into runs of neighbour elements that have the same key (given by f).", ""),
-        ("Cuts a list or a text in two at position i: `[before, from i on]`. A negative position counts from the end.", ""),
-        ("Every way to choose k elements of the list, each kept in the order of the list.", ""),
-        ("Every order of the elements of the list, or of k of them.", ""),
-        ("Every way to take one element of each list: the cartesian product.", ""),
-        ("The opposite of `zip`: a list of pairs (or of lists of the same length) becomes the list of the first elements, the list of the second ones...", ""),
-        ("A list of n values: `start`, then f(start), then f of that... For sequences where each value comes from the one before.", ""),
-        ("Builds a list from a starting state: f receives the state and gives `Some([value, next state])` to add a value and go on, or `None` to stop.", ""),
-        ("Applies f to each element and keeps the values of the `Some(...)` it gives, leaving out the `None`: filtering and transforming at once.", ""),
-        ("The value found by following a path of keys into records, dicts and lists nested in one another (names of fields, keys, positions): `Some(value)`, or `None` as soon as one is missing. For data read with `parse_json`.", ""),
-        ("Merges two records or two dicts; for a key in both, f receives the two values and gives the one kept.", ""),
-        ("A dict where the values of a record or a dict have become the keys, and the keys the values. When a value comes several times, the last key wins.", ""),
-        ("The record or dict with only the keys given (in a list or a set); a key that is missing is ignored.", ""),
-        ("The record or dict without the keys given (in a list or a set).", ""),
-        ("The record or dict with each key replaced by f(key); for a record, f must give a text.", ""),
-        ("The record or dict where the value of `key` is replaced by f(value); when the key is missing, it is added with `default`. Handy to count: `update(counts, word, 1, fn(n) = n + 1)`.", ""),
-        ("The elements that are in exactly one of the two sets.", ""),
-        ("Have the two sets no element in common?", ""),
-        ("The value inside `Some(x)` or `Ok(x)`; otherwise what f gives: f receives nothing for `None`, and the error for `Err(e)`. The default is computed only when it is needed.", ""),
-        ("The value inside `Some(x)` or `Ok(x)`, like `unwrap`; otherwise stops the program with your message, which says what was expected.", ""),
-        ("Makes one Result of a list of Results: `Ok(list of the values)` if they are all `Ok`, or else the first `Err`. When reading many values where one mistake must stop everything.", ""),
-        ("The date n months later (earlier if n is negative). A day that the new month does not have becomes its last day: 31 January plus one month is the end of February.", ""),
-        ("The number of the day in its year, from 1 (1 January) to 365, or 366 in a leap year.", ""),
-        ("n decimal numbers evenly spaced from `start` to `end`, both included: to draw a function with `plot`, or to try values.", ""),
-        ("The correlation (Pearson) of two lists of numbers of the same length: from -1 (they vary in opposite ways) to 1 (they vary together); about 0 when they are not linearly related.", ""),
-        ("The covariance of two lists of numbers of the same length, divided by their length like `variance`.", ""),
-        ("Encodes a text in Base64 (its UTF-8 bytes), as in emails, web pages and the headers of HTTP requests.", ""),
-        ("Decodes a Base64 text: `Ok(text)`, or `Err(message)` if it is not valid Base64, or not a text once decoded.", ""),
-        ("Encodes a text to put it in a web address: every character but the letters, the digits and `-_.~` becomes `%` and two hexadecimal digits (a space is `%20`).", ""),
-        ("Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.", ""),
+        ("The index is the folder {url}, where Rythme writes nothing.", "インデックスはフォルダー {url} で、Rythme はそこに何も書きません。"),
+        ("Create its file {file} with:", "そのファイル {file} を次の内容で作ります："),
+        ("Add at the end of its file {file}:", "そのファイル {file} の末尾に次を加えます："),
+        ("the pattern \"{pattern}\" has an unknown directive `%{c}`", "パターン \"{pattern}\" に不明な指示子 `%{c}` がある"),
+        ("the directives are %Y (year), %m (month), %d (day), %H (hour), %M (minute), %S (second), %y (year in 2 digits), %B and %b (month name), %A and %a (day name), %I and %p (12-hour clock), %j (day of the year), %z (offset) and %% (a %)", "指示子は %Y（年）、%m（月）、%d（日）、%H（時）、%M（分）、%S（秒）、%y（2 桁の年）、%B と %b（月の名前）、%A と %a（曜日の名前）、%I と %p（12 時間制）、%j（年内の日）、%z（時差）、%%（% そのもの）"),
+        ("\"{text}\" does not follow the pattern \"{pattern}\"", "\"{text}\" はパターン \"{pattern}\" に従っていない"),
+        ("the hour must go from 1 to 12 with AM or PM, not {}", "AM か PM 付きの時は 1 から 12 までで、{} は範囲外"),
+        ("the day of the year must go from 1 to {len}, not {n}", "年内の日は 1 から {len} までで、{n} は範囲外"),
+        ("`{c}` is not a Base64 character", "`{c}` は Base64 の文字ではない"),
+        ("this Base64 text is cut short", "この Base64 テキストは途中で切れている"),
+        ("the decoded bytes are not a text (UTF-8)", "デコードしたバイトはテキスト（UTF-8）ではない"),
+        ("a `%` must be followed by two hexadecimal digits, like `%20`", "`%` の後には 16 進数 2 桁が必要。例：`%20`"),
+        ("`{f}` would give {count} lists: too many (at most {MAX_COMBINED} elements in all)", "`{f}` はリストを {count} 個返すことになる：多すぎる（全体で最大 {MAX_COMBINED} 要素）"),
+        ("the number of combinations grows very fast: try with a shorter list, or fewer elements in each one", "組み合わせの数はとても速く増える：もっと短いリストか、それぞれの要素を減らして試す"),
+        ("`unzip` needs a list of lists, but its element {k} is {}", "`unzip` にはリストのリストが必要だが、その要素 {k} は {}"),
+        ("the function given to `unfold` must return `Some([value, next])` or `None`, but it returned Some({})", "`unfold` に渡す関数は `Some([value, next])` か `None` を返さなければならないが、Some({}) を返した"),
+        ("`{f}` needs at least two numbers in each list", "`{f}` には各リストに少なくとも 2 つの数が必要"),
+        ("`correlation` needs numbers that vary: one of the lists has all its numbers equal", "`correlation` には変化する数が必要：どちらかのリストの数がすべて等しい"),
+        ("`{f}` cannot compare {} and {}", "`{f}` は {} と {} を比較できない"),
+        ("the value and its bounds must be of the same kind: all numbers, or all texts...", "値とその上下限は同じ種類でなければならない：すべて数、すべてテキストなど"),
+        ("`constrain`: the lower bound {} is above the upper bound {}", "`constrain`：下限 {} が上限 {} より大きい"),
+        ("`binomial` needs a number of 0 or more, not {n}", "`binomial` には 0 以上の数が必要（{n} は不可）"),
+        ("`expect` found `None`: there is no value", "`expect` が `None` を見つけた：値がない"),
+        ("`expect` found an error: {}", "`expect` がエラーを見つけた：{}"),
+        ("`all_ok` needs a list of Results (Ok or Err), but its element {k} is {}", "`all_ok` には Result（Ok か Err）のリストが必要だが、その要素 {k} は {}"),
+        ("to keep the values of a list of Options, use `filter_map(list, fn(x) = x)`", "Option のリストの値を残すには `filter_map(list, fn(x) = x)` を使う"),
+        ("`format` cannot use \"{spec}\": {why}", "`format` は \"{spec}\" を使えない：{why}"),
+        ("a spec is written [[fill]align][sign][#][0][width][,][.precision][type]: \">8\" (8 wide, on the right), \"^8\" (centered), \"08.2f\" (2 decimals, zeros before), \",d\" (thousands), \".1%\" (a percentage), \"x\" (hexadecimal), \"b\" (binary), \"e\" (exponent)", "書式指定は [[fill]align][sign][#][0][width][,][.precision][type] と書く：\">8\"（幅 8、右寄せ）、\"^8\"（中央）、\"08.2f\"（小数 2 桁、前を 0 で埋める）、\",d\"（3 桁区切り）、\".1%\"（百分率）、\"x\"（16 進数）、\"b\"（2 進数）、\"e\"（指数）"),
+        ("the width is at most {MAX_WIDTH}", "幅は最大 {MAX_WIDTH}"),
+        ("the precision is at most {MAX_PRECISION}", "精度は最大 {MAX_PRECISION}"),
+        ("a number must follow the `.`", "`.` の後には数が必要"),
+        ("`{c}` is not a type of format", "`{c}` は書式の型ではない"),
+        ("this is not a format spec", "これは書式指定ではない"),
+        ("`{kind}` cannot write {what}", "`{kind}` は{what}を書けない"),
+        ("a whole number", "整数"),
+        ("a whole number has no decimals: write a type like `f` for them", "整数に小数部分はない：小数には `f` のような型を書く"),
+        ("`,` groups decimal digits only: use `_`", "`,` は 10 進数の桁しか区切らない：`_` を使う"),
+        ("a decimal number", "小数"),
+        ("signs, `#`, `0` and `,` are for numbers", "符号、`#`、`0`、`,` は数のためのもの"),
+        ("`{f}`: the base must go from 2 to 36, not {b}", "`{f}`：基数は 2 から 36 までで、{b} は範囲外"),
+        ("\"{s}\" is not a whole number in base {radix}", "\"{s}\" は {radix} 進数の整数ではない"),
+        ("`digits` needs a number of 0 or more, not {}", "`digits` には 0 以上の数が必要（{} は不可）"),
+        ("`{f}`: the text to look for is empty", "`{f}`：探すテキストが空"),
+        ("`{f}` cannot replace an empty text", "`{f}` は空のテキストを置換できない"),
+        ("`edit_distance` compares texts of at most {MAX_DISTANCE_WORK} pairs of characters, not {} by {}", "`edit_distance` が比べられるのは最大 {MAX_DISTANCE_WORK} 組の文字のテキスト（{} × {} は不可）"),
+        ("to count a piece of text in a text, use `occurrences(text, piece)`", "テキスト中の部分テキストを数えるには `occurrences(text, piece)` を使う"),
+        ("to count the elements equal to a value, use `occurrences(list, x)`", "ある値に等しい要素を数えるには `occurrences(list, x)` を使う"),
+        ("the value comes first, then the spec: `format(42, \"05\")`; to put values in a text, use braces", "値が先、書式指定が後：`format(42, \"05\")`。テキストに値を入れるには波かっこを使う"),
+        ("return `Some(x)` to keep x, or `None` to leave the element out", "x を残すなら `Some(x)`、要素を除くなら `None` を返す"),
+        ("return `Some([value, next])` to go on, or `None` to stop", "続けるなら `Some([value, next])`、止めるなら `None` を返す"),
+        ("Pairs the elements of two lists (or more: one element of each list in every group): [[a1, b1], [a2, b2], ...]. It stops at the end of the shortest list.", "2 つ（以上）のリストの要素を組にします（各グループに各リストの要素が 1 つずつ）：[[a1, b1], [a2, b2], ...]。いちばん短いリストの終わりで止まります。"),
+        ("Reads a date written as ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date. With a pattern like \"%d/%m/%Y\" (the directives of `format_date`), reads a date written that way.", "ISO 8601 で書いた日付（\"2024-02-29\"、\"2024-02-29T13:05:00\"、必要なら `Z` か `+01:00` のような時差付き）を読みます：`Ok(日付)`、有効な日付でなければ `Err(message)`。\"%d/%m/%Y\" のようなパターン（`format_date` の指示子）を渡すと、その形で書いた日付を読みます。"),
+        ("Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one. With a pattern, writes it the way `strftime` does: %Y year, %m month, %d day, %H hour, %M minute, %S second, %y year in two digits, %B and %b the month, %A and %a the day of the week (in English), %I and %p the 12-hour clock, %j the day of the year, %z the offset, %% a %.", "日付を ISO 8601 で書きます：\"2024-02-29\"。日付に時刻があれば時刻も、時差があれば `Z` か時差も書きます。パターンを渡すと `strftime` と同じように書きます：%Y 年、%m 月、%d 日、%H 時、%M 分、%S 秒、%y 2 桁の年、%B と %b 月、%A と %a 曜日（英語）、%I と %p 12 時間制、%j 年内の日、%z 時差、%% は %。"),
+        ("The text that shows a value the way the REPL and `debug` show it: a text between quotes, with its special characters written as escapes. `text` gives a text as it is.", "REPL や `debug` と同じように値を表すテキスト：引用符で囲み、特殊文字をエスケープで書いたテキスト。`text` はテキストをそのまま返します。"),
+        ("Shows values on the error output (stderr), separated by spaces, then goes to the next line: for messages that must not mix with the results of a program, which go to the standard output.", "値を空白で区切ってエラー出力（stderr）に表示し、改行します：標準出力に出るプログラムの結果と混ざってはいけないメッセージのためのものです。"),
+        ("The value kept between two bounds: `low` if it is below, `high` if it is above, itself otherwise. For numbers, texts... any values that can be compared.", "2 つの境界の間に収めた値：下回れば `low`、上回れば `high`、それ以外はそのまま。数、テキストなど、比較できるどんな値にも使えます。"),
+        ("The whole quotient and the remainder of a division at once: `[a // b, a % b]`.", "割り算の整数の商と余りを一度に：`[a // b, a % b]`。"),
+        ("The binomial coefficient \"n choose k\": the number of ways to choose k elements among n, exact even when it is very large.", "二項係数「n 個から k 個を選ぶ」：n 個の中から k 個を選ぶ方法の数。とても大きくても正確です。"),
+        ("The digits of a whole number (0 or more), the most significant first, in base 10 or in the base given (from 2 to 36).", "整数（0 以上）の各桁を、上の桁から、10 進数または指定した基数（2 から 36）で。"),
+        ("Writes a whole number in a base from 2 to 36, with the digits 0 to 9 then the letters a to z.", "整数を 2 から 36 までの基数で、0〜9 の数字と a〜z の英字を使って書きます。"),
+        ("Reads a whole number written in a base from 2 to 36: `Ok(number)`, or `Err(message)` if the text is not a number in this base. `0x`, `0o` and `0b` may come before a number in base 16, 8 and 2.", "2 から 36 までの基数で書いた整数を読みます：`Ok(数)`、その基数の数でなければ `Err(message)`。16 進数、8 進数、2 進数の前には `0x`、`0o`、`0b` を付けてもかまいません。"),
+        ("Is the number greater than 0?", "数は 0 より大きいか？"),
+        ("Is the number less than 0?", "数は 0 より小さいか？"),
+        ("Is the number 0 (or 0.0)?", "数は 0（または 0.0）か？"),
+        ("Is the decimal number `nan` (\"not a number\")? It is never equal to anything, not even to itself.", "小数が `nan`（非数）か？ `nan` は何とも、自分自身とさえ等しくなりません。"),
+        ("Is the number finite: neither an infinity nor `nan`? Whole numbers always are.", "数は有限か（無限大でも `nan` でもないか）？ 整数は常に有限です。"),
+        ("Adds `fill` (a space by default) on both sides of the text until it is `width` characters long: titles and cells of tables stay centered. A character left over goes to the right.", "テキストが `width` 文字になるまで、両側に `fill`（デフォルトは空白）を加えます：表の見出しやセルが中央にそろいます。余った 1 文字は右に入ります。"),
+        ("Writes a value following a format spec, like Python's `format`: \".2f\" for 2 decimals, \">8\" to fill 8 characters on the right (\"<\" on the left, \"^\" centered), \"08.2f\" with zeros before, \",\" with the thousands separated, \"%\" as a percentage, \"x\", \"o\" and \"b\" in hexadecimal, octal and binary (\"#\" adds 0x, 0o, 0b), \"e\" with an exponent. To put values in a text, use braces.", "Python の `format` のように、書式指定に従って値を書きます：\".2f\" は小数 2 桁、\">8\" は右寄せで 8 文字分（\"<\" は左寄せ、\"^\" は中央）、\"08.2f\" は前を 0 で埋める、\",\" は 3 桁区切り、\"%\" は百分率、\"x\"、\"o\"、\"b\" は 16 進数、8 進数、2 進数（\"#\" で 0x、0o、0b を付ける）、\"e\" は指数付き。テキストに値を入れるには波かっこを使います。"),
+        ("Replaces the first occurrence of `old` by `new`, and only that one.", "最初の `old` だけを `new` に置き換えます。"),
+        ("How many times an element is in a list, or a piece of text in a text (pieces that do not overlap).", "リストの中の要素、またはテキストの中の部分テキスト（重ならないもの）の個数。"),
+        ("The position of the last occurrence of an element in a list, or of a piece of text in a text: `Some(position)`, or `None` if it is not there.", "リストの中の要素、またはテキストの中の部分テキストが最後に出てくる位置：`Some(位置)`、なければ `None`。"),
+        ("The text without this start, if it starts with it; otherwise the text unchanged.", "テキストがこの部分で始まれば、それを除いたテキスト。そうでなければテキストそのまま。"),
+        ("The text without this end, if it ends with it; otherwise the text unchanged.", "テキストがこの部分で終われば、それを除いたテキスト。そうでなければテキストそのまま。"),
+        ("The text with the first character of each word in uppercase (the rest is unchanged). Words are separated by spaces.", "各単語の最初の文字を大文字にしたテキスト（残りはそのまま）。単語は空白で区切られます。"),
+        ("Writes a name in snake_case: its words in lowercase, joined by `_`. Reads names written in any style: camelCase, PascalCase, kebab-case, with spaces...", "名前を snake_case で書きます：単語を小文字にして `_` でつなぎます。どんな書き方の名前でも読みます：camelCase、PascalCase、kebab-case、空白入りなど。"),
+        ("Writes a name in camelCase: its words glued together, each with an uppercase first letter but the first word.", "名前を camelCase で書きます：単語をくっつけ、最初の単語以外は頭文字を大文字にします。"),
+        ("Writes a name in kebab-case: its words in lowercase, joined by `-`, as in web addresses.", "名前を kebab-case で書きます：Web アドレスのように、単語を小文字にして `-` でつなぎます。"),
+        ("The text with its uppercase letters in lowercase, and its lowercase letters in uppercase.", "大文字を小文字に、小文字を大文字にしたテキスト。"),
+        ("Has the text letters, all of them in uppercase? (The other characters do not count.)", "テキストに英字があり、そのすべてが大文字か？（他の文字は数えない。）"),
+        ("Has the text letters, all of them in lowercase? (The other characters do not count.)", "テキストに英字があり、そのすべてが小文字か？（他の文字は数えない。）"),
+        ("The bytes of a text in UTF-8, as whole numbers from 0 to 255: an accented letter takes two of them, an emoji four.", "テキストの UTF-8 のバイトを、0 から 255 までの整数で：アクセント付きの文字は 2 バイト、絵文字は 4 バイトです。"),
+        ("Cuts a text in two at the first separator: `Some([before, after])`, or `None` if the separator is not there. For lines like `key=value`.", "テキストを最初の区切り文字で 2 つに切ります：`Some([前, 後])`、区切り文字がなければ `None`。`key=value` のような行に使います。"),
+        ("Cuts the lines of a text between words so that none is longer than `width` characters (a longer word stays whole on its own line).", "どの行も `width` 文字より長くならないように、テキストの行を単語の間で切ります（それより長い単語は 1 行にそのまま置きます）。"),
+        ("The edit distance (Levenshtein) between two texts: the fewest characters to add, remove or replace to go from one to the other. For spelling checkers, and to find the closest word.", "2 つのテキストの編集距離（レーベンシュタイン距離）：一方から他方へ変えるのに必要な、文字の追加・削除・置換の最小回数。スペルチェックや、いちばん近い単語を探すのに使います。"),
+        ("The position of the first element for which f is true: `Some(position)`, or `None` if there is none.", "f が真になる最初の要素の位置：`Some(位置)`、なければ `None`。"),
+        ("The list with the element at position i replaced by f(element). A negative position counts from the end.", "位置 i の要素を f(要素) に置き換えたリスト。負の位置は末尾から数えます。"),
+        ("The list or text turned by n places to the left (1 by default): the first elements go to the end. A negative n turns it to the right.", "リストやテキストを n 個（デフォルトは 1）左に回したもの：最初の要素が末尾に行きます。n が負なら右に回します。"),
+        ("The list with `x` between every two elements.", "各要素の間に `x` を入れたリスト。"),
+        ("The elements of two lists taken in turn, one from each; what is left of the longer list comes at the end.", "2 つのリストから 1 つずつ交互に取った要素。長いほうのリストの残りは最後に来ます。"),
+        ("Counts how many times each value is in a list: a dict from each value to its count (like Python's `Counter`).", "リストの中に各値が何回あるかを数えます：各値からその個数への辞書（Python の `Counter` と同じ）。"),
+        ("Counts the elements by the key that f gives them: a dict from each key to how many elements have it.", "f が与えるキーで要素を数えます：各キーから、そのキーを持つ要素の数への辞書。"),
+        ("The values that come most often, with their counts: a list of `[value, count]` pairs, the most frequent first (on a tie, the one seen first). With n, only the first n.", "最もよく出てくる値とその個数：`[値, 個数]` のペアのリストで、多い順（同数なら先に出てきたもの）。n を指定すると最初の n 個だけ。"),
+        ("The list without the elements whose key (given by f) was already seen: the first element of each key stays.", "（f が与える）キーがすでに出てきた要素を除いたリスト：各キーの最初の要素が残ります。"),
+        ("The list sorted from the largest to the smallest.", "大きい順に並べたリスト。"),
+        ("The list sorted by the key that the function gives, from the largest key to the smallest; elements with the same key keep their order.", "関数が与えるキーで、大きいキーから小さいキーの順に並べたリスト。同じキーの要素は元の順序を保ちます。"),
+        ("Cuts a list into runs of neighbour elements that have the same key (given by f).", "リストを、（f が与える）同じキーを持つ隣り合う要素の連なりに切ります。"),
+        ("Cuts a list or a text in two at position i: `[before, from i on]`. A negative position counts from the end.", "リストやテキストを位置 i で 2 つに切ります：`[前, i 以降]`。負の位置は末尾から数えます。"),
+        ("Every way to choose k elements of the list, each kept in the order of the list.", "リストから k 個の要素を選ぶすべての方法（それぞれリストの順を保つ）。"),
+        ("Every order of the elements of the list, or of k of them.", "リストの要素（または k 個の要素）のすべての並べ方。"),
+        ("Every way to take one element of each list: the cartesian product.", "各リストから 1 つずつ要素を取るすべての方法：直積。"),
+        ("The opposite of `zip`: a list of pairs (or of lists of the same length) becomes the list of the first elements, the list of the second ones...", "`zip` の逆：ペア（または同じ長さのリスト）のリストを、最初の要素のリスト、2 番目の要素のリスト……に変えます。"),
+        ("A list of n values: `start`, then f(start), then f of that... For sequences where each value comes from the one before.", "n 個の値のリスト：`start`、次に f(start)、次にその f……。各値が前の値から決まる数列に使います。"),
+        ("Builds a list from a starting state: f receives the state and gives `Some([value, next state])` to add a value and go on, or `None` to stop.", "初期状態からリストを作ります：f は状態を受け取り、値を加えて続けるなら `Some([値, 次の状態])`、止めるなら `None` を返します。"),
+        ("Applies f to each element and keeps the values of the `Some(...)` it gives, leaving out the `None`: filtering and transforming at once.", "各要素に f を適用し、返された `Some(...)` の値を残して `None` を除きます：絞り込みと変換を一度に。"),
+        ("The value found by following a path of keys into records, dicts and lists nested in one another (names of fields, keys, positions): `Some(value)`, or `None` as soon as one is missing. For data read with `parse_json`.", "入れ子になったレコード、辞書、リストの中をキーの道筋（フィールド名、キー、位置）に沿ってたどって見つけた値：`Some(値)`、途中でどれかがなければ `None`。`parse_json` で読んだデータに使います。"),
+        ("Merges two records or two dicts; for a key in both, f receives the two values and gives the one kept.", "2 つのレコードか 2 つの辞書をまとめます。両方にあるキーでは、f が 2 つの値を受け取って残す値を返します。"),
+        ("A dict where the values of a record or a dict have become the keys, and the keys the values. When a value comes several times, the last key wins.", "レコードや辞書の値をキーに、キーを値にした辞書。同じ値が複数あれば、最後のキーが優先されます。"),
+        ("The record or dict with only the keys given (in a list or a set); a key that is missing is ignored.", "指定したキー（リストか集合で）だけを持つレコードや辞書。ないキーは無視されます。"),
+        ("The record or dict without the keys given (in a list or a set).", "指定したキー（リストか集合で）を除いたレコードや辞書。"),
+        ("The record or dict with each key replaced by f(key); for a record, f must give a text.", "各キーを f(キー) に置き換えたレコードや辞書。レコードなら f はテキストを返さなければなりません。"),
+        ("The record or dict where the value of `key` is replaced by f(value); when the key is missing, it is added with `default`. Handy to count: `update(counts, word, 1, fn(n) = n + 1)`.", "`key` の値を f(値) に置き換えたレコードや辞書。キーがなければ `default` で加えます。数えるのに便利です：`update(counts, word, 1, fn(n) = n + 1)`。"),
+        ("The elements that are in exactly one of the two sets.", "2 つの集合のちょうど一方にだけある要素。"),
+        ("Have the two sets no element in common?", "2 つの集合に共通の要素がないか？"),
+        ("The value inside `Some(x)` or `Ok(x)`; otherwise what f gives: f receives nothing for `None`, and the error for `Err(e)`. The default is computed only when it is needed.", "`Some(x)` や `Ok(x)` の中の値。そうでなければ f が返すもの：`None` なら f は何も受け取らず、`Err(e)` ならエラーを受け取ります。デフォルト値は必要なときだけ計算されます。"),
+        ("The value inside `Some(x)` or `Ok(x)`, like `unwrap`; otherwise stops the program with your message, which says what was expected.", "`unwrap` と同じく `Some(x)` や `Ok(x)` の中の値。そうでなければ、何を期待していたかを伝えるあなたのメッセージでプログラムを止めます。"),
+        ("Makes one Result of a list of Results: `Ok(list of the values)` if they are all `Ok`, or else the first `Err`. When reading many values where one mistake must stop everything.", "Result のリストを 1 つの Result にします：すべて `Ok` なら `Ok(値のリスト)`、そうでなければ最初の `Err`。多くの値を読んで、1 つの誤りで全体を止めたいときに使います。"),
+        ("The date n months later (earlier if n is negative). A day that the new month does not have becomes its last day: 31 January plus one month is the end of February.", "n か月後（n が負なら前）の日付。新しい月にない日は、その月の最後の日になります：1 月 31 日の 1 か月後は 2 月の末日です。"),
+        ("The number of the day in its year, from 1 (1 January) to 365, or 366 in a leap year.", "その年の中の日の番号：1（1 月 1 日）から 365、うるう年なら 366 まで。"),
+        ("n decimal numbers evenly spaced from `start` to `end`, both included: to draw a function with `plot`, or to try values.", "`start` から `end` まで（両端を含む）等間隔に並んだ n 個の小数：`plot` で関数を描いたり、値を試したりするのに使います。"),
+        ("The correlation (Pearson) of two lists of numbers of the same length: from -1 (they vary in opposite ways) to 1 (they vary together); about 0 when they are not linearly related.", "同じ長さの 2 つの数のリストの相関（ピアソン）：-1（逆に変化する）から 1（一緒に変化する）まで。線形の関係がなければ 0 に近くなります。"),
+        ("The covariance of two lists of numbers of the same length, divided by their length like `variance`.", "同じ長さの 2 つの数のリストの共分散。`variance` と同じく長さで割ります。"),
+        ("Encodes a text in Base64 (its UTF-8 bytes), as in emails, web pages and the headers of HTTP requests.", "メール、Web ページ、HTTP リクエストのヘッダーのように、テキスト（その UTF-8 のバイト）を Base64 でエンコードします。"),
+        ("Decodes a Base64 text: `Ok(text)`, or `Err(message)` if it is not valid Base64, or not a text once decoded.", "Base64 テキストをデコードします：`Ok(テキスト)`、正しい Base64 でないかデコードしてもテキストにならなければ `Err(message)`。"),
+        ("Encodes a text to put it in a web address: every character but the letters, the digits and `-_.~` becomes `%` and two hexadecimal digits (a space is `%20`).", "Web アドレスに入れるためにテキストをエンコードします：英字、数字、`-_.~` 以外の文字は `%` と 16 進数 2 桁になります（空白は `%20`）。"),
+        ("Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.", "Web アドレスのテキスト（`%20` など）をデコードします：`Ok(テキスト)`、`%` の後に 16 進数 2 桁がなければ `Err(message)`。"),
         (
             r#"More functions on lists
   find_index([3, 8, 5], is_even)          # Some(1)
@@ -9322,7 +9863,17 @@ the index with a pull request. Rythme never sends anything by itself."#,
   iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
   permutations(xs)   cartesian_product(xs, ys)   unzip(pairs)   zip(xs, ys, zs)
   filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#,
-            "",
+            r#"リストのその他の関数
+  find_index([3, 8, 5], is_even)          # Some(1)
+  sort_desc([3, 1, 2])                    # [3, 2, 1]  (sort_by_desc with a key)
+  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(words, 3)                   # 最も多い 3 つとその個数
+  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
+  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
+  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  permutations(xs)   cartesian_product(xs, ys)   unzip(pairs)   zip(xs, ys, zs)
+  filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#,
         ),
         (
             r##"More functions on texts
@@ -9337,7 +9888,18 @@ the index with a pull request. Rythme never sends anything by itself."#,
   word_wrap(text, 40)            # lines of at most 40 characters
   to_base(255, 16)   from_base("ff", 16)    # "ff" and Ok(255)
   edit_distance("kitten", "sitting")        # 3"##,
-            "",
+            r##"テキストのその他の関数
+  format(3.14159, ".2f")         # "3.14"  （Python の書式指定：">8"、",d"、".1%"、"#x" など）
+  center("hi", 6, "*")           # "**hi**"
+  replace_first("a-b-c", "-", "+")          # "a+b-c"
+  occurrences("banana", "an")    # 2
+  remove_prefix("Mr Smith", "Mr ")          # "Smith"  （remove_suffix も）
+  split_once("key=value", "=")   # Some(["key", "value"])
+  snake_case("helloWorld")       # "hello_world"  （camel_case、kebab_case も）
+  capitalize_words("ada lovelace")          # "Ada Lovelace"
+  word_wrap(text, 40)            # 最大 40 文字の行
+  to_base(255, 16)   from_base("ff", 16)    # "ff" と Ok(255)
+  edit_distance("kitten", "sitting")        # 3"##,
         ),
         (
             r#"More functions on records and dicts
@@ -9347,7 +9909,13 @@ the index with a pull request. Rythme never sends anything by itself."#,
   update(counts, "apples", 1, fn(n) = n + 1)  # +1, or 1 when missing
   invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
   map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#,
-            "",
+            r#"レコードと辞書のその他の関数
+  dig(data, ["user", "langs", 0])           # Some(...) か None：奥深くまで
+  select_keys(person, ["name", "age"])      # これらのキーだけ（reject_keys：これらを除く）
+  merge_with(a, b, fn(x, y) = x + y)        # 両方にあるキーは f が決める
+  update(counts, "apples", 1, fn(n) = n + 1)  # +1、なければ 1
+  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#,
         ),
         (
             r#"More helpers
@@ -9355,7 +9923,11 @@ the index with a pull request. Rythme never sends anything by itself."#,
   expect(x, "a config file")       # like unwrap, with your message if it fails
   all_ok(map(texts, parse_int))    # Ok([...]), or the first Err
   filter_map(xs, f)                # the values of the Some(...) that f gives"#,
-            "",
+            r#"その他の便利な関数
+  unwrap_or_else(x, fn(e) = ...)   # デフォルト値。必要なときだけ計算する
+  expect(x, "a config file")       # unwrap と同じで、失敗したらあなたのメッセージ
+  all_ok(map(texts, parse_int))    # Ok([...]) か最初の Err
+  filter_map(xs, f)                # f が返す Some(...) の値"#,
         ),
         (
             r#"More on dates
@@ -9363,46 +9935,57 @@ the index with a pull request. Rythme never sends anything by itself."#,
   day_of_year(date)                         # from 1 to 366
   format_date(date, "%d/%m/%Y %H:%M")       # with a pattern: %Y %m %d %H %M %S %B %A...
   parse_date("29/02/2024", "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#,
-            "",
+            r#"日付のその他の関数
+  add_months(date, 1)                       # 1 月 31 日 + 1 か月：2 月の末日
+  day_of_year(date)                         # 1 から 366 まで
+  format_date(date, "%d/%m/%Y %H:%M")       # パターン付き：%Y %m %d %H %M %S %B %A...
+  parse_date("29/02/2024", "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#,
         ),
         // src/cli.rs
-        ("run a program; the words after the file are its arguments", ""),
-        ("find problems without running the program", ""),
-        ("run the tests of a file or of a folder", ""),
-        ("give the code its official layout", ""),
-        ("write the documentation of a file from its ## comments", ""),
-        ("apply the safe fixes of the problems that `rythme check` finds", ""),
-        ("show a calculation step by step", ""),
-        ("pause a program where you want and look at its values", ""),
-        ("the debugger for editors (Debug Adapter Protocol)", ""),
-        ("exercises checked automatically", ""),
-        ("create a project (rythme.toml, src/, tests/)", ""),
-        ("download the dependencies of the project", ""),
-        ("guided tour of the language, step by step", ""),
-        ("help on a topic, a function or an error code", ""),
-        ("explain an error or warning code, like E003", ""),
-        ("run a piece of code given on the command line", ""),
-        ("interactive mode: try code line by line (also `rythme` alone)", ""),
-        ("language server, for editors (VS Code, Neovim...)", ""),
-        ("server for AI assistants (Model Context Protocol)", ""),
-        ("the version of Rythme", ""),
-        ("completion of the commands in a shell", ""),
-        ("the manual page of the command, to install with `man`", ""),
-        ("how to install the latest version of Rythme", ""),
+        ("run a program; the words after the file are its arguments", "プログラムを実行する。ファイルの後の単語はその引数"),
+        ("find problems without running the program", "プログラムを実行せずに問題を見つける"),
+        ("run the tests of a file or of a folder", "ファイルかフォルダーのテストを実行する"),
+        ("give the code its official layout", "コードを公式のレイアウトに整形する"),
+        ("write the documentation of a file from its ## comments", "## コメントからファイルのドキュメントを書く"),
+        ("apply the safe fixes of the problems that `rythme check` finds", "`rythme check` が見つけた問題の安全な修正を適用する"),
+        ("show a calculation step by step", "計算を 1 ステップずつ表示する"),
+        ("pause a program where you want and look at its values", "好きな場所でプログラムを一時停止し、値を調べる"),
+        ("the debugger for editors (Debug Adapter Protocol)", "エディター向けのデバッガー（Debug Adapter Protocol）"),
+        ("exercises checked automatically", "自動でチェックされる練習問題"),
+        ("create a project (rythme.toml, src/, tests/)", "プロジェクトを作る（rythme.toml、src/、tests/）"),
+        ("download the dependencies of the project", "プロジェクトの依存関係をダウンロードする"),
+        ("guided tour of the language, step by step", "言語のガイドツアー（1 ステップずつ）"),
+        ("help on a topic, a function or an error code", "トピック、関数、エラーコードのヘルプ"),
+        ("explain an error or warning code, like E003", "E003 のようなエラーや警告のコードを説明する"),
+        ("run a piece of code given on the command line", "コマンドラインで渡したコードの断片を実行する"),
+        ("interactive mode: try code line by line (also `rythme` alone)", "対話モード：コードを 1 行ずつ試す（`rythme` だけでも同じ）"),
+        ("language server, for editors (VS Code, Neovim...)", "エディター向けの言語サーバー（VS Code、Neovim...）"),
+        ("server for AI assistants (Model Context Protocol)", "AI アシスタント向けのサーバー（Model Context Protocol）"),
+        ("the version of Rythme", "Rythme のバージョン"),
+        ("completion of the commands in a shell", "シェルでのコマンドの補完"),
+        ("the manual page of the command, to install with `man`", "コマンドのマニュアルページ（`man` でインストールする）"),
+        ("how to install the latest version of Rythme", "Rythme の最新版のインストール方法"),
         (
             r#"  --seed N        the same draws of random and shuffle on every run
   --sandbox       no files, folders, environment variables nor network
   --format json   the output and the errors as JSON, for tools
   FILE may be `-`: the program is read from the standard input.
   At the root of a project, `rythme run` runs its program."#,
-            "",
+            r#"  --seed N        random と shuffle の結果を毎回同じにする
+  --sandbox       ファイル、フォルダー、環境変数、ネットワークなし
+  --format json   出力とエラーを JSON で（ツール向け）
+  FILE は `-` でもよい：プログラムを標準入力から読む。
+  プロジェクトのルートでは、`rythme run` はそのプログラムを実行する。"#,
         ),
         (
             r#"  --format json   the problems as JSON, for tools and AI assistants
   A folder checks every .ry file inside it; at the root of a project,
   `rythme check` checks the files of the project.
   Exit code: 0 without errors (warnings allowed), 1 with errors."#,
-            "",
+            r#"  --format json   問題を JSON で（ツールと AI アシスタント向け）
+  フォルダーを指定すると中のすべての .ry ファイルをチェックする。プロジェクトの
+  ルートでは、`rythme check` はプロジェクトのファイルをチェックする。
+  終了コード：エラーがなければ 0（警告はよい）、エラーがあれば 1。"#,
         ),
         (
             r#"  --filter NAME   only the tests whose name contains NAME
@@ -9411,14 +9994,22 @@ the index with a pull request. Rythme never sends anything by itself."#,
   --sandbox       no files, folders, environment variables nor network
   --format json   the results as JSON
   Exit code: 0 when every test passes, 1 otherwise."#,
-            "",
+            r#"  --filter NAME   名前に NAME を含むテストだけ
+  --seed N        random の結果を毎回同じにする
+  --watch         ファイルが変わるたびにテストを再実行する
+  --sandbox       ファイル、フォルダー、環境変数、ネットワークなし
+  --format json   結果を JSON で
+  終了コード：すべてのテストが成功すれば 0、そうでなければ 1。"#,
         ),
         (
             r#"  --check         only check, for continuous integration: exit code 1 when a
                   file must be formatted
   A folder formats all its .ry files; `-` reads the code from the standard
   input and writes it formatted."#,
-            "",
+            r#"  --check         チェックだけ（継続的インテグレーション向け）：整形が必要な
+                  ファイルがあれば終了コード 1
+  フォルダーを指定するとすべての .ry ファイルを整形する。`-` は標準入力から
+  コードを読み、整形して書く。"#,
         ),
         (
             r#"  --dry-run       only show the changes, as a diff
@@ -9426,52 +10017,67 @@ the index with a pull request. Rythme never sends anything by itself."#,
   --format json   the fixes as JSON
   Exit code: 0 when no error is left, 1 otherwise (with --dry-run: 1 when
   something would change)."#,
-            "",
+            r#"  --dry-run       変更を diff で表示するだけ
+  --all           確実ではない修正も適用する
+  --format json   修正を JSON で
+  終了コード：エラーが残らなければ 0、そうでなければ 1（--dry-run では、
+  何かが変わるなら 1）。"#,
         ),
         (
             r#"  --max N         show at most N steps
   --width N       cut the lines at N characters (20 at least)
   Without an expression, the steps of the last line of the file."#,
-            "",
+            r#"  --max N         最大 N ステップまで表示する
+  --width N       行を N 文字で切る（20 以上）
+  式がなければ、ファイルの最後の行のステップ。"#,
         ),
         (
             r#"  In the debugger, `help` lists its commands: break, run, next, step,
   finish, where, print, locals, quit."#,
-            "",
+            r#"  デバッガーでは `help` でコマンドを一覧できる：break、run、next、step、
+  finish、where、print、locals、quit。"#,
         ),
-        ("  Your editor starts it: the VS Code extension does, for the debugger type `rythme`.", ""),
+        ("  Your editor starts it: the VS Code extension does, for the debugger type `rythme`.", "  エディターが起動する：VS Code 拡張機能がデバッガーの種類 `rythme` で起動する。"),
         (
             r#"  list            the exercises, from the easiest
   start NAME      write the file of an exercise, to complete
   check FILE.ry   run its tests and give hints"#,
-            "",
+            r#"  list            練習問題（やさしいものから）
+  start NAME      練習問題のファイルを書く（完成させる）
+  check FILE.ry   そのテストを実行してヒントを出す"#,
         ),
         (
             r#"  `rythme help` lists the topics, `rythme help builtins` every function,
   `rythme help llms` the whole language in one text (for AI assistants)."#,
-            "",
+            r#"  `rythme help` はトピックを、`rythme help builtins` はすべての関数を、
+  `rythme help llms` は言語全体を 1 つのテキストで（AI アシスタント向け）一覧する。"#,
         ),
-        ("  Without a code, the list of the codes; --format json gives them all.", ""),
-        ("  The value of the last expression is shown, unless it is ().", ""),
-        ("  `:help` lists the commands of the interactive mode.", ""),
-        ("  --verbose       also the system, the languages, the functions and the formats", ""),
-        ("Then open a new shell.", ""),
+        ("  Without a code, the list of the codes; --format json gives them all.", "  コードがなければコードの一覧。--format json ですべてを出す。"),
+        ("  The value of the last expression is shown, unless it is ().", "  最後の式の値を表示する（() なら表示しない）。"),
+        ("  `:help` lists the commands of the interactive mode.", "  `:help` で対話モードのコマンドを一覧できる。"),
+        ("  --verbose       also the system, the languages, the functions and the formats", "  --verbose       システム、言語、関数、形式も表示する"),
+        ("Then open a new shell.", "その後、新しいシェルを開いてください。"),
         (
             r#"  rythme man > rythme.1 && man ./rythme.1
   To install it: put rythme.1 in a folder of the manual pages, like
   ~/.local/share/man/man1."#,
-            "",
+            r#"  rythme man > rythme.1 && man ./rythme.1
+  インストールするには：rythme.1 をマニュアルページのフォルダー
+  （~/.local/share/man/man1 など）に置く。"#,
         ),
         (
             r#"
 Options of every command: --lang CODE ({codes}), --no-color
 "#,
-            "",
+            r#"
+すべてのコマンドのオプション：--lang CODE（{codes}）、--no-color
+"#,
         ),
         (
             r#"See also `rythme help {topic}`.
 "#,
-            "",
+            r#"`rythme help {topic}` も参照してください。
+"#,
         ),
         (
             r#"
@@ -9484,9 +10090,18 @@ Tools
   rythme version --verbose  the version, with the system and what Rythme contains
   rythme upgrade            how to install the latest version
 "#,
-            "",
+            r#"
+ツール
+  rythme CMD --help         コマンドのオプション（例：rythme test --help）
+  rythme run -              標準入力から読んだプログラムを実行する
+  rythme check FOLDER       フォルダーのすべての .ry ファイルをチェックする
+  rythme completions SHELL  コマンドの補完：bash、zsh、fish、powershell
+  rythme man                コマンドのマニュアルページ（rythme man > rythme.1）
+  rythme version --verbose  バージョンと、システムと Rythme の内容
+  rythme upgrade            最新版のインストール方法
+"#,
         ),
-        ("unknown option `{bad}` for `rythme version`: the option is --verbose", ""),
+        ("unknown option `{bad}` for `rythme version`: the option is --verbose", "`rythme version` に不明なオプション `{bad}`：オプションは --verbose"),
         (
             r#"system: {os} {arch}
 languages of the messages: {codes} (now: {now})
@@ -9495,9 +10110,15 @@ codes: {errors} errors ({e_range}), {warnings} warnings ({w_range})
 JSON output (--format json): version {json}
 program: {exe}
 "#,
-            "",
+            r#"システム：{os} {arch}
+メッセージの言語：{codes}（現在：{now}）
+組み込み関数：{functions}（と Ruby での名前 {ruby} 個）
+コード：エラー {errors} 個（{e_range}）、警告 {warnings} 個（{w_range}）
+JSON 出力（--format json）：バージョン {json}
+プログラム：{exe}
+"#,
         ),
-        ("`rythme upgrade` takes no argument, not `{bad}`", ""),
+        ("`rythme upgrade` takes no argument, not `{bad}`", "`rythme upgrade` は引数を取らない（`{bad}` は不可）"),
         (
             r#"This is rythme {v} ({exe}).
 To install the latest version, type:
@@ -9505,67 +10126,81 @@ To install the latest version, type:
 The versions and what changed: https://github.com/maxlestage/Rythme/releases
 Within 1.x, a program that runs keeps running, with the same output.
 "#,
-            "",
+            r#"これは rythme {v}（{exe}）です。
+最新版をインストールするには、次のように入力します：
+  {how}
+バージョンと変更点：https://github.com/maxlestage/Rythme/releases
+1.x の間は、動くプログラムは同じ出力で動き続けます。
+"#,
         ),
-        ("unknown shell `{s}`", ""),
-        ("which shell?", ""),
+        ("unknown shell `{s}`", "不明なシェル `{s}`"),
+        ("which shell?", "どのシェル？"),
         (
             r#"{what} Write one of bash, zsh, fish, powershell, like `rythme completions bash`
 see `rythme completions --help`"#,
-            "",
+            r#"{what} bash、zsh、fish、powershell のどれかを書く。例：`rythme completions bash`
+`rythme completions --help` を参照"#,
         ),
-        ("`rythme man` takes no argument, not `{bad}`", ""),
-        ("Name", ""),
-        ("rythme - a small, purely functional language with help everywhere", ""),
-        ("Synopsis", ""),
-        ("Description", ""),
-        ("Rythme runs, checks, tests and formats programs written in Rythme. Without a command, `rythme` starts the interactive mode; `rythme file.ry` runs a program. Every message has a code explained by `rythme explain CODE`, and `rythme help` shows help on the language and its functions.", ""),
-        ("Commands", ""),
-        ("Options", ""),
-        ("the language of the messages: {codes}", ""),
-        ("messages without colors", ""),
-        ("the help; after a command, its options", ""),
-        ("Environment", ""),
-        ("the language of the messages, before LC_ALL, LC_MESSAGES and LANG", ""),
-        ("when set, messages without colors", ""),
-        ("Exit status", ""),
-        ("0 when everything went well; 1 after an error in the program, a failed test or a problem found; 2 for a command written wrongly. A program may choose its own code with exit(code).", ""),
-        ("See also", ""),
-        ("no .ry file in `{a}`", ""),
-        ("the standard input cannot be read: {e}", ""),
+        ("`rythme man` takes no argument, not `{bad}`", "`rythme man` は引数を取らない（`{bad}` は不可）"),
+        ("Name", "名前"),
+        ("rythme - a small, purely functional language with help everywhere", "rythme - どこにでもヘルプがある、小さな純粋関数型言語"),
+        ("Synopsis", "書式"),
+        ("Description", "説明"),
+        ("Rythme runs, checks, tests and formats programs written in Rythme. Without a command, `rythme` starts the interactive mode; `rythme file.ry` runs a program. Every message has a code explained by `rythme explain CODE`, and `rythme help` shows help on the language and its functions.", "Rythme は Rythme で書いたプログラムを実行、チェック、テスト、整形します。コマンドなしの `rythme` は対話モードを始め、`rythme file.ry` はプログラムを実行します。どのメッセージにも `rythme explain CODE` で説明されるコードがあり、`rythme help` は言語とその関数のヘルプを表示します。"),
+        ("Commands", "コマンド"),
+        ("Options", "オプション"),
+        ("the language of the messages: {codes}", "メッセージの言語：{codes}"),
+        ("messages without colors", "色なしのメッセージ"),
+        ("the help; after a command, its options", "ヘルプ。コマンドの後ならそのオプション"),
+        ("Environment", "環境変数"),
+        ("the language of the messages, before LC_ALL, LC_MESSAGES and LANG", "メッセージの言語（LC_ALL、LC_MESSAGES、LANG より優先）"),
+        ("when set, messages without colors", "設定されていれば、色なしのメッセージ"),
+        ("Exit status", "終了ステータス"),
+        ("0 when everything went well; 1 after an error in the program, a failed test or a problem found; 2 for a command written wrongly. A program may choose its own code with exit(code).", "すべてうまくいけば 0。プログラムのエラー、テストの失敗、問題の発見の後は 1。コマンドの書き間違いは 2。プログラムは exit(code) で自分のコードを選べます。"),
+        ("See also", "関連項目"),
+        ("no .ry file in `{a}`", "`{a}` に .ry ファイルがない"),
+        ("the standard input cannot be read: {e}", "標準入力を読めない：{e}"),
         // src/cli.rs: the commands of the package index
-        ("search the package index", ""),
-        ("what the index says of a package: its versions, repository and license", ""),
-        ("add a package of the index to the project, then install it", ""),
-        ("take the newest versions that the ranges of rythme.toml allow", ""),
-        ("check a package and print its entry for the index (sends nothing)", ""),
+        ("search the package index", "パッケージインデックスを検索する"),
+        ("what the index says of a package: its versions, repository and license", "インデックスにあるパッケージの情報：バージョン、リポジトリ、ライセンス"),
+        ("add a package of the index to the project, then install it", "インデックスのパッケージをプロジェクトに加え、インストールする"),
+        ("take the newest versions that the ranges of rythme.toml allow", "rythme.toml の範囲が許す最新のバージョンにする"),
+        ("check a package and print its entry for the index (sends nothing)", "パッケージをチェックし、インデックス用の項目を表示する（何も送らない）"),
         (
             r#"  --update        download the newest copy of the index first
   --format json   the packages found as JSON
   Without words, every package of the index."#,
-            "",
+            r#"  --update        先にインデックスの最新のコピーをダウンロードする
+  --format json   見つかったパッケージを JSON で
+  単語がなければ、インデックスのすべてのパッケージ。"#,
         ),
         (
             r#"  --update        download the newest copy of the index first
   --format json   the entry of the package as JSON"#,
-            "",
+            r#"  --update        先にインデックスの最新のコピーをダウンロードする
+  --format json   パッケージの項目を JSON で"#,
         ),
         (
             r#"  NAME@RANGE      a range of versions, like mathlib@1.2; without a range,
                   the newest version
   rythme.toml gets the range, rythme.lock the exact commit and its checksum."#,
-            "",
+            r#"  NAME@RANGE      バージョンの範囲（例：mathlib@1.2）。範囲がなければ
+                  最新のバージョン
+  rythme.toml には範囲が、rythme.lock には正確なコミットとチェックサムが入る。"#,
         ),
         (
             r#"  Without names, every dependency. rythme.toml does not change;
   rythme.lock gets the new versions."#,
-            "",
+            r#"  名前がなければすべての依存関係。rythme.toml は変わらず、
+  rythme.lock に新しいバージョンが入る。"#,
         ),
         (
             r#"  Checks rythme.toml, the tag of the version (like v1.2.0), rythme check
   and rythme test, then prints the entry and the steps of a pull request.
   --verify FILE...  the index's own check of its entries (packages/NAME.toml)"#,
-            "",
+            r#"  rythme.toml、バージョンのタグ（v1.2.0 など）、rythme check、rythme test を
+  チェックし、項目とプルリクエストの手順を表示する。
+  --verify FILE...  インデックス自身による項目のチェック（packages/NAME.toml）"#,
         ),
     ],
 }
