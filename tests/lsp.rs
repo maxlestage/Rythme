@@ -582,6 +582,36 @@ fn type_names_are_completed_and_explained() {
 }
 
 #[test]
+fn type_names_of_used_files() {
+    let dir = temp_dir("types-used");
+    std::fs::write(
+        dir.join("trees.ry"),
+        "## A tree.\ntype Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))\ntype Shape = Dot\n",
+    )
+    .unwrap();
+    let main = dir.join("main.ry");
+    let text = "use trees\nfn size(t: trees.Tree(Int)) -> Int = 0\nx: trees.\n";
+    std::fs::write(&main, text).unwrap();
+    let init = format!(r#"{{"processId":null,"rootUri":{},"capabilities":{{}}}}"#, s(&uri(&dir)));
+    let (mut lsp, _) = Lsp::start("en", &init);
+    let mu = uri(&main);
+    lsp.open(&mu, text);
+    // Hover and definition on `trees.Tree`, written in a type.
+    let h = hover_text(&lsp.at("textDocument/hover", &mu, 1, 18));
+    assert!(h.contains("type Tree(a) = Leaf") && h.contains("A tree.") && h.contains("trees.ry"), "{h}");
+    let d = lsp.at("textDocument/definition", &mu, 1, 18);
+    assert_eq!(d.get("uri").as_str(), Some(uri(&dir.join("trees.ry")).as_str()));
+    // After `trees.` in a type: the types of that file only.
+    let found = labels(&lsp.at("textDocument/completion", &mu, 2, 9));
+    assert_eq!(found, ["Shape", "Tree"], "{found:?}");
+    // After `:`, the name of the file is offered, for `trees.Tree`.
+    lsp.change(&mu, 2, "use trees\nx: \n");
+    let found = labels(&lsp.at("textDocument/completion", &mu, 1, 3));
+    assert!(found.contains(&"trees".to_string()) && found.contains(&"Int".to_string()), "{found:?}");
+    assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
 fn signature_help_for_calls_without_parentheses() {
     let (mut lsp, _) = Lsp::start("en", INIT);
     let u = "file:///nowhere/command.ry";
