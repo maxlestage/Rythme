@@ -370,7 +370,8 @@ mode) and is organised as a pipeline:
 | [`src/types.rs`](src/types.rs) | what the checker knows for sure about values: their types |
 | [`src/check/needs.rs`](src/check/needs.rs) | what the parameters of each function must be, and the calls that always fail |
 | [`src/compile.rs`](src/compile.rs) | prepares functions: each local name becomes a numbered slot |
-| [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
+| [`src/vm/`](src/vm) | the virtual machine: instructions on registers, with tail calls that do not grow the stack |
+| [`src/interp.rs`](src/interp.rs) | the interpreter: names of the program, calls, what the tools need |
 | [`src/bigint.rs`](src/bigint.rs) | whole numbers beyond 64 bits, without a dependency |
 | [`src/dict.rs`](src/dict.rs) | the persistent ordered tree behind dictionaries and sets, and the order of their keys |
 | [`src/builtins.rs`](src/builtins.rs) | 283 built-in functions (and their Ruby names), documented in six languages, JSON, CSV, HTTP and machine learning included ([compared with Ruby, Python and Elixir](docs/stdlib-audit.md)) |
@@ -400,11 +401,12 @@ messages in six languages. What it contains is in
 [`CHANGELOG.md`](CHANGELOG.md); ideas for what comes next are at the end of
 [`ROADMAP.md`](ROADMAP.md#after-10). Honest limits:
 
-- **Speed.** It is a tree-walking interpreter: local names become numbered
-  slots before running, and most calls allocate nothing. The programs of
-  [`bench/`](bench) (`bench/run.sh`) run 1.2 to 4.3 times faster than with
-  the first version, Rythme 0.1; that is in the range of Python, far from
-  compiled Rust.
+- **Speed.** Programs are compiled to the instructions of a virtual machine
+  on registers before running: local names are numbered slots, and most
+  calls allocate nothing. The programs of [`bench/`](bench) (`bench/run.sh`)
+  run 1.1 to 2 times faster than with Rythme 1.0, whose interpreter
+  walked the syntax tree, and print exactly the same; that is in the range
+  of Python, far from compiled Rust.
   Building a text with `+` or `"{acc}..."` and adding to a list (`push`,
   `xs + [x]`, `[..xs, x]`) take constant time per addition: 100 000 of them
   take 0.1 s, instead of 23 s (texts) and 150 s (lists) before. Local
