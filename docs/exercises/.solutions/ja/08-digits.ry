@@ -1,0 +1,32 @@
+# 練習問題 08 · 数の各桁  ★★☆
+# 参考解答。読む前に、まず自分で練習問題に挑戦してください！
+
+fn digit_count(n) = if n < 10 then 1 else 1 + digit_count(n // 10)
+
+fn digit_sum(n) = if n < 10 then n else n % 10 + digit_sum(n // 10)
+
+fn reverse_from(0, built) = built
+fn reverse_from(n, built) = reverse_from(n // 10, built * 10 + n % 10)
+
+fn reverse_number(n) = reverse_from(n, 0)
+
+# --- テスト（変更しないでください）---
+
+test "桁数"
+  assert_eq(digit_count(0), 1)
+  assert_eq(digit_count(7), 1)
+  assert_eq(digit_count(472), 3)
+  assert_eq(digit_count(1000000), 7)
+end
+
+test "各桁の和"
+  assert_eq(digit_sum(0), 0)
+  assert_eq(digit_sum(472), 13)
+  assert_eq(digit_sum(99999), 45)
+end
+
+test "逆順の数"
+  assert_eq(reverse_number(472), 274)
+  assert_eq(reverse_number(1230), 321)
+  assert_eq(reverse_number(5), 5)
+end
