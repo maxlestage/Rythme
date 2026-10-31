@@ -10,6 +10,7 @@
 //! [dependencies]
 //! mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
 //! tools = { path = "../tools" }
+//! geometry = { version = "^1.2.0" }      # from the package index (index.rs)
 //! ```
 
 use std::cell::RefCell;
@@ -27,10 +28,12 @@ pub const LOCK: &str = "rythme.lock";
 
 // ----- the part of TOML that is needed -------------------------------------
 
-/// A value: a text, or a table written on one line (`{ git = "...", tag = "..." }`).
+/// A value: a text, a table written on one line (`{ git = "...", tag = "..." }`),
+/// or a list of texts written on one line (`["math", "vectors"]`).
 pub enum Value {
     Text(String),
     Table(Vec<Entry>),
+    List(Vec<String>),
 }
 
 pub struct Entry {
@@ -161,6 +164,32 @@ impl Cursor<'_> {
     fn value(&mut self) -> Result<Value, Box<Diagnostic>> {
         match self.peek() {
             Some('"' | '\'') => Ok(Value::Text(self.text()?)),
+            Some('[') => {
+                self.i += 1;
+                let mut items = Vec::new();
+                loop {
+                    self.skip_ws();
+                    if self.eat(']') {
+                        return Ok(Value::List(items));
+                    }
+                    match self.peek() {
+                        Some('"' | '\'') => items.push(self.text()?),
+                        Some(c) if c != '#' => return Err(self.not_a_text()),
+                        _ => {}
+                    }
+                    self.skip_ws();
+                    if self.eat(']') {
+                        return Ok(Value::List(items));
+                    }
+                    if self.at_end() || !self.eat(',') {
+                        let d = toml_error(t!("expected `,` or `]` here", "`,` ou `]` était attendu ici"), self.here());
+                        return Err(Box::new(d.help(t!(
+                            "a list is written on one line: `[\"math\", \"vectors\"]`",
+                            "une liste s'écrit sur une ligne : `[\"maths\", \"vecteurs\"]`"
+                        ))));
+                    }
+                }
+            }
             Some('{') => {
                 self.i += 1;
                 let mut entries: Vec<Entry> = Vec::new();
@@ -328,7 +357,7 @@ fn register(path: &Path, text: &str) -> u32 {
 }
 
 /// Reads and parses a file, with its id.
-fn read(path: &Path) -> Result<(Doc, u32), Box<Diagnostic>> {
+pub(crate) fn read(path: &Path) -> Result<(Doc, u32), Box<Diagnostic>> {
     let text = crate::driver::read_source(path)?;
     let file = register(path, &text);
     Ok((parse(&text, file)?, file))
@@ -345,6 +374,9 @@ pub enum Source {
     },
     /// A folder, relative to the project.
     Path(String),
+    /// The package index (`index.rs`): the newest version in this range,
+    /// or the one `rythme.lock` keeps.
+    Index(crate::semver::Range),
 }
 
 /// The version of a dependency from git: always a fixed one.
@@ -377,13 +409,35 @@ pub struct Manifest {
     /// The program, relative to the folder of the project.
     pub entry: String,
     pub deps: Vec<Dep>,
+    /// What the package is for, in one sentence (for the package index).
+    pub description: Option<String>,
+    /// Its license, like `MIT` (for the package index).
+    pub license: Option<String>,
+    /// The address of its git repository (for the package index).
+    pub repository: Option<String>,
+    pub keywords: Vec<String>,
+    pub authors: Vec<String>,
+    /// The package index of the project, instead of the usual one: an
+    /// address, or a folder relative to the project.
+    pub index: Option<String>,
+    /// The id of `rythme.toml` for messages, and where each key is written.
+    pub file: u32,
+    pub spans: Vec<(String, Span)>,
 }
 
 impl Manifest {
     pub fn dep(&self, name: &str) -> Option<&Dep> {
         self.deps.iter().find(|d| d.name == name)
     }
+
+    /// Where the key `key` is written in `rythme.toml`.
+    pub fn span(&self, key: &str) -> Option<Span> {
+        self.spans.iter().find(|(k, _)| k == key).map(|(_, s)| *s)
+    }
 }
+
+/// The top-level keys of `rythme.toml`.
+const KEYS: &[&str] = &["name", "version", "entry", "description", "license", "repository", "keywords", "authors", "index"];
 
 /// Can this name be used in `use name/file`? A Rythme name in lower case.
 pub fn is_package_name(name: &str) -> bool {
@@ -411,10 +465,10 @@ pub fn bad_name(name: &str) -> (String, Option<String>) {
     (msg, (is_package_name(&better) && better != name).then_some(better))
 }
 
-fn text_of<'a>(e: &'a Entry, what: &str) -> Result<&'a str, Box<Diagnostic>> {
+pub(crate) fn text_of<'a>(e: &'a Entry, what: &str) -> Result<&'a str, Box<Diagnostic>> {
     match &e.value {
         Value::Text(s) => Ok(s),
-        Value::Table(_) => {
+        Value::Table(_) | Value::List(_) => {
             let key = &e.key;
             Err(toml_error(t!("`{key}` is {what}, written in quotes", "`{key}` est {what}, écrit entre guillemets"), e.span).boxed())
         }
@@ -427,7 +481,7 @@ fn is_version(v: &str) -> bool {
     parts.len() == 3 && parts.iter().all(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit())) && !v.ends_with(['-', '+'])
 }
 
-fn unknown_key(key: &str, span: Span, known: &[&str]) -> Box<Diagnostic> {
+pub(crate) fn unknown_key(key: &str, span: Span, known: &[&str]) -> Box<Diagnostic> {
     let mut d = Diagnostic::error("E025", t!("unknown key `{key}`", "clé inconnue `{key}`")).at(span);
     if let Some(best) = suggest::closest(key, known.iter().copied()) {
         d = d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?"));
@@ -439,13 +493,38 @@ fn unknown_key(key: &str, span: Span, known: &[&str]) -> Box<Diagnostic> {
 /// Reads the `rythme.toml` of the folder `dir`.
 pub fn load(dir: &Path) -> Result<Manifest, Box<Diagnostic>> {
     let path = dir.join(MANIFEST);
-    let (doc, _) = read(&path)?;
+    let (doc, file) = read(&path)?;
     let shown = crate::project::shown(&path);
     let mut name = None;
     let mut version = None;
     let mut entry = None;
+    let (mut description, mut license, mut repository, mut index) = (None, None, None, None);
+    let (mut keywords, mut authors) = (Vec::new(), Vec::new());
     for e in &doc.top {
         match e.key.as_str() {
+            "description" | "license" => {
+                let text = text_of(e, &t!("a text", "un texte"))?.trim().to_string();
+                let slot = if e.key == "license" { &mut license } else { &mut description };
+                *slot = Some(text);
+            }
+            "repository" | "index" => {
+                let text = text_of(e, &t!("a text", "un texte"))?.trim().to_string();
+                if let Err(msg) = crate::index::check_address(&text, e.key == "index") {
+                    return Err(toml_error(msg, e.span).boxed());
+                }
+                let slot = if e.key == "index" { &mut index } else { &mut repository };
+                *slot = Some(text);
+            }
+            "keywords" | "authors" => {
+                let Value::List(items) = &e.value else {
+                    let key = &e.key;
+                    let d = toml_error(t!("`{key}` is a list of texts", "`{key}` est une liste de textes"), e.span);
+                    let example = if key == "keywords" { "[\"math\", \"vectors\"]" } else { "[\"Ada Lovelace <ada@example.com>\"]" };
+                    return Err(Box::new(d.help(t!("like `{key} = {example}`", "comme `{key} = {example}`"))));
+                };
+                let slot = if e.key == "keywords" { &mut keywords } else { &mut authors };
+                *slot = items.iter().map(|s| s.trim().to_string()).collect();
+            }
             "name" => {
                 let n = text_of(e, &t!("a text", "un texte"))?;
                 if !is_package_name(n) {
@@ -480,7 +559,7 @@ pub fn load(dir: &Path) -> Result<Manifest, Box<Diagnostic>> {
                 }
                 entry = Some(p.to_string());
             }
-            key => return Err(unknown_key(key, e.key_span, &["name", "version", "entry"])),
+            key => return Err(unknown_key(key, e.key_span, KEYS)),
         }
     }
     for s in &doc.sections {
@@ -516,13 +595,37 @@ pub fn load(dir: &Path) -> Result<Manifest, Box<Diagnostic>> {
             deps.push(dependency(e, &name)?);
         }
     }
-    Ok(Manifest { dir: dir.to_path_buf(), name, version, entry: entry.unwrap_or_else(|| "src/main.ry".to_string()), deps })
+    let spans =
+        doc.top.iter().map(|e| (e.key.clone(), e.span)).chain(doc.sections.iter().map(|s| (format!("[{}]", s.name), s.span))).collect();
+    Ok(Manifest {
+        dir: dir.to_path_buf(),
+        name,
+        version,
+        entry: entry.unwrap_or_else(|| "src/main.ry".to_string()),
+        deps,
+        description,
+        license,
+        repository,
+        keywords,
+        authors,
+        index,
+        file,
+        spans,
+    })
 }
 
 fn dependency_help(name: &str) -> String {
     t!(
-        "write `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (or `commit = \"...\"`), or `{name} = {{ path = \"../folder\" }}`",
-        "écrivez `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (ou `commit = \"...\"`), ou `{name} = {{ path = \"../dossier\" }}`"
+        "write `{name} = {{ version = \"^1.0.0\" }}` (from the package index), `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (or `commit = \"...\"`), or `{name} = {{ path = \"../folder\" }}`",
+        "écrivez `{name} = {{ version = \"^1.0.0\" }}` (depuis l'index des paquets), `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (ou `commit = \"...\"`), ou `{name} = {{ path = \"../dossier\" }}`"
+    )
+}
+
+/// The help for a range of versions that cannot be read.
+pub fn range_help() -> String {
+    t!(
+        "write `\"^1.2.0\"` (1.2.0 or a newer compatible version, below 2.0.0), `\"~1.2.0\"` (1.2.x), `\"=1.2.0\"` (exactly this one) or `\">=1.2.0, <1.5.0\"`",
+        "écrivez `\"^1.2.0\"` (1.2.0 ou une version compatible plus récente, sous 2.0.0), `\"~1.2.0\"` (1.2.x), `\"=1.2.0\"` (exactement celle-ci) ou `\">=1.2.0, <1.5.0\"`"
     )
 }
 
@@ -548,16 +651,37 @@ fn dependency(e: &Entry, own: &str) -> Result<Dep, Box<Diagnostic>> {
     }
     let Value::Table(fields) = &e.value else {
         let d = toml_error(t!("the dependency `{name}` is written as a table", "la dépendance `{name}` s'écrit comme une table"), e.span);
+        let d = match &e.value {
+            Value::Text(v) if crate::semver::Range::parse(v).is_some() => d.help(t!(
+                "for a version from the package index, write `{name} = {{ version = \"{v}\" }}`",
+                "pour une version de l'index des paquets, écrivez `{name} = {{ version = \"{v}\" }}`"
+            )),
+            _ => d,
+        };
         return Err(Box::new(d.help(dependency_help(name))));
     };
+    const FIELDS: &[&str] = &["version", "git", "tag", "commit", "path"];
     let mut get = HashMap::new();
     for f in fields {
-        if !["git", "tag", "commit", "path"].contains(&f.key.as_str()) {
-            return Err(unknown_key(&f.key, f.key_span, &["git", "tag", "commit", "path"]));
+        if !FIELDS.contains(&f.key.as_str()) {
+            return Err(unknown_key(&f.key, f.key_span, FIELDS));
         }
         get.insert(f.key.as_str(), text_of(f, &t!("a text", "un texte"))?.to_string());
     }
     let wrong = |msg: String| -> Box<Diagnostic> { Box::new(toml_error(msg, e.span).help(dependency_help(name))) };
+    if let Some(v) = get.remove("version") {
+        if !get.is_empty() {
+            return Err(wrong(t!(
+                "a dependency comes from the package index (`version`), from git (`git`) or from a folder (`path`): give only one",
+                "une dépendance vient de l'index des paquets (`version`), de git (`git`) ou d'un dossier (`path`) : n'en donnez qu'un"
+            )));
+        }
+        let Some(range) = crate::semver::Range::parse(&v) else {
+            let d = toml_error(t!("`{v}` is not a range of versions", "`{v}` n'est pas un intervalle de versions"), e.span);
+            return Err(Box::new(d.help(range_help())));
+        };
+        return Ok(Dep { name: name.clone(), source: Source::Index(range), span: e.span });
+    }
     let source = match (get.remove("git"), get.remove("path")) {
         (Some(_), Some(_)) => {
             return Err(wrong(t!(
@@ -566,7 +690,10 @@ fn dependency(e: &Entry, own: &str) -> Result<Dep, Box<Diagnostic>> {
             )))
         }
         (None, None) => {
-            return Err(wrong(t!("the dependency `{name}` needs `git` or `path`", "la dépendance `{name}` a besoin de `git` ou de `path`")))
+            return Err(wrong(t!(
+                "the dependency `{name}` needs `version`, `git` or `path`",
+                "la dépendance `{name}` a besoin de `version`, de `git` ou de `path`"
+            )))
         }
         (None, Some(path)) => {
             if !get.is_empty() {
@@ -603,13 +730,23 @@ fn dependency(e: &Entry, own: &str) -> Result<Dep, Box<Diagnostic>> {
 
 // ----- rythme.lock -----------------------------------------------------------
 
-/// The exact commit of a dependency from git.
+/// The exact commit of a dependency from git, or from the package index.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Locked {
     pub name: String,
     pub url: String,
     pub rev: Rev,
     pub commit: String,
+    /// From the package index: the version, the address of the index and the
+    /// checksum of the files of the commit (`sha256:...`).
+    pub from_index: Option<IndexLock>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IndexLock {
+    pub version: String,
+    pub index: String,
+    pub checksum: String,
 }
 
 /// Reads `rythme.lock` in `dir`; nothing when there is none.
@@ -643,9 +780,14 @@ pub fn load_lock(dir: &Path) -> Result<Vec<Locked>, Box<Diagnostic>> {
             (None, Some(c)) => Some(Rev::Commit(get.get("asked").unwrap_or(c).to_string())),
             _ => None,
         };
-        match (s.name.as_str(), s.array, get.get("name"), get.get("git"), rev, get.get("commit")) {
-            ("package", true, Some(name), Some(url), Some(rev), Some(commit)) => {
-                out.push(Locked { name: name.to_string(), url: url.to_string(), rev, commit: commit.to_string() })
+        let from_index = match (get.get("version"), get.get("index"), get.get("checksum")) {
+            (Some(v), Some(i), Some(c)) => Some(Some(IndexLock { version: v.to_string(), index: i.to_string(), checksum: c.to_string() })),
+            (None, None, None) => Some(None),
+            _ => None,
+        };
+        match (s.name.as_str(), s.array, get.get("name"), get.get("git"), rev, get.get("commit"), from_index) {
+            ("package", true, Some(name), Some(url), Some(rev), Some(commit), Some(from_index)) => {
+                out.push(Locked { name: name.to_string(), url: url.to_string(), rev, commit: commit.to_string(), from_index })
             }
             _ => {
                 let d = toml_error(
@@ -660,7 +802,7 @@ pub fn load_lock(dir: &Path) -> Result<Vec<Locked>, Box<Diagnostic>> {
 }
 
 fn quoted(s: &str) -> String {
-    format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\""))
+    format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n").replace('\t', "\\t"))
 }
 
 /// The text of `rythme.lock`.
@@ -670,12 +812,24 @@ pub fn lock_text(entries: &[Locked]) -> String {
         "# Le commit exact de chaque dépendance venant de git, écrit par `rythme install`.\n# Gardez ce fichier avec le projet, pour que tout le monde ait le même code.\n"
     );
     for e in entries {
-        out.push_str(&format!("\n[[package]]\nname = {}\ngit = {}\n", quoted(&e.name), quoted(&e.url)));
+        out.push_str(&format!("\n[[package]]\nname = {}\n", quoted(&e.name)));
+        if let Some(i) = &e.from_index {
+            out.push_str(&format!("version = {}\nindex = {}\n", quoted(&i.version), quoted(&i.index)));
+        }
+        out.push_str(&format!("git = {}\n", quoted(&e.url)));
         match &e.rev {
             Rev::Tag(t) => out.push_str(&format!("tag = {}\n", quoted(t))),
             Rev::Commit(c) => out.push_str(&format!("asked = {}\n", quoted(c))),
         }
         out.push_str(&format!("commit = {}\n", quoted(&e.commit)));
+        if let Some(i) = &e.from_index {
+            out.push_str(&format!("checksum = {}\n", quoted(&i.checksum)));
+        }
     }
     out
+}
+
+/// A text in quotes for a TOML file, with `\"` and `\\`.
+pub fn quote(s: &str) -> String {
+    quoted(s)
 }

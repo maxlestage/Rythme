@@ -8,16 +8,22 @@
 //! project, or the project itself when it is its name. A dependency from
 //! git is downloaded by `rythme install` into a folder of its own, given by
 //! its address and its tag or commit, under `RYTHME_HOME` (`~/.rythme`);
-//! `rythme.lock` keeps the exact commit of each one.
+//! `rythme.lock` keeps the exact commit of each one. A dependency from the
+//! package index (`index.rs`) is a dependency from git at the commit the
+//! index gives for the version chosen, whose files are checked against the
+//! checksum of the index.
 
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use crate::diagnostic::Diagnostic;
 use crate::driver::join_use;
+use crate::index::{self, Index};
 use crate::io::out_line;
-use crate::manifest::{self, Dep, Locked, Manifest, Rev, Source, LOCK, MANIFEST};
+use crate::manifest::{self, Dep, IndexLock, Locked, Manifest, Rev, Source, LOCK, MANIFEST};
+use crate::semver::Version;
 use crate::source::Span;
 
 /// A path as shown in messages: relative to the current folder when it is inside it.
@@ -61,6 +67,11 @@ fn join(dir: &Path, p: &str) -> PathBuf {
 /// The folder where packages from git are kept: `RYTHME_HOME/packages`,
 /// `~/.rythme/packages` by default.
 pub fn cache_root() -> Result<PathBuf, Box<Diagnostic>> {
+    Ok(rythme_home()?.join("packages"))
+}
+
+/// The folder where Rythme keeps what it downloads: `RYTHME_HOME`, `~/.rythme` by default.
+pub fn rythme_home() -> Result<PathBuf, Box<Diagnostic>> {
     let var = |name: &str| std::env::var_os(name).filter(|v| !v.is_empty()).map(PathBuf::from);
     let home = var("RYTHME_HOME").or_else(|| var(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(|h| h.join(".rythme")));
     let Some(home) = home else {
@@ -72,12 +83,11 @@ pub fn cache_root() -> Result<PathBuf, Box<Diagnostic>> {
             ))
             .boxed());
     };
-    let home = if home.is_absolute() { home } else { std::env::current_dir().unwrap_or_default().join(home) };
-    Ok(home.join("packages"))
+    Ok(if home.is_absolute() { home } else { std::env::current_dir().unwrap_or_default().join(home) })
 }
 
 /// A short, stable fingerprint of a text (FNV-1a).
-fn fingerprint(s: &str) -> String {
+pub(crate) fn fingerprint(s: &str) -> String {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     for b in s.bytes() {
         h ^= u64::from(b);
@@ -108,11 +118,46 @@ fn git_dir(name: &str, url: &str, rev: &Rev) -> Result<PathBuf, Box<Diagnostic>>
     Ok(cache_root()?.join(format!("{name}-{}", fingerprint(url))).join(rev))
 }
 
-/// The folder of a dependency of the project `m`, whether it is installed or not.
-fn dep_dir(m: &Manifest, dep: &Dep) -> Result<PathBuf, Box<Diagnostic>> {
+thread_local! {
+    /// The last project seen outside of the folder of Rythme (`RYTHME_HOME`):
+    /// its `rythme.lock` chooses the versions of the packages from the index,
+    /// also for the packages that its packages use.
+    static TOP: RefCell<Option<PathBuf>> = const { RefCell::new(None) };
+}
+
+/// The folder whose `rythme.lock` gives the versions of the packages of `m`
+/// from the index: `m` itself, or, for a package kept by Rythme, the project
+/// that uses it.
+fn lock_root(m: &Manifest) -> PathBuf {
+    let dir = m.dir.canonicalize().unwrap_or_else(|_| m.dir.clone());
+    let kept = rythme_home().ok().and_then(|h| h.canonicalize().ok()).is_some_and(|h| dir.starts_with(h));
+    TOP.with(|top| {
+        let mut top = top.borrow_mut();
+        if kept {
+            top.clone().unwrap_or(dir)
+        } else {
+            *top = Some(dir.clone());
+            dir
+        }
+    })
+}
+
+/// The entry of the `rythme.lock` of `root` for a dependency from the index.
+fn locked_index(root: &Path, name: &str, range: &crate::semver::Range) -> Option<Locked> {
+    let fits = |l: &Locked| l.from_index.as_ref().and_then(|i| Version::parse(&i.version)).is_some_and(|v| range.matches(&v));
+    manifest::load_lock(root).ok()?.into_iter().find(|l| l.name == name && fits(l))
+}
+
+/// The folder of a dependency of the project `m`, whether it is installed or
+/// not; nothing for a dependency from the index that `rythme.lock` does not have yet.
+fn dep_dir(m: &Manifest, dep: &Dep) -> Result<Option<PathBuf>, Box<Diagnostic>> {
     match &dep.source {
-        Source::Path(p) => Ok(join(&m.dir, p)),
-        Source::Git { url, rev } => git_dir(&dep.name, &git_address(url, &m.dir), rev),
+        Source::Path(p) => Ok(Some(join(&m.dir, p))),
+        Source::Git { url, rev } => git_dir(&dep.name, &git_address(url, &m.dir), rev).map(Some),
+        Source::Index(range) => match locked_index(&lock_root(m), &dep.name, range) {
+            Some(l) => git_dir(&dep.name, &l.url, &Rev::Commit(l.commit)).map(Some),
+            None => Ok(None),
+        },
     }
 }
 
@@ -121,15 +166,17 @@ fn origin(dep: &Dep) -> String {
     match &dep.source {
         Source::Path(p) => t!("the folder `{p}`", "le dossier `{p}`"),
         Source::Git { url, rev } => format!("git `{url}`, {rev}"),
+        Source::Index(range) => t!("the package index, version {range}", "l'index des paquets, version {range}"),
     }
 }
 
 /// The folder of an installed dependency, or why it cannot be used.
 fn installed_dir(m: &Manifest, dep: &Dep, at: Span) -> Result<PathBuf, Box<Diagnostic>> {
-    let dir = dep_dir(m, dep)?;
-    if dir.is_dir() {
-        return Ok(dir);
+    let found = dep_dir(m, dep)?;
+    if let Some(dir) = found.as_ref().filter(|d| d.is_dir()) {
+        return Ok(dir.clone());
     }
+    let dir = found.unwrap_or_default();
     let (name, root) = (&dep.name, shown(&m.dir));
     let place = if root.is_empty() || root == "." {
         t!("run `rythme install` here, in the folder of the project", "lancez `rythme install` ici, dans le dossier du projet")
@@ -143,7 +190,7 @@ fn installed_dir(m: &Manifest, dep: &Dep, at: Span) -> Result<PathBuf, Box<Diagn
         )
         .note(t!("looked for: {}", "cherché : {}", dir.display()))
         .help(t!("fix its `path` in `rythme.toml`", "corrigez son `path` dans `rythme.toml`")),
-        Source::Git { .. } => {
+        Source::Git { .. } | Source::Index(_) => {
             Diagnostic::error("E025", t!("the package `{name}` is not installed", "le paquet `{name}` n'est pas installé"))
                 .note(t!("`rythme.toml` asks for it from {}", "`rythme.toml` le demande depuis {}", origin(dep)))
                 .help(place)
@@ -256,7 +303,7 @@ pub fn packages(base: &Path) -> Vec<(String, PathBuf)> {
     let Ok(m) = manifest::load(&root) else { return Vec::new() };
     let mut out = vec![(m.name.clone(), root.join("src"))];
     for dep in &m.deps {
-        if let Ok(dir) = dep_dir(&m, dep) {
+        if let Ok(Some(dir)) = dep_dir(&m, dep) {
             out.push((dep.name.clone(), dir.join("src")));
         }
     }
@@ -286,7 +333,7 @@ pub fn use_hint(written: &str, base: &Path) -> Option<Result<String, String>> {
 
 // ----- git -----------------------------------------------------------------------
 
-enum GitError {
+pub(crate) enum GitError {
     /// The program `git` cannot be started.
     Missing,
     /// What git said.
@@ -305,23 +352,61 @@ fn plain(s: &str) -> String {
 }
 
 fn git(args: &[&str], dir: &Path) -> Result<String, GitError> {
-    let args: Vec<String> = args.iter().map(|a| plain(a)).collect();
+    run_git(args, dir, false).map(|out| String::from_utf8_lossy(&out).trim().to_string())
+}
+
+/// git for the package index and its packages, with the safe options: only
+/// the protocols https, ssh and file (a folder of this computer), no hooks,
+/// no file system monitor, links checked out as plain files.
+pub(crate) fn git_safe(args: &[&str], dir: &Path) -> Result<String, GitError> {
+    run_git(args, dir, true).map(|out| String::from_utf8_lossy(&out).trim().to_string())
+}
+
+/// The command `git` with these arguments in `dir` (environment variables
+/// that would point it at another repository are left out).
+pub(crate) fn git_command(args: &[&str], dir: &Path, safe: bool) -> Command {
+    let mut all: Vec<String> = Vec::new();
+    if safe {
+        let no_hooks = if cfg!(windows) { "NUL" } else { "/dev/null" };
+        for option in [format!("core.hooksPath={no_hooks}"), "core.fsmonitor=false".into(), "core.symlinks=false".into()] {
+            all.push("-c".into());
+            all.push(option);
+        }
+    }
+    all.extend(args.iter().map(|a| plain(a)));
     let dir = PathBuf::from(plain(&dir.to_string_lossy()));
-    let out = Command::new("git")
-        .args(&args)
-        .current_dir(if dir.as_os_str().is_empty() { Path::new(".") } else { &dir })
-        .env("GIT_TERMINAL_PROMPT", "0")
-        .stdin(Stdio::null())
-        .output()
-        .map_err(|e| if e.kind() == std::io::ErrorKind::NotFound { GitError::Missing } else { GitError::Failed(e.to_string()) })?;
+    let mut cmd = Command::new("git");
+    cmd.args(&all).current_dir(if dir.as_os_str().is_empty() { Path::new(".") } else { &dir }).env("GIT_TERMINAL_PROMPT", "0");
+    for var in ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_NAMESPACE"] {
+        cmd.env_remove(var);
+    }
+    if safe {
+        cmd.env("GIT_ALLOW_PROTOCOL", "https:ssh:file");
+    }
+    cmd
+}
+
+fn run_git(args: &[&str], dir: &Path, safe: bool) -> Result<Vec<u8>, GitError> {
+    let out = git_command(args, dir, safe).stdin(Stdio::null()).output().map_err(|e| {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            GitError::Missing
+        } else {
+            GitError::Failed(e.to_string())
+        }
+    })?;
     if out.status.success() {
-        Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
+        Ok(out.stdout)
     } else {
         Err(GitError::Failed(String::from_utf8_lossy(&out.stderr).trim().to_string()))
     }
 }
 
-fn git_missing() -> Box<Diagnostic> {
+/// What a safe git command prints, as bytes.
+pub(crate) fn git_bytes(args: &[&str], dir: &Path) -> Result<Vec<u8>, GitError> {
+    run_git(args, dir, true)
+}
+
+pub(crate) fn git_missing() -> Box<Diagnostic> {
     Diagnostic::error("E025", t!("the program `git` was not found", "le programme `git` est introuvable"))
         .note(t!(
             "Rythme uses git to download the dependencies that come from git",
@@ -334,7 +419,7 @@ fn git_missing() -> Box<Diagnostic> {
         .boxed()
 }
 
-fn git_error(e: GitError, msg: String) -> Box<Diagnostic> {
+pub(crate) fn git_error(e: GitError, msg: String) -> Box<Diagnostic> {
     match e {
         GitError::Missing => git_missing(),
         GitError::Failed(said) => {
@@ -384,7 +469,7 @@ fn resolve(dir: &Path, name: &str, url: &str, rev: &Rev) -> Result<String, Box<D
 
 /// Removes a folder and what it holds, even the files marked read-only (git
 /// marks some of its files so on Windows).
-fn remove_all(dir: &Path) -> std::io::Result<()> {
+pub(crate) fn remove_all(dir: &Path) -> std::io::Result<()> {
     if !dir.exists() {
         return Ok(());
     }
@@ -409,11 +494,13 @@ fn remove_all(dir: &Path) -> std::io::Result<()> {
 }
 
 /// Downloads a dependency from git into its folder, at the commit of the
-/// lock file when there is one. Gives the commit, and whether it was downloaded.
-fn fetch(name: &str, url: &str, rev: &Rev, base: &Path, locked: Option<&str>) -> Result<(String, bool), Box<Diagnostic>> {
+/// lock file when there is one. Gives the commit, and whether it was
+/// downloaded. `fresh`: download it again even when it is there (`rythme
+/// update`, for a tag that moved).
+fn fetch(name: &str, url: &str, rev: &Rev, base: &Path, locked: Option<&str>, fresh: bool) -> Result<(String, bool), Box<Diagnostic>> {
     let address = git_address(url, base);
     let dir = git_dir(name, &address, rev)?;
-    if dir.join(".git").exists() {
+    if dir.join(".git").exists() && !fresh {
         if let Ok(head) = git(&["rev-parse", "HEAD"], &dir) {
             let want = match locked {
                 Some(c) => Some(c.to_string()),
@@ -453,6 +540,88 @@ fn fetch(name: &str, url: &str, rev: &Rev, base: &Path, locked: Option<&str>) ->
     Ok((result?, true))
 }
 
+/// What the index (or `rythme.lock`) says of the version of a package to install.
+pub(crate) struct Pinned {
+    pub version: String,
+    pub url: String,
+    pub tag: Option<String>,
+    pub commit: String,
+    pub checksum: String,
+}
+
+/// Downloads a package of the index into its folder: the commit the index
+/// gives, whose files must have the checksum of the index; nothing of the
+/// package runs. Gives whether it was downloaded.
+fn fetch_index(name: &str, p: &Pinned) -> Result<bool, Box<Diagnostic>> {
+    let rev = Rev::Commit(p.commit.clone());
+    let dir = git_dir(name, &p.url, &rev)?;
+    if dir.join(".git").exists() && git_safe(&["rev-parse", "HEAD"], &dir).is_ok_and(|head| head == p.commit) {
+        return Ok(false);
+    }
+    let parent = dir.parent().map(Path::to_path_buf).unwrap_or_default();
+    let cannot = |e: std::io::Error, p: &Path| {
+        Diagnostic::error("E025", t!("cannot write in `{}`: {e}", "impossible d'écrire dans `{}` : {e}", p.display())).boxed()
+    };
+    std::fs::create_dir_all(&parent).map_err(|e| cannot(e, &parent))?;
+    let leaf = dir.file_name().map(|f| f.to_string_lossy().to_string()).unwrap_or_default();
+    let tmp = parent.join(format!(".download-{leaf}-{}", std::process::id()));
+    remove_all(&tmp).map_err(|e| cannot(e, &tmp))?;
+    let tmp_text = tmp.display().to_string();
+    let url = &p.url;
+    git_safe(&["clone", "--quiet", "--no-checkout", "--", url, &tmp_text], &parent)
+        .map_err(|e| git_error(e, t!("cannot download `{name}` from `{url}`", "impossible de télécharger `{name}` depuis `{url}`")))?;
+    let result = (|| -> Result<(), Box<Diagnostic>> {
+        let (commit, version) = (&p.commit, &p.version);
+        let wanted = format!("{commit}^{{commit}}");
+        if !git_safe(&["rev-parse", "--verify", "--quiet", &wanted], &tmp).is_ok_and(|c| c == *commit) {
+            let d = Diagnostic::error(
+                "E025",
+                t!(
+                    "the commit `{commit}` of `{name}` {version} does not exist in `{url}`",
+                    "le commit `{commit}` de `{name}` {version} n'existe pas dans `{url}`"
+                ),
+            );
+            return Err(d
+                .note(t!("the package index gives this commit for this version", "l'index des paquets donne ce commit pour cette version"))
+                .help(t!(
+                    "tell the authors of `{name}`: the history of their repository may have been rewritten",
+                    "prévenez les auteurs de `{name}` : l'historique de leur dépôt a peut-être été réécrit"
+                ))
+                .boxed());
+        }
+        let found = index::checksum(&tmp, commit).map_err(|e| {
+            git_error(e, t!("cannot read the files of `{name}` {version}", "impossible de lire les fichiers de `{name}` {version}"))
+        })?;
+        if found != p.checksum {
+            let d = Diagnostic::error(
+                "E025",
+                t!(
+                    "the files of `{name}` {version} do not match the checksum of the package index",
+                    "les fichiers de `{name}` {version} ne correspondent pas à la somme de contrôle de l'index des paquets"
+                ),
+            );
+            return Err(d
+                .note(t!("expected: {}\nfound:    {found}", "attendue : {}\ntrouvée :  {found}", p.checksum))
+                .note(t!("nothing was installed, and nothing of the package ran", "rien n'a été installé, et rien du paquet n'a été lancé"))
+                .help(t!(
+                    "do not use this version; tell the maintainers of the package index",
+                    "n'utilisez pas cette version ; prévenez les responsables de l'index des paquets"
+                ))
+                .boxed());
+        }
+        git_safe(&["checkout", "--quiet", "--detach", commit], &tmp).map_err(|e| {
+            git_error(e, t!("cannot take the commit `{commit}` of `{name}`", "impossible de prendre le commit `{commit}` de `{name}`"))
+        })?;
+        remove_all(&dir).map_err(|e| cannot(e, &dir))?;
+        std::fs::rename(&tmp, &dir).map_err(|e| cannot(e, &dir))?;
+        Ok(())
+    })();
+    if result.is_err() {
+        let _ = remove_all(&tmp);
+    }
+    result.map(|()| true)
+}
+
 // ----- `rythme install` ------------------------------------------------------------
 
 fn usage(msg: String) -> i32 {
@@ -465,7 +634,7 @@ fn report(d: &Diagnostic) {
 }
 
 /// The project of the current folder, or a message saying there is none.
-fn current_project() -> Result<PathBuf, Box<Diagnostic>> {
+pub(crate) fn current_project() -> Result<PathBuf, Box<Diagnostic>> {
     find_root(Path::new("")).ok_or_else(|| {
         Diagnostic::error("E025", t!("no `rythme.toml` in this folder or above it", "aucun `rythme.toml` dans ce dossier ni au-dessus"))
             .help(t!(
@@ -485,8 +654,8 @@ pub fn install_command(args: &[String]) -> i32 {
             "`rythme install` ne prend pas d'argument (`{a}`) : il installe les dépendances de `rythme.toml`\nvoir `rythme help projects`"
         ));
     }
-    match install() {
-        Ok(()) => 0,
+    match install(None) {
+        Ok(_) => 0,
         Err(d) => {
             report(&d);
             1
@@ -494,7 +663,74 @@ pub fn install_command(args: &[String]) -> i32 {
     }
 }
 
-fn install() -> Result<(), Box<Diagnostic>> {
+/// `rythme.lock` before and after `rythme install` or `rythme update`.
+pub(crate) struct Installed {
+    pub before: Vec<Locked>,
+    pub after: Vec<Locked>,
+}
+
+/// The package index of an installation, found only when a dependency
+/// needs it.
+struct LazyIndex {
+    /// The `index` of the `rythme.toml` of the project, and its folder.
+    setting: (Option<String>, PathBuf),
+    index: Option<Index>,
+}
+
+impl LazyIndex {
+    fn get(&mut self) -> Result<&mut Index, Box<Diagnostic>> {
+        if self.index.is_none() {
+            let (setting, dir) = &self.setting;
+            self.index = Some(Index::new(setting.as_deref().map(|s| (s, dir.as_path())))?);
+        }
+        Ok(self.index.as_mut().expect("just made"))
+    }
+}
+
+/// A message about a dependency, at its line of `rythme.toml` when it has no place yet.
+fn at_dep(d: Box<Diagnostic>, span: Span) -> Box<Diagnostic> {
+    if d.span.is_some() {
+        d
+    } else {
+        Box::new(d.at(span))
+    }
+}
+
+/// The version of a dependency from the index to install: the one of
+/// `rythme.lock` while it is in the range (unless `update`), else the
+/// newest one of the index in the range.
+fn pin(name: &str, range: &crate::semver::Range, lock: &[Locked], index: &mut LazyIndex, update: bool) -> Result<Pinned, Box<Diagnostic>> {
+    let address = index.get()?.url.clone();
+    let kept = lock.iter().filter(|_| !update).find_map(|l| {
+        let i = l.from_index.as_ref().filter(|i| l.name == name && i.index == address)?;
+        Version::parse(&i.version).filter(|v| range.matches(v))?;
+        let tag = match &l.rev {
+            Rev::Tag(t) => Some(t.clone()),
+            Rev::Commit(_) => None,
+        };
+        Some(Pinned { version: i.version.clone(), url: l.url.clone(), tag, commit: l.commit.clone(), checksum: i.checksum.clone() })
+    });
+    if let Some(p) = kept {
+        return Ok(p);
+    }
+    let index = index.get()?;
+    if update {
+        index.refresh()?;
+    }
+    let entry = index.find(name)?;
+    let Some(release) = index::choose(&entry, range) else { return Err(index::no_version(&entry, range)) };
+    Ok(Pinned {
+        version: release.version.to_string(),
+        url: entry.repository.clone(),
+        tag: release.tag.clone(),
+        commit: release.commit.clone(),
+        checksum: release.checksum.clone(),
+    })
+}
+
+/// Installs the dependencies of the project; `update`: the packages to take
+/// again without `rythme.lock` (every one when the list is empty).
+pub(crate) fn install(update: Option<&[String]>) -> Result<Installed, Box<Diagnostic>> {
     let root = current_project()?;
     let m = manifest::load(&root)?;
     let lock = manifest::load_lock(&root)?;
@@ -504,9 +740,13 @@ fn install() -> Result<(), Box<Diagnostic>> {
             "`{name}` has no dependencies: add them under `[dependencies]` in `rythme.toml`",
             "`{name}` n'a pas de dépendances : ajoutez-les sous `[dependencies]` dans `rythme.toml`"
         ));
+    } else if update.is_some() {
+        out_line(&t!("Updating the dependencies of `{name}`", "Mise à jour des dépendances de `{name}`"));
     } else {
         out_line(&t!("Installing the dependencies of `{name}`", "Installation des dépendances de `{name}`"));
     }
+    let updating = |n: &str| update.is_some_and(|names| names.is_empty() || names.iter().any(|u| u == n));
+    let mut index = LazyIndex { setting: (m.index.clone(), m.dir.clone()), index: None };
     let mut queue: Vec<(Manifest, usize)> = Vec::new();
     let mut seen: HashSet<PathBuf> = HashSet::new();
     let mut locked: Vec<Locked> = Vec::new();
@@ -515,8 +755,30 @@ fn install() -> Result<(), Box<Diagnostic>> {
     queue.push((m, 0));
     while let Some((owner, next)) = queue.pop() {
         let Some(dep) = owner.deps.get(next) else { continue };
-        let dep_name = dep.name.clone();
+        let (dep_name, dep_span) = (dep.name.clone(), dep.span);
+        let mut from_index = None;
         let (dir, line) = match &dep.source {
+            Source::Index(range) => {
+                let pinned = pin(&dep_name, range, &lock, &mut index, updating(&dep_name)).map_err(|d| at_dep(d, dep.span))?;
+                let downloaded = fetch_index(&dep_name, &pinned).map_err(|d| at_dep(d, dep.span))?;
+                let short: String = pinned.commit.chars().take(7).collect();
+                let how = if downloaded { t!("downloaded", "téléchargé") } else { t!("already there", "déjà là") };
+                let rev = pinned.tag.clone().map_or_else(|| Rev::Commit(pinned.commit.clone()), Rev::Tag);
+                let address = index.get()?.url.clone();
+                let entry = Locked {
+                    name: dep_name.clone(),
+                    url: pinned.url.clone(),
+                    rev,
+                    commit: pinned.commit.clone(),
+                    from_index: Some(IndexLock { version: pinned.version.clone(), index: address, checksum: pinned.checksum.clone() }),
+                };
+                if !locked.contains(&entry) {
+                    locked.push(entry);
+                }
+                let dir = git_dir(&dep_name, &pinned.url, &Rev::Commit(pinned.commit.clone()))?;
+                from_index = Some(pinned.version);
+                (dir, t!("{range} from the index, commit {short} ({how})", "{range} depuis l'index, commit {short} ({how})"))
+            }
             Source::Path(p) => {
                 let dir = join(&owner.dir, p);
                 if !dir.is_dir() {
@@ -532,12 +794,14 @@ fn install() -> Result<(), Box<Diagnostic>> {
                 (dir, t!("folder {p}", "dossier {p}"))
             }
             Source::Git { url, rev } => {
-                let wanted = |l: &&Locked| l.url == *url && l.rev == *rev;
+                let again = updating(&dep_name);
+                let wanted = |l: &&Locked| l.url == *url && l.rev == *rev && l.from_index.is_none() && !again;
                 let before = lock.iter().find(wanted).map(|l| l.commit.as_str());
-                let (commit, downloaded) = fetch(&dep_name, url, rev, &owner.dir, before).map_err(|d| Box::new(d.at(dep.span)))?;
+                let fresh = again && matches!(rev, Rev::Tag(_));
+                let (commit, downloaded) = fetch(&dep_name, url, rev, &owner.dir, before, fresh).map_err(|d| Box::new(d.at(dep.span)))?;
                 let short: String = commit.chars().take(7).collect();
                 let how = if downloaded { t!("downloaded", "téléchargé") } else { t!("already there", "déjà là") };
-                let entry = Locked { name: dep_name.clone(), url: url.clone(), rev: rev.clone(), commit: commit.clone() };
+                let entry = Locked { name: dep_name.clone(), url: url.clone(), rev: rev.clone(), commit: commit.clone(), from_index: None };
                 if !locked.contains(&entry) {
                     locked.push(entry);
                 }
@@ -567,6 +831,20 @@ fn install() -> Result<(), Box<Diagnostic>> {
                 .boxed());
         }
         let sub = manifest::load(&dir)?;
+        if let Some(wanted) = from_index.filter(|v| *v != sub.version || sub.name != dep_name) {
+            let (found, version) = (&sub.name, &sub.version);
+            let d = Diagnostic::error(
+                "E025",
+                t!(
+                    "the package index gives `{dep_name}` {wanted}, but its `rythme.toml` says `{found}` {version}",
+                    "l'index des paquets donne `{dep_name}` {wanted}, mais son `rythme.toml` dit `{found}` {version}"
+                ),
+            );
+            return Err(d
+                .at(dep_span)
+                .help(t!("tell the maintainers of the package index", "prévenez les responsables de l'index des paquets"))
+                .boxed());
+        }
         count += 1;
         let version = &sub.version;
         out_line(&t!("  ✓ {dep_name} {version}: {line}", "  ✓ {dep_name} {version} : {line}"));
@@ -596,7 +874,79 @@ fn install() -> Result<(), Box<Diagnostic>> {
             ));
         }
     }
-    Ok(())
+    Ok(Installed { before: lock, after: locked })
+}
+
+// ----- `rythme update` -------------------------------------------------------------
+
+/// `rythme update [NAME...]`: takes again the dependencies (all of them, or
+/// those named) without `rythme.lock`: for a package of the index, the newest
+/// version of its range, from the newest copy of the index; for a tag of git,
+/// its commit now. `rythme.toml` does not change.
+pub fn update_command(args: &[String]) -> i32 {
+    if let Some(bad) = args.iter().find(|a| a.starts_with('-')) {
+        return usage(t!(
+            "`rythme update` takes the names of dependencies, not `{bad}`: `rythme update` (all of them) or `rythme update mathlib`",
+            "`rythme update` prend des noms de dépendances, pas `{bad}` : `rythme update` (toutes) ou `rythme update mathlib`"
+        ));
+    }
+    let result = (|| -> Result<Installed, Box<Diagnostic>> {
+        let root = current_project()?;
+        let m = manifest::load(&root)?;
+        let known: Vec<String> =
+            m.deps.iter().map(|d| d.name.clone()).chain(manifest::load_lock(&root)?.into_iter().map(|l| l.name)).collect();
+        for a in args {
+            if !known.contains(a) {
+                let d =
+                    Diagnostic::error("E025", t!("`{a}` is not a dependency of `{}`", "`{a}` n'est pas une dépendance de `{}`", m.name));
+                let d = match crate::suggest::closest(a, known.iter().map(String::as_str)) {
+                    Some(best) => d.help(t!("did you mean `rythme update {best}`?", "vouliez-vous dire `rythme update {best}` ?")),
+                    None => d.help(t!(
+                        "`rythme add {a}` adds it from the package index",
+                        "`rythme add {a}` l'ajoute depuis l'index des paquets"
+                    )),
+                };
+                return Err(d.boxed());
+            }
+        }
+        install(Some(args))
+    })();
+    match result {
+        Ok(done) => {
+            let changes = changes(&done.before, &done.after);
+            if changes.is_empty() {
+                out_line(&t!("Everything was already up to date", "Tout était déjà à jour"));
+            } else {
+                out_line(&t!("Updated:", "Mis à jour :"));
+                for c in changes {
+                    out_line(&format!("  {c}"));
+                }
+            }
+            0
+        }
+        Err(d) => {
+            report(&d);
+            1
+        }
+    }
+}
+
+/// What changed in `rythme.lock`: `mathlib 1.0.0 → 1.2.0`.
+fn changes(before: &[Locked], after: &[Locked]) -> Vec<String> {
+    let what = |l: &Locked| match &l.from_index {
+        Some(i) => i.version.clone(),
+        None => format!("{} ({})", l.rev, l.commit.chars().take(7).collect::<String>()),
+    };
+    let mut out = Vec::new();
+    for a in after {
+        let same_kind = |b: &&Locked| b.name == a.name && b.from_index.is_some() == a.from_index.is_some();
+        match before.iter().find(same_kind) {
+            Some(b) if b.commit == a.commit => {}
+            Some(b) => out.push(format!("{} {} → {}", a.name, what(b), what(a))),
+            None => out.push(t!("{} {} (new)", "{} {} (nouveau)", a.name, what(a))),
+        }
+    }
+    out
 }
 
 // ----- `rythme new` ----------------------------------------------------------------

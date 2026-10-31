@@ -3921,6 +3921,11 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMANDE] [ARGUMENTS...]
 | `doc [--html] [--out FICHIER] FICHIER...` | `documenter` | écrit la documentation de fichiers ou de dossiers, en Markdown ou sous forme de page web (voir [7.6](#76-la-documentation--rythme-doc)) |
 | `new NOM` | `nouveau` | crée le dossier d'un nouveau projet (voir [7.7](#77-projets-et-paquets)) |
 | `install` | `installer` | télécharge les dépendances du projet et écrit `rythme.lock` (voir [7.7](#77-projets-et-paquets)) |
+| `search [MOTS...]` | `chercher`, `rechercher` | trouve des paquets dans l'index des paquets (voir [7.11](#711-lindex-des-paquets)) |
+| `info NOM` | `infos` | ce que l'index des paquets dit d'un paquet (voir [7.11](#711-lindex-des-paquets)) |
+| `add NOM[@INTERVALLE]...` | `ajouter` | ajoute des paquets de l'index à `rythme.toml`, puis les installe (voir [7.11](#711-lindex-des-paquets)) |
+| `update [NOM...]` | `mettre-a-jour` | la version la plus récente de l'intervalle de chaque dépendance, dans `rythme.lock` (voir [7.11](#711-lindex-des-paquets)) |
+| `publish [--verify FICHIER...]` | `publier` | vérifie un paquet avant son entrée dans l'index, et affiche son entrée ; n'envoie jamais rien (voir [7.11](#711-lindex-des-paquets)) |
 | `exercise [list \| start NOM \| check FICHIER]` | `exercises`, `exercice`, `exercices` | les exercices intégrés (voir plus bas) |
 | `steps FICHIER [EXPRESSION] [--max N] [--width N]` | `etapes`, `étapes` | montre l'évaluation étape par étape (voir [7.8](#78-étape-par-étape--rythme-etapes)) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | exécute le code donné en argument, et affiche la valeur de sa dernière expression sauf si c'est `()` ; `ARGS` est donné à `args()` |
@@ -3935,7 +3940,7 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMANDE] [ARGUMENTS...]
 | `version` | `--version`, `-V` | affiche `rythme 1.0.0` |
 
 **Pour les programmes et les assistants d'IA.** `check`, `run`, `test`,
-`fix`, `explain` et `help` acceptent `--format json` : un seul document JSON
+`fix`, `explain`, `help`, `search` et `info` acceptent `--format json` : un seul document JSON
 au lieu des messages pour les personnes ; `run` et `test` acceptent
 `--sandbox` ; `rythme help llms` affiche tout le langage en un texte (voir
 [7.10](#710-rythme-et-les-assistants-dia)).
@@ -3984,7 +3989,7 @@ inconnu donne le code de sortie 2.
 
 **Sujets d'aide.** `rythme help SUJET` accepte `start`, `syntax`,
 `functions`, `lists`, `text`, `records`, `types`, `match`, `errors`,
-`functional`, `tests`, `exercises`, `modules`, `system`, `projects`, `dates`, `csv`, `random`,
+`functional`, `tests`, `exercises`, `modules`, `system`, `projects`, `packages`, `dates`, `csv`, `random`,
 `repl`, `fmt`, `doc`, `steps`, `editors`, `ruby` et `builtins`, ainsi que des
 noms français ou alternatifs : `syntaxe`, `fonctions`, `listes`, `texte`,
 `enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`, `exercices`,
@@ -4023,7 +4028,11 @@ noms allemands : `funktionen`, `listen`, `typen`, `muster`, `fehler`,
   seulement dans les terminaux connus pour les accepter).
 - `HOME` (`USERPROFILE` sous Windows) : là où le mode interactif garde son
   historique, et où `rythme install` garde les paquets (`~/.rythme/packages`).
-- `RYTHME_HOME` : un autre dossier pour les paquets (`RYTHME_HOME/packages`).
+- `RYTHME_HOME` : un autre dossier pour les paquets (`RYTHME_HOME/packages`)
+  et la copie de l'index des paquets (`RYTHME_HOME/index`).
+- `RYTHME_INDEX` : un autre index des paquets, une adresse ou un dossier
+  (voir [7.11](#711-lindex-des-paquets)) ; `index = "..."` dans
+  `rythme.toml` l'emporte sur elle.
 
 **Sorties.** Ce que le programme affiche (`print`, l'invite de `input`, les
 résultats de `check`, de `test` et de `fmt`) va sur la sortie standard ; les
@@ -4470,14 +4479,19 @@ entry = "src/main.ry"     # le programme ; celui-ci quand il n'est pas donné
 mathlib = { git = "https://github.com/quelqu-un/mathlib", tag = "v1.0.0" }
 geometrie = { git = "https://github.com/quelqu-un/geometrie", commit = "4d868c2" }
 outils = { path = "../outils" }
+graphiques = { version = "^1.2.0" }
 ```
 
 Une dépendance venant de git donne son adresse et une version fixe : un
 `tag` ou un `commit` (au moins 4 chiffres hexadécimaux). Une dépendance
-venant d'un dossier donne son `path`, relatif au projet. Le nom avant `=`
-est le nom utilisé dans `use`. C'est une petite partie de TOML, lue par
+venant d'un dossier donne son `path`, relatif au projet. Une dépendance
+venant de l'index des paquets donne un intervalle de versions (voir
+[7.11](#711-lindex-des-paquets)). Le nom avant `=` est le nom utilisé dans
+`use`. Les clés `description`, `license`, `repository`, `keywords`,
+`authors` et `index` sont pour l'index des paquets (voir
+[7.11](#711-lindex-des-paquets)). C'est une petite partie de TOML, lue par
 Rythme lui-même : des textes avec `"` (avec `\"`, `\\`, `\n`, `\t`) ou `'`,
-et des tables sur une ligne. Toute autre clé, section (`[package]` compris)
+des tables et des listes de textes sur une ligne. Toute autre clé, section (`[package]` compris)
 ou sorte de valeur est E025, montrée à sa place dans `rythme.toml`, avec une
 suggestion quand une clé proche existe :
 
@@ -4488,7 +4502,7 @@ erreur[E025]: clé inconnue `tga`
 6 | outils = { path = "../outils", tga = "x" }
   |                                ^^^
   |
-  = note: les clés ici sont `git`, `tag`, `commit`, `path`
+  = note: les clés ici sont `version`, `git`, `tag`, `commit`, `path`
   = aide: vouliez-vous dire `tag` ?
   = en savoir plus : `rythme explain E025`
 ```
@@ -4991,6 +5005,200 @@ AI assistants.
 **Contribuer avec un agent.** [`AGENTS.md`](../AGENTS.md), à la racine du
 dépôt, dit aux agents des contributeurs comment construire et tester Rythme
 et quelles sont ses conventions.
+
+### 7.11 L'index des paquets
+
+L'**index des paquets** trouve et partage des paquets par leur nom, à côté
+des dépendances venant d'un dépôt git ou d'un dossier (voir
+[7.7](#77-projets-et-paquets)). Il n'a besoin d'aucun serveur : c'est un
+dépôt git public avec un fichier par paquet, et ajouter une version est une
+pull request sur ce dépôt.
+
+```text
+$ rythme search vecteurs
+mathlib 1.2.0   Vecteurs, matrices et quelques nombres
+1 paquet(s) trouvé(s) pour `vecteurs` dans https://github.com/maxlestage/rythme-index (copie du 2026-10-31)
+Plus sur l'un d'eux : `rythme info mathlib` ; l'ajouter à un projet : `rythme add mathlib`
+`rythme search --update vecteurs` cherche dans la copie la plus récente de l'index
+$ rythme add mathlib
+Installation des dépendances de `bonjour`
+  ✓ mathlib 1.2.0 : ^1.2.0 depuis l'index, commit 4d868c2 (téléchargé)
+1 paquet(s) prêt(s)
+Ajouté `mathlib = { version = "^1.2.0" }` à rythme.toml (1.2.0)
+  mathlib: Vecteurs, matrices et quelques nombres
+  utilisez-le avec `use mathlib/FICHIER` (voir `rythme info mathlib`)
+```
+
+| Commande | Ce qu'elle fait |
+|----------|-----------------|
+| `search [MOTS...] [--update] [--format json]` | les paquets dont le nom, la description ou les mots-clés contiennent chaque mot (tous les paquets sans mots), les meilleurs d'abord : un mot qui est le nom, puis un mot dans le nom, un mot-clé, un mot de la description |
+| `info NOM [--update] [--format json]` | la description, le dépôt, la licence, les mots-clés, les auteurs et les versions d'un paquet, et pourquoi une version a été retirée |
+| `add NOM[@INTERVALLE]...` | ajoute `NOM = { version = "^1.2.0" }` (la version la plus récente) ou l'intervalle donné (`mathlib@1.1` est `^1.1`, `mathlib@=1.1.0` exactement) à la fin de `[dependencies]`, puis installe ; le reste de `rythme.toml` reste tel quel, et si l'installation échoue il est laissé tel quel. Une dépendance du même nom est remplacée |
+| `update [NOM...]` | reprend les dépendances (toutes, ou celles nommées) sans `rythme.lock` : la version la plus récente de l'intervalle de chaque paquet de l'index, depuis la copie la plus récente de l'index, et le commit actuel de chaque tag de git ; puis liste ce qui a changé. `rythme.toml` ne change pas |
+| `publish` | vérifie le paquet du dossier courant, puis affiche son entrée pour l'index et les étapes de la pull request |
+| `publish --verify FICHIER...` | vérifie des entrées de l'index, pour les vérifications de ses pull requests |
+
+`rythme install` et `rythme update` marchent comme en
+[7.7](#77-projets-et-paquets) ; une dépendance de l'index est montrée comme
+`^1.2.0 depuis l'index`. `search`, `info`, `add`, `update` et `publish` ont
+aussi des noms français : `chercher`, `infos`, `ajouter`, `mettre-a-jour`,
+`publier`.
+
+**Versions.** Une dépendance venant de l'index donne un intervalle de
+versions de la [gestion sémantique de versions](https://semver.org/lang/fr/),
+avec les sens de Cargo et de npm :
+
+```toml
+[dependencies]
+mathlib = { version = "^1.2.0" }    # 1.2.0 ou plus récente, sous 2.0.0 (aussi écrit "1.2.0")
+geometrie = { version = "~0.3.1" }  # 0.3.1 ou plus récente, sous 0.4.0
+outils = { version = "=1.0.0" }     # exactement 1.0.0
+graphiques = { version = ">=1.2.0, <1.5.0" }
+```
+
+`^0.3.1` s'arrête sous 0.4.0 et `^0.0.3` ne prend que 0.0.3 : avant 1.0, le
+deuxième nombre compte comme le premier. `*` prend n'importe quelle version,
+`1.*` n'importe quelle 1.x.y. Une préversion (`1.0.0-beta.2`) n'est prise
+que par un intervalle qui nomme une préversion des mêmes trois nombres.
+`rythme install` installe la version de `rythme.lock` tant qu'elle est dans
+l'intervalle, et sinon la version la plus récente de l'intervalle qui n'est
+pas retirée ; `rythme update` prend toujours la plus récente. Un intervalle
+illisible, ou auquel aucune version ne va, est E025, avec les versions qui
+existent.
+
+**`rythme.lock`.** Un paquet de l'index est verrouillé comme une dépendance
+venant de git, avec trois lignes de plus : sa version, l'index, et la somme
+de contrôle de ses fichiers.
+
+```toml
+[[package]]
+name = "mathlib"
+version = "1.2.0"
+index = "https://github.com/maxlestage/rythme-index"
+git = "https://github.com/quelqu-un/mathlib"
+tag = "v1.2.0"
+commit = "4d868c2b0f6c1e1a8d7b8f5d3c2a1b0e9f8d7c6b"
+checksum = "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+```
+
+Avec `rythme.lock` et les paquets déjà téléchargés, `rythme install` n'a
+besoin ni de l'index ni du réseau. Les paquets utilisés par un paquet de
+l'index prennent leurs versions dans le `rythme.lock` du projet qui
+l'utilise.
+
+**L'index.** Un dépôt git avec un fichier par paquet,
+`packages/NOM.toml`, dans le TOML de `rythme.toml` :
+
+```toml
+name = "mathlib"
+description = "Vecteurs, matrices et quelques nombres"
+repository = "https://github.com/quelqu-un/mathlib"
+license = "MIT"
+keywords = ["maths", "vecteurs"]
+authors = ["Quelqu'un <quelqu-un@example.com>"]
+
+[[version]]
+version = "1.2.0"
+tag = "v1.2.0"
+commit = "4d868c2b0f6c1e1a8d7b8f5d3c2a1b0e9f8d7c6b"
+checksum = "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+```
+
+`yanked = "pourquoi"` dans une `[[version]]` la retire : elle n'est plus
+jamais choisie, mais un projet dont le `rythme.lock` l'a l'installe encore.
+Rythme garde une copie de l'index dans `RYTHME_HOME/index`
+(`~/.rythme/index`) et la lit sans réseau : `search` et `info` lisent la
+copie (et la téléchargent la première fois), `--update` prend la plus
+récente, `add` et `update` prennent la plus récente avant de choisir une
+version, et un paquet que la copie n'a pas fait prendre une fois la copie la
+plus récente. Sans réseau, la copie présente sert, avec un avertissement ;
+sans copie, c'est E025, qui dit de vérifier la connexion ou de choisir un
+autre index.
+
+**Quel index.** Dans cet ordre : `index = "..."` en haut de `rythme.toml`
+(une adresse, ou un dossier relatif au projet), la variable `RYTHME_INDEX`,
+et sinon `https://github.com/maxlestage/rythme-index`. Une adresse utilise
+`https://`, `ssh://` (ou `git@hôte:chemin`) ou `file://` ; un dossier de
+l'ordinateur avec un dossier `packages` est lu tel quel, sans git et sans
+copie, ce qui convient à un index partagé dans une école ou une équipe.
+
+**`rythme.toml` pour l'index.** Ces clés, en haut, décrivent un paquet ;
+`rythme publish` a besoin des trois premières :
+
+| Clé | Valeur |
+|-----|--------|
+| `description` | à quoi sert le paquet, en une phrase (au plus 200 caractères) |
+| `license` | sa licence, comme `"MIT"` ou `"Apache-2.0"` |
+| `repository` | l'adresse de son dépôt git, d'où l'index le donne |
+| `keywords` | au plus cinq mots en minuscules, comme `["maths", "vecteurs"]` |
+| `authors` | comme `["Ada Lovelace <ada@example.com>"]` |
+| `index` | un autre index des paquets pour le projet |
+
+**Publier une version.** Dans le dossier du paquet, à la racine de son
+dépôt git : validez tout, étiquetez la version avec la version de
+`rythme.toml` (`git tag v1.2.0`, ou `1.2.0`), poussez le tag
+(`git push origin v1.2.0`), puis lancez `rythme publish`. Il vérifie, et
+liste chaque problème avec la façon de le corriger :
+
+- `rythme.toml` : une version de la gestion sémantique de versions,
+  `description`, `license` et `repository`, les mots-clés, et aucune
+  dépendance venant d'un dossier (celles de l'index et de git vont bien) ;
+- git : le paquet à la racine de son dépôt, rien à valider, le tag de la
+  version sur le commit courant, et ce tag dans le `repository` avec le même
+  commit (quand il ne peut pas être joint, un avertissement) ;
+- `rythme check` et `rythme test` passent ;
+- l'index : le nom n'est pas pris par un autre dépôt, et la version n'y est
+  pas encore (une version publiée ne change jamais).
+
+Il affiche ensuite l'entrée à ajouter à l'index (le fichier entier pour un
+nouveau paquet, le bloc `[[version]]` sinon), avec sa somme de contrôle, et
+les étapes de la pull request. **Rythme n'envoie jamais rien lui-même** :
+la pull request est la vôtre, et les vérifications de l'index lancent
+`rythme publish --verify packages/NOM.toml`. Code de sortie 0 quand le
+paquet est prêt, 1 sinon.
+
+**`rythme publish --verify FICHIER...`** vérifie des entrées : chaque clé
+connue, `description`, `license`, `repository`, au moins une version et un
+`tag` pour chacune, un fichier nommé d'après son paquet ; puis, pour chaque
+version, que le commit est dans le dépôt, que le tag est ce commit, que les
+fichiers ont la somme de contrôle, et que le `rythme.toml` du commit a ce
+nom et cette version et aucune dépendance venant d'un dossier. Il affiche
+`✓ FICHIER` ou le problème, avec le code de sortie 1 si une entrée est
+fausse.
+
+**Sommes de contrôle.** La somme de contrôle d'une version est `sha256:`
+suivi du SHA-256 de, pour chaque fichier du commit dans l'ordre des octets
+de son chemin : son mode (`100644`), une espace, son chemin et un octet nul,
+puis sa taille en octets, un octet nul et son contenu (pour un sous-module :
+son commit et un octet nul). Elle est calculée sur ce que git garde, donc
+elle est la même sur tous les systèmes, quoi que git fasse des fins de
+lignes.
+
+**Sécurité.** Tout ce qui vient de l'index est vérifié avant d'être utilisé :
+les noms de paquets sont des noms Rythme (donc `rythme info ../x` est
+refusé avant d'ouvrir un fichier) ; les adresses n'utilisent que https, ssh
+ou file (git lui-même est limité à ces protocoles) ; git tourne sans hooks,
+sans moniteur du système de fichiers et avec les liens écrits comme des
+fichiers ordinaires ; les fichiers de chaque version doivent avoir la somme
+de contrôle de l'index, sinon rien n'est installé ; le `rythme.toml` de la
+version doit avoir le nom et la version que l'index donne ; les textes de
+l'index sont montrés sans caractères de contrôle ; et rien d'un paquet ne
+tourne quand il est installé, ajouté ou vérifié (seul `rythme publish` lance
+`rythme check` et `rythme test`, sur votre propre paquet).
+
+**Pour les programmes.** `search` et `info` acceptent `--format json` : un
+document (`"command": "search"` ou `"info"`, voir
+[`rythme-output.schema.json`](rythme-output.schema.json)) avec `ok`,
+`exit_code`, l'`index` (`url`, et `updated`, quand sa copie a été
+téléchargée), les `packages` trouvés (ou le `package`, avec ses
+`versions`), et les `diagnostics`.
+
+**Créer l'index.** L'index de Rythme est
+`https://github.com/maxlestage/rythme-index`, créé par le propriétaire de
+Rythme à partir de [`packaging/index-template/`](../packaging/index-template),
+qui contient son README, une entrée d'exemple et le workflow qui vérifie
+chaque pull request. Toute équipe peut faire son propre index de la même
+façon.
 
 ---
 
