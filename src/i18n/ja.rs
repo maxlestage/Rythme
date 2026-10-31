@@ -10133,7 +10133,7 @@ Within 1.x, a program that runs keeps running, with the same output.
 1.x の間は、動くプログラムは同じ出力で動き続けます。
 "#,
         ),
-        ("unknown shell `{s}`", "不明なシェル `{s}`"),
+        ("unknown shell `{s}`.", "不明なシェル `{s}`。"),
         ("which shell?", "どのシェル？"),
         (
             r#"{what} Write one of bash, zsh, fish, powershell, like `rythme completions bash`
@@ -10202,5 +10202,6 @@ see `rythme completions --help`"#,
   チェックし、項目とプルリクエストの手順を表示する。
   --verify FILE...  インデックス自身による項目のチェック（packages/NAME.toml）"#,
         ),
+        ("the argument `{shown}` is not valid UTF-8: Rythme reads only names and words written in UTF-8; rename the file, or give the program its input another way", "引数 `{shown}` は正しい UTF-8 ではありません：Rythme は UTF-8 で書かれた名前と言葉しか読めません。ファイル名を変えるか、別の方法で入力を渡してください"),
     ],
 }
