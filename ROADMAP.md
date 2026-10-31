@@ -199,7 +199,11 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
   (`docs/llms.txt`, `docs/llms-full.txt`, generated and tested), the MCP
   server `rythme mcp` (sandboxed, time and memory limited), `AGENTS.md` in
   the repository and in new projects, and targeted messages for the habits
-  of other languages (manual 7.10). The website does not show it yet.
+  of other languages (manual 7.10). The website shows it too: the AI page
+  (`/{lang}/ai/`: what to give an assistant, the MCP configurations, the
+  loop of `--format json` and `rythme fix`), `/llms.txt` and
+  `/llms-full.txt`, every page as Markdown, and *Copy for AI* in the
+  playground (see [site/README.md](site/README.md#for-ai-assistants)).
 - [x] **Artificial intelligence in class**: what a course needs to write
   machine learning, neural networks, search, games and calls to language
   models, pure and readable. Done: vectors and matrices over lists (`dot`,
