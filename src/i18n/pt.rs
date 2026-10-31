@@ -1696,17 +1696,11 @@ exemplo: rythme steps fibonacci.ry "fib(4)""#,
         ("write a range with `..`: `1..10` is the list from 1 to 10 (included), and `0..10 |> step_by(2)` counts by 2", "escreva um intervalo com `..`: `1..10` é a lista de 1 a 10 (incluído), e `0..10 |> step_by(2)` conta de 2 em 2"),
         ("use the operator `//` for a whole division: `7 // 2` is 3", "use o operador `//` para uma divisão inteira: `7 // 2` é 3"),
         ("use the operator `%` for the remainder: `7 % 3` is 1", "use o operador `%` para o resto: `7 % 3` é 1"),
-        ("use the operators `//` and `%`: `7 // 2` is 3 and `7 % 2` is 1", "use os operadores `//` e `%`: `7 // 2` é 3 e `7 % 2` é 1"),
         ("to put values in a text, use braces: \"total: {{x}}\"; to write a number with 2 decimals: `text(x, 2)`", "para colocar valores em um texto, use chaves: \"total: {{x}}\"; para escrever um número com 2 casas decimais: `text(x, 2)`"),
         ("read the whole file with `read_file(path)`, then cut it with `lines(text)`; the lines of the standard input are `input_lines()`", "leia o arquivo inteiro com `read_file(path)`, depois corte-o com `lines(text)`; as linhas da entrada padrão são `input_lines()`"),
         ("to merge two records, write `{{..a, ..b}}`: the fields of `b` replace those of `a`; for two dicts or two sets, `union(a, b)`", "para juntar dois registros, escreva `{{..a, ..b}}`: os campos de `b` substituem os de `a`; para dois dicionários ou dois conjuntos, `union(a, b)`"),
         ("write `unwrap_or(get(x, key), default)`: the value, or the default if it is missing", "escreva `unwrap_or(get(x, key), default)`: o valor, ou o valor padrão se ele faltar"),
-        ("pair the lists, then combine each pair: `zip(a, b) |> map(fn([x, y]) = x + y)`", "junte as listas em pares, depois combine cada par: `zip(a, b) |> map(fn([x, y]) = x + y)`"),
-        ("sort from the largest to the smallest with `sort(list) |> reverse`", "ordene do maior para o menor com `sort(list) |> reverse`"),
         ("compute the average with `sum(list) / len(list)`", "calcule a média com `sum(list) / len(list)`"),
-        ("keep x between low and high with `max(low, min(x, high))`", "mantenha x entre low e high com `max(low, min(x, high))`"),
-        ("count how many times each value appears with `group_by(list, fn(x) = x) |> map_values(len)`", "conte quantas vezes cada valor aparece com `group_by(list, fn(x) = x) |> map_values(len)`"),
-        ("a decimal number x is NaN (not a number) when `x != x`", "um número decimal x é NaN (não é um número) quando `x != x`"),
         ("`n.times do |i| ... end` is written `(0..n - 1).each do |i| ... end`", "`n.times do |i| ... end` se escreve `(0..n - 1).each do |i| ... end`"),
         ("to use another file, write `use other_file`, then `other_file.name`", "para usar outro arquivo, escreva `use other_file`, depois `other_file.name`"),
         ("there is no `new`: build values directly, like `{{name: \"Ada\"}}` or `Circle(2.0)`", "não existe `new`: crie os valores diretamente, como `{{name: \"Ada\"}}` ou `Circle(2.0)`"),
@@ -4508,7 +4502,6 @@ Ou dê outro nome ao parâmetro: fn twice(n) = n * 2"#,
         ("One element out of n of a list (or text), starting with the first. On a range: the numbers with a step.", "Um elemento a cada n de uma lista (ou de um texto), começando pelo primeiro. Em um intervalo: os números com um passo."),
         ("Cuts a list (or text) into pieces of n elements; the last piece may be shorter.", "Corta uma lista (ou um texto) em pedaços de n elementos; o último pedaço pode ser mais curto."),
         ("Every group of n neighbouring elements of a list (or text), in order: handy to compare each element with the next one.", "Cada grupo de n elementos vizinhos de uma lista (ou de um texto), em ordem: útil para comparar cada elemento com o seguinte."),
-        ("Pairs the elements of two lists: [[a1, b1], [a2, b2], ...]. It stops at the end of the shorter list.", "Junta em pares os elementos de duas listas: [[a1, b1], [a2, b2], ...]. Para no fim da lista mais curta."),
         ("Pairs each element with its position: [[0, x0], [1, x1], ...].", "Junta cada elemento com a sua posição: [[0, x0], [1, x1], ...]."),
         ("Is f true for at least one element?", "f é verdadeira para pelo menos um elemento?"),
         ("Is f true for every element?", "f é verdadeira para todos os elementos?"),
@@ -4559,8 +4552,6 @@ Ou dê outro nome ao parâmetro: fn twice(n) = n * 2"#,
         ("The parts of a path, split at each `/` or `\\`; the first part of an absolute path is its root (`/`, `C:\\`...). `join_path` puts them back together.", "As partes de um caminho, separadas em cada `/` ou `\\`; a primeira parte de um caminho absoluto é a raiz dele (`/`, `C:\\`...). `join_path` as junta de novo."),
         ("The date and time now, where the program runs: a record {year, month, day, hour, minute, second, offset}, where `offset` is the number of minutes the local time is ahead of UTC (0 when the system does not tell).", "A data e a hora de agora, onde o programa roda: um registro {year, month, day, hour, minute, second, offset}, em que `offset` é o número de minutos que a hora local está à frente do UTC (0 quando o sistema não informa)."),
         ("The date of today, where the program runs: a record {year, month, day}.", "A data de hoje, onde o programa roda: um registro {year, month, day}."),
-        ("Reads a date written as ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date.", "Lê uma data escrita em ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", com `Z` ou um deslocamento como `+01:00` se necessário): `Ok(date)`, ou `Err(message)` se não for uma data válida."),
-        ("Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one.", "Escreve uma data em ISO 8601: \"2024-02-29\", com a hora se a data tiver uma, e `Z` ou o deslocamento se tiver um."),
         ("Is the value a valid date: a record {year, month, day} (with `hour`, `minute`, `second`, `offset` if needed) for a day that exists?", "O valor é uma data válida: um registro {year, month, day} (com `hour`, `minute`, `second`, `offset` se necessário) de um dia que existe?"),
         ("The date n days later (or earlier, when n is negative), at the same time of day.", "A data n dias depois (ou antes, quando n é negativo), na mesma hora do dia."),
         ("The date and time n seconds later (or earlier, when n is negative). Add `60 * minutes` or `3600 * hours` the same way.", "A data e a hora n segundos depois (ou antes, quando n é negativo). Some `60 * minutes` ou `3600 * hours` do mesmo jeito."),
@@ -9985,5 +9976,373 @@ nada sozinho."#,
         ("The index is the folder {url}, where Rythme writes nothing.", "O índice é a pasta {url}, onde o Rythme não escreve nada."),
         ("Create its file {file} with:", "Crie o arquivo {file} dele com:"),
         ("Add at the end of its file {file}:", "Adicione no final do arquivo {file} dele:"),
+        ("the pattern \"{pattern}\" has an unknown directive `%{c}`", "o padrão \"{pattern}\" tem uma diretiva desconhecida `%{c}`"),
+        ("the directives are %Y (year), %m (month), %d (day), %H (hour), %M (minute), %S (second), %y (year in 2 digits), %B and %b (month name), %A and %a (day name), %I and %p (12-hour clock), %j (day of the year), %z (offset) and %% (a %)", "as diretivas são %Y (ano), %m (mês), %d (dia), %H (hora), %M (minuto), %S (segundo), %y (ano com 2 dígitos), %B e %b (nome do mês), %A e %a (nome do dia), %I e %p (relógio de 12 horas), %j (dia do ano), %z (deslocamento) e %% (um %)"),
+        (r#""{text}" does not follow the pattern "{pattern}""#, r#""{text}" não segue o padrão "{pattern}""#),
+        ("the hour must go from 1 to 12 with AM or PM, not {}", "a hora deve ir de 1 a 12 com AM ou PM, não {}"),
+        ("the day of the year must go from 1 to {len}, not {n}", "o dia do ano deve ir de 1 a {len}, não {n}"),
+        ("`{c}` is not a Base64 character", "`{c}` não é um caractere Base64"),
+        ("this Base64 text is cut short", "este texto em Base64 está cortado"),
+        ("the decoded bytes are not a text (UTF-8)", "os bytes decodificados não são um texto (UTF-8)"),
+        ("a `%` must be followed by two hexadecimal digits, like `%20`", "um `%` deve ser seguido de dois dígitos hexadecimais, como `%20`"),
+        ("`{f}` would give {count} lists: too many (at most {MAX_COMBINED} elements in all)", "`{f}` daria {count} listas: demais (no máximo {MAX_COMBINED} elementos no total)"),
+        ("the number of combinations grows very fast: try with a shorter list, or fewer elements in each one", "o número de combinações cresce muito rápido: tente com uma lista mais curta, ou menos elementos em cada uma"),
+        ("`unzip` needs a list of lists, but its element {k} is {}", "`unzip` precisa de uma lista de listas, mas o seu elemento {k} é {}"),
+        ("the function given to `unfold` must return `Some([value, next])` or `None`, but it returned Some({})", "a função dada a `unfold` deve retornar `Some([valor, próximo])` ou `None`, mas retornou Some({})"),
+        ("`{f}` needs at least two numbers in each list", "`{f}` precisa de pelo menos dois números em cada lista"),
+        ("`correlation` needs numbers that vary: one of the lists has all its numbers equal", "`correlation` precisa de números que variem: uma das listas tem todos os números iguais"),
+        ("`{f}` cannot compare {} and {}", "`{f}` não pode comparar {} e {}"),
+        ("the value and its bounds must be of the same kind: all numbers, or all texts...", "o valor e os seus limites devem ser do mesmo tipo: todos números, ou todos textos..."),
+        ("`constrain`: the lower bound {} is above the upper bound {}", "`constrain`: o limite inferior {} está acima do limite superior {}"),
+        ("`binomial` needs a number of 0 or more, not {n}", "`binomial` precisa de um número maior ou igual a 0, não {n}"),
+        ("`expect` found `None`: there is no value", "`expect` encontrou `None`: não há valor"),
+        ("`expect` found an error: {}", "`expect` encontrou um erro: {}"),
+        ("`all_ok` needs a list of Results (Ok or Err), but its element {k} is {}", "`all_ok` precisa de uma lista de Results (Ok ou Err), mas o seu elemento {k} é {}"),
+        ("to keep the values of a list of Options, use `filter_map(list, fn(x) = x)`", "para manter os valores de uma lista de Options, use `filter_map(lista, fn(x) = x)`"),
+        ("`format` cannot use \"{spec}\": {why}", "`format` não pode usar \"{spec}\": {why}"),
+        (r#"a spec is written [[fill]align][sign][#][0][width][,][.precision][type]: ">8" (8 wide, on the right), "^8" (centered), "08.2f" (2 decimals, zeros before), ",d" (thousands), ".1%" (a percentage), "x" (hexadecimal), "b" (binary), "e" (exponent)"#, r#"uma especificação se escreve [[preenchimento]alinhamento][sinal][#][0][largura][,][.precisão][tipo]: ">8" (largura 8, à direita), "^8" (centralizado), "08.2f" (2 casas decimais, zeros na frente), ",d" (milhares), ".1%" (uma porcentagem), "x" (hexadecimal), "b" (binário), "e" (expoente)"#),
+        ("the width is at most {MAX_WIDTH}", "a largura é no máximo {MAX_WIDTH}"),
+        ("the precision is at most {MAX_PRECISION}", "a precisão é no máximo {MAX_PRECISION}"),
+        ("a number must follow the `.`", "um número deve vir depois do `.`"),
+        ("`{c}` is not a type of format", "`{c}` não é um tipo de formato"),
+        ("this is not a format spec", "isto não é uma especificação de formato"),
+        ("`{kind}` cannot write {what}", "`{kind}` não pode escrever {what}"),
+        ("a whole number", "um número inteiro"),
+        ("a whole number has no decimals: write a type like `f` for them", "um número inteiro não tem casas decimais: escreva um tipo como `f` para tê-las"),
+        ("`,` groups decimal digits only: use `_`", "`,` só agrupa dígitos decimais: use `_`"),
+        ("a decimal number", "um número decimal"),
+        ("signs, `#`, `0` and `,` are for numbers", "os sinais, `#`, `0` e `,` são para números"),
+        ("`{f}`: the base must go from 2 to 36, not {b}", "`{f}`: a base deve ir de 2 a 36, não {b}"),
+        ("\"{s}\" is not a whole number in base {radix}", "\"{s}\" não é um número inteiro na base {radix}"),
+        ("`digits` needs a number of 0 or more, not {}", "`digits` precisa de um número maior ou igual a 0, não {}"),
+        ("`{f}`: the text to look for is empty", "`{f}`: o texto a procurar está vazio"),
+        ("`{f}` cannot replace an empty text", "`{f}` não pode substituir um texto vazio"),
+        ("`edit_distance` compares texts of at most {MAX_DISTANCE_WORK} pairs of characters, not {} by {}", "`edit_distance` compara textos de no máximo {MAX_DISTANCE_WORK} pares de caracteres, não {} por {}"),
+        ("to count a piece of text in a text, use `occurrences(text, piece)`", "para contar um trecho de texto em um texto, use `occurrences(texto, trecho)`"),
+        ("to count the elements equal to a value, use `occurrences(list, x)`", "para contar os elementos iguais a um valor, use `occurrences(lista, x)`"),
+        ("the value comes first, then the spec: `format(42, \"05\")`; to put values in a text, use braces", "o valor vem primeiro, depois a especificação: `format(42, \"05\")`; para colocar valores em um texto, use chaves"),
+        ("return `Some(x)` to keep x, or `None` to leave the element out", "retorne `Some(x)` para manter x, ou `None` para deixar o elemento de fora"),
+        ("return `Some([value, next])` to go on, or `None` to stop", "retorne `Some([valor, próximo])` para continuar, ou `None` para parar"),
+        ("Pairs the elements of two lists (or more: one element of each list in every group): [[a1, b1], [a2, b2], ...]. It stops at the end of the shortest list.", "Emparelha os elementos de duas listas (ou mais: um elemento de cada lista em cada grupo): [[a1, b1], [a2, b2], ...]. Para no fim da lista mais curta."),
+        (r#"Reads a date written as ISO 8601 ("2024-02-29", "2024-02-29T13:05:00", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date. With a pattern like "%d/%m/%Y" (the directives of `format_date`), reads a date written that way."#, r#"Lê uma data escrita em ISO 8601 ("2024-02-29", "2024-02-29T13:05:00", com `Z` ou um deslocamento como `+01:00` se necessário): `Ok(date)`, ou `Err(message)` se não for uma data válida. Com um padrão como "%d/%m/%Y" (as diretivas de `format_date`), lê uma data escrita dessa forma."#),
+        ("Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one. With a pattern, writes it the way `strftime` does: %Y year, %m month, %d day, %H hour, %M minute, %S second, %y year in two digits, %B and %b the month, %A and %a the day of the week (in English), %I and %p the 12-hour clock, %j the day of the year, %z the offset, %% a %.", "Escreve uma data em ISO 8601: \"2024-02-29\", com a hora se a data tiver uma, e `Z` ou o deslocamento se tiver um. Com um padrão, escreve-a como `strftime`: %Y o ano, %m o mês, %d o dia, %H a hora, %M o minuto, %S o segundo, %y o ano com dois dígitos, %B e %b o mês, %A e %a o dia da semana (em inglês), %I e %p o relógio de 12 horas, %j o dia do ano, %z o deslocamento, %% um %."),
+        ("The text that shows a value the way the REPL and `debug` show it: a text between quotes, with its special characters written as escapes. `text` gives a text as it is.", "O texto que mostra um valor como o REPL e `debug` o mostram: um texto entre aspas, com os seus caracteres especiais escritos como sequências de escape. `text` dá um texto tal como é."),
+        ("Shows values on the error output (stderr), separated by spaces, then goes to the next line: for messages that must not mix with the results of a program, which go to the standard output.", "Mostra valores na saída de erro (stderr), separados por espaços, e passa para a próxima linha: para mensagens que não devem se misturar com os resultados de um programa, que vão para a saída padrão."),
+        ("The value kept between two bounds: `low` if it is below, `high` if it is above, itself otherwise. For numbers, texts... any values that can be compared.", "O valor mantido entre dois limites: `low` se estiver abaixo, `high` se estiver acima, ele mesmo caso contrário. Para números, textos... quaisquer valores comparáveis."),
+        ("The whole quotient and the remainder of a division at once: `[a // b, a % b]`.", "O quociente inteiro e o resto de uma divisão de uma só vez: `[a // b, a % b]`."),
+        ("The binomial coefficient \"n choose k\": the number of ways to choose k elements among n, exact even when it is very large.", "O coeficiente binomial \"n escolhe k\": o número de maneiras de escolher k elementos entre n, exato mesmo quando é muito grande."),
+        ("The digits of a whole number (0 or more), the most significant first, in base 10 or in the base given (from 2 to 36).", "Os dígitos de um número inteiro (maior ou igual a 0), o mais significativo primeiro, na base 10 ou na base dada (de 2 a 36)."),
+        ("Writes a whole number in a base from 2 to 36, with the digits 0 to 9 then the letters a to z.", "Escreve um número inteiro em uma base de 2 a 36, com os dígitos 0 a 9 e depois as letras a a z."),
+        ("Reads a whole number written in a base from 2 to 36: `Ok(number)`, or `Err(message)` if the text is not a number in this base. `0x`, `0o` and `0b` may come before a number in base 16, 8 and 2.", "Lê um número inteiro escrito em uma base de 2 a 36: `Ok(number)`, ou `Err(message)` se o texto não for um número nessa base. `0x`, `0o` e `0b` podem vir antes de um número na base 16, 8 e 2."),
+        ("Is the number greater than 0?", "O número é maior que 0?"),
+        ("Is the number less than 0?", "O número é menor que 0?"),
+        ("Is the number 0 (or 0.0)?", "O número é 0 (ou 0.0)?"),
+        ("Is the decimal number `nan` (\"not a number\")? It is never equal to anything, not even to itself.", "O número decimal é `nan` (\"não é um número\")? Ele nunca é igual a nada, nem a si mesmo."),
+        ("Is the number finite: neither an infinity nor `nan`? Whole numbers always are.", "O número é finito: nem um infinito nem `nan`? Os números inteiros sempre são."),
+        ("Adds `fill` (a space by default) on both sides of the text until it is `width` characters long: titles and cells of tables stay centered. A character left over goes to the right.", "Adiciona `fill` (um espaço por padrão) dos dois lados do texto até ele ter `width` caracteres: os títulos e as células das tabelas ficam centralizados. Um caractere que sobra vai para a direita."),
+        (r##"Writes a value following a format spec, like Python's `format`: ".2f" for 2 decimals, ">8" to fill 8 characters on the right ("<" on the left, "^" centered), "08.2f" with zeros before, "," with the thousands separated, "%" as a percentage, "x", "o" and "b" in hexadecimal, octal and binary ("#" adds 0x, 0o, 0b), "e" with an exponent. To put values in a text, use braces."##, r##"Escreve um valor seguindo uma especificação de formato, como `format` em Python: ".2f" para 2 casas decimais, ">8" para preencher 8 caracteres à direita ("<" à esquerda, "^" centralizado), "08.2f" com zeros na frente, "," com os milhares separados, "%" como porcentagem, "x", "o" e "b" em hexadecimal, octal e binário ("#" adiciona 0x, 0o, 0b), "e" com um expoente. Para colocar valores em um texto, use chaves."##),
+        ("Replaces the first occurrence of `old` by `new`, and only that one.", "Substitui a primeira ocorrência de `old` por `new`, e só essa."),
+        ("How many times an element is in a list, or a piece of text in a text (pieces that do not overlap).", "Quantas vezes um elemento está em uma lista, ou um trecho de texto em um texto (trechos que não se sobrepõem)."),
+        ("The position of the last occurrence of an element in a list, or of a piece of text in a text: `Some(position)`, or `None` if it is not there.", "A posição da última ocorrência de um elemento em uma lista, ou de um trecho de texto em um texto: `Some(position)`, ou `None` se não estiver lá."),
+        ("The text without this start, if it starts with it; otherwise the text unchanged.", "O texto sem este começo, se começar por ele; caso contrário, o texto inalterado."),
+        ("The text without this end, if it ends with it; otherwise the text unchanged.", "O texto sem este final, se terminar com ele; caso contrário, o texto inalterado."),
+        ("The text with the first character of each word in uppercase (the rest is unchanged). Words are separated by spaces.", "O texto com o primeiro caractere de cada palavra em maiúscula (o resto não muda). As palavras são separadas por espaços."),
+        ("Writes a name in snake_case: its words in lowercase, joined by `_`. Reads names written in any style: camelCase, PascalCase, kebab-case, with spaces...", "Escreve um nome em snake_case: as suas palavras em minúsculas, unidas por `_`. Lê nomes escritos em qualquer estilo: camelCase, PascalCase, kebab-case, com espaços..."),
+        ("Writes a name in camelCase: its words glued together, each with an uppercase first letter but the first word.", "Escreve um nome em camelCase: as suas palavras juntas, cada uma com a primeira letra maiúscula, menos a primeira palavra."),
+        ("Writes a name in kebab-case: its words in lowercase, joined by `-`, as in web addresses.", "Escreve um nome em kebab-case: as suas palavras em minúsculas, unidas por `-`, como nos endereços web."),
+        ("The text with its uppercase letters in lowercase, and its lowercase letters in uppercase.", "O texto com as suas maiúsculas em minúsculas, e as suas minúsculas em maiúsculas."),
+        ("Has the text letters, all of them in uppercase? (The other characters do not count.)", "O texto tem letras, todas maiúsculas? (Os outros caracteres não contam.)"),
+        ("Has the text letters, all of them in lowercase? (The other characters do not count.)", "O texto tem letras, todas minúsculas? (Os outros caracteres não contam.)"),
+        ("The bytes of a text in UTF-8, as whole numbers from 0 to 255: an accented letter takes two of them, an emoji four.", "Os bytes de um texto em UTF-8, como números inteiros de 0 a 255: uma letra acentuada ocupa dois, um emoji quatro."),
+        ("Cuts a text in two at the first separator: `Some([before, after])`, or `None` if the separator is not there. For lines like `key=value`.", "Corta um texto em dois no primeiro separador: `Some([antes, depois])`, ou `None` se o separador não estiver lá. Para linhas como `chave=valor`."),
+        ("Cuts the lines of a text between words so that none is longer than `width` characters (a longer word stays whole on its own line).", "Quebra as linhas de um texto entre as palavras para que nenhuma passe de `width` caracteres (uma palavra mais longa fica inteira na sua linha)."),
+        ("The edit distance (Levenshtein) between two texts: the fewest characters to add, remove or replace to go from one to the other. For spelling checkers, and to find the closest word.", "A distância de edição (Levenshtein) entre dois textos: o mínimo de caracteres a adicionar, remover ou substituir para passar de um ao outro. Para corretores ortográficos e para encontrar a palavra mais próxima."),
+        ("The position of the first element for which f is true: `Some(position)`, or `None` if there is none.", "A posição do primeiro elemento para o qual f é verdadeira: `Some(position)`, ou `None` se não houver nenhum."),
+        ("The list with the element at position i replaced by f(element). A negative position counts from the end.", "A lista com o elemento na posição i substituído por f(elemento). Uma posição negativa conta a partir do fim."),
+        ("The list or text turned by n places to the left (1 by default): the first elements go to the end. A negative n turns it to the right.", "A lista ou o texto girado n posições para a esquerda (1 por padrão): os primeiros elementos vão para o fim. Um n negativo gira para a direita."),
+        ("The list with `x` between every two elements.", "A lista com `x` entre cada dois elementos."),
+        ("The elements of two lists taken in turn, one from each; what is left of the longer list comes at the end.", "Os elementos de duas listas tomados alternadamente, um de cada; o que sobra da lista mais longa vai para o fim."),
+        ("Counts how many times each value is in a list: a dict from each value to its count (like Python's `Counter`).", "Conta quantas vezes cada valor está em uma lista: um dicionário de cada valor para a sua contagem (como `Counter` em Python)."),
+        ("Counts the elements by the key that f gives them: a dict from each key to how many elements have it.", "Conta os elementos pela chave que f lhes dá: um dicionário de cada chave para quantos elementos a têm."),
+        ("The values that come most often, with their counts: a list of `[value, count]` pairs, the most frequent first (on a tie, the one seen first). With n, only the first n.", "Os valores que aparecem com mais frequência, com as suas contagens: uma lista de pares `[valor, contagem]`, o mais frequente primeiro (em caso de empate, o visto primeiro). Com n, só os n primeiros."),
+        ("The list without the elements whose key (given by f) was already seen: the first element of each key stays.", "A lista sem os elementos cuja chave (dada por f) já foi vista: fica o primeiro elemento de cada chave."),
+        ("The list sorted from the largest to the smallest.", "A lista ordenada do maior para o menor."),
+        ("The list sorted by the key that the function gives, from the largest key to the smallest; elements with the same key keep their order.", "A lista ordenada pela chave que a função dá, da maior chave para a menor; os elementos com a mesma chave mantêm a sua ordem."),
+        ("Cuts a list into runs of neighbour elements that have the same key (given by f).", "Corta uma lista em sequências de elementos vizinhos que têm a mesma chave (dada por f)."),
+        ("Cuts a list or a text in two at position i: `[before, from i on]`. A negative position counts from the end.", "Corta uma lista ou um texto em dois na posição i: `[antes, a partir de i]`. Uma posição negativa conta a partir do fim."),
+        ("Every way to choose k elements of the list, each kept in the order of the list.", "Todas as maneiras de escolher k elementos da lista, cada uma na ordem da lista."),
+        ("Every order of the elements of the list, or of k of them.", "Todas as ordens dos elementos da lista, ou de k deles."),
+        ("Every way to take one element of each list: the cartesian product.", "Todas as maneiras de pegar um elemento de cada lista: o produto cartesiano."),
+        ("The opposite of `zip`: a list of pairs (or of lists of the same length) becomes the list of the first elements, the list of the second ones...", "O contrário de `zip`: uma lista de pares (ou de listas do mesmo tamanho) se torna a lista dos primeiros elementos, a lista dos segundos..."),
+        ("A list of n values: `start`, then f(start), then f of that... For sequences where each value comes from the one before.", "Uma lista de n valores: `start`, depois f(start), depois f desse... Para sequências em que cada valor vem do anterior."),
+        ("Builds a list from a starting state: f receives the state and gives `Some([value, next state])` to add a value and go on, or `None` to stop.", "Constrói uma lista a partir de um estado inicial: f recebe o estado e dá `Some([valor, próximo estado])` para adicionar um valor e continuar, ou `None` para parar."),
+        ("Applies f to each element and keeps the values of the `Some(...)` it gives, leaving out the `None`: filtering and transforming at once.", "Aplica f a cada elemento e mantém os valores dos `Some(...)` que ela dá, deixando de fora os `None`: filtrar e transformar ao mesmo tempo."),
+        ("The value found by following a path of keys into records, dicts and lists nested in one another (names of fields, keys, positions): `Some(value)`, or `None` as soon as one is missing. For data read with `parse_json`.", "O valor encontrado seguindo um caminho de chaves por registros, dicionários e listas aninhados (nomes de campos, chaves, posições): `Some(valor)`, ou `None` assim que uma faltar. Para dados lidos com `parse_json`."),
+        ("Merges two records or two dicts; for a key in both, f receives the two values and gives the one kept.", "Mescla dois registros ou dois dicionários; para uma chave presente nos dois, f recebe os dois valores e dá o que é mantido."),
+        ("A dict where the values of a record or a dict have become the keys, and the keys the values. When a value comes several times, the last key wins.", "Um dicionário em que os valores de um registro ou de um dicionário se tornaram as chaves, e as chaves os valores. Quando um valor aparece várias vezes, a última chave vence."),
+        ("The record or dict with only the keys given (in a list or a set); a key that is missing is ignored.", "O registro ou o dicionário só com as chaves dadas (em uma lista ou um conjunto); uma chave ausente é ignorada."),
+        ("The record or dict without the keys given (in a list or a set).", "O registro ou o dicionário sem as chaves dadas (em uma lista ou um conjunto)."),
+        ("The record or dict with each key replaced by f(key); for a record, f must give a text.", "O registro ou o dicionário com cada chave substituída por f(chave); para um registro, f deve dar um texto."),
+        ("The record or dict where the value of `key` is replaced by f(value); when the key is missing, it is added with `default`. Handy to count: `update(counts, word, 1, fn(n) = n + 1)`.", "O registro ou o dicionário em que o valor de `key` é substituído por f(valor); quando a chave falta, ela é adicionada com `default`. Prático para contar: `update(contagens, palavra, 1, fn(n) = n + 1)`."),
+        ("The elements that are in exactly one of the two sets.", "Os elementos que estão em exatamente um dos dois conjuntos."),
+        ("Have the two sets no element in common?", "Os dois conjuntos não têm nenhum elemento em comum?"),
+        ("The value inside `Some(x)` or `Ok(x)`; otherwise what f gives: f receives nothing for `None`, and the error for `Err(e)`. The default is computed only when it is needed.", "O valor dentro de `Some(x)` ou `Ok(x)`; caso contrário, o que f dá: f não recebe nada para `None`, e o erro para `Err(e)`. O valor padrão só é calculado quando é necessário."),
+        ("The value inside `Some(x)` or `Ok(x)`, like `unwrap`; otherwise stops the program with your message, which says what was expected.", "O valor dentro de `Some(x)` ou `Ok(x)`, como `unwrap`; caso contrário, para o programa com a sua mensagem, que diz o que era esperado."),
+        ("Makes one Result of a list of Results: `Ok(list of the values)` if they are all `Ok`, or else the first `Err`. When reading many values where one mistake must stop everything.", "Faz um único Result de uma lista de Results: `Ok(lista dos valores)` se todos forem `Ok`, ou senão o primeiro `Err`. Para ler muitos valores quando um único erro deve parar tudo."),
+        ("The date n months later (earlier if n is negative). A day that the new month does not have becomes its last day: 31 January plus one month is the end of February.", "A data n meses depois (antes se n for negativo). Um dia que o novo mês não tem se torna o seu último dia: 31 de janeiro mais um mês é o fim de fevereiro."),
+        ("The number of the day in its year, from 1 (1 January) to 365, or 366 in a leap year.", "O número do dia no seu ano, de 1 (1º de janeiro) a 365, ou 366 em um ano bissexto."),
+        ("n decimal numbers evenly spaced from `start` to `end`, both included: to draw a function with `plot`, or to try values.", "n números decimais igualmente espaçados de `start` a `end`, ambos incluídos: para desenhar uma função com `plot`, ou testar valores."),
+        ("The correlation (Pearson) of two lists of numbers of the same length: from -1 (they vary in opposite ways) to 1 (they vary together); about 0 when they are not linearly related.", "A correlação (de Pearson) de duas listas de números do mesmo tamanho: de -1 (variam em sentidos opostos) a 1 (variam juntas); perto de 0 quando não têm relação linear."),
+        ("The covariance of two lists of numbers of the same length, divided by their length like `variance`.", "A covariância de duas listas de números do mesmo tamanho, dividida pelo seu tamanho como `variance`."),
+        ("Encodes a text in Base64 (its UTF-8 bytes), as in emails, web pages and the headers of HTTP requests.", "Codifica um texto em Base64 (os seus bytes UTF-8), como em e-mails, páginas web e cabeçalhos de requisições HTTP."),
+        ("Decodes a Base64 text: `Ok(text)`, or `Err(message)` if it is not valid Base64, or not a text once decoded.", "Decodifica um texto em Base64: `Ok(text)`, ou `Err(message)` se não for Base64 válido, ou não for um texto depois de decodificado."),
+        ("Encodes a text to put it in a web address: every character but the letters, the digits and `-_.~` becomes `%` and two hexadecimal digits (a space is `%20`).", "Codifica um texto para colocá-lo em um endereço web: cada caractere, exceto as letras, os dígitos e `-_.~`, se torna `%` e dois dígitos hexadecimais (um espaço é `%20`)."),
+        ("Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.", "Decodifica um texto de um endereço web (`%20`...): `Ok(text)`, ou `Err(message)` se um `%` não for seguido de dois dígitos hexadecimais."),
+        (r#"More functions on lists
+  find_index([3, 8, 5], is_even)          # Some(1)
+  sort_desc([3, 1, 2])                    # [3, 2, 1]  (sort_by_desc with a key)
+  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(words, 3)                   # the 3 most frequent, with their counts
+  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
+  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
+  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  permutations(xs)   cartesian_product(xs, ys)   unzip(pairs)   zip(xs, ys, zs)
+  filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#, r#"Mais funções sobre listas
+  find_index([3, 8, 5], is_even)          # Some(1)
+  sort_desc([3, 1, 2])                    # [3, 2, 1]  (sort_by_desc com uma chave)
+  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(palavras, 3)                # as 3 mais frequentes, com as suas contagens
+  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
+  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
+  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  permutations(xs)   cartesian_product(xs, ys)   unzip(pares)   zip(xs, ys, zs)
+  filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#),
+        (r##"More functions on texts
+  format(3.14159, ".2f")         # "3.14"  (the format specs of Python: ">8", ",d", ".1%", "#x"...)
+  center("hi", 6, "*")           # "**hi**"
+  replace_first("a-b-c", "-", "+")          # "a+b-c"
+  occurrences("banana", "an")    # 2
+  remove_prefix("Mr Smith", "Mr ")          # "Smith"  (and remove_suffix)
+  split_once("key=value", "=")   # Some(["key", "value"])
+  snake_case("helloWorld")       # "hello_world"  (and camel_case, kebab_case)
+  capitalize_words("ada lovelace")          # "Ada Lovelace"
+  word_wrap(text, 40)            # lines of at most 40 characters
+  to_base(255, 16)   from_base("ff", 16)    # "ff" and Ok(255)
+  edit_distance("kitten", "sitting")        # 3"##, r##"Mais funções sobre textos
+  format(3.14159, ".2f")         # "3.14"  (as especificações de formato de Python: ">8", ",d", ".1%", "#x"...)
+  center("hi", 6, "*")           # "**hi**"
+  replace_first("a-b-c", "-", "+")          # "a+b-c"
+  occurrences("banana", "an")    # 2
+  remove_prefix("Sr. Silva", "Sr. ")        # "Silva"  (e remove_suffix)
+  split_once("chave=valor", "=") # Some(["chave", "valor"])
+  snake_case("helloWorld")       # "hello_world"  (e camel_case, kebab_case)
+  capitalize_words("ada lovelace")          # "Ada Lovelace"
+  word_wrap(texto, 40)           # linhas de no máximo 40 caracteres
+  to_base(255, 16)   from_base("ff", 16)    # "ff" e Ok(255)
+  edit_distance("casa", "caso")             # 1"##),
+        (r#"More functions on records and dicts
+  dig(data, ["user", "langs", 0])           # Some(...), or None: deep inside
+  select_keys(person, ["name", "age"])      # only these keys (reject_keys: without them)
+  merge_with(a, b, fn(x, y) = x + y)        # f decides for a key in both
+  update(counts, "apples", 1, fn(n) = n + 1)  # +1, or 1 when missing
+  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#, r#"Mais funções sobre registros e dicionários
+  dig(dados, ["user", "langs", 0])          # Some(...), ou None: lá no fundo
+  select_keys(pessoa, ["nome", "idade"])    # só essas chaves (reject_keys: sem elas)
+  merge_with(a, b, fn(x, y) = x + y)        # f decide para uma chave presente nos dois
+  update(contagens, "macas", 1, fn(n) = n + 1)  # +1, ou 1 quando falta
+  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#),
+        (r#"More helpers
+  unwrap_or_else(x, fn(e) = ...)   # the default, computed only when it is needed
+  expect(x, "a config file")       # like unwrap, with your message if it fails
+  all_ok(map(texts, parse_int))    # Ok([...]), or the first Err
+  filter_map(xs, f)                # the values of the Some(...) that f gives"#, r#"Mais ferramentas
+  unwrap_or_else(x, fn(e) = ...)   # o valor padrão, calculado só quando é necessário
+  expect(x, "um arquivo de configuração")  # como unwrap, com a sua mensagem se falhar
+  all_ok(map(textos, parse_int))   # Ok([...]), ou o primeiro Err
+  filter_map(xs, f)                # os valores dos Some(...) que f dá"#),
+        (r#"More on dates
+  add_months(date, 1)                       # 31 January + 1 month: the end of February
+  day_of_year(date)                         # from 1 to 366
+  format_date(date, "%d/%m/%Y %H:%M")       # with a pattern: %Y %m %d %H %M %S %B %A...
+  parse_date("29/02/2024", "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#, r#"Mais sobre datas
+  add_months(data, 1)                       # 31 de janeiro + 1 mês: o fim de fevereiro
+  day_of_year(data)                         # de 1 a 366
+  format_date(data, "%d/%m/%Y %H:%M")       # com um padrão: %Y %m %d %H %M %S %B %A...
+  parse_date("29/02/2024", "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#),
+        // src/cli.rs
+        ("run a program; the words after the file are its arguments", "executar um programa; as palavras depois do arquivo são os seus argumentos"),
+        ("find problems without running the program", "encontrar os problemas sem executar o programa"),
+        ("run the tests of a file or of a folder", "executar os testes de um arquivo ou de uma pasta"),
+        ("give the code its official layout", "dar ao código a sua formatação oficial"),
+        ("write the documentation of a file from its ## comments", "escrever a documentação de um arquivo a partir dos seus comentários ##"),
+        ("apply the safe fixes of the problems that `rythme check` finds", "aplicar as correções seguras dos problemas que `rythme check` encontra"),
+        ("show a calculation step by step", "mostrar um cálculo passo a passo"),
+        ("pause a program where you want and look at its values", "pausar um programa onde você quiser e olhar os seus valores"),
+        ("the debugger for editors (Debug Adapter Protocol)", "o depurador para os editores (Debug Adapter Protocol)"),
+        ("exercises checked automatically", "exercícios verificados automaticamente"),
+        ("create a project (rythme.toml, src/, tests/)", "criar um projeto (rythme.toml, src/, tests/)"),
+        ("download the dependencies of the project", "baixar as dependências do projeto"),
+        ("guided tour of the language, step by step", "visita guiada pela linguagem, passo a passo"),
+        ("help on a topic, a function or an error code", "ajuda sobre um tópico, uma função ou um código de erro"),
+        ("explain an error or warning code, like E003", "explicar um código de erro ou de aviso, como E003"),
+        ("run a piece of code given on the command line", "executar um trecho de código dado na linha de comando"),
+        ("interactive mode: try code line by line (also `rythme` alone)", "modo interativo: experimentar código linha por linha (também `rythme` sozinho)"),
+        ("language server, for editors (VS Code, Neovim...)", "servidor de linguagem, para os editores (VS Code, Neovim...)"),
+        ("server for AI assistants (Model Context Protocol)", "servidor para assistentes de IA (Model Context Protocol)"),
+        ("the version of Rythme", "a versão do Rythme"),
+        ("completion of the commands in a shell", "completação dos comandos em um shell"),
+        ("the manual page of the command, to install with `man`", "a página de manual do comando, para instalar com `man`"),
+        ("how to install the latest version of Rythme", "como instalar a versão mais recente do Rythme"),
+        (r#"  --seed N        the same draws of random and shuffle on every run
+  --sandbox       no files, folders, environment variables nor network
+  --format json   the output and the errors as JSON, for tools
+  FILE may be `-`: the program is read from the standard input.
+  At the root of a project, `rythme run` runs its program."#, r#"  --seed N        os mesmos sorteios de random e shuffle a cada execução
+  --sandbox       sem arquivos, pastas, variáveis de ambiente nem rede
+  --format json   a saída e os erros em JSON, para as ferramentas
+  ARQUIVO pode ser `-`: o programa é lido da entrada padrão.
+  Na raiz de um projeto, `rythme run` executa o seu programa."#),
+        (r#"  --format json   the problems as JSON, for tools and AI assistants
+  A folder checks every .ry file inside it; at the root of a project,
+  `rythme check` checks the files of the project.
+  Exit code: 0 without errors (warnings allowed), 1 with errors."#, r#"  --format json   os problemas em JSON, para as ferramentas e os assistentes de IA
+  Uma pasta verifica cada arquivo .ry dentro dela; na raiz de um projeto,
+  `rythme check` verifica os arquivos do projeto.
+  Código de saída: 0 sem erros (avisos permitidos), 1 com erros."#),
+        (r#"  --filter NAME   only the tests whose name contains NAME
+  --seed N        the same draws of random on every run
+  --watch         run the tests again whenever a file changes
+  --sandbox       no files, folders, environment variables nor network
+  --format json   the results as JSON
+  Exit code: 0 when every test passes, 1 otherwise."#, r#"  --filter NOME   só os testes cujo nome contém NOME
+  --seed N        os mesmos sorteios de random a cada execução
+  --watch         executar os testes de novo sempre que um arquivo mudar
+  --sandbox       sem arquivos, pastas, variáveis de ambiente nem rede
+  --format json   os resultados em JSON
+  Código de saída: 0 quando todos os testes passam, 1 caso contrário."#),
+        (r#"  --check         only check, for continuous integration: exit code 1 when a
+                  file must be formatted
+  A folder formats all its .ry files; `-` reads the code from the standard
+  input and writes it formatted."#, r#"  --check         só verificar, para a integração contínua: código de saída 1
+                  quando um arquivo precisa ser formatado
+  Uma pasta formata todos os seus arquivos .ry; `-` lê o código da entrada
+  padrão e o escreve formatado."#),
+        (r#"  --dry-run       only show the changes, as a diff
+  --all           also apply the fixes that are only likely
+  --format json   the fixes as JSON
+  Exit code: 0 when no error is left, 1 otherwise (with --dry-run: 1 when
+  something would change)."#, r#"  --dry-run       só mostrar as mudanças, como um diff
+  --all           aplicar também as correções apenas prováveis
+  --format json   as correções em JSON
+  Código de saída: 0 quando não resta nenhum erro, 1 caso contrário (com
+  --dry-run: 1 quando algo mudaria)."#),
+        (r#"  --max N         show at most N steps
+  --width N       cut the lines at N characters (20 at least)
+  Without an expression, the steps of the last line of the file."#, r#"  --max N         mostrar no máximo N passos
+  --width N       cortar as linhas em N caracteres (no mínimo 20)
+  Sem expressão, os passos da última linha do arquivo."#),
+        (r#"  In the debugger, `help` lists its commands: break, run, next, step,
+  finish, where, print, locals, quit."#, r#"  No depurador, `help` lista os seus comandos: break, run, next, step,
+  finish, where, print, locals, quit."#),
+        ("  Your editor starts it: the VS Code extension does, for the debugger type `rythme`.", "  O seu editor o inicia: a extensão do VS Code faz isso, para o tipo de depurador `rythme`."),
+        (r#"  list            the exercises, from the easiest
+  start NAME      write the file of an exercise, to complete
+  check FILE.ry   run its tests and give hints"#, r#"  list            os exercícios, do mais fácil ao mais difícil
+  start NOME      escrever o arquivo de um exercício, para completar
+  check ARQUIVO   executar os seus testes e dar dicas"#),
+        (r#"  `rythme help` lists the topics, `rythme help builtins` every function,
+  `rythme help llms` the whole language in one text (for AI assistants)."#, r#"  `rythme help` lista os tópicos, `rythme help builtins` cada função,
+  `rythme help llms` a linguagem inteira em um texto (para assistentes de IA)."#),
+        ("  Without a code, the list of the codes; --format json gives them all.", "  Sem código, a lista dos códigos; --format json dá todos eles."),
+        ("  The value of the last expression is shown, unless it is ().", "  O valor da última expressão é mostrado, a menos que seja ()."),
+        ("  `:help` lists the commands of the interactive mode.", "  `:help` lista os comandos do modo interativo."),
+        ("  --verbose       also the system, the languages, the functions and the formats", "  --verbose       também o sistema, os idiomas, as funções e os formatos"),
+        ("Then open a new shell.", "Depois abra um novo shell."),
+        (r#"  rythme man > rythme.1 && man ./rythme.1
+  To install it: put rythme.1 in a folder of the manual pages, like
+  ~/.local/share/man/man1."#, r#"  rythme man > rythme.1 && man ./rythme.1
+  Para instalá-la: coloque rythme.1 em uma pasta das páginas de manual,
+  como ~/.local/share/man/man1."#),
+        (r#"
+Options of every command: --lang CODE ({codes}), --no-color
+"#, r#"
+Opções de todos os comandos: --lang CÓDIGO ({codes}), --no-color
+"#),
+        (r#"See also `rythme help {topic}`.
+"#, r#"Veja também `rythme help {topic}`.
+"#),
+        (r#"
+Tools
+  rythme CMD --help         the options of a command, like rythme test --help
+  rythme run -              run the program read from the standard input
+  rythme check FOLDER       check every .ry file of a folder
+  rythme completions SHELL  completion of the commands: bash, zsh, fish, powershell
+  rythme man                the manual page of the command (rythme man > rythme.1)
+  rythme version --verbose  the version, with the system and what Rythme contains
+  rythme upgrade            how to install the latest version
+"#, r#"
+Ferramentas
+  rythme CMD --help         as opções de um comando, como rythme test --help
+  rythme run -              executar o programa lido da entrada padrão
+  rythme check PASTA        verificar cada arquivo .ry de uma pasta
+  rythme completions SHELL  completação dos comandos: bash, zsh, fish, powershell
+  rythme man                a página de manual do comando (rythme man > rythme.1)
+  rythme version --verbose  a versão, com o sistema e o que o Rythme contém
+  rythme upgrade            como instalar a versão mais recente
+"#),
+        ("unknown option `{bad}` for `rythme version`: the option is --verbose", "opção desconhecida `{bad}` para `rythme version`: a opção é --verbose"),
+        (r#"system: {os} {arch}
+languages of the messages: {codes} (now: {now})
+built-in functions: {functions} (and {ruby} Ruby names)
+codes: {errors} errors ({e_range}), {warnings} warnings ({w_range})
+JSON output (--format json): version {json}
+program: {exe}
+"#, r#"sistema: {os} {arch}
+idiomas das mensagens: {codes} (agora: {now})
+funções embutidas: {functions} (e {ruby} nomes Ruby)
+códigos: {errors} erros ({e_range}), {warnings} avisos ({w_range})
+saída JSON (--format json): versão {json}
+programa: {exe}
+"#),
+        ("`rythme upgrade` takes no argument, not `{bad}`", "`rythme upgrade` não recebe argumento, não `{bad}`"),
+        (r#"This is rythme {v} ({exe}).
+To install the latest version, type:
+  {how}
+The versions and what changed: https://github.com/maxlestage/Rythme/releases
+Within 1.x, a program that runs keeps running, with the same output.
+"#, r#"Este é o rythme {v} ({exe}).
+Para instalar a versão mais recente, digite:
+  {how}
+As versões e o que mudou: https://github.com/maxlestage/Rythme/releases
+Nas versões 1.x, um programa que funciona continua funcionando, com a mesma saída.
+"#),
+        ("unknown shell `{s}`", "shell desconhecido `{s}`"),
+        ("which shell?", "qual shell?"),
+        (r#"{what} Write one of bash, zsh, fish, powershell, like `rythme completions bash`
+see `rythme completions --help`"#, r#"{what} Escreva um de bash, zsh, fish, powershell, como `rythme completions bash`
+veja `rythme completions --help`"#),
+        ("`rythme man` takes no argument, not `{bad}`", "`rythme man` não recebe argumento, não `{bad}`"),
+        ("Name", "Nome"),
+        ("rythme - a small, purely functional language with help everywhere", "rythme - uma pequena linguagem puramente funcional, com ajuda em todo lugar"),
+        ("Synopsis", "Sinopse"),
+        ("Description", "Descrição"),
+        ("Rythme runs, checks, tests and formats programs written in Rythme. Without a command, `rythme` starts the interactive mode; `rythme file.ry` runs a program. Every message has a code explained by `rythme explain CODE`, and `rythme help` shows help on the language and its functions.", "O Rythme executa, verifica, testa e formata programas escritos em Rythme. Sem comando, `rythme` inicia o modo interativo; `rythme arquivo.ry` executa um programa. Cada mensagem tem um código explicado por `rythme explain CÓDIGO`, e `rythme help` mostra ajuda sobre a linguagem e as suas funções."),
+        ("Commands", "Comandos"),
+        ("Options", "Opções"),
+        ("the language of the messages: {codes}", "o idioma das mensagens: {codes}"),
+        ("messages without colors", "mensagens sem cores"),
+        ("the help; after a command, its options", "a ajuda; depois de um comando, as suas opções"),
+        ("Environment", "Ambiente"),
+        ("the language of the messages, before LC_ALL, LC_MESSAGES and LANG", "o idioma das mensagens, antes de LC_ALL, LC_MESSAGES e LANG"),
+        ("when set, messages without colors", "quando definida, mensagens sem cores"),
+        ("Exit status", "Código de saída"),
+        ("0 when everything went well; 1 after an error in the program, a failed test or a problem found; 2 for a command written wrongly. A program may choose its own code with exit(code).", "0 quando tudo correu bem; 1 depois de um erro no programa, um teste que falhou ou um problema encontrado; 2 para um comando escrito errado. Um programa pode escolher o seu próprio código com exit(código)."),
+        ("See also", "Veja também"),
+        ("no .ry file in `{a}`", "nenhum arquivo .ry em `{a}`"),
+        ("the standard input cannot be read: {e}", "não é possível ler a entrada padrão: {e}"),
     ],
 }

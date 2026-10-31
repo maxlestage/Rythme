@@ -216,3 +216,115 @@ fn tree_sitter_grammar_knows_every_keyword() {
         }
     }
 }
+
+/// A folder of its own for one test, removed first.
+fn scratch(name: &str) -> std::path::PathBuf {
+    let dir = std::env::temp_dir().join(format!("rythme-cli-{name}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
+
+#[test]
+fn every_command_has_a_help_in_every_language() {
+    for cmd in ["run", "check", "test", "fmt", "fix", "steps", "debug", "dap", "exercise", "learn", "help", "explain", "-e", "repl"] {
+        for flag in ["--help", "-h"] {
+            let r = rythme(&[cmd, flag]);
+            assert_eq!(r.code, 0, "{cmd} {flag}: {}", r.stderr);
+            assert!(r.stdout.starts_with(&format!("rythme {cmd}")), "{cmd} {flag}:\n{}", r.stdout);
+            assert!(r.stdout.contains("--lang CODE"), "{cmd} {flag}:\n{}", r.stdout);
+        }
+    }
+    for cmd in ["version", "completions", "man", "upgrade"] {
+        assert!(rythme(&[cmd, "--help"]).stdout.starts_with(&format!("rythme {cmd}")), "{cmd}");
+    }
+    let r = common::rythme_lang("fr", &["test", "--help"]);
+    assert!(r.stdout.contains("lancer les tests d'un fichier ou d'un dossier"), "{}", r.stdout);
+    let r = common::rythme_lang("zh", &["run", "--help"]);
+    assert!(r.stdout.contains("运行程序"), "{}", r.stdout);
+    // Aliases in French, and options before the help.
+    assert!(rythme(&["lancer", "--seed", "--help"]).stdout.starts_with("rythme run"));
+    assert!(rythme(&["fmt", "--check", "--help"]).stdout.starts_with("rythme fmt"));
+    // After the file, the words are the program's.
+    let dir = scratch("help-after-file");
+    let file = dir.join("args.ry");
+    std::fs::write(&file, "print(args())\n").unwrap();
+    let r = rythme(&["run", file.to_str().unwrap(), "--help"]);
+    assert_eq!(r.stdout.trim(), "[\"--help\"]", "{}", r.stderr);
+    let tested = dir.join("tested.ry");
+    std::fs::write(&tested, "test \"its arguments\" = assert_eq(args(), [\"--help\"])\n").unwrap();
+    let r = rythme(&["test", tested.to_str().unwrap(), "--", "--help"]);
+    assert_eq!(r.code, 0, "{}{}", r.stdout, r.stderr);
+    assert!(!r.stdout.starts_with("rythme test"), "{}", r.stdout);
+    let _ = std::fs::remove_dir_all(&dir);
+    // `rythme help` names the tools, and `rythme help CMD` shows the usage of a command.
+    assert!(rythme(&["help"]).stdout.contains("rythme completions SHELL"));
+    assert!(rythme(&["help", "check"]).stdout.starts_with("rythme check"));
+    assert!(rythme(&["help", "upgrade"]).stdout.starts_with("rythme upgrade"));
+}
+
+#[test]
+fn programs_from_the_standard_input_and_folders_to_check() {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+    let run = |args: &[&str], input: &str| {
+        let mut child = Command::new(env!("CARGO_BIN_EXE_rythme"))
+            .args(args)
+            .env("RYTHME_LANG", "en")
+            .env("NO_COLOR", "1")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        child.stdin.take().unwrap().write_all(input.as_bytes()).unwrap();
+        let out = child.wait_with_output().unwrap();
+        (String::from_utf8_lossy(&out.stdout).into_owned(), out.status.code())
+    };
+    assert_eq!(run(&["run", "-", "a", "b"], "print(1 + 1, args())\n"), ("2 [\"a\", \"b\"]\n".into(), Some(0)));
+    assert_eq!(run(&["-"], "print(\"stdin\")\n"), ("stdin\n".into(), Some(0)));
+    assert_eq!(run(&["run", "--seed", "3", "-"], "print(random(1, 1000) == random(1, 1000))\n").1, Some(0));
+    assert_eq!(run(&["run", "-"], "print(nope)\n").1, Some(1));
+
+    let dir = scratch("check-folder");
+    std::fs::create_dir_all(dir.join("sub")).unwrap();
+    std::fs::write(dir.join("good.ry"), "print(1)\n").unwrap();
+    std::fs::write(dir.join("sub/bad.ry"), "print(nope)\n").unwrap();
+    let r = rythme(&["check", dir.to_str().unwrap()]);
+    assert_eq!(r.code, 1);
+    assert!(r.stdout.contains("good.ry: no problems found") && r.stdout.contains("bad.ry: 1 error(s)"), "{}", r.stdout);
+    std::fs::remove_file(dir.join("sub/bad.ry")).unwrap();
+    assert_eq!(rythme(&["check", dir.to_str().unwrap()]).code, 0);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn version_upgrade_completions_and_manual_page() {
+    assert_eq!(rythme(&["--version"]).stdout, format!("rythme {}\n", rythme::VERSION));
+    let r = rythme(&["version", "--verbose"]);
+    assert!(r.stdout.starts_with(&format!("rythme {}\n", rythme::VERSION)), "{}", r.stdout);
+    assert!(r.stdout.contains(&format!("built-in functions: {}", rythme::builtins::BUILTINS.len())), "{}", r.stdout);
+    assert!(r.stdout.contains("JSON output (--format json): version 1"), "{}", r.stdout);
+    assert_eq!(rythme(&["version", "--bogus"]).code, 2);
+    let r = rythme(&["upgrade"]);
+    assert!(r.stdout.contains("To install the latest version") && r.stdout.contains("https://github.com/maxlestage/Rythme/releases"));
+    for shell in ["bash", "zsh", "fish", "powershell"] {
+        let r = rythme(&["completions", shell]);
+        assert_eq!(r.code, 0, "{shell}");
+        for name in ["check", "completions", "lang"] {
+            assert!(r.stdout.contains(name), "{shell}: {name}");
+        }
+    }
+    assert_eq!(rythme(&["completions"]).code, 2);
+    assert_eq!(rythme(&["completions", "tcsh"]).code, 2);
+    // The bash script is valid bash, when bash is there to say so.
+    if let Ok(out) = std::process::Command::new("bash").args(["-n", "-c", &rythme(&["completions", "bash"]).stdout]).output() {
+        assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    }
+    let r = rythme(&["man"]);
+    assert!(r.stdout.starts_with(".TH RYTHME 1"), "{}", r.stdout);
+    for part in [".SH NAME", ".SH COMMANDS", ".SH EXIT STATUS", "rythme check"] {
+        assert!(r.stdout.contains(part), "{part}");
+    }
+    assert!(common::rythme_lang("fr", &["man"]).stdout.contains(".SH COMMANDES"));
+}

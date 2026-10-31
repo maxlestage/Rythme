@@ -212,6 +212,8 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
 | `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
 | `rythme mcp`                | serveur pour les assistants d'IA ([plus bas](#assistants-dia)) |
+| `rythme test --help`        | l'utilisation et les options de n'importe quelle commande, dans votre langue |
+| `rythme completions bash`   | complétion des commandes pour bash, zsh, fish ou PowerShell ; `rythme man` : la page de manuel |
 
 Ajoutez `--lang` et une langue (`fr`, `en`, `es`, `de`, `pt` ou `zh`) avant la
 commande pour choisir la langue des messages, ou définissez `RYTHME_LANG`.
@@ -297,6 +299,7 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 | [`calendar.ry`](examples/calendar.ry) | des dates : la page d'un mois, des textes ISO 8601, `days_between`, `add_days` |
 | [`logs.ry`](examples/logs.ry) | lire un journal avec des regex : `named_captures`, `matches`, `find_all`, `replace_all`, `format_number` |
 | [`grades.ry`](examples/grades.ry) | les notes d'un tableur : `csv_records` avec `;`, `csv_format`, un tirage répétable avec `random_seed` |
+| [`report.ry`](examples/report.ry) | un tableau écrit avec des spécifications de `format` et `center`, `tally`, `most_common`, `sort_by_desc`, un motif de date, `word_wrap` |
 | [`tree.ry`](examples/tree.ry) | un type récursif : arbre binaire de recherche |
 | [`primes.ry`](examples/primes.ry) | un crible récursif, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | les blocs `test` |

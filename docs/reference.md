@@ -3107,7 +3107,7 @@ with examples; the code may be written in lowercase.
 
 ## 6. Standard library
 
-The 211 built-in functions are always available, without `use`. Like the
+The 283 built-in functions are always available, without `use`. Like the
 keywords, their names are in English. `rythme help builtins` lists all of
 them by category, one line each; `rythme help NAME` (or `help(NAME)` in a
 program, or `:doc NAME` in the REPL) shows the documentation of one, with
@@ -3133,7 +3133,7 @@ reference for the details of each function.
 - The texts of `Err(...)` values made by built-ins (for example by
   `parse_int`) are written in the language of the messages.
 - Mistakes get a hint: the name of a function of another language gives its
-  Rythme name (`ord` → `char_code`, `padStart` → `pad_left`, `takeWhile` →
+  Rythme name (`charCodeAt` → `char_code`, `padStart` → `pad_left`, `takeWhile` →
   `take_while`, `stringify` → `to_json`...), and a value of a neighbouring
   kind points to the right function (a text given where a list is expected:
   `chars`; a record: `entries`, `keys` or `values`; a list given to `put`,
@@ -3581,6 +3581,104 @@ print(http_get("ftp://example.com/data.csv"))
 Err("a web address starts with http:// or https://, not \"ftp://example.com/data.csv\"")
 ```
 
+**More of the library.** Functions that students and professionals expect
+from Ruby, Python and Elixir, added after 1.0 (the audit that chose them is
+[`stdlib-audit.md`](stdlib-audit.md)):
+
+- text: `center(x, width, fill)`, `format(value, spec)` (the format specs of
+  Python: `[[fill]align][sign][#][0][width][,|_][.precision][type]`, with the
+  types `d`, `b`, `o`, `x`, `X`, `c`, `e`, `f`, `g`, `%` and `s`; a wrong spec
+  is E023), `replace_first`, `occurrences(x, item)` (in a list, or pieces of
+  a text that do not overlap), `last_index_of`, `remove_prefix` and
+  `remove_suffix`, `capitalize_words`, `snake_case`, `camel_case` and
+  `kebab_case` (they read names written in any of these styles),
+  `swap_case`, `is_upper` and `is_lower`, `bytes` (UTF-8), `split_once`
+  (an Option of `[before, after]`), `word_wrap(text, width)`,
+  `edit_distance` (Levenshtein), `inspect(value)` (the code form of a value,
+  as a text) and `print_error(values...)` (like `print`, on the error output);
+- numbers: `constrain(x, low, high)` (Ruby's `clamp`, for any values that
+  compare), `divmod(a, b)` (`[a // b, a % b]`), `binomial(n, k)` (exact),
+  `digits(n, base)` (the most significant first), `to_base(n, base)` and
+  `from_base(text, base)` (bases 2 to 36, numbers of any size; a Result),
+  `is_positive`, `is_negative`, `is_zero`, `is_nan`, `is_finite`;
+- lists: `find_index`, `update_at(list, i, f)`, `rotate_by(x, n)`,
+  `intersperse`, `interleave`, `tally` (a dict of counts), `count_by`,
+  `most_common(list, n)`, `unique_by`, `sort_desc`, `sort_by_desc` (stable),
+  `chunk_by` (runs of neighbours with the same key), `split_at`,
+  `combinations`, `permutations`, `cartesian_product` (at most 10 million
+  elements in all, else E023), `unzip`, `iterate(start, n, f)`,
+  `unfold(start, f)` (f gives `Some([value, next])` or `None`) and
+  `filter_map`; `zip` takes two lists or more;
+- records and dicts: `dig(x, path)` (an Option, through nested records,
+  dicts and lists), `merge_with(a, b, f)`, `invert`, `select_keys` and
+  `reject_keys`, `map_keys`, `update(x, key, default, f)`; sets:
+  `symmetric_difference`, `is_disjoint`;
+- Option and Result: `unwrap_or_else(x, f)` (f receives nothing for `None`,
+  the error for `Err(e)`), `expect(x, message)` (E013 with the message),
+  `all_ok(list)` (a list of Results made one Result);
+- dates: `add_months` (the day is kept within the month), `day_of_year`, and
+  patterns for `format_date(date, pattern)` and `parse_date(text, pattern)`:
+  `%Y`, `%m`, `%d`, `%H`, `%M`, `%S`, `%y`, `%B`/`%b` and `%A`/`%a` (names in
+  English, whatever the language of the messages), `%I` and `%p`, `%j`, `%z`
+  and `%%`;
+- the web and statistics: `base64_encode`, `base64_decode`, `url_encode`,
+  `url_decode` (decoding gives a Result), `linspace(start, end, n)`,
+  `correlation` and `covariance`.
+
+```rythme
+print(format(3.14159, ".2f"), format(1234567, ","), format(42, ">6"), format(255, "#x"), format(0.256, ".1%"))
+print(center("menu", 10, "*"), replace_first("a-b-c", "-", "+"), occurrences("banana", "an"), split_once("key=value", "="))
+print(snake_case("HTTPServer"), camel_case("user name"), kebab_case("Hello World"), capitalize_words("ada lovelace"))
+print(to_base(255, 2), from_base("ff", 16), digits(2024), divmod(17, 5), binomial(52, 5), constrain(15, 0, 10))
+```
+
+```text
+3.14 1,234,567     42 0xff 25.6%
+***menu*** a+b-c 2 Some(["key", "value"])
+http_server userName hello-world Ada Lovelace
+11111111 Ok(255) [2, 0, 2, 4] [3, 2] 2598960 10
+```
+
+```rythme
+tokens = split("the cat and the dog and the bird")
+print(tally(tokens), most_common(tokens, 2))
+print(sort_desc([3, 1, 2]), sort_by_desc(tokens, len) |> take(2), find_index(tokens, fn(w) = len(w) > 3))
+print(combinations([1, 2, 3], 2), cartesian_product([1, 2], ["a", "b"]))
+print(chunk_by([1, 1, 2, 3, 3], fn(x) = x), split_at([1, 2, 3, 4], 1), rotate_by([1, 2, 3], 1), unzip([[1, "a"], [2, "b"]]))
+print(iterate(1, 6, fn(x) = x * 2), unfold(10, fn(n) = if n == 0 then None else Some([n, n // 2])))
+print(["1", "x", "3"] |> filter_map(fn(t) = if is_digit(t) then Some(int(t)) else None))
+```
+
+```text
+dict("and" => 2, "bird" => 1, "cat" => 1, "dog" => 1, "the" => 3) [["the", 3], ["and", 2]]
+[3, 2, 1] ["bird", "the"] Some(7)
+[[1, 2], [1, 3], [2, 3]] [[1, "a"], [1, "b"], [2, "a"], [2, "b"]]
+[[1, 1], [2], [3, 3]] [[1], [2, 3, 4]] [2, 3, 1] [[1, 2], ["a", "b"]]
+[1, 2, 4, 8, 16, 32] [10, 5, 2, 1]
+[1, 3]
+```
+
+```rythme
+data = {user: {name: "Ada", langs: ["fr", "en"]}}
+print(dig(data, ["user", "langs", 1]), dig(data, ["user", "age"]))
+counts = fold(["a", "b", "a"], {}, fn(c, w) = update(c, w, 1, fn(n) = n + 1))
+print(counts, merge_with(counts, {a: 10, c: 1}, fn(x, y) = x + y), invert(counts))
+print(select_keys(data.user, ["name"]), map_keys({a: 1}, upper))
+print(all_ok(map(["1", "2"], parse_int)), all_ok(map(["1", "x"], parse_int)), unwrap_or_else(None, fn() = 0))
+d = {year: 2024, month: 1, day: 31}
+print(add_months(d, 1), day_of_year(d), format_date(d, "%A %d %B %Y"), parse_date("29/02/2024", "%d/%m/%Y"))
+print(base64_encode("Hi!"), url_encode("a b&c"), url_decode("caf%C3%A9"))
+```
+
+```text
+Some("en") None
+{a: 2, b: 1} {a: 12, b: 1, c: 1} dict(1 => "b", 2 => "a")
+{name: "Ada"} {A: 1}
+Ok([1, 2]) Err("\"x\" is not a whole number") 0
+{year: 2024, month: 2, day: 29} 31 Wednesday 31 January 2024 Ok({year: 2024, month: 2, day: 29})
+SGkh a%20b%26c Ok("café")
+```
+
 **Ruby names.** Some functions have a second name, the one Ruby gives them.
 Each one is exactly the function it names (same arguments, same messages):
 `rythme help upcase` says so, and `rythme help builtins` lists them by
@@ -3600,10 +3698,21 @@ without a warning.
 | `start_with?` | `starts_with` | `any?`, `all?` | `any`, `all` |
 | `end_with?` | `ends_with` | `key?` | `has` |
 | `lstrip`, `rstrip` | `trim_start`, `trim_end` | `casecmp?` | `equals_ignore_case` |
+| `clamp` | `constrain` | `swapcase` | `swap_case` |
+| `ljust`, `rjust` | `pad_right`, `pad_left` | `ord`, `chr` | `char_code`, `char` |
+| `delete_prefix`, `delete_suffix` | `remove_prefix`, `remove_suffix` | `rindex` | `last_index_of` |
+| `detect` | `find` | `collect` | `map` |
+| `rotate` | `rotate_by` | `combination`, `permutation` | `combinations`, `permutations` |
+| `transform_values`, `transform_keys` | `map_values`, `map_keys` | `each_pair` | `each` |
+| `positive?`, `negative?`, `zero?` | `is_positive`, `is_negative`, `is_zero` | `nan?`, `finite?` | `is_nan`, `is_finite` |
+| `subset?`, `disjoint?` | `is_subset`, `is_disjoint` | `to_h`, `warn` | `dict`, `print_error` |
 
 `sort_by`, `min_by`, `max_by`, `group_by`, `zip`, `flatten`, `sum`, `count`,
-`first`, `last`, `find`, `map`, `each`, `reject` and `each_with_index` have the
-same name in both languages. With method calls and blocks
+`first`, `last`, `find`, `map`, `each`, `reject`, `each_with_index`, `tally`,
+`find_index`, `filter_map`, `dig`, `invert`, `divmod`, `center`, `bytes` and
+`inspect` have the same name in both languages; `digits` gives the most
+significant digit first, where Ruby gives them in reverse, and `format` takes
+the specs of Python, not the `%` of Ruby. With method calls and blocks
 ([3.8](#38-fields-and-method-calls), [3.14](#314-blocks-given-to-calls)),
 Ruby code often works as it is:
 
@@ -3685,16 +3794,16 @@ before the program runs:
 
 ```rythme
 word = "hello"
-print(ord(word[0]))
+print(charCodeAt(word[0]))
 print(map(word, upper))
 ```
 
 ```text
-error[E003]: unknown name `ord`
+error[E003]: unknown name `charCodeAt`
  --> 62-hints.ry:2:7
   |
-2 | print(ord(word[0]))
-  |       ^^^ not defined
+2 | print(charCodeAt(word[0]))
+  |       ^^^^^^^^^^ not defined
   |
   = help: in Rythme, this is called `char_code`
   = more about this error: `rythme explain E003`
@@ -3891,6 +4000,30 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMAND] [ARGUMENTS...]
 | `explain [CODE]` | `expliquer` | the explanation of an error or warning code; without a code, the list of codes |
 | `learn` | `apprendre`, `tutorial`, `tutoriel` | the guided tour: the 13 topics in order, with a pause after each one when run in a terminal |
 | `version` | `--version`, `-V` | prints `rythme 1.0.0` |
+| `version --verbose` | | also the system, the languages, the numbers of built-in functions and of codes, and the version of the JSON output |
+| `completions SHELL` | | a completion script for `bash`, `zsh`, `fish` or `powershell` (see below) |
+| `man` | | the manual page of the command, in roff: `rythme man > rythme.1` |
+| `upgrade` | | which command installs the latest version, guessed from where Rythme is installed (nothing is downloaded) |
+
+**Help, completions and the manual page.** Every command answers `--help`
+(or `-h`) with its usage, its options and its exit codes, in the language of
+the messages: `rythme test --help`. For `run`, `steps`, `debug` and `-e`,
+`--help` counts only before the file: after it, the words are the
+program's. `rythme run -` (or `rythme -`) runs the program read from the
+standard input, which `input` then finds at its end. `rythme check FOLDER`
+checks every `.ry` file of a folder and of its subfolders (hidden ones
+excepted), like `rythme fmt`. `rythme completions bash` (or `zsh`, `fish`,
+`powershell`) writes a script that completes the commands, their options,
+the topics of `rythme help`, the codes of `rythme explain`, the languages of
+`--lang` and the `.ry` files; install it once:
+
+```text
+rythme completions bash > ~/.local/share/bash-completion/completions/rythme
+rythme completions zsh > "${fpath[1]}/_rythme"
+rythme completions fish > ~/.config/fish/completions/rythme.fish
+rythme completions powershell >> $PROFILE
+rythme man > ~/.local/share/man/man1/rythme.1
+```
 
 **For programs and AI assistants.** `check`, `run`, `test`, `fix`,
 `explain`, `help`, `search` and `info` accept `--format json`: one JSON document instead of

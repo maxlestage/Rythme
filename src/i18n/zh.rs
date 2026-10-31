@@ -1696,17 +1696,11 @@ example: rythme steps fibonacci.ry "fib(4)""#,
         ("write a range with `..`: `1..10` is the list from 1 to 10 (included), and `0..10 |> step_by(2)` counts by 2", "范围用 `..` 来写：`1..10` 是从 1 到 10 的列表（包括 10），`0..10 |> step_by(2)` 则以 2 为步长计数"),
         ("use the operator `//` for a whole division: `7 // 2` is 3", "整数除法请使用运算符 `//`：`7 // 2` 等于 3"),
         ("use the operator `%` for the remainder: `7 % 3` is 1", "求余数请使用运算符 `%`：`7 % 3` 等于 1"),
-        ("use the operators `//` and `%`: `7 // 2` is 3 and `7 % 2` is 1", "请使用运算符 `//` 和 `%`：`7 // 2` 等于 3，`7 % 2` 等于 1"),
         ("to put values in a text, use braces: \"total: {{x}}\"; to write a number with 2 decimals: `text(x, 2)`", "要把值放进文本，请使用花括号：\"total: {{x}}\"；要把数字写成 2 位小数：`text(x, 2)`"),
         ("read the whole file with `read_file(path)`, then cut it with `lines(text)`; the lines of the standard input are `input_lines()`", "用 `read_file(path)` 读取整个文件，再用 `lines(text)` 切分；标准输入的各行是 `input_lines()`"),
         ("to merge two records, write `{{..a, ..b}}`: the fields of `b` replace those of `a`; for two dicts or two sets, `union(a, b)`", "要合并两个记录，请写 `{{..a, ..b}}`：`b` 的字段会替换 `a` 的字段；对于两个字典或两个集合，请用 `union(a, b)`"),
         ("write `unwrap_or(get(x, key), default)`: the value, or the default if it is missing", "请写 `unwrap_or(get(x, key), default)`：得到这个值，如果缺失则得到默认值"),
-        ("pair the lists, then combine each pair: `zip(a, b) |> map(fn([x, y]) = x + y)`", "先把列表配对，再组合每一对：`zip(a, b) |> map(fn([x, y]) = x + y)`"),
-        ("sort from the largest to the smallest with `sort(list) |> reverse`", "用 `sort(list) |> reverse` 从大到小排序"),
         ("compute the average with `sum(list) / len(list)`", "用 `sum(list) / len(list)` 计算平均值"),
-        ("keep x between low and high with `max(low, min(x, high))`", "用 `max(low, min(x, high))` 把 x 限制在 low 和 high 之间"),
-        ("count how many times each value appears with `group_by(list, fn(x) = x) |> map_values(len)`", "用 `group_by(list, fn(x) = x) |> map_values(len)` 统计每个值出现的次数"),
-        ("a decimal number x is NaN (not a number) when `x != x`", "当 `x != x` 时，小数 x 是 NaN（不是数字）"),
         ("`n.times do |i| ... end` is written `(0..n - 1).each do |i| ... end`", "`n.times do |i| ... end` 写作 `(0..n - 1).each do |i| ... end`"),
         ("to use another file, write `use other_file`, then `other_file.name`", "要使用另一个文件，请写 `use other_file`，然后 `other_file.name`"),
         ("there is no `new`: build values directly, like `{{name: \"Ada\"}}` or `Circle(2.0)`", "没有 `new`：直接构造值，例如 `{{name: \"Ada\"}}` 或 `Circle(2.0)`"),
@@ -4461,7 +4455,6 @@ Or give the parameter another name: fn twice(n) = n * 2"#,
         ("One element out of n of a list (or text), starting with the first. On a range: the numbers with a step.", "列表（或文本）中每 n 个取一个元素，从第一个开始。对于范围：按步长取数字。"),
         ("Cuts a list (or text) into pieces of n elements; the last piece may be shorter.", "把列表（或文本）切成每段 n 个元素；最后一段可能更短。"),
         ("Every group of n neighbouring elements of a list (or text), in order: handy to compare each element with the next one.", "列表（或文本）中每组 n 个相邻的元素，按顺序排列：方便把每个元素和下一个比较。"),
-        ("Pairs the elements of two lists: [[a1, b1], [a2, b2], ...]. It stops at the end of the shorter list.", "把两个列表的元素配对：[[a1, b1], [a2, b2], ...]。在较短的列表结束时停止。"),
         ("Pairs each element with its position: [[0, x0], [1, x1], ...].", "把每个元素和它的位置配对：[[0, x0], [1, x1], ...]。"),
         ("Is f true for at least one element?", "f 是否至少对一个元素为真？"),
         ("Is f true for every element?", "f 是否对每个元素都为真？"),
@@ -4512,8 +4505,6 @@ Or give the parameter another name: fn twice(n) = n * 2"#,
         ("The parts of a path, split at each `/` or `\\`; the first part of an absolute path is its root (`/`, `C:\\`...). `join_path` puts them back together.", "路径的各个部分，在每个 `/` 或 `\\` 处切分；绝对路径的第一部分是它的根（`/`、`C:\\`……）。`join_path` 可以把它们重新组合起来。"),
         ("The date and time now, where the program runs: a record {year, month, day, hour, minute, second, offset}, where `offset` is the number of minutes the local time is ahead of UTC (0 when the system does not tell).", "程序运行所在地的当前日期和时间：一个记录 {year, month, day, hour, minute, second, offset}，其中 `offset` 是当地时间比 UTC 快的分钟数（系统没有提供时为 0）。"),
         ("The date of today, where the program runs: a record {year, month, day}.", "程序运行所在地的今天的日期：一个记录 {year, month, day}。"),
-        ("Reads a date written as ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date.", "读取按 ISO 8601 书写的日期（\"2024-02-29\"、\"2024-02-29T13:05:00\"，需要时带 `Z` 或像 `+01:00` 这样的时差）：`Ok(date)`，如果不是有效的日期则为 `Err(message)`。"),
-        ("Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one.", "把日期写成 ISO 8601 格式：\"2024-02-29\"，如果日期带有时间则包括时间，如果带有时差则包括 `Z` 或时差。"),
         ("Is the value a valid date: a record {year, month, day} (with `hour`, `minute`, `second`, `offset` if needed) for a day that exists?", "这个值是否是有效的日期：一个表示存在的某一天的记录 {year, month, day}（需要时带 `hour`、`minute`、`second`、`offset`）？"),
         ("The date n days later (or earlier, when n is negative), at the same time of day.", "n 天之后（n 为负数时是之前）的日期，一天中的时间不变。"),
         ("The date and time n seconds later (or earlier, when n is negative). Add `60 * minutes` or `3600 * hours` the same way.", "n 秒之后（n 为负数时是之前）的日期和时间。用同样的方法可以加上 `60 * minutes` 或 `3600 * hours`。"),
@@ -9775,5 +9766,373 @@ file://，git 运行时不执行 hooks，每个版本的文件必须符合索引
         ("The index is the folder {url}, where Rythme writes nothing.", "索引是文件夹 {url}，Rythme 不会往里面写任何东西。"),
         ("Create its file {file} with:", "创建它的文件 {file}，内容是："),
         ("Add at the end of its file {file}:", "在它的文件 {file} 末尾加上："),
+        ("the pattern \"{pattern}\" has an unknown directive `%{c}`", "模式 \"{pattern}\" 有一个未知的指令 `%{c}`"),
+        ("the directives are %Y (year), %m (month), %d (day), %H (hour), %M (minute), %S (second), %y (year in 2 digits), %B and %b (month name), %A and %a (day name), %I and %p (12-hour clock), %j (day of the year), %z (offset) and %% (a %)", "指令有 %Y（年）、%m（月）、%d（日）、%H（时）、%M（分）、%S（秒）、%y（两位数的年）、%B 和 %b（月份名）、%A 和 %a（星期名）、%I 和 %p（12 小时制）、%j（一年中的第几天）、%z（时差）以及 %%（一个 %）"),
+        (r#""{text}" does not follow the pattern "{pattern}""#, r#""{text}" 不符合模式 "{pattern}""#),
+        ("the hour must go from 1 to 12 with AM or PM, not {}", "使用 AM 或 PM 时，小时必须在 1 到 12 之间，而不是 {}"),
+        ("the day of the year must go from 1 to {len}, not {n}", "一年中的第几天必须在 1 到 {len} 之间，而不是 {n}"),
+        ("`{c}` is not a Base64 character", "`{c}` 不是 Base64 字符"),
+        ("this Base64 text is cut short", "这段 Base64 文本被截断了"),
+        ("the decoded bytes are not a text (UTF-8)", "解码后的字节不是文本（UTF-8）"),
+        ("a `%` must be followed by two hexadecimal digits, like `%20`", "`%` 后面必须跟两个十六进制数字，例如 `%20`"),
+        ("`{f}` would give {count} lists: too many (at most {MAX_COMBINED} elements in all)", "`{f}` 会得到 {count} 个列表：太多了（总共最多 {MAX_COMBINED} 个元素）"),
+        ("the number of combinations grows very fast: try with a shorter list, or fewer elements in each one", "组合的数量增长得非常快：试试更短的列表，或者每个组合里更少的元素"),
+        ("`unzip` needs a list of lists, but its element {k} is {}", "`unzip` 需要一个由列表组成的列表，但它的第 {k} 个元素是 {}"),
+        ("the function given to `unfold` must return `Some([value, next])` or `None`, but it returned Some({})", "传给 `unfold` 的函数必须返回 `Some([值, 下一个])` 或 `None`，但它返回了 Some({})"),
+        ("`{f}` needs at least two numbers in each list", "`{f}` 需要每个列表至少有两个数"),
+        ("`correlation` needs numbers that vary: one of the lists has all its numbers equal", "`correlation` 需要会变化的数：其中一个列表的所有数都相等"),
+        ("`{f}` cannot compare {} and {}", "`{f}` 无法比较 {} 和 {}"),
+        ("the value and its bounds must be of the same kind: all numbers, or all texts...", "值和它的边界必须是同一种：都是数，或者都是文本……"),
+        ("`constrain`: the lower bound {} is above the upper bound {}", "`constrain`：下界 {} 大于上界 {}"),
+        ("`binomial` needs a number of 0 or more, not {n}", "`binomial` 需要一个大于或等于 0 的数，而不是 {n}"),
+        ("`expect` found `None`: there is no value", "`expect` 遇到了 `None`：没有值"),
+        ("`expect` found an error: {}", "`expect` 遇到了一个错误：{}"),
+        ("`all_ok` needs a list of Results (Ok or Err), but its element {k} is {}", "`all_ok` 需要一个由 Result（Ok 或 Err）组成的列表，但它的第 {k} 个元素是 {}"),
+        ("to keep the values of a list of Options, use `filter_map(list, fn(x) = x)`", "要保留一个 Option 列表中的值，请使用 `filter_map(list, fn(x) = x)`"),
+        ("`format` cannot use \"{spec}\": {why}", "`format` 无法使用 \"{spec}\"：{why}"),
+        (r#"a spec is written [[fill]align][sign][#][0][width][,][.precision][type]: ">8" (8 wide, on the right), "^8" (centered), "08.2f" (2 decimals, zeros before), ",d" (thousands), ".1%" (a percentage), "x" (hexadecimal), "b" (binary), "e" (exponent)"#, r#"格式说明写作 [[填充]对齐][符号][#][0][宽度][,][.精度][类型]：">8"（宽 8，靠右）、"^8"（居中）、"08.2f"（2 位小数，前面补零）、",d"（千位分隔）、".1%"（百分比）、"x"（十六进制）、"b"（二进制）、"e"（指数）"#),
+        ("the width is at most {MAX_WIDTH}", "宽度最多为 {MAX_WIDTH}"),
+        ("the precision is at most {MAX_PRECISION}", "精度最多为 {MAX_PRECISION}"),
+        ("a number must follow the `.`", "`.` 后面必须跟一个数"),
+        ("`{c}` is not a type of format", "`{c}` 不是一种格式类型"),
+        ("this is not a format spec", "这不是格式说明"),
+        ("`{kind}` cannot write {what}", "`{kind}` 不能写出{what}"),
+        ("a whole number", "整数"),
+        ("a whole number has no decimals: write a type like `f` for them", "整数没有小数：要显示小数，请写一个类型，例如 `f`"),
+        ("`,` groups decimal digits only: use `_`", "`,` 只对十进制数字分组：请使用 `_`"),
+        ("a decimal number", "小数"),
+        ("signs, `#`, `0` and `,` are for numbers", "符号、`#`、`0` 和 `,` 只用于数"),
+        ("`{f}`: the base must go from 2 to 36, not {b}", "`{f}`：进制必须在 2 到 36 之间，而不是 {b}"),
+        ("\"{s}\" is not a whole number in base {radix}", "\"{s}\" 不是 {radix} 进制的整数"),
+        ("`digits` needs a number of 0 or more, not {}", "`digits` 需要一个大于或等于 0 的数，而不是 {}"),
+        ("`{f}`: the text to look for is empty", "`{f}`：要查找的文本是空的"),
+        ("`{f}` cannot replace an empty text", "`{f}` 不能替换空文本"),
+        ("`edit_distance` compares texts of at most {MAX_DISTANCE_WORK} pairs of characters, not {} by {}", "`edit_distance` 比较的文本最多有 {MAX_DISTANCE_WORK} 对字符，而不是 {} 乘 {}"),
+        ("to count a piece of text in a text, use `occurrences(text, piece)`", "要统计一段文本在文本中出现的次数，请使用 `occurrences(text, piece)`"),
+        ("to count the elements equal to a value, use `occurrences(list, x)`", "要统计等于某个值的元素个数，请使用 `occurrences(list, x)`"),
+        ("the value comes first, then the spec: `format(42, \"05\")`; to put values in a text, use braces", "先写值，再写格式说明：`format(42, \"05\")`；要把值放进文本里，请使用花括号"),
+        ("return `Some(x)` to keep x, or `None` to leave the element out", "返回 `Some(x)` 来保留 x，返回 `None` 来跳过这个元素"),
+        ("return `Some([value, next])` to go on, or `None` to stop", "返回 `Some([值, 下一个])` 继续，返回 `None` 停止"),
+        ("Pairs the elements of two lists (or more: one element of each list in every group): [[a1, b1], [a2, b2], ...]. It stops at the end of the shortest list.", "把两个（或更多）列表的元素配对（每组里每个列表各一个元素）：[[a1, b1], [a2, b2], ...]。在最短的列表结束时停止。"),
+        (r#"Reads a date written as ISO 8601 ("2024-02-29", "2024-02-29T13:05:00", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date. With a pattern like "%d/%m/%Y" (the directives of `format_date`), reads a date written that way."#, r#"读取按 ISO 8601 书写的日期（"2024-02-29"、"2024-02-29T13:05:00"，需要时可带 `Z` 或像 `+01:00` 这样的时差）：`Ok(date)`，如果不是有效日期则为 `Err(message)`。给出像 "%d/%m/%Y" 这样的模式（即 `format_date` 的指令）时，读取按这种方式书写的日期。"#),
+        ("Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one. With a pattern, writes it the way `strftime` does: %Y year, %m month, %d day, %H hour, %M minute, %S second, %y year in two digits, %B and %b the month, %A and %a the day of the week (in English), %I and %p the 12-hour clock, %j the day of the year, %z the offset, %% a %.", "按 ISO 8601 写出日期：\"2024-02-29\"，如果日期有时间则带上时间，如果有时差则带上 `Z` 或时差。给出模式时，像 `strftime` 那样写出：%Y 年，%m 月，%d 日，%H 时，%M 分，%S 秒，%y 两位数的年，%B 和 %b 月份，%A 和 %a 星期几（英文），%I 和 %p 12 小时制，%j 一年中的第几天，%z 时差，%% 一个 %。"),
+        ("The text that shows a value the way the REPL and `debug` show it: a text between quotes, with its special characters written as escapes. `text` gives a text as it is.", "按 REPL 和 `debug` 的方式显示一个值的文本：文本放在引号里，特殊字符写成转义序列。`text` 则原样给出文本。"),
+        ("Shows values on the error output (stderr), separated by spaces, then goes to the next line: for messages that must not mix with the results of a program, which go to the standard output.", "在错误输出（stderr）上显示值，用空格分隔，然后换行：用于不应和程序结果混在一起的消息，程序结果写到标准输出。"),
+        ("The value kept between two bounds: `low` if it is below, `high` if it is above, itself otherwise. For numbers, texts... any values that can be compared.", "把值限制在两个边界之间：小于下界时为 `low`，大于上界时为 `high`，否则为它本身。适用于数、文本……任何可以比较的值。"),
+        ("The whole quotient and the remainder of a division at once: `[a // b, a % b]`.", "同时给出除法的整数商和余数：`[a // b, a % b]`。"),
+        ("The binomial coefficient \"n choose k\": the number of ways to choose k elements among n, exact even when it is very large.", "二项式系数“从 n 个中选 k 个”：从 n 个元素中选出 k 个的方法数，即使非常大也是精确的。"),
+        ("The digits of a whole number (0 or more), the most significant first, in base 10 or in the base given (from 2 to 36).", "整数（大于或等于 0）的各位数字，最高位在前，使用十进制或给定的进制（2 到 36）。"),
+        ("Writes a whole number in a base from 2 to 36, with the digits 0 to 9 then the letters a to z.", "用 2 到 36 之间的进制写出整数，使用数字 0 到 9，然后是字母 a 到 z。"),
+        ("Reads a whole number written in a base from 2 to 36: `Ok(number)`, or `Err(message)` if the text is not a number in this base. `0x`, `0o` and `0b` may come before a number in base 16, 8 and 2.", "读取用 2 到 36 之间的进制写的整数：`Ok(number)`，如果文本不是这个进制的数则为 `Err(message)`。16、8、2 进制的数前面可以有 `0x`、`0o`、`0b`。"),
+        ("Is the number greater than 0?", "这个数大于 0 吗？"),
+        ("Is the number less than 0?", "这个数小于 0 吗？"),
+        ("Is the number 0 (or 0.0)?", "这个数是 0（或 0.0）吗？"),
+        ("Is the decimal number `nan` (\"not a number\")? It is never equal to anything, not even to itself.", "这个小数是 `nan`（“不是一个数”）吗？它不等于任何值，甚至不等于它自己。"),
+        ("Is the number finite: neither an infinity nor `nan`? Whole numbers always are.", "这个数是有限的吗：既不是无穷大也不是 `nan`？整数总是有限的。"),
+        ("Adds `fill` (a space by default) on both sides of the text until it is `width` characters long: titles and cells of tables stay centered. A character left over goes to the right.", "在文本两边添加 `fill`（默认是空格），直到它有 `width` 个字符：标题和表格单元格保持居中。多出的一个字符放在右边。"),
+        (r##"Writes a value following a format spec, like Python's `format`: ".2f" for 2 decimals, ">8" to fill 8 characters on the right ("<" on the left, "^" centered), "08.2f" with zeros before, "," with the thousands separated, "%" as a percentage, "x", "o" and "b" in hexadecimal, octal and binary ("#" adds 0x, 0o, 0b), "e" with an exponent. To put values in a text, use braces."##, r##"按格式说明写出值，就像 Python 的 `format`：".2f" 表示 2 位小数，">8" 表示在右边对齐占 8 个字符（"<" 靠左，"^" 居中），"08.2f" 前面补零，"," 分隔千位，"%" 写成百分比，"x"、"o"、"b" 分别是十六进制、八进制和二进制（"#" 会加上 0x、0o、0b），"e" 带指数。要把值放进文本里，请使用花括号。"##),
+        ("Replaces the first occurrence of `old` by `new`, and only that one.", "把第一次出现的 `old` 替换为 `new`，只替换这一次。"),
+        ("How many times an element is in a list, or a piece of text in a text (pieces that do not overlap).", "一个元素在列表中出现几次，或一段文本在文本中出现几次（互不重叠的片段）。"),
+        ("The position of the last occurrence of an element in a list, or of a piece of text in a text: `Some(position)`, or `None` if it is not there.", "元素在列表中最后一次出现的位置，或一段文本在文本中最后一次出现的位置：`Some(position)`，如果不存在则为 `None`。"),
+        ("The text without this start, if it starts with it; otherwise the text unchanged.", "如果文本以它开头，去掉这个开头；否则原样返回文本。"),
+        ("The text without this end, if it ends with it; otherwise the text unchanged.", "如果文本以它结尾，去掉这个结尾；否则原样返回文本。"),
+        ("The text with the first character of each word in uppercase (the rest is unchanged). Words are separated by spaces.", "把每个单词的第一个字符变成大写（其余不变）的文本。单词之间用空格分隔。"),
+        ("Writes a name in snake_case: its words in lowercase, joined by `_`. Reads names written in any style: camelCase, PascalCase, kebab-case, with spaces...", "把名字写成 snake_case：单词小写，用 `_` 连接。能读懂任何风格的名字：camelCase、PascalCase、kebab-case、带空格的……"),
+        ("Writes a name in camelCase: its words glued together, each with an uppercase first letter but the first word.", "把名字写成 camelCase：单词连在一起，除第一个单词外每个单词首字母大写。"),
+        ("Writes a name in kebab-case: its words in lowercase, joined by `-`, as in web addresses.", "把名字写成 kebab-case：单词小写，用 `-` 连接，就像网址里那样。"),
+        ("The text with its uppercase letters in lowercase, and its lowercase letters in uppercase.", "把大写字母变成小写、小写字母变成大写的文本。"),
+        ("Has the text letters, all of them in uppercase? (The other characters do not count.)", "文本有字母并且全部是大写吗？（其他字符不算。）"),
+        ("Has the text letters, all of them in lowercase? (The other characters do not count.)", "文本有字母并且全部是小写吗？（其他字符不算。）"),
+        ("The bytes of a text in UTF-8, as whole numbers from 0 to 255: an accented letter takes two of them, an emoji four.", "文本的 UTF-8 字节，用 0 到 255 的整数表示：一个带重音的字母占两个字节，一个表情符号占四个。"),
+        ("Cuts a text in two at the first separator: `Some([before, after])`, or `None` if the separator is not there. For lines like `key=value`.", "在第一个分隔符处把文本切成两段：`Some([前, 后])`，如果没有分隔符则为 `None`。用于像 `key=value` 这样的行。"),
+        ("Cuts the lines of a text between words so that none is longer than `width` characters (a longer word stays whole on its own line).", "在单词之间折行，使每行不超过 `width` 个字符（更长的单词独占一行，保持完整）。"),
+        ("The edit distance (Levenshtein) between two texts: the fewest characters to add, remove or replace to go from one to the other. For spelling checkers, and to find the closest word.", "两个文本之间的编辑距离（Levenshtein）：从一个变成另一个最少需要添加、删除或替换的字符数。用于拼写检查，以及找出最接近的单词。"),
+        ("The position of the first element for which f is true: `Some(position)`, or `None` if there is none.", "第一个使 f 为真的元素的位置：`Some(position)`，如果没有则为 `None`。"),
+        ("The list with the element at position i replaced by f(element). A negative position counts from the end.", "把位置 i 的元素替换为 f(元素) 后的列表。负数位置从末尾开始数。"),
+        ("The list or text turned by n places to the left (1 by default): the first elements go to the end. A negative n turns it to the right.", "把列表或文本向左旋转 n 位（默认 1 位）：前面的元素移到末尾。n 为负数时向右旋转。"),
+        ("The list with `x` between every two elements.", "在每两个相邻元素之间插入 `x` 的列表。"),
+        ("The elements of two lists taken in turn, one from each; what is left of the longer list comes at the end.", "轮流从两个列表中各取一个元素；较长列表剩下的元素放在最后。"),
+        ("Counts how many times each value is in a list: a dict from each value to its count (like Python's `Counter`).", "统计每个值在列表中出现的次数：从每个值到它的次数的字典（就像 Python 的 `Counter`）。"),
+        ("Counts the elements by the key that f gives them: a dict from each key to how many elements have it.", "按 f 给出的键统计元素：从每个键到具有该键的元素个数的字典。"),
+        ("The values that come most often, with their counts: a list of `[value, count]` pairs, the most frequent first (on a tie, the one seen first). With n, only the first n.", "出现最频繁的值及其次数：由 `[值, 次数]` 组成的列表，最频繁的在前（次数相同时，先出现的在前）。给出 n 时，只取前 n 个。"),
+        ("The list without the elements whose key (given by f) was already seen: the first element of each key stays.", "去掉键（由 f 给出）已经出现过的元素后的列表：每个键保留第一个元素。"),
+        ("The list sorted from the largest to the smallest.", "从大到小排序的列表。"),
+        ("The list sorted by the key that the function gives, from the largest key to the smallest; elements with the same key keep their order.", "按函数给出的键排序的列表，键从大到小；键相同的元素保持原来的顺序。"),
+        ("Cuts a list into runs of neighbour elements that have the same key (given by f).", "把列表切分成若干段，每段由键（由 f 给出）相同的相邻元素组成。"),
+        ("Cuts a list or a text in two at position i: `[before, from i on]`. A negative position counts from the end.", "在位置 i 把列表或文本切成两段：`[之前, 从 i 开始]`。负数位置从末尾开始数。"),
+        ("Every way to choose k elements of the list, each kept in the order of the list.", "从列表中选出 k 个元素的所有方式，每种都保持列表中的顺序。"),
+        ("Every order of the elements of the list, or of k of them.", "列表元素（或其中 k 个元素）的所有排列。"),
+        ("Every way to take one element of each list: the cartesian product.", "从每个列表各取一个元素的所有方式：笛卡尔积。"),
+        ("The opposite of `zip`: a list of pairs (or of lists of the same length) becomes the list of the first elements, the list of the second ones...", "`zip` 的反操作：由数对（或等长列表）组成的列表变成第一个元素组成的列表、第二个元素组成的列表……"),
+        ("A list of n values: `start`, then f(start), then f of that... For sequences where each value comes from the one before.", "由 n 个值组成的列表：`start`，然后 f(start)，再然后对它应用 f……用于每个值都由前一个值得到的数列。"),
+        ("Builds a list from a starting state: f receives the state and gives `Some([value, next state])` to add a value and go on, or `None` to stop.", "从一个初始状态构造列表：f 接收状态，返回 `Some([值, 下一个状态])` 表示添加一个值并继续，返回 `None` 表示停止。"),
+        ("Applies f to each element and keeps the values of the `Some(...)` it gives, leaving out the `None`: filtering and transforming at once.", "对每个元素应用 f，保留它返回的 `Some(...)` 里的值，丢掉 `None`：同时完成过滤和转换。"),
+        ("The value found by following a path of keys into records, dicts and lists nested in one another (names of fields, keys, positions): `Some(value)`, or `None` as soon as one is missing. For data read with `parse_json`.", "沿着一串键（字段名、键、位置）深入嵌套的记录、字典和列表找到的值：`Some(值)`，一旦缺少某个键就为 `None`。适用于用 `parse_json` 读取的数据。"),
+        ("Merges two records or two dicts; for a key in both, f receives the two values and gives the one kept.", "合并两个记录或两个字典；对于两边都有的键，f 接收两个值并返回要保留的那个。"),
+        ("A dict where the values of a record or a dict have become the keys, and the keys the values. When a value comes several times, the last key wins.", "把记录或字典的值变成键、键变成值的字典。某个值出现多次时，以最后一个键为准。"),
+        ("The record or dict with only the keys given (in a list or a set); a key that is missing is ignored.", "只保留给定键（放在列表或集合中）的记录或字典；不存在的键会被忽略。"),
+        ("The record or dict without the keys given (in a list or a set).", "去掉给定键（放在列表或集合中）的记录或字典。"),
+        ("The record or dict with each key replaced by f(key); for a record, f must give a text.", "把每个键替换为 f(键) 的记录或字典；对于记录，f 必须返回文本。"),
+        ("The record or dict where the value of `key` is replaced by f(value); when the key is missing, it is added with `default`. Handy to count: `update(counts, word, 1, fn(n) = n + 1)`.", "把 `key` 的值替换为 f(值) 的记录或字典；如果没有这个键，就以 `default` 添加它。很适合计数：`update(counts, word, 1, fn(n) = n + 1)`。"),
+        ("The elements that are in exactly one of the two sets.", "恰好只在两个集合之一中的元素。"),
+        ("Have the two sets no element in common?", "两个集合没有共同的元素吗？"),
+        ("The value inside `Some(x)` or `Ok(x)`; otherwise what f gives: f receives nothing for `None`, and the error for `Err(e)`. The default is computed only when it is needed.", "`Some(x)` 或 `Ok(x)` 里的值；否则为 f 给出的值：对于 `None`，f 不接收参数；对于 `Err(e)`，f 接收错误。默认值只在需要时才计算。"),
+        ("The value inside `Some(x)` or `Ok(x)`, like `unwrap`; otherwise stops the program with your message, which says what was expected.", "`Some(x)` 或 `Ok(x)` 里的值，和 `unwrap` 一样；否则用你的消息停止程序，消息说明期望的是什么。"),
+        ("Makes one Result of a list of Results: `Ok(list of the values)` if they are all `Ok`, or else the first `Err`. When reading many values where one mistake must stop everything.", "把一个 Result 列表合成一个 Result：如果全部是 `Ok`，得到 `Ok(值的列表)`，否则得到第一个 `Err`。用于读取许多值、只要有一个错误就全部停止的情况。"),
+        ("The date n months later (earlier if n is negative). A day that the new month does not have becomes its last day: 31 January plus one month is the end of February.", "n 个月之后的日期（n 为负数时为之前）。新月份没有的日子会变成该月的最后一天：1 月 31 日加一个月是 2 月底。"),
+        ("The number of the day in its year, from 1 (1 January) to 365, or 366 in a leap year.", "这一天是一年中的第几天，从 1（1 月 1 日）到 365，闰年到 366。"),
+        ("n decimal numbers evenly spaced from `start` to `end`, both included: to draw a function with `plot`, or to try values.", "从 `start` 到 `end`（都包含）等间距的 n 个小数：用于用 `plot` 画函数，或尝试一些值。"),
+        ("The correlation (Pearson) of two lists of numbers of the same length: from -1 (they vary in opposite ways) to 1 (they vary together); about 0 when they are not linearly related.", "两个等长数列的（皮尔逊）相关系数：从 -1（变化方向相反）到 1（一起变化）；没有线性关系时接近 0。"),
+        ("The covariance of two lists of numbers of the same length, divided by their length like `variance`.", "两个等长数列的协方差，像 `variance` 一样除以长度。"),
+        ("Encodes a text in Base64 (its UTF-8 bytes), as in emails, web pages and the headers of HTTP requests.", "把文本（它的 UTF-8 字节）编码为 Base64，就像电子邮件、网页和 HTTP 请求头里那样。"),
+        ("Decodes a Base64 text: `Ok(text)`, or `Err(message)` if it is not valid Base64, or not a text once decoded.", "解码 Base64 文本：`Ok(text)`；如果不是有效的 Base64，或解码后不是文本，则为 `Err(message)`。"),
+        ("Encodes a text to put it in a web address: every character but the letters, the digits and `-_.~` becomes `%` and two hexadecimal digits (a space is `%20`).", "编码文本以便放进网址：除字母、数字和 `-_.~` 以外的每个字符都变成 `%` 加两个十六进制数字（空格是 `%20`）。"),
+        ("Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.", "解码网址中的文本（`%20`……）：`Ok(text)`；如果 `%` 后面不是两个十六进制数字，则为 `Err(message)`。"),
+        (r#"More functions on lists
+  find_index([3, 8, 5], is_even)          # Some(1)
+  sort_desc([3, 1, 2])                    # [3, 2, 1]  (sort_by_desc with a key)
+  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(words, 3)                   # the 3 most frequent, with their counts
+  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
+  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
+  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  permutations(xs)   cartesian_product(xs, ys)   unzip(pairs)   zip(xs, ys, zs)
+  filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#, r#"列表的更多函数
+  find_index([3, 8, 5], is_even)          # Some(1)
+  sort_desc([3, 1, 2])                    # [3, 2, 1]（带键时用 sort_by_desc）
+  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(words, 3)                   # 最频繁的 3 个，以及它们的次数
+  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
+  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
+  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  permutations(xs)   cartesian_product(xs, ys)   unzip(pairs)   zip(xs, ys, zs)
+  filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#),
+        (r##"More functions on texts
+  format(3.14159, ".2f")         # "3.14"  (the format specs of Python: ">8", ",d", ".1%", "#x"...)
+  center("hi", 6, "*")           # "**hi**"
+  replace_first("a-b-c", "-", "+")          # "a+b-c"
+  occurrences("banana", "an")    # 2
+  remove_prefix("Mr Smith", "Mr ")          # "Smith"  (and remove_suffix)
+  split_once("key=value", "=")   # Some(["key", "value"])
+  snake_case("helloWorld")       # "hello_world"  (and camel_case, kebab_case)
+  capitalize_words("ada lovelace")          # "Ada Lovelace"
+  word_wrap(text, 40)            # lines of at most 40 characters
+  to_base(255, 16)   from_base("ff", 16)    # "ff" and Ok(255)
+  edit_distance("kitten", "sitting")        # 3"##, r##"文本的更多函数
+  format(3.14159, ".2f")         # "3.14"（Python 的格式说明：">8"、",d"、".1%"、"#x"……）
+  center("hi", 6, "*")           # "**hi**"
+  replace_first("a-b-c", "-", "+")          # "a+b-c"
+  occurrences("banana", "an")    # 2
+  remove_prefix("Mr Smith", "Mr ")          # "Smith"（还有 remove_suffix）
+  split_once("key=value", "=")   # Some(["key", "value"])
+  snake_case("helloWorld")       # "hello_world"（还有 camel_case、kebab_case）
+  capitalize_words("ada lovelace")          # "Ada Lovelace"
+  word_wrap(text, 40)            # 每行最多 40 个字符
+  to_base(255, 16)   from_base("ff", 16)    # "ff" 和 Ok(255)
+  edit_distance("kitten", "sitting")        # 3"##),
+        (r#"More functions on records and dicts
+  dig(data, ["user", "langs", 0])           # Some(...), or None: deep inside
+  select_keys(person, ["name", "age"])      # only these keys (reject_keys: without them)
+  merge_with(a, b, fn(x, y) = x + y)        # f decides for a key in both
+  update(counts, "apples", 1, fn(n) = n + 1)  # +1, or 1 when missing
+  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#, r#"记录和字典的更多函数
+  dig(data, ["user", "langs", 0])           # Some(...) 或 None：深入内部
+  select_keys(person, ["name", "age"])      # 只保留这些键（reject_keys：去掉它们）
+  merge_with(a, b, fn(x, y) = x + y)        # 两边都有的键由 f 决定
+  update(counts, "apples", 1, fn(n) = n + 1)  # 加 1，缺少时为 1
+  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#),
+        (r#"More helpers
+  unwrap_or_else(x, fn(e) = ...)   # the default, computed only when it is needed
+  expect(x, "a config file")       # like unwrap, with your message if it fails
+  all_ok(map(texts, parse_int))    # Ok([...]), or the first Err
+  filter_map(xs, f)                # the values of the Some(...) that f gives"#, r#"更多工具
+  unwrap_or_else(x, fn(e) = ...)   # 默认值，只在需要时才计算
+  expect(x, "a config file")       # 和 unwrap 一样，失败时显示你的消息
+  all_ok(map(texts, parse_int))    # Ok([...])，或者第一个 Err
+  filter_map(xs, f)                # f 返回的 Some(...) 里的值"#),
+        (r#"More on dates
+  add_months(date, 1)                       # 31 January + 1 month: the end of February
+  day_of_year(date)                         # from 1 to 366
+  format_date(date, "%d/%m/%Y %H:%M")       # with a pattern: %Y %m %d %H %M %S %B %A...
+  parse_date("29/02/2024", "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#, r#"日期的更多用法
+  add_months(date, 1)                       # 1 月 31 日 + 1 个月：2 月底
+  day_of_year(date)                         # 从 1 到 366
+  format_date(date, "%Y年%m月%d日 %H:%M")    # 用模式：%Y %m %d %H %M %S %B %A……
+  parse_date("2024-02-29", "%Y-%m-%d")      # Ok({year: 2024, month: 2, day: 29})"#),
+        // src/cli.rs
+        ("run a program; the words after the file are its arguments", "运行程序；文件后面的词是它的参数"),
+        ("find problems without running the program", "不运行程序就找出问题"),
+        ("run the tests of a file or of a folder", "运行一个文件或文件夹中的测试"),
+        ("give the code its official layout", "给代码统一的官方格式"),
+        ("write the documentation of a file from its ## comments", "根据 ## 注释写出文件的文档"),
+        ("apply the safe fixes of the problems that `rythme check` finds", "应用 `rythme check` 找到的问题的安全修复"),
+        ("show a calculation step by step", "一步一步地展示计算"),
+        ("pause a program where you want and look at its values", "在你想要的地方暂停程序并查看它的值"),
+        ("the debugger for editors (Debug Adapter Protocol)", "供编辑器使用的调试器（Debug Adapter Protocol）"),
+        ("exercises checked automatically", "自动检查的练习"),
+        ("create a project (rythme.toml, src/, tests/)", "创建项目（rythme.toml、src/、tests/）"),
+        ("download the dependencies of the project", "下载项目的依赖"),
+        ("guided tour of the language, step by step", "语言导览，一步一步"),
+        ("help on a topic, a function or an error code", "关于某个主题、函数或错误代码的帮助"),
+        ("explain an error or warning code, like E003", "解释错误或警告代码，例如 E003"),
+        ("run a piece of code given on the command line", "运行在命令行中给出的一段代码"),
+        ("interactive mode: try code line by line (also `rythme` alone)", "交互模式：逐行尝试代码（也可以只输入 `rythme`）"),
+        ("language server, for editors (VS Code, Neovim...)", "语言服务器，供编辑器使用（VS Code、Neovim……）"),
+        ("server for AI assistants (Model Context Protocol)", "供 AI 助手使用的服务器（Model Context Protocol）"),
+        ("the version of Rythme", "Rythme 的版本"),
+        ("completion of the commands in a shell", "在 shell 中补全命令"),
+        ("the manual page of the command, to install with `man`", "命令的手册页，可安装后用 `man` 查看"),
+        ("how to install the latest version of Rythme", "如何安装最新版本的 Rythme"),
+        (r#"  --seed N        the same draws of random and shuffle on every run
+  --sandbox       no files, folders, environment variables nor network
+  --format json   the output and the errors as JSON, for tools
+  FILE may be `-`: the program is read from the standard input.
+  At the root of a project, `rythme run` runs its program."#, r#"  --seed N        每次运行时 random 和 shuffle 抽到相同的结果
+  --sandbox       不能使用文件、文件夹、环境变量和网络
+  --format json   以 JSON 输出结果和错误，供工具使用
+  FILE 可以是 `-`：从标准输入读取程序。
+  在项目根目录下，`rythme run` 运行项目的程序。"#),
+        (r#"  --format json   the problems as JSON, for tools and AI assistants
+  A folder checks every .ry file inside it; at the root of a project,
+  `rythme check` checks the files of the project.
+  Exit code: 0 without errors (warnings allowed), 1 with errors."#, r#"  --format json   以 JSON 输出问题，供工具和 AI 助手使用
+  文件夹会检查其中的每个 .ry 文件；在项目根目录下，
+  `rythme check` 检查项目的文件。
+  退出码：没有错误时为 0（允许有警告），有错误时为 1。"#),
+        (r#"  --filter NAME   only the tests whose name contains NAME
+  --seed N        the same draws of random on every run
+  --watch         run the tests again whenever a file changes
+  --sandbox       no files, folders, environment variables nor network
+  --format json   the results as JSON
+  Exit code: 0 when every test passes, 1 otherwise."#, r#"  --filter NAME   只运行名字包含 NAME 的测试
+  --seed N        每次运行时 random 抽到相同的结果
+  --watch         文件一改变就重新运行测试
+  --sandbox       不能使用文件、文件夹、环境变量和网络
+  --format json   以 JSON 输出结果
+  退出码：所有测试都通过时为 0，否则为 1。"#),
+        (r#"  --check         only check, for continuous integration: exit code 1 when a
+                  file must be formatted
+  A folder formats all its .ry files; `-` reads the code from the standard
+  input and writes it formatted."#, r#"  --check         只检查，用于持续集成：有文件需要格式化时
+                  退出码为 1
+  文件夹会格式化其中所有的 .ry 文件；`-` 从标准输入读取代码，
+  并输出格式化后的代码。"#),
+        (r#"  --dry-run       only show the changes, as a diff
+  --all           also apply the fixes that are only likely
+  --format json   the fixes as JSON
+  Exit code: 0 when no error is left, 1 otherwise (with --dry-run: 1 when
+  something would change)."#, r#"  --dry-run       只显示改动，以 diff 的形式
+  --all           也应用只是可能正确的修复
+  --format json   以 JSON 输出修复
+  退出码：没有剩余错误时为 0，否则为 1（使用 --dry-run 时：
+  如果会有改动则为 1）。"#),
+        (r#"  --max N         show at most N steps
+  --width N       cut the lines at N characters (20 at least)
+  Without an expression, the steps of the last line of the file."#, r#"  --max N         最多显示 N 步
+  --width N       在第 N 个字符处换行（至少 20）
+  不给表达式时，显示文件最后一行的步骤。"#),
+        (r#"  In the debugger, `help` lists its commands: break, run, next, step,
+  finish, where, print, locals, quit."#, r#"  在调试器中，`help` 会列出它的命令：break、run、next、step、
+  finish、where、print、locals、quit。"#),
+        ("  Your editor starts it: the VS Code extension does, for the debugger type `rythme`.", "  由编辑器启动它：VS Code 扩展会为调试器类型 `rythme` 启动它。"),
+        (r#"  list            the exercises, from the easiest
+  start NAME      write the file of an exercise, to complete
+  check FILE.ry   run its tests and give hints"#, r#"  list            列出练习，从最简单的开始
+  start NAME      写出某个练习的文件，等你完成
+  check FILE.ry   运行它的测试并给出提示"#),
+        (r#"  `rythme help` lists the topics, `rythme help builtins` every function,
+  `rythme help llms` the whole language in one text (for AI assistants)."#, r#"  `rythme help` 列出所有主题，`rythme help builtins` 列出每个函数，
+  `rythme help llms` 用一个文本给出整个语言（供 AI 助手使用）。"#),
+        ("  Without a code, the list of the codes; --format json gives them all.", "  不给代码时列出所有代码；--format json 会给出全部内容。"),
+        ("  The value of the last expression is shown, unless it is ().", "  会显示最后一个表达式的值，除非它是 ()。"),
+        ("  `:help` lists the commands of the interactive mode.", "  `:help` 会列出交互模式的命令。"),
+        ("  --verbose       also the system, the languages, the functions and the formats", "  --verbose       同时显示系统、语言、函数和格式"),
+        ("Then open a new shell.", "然后打开一个新的 shell。"),
+        (r#"  rythme man > rythme.1 && man ./rythme.1
+  To install it: put rythme.1 in a folder of the manual pages, like
+  ~/.local/share/man/man1."#, r#"  rythme man > rythme.1 && man ./rythme.1
+  安装方法：把 rythme.1 放进手册页的文件夹，
+  例如 ~/.local/share/man/man1。"#),
+        (r#"
+Options of every command: --lang CODE ({codes}), --no-color
+"#, r#"
+所有命令的选项：--lang CODE（{codes}）、--no-color
+"#),
+        (r#"See also `rythme help {topic}`.
+"#, r#"另见 `rythme help {topic}`。
+"#),
+        (r#"
+Tools
+  rythme CMD --help         the options of a command, like rythme test --help
+  rythme run -              run the program read from the standard input
+  rythme check FOLDER       check every .ry file of a folder
+  rythme completions SHELL  completion of the commands: bash, zsh, fish, powershell
+  rythme man                the manual page of the command (rythme man > rythme.1)
+  rythme version --verbose  the version, with the system and what Rythme contains
+  rythme upgrade            how to install the latest version
+"#, r#"
+工具
+  rythme CMD --help         某个命令的选项，例如 rythme test --help
+  rythme run -              运行从标准输入读取的程序
+  rythme check FOLDER       检查文件夹中的每个 .ry 文件
+  rythme completions SHELL  命令补全：bash、zsh、fish、powershell
+  rythme man                命令的手册页（rythme man > rythme.1）
+  rythme version --verbose  版本，以及系统和 Rythme 包含的内容
+  rythme upgrade            如何安装最新版本
+"#),
+        ("unknown option `{bad}` for `rythme version`: the option is --verbose", "`rythme version` 没有选项 `{bad}`：唯一的选项是 --verbose"),
+        (r#"system: {os} {arch}
+languages of the messages: {codes} (now: {now})
+built-in functions: {functions} (and {ruby} Ruby names)
+codes: {errors} errors ({e_range}), {warnings} warnings ({w_range})
+JSON output (--format json): version {json}
+program: {exe}
+"#, r#"系统：{os} {arch}
+消息语言：{codes}（当前：{now}）
+内置函数：{functions} 个（以及 {ruby} 个 Ruby 名字）
+代码：{errors} 个错误（{e_range}），{warnings} 个警告（{w_range}）
+JSON 输出（--format json）：版本 {json}
+程序：{exe}
+"#),
+        ("`rythme upgrade` takes no argument, not `{bad}`", "`rythme upgrade` 不接受参数，`{bad}` 也不行"),
+        (r#"This is rythme {v} ({exe}).
+To install the latest version, type:
+  {how}
+The versions and what changed: https://github.com/maxlestage/Rythme/releases
+Within 1.x, a program that runs keeps running, with the same output.
+"#, r#"这是 rythme {v}（{exe}）。
+要安装最新版本，请输入：
+  {how}
+各个版本及其变化：https://github.com/maxlestage/Rythme/releases
+在 1.x 版本中，能运行的程序会一直能运行，并且输出相同。
+"#),
+        ("unknown shell `{s}`", "未知的 shell `{s}`"),
+        ("which shell?", "哪个 shell？"),
+        (r#"{what} Write one of bash, zsh, fish, powershell, like `rythme completions bash`
+see `rythme completions --help`"#, r#"{what} 请写 bash、zsh、fish、powershell 之一，例如 `rythme completions bash`
+参见 `rythme completions --help`"#),
+        ("`rythme man` takes no argument, not `{bad}`", "`rythme man` 不接受参数，`{bad}` 也不行"),
+        ("Name", "名称"),
+        ("rythme - a small, purely functional language with help everywhere", "rythme - 一门小巧的纯函数式语言，处处有帮助"),
+        ("Synopsis", "概要"),
+        ("Description", "描述"),
+        ("Rythme runs, checks, tests and formats programs written in Rythme. Without a command, `rythme` starts the interactive mode; `rythme file.ry` runs a program. Every message has a code explained by `rythme explain CODE`, and `rythme help` shows help on the language and its functions.", "Rythme 运行、检查、测试并格式化用 Rythme 写的程序。不带命令时，`rythme` 启动交互模式；`rythme file.ry` 运行一个程序。每条消息都有一个代码，可以用 `rythme explain CODE` 查看解释，`rythme help` 显示关于语言及其函数的帮助。"),
+        ("Commands", "命令"),
+        ("Options", "选项"),
+        ("the language of the messages: {codes}", "消息的语言：{codes}"),
+        ("messages without colors", "不带颜色的消息"),
+        ("the help; after a command, its options", "帮助；放在命令后面时显示该命令的选项"),
+        ("Environment", "环境"),
+        ("the language of the messages, before LC_ALL, LC_MESSAGES and LANG", "消息的语言，优先于 LC_ALL、LC_MESSAGES 和 LANG"),
+        ("when set, messages without colors", "设置后，消息不带颜色"),
+        ("Exit status", "退出状态"),
+        ("0 when everything went well; 1 after an error in the program, a failed test or a problem found; 2 for a command written wrongly. A program may choose its own code with exit(code).", "一切正常时为 0；程序出错、测试失败或发现问题时为 1；命令写错时为 2。程序可以用 exit(code) 选择自己的退出码。"),
+        ("See also", "另见"),
+        ("no .ry file in `{a}`", "`{a}` 中没有 .ry 文件"),
+        ("the standard input cannot be read: {e}", "无法读取标准输入：{e}"),
     ],
 }
