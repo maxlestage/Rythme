@@ -15,7 +15,7 @@ const { workspace, freePort, startServer, startExport, binary, checker, started 
 const BIN = binary(process.argv[2]);
 const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
 // Every language of the site (src/i18n.rs).
-const LANGS = ["fr", "en", "es", "de", "pt", "zh"];
+const LANGS = ["fr", "en", "es", "de", "pt", "zh", "it", "ja"];
 const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "ai/", "offline/", "nothing-here/"];
 const WIDTHS = [320, 360, 375, 390, 414, 600, 768, 1024, 1280, 1440, 1920];
 // The color themes, as `site.css` defines them; `auto` follows the system.

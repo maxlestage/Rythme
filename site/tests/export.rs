@@ -43,7 +43,7 @@ async fn exports_every_page_behind_the_base_path() {
     assert!(root.contains(r#"<meta name="description" content="Rythme est un langage"#), "{root}");
     // `/` picks any language of the site (the browser side, which it loads), and links
     // them all.
-    assert!(root.contains(r#"data-pick-language="fr en es de pt zh""#), "{root}");
+    assert!(root.contains(r#"data-pick-language="fr en es de pt zh it ja""#), "{root}");
     assert!(root.contains(r#"<script type="module">import init from "/Rythme/pkg/site.js?v="#), "{root}");
     assert!(!root.contains("<script>"), "no inline script but the bundle's start: {root}");
     for lang in Lang::ALL {
@@ -63,8 +63,11 @@ async fn exports_every_page_behind_the_base_path() {
         "fr/offline/index.html",
         "zh/offline/index.html",
         "zh/teach/index.html",
+        "it/teach/index.html",
+        "ja/offline/index.html",
         "en/manifest.webmanifest",
         "pt/manifest.webmanifest",
+        "ja/manifest.webmanifest",
     ] {
         assert!(out.join(file).is_file(), "{file}");
     }

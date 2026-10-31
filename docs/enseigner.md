@@ -1,6 +1,6 @@
 # Enseigner avec Rythme
 
-*[English version →](teaching.md) · [En español →](teaching.es.md) · [Auf Deutsch →](teaching.de.md) · [Em português →](teaching.pt.md) · [中文 →](teaching.zh.md)*
+*[English version →](teaching.md) · [En español →](teaching.es.md) · [Auf Deutsch →](teaching.de.md) · [Em português →](teaching.pt.md) · [中文 →](teaching.zh.md) · [In italiano →](teaching.it.md) · [日本語 →](teaching.ja.md)*
 
 Rythme a été conçu pour la salle de cours : un petit langage, avec des
 messages qui enseignent, pour que les étudiants passent leur temps sur les
@@ -244,8 +244,8 @@ tablette ou téléphone.
 ## Dans la langue des étudiants
 
 - Chaque message, sujet d'aide, explication et page de `rythme learn`
-  existe en français, en anglais, en espagnol, en allemand, en portugais et
-  en chinois. Rythme suit la langue du système ; `--lang es` ou la variable
+  existe en français, en anglais, en espagnol, en allemand, en portugais, en
+  chinois, en italien et en japonais. Rythme suit la langue du système ; `--lang es` ou la variable
   `RYTHME_LANG=es` en choisissent une autre.
 - Les mots-clés, les noms des fonctions et les commandes restent les mêmes
   dans toutes les langues : un programme écrit dans une classe fonctionne
