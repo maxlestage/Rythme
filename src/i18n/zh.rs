@@ -829,7 +829,7 @@ Commands
   rythme -e "code"          run a piece of code
   rythme lsp                language server, for editors (VS Code, Neovim...)
   rythme mcp                server for AI assistants (Model Context Protocol)
-  option --lang CODE        language of the messages: en, fr, es, de, pt, zh (or RYTHME_LANG)
+  option --lang CODE        language of the messages: en, fr, es, de, pt, zh, it, ja (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
   start       the language in one minute
@@ -889,7 +889,7 @@ A specific function: rythme help map
   rythme -e "code"          运行一段代码
   rythme lsp                语言服务器，供编辑器使用（VS Code、Neovim……）
   rythme mcp                供 AI 助手使用的服务器（Model Context Protocol）
-  选项 --lang CODE          消息的语言：en、fr、es、de、pt、zh（或 RYTHME_LANG）
+  选项 --lang CODE          消息的语言：en、fr、es、de、pt、zh、it、ja（或 RYTHME_LANG）
 
 主题（rythme help TOPIC）
   start       一分钟了解这门语言
@@ -3044,7 +3044,7 @@ Definitions are kept from one line to the next. If a line is not finished
 Commands
   :help           this help              :quit          leave (or Ctrl-D)
   :doc map        help on a name         :load f.ry     load a file
-  :reset          forget everything      :lang fr       change the language (en, fr, es, de, pt, zh)
+  :reset          forget everything      :lang fr       change the language (en, fr, es, de, pt, zh, it, ja)
   :learn          guided tour            :explain E003  explain an error
   :steps fib(4)   show the calculation step by step
 The Tab key completes names."#,
@@ -3059,7 +3059,7 @@ The Tab key completes names."#,
 命令
   :help           这份帮助               :quit          退出（或 Ctrl-D）
   :doc map        某个名字的帮助         :load f.ry     加载一个文件
-  :reset          清除所有内容           :lang zh       切换语言（en、fr、es、de、pt、zh）
+  :reset          清除所有内容           :lang zh       切换语言（en、fr、es、de、pt、zh、it、ja）
   :learn          导览                   :explain E003  解释一个错误
   :steps fib(4)   一步一步显示计算过程
 Tab 键可以补全名字。"#,
@@ -3277,7 +3277,7 @@ starts by itself:
 
 VS Code
   the extension in editors/vscode: colors, snippets and the language server.
-  Settings: rythme.path (the program), rythme.language (en, fr, es, de, pt, zh or auto).
+  Settings: rythme.path (the program), rythme.language (en, fr, es, de, pt, zh, it, ja or auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   every editor that speaks the Language Server Protocol: tell it to start
@@ -3291,7 +3291,7 @@ Zed
 Colors in Neovim, Helix and Zed
   the Tree-sitter grammar in editors/tree-sitter-rythme (see editors/README.md).
 
-The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh) or
+The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh, it, ja) or
 RYTHME_LANG chooses it: rythme --lang fr lsp"#,
             r#"在你的编辑器中使用 RYTHME
 
@@ -3305,7 +3305,7 @@ Rythme 在编辑器中也能提供帮助：输入时显示问题，鼠标悬停�
 
 VS Code
   editors/vscode 中的扩展：着色、代码片段和语言服务器。
-  设置：rythme.path（程序），rythme.language（en、fr、es、de、pt、zh 或 auto）。
+  设置：rythme.path（程序），rythme.language（en、fr、es、de、pt、zh、it、ja 或 auto）。
 
 Neovim、Helix、Zed、Emacs、Sublime Text、Kate……
   所有支持 Language Server Protocol 的编辑器：让它为 .ry 文件启动
@@ -3319,7 +3319,7 @@ Zed
 Neovim、Helix 和 Zed 中的着色
   editors/tree-sitter-rythme 中的 Tree-sitter 语法（参见 editors/README.md）。
 
-消息的语言跟随编辑器，除非用 `--lang`（en、fr、es、de、pt、zh）或
+消息的语言跟随编辑器，除非用 `--lang`（en、fr、es、de、pt、zh、it、ja）或
 RYTHME_LANG 指定：rythme --lang zh lsp"#,
         ),
         (
