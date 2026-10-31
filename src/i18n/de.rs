@@ -9896,5 +9896,176 @@ list)."#,
   day_of_year(datum)                        # von 1 bis 366
   format_date(datum, "%d.%m.%Y %H:%M")      # mit einem Muster: %Y %m %d %H %M %S %B %A...
   parse_date("29.02.2024", "%d.%m.%Y")      # Ok({year: 2024, month: 2, day: 29})"#),
+        // src/cli.rs
+        ("run a program; the words after the file are its arguments", "ein Programm ausführen; die Wörter nach der Datei sind seine Argumente"),
+        ("find problems without running the program", "Probleme finden, ohne das Programm auszuführen"),
+        ("run the tests of a file or of a folder", "die Tests einer Datei oder eines Ordners ausführen"),
+        ("give the code its official layout", "dem Code sein offizielles Layout geben"),
+        ("write the documentation of a file from its ## comments", "die Dokumentation einer Datei aus ihren ##-Kommentaren schreiben"),
+        ("apply the safe fixes of the problems that `rythme check` finds", "die sicheren Korrekturen der Probleme anwenden, die `rythme check` findet"),
+        ("show a calculation step by step", "eine Berechnung Schritt für Schritt zeigen"),
+        ("pause a program where you want and look at its values", "ein Programm anhalten, wo du willst, und seine Werte ansehen"),
+        ("the debugger for editors (Debug Adapter Protocol)", "der Debugger für Editoren (Debug Adapter Protocol)"),
+        ("exercises checked automatically", "automatisch geprüfte Übungen"),
+        ("create a project (rythme.toml, src/, tests/)", "ein Projekt anlegen (rythme.toml, src/, tests/)"),
+        ("download the dependencies of the project", "die Abhängigkeiten des Projekts herunterladen"),
+        ("guided tour of the language, step by step", "geführte Tour durch die Sprache, Schritt für Schritt"),
+        ("help on a topic, a function or an error code", "Hilfe zu einem Thema, einer Funktion oder einem Fehlercode"),
+        ("explain an error or warning code, like E003", "einen Fehler- oder Warncode erklären, wie E003"),
+        ("run a piece of code given on the command line", "ein Stück Code ausführen, das auf der Befehlszeile steht"),
+        ("interactive mode: try code line by line (also `rythme` alone)", "interaktiver Modus: Code Zeile für Zeile ausprobieren (auch `rythme` allein)"),
+        ("language server, for editors (VS Code, Neovim...)", "Sprachserver, für Editoren (VS Code, Neovim...)"),
+        ("server for AI assistants (Model Context Protocol)", "Server für KI-Assistenten (Model Context Protocol)"),
+        ("the version of Rythme", "die Version von Rythme"),
+        ("completion of the commands in a shell", "Vervollständigung der Befehle in einer Shell"),
+        ("the manual page of the command, to install with `man`", "die Handbuchseite des Befehls, zum Installieren für `man`"),
+        ("how to install the latest version of Rythme", "wie man die neueste Version von Rythme installiert"),
+        (r#"  --seed N        the same draws of random and shuffle on every run
+  --sandbox       no files, folders, environment variables nor network
+  --format json   the output and the errors as JSON, for tools
+  FILE may be `-`: the program is read from the standard input.
+  At the root of a project, `rythme run` runs its program."#, r#"  --seed N        dieselben Ziehungen von random und shuffle bei jedem Lauf
+  --sandbox       keine Dateien, Ordner, Umgebungsvariablen und kein Netzwerk
+  --format json   die Ausgabe und die Fehler als JSON, für Werkzeuge
+  DATEI darf `-` sein: das Programm wird von der Standardeingabe gelesen.
+  Im Wurzelordner eines Projekts führt `rythme run` dessen Programm aus."#),
+        (r#"  --format json   the problems as JSON, for tools and AI assistants
+  A folder checks every .ry file inside it; at the root of a project,
+  `rythme check` checks the files of the project.
+  Exit code: 0 without errors (warnings allowed), 1 with errors."#, r#"  --format json   die Probleme als JSON, für Werkzeuge und KI-Assistenten
+  Ein Ordner prüft jede .ry-Datei darin; im Wurzelordner eines Projekts
+  prüft `rythme check` die Dateien des Projekts.
+  Exit-Code: 0 ohne Fehler (Warnungen erlaubt), 1 mit Fehlern."#),
+        (r#"  --filter NAME   only the tests whose name contains NAME
+  --seed N        the same draws of random on every run
+  --watch         run the tests again whenever a file changes
+  --sandbox       no files, folders, environment variables nor network
+  --format json   the results as JSON
+  Exit code: 0 when every test passes, 1 otherwise."#, r#"  --filter NAME   nur die Tests, deren Name NAME enthält
+  --seed N        dieselben Ziehungen von random bei jedem Lauf
+  --watch         die Tests erneut ausführen, sobald sich eine Datei ändert
+  --sandbox       keine Dateien, Ordner, Umgebungsvariablen und kein Netzwerk
+  --format json   die Ergebnisse als JSON
+  Exit-Code: 0, wenn alle Tests bestehen, sonst 1."#),
+        (r#"  --check         only check, for continuous integration: exit code 1 when a
+                  file must be formatted
+  A folder formats all its .ry files; `-` reads the code from the standard
+  input and writes it formatted."#, r#"  --check         nur prüfen, für die kontinuierliche Integration: Exit-Code 1,
+                  wenn eine Datei formatiert werden muss
+  Ein Ordner formatiert alle seine .ry-Dateien; `-` liest den Code von der
+  Standardeingabe und schreibt ihn formatiert."#),
+        (r#"  --dry-run       only show the changes, as a diff
+  --all           also apply the fixes that are only likely
+  --format json   the fixes as JSON
+  Exit code: 0 when no error is left, 1 otherwise (with --dry-run: 1 when
+  something would change)."#, r#"  --dry-run       nur die Änderungen zeigen, als Diff
+  --all           auch die nur wahrscheinlichen Korrekturen anwenden
+  --format json   die Korrekturen als JSON
+  Exit-Code: 0, wenn kein Fehler übrig bleibt, sonst 1 (mit --dry-run: 1,
+  wenn sich etwas ändern würde)."#),
+        (r#"  --max N         show at most N steps
+  --width N       cut the lines at N characters (20 at least)
+  Without an expression, the steps of the last line of the file."#, r#"  --max N         höchstens N Schritte zeigen
+  --width N       die Zeilen nach N Zeichen umbrechen (mindestens 20)
+  Ohne Ausdruck die Schritte der letzten Zeile der Datei."#),
+        (r#"  In the debugger, `help` lists its commands: break, run, next, step,
+  finish, where, print, locals, quit."#, r#"  Im Debugger listet `help` seine Befehle auf: break, run, next, step,
+  finish, where, print, locals, quit."#),
+        ("  Your editor starts it: the VS Code extension does, for the debugger type `rythme`.", "  Dein Editor startet ihn: die VS-Code-Erweiterung tut das für den Debugger-Typ `rythme`."),
+        (r#"  list            the exercises, from the easiest
+  start NAME      write the file of an exercise, to complete
+  check FILE.ry   run its tests and give hints"#, r#"  list            die Übungen, von der leichtesten an
+  start NAME      die Datei einer Übung schreiben, zum Vervollständigen
+  check DATEI.ry  ihre Tests ausführen und Hinweise geben"#),
+        (r#"  `rythme help` lists the topics, `rythme help builtins` every function,
+  `rythme help llms` the whole language in one text (for AI assistants)."#, r#"  `rythme help` listet die Themen auf, `rythme help builtins` jede Funktion,
+  `rythme help llms` die ganze Sprache in einem Text (für KI-Assistenten)."#),
+        ("  Without a code, the list of the codes; --format json gives them all.", "  Ohne Code die Liste der Codes; --format json gibt sie alle aus."),
+        ("  The value of the last expression is shown, unless it is ().", "  Der Wert des letzten Ausdrucks wird angezeigt, außer wenn er () ist."),
+        ("  `:help` lists the commands of the interactive mode.", "  `:help` listet die Befehle des interaktiven Modus auf."),
+        ("  --verbose       also the system, the languages, the functions and the formats", "  --verbose       auch das System, die Sprachen, die Funktionen und die Formate"),
+        ("Then open a new shell.", "Öffne danach eine neue Shell."),
+        (r#"  rythme man > rythme.1 && man ./rythme.1
+  To install it: put rythme.1 in a folder of the manual pages, like
+  ~/.local/share/man/man1."#, r#"  rythme man > rythme.1 && man ./rythme.1
+  Zum Installieren: leg rythme.1 in einen Ordner der Handbuchseiten, wie
+  ~/.local/share/man/man1."#),
+        (r#"
+Options of every command: --lang CODE ({codes}), --no-color
+"#, r#"
+Optionen aller Befehle: --lang CODE ({codes}), --no-color
+"#),
+        (r#"See also `rythme help {topic}`.
+"#, r#"Siehe auch `rythme help {topic}`.
+"#),
+        (r#"
+Tools
+  rythme CMD --help         the options of a command, like rythme test --help
+  rythme run -              run the program read from the standard input
+  rythme check FOLDER       check every .ry file of a folder
+  rythme completions SHELL  completion of the commands: bash, zsh, fish, powershell
+  rythme man                the manual page of the command (rythme man > rythme.1)
+  rythme version --verbose  the version, with the system and what Rythme contains
+  rythme upgrade            how to install the latest version
+"#, r#"
+Werkzeuge
+  rythme CMD --help         die Optionen eines Befehls, wie rythme test --help
+  rythme run -              das Programm von der Standardeingabe ausführen
+  rythme check ORDNER       jede .ry-Datei eines Ordners prüfen
+  rythme completions SHELL  Vervollständigung der Befehle: bash, zsh, fish, powershell
+  rythme man                die Handbuchseite des Befehls (rythme man > rythme.1)
+  rythme version --verbose  die Version, mit dem System und dem Inhalt von Rythme
+  rythme upgrade            wie man die neueste Version installiert
+"#),
+        ("unknown option `{bad}` for `rythme version`: the option is --verbose", "unbekannte Option `{bad}` für `rythme version`: die Option ist --verbose"),
+        (r#"system: {os} {arch}
+languages of the messages: {codes} (now: {now})
+built-in functions: {functions} (and {ruby} Ruby names)
+codes: {errors} errors ({e_range}), {warnings} warnings ({w_range})
+JSON output (--format json): version {json}
+program: {exe}
+"#, r#"System: {os} {arch}
+Sprachen der Meldungen: {codes} (jetzt: {now})
+eingebaute Funktionen: {functions} (und {ruby} Ruby-Namen)
+Codes: {errors} Fehler ({e_range}), {warnings} Warnungen ({w_range})
+JSON-Ausgabe (--format json): Version {json}
+Programm: {exe}
+"#),
+        ("`rythme upgrade` takes no argument, not `{bad}`", "`rythme upgrade` nimmt kein Argument, nicht `{bad}`"),
+        (r#"This is rythme {v} ({exe}).
+To install the latest version, type:
+  {how}
+The versions and what changed: https://github.com/maxlestage/Rythme/releases
+Within 1.x, a program that runs keeps running, with the same output.
+"#, r#"Das ist rythme {v} ({exe}).
+Um die neueste Version zu installieren, gib ein:
+  {how}
+Die Versionen und was sich geändert hat: https://github.com/maxlestage/Rythme/releases
+In den Versionen 1.x läuft ein Programm, das läuft, weiter, mit derselben Ausgabe.
+"#),
+        ("unknown shell `{s}`", "unbekannte Shell `{s}`"),
+        ("which shell?", "welche Shell?"),
+        (r#"{what} Write one of bash, zsh, fish, powershell, like `rythme completions bash`
+see `rythme completions --help`"#, r#"{what} Schreib eine von bash, zsh, fish, powershell, wie `rythme completions bash`
+siehe `rythme completions --help`"#),
+        ("`rythme man` takes no argument, not `{bad}`", "`rythme man` nimmt kein Argument, nicht `{bad}`"),
+        ("Name", "Name"),
+        ("rythme - a small, purely functional language with help everywhere", "rythme - eine kleine, rein funktionale Sprache mit Hilfe überall"),
+        ("Synopsis", "Übersicht"),
+        ("Description", "Beschreibung"),
+        ("Rythme runs, checks, tests and formats programs written in Rythme. Without a command, `rythme` starts the interactive mode; `rythme file.ry` runs a program. Every message has a code explained by `rythme explain CODE`, and `rythme help` shows help on the language and its functions.", "Rythme führt in Rythme geschriebene Programme aus, prüft, testet und formatiert sie. Ohne Befehl startet `rythme` den interaktiven Modus; `rythme datei.ry` führt ein Programm aus. Jede Meldung hat einen Code, den `rythme explain CODE` erklärt, und `rythme help` zeigt Hilfe zur Sprache und ihren Funktionen."),
+        ("Commands", "Befehle"),
+        ("Options", "Optionen"),
+        ("the language of the messages: {codes}", "die Sprache der Meldungen: {codes}"),
+        ("messages without colors", "Meldungen ohne Farben"),
+        ("the help; after a command, its options", "die Hilfe; nach einem Befehl seine Optionen"),
+        ("Environment", "Umgebung"),
+        ("the language of the messages, before LC_ALL, LC_MESSAGES and LANG", "die Sprache der Meldungen, vor LC_ALL, LC_MESSAGES und LANG"),
+        ("when set, messages without colors", "wenn gesetzt, Meldungen ohne Farben"),
+        ("Exit status", "Exit-Status"),
+        ("0 when everything went well; 1 after an error in the program, a failed test or a problem found; 2 for a command written wrongly. A program may choose its own code with exit(code).", "0, wenn alles gut gegangen ist; 1 nach einem Fehler im Programm, einem fehlgeschlagenen Test oder einem gefundenen Problem; 2 für einen falsch geschriebenen Befehl. Ein Programm kann seinen eigenen Code mit exit(code) wählen."),
+        ("See also", "Siehe auch"),
+        ("no .ry file in `{a}`", "keine .ry-Datei in `{a}`"),
+        ("the standard input cannot be read: {e}", "die Standardeingabe kann nicht gelesen werden: {e}"),
     ],
 }

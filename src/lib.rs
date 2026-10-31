@@ -12,6 +12,9 @@ pub mod bigint;
 pub mod buffer;
 pub mod builtins;
 pub mod check;
+// The polish of the command: --help of each command, completions, manual page...
+#[cfg(not(target_arch = "wasm32"))]
+pub mod cli;
 pub mod compile;
 pub mod debug;
 pub mod diagnostic;

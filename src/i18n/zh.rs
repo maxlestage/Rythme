@@ -9628,5 +9628,176 @@ knn、naive_bayes、markov、tictactoe、pathfinding 和 genetic；练习 31 到
   day_of_year(date)                         # 从 1 到 366
   format_date(date, "%Y年%m月%d日 %H:%M")    # 用模式：%Y %m %d %H %M %S %B %A……
   parse_date("2024-02-29", "%Y-%m-%d")      # Ok({year: 2024, month: 2, day: 29})"#),
+        // src/cli.rs
+        ("run a program; the words after the file are its arguments", "运行程序；文件后面的词是它的参数"),
+        ("find problems without running the program", "不运行程序就找出问题"),
+        ("run the tests of a file or of a folder", "运行一个文件或文件夹中的测试"),
+        ("give the code its official layout", "给代码统一的官方格式"),
+        ("write the documentation of a file from its ## comments", "根据 ## 注释写出文件的文档"),
+        ("apply the safe fixes of the problems that `rythme check` finds", "应用 `rythme check` 找到的问题的安全修复"),
+        ("show a calculation step by step", "一步一步地展示计算"),
+        ("pause a program where you want and look at its values", "在你想要的地方暂停程序并查看它的值"),
+        ("the debugger for editors (Debug Adapter Protocol)", "供编辑器使用的调试器（Debug Adapter Protocol）"),
+        ("exercises checked automatically", "自动检查的练习"),
+        ("create a project (rythme.toml, src/, tests/)", "创建项目（rythme.toml、src/、tests/）"),
+        ("download the dependencies of the project", "下载项目的依赖"),
+        ("guided tour of the language, step by step", "语言导览，一步一步"),
+        ("help on a topic, a function or an error code", "关于某个主题、函数或错误代码的帮助"),
+        ("explain an error or warning code, like E003", "解释错误或警告代码，例如 E003"),
+        ("run a piece of code given on the command line", "运行在命令行中给出的一段代码"),
+        ("interactive mode: try code line by line (also `rythme` alone)", "交互模式：逐行尝试代码（也可以只输入 `rythme`）"),
+        ("language server, for editors (VS Code, Neovim...)", "语言服务器，供编辑器使用（VS Code、Neovim……）"),
+        ("server for AI assistants (Model Context Protocol)", "供 AI 助手使用的服务器（Model Context Protocol）"),
+        ("the version of Rythme", "Rythme 的版本"),
+        ("completion of the commands in a shell", "在 shell 中补全命令"),
+        ("the manual page of the command, to install with `man`", "命令的手册页，可安装后用 `man` 查看"),
+        ("how to install the latest version of Rythme", "如何安装最新版本的 Rythme"),
+        (r#"  --seed N        the same draws of random and shuffle on every run
+  --sandbox       no files, folders, environment variables nor network
+  --format json   the output and the errors as JSON, for tools
+  FILE may be `-`: the program is read from the standard input.
+  At the root of a project, `rythme run` runs its program."#, r#"  --seed N        每次运行时 random 和 shuffle 抽到相同的结果
+  --sandbox       不能使用文件、文件夹、环境变量和网络
+  --format json   以 JSON 输出结果和错误，供工具使用
+  FILE 可以是 `-`：从标准输入读取程序。
+  在项目根目录下，`rythme run` 运行项目的程序。"#),
+        (r#"  --format json   the problems as JSON, for tools and AI assistants
+  A folder checks every .ry file inside it; at the root of a project,
+  `rythme check` checks the files of the project.
+  Exit code: 0 without errors (warnings allowed), 1 with errors."#, r#"  --format json   以 JSON 输出问题，供工具和 AI 助手使用
+  文件夹会检查其中的每个 .ry 文件；在项目根目录下，
+  `rythme check` 检查项目的文件。
+  退出码：没有错误时为 0（允许有警告），有错误时为 1。"#),
+        (r#"  --filter NAME   only the tests whose name contains NAME
+  --seed N        the same draws of random on every run
+  --watch         run the tests again whenever a file changes
+  --sandbox       no files, folders, environment variables nor network
+  --format json   the results as JSON
+  Exit code: 0 when every test passes, 1 otherwise."#, r#"  --filter NAME   只运行名字包含 NAME 的测试
+  --seed N        每次运行时 random 抽到相同的结果
+  --watch         文件一改变就重新运行测试
+  --sandbox       不能使用文件、文件夹、环境变量和网络
+  --format json   以 JSON 输出结果
+  退出码：所有测试都通过时为 0，否则为 1。"#),
+        (r#"  --check         only check, for continuous integration: exit code 1 when a
+                  file must be formatted
+  A folder formats all its .ry files; `-` reads the code from the standard
+  input and writes it formatted."#, r#"  --check         只检查，用于持续集成：有文件需要格式化时
+                  退出码为 1
+  文件夹会格式化其中所有的 .ry 文件；`-` 从标准输入读取代码，
+  并输出格式化后的代码。"#),
+        (r#"  --dry-run       only show the changes, as a diff
+  --all           also apply the fixes that are only likely
+  --format json   the fixes as JSON
+  Exit code: 0 when no error is left, 1 otherwise (with --dry-run: 1 when
+  something would change)."#, r#"  --dry-run       只显示改动，以 diff 的形式
+  --all           也应用只是可能正确的修复
+  --format json   以 JSON 输出修复
+  退出码：没有剩余错误时为 0，否则为 1（使用 --dry-run 时：
+  如果会有改动则为 1）。"#),
+        (r#"  --max N         show at most N steps
+  --width N       cut the lines at N characters (20 at least)
+  Without an expression, the steps of the last line of the file."#, r#"  --max N         最多显示 N 步
+  --width N       在第 N 个字符处换行（至少 20）
+  不给表达式时，显示文件最后一行的步骤。"#),
+        (r#"  In the debugger, `help` lists its commands: break, run, next, step,
+  finish, where, print, locals, quit."#, r#"  在调试器中，`help` 会列出它的命令：break、run、next、step、
+  finish、where、print、locals、quit。"#),
+        ("  Your editor starts it: the VS Code extension does, for the debugger type `rythme`.", "  由编辑器启动它：VS Code 扩展会为调试器类型 `rythme` 启动它。"),
+        (r#"  list            the exercises, from the easiest
+  start NAME      write the file of an exercise, to complete
+  check FILE.ry   run its tests and give hints"#, r#"  list            列出练习，从最简单的开始
+  start NAME      写出某个练习的文件，等你完成
+  check FILE.ry   运行它的测试并给出提示"#),
+        (r#"  `rythme help` lists the topics, `rythme help builtins` every function,
+  `rythme help llms` the whole language in one text (for AI assistants)."#, r#"  `rythme help` 列出所有主题，`rythme help builtins` 列出每个函数，
+  `rythme help llms` 用一个文本给出整个语言（供 AI 助手使用）。"#),
+        ("  Without a code, the list of the codes; --format json gives them all.", "  不给代码时列出所有代码；--format json 会给出全部内容。"),
+        ("  The value of the last expression is shown, unless it is ().", "  会显示最后一个表达式的值，除非它是 ()。"),
+        ("  `:help` lists the commands of the interactive mode.", "  `:help` 会列出交互模式的命令。"),
+        ("  --verbose       also the system, the languages, the functions and the formats", "  --verbose       同时显示系统、语言、函数和格式"),
+        ("Then open a new shell.", "然后打开一个新的 shell。"),
+        (r#"  rythme man > rythme.1 && man ./rythme.1
+  To install it: put rythme.1 in a folder of the manual pages, like
+  ~/.local/share/man/man1."#, r#"  rythme man > rythme.1 && man ./rythme.1
+  安装方法：把 rythme.1 放进手册页的文件夹，
+  例如 ~/.local/share/man/man1。"#),
+        (r#"
+Options of every command: --lang CODE ({codes}), --no-color
+"#, r#"
+所有命令的选项：--lang CODE（{codes}）、--no-color
+"#),
+        (r#"See also `rythme help {topic}`.
+"#, r#"另见 `rythme help {topic}`。
+"#),
+        (r#"
+Tools
+  rythme CMD --help         the options of a command, like rythme test --help
+  rythme run -              run the program read from the standard input
+  rythme check FOLDER       check every .ry file of a folder
+  rythme completions SHELL  completion of the commands: bash, zsh, fish, powershell
+  rythme man                the manual page of the command (rythme man > rythme.1)
+  rythme version --verbose  the version, with the system and what Rythme contains
+  rythme upgrade            how to install the latest version
+"#, r#"
+工具
+  rythme CMD --help         某个命令的选项，例如 rythme test --help
+  rythme run -              运行从标准输入读取的程序
+  rythme check FOLDER       检查文件夹中的每个 .ry 文件
+  rythme completions SHELL  命令补全：bash、zsh、fish、powershell
+  rythme man                命令的手册页（rythme man > rythme.1）
+  rythme version --verbose  版本，以及系统和 Rythme 包含的内容
+  rythme upgrade            如何安装最新版本
+"#),
+        ("unknown option `{bad}` for `rythme version`: the option is --verbose", "`rythme version` 没有选项 `{bad}`：唯一的选项是 --verbose"),
+        (r#"system: {os} {arch}
+languages of the messages: {codes} (now: {now})
+built-in functions: {functions} (and {ruby} Ruby names)
+codes: {errors} errors ({e_range}), {warnings} warnings ({w_range})
+JSON output (--format json): version {json}
+program: {exe}
+"#, r#"系统：{os} {arch}
+消息语言：{codes}（当前：{now}）
+内置函数：{functions} 个（以及 {ruby} 个 Ruby 名字）
+代码：{errors} 个错误（{e_range}），{warnings} 个警告（{w_range}）
+JSON 输出（--format json）：版本 {json}
+程序：{exe}
+"#),
+        ("`rythme upgrade` takes no argument, not `{bad}`", "`rythme upgrade` 不接受参数，`{bad}` 也不行"),
+        (r#"This is rythme {v} ({exe}).
+To install the latest version, type:
+  {how}
+The versions and what changed: https://github.com/maxlestage/Rythme/releases
+Within 1.x, a program that runs keeps running, with the same output.
+"#, r#"这是 rythme {v}（{exe}）。
+要安装最新版本，请输入：
+  {how}
+各个版本及其变化：https://github.com/maxlestage/Rythme/releases
+在 1.x 版本中，能运行的程序会一直能运行，并且输出相同。
+"#),
+        ("unknown shell `{s}`", "未知的 shell `{s}`"),
+        ("which shell?", "哪个 shell？"),
+        (r#"{what} Write one of bash, zsh, fish, powershell, like `rythme completions bash`
+see `rythme completions --help`"#, r#"{what} 请写 bash、zsh、fish、powershell 之一，例如 `rythme completions bash`
+参见 `rythme completions --help`"#),
+        ("`rythme man` takes no argument, not `{bad}`", "`rythme man` 不接受参数，`{bad}` 也不行"),
+        ("Name", "名称"),
+        ("rythme - a small, purely functional language with help everywhere", "rythme - 一门小巧的纯函数式语言，处处有帮助"),
+        ("Synopsis", "概要"),
+        ("Description", "描述"),
+        ("Rythme runs, checks, tests and formats programs written in Rythme. Without a command, `rythme` starts the interactive mode; `rythme file.ry` runs a program. Every message has a code explained by `rythme explain CODE`, and `rythme help` shows help on the language and its functions.", "Rythme 运行、检查、测试并格式化用 Rythme 写的程序。不带命令时，`rythme` 启动交互模式；`rythme file.ry` 运行一个程序。每条消息都有一个代码，可以用 `rythme explain CODE` 查看解释，`rythme help` 显示关于语言及其函数的帮助。"),
+        ("Commands", "命令"),
+        ("Options", "选项"),
+        ("the language of the messages: {codes}", "消息的语言：{codes}"),
+        ("messages without colors", "不带颜色的消息"),
+        ("the help; after a command, its options", "帮助；放在命令后面时显示该命令的选项"),
+        ("Environment", "环境"),
+        ("the language of the messages, before LC_ALL, LC_MESSAGES and LANG", "消息的语言，优先于 LC_ALL、LC_MESSAGES 和 LANG"),
+        ("when set, messages without colors", "设置后，消息不带颜色"),
+        ("Exit status", "退出状态"),
+        ("0 when everything went well; 1 after an error in the program, a failed test or a problem found; 2 for a command written wrongly. A program may choose its own code with exit(code).", "一切正常时为 0；程序出错、测试失败或发现问题时为 1；命令写错时为 2。程序可以用 exit(code) 选择自己的退出码。"),
+        ("See also", "另见"),
+        ("no .ry file in `{a}`", "`{a}` 中没有 .ry 文件"),
+        ("the standard input cannot be read: {e}", "无法读取标准输入：{e}"),
     ],
 }
