@@ -838,7 +838,7 @@ Topics (rythme help TOPIC)
   text        texts
   records     records {{name: value}}
   dicts       dictionaries and sets: dict(...), set(...)
-  types       your own types
+  types       your own types, and types written in the code
   match       choosing according to the shape of a value
   errors      Option, Result and ?
   functional  no loops: what to do instead
@@ -896,7 +896,7 @@ A specific function: rythme help map
   text        文本
   records     记录 {{name: value}}
   dicts       字典和集合：dict(...)、set(...)
-  types       你自己的类型
+  types       你自己的类型，以及写在代码中的类型
   match       根据值的形状进行选择
   errors      Option、Result 和 ?
   functional  没有循环：该怎么做
@@ -1931,6 +1931,11 @@ Several steps inside an expression
 Your own types
   type Shape = Circle(radius) | Rect(width, height)
 
+Types written in the code (optional, checked by rythme check)
+  fn area(w: Int, h: Int) -> Int = w * h
+  total: Float = 0.0
+  type Box(a) = Box(value: a)    a type that takes a type: Box(Int), Box(Text)
+
 Tests and other files
   test "double works" = assert_eq(double(2), 4)
   use geometry                   then geometry.area(2)
@@ -2002,6 +2007,11 @@ Comments
 
 你自己的类型
   type Shape = Circle(radius) | Rect(width, height)
+
+写在代码中的类型（可选，由 rythme check 检查）
+  fn area(w: Int, h: Int) -> Int = w * h
+  total: Float = 0.0
+  type Box(a) = Box(value: a)    接受一个类型的类型：Box(Int)、Box(Text)
 
 测试和其他文件
   test "double works" = assert_eq(double(2), 4)
@@ -8402,6 +8412,8 @@ Wrong:   fn label(n: Int) -> Text = n  # gives an Int
 Right:   fn label(n: Int) -> Text = text(n)
 Wrong:   fn twice(x: int) = x * 2      # type names start with an uppercase letter
 Right:   fn twice(x: Int) = x * 2
+Wrong:   fn depth(t: Tree(Int, Text))  # type Tree(a) takes one type
+Right:   fn depth(t: Tree(Int))
 
 Written types are optional: removing one never changes what a program does.
 More: `rythme help types`."#,
@@ -8419,6 +8431,8 @@ More: `rythme help types`."#,
 正确：   fn label(n: Int) -> Text = text(n)
 错误：   fn twice(x: int) = x * 2      # 类型名以大写字母开头
 正确：   fn twice(x: Int) = x * 2
+错误：   fn depth(t: Tree(Int, Text))  # type Tree(a) 只接受一个类型
+正确：   fn depth(t: Tree(Int))
 
 写出的类型是可选的：去掉一个类型，永远不会改变程序的行为。
 更多：`rythme help types`。"#,
@@ -8441,12 +8455,26 @@ The types
   fn(Int, Int) -> Int          a function
   Shape                        a type defined with `type` (geometry.Shape
                                for a type of `use geometry`)
+  Tree(Int)                    a type defined with parameters, with its types
   a                            any type: one lowercase letter, the same type
                                everywhere in a definition
   List, Dict, Set, Option, Result, Record, Function alone: any content
+  (Tree alone too)
 
   fn first_of(xs: List(a)) -> a = xs[0]
   first_of([1, 2]) + 1         # the checker knows it is an Int
+
+Types with parameters: a type can take types, like List(Int)
+  type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+  type Pair(a, b) = Pair(first: a, second: b)
+
+  fn depth(t: Tree(a)) -> Int = ...      a Tree of anything
+  fn total(t: Tree(Int)) -> Int = ...    a Tree of whole numbers
+  total(Node(Leaf, "two", Leaf))         E027: this is a Tree(Text)
+
+A type variable is one letter: a lowercase word, like `int` or `string`, is
+taken for a type named as in another language, and `rythme check` gives its
+Rythme name.
 
 Written types are never needed and change nothing when the program runs;
 the editors and `rythme doc` show them."#,
@@ -8467,12 +8495,25 @@ Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把�
   fn(Int, Int) -> Int          一个函数
   Shape                        用 `type` 定义的类型（`use geometry` 中的类型
                                写作 geometry.Shape）
+  Tree(Int)                    带参数定义的类型，连同它的类型
   a                            任意类型：一个小写字母，在一个定义中处处
                                代表同一个类型
   单独的 List、Dict、Set、Option、Result、Record、Function：内容不限
+  （单独的 Tree 也可以）
 
   fn first_of(xs: List(a)) -> a = xs[0]
   first_of([1, 2]) + 1         # 检查器知道这是一个 Int
+
+带参数的类型：一个类型可以接受类型，就像 List(Int)
+  type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+  type Pair(a, b) = Pair(first: a, second: b)
+
+  fn depth(t: Tree(a)) -> Int = ...      任意内容的 Tree
+  fn total(t: Tree(Int)) -> Int = ...    整数的 Tree
+  total(Node(Leaf, "two", Leaf))         E027：这是一个 Tree(Text)
+
+类型变量是一个字母：像 `int` 或 `string` 这样的小写单词，会被当作按其他
+语言命名的类型，`rythme check` 会给出它在 Rythme 中的名字。
 
 写出的类型从来不是必需的，程序运行时也不会因此有任何不同；
 编辑器和 `rythme doc` 会显示它们。"#,
@@ -9440,5 +9481,41 @@ genetic; exercises 31 to 36 (rythme exercise list)."#,
 knn、naive_bayes、markov、tictactoe、pathfinding 和 genetic；练习 31 到 36
 （rythme exercise list）。"#,
         ),
+        // Types with parameters: src/check/annot.rs, src/help.rs, src/lsp/features.rs, src/parser.rs
+        ("the type variable `{name}` appears twice in `{ty}`", "类型变量 `{name}` 在 `{ty}` 中出现了两次"),
+        ("give each one its own letter: `type Pair(a, b)`", "给每个类型变量一个自己的字母：`type Pair(a, b)`"),
+        ("`{name}` cannot be a type variable: a type variable is one lowercase letter", "`{name}` 不能作为类型变量：类型变量是一个小写字母"),
+        ("write one letter, like `{letter}`, here and in the fields", "写一个字母，比如 `{letter}`，这里和字段中都要改"),
+        ("`{v}` is not a parameter of `{ty}`", "`{v}` 不是 `{ty}` 的参数"),
+        ("not among `{header}`", "不在 `{header}` 之中"),
+        ("add it to the parameters of the type: `type {with} = ...`", "把它加到类型的参数中：`type {with} = ...`"),
+        ("`{name}` takes {count} types: `{example}`", "`{name}` 接受 {count} 个类型：`{example}`"),
+        (
+            r#"Types may also be written in the code, where they help to read it:
+  fn area(s: Shape) -> Float
+`rythme check` verifies them; they are never needed (rythme help types)."#,
+            r#"类型也可以写在代码中，在有助于阅读的地方：
+  fn area(s: Shape) -> Float
+`rythme check` 会检查它们；它们从来不是必需的（rythme help types）。"#,
+        ),
+        ("A whole number, as large as needed: `42`, `-7`.", "一个整数，要多大有多大：`42`、`-7`。"),
+        ("A decimal number: `3.14`, `2.0`.", "一个小数：`3.14`、`2.0`。"),
+        ("A text: `\"hello\"`.", "一个文本：`\"你好\"`。"),
+        ("`true` or `false`.", "`true` 或 `false`。"),
+        ("`()`: what a function gives when it gives nothing, like `print`.", "`()`：不给出任何东西的函数所给出的值，比如 `print`。"),
+        ("A value that is only its name: `:ok`, `:error`.", "只是自己名字的值：`:ok`、`:error`。"),
+        ("A list whose elements all have the type between parentheses; `List` alone: any list.", "元素都具有括号中类型的列表；单独的 `List`：任意列表。"),
+        ("A set of values of this type: `set([1, 2])`.", "这个类型的值的集合：`set([1, 2])`。"),
+        ("A dictionary: keys of the first type, values of the second.", "一个字典：键是第一个类型，值是第二个类型。"),
+        ("`Some(value)` or `None`: a value that may be missing.", "`Some(value)` 或 `None`：可能缺失的值。"),
+        ("`Ok(value)` or `Err(error)`: the result of what may fail.", "`Ok(value)` 或 `Err(error)`：可能失败的操作的结果。"),
+        ("Any record; `{{name: Text}}` is a record with at least these fields.", "任意记录；`{{name: Text}}` 是至少有这些字段的记录。"),
+        ("Any function; `fn(Int) -> Int` is a function with these types.", "任意函数；`fn(Int) -> Int` 是具有这些类型的函数。"),
+        ("A type of Rythme: `rythme help types`", "Rythme 的一个类型：`rythme help types`"),
+        ("type variable", "类型变量"),
+        ("used file", "被使用的文件"),
+        ("a type variable, like `a`", "一个类型变量，比如 `a`"),
+        ("a type without parameters is written without parentheses: `type {name} = ...`", "没有参数的类型写的时候不带括号：`type {name} = ...`"),
+        ("the parameters of a type are type variables, one lowercase letter each: `type Box(a) = Box(value: a)`", "类型的参数是类型变量，每个都是一个小写字母：`type Box(a) = Box(value: a)`"),
     ],
 }

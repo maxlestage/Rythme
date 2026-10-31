@@ -63,6 +63,8 @@ pub enum Target {
     Pi,
     /// `Some`, `None`, `Ok`, `Err`.
     Prelude(&'static str),
+    /// A type of Rythme written in the code: `Int`, `List`...
+    Type(&'static str),
     Unknown,
 }
 
@@ -92,9 +94,15 @@ pub struct Index {
     pub fields: BTreeSet<Rc<str>>,
     /// `use "file"`: the place and the path written.
     pub uses: Vec<(Span, Rc<str>)>,
+    /// The types defined with `type`, in order, with their definitions.
+    pub types: Vec<(Sym, u32)>,
 }
 
 pub const PRELUDE: [&str; 4] = ["Some", "None", "Ok", "Err"];
+
+/// The types of Rythme that a written type may name (`fn f(x: Int)`).
+pub const TYPES: [&str; 13] =
+    ["Int", "Float", "Text", "Bool", "Unit", "Symbol", "List", "Set", "Dict", "Option", "Result", "Record", "Function"];
 
 impl Index {
     /// The name written at a byte offset (a name ending right there counts too).
@@ -125,10 +133,20 @@ impl Index {
 }
 
 /// Builds the index of a file. `deps` holds the top-level names of the files
-/// it uses, as the checker sees them (a later file wins).
-pub fn build(items: &[Item], file: u32, text: &str, deps: &HashMap<Sym, DefId>) -> Index {
-    let mut ix =
-        Indexer { file, text, out: Index { file, ..Index::default() }, scopes: Vec::new(), own: HashMap::new(), deps, owner: None };
+/// it uses, as the checker sees them (a later file wins), and `dep_types`
+/// the types they define (`geometry.Shape` for a file used with a name).
+pub fn build(items: &[Item], file: u32, text: &str, deps: &HashMap<Sym, DefId>, dep_types: &HashMap<Sym, DefId>) -> Index {
+    let mut ix = Indexer {
+        file,
+        text,
+        out: Index { file, ..Index::default() },
+        scopes: Vec::new(),
+        own: HashMap::new(),
+        own_types: HashMap::new(),
+        deps,
+        dep_types,
+        owner: None,
+    };
     ix.collect(items);
     ix.walk(items);
     let mut out = ix.out;
@@ -142,7 +160,10 @@ struct Indexer<'a> {
     out: Index,
     scopes: Vec<Vec<(Sym, u32)>>,
     own: HashMap<Sym, u32>,
+    /// The types defined in this file.
+    own_types: HashMap<Sym, u32>,
     deps: &'a HashMap<Sym, DefId>,
+    dep_types: &'a HashMap<Sym, DefId>,
     /// The function whose parameters are being read.
     owner: Option<Rc<str>>,
 }
@@ -205,8 +226,12 @@ impl Indexer<'_> {
                     let full = t.variants.last().map_or(t.span, |v| t.span.to(v.span));
                     let mut d = Self::new_def(name.clone(), DefKind::Type, span, full, true);
                     d.doc = t.doc.clone();
+                    // `Tree(a)`: with its parameters.
+                    d.sig = Some(t.header());
                     let idx = self.add(d);
                     self.def_occ(name.clone(), span, idx, false);
+                    self.own_types.entry(t.name).or_insert(idx);
+                    self.out.types.push((t.name, idx));
                     for v in &t.variants {
                         let vname = v.name.name();
                         let vspan = name_at_start(self.text, v.span, &vname);
@@ -363,6 +388,11 @@ impl Indexer<'_> {
                     self.pattern_refs(p);
                 }
                 Item::Stmt(Stmt::Expr(e)) => self.expr(e),
+                Item::Type(t) => {
+                    for ty in t.variants.iter().flat_map(|v| v.types.iter().flatten()) {
+                        self.type_refs(ty);
+                    }
+                }
                 Item::Test(_, body, _) => {
                     self.scopes.push(Vec::new());
                     match &body.kind {
@@ -371,7 +401,7 @@ impl Indexer<'_> {
                     }
                     self.scopes.pop();
                 }
-                Item::Type(_) | Item::Use(..) => {}
+                Item::Use(..) => {}
             }
         }
     }
@@ -399,6 +429,9 @@ impl Indexer<'_> {
                     }
                 }
             }
+            if let Some(t) = &clause.ret {
+                self.type_refs(t);
+            }
             if let Some(g) = &clause.guard {
                 self.expr(g);
             }
@@ -420,6 +453,9 @@ impl Indexer<'_> {
                         let idx = self.local(*name, p.span, DefKind::Local, (p.span.start, end), p.span.to(e.span), false);
                         let sig = lambda.signature().replacen("fn(", &format!("{name}("), 1);
                         self.out.defs[idx as usize].sig = Some(sig);
+                        if let Some(t) = &p.ty {
+                            self.type_refs(t);
+                        }
                         self.expr(e);
                     } else {
                         self.expr(e);
@@ -549,8 +585,39 @@ impl Indexer<'_> {
         }
     }
 
-    /// The constructors written in a pattern.
+    /// The names of types written in a type (`Tree(Int)`): those of the
+    /// file and of the files it uses, and those of Rythme.
+    fn type_refs(&mut self, t: &TypeExpr) {
+        t.each(&mut |x| {
+            let TypeKind::Named(n, _) = &x.kind else { return };
+            let name = n.name();
+            let target = match (self.own_types.get(n), self.dep_types.get(n)) {
+                (Some(idx), _) => Target::Def(DefId { file: self.file, idx: *idx }),
+                (None, Some(id)) => Target::Def(*id),
+                (None, None) => match TYPES.iter().find(|t| **t == &*name) {
+                    Some(t) => Target::Type(t),
+                    None => return,
+                },
+            };
+            let start = x.span.start as usize;
+            let mut span = Span::new(x.span.file, start, start + name.len());
+            let mut shown = name.clone();
+            // `geometry.Shape`: the name is `Shape`, written at the end.
+            if let Some((_, own)) = n.split_module() {
+                shown = own.name();
+                span.start = span.end.saturating_sub(shown.len() as u32).max(span.start);
+            }
+            if slice(self.text, span.start as usize, span.end as usize) == Some(&*shown) {
+                self.out.occs.push(Occ { span, name: shown, target, def: false, punned: false, method: false });
+            }
+        });
+    }
+
+    /// The constructors written in a pattern, and the type written after it.
     fn pattern_refs(&mut self, p: &Pattern) {
+        if let Some(t) = &p.ty {
+            self.type_refs(t);
+        }
         match &p.kind {
             PatKind::Ctor(name, args) => {
                 let span = name_at_start(self.text, p.span, &name.name());
