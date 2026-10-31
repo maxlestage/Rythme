@@ -225,7 +225,7 @@ pub const DE: Texts = Texts {
     ],
     teach_lead: "Ein Kursplan in 12 Sitzungen, und warum Rythme für einen ersten Programmierkurs ebenso passt wie für einen Kurs über funktionale Programmierung.",
     teach_toc: "Auf dieser Seite",
-    teach_note: Some("Dieser Leitfaden ist noch nicht ins Deutsche übersetzt: hier ist er auf Englisch."),
+    teach_note: None,
     nf_title: "Diese Seite gibt es nicht",
     nf_text: "Vielleicht ist der Link alt, oder die Adresse hat einen Tippfehler. Rythme hätte den richtigen Namen vorgeschlagen.",
     nf_home: "Zurück zur Startseite",

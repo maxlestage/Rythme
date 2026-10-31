@@ -222,7 +222,7 @@ pub const ES: Texts = Texts {
     ],
     teach_lead: "Un plan de curso en 12 sesiones, y por qué Rythme sirve tanto para un primer curso de programación como para un curso de programación funcional.",
     teach_toc: "En esta página",
-    teach_note: Some("Esta guía todavía no está traducida al español: aquí está en inglés."),
+    teach_note: None,
     nf_title: "Esta página no existe",
     nf_text: "Puede que el enlace sea antiguo, o que la dirección tenga una errata. Rythme habría propuesto el nombre correcto.",
     nf_home: "Volver al inicio",

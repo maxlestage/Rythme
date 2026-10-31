@@ -213,7 +213,7 @@ pub const ZH: Texts = Texts {
     ],
     teach_lead: "一份 12 节课的课程大纲，以及为什么 Rythme 既适合第一门编程课，也适合函数式编程课。",
     teach_toc: "本页内容",
-    teach_note: Some("本指南还没有中文版：下面是英文版。"),
+    teach_note: None,
     nf_title: "这个页面不存在",
     nf_text: "链接可能已经过时，或者地址里有错字。换作 Rythme，它会建议正确的名字。",
     nf_home: "返回首页",
