@@ -285,6 +285,13 @@ fn programs_from_the_standard_input_and_folders_to_check() {
     assert_eq!(run(&["-"], "print(\"stdin\")\n"), ("stdin\n".into(), Some(0)));
     assert_eq!(run(&["run", "--seed", "3", "-"], "print(random(1, 1000) == random(1, 1000))\n").1, Some(0));
     assert_eq!(run(&["run", "-"], "print(nope)\n").1, Some(1));
+    // With --format json too: one document, the output kept in it.
+    let (doc, code) = run(&["run", "--format", "json", "-", "a"], "print(args())\n");
+    assert_eq!(code, Some(0));
+    assert!(doc.contains("\"ok\":true") && doc.contains("\"stdout\":\"[\\\"a\\\"]\\n\""), "{doc}");
+    let (doc, code) = run(&["run", "--format", "json", "-"], "print(nope)\n");
+    assert_eq!(code, Some(1));
+    assert!(doc.contains("\"ok\":false") && doc.contains("\"file\":\"<stdin>\""), "{doc}");
 
     let dir = scratch("check-folder");
     std::fs::create_dir_all(dir.join("sub")).unwrap();
