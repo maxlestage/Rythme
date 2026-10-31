@@ -76,6 +76,17 @@ impl List {
         self.concat(std::slice::from_ref(&x))
     }
 
+    /// This list becomes itself followed by `x` (the other lists that share
+    /// its memory do not see it).
+    pub fn push_mut(&mut self, x: Value) {
+        self.extend_mut(std::slice::from_ref(&x));
+    }
+
+    /// This list becomes itself followed by the elements of `tail`.
+    pub fn extend_mut(&mut self, tail: &[Value]) {
+        *self = self.concat(tail);
+    }
+
     /// Whether `tail` may be written in the memory of this list: not when
     /// it holds this memory, which would then hold itself and never be freed.
     fn may_grow_with(&self, tail: &[Value]) -> bool {
