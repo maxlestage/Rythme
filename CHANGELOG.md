@@ -318,6 +318,26 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   gives `Եւ`, and Georgian letters stay as they are. A program that
   capitalizes one of these characters prints another text: a bug fix.
   `upper` does not change.
+- **Found by auditing the tools around the interpreter** (with new fuzzers
+  of the checker, the formatter, the fixes, the language server and every
+  built-in function on edge values):
+  - `from_base("0é", 16)` and `zeros(0, 10 ** 18)` (also `ones`) stopped
+    Rythme with an internal error; they give `Err(...)` and E023.
+  - The checker no longer reports a function that is never called on an
+    empty value written in the code: `map_keys({}, len)`,
+    `take_while("", len)`, `merge_with` of two records without a name in
+    common (as it already did for `[]`). For `sum(list, f)`, it says that
+    `f` must return a number (it said "true or false").
+  - `rythme fix`: `else ()` goes where `else` was expected (inside
+    `print(if x then y)`, not after the `)`), and `else ()` and `then` go
+    before a comment that ends the line, not inside it; `fn f"..."` is no
+    longer taken for an f-string.
+  - A command-line word that is not UTF-8 (a file name made on another
+    system) is a usage error (exit code 2) instead of a crash; `rythme fmt`
+    says why a file cannot be read like the other commands (not UTF-8, saved
+    in UTF-16...) and refuses unknown options written with one `-`.
+  - `rythme.lock` must give a commit in hexadecimal and an address that git
+    cannot take as an option.
 
 ### Performance
 

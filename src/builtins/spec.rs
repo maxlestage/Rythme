@@ -349,7 +349,7 @@ pub(super) fn from_base(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Va
         _ => None,
     };
     let rest = match prefix {
-        Some(p) if rest.len() > 2 && rest[..2].eq_ignore_ascii_case(p) => &rest[2..],
+        Some(p) if rest.len() > 2 && rest.get(..2).is_some_and(|head| head.eq_ignore_ascii_case(p)) => &rest[2..],
         _ => rest,
     };
     let digits: Option<Vec<u8>> = rest
