@@ -4236,7 +4236,7 @@ comme en anglais (seuls ses commentaires sont traduits), et les `^` sous une
 erreur restent alignés : les caractères chinois prennent deux colonnes du
 terminal, dans le code comme dans les messages.
 
-**Exercices.** `rythme exercise` (ou `rythme exercise list`) liste les 30
+**Exercices.** `rythme exercise` (ou `rythme exercise list`) liste les 36
 exercices gradués intégrés au programme (les fichiers de
 [`docs/exercises/`](exercises/README.fr.md)). `start NOM` écrit l'exercice
 désigné par son numéro (`7`) ou son nom de fichier (`07-recursivite`,

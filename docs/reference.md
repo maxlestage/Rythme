@@ -4057,7 +4057,7 @@ Chinese, the code in the help stays as written in English (only its comments
 are translated), and the `^` under a mistake stay aligned: Chinese characters
 take two columns of the terminal, in the code as in the messages.
 
-**Exercises.** `rythme exercise` (or `rythme exercise list`) lists the 30
+**Exercises.** `rythme exercise` (or `rythme exercise list`) lists the 36
 graded exercises built into the program (the files of
 [`docs/exercises/`](exercises/README.md)). `start NAME` writes the exercise
 named by its number (`7`) or its file name (`07-recursion`, `recursion`) into
