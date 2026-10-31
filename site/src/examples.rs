@@ -233,6 +233,17 @@ pub const EXAMPLES: &[Example] = &[
         ]
     ),
     example!(
+        "report",
+        [
+            "un tableau écrit avec des spécifications de format et center, tally, most_common, sort_by_desc, un motif de date, word_wrap",
+            "a table written with format specs and center, tally, most_common, sort_by_desc, a date pattern, word_wrap",
+            "una tabla escrita con especificaciones de format y center, tally, most_common, sort_by_desc, un patrón de fecha, word_wrap",
+            "eine Tabelle mit Formatangaben von format und center, tally, most_common, sort_by_desc, ein Datumsmuster, word_wrap",
+            "uma tabela escrita com especificações de format e center, tally, most_common, sort_by_desc, um padrão de data, word_wrap",
+            "用 format 格式说明和 center 写出的表格、tally、most_common、sort_by_desc、日期模式、word_wrap",
+        ]
+    ),
+    example!(
         "tree",
         [
             "un type récursif : arbre binaire de recherche",
