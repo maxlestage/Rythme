@@ -108,11 +108,13 @@ pub fn language_picker(version: &str) -> String {
         concat!(
             r#"<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>"#,
             r#"<meta name="viewport" content="width=device-width, initial-scale=1"/>"#,
-            r#"<title>Rythme</title><link rel="canonical" href="{fr}"/>{client}"#,
+            r#"<title>Rythme</title><meta name="description" content="{description}"/>"#,
+            r#"<link rel="canonical" href="{fr}"/>{client}"#,
             r#"<noscript><meta http-equiv="refresh" content="0; url={fr}"/></noscript>"#,
             r#"</head><body data-pick-language="{list}" data-base="{base}"><p>{links}</p></body></html>"#,
         ),
         fr = fr,
+        description = crate::teach::escape_attr(Lang::Fr.texts().meta_description),
         client = Bundle::Site.head(version),
         base = base(),
         list = codes.join(" "),
@@ -120,13 +122,25 @@ pub fn language_picker(version: &str) -> String {
     )
 }
 
-/// Every file of `from`, at the same place in the export.
+/// Whether `path` is a compressed copy that `./build.sh` wrote for the server
+/// (`site.css.br` next to `site.css`): GitHub Pages compresses with gzip by itself, and
+/// would serve the copies as files of their own.
+pub fn is_compressed_copy(path: &Path) -> bool {
+    let name = path.to_string_lossy();
+    rythme_site_client::compression::ENCODINGS
+        .iter()
+        .any(|(ext, _)| name.strip_suffix(&format!(".{ext}")).is_some_and(|stem| Path::new(stem).is_file()))
+}
+
+/// Every file of `from`, at the same place in the export, but the compressed copies.
 fn copy_dir(from: &Path, write: &mut impl FnMut(&str, &[u8]) -> io::Result<()>) -> io::Result<()> {
     fn walk(root: &Path, dir: &Path, write: &mut impl FnMut(&str, &[u8]) -> io::Result<()>) -> io::Result<()> {
         for entry in std::fs::read_dir(dir)? {
             let path = entry?.path();
             if path.is_dir() {
                 walk(root, &path, write)?;
+            } else if is_compressed_copy(&path) {
+                continue;
             } else {
                 let rel = path.strip_prefix(root).map_err(io::Error::other)?;
                 write(&rel.to_string_lossy(), &std::fs::read(&path)?)?;

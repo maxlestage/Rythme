@@ -4,7 +4,8 @@
 #   site        every page: menus, themes, the installable app
 #   playground  the playground: the same, its editor and the interpreter
 #   sw          the service worker
-# The examples are built into the server itself.
+# then compresses the files of public/ worth it, once, at their best (Brotli and gzip
+# copies next to them, for the server). The examples are built into the server itself.
 #
 # Needs the wasm32-unknown-unknown target of Rust and wasm-bindgen-cli at exactly the
 # version of the wasm-bindgen crate in Cargo.lock: both are installed when missing.
@@ -36,6 +37,23 @@ for bundle in site:page:web playground:playground:web sw:sw:no-modules; do
     cargo run --release -p rythme-site-client --features host-imports --bin host-imports -- "$out/$name.wasm"
   fi
   wasm-bindgen --target "$kind" --no-typescript --out-dir public/pkg "$out/$name.wasm"
+  # Optional: binaryen's wasm-opt, when installed, shrinks the bundle a little more
+  # (the features are the ones Rust uses for wasm32 by default). Without it, or if it
+  # fails, the bundle stays as Rust made it.
+  if command -v wasm-opt > /dev/null; then
+    wasm="public/pkg/${name}_bg.wasm"
+    if wasm-opt -Oz --enable-bulk-memory --enable-mutable-globals --enable-nontrapping-float-to-int --enable-sign-ext \
+      --enable-reference-types --enable-multivalue "$wasm" -o "$wasm.opt"; then
+      mv "$wasm.opt" "$wasm"
+    else
+      rm -f "$wasm.opt"
+      echo "wasm-opt failed: $wasm kept as it is"
+    fi
+  fi
 done
+
+# Brotli and gzip copies of the files worth it, at their best, for the server (see
+# client/src/bin/precompress.rs; GitHub Pages compresses with gzip by itself).
+cargo run --release -p rythme-site-client --features precompress --bin precompress -- public
 
 echo "public/pkg/ ready: cargo run --release"

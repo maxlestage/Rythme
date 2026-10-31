@@ -18,9 +18,11 @@ cargo build --release
 NODE_PATH=/path/to/node_modules node tests/pwa/check.js target/release/rythme-site
 ```
 
-It runs twice: the server at the root (as on Heroku), then the static export behind
-`/Rythme` served like GitHub Pages; add `server` or `export` to run one of them. Each
-run works on a copy of `public/` in a temporary folder and checks:
+It runs twice: the server at the root (as on Heroku: the bundles from the copies
+`./build.sh` compressed, the rest compressed on the fly), then the static export behind
+`/Rythme` served like GitHub Pages (gzip, an `ETag`, a cache of 10 minutes); add `server` or
+`export` to run one of them. Each run works on a copy of `public/` in a temporary
+folder and checks:
 
 1. on an iPhone, the hint to add the site to the home screen, until it is closed;
    *Share* hands the link to the share sheet (a Web Share API made by hand);
@@ -29,7 +31,8 @@ run works on a copy of `public/` in a temporary folder and checks:
    in every language; the install button appears when the browser offers to install
    (an event made by hand: headless Chromium never offers it);
 4. offline (the site stopped and the browser offline): every page in every
-   language, with its fonts and no horizontal scroll; the playground runs, checks,
+   language, with its fonts and no horizontal scroll; the playground runs, *Stop*
+   ends a program that never stops (and the next one runs at once), it checks,
    tests and formats, its examples menu and help work, a `.ry` file opens and
    downloads, the code survives a reload, a shared text opens; *Share* makes a link
    (copied, compressed, URL-safe) that opens the same program in another page, which
@@ -147,6 +150,24 @@ shown only on hover, no text kept on one line unless its overflow is hidden. The
 
 The pages are visited at a human pace: the server answers 100 requests a second to
 one visitor.
+
+## `speed.js`: how fast on a slow phone
+
+```sh
+NODE_PATH=… node tests/pwa/speed.js target/release/rythme-site [server|export] [runs] [devtools|shared]
+```
+
+Chromium with Lighthouse's mobile profile (the CPU 4× slower, 1.6 Mb/s down, 750 kb/s
+up, 150 ms of latency), a fresh browser for each measure (nothing cached, the service
+worker allowed), the server (by default) or the static export served like GitHub
+Pages. From the start of the navigation, three times (or `runs`), then the medians:
+the home page until its menus work (the burger shown: the site's bundle has started),
+the playground until its menus work, and until its first program has run. A first
+visit, not counted, warms up the connection to Google Fonts. The network is slowed as
+DevTools and Lighthouse do (`devtools`, by default), which leaves the service worker
+out, or (`shared`) by one link in front of the site that the page, its workers and
+the service worker share, as on a real phone. It measures and checks nothing (see
+[Speed](../../README.md#speed) for the figures).
 
 ## `images.js`: icons and screenshots
 

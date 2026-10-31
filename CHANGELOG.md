@@ -266,7 +266,7 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   wrap, runs of spaces in an output wrap, deep code lines keep room to wrap.
   The editor's text is 16px on every touch screen, landscape included: iOS
   zoomed into it at 14px and the page then scrolled sideways. Every control is
-  44px at least for a finger; the bar stops sticking on short screens,
+  44px at least for a finger; the bar gets compact on short screens,
   titles shrink with the height in landscape, the editor fits above the
   keyboard, and opening the playground no longer scrolls the page by itself.
   The media queries only add room (`min-width`, `min-height`).
@@ -278,6 +278,28 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   edited, and at the next launch. The banner stays for the other cases, and
   nothing reloads while something is being typed. Pages are revalidated with
   the server by the service worker (GitHub Pages kept them 10 minutes).
+- **The website is fast on a slow phone**: on Lighthouse's mobile profile (CPU
+  4× slower, 1.6 Mb/s, 150 ms), the home page works in 0.8 s instead of 1.5,
+  the playground's menus in 0.9 s instead of 2.1, and its first run comes in
+  5.7 s instead of 18.4 (5.0 instead of 28.5 when the service worker shares
+  the network, as on a real phone). The server sends everything compressed:
+  the bundles from Brotli and gzip copies made once at build time
+  (`site/build.sh`, the interpreter 3.2 MB → 0.8 MB), the pages and the rest
+  on the fly; files linked with `?v=` are kept a year
+  (`immutable`), pages are revalidated with an `ETag`. The playground compiles
+  the interpreter once and hands it to its worker (no second download, a
+  worker started again after *Stop* is ready at once), fetches its examples
+  and its worker's script while the interpreter downloads, and lets the
+  service worker save the site only after its first run. On GitHub Pages,
+  GitHub's gzip does the compression. `site/tests/pwa/speed.js` measures it.
+- **The bar stays at hand in landscape**: on a short screen it is compact and
+  still sticks to the top, so the burger is always reachable; with the keyboard
+  open in the playground it scrolls away, leaving the editor the height above
+  the keyboard.
+- **GitHub Pages**: the `Website` workflow says in its summary whether the
+  source of Pages is "GitHub Actions", and while it is "Deploy from a branch"
+  waits for GitHub's own build of the README to end, so that the site always
+  deploys last instead of sometimes being replaced (a 404).
 - **The website is Rust in the browser too**: its menus, themes, installable
   app, service worker and playground were hand-written JavaScript (about 1,700
   lines); they are now Rust compiled to WebAssembly (`site/client`), and the
