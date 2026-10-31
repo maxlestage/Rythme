@@ -1722,29 +1722,35 @@ example: rythme steps fibonacci.ry "fib(4)""#,
         ("write `unwrap_or(get(x, key), default)`: the value, or the default if it is missing", "`unwrap_or(get(x, key), default)` と書く：値か、なければデフォルト値"),
         ("compute the average with `sum(list) / len(list)`", "平均は `sum(list) / len(list)` で計算する"),
         ("`n.times do |i| ... end` is written `(0..n - 1).each do |i| ... end`", "`n.times do |i| ... end` は `(0..n - 1).each do |i| ... end` と書く"),
-        ("to use another file, write `use other_file`, then `other_file.name`", ""),
-        ("there is no `new`: build values directly, like `{{name: \"Ada\"}}` or `Circle(2.0)`", ""),
-        ("values never change in Rythme: build a new value instead", ""),
+        ("to use another file, write `use other_file`, then `other_file.name`", "別のファイルを使うには `use other_file` と書き、`other_file.name` とする"),
+        ("there is no `new`: build values directly, like `{{name: \"Ada\"}}` or `Circle(2.0)`", "`new` はない：`{{name: \"Ada\"}}` や `Circle(2.0)` のように値を直接作る"),
+        ("values never change in Rythme: build a new value instead", "Rythme では値は変わらない：代わりに新しい値を作る"),
         (
             r#"Rythme has no loops. Work on the whole list instead:
   1..5 |> each(fn(i) = print(i))
   [1, 2, 3] |> map(fn(x) = x * 2)
 or write a recursive function. See `rythme help functional`."#,
-            "",
+            r#"Rythme にループはない。代わりにリスト全体を処理する：
+  1..5 |> each(fn(i) = print(i))
+  [1, 2, 3] |> map(fn(x) = x * 2)
+または再帰関数を書く。`rythme help functional` を参照。"#,
         ),
-        ("Rythme has no loops to interrupt: use `find`, `take`, `filter`, or a recursive function", ""),
+        ("Rythme has no loops to interrupt: use `find`, `take`, `filter`, or a recursive function", "Rythme には中断するループがない：`find`、`take`、`filter` か再帰関数を使う"),
         (
             r#"no `return` needed: the last expression of a function is its result.
 To stop early with an error, return `Err(...)` and use `?`."#,
-            "",
+            r#"`return` は要らない：関数の最後の式がその結果になる。
+エラーで早めに止めるには `Err(...)` を返し、`?` を使う。"#,
         ),
-        ("just write `name = value` (values never change, so no keyword is needed)", ""),
-        ("functions are written `fn name(x) = x * 2`, and anonymous ones `fn(x) = x * 2`", ""),
+        ("just write `name = value` (values never change, so no keyword is needed)", "`name = value` と書くだけでよい（値は変わらないので、キーワードは要らない）"),
+        ("functions are written `fn name(x) = x * 2`, and anonymous ones `fn(x) = x * 2`", "関数は `fn name(x) = x * 2`、無名関数は `fn(x) = x * 2` と書く"),
         (
             r#"Rythme has no classes. Describe your data with `type`:
   type Shape = Circle(radius) | Square(side)
 or use a record: {{name: "Ada", age: 36}}"#,
-            "",
+            r#"Rythme にクラスはない。データは `type` で表す：
+  type Shape = Circle(radius) | Square(side)
+またはレコードを使う：{{name: "Ada", age: 36}}"#,
         ),
         (
             r#"use `match`:
@@ -1752,69 +1758,80 @@ or use a record: {{name: "Ada", age: 36}}"#,
     0 -> "zero"
     _ -> "other"
   end"#,
-            "",
+            r#"`match` を使う：
+  match value
+    0 -> "zero"
+    _ -> "other"
+  end"#,
         ),
         (
             r#"errors are values in Rythme: return `Ok(value)` or `Err(message)`,
 then handle them with `match` or pass them on with `?`. `fail(message)` stops the program."#,
-            "",
+            r#"Rythme ではエラーは値：`Ok(value)` か `Err(message)` を返し、
+`match` で扱うか `?` で呼び出し元に渡す。`fail(message)` はプログラムを止める。"#,
         ),
         // src/testing.rs
-        (".", ""),
-        ("the test returned `false`", ""),
-        ("use `assert_eq(actual, expected)` to see the values", ""),
-        ("the test ended with {}", ""),
-        ("a test passes when it ends without error, and its value is not `false`, `Err(...)` or `None`", ""),
+        (".", "."),
+        ("the test returned `false`", "テストが `false` を返した"),
+        ("use `assert_eq(actual, expected)` to see the values", "値を確認するには `assert_eq(actual, expected)` を使う"),
+        ("the test ended with {}", "テストが {} で終わった"),
+        ("a test passes when it ends without error, and its value is not `false`, `Err(...)` or `None`", "テストが成功するのは、エラーなしで終わり、その値が `false`、`Err(...)`、`None` でないとき"),
         (
             r#"No tests found. Write one like this:
   test "addition" = assert_eq(1 + 1, 2)"#,
-            "",
+            r#"テストが見つかりません。次のように書いてください：
+  test "足し算" = assert_eq(1 + 1, 2)"#,
         ),
-        ("Running {n} test(s)", ""),
-        ("Running {n} of {total} test(s)", ""),
-        ("Running {n} test(s) of {file}", ""),
-        ("Running {n} of {total} test(s) of {file}", ""),
-        ("{f} file(s), ", ""),
-        ("{total} test(s): {passed} passed, {failed} failed", ""),
-        (", {left_out} left out by the filter", ""),
-        (", {broken} file(s) with errors", ""),
-        ("No test name contains {}.", ""),
-        (" or ", ""),
-        ("{red}✗{reset} {}: the file has errors, so its tests could not run", ""),
+        ("Running {n} test(s)", "{n} 個のテストを実行中"),
+        ("Running {n} of {total} test(s)", "{total} 個中 {n} 個のテストを実行中"),
+        ("Running {n} test(s) of {file}", "{file} の {n} 個のテストを実行中"),
+        ("Running {n} of {total} test(s) of {file}", "{file} の {total} 個中 {n} 個のテストを実行中"),
+        ("{f} file(s), ", "{f} 個のファイル、"),
+        ("{total} test(s): {passed} passed, {failed} failed", "{total} 個のテスト：成功 {passed}、失敗 {failed}"),
+        (", {left_out} left out by the filter", "、フィルターで除外 {left_out}"),
+        (", {broken} file(s) with errors", "、エラーのあるファイル {broken}"),
+        ("No test name contains {}.", "{} を含む名前のテストはありません。"),
+        (" or ", " または"),
+        ("{red}✗{reset} {}: the file has errors, so its tests could not run", "{red}✗{reset} {}：ファイルにエラーがあるため、テストを実行できなかった"),
         (
             r#"No file with tests in {}. Write a test in a `.ry` file like this:
   test "addition" = assert_eq(1 + 1, 2)"#,
-            "",
+            r#"{} にテストのあるファイルがありません。`.ry` ファイルに次のようにテストを書いてください：
+  test "足し算" = assert_eq(1 + 1, 2)"#,
         ),
-        ("Failed tests:", ""),
-        ("`{name}` needs {what}", ""),
-        ("a part of the name of a test", ""),
-        ("a number, or `random`", ""),
-        ("the seed must be a whole number of 0 or more, or `random`, not `{v}`", ""),
-        ("unknown option `{name}` for `rythme test`", ""),
+        ("Failed tests:", "失敗したテスト："),
+        ("`{name}` needs {what}", "`{name}` には{what}が必要"),
+        ("a part of the name of a test", "テスト名の一部"),
+        ("a number, or `random`", "数か `random`"),
+        ("the seed must be a whole number of 0 or more, or `random`, not `{v}`", "シードは 0 以上の整数か `random` でなければならないが、`{v}` だった"),
+        ("unknown option `{name}` for `rythme test`", "`rythme test` に不明なオプション `{name}`"),
         (
             r#"
 the options are: --filter NAME, --seed N, --watch, --sandbox, --format json (see `rythme help tests`)"#,
-            "",
+            r#"
+オプションは --filter NAME、--seed N、--watch、--sandbox、--format json（`rythme help tests` を参照）"#,
         ),
-        ("which file or folder? Example: rythme test my_tests.ry, or rythme test . for the files of this folder", ""),
-        ("Seed: {}", ""),
+        ("which file or folder? Example: rythme test my_tests.ry, or rythme test . for the files of this folder", "どのファイルまたはフォルダー？ 例：rythme test my_tests.ry、このフォルダーのファイルなら rythme test ."),
+        ("Seed: {}", "シード：{}"),
         (
             r#"
 Watching {} file(s): the tests run again when one changes (Ctrl+C to stop)."#,
-            "",
+            r#"
+{} 個のファイルを監視中：変更されるとテストをもう一度実行します（止めるには Ctrl+C）。"#,
         ),
         (
             r#"
 {} changed: running the tests again
 "#,
-            "",
+            r#"
+{} が変更されました：テストをもう一度実行します
+"#,
         ),
         // src/value.rs
-        ("constructor", ""),
+        ("constructor", "コンストラクター"),
         // playground/src/lib.rs
-        ("✓ no problems found", ""),
-        ("✓ no errors, {n} warning(s)", ""),
+        ("✓ no problems found", "✓ 問題なし"),
+        ("✓ no errors, {n} warning(s)", "✓ エラーなし、警告 {n} 件"),
         // help pages, explanations, keywords, functions, months
         (
             r#"RYTHME IN ONE MINUTE
@@ -1841,7 +1858,30 @@ Try code:   rythme          (interactive mode)
 
 Rythme helps you all the time: every error says where it is, why, and how
 to fix it. `rythme explain E003` explains an error code in detail."#,
-            "",
+            r#"1 分でわかる RYTHME
+
+Rythme はシンプルな言語で、値は決して変わらず、すべてが関数です。
+プログラムは .ry で終わるファイルです。
+
+  # コメント
+  name = "World"                 # 値に名前を付ける（決して変わらない）
+  print("Hello, {name}!")        # {...} はテキストに値を埋め込む
+
+  fn square(x) = x * x           # 関数
+  print(square(4))               # 16
+
+  [1, 2, 3, 4]
+    |> filter(is_even)           # 偶数だけ残す
+    |> map(square)               # それぞれを 2 乗する
+    |> sum                       # 合計する
+    |> print                     # 20
+
+実行する：          rythme hello.ry
+チェックする：      rythme check hello.ry
+コードを試す：      rythme          （対話モード）
+
+Rythme はいつでも手助けします：どのエラーも、場所、理由、直し方を
+教えてくれます。`rythme explain E003` はエラーコードを詳しく説明します。"#,
         ),
         (
             r#"SYNTAX
@@ -1921,7 +1961,83 @@ Tests and other files
 Comments
   # an ordinary comment
   ## a documentation comment, above a function or a type, shown by help(...)"#,
-            "",
+            r#"構文
+
+値
+  42   -7   1_000_000            整数（Int）、大きさの制限なし
+  3.14   2.0                     小数（Float）
+  "hello"   "total: {x}"         テキスト（Text）。{...} か #{...} で値を埋め込む
+  true   false                   真偽値（Bool）
+  :ok   :error                   シンボル（Symbol）：値として使う名前
+  [1, 2, 3]                      リスト
+  {name: "Ada", age: 36}         レコード
+  Some(3)   None                 ないかもしれない値（Option）
+  Ok(3)   Err("oops")            失敗するかもしれない結果（Result）
+  1..5                           リスト [1, 2, 3, 4, 5]
+
+名前
+  x = 5                          値に名前を付ける。決して変わらない
+  [a, b] = [1, 2]                値を分解する
+  {name, age} = person
+
+演算子
+  + - * /   //（整数の割り算）   %（余り）   **（べき乗）
+  == != < <= > >=   and   or   not
+  x |> f(y)                      f(x, y) と同じ：左から右へのステップ
+  x.f(y)                         これも f(x, y) と同じ
+  x.f                            x のフィールド f。x になければ f(x)：xs.sum
+  xs                             チェーンは続けられる（各行は . で始める）
+    .select(even?)
+    .sum
+
+関数
+  fn double(x) = x * 2           1 行なら = で
+  fn greet(name)                 複数行なら `end` で終える
+    message = "Hello {name}"
+    print(message)               最後の行が結果になる
+  end
+  fn(x) = x + 1                  無名関数
+  fn adult?(p) = p.age >= 18     名前の最後に ? も使える（rythme help ruby）
+
+ブロック：呼び出しの最後の引数として渡す関数
+  xs.map do |x| x * 2 end        map(xs, fn(x) = x * 2) と同じ
+  xs.each do |x|                 複数行なら `end` で終える
+    print(x)
+  end
+  xs.select { |x| x > 2 }        波かっこでも書ける
+
+条件（if には必ず else がある）
+  if x > 0 then "positive" else if x == 0 then "zero" else "negative"
+  unless x > 0 then "small" else "big"     if の逆
+
+形で選ぶ
+  match list
+    [] -> "empty"
+    [x] -> "one element: {x}"
+    [x, ..rest] -> "{x}, then {len(rest)} more"
+  end
+
+式の中の複数のステップ
+  do
+    a = 1
+    a + 1
+  end
+
+独自の型
+  type Shape = Circle(radius) | Rect(width, height)
+
+コードに書く型（省略可、rythme check がチェックする）
+  fn area(w: Int, h: Int) -> Int = w * h
+  total: Float = 0.0
+  type Box(a) = Box(value: a)    型を取る型：Box(Int)、Box(Text)
+
+テストと他のファイル
+  test "double works" = assert_eq(double(2), 4)
+  use geometry                   その後 geometry.area(2)
+
+コメント
+  # 普通のコメント
+  ## ドキュメントコメント。関数や型の上に書き、help(...) で表示される"#,
         ),
         (
             r#"FUNCTIONS
@@ -1971,7 +2087,53 @@ Recursion without limit
     print(n)
     count_down(n - 1)
   end"#,
-            "",
+            r#"関数
+
+定義と呼び出し
+  fn add(a, b) = a + b
+  add(2, 3)                      # 5
+
+複数行：最後の式が結果になる
+  fn describe(n)
+    kind = if n % 2 == 0 then "even" else "odd"
+    "{n} is {kind}"
+  end
+
+ケースごとに 1 つの定義（順に試される）
+  fn fib(0) = 0
+  fn fib(1) = 1
+  fn fib(n) = fib(n - 1) + fib(n - 2)
+
+条件付き（ガード）
+  fn sign(n) if n < 0 = "negative"
+  fn sign(0) = "zero"
+  fn sign(_) = "positive"
+
+関数は値
+  double = fn(x) = x * 2
+  [1, 2, 3] |> map(double)       # [2, 4, 6]
+  [1, 2, 3] |> map(fn(x) = x + 1)
+
+パイプは左から右へ読む
+  "  Hello  " |> trim |> upper   # "HELLO"
+  x |> f(a, b)    は    f(x, a, b) という意味
+
+メソッド風の書き方
+  "hello".upper()                # upper("hello") と同じ
+
+ドキュメント
+  ## 2 つの数を足す。
+  fn add(a, b) = a + b
+  help(add)                      # "2 つの数を足す。" と表示する
+
+制限のない再帰
+  再帰呼び出しが関数の最後に行う処理なら、何百万回でも
+  繰り返せます：
+  fn count_down(0) = print("Liftoff!")
+  fn count_down(n)
+    print(n)
+    count_down(n - 1)
+  end"#,
         ),
         (
             r#"LISTS
@@ -2012,7 +2174,44 @@ Take a list apart with patterns
   end
 
 All the functions: rythme help builtins"#,
-            "",
+            r#"リスト
+
+  numbers = [3, 1, 2]
+  numbers[0]                     # 3（最初の要素。-1 は最後）
+  len(numbers)                   # 3
+  1..5                           # [1, 2, 3, 4, 5]
+  [0, ..numbers]                 # [0, 3, 1, 2]   （.. はリスト全体を挿入する）
+  numbers + [9]                  # [3, 1, 2, 9]
+
+リスト全体を処理する（ループは要らない）
+  map(numbers, fn(x) = x * 10)            # [30, 10, 20]
+  filter(numbers, fn(x) = x > 1)          # [3, 2]
+  fold(numbers, 0, fn(acc, x) = acc + x)  # 6
+  sort(numbers)                           # [1, 2, 3]
+  numbers |> each(fn(x) = print(x))       # 各要素を表示する
+
+安全なアクセス（決してエラーにならない）
+  first([])                      # None
+  get(numbers, 10)               # None
+
+リストを「変更する」：新しいリストが得られ、元のリストはそのまま
+  set_at(numbers, 0, 9)          # [9, 1, 2]
+  insert_at(numbers, 1, 7)       # [3, 7, 1, 2]
+  remove_at(numbers, -1)         # [3, 1]
+
+リストの一部
+  take_while(numbers, fn(x) = x > 2)      # [3]
+  chunks([1, 2, 3, 4, 5], 2)              # [[1, 2], [3, 4], [5]]
+  windows([1, 2, 3], 2)                   # [[1, 2], [2, 3]]
+  0..10 |> step_by(5)                     # [0, 5, 10]
+
+パターンでリストを分解する
+  match numbers
+    [] -> "empty"
+    [first, ..rest] -> "{first}、ほかに {len(rest)} 個"
+  end
+
+すべての関数：rythme help builtins"#,
         ),
         (
             r#"TEXT
@@ -2042,7 +2241,33 @@ All the functions: rythme help builtins"#,
 Special characters: \n (new line), \t (tab), \r (carriage return),
 \0 (null character), \" (quote), \\ (backslash), \{ and \} (braces, because
 { starts an insertion), \u{e9} (any character by its Unicode number: é)."#,
-            "",
+            r#"テキスト
+
+  name = "Ada"
+  "Hello, {name}!"               # "Hello, Ada!"  （{...} はどんな式でも埋め込む）
+  "2 + 2 = {2 + 2}"              # "2 + 2 = 4"
+  "a" + "b"                      # "ab"
+  len("été")                     # 3（文字数。アクセント付きの文字も 1 文字）
+  upper("abc")   lower("ABC")   trim("  x  ")
+  split("a,b,c", ",")            # ["a", "b", "c"]
+  join(["a", "b"], "-")          # "a-b"
+  replace("2024", "4", "5")      # "2025"
+  contains("hello", "ell")       # true
+  text(42)                       # "42"
+  text(3.14159, 2)               # "3.14"（小数点以下 2 桁の数）
+  pad_left("7", 3, "0")          # "007"  （pad_right もある：列をそろえるため）
+  char_code("A")   char(66)      # 65 と "B"
+  int("42")                      # 42
+  parse_int("x42")               # Err(...)：クラッシュしない変換
+  trim_start("  x")   trim_end("x  ")
+  words("Hi, you!")              # ["Hi", "you"]
+  equals_ignore_case("Ada", "ADA")          # true
+  format_number(1234.5, 2)       # "1,234.50"   （"fr" なら "1 234,50"）
+  find_all("3 cats, 12 dogs", "[0-9]+")     # ["3", "12"]（rythme help regex）
+
+特殊文字：\n（改行）、\t（タブ）、\r（復帰）、\0（ヌル文字）、\"（引用符）、
+\\（バックスラッシュ）、\{ と \}（{ は埋め込みの始まりなので波かっこ）、
+\u{e9}（Unicode 番号で表す任意の文字：é）。"#,
         ),
         (
             r#"RECORDS
@@ -2074,7 +2299,35 @@ Records as dictionaries
 JSON, the format of data on the web
   parse_json(text)               # Ok(...): objects become records, arrays lists
   to_json(value)                 # the text, ready to save with write_file"#,
-            "",
+            r#"レコード
+
+レコードは名前の付いた値をまとめます：
+  ada = {name: "Ada", born: 1815}
+  ada.name                       # "Ada"
+  ada["name"]                    # "Ada"
+
+レコードは決して変わりません：古いレコードから新しいレコードを作ります
+  older = {..ada, born: 1816}    # 同じフィールドで、`born` だけ置き換え
+
+分解する
+  {name, born} = ada
+  fn greet({name}) = "Hello {name}"
+
+便利な関数
+  keys(ada)   values(ada)   has(ada, "name")   get(ada, "x")   put(ada, "x", 1)
+  entries(ada)                   # [["name", "Ada"], ["born", 1815]]
+  from_entries([["x", 1]])       # {x: 1}
+
+辞書としてのレコード
+  counts = {apple: 2}
+  put(counts, "pear", 5)         # {apple: 2, pear: 5}
+  map_values(counts, fn(n) = n * 10)      # {apple: 20}
+  group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+  名前でないキー（数、リストなど）には辞書を使います：rythme help dicts
+
+JSON（Web のデータ形式）
+  parse_json(text)               # Ok(...)：オブジェクトはレコード、配列はリストに
+  to_json(value)                 # write_file で保存できるテキスト"#,
         ),
         (
             r#"DICTIONARIES AND SETS
@@ -2106,7 +2359,36 @@ A set holds values without repetition, in order.
 Dicts and sets compare with == and <, and print as dict(k => v, ...) and
 set(a, b, ...). `to_json` writes a dict whose keys are all texts (or all symbols) as an
 object, a set as an array; `dict(parse_json(text)?)` reads an object back."#,
-            "",
+            r#"辞書と集合
+
+辞書（dict）はキーごとに値を与えます。キーには関数以外のどんな値でも
+使えます：数、テキスト、リスト、レコードなど。順番は保たれます。
+  ages = dict([["Ada", 36], ["Alan", 41]])
+  ages                           # dict("Ada" => 36, "Alan" => 41)
+  ages["Ada"]                    # 36（キーがなければエラー）
+  get(ages, "Bob")               # None：Option で、決してエラーにならない
+  grid = dict([[[0, 0], "start"]])   # リストをキーにする
+  dict({x: 1})                   # レコードから：dict("x" => 1)
+
+辞書は決して変わりません：関数が新しい辞書をすばやく（O(log n) で）返します
+  put(ages, "Bob", 20)           # 追加（または置き換え）
+  remove(ages, "Ada")            # このキーを除いたもの
+  has(ages, "Ada")   len(ages)   keys(ages)   values(ages)   entries(ages)
+  map_values(ages, fn(n) = n + 1)
+  filter(ages, fn(name, age) = age > 40)   # f はキーと値を受け取る
+  ages.each do |name, age| print(name, age) end   # reject と select も同様
+  union(a, b)                    # 両方。両方にあるキーは b の値が優先
+
+集合は値を重複なしに、順番どおりに持ちます。
+  s = set([3, 1, 3])             # set(1, 3)
+  has(s, 3)   push(s, 5)   remove(s, 1)   len(s)   values(s)   # values：リスト
+  union(a, b)   intersection(a, b)   difference(a, b)   is_subset(a, b)
+  filter(s, is_odd)   map(s, fn(x) = x * 10)
+
+辞書と集合は == と < で比較でき、dict(k => v, ...) と set(a, b, ...) の
+形で表示されます。`to_json` はキーがすべてテキスト（またはすべてシンボル）の
+辞書をオブジェクトとして、集合を配列として書きます。
+`dict(parse_json(text)?)` でオブジェクトを読み戻せます。"#,
         ),
         (
             r#"YOUR OWN TYPES
@@ -2133,7 +2415,30 @@ If you forget a shape, `rythme check` tells you which one.
 
 A type can contain itself (trees...):
   type Tree = Leaf | Node(left, value, right)"#,
-            "",
+            r#"独自の型
+
+型は値がとりうる形を列挙します：
+  type Shape = Circle(radius) | Rect(width, height) | Empty
+
+  c = Circle(2.0)
+  c.radius                       # 2.0
+
+match でそれぞれの形を扱う
+  fn area(shape) = match shape
+    Circle(r) -> pi * r * r
+    Rect(w, h) -> w * h
+    Empty -> 0
+  end
+
+または形ごとに 1 つの定義で
+  fn perimeter(Circle(r)) = 2 * pi * r
+  fn perimeter(Rect(w, h)) = 2 * (w + h)
+  fn perimeter(Empty) = 0
+
+形を 1 つ忘れると、`rythme check` がどれかを教えてくれます。
+
+型は自分自身を含められます（木など）：
+  type Tree = Leaf | Node(left, value, right)"#,
         ),
         (
             r#"MATCH AND PATTERNS
@@ -2164,7 +2469,34 @@ Patterns work everywhere a name is given:
   [x, y] = [1, 2]
   fn head_or_zero([]) = 0
   fn head_or_zero([x, ..]) = x"#,
-            "",
+            r#"MATCH とパターン
+
+`match` は値をパターンと順に比べ、最初に当てはまったものの結果を
+返します：
+
+  fn describe(x) = match x
+    0 -> "zero"
+    1 | 2 | 3 -> "small"
+    n if n < 0 -> "negative"
+    _ -> "big"
+  end
+
+パターン
+  42   "text"   true             ちょうどこの値
+  1..9   -5..-1   0.0..0.5       最初から 2 番目までの数（両端を含む）
+  "Mr " + name                   "Mr " で始まるテキスト。name は残りの部分
+  x                              何でもよく、x と名付ける
+  _                              何でもよく、無視する
+  Some(x)   Circle(r)            コンストラクターとその中身
+  []   [a, b]   [first, ..rest]  形で見るリスト
+  {name, age}                    これらのフィールドを持つレコード
+  p if condition                 パターンと条件（ガード）
+  a | b                          どちらかのパターン
+
+パターンは名前を付けるところならどこでも使えます：
+  [x, y] = [1, 2]
+  fn head_or_zero([]) = 0
+  fn head_or_zero([x, ..]) = x"#,
         ),
         (
             r#"ERRORS ARE VALUES (Option, Result, ?)
@@ -2197,7 +2529,36 @@ Quick tools
   map_err(r, fn(e) = "config: {e}")     # explain an error better
 
 To stop the whole program: fail("message")."#,
-            "",
+            r#"エラーは値（Option、Result、?）
+
+Rythme には null も例外もありません。ないかもしれない値は Option：
+Some(value) か None です。失敗するかもしれない操作は Result を返します：
+Ok(value) か Err(message) です。扱い忘れることはありません。
+
+  fn divide(a, b) = if b == 0 then Err("ゼロ除算") else Ok(a / b)
+
+  match divide(10, 2)
+    Ok(x) -> print("結果：{x}")
+    Err(e) -> print("エラー：{e}")
+  end
+
+? 演算子：値を取り出すか、止まってエラーを呼び出し元に渡す
+  fn average(a, b)
+    x = parse_float(a)?          # これが Err(...) なら average はそれを返す
+    y = parse_float(b)?
+    Ok((x + y) / 2)
+  end
+
+手軽な道具
+  unwrap_or(get(list, 5), 0)     # 値か、デフォルト値
+  unwrap(Some(3))                # 3（None や Err ならプログラムを止める）
+  is_some(x)   is_none(x)   is_ok(x)   is_err(x)
+  map(Some(2), fn(x) = x * 10)   # Some(20)
+  ok_or(get(person, "age"), "no age")   # なければ Err("no age")。? で使える
+  and_then(x, f)                 # 失敗するかもしれないもう 1 つのステップ
+  map_err(r, fn(e) = "config: {e}")     # エラーをよりよく説明する
+
+プログラム全体を止めるには：fail("message")。"#,
         ),
         (
             r#"THINKING FUNCTIONALLY
@@ -2229,7 +2590,35 @@ Instead of changing a value, make a new one:
   x2 = x + 1
   person2 = {..person, age: 37}
   list2 = push(list, 4)"#,
-            "",
+            r#"関数型の考え方
+
+Rythme では値は決して変わらず、ループもありません。不思議に思えるかも
+しれませんが、プログラムは読みやすく、テストしやすく、信頼しやすくなります：
+関数は同じ引数に対していつも同じ結果を返します。
+
+表示するループの代わりに：          1..5 |> each(fn(i) = print(i))
+変換するループの代わりに：          map(list, f)
+選び出すループの代わりに：          filter(list, f)
+積み上げるループの代わりに：        fold(list, start, f)   または sum、product
+累計の代わりに：                    scan(list, start, f)
+探すループの代わりに：              find、any、all、index_of、min_by、max_by
+"break" の代わりに：                take_while(list, f)
+"while" の代わりに：                再帰関数
+
+  # Python:  total = 0
+  #          for x in numbers: total += x * x
+  total = numbers |> map(fn(x) = x * x) |> sum
+
+  # "while" ループを再帰関数で：
+  fn collatz(1, steps) = steps
+  fn collatz(n, steps) =
+    if n % 2 == 0 then collatz(n // 2, steps + 1) else collatz(3 * n + 1, steps + 1)
+  collatz(27, 0)                 # 111
+
+値を変える代わりに、新しい値を作ります：
+  x2 = x + 1
+  person2 = {..person, age: 37}
+  list2 = push(list, 4)"#,
         ),
         (
             r#"TESTS
@@ -2267,7 +2656,42 @@ lists_of(generator, max_length), one_of(list), records_of({x: ints(), y: texts()
 false, it is simplified (shrinking) and shown with the seed that made it: the
 same values come back on every run, and `--seed N` tries others
 (`--seed random` picks one)."#,
-            "",
+            r#"テスト
+
+テストはコードのすぐそばに書きます：
+  fn double(x) = x * 2
+
+  test "2 の 2 倍は 4" = assert_eq(double(2), 4)
+
+  test "いくつかのチェック"
+    assert_eq(double(0), 0)
+    assert(double(-1) < 0, "負のままのはず")
+  end
+
+実行する：
+  rythme test my_file.ry            1 つのファイルのテスト
+  rythme test .                     フォルダー以下のすべての .ry ファイル
+  rythme test . --filter double     名前に "double" を含むテストだけ
+  rythme test . --watch             ファイルが変わるたびに再実行（Ctrl+C で止める）
+  rythme test my_file.ry -- a b     `args()` が ["a", "b"] を返す状態で
+  rythme test                       プロジェクトでは、テストのあるファイル
+
+テスト中は、print(...) のような最上位の式は実行されません：定義が
+読み込まれ、それから各テストが実行されます。テストが成功するのは、
+エラーなしで終わり、その値が false、Err(...)、None でないときです。
+まとめには件数と時間が表示され、すべてのテストが成功すると終了コードは
+0 になります。
+
+プロパティテスト：多くの値で何かが成り立つことを確かめる
+  test "2 回逆にすると元のリストに戻る" =
+    check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+
+ジェネレーター：ints(min, max)、floats(min, max)、texts(max_length)、bools()、
+lists_of(generator, max_length)、one_of(list)、records_of({x: ints(), y: texts()})。
+`sample(generator)` はジェネレーターが返す値を見せます。ある値でプロパティが
+偽になると、その値は単純化（シュリンク）され、それを生んだシードとともに
+表示されます：毎回同じ値が出てくるので、`--seed N` で別の値を試します
+（`--seed random` はシードを 1 つ選びます）。"#,
         ),
         (
             r#"EXERCISES
@@ -2287,7 +2711,24 @@ In the file, replace each fail("to do") with your code; do not change the
 tests. `rythme test file.ry` runs the tests too. The exercises follow the
 language of the messages (`rythme --lang es exercise start 7`); the folder
 docs/exercises of the repository of Rythme has them in English and French."#,
-            "",
+            r#"練習問題
+
+Rythme には入門コース向けに、段階的な練習問題が 36 問付いています。最初の
+値から再帰、リスト、レコード、型、Option、Result、テストまで進み、最後の
+6 問は人工知能がテーマです（31〜36：ベクトル、統計、ニューロン、勾配降下法、
+最近傍法、ミニマックス）。それぞれが、問題、ヒント、書くべき関数と
+そのテストを含む 1 つのファイルです。
+
+  rythme exercise list              練習問題の一覧。★☆☆（やさしい）から ★★★ まで
+  rythme exercise start 7           練習問題 7 を現在のフォルダーにコピーする
+  rythme exercise check 07-recursion.ry
+                                    テストを実行し、次にすることを教える
+
+ファイルの中のそれぞれの fail("未完成") を自分のコードに置き換えてください。
+テストは変えないでください。`rythme test file.ry` でもテストを実行できます。
+練習問題はメッセージの言語に従います（`rythme --lang ja exercise start 7`）。
+Rythme のリポジトリの docs/exercises フォルダーには英語版とフランス語版が
+あります。"#,
         ),
         (
             r#"SEVERAL FILES
@@ -2313,7 +2754,30 @@ runs only once. Rythme says which file defines a name you forgot to use.
 
 Older form: `use "geometry.ry"` (with quotes) gives its definitions directly,
 as `area(2, 3)`; prefer `use geometry`."#,
-            "",
+            r#"複数のファイル
+
+  # geometry.ry
+  ## 長方形の面積。
+  fn area(w, h) = w * h
+  fn _check(x) = x >= 0          # 非公開：`_` で始まる
+
+  # main.ry
+  use geometry                    # main.ry の隣のファイル geometry.ry
+  print(geometry.area(2, 3))      # 6
+
+`use geometry` は geometry.ry の定義をその名前を通して使えるようにします：
+`geometry.area`、`geometry.Circle(1)`、`match` の中なら `geometry.Circle(r)`。
+こうして、名前がどこから来たのかがいつでもわかります。フォルダーの中の
+ファイルなら `use shapes/circle` の後に `circle.perimeter(1)`。別の名前を
+付けるなら `use geometry as geo` の後に `geo.area(2, 3)`。`_` で始まる名前は
+そのファイルの中だけのものです。
+
+パスは `use` を含むファイルのフォルダーからの相対パスです。各ファイルは
+1 回だけ実行されます。使い忘れた名前がどのファイルで定義されているかは
+Rythme が教えてくれます。
+
+古い形：`use "geometry.ry"`（引用符付き）は定義を直接使えるようにします
+（`area(2, 3)` のように）。`use geometry` のほうがおすすめです。"#,
         ),
         (
             r#"FILES AND THE SYSTEM
@@ -2356,7 +2820,46 @@ Exit codes, for the scripts that run your program
 
 In the playground, in the browser, there are no files and no input: these
 functions give Err("... is not available in the browser ...")."#,
-            "",
+            r#"ファイルとシステム
+
+システムに触れる関数はどれも Result を返します：Ok(...) か、何がうまく
+いかなかったかを伝えるメッセージ付きの Err(message) です。
+
+ファイルとフォルダー（相対パスは現在のフォルダーから始まる）
+  read_file("notes.txt")         # Ok("...") か Err("ファイルが見つからない：notes.txt")
+  write_file("out.txt", "hi")    # Ok(())。内容を置き換える
+  append_file("log.txt", "done\n")
+  file_exists("notes.txt")       # true か false
+  file_info("notes.txt")         # Ok({is_folder: false, size: 11})。バイト単位
+  list_folder(".")               # Ok(["notes.txt", "photos"])。順番どおり
+  create_folder("backup/2024")   # Ok(())。足りない上位フォルダーも作る
+  delete_file("old.txt")         # Ok(())。フォルダーは決して削除しない
+
+Linux、macOS、Windows で使えるパス
+  join_path(["data", "notes.txt"])       # "data/notes.txt"
+  split_path("/home/ada/notes.txt")      # ["/", "home", "ada", "notes.txt"]
+  split_path("C:\Users\ada")             # ["C:\", "Users", "ada"]
+
+コマンドライン：rythme tool.ry --verbose --name=Ada notes.txt
+  args()                         # ["--verbose", "--name=Ada", "notes.txt"]
+  options()                      # Ok({args: ["notes.txt"], verbose: true, name: "Ada"})
+  opts = unwrap(options())
+  name = unwrap_or(get(opts, "name"), "World")   # ないかもしれないオプション
+  env("HOME")                    # Some("/home/ada") か None
+
+標準入力：rythme count.ry < names.txt
+  input("Name? ")                # 1 行
+  input_lines()                  # Ok(["Ada", "Alan"])：終わりまでのすべての行
+
+終了コード（プログラムを実行するスクリプト向け）
+  0    すべてうまくいった（プログラムの終わりでも）
+  1    プログラムのエラー：構文、チェック、実行中、テストの失敗
+  2    コマンドの使い方の誤り（不明なコマンドやオプション）
+  101  Rythme の内部エラー（報告すべきバグ）
+  exit(code)                     # このコード（0〜255）ですぐに止まる
+
+ブラウザーのプレイグラウンドにはファイルも入力もありません：これらの
+関数は Err("... はブラウザーでは使えない ...") を返します。"#,
         ),
         (
             r#"PROJECTS AND PACKAGES
@@ -2391,7 +2894,39 @@ same code. Then:
 A file next to the one that contains `use` comes first. Packages from git
 are kept in ~/.rythme/packages (or RYTHME_HOME/packages). Finding packages
 by name and sharing yours: `rythme help packages`."#,
-            "",
+            r#"プロジェクトとパッケージ
+
+  rythme new hello        # 新しいプロジェクトを入れたフォルダー hello/：
+                          #   rythme.toml, src/main.ry, src/greeting.ry,
+                          #   tests/greeting_test.ry, README.md, .gitignore
+  cd hello
+  rythme run              # プログラムを実行する：rythme.toml の `entry`
+  rythme test             # src/ と tests/ のテストのあるファイルを実行する
+  rythme check            # 全ファイルをチェック。`rythme fmt`、`rythme doc` も
+
+rythme.toml はプロジェクトを記述します：
+
+  name = "hello"
+  version = "0.1.0"
+  entry = "src/main.ry"
+
+  [dependencies]
+  mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
+  tools = { path = "../tools" }
+
+依存関係は、`tag` か `commit` を指定した git か、フォルダーから取得します。
+`rythme install` はそれらを（git で）ダウンロードし、それぞれの正確な
+コミットを rythme.lock に書きます：全員が同じコードを使えるよう、
+このファイルはプロジェクトと一緒に保管してください。その後は：
+
+  use mathlib/vectors       # mathlib のファイル src/vectors.ry
+  use mathlib               # そのプログラム（rythme.toml の `entry`）
+  use hello/greeting        # tests/ から使う、プロジェクト自身のファイル
+
+`use` を含むファイルの隣にあるファイルが優先されます。git からの
+パッケージは ~/.rythme/packages（または RYTHME_HOME/packages）に保管されます。
+名前でパッケージを探したり、自分のパッケージを共有したりするには：
+`rythme help packages`。"#,
         ),
         (
             r#"DATES AND TIMES
@@ -2422,7 +2957,34 @@ Calendar arithmetic (leap years and month lengths included)
 A date that does not exist stops the functions with E023, which says why.
 The local offset comes from the system (UTC when it does not tell); time()
 gives seconds since 1970 as a Float, to measure durations."#,
-            "",
+            r#"日付と時刻
+
+日付はレコード {year, month, day} で、1 日の中の時刻には hour、minute、
+second を、わかっていれば offset（UTC より進んでいる分数）を加えます。
+  today()                        # {year: 2026, month: 10, day: 18}
+  now()                          # {year: 2026, ..., hour: 14, minute: 5, second: 9, offset: 120}
+  birthday = {year: 1815, month: 12, day: 10}
+  birthday.year                  # 1815
+
+テキストとの相互変換（ISO 8601 形式）
+  parse_date("2024-02-29")       # Ok({year: 2024, month: 2, day: 29})
+  parse_date("2024-02-30")       # Err("... 2024年2月 ...")
+  parse_date("2024-02-29T13:05:00+01:00")    # 時刻と時差付き
+  format_date({year: 2024, month: 2, day: 29, hour: 9})   # "2024-02-29T09:00:00"
+
+暦の計算（うるう年と月の長さも考慮）
+  add_days({year: 2024, month: 2, day: 28}, 1)     # {year: 2024, month: 2, day: 29}
+  add_seconds(now(), 3600)       # 1 時間後
+  days_between(today(), {year: 2027, month: 1, day: 1})   # 残りの日数
+  seconds_between(a, b)          # b が a より前なら負
+  day_of_week(today())           # 1 = 月曜日 ... 7 = 日曜日
+  days_in_month(2023, 2)         # 28
+  is_leap_year(2000)             # true
+  is_date({year: 2023, month: 2, day: 29})   # false
+
+存在しない日付を渡すと、関数は E023 で止まり、その理由を示します。
+ローカルの時差はシステムから取得します（わからなければ UTC）。time() は
+1970 年からの秒数を Float で返すので、時間の計測に使えます。"#,
         ),
         (
             r#"REGEX: SEARCHING WITH A PATTERN
@@ -2464,7 +3026,45 @@ Writing a regex in a Rythme text
 
 A mistake in a regex stops the program with E026, which shows where it is;
 when the regex is written in the code, `rythme check` finds it before."#,
-            "",
+            r#"正規表現：パターンで検索する
+
+正規表現（regex）はテキストの断片を表します："[0-9]+" は「1 つ以上の数字」
+という意味です。Rythme は一般的な正規表現を読み、検索にかかる時間は
+（テキストの長さ）×（正規表現の大きさ）を超えません。
+
+  matches("2024", "[0-9]+")                  # true：テキスト全体がマッチする
+  find_first("tel: 06 12", "[0-9]+")         # Some("06")：最初の断片
+  find_all("3 cats, 12 dogs", "[0-9]+")      # ["3", "12"]
+  split_by("a, b;c", "[,;] *")               # ["a", "b", "c"]
+  replace_all("a cat", "\\b\\w", upper)      # "A Cat"（断片ごとに関数を適用）
+  replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1")   # "2024-02-29"
+  captures("2024-02", "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
+  named_captures("2024-02", "(?<year>[0-9]+)-(?<month>[0-9]+)")
+                                             # Some({year: "2024", month: "02"})
+
+正規表現で表せること
+  abc          これらの文字をこの順で
+  .            改行以外の任意の文字
+  [abc]        これらの文字のどれか。[a-z] は a〜z のどれか。[^0-9] はそれ以外
+  \d \w \s     数字（0-9）。英字（アクセント付きも）、数字、_。空白
+  \D \W \S     それ以外
+  \b           単語の境界
+  ^  $         テキストの先頭と末尾
+  x|y          x か y
+  (...)        グループ：繰り返し、テキストのキャプチャ（$1、`captures`）
+  (?:...)      何もキャプチャしないグループ。(?<name>...) は名前付きグループ
+  x*  x+  x?   x が 0 回以上、1 回以上、0 回か 1 回（最長一致）
+  x{3}  x{2,5}  x{2,}    3 回、2〜5 回、2 回以上
+  x*?  x+?     最長ではなく最短一致
+  (?i)         先頭に置くと、大文字と小文字を同じとみなす
+
+Rythme のテキストで正規表現を書く
+  バックスラッシュは 2 回書きます："\\d+" が正規表現 \d+ です。波かっこは
+  \{ と \} と書きます："[0-9]\{4\}" が正規表現 [0-9]{4} です。記号そのものは
+  角かっこに入れます："[.]" はドット、"[(]" は丸かっこ、"[$]" はドル記号です。
+
+正規表現に誤りがあると、プログラムは E026 で止まり、その場所を示します。
+正規表現がコードに書かれていれば、`rythme check` が先に見つけます。"#,
         ),
         (
             r#"THE INTERACTIVE MODE
@@ -2482,7 +3082,21 @@ Commands
   :learn          guided tour            :explain E003  explain an error
   :steps fib(4)   show the calculation step by step
 The Tab key completes names."#,
-            "",
+            r#"対話モード
+
+ファイルを指定せずに `rythme` を実行します。式を入力すると値が表示されます：
+  ry> 1 + 2
+  3
+定義は行をまたいで保持されます。行が終わっていなければ（閉じていない
+かっこ、`end` のないブロックなど）、次の行に続きます。
+
+コマンド
+  :help           このヘルプ             :quit          終了（または Ctrl-D）
+  :doc map        名前のヘルプ           :load f.ry     ファイルを読み込む
+  :reset          すべて忘れる           :lang ja       言語を変える（en、fr、es、de、pt、zh、it、ja）
+  :learn          ガイドツアー           :explain E003  エラーを説明する
+  :steps fib(4)   計算を 1 ステップずつ表示する
+Tab キーで名前を補完できます。"#,
         ),
         (
             r#"FORMATTING: rythme fmt
@@ -2521,7 +3135,40 @@ The style
 Line breaks are kept where the language allows a choice, and long lines are
 kept as written. The formatter never changes what a program does: a file with
 a syntax error is left as it is, and the error is shown."#,
-            "",
+            r#"整形：rythme fmt
+
+`rythme fmt` はコードを Rythme の公式のレイアウトに整えます：どのプログラムも
+同じ見た目になり、空白について議論する必要がなくなります。
+
+  rythme fmt hello.ry            ファイルを整形する（書き換えられる）
+  rythme fmt .                   フォルダー以下のすべての .ry ファイル
+  rythme fmt --check .           チェックだけ：整形が必要なファイルを一覧し、
+                                 1 つでもあれば失敗する（終了コード 1）。CI 向け
+  rythme fmt - < hello.ry        コードを読み、結果を書く
+
+スタイル
+  - インデントは 1 段につき空白 2 つ
+  - 演算子の前後に空白：x = a + b * 2   xs |> map(f)   n -> n * 2
+  - かっこの内側と .. の前後には空白なし：f(x)   [1, 2]   {name: "Ada"}   1..10
+  - 複数行のパイプラインは 1 行に 1 ステップ
+      total = prices
+        |> filter(fn(p) = p > 10)
+        |> sum
+  - 複数行の型は 1 行に 1 バリアント
+      type Shape =
+        | Circle(radius)
+        | Rect(width, height)
+  - 複数行のリストはカンマで終わる
+  - 1 行で書いたブロックは 1 行のまま：
+      xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+    複数行なら、その文は `do` より 1 段深くなる
+  - 1 行に 1 文（`;` はない）、`end` は単独の行に
+  - 複数行の定義の前後には空行を 1 つ。空行を 2 つ続けない
+  - コメントはすべて残る。連続する行の末尾のコメントはそろえられる
+
+改行は言語が選択を許す場所では保たれ、長い行は書いたままになります。
+整形でプログラムの動作が変わることはありません：構文エラーのある
+ファイルはそのままにされ、エラーが表示されます。"#,
         ),
         (
             r#"DOCUMENTATION: rythme doc
@@ -2558,7 +3205,39 @@ What is written
 
 In a comment, a blank `##` line starts a new paragraph, and lines starting
 with `- ` make a list."#,
-            "",
+            r#"ドキュメント：rythme doc
+
+`rythme doc` は、`##` コメント、型、関数の定義からコードのドキュメントを
+作ります。
+
+  rythme doc geometry.ry         画面に Markdown で
+  rythme doc .                   フォルダー以下のすべての .ry ファイル
+  rythme doc --html geometry.ry  他に何も要らない 1 つの Web ページ
+  rythme doc . --out doc.html    ファイルに書く（.html なら Web ページ）
+
+`##` コメントは、説明する対象のすぐ上に書きます：
+
+  ## 図形とその面積。             <- 先頭に書き、空行を続けると、
+                                     ファイル全体の説明になる
+  ## 描く図形。
+  type Shape = Circle(radius) | Rect(width, height)
+
+  ## 図形の面積。`len` と `area` も参照。
+  fn area(Circle(r)) = pi * r * r
+  fn area(Rect(w, h)) = w * h
+
+書かれる内容
+  - 各ファイルについて：説明、使っているファイル（それも文書化される）、
+    型、関数（各定義の 1 行目）、値、テストの名前
+  - `_` で始まる名前は除かれる：そのファイルの中だけのもの
+  - コメントの中でバッククォートで囲んだ名前（`area` や `len(list)` など）は
+    そのドキュメントへのリンクになる。`use geometry` の後なら
+    `geometry.area` は geometry.ry の `area` につながる。このように触れた
+    組み込み関数は最後に説明される
+  - 見出しはメッセージの言語になる（`--lang fr`）
+
+コメントの中では、空の `##` 行で新しい段落になり、`- ` で始まる行は
+箇条書きになります。"#,
         ),
         (
             r#"STEP BY STEP: rythme steps
@@ -2591,7 +3270,36 @@ steps shown (200 by default), the rest is computed without being shown.
 
 In the interactive mode: :steps fib(4). In the playground: the Steps button.
 In French: rythme etapes."#,
-            "",
+            r#"ステップ実行：rythme steps
+
+`rythme steps` は、プログラムが値を計算する様子を 1 ステップずつ見せます：
+各呼び出しは、引数の値を当てはめた関数の本体に置き換えられ、最後には
+結果だけが残ります。
+
+  rythme steps fib.ry              ファイルの各定義と各式
+  rythme steps fib.ry "fib(4)"     ファイルの定義の後に、1 つの式
+  rythme steps fib.ry --max 50     各式について最大 50 ステップまで表示する
+  rythme steps fib.ry --width 80   80 文字より長い行を切る
+
+例：fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
+
+  fib(3)
+    → fib(2) + fib(1)
+    → fib(1) + fib(0) + fib(1)
+    → 1 + fib(0) + fib(1)
+    → 1 + 0 + fib(1)
+    → 1 + fib(1)
+    → 1 + 1
+    → 2
+
+1 ステップは 1 回の呼び出しか 1 回の演算です。呼び出された関数の本体は、
+他の関数を呼ばずにできるところまで単純化して表示されます。組み込み関数
+（と他のファイルの関数）は 1 ステップで結果を返します。プログラムが表示する
+ものはステップの間に現れます。表示するステップ（デフォルトで 200）の後は、
+表示せずに計算を続けます。
+
+対話モードでは :steps fib(4)。プレイグラウンドではステップボタン。
+フランス語では rythme etapes。"#,
         ),
         (
             r#"RYTHME IN YOUR EDITOR
@@ -2625,7 +3333,35 @@ Colors in Neovim, Helix and Zed
 
 The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh, it, ja) or
 RYTHME_LANG chooses it: rythme --lang fr lsp"#,
-            "",
+            r#"エディターで使う RYTHME
+
+Rythme はエディターの中でも手助けします：入力中の問題の表示、マウスを
+重ねたときの関数のドキュメント（`fn area(side: Int|Float) -> Int|Float` の
+ようにコードから推論したシグネチャ付き）、補完、呼び出しの引数、定義へ
+移動、参照、名前の変更、打ち間違いのクイックフィックス、`rythme fmt` と
+同じ整形、確実なときの名前の型（と関数のシグネチャ）、名前の種類に応じた
+色分け、コードの上の "Run" と "Run test"、ワークスペース全体の名前、
+折りたたみ。これは言語サーバーで、エディターが自動的に起動します：
+  rythme lsp
+
+VS Code
+  editors/vscode の拡張機能：色分け、スニペット、言語サーバー。
+  設定：rythme.path（プログラム）、rythme.language（en、fr、es、de、pt、zh、it、ja、auto）。
+
+Neovim、Helix、Zed、Emacs、Sublime Text、Kate など
+  Language Server Protocol に対応したエディターならどれでも：.ry ファイルに
+  `rythme lsp` を起動するよう設定します。設定例：editors/README.md
+  （"Run" と "Run test" はコマンド rythme.runFile、rythme.testFile、
+  rythme.runTest を指定し、エディターがそれを実行します：editors/README.md を参照）
+
+Zed
+  editors/zed の拡張機能：色分けと言語サーバー。
+
+Neovim、Helix、Zed での色分け
+  editors/tree-sitter-rythme の Tree-sitter 文法（editors/README.md を参照）。
+
+メッセージの言語はエディターに従います。`--lang`（en、fr、es、de、pt、zh、it、ja）
+か RYTHME_LANG で選ぶこともできます：rythme --lang fr lsp"#,
         ),
         (
             r#"COMING FROM RUBY
@@ -2708,7 +3444,85 @@ When ? is part of a name
   even? without `(`: when such a function exists (built-in, or defined with
   fn in the file). Otherwise value? is the ? that stops on None or Err, and
   (value)? always is."#,
-            "",
+            r#"RUBY から来た人へ
+
+Rythme は Ruby のように読めますが、値は決して変わりません：ミューテーション
+も nil も例外もありません。Ruby で知っていることはたいてい使えます：
+
+  names = ["Ada", "Grace", "Alan"]
+  names.each do |name|
+    puts "Hello, #{name}!"
+  end
+
+  [1, 2, 3, 4, 5, 6]
+    .select(even?)
+    .map { |x| x * x }
+    .sum                         # 56
+
+  fn adult?(person) = person.age >= 18
+  kind = unless adult?(ada) then :minor else :adult
+
+Ruby と同じもの
+  呼び出し        puts "hi"   print x, y   assert_eq total, 42
+                  （文や結果の先頭で。下を参照）
+  ブロック        xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+                  ブロックは関数：fn(x) = x * 2 と同じ
+  メソッド        xs.sum   name.upcase   xs.first(2)   xs.include?(3)
+  ? 付きの名前    even?   empty?   include?(x)   fn adult?(p) = ...
+  シンボル        :ok   :error（== で比較し、match で使う）
+  テキスト        "Hello #{name}"（または "Hello {name}"）。"\#{" で #{ と書ける
+  unless          unless cond then a else b
+  Ruby の名前     puts to_s to_i to_f length size upcase downcase strip
+                  select reject reduce inject uniq each_slice each_cons
+                  each_with_index include? empty? even? odd? any? all?
+                  start_with? end_with? key? lstrip rstrip casecmp?
+                  （rythme help builtins を参照）
+
+違うところ
+  括弧            式の中の呼び出しには必要：x = len(xs)、
+                  x = len xs ではない
+  値の変更        x += 1 はない：新しい値に新しい名前を付ける。total2 = total + 1
+  nil             ない値は None、ある値は Some(x)
+  例外            エラーは値で、Ok(x) か Err(message)。? で呼び出し元に渡す
+  if と unless    必ず else があり、値を返す。`return` はなく、
+                  関数の最後の行がその結果になる
+  クラス          レコード {name: "Ada"} と型：type Shape = Circle(r) | Square(s)
+  ループ          each、map、select、reduce、または自分自身を呼ぶ関数
+  case/when       match value ... end。1 行に 1 ケース：pattern -> result
+  ハッシュ        dict([[:ada, 36]])（シンボルを含め、どんな種類のキーも可）
+                  またはレコード {name: "Ada", age: 36}
+
+括弧なしの呼び出し
+  名前で始まり、同じ行にその後で値の始まり（数、テキスト、シンボル、名前、
+  コンストラクター、not、if、match、fn）が続く文は呼び出しです：print x, y は
+  print(x, y)。引数の後の do ブロックは呼び出しに渡されます：
+  each xs do |x| ... end。Ruby と同じく、空白の後にあり、直後に空白のない
+  [ や - も引数の始まりになります（puts [1, 2]、puts -1）。ただし、コードが
+  その名前に値を与えている場合（=、引数、パターンで）は別で、x -1 は x - 1、
+  xs [0] は xs[0] のままです。`rythme fmt` はそれらを x - 1、xs[0] と書きます。
+
+  結果も同じように始められます：if や unless の分岐、match のケース、
+  関数やテストの = の後の本体。その引数は else、end、}、)、行の終わりで
+  終わります：
+
+  fn greet(name) = puts "Hello, #{name}!"
+  fn check(ok) = if ok then puts "yes" else puts "no"
+  match name
+    "Dr " + rest -> puts "doctor", rest
+    _ -> puts name
+  end
+  xs.each { |x| puts x }
+
+x.name の仕組み
+  x.name はレコードのフィールド `name` を読みます。x にそのフィールドが
+  なければ、x を引数に関数 `name` を呼びます：xs.sum は sum(xs)、
+  xs.first(2) は first(xs, 2)。チェーンは複数行に続けられ、各行は `.` で始めます。
+
+? が名前の一部になるとき
+  even?(4)、xs.include?(3)、fn adult?(p)：名前の直後、`(` の前。
+  `(` のない even?：そういう関数がある（組み込み、またはファイルの中で fn で
+  定義した）とき。それ以外では value? は None や Err で止まる ? で、
+  (value)? は常にそうなります。"#,
         ),
         (
             r#"E001 — Syntax error
@@ -2722,7 +3536,17 @@ says what was expected. Frequent causes:
 
 Wrong:   if x > 0 { print(x) }
 Right:   if x > 0 then print(x) else print("not positive")"#,
-            "",
+            r#"E001 — 構文エラー
+
+この場所のコードが Rythme の文法に従っていません。メッセージは何が
+期待されていたかを示します。よくある原因：
+  - `)`、`]`、`,` が足りない
+  - `if` に `then` や `else` がない
+  - ブロックに波かっこ { } を使っている（Rythme は改行と `end` を使う）
+  - 他の言語のキーワード（for、while、return、let、def など）
+
+誤り：   if x > 0 { print(x) }
+正しい： if x > 0 then print(x) else print("正ではない")"#,
         ),
         (
             r#"E002 — Text never closed
@@ -2733,7 +3557,14 @@ text starts an insertion and must be closed by `}`.
 Wrong:   print("hello)
 Right:   print("hello")
 To write a brace in a text: "\{not inserted\}""#,
-            "",
+            r#"E002 — 閉じられていないテキスト
+
+テキストは " で始まり、同じテキストの中の " で終わらなければなりません。
+テキストの中の `{` は埋め込みの始まりで、`}` で閉じる必要があります。
+
+誤り：   print("hello)
+正しい： print("hello")
+テキストに波かっこを書くには："\{埋め込まない\}""#,
         ),
         (
             r#"E003 — Unknown name
@@ -2754,7 +3585,23 @@ that defines it when it is another file of the folder:
   print(geometry.area(2))        # not area(2)
 
 A name starting with `_` is private to its file: other files cannot use it."#,
-            "",
+            r#"E003 — 不明な名前
+
+この名前はこの場所では定義されていません。つづり（大文字と小文字は区別
+されます）と、名前が使う前に定義されているかを確かめてください。関数の
+中では、引数と上で定義した名前が見えます。続けて書いたローカル関数どうしは
+互いに見えます。最上位では、すべての関数がどこからでも見えます。
+
+誤り：   print(lenght([1, 2]))
+正しい： print(len([1, 2]))
+
+Rythme はいちばん近い既存の名前があればそれを提案し、フォルダーの別の
+ファイルで定義されていれば、そのファイルを教えます：
+
+  use geometry                   # その後で
+  print(geometry.area(2))        # area(2) ではない
+
+`_` で始まる名前はそのファイルの非公開の名前です：他のファイルからは使えません。"#,
         ),
         (
             r#"E004 — Wrong number of arguments
@@ -2768,7 +3615,17 @@ Right:   add(1, 2)
 Also right:  1 |> add(2)
 
 `rythme help NAME` shows how to call a built-in function."#,
-            "",
+            r#"E004 — 引数の数が違う
+
+関数が、取るよりも多い（または少ない）値で呼ばれています。`|>` では、
+左側の値が最初の引数になることを思い出してください。
+
+誤り：   fn add(a, b) = a + b
+         add(1)
+正しい： add(1, 2)
+これも正しい：  1 |> add(2)
+
+組み込み関数の呼び方は `rythme help NAME` で確認できます。"#,
         ),
         (
             r#"E005 — Wrong kind of value
@@ -2788,7 +3645,23 @@ When the kinds of the values are certain, `rythme check` finds this mistake
 before the program runs, even in code that does not run every time, and in
 the calls that give a function what it cannot use: `area("big")` when
 `area(side)` computes `side * side`."#,
-            "",
+            r#"E005 — 値の種類が違う
+
+この操作はこの種類の値には使えません。Rythme は値を黙って変換しません：
+"1" + 1 はエラーで、"11" にも 2 にもなりません。
+
+誤り：   "age: " + 36
+正しい： "age: {36}"              （値をテキストに埋め込む）
+正しい： "age: " + text(36)       （先に変換する）
+
+条件は true か false でなければなりません：
+誤り：   if len(list) then ... else ...
+正しい： if len(list) > 0 then ... else ...
+
+値の種類が確実なとき、`rythme check` はこの誤りをプログラムの実行前に
+見つけます。毎回は実行されないコードの中でも、関数が使えないものを渡す
+呼び出しでも見つけます：`area(side)` が `side * side` を計算するときの
+`area("big")` のように。"#,
         ),
         (
             r#"E006 — No case matches
@@ -2804,7 +3677,19 @@ Right:   fn name(1) = "one"
 `rythme check` warns about forgotten cases before running (W002). When the
 kind of the value is certain, it also reports, before running, a case that
 can never fit it: `[first, ..rest]` for a Text, `Circle(r)` for a number."#,
-            "",
+            r#"E006 — どのケースにもマッチしない
+
+`match` のケース（または関数の定義、`[a, b] = list` のような定義の
+パターン）のどれもこの値を受け付けません。
+
+誤り：   fn name(1) = "one"
+         name(2)
+正しい： fn name(1) = "one"
+         fn name(_) = "別の数"
+
+`rythme check` は忘れたケースを実行前に警告します（W002）。値の種類が
+確実なときは、決して当てはまらないケースも実行前に報告します：Text に
+対する `[first, ..rest]`、数に対する `Circle(r)` など。"#,
         ),
         (
             r#"E007 — Index out of range
@@ -2814,7 +3699,13 @@ Positions in a list or a text go from 0 to length - 1 (and -1 is the last).
 Wrong:   [10, 20][2]
 Right:   [10, 20][1]              # 20
 Safe:    get([10, 20], 2)         # None, never an error"#,
-            "",
+            r#"E007 — インデックスが範囲外
+
+リストやテキストの位置は 0 から長さ - 1 まで（-1 は最後）です。
+
+誤り：   [10, 20][2]
+正しい： [10, 20][1]              # 20
+安全：   get([10, 20], 2)         # None。決してエラーにならない"#,
         ),
         (
             r#"E008 — Division by zero
@@ -2822,7 +3713,12 @@ Safe:    get([10, 20], 2)         # None, never an error"#,
 Dividing by zero has no meaning. Check the divisor before, or return a Result.
 
   fn divide(a, b) = if b == 0 then Err("division by zero") else Ok(a / b)"#,
-            "",
+            r#"E008 — ゼロ除算
+
+ゼロで割ることには意味がありません。先に割る数を確かめるか、
+Result を返してください。
+
+  fn divide(a, b) = if b == 0 then Err("ゼロ除算") else Ok(a / b)"#,
         ),
         (
             r#"E009 — Not a function
@@ -2834,7 +3730,15 @@ Wrong:   x = 5
 Wrong:   None()                   (None is a value)
 Right:   None
 To multiply, write it:  2 * (x + 1)"#,
-            "",
+            r#"E009 — 関数ではない
+
+値の後の括弧はそれを呼び出しますが、呼び出せるのは関数だけです。
+
+誤り：   x = 5
+         x(3)
+誤り：   None()                   （None は値）
+正しい： None
+掛け算なら明示的に書く：  2 * (x + 1)"#,
         ),
         (
             r#"E010 — Unknown field
@@ -2849,7 +3753,18 @@ Safe:    get(record, "name")     # an Option, never an error
 
 When the fields of the record are certain, `rythme check` finds this mistake
 before the program runs, and suggests the closest field."#,
-            "",
+            r#"E010 — 不明なフィールド
+
+レコード（またはコンストラクター）にこの名前のフィールドがありません。
+または辞書にそのキーがありません（`dict[key]`）。
+
+誤り：   {name: "Ada"}.nmae
+正しい： {name: "Ada"}.name
+安全：   get(record, "name")     # Option。決してエラーにならない
+         get(dict, key)          # 辞書でも同じ
+
+レコードのフィールドが確実なとき、`rythme check` はこの誤りをプログラムの
+実行前に見つけ、いちばん近いフィールドを提案します。"#,
         ),
         (
             r#"E011 — Already defined
@@ -2872,7 +3787,25 @@ The name given to a used file (`use geometry`, `use ... as geo`) cannot name
 anything else in the file; and two files used with quotes (`use "a.ry"`)
 cannot define the same name: use them by their names instead
 (`use a`, then `a.area`)."#,
-            "",
+            r#"E011 — すでに定義されている
+
+Rythme では、名前はいつも同じ値を指します：同じ場所で変更したり 2 回
+定義したりはできません。これがプログラムを追いやすくしています。
+
+誤り：   x = 1
+         x = x + 1
+正しい： x = 1
+         y = x + 1
+
+複数のケースを持つ関数は、定義を続けて並べて書きます：
+  fn fib(0) = 0
+  fn fib(1) = 1
+  fn fib(n) = fib(n - 1) + fib(n - 2)
+
+使うファイルに付けた名前（`use geometry`、`use ... as geo`）は、そのファイルの
+中で他のものの名前にはできません。また、引用符付きで使う 2 つのファイル
+（`use "a.ry"`）が同じ名前を定義することもできません：代わりに名前で使います
+（`use a` の後に `a.area`）。"#,
         ),
         (
             r#"E012 — Number too large (no longer given)
@@ -2885,7 +3818,16 @@ exact. Earlier versions of Rythme stopped with this error beyond 64 bits.
 
 Only a whole number of more than 100000 digits stops the program, with
 E023: it is usually a calculation that grows without end."#,
-            "",
+            r#"E012 — 数が大きすぎる（現在は出ない）
+
+整数（Int）にはもう上限がありません：必要なだけ大きくなり、正確なままです。
+以前の Rythme は 64 ビットを超えるとこのエラーで止まっていました。
+
+  2 ** 100        # 1267650600228229401496703205376
+  2.0 ** 100      # 1.2676506002282294e30（Float は近似値）
+
+プログラムが止まるのは 100000 桁を超える整数だけで、E023 になります：
+たいていは際限なく大きくなる計算です。"#,
         ),
         (
             r#"E013 — unwrap found no value
@@ -2898,7 +3840,16 @@ program on None or Err(...). Handle the missing case instead:
     None -> 0
   end
 or simply:  unwrap_or(get(list, 5), 0)"#,
-            "",
+            r#"E013 — unwrap が値を見つけられなかった
+
+`unwrap(x)` は Some(...) や Ok(...) から値を取り出し、None や Err(...) なら
+プログラムを止めます。代わりに値がない場合を扱ってください：
+
+  match get(list, 5)
+    Some(x) -> x
+    None -> 0
+  end
+または単に：  unwrap_or(get(list, 5), 0)"#,
         ),
         (
             r#"E014 — Too many nested calls
@@ -2913,7 +3864,17 @@ Limited:     fn sum([]) = 0
 No limit:    fn sum([], acc) = acc
              fn sum([x, ..rest], acc) = sum(rest, acc + x)
 Simplest:    sum(list)  or  fold(list, 0, fn(a, x) = a + x)"#,
-            "",
+            r#"E014 — 入れ子の呼び出しが多すぎる
+
+関数が終わらないまま自分自身（または他の関数）を何度も呼んでいます。
+基底ケースに到達しないか、再帰呼び出しが最後に行う処理（末尾呼び出し）に
+なるように書き直す必要があります：末尾呼び出しには制限がありません。
+
+制限あり：   fn sum([]) = 0
+             fn sum([x, ..rest]) = x + sum(rest)       # + は後で計算される
+制限なし：   fn sum([], acc) = acc
+             fn sum([x, ..rest], acc) = sum(rest, acc + x)
+最も簡単：   sum(list)  または  fold(list, 0, fn(a, x) = a + x)"#,
         ),
         (
             r#"E015 — Assertion failed
@@ -2930,7 +3891,20 @@ Right:   assert_eq(parse_int("3"), Ok(3))
 `check_all(property, generator)` reports E015 too when a value makes the
 property false: it shows the simplest value found, and the seed that gave it
 (the same values come back on every run; `rythme test --seed N` tries others)."#,
-            "",
+            r#"E015 — アサーション失敗
+
+`assert(condition)` か `assert_eq(actual, expected)` が、何かが期待どおりで
+ないことを見つけました。テストの中なら、テストは失敗します：メッセージに
+比べる値が表示されます。
+
+決して成功しない `assert_eq` は、2 つの値の種類が決して等しくならない
+ものなら、`rythme check` が実行前に見つけます：
+誤り：   assert_eq(parse_int("3"), 3)      # Result は決して Int にならない
+正しい： assert_eq(parse_int("3"), Ok(3))
+
+`check_all(property, generator)` も、ある値でプロパティが偽になると E015 を
+報告します：見つかったいちばん単純な値と、それを生んだシードを表示します
+（毎回同じ値が出てきます。`rythme test --seed N` で別の値を試せます）。"#,
         ),
         (
             r#"E016 — Wrong use of ?
@@ -2944,7 +3918,17 @@ function, on an Option or a Result.
     y = parse_int(b)?
     Ok(x + y)
   end"#,
-            "",
+            r#"E016 — ? の使い方の誤り
+
+`x?` は Some(...) や Ok(...) から値を取り出し、None や Err(...) なら今の関数から
+すぐにそれを返します。そのため、関数の中で、Option か Result に対してしか
+使えません。
+
+  fn total(a, b)
+    x = parse_int(a)?
+    y = parse_int(b)?
+    Ok(x + y)
+  end"#,
         ),
         (
             r#"E017 — File problem
@@ -2957,14 +3941,26 @@ usual choice of editors).
 `input()` also stops with this error when there is nothing more to read:
 the keyboard input was closed (Ctrl-D), or the text sent to the program
 (`rythme prog.ry < answers.txt`) has no more lines."#,
-            "",
+            r#"E017 — ファイルの問題
+
+ファイルを読めなかったか、`use` に渡したファイルが見つからなかったか、
+ファイルどうしが循環して互いを使っています。`use` のパスは、`use` を含む
+ファイルのフォルダーからの相対パスです。プログラムは UTF-8（エディターの
+普通の設定）で保存したテキストファイルです。
+
+`input()` も読むものがなくなるとこのエラーで止まります：キーボード入力が
+閉じられた（Ctrl-D）か、プログラムに送ったテキスト
+（`rythme prog.ry < answers.txt`）にもう行がない場合です。"#,
         ),
         (
             r#"E018 — Unexpected character
 
 This character has no meaning in Rythme here. Texts use straight double
 quotes "...", powers use **, and comments start with #."#,
-            "",
+            r#"E018 — 予期しない文字
+
+この文字はここでは Rythme で意味を持ちません。テキストにはまっすぐな
+二重引用符 "..." を、べき乗には ** を使い、コメントは # で始めます。"#,
         ),
         (
             r#"E019 — if without else
@@ -2975,7 +3971,14 @@ needed. Each branch holds a single expression; use `do ... end` for several.
 Wrong:   if x > 0 then print("positive")
 Right:   if x > 0 then print("positive") else ()
 Right:   if x > 0 then "positive" else if x == 0 then "zero" else "negative""#,
-            "",
+            r#"E019 — else のない if
+
+Rythme の `if` は式です：必ず値を返すので、両方のケースが必要です。各分岐は
+1 つの式だけです。複数行なら `do ... end` を使います。
+
+誤り：   if x > 0 then print("正")
+正しい： if x > 0 then print("正") else ()
+正しい： if x > 0 then "正" else if x == 0 then "ゼロ" else "負""#,
         ),
         (
             r#"E020 — Missing end
@@ -2986,14 +3989,24 @@ with `end` on its own line.
   fn greet(name)
     print("Hello {name}")
   end"#,
-            "",
+            r#"E020 — end がない
+
+複数行で書いた関数、`match`、`do` ブロックは、単独の行の `end` で
+終えなければなりません。
+
+  fn greet(name)
+    print("こんにちは {name}")
+  end"#,
         ),
         (
             r#"E021 — Program stopped by fail
 
 The program called `fail(message)`, which stops everything. For errors that
 the caller could handle, return Err(message) instead."#,
-            "",
+            r#"E021 — fail によるプログラムの停止
+
+プログラムが `fail(message)` を呼び、すべてを止めました。呼び出し側が扱える
+エラーには、代わりに Err(message) を返してください。"#,
         ),
         (
             r#"E022 — Impossible conversion
@@ -3005,7 +4018,15 @@ file, use the safe versions, which give a Result:
     Ok(age) -> print("Next year: {age + 1}")
     Err(e) -> print(e)
   end"#,
-            "",
+            r#"E022 — 変換できない
+
+テキストに数が含まれていません。テキストがユーザーやファイルから来るときは、
+Result を返す安全な版を使ってください：
+
+  match parse_int(input("年齢は？ "))
+    Ok(age) -> print("来年：{age + 1}")
+    Err(e) -> print(e)
+  end"#,
         ),
         (
             r#"E023 — Invalid value
@@ -3015,7 +4036,12 @@ accepts: a negative count, the minimum of an empty list, the square root of
 a negative number, a date that does not exist (30 February), a range, a
 list or a text too large, a whole number of more than 100000 digits... The
 message explains the limit."#,
-            "",
+            r#"E023 — 無効な値
+
+関数は正しい種類の値を受け取りましたが、受け付ける範囲の外でした：負の
+回数、空のリストの最小値、負の数の平方根、存在しない日付（2 月 30 日）、
+大きすぎる範囲・リスト・テキスト、100000 桁を超える整数など。メッセージが
+限界を説明します。"#,
         ),
         (
             r#"E024 — A value is lost
@@ -3030,7 +4056,18 @@ Right:   total = price -
 Wrong:   x + 1                   # does not change x
 Right:   y = x + 1
 To show a value, print it:  print(x + 1)"#,
-            "",
+            r#"E024 — 値が失われる
+
+行が値を計算していますが、何もそれを使っていません：ブロックで値を返すのは
+最後の行だけで、値は変わらないので、結果はただ失われます。
+
+誤り：   total = price
+         - discount              # 新しい行：別の文になる
+正しい： total = price -
+           discount              # 続けるには行を演算子で終える
+誤り：   x + 1                   # x は変わらない
+正しい： y = x + 1
+値を表示するには print を使う：  print(x + 1)"#,
         ),
         (
             r#"E025 — Project or package problem
@@ -3055,7 +4092,28 @@ version, a `tag` or a `commit`, and the program `git`
 (https://git-scm.com). After a change of `[dependencies]`, run
 `rythme install` in the folder of the project. More: `rythme help projects`
 and `rythme help packages`."#,
-            "",
+            r#"E025 — プロジェクトまたはパッケージの問題
+
+プロジェクトの `rythme.toml`（または `rythme install` が書いた `rythme.lock`）
+を読めないか、依存関係がインストールされていないか、`rythme install` が
+それをダウンロードできないか、パッケージインデックス（`rythme search`、`add`、
+`publish`）を読めない、または求めたものがありません。`rythme.toml` は
+次のような形です：
+
+  name = "hello"                 # 小文字の Rythme の名前
+  version = "0.1.0"              # 3 つの数
+  entry = "src/main.ry"          # プログラム（デフォルトはこれ）
+
+  [dependencies]
+  mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
+  tools = { path = "../tools" }
+  geometry = { version = "^1.2.0" }   # パッケージインデックスから
+
+値はすべて引用符で囲んだテキストです。git からの依存関係には、固定の
+バージョン（`tag` か `commit`）とプログラム `git`（https://git-scm.com）が
+必要です。`[dependencies]` を変えたら、プロジェクトのフォルダーで
+`rythme install` を実行してください。詳しくは `rythme help projects` と
+`rythme help packages`。"#,
         ),
         (
             r#"E026 — Invalid regex
@@ -3075,14 +4133,33 @@ In a Rythme text, a backslash is written twice ("\\d") and braces are
 written \{ and \} ("[0-9]\{4\}"). `rythme help regex` shows everything a
 regex can say. When the regex is written in the code, `rythme check` finds
 the mistake before running."#,
-            "",
+            r#"E026 — 無効な正規表現
+
+正規表現（`matches`、`find_all`、`split_by`、`replace_all` などに渡すもの）が
+規則のどれかに反しているか、`replace_all` の置換が存在しないグループを
+使っています。メッセージがその場所を示します。
+
+誤り：   find_all(text, "([0-9]+")       # `(` が閉じられていない
+正しい： find_all(text, "([0-9]+)")
+誤り：   split_by(text, "*")             # `*` は何も繰り返さない
+正しい： split_by(text, "[*]")           # 記号 * そのものは角かっこに入れる
+誤り：   replace_all(date, "(\\d+)-(\\d+)", "$3")    # グループは 2 つだけ
+正しい： replace_all(date, "(\\d+)-(\\d+)", "$2/$1")
+
+Rythme のテキストでは、バックスラッシュは 2 回書き（"\\d"）、波かっこは
+\{ と \} と書きます（"[0-9]\{4\}"）。正規表現で表せることはすべて
+`rythme help regex` にあります。正規表現がコードに書かれていれば、
+`rythme check` が実行前に誤りを見つけます。"#,
         ),
         (
             r#"W001 — Unused name
 
 A name is defined but never used. It is often a typo or a forgotten step.
 If it is on purpose, start the name with `_`: `_unused = ...`."#,
-            "",
+            r#"W001 — 使われていない名前
+
+名前が定義されていますが、一度も使われていません。打ち間違いか、忘れた
+手順であることが多いです。意図的なら、名前を `_` で始めます：`_unused = ...`。"#,
         ),
         (
             r#"W002 — Forgotten case
@@ -3096,14 +4173,27 @@ program will stop with E006.
   fn next(Green) = Orange
   # W002: `next` does not handle `Orange`. Add the missing definition:
   fn next(Orange) = Red"#,
-            "",
+            r#"W002 — 忘れたケース
+
+`match`（または複数の定義を持つ関数）が、ありうる値をすべて扱っていません。
+メッセージは足りないものを一覧します。その値が来ると、プログラムは E006 で
+止まります。
+
+  type Light = Red | Orange | Green
+  fn next(Red) = Green
+  fn next(Green) = Orange
+  # W002：`next` は `Orange` を扱っていない。足りない定義を加える：
+  fn next(Orange) = Red"#,
         ),
         (
             r#"W003 — Built-in function hidden
 
 You defined a name that already belongs to a built-in function. In your file,
 the name now means your definition. Choose another name to keep both."#,
-            "",
+            r#"W003 — 組み込み関数を隠している
+
+組み込み関数の名前をあなたが定義しました。あなたのファイルでは、その名前は
+以後あなたの定義を指します。両方を使うには別の名前を選んでください。"#,
         ),
         (
             r#"W004 — Case never reached
@@ -3122,7 +4212,22 @@ case (or a definition of a function) can never be used when:
     _ -> "?"
   end
 To look at the characters of a text, use `chars(name)`."#,
-            "",
+            r#"W004 — 到達しないケース
+
+ケースは順に試され、値は最初に当てはまるケースに進みます。ケース（または
+関数の定義）が決して使われないのは次のときです：
+  - それより前のケースがすべてを受け付ける（`_` やただの名前）：そのケースを
+    最後に置く
+  - それより前のケースがすでに同じ値を扱っている：`1 -> ...` が 2 回など
+  - 値が決してその形にならない：Text は `[first, ..rest]` のようなリストの
+    パターンに決してマッチせず、数は `Some(x)` に決してマッチしない
+  - 範囲が空：`9..1` は数を 1 つも含まない。`1..9` と書く
+
+  match name                     # `name` は Text
+    [first, ..] -> first         # W004：Text はリストではない
+    _ -> "?"
+  end
+テキストの文字を調べるには `chars(name)` を使います。"#,
         ),
         (
             r#"W005 — Unknown function after a dot
@@ -3133,7 +4238,14 @@ field: it is probably a typo.
 
 Wrong:   [1, 2].lenght()
 Right:   [1, 2].len()"#,
-            "",
+            r#"W005 — ドットの後の不明な関数
+
+`value.name(args)` は関数 `name(value, args)` か、レコードのフィールド `name` を
+呼び出します。この名前の関数はなく、ファイルのどのレコードにもそのような
+フィールドはありません：おそらく打ち間違いです。
+
+誤り：   [1, 2].lenght()
+正しい： [1, 2].len()"#,
         ),
         (
             r#"W006 — Comparison always false
@@ -3148,7 +4260,17 @@ Right:   if count == 3 then ...
 Wrong:   get(scores, "ada") == 19            (an Option and a number)
 Right:   get(scores, "ada") == Some(19)
 Right:   unwrap_or(get(scores, "ada"), 0) == 19"#,
-            "",
+            r#"W006 — 常に偽になる比較
+
+種類の違う値は決して等しくなりません：Rythme は値を黙って変換しません。
+`x` が数なら、`x == "1"` は常に偽で、`x != "1"` は常に真です。変換を
+忘れたか、Option の中の値を外にあるかのように比べていることが多いです。
+
+誤り：   if count == "3" then ...            （数とテキスト）
+正しい： if count == 3 then ...
+誤り：   get(scores, "ada") == 19            （Option と数）
+正しい： get(scores, "ada") == Some(19)
+正しい： unwrap_or(get(scores, "ada"), 0) == 19"#,
         ),
         (
             r#"W007 — Test that can never fail
@@ -3162,7 +4284,17 @@ Wrong:   test "length" = len([1, 2])
 Wrong:   test "length" = print(len([1, 2]))
 Right:   test "length" = assert_eq(len([1, 2]), 2)
 Right:   test "length" = len([1, 2]) == 2"#,
-            "",
+            r#"W007 — 決して失敗しないテスト
+
+テストが失敗するのは、エラーで止まったときか、`false`、`None`、`Err(...)` で
+終わったときだけです。決して止まらない関数で値を計算したり表示したり
+するだけで、期待値と比べないテストは、決して失敗しません：何もチェック
+していません。
+
+誤り：   test "長さ" = len([1, 2])
+誤り：   test "長さ" = print(len([1, 2]))
+正しい： test "長さ" = assert_eq(len([1, 2]), 2)
+正しい： test "長さ" = len([1, 2]) == 2"#,
         ),
         (
             r#"W008 — Result lost
@@ -3175,7 +4307,16 @@ Wrong:   push(numbers, 4)               # `numbers` is unchanged
 Right:   more = push(numbers, 4)
 Wrong:   name.upper()
 Right:   print(name.upper())"#,
-            "",
+            r#"W008 — 結果が失われる
+
+Rythme では値は変わりません：`push(list, 4)` は `list` に 4 を加えるのでは
+なく、新しいリストを返します。そのような関数を呼ぶだけで、返したものを
+何も使わない行は、まったく何もしません。
+
+誤り：   push(numbers, 4)               # `numbers` は変わらない
+正しい： more = push(numbers, 4)
+誤り：   name.upper()
+正しい： print(name.upper())"#,
         ),
         (
             r#"W009 — A function shown instead of its value
@@ -3186,7 +4327,14 @@ it gives, call it, with parentheses, even when it takes no argument.
   fn greeting() = "hello"
 Wrong:   print("{greeting}")          # shows <fn greeting>
 Right:   print("{greeting()}")        # shows hello"#,
-            "",
+            r#"W009 — 値ではなく関数を表示している
+
+テキストに入れたり表示したりした関数は `<fn name>` と表示されます。関数が
+返す値を表示するには、引数がなくても括弧を付けて呼び出してください。
+
+  fn greeting() = "こんにちは"
+誤り：   print("{greeting}")          # <fn greeting> と表示される
+正しい： print("{greeting()}")        # こんにちは と表示される"#,
         ),
         (
             r#"W010 — Ranges that overlap
@@ -3205,7 +4353,22 @@ Right:   0..17 -> "young"
          18..64 -> "adult"
 For decimal numbers, which fall between 17 and 18, compare instead:
   a if a < 18 -> "young""#,
-            "",
+            r#"W010 — 重なる範囲
+
+範囲のパターン `a..b` は `a` から `b` まで（両端を含む）の数にマッチします。
+`match`（または関数の定義）の 2 つの範囲が数を共有すると、その数はいつも
+最初の範囲に進みます：2 つ目の範囲はそれを決して見ません。端を 2 回
+書いていることが多いです。
+
+誤り：   match age
+           0..18 -> "子ども"
+           18..65 -> "大人"          # W010：18 は "子ども" に進む
+           _ -> "高齢者"
+         end
+正しい： 0..17 -> "子ども"
+         18..64 -> "大人"
+17 と 18 の間に入る小数には、代わりに比較を使います：
+  a if a < 18 -> "子ども""#,
         ),
         (
             r#"W011 — Index or subtraction instead of a call
@@ -3222,210 +4385,222 @@ Wrong:   fn show(xs) = print(xs)
          show [1, 2]                  # W011: an index of the function
 Right:   show([1, 2])
 Or give the parameter another name: fn twice(n) = n * 2"#,
-            "",
+            r#"W011 — 呼び出しではなくインデックスや引き算になっている
+
+文や結果の先頭では、`show [1, 2]` と `show -1` は括弧なしで `show` を
+呼び出します。ただし、ファイルのどこかで `show` に値を与えている（`=` で、
+関数やブロックの引数として、またはパターンで）場合は別です。そのときは、
+ファイルのどこでも、`show` が関数である場所でも、インデックスと引き算に
+なります。値は離れた場所で、別の関数の引数に与えられているかもしれません。
+
+誤り：   fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1, 2]                  # W011：関数のインデックスになる
+正しい： show([1, 2])
+または引数に別の名前を付ける：fn twice(n) = n * 2"#,
         ),
-        ("Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.", ""),
-        ("Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.", ""),
-        ("Separates the condition of an `if` from the value it gives when the condition is true.", ""),
-        ("Gives the value of an `if` when the condition is false. It is always required; `else if` chains several conditions.", ""),
-        ("The opposite of `if`: `unless condition then a else b` gives `b` when the condition is true, `a` otherwise. Like `if`, it always has an `else`.", ""),
-        ("Chooses according to the shape of a value: one case per line, `pattern -> result`, finished by `end`. Cases are tried in order, and `rythme check` warns about forgotten cases.", ""),
-        ("Closes a block: a function written on several lines, a `match`, a `do` or a `test`.", ""),
-        ("Groups several steps inside an expression, up to `end`. The last line gives the value. After a call, `do |x| ... end` is a block: a function given as the last argument.", ""),
-        ("Defines your own type and its variants. Each variant is a constructor, with or without fields.", ""),
-        ("Defines a test, next to the code. `rythme test file.ry` runs the tests of the file.", ""),
-        ("Uses another file through its name: `use geometry`, then `geometry.area(2)`. The path is relative to the folder of the file that contains `use`.", ""),
-        ("True when both conditions are true. The second one is computed only if the first one is true.", ""),
-        ("True when at least one of the conditions is true. The second one is computed only if the first one is false.", ""),
-        ("Inverts a condition: `not true` is `false`.", ""),
-        ("One of the two values of the type Bool.", ""),
-        ("Shows values on the screen, separated by spaces, then goes to the next line.", ""),
-        ("Shows a value with its position in the code (on the error output) and returns it unchanged. Handy in the middle of a pipeline.", ""),
-        ("Converts any value to text. With a number of decimals, writes a number with exactly that many digits after the point.", ""),
-        ("Shows the prompt, then reads a line typed on the keyboard and returns it as text.", ""),
-        ("Reads all the lines of the standard input, until its end: `Ok(list of texts)`, or `Err(message)` if it cannot be read. For `rythme count.ry < names.txt`, or text typed until Ctrl-D (Ctrl-Z then Enter on Windows).", ""),
-        ("Returns the name of the type of a value: \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (for `()`), \"Symbol\" (for `:ok`), \"Option\", \"Result\", or the name of your own type.", ""),
-        ("Shows help: about a function (`help(map)`), a topic (`help(\"lists\")`), or what you can do with a value (`help([1, 2])`).", ""),
-        ("Stops with an error if the condition is false. Mostly used in tests.", ""),
-        ("Stops with an error showing both values if they are different. Mostly used in tests.", ""),
-        ("Stops the program with an error message. Prefer returning `Err(...)` for errors that can be handled.", ""),
-        ("Returns the list of the words given after the file name on the command line.", ""),
-        ("Reads the options of the command line (the words of `args()`, or the list given) into a record, in a Result: `--name=value` gives the text `value`, `--name` and `-n` give `true`, a `-` in a name becomes `_`, and the other words are in the field `args` (all of them after `--`). An option given twice, or a word like `-abc`, gives `Err(message)`. Use `get(opts, \"name\")` or `has(opts, \"name\")` for an option that may be missing.", ""),
-        ("The value of an environment variable of the system, as an Option: `Some(text)`, or `None` if it is not set.", ""),
-        ("Stops the program immediately. The code (0 by default) tells the system if everything went well (0) or not; Rythme itself exits with 1 after an error in the program (see `rythme help system`).", ""),
-        ("Returns the current time in seconds (a Float), counted from 1 January 1970. Subtract two times to measure a duration.", ""),
-        ("random() gives a decimal number between 0 and 1; random(a, b) a whole number from a to b (included); random(list) a random element.", ""),
-        ("Absolute value: the number without its sign.", ""),
-        ("The smallest of the values, or of the elements of a list.", ""),
-        ("The largest of the values, or of the elements of a list.", ""),
-        ("Square root.", ""),
-        ("x to the power n (same as `x ** n`).", ""),
-        ("Rounds down to a whole number.", ""),
-        ("Rounds up to a whole number.", ""),
-        ("Rounds to the nearest whole number, or to the given number of decimal digits.", ""),
-        ("Converts to a whole number (Int): decimals are cut, texts are read.", ""),
-        ("Converts to a decimal number (Float).", ""),
-        ("Sine (x in radians).", ""),
-        ("Cosine (x in radians).", ""),
-        ("Tangent (x in radians).", ""),
-        ("Arc sine: the angle (in radians) whose sine is x, for x from -1 to 1.", ""),
-        ("Arc cosine: the angle (in radians) whose cosine is x, for x from -1 to 1.", ""),
-        ("Arc tangent: the angle (in radians) whose tangent is y. With two numbers, the angle of the point (x, y), from -pi to pi.", ""),
-        ("Logarithm: natural (base e) by default, or in the given base.", ""),
-        ("e to the power x.", ""),
-        ("Is the whole number even?", ""),
-        ("Is the whole number odd?", ""),
-        ("Greatest common divisor of two whole numbers: the largest number that divides both.", ""),
-        ("Least common multiple of two whole numbers: the smallest number divisible by both.", ""),
-        ("Length of a text (in characters), a list, a record, a dict or a set.", ""),
-        ("The text in uppercase.", ""),
-        ("The text in lowercase.", ""),
-        ("The text with its first character in uppercase (the rest is unchanged).", ""),
-        ("The text without spaces and line breaks at the start and the end.", ""),
-        ("Adds `fill` (a space by default) before the text until it is `width` characters long: numbers line up in columns. A value that is not a text is first shown as `print` shows it.", ""),
-        ("Adds `fill` (a space by default) after the text until it is `width` characters long.", ""),
-        ("Cuts a text into a list of texts. Without separator, cuts at spaces.", ""),
-        ("Glues the elements of a list into one text, with the separator between them.", ""),
-        ("Does the text contain this piece of text? Does the list (or the set) contain this element? Does the record have this field, or the dict this key?", ""),
-        ("Does the text start with this piece of text?", ""),
-        ("Does the text end with this piece of text?", ""),
-        ("Replaces every occurrence of `old` by `new`.", ""),
-        ("The list of the characters of a text.", ""),
-        ("The list of the lines of a text.", ""),
-        ("The number of a character (its Unicode code point).", ""),
-        ("The character with this number (Unicode code point): the opposite of `char_code`.", ""),
-        ("Is the text made only of digits from 0 to 9 (and not empty)?", ""),
-        ("Is the text made only of letters, accented ones included (and not empty)?", ""),
-        ("Is the text made only of spaces, tabs and line breaks (and not empty)?", ""),
-        ("A text or a list repeated n times.", ""),
-        ("Reads a whole number from a text: `Ok(number)`, or `Err(message)` if the text is not a number.", ""),
-        ("Reads a decimal number from a text: `Ok(number)` or `Err(message)`.", ""),
-        ("Reads a JSON text: `Ok(value)`, or `Err(message)` if the text is not valid JSON. Objects become records, arrays lists, and null `None`.", ""),
-        ("Writes a value as JSON text: records become objects, lists arrays, and `None` null. With `indent`, one element per line, shifted by that many spaces.", ""),
-        ("The text without spaces and line breaks at the start.", ""),
-        ("The text without spaces and line breaks at the end.", ""),
-        ("The list of the words of a text: letters and digits, accents included, with `'` or `-` inside a word. Punctuation and spaces separate them.", ""),
-        ("Are the two texts the same when uppercase and lowercase letters count as equal?", ""),
-        ("Writes a number for people: thousands separated, with exactly `decimals` decimals if given, in the style of a language: \"en\" (1,234.5, by default), \"fr\" (1 234,5), \"de\", \"es\", \"it\", \"nl\" or \"pt\" (1.234,5). To line it up in a column, use `pad_left`.", ""),
-        ("Does the whole text match the regex (a regular expression: see `rythme help regex`)? To look for the regex anywhere in the text, use `find_first`.", ""),
-        ("The first piece of the text that matches the regex, as an Option: `Some(piece)`, or `None` if there is none.", ""),
-        ("Every piece of the text that matches the regex, from left to right.", ""),
-        ("The first match of the regex, as an Option of a list: the whole piece, then the text of each group `(...)`, in order (\"\" for a group that matched nothing).", ""),
-        ("Like `captures`, for every match: a list of lists.", ""),
-        ("The first match of a regex with named groups `(?<name>...)`, as an Option of a record: one field for each name.", ""),
-        ("Cuts a text at every piece that matches the regex.", ""),
-        ("Replaces every piece that matches the regex. `new` is a text, where `$1` stands for the text of group 1 (`$<name>` for a named group, `$0` for the whole piece, `$$` for a `$`), or a function that receives each piece and gives its replacement.", ""),
-        ("Applies the function f to each element and returns the list of the results. Also works on Option and Result, and on a set (giving the set of the results).", ""),
-        ("Keeps only the elements for which f returns true. Also works on a set, and on a dict, where f receives each key and its value.", ""),
-        ("Combines all the elements into one value: starts with `start`, then computes f(result, element) for each element.", ""),
-        ("Like fold, but gives the list of every intermediate result: running totals, for example.", ""),
-        ("Calls f on each element, for its effect (like printing). Returns (). Also works on a set, and on a dict, where f receives each key and its value.", ""),
-        ("The sum of the numbers of a list; with f, the sum of f(x) for each element.", ""),
-        ("The product of the numbers of a list.", ""),
-        ("The first element of a list (or character of a text), as an Option: `Some(x)`, or `None` if there is none. With n, the first n elements (like `take`).", ""),
-        ("The last element of a list (or character of a text), as an Option. With n, the last n elements.", ""),
-        ("The list (or text) without its first element.", ""),
-        ("The element at a position of a list or text, the field of a record, or the value of a key of a dict, as an Option (never an error). Negative positions count from the end.", ""),
-        ("A new list with x added at the end; or a new set with x added.", ""),
-        ("A new list where the element at position i is replaced by x. Negative positions count from the end.", ""),
-        ("A new list with x inserted so that it is at position i (-1 adds it at the end).", ""),
-        ("A new list without the element at position i. Negative positions count from the end.", ""),
-        ("The list or text in reverse order.", ""),
-        ("The list sorted from smallest to largest (numbers, texts in alphabetical order...). For the largest first: `sort(list) |> reverse`.", ""),
-        ("Sorts the list by the value that the function `key` gives for each element. Elements with the same value keep their order.", ""),
-        ("The list without duplicates (the first occurrence is kept).", ""),
-        ("The elements of the list in a random order.", ""),
-        ("The part of a list or text from position `start` (included) to `end` (excluded). Negative positions count from the end.", ""),
-        ("The first n elements of a list or text.", ""),
-        ("The list or text without its first n elements.", ""),
-        ("The first elements of a list (or characters of a text), as long as f is true for them.", ""),
-        ("The list (or text) without its first elements for which f is true.", ""),
-        ("One element out of n of a list (or text), starting with the first. On a range: the numbers with a step.", ""),
-        ("Cuts a list (or text) into pieces of n elements; the last piece may be shorter.", ""),
-        ("Every group of n neighbouring elements of a list (or text), in order: handy to compare each element with the next one.", ""),
-        ("Pairs each element with its position: [[0, x0], [1, x1], ...].", ""),
-        ("Is f true for at least one element?", ""),
-        ("Is f true for every element?", ""),
-        ("The first element for which f is true, as an Option.", ""),
-        ("How many elements make f true; without f, how many elements there are.", ""),
-        ("The elements for which f is false: the opposite of `filter`. Also works on a set and on a dict, like `filter`.", ""),
-        ("Calls f(element, position) for each element, in order (positions start at 0). For effects, like `print`.", ""),
-        ("The position of an element in a list (or of a piece of text in a text), as an Option.", ""),
-        ("The element for which the function `key` gives the smallest value (the first one if there are several).", ""),
-        ("The element for which the function `key` gives the largest value (the first one if there are several).", ""),
-        ("Joins a list of lists into one list.", ""),
-        ("Like map, when f returns a list: the lists are joined.", ""),
-        ("Splits a list in two: [elements where f is true, elements where f is false].", ""),
-        ("Groups the elements in a record: the key is the text of what `key` returns, the value the list of matching elements.", ""),
-        ("Is the list, text, record, dict or set empty?", ""),
-        ("The list of the field names of a record, or of the keys of a dict (in order).", ""),
-        ("The list of the values of a record or of a dict (in the order of its keys), or of the elements of a set (in order).", ""),
-        ("The list of the [name, value] pairs of a record, or of the [key, value] pairs of a dict.", ""),
-        ("Builds a record from a list of [name, value] pairs: the opposite of `entries`.", ""),
-        ("Does the record have this field? Does the dict have this key, or the set this element?", ""),
-        ("A new record with the field set to the value (added or replaced); or a new dict with the key set to the value.", ""),
-        ("A new record without this field; or a new dict without this key, or a new set without this element.", ""),
-        ("A new record (or dict) where f is applied to every value; the names (or keys) stay the same.", ""),
-        ("A dictionary: keys of any kind (but functions), each with a value, kept in the order of the keys. Made from a list of [key, value] pairs (the last value of a key wins), from a record, or empty with `dict()`. Use it with get, put, has, remove, keys, values, entries, len, map_values, filter, union...", ""),
-        ("A set: values (but functions) without repetition, kept in order. Made from a list, or empty with `set()`. Use it with has, push, remove, len, values, filter, map, union, intersection, difference, is_subset.", ""),
-        ("The elements of two sets together; or the pairs of two dicts, where the value of b wins for a key in both.", ""),
-        ("The elements of the set a that are also in b; or the pairs of the dict a whose key is in b.", ""),
-        ("The elements of the set a that are not in b; or the pairs of the dict a whose key is not in b.", ""),
-        ("Is every element of the set a also in the set b?", ""),
-        ("The value inside `Some(x)` or `Ok(x)`. Stops the program with an error for `None` or `Err(e)`.", ""),
-        ("The value inside `Some(x)` or `Ok(x)`, or the default value for `None` or `Err(e)`.", ""),
-        ("Is it `Some(...)`?", ""),
-        ("Is it `None`?", ""),
-        ("Is it `Ok(...)`?", ""),
-        ("Is it `Err(...)`?", ""),
-        ("Chains steps that may fail: for `Some(x)` or `Ok(x)`, gives f(x), which must be an Option or a Result; `None` and `Err(e)` stay as they are.", ""),
-        ("Turns an Option into a Result: `Some(x)` gives `Ok(x)`, and `None` gives `Err(error)`. Handy before `?`.", ""),
-        ("For `Err(e)`, gives `Err(f(e))`; `Ok(x)` stays as it is. Handy to explain an error better.", ""),
-        ("Reads a whole text file: `Ok(text)`, or `Err(message)` if it cannot be read.", ""),
-        ("Writes a text in a file (replacing its content): `Ok(())` or `Err(message)`.", ""),
-        ("Adds a text at the end of a file, creating the file if needed: `Ok(())` or `Err(message)`.", ""),
-        ("Does this file (or folder) exist? Always `false` in the browser.", ""),
-        ("What is known about a file or a folder: `Ok({is_folder, size})`, with its size in bytes (0 for a folder), or `Err(message)` if it does not exist or cannot be read.", ""),
-        ("The names of the files and folders inside a folder, in alphabetical order: `Ok(list of texts)`, or `Err(message)`. `list_folder(\".\")` lists the current folder.", ""),
-        ("Creates a folder, and the folders around it that are missing: `Ok(())`, also when it already exists, or `Err(message)`.", ""),
-        ("Deletes one file (never a folder: that is an error): `Ok(())` or `Err(message)`. A deleted file cannot be brought back.", ""),
-        ("Joins the parts of a path with `/`, which works on Linux, macOS and Windows (with `\\` if the parts already use only `\\`). Only the first part can start at a root (`/`, `C:`): a part like \"/etc\" after another one is an error.", ""),
-        ("The parts of a path, split at each `/` or `\\`; the first part of an absolute path is its root (`/`, `C:\\`...). `join_path` puts them back together.", ""),
-        ("The date and time now, where the program runs: a record {year, month, day, hour, minute, second, offset}, where `offset` is the number of minutes the local time is ahead of UTC (0 when the system does not tell).", ""),
-        ("The date of today, where the program runs: a record {year, month, day}.", ""),
-        ("Is the value a valid date: a record {year, month, day} (with `hour`, `minute`, `second`, `offset` if needed) for a day that exists?", ""),
-        ("The date n days later (or earlier, when n is negative), at the same time of day.", ""),
-        ("The date and time n seconds later (or earlier, when n is negative). Add `60 * minutes` or `3600 * hours` the same way.", ""),
-        ("The number of whole days from date a to date b: negative when b is before a.", ""),
-        ("The number of seconds from date a to date b, taking their offsets into account: negative when b is before a.", ""),
-        ("The day of the week of a date, from 1 (Monday) to 7 (Sunday), as in ISO 8601.", ""),
-        ("The number of days of a month (from 1 to 12) of a year: 28 to 31.", ""),
-        ("Does the year have a 29 February? Every 4 years, except every 100 years, except every 400 years.", ""),
-        ("Checks that a property holds for many values made by a generator (100, or `cases`): the function is called with each value and must give `true` (or `()`, `Some(...)`, `Ok(...)`). When a value makes it false or stops it with an error, that value is simplified as much as possible (shrinking) and shown, with the seed that made it: the same values come back on every run. The property may also come last, as a block: `check_all(ints()) { |x| x + 0 == x }`.", ""),
-        ("A list of `n` values (10 if not given) made by a generator, to see what `check_all` will try.", ""),
-        ("A generator of whole numbers from `min` to `max` (from -1000 to 1000 if not given), often near 0 and at the edges. A failing number is simplified towards 0.", ""),
-        ("A generator of decimal numbers from `min` to `max` (from -1000.0 to 1000.0 if not given).", ""),
-        ("A generator of texts of at most `max_length` characters (20 if not given): letters mostly, with digits, spaces, punctuation and accents. A failing text is made shorter and simpler.", ""),
-        ("A generator of `true` and `false`.", ""),
-        ("A generator of lists of at most `max_length` elements (10 if not given), each made by `generator`. A failing list is made shorter, then its elements simpler.", ""),
-        ("A generator that picks one of the values of a list. A failing value is replaced by one written before it.", ""),
-        ("A generator of records, with a generator for each field: `records_of({name: texts(), age: ints(0, 120)})`. Handy to give several values to `check_all`.", ""),
-        ("January", ""),
-        ("February", ""),
-        ("March", ""),
-        ("April", ""),
-        ("May", ""),
-        ("June", ""),
-        ("July", ""),
-        ("August", ""),
-        ("September", ""),
-        ("October", ""),
-        ("November", ""),
-        ("December", ""),
+        ("Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.", "関数を定義します：`fn name(x) = expression`、または本体を次の行から書いて `end` で終えます。名前なしの `fn(x) = x * 2` は無名関数です。"),
+        ("Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.", "2 つの値から選びます：`if condition then value else other`。`if` は必ず値を返すので、どの `if` にも `else` があります。"),
+        ("Separates the condition of an `if` from the value it gives when the condition is true.", "`if` の条件と、条件が真のときに返す値を区切ります。"),
+        ("Gives the value of an `if` when the condition is false. It is always required; `else if` chains several conditions.", "条件が偽のときの `if` の値を与えます。常に必要です。`else if` で複数の条件をつなげます。"),
+        ("The opposite of `if`: `unless condition then a else b` gives `b` when the condition is true, `a` otherwise. Like `if`, it always has an `else`.", "`if` の逆：`unless condition then a else b` は、条件が真なら `b`、そうでなければ `a` を返します。`if` と同じく、必ず `else` があります。"),
+        ("Chooses according to the shape of a value: one case per line, `pattern -> result`, finished by `end`. Cases are tried in order, and `rythme check` warns about forgotten cases.", "値の形に応じて選びます：1 行に 1 ケースで `pattern -> result` と書き、`end` で終えます。ケースは順に試され、`rythme check` は忘れたケースを警告します。"),
+        ("Closes a block: a function written on several lines, a `match`, a `do` or a `test`.", "ブロックを閉じます：複数行で書いた関数、`match`、`do`、`test`。"),
+        ("Groups several steps inside an expression, up to `end`. The last line gives the value. After a call, `do |x| ... end` is a block: a function given as the last argument.", "式の中の複数のステップを `end` までまとめます。最後の行が値になります。呼び出しの後の `do |x| ... end` はブロック、つまり最後の引数として渡す関数です。"),
+        ("Defines your own type and its variants. Each variant is a constructor, with or without fields.", "独自の型とそのバリアントを定義します。各バリアントはフィールドのある、またはないコンストラクターです。"),
+        ("Defines a test, next to the code. `rythme test file.ry` runs the tests of the file.", "コードのそばにテストを定義します。`rythme test file.ry` でファイルのテストを実行します。"),
+        ("Uses another file through its name: `use geometry`, then `geometry.area(2)`. The path is relative to the folder of the file that contains `use`.", "別のファイルを名前を通して使います：`use geometry` の後に `geometry.area(2)`。パスは `use` を含むファイルのフォルダーからの相対パスです。"),
+        ("True when both conditions are true. The second one is computed only if the first one is true.", "両方の条件が真のときに真。2 つ目は 1 つ目が真のときだけ計算されます。"),
+        ("True when at least one of the conditions is true. The second one is computed only if the first one is false.", "少なくとも 1 つの条件が真のときに真。2 つ目は 1 つ目が偽のときだけ計算されます。"),
+        ("Inverts a condition: `not true` is `false`.", "条件を反転します：`not true` は `false`。"),
+        ("One of the two values of the type Bool.", "Bool 型の 2 つの値の 1 つ。"),
+        ("Shows values on the screen, separated by spaces, then goes to the next line.", "値を空白で区切って画面に表示し、改行します。"),
+        ("Shows a value with its position in the code (on the error output) and returns it unchanged. Handy in the middle of a pipeline.", "値をコード内の位置とともに（エラー出力に）表示し、そのまま返します。パイプラインの途中で便利です。"),
+        ("Converts any value to text. With a number of decimals, writes a number with exactly that many digits after the point.", "どんな値でもテキストに変換します。小数の桁数を指定すると、小数点以下をちょうどその桁数で書きます。"),
+        ("Shows the prompt, then reads a line typed on the keyboard and returns it as text.", "プロンプトを表示し、キーボードで入力された 1 行を読んでテキストとして返します。"),
+        ("Reads all the lines of the standard input, until its end: `Ok(list of texts)`, or `Err(message)` if it cannot be read. For `rythme count.ry < names.txt`, or text typed until Ctrl-D (Ctrl-Z then Enter on Windows).", "標準入力のすべての行を終わりまで読みます：`Ok(テキストのリスト)`、読めなければ `Err(message)`。`rythme count.ry < names.txt` や、Ctrl-D（Windows では Ctrl-Z の後に Enter）まで入力したテキストに使います。"),
+        ("Returns the name of the type of a value: \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (for `()`), \"Symbol\" (for `:ok`), \"Option\", \"Result\", or the name of your own type.", "値の型の名前を返します：\"Int\"、\"Float\"、\"Text\"、\"Bool\"、\"List\"、\"Record\"、\"Function\"、\"Unit\"（`()` の場合）、\"Symbol\"（`:ok` の場合）、\"Option\"、\"Result\"、または独自の型の名前。"),
+        ("Shows help: about a function (`help(map)`), a topic (`help(\"lists\")`), or what you can do with a value (`help([1, 2])`).", "ヘルプを表示します：関数について（`help(map)`）、トピックについて（`help(\"lists\")`）、値でできることについて（`help([1, 2])`）。"),
+        ("Stops with an error if the condition is false. Mostly used in tests.", "条件が偽ならエラーで止まります。主にテストで使います。"),
+        ("Stops with an error showing both values if they are different. Mostly used in tests.", "2 つの値が違えば、両方の値を示すエラーで止まります。主にテストで使います。"),
+        ("Stops the program with an error message. Prefer returning `Err(...)` for errors that can be handled.", "エラーメッセージとともにプログラムを止めます。扱えるエラーには `Err(...)` を返すほうが適しています。"),
+        ("Returns the list of the words given after the file name on the command line.", "コマンドラインでファイル名の後に与えた単語のリストを返します。"),
+        ("Reads the options of the command line (the words of `args()`, or the list given) into a record, in a Result: `--name=value` gives the text `value`, `--name` and `-n` give `true`, a `-` in a name becomes `_`, and the other words are in the field `args` (all of them after `--`). An option given twice, or a word like `-abc`, gives `Err(message)`. Use `get(opts, \"name\")` or `has(opts, \"name\")` for an option that may be missing.", "コマンドラインのオプション（`args()` の単語、または渡したリスト）をレコードに読み込み、Result で返します：`--name=value` はテキスト `value` を、`--name` と `-n` は `true` を与え、名前の中の `-` は `_` になり、その他の単語はフィールド `args` に入ります（`--` の後はすべて）。2 回指定したオプションや `-abc` のような単語は `Err(message)` になります。ないかもしれないオプションには `get(opts, \"name\")` か `has(opts, \"name\")` を使います。"),
+        ("The value of an environment variable of the system, as an Option: `Some(text)`, or `None` if it is not set.", "システムの環境変数の値を Option で返します：`Some(text)`、設定されていなければ `None`。"),
+        ("Stops the program immediately. The code (0 by default) tells the system if everything went well (0) or not; Rythme itself exits with 1 after an error in the program (see `rythme help system`).", "プログラムをすぐに止めます。コード（デフォルトは 0）は、すべてうまくいったか（0）どうかをシステムに伝えます。プログラムでエラーが起きると Rythme 自身は 1 で終了します（`rythme help system` を参照）。"),
+        ("Returns the current time in seconds (a Float), counted from 1 January 1970. Subtract two times to measure a duration.", "1970 年 1 月 1 日から数えた現在の時刻を秒（Float）で返します。2 つの時刻を引き算すると経過時間を測れます。"),
+        ("random() gives a decimal number between 0 and 1; random(a, b) a whole number from a to b (included); random(list) a random element.", "random() は 0 から 1 の小数、random(a, b) は a から b まで（両端を含む）の整数、random(list) はランダムな要素を返します。"),
+        ("Absolute value: the number without its sign.", "絶対値：符号を取り除いた数。"),
+        ("The smallest of the values, or of the elements of a list.", "値、またはリストの要素のうち最小のもの。"),
+        ("The largest of the values, or of the elements of a list.", "値、またはリストの要素のうち最大のもの。"),
+        ("Square root.", "平方根。"),
+        ("x to the power n (same as `x ** n`).", "x の n 乗（`x ** n` と同じ）。"),
+        ("Rounds down to a whole number.", "切り捨てて整数にします。"),
+        ("Rounds up to a whole number.", "切り上げて整数にします。"),
+        ("Rounds to the nearest whole number, or to the given number of decimal digits.", "いちばん近い整数に、または指定した小数の桁数に丸めます。"),
+        ("Converts to a whole number (Int): decimals are cut, texts are read.", "整数（Int）に変換します：小数部分は切り捨てられ、テキストは読み取られます。"),
+        ("Converts to a decimal number (Float).", "小数（Float）に変換します。"),
+        ("Sine (x in radians).", "正弦（x はラジアン）。"),
+        ("Cosine (x in radians).", "余弦（x はラジアン）。"),
+        ("Tangent (x in radians).", "正接（x はラジアン）。"),
+        ("Arc sine: the angle (in radians) whose sine is x, for x from -1 to 1.", "逆正弦：正弦が x になる角度（ラジアン）。x は -1 から 1 まで。"),
+        ("Arc cosine: the angle (in radians) whose cosine is x, for x from -1 to 1.", "逆余弦：余弦が x になる角度（ラジアン）。x は -1 から 1 まで。"),
+        ("Arc tangent: the angle (in radians) whose tangent is y. With two numbers, the angle of the point (x, y), from -pi to pi.", "逆正接：正接が y になる角度（ラジアン）。2 つの数を渡すと、点 (x, y) の角度（-pi から pi まで）。"),
+        ("Logarithm: natural (base e) by default, or in the given base.", "対数：デフォルトは自然対数（底 e）、または指定した底。"),
+        ("e to the power x.", "e の x 乗。"),
+        ("Is the whole number even?", "整数は偶数か？"),
+        ("Is the whole number odd?", "整数は奇数か？"),
+        ("Greatest common divisor of two whole numbers: the largest number that divides both.", "2 つの整数の最大公約数：両方を割り切る最大の数。"),
+        ("Least common multiple of two whole numbers: the smallest number divisible by both.", "2 つの整数の最小公倍数：両方で割り切れる最小の数。"),
+        ("Length of a text (in characters), a list, a record, a dict or a set.", "テキスト（文字数）、リスト、レコード、辞書、集合の長さ。"),
+        ("The text in uppercase.", "大文字にしたテキスト。"),
+        ("The text in lowercase.", "小文字にしたテキスト。"),
+        ("The text with its first character in uppercase (the rest is unchanged).", "最初の文字を大文字にしたテキスト（残りはそのまま）。"),
+        ("The text without spaces and line breaks at the start and the end.", "先頭と末尾の空白と改行を取り除いたテキスト。"),
+        ("Adds `fill` (a space by default) before the text until it is `width` characters long: numbers line up in columns. A value that is not a text is first shown as `print` shows it.", "テキストが `width` 文字になるまで、前に `fill`（デフォルトは空白）を加えます：数が列にそろいます。テキストでない値は、まず `print` と同じように表示した形にします。"),
+        ("Adds `fill` (a space by default) after the text until it is `width` characters long.", "テキストが `width` 文字になるまで、後ろに `fill`（デフォルトは空白）を加えます。"),
+        ("Cuts a text into a list of texts. Without separator, cuts at spaces.", "テキストを切ってテキストのリストにします。区切り文字がなければ空白で切ります。"),
+        ("Glues the elements of a list into one text, with the separator between them.", "リストの要素を、間に区切り文字を入れて 1 つのテキストにつなげます。"),
+        ("Does the text contain this piece of text? Does the list (or the set) contain this element? Does the record have this field, or the dict this key?", "テキストにこの部分テキストが含まれるか？ リスト（または集合）にこの要素が含まれるか？ レコードにこのフィールドが、辞書にこのキーがあるか？"),
+        ("Does the text start with this piece of text?", "テキストがこの部分テキストで始まるか？"),
+        ("Does the text end with this piece of text?", "テキストがこの部分テキストで終わるか？"),
+        ("Replaces every occurrence of `old` by `new`.", "`old` をすべて `new` に置き換えます。"),
+        ("The list of the characters of a text.", "テキストの文字のリスト。"),
+        ("The list of the lines of a text.", "テキストの行のリスト。"),
+        ("The number of a character (its Unicode code point).", "文字の番号（Unicode のコードポイント）。"),
+        ("The character with this number (Unicode code point): the opposite of `char_code`.", "この番号（Unicode のコードポイント）の文字：`char_code` の逆。"),
+        ("Is the text made only of digits from 0 to 9 (and not empty)?", "テキストが 0〜9 の数字だけでできているか（空でないか）？"),
+        ("Is the text made only of letters, accented ones included (and not empty)?", "テキストが文字（アクセント付きも含む）だけでできているか（空でないか）？"),
+        ("Is the text made only of spaces, tabs and line breaks (and not empty)?", "テキストが空白、タブ、改行だけでできているか（空でないか）？"),
+        ("A text or a list repeated n times.", "n 回繰り返したテキストまたはリスト。"),
+        ("Reads a whole number from a text: `Ok(number)`, or `Err(message)` if the text is not a number.", "テキストから整数を読みます：`Ok(数)`、テキストが数でなければ `Err(message)`。"),
+        ("Reads a decimal number from a text: `Ok(number)` or `Err(message)`.", "テキストから小数を読みます：`Ok(数)` か `Err(message)`。"),
+        ("Reads a JSON text: `Ok(value)`, or `Err(message)` if the text is not valid JSON. Objects become records, arrays lists, and null `None`.", "JSON テキストを読みます：`Ok(値)`、正しい JSON でなければ `Err(message)`。オブジェクトはレコードに、配列はリストに、null は `None` になります。"),
+        ("Writes a value as JSON text: records become objects, lists arrays, and `None` null. With `indent`, one element per line, shifted by that many spaces.", "値を JSON テキストとして書きます：レコードはオブジェクトに、リストは配列に、`None` は null になります。`indent` を指定すると、1 行に 1 要素で、その数の空白だけずらします。"),
+        ("The text without spaces and line breaks at the start.", "先頭の空白と改行を取り除いたテキスト。"),
+        ("The text without spaces and line breaks at the end.", "末尾の空白と改行を取り除いたテキスト。"),
+        ("The list of the words of a text: letters and digits, accents included, with `'` or `-` inside a word. Punctuation and spaces separate them.", "テキストの単語のリスト：英字と数字（アクセント付きも含む）で、単語の中の `'` や `-` も含みます。句読点と空白が区切りになります。"),
+        ("Are the two texts the same when uppercase and lowercase letters count as equal?", "大文字と小文字を同じとみなしたとき、2 つのテキストは同じか？"),
+        ("Writes a number for people: thousands separated, with exactly `decimals` decimals if given, in the style of a language: \"en\" (1,234.5, by default), \"fr\" (1 234,5), \"de\", \"es\", \"it\", \"nl\" or \"pt\" (1.234,5). To line it up in a column, use `pad_left`.", "人が読むための数を書きます：3 桁ごとに区切り、`decimals` を指定すればちょうどその桁数の小数で、言語の書き方に従います：\"en\"（1,234.5、デフォルト）、\"fr\"（1 234,5）、\"de\"、\"es\"、\"it\"、\"nl\"、\"pt\"（1.234,5）。列にそろえるには `pad_left` を使います。"),
+        ("Does the whole text match the regex (a regular expression: see `rythme help regex`)? To look for the regex anywhere in the text, use `find_first`.", "テキスト全体が正規表現（`rythme help regex` を参照）にマッチするか？ テキストのどこかに正規表現があるか探すには `find_first` を使います。"),
+        ("The first piece of the text that matches the regex, as an Option: `Some(piece)`, or `None` if there is none.", "正規表現にマッチするテキストの最初の部分を Option で返します：`Some(部分)`、なければ `None`。"),
+        ("Every piece of the text that matches the regex, from left to right.", "正規表現にマッチするテキストのすべての部分を、左から右へ。"),
+        ("The first match of the regex, as an Option of a list: the whole piece, then the text of each group `(...)`, in order (\"\" for a group that matched nothing).", "正規表現の最初のマッチを、リストの Option で返します：部分全体、続いて各グループ `(...)` のテキストを順に（何にもマッチしなかったグループは \"\"）。"),
+        ("Like `captures`, for every match: a list of lists.", "`captures` と同じで、すべてのマッチについて：リストのリスト。"),
+        ("The first match of a regex with named groups `(?<name>...)`, as an Option of a record: one field for each name.", "名前付きグループ `(?<name>...)` を持つ正規表現の最初のマッチを、レコードの Option で返します：名前ごとに 1 つのフィールド。"),
+        ("Cuts a text at every piece that matches the regex.", "正規表現にマッチする部分ごとにテキストを切ります。"),
+        ("Replaces every piece that matches the regex. `new` is a text, where `$1` stands for the text of group 1 (`$<name>` for a named group, `$0` for the whole piece, `$$` for a `$`), or a function that receives each piece and gives its replacement.", "正規表現にマッチする部分をすべて置き換えます。`new` はテキストで、`$1` はグループ 1 のテキストを表します（名前付きグループは `$<name>`、部分全体は `$0`、`$` そのものは `$$`）。または、各部分を受け取って置き換えを返す関数です。"),
+        ("Applies the function f to each element and returns the list of the results. Also works on Option and Result, and on a set (giving the set of the results).", "各要素に関数 f を適用し、結果のリストを返します。Option と Result、集合にも使えます（集合なら結果の集合を返す）。"),
+        ("Keeps only the elements for which f returns true. Also works on a set, and on a dict, where f receives each key and its value.", "f が true を返す要素だけを残します。集合にも、辞書にも使えます（辞書では f は各キーとその値を受け取る）。"),
+        ("Combines all the elements into one value: starts with `start`, then computes f(result, element) for each element.", "すべての要素を 1 つの値にまとめます：`start` から始め、各要素について f(結果, 要素) を計算します。"),
+        ("Like fold, but gives the list of every intermediate result: running totals, for example.", "fold と同じですが、途中の結果をすべてリストで返します：例えば累計。"),
+        ("Calls f on each element, for its effect (like printing). Returns (). Also works on a set, and on a dict, where f receives each key and its value.", "各要素について、その効果（表示など）のために f を呼びます。() を返します。集合にも、辞書にも使えます（辞書では f は各キーとその値を受け取る）。"),
+        ("The sum of the numbers of a list; with f, the sum of f(x) for each element.", "リストの数の合計。f を渡すと、各要素の f(x) の合計。"),
+        ("The product of the numbers of a list.", "リストの数の積。"),
+        ("The first element of a list (or character of a text), as an Option: `Some(x)`, or `None` if there is none. With n, the first n elements (like `take`).", "リストの最初の要素（またはテキストの最初の文字）を Option で返します：`Some(x)`、なければ `None`。n を渡すと、最初の n 個の要素（`take` と同じ）。"),
+        ("The last element of a list (or character of a text), as an Option. With n, the last n elements.", "リストの最後の要素（またはテキストの最後の文字）を Option で返します。n を渡すと、最後の n 個の要素。"),
+        ("The list (or text) without its first element.", "最初の要素を除いたリスト（またはテキスト）。"),
+        ("The element at a position of a list or text, the field of a record, or the value of a key of a dict, as an Option (never an error). Negative positions count from the end.", "リストやテキストのある位置の要素、レコードのフィールド、辞書のキーの値を Option で返します（決してエラーにならない）。負の位置は末尾から数えます。"),
+        ("A new list with x added at the end; or a new set with x added.", "x を末尾に加えた新しいリスト。または x を加えた新しい集合。"),
+        ("A new list where the element at position i is replaced by x. Negative positions count from the end.", "位置 i の要素を x に置き換えた新しいリスト。負の位置は末尾から数えます。"),
+        ("A new list with x inserted so that it is at position i (-1 adds it at the end).", "x が位置 i に来るように挿入した新しいリスト（-1 なら末尾に加える）。"),
+        ("A new list without the element at position i. Negative positions count from the end.", "位置 i の要素を除いた新しいリスト。負の位置は末尾から数えます。"),
+        ("The list or text in reverse order.", "逆順にしたリストまたはテキスト。"),
+        ("The list sorted from smallest to largest (numbers, texts in alphabetical order...). For the largest first: `sort(list) |> reverse`.", "小さい順に並べたリスト（数、テキストはアルファベット順など）。大きい順にするには：`sort(list) |> reverse`。"),
+        ("Sorts the list by the value that the function `key` gives for each element. Elements with the same value keep their order.", "関数 `key` が各要素に返す値でリストを並べ替えます。同じ値の要素は元の順序を保ちます。"),
+        ("The list without duplicates (the first occurrence is kept).", "重複を取り除いたリスト（最初に出てきたものを残す）。"),
+        ("The elements of the list in a random order.", "リストの要素をランダムな順にしたもの。"),
+        ("The part of a list or text from position `start` (included) to `end` (excluded). Negative positions count from the end.", "リストやテキストの、位置 `start`（含む）から `end`（含まない）までの部分。負の位置は末尾から数えます。"),
+        ("The first n elements of a list or text.", "リストやテキストの最初の n 個の要素。"),
+        ("The list or text without its first n elements.", "最初の n 個の要素を除いたリストやテキスト。"),
+        ("The first elements of a list (or characters of a text), as long as f is true for them.", "f が真である間の、リストの最初の要素（またはテキストの最初の文字）。"),
+        ("The list (or text) without its first elements for which f is true.", "f が真である最初の要素を除いたリスト（またはテキスト）。"),
+        ("One element out of n of a list (or text), starting with the first. On a range: the numbers with a step.", "リスト（またはテキスト）の要素を、最初から n 個に 1 個取り出します。範囲に使うと、刻み幅付きの数になります。"),
+        ("Cuts a list (or text) into pieces of n elements; the last piece may be shorter.", "リスト（またはテキスト）を n 個ずつの部分に切ります。最後の部分は短いこともあります。"),
+        ("Every group of n neighbouring elements of a list (or text), in order: handy to compare each element with the next one.", "リスト（またはテキスト）の隣り合う n 個の要素のグループをすべて、順に返します：各要素を次の要素と比べるのに便利です。"),
+        ("Pairs each element with its position: [[0, x0], [1, x1], ...].", "各要素をその位置と組にします：[[0, x0], [1, x1], ...]。"),
+        ("Is f true for at least one element?", "少なくとも 1 つの要素で f が真か？"),
+        ("Is f true for every element?", "すべての要素で f が真か？"),
+        ("The first element for which f is true, as an Option.", "f が真になる最初の要素を Option で返します。"),
+        ("How many elements make f true; without f, how many elements there are.", "f を真にする要素の数。f がなければ要素の数。"),
+        ("The elements for which f is false: the opposite of `filter`. Also works on a set and on a dict, like `filter`.", "f が偽になる要素：`filter` の逆。`filter` と同じく、集合と辞書にも使えます。"),
+        ("Calls f(element, position) for each element, in order (positions start at 0). For effects, like `print`.", "各要素について順に f(要素, 位置) を呼びます（位置は 0 から）。`print` のような効果のためのものです。"),
+        ("The position of an element in a list (or of a piece of text in a text), as an Option.", "リストの中の要素の位置（またはテキストの中の部分テキストの位置）を Option で返します。"),
+        ("The element for which the function `key` gives the smallest value (the first one if there are several).", "関数 `key` が最小の値を返す要素（複数あれば最初のもの）。"),
+        ("The element for which the function `key` gives the largest value (the first one if there are several).", "関数 `key` が最大の値を返す要素（複数あれば最初のもの）。"),
+        ("Joins a list of lists into one list.", "リストのリストを 1 つのリストにつなげます。"),
+        ("Like map, when f returns a list: the lists are joined.", "map と同じで、f がリストを返すとき：それらのリストをつなげます。"),
+        ("Splits a list in two: [elements where f is true, elements where f is false].", "リストを 2 つに分けます：[f が真の要素, f が偽の要素]。"),
+        ("Groups the elements in a record: the key is the text of what `key` returns, the value the list of matching elements.", "要素をレコードにまとめます：キーは `key` が返すもののテキスト、値は当てはまる要素のリストです。"),
+        ("Is the list, text, record, dict or set empty?", "リスト、テキスト、レコード、辞書、集合が空か？"),
+        ("The list of the field names of a record, or of the keys of a dict (in order).", "レコードのフィールド名、または辞書のキーのリスト（順番どおり）。"),
+        ("The list of the values of a record or of a dict (in the order of its keys), or of the elements of a set (in order).", "レコードや辞書の値のリスト（キーの順）、または集合の要素のリスト（順番どおり）。"),
+        ("The list of the [name, value] pairs of a record, or of the [key, value] pairs of a dict.", "レコードの [名前, 値] のペア、または辞書の [キー, 値] のペアのリスト。"),
+        ("Builds a record from a list of [name, value] pairs: the opposite of `entries`.", "[名前, 値] のペアのリストからレコードを作ります：`entries` の逆。"),
+        ("Does the record have this field? Does the dict have this key, or the set this element?", "レコードにこのフィールドがあるか？ 辞書にこのキーが、集合にこの要素があるか？"),
+        ("A new record with the field set to the value (added or replaced); or a new dict with the key set to the value.", "フィールドに値を設定した（追加または置き換えた）新しいレコード。またはキーに値を設定した新しい辞書。"),
+        ("A new record without this field; or a new dict without this key, or a new set without this element.", "このフィールドを除いた新しいレコード。またはこのキーを除いた新しい辞書、この要素を除いた新しい集合。"),
+        ("A new record (or dict) where f is applied to every value; the names (or keys) stay the same.", "すべての値に f を適用した新しいレコード（または辞書）。名前（またはキー）は同じままです。"),
+        ("A dictionary: keys of any kind (but functions), each with a value, kept in the order of the keys. Made from a list of [key, value] pairs (the last value of a key wins), from a record, or empty with `dict()`. Use it with get, put, has, remove, keys, values, entries, len, map_values, filter, union...", "辞書：（関数以外の）どんな種類のキーにもそれぞれ値があり、キーの順に保たれます。[キー, 値] のペアのリスト（同じキーは最後の値が優先）、レコードから作るか、`dict()` で空の辞書を作ります。get、put、has、remove、keys、values、entries、len、map_values、filter、union などと使います。"),
+        ("A set: values (but functions) without repetition, kept in order. Made from a list, or empty with `set()`. Use it with has, push, remove, len, values, filter, map, union, intersection, difference, is_subset.", "集合：（関数以外の）値を重複なしに、順番どおりに保ちます。リストから作るか、`set()` で空の集合を作ります。has、push、remove、len、values、filter、map、union、intersection、difference、is_subset と使います。"),
+        ("The elements of two sets together; or the pairs of two dicts, where the value of b wins for a key in both.", "2 つの集合の要素を合わせたもの。または 2 つの辞書のペアで、両方にあるキーは b の値が優先されます。"),
+        ("The elements of the set a that are also in b; or the pairs of the dict a whose key is in b.", "集合 a の要素のうち b にもあるもの。または辞書 a のペアのうちキーが b にあるもの。"),
+        ("The elements of the set a that are not in b; or the pairs of the dict a whose key is not in b.", "集合 a の要素のうち b にないもの。または辞書 a のペアのうちキーが b にないもの。"),
+        ("Is every element of the set a also in the set b?", "集合 a のすべての要素が集合 b にもあるか？"),
+        ("The value inside `Some(x)` or `Ok(x)`. Stops the program with an error for `None` or `Err(e)`.", "`Some(x)` や `Ok(x)` の中の値。`None` や `Err(e)` ならエラーでプログラムを止めます。"),
+        ("The value inside `Some(x)` or `Ok(x)`, or the default value for `None` or `Err(e)`.", "`Some(x)` や `Ok(x)` の中の値。`None` や `Err(e)` ならデフォルト値。"),
+        ("Is it `Some(...)`?", "`Some(...)` か？"),
+        ("Is it `None`?", "`None` か？"),
+        ("Is it `Ok(...)`?", "`Ok(...)` か？"),
+        ("Is it `Err(...)`?", "`Err(...)` か？"),
+        ("Chains steps that may fail: for `Some(x)` or `Ok(x)`, gives f(x), which must be an Option or a Result; `None` and `Err(e)` stay as they are.", "失敗するかもしれないステップをつなげます：`Some(x)` や `Ok(x)` なら f(x) を返し、f(x) は Option か Result でなければなりません。`None` と `Err(e)` はそのままです。"),
+        ("Turns an Option into a Result: `Some(x)` gives `Ok(x)`, and `None` gives `Err(error)`. Handy before `?`.", "Option を Result に変えます：`Some(x)` は `Ok(x)` に、`None` は `Err(error)` になります。`?` の前で便利です。"),
+        ("For `Err(e)`, gives `Err(f(e))`; `Ok(x)` stays as it is. Handy to explain an error better.", "`Err(e)` なら `Err(f(e))` を返し、`Ok(x)` はそのままです。エラーをよりよく説明するのに便利です。"),
+        ("Reads a whole text file: `Ok(text)`, or `Err(message)` if it cannot be read.", "テキストファイル全体を読みます：`Ok(テキスト)`、読めなければ `Err(message)`。"),
+        ("Writes a text in a file (replacing its content): `Ok(())` or `Err(message)`.", "テキストをファイルに書きます（内容を置き換える）：`Ok(())` か `Err(message)`。"),
+        ("Adds a text at the end of a file, creating the file if needed: `Ok(())` or `Err(message)`.", "ファイルの末尾にテキストを加えます。必要ならファイルを作ります：`Ok(())` か `Err(message)`。"),
+        ("Does this file (or folder) exist? Always `false` in the browser.", "このファイル（またはフォルダー）があるか？ ブラウザーでは常に `false`。"),
+        ("What is known about a file or a folder: `Ok({is_folder, size})`, with its size in bytes (0 for a folder), or `Err(message)` if it does not exist or cannot be read.", "ファイルやフォルダーについてわかること：`Ok({is_folder, size})`（サイズはバイト単位で、フォルダーは 0）、存在しないか読めなければ `Err(message)`。"),
+        ("The names of the files and folders inside a folder, in alphabetical order: `Ok(list of texts)`, or `Err(message)`. `list_folder(\".\")` lists the current folder.", "フォルダーの中のファイルとフォルダーの名前をアルファベット順に：`Ok(テキストのリスト)` か `Err(message)`。`list_folder(\".\")` は現在のフォルダーを一覧します。"),
+        ("Creates a folder, and the folders around it that are missing: `Ok(())`, also when it already exists, or `Err(message)`.", "フォルダーと、足りない上位フォルダーを作ります：すでにあっても `Ok(())`、または `Err(message)`。"),
+        ("Deletes one file (never a folder: that is an error): `Ok(())` or `Err(message)`. A deleted file cannot be brought back.", "ファイルを 1 つ削除します（フォルダーは削除せず、エラーになる）：`Ok(())` か `Err(message)`。削除したファイルは元に戻せません。"),
+        ("Joins the parts of a path with `/`, which works on Linux, macOS and Windows (with `\\` if the parts already use only `\\`). Only the first part can start at a root (`/`, `C:`): a part like \"/etc\" after another one is an error.", "パスの部分を `/` でつなげます。これは Linux、macOS、Windows で使えます（部分がすでに `\\` だけを使っていれば `\\` で）。ルート（`/`、`C:`）から始められるのは最初の部分だけです：他の部分の後に \"/etc\" のような部分があるとエラーになります。"),
+        ("The parts of a path, split at each `/` or `\\`; the first part of an absolute path is its root (`/`, `C:\\`...). `join_path` puts them back together.", "パスを `/` か `\\` ごとに分けた部分。絶対パスの最初の部分はそのルートです（`/`、`C:\\` など）。`join_path` で元に戻せます。"),
+        ("The date and time now, where the program runs: a record {year, month, day, hour, minute, second, offset}, where `offset` is the number of minutes the local time is ahead of UTC (0 when the system does not tell).", "プログラムが動いている場所の現在の日付と時刻：レコード {year, month, day, hour, minute, second, offset}。`offset` はローカル時刻が UTC より進んでいる分数です（システムがわからなければ 0）。"),
+        ("The date of today, where the program runs: a record {year, month, day}.", "プログラムが動いている場所の今日の日付：レコード {year, month, day}。"),
+        ("Is the value a valid date: a record {year, month, day} (with `hour`, `minute`, `second`, `offset` if needed) for a day that exists?", "値が有効な日付か：存在する日を表すレコード {year, month, day}（必要なら `hour`、`minute`、`second`、`offset` 付き）か？"),
+        ("The date n days later (or earlier, when n is negative), at the same time of day.", "n 日後（n が負なら前）の、同じ時刻の日付。"),
+        ("The date and time n seconds later (or earlier, when n is negative). Add `60 * minutes` or `3600 * hours` the same way.", "n 秒後（n が負なら前）の日付と時刻。`60 * minutes` や `3600 * hours` も同じように加えます。"),
+        ("The number of whole days from date a to date b: negative when b is before a.", "日付 a から日付 b までの丸一日の数：b が a より前なら負。"),
+        ("The number of seconds from date a to date b, taking their offsets into account: negative when b is before a.", "時差を考慮した、日付 a から日付 b までの秒数：b が a より前なら負。"),
+        ("The day of the week of a date, from 1 (Monday) to 7 (Sunday), as in ISO 8601.", "日付の曜日を、ISO 8601 と同じく 1（月曜日）から 7（日曜日）で返します。"),
+        ("The number of days of a month (from 1 to 12) of a year: 28 to 31.", "ある年のある月（1〜12）の日数：28〜31。"),
+        ("Does the year have a 29 February? Every 4 years, except every 100 years, except every 400 years.", "その年に 2 月 29 日があるか？ 4 年ごと。ただし 100 年ごとは除き、400 年ごとは含む。"),
+        ("Checks that a property holds for many values made by a generator (100, or `cases`): the function is called with each value and must give `true` (or `()`, `Some(...)`, `Ok(...)`). When a value makes it false or stops it with an error, that value is simplified as much as possible (shrinking) and shown, with the seed that made it: the same values come back on every run. The property may also come last, as a block: `check_all(ints()) { |x| x + 0 == x }`.", "ジェネレーターが作る多くの値（100 個、または `cases`）でプロパティが成り立つか確かめます：関数は各値で呼ばれ、`true`（または `()`、`Some(...)`、`Ok(...)`）を返さなければなりません。ある値で偽になるかエラーで止まると、その値はできるだけ単純化（シュリンク）され、それを生んだシードとともに表示されます：毎回同じ値が出てきます。プロパティはブロックとして最後に置くこともできます：`check_all(ints()) { |x| x + 0 == x }`。"),
+        ("A list of `n` values (10 if not given) made by a generator, to see what `check_all` will try.", "ジェネレーターが作る `n` 個（指定しなければ 10 個）の値のリスト。`check_all` が何を試すかを見るのに使います。"),
+        ("A generator of whole numbers from `min` to `max` (from -1000 to 1000 if not given), often near 0 and at the edges. A failing number is simplified towards 0.", "`min` から `max` まで（指定しなければ -1000 から 1000 まで）の整数のジェネレーター。0 の近くと両端の値がよく出ます。失敗した数は 0 に向けて単純化されます。"),
+        ("A generator of decimal numbers from `min` to `max` (from -1000.0 to 1000.0 if not given).", "`min` から `max` まで（指定しなければ -1000.0 から 1000.0 まで）の小数のジェネレーター。"),
+        ("A generator of texts of at most `max_length` characters (20 if not given): letters mostly, with digits, spaces, punctuation and accents. A failing text is made shorter and simpler.", "最大 `max_length` 文字（指定しなければ 20 文字）のテキストのジェネレーター：主に英字で、数字、空白、句読点、アクセントも入ります。失敗したテキストは短く、単純にされます。"),
+        ("A generator of `true` and `false`.", "`true` と `false` のジェネレーター。"),
+        ("A generator of lists of at most `max_length` elements (10 if not given), each made by `generator`. A failing list is made shorter, then its elements simpler.", "各要素を `generator` で作る、最大 `max_length` 個（指定しなければ 10 個）の要素のリストのジェネレーター。失敗したリストはまず短くされ、次に要素が単純にされます。"),
+        ("A generator that picks one of the values of a list. A failing value is replaced by one written before it.", "リストの値の 1 つを選ぶジェネレーター。失敗した値はそれより前に書いた値に置き換えられます。"),
+        ("A generator of records, with a generator for each field: `records_of({name: texts(), age: ints(0, 120)})`. Handy to give several values to `check_all`.", "フィールドごとにジェネレーターを持つレコードのジェネレーター：`records_of({name: texts(), age: ints(0, 120)})`。`check_all` に複数の値を渡すのに便利です。"),
+        ("January", "1月"),
+        ("February", "2月"),
+        ("March", "3月"),
+        ("April", "4月"),
+        ("May", "5月"),
+        ("June", "6月"),
+        ("July", "7月"),
+        ("August", "8月"),
+        ("September", "9月"),
+        ("October", "10月"),
+        ("November", "11月"),
+        ("December", "12月"),
         // docs/exercises: the exercises of `rythme exercise` (see src/exercise.rs)
-        ("# --- Tests (do not change them) ---", ""),
-        ("to do", ""),
-        ("01-values", ""),
+        ("# --- Tests (do not change them) ---", "# --- テスト（変更しないでください）---"),
+        ("to do", "未完成"),
+        ("01-values", "01-values"),
         (
             r#"# Exercise 01 · First values  ★☆☆
 #
@@ -3466,9 +4641,47 @@ test "seconds in a week" = assert_eq(seconds_per_week, 604800)
 
 test "the summary" = assert_eq(summary, "A week has 604800 seconds.")
 "#,
-            "",
+            r#"# 練習問題 01 · 最初の値  ★☆☆
+#
+# 名前は `=` で値を受け取り、それをずっと持ち続けます。Rythme では値は
+# 決して変わりません。
+#
+# 問題
+#   `seconds_per_minute` は与えられています。下のそれぞれの `0`（と空の
+#   テキスト）を、その前で定義した名前を使う式に置き換えてください：
+#   - `seconds_per_hour`：1 時間の秒数
+#   - `seconds_per_day`：1 日の秒数
+#   - `seconds_per_week`：1 週間の秒数
+#   - `summary`：テキスト "1 週間は 604800 秒です。"。ただし数は
+#     `seconds_per_week` から取ります（自分で打ち込まないこと）。
+#
+# ヒント
+#   1. 1 時間は 60 分です：`60 * seconds_per_minute`。
+#   2. 1 日は 24 時間、1 週間は 7 日です。
+#   3. テキストの中の `{name}` は `name` の値に置き換えられます：
+#      "りんごを {count} 個持っています"。
+#
+# 答えをチェックする：  rythme exercise check 01-values.ry
+#             または：  rythme test 01-values.ry
+
+seconds_per_minute = 60
+seconds_per_hour = 0
+seconds_per_day = 0
+seconds_per_week = 0
+summary = ""
+
+# --- テスト（変更しないでください）---
+
+test "1 時間の秒数" = assert_eq(seconds_per_hour, 3600)
+
+test "1 日の秒数" = assert_eq(seconds_per_day, 86400)
+
+test "1 週間の秒数" = assert_eq(seconds_per_week, 604800)
+
+test "まとめ" = assert_eq(summary, "1 週間は 604800 秒です。")
+"#,
         ),
-        ("02-texts", ""),
+        ("02-texts", "02-texts"),
         (
             r#"# Exercise 02 · Texts  ★☆☆
 #
@@ -3521,9 +4734,59 @@ end
 
 test "introduce" = assert_eq(introduce("Ada", 36), "Ada is 36 years old.")
 "#,
-            "",
+            r#"# 練習問題 02 · テキスト  ★☆☆
+#
+# 関数は値を受け取り、新しい値を返します：
+#   fn double(x) = x * 2
+#
+# 問題
+#   テストが成功するように、下の 4 つの関数を書いてください：
+#   - `greet(name)` は "Ada" に対して "こんにちは、Ada！" を返す
+#   - `shout(text)` はテキストを大文字にして "!" を付けたものを返す
+#   - `initials(first, last)` は "Ada" と "Lovelace" に対して "A.L." を返す
+#   - `introduce(name, age)` は "Ada は 36 歳です。" を返す
+#
+# ヒント
+#   1. "こんにちは、{name}！" はテキストに `name` の値を埋め込みます。
+#   2. `upper("hi")` は "HI" で、`+` は 2 つのテキストをつなげます："HI" + "!"。
+#   3. `word[0]` は `word` の最初の文字です。波かっこの中にも書けます：
+#      "{word[0]}."。
+#
+# 答えをチェックする：  rythme exercise check 02-texts.ry
+#             または：  rythme test 02-texts.ry
+
+## `name` へのあいさつ。
+fn greet(name) = fail("未完成")
+
+## 大文字にしたテキストに "!" を付けたもの。
+fn shout(text) = fail("未完成")
+
+## 人のイニシャル。それぞれの後にドットを付ける。
+fn initials(first, last) = fail("未完成")
+
+## 人を紹介する文。
+fn introduce(name, age) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "あいさつ" = assert_eq(greet("Ada"), "こんにちは、Ada！")
+
+test "別の人へのあいさつ" = assert_eq(greet("Alan"), "こんにちは、Alan！")
+
+test "大声"
+  assert_eq(shout("hello"), "HELLO!")
+  assert_eq(shout("Stop"), "STOP!")
+end
+
+test "イニシャル"
+  assert_eq(initials("Ada", "Lovelace"), "A.L.")
+  assert_eq(initials("grace", "hopper"), "g.h.")
+end
+
+test "紹介" = assert_eq(introduce("Ada", 36), "Ada は 36 歳です。")
+"#,
         ),
-        ("03-arithmetic", ""),
+        ("03-arithmetic", "03-arithmetic"),
         (
             r#"# Exercise 03 · Arithmetic  ★☆☆
 #
@@ -3589,7 +4852,70 @@ test "minutes and seconds"
   assert_eq(minutes_and_seconds(600), "10 min 0 s")
 end
 "#,
-            "",
+            r#"# 練習問題 03 · 算術  ★☆☆
+#
+# 数は整数（Int：3）か小数（Float：3.5）です。`/` は常に Float を返し
+# （`7 / 2` は 3.5）、`//` は割り算して切り捨て（`7 // 2` は 3）、`%` は
+# 余りを返します（`7 % 2` は 1）。
+#
+# 問題
+#   - `square(x)`：x かける x
+#   - `average(a, b)`：2 つの数の平均
+#   - `fahrenheit(celsius)`：華氏の温度
+#     （9 をかけて、5 で割り、32 を足す）
+#   - `hypotenuse(a, b)`：残りの 2 辺が a と b である直角三角形の斜辺
+#     （a² + b² の平方根）
+#   - `minutes_and_seconds(total)`：秒数に対して "2 min 5 s"（125 の場合）
+#     のようなテキスト
+#
+# ヒント
+#   1. `sqrt(16)` は 4.0 です。
+#   2. `125 // 60` は 2、`125 % 60` は 5 です。
+#   3. `3 == 3.0` は真です：同じ値の Int と Float は等しくなります。
+#
+# 答えをチェックする：  rythme exercise check 03-arithmetic.ry
+#             または：  rythme test 03-arithmetic.ry
+
+fn square(x) = fail("未完成")
+
+fn average(a, b) = fail("未完成")
+
+fn fahrenheit(celsius) = fail("未完成")
+
+fn hypotenuse(a, b) = fail("未完成")
+
+fn minutes_and_seconds(total) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "2 乗"
+  assert_eq(square(3), 9)
+  assert_eq(square(-4), 16)
+  assert_eq(square(1.5), 2.25)
+end
+
+test "平均"
+  assert_eq(average(2, 4), 3)
+  assert_eq(average(1, 2), 1.5)
+end
+
+test "華氏"
+  assert_eq(fahrenheit(0), 32)
+  assert_eq(fahrenheit(100), 212)
+  assert_eq(fahrenheit(-40), -40)
+end
+
+test "斜辺"
+  assert_eq(hypotenuse(3, 4), 5)
+  assert_eq(hypotenuse(5, 12), 13)
+end
+
+test "分と秒"
+  assert_eq(minutes_and_seconds(125), "2 min 5 s")
+  assert_eq(minutes_and_seconds(59), "0 min 59 s")
+  assert_eq(minutes_and_seconds(600), "10 min 0 s")
+end
+"#,
         ),
         ("04-choosing", ""),
         (
