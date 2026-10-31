@@ -12,6 +12,47 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### The package index
+
+Packages are found and shared by name, beside the dependencies from git or
+a folder (manual 7.11, `rythme help packages`). The index needs no server:
+it is a public git repository with one file per package
+(`packages/NAME.toml`: description, repository, license, keywords, authors,
+and for each version its tag, its commit and a checksum of its files), by
+default `https://github.com/maxlestage/rythme-index` (to be created by the
+owner from `packaging/index-template/`, which has its README, an example
+entry and the workflow that checks its pull requests).
+
+- **`rythme search WORDS`** and **`rythme info NAME`** read a copy of the
+  index kept in `RYTHME_HOME/index`, without a network (`--update` gets the
+  newest one; without a network the copy is used, with a warning), with
+  `--format json` (`"command": "search"` and `"info"` in
+  `docs/rythme-output.schema.json`).
+- **`rythme add NAME[@RANGE]`** writes `NAME = { version = "^1.2.0" }` at the
+  end of `[dependencies]` (the rest of `rythme.toml` untouched), then
+  installs; `rythme.lock` keeps the version, the exact commit and the
+  checksum, so `rythme install` needs neither the index nor the network
+  afterwards.
+- **`rythme update [NAME...]`** takes the newest version within the range of
+  each dependency (`^1.2.0`, `~1.2`, `=1.2.0`, `>=1.2.0, <1.5.0`, as in
+  Cargo and npm; withdrawn versions are never chosen) and the commit of each
+  tag of git now, and lists what changed.
+- **`rythme publish`** checks a package (`description`, `license` and
+  `repository` in `rythme.toml`, a clean git repository, the tag of the
+  version on the current commit and in the repository, `rythme check` and
+  `rythme test`, a name and a version free in the index), then prints its
+  entry and the steps of the pull request: it never sends anything.
+  `rythme publish --verify FILE...` checks entries for the index's CI.
+- **Safety**: names of packages are Rythme names (no path in them),
+  addresses use https, ssh or file only (git is limited to these
+  protocols), git runs without hooks, the files of each version must have
+  the checksum of the index, and nothing of a package runs when it is
+  installed.
+- `rythme.toml` accepts `description`, `license`, `repository`, `keywords`,
+  `authors` and `index` (another index: an address, or a folder read as it
+  is; or the variable `RYTHME_INDEX`), lists of texts on one line, and
+  dependencies `{ version = "..." }`. Files of 1.0 read the same.
+
 ### Embedding
 
 - **Programs that embed Rythme can give records of functions** (`db.all(q)`,

@@ -93,6 +93,7 @@ irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex
 | `rythme test hello.ry`      | 运行文件中写的测试                               |
 | `rythme fmt hello.ry`       | 把代码整理成官方格式                             |
 | `rythme new hello`          | 新项目：`rythme.toml`、`src/`、`tests/`          |
+| `rythme add mathlib`        | 从[包索引](docs/reference.md#711-the-package-index)添加一个包（`rythme search 关键词` 查找包） |
 | `rythme help [主题]`        | 某个主题或函数的帮助（`rythme help 列表`）       |
 | `rythme explain E003`       | 解释错误代码                                     |
 | `rythme learn`              | 语言导览                                         |

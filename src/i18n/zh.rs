@@ -821,6 +821,7 @@ Commands
   rythme exercise           exercises checked automatically (list, start, check)
   rythme new NAME           create a project (rythme.toml, src/, tests/)
   rythme install            download the dependencies of the project
+  rythme add NAME           add a package of the index to the project (rythme search WORDS finds them)
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
@@ -847,6 +848,7 @@ Topics (rythme help TOPIC)
   modules     using several files
   system      files, folders, paths, options, input, exit codes
   projects    projects and packages: rythme new, rythme.toml, rythme install
+  packages    the package index: rythme search, add, update, publish
   dates       dates and times: now(), today(), calendar, ISO 8601
   regex       searching, cutting and replacing with regular expressions
   csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
@@ -879,6 +881,7 @@ A specific function: rythme help map
   rythme exercise           自动检查的练习（list、start、check）
   rythme new NAME           创建项目（rythme.toml、src/、tests/）
   rythme install            下载项目的依赖
+  rythme add NAME           把索引中的包加入项目（rythme search 关键词 查找包）
   rythme learn              一步一步的语言导览
   rythme help TOPIC         某个主题或函数的帮助
   rythme explain E003       解释错误代码
@@ -905,6 +908,7 @@ A specific function: rythme help map
   modules     使用多个文件
   system      文件、文件夹、路径、选项、输入、退出码
   projects    项目和包：rythme new、rythme.toml、rythme install
+  packages    包索引：rythme search、add、update、publish
   dates       日期和时间：now()、today()、日历、ISO 8601
   regex       用正则表达式搜索、切分和替换
   csv         电子表格中的表格：csv_parse、csv_records、csv_format
@@ -1287,13 +1291,13 @@ Its definitions are used through the name `{n}`: `{n}.name`"#,
         ("add a line like `name = \"hello\"` at the top", "在开头加上一行，例如 `name = \"hello\"`"),
         ("`{shown}` has no `version`", "`{shown}` 没有 `version`"),
         ("add a line like `version = \"0.1.0\"` at the top", "在开头加上一行，例如 `version = \"0.1.0\"`"),
-        ("write `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (or `commit = \"...\"`), or `{name} = {{ path = \"../folder\" }}`", "请写 `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}`（或 `commit = \"...\"`），或者 `{name} = {{ path = \"../folder\" }}`"),
+        ("write `{name} = {{ version = \"^1.0.0\" }}` (from the package index), `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (or `commit = \"...\"`), or `{name} = {{ path = \"../folder\" }}`", "请写 `{name} = {{ version = \"^1.0.0\" }}`（来自包索引）、`{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}`（或 `commit = \"...\"`），或者 `{name} = {{ path = \"../folder\" }}`"),
         ("call it `{b}`", "把它命名为 `{b}`"),
         ("the project `{own}` cannot depend on itself", "项目 `{own}` 不能依赖它自己"),
         ("`use {own}/file` already reaches its own files", "`use {own}/file` 已经可以访问它自己的文件"),
         ("the dependency `{name}` is written as a table", "依赖 `{name}` 写成了表格"),
         ("the dependency `{name}` has both `git` and `path`", "依赖 `{name}` 同时有 `git` 和 `path`"),
-        ("the dependency `{name}` needs `git` or `path`", "依赖 `{name}` 需要 `git` 或 `path`"),
+        ("the dependency `{name}` needs `version`, `git` or `path`", "依赖 `{name}` 需要 `version`、`git` 或 `path`"),
         ("`tag` and `commit` are for a dependency from git, not from a folder", "`tag` 和 `commit` 用于来自 git 的依赖，而不是来自文件夹的依赖"),
         ("`{c}` is not a commit", "`{c}` 不是提交"),
         ("give a `tag` or a `commit`, not both", "请给出 `tag` 或 `commit`，不要两个都给"),
@@ -2852,7 +2856,8 @@ same code. Then:
   use hello/greeting        # a file of the project itself, from tests/
 
 A file next to the one that contains `use` comes first. Packages from git
-are kept in ~/.rythme/packages (or RYTHME_HOME/packages)."#,
+are kept in ~/.rythme/packages (or RYTHME_HOME/packages). Finding packages
+by name and sharing yours: `rythme help packages`."#,
             r#"项目和包
 
   rythme new hello        # 创建一个文件夹 hello/，其中是一个新项目：
@@ -2882,7 +2887,8 @@ rythme.toml 描述了这个项目：
   use hello/greeting        # 项目自己的一个文件，在 tests/ 中使用
 
 与包含 `use` 的文件在同一位置的文件优先。来自 git 的包保存在
-~/.rythme/packages（或 RYTHME_HOME/packages）中。"#,
+~/.rythme/packages（或 RYTHME_HOME/packages）中。按名字查找包、
+分享你的包：`rythme help packages`。"#,
         ),
         (
             r#"DATES AND TIMES
@@ -4009,8 +4015,10 @@ To show a value, print it:  print(x + 1)"#,
             r#"E025 — Project or package problem
 
 The `rythme.toml` of the project (or the `rythme.lock` written by
-`rythme install`) cannot be read, a dependency is not installed, or
-`rythme install` cannot download one. A `rythme.toml` looks like this:
+`rythme install`) cannot be read, a dependency is not installed,
+`rythme install` cannot download one, or the package index (`rythme
+search`, `add`, `publish`) cannot be read or does not have what was asked.
+A `rythme.toml` looks like this:
 
   name = "hello"                 # a Rythme name in lower case
   version = "0.1.0"              # three numbers
@@ -4019,16 +4027,19 @@ The `rythme.toml` of the project (or the `rythme.lock` written by
   [dependencies]
   mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
   tools = { path = "../tools" }
+  geometry = { version = "^1.2.0" }   # from the package index
 
 Every value is a text, in quotes. A dependency from git needs a fixed
 version, a `tag` or a `commit`, and the program `git`
 (https://git-scm.com). After a change of `[dependencies]`, run
-`rythme install` in the folder of the project. More: `rythme help projects`."#,
+`rythme install` in the folder of the project. More: `rythme help projects`
+and `rythme help packages`."#,
             r#"E025 — 项目或包的问题
 
 无法读取项目的 `rythme.toml`（或者由 `rythme install` 写入的 `rythme.lock`），
-某个依赖没有安装，或者 `rythme install` 无法下载某个依赖。`rythme.toml` 的
-样子是这样的：
+某个依赖没有安装，`rythme install` 无法下载某个依赖，或者无法读取包索引
+（`rythme search`、`add`、`publish`），或者包索引中没有所要的东西。
+`rythme.toml` 的样子是这样的：
 
   name = "hello"                 # 小写的 Rythme 名字
   version = "0.1.0"              # 三个数字
@@ -4037,10 +4048,12 @@ version, a `tag` or a `commit`, and the program `git`
   [dependencies]
   mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
   tools = { path = "../tools" }
+  geometry = { version = "^1.2.0" }   # 来自包索引
 
 每个值都是写在引号里的文本。来自 git 的依赖需要固定的版本（`tag` 或
 `commit`），还需要程序 `git`（https://git-scm.com）。修改 `[dependencies]`
-之后，请在项目文件夹中运行 `rythme install`。更多信息：`rythme help projects`。"#,
+之后，请在项目文件夹中运行 `rythme install`。更多信息：`rythme help projects`
+和 `rythme help packages`。"#,
         ),
         (
             r#"E026 — Invalid regex
@@ -9440,5 +9453,250 @@ genetic; exercises 31 to 36 (rythme exercise list)."#,
 knn、naive_bayes、markov、tictactoe、pathfinding 和 genetic；练习 31 到 36
 （rythme exercise list）。"#,
         ),
+        // src/index.rs, src/packages.rs, src/project.rs, src/manifest.rs, src/help.rs: the package index
+        ("the address is empty", "地址是空的"),
+        ("`{a}` is not an address that Rythme accepts: no spaces, and no `-` at the start", "`{a}` 不是 Rythme 接受的地址：不能有空格，开头也不能是 `-`"),
+        ("Rythme downloads packages only with `https://`, `ssh://` or from this computer (`file://`), not with `{other}`", "Rythme 只通过 `https://`、`ssh://` 或从这台电脑（`file://`）下载包，不用 `{other}`"),
+        ("`{a}` is not the address of a repository: write `https://...`, `ssh://...` or `file://...`", "`{a}` 不是仓库的地址：请写 `https://...`、`ssh://...` 或 `file://...`"),
+        ("set by `index` in `rythme.toml`", "由 `rythme.toml` 中的 `index` 指定"),
+        ("set by the variable RYTHME_INDEX", "由变量 RYTHME_INDEX 指定"),
+        ("`{url}` is not a package index: it has no folder `packages`", "`{url}` 不是包索引：它没有 `packages` 文件夹"),
+        ("an index holds one file per package, like `packages/mathlib.toml` (see `rythme help packages`)", "索引中每个包有一个文件，比如 `packages/mathlib.toml`（见 `rythme help packages`）"),
+        ("an unknown day", "未知日期"),
+        ("cannot update the package index from `{url}`: using the copy of {date}", "无法从 `{url}` 更新包索引：使用 {date} 的副本"),
+        ("cannot download the package index from `{url}`", "无法从 `{url}` 下载包索引"),
+        ("check the connection to the network, or give another index with the variable RYTHME_INDEX (an address or a folder); dependencies from git or from a folder work without the index", "请检查网络连接，或者用变量 RYTHME_INDEX 指定另一个索引（地址或文件夹）；来自 git 或文件夹的依赖不需要索引"),
+        ("no package `{name}` in the package index", "包索引中没有包 `{name}`"),
+        ("`rythme search WORDS` finds packages by the words of their name and description", "`rythme search 关键词` 按名字和描述中的词查找包"),
+        ("the index: {place}", "索引：{place}"),
+        ("{url} (copy of {date})", "{url}（{date} 的副本）"),
+        ("{} (withdrawn)", "{}（已撤回）"),
+        ("none", "无"),
+        ("no version of `{name}` in the package index fits `{range}`", "包索引中 `{name}` 没有符合 `{range}` 的版本"),
+        ("its versions: {}", "它的版本：{}"),
+        ("for the newest one, write `{name} = {{ version = \"^{v}\" }}`", "要用最新版本，请写 `{name} = {{ version = \"^{v}\" }}`"),
+        ("every version of `{name}` was withdrawn", "`{name}` 的所有版本都已撤回"),
+        ("`{shown}` is too large for an entry of the package index", "`{shown}` 太大，不能作为包索引的条目"),
+        ("`{key}` is a list of texts", "`{key}` 是文本列表"),
+        ("this entry of the package index is for `{found}`, but its file is named for `{name}`", "包索引的这个条目是 `{found}` 的，但它的文件名是 `{name}`"),
+        ("the entry of `{name}` has no `repository`", "`{name}` 的条目没有 `repository`"),
+        ("the entry of `{name}` has no `{key}`", "`{name}` 的条目没有 `{key}`"),
+        ("each version is written under `[[version]]`", "每个版本写在 `[[version]]` 下面"),
+        ("this version of `{name}` has no `{k}`", "`{name}` 的这个版本没有 `{k}`"),
+        ("`{commit}` is not a full commit: 40 hexadecimal digits in lower case", "`{commit}` 不是完整的 commit：应为 40 位小写十六进制数字"),
+        ("`{checksum}` is not a checksum: `sha256:` and 64 hexadecimal digits, as `rythme publish` writes it", "`{checksum}` 不是校验和：应为 `sha256:` 加 64 位十六进制数字，和 `rythme publish` 写的一样"),
+        ("`{t}` is not a tag", "`{t}` 不是 tag"),
+        ("the version {v} is written twice", "版本 {v} 写了两次"),
+        ("the entry of `{name}` has no version", "`{name}` 的条目没有版本"),
+        ("expected `,` or `]` here", "这里应该是 `,` 或 `]`"),
+        ("a list is written on one line: `[\"math\", \"vectors\"]`", "列表写在一行里：`[\"math\", \"vectors\"]`"),
+        ("like `{key} = {example}`", "例如 `{key} = {example}`"),
+        ("write `\"^1.2.0\"` (1.2.0 or a newer compatible version, below 2.0.0), `\"~1.2.0\"` (1.2.x), `\"=1.2.0\"` (exactly this one) or `\">=1.2.0, <1.5.0\"`", "请写 `\"^1.2.0\"`（1.2.0 或更新的兼容版本，低于 2.0.0）、`\"~1.2.0\"`（1.2.x）、`\"=1.2.0\"`（正好这个版本）或 `\">=1.2.0, <1.5.0\"`"),
+        ("for a version from the package index, write `{name} = {{ version = \"{v}\" }}`", "要使用包索引中的版本，请写 `{name} = {{ version = \"{v}\" }}`"),
+        ("a dependency comes from the package index (`version`), from git (`git`) or from a folder (`path`): give only one", "依赖来自包索引（`version`）、git（`git`）或文件夹（`path`）：只能给一个"),
+        ("`{v}` is not a range of versions", "`{v}` 不是版本范围"),
+        (
+            r#"unknown option `{bad}` for `rythme {command}`
+see `rythme help packages`"#,
+            r#"`rythme {command}` 没有选项 `{bad}`
+见 `rythme help packages`"#,
+        ),
+        ("{bad} file(s) of the package index could not be read", "包索引中有 {bad} 个文件无法读取"),
+        ("{n} package(s) in {place}", "{place} 中有 {n} 个包"),
+        ("No package found for `{query}` in {place}", "在 {place} 中没有找到 `{query}` 的包"),
+        ("{n} package(s) found for `{query}` in {place}", "在 {place} 中找到 `{query}` 的 {n} 个包"),
+        ("More about one: `rythme info {name}`; add it to a project: `rythme add {name}`", "了解某个包：`rythme info {name}`；把它加入项目：`rythme add {name}`"),
+        ("`rythme search --update{words}` searches the newest copy of the index", "`rythme search --update{words}` 在最新的索引副本中查找"),
+        ("which package? Example: rythme info mathlib", "哪个包？例如：rythme info mathlib"),
+        ("repository", "仓库"),
+        ("license", "许可证"),
+        ("keywords", "关键词"),
+        ("authors", "作者"),
+        ("versions", "版本"),
+        ("  {v} was withdrawn: {}", "  {v} 已撤回：{}"),
+        ("Add it to a project: `rythme add {name}` (writes `{name} = {{ version = \"^{v}\" }}` in rythme.toml)", "把它加入项目：`rythme add {name}`（在 rythme.toml 中写入 `{name} = {{ version = \"^{v}\" }}`）"),
+        ("Every version of this package was withdrawn.", "这个包的所有版本都已撤回。"),
+        ("which package? Example: rythme add mathlib (or rythme add mathlib@1.2)", "哪个包？例如：rythme add mathlib（或 rythme add mathlib@1.2）"),
+        ("cannot read `{}`: {e}", "无法读取 `{}`：{e}"),
+        ("`{range_text}` is not a range of versions", "`{range_text}` 不是版本范围"),
+        ("`{name}` came from {from}: it now comes from the package index", "`{name}` 原来来自 {from}：现在改为来自包索引"),
+        ("`rythme.toml` was left as it was", "`rythme.toml` 保持原样"),
+        ("Added `{line}` to rythme.toml ({version})", "已把 `{line}` 加入 rythme.toml（{version}）"),
+        ("  use it with `use {name}/FILE` (see `rythme info {name}`)", "  用 `use {name}/FILE` 使用它（见 `rythme info {name}`）"),
+        ("which entries? Example: rythme publish --verify packages/mathlib.toml", "哪些条目？例如：rythme publish --verify packages/mathlib.toml"),
+        (
+            r#"`rythme publish` takes no argument (`{a}`): it checks the package of the current folder
+see `rythme help packages`"#,
+            r#"`rythme publish` 不接受参数（`{a}`）：它检查当前文件夹的包
+见 `rythme help packages`"#,
+        ),
+        ("`rythme.toml` has no `{key}`", "`rythme.toml` 没有 `{key}`"),
+        ("the package index shows it, and needs it", "包索引会显示它，也需要它"),
+        ("add a line like `{example}` at the top", "请在开头加一行，比如 `{example}`"),
+        ("Checking `{name}` {version} before it goes into the package index", "在 `{name}` {version} 进入包索引之前进行检查"),
+        ("`{version}` is not a version of semantic versioning", "`{version}` 不是语义化版本"),
+        ("like `version = \"1.2.0\"`, without zeros at the start of a number", "例如 `version = \"1.2.0\"`，数字开头不能有 0"),
+        ("description = \"What `{name}` is for, in one sentence\"", "description = \"用一句话说明 `{name}` 的用途\""),
+        ("the `description` is too long: one sentence, at most 200 characters", "`description` 太长：一句话，最多 200 个字符"),
+        ("YOU", "你的名字"),
+        ("`{k}` is not a keyword: a word in lower case, at most 24 characters", "`{k}` 不是关键词：应为一个小写的词，最多 24 个字符"),
+        ("at most 5 keywords", "最多 5 个关键词"),
+        ("a published package cannot use a folder of this computer: `{dep_name}` comes from `{p}`", "已发布的包不能使用这台电脑上的文件夹：`{dep_name}` 来自 `{p}`"),
+        ("publish `{dep_name}` too, then write `{dep_name} = {{ version = \"^...\" }}`", "也发布 `{dep_name}`，然后写 `{dep_name} = {{ version = \"^...\" }}`"),
+        ("`{name}` is not in a git repository", "`{name}` 不在 git 仓库中"),
+        ("the package index gives the commit of each version: a package is published from its git repository", "包索引给出每个版本的 commit：包要从它的 git 仓库发布"),
+        ("`git init`, `git add .`, `git commit`, then push it to its `repository`", "`git init`、`git add .`、`git commit`，然后推送到它的 `repository`"),
+        ("`rythme.toml` must be at the root of its git repository", "`rythme.toml` 必须在它的 git 仓库的根目录"),
+        ("the root of the repository: {top}", "仓库的根目录：{top}"),
+        ("give the package a repository of its own", "给这个包一个单独的仓库"),
+        ("some changes are not committed", "有些更改还没有提交（commit）"),
+        ("for example: {}", "例如：{}"),
+        ("commit them (`git add`, `git commit`), or set them aside, then tag the commit", "提交它们（`git add`、`git commit`），或者先放到一边，然后给 commit 打 tag"),
+        ("no tag `v{version}` for the version {version}", "版本 {version} 没有 tag `v{version}`"),
+        ("tag the commit and push the tag: `git tag v{version}`, then `git push origin v{version}`", "给 commit 打 tag 并推送：`git tag v{version}`，然后 `git push origin v{version}`"),
+        ("the tag `{t}` is not the current commit", "tag `{t}` 不是当前的 commit"),
+        ("what is checked must be what is published", "检查的内容必须就是发布的内容"),
+        ("publish from the tag (`git checkout {t}`), or move the tag to this commit (`git tag --force {t}`) before pushing it", "从 tag 发布（`git checkout {t}`），或者在推送之前把 tag 移到这个 commit（`git tag --force {t}`）"),
+        ("Running `rythme check`", "正在运行 `rythme check`"),
+        ("`rythme check` found errors", "`rythme check` 发现了错误"),
+        ("fix them first: a package must pass `rythme check`", "请先修正它们：包必须通过 `rythme check`"),
+        ("Running `rythme test`", "正在运行 `rythme test`"),
+        ("`rythme test` failed", "`rythme test` 失败了"),
+        ("fix them first: a package must pass its tests", "请先修正它们：包必须通过自己的测试"),
+        ("the name `{name}` is already taken in the package index", "名字 `{name}` 在包索引中已被占用"),
+        ("by the repository {repo}", "被仓库 {repo} 占用"),
+        ("choose another `name` for your package", "请给你的包换一个 `name`"),
+        ("the version {version} of `{name}` is already in the package index", "`{name}` 的版本 {version} 已经在包索引中"),
+        ("a published version never changes: raise `version` in `rythme.toml`, commit and tag again", "已发布的版本永远不变：请提高 `rythme.toml` 中的 `version`，再提交并打 tag"),
+        ("cannot read the package index `{url}`: it will check the name and the version itself", "无法读取包索引 `{url}`：它会自己检查名字和版本"),
+        ("the tag `{t}` is not in {repo}", "tag `{t}` 不在 {repo} 中"),
+        ("push it: `git push origin {t}`", "请推送它：`git push origin {t}`"),
+        ("the tag `{t}` of {repo} is not this commit", "{repo} 中的 tag `{t}` 不是这个 commit"),
+        ("push the tag again: `git push --force origin {t}`", "请重新推送 tag：`git push --force origin {t}`"),
+        ("cannot reach {repo} to check that the tag `{t}` is there", "无法连接 {repo} 来检查 tag `{t}` 是否在那里"),
+        ("cannot read the files of the commit `{commit}`", "无法读取 commit `{commit}` 的文件"),
+        ("✓ `{name}` {version} is ready for the package index.", "✓ `{name}` {version} 已经可以进入包索引。"),
+        ("Rythme never publishes anything by itself: a version goes into the index with a pull request on its repository, {}.", "Rythme 从不自己发布任何东西：版本通过在索引仓库 {} 上的 pull request 进入索引。"),
+        ("1. Fork the repository of the index and clone your fork. Create the file {file} with:", "1. Fork 索引的仓库，再 clone 你的 fork。创建文件 {file}，内容是："),
+        ("1. Fork the repository of the index and clone your fork. Add at the end of {file}:", "1. Fork 索引的仓库，再 clone 你的 fork。在 {file} 的末尾加上："),
+        ("2. Commit it on a branch of your fork and push it:", "2. 在你的 fork 的一个分支上提交并推送："),
+        ("3. Open a pull request on {}: its checks run `rythme publish --verify {file}`, then a maintainer merges it.", "3. 在 {} 上开一个 pull request：它的检查会运行 `rythme publish --verify {file}`，然后由维护者合并。"),
+        (
+            r#"
+{problems} problem(s) to fix before publishing: nothing was sent anywhere"#,
+            r#"
+发布前要修正 {problems} 个问题：没有向任何地方发送任何东西"#,
+        ),
+        ("`{f}` is not an entry of the index: `packages/NAME.toml`", "`{f}` 不是索引的条目：应为 `packages/NAME.toml`"),
+        ("✓ {f}: `{stem}`, {count} version(s) verified", "✓ {f}：`{stem}`，已验证 {count} 个版本"),
+        ("✗ {f}", "✗ {f}"),
+        ("{v}: the commit `{commit}` is not in `{url}`", "{v}：commit `{commit}` 不在 `{url}` 中"),
+        ("{v}: the tag `{tag}` of `{url}` is not the commit `{commit}`", "{v}：`{url}` 中的 tag `{tag}` 不是 commit `{commit}`"),
+        ("{v}: the files of the commit do not have the checksum of the entry", "{v}：commit 的文件与条目中的校验和不符"),
+        (
+            r#"expected: {}
+found:    {found}"#,
+            r#"应为：{}
+实际：{found}"#,
+        ),
+        ("`rythme publish` in the package, at its tag, writes the right one", "在包里、在它的 tag 上运行 `rythme publish`，会写出正确的校验和"),
+        ("{v}: the commit has no `rythme.toml` at its root", "{v}：commit 的根目录中没有 `rythme.toml`"),
+        ("{v}: the `rythme.toml` of the commit says `{found_name}` {found_version}", "{v}：commit 中的 `rythme.toml` 写的是 `{found_name}` {found_version}"),
+        ("{v}: the dependency `{dep_name}` is a folder of the computer of the author", "{v}：依赖 `{dep_name}` 是作者电脑上的文件夹"),
+        ("the package index, version {range}", "包索引，版本 {range}"),
+        ("the commit `{commit}` of `{name}` {version} does not exist in `{url}`", "`{name}` {version} 的 commit `{commit}` 在 `{url}` 中不存在"),
+        ("the package index gives this commit for this version", "包索引为这个版本给出的是这个 commit"),
+        ("tell the authors of `{name}`: the history of their repository may have been rewritten", "请告诉 `{name}` 的作者：他们仓库的历史可能被改写了"),
+        ("cannot read the files of `{name}` {version}", "无法读取 `{name}` {version} 的文件"),
+        ("the files of `{name}` {version} do not match the checksum of the package index", "`{name}` {version} 的文件与包索引中的校验和不符"),
+        ("nothing was installed, and nothing of the package ran", "什么都没有安装，包里的任何东西都没有运行"),
+        ("do not use this version; tell the maintainers of the package index", "不要使用这个版本；请告诉包索引的维护者"),
+        ("Updating the dependencies of `{name}`", "正在更新 `{name}` 的依赖"),
+        ("{range} from the index, commit {short} ({how})", "来自索引的 {range}，commit {short}（{how}）"),
+        ("the package index gives `{dep_name}` {wanted}, but its `rythme.toml` says `{found}` {version}", "包索引给出的是 `{dep_name}` {wanted}，但它的 `rythme.toml` 写的是 `{found}` {version}"),
+        ("tell the maintainers of the package index", "请告诉包索引的维护者"),
+        ("`rythme update` takes the names of dependencies, not `{bad}`: `rythme update` (all of them) or `rythme update mathlib`", "`rythme update` 接受依赖的名字，不接受 `{bad}`：`rythme update`（全部）或 `rythme update mathlib`"),
+        ("`{a}` is not a dependency of `{}`", "`{a}` 不是 `{}` 的依赖"),
+        ("did you mean `rythme update {best}`?", "你是不是想写 `rythme update {best}`？"),
+        ("`rythme add {a}` adds it from the package index", "`rythme add {a}` 会从包索引添加它"),
+        ("Everything was already up to date", "一切都已经是最新的"),
+        ("Updated:", "已更新："),
+        ("{} {} (new)", "{} {}（新）"),
+        (
+            r#"THE PACKAGE INDEX
+
+  rythme search vectors      # the packages whose name, description or keywords say it
+  rythme info mathlib        # its description, repository, license, versions
+  rythme add mathlib         # adds `mathlib = { version = "^1.2.0" }` to rythme.toml,
+                             #   then installs it (rythme.lock keeps the exact commit)
+  rythme add mathlib@1.1     # a range of versions of your choice
+  rythme update              # the newest version in the range of each dependency
+  rythme publish             # checks your package, then says how to add it
+
+A dependency from the index gives a range of versions:
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 or newer, below 2.0.0 (the default)
+  geometry = { version = "~0.3.1" }   # 0.3.x, from 0.3.1
+  tools = { version = "=1.0.0" }      # exactly this one
+
+`rythme install` takes the version of rythme.lock while it is in the range,
+and `rythme update` the newest one; a withdrawn version is never chosen.
+
+The index is a git repository, one file per package (packages/NAME.toml):
+its name, description, repository, license, keywords, and for each version
+its tag, its commit and the checksum of its files. Rythme keeps a copy in
+~/.rythme/index and reads it without a network: `rythme search --update`
+gets the newest one. Another index: `index = "..."` in rythme.toml, or the
+variable RYTHME_INDEX (an address, or a folder of this computer); by
+default https://github.com/maxlestage/rythme-index.
+
+Safety: names are Rythme names (no `/`, no `..`), addresses use https, ssh
+or file://, git runs without hooks, the files of each version must have the
+checksum of the index, and nothing of a package runs when it is installed.
+
+Publishing: tag the version (git tag v1.2.0, git push origin v1.2.0), then
+`rythme publish` checks rythme.toml (description, license, repository),
+`rythme check`, `rythme test` and the tag, and prints the entry to add to
+the index with a pull request. Rythme never sends anything by itself."#,
+            r#"包索引
+
+  rythme search vectors      # 名字、描述或关键词中包含这个词的包
+  rythme info mathlib        # 它的描述、仓库、许可证、版本
+  rythme add mathlib         # 在 rythme.toml 中加入 `mathlib = { version = "^1.2.0" }`，
+                             #   然后安装它（rythme.lock 记下确切的 commit）
+  rythme add mathlib@1.1     # 你自己选择的版本范围
+  rythme update              # 每个依赖在其范围内的最新版本
+  rythme publish             # 检查你的包，然后说明如何把它加入索引
+
+来自索引的依赖给出一个版本范围：
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 或更新，低于 2.0.0（默认）
+  geometry = { version = "~0.3.1" }   # 0.3.x，从 0.3.1 起
+  tools = { version = "=1.0.0" }      # 正好这个版本
+
+只要 rythme.lock 中的版本还在范围内，`rythme install` 就用它；
+`rythme update` 则取最新的版本；已撤回的版本永远不会被选中。
+
+索引是一个 git 仓库，每个包一个文件（packages/NAME.toml）：包的名字、描述、
+仓库、许可证、关键词，以及每个版本的 tag、commit 和文件的校验和。Rythme 在
+~/.rythme/index 中保存一份副本，不联网也能读取：`rythme search --update`
+获取最新的副本。使用另一个索引：在 rythme.toml 中写 `index = "..."`，或者
+设置变量 RYTHME_INDEX（一个地址，或这台电脑上的一个文件夹）；默认是
+https://github.com/maxlestage/rythme-index。
+
+安全：名字都是 Rythme 名字（不能有 `/` 或 `..`），地址只用 https、ssh 或
+file://，git 运行时不执行 hooks，每个版本的文件必须符合索引中的校验和，安装
+包的时候包里的任何东西都不会运行。
+
+发布：给版本打 tag（git tag v1.2.0，git push origin v1.2.0），然后
+`rythme publish` 会检查 rythme.toml（description、license、repository）、
+`rythme check`、`rythme test` 和 tag，并显示要通过 pull request 加入索引的
+条目。Rythme 从不自己发送任何东西。"#,
+        ),
+        ("The index is the folder {url}, where Rythme writes nothing.", "索引是文件夹 {url}，Rythme 不会往里面写任何东西。"),
+        ("Create its file {file} with:", "创建它的文件 {file}，内容是："),
+        ("Add at the end of its file {file}:", "在它的文件 {file} 末尾加上："),
     ],
 }

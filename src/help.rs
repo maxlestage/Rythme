@@ -115,10 +115,6 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "project",
             "projet",
             "projets",
-            "packages",
-            "package",
-            "paquets",
-            "paquet",
             "new",
             "install",
             "dependencies",
@@ -127,15 +123,32 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "rythme.toml",
             "proyectos",
             "proyecto",
-            "paquetes",
             "projekte",
             "projekt",
-            "pakete",
             "projetos",
             "projeto",
-            "pacotes",
             "项目",
+        ],
+    ),
+    (
+        "packages",
+        &[
+            "package",
+            "paquets",
+            "paquet",
+            "index",
+            "registry",
+            "publish",
+            "publier",
+            "semver",
+            "paquetes",
+            "paquete",
+            "pakete",
+            "paket",
+            "pacotes",
+            "pacote",
             "包",
+            "软件包",
         ],
     ),
     (
@@ -340,6 +353,7 @@ Commands
   rythme exercise           exercises checked automatically (list, start, check)
   rythme new NAME           create a project (rythme.toml, src/, tests/)
   rythme install            download the dependencies of the project
+  rythme add NAME           add a package of the index to the project (rythme search WORDS finds them)
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
@@ -366,6 +380,7 @@ Topics (rythme help TOPIC)
   modules     using several files
   system      files, folders, paths, options, input, exit codes
   projects    projects and packages: rythme new, rythme.toml, rythme install
+  packages    the package index: rythme search, add, update, publish
   dates       dates and times: now(), today(), calendar, ISO 8601
   regex       searching, cutting and replacing with regular expressions
   csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
@@ -398,6 +413,7 @@ Commandes
   rythme exercise           exercices corrigés automatiquement (list, start, check)
   rythme new NOM            créer un projet (rythme.toml, src/, tests/)
   rythme install            télécharger les dépendances du projet
+  rythme add NOM            ajouter un paquet de l'index au projet (rythme search MOTS les trouve)
   rythme learn              visite guidée du langage, pas à pas
   rythme help SUJET         aide sur un sujet ou une fonction
   rythme explain E003       expliquer un code d'erreur
@@ -424,6 +440,7 @@ Sujets (rythme help SUJET)
   modules     utiliser plusieurs fichiers
   system      fichiers, dossiers, chemins, options, entrée, codes de sortie
   projects    projets et paquets : rythme new, rythme.toml, rythme install
+  packages    l'index des paquets : rythme search, add, update, publish
   dates       dates et heures : now(), today(), calendrier, ISO 8601
   regex       chercher, découper et remplacer avec des expressions régulières
   csv         les tableaux des tableurs : csv_parse, csv_records, csv_format
@@ -996,6 +1013,7 @@ fn topic_texts(name: &str) -> (&'static str, &'static str) {
         "modules" => (MODULES_EN, MODULES_FR),
         "system" => (SYSTEM_EN, SYSTEM_FR),
         "projects" => (PROJECTS_EN, PROJECTS_FR),
+        "packages" => (PACKAGES_EN, PACKAGES_FR),
         "dates" => (DATES_EN, DATES_FR),
         "regex" => (REGEX_EN, REGEX_FR),
         "csv" => (CSV_EN, CSV_FR),
@@ -2480,7 +2498,85 @@ same code. Then:
   use hello/greeting        # a file of the project itself, from tests/
 
 A file next to the one that contains `use` comes first. Packages from git
-are kept in ~/.rythme/packages (or RYTHME_HOME/packages)."#;
+are kept in ~/.rythme/packages (or RYTHME_HOME/packages). Finding packages
+by name and sharing yours: `rythme help packages`."#;
+
+const PACKAGES_EN: &str = r#"THE PACKAGE INDEX
+
+  rythme search vectors      # the packages whose name, description or keywords say it
+  rythme info mathlib        # its description, repository, license, versions
+  rythme add mathlib         # adds `mathlib = { version = "^1.2.0" }` to rythme.toml,
+                             #   then installs it (rythme.lock keeps the exact commit)
+  rythme add mathlib@1.1     # a range of versions of your choice
+  rythme update              # the newest version in the range of each dependency
+  rythme publish             # checks your package, then says how to add it
+
+A dependency from the index gives a range of versions:
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 or newer, below 2.0.0 (the default)
+  geometry = { version = "~0.3.1" }   # 0.3.x, from 0.3.1
+  tools = { version = "=1.0.0" }      # exactly this one
+
+`rythme install` takes the version of rythme.lock while it is in the range,
+and `rythme update` the newest one; a withdrawn version is never chosen.
+
+The index is a git repository, one file per package (packages/NAME.toml):
+its name, description, repository, license, keywords, and for each version
+its tag, its commit and the checksum of its files. Rythme keeps a copy in
+~/.rythme/index and reads it without a network: `rythme search --update`
+gets the newest one. Another index: `index = "..."` in rythme.toml, or the
+variable RYTHME_INDEX (an address, or a folder of this computer); by
+default https://github.com/maxlestage/rythme-index.
+
+Safety: names are Rythme names (no `/`, no `..`), addresses use https, ssh
+or file://, git runs without hooks, the files of each version must have the
+checksum of the index, and nothing of a package runs when it is installed.
+
+Publishing: tag the version (git tag v1.2.0, git push origin v1.2.0), then
+`rythme publish` checks rythme.toml (description, license, repository),
+`rythme check`, `rythme test` and the tag, and prints the entry to add to
+the index with a pull request. Rythme never sends anything by itself."#;
+
+const PACKAGES_FR: &str = r#"L'INDEX DES PAQUETS
+
+  rythme search vecteurs     # les paquets dont le nom, la description ou les mots-clés le disent
+  rythme info mathlib        # sa description, son dépôt, sa licence, ses versions
+  rythme add mathlib         # ajoute `mathlib = { version = "^1.2.0" }` à rythme.toml,
+                             #   puis l'installe (rythme.lock garde le commit exact)
+  rythme add mathlib@1.1     # un intervalle de versions de votre choix
+  rythme update              # la version la plus récente de l'intervalle de chaque dépendance
+  rythme publish             # vérifie votre paquet, puis dit comment l'ajouter
+
+Une dépendance venant de l'index donne un intervalle de versions :
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 ou plus récente, sous 2.0.0 (par défaut)
+  geometrie = { version = "~0.3.1" }  # 0.3.x, à partir de 0.3.1
+  outils = { version = "=1.0.0" }     # exactement celle-ci
+
+`rythme install` prend la version de rythme.lock tant qu'elle est dans
+l'intervalle, et `rythme update` la plus récente ; une version retirée n'est
+jamais choisie.
+
+L'index est un dépôt git, un fichier par paquet (packages/NOM.toml) : son
+nom, sa description, son dépôt, sa licence, ses mots-clés, et pour chaque
+version son tag, son commit et la somme de contrôle de ses fichiers. Rythme
+en garde une copie dans ~/.rythme/index et la lit sans réseau :
+`rythme search --update` prend la plus récente. Un autre index :
+`index = "..."` dans rythme.toml, ou la variable RYTHME_INDEX (une adresse,
+ou un dossier de cet ordinateur) ; par défaut
+https://github.com/maxlestage/rythme-index.
+
+Sécurité : les noms sont des noms Rythme (pas de `/`, pas de `..`), les
+adresses utilisent https, ssh ou file://, git tourne sans hooks, les
+fichiers de chaque version doivent avoir la somme de contrôle de l'index, et
+rien d'un paquet ne tourne quand il est installé.
+
+Publier : étiquetez la version (git tag v1.2.0, git push origin v1.2.0),
+puis `rythme publish` vérifie rythme.toml (description, licence, dépôt),
+`rythme check`, `rythme test` et le tag, et affiche l'entrée à ajouter à
+l'index par une pull request. Rythme n'envoie jamais rien lui-même."#;
 
 const PROJECTS_FR: &str = r#"PROJETS ET PAQUETS
 
@@ -2512,7 +2608,8 @@ même code. Ensuite :
   use bonjour/salutation    # un fichier du projet lui-même, depuis tests/
 
 Un fichier à côté de celui qui contient `use` passe en premier. Les paquets
-venant de git sont gardés dans ~/.rythme/packages (ou RYTHME_HOME/packages)."#;
+venant de git sont gardés dans ~/.rythme/packages (ou RYTHME_HOME/packages).
+Trouver des paquets par leur nom et partager les vôtres : `rythme help packages`."#;
 
 const EDITORS_EN: &str = r#"RYTHME IN YOUR EDITOR
 
@@ -3371,8 +3468,10 @@ la saisie au clavier a été fermée (Ctrl-D), ou le texte envoyé au programme
             r#"E025 — Project or package problem
 
 The `rythme.toml` of the project (or the `rythme.lock` written by
-`rythme install`) cannot be read, a dependency is not installed, or
-`rythme install` cannot download one. A `rythme.toml` looks like this:
+`rythme install`) cannot be read, a dependency is not installed,
+`rythme install` cannot download one, or the package index (`rythme
+search`, `add`, `publish`) cannot be read or does not have what was asked.
+A `rythme.toml` looks like this:
 
   name = "hello"                 # a Rythme name in lower case
   version = "0.1.0"              # three numbers
@@ -3381,17 +3480,20 @@ The `rythme.toml` of the project (or the `rythme.lock` written by
   [dependencies]
   mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
   tools = { path = "../tools" }
+  geometry = { version = "^1.2.0" }   # from the package index
 
 Every value is a text, in quotes. A dependency from git needs a fixed
 version, a `tag` or a `commit`, and the program `git`
 (https://git-scm.com). After a change of `[dependencies]`, run
-`rythme install` in the folder of the project. More: `rythme help projects`."#,
+`rythme install` in the folder of the project. More: `rythme help projects`
+and `rythme help packages`."#,
             r#"E025 — Problème de projet ou de paquet
 
 Le `rythme.toml` du projet (ou le `rythme.lock` écrit par `rythme install`)
-ne peut pas être lu, une dépendance n'est pas installée, ou
-`rythme install` ne peut pas en télécharger une. Un `rythme.toml`
-ressemble à ceci :
+ne peut pas être lu, une dépendance n'est pas installée, `rythme install`
+ne peut pas en télécharger une, ou l'index des paquets (`rythme search`,
+`add`, `publish`) ne peut pas être lu ou n'a pas ce qui est demandé. Un
+`rythme.toml` ressemble à ceci :
 
   name = "bonjour"               # un nom Rythme en minuscules
   version = "0.1.0"              # trois nombres
@@ -3400,11 +3502,13 @@ ressemble à ceci :
   [dependencies]
   mathlib = { git = "https://github.com/quelqu-un/mathlib", tag = "v1.0.0" }
   outils = { path = "../outils" }
+  geometrie = { version = "^1.2.0" }  # depuis l'index des paquets
 
 Chaque valeur est un texte, entre guillemets. Une dépendance venant de git
 a besoin d'une version fixe, un `tag` ou un `commit`, et du programme `git`
 (https://git-scm.com). Après un changement de `[dependencies]`, lancez
-`rythme install` dans le dossier du projet. Plus : `rythme help projects`."#,
+`rythme install` dans le dossier du projet. Plus : `rythme help projects`
+et `rythme help packages`."#,
         ),
         "E018" => (
             r#"E018 — Unexpected character

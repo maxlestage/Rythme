@@ -205,6 +205,7 @@ cargo install --path .       # or install it in your PATH
 | `rythme doc hello.ry`       | its documentation from the `##` comments, in Markdown (`--html`: one web page) |
 | `rythme new hello`          | a new project: `rythme.toml`, `src/`, `tests/`; then `rythme run`, `rythme test`... without a file |
 | `rythme install`            | download the dependencies of `rythme.toml` (git or folders), and write `rythme.lock` |
+| `rythme search vectors`     | find packages in the [package index](docs/reference.md#711-the-package-index); `rythme add mathlib` adds one to the project, `rythme update` takes the newest versions, `rythme publish` shares yours |
 | `rythme help [topic]`       | help on a topic or a function                  |
 | `rythme explain E003`       | explain an error code                          |
 | `rythme learn`              | guided tour of the language                    |
@@ -371,6 +372,7 @@ mode) and is organised as a pipeline:
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |
 | [`src/project.rs`](src/project.rs), [`src/manifest.rs`](src/manifest.rs) | projects and packages: `rythme new`, `rythme install`, `rythme.toml`, `use package/file` |
+| [`src/index.rs`](src/index.rs), [`src/packages.rs`](src/packages.rs) | the package index, a git repository without a server: `rythme search`, `info`, `add`, `update`, `publish`, checksums ([`src/sha256.rs`](src/sha256.rs)) and ranges of versions ([`src/semver.rs`](src/semver.rs)) |
 | [`src/testing.rs`](src/testing.rs) | `rythme test`: files and folders, `--filter`, `--watch`, the summary |
 | [`src/format.rs`](src/format.rs) | `rythme fmt`: the official layout, which never changes the meaning |
 | [`src/steps.rs`](src/steps.rs) | `rythme steps`: the evaluation shown step by step, for teaching |
@@ -412,7 +414,9 @@ messages in six languages. What it contains is in
   `rythme help fmt`), `rythme doc` writes the documentation of files and
   folders from their `##` comments (see `rythme help doc`), `rythme new` and
   `rythme install` make projects with dependencies (see `rythme help
-  projects`), and the language server (`rythme lsp`) brings errors and
+  projects`), `rythme search`, `add` and `publish` find and share packages
+  through a package index that needs no server (see `rythme help
+  packages`), and the language server (`rythme lsp`) brings errors and
   documentation inside every editor (see `rythme help editors`). The web
   playground runs the interpreter compiled to WebAssembly.
 - **Languages.** Messages exist in English, French, Spanish, German,

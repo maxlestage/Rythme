@@ -95,6 +95,7 @@ Mais opções no [README em inglês](README.md#install).
 | `rythme test ola.ry`        | executar os testes escritos no arquivo           |
 | `rythme fmt ola.ry`         | dar ao código o seu layout oficial               |
 | `rythme new ola`            | um projeto novo: `rythme.toml`, `src/`, `tests/` |
+| `rythme add mathlib`        | adicionar um pacote do [índice de pacotes](docs/reference.md#711-the-package-index) (`rythme search PALAVRAS` os encontra) |
 | `rythme help [tema]`        | ajuda sobre um tema ou uma função (`rythme help listas`) |
 | `rythme explain E003`       | explicar um código de erro                       |
 | `rythme learn`              | visita guiada pela linguagem                     |

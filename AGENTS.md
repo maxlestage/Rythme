@@ -54,7 +54,8 @@ After a change to the interpreter: `bench/run.sh` before and after.
 | `src/lsp/` | the language server; `src/debug/` the debugger (terminal and DAP) |
 | `src/mcp.rs` | `rythme mcp`, the Model Context Protocol server for AI assistants |
 | `src/llms.rs` | generates `docs/llms.txt` and `docs/llms-full.txt` |
-| `src/format.rs`, `doc.rs`, `steps.rs`, `testing.rs`, `project.rs`, `exercise.rs` | `fmt`, `doc`, `steps`, `test`, `new`/`install`, `exercise` |
+| `src/format.rs`, `doc.rs`, `steps.rs`, `testing.rs`, `project.rs`, `exercise.rs` | `fmt`, `doc`, `steps`, `test`, `new`/`install`/`update`, `exercise` |
+| `src/index.rs`, `src/packages.rs` (+ `semver.rs`, `sha256.rs`) | the package index: `search`, `info`, `add`, `publish`; its template in `packaging/index-template/` |
 | `docs/reference.md`, `docs/reference.fr.md` | the manual (EN and FR); samples are run by `tests/manual.rs` |
 | `tests/` | integration tests; `tests/common/mod.rs` runs the binary |
 | `editors/` | VS Code, Tree-sitter, Zed, Helix |
