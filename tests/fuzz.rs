@@ -1195,6 +1195,9 @@ fn inputs_found_by_fuzzing() {
         // `fail` with an empty message gave an error without any text.
         "fail(\"\")",
         "fail(\"\\n\")",
+        // The fixes of `x => ...` and `xs[a:b]` cut a name after a character of several bytes.
+        "test \"\\n\" &&é/ ! \"a{}b\" x_1 \"a\" unwrap / ( \"unclosed (👍pow => g 日本 ? type x  1\t",
+        "x = 3\ny = -2.5\nn = 0\nxs = [1, 2, 3]\ns = \"héllo 👍[1, 2, 3\"\nr = {name: \"Ada\", age: 36}\no = Soname: \"Ada\", age: 36}\no = Some(1)\ntype T = A | B(v) | C(v, w)\ntype Tree = Leaf | Node(l, v, r)\ntype U = D(d: Int) | E(e: List(a), f: T)\ntype W(a) = W0 | W1(w: a, ws: W(a))\n[v1, v2] = [-()]\nprint([1, \"a\"])\ntest \"v3\" = unless xs % \"a,b,,c\" then not 2 else o |> text\nv4 = \"b\"[s]\nputs -\"a,b,,c\"\nputs [index_of(\"b\", C(2, \"z\")) |> reverse]\nv5 = match n |> map(fn(v) = v) >= s\n  Err({\"my key\": k}) -> 8\n  {name} -> -1\n  [B(_), ..] -> (if 2.0 then B(1) else xs)\n  B(A | ()) -> \"a {- \"b\"} b\"\nend\n",
     ] {
         survives(src);
     }
