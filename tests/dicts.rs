@@ -260,7 +260,7 @@ fn help_knows_dicts_and_sets() {
     assert!(r.stdout.contains("DICTIONNAIRES ET ENSEMBLES"), "{}", r.stdout);
     let r = rythme(&["help", "dict"]);
     assert!(r.stdout.contains("DICTIONARIES AND SETS") && r.stdout.contains("dict(pairs)"), "{}", r.stdout);
-    ok("help(set([1]))", "This is a value of type Set: set(1)\nUseful functions: dict, set, union, intersection, difference, is_subset\nAlso: has, push, remove, len, is_empty, values, filter, map, to_json");
+    ok("help(set([1]))", "This is a value of type Set: set(1)\nUseful functions: dict, set, union, intersection, difference, is_subset, symmetric_difference, is_disjoint\nAlso: has, push, remove, len, is_empty, values, filter, map, to_json");
     let r = rythme(&["-e", "help(dict([[1, 2]]))"]);
     assert!(r.stdout.contains("Also: get, put, has, remove, keys"), "{}", r.stdout);
     let r = rythme(&["help", "builtins"]);
