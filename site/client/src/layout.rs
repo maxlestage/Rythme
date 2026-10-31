@@ -66,7 +66,7 @@ impl Menu {
 }
 
 /// The bottom of the bar, where the menu panel and the language list start: the bar
-/// wraps on two lines when the text is enlarged, and scrolls away on a short screen.
+/// wraps on two lines when the text is enlarged, and scrolls away while the keyboard is open.
 fn measure_bar() {
     if let Some(bar) = dom::query::<Element>(".bar") {
         // Whole pixels, as integers: no formatting of floats in the bundle.
