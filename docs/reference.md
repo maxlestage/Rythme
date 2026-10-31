@@ -4010,7 +4010,8 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMAND] [ARGUMENTS...]
 the messages: `rythme test --help`. For `run`, `steps`, `debug` and `-e`,
 `--help` counts only before the file: after it, the words are the
 program's. `rythme run -` (or `rythme -`) runs the program read from the
-standard input, which `input` then finds at its end. `rythme check FOLDER`
+standard input, which `input` then finds at its end (also with `--format
+json`). `rythme check FOLDER`
 checks every `.ry` file of a folder and of its subfolders (hidden ones
 excepted), like `rythme fmt`. `rythme completions bash` (or `zsh`, `fish`,
 `powershell`) writes a script that completes the commands, their options,

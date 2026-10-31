@@ -264,7 +264,7 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   `run`, `steps`, `debug` and `-e`, whose following words belong to the
   program).
 - **`rythme run -`** and `rythme -` run the program read from the standard
-  input; **`rythme check FOLDER`** checks every `.ry` file of a folder.
+  input (also with `--format json`); **`rythme check FOLDER`** checks every `.ry` file of a folder.
 - **`rythme completions bash|zsh|fish|powershell`** writes a completion
   script (commands, options, topics of `help`, codes of `explain`,
   languages, `.ry` files), and **`rythme man`** the manual page, in roff.

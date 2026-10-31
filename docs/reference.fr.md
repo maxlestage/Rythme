@@ -4186,7 +4186,8 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMANDE] [ARGUMENTS...]
 langue des messages : `rythme test --help`. Pour `run`, `steps`, `debug` et
 `-e`, `--help` ne compte qu'avant le fichier : après, les mots sont ceux du
 programme. `rythme run -` (ou `rythme -`) lance le programme lu sur l'entrée
-standard, dont `input` trouve alors la fin. `rythme check DOSSIER` vérifie
+standard, dont `input` trouve alors la fin (aussi avec `--format json`).
+`rythme check DOSSIER` vérifie
 chaque fichier `.ry` d'un dossier et de ses sous-dossiers (sauf les cachés),
 comme `rythme fmt`. `rythme completions bash` (ou `zsh`, `fish`,
 `powershell`) écrit un script qui complète les commandes, leurs options, les
