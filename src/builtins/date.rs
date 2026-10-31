@@ -369,14 +369,24 @@ pub(super) fn today(_: &mut Interp, _: &[Value], span: Span) -> Fallible<Value> 
 
 pub(super) fn parse_date(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let s = text(a, 0, "parse_date", span)?;
-    Ok(match Date::parse(s) {
+    let read = match a.get(1) {
+        Some(_) => parse_pattern(s, text(a, 1, "parse_date", span)?, span)?,
+        None => Date::parse(s),
+    };
+    Ok(match read {
         Ok(d) => it.ok(d.to_value()),
         Err(why) => it.err(text_value(why)),
     })
 }
 
 pub(super) fn format_date(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    Ok(text_value(date(a, 0, "format_date", span)?.iso()))
+    let r = date_record(a, 0, "format_date", span)?;
+    let pattern = if a.len() == 2 { Some(text(a, 1, "format_date", span)?) } else { None };
+    let d = valid(r, "format_date", span)?;
+    Ok(text_value(match pattern {
+        Some(p) => format_pattern(&d, p, span)?,
+        None => d.iso(),
+    }))
 }
 
 pub(super) fn is_date(_: &mut Interp, a: &[Value], _: Span) -> Fallible<Value> {
@@ -433,6 +443,230 @@ pub(super) fn is_leap_year(_: &mut Interp, a: &[Value], span: Span) -> Fallible<
 /// Does this record hold a valid date? (`help(value)` lists the date functions then.)
 pub(crate) fn is_date_record(r: &Record) -> bool {
     Date::read(r).is_ok()
+}
+
+// ----- months, days of the year, patterns ---------------------------------
+
+pub(super) fn add_months(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let r = date_record(a, 0, "add_months", span)?;
+    let n = int(a, 1, "add_months", span)?;
+    let d = valid(r, "add_months", span)?;
+    let months = i128::from(d.year) * 12 + i128::from(d.month - 1) + i128::from(n);
+    let year = months.div_euclid(12);
+    if !(1..=9999).contains(&year) {
+        return Err(out_of_years("add_months", span));
+    }
+    let (year, month) = (year as i64, months.rem_euclid(12) as i64 + 1);
+    // 31 January + 1 month: the last day of February.
+    let day = d.day.min(month_len(year, month));
+    Ok(Date { year, month, day, ..d }.to_value())
+}
+
+pub(super) fn day_of_year(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let d = date(a, 0, "day_of_year", span)?;
+    Ok(Value::Int(d.days() - days_from_civil(d.year, 1, 1) + 1))
+}
+
+/// The days of the week in English, Monday first (patterns are not translated:
+/// a program prints the same thing in every language).
+const WEEKDAYS_EN: [&str; 7] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+fn pattern_error(pattern: &str, c: char, span: Span) -> Box<Diagnostic> {
+    Diagnostic::error(
+        "E023",
+        t!("the pattern \"{pattern}\" has an unknown directive `%{c}`", "le motif \"{pattern}\" a une directive inconnue `%{c}`"),
+    )
+    .at(span)
+    .help(t!(
+        "the directives are %Y (year), %m (month), %d (day), %H (hour), %M (minute), %S (second), %y (year in 2 digits), %B and %b (month name), %A and %a (day name), %I and %p (12-hour clock), %j (day of the year), %z (offset) and %% (a %)",
+        "les directives sont %Y (année), %m (mois), %d (jour), %H (heure), %M (minute), %S (seconde), %y (année en 2 chiffres), %B et %b (nom du mois), %A et %a (nom du jour), %I et %p (horloge de 12 heures), %j (jour de l'année), %z (décalage) et %% (un %)"
+    ))
+    .boxed()
+}
+
+/// A date written with a pattern like `"%d/%m/%Y %H:%M"`, as `strftime` does.
+fn format_pattern(d: &Date, pattern: &str, span: Span) -> Fallible<String> {
+    let mut out = String::new();
+    let mut chars = pattern.chars();
+    while let Some(c) = chars.next() {
+        if c != '%' {
+            out.push(c);
+            continue;
+        }
+        let Some(k) = chars.next() else { return Err(pattern_error(pattern, ' ', span)) };
+        let month = MONTHS_EN[(d.month - 1) as usize];
+        let weekday = WEEKDAYS_EN[(d.days() + 3).rem_euclid(7) as usize];
+        let hour12 = if d.hour % 12 == 0 { 12 } else { d.hour % 12 };
+        match k {
+            'Y' => out.push_str(&format!("{:04}", d.year)),
+            'y' => out.push_str(&format!("{:02}", d.year % 100)),
+            'm' => out.push_str(&format!("{:02}", d.month)),
+            'd' => out.push_str(&format!("{:02}", d.day)),
+            'H' => out.push_str(&format!("{:02}", d.hour)),
+            'I' => out.push_str(&format!("{hour12:02}")),
+            'M' => out.push_str(&format!("{:02}", d.minute)),
+            'S' => out.push_str(&format!("{:02}", d.second)),
+            'p' => out.push_str(if d.hour < 12 { "AM" } else { "PM" }),
+            'j' => out.push_str(&format!("{:03}", d.days() - days_from_civil(d.year, 1, 1) + 1)),
+            'B' => out.push_str(month),
+            'b' => out.push_str(&month[..3]),
+            'A' => out.push_str(weekday),
+            'a' => out.push_str(&weekday[..3]),
+            'z' => {
+                let o = d.offset.unwrap_or(0);
+                out.push_str(&format!("{}{:02}{:02}", if o < 0 { '-' } else { '+' }, o.abs() / 60, o.abs() % 60));
+            }
+            '%' => out.push('%'),
+            other => return Err(pattern_error(pattern, other, span)),
+        }
+    }
+    Ok(out)
+}
+
+/// Reads a date written with a pattern: `Ok(date)`, `Err(why)` when the text
+/// does not follow it, or a diagnostic for a pattern that is not one.
+fn parse_pattern(text: &str, pattern: &str, span: Span) -> Fallible<Result<Date, String>> {
+    let s: Vec<char> = text.trim().chars().collect();
+    let mut at = 0;
+    let mut d = Date { year: 1900, month: 1, day: 1, hour: 0, minute: 0, second: 0, timed: false, offset: None };
+    let mut pm: Option<bool> = None;
+    let mismatch = || Ok(Err(t!("\"{text}\" does not follow the pattern \"{pattern}\"", "\"{text}\" ne suit pas le motif \"{pattern}\"")));
+    // A number of 1 to `max` digits.
+    let number = |at: &mut usize, max: usize| -> Option<i64> {
+        let start = *at;
+        while *at < s.len() && *at - start < max && s[*at].is_ascii_digit() {
+            *at += 1;
+        }
+        (*at > start).then(|| s[start..*at].iter().fold(0, |acc, c| acc * 10 + i64::from(c.to_digit(10).unwrap_or(0))))
+    };
+    // One of these names (or its first three letters), whatever the case.
+    let name = |at: &mut usize, names: &[&str]| -> Option<i64> {
+        let rest: String = s[*at..].iter().collect::<String>().to_lowercase();
+        for (i, n) in names.iter().enumerate() {
+            for candidate in [n.to_lowercase(), n[..3].to_lowercase()] {
+                if rest.starts_with(&candidate) {
+                    *at += candidate.chars().count();
+                    return Some(i as i64);
+                }
+            }
+        }
+        None
+    };
+    let mut p = pattern.chars();
+    while let Some(c) = p.next() {
+        if c != '%' {
+            if c.is_whitespace() {
+                while at < s.len() && s[at].is_whitespace() {
+                    at += 1;
+                }
+                continue;
+            }
+            if s.get(at) != Some(&c) {
+                return mismatch();
+            }
+            at += 1;
+            continue;
+        }
+        let Some(k) = p.next() else { return Err(pattern_error(pattern, ' ', span)) };
+        let read = match k {
+            'Y' => number(&mut at, 4).map(|n| d.year = n),
+            'y' => number(&mut at, 2).map(|n| d.year = if n < 69 { 2000 + n } else { 1900 + n }),
+            'm' => number(&mut at, 2).map(|n| d.month = n),
+            'd' => number(&mut at, 2).map(|n| d.day = n),
+            'H' | 'I' => number(&mut at, 2).map(|n| {
+                d.hour = n;
+                d.timed = true;
+            }),
+            'M' => number(&mut at, 2).map(|n| {
+                d.minute = n;
+                d.timed = true;
+            }),
+            'S' => number(&mut at, 2).map(|n| {
+                d.second = n;
+                d.timed = true;
+            }),
+            'j' => number(&mut at, 3).map(|n| d.day = -n),
+            'B' | 'b' => name(&mut at, &MONTHS_EN).map(|i| d.month = i + 1),
+            'A' | 'a' => name(&mut at, &WEEKDAYS_EN).map(|_| ()),
+            'p' => {
+                let rest: String = s[at..].iter().take(2).collect::<String>().to_uppercase();
+                let found = match rest.as_str() {
+                    "AM" => Some(false),
+                    "PM" => Some(true),
+                    _ => None,
+                };
+                found.map(|found| {
+                    at += 2;
+                    pm = Some(found);
+                })
+            }
+            'z' => {
+                if s.get(at).is_some_and(|c| *c == 'Z' || *c == 'z') {
+                    at += 1;
+                    d.offset = Some(0);
+                    Some(())
+                } else {
+                    let sign = match s.get(at) {
+                        Some('+') => 1,
+                        Some('-') => -1,
+                        _ => return mismatch(),
+                    };
+                    at += 1;
+                    let hours = number(&mut at, 2);
+                    if s.get(at) == Some(&':') {
+                        at += 1;
+                    }
+                    let minutes = number(&mut at, 2);
+                    match (hours, minutes) {
+                        (Some(h), Some(m)) if m < 60 => {
+                            d.offset = Some(sign * (h * 60 + m));
+                            d.timed = true;
+                            Some(())
+                        }
+                        _ => None,
+                    }
+                }
+            }
+            '%' => (s.get(at) == Some(&'%')).then(|| at += 1),
+            other => return Err(pattern_error(pattern, other, span)),
+        };
+        if read.is_none() {
+            return mismatch();
+        }
+    }
+    if at != s.len() {
+        return mismatch();
+    }
+    if let Some(pm) = pm {
+        if !(1..=12).contains(&d.hour) {
+            return Ok(Err(t!(
+                "\"{text}\" is not a valid date: {why}",
+                "\"{text}\" n'est pas une date valide : {why}",
+                why =
+                    t!("the hour must go from 1 to 12 with AM or PM, not {}", "l'heure doit aller de 1 à 12 avec AM ou PM, pas {}", d.hour)
+            )));
+        }
+        d.hour = d.hour % 12 + if pm { 12 } else { 0 };
+    }
+    // `%j`: the day of the year, counted from 1 January.
+    if d.day < 0 {
+        let n = -d.day;
+        let len = if is_leap(d.year) { 366 } else { 365 };
+        if !(1..=len).contains(&n) {
+            return Ok(Err(t!(
+                "\"{text}\" is not a valid date: {why}",
+                "\"{text}\" n'est pas une date valide : {why}",
+                why = t!("the day of the year must go from 1 to {len}, not {n}", "le jour de l'année doit aller de 1 à {len}, pas {n}")
+            )));
+        }
+        let (_, month, day) = civil_from_days(days_from_civil(d.year, 1, 1) + n - 1);
+        d.month = month;
+        d.day = day;
+    }
+    Ok(match d.problem() {
+        Some(why) => Err(t!("\"{text}\" is not a valid date: {why}", "\"{text}\" n'est pas une date valide : {why}")),
+        None => Ok(d),
+    })
 }
 
 #[cfg(test)]

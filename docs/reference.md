@@ -3566,16 +3566,16 @@ before the program runs:
 
 ```rythme
 word = "hello"
-print(ord(word[0]))
+print(charCodeAt(word[0]))
 print(map(word, upper))
 ```
 
 ```text
-error[E003]: unknown name `ord`
+error[E003]: unknown name `charCodeAt`
  --> 62-hints.ry:2:7
   |
-2 | print(ord(word[0]))
-  |       ^^^ not defined
+2 | print(charCodeAt(word[0]))
+  |       ^^^^^^^^^^ not defined
   |
   = help: in Rythme, this is called `char_code`
   = more about this error: `rythme explain E003`

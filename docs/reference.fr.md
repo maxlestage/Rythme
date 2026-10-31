@@ -3731,16 +3731,16 @@ une indication, ici avant que le programme ne s'exécute :
 
 ```rythme
 mot = "bonjour"
-print(ord(mot[0]))
+print(charCodeAt(mot[0]))
 print(map(mot, upper))
 ```
 
 ```text
-erreur[E003]: nom inconnu `ord`
+erreur[E003]: nom inconnu `charCodeAt`
  --> 62-indices.ry:2:7
   |
-2 | print(ord(mot[0]))
-  |       ^^^ non défini
+2 | print(charCodeAt(mot[0]))
+  |       ^^^^^^^^^^ non défini
   |
   = aide: en Rythme, cela s'appelle `char_code`
   = en savoir plus : `rythme explain E003`

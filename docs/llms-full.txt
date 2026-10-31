@@ -272,6 +272,8 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `time()`: Returns the current time in seconds (a Float), counted from 1 January 1970.
 - `random(a, b), random(list)`: random() gives a decimal number between 0 and 1; random(a, b) a whole number from a to b (included); random(list) a random element.
 - `random_seed(n)`: Makes the draws of `random` and `shuffle` that follow the same on every run: the same seed (a whole number) gives the same draws, with the same version of Rythme.
+- `inspect(value)`: The text that shows a value the way the REPL and `debug` show it: a text between quotes, with its special characters written as escapes.
+- `print_error(value, ...)`: Shows values on the error output (stderr), separated by spaces, then goes to the next line: for messages that must not mix with the results of a program, which go to the standard output.
 
 ### Numbers
 
@@ -297,6 +299,17 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `is_odd(n)`: Is the whole number odd?
 - `gcd(a, b)`: Greatest common divisor of two whole numbers: the largest number that divides both.
 - `lcm(a, b)`: Least common multiple of two whole numbers: the smallest number divisible by both.
+- `constrain(x, low, high)`: The value kept between two bounds: `low` if it is below, `high` if it is above, itself otherwise.
+- `divmod(a, b)`: The whole quotient and the remainder of a division at once: `[a // b, a % b]`.
+- `binomial(n, k)`: The binomial coefficient "n choose k": the number of ways to choose k elements among n, exact even when it is very large.
+- `digits(n, base)`: The digits of a whole number (0 or more), the most significant first, in base 10 or in the base given (from 2 to 36).
+- `to_base(n, base)`: Writes a whole number in a base from 2 to 36, with the digits 0 to 9 then the letters a to z.
+- `from_base(text, base)`: Reads a whole number written in a base from 2 to 36: `Ok(number)`, or `Err(message)` if the text is not a number in this base.
+- `is_positive(x)`: Is the number greater than 0?
+- `is_negative(x)`: Is the number less than 0?
+- `is_zero(x)`: Is the number 0 (or 0.0)?
+- `is_nan(x)`: Is the decimal number `nan` ("not a number")? It is never equal to anything, not even to itself.
+- `is_finite(x)`: Is the number finite: neither an infinity nor `nan`? Whole numbers always are.
 - `pi`: the number π (a value, not a function)
 
 ### Text
@@ -342,6 +355,24 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `csv_parse(text, separator)`: Reads a CSV table (a spreadsheet saved as text): `Ok(list of rows)`, each row a list of texts, or `Err(message)` saying at which line and column the text is not valid CSV.
 - `csv_records(text, separator)`: Reads a CSV table whose first line names the columns: `Ok(list of records)`, one record for each other line, with one field for each column, in their order, holding a text.
 - `csv_format(rows, separator)`: Writes rows as a CSV text, each one on its line, ended by a line break.
+- `center(text, width, fill)`: Adds `fill` (a space by default) on both sides of the text until it is `width` characters long: titles and cells of tables stay centered.
+- `format(value, spec)`: Writes a value following a format spec, like Python's `format`: ".2f" for 2 decimals, ">8" to fill 8 characters on the right ("<" on the left, "^" centered), "08.2f" with zeros before, "," with the thousands separated, "%" as a percentage, "x", "o" and "b" in hexadecimal, octal and binary ("#" adds 0x, 0o, 0b), "e" with an exponent.
+- `replace_first(text, old, new)`: Replaces the first occurrence of `old` by `new`, and only that one.
+- `occurrences(x, item)`: How many times an element is in a list, or a piece of text in a text (pieces that do not overlap).
+- `last_index_of(x, item)`: The position of the last occurrence of an element in a list, or of a piece of text in a text: `Some(position)`, or `None` if it is not there.
+- `remove_prefix(text, start)`: The text without this start, if it starts with it; otherwise the text unchanged.
+- `remove_suffix(text, end)`: The text without this end, if it ends with it; otherwise the text unchanged.
+- `capitalize_words(text)`: The text with the first character of each word in uppercase (the rest is unchanged).
+- `snake_case(text)`: Writes a name in snake_case: its words in lowercase, joined by `_`.
+- `camel_case(text)`: Writes a name in camelCase: its words glued together, each with an uppercase first letter but the first word.
+- `kebab_case(text)`: Writes a name in kebab-case: its words in lowercase, joined by `-`, as in web addresses.
+- `swap_case(text)`: The text with its uppercase letters in lowercase, and its lowercase letters in uppercase.
+- `is_upper(text)`: Has the text letters, all of them in uppercase? (The other characters do not count.)
+- `is_lower(text)`: Has the text letters, all of them in lowercase? (The other characters do not count.)
+- `bytes(text)`: The bytes of a text in UTF-8, as whole numbers from 0 to 255: an accented letter takes two of them, an emoji four.
+- `split_once(text, separator)`: Cuts a text in two at the first separator: `Some([before, after])`, or `None` if the separator is not there.
+- `word_wrap(text, width)`: Cuts the lines of a text between words so that none is longer than `width` characters (a longer word stays whole on its own line).
+- `edit_distance(a, b)`: The edit distance (Levenshtein) between two texts: the fewest characters to add, remove or replace to go from one to the other.
 
 ### Lists
 
@@ -373,7 +404,7 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `step_by(x, n)`: One element out of n of a list (or text), starting with the first.
 - `chunks(x, n)`: Cuts a list (or text) into pieces of n elements; the last piece may be shorter.
 - `windows(x, n)`: Every group of n neighbouring elements of a list (or text), in order: handy to compare each element with the next one.
-- `zip(a, b)`: Pairs the elements of two lists: [[a1, b1], [a2, b2], ...].
+- `zip(a, b, ...)`: Pairs the elements of two lists (or more: one element of each list in every group): [[a1, b1], [a2, b2], ...].
 - `enumerate(list)`: Pairs each element with its position: [[0, x0], [1, x1], ...].
 - `any(list, f)`: Is f true for at least one element?
 - `all(list, f)`: Is f true for every element?
@@ -390,6 +421,26 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `group_by(list, key)`: Groups the elements in a record: the key is the text of what `key` returns, the value the list of matching elements.
 - `is_empty(x)`: Is the list, text, record, dict or set empty?
 - `zip_with(xs, ys, f)`: Calls f with the elements of two lists of the same length, one pair at a time, and gives the list of the results.
+- `find_index(list, f)`: The position of the first element for which f is true: `Some(position)`, or `None` if there is none.
+- `update_at(list, i, f)`: The list with the element at position i replaced by f(element).
+- `rotate_by(x, n)`: The list or text turned by n places to the left (1 by default): the first elements go to the end.
+- `intersperse(list, x)`: The list with `x` between every two elements.
+- `interleave(a, b)`: The elements of two lists taken in turn, one from each; what is left of the longer list comes at the end.
+- `tally(list)`: Counts how many times each value is in a list: a dict from each value to its count (like Python's `Counter`).
+- `count_by(list, f)`: Counts the elements by the key that f gives them: a dict from each key to how many elements have it.
+- `most_common(list, n)`: The values that come most often, with their counts: a list of `[value, count]` pairs, the most frequent first (on a tie, the one seen first).
+- `unique_by(list, f)`: The list without the elements whose key (given by f) was already seen: the first element of each key stays.
+- `sort_desc(list)`: The list sorted from the largest to the smallest.
+- `sort_by_desc(list, key)`: The list sorted by the key that the function gives, from the largest key to the smallest; elements with the same key keep their order.
+- `chunk_by(list, f)`: Cuts a list into runs of neighbour elements that have the same key (given by f).
+- `split_at(x, i)`: Cuts a list or a text in two at position i: `[before, from i on]`.
+- `combinations(list, k)`: Every way to choose k elements of the list, each kept in the order of the list.
+- `permutations(list, k)`: Every order of the elements of the list, or of k of them.
+- `cartesian_product(a, b, ...)`: Every way to take one element of each list: the cartesian product.
+- `unzip(list)`: The opposite of `zip`: a list of pairs (or of lists of the same length) becomes the list of the first elements, the list of the second ones...
+- `iterate(start, n, f)`: A list of n values: `start`, then f(start), then f of that...
+- `unfold(start, f)`: Builds a list from a starting state: f receives the state and gives `Some([value, next state])` to add a value and go on, or `None` to stop.
+- `filter_map(list, f)`: Applies f to each element and keeps the values of the `Some(...)` it gives, leaving out the `None`: filtering and transforming at once.
 
 ### Records
 
@@ -401,6 +452,13 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `put(record, name, value)`: A new record with the field set to the value (added or replaced); or a new dict with the key set to the value.
 - `remove(record, name)`: A new record without this field; or a new dict without this key, or a new set without this element.
 - `map_values(record, f)`: A new record (or dict) where f is applied to every value; the names (or keys) stay the same.
+- `dig(x, path)`: The value found by following a path of keys into records, dicts and lists nested in one another (names of fields, keys, positions): `Some(value)`, or `None` as soon as one is missing.
+- `merge_with(a, b, f)`: Merges two records or two dicts; for a key in both, f receives the two values and gives the one kept.
+- `invert(x)`: A dict where the values of a record or a dict have become the keys, and the keys the values.
+- `select_keys(x, keys)`: The record or dict with only the keys given (in a list or a set); a key that is missing is ignored.
+- `reject_keys(x, keys)`: The record or dict without the keys given (in a list or a set).
+- `map_keys(x, f)`: The record or dict with each key replaced by f(key); for a record, f must give a text.
+- `update(x, key, default, f)`: The record or dict where the value of `key` is replaced by f(value); when the key is missing, it is added with `default`.
 
 ### Dictionaries and sets
 
@@ -410,6 +468,8 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `intersection(a, b)`: The elements of the set a that are also in b; or the pairs of the dict a whose key is in b.
 - `difference(a, b)`: The elements of the set a that are not in b; or the pairs of the dict a whose key is not in b.
 - `is_subset(a, b)`: Is every element of the set a also in the set b?
+- `symmetric_difference(a, b)`: The elements that are in exactly one of the two sets.
+- `is_disjoint(a, b)`: Have the two sets no element in common?
 
 ### Option and Result
 
@@ -422,6 +482,9 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `and_then(x, f)`: Chains steps that may fail: for `Some(x)` or `Ok(x)`, gives f(x), which must be an Option or a Result; `None` and `Err(e)` stay as they are.
 - `ok_or(option, error)`: Turns an Option into a Result: `Some(x)` gives `Ok(x)`, and `None` gives `Err(error)`.
 - `map_err(result, f)`: For `Err(e)`, gives `Err(f(e))`; `Ok(x)` stays as it is.
+- `unwrap_or_else(x, f)`: The value inside `Some(x)` or `Ok(x)`; otherwise what f gives: f receives nothing for `None`, and the error for `Err(e)`.
+- `expect(x, message)`: The value inside `Some(x)` or `Ok(x)`, like `unwrap`; otherwise stops the program with your message, which says what was expected.
+- `all_ok(list)`: Makes one Result of a list of Results: `Ok(list of the values)` if they are all `Ok`, or else the first `Err`.
 - `Some(x)`, `None`, `Ok(x)`, `Err(e)`: build an Option or a Result
 
 ### Files
@@ -441,8 +504,8 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 
 - `now()`: The date and time now, where the program runs: a record {year, month, day, hour, minute, second, offset}, where `offset` is the number of minutes the local time is ahead of UTC (0 when the system does not tell).
 - `today()`: The date of today, where the program runs: a record {year, month, day}.
-- `parse_date(text)`: Reads a date written as ISO 8601 ("2024-02-29", "2024-02-29T13:05:00", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date.
-- `format_date(date)`: Writes a date as ISO 8601: "2024-02-29", with the time if the date has one, and `Z` or the offset if it has one.
+- `parse_date(text, pattern)`: Reads a date written as ISO 8601 ("2024-02-29", "2024-02-29T13:05:00", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date.
+- `format_date(date, pattern)`: Writes a date as ISO 8601: "2024-02-29", with the time if the date has one, and `Z` or the offset if it has one.
 - `is_date(value)`: Is the value a valid date: a record {year, month, day} (with `hour`, `minute`, `second`, `offset` if needed) for a day that exists?
 - `add_days(date, n)`: The date n days later (or earlier, when n is negative), at the same time of day.
 - `add_seconds(date, n)`: The date and time n seconds later (or earlier, when n is negative).
@@ -451,6 +514,8 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `day_of_week(date)`: The day of the week of a date, from 1 (Monday) to 7 (Sunday), as in ISO 8601.
 - `days_in_month(year, month)`: The number of days of a month (from 1 to 12) of a year: 28 to 31.
 - `is_leap_year(year)`: Does the year have a 29 February? Every 4 years, except every 100 years, except every 400 years.
+- `add_months(date, n)`: The date n months later (earlier if n is negative).
+- `day_of_year(date)`: The number of the day in its year, from 1 (1 January) to 365, or 366 in a leap year.
 
 ### Property tests
 
@@ -496,13 +561,20 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `gradient(f, xs)`: The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`).
 - `plot(xs, ys)`: Draws the points (x, y) as a chart in text, 50 columns wide and 11 lines high, with the smallest and largest values on the axes; with one list, draws its numbers at the positions 0, 1, 2...
 - `histogram(xs, bars)`: Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each.
+- `linspace(start, end, n)`: n decimal numbers evenly spaced from `start` to `end`, both included: to draw a function with `plot`, or to try values.
+- `correlation(xs, ys)`: The correlation (Pearson) of two lists of numbers of the same length: from -1 (they vary in opposite ways) to 1 (they vary together); about 0 when they are not linearly related.
+- `covariance(xs, ys)`: The covariance of two lists of numbers of the same length, divided by their length like `variance`.
 
 ### The web: HTTP requests
 
 - `http_get(url, headers)`: Fetches a web address (http:// or https://): `Ok(text of the answer)`, or `Err(message)` when there is no network, the address is wrong, the server answers with an error (404...) or does not answer within 30 seconds.
 - `http_post(url, body, headers)`: Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`.
+- `base64_encode(text)`: Encodes a text in Base64 (its UTF-8 bytes), as in emails, web pages and the headers of HTTP requests.
+- `base64_decode(text)`: Decodes a Base64 text: `Ok(text)`, or `Err(message)` if it is not valid Base64, or not a text once decoded.
+- `url_encode(text)`: Encodes a text to put it in a web address: every character but the letters, the digits and `-_.~` becomes `%` and two hexadecimal digits (a space is `%20`).
+- `url_decode(text)`: Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.
 
-Ruby names, exactly the same functions: `puts` = `print`, `to_s` = `text`, `to_i` = `int`, `to_f` = `float`, `even?` = `is_even`, `odd?` = `is_odd`, `length` = `len`, `size` = `len`, `upcase` = `upper`, `downcase` = `lower`, `strip` = `trim`, `include?` = `contains`, `start_with?` = `starts_with`, `end_with?` = `ends_with`, `select` = `filter`, `reduce` = `fold`, `inject` = `fold`, `uniq` = `unique`, `each_slice` = `chunks`, `each_cons` = `windows`, `any?` = `any`, `all?` = `all`, `empty?` = `is_empty`, `key?` = `has`, `lstrip` = `trim_start`, `rstrip` = `trim_end`, `casecmp?` = `equals_ignore_case`.
+Ruby names, exactly the same functions: `puts` = `print`, `to_s` = `text`, `to_i` = `int`, `to_f` = `float`, `even?` = `is_even`, `odd?` = `is_odd`, `length` = `len`, `size` = `len`, `upcase` = `upper`, `downcase` = `lower`, `strip` = `trim`, `include?` = `contains`, `start_with?` = `starts_with`, `end_with?` = `ends_with`, `select` = `filter`, `reduce` = `fold`, `inject` = `fold`, `uniq` = `unique`, `each_slice` = `chunks`, `each_cons` = `windows`, `any?` = `any`, `all?` = `all`, `empty?` = `is_empty`, `key?` = `has`, `lstrip` = `trim_start`, `rstrip` = `trim_end`, `casecmp?` = `equals_ignore_case`, `clamp` = `constrain`, `swapcase` = `swap_case`, `ljust` = `pad_right`, `rjust` = `pad_left`, `ord` = `char_code`, `chr` = `char`, `delete_prefix` = `remove_prefix`, `delete_suffix` = `remove_suffix`, `rindex` = `last_index_of`, `positive?` = `is_positive`, `negative?` = `is_negative`, `zero?` = `is_zero`, `nan?` = `is_nan`, `finite?` = `is_finite`, `detect` = `find`, `collect` = `map`, `rotate` = `rotate_by`, `combination` = `combinations`, `permutation` = `permutations`, `transform_values` = `map_values`, `transform_keys` = `map_keys`, `each_pair` = `each`, `to_h` = `dict`, `subset?` = `is_subset`, `disjoint?` = `is_disjoint`, `warn` = `print_error`.
 
 ## Keywords
 

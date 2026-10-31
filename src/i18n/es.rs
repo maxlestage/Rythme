@@ -1692,17 +1692,11 @@ ejemplo: rythme steps fibonacci.ry "fib(4)""#,
         ("write a range with `..`: `1..10` is the list from 1 to 10 (included), and `0..10 |> step_by(2)` counts by 2", "escribe un intervalo con `..`: `1..10` es la lista del 1 al 10 (incluido), y `0..10 |> step_by(2)` cuenta de 2 en 2"),
         ("use the operator `//` for a whole division: `7 // 2` is 3", "usa el operador `//` para una división entera: `7 // 2` es 3"),
         ("use the operator `%` for the remainder: `7 % 3` is 1", "usa el operador `%` para el resto: `7 % 3` es 1"),
-        ("use the operators `//` and `%`: `7 // 2` is 3 and `7 % 2` is 1", "usa los operadores `//` y `%`: `7 // 2` es 3 y `7 % 2` es 1"),
         ("to put values in a text, use braces: \"total: {{x}}\"; to write a number with 2 decimals: `text(x, 2)`", "para poner valores en un texto, usa llaves: \"total: {{x}}\"; para escribir un número con 2 decimales: `text(x, 2)`"),
         ("read the whole file with `read_file(path)`, then cut it with `lines(text)`; the lines of the standard input are `input_lines()`", "lee el archivo entero con `read_file(ruta)`, y luego córtalo con `lines(texto)`; las líneas de la entrada estándar son `input_lines()`"),
         ("to merge two records, write `{{..a, ..b}}`: the fields of `b` replace those of `a`; for two dicts or two sets, `union(a, b)`", "para fusionar dos registros, escribe `{{..a, ..b}}`: los campos de `b` reemplazan a los de `a`; para dos diccionarios o dos conjuntos, `union(a, b)`"),
         ("write `unwrap_or(get(x, key), default)`: the value, or the default if it is missing", "escribe `unwrap_or(get(x, clave), por_defecto)`: el valor, o el valor por defecto si falta"),
-        ("pair the lists, then combine each pair: `zip(a, b) |> map(fn([x, y]) = x + y)`", "empareja las listas, y luego combina cada par: `zip(a, b) |> map(fn([x, y]) = x + y)`"),
-        ("sort from the largest to the smallest with `sort(list) |> reverse`", "ordena del más grande al más pequeño con `sort(lista) |> reverse`"),
         ("compute the average with `sum(list) / len(list)`", "calcula la media con `sum(lista) / len(lista)`"),
-        ("keep x between low and high with `max(low, min(x, high))`", "mantén x entre bajo y alto con `max(bajo, min(x, alto))`"),
-        ("count how many times each value appears with `group_by(list, fn(x) = x) |> map_values(len)`", "cuenta cuántas veces aparece cada valor con `group_by(lista, fn(x) = x) |> map_values(len)`"),
-        ("a decimal number x is NaN (not a number) when `x != x`", "un número decimal x es NaN (no es un número) cuando `x != x`"),
         ("`n.times do |i| ... end` is written `(0..n - 1).each do |i| ... end`", "`n.times do |i| ... end` se escribe `(0..n - 1).each do |i| ... end`"),
         ("to use another file, write `use other_file`, then `other_file.name`", "para usar otro archivo, escribe `use otro_archivo`, y luego `otro_archivo.nombre`"),
         ("there is no `new`: build values directly, like `{{name: \"Ada\"}}` or `Circle(2.0)`", "no hay `new`: construye los valores directamente, como `{{nombre: \"Ada\"}}` o `Circulo(2.0)`"),
@@ -4502,7 +4496,6 @@ O da otro nombre al parámetro: fn twice(n) = n * 2"#,
         ("One element out of n of a list (or text), starting with the first. On a range: the numbers with a step.", "Un elemento de cada n de una lista (o de un texto), empezando por el primero. En un intervalo: los números con un paso."),
         ("Cuts a list (or text) into pieces of n elements; the last piece may be shorter.", "Corta una lista (o un texto) en trozos de n elementos; el último trozo puede ser más corto."),
         ("Every group of n neighbouring elements of a list (or text), in order: handy to compare each element with the next one.", "Cada grupo de n elementos vecinos de una lista (o de un texto), en orden: útil para comparar cada elemento con el siguiente."),
-        ("Pairs the elements of two lists: [[a1, b1], [a2, b2], ...]. It stops at the end of the shorter list.", "Empareja los elementos de dos listas: [[a1, b1], [a2, b2], ...]. Se detiene al final de la lista más corta."),
         ("Pairs each element with its position: [[0, x0], [1, x1], ...].", "Empareja cada elemento con su posición: [[0, x0], [1, x1], ...]."),
         ("Is f true for at least one element?", "¿Es f verdadera para al menos un elemento?"),
         ("Is f true for every element?", "¿Es f verdadera para todos los elementos?"),
@@ -4553,8 +4546,6 @@ O da otro nombre al parámetro: fn twice(n) = n * 2"#,
         ("The parts of a path, split at each `/` or `\\`; the first part of an absolute path is its root (`/`, `C:\\`...). `join_path` puts them back together.", "Las partes de una ruta, cortada en cada `/` o `\\`; la primera parte de una ruta absoluta es su raíz (`/`, `C:\\`...). `join_path` las vuelve a juntar."),
         ("The date and time now, where the program runs: a record {year, month, day, hour, minute, second, offset}, where `offset` is the number of minutes the local time is ahead of UTC (0 when the system does not tell).", "La fecha y la hora de ahora, donde se ejecuta el programa: un registro {year, month, day, hour, minute, second, offset}, donde `offset` es el número de minutos que la hora local va por delante de UTC (0 cuando el sistema no lo dice)."),
         ("The date of today, where the program runs: a record {year, month, day}.", "La fecha de hoy, donde se ejecuta el programa: un registro {year, month, day}."),
-        ("Reads a date written as ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date.", "Lee una fecha escrita en ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", con `Z` o un desfase como `+01:00` si hace falta): `Ok(fecha)`, o `Err(mensaje)` si no es una fecha válida."),
-        ("Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one.", "Escribe una fecha en ISO 8601: \"2024-02-29\", con la hora si la fecha la tiene, y `Z` o el desfase si lo tiene."),
         ("Is the value a valid date: a record {year, month, day} (with `hour`, `minute`, `second`, `offset` if needed) for a day that exists?", "¿Es el valor una fecha válida: un registro {year, month, day} (con `hour`, `minute`, `second`, `offset` si hace falta) para un día que existe?"),
         ("The date n days later (or earlier, when n is negative), at the same time of day.", "La fecha n días después (o antes, cuando n es negativo), a la misma hora del día."),
         ("The date and time n seconds later (or earlier, when n is negative). Add `60 * minutes` or `3600 * hours` the same way.", "La fecha y la hora n segundos después (o antes, cuando n es negativo). Suma `60 * minutos` o `3600 * horas` de la misma forma."),
@@ -9677,5 +9668,202 @@ linear_regression, perceptron, xor_network, kmeans, knn, naive_bayes, markov,
 tictactoe, pathfinding y genetic; los ejercicios 31 a 36 (rythme exercise
 list)."#,
         ),
+        ("the pattern \"{pattern}\" has an unknown directive `%{c}`", "el patrón \"{pattern}\" tiene una directiva desconocida `%{c}`"),
+        ("the directives are %Y (year), %m (month), %d (day), %H (hour), %M (minute), %S (second), %y (year in 2 digits), %B and %b (month name), %A and %a (day name), %I and %p (12-hour clock), %j (day of the year), %z (offset) and %% (a %)", "las directivas son %Y (año), %m (mes), %d (día), %H (hora), %M (minuto), %S (segundo), %y (año en 2 cifras), %B y %b (nombre del mes), %A y %a (nombre del día), %I y %p (reloj de 12 horas), %j (día del año), %z (desfase) y %% (un %)"),
+        (r#""{text}" does not follow the pattern "{pattern}""#, r#""{text}" no sigue el patrón "{pattern}""#),
+        ("the hour must go from 1 to 12 with AM or PM, not {}", "la hora debe ir de 1 a 12 con AM o PM, no {}"),
+        ("the day of the year must go from 1 to {len}, not {n}", "el día del año debe ir de 1 a {len}, no {n}"),
+        ("`{c}` is not a Base64 character", "`{c}` no es un carácter de Base64"),
+        ("this Base64 text is cut short", "este texto en Base64 está cortado"),
+        ("the decoded bytes are not a text (UTF-8)", "los bytes decodificados no son un texto (UTF-8)"),
+        ("a `%` must be followed by two hexadecimal digits, like `%20`", "un `%` debe ir seguido de dos cifras hexadecimales, como `%20`"),
+        ("`{f}` would give {count} lists: too many (at most {MAX_COMBINED} elements in all)", "`{f}` daría {count} listas: demasiadas (como mucho {MAX_COMBINED} elementos en total)"),
+        ("the number of combinations grows very fast: try with a shorter list, or fewer elements in each one", "el número de combinaciones crece muy rápido: prueba con una lista más corta, o menos elementos en cada una"),
+        ("`unzip` needs a list of lists, but its element {k} is {}", "`unzip` necesita una lista de listas, pero su elemento {k} es {}"),
+        ("the function given to `unfold` must return `Some([value, next])` or `None`, but it returned Some({})", "la función dada a `unfold` debe devolver `Some([valor, siguiente])` o `None`, pero devolvió Some({})"),
+        ("`{f}` needs at least two numbers in each list", "`{f}` necesita al menos dos números en cada lista"),
+        ("`correlation` needs numbers that vary: one of the lists has all its numbers equal", "`correlation` necesita números que varíen: una de las listas tiene todos sus números iguales"),
+        ("`{f}` cannot compare {} and {}", "`{f}` no puede comparar {} y {}"),
+        ("the value and its bounds must be of the same kind: all numbers, or all texts...", "el valor y sus límites deben ser del mismo tipo: todos números, o todos textos..."),
+        ("`constrain`: the lower bound {} is above the upper bound {}", "`constrain`: el límite inferior {} está por encima del límite superior {}"),
+        ("`binomial` needs a number of 0 or more, not {n}", "`binomial` necesita un número mayor o igual que 0, no {n}"),
+        ("`expect` found `None`: there is no value", "`expect` encontró `None`: no hay ningún valor"),
+        ("`expect` found an error: {}", "`expect` encontró un error: {}"),
+        ("`all_ok` needs a list of Results (Ok or Err), but its element {k} is {}", "`all_ok` necesita una lista de Results (Ok o Err), pero su elemento {k} es {}"),
+        ("to keep the values of a list of Options, use `filter_map(list, fn(x) = x)`", "para conservar los valores de una lista de Options, usa `filter_map(lista, fn(x) = x)`"),
+        ("`format` cannot use \"{spec}\": {why}", "`format` no puede usar \"{spec}\": {why}"),
+        (r#"a spec is written [[fill]align][sign][#][0][width][,][.precision][type]: ">8" (8 wide, on the right), "^8" (centered), "08.2f" (2 decimals, zeros before), ",d" (thousands), ".1%" (a percentage), "x" (hexadecimal), "b" (binary), "e" (exponent)"#, r#"una especificación se escribe [[relleno]alineación][signo][#][0][ancho][,][.precisión][tipo]: ">8" (ancho 8, a la derecha), "^8" (centrado), "08.2f" (2 decimales, ceros delante), ",d" (miles), ".1%" (un porcentaje), "x" (hexadecimal), "b" (binario), "e" (exponente)"#),
+        ("the width is at most {MAX_WIDTH}", "el ancho es como mucho {MAX_WIDTH}"),
+        ("the precision is at most {MAX_PRECISION}", "la precisión es como mucho {MAX_PRECISION}"),
+        ("a number must follow the `.`", "un número debe seguir al `.`"),
+        ("`{c}` is not a type of format", "`{c}` no es un tipo de formato"),
+        ("this is not a format spec", "esto no es una especificación de formato"),
+        ("`{kind}` cannot write {what}", "`{kind}` no puede escribir {what}"),
+        ("a whole number", "un número entero"),
+        ("a whole number has no decimals: write a type like `f` for them", "un número entero no tiene decimales: escribe un tipo como `f` para tenerlos"),
+        ("`,` groups decimal digits only: use `_`", "`,` solo agrupa cifras decimales: usa `_`"),
+        ("a decimal number", "un número decimal"),
+        ("signs, `#`, `0` and `,` are for numbers", "los signos, `#`, `0` y `,` son para números"),
+        ("`{f}`: the base must go from 2 to 36, not {b}", "`{f}`: la base debe ir de 2 a 36, no {b}"),
+        ("\"{s}\" is not a whole number in base {radix}", "\"{s}\" no es un número entero en base {radix}"),
+        ("`digits` needs a number of 0 or more, not {}", "`digits` necesita un número mayor o igual que 0, no {}"),
+        ("`{f}`: the text to look for is empty", "`{f}`: el texto que hay que buscar está vacío"),
+        ("`{f}` cannot replace an empty text", "`{f}` no puede reemplazar un texto vacío"),
+        ("`edit_distance` compares texts of at most {MAX_DISTANCE_WORK} pairs of characters, not {} by {}", "`edit_distance` compara textos de como mucho {MAX_DISTANCE_WORK} pares de caracteres, no {} por {}"),
+        ("to count a piece of text in a text, use `occurrences(text, piece)`", "para contar un trozo de texto en un texto, usa `occurrences(texto, trozo)`"),
+        ("to count the elements equal to a value, use `occurrences(list, x)`", "para contar los elementos iguales a un valor, usa `occurrences(lista, x)`"),
+        ("the value comes first, then the spec: `format(42, \"05\")`; to put values in a text, use braces", "el valor va primero, luego la especificación: `format(42, \"05\")`; para poner valores en un texto, usa llaves"),
+        ("return `Some(x)` to keep x, or `None` to leave the element out", "devuelve `Some(x)` para conservar x, o `None` para dejar fuera el elemento"),
+        ("return `Some([value, next])` to go on, or `None` to stop", "devuelve `Some([valor, siguiente])` para continuar, o `None` para parar"),
+        ("Pairs the elements of two lists (or more: one element of each list in every group): [[a1, b1], [a2, b2], ...]. It stops at the end of the shortest list.", "Empareja los elementos de dos listas (o más: un elemento de cada lista en cada grupo): [[a1, b1], [a2, b2], ...]. Se detiene al final de la lista más corta."),
+        (r#"Reads a date written as ISO 8601 ("2024-02-29", "2024-02-29T13:05:00", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date. With a pattern like "%d/%m/%Y" (the directives of `format_date`), reads a date written that way."#, r#"Lee una fecha escrita en ISO 8601 ("2024-02-29", "2024-02-29T13:05:00", con `Z` o un desfase como `+01:00` si hace falta): `Ok(fecha)`, o `Err(mensaje)` si no es una fecha válida. Con un patrón como "%d/%m/%Y" (las directivas de `format_date`), lee una fecha escrita de esa forma."#),
+        ("Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one. With a pattern, writes it the way `strftime` does: %Y year, %m month, %d day, %H hour, %M minute, %S second, %y year in two digits, %B and %b the month, %A and %a the day of the week (in English), %I and %p the 12-hour clock, %j the day of the year, %z the offset, %% a %.", "Escribe una fecha en ISO 8601: \"2024-02-29\", con la hora si la fecha tiene una, y `Z` o el desfase si tiene uno. Con un patrón, la escribe como `strftime`: %Y el año, %m el mes, %d el día, %H la hora, %M el minuto, %S el segundo, %y el año en dos cifras, %B y %b el mes, %A y %a el día de la semana (en inglés), %I y %p el reloj de 12 horas, %j el día del año, %z el desfase, %% un %."),
+        ("The text that shows a value the way the REPL and `debug` show it: a text between quotes, with its special characters written as escapes. `text` gives a text as it is.", "El texto que muestra un valor como lo muestran el REPL y `debug`: un texto entre comillas, con sus caracteres especiales escritos como secuencias de escape. `text` da un texto tal cual."),
+        ("Shows values on the error output (stderr), separated by spaces, then goes to the next line: for messages that must not mix with the results of a program, which go to the standard output.", "Muestra valores en la salida de error (stderr), separados por espacios, y pasa a la línea siguiente: para los mensajes que no deben mezclarse con los resultados de un programa, que van a la salida estándar."),
+        ("The value kept between two bounds: `low` if it is below, `high` if it is above, itself otherwise. For numbers, texts... any values that can be compared.", "El valor mantenido entre dos límites: `low` si está por debajo, `high` si está por encima, él mismo si no. Para números, textos... cualquier valor que se pueda comparar."),
+        ("The whole quotient and the remainder of a division at once: `[a // b, a % b]`.", "El cociente entero y el resto de una división a la vez: `[a // b, a % b]`."),
+        ("The binomial coefficient \"n choose k\": the number of ways to choose k elements among n, exact even when it is very large.", "El coeficiente binomial \"n sobre k\": el número de formas de elegir k elementos entre n, exacto incluso cuando es muy grande."),
+        ("The digits of a whole number (0 or more), the most significant first, in base 10 or in the base given (from 2 to 36).", "Las cifras de un número entero (mayor o igual que 0), la más significativa primero, en base 10 o en la base dada (de 2 a 36)."),
+        ("Writes a whole number in a base from 2 to 36, with the digits 0 to 9 then the letters a to z.", "Escribe un número entero en una base de 2 a 36, con las cifras 0 a 9 y luego las letras a a z."),
+        ("Reads a whole number written in a base from 2 to 36: `Ok(number)`, or `Err(message)` if the text is not a number in this base. `0x`, `0o` and `0b` may come before a number in base 16, 8 and 2.", "Lee un número entero escrito en una base de 2 a 36: `Ok(número)`, o `Err(mensaje)` si el texto no es un número en esa base. `0x`, `0o` y `0b` pueden preceder a un número en base 16, 8 y 2."),
+        ("Is the number greater than 0?", "¿Es el número mayor que 0?"),
+        ("Is the number less than 0?", "¿Es el número menor que 0?"),
+        ("Is the number 0 (or 0.0)?", "¿Vale el número 0 (o 0.0)?"),
+        ("Is the decimal number `nan` (\"not a number\")? It is never equal to anything, not even to itself.", "¿Es el número decimal `nan` (\"no es un número\")? Nunca es igual a nada, ni siquiera a sí mismo."),
+        ("Is the number finite: neither an infinity nor `nan`? Whole numbers always are.", "¿Es el número finito: ni un infinito ni `nan`? Los números enteros siempre lo son."),
+        ("Adds `fill` (a space by default) on both sides of the text until it is `width` characters long: titles and cells of tables stay centered. A character left over goes to the right.", "Añade `fill` (un espacio por defecto) a ambos lados del texto hasta que mida `width` caracteres: los títulos y las celdas de las tablas quedan centrados. Un carácter que sobra va a la derecha."),
+        (r##"Writes a value following a format spec, like Python's `format`: ".2f" for 2 decimals, ">8" to fill 8 characters on the right ("<" on the left, "^" centered), "08.2f" with zeros before, "," with the thousands separated, "%" as a percentage, "x", "o" and "b" in hexadecimal, octal and binary ("#" adds 0x, 0o, 0b), "e" with an exponent. To put values in a text, use braces."##, r##"Escribe un valor siguiendo una especificación de formato, como `format` en Python: ".2f" para 2 decimales, ">8" para llenar 8 caracteres a la derecha ("<" a la izquierda, "^" centrado), "08.2f" con ceros delante, "," con los miles separados, "%" como porcentaje, "x", "o" y "b" en hexadecimal, octal y binario ("#" añade 0x, 0o, 0b), "e" con un exponente. Para poner valores en un texto, usa llaves."##),
+        ("Replaces the first occurrence of `old` by `new`, and only that one.", "Reemplaza la primera aparición de `old` por `new`, y solo esa."),
+        ("How many times an element is in a list, or a piece of text in a text (pieces that do not overlap).", "Cuántas veces está un elemento en una lista, o un trozo de texto en un texto (trozos que no se solapan)."),
+        ("The position of the last occurrence of an element in a list, or of a piece of text in a text: `Some(position)`, or `None` if it is not there.", "La posición de la última aparición de un elemento en una lista, o de un trozo de texto en un texto: `Some(posición)`, o `None` si no está."),
+        ("The text without this start, if it starts with it; otherwise the text unchanged.", "El texto sin este comienzo, si empieza por él; si no, el texto tal cual."),
+        ("The text without this end, if it ends with it; otherwise the text unchanged.", "El texto sin este final, si termina con él; si no, el texto tal cual."),
+        ("The text with the first character of each word in uppercase (the rest is unchanged). Words are separated by spaces.", "El texto con el primer carácter de cada palabra en mayúscula (el resto no cambia). Las palabras están separadas por espacios."),
+        ("Writes a name in snake_case: its words in lowercase, joined by `_`. Reads names written in any style: camelCase, PascalCase, kebab-case, with spaces...", "Escribe un nombre en snake_case: sus palabras en minúsculas, unidas por `_`. Lee nombres escritos en cualquier estilo: camelCase, PascalCase, kebab-case, con espacios..."),
+        ("Writes a name in camelCase: its words glued together, each with an uppercase first letter but the first word.", "Escribe un nombre en camelCase: sus palabras pegadas, cada una con mayúscula inicial salvo la primera palabra."),
+        ("Writes a name in kebab-case: its words in lowercase, joined by `-`, as in web addresses.", "Escribe un nombre en kebab-case: sus palabras en minúsculas, unidas por `-`, como en las direcciones web."),
+        ("The text with its uppercase letters in lowercase, and its lowercase letters in uppercase.", "El texto con sus mayúsculas en minúsculas, y sus minúsculas en mayúsculas."),
+        ("Has the text letters, all of them in uppercase? (The other characters do not count.)", "¿Tiene el texto letras, todas en mayúsculas? (Los demás caracteres no cuentan.)"),
+        ("Has the text letters, all of them in lowercase? (The other characters do not count.)", "¿Tiene el texto letras, todas en minúsculas? (Los demás caracteres no cuentan.)"),
+        ("The bytes of a text in UTF-8, as whole numbers from 0 to 255: an accented letter takes two of them, an emoji four.", "Los bytes de un texto en UTF-8, como números enteros de 0 a 255: una letra con tilde ocupa dos, un emoji cuatro."),
+        ("Cuts a text in two at the first separator: `Some([before, after])`, or `None` if the separator is not there. For lines like `key=value`.", "Corta un texto en dos en el primer separador: `Some([antes, después])`, o `None` si el separador no está. Para líneas como `clave=valor`."),
+        ("Cuts the lines of a text between words so that none is longer than `width` characters (a longer word stays whole on its own line).", "Corta las líneas de un texto entre las palabras para que ninguna supere `width` caracteres (una palabra más larga queda entera en su línea)."),
+        ("The edit distance (Levenshtein) between two texts: the fewest characters to add, remove or replace to go from one to the other. For spelling checkers, and to find the closest word.", "La distancia de edición (Levenshtein) entre dos textos: el mínimo de caracteres que hay que añadir, quitar o reemplazar para pasar de uno a otro. Para correctores ortográficos y para encontrar la palabra más cercana."),
+        ("The position of the first element for which f is true: `Some(position)`, or `None` if there is none.", "La posición del primer elemento para el que f es verdadera: `Some(posición)`, o `None` si no hay ninguno."),
+        ("The list with the element at position i replaced by f(element). A negative position counts from the end.", "La lista con el elemento de la posición i reemplazado por f(elemento). Una posición negativa cuenta desde el final."),
+        ("The list or text turned by n places to the left (1 by default): the first elements go to the end. A negative n turns it to the right.", "La lista o el texto girado n posiciones hacia la izquierda (1 por defecto): los primeros elementos pasan al final. Un n negativo lo gira hacia la derecha."),
+        ("The list with `x` between every two elements.", "La lista con `x` entre cada dos elementos."),
+        ("The elements of two lists taken in turn, one from each; what is left of the longer list comes at the end.", "Los elementos de dos listas tomados por turnos, uno de cada una; lo que queda de la lista más larga va al final."),
+        ("Counts how many times each value is in a list: a dict from each value to its count (like Python's `Counter`).", "Cuenta cuántas veces está cada valor en una lista: un diccionario de cada valor a su cuenta (como `Counter` en Python)."),
+        ("Counts the elements by the key that f gives them: a dict from each key to how many elements have it.", "Cuenta los elementos según la clave que les da f: un diccionario de cada clave a cuántos elementos la tienen."),
+        ("The values that come most often, with their counts: a list of `[value, count]` pairs, the most frequent first (on a tie, the one seen first). With n, only the first n.", "Los valores que aparecen más a menudo, con sus cuentas: una lista de pares `[valor, cuenta]`, el más frecuente primero (en caso de empate, el que se vio primero). Con n, solo los n primeros."),
+        ("The list without the elements whose key (given by f) was already seen: the first element of each key stays.", "La lista sin los elementos cuya clave (dada por f) ya se vio: queda el primer elemento de cada clave."),
+        ("The list sorted from the largest to the smallest.", "La lista ordenada de mayor a menor."),
+        ("The list sorted by the key that the function gives, from the largest key to the smallest; elements with the same key keep their order.", "La lista ordenada según la clave que da la función, de la clave mayor a la menor; los elementos con la misma clave conservan su orden."),
+        ("Cuts a list into runs of neighbour elements that have the same key (given by f).", "Corta una lista en tramos de elementos vecinos que tienen la misma clave (dada por f)."),
+        ("Cuts a list or a text in two at position i: `[before, from i on]`. A negative position counts from the end.", "Corta una lista o un texto en dos en la posición i: `[antes, desde i]`. Una posición negativa cuenta desde el final."),
+        ("Every way to choose k elements of the list, each kept in the order of the list.", "Todas las formas de elegir k elementos de la lista, cada una en el orden de la lista."),
+        ("Every order of the elements of the list, or of k of them.", "Todos los órdenes de los elementos de la lista, o de k de ellos."),
+        ("Every way to take one element of each list: the cartesian product.", "Todas las formas de tomar un elemento de cada lista: el producto cartesiano."),
+        ("The opposite of `zip`: a list of pairs (or of lists of the same length) becomes the list of the first elements, the list of the second ones...", "Lo contrario de `zip`: una lista de pares (o de listas de la misma longitud) se convierte en la lista de los primeros elementos, la lista de los segundos..."),
+        ("A list of n values: `start`, then f(start), then f of that... For sequences where each value comes from the one before.", "Una lista de n valores: `start`, luego f(start), luego f de ese... Para las sucesiones en las que cada valor sale del anterior."),
+        ("Builds a list from a starting state: f receives the state and gives `Some([value, next state])` to add a value and go on, or `None` to stop.", "Construye una lista a partir de un estado inicial: f recibe el estado y da `Some([valor, estado siguiente])` para añadir un valor y seguir, o `None` para parar."),
+        ("Applies f to each element and keeps the values of the `Some(...)` it gives, leaving out the `None`: filtering and transforming at once.", "Aplica f a cada elemento y conserva los valores de los `Some(...)` que da, dejando fuera los `None`: filtrar y transformar a la vez."),
+        ("The value found by following a path of keys into records, dicts and lists nested in one another (names of fields, keys, positions): `Some(value)`, or `None` as soon as one is missing. For data read with `parse_json`.", "El valor que se encuentra siguiendo un camino de claves por registros, diccionarios y listas anidados (nombres de campos, claves, posiciones): `Some(valor)`, o `None` en cuanto falta una. Para datos leídos con `parse_json`."),
+        ("Merges two records or two dicts; for a key in both, f receives the two values and gives the one kept.", "Fusiona dos registros o dos diccionarios; para una clave que está en los dos, f recibe los dos valores y da el que se conserva."),
+        ("A dict where the values of a record or a dict have become the keys, and the keys the values. When a value comes several times, the last key wins.", "Un diccionario en el que los valores de un registro o de un diccionario se han convertido en las claves, y las claves en los valores. Cuando un valor aparece varias veces, gana la última clave."),
+        ("The record or dict with only the keys given (in a list or a set); a key that is missing is ignored.", "El registro o el diccionario solo con las claves dadas (en una lista o un conjunto); una clave que falta se ignora."),
+        ("The record or dict without the keys given (in a list or a set).", "El registro o el diccionario sin las claves dadas (en una lista o un conjunto)."),
+        ("The record or dict with each key replaced by f(key); for a record, f must give a text.", "El registro o el diccionario con cada clave reemplazada por f(clave); para un registro, f debe dar un texto."),
+        ("The record or dict where the value of `key` is replaced by f(value); when the key is missing, it is added with `default`. Handy to count: `update(counts, word, 1, fn(n) = n + 1)`.", "El registro o el diccionario en el que el valor de `key` se reemplaza por f(valor); cuando falta la clave, se añade con `default`. Práctico para contar: `update(cuentas, palabra, 1, fn(n) = n + 1)`."),
+        ("The elements that are in exactly one of the two sets.", "Los elementos que están exactamente en uno de los dos conjuntos."),
+        ("Have the two sets no element in common?", "¿No tienen los dos conjuntos ningún elemento en común?"),
+        ("The value inside `Some(x)` or `Ok(x)`; otherwise what f gives: f receives nothing for `None`, and the error for `Err(e)`. The default is computed only when it is needed.", "El valor dentro de `Some(x)` o `Ok(x)`; si no, lo que da f: f no recibe nada para `None`, y el error para `Err(e)`. El valor por defecto solo se calcula cuando hace falta."),
+        ("The value inside `Some(x)` or `Ok(x)`, like `unwrap`; otherwise stops the program with your message, which says what was expected.", "El valor dentro de `Some(x)` o `Ok(x)`, como `unwrap`; si no, detiene el programa con tu mensaje, que dice lo que se esperaba."),
+        ("Makes one Result of a list of Results: `Ok(list of the values)` if they are all `Ok`, or else the first `Err`. When reading many values where one mistake must stop everything.", "Hace un solo Result de una lista de Results: `Ok(lista de los valores)` si todos son `Ok`, o si no el primer `Err`. Para leer muchos valores cuando un solo error debe pararlo todo."),
+        ("The date n months later (earlier if n is negative). A day that the new month does not have becomes its last day: 31 January plus one month is the end of February.", "La fecha n meses después (antes si n es negativo). Un día que el nuevo mes no tiene se convierte en su último día: el 31 de enero más un mes es el final de febrero."),
+        ("The number of the day in its year, from 1 (1 January) to 365, or 366 in a leap year.", "El número del día en su año, de 1 (el 1 de enero) a 365, o 366 en un año bisiesto."),
+        ("n decimal numbers evenly spaced from `start` to `end`, both included: to draw a function with `plot`, or to try values.", "n números decimales espaciados por igual de `start` a `end`, ambos incluidos: para dibujar una función con `plot`, o probar valores."),
+        ("The correlation (Pearson) of two lists of numbers of the same length: from -1 (they vary in opposite ways) to 1 (they vary together); about 0 when they are not linearly related.", "La correlación (de Pearson) de dos listas de números de la misma longitud: de -1 (varían en sentidos opuestos) a 1 (varían juntas); cerca de 0 cuando no tienen relación lineal."),
+        ("The covariance of two lists of numbers of the same length, divided by their length like `variance`.", "La covarianza de dos listas de números de la misma longitud, dividida por su longitud como `variance`."),
+        ("Encodes a text in Base64 (its UTF-8 bytes), as in emails, web pages and the headers of HTTP requests.", "Codifica un texto en Base64 (sus bytes UTF-8), como en los correos, las páginas web y las cabeceras de las peticiones HTTP."),
+        ("Decodes a Base64 text: `Ok(text)`, or `Err(message)` if it is not valid Base64, or not a text once decoded.", "Decodifica un texto en Base64: `Ok(texto)`, o `Err(mensaje)` si no es Base64 válido, o no es un texto una vez decodificado."),
+        ("Encodes a text to put it in a web address: every character but the letters, the digits and `-_.~` becomes `%` and two hexadecimal digits (a space is `%20`).", "Codifica un texto para ponerlo en una dirección web: cada carácter salvo las letras, las cifras y `-_.~` se convierte en `%` y dos cifras hexadecimales (un espacio es `%20`)."),
+        ("Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.", "Decodifica un texto de una dirección web (`%20`...): `Ok(texto)`, o `Err(mensaje)` si un `%` no va seguido de dos cifras hexadecimales."),
+        (r#"More functions on lists
+  find_index([3, 8, 5], is_even)          # Some(1)
+  sort_desc([3, 1, 2])                    # [3, 2, 1]  (sort_by_desc with a key)
+  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(words, 3)                   # the 3 most frequent, with their counts
+  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
+  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
+  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  permutations(xs)   cartesian_product(xs, ys)   unzip(pairs)   zip(xs, ys, zs)
+  filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#, r#"Más funciones sobre listas
+  find_index([3, 8, 5], is_even)          # Some(1)
+  sort_desc([3, 1, 2])                    # [3, 2, 1]  (sort_by_desc con una clave)
+  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(palabras, 3)                # las 3 más frecuentes, con sus cuentas
+  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
+  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
+  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  permutations(xs)   cartesian_product(xs, ys)   unzip(pares)   zip(xs, ys, zs)
+  filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#),
+        (r##"More functions on texts
+  format(3.14159, ".2f")         # "3.14"  (the format specs of Python: ">8", ",d", ".1%", "#x"...)
+  center("hi", 6, "*")           # "**hi**"
+  replace_first("a-b-c", "-", "+")          # "a+b-c"
+  occurrences("banana", "an")    # 2
+  remove_prefix("Mr Smith", "Mr ")          # "Smith"  (and remove_suffix)
+  split_once("key=value", "=")   # Some(["key", "value"])
+  snake_case("helloWorld")       # "hello_world"  (and camel_case, kebab_case)
+  capitalize_words("ada lovelace")          # "Ada Lovelace"
+  word_wrap(text, 40)            # lines of at most 40 characters
+  to_base(255, 16)   from_base("ff", 16)    # "ff" and Ok(255)
+  edit_distance("kitten", "sitting")        # 3"##, r##"Más funciones sobre textos
+  format(3.14159, ".2f")         # "3.14"  (las especificaciones de formato de Python: ">8", ",d", ".1%", "#x"...)
+  center("hi", 6, "*")           # "**hi**"
+  replace_first("a-b-c", "-", "+")          # "a+b-c"
+  occurrences("banana", "an")    # 2
+  remove_prefix("Sr. Pérez", "Sr. ")        # "Pérez"  (y remove_suffix)
+  split_once("clave=valor", "=") # Some(["clave", "valor"])
+  snake_case("helloWorld")       # "hello_world"  (y camel_case, kebab_case)
+  capitalize_words("ada lovelace")          # "Ada Lovelace"
+  word_wrap(texto, 40)           # líneas de como mucho 40 caracteres
+  to_base(255, 16)   from_base("ff", 16)    # "ff" y Ok(255)
+  edit_distance("casa", "cosa")             # 1"##),
+        (r#"More functions on records and dicts
+  dig(data, ["user", "langs", 0])           # Some(...), or None: deep inside
+  select_keys(person, ["name", "age"])      # only these keys (reject_keys: without them)
+  merge_with(a, b, fn(x, y) = x + y)        # f decides for a key in both
+  update(counts, "apples", 1, fn(n) = n + 1)  # +1, or 1 when missing
+  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#, r#"Más funciones sobre registros y diccionarios
+  dig(datos, ["user", "langs", 0])          # Some(...), o None: en lo más hondo
+  select_keys(persona, ["nombre", "edad"])  # solo esas claves (reject_keys: sin ellas)
+  merge_with(a, b, fn(x, y) = x + y)        # f decide para una clave que está en los dos
+  update(cuentas, "manzanas", 1, fn(n) = n + 1)  # +1, o 1 cuando falta
+  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#),
+        (r#"More helpers
+  unwrap_or_else(x, fn(e) = ...)   # the default, computed only when it is needed
+  expect(x, "a config file")       # like unwrap, with your message if it fails
+  all_ok(map(texts, parse_int))    # Ok([...]), or the first Err
+  filter_map(xs, f)                # the values of the Some(...) that f gives"#, r#"Más herramientas
+  unwrap_or_else(x, fn(e) = ...)   # el valor por defecto, calculado solo cuando hace falta
+  expect(x, "un archivo de configuración")  # como unwrap, con tu mensaje si falla
+  all_ok(map(textos, parse_int))   # Ok([...]), o el primer Err
+  filter_map(xs, f)                # los valores de los Some(...) que da f"#),
+        (r#"More on dates
+  add_months(date, 1)                       # 31 January + 1 month: the end of February
+  day_of_year(date)                         # from 1 to 366
+  format_date(date, "%d/%m/%Y %H:%M")       # with a pattern: %Y %m %d %H %M %S %B %A...
+  parse_date("29/02/2024", "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#, r#"Más sobre las fechas
+  add_months(fecha, 1)                      # 31 de enero + 1 mes: el final de febrero
+  day_of_year(fecha)                        # de 1 a 366
+  format_date(fecha, "%d/%m/%Y %H:%M")      # con un patrón: %Y %m %d %H %M %S %B %A...
+  parse_date("29/02/2024", "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#),
     ],
 }

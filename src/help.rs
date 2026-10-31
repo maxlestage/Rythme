@@ -11,6 +11,8 @@ use crate::source;
 use crate::suggest;
 use crate::value::Value;
 
+mod more;
+
 /// Topic names, in the order of the guided tour, with their aliases in the other languages.
 pub const TOPICS: &[(&str, &[&str])] = &[
     ("start", &["intro", "debut", "début", "commencer", "inicio", "empezar", "einstieg", "anfang", "comecar", "começar", "开始", "入门"]),
@@ -476,6 +478,9 @@ pub fn topic(name: &str) -> Option<String> {
     let mut text = topic_text(t).to_string();
     if t == "types" {
         text.push_str(&format!("\n\n{}", pick(WRITTEN_EN, WRITTEN_FR)));
+    }
+    if let Some(extra) = more::extra(t) {
+        text.push_str(&format!("\n\n{extra}"));
     }
     if let Some(b) = builtin {
         // `text` is both a topic and a function: show both.
@@ -3873,6 +3878,7 @@ pub fn fixed_texts() -> Vec<&'static str> {
     texts.extend(BUILTINS.iter().map(|b| b.en));
     texts.extend(builtins::date::MONTHS_EN);
     texts.extend(crate::exercise::fixed_texts());
+    texts.extend(more::fixed_texts());
     texts
 }
 
