@@ -6,6 +6,7 @@
 
 pub mod ai;
 pub mod client;
+pub mod compress;
 pub mod examples;
 pub mod export;
 pub mod highlight;

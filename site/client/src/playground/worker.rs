@@ -1,6 +1,7 @@
 //! The worker of the playground: the same bundle as the page, started in a web worker
-//! (`/pkg/worker.js`), runs the programs away from the page, so that a program that
-//! never stops can be stopped (the page ends this worker and starts a new one).
+//! (`/pkg/worker.js`, with the module the page has compiled: the interpreter is compiled
+//! once), runs the programs away from the page, so that a program that never stops can
+//! be stopped (the page ends this worker and starts a new one).
 //!
 //! It receives `{id, code, mode, lang, seed}` (the modes of `rythme_run`: 0 runs,
 //! 1 checks, 2 tests, 5 shows the steps of one expression; `lang` is the position of the

@@ -385,6 +385,13 @@ impl Playground {
             self.load_failed("Worker");
             return;
         };
+        // The interpreter is compiled once, by this page: the worker gets the compiled
+        // module (`/pkg/worker.js` waits for it) and only instantiates it, so a new
+        // worker after Stop starts at once too. A browser that cannot pass a module gets
+        // `null`, and the worker downloads and compiles the bundle itself.
+        if worker.post_message(&wasm_bindgen::module()).is_err() {
+            let _ = worker.post_message(&JsValue::NULL);
+        }
         let p = self.clone();
         let w = worker.clone();
         let listener = Closure::<dyn FnMut(MessageEvent)>::new(move |msg: MessageEvent| {
@@ -431,6 +438,18 @@ impl Playground {
         self.set_running(false);
         self.output.set_text_content(None);
         let _ = self.output.append_child(&text(&format!("{}{why}", self.t.get("loadFailed")), Some("err")));
+        self.say_ready();
+    }
+
+    /// The first program has run (or cannot): the site's bundle may now register the
+    /// service worker, which takes the network to save the whole site (`layout.rs`).
+    fn say_ready(&self) {
+        if !self.page.has_attribute("data-ready") {
+            let _ = self.page.set_attribute("data-ready", "");
+            if let Ok(event) = Event::new(crate::layout::PLAYGROUND_READY) {
+                let _ = dom::document().dispatch_event(&event);
+            }
+        }
     }
 
     fn set_running(&self, on: bool) {
@@ -481,6 +500,7 @@ impl Playground {
             return;
         }
         self.set_running(false);
+        self.say_ready();
         let ms = js::get(result, "ms").as_f64().unwrap_or(0.0).round().max(1.0);
         let trap = js::string(result, "trap");
         let (mode, seed, code, expr) = {
