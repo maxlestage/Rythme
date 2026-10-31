@@ -284,7 +284,7 @@ fn record_equal(text: &str, at: usize, w: &str) -> Option<String> {
         return None;
     }
     let head = text[..at].trim_end();
-    let start = head.rfind(|c: char| !is_name_char(c)).map_or(0, |i| i + 1);
+    let start = head.char_indices().rev().find(|&(_, c)| !is_name_char(c)).map_or(0, |(i, c)| i + c.len_utf8());
     let field = &head[start..];
     let lead = head[..start].trim_end();
     (!field.is_empty() && (lead.ends_with('{') || lead.ends_with(','))).then(|| field.to_string())
@@ -455,7 +455,8 @@ fn arrow_fix(text: &str, s: usize, e: usize, sp: impl Fn(usize, usize) -> Span) 
         }
         (open, inner[open + 1..].trim())
     } else {
-        let start = head.rfind(|c: char| !is_name_char(c)).map_or(0, |i| i + 1);
+        // After the last character that is not part of a name (which may take several bytes).
+        let start = head.char_indices().rev().find(|&(_, c)| !is_name_char(c)).map_or(0, |(i, c)| i + c.len_utf8());
         let name = &head[start..];
         if name.is_empty() || head[..start].trim_end().ends_with(|c: char| is_name_char(c) || c == '.') {
             return None;

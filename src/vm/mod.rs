@@ -390,7 +390,19 @@ pub struct GlobalSite {
     /// Its value, read when the names of the program had this stamp
     /// (`Globals::stamp`): still its value while they have it.
     pub seen: std::cell::Cell<u64>,
-    pub value: std::cell::RefCell<Value>,
+    pub value: std::cell::RefCell<Seen>,
+}
+
+/// A value of a name of the program, as an instruction keeps it. A function
+/// is kept without counting as a reference, since its code may be the code
+/// that keeps it (a cycle would never be freed); values that may hold
+/// functions are not kept.
+#[derive(Default)]
+pub enum Seen {
+    #[default]
+    Nothing,
+    Plain(Value),
+    Func(std::rc::Weak<crate::value::Closure>),
 }
 
 /// A call of a function of the group of the running function.

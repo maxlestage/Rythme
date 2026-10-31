@@ -149,8 +149,7 @@ impl Gen {
     }
 
     fn global(&mut self, s: Sym, scope: &crate::compile::Scope) -> u32 {
-        let site =
-            super::GlobalSite { name: s, scope: scope.clone(), seen: Default::default(), value: std::cell::RefCell::new(Value::Unit) };
+        let site = super::GlobalSite { name: s, scope: scope.clone(), seen: Default::default(), value: Default::default() };
         Gen::index(&mut self.c.globals, site)
     }
 

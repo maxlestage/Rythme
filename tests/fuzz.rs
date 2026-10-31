@@ -1167,6 +1167,9 @@ fn survives(src: &str) {
 #[test]
 fn inputs_found_by_fuzzing() {
     for src in [
+        // A name before `=>` (or a field before `=`) after a character of several bytes.
+        "sum👍filter => 1",
+        "{a👍b = 1}",
         // Long chains of operators and calls (the tree was too deep for the stack).
         &format!("x = {}", ["1"; 5000].join(" + ")),
         &format!("x = 1{}", "?".repeat(5000)),

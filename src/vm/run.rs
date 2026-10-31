@@ -796,7 +796,12 @@ impl Interp {
     fn global(&self, chunk: &Chunk, g: u32, at: usize) -> Fallible<Value> {
         let site = &chunk.globals[g as usize];
         if site.seen.get() == self.globals.stamp() {
-            return Ok(dup(&site.value.borrow()));
+            match &*site.value.borrow() {
+                super::Seen::Plain(v) => return Ok(dup(v)),
+                // The names of the program did not change: it is still alive.
+                super::Seen::Func(f) => return Ok(Value::Func(f.upgrade().expect("a function of the program"))),
+                super::Seen::Nothing => {}
+            }
         }
         self.look_up(site, chunk.spans[at].0)
     }
@@ -807,7 +812,9 @@ impl Interp {
     fn is_global(&self, chunk: &Chunk, g: u32, clo: &Rc<Closure>) -> bool {
         let site = &chunk.globals[g as usize];
         if site.seen.get() == self.globals.stamp() {
-            return matches!(&*site.value.borrow(), Value::Func(f) if Rc::ptr_eq(f, clo));
+            if let super::Seen::Func(f) = &*site.value.borrow() {
+                return std::ptr::eq(f.as_ptr(), Rc::as_ptr(clo));
+            }
         }
         matches!(self.globals.get(&site.name), Some(Value::Func(f)) if Rc::ptr_eq(f, clo))
     }
@@ -816,8 +823,15 @@ impl Interp {
     fn look_up(&self, site: &super::GlobalSite, span: Span) -> Fallible<Value> {
         match self.globals.get(&site.name) {
             Some(v) => {
-                *site.value.borrow_mut() = v.clone();
-                site.seen.set(self.globals.stamp());
+                let seen = match v {
+                    Value::Func(f) => Some(super::Seen::Func(Rc::downgrade(f))),
+                    v if !is_container(v) => Some(super::Seen::Plain(v.clone())),
+                    _ => None,
+                };
+                if let Some(seen) = seen {
+                    *site.value.borrow_mut() = seen;
+                    site.seen.set(self.globals.stamp());
+                }
                 Ok(v.clone())
             }
             None => Err(self.unknown_name(site.name, &site.scope, span)),
