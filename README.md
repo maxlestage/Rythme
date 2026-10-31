@@ -296,6 +296,7 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 | [`calendar.ry`](examples/calendar.ry) | dates: the page of a month, ISO 8601 texts, `days_between`, `add_days` |
 | [`logs.ry`](examples/logs.ry) | reading a log with regexes: `named_captures`, `matches`, `find_all`, `replace_all`, `format_number` |
 | [`grades.ry`](examples/grades.ry) | grades from a spreadsheet: `csv_records` with `;`, `csv_format`, a repeatable draw with `random_seed` |
+| [`report.ry`](examples/report.ry) | a table written with `format` specs and `center`, `tally`, `most_common`, `sort_by_desc`, a date pattern, `word_wrap` |
 | [`tree.ry`](examples/tree.ry) | a recursive type: binary search tree |
 | [`primes.ry`](examples/primes.ry) | a recursive sieve, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | `test` blocks |
