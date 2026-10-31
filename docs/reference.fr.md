@@ -2113,10 +2113,10 @@ appel qui sert d'argument, d'opérande (`n * fact(n - 1)`), de condition, ou
 qui est suivi de `?`, n'est pas en position terminale.
 
 Les autres appels s'imbriquent, et l'imbrication est limitée par la pile :
-au-delà d'une limite, le programme s'arrête avec E014. La limite dépend de la
-fonction ; avec la commande `rythme`, c'est plusieurs centaines de milliers
-d'appels imbriqués (environ 900 000 pour `somme` ci-dessous, plus de 400 000
-même pour une fonction qui en fait bien plus à chaque appel), et 600 dans le
+au-delà d'une limite, le programme s'arrête avec E014. Avec la commande
+`rythme`, la limite est de 917 504 appels imbriqués, quelle que soit la
+fonction (un peu moins quand les appels passent par des fonctions comme
+`map`, qui appellent la fonction qu'on leur donne), et de 600 dans le
 playground. Les fonctions de listes (`map`, `fold`...) ne s'imbriquent pas.
 
 ```rythme
@@ -2134,7 +2134,7 @@ print(somme(1..5000000))
 
 ```text
 1000000 false
-erreur[E014]: trop d'appels imbriqués (917503 appels en cours)
+erreur[E014]: trop d'appels imbriqués (917504 appels en cours)
  --> 44-terminal.ry:9:30
   |
 9 | fn somme([x, ..reste]) = x + somme(reste)             # pas un appel terminal : + vient après
@@ -2148,11 +2148,11 @@ erreur[E014]: trop d'appels imbriqués (917503 appels en cours)
       ou utilisez `fold`, `map`, `filter`, qui n'ont pas de limite.
   = appels en cours (le plus récent d'abord) :
       dans `somme` (×40) appelée en 44-terminal.ry:9:30
-      … et 917463 autres appels
+      … et 917464 autres appels
   = en savoir plus : `rythme explain E014`
 ```
 
-(Le nombre d'appels en cours varie selon la fonction et la machine.)
+(Le nombre d'appels en cours peut changer avec la version de Rythme.)
 
 ### 4.7 Types
 
@@ -5612,7 +5612,7 @@ Remarques :
 | imbrication des parenthèses, crochets, blocs et autres constructions dans le code | 256 niveaux | E001 |
 | profondeur d'une expression : chaque opérateur, appel, indice ou champ compte pour un niveau, donc `1 + 1 + ...` contient au plus 1000 nombres | 1000 niveaux | E001 |
 | textes imbriqués dans des `{...}` de textes | 32 niveaux | E001 |
-| appels imbriqués (non terminaux) | selon la fonction et la pile : plusieurs centaines de milliers avec `rythme` (environ 900 000 pour une récursion simple), 600 dans le playground | E014 |
+| appels imbriqués (non terminaux) | 917 504 avec `rythme` (un peu moins par des fonctions comme `map`), 600 dans le playground | E014 |
 | étapes de `rythme etapes` : montrées pour chaque expression ; en tout ; profondeur d'une expression en cours d'évaluation | 200 (`--max`) ; 10 000 000 ; 10 000 niveaux, 1 200 dans le playground | — |
 | chiffres de `round(x, chiffres)` | ramenés entre −15 et 15 | — |
 | décimales de `text(x, decimales)` | de 0 à 100 | E023 |

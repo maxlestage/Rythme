@@ -369,11 +369,12 @@ et des messages en six langues. Son contenu est décrit dans
 [`CHANGELOG.md`](CHANGELOG.md) ; des idées pour la suite sont à la fin de
 [`ROADMAP.md`](ROADMAP.md#after-10). Les limites, honnêtement :
 
-- **Vitesse.** C'est un interpréteur qui parcourt l'arbre du programme : les
-  noms locaux deviennent des cases numérotées avant l'exécution, et la
-  plupart des appels n'allouent rien. Les programmes de [`bench/`](bench)
-  (`bench/run.sh`) tournent 1,2 à 4,3 fois plus vite qu'avec la première
-  version, Rythme 0.1 ;
+- **Vitesse.** Les programmes sont compilés en instructions d'une machine
+  virtuelle à registres avant l'exécution : les noms locaux sont des cases
+  numérotées, et la plupart des appels n'allouent rien. Les programmes de
+  [`bench/`](bench) (`bench/run.sh`) tournent 1,1 à 2 fois plus vite
+  qu'avec Rythme 1.0, dont l'interpréteur parcourait l'arbre du programme,
+  et affichent exactement la même chose ;
   c'est de l'ordre de Python, loin de Rust compilé. Construire un texte avec
   `+` ou `"{acc}..."` et ajouter à une liste (`push`, `xs + [x]`,
   `[..xs, x]`) prennent un temps constant par ajout : 100 000 ajouts

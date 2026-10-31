@@ -52,7 +52,6 @@ entry and the workflow that checks its pull requests).
   `authors` and `index` (another index: an address, or a folder read as it
   is; or the variable `RYTHME_INDEX`), lists of texts on one line, and
   dependencies `{ version = "..." }`. Files of 1.0 read the same.
-
 ### Embedding
 
 - **Programs that embed Rythme can give records of functions** (`db.all(q)`,
@@ -325,6 +324,9 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
 
 ### Fixed
 
+- `rythme fix` and the suggestions for `x => ...` and `{name = ...}` no
+  longer stop with an internal error when a character of several bytes
+  comes right before the name (found by fuzzing).
 - **`capitalize` uses the titlecase of Unicode** where it differs from the
   uppercase: `capitalize("ǆungla")` gives `ǅungla` (not `Ǆungla`), and so do
   `ǈ ǋ ǲ`; `ß` gives `Ss`, the ligatures `ﬁ ﬂ ﬀ...` give `Fi Fl Ff...`, the
@@ -335,6 +337,17 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
 
 ### Performance
 
+- **A bytecode virtual machine runs programs** instead of the interpreter
+  that walked the syntax tree: functions are compiled once to instructions
+  on registers (`src/vm/`), and the programs of `bench/` run 1.1 to 2
+  times faster, printing exactly the same (output, errors with their
+  places and traces, what the debugger and `rythme steps` show, the draws
+  of `random_seed`). Every program of the repository and thousands of
+  generated ones print the same as with 1.0.
+- The limit of nested calls (E014) is now the same for every function:
+  917 504 with `rythme` (it was about 900 000, fewer for functions that do
+  more in each call), still 600 in the playground, which needs less of the
+  browser's stack.
 - **`find_all`, `split_by` and `replace_all` are no longer quadratic** on
   regexes that read far ahead: their searches skip the ways that an earlier
   search showed to lead nowhere, and share their memory. `a*b|a` on 40 000

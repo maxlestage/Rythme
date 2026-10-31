@@ -444,8 +444,8 @@ pub(crate) fn stop(it: &mut Interp, at: Span, info: &Rc<StopInfo>, base: usize) 
     })
 }
 
-/// A call starts: `f`, with its arguments from `base` on.
-pub(crate) fn call(it: &mut Interp, f: &Value, member: Option<u32>, base: usize, span: Span) -> Fallible<()> {
+/// A call starts: `f`, with its `argc` arguments from `base` on.
+pub(crate) fn call(it: &mut Interp, f: &Value, member: Option<u32>, base: usize, argc: usize, span: Span) -> Fallible<()> {
     with_session(it, Ok(()), |s, it, _| {
         let depth = it.call_depth();
         s.ensure_top();
@@ -465,7 +465,7 @@ pub(crate) fn call(it: &mut Interp, f: &Value, member: Option<u32>, base: usize,
                 What::Top => None,
             };
         }
-        let args = it.stack_values().get(base..).map(<[Value]>::to_vec).unwrap_or_default();
+        let args = it.stack_values().get(base..base + argc).map(<[Value]>::to_vec).unwrap_or_default();
         let what = match f {
             Value::Func(clo) => {
                 let (def, code) = match member {

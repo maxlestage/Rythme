@@ -2,7 +2,7 @@
 //! everywhere. This crate contains the whole interpreter.
 //!
 //! The pipeline: [`lexer`] → [`parser`] → [`check`] → [`compile`] →
-//! [`interp`], driven by [`driver`]. Every message exists in English,
+//! [`vm`] (run by [`interp`]), driven by [`driver`]. Every message exists in English,
 //! French and the languages of `src/i18n/` ([`lang`]).
 
 #[macro_use]
@@ -58,5 +58,6 @@ pub mod symbol;
 pub mod testing;
 pub mod types;
 pub mod value;
+pub mod vm;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
