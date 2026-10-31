@@ -13,7 +13,11 @@
   Ruby, Python and Elixir offer, and its Rythme function (or why there is
   none).
 - [**Teaching with Rythme**](teaching.md): why Rythme fits a course, a
-  12-session course outline, exercises with automatic checking.
+  12-session course outline, exercises checked and graded automatically,
+  the playground and the debugger in class, and AI assistants. Also in
+  [French](enseigner.md), [Spanish](teaching.es.md),
+  [German](teaching.de.md), [Portuguese](teaching.pt.md) and
+  [Chinese](teaching.zh.md).
 - [**Exercises**](exercises/README.md): 36 graded exercises for a first
   course (six about AI), with hints and tests, built into `rythme exercise`.
 - **Inside the interpreter**: `rythme learn` (a guided tour),
@@ -43,8 +47,11 @@
   chaque opération de Ruby, Python et Elixir, et sa fonction en Rythme (ou
   pourquoi il n'y en a pas).
 - [**Enseigner avec Rythme**](enseigner.md) : pourquoi Rythme convient à un
-  cours, un plan de cours en 12 séances, des exercices corrigés
-  automatiquement.
+  cours, un plan de cours en 12 séances, des exercices corrigés et notés
+  automatiquement, le playground et le débogueur en cours, et les
+  assistants d'IA. Aussi en [anglais](teaching.md),
+  [espagnol](teaching.es.md), [allemand](teaching.de.md),
+  [portugais](teaching.pt.md) et [chinois](teaching.zh.md).
 - [**Exercices**](exercises/README.fr.md) : 36 exercices gradués pour un
   premier cours (dont six sur l'IA), avec des indices et des tests, intégrés à `rythme exercise`.
 - **Dans l'interpréteur** : `rythme learn` (une visite guidée),
