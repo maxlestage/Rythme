@@ -4917,7 +4917,7 @@ test "分と秒"
 end
 "#,
         ),
-        ("04-choosing", ""),
+        ("04-choosing", "04-choosing"),
         (
             r#"# Exercise 04 · Choosing with `if`  ★☆☆
 #
@@ -4981,9 +4981,69 @@ test "ticket price"
   assert_eq(ticket_price(65), 12)
 end
 "#,
-            "",
+            r#"# 練習問題 04 · `if` で選ぶ  ★☆☆
+#
+# `if condition then value else other_value` は式です：値を返すので、
+# `else` は常に必要です。`else if` で複数の条件をつなげます。
+#
+# 問題
+#   組み込み関数 `abs`、`min`、`max` を使わずに：
+#   - `absolute(n)`：符号を取り除いた n（`absolute(-5)` は 5）
+#   - `larger(a, b)`：2 つの数のうち大きいほう
+#   - `grade(score)`：0〜100 の点数に対して、90 以上は "A"、80 以上は "B"、
+#     70 以上は "C"、60 以上は "D"、60 未満は "F"
+#   - `ticket_price(age)`：4 歳未満は 0、12 歳未満は 5、65 歳以上は 12、
+#     それ以外は 10
+#
+# ヒント
+#   1. `if n < 0 then -n else n`
+#   2. いちばん高い評価から調べます：`if score >= 90 then "A" else if ...`。
+#   3. 長い `if` は次の行に続けられます。各行は `else if` で始めます。
+#
+# 答えをチェックする：  rythme exercise check 04-choosing.ry
+#             または：  rythme test 04-choosing.ry
+
+fn absolute(n) = fail("未完成")
+
+fn larger(a, b) = fail("未完成")
+
+fn grade(score) = fail("未完成")
+
+fn ticket_price(age) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "絶対値"
+  assert_eq(absolute(-5), 5)
+  assert_eq(absolute(7), 7)
+  assert_eq(absolute(0), 0)
+end
+
+test "大きいほう"
+  assert_eq(larger(3, 8), 8)
+  assert_eq(larger(8, 3), 8)
+  assert_eq(larger(-1, -2), -1)
+end
+
+test "評価"
+  assert_eq(grade(95), "A")
+  assert_eq(grade(90), "A")
+  assert_eq(grade(85), "B")
+  assert_eq(grade(70), "C")
+  assert_eq(grade(61), "D")
+  assert_eq(grade(12), "F")
+end
+
+test "チケットの値段"
+  assert_eq(ticket_price(2), 0)
+  assert_eq(ticket_price(4), 5)
+  assert_eq(ticket_price(11), 5)
+  assert_eq(ticket_price(30), 10)
+  assert_eq(ticket_price(65), 12)
+end
+"#,
         ),
-        ("05-logic", ""),
+        ("05-logic", "05-logic"),
         (
             r#"# Exercise 05 · True or false  ★☆☆
 #
@@ -5048,9 +5108,70 @@ test "exclusive or"
   assert_eq(exclusive_or(false, false), false)
 end
 "#,
-            "",
+            r#"# 練習問題 05 · 真か偽か  ★☆☆
+#
+# 比較（`==`、`!=`、`<`、`<=`、`>`、`>=`）は Bool、つまり `true` か `false` を
+# 返します。`and`、`or`、`not` は Bool を組み合わせます。
+#
+# 問題
+#   どの関数も Bool を返し、どれにも `if` は要りません：
+#   - `is_multiple(n, d)`：n は d の倍数か？
+#   - `is_between(x, low, high)`：x は low から high まで（両端を含む）か？
+#   - `is_leap(year)`：4 の倍数の年はうるう年。ただし 100 の倍数で 400 の
+#     倍数でない年は除く（2000 年はうるう年、1900 年は違う）。ライブラリにも
+#     `is_leap_year` としてありますが、ここでは規則を自分で書きます
+#   - `exclusive_or(a, b)`：a と b のちょうど一方だけが真か？
+#
+# ヒント
+#   1. 余り `n % d` が 0 なら、n は d の倍数です。
+#   2. `x >= low and x <= high`
+#   3. うるう年の規則は最初の関数を使って書きます：
+#      `is_multiple(year, 4) and (...)`。
+#   4. 2 つの Bool は `!=` でも比べられます。
+#
+# 答えをチェックする：  rythme exercise check 05-logic.ry
+#             または：  rythme test 05-logic.ry
+
+fn is_multiple(n, d) = fail("未完成")
+
+fn is_between(x, low, high) = fail("未完成")
+
+fn is_leap(year) = fail("未完成")
+
+fn exclusive_or(a, b) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "倍数"
+  assert(is_multiple(12, 3), "12 は 3 の倍数")
+  assert(not is_multiple(12, 5), "12 は 5 の倍数ではない")
+  assert(is_multiple(0, 7), "0 はどの数の倍数でもある")
+end
+
+test "範囲内"
+  assert(is_between(5, 1, 10), "5 は 1 と 10 の間")
+  assert(is_between(1, 1, 10), "両端を含む")
+  assert(is_between(10, 1, 10), "両端を含む")
+  assert(not is_between(11, 1, 10), "11 は大きすぎる")
+  assert(not is_between(0, 1, 10), "0 は小さすぎる")
+end
+
+test "うるう年"
+  assert_eq(is_leap(2024), true)
+  assert_eq(is_leap(2023), false)
+  assert_eq(is_leap(1900), false)
+  assert_eq(is_leap(2000), true)
+end
+
+test "排他的論理和"
+  assert_eq(exclusive_or(true, false), true)
+  assert_eq(exclusive_or(false, true), true)
+  assert_eq(exclusive_or(true, true), false)
+  assert_eq(exclusive_or(false, false), false)
+end
+"#,
         ),
-        ("06-cases", ""),
+        ("06-cases", "06-cases"),
         (
             r#"# Exercise 06 · One definition per case  ★☆☆
 #
@@ -5109,9 +5230,65 @@ test "day kind"
   assert_eq(day_kind("Monday"), "weekday")
 end
 "#,
-            "",
+            r#"# 練習問題 06 · ケースごとに 1 つの定義  ★☆☆
+#
+# 関数は複数の定義で書くことができ、順に試されます。引数には値を書けて
+# （`fn f(0) = ...`）、ガード（`=` の前の `if ...`）で条件を加えられます：
+#   fn describe(0) = "ゼロ"
+#   fn describe(n) if n < 0 = "負"
+#   fn describe(_) = "正"
+#
+# 問題
+#   - `plural(n, word)`：英語の複数形。1 なら "1 cat"、それ以外は "0 cats"、
+#     "2 cats" など
+#   - `fizzbuzz(n)`：n が 3 と 5 の両方の倍数なら "FizzBuzz"、それ以外の 3 の
+#     倍数なら "Fizz"、それ以外の 5 の倍数なら "Buzz"、どれでもなければ数を
+#     テキストにしたもの
+#   - `day_kind(day)`："土曜日" と "日曜日" なら "週末"、それ以外のテキスト
+#     なら "平日"
+#
+# ヒント
+#   1. 特別なケースから始めます：`fn plural(1, word) = ...`、その次の行に
+#      一般的なケースを書きます。
+#   2. 順番が大事です："Fizz" と "Buzz" より先に "FizzBuzz" を調べます。
+#   3. `text(15)` は "15" です。
+#   4. `_` は何でも受け付けるので、普通は最後のケースにします。
+#
+# 答えをチェックする：  rythme exercise check 06-cases.ry
+#             または：  rythme test 06-cases.ry
+
+fn plural(n, word) = fail("未完成")
+
+fn fizzbuzz(n) = fail("未完成")
+
+fn day_kind(day) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "複数形"
+  assert_eq(plural(1, "cat"), "1 cat")
+  assert_eq(plural(2, "cat"), "2 cats")
+  assert_eq(plural(0, "dog"), "0 dogs")
+end
+
+test "fizzbuzz"
+  assert_eq(fizzbuzz(1), "1")
+  assert_eq(fizzbuzz(3), "Fizz")
+  assert_eq(fizzbuzz(10), "Buzz")
+  assert_eq(fizzbuzz(30), "FizzBuzz")
+  assert_eq(fizzbuzz(31), "31")
+end
+
+test "最初の 15 個" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+
+test "曜日の種類"
+  assert_eq(day_kind("土曜日"), "週末")
+  assert_eq(day_kind("日曜日"), "週末")
+  assert_eq(day_kind("月曜日"), "平日")
+end
+"#,
         ),
-        ("07-recursion", ""),
+        ("07-recursion", "07-recursion"),
         (
             r#"# Exercise 07 · Recursion  ★★☆
 #
@@ -5165,9 +5342,60 @@ test "power"
   assert_eq(power(1.5, 2), 2.25)
 end
 "#,
-            "",
+            r#"# 練習問題 07 · 再帰  ★★☆
+#
+# Rythme にループはありません：繰り返すには、関数が自分自身を呼びます。
+# 再帰関数にはどれも、止まる基底ケースと、問題を基底ケースに近づける
+# 再帰ケースが必要です：
+#   fn countdown(0) = "発射！"
+#   fn countdown(n) = "{n} " + countdown(n - 1)
+#
+# 問題
+#   - `factorial(n)`：1 × 2 × ... × n。`factorial(0)` は 1
+#   - `sum_to(n)`：1 + 2 + ... + n。`sum_to(0)` は 0
+#   - `power(x, n)`：x の n 乗（n ≥ 0）。`**` も `pow` も使わずに
+#
+# ヒント
+#   1. `factorial(5)` は `5 * factorial(4)` です。
+#   2. `power(x, 0)` はいくつでしょう？ `power(x, n)` を `power(x, n - 1)` と
+#      比べるとどうでしょう？
+#   3. 基底ケースに決して到達しない関数はエラー E014 で止まります：
+#      呼び出しのたびに n が小さくなっているか確かめてください。
+#
+# 答えをチェックする：  rythme exercise check 07-recursion.ry
+#             または：  rythme test 07-recursion.ry
+
+fn factorial(n) = fail("未完成")
+
+fn sum_to(n) = fail("未完成")
+
+fn power(x, n) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "階乗"
+  assert_eq(factorial(0), 1)
+  assert_eq(factorial(1), 1)
+  assert_eq(factorial(5), 120)
+  assert_eq(factorial(10), 3628800)
+end
+
+test "n までの和"
+  assert_eq(sum_to(0), 0)
+  assert_eq(sum_to(1), 1)
+  assert_eq(sum_to(10), 55)
+  assert_eq(sum_to(100), 5050)
+end
+
+test "べき乗"
+  assert_eq(power(2, 0), 1)
+  assert_eq(power(2, 10), 1024)
+  assert_eq(power(3, 4), 81)
+  assert_eq(power(1.5, 2), 2.25)
+end
+"#,
         ),
-        ("08-digits", ""),
+        ("08-digits", "08-digits"),
         (
             r#"# Exercise 08 · The digits of a number  ★★☆
 #
@@ -5219,9 +5447,57 @@ test "reverse number"
   assert_eq(reverse_number(5), 5)
 end
 "#,
-            "",
+            r#"# 練習問題 08 · 数の各桁  ★★☆
+#
+# `n % 10` は n の最後の桁で、`n // 10` は最後の桁を除いた n です：
+# 472 なら 2 と 47 です。
+#
+# 問題
+#   整数 n ≥ 0 について、再帰を使って（数をテキストに変えずに）：
+#   - `digit_count(n)`：n の桁数（0 は 1 桁）
+#   - `digit_sum(n)`：n の各桁の和
+#   - `reverse_number(n)`：桁を逆順にした数（1230 は 321 になる）
+#
+# ヒント
+#   1. 10 未満の数は 1 桁です：これが基底ケースです。
+#   2. `digit_sum(472)` は `2 + digit_sum(47)` です。
+#   3. `reverse_number` には、引数を 1 つ増やした補助関数を書きます。増やす
+#      引数はそれまでに作った数です：`reverse_from(n, built)`。ただし
+#      `reverse_from(0, built) = built`。各ステップで n の最後の桁を `built` の
+#      末尾に移します：`built * 10 + n % 10`。
+#
+# 答えをチェックする：  rythme exercise check 08-digits.ry
+#             または：  rythme test 08-digits.ry
+
+fn digit_count(n) = fail("未完成")
+
+fn digit_sum(n) = fail("未完成")
+
+fn reverse_number(n) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "桁数"
+  assert_eq(digit_count(0), 1)
+  assert_eq(digit_count(7), 1)
+  assert_eq(digit_count(472), 3)
+  assert_eq(digit_count(1000000), 7)
+end
+
+test "各桁の和"
+  assert_eq(digit_sum(0), 0)
+  assert_eq(digit_sum(472), 13)
+  assert_eq(digit_sum(99999), 45)
+end
+
+test "逆順の数"
+  assert_eq(reverse_number(472), 274)
+  assert_eq(reverse_number(1230), 321)
+  assert_eq(reverse_number(5), 5)
+end
+"#,
         ),
-        ("09-accumulators", ""),
+        ("09-accumulators", "09-accumulators"),
         (
             r#"# Exercise 09 · Accumulators and tail calls  ★★☆
 #
@@ -5276,9 +5552,61 @@ test "fibonacci"
   assert_eq(fib(90), 2880067194370816120)
 end
 "#,
-            "",
+            r#"# 練習問題 09 · 累積引数と末尾呼び出し  ★★☆
+#
+# `n + sum_to(n - 1)` では、足し算が呼び出しの終わりを待ちます：入れ子の
+# 呼び出しが 100 万個になると、エラー E014（「入れ子の呼び出しが多すぎる」）で
+# 止まります。再帰呼び出しが関数の最後に行う処理（末尾呼び出し）なら、
+# 何も待たず、制限もありません。追加の引数（累積引数）が、それまでに
+# 作った結果を運びます：
+#   fn sum_from(0, total) = total
+#   fn sum_from(n, total) = sum_from(n - 1, total + n)
+#
+# 問題
+#   - `big_sum(n)`：1 + 2 + ... + n。n = 1000000 でも動くこと
+#   - `collatz_steps(n)`：n ≥ 1 について、1 に着くまでのステップ数。1 ステップ
+#     で、偶数は 2 で割り、奇数は 3 × n + 1 にする
+#     （6 → 3 → 10 → 5 → 16 → 8 → 4 → 2 → 1 は 8 ステップ）
+#   - `fib(n)`：n 番目のフィボナッチ数（0, 1, 1, 2, 3, 5, 8...：それぞれ
+#     直前の 2 つの和）。n = 90 でも速いこと
+#
+# ヒント
+#   1. `big_sum(n)` は補助関数を呼ぶだけでよいです：`sum_from(n, 0)`。
+#   2. `collatz_from(n, steps)`：n が 1 なら、答えは `steps` です。
+#   3. `fib(n) = fib(n - 1) + fib(n - 2)` は正しいですが、同じ数を何度も
+#      計算するのでとても遅いです。代わりに最後の 2 つの数を運びます：
+#      `fib_from(n, a, b)`。a と b は隣り合うフィボナッチ数で、
+#      `fib_from(n, 0, 1)` から始めます。
+#
+# 答えをチェックする：  rythme exercise check 09-accumulators.ry
+#             または：  rythme test 09-accumulators.ry
+
+fn big_sum(n) = fail("未完成")
+
+fn collatz_steps(n) = fail("未完成")
+
+fn fib(n) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "大きな和"
+  assert_eq(big_sum(10), 55)
+  assert_eq(big_sum(1000000), 500000500000)
+end
+
+test "コラッツのステップ数"
+  assert_eq(collatz_steps(1), 0)
+  assert_eq(collatz_steps(6), 8)
+  assert_eq(collatz_steps(27), 111)
+end
+
+test "フィボナッチ"
+  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
+  assert_eq(fib(90), 2880067194370816120)
+end
+"#,
         ),
-        ("10-divisors", ""),
+        ("10-divisors", "10-divisors"),
         (
             r#"# Exercise 10 · Divisors and prime numbers  ★★☆
 #
@@ -5331,9 +5659,58 @@ test "next prime"
   assert_eq(next_prime(100), 101)
 end
 "#,
-            "",
+            r#"# 練習問題 10 · 約数と素数  ★★☆
+#
+# 再帰を使うと、答えが見つかるまで候補を 1 つずつ順に試すこともできます。
+#
+# 問題
+#   - `my_gcd(a, b)`：0 以上の 2 つの整数の最大公約数。ユークリッドの互除法
+#     を使う：a と 0 の最大公約数は a、a と b の最大公約数は b と `a % b` の
+#     最大公約数（組み込みの `gcd` は使わない）
+#   - `is_prime(n)`：n は素数（約数が 1 と自分自身だけの 2 以上の数）か？
+#   - `next_prime(n)`：n より真に大きい最小の素数
+#
+# ヒント
+#   1. ユークリッドの互除法はすでに 2 つのケースとして書かれています：
+#      それをコードにしてください。
+#   2. `is_prime` には、d、d + 1... と試す補助関数 `no_divisor_from(n, d)` を
+#      書きます。`d * d > n` になったらすぐに止めてかまいません。
+#   3. `next_prime(n)` は n + 1 を試します：素数ならそれが答え、そうでなければ
+#      答えは `next_prime(n + 1)` です。
+#
+# 答えをチェックする：  rythme exercise check 10-divisors.ry
+#             または：  rythme test 10-divisors.ry
+
+fn my_gcd(a, b) = fail("未完成")
+
+fn is_prime(n) = fail("未完成")
+
+fn next_prime(n) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "最大公約数"
+  assert_eq(my_gcd(12, 18), 6)
+  assert_eq(my_gcd(17, 5), 1)
+  assert_eq(my_gcd(7, 0), 7)
+  assert_eq(my_gcd(0, 9), 9)
+end
+
+test "素数"
+  assert_eq(1..30 |> filter(is_prime), [2, 3, 5, 7, 11, 13, 17, 19, 23, 29])
+  assert_eq(is_prime(0), false)
+  assert_eq(is_prime(7919), true)
+  assert_eq(is_prime(7917), false)
+end
+
+test "次の素数"
+  assert_eq(next_prime(1), 2)
+  assert_eq(next_prime(13), 17)
+  assert_eq(next_prime(100), 101)
+end
+"#,
         ),
-        ("11-list-patterns", ""),
+        ("11-list-patterns", "11-list-patterns"),
         (
             r#"# Exercise 11 · Taking lists apart  ★★☆
 #
@@ -5400,9 +5777,72 @@ test "last one"
   assert_eq(last_one(["only"]), "only")
 end
 "#,
-            "",
+            r#"# 練習問題 11 · リストを分解する  ★★☆
+#
+# リストは空の `[]` か、最初の要素とリストの残りが続く `[first, ..rest]` の
+# どちらかです。リストを扱う関数は、普通この 2 つのケースそれぞれに 1 つずつ
+# 定義を持ちます：
+#   fn count_items([]) = 0
+#   fn count_items([_, ..rest]) = 1 + count_items(rest)
+#
+# 問題
+#   再帰を使い、組み込み関数 `len`、`sum`、`max`、`contains` を使わずに：
+#   - `total(list)`：リストの数の合計
+#   - `largest(list)`：空でないリストのいちばん大きい要素
+#   - `has_value(list, x)`：x はリストの要素か？
+#   - `last_one(list)`：空でないリストの最後の要素
+#
+# ヒント
+#   1. 空のリストの合計は 0 です。
+#   2. 要素が 1 つのリスト `[x]` は、`largest` と `last_one` のよい基底
+#      ケースです。
+#   3. `[x, ..rest]` のいちばん大きい要素は、x と rest のいちばん大きい要素の
+#      うち大きいほうです。
+#   4. `has_value`：空のリストは何も含みません。そうでなければ、最初の要素が
+#      x か、x が残りにあるかです（`or`）。
+#   5. `rythme check` は忘れたケース（ここでは空のリスト）を警告します
+#      （W002）。空のリストにはいちばん大きい要素がありません：それを
+#      `fn largest([]) = fail("リストが空です")` で伝えます。
+#
+# 答えをチェックする：  rythme exercise check 11-list-patterns.ry
+#             または：  rythme test 11-list-patterns.ry
+
+fn total(list) = fail("未完成")
+
+fn largest(list) = fail("未完成")
+
+fn has_value(list, x) = fail("未完成")
+
+fn last_one(list) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "合計"
+  assert_eq(total([]), 0)
+  assert_eq(total([4]), 4)
+  assert_eq(total([1, 2, 3, 4]), 10)
+end
+
+test "いちばん大きい要素"
+  assert_eq(largest([7]), 7)
+  assert_eq(largest([3, 9, 2]), 9)
+  assert_eq(largest([-3, -1, -2]), -1)
+end
+
+test "値を含むか"
+  assert_eq(has_value([1, 2, 3], 2), true)
+  assert_eq(has_value([1, 2, 3], 5), false)
+  assert_eq(has_value([], 1), false)
+  assert_eq(has_value(["a", "b"], "b"), true)
+end
+
+test "最後の要素"
+  assert_eq(last_one([1, 2, 3]), 3)
+  assert_eq(last_one(["ひとつ"]), "ひとつ")
+end
+"#,
         ),
-        ("12-building-lists", ""),
+        ("12-building-lists", "12-building-lists"),
         (
             r#"# Exercise 12 · Building lists  ★★☆
 #
@@ -5466,9 +5906,70 @@ test "the original list does not change"
   assert_eq(numbers, [1, 2, 3])
 end
 "#,
-            "",
+            r#"# 練習問題 12 · リストを作る  ★★☆
+#
+# `[x, ..rest]` はリストを作ることもできます：x の後に rest の要素が続きます。
+# リストは決して変わりません：関数は新しいリストを返します。
+#   fn zeros(0) = []
+#   fn zeros(n) = [0, ..zeros(n - 1)]
+#
+# 問題
+#   再帰を使い、`map`、`reverse`、範囲（`1..n`）を使わずに：
+#   - `countdown(n)`：リスト [n, n - 1, ..., 1, 0]
+#   - `repeat_value(x, n)`：値 x を n 個並べたリスト
+#   - `double_all(list)`：リストの各数を 2 倍にしたもの
+#   - `reversed(list)`：要素を逆順にしたもの
+#
+# ヒント
+#   1. `countdown(0)` は `[0]` です。
+#   2. `double_all([x, ..rest])` は `x * 2` で始まります。
+#   3. `reversed` には累積引数を使います：`reversed_onto(list, done)` は、list が
+#      空になるまで、list の最初の要素を done の先頭に移します。
+#      `reversed_onto([1, 2], [])` → `reversed_onto([2], [1])` →
+#      `reversed_onto([], [2, 1])`。
+#
+# 答えをチェックする：  rythme exercise check 12-building-lists.ry
+#             または：  rythme test 12-building-lists.ry
+
+fn countdown(n) = fail("未完成")
+
+fn repeat_value(x, n) = fail("未完成")
+
+fn double_all(list) = fail("未完成")
+
+fn reversed(list) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "カウントダウン"
+  assert_eq(countdown(0), [0])
+  assert_eq(countdown(3), [3, 2, 1, 0])
+end
+
+test "値の繰り返し"
+  assert_eq(repeat_value("a", 3), ["a", "a", "a"])
+  assert_eq(repeat_value(1, 0), [])
+end
+
+test "すべて 2 倍"
+  assert_eq(double_all([1, 2, 3]), [2, 4, 6])
+  assert_eq(double_all([]), [])
+end
+
+test "逆順"
+  assert_eq(reversed([1, 2, 3]), [3, 2, 1])
+  assert_eq(reversed([]), [])
+  assert_eq(reversed(["x"]), ["x"])
+end
+
+test "元のリストは変わらない"
+  numbers = [1, 2, 3]
+  reversed(numbers)
+  assert_eq(numbers, [1, 2, 3])
+end
+"#,
         ),
-        ("13-library", ""),
+        ("13-library", "13-library"),
         (
             r#"# Exercise 13 · The list functions  ★★☆
 #
@@ -5529,9 +6030,67 @@ test "smallest three"
   assert_eq(smallest_three([9, 8]), [8, 9])
 end
 "#,
-            "",
+            r#"# 練習問題 13 · リストの関数  ★★☆
+#
+# リストの処理のほとんどに再帰は要りません：組み込み関数がやってくれます。
+# `1..5` はリスト [1, 2, 3, 4, 5]、`map(list, f)` は各要素に f を適用し、
+# `filter(list, f)` は f が true を返す要素を残します。`sum`、`len`、`sort`、
+# `reverse`、`take` など、`rythme help lists` で一覧できます。
+#
+# 問題
+#   - `squares(n)`：リスト [1, 4, 9, ..., n × n]
+#   - `evens(list)`：リストの偶数を同じ順で
+#   - `sum_of_multiples(limit)`：1 から limit - 1 までの数のうち、3 か 5 の
+#     倍数であるものの合計
+#   - `mean(list)`：空でないリストの数の平均
+#   - `smallest_three(list)`：小さいほうから 3 つの数
+#
+# ヒント
+#   1. 自分で書いた関数 `square` を使って `map(1..n, square)`、または
+#      `map(1..n, fn(x) = x * x)`（無名関数。練習問題 14 を参照）。
+#   2. `is_even` は組み込み関数です：`filter(list, is_even)`。
+#   3. `1..0` は空のリスト `[]` です。
+#   4. `sort` してから `take`。
+#
+# 答えをチェックする：  rythme exercise check 13-library.ry
+#             または：  rythme test 13-library.ry
+
+fn squares(n) = fail("未完成")
+
+fn evens(list) = fail("未完成")
+
+fn sum_of_multiples(limit) = fail("未完成")
+
+fn mean(list) = fail("未完成")
+
+fn smallest_three(list) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "2 乗"
+  assert_eq(squares(5), [1, 4, 9, 16, 25])
+  assert_eq(squares(0), [])
+end
+
+test "偶数" = assert_eq(evens([5, 2, 8, 1, 4]), [2, 8, 4])
+
+test "倍数の和"
+  assert_eq(sum_of_multiples(10), 23)
+  assert_eq(sum_of_multiples(1000), 233168)
+end
+
+test "平均"
+  assert_eq(mean([1, 2, 3, 4]), 2.5)
+  assert_eq(mean([7]), 7)
+end
+
+test "小さいほうから 3 つ"
+  assert_eq(smallest_three([5, 1, 4, 2, 3]), [1, 2, 3])
+  assert_eq(smallest_three([9, 8]), [8, 9])
+end
+"#,
         ),
-        ("14-anonymous-functions", ""),
+        ("14-anonymous-functions", "14-anonymous-functions"),
         (
             r#"# Exercise 14 · Anonymous functions  ★★☆
 #
@@ -5584,9 +6143,59 @@ end
 
 test "count above" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
 "#,
-            "",
+            r#"# 練習問題 14 · 無名関数  ★★☆
+#
+# `fn(x) = x * 2` は名前のない関数で、必要な場所にそのまま書きます。
+# 周りの名前を使うこともできます：
+#   fn add_to_all(list, n) = map(list, fn(x) = x + n)
+#
+# 問題
+#   - `with_tax(prices, percent)`：各価格を `percent` % 上げたもの
+#   - `long_words(words, n)`：n 文字より長い単語
+#   - `lengths(words)`：各単語の長さ
+#   - `all_positive(list)`：すべての数が 0 より大きいか？
+#   - `count_above(list, limit)`：limit より大きい数の個数
+#
+# ヒント
+#   1. 価格 p を 20 % 上げると `p + p * 20 / 100` です。
+#   2. `len("word")` は 4 です。
+#   3. `all(list, f)` はすべての要素で f が true を返すときに真で、
+#      `count(list, f)` は f が true を返す要素を数えます。
+#
+# 答えをチェックする：  rythme exercise check 14-anonymous-functions.ry
+#             または：  rythme test 14-anonymous-functions.ry
+
+fn with_tax(prices, percent) = fail("未完成")
+
+fn long_words(words, n) = fail("未完成")
+
+fn lengths(words) = fail("未完成")
+
+fn all_positive(list) = fail("未完成")
+
+fn count_above(list, limit) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "税込み"
+  assert_eq(with_tax([100, 50], 20), [120, 60])
+  assert_eq(with_tax([10], 0), [10])
+end
+
+test "長い単語" = assert_eq(long_words(["a", "tree", "is", "green"], 3), ["tree", "green"])
+
+test "長さ" = assert_eq(lengths(["a", "tree", "is"]), [1, 4, 2])
+
+test "すべて正"
+  assert_eq(all_positive([1, 5, 3]), true)
+  assert_eq(all_positive([1, -5, 3]), false)
+  assert_eq(all_positive([]), true)
+end
+
+test "より大きい数の個数" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
+"#,
         ),
-        ("15-functions-as-values", ""),
+        ("15-functions-as-values", "15-functions-as-values"),
         (
             r#"# Exercise 15 · Functions are values  ★★☆
 #
@@ -5650,9 +6259,69 @@ test "my filter"
   assert_eq(my_filter(["a", "bb", "ccc"], fn(w) = len(w) > 1), ["bb", "ccc"])
 end
 "#,
-            "",
+            r#"# 練習問題 15 · 関数は値  ★★☆
+#
+# 関数は別の関数に渡すことができ、関数が新しい関数を返すこともできます：
+#   fn twice(f) = fn(x) = f(f(x))
+#   add_two = twice(fn(x) = x + 1)      # add_two(5) は 7
+#
+# 問題
+#   - `apply_twice(f, x)`：x に f を適用し、その結果にもう一度 f を適用する
+#   - `compose(f, g)`：g を適用してから f を適用する新しい関数
+#   - `adder(n)`：引数に n を足す新しい関数
+#   - `my_map(list, f)` と `my_filter(list, f)`：再帰で書いた自分版の
+#     `map` と `filter`
+#
+# ヒント
+#   1. `compose(f, g)` は `fn(x) = ...` を返します。
+#   2. `my_map([x, ..rest], f)` は `f(x)` で始まります。
+#   3. `my_filter([x, ..rest], f)`：`f(x)` が真のときだけ x を残し、rest で
+#      続けます。
+#
+# 答えをチェックする：  rythme exercise check 15-functions-as-values.ry
+#             または：  rythme test 15-functions-as-values.ry
+
+fn apply_twice(f, x) = fail("未完成")
+
+fn compose(f, g) = fail("未完成")
+
+fn adder(n) = fail("未完成")
+
+fn my_map(list, f) = fail("未完成")
+
+fn my_filter(list, f) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "2 回適用"
+  assert_eq(apply_twice(fn(x) = x * 3, 2), 18)
+  assert_eq(apply_twice(upper, "hi"), "HI")
+end
+
+test "合成"
+  plus_one_then_double = compose(fn(x) = x * 2, fn(x) = x + 1)
+  assert_eq(plus_one_then_double(4), 10)
+  assert_eq(compose(len, trim)("  abc  "), 3)
+end
+
+test "足し算器"
+  add10 = adder(10)
+  assert_eq(add10(5), 15)
+  assert_eq(map([1, 2, 3], adder(100)), [101, 102, 103])
+end
+
+test "自分の map"
+  assert_eq(my_map([1, 2, 3], fn(x) = x * x), [1, 4, 9])
+  assert_eq(my_map([], fn(x) = x), [])
+end
+
+test "自分の filter"
+  assert_eq(my_filter([1, 2, 3, 4, 5, 6], is_even), [2, 4, 6])
+  assert_eq(my_filter(["a", "bb", "ccc"], fn(w) = len(w) > 1), ["bb", "ccc"])
+end
+"#,
         ),
-        ("16-fold", ""),
+        ("16-fold", "16-fold"),
         (
             r#"# Exercise 16 · Folding a list into one value  ★★☆
 #
@@ -5712,9 +6381,65 @@ test "count where"
   assert_eq(count_where(["a", "bb"], fn(w) = len(w) > 5), 0)
 end
 "#,
-            "",
+            r#"# 練習問題 16 · リストを 1 つの値にたたみ込む  ★★☆
+#
+# `fold(list, start, f)` はすべての要素を 1 つの値にまとめます：`start` から
+# 始め、各要素について `f(result, element)` を計算します。
+#   fold([1, 2, 3], 0, fn(total, x) = total + x)     # 6
+#
+# 問題
+#   `fold` を使い、再帰を使わずに：
+#   - `product_of(list)`：数の積（空のリストなら 1）
+#   - `longest_word(words)`：いちばん長い単語（同じ長さが複数あれば最初の
+#     もの。空のリストなら ""）
+#   - `to_number(digits)`：これらの数字で書いた数（[1, 2, 3] は 123）
+#   - `count_where(list, f)`：f で true になる要素の数（`count` も `filter` も
+#     使わずに）
+#
+# ヒント
+#   1. `start` をよく選びます：それが空のリストに対する答えです。
+#   2. `longest_word` では、途中の結果はそれまでに見たいちばん長い単語です：
+#      それを残すか、新しい単語が真に長ければそれに替えます。
+#   3. `to_number`：途中の結果が 12 で数字が 3 なら、新しい結果は
+#      12 * 10 + 3 です。
+#
+# 答えをチェックする：  rythme exercise check 16-fold.ry
+#             または：  rythme test 16-fold.ry
+
+fn product_of(list) = fail("未完成")
+
+fn longest_word(words) = fail("未完成")
+
+fn to_number(digits) = fail("未完成")
+
+fn count_where(list, f) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "積"
+  assert_eq(product_of([2, 3, 4]), 24)
+  assert_eq(product_of([]), 1)
+end
+
+test "いちばん長い単語"
+  assert_eq(longest_word(["a", "tree", "is", "green"]), "green")
+  assert_eq(longest_word(["one", "two"]), "one")
+  assert_eq(longest_word([]), "")
+end
+
+test "数にする"
+  assert_eq(to_number([1, 2, 3]), 123)
+  assert_eq(to_number([0, 7]), 7)
+  assert_eq(to_number([]), 0)
+end
+
+test "条件に合う数"
+  assert_eq(count_where([1, 2, 3, 4, 5], is_odd), 3)
+  assert_eq(count_where(["a", "bb"], fn(w) = len(w) > 5), 0)
+end
+"#,
         ),
-        ("17-pipelines", ""),
+        ("17-pipelines", "17-pipelines"),
         (
             r#"# Exercise 17 · Pipelines  ★★☆
 #
@@ -5770,9 +6495,61 @@ test "initials of"
   assert_eq(initials_of("Rythme"), "R")
 end
 "#,
-            "",
+            r#"# 練習問題 17 · パイプライン  ★★☆
+#
+# `x |> f(a)` は `f(x, a)` という意味です：左側の値が最初の引数になります。
+# ステップは、起きる順に左から右へ読みます：
+#   [3, 1, 2] |> sort |> map(fn(x) = x * 10)        # [10, 20, 30]
+# `|>` で始まる行は、前の行の続きです。
+#
+# 問題
+#   それぞれの関数を 1 つのパイプラインで書いてください：
+#   - `sum_of_odd_squares(n)`：1 から n までの奇数の 2 乗の和
+#   - `top_three(scores)`：最高の 3 つの点数（最高点を先頭に）
+#   - `shout_words(sentence)`：各単語を大文字にし、空白 1 つで区切ったもの
+#     （"hello  world" は "HELLO WORLD" になる）
+#   - `initials_of(sentence)`：各単語の最初の文字を大文字にしたもの
+#     （"portable network graphics" は "PNG" になる）
+#
+# ヒント
+#   1. `filter`、次に `map`、次に `sum`。
+#   2. `sort`、`reverse`、`take(3)`。
+#   3. `split(text)` はテキストを空白で切ります（続いた空白は 1 つとみなす）。
+#      `join(words, " ")` は単語をつなぎ直します。
+#   4. `word[0]` は `word` の最初の文字です。
+#
+# 答えをチェックする：  rythme exercise check 17-pipelines.ry
+#             または：  rythme test 17-pipelines.ry
+
+fn sum_of_odd_squares(n) = fail("未完成")
+
+fn top_three(scores) = fail("未完成")
+
+fn shout_words(sentence) = fail("未完成")
+
+fn initials_of(sentence) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "奇数の 2 乗の和"
+  assert_eq(sum_of_odd_squares(5), 35)
+  assert_eq(sum_of_odd_squares(1), 1)
+end
+
+test "上位 3 つ"
+  assert_eq(top_three([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(top_three([4]), [4])
+end
+
+test "単語を大文字に" = assert_eq(shout_words("hello  world"), "HELLO WORLD")
+
+test "頭文字"
+  assert_eq(initials_of("portable network graphics"), "PNG")
+  assert_eq(initials_of("Rythme"), "R")
+end
+"#,
         ),
-        ("18-text-processing", ""),
+        ("18-text-processing", "18-text-processing"),
         (
             r#"# Exercise 18 · Working with texts  ★★☆
 #
@@ -5820,9 +6597,53 @@ end
 
 test "title case" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")
 "#,
-            "",
+            r#"# 練習問題 18 · テキストを扱う  ★★☆
+#
+# テキストは `chars` で文字のリストに変えられ、あとはリストの関数が
+# やってくれます。`lower`、`upper`、`replace`、`split`、`join`、`contains` など
+# は `rythme help text` で説明されています。
+#
+# 問題
+#   - `is_palindrome(text)`：大文字と空白を無視して、テキストが前からも
+#     後ろからも同じに読めるか？（"Never odd or even" は読める。）
+#   - `count_vowels(text)`：母音（大文字か小文字の a、e、i、o、u、y）の文字は
+#     いくつあるか？
+#   - `title_case(text)`：各単語を大文字で始め、残りを小文字にしたもの
+#     （"the LORD of the rings" は "The Lord Of The Rings" になる）
+#
+# ヒント
+#   1. `replace(text, " ", "")` は空白を取り除きます。`reverse` はテキストにも
+#      使えます。
+#   2. `contains("aeiouy", c)` で、文字 c が母音かどうかがわかります。
+#   3. `capitalize("lord")` は "Lord" です。
+#
+# 答えをチェックする：  rythme exercise check 18-text-processing.ry
+#             または：  rythme test 18-text-processing.ry
+
+fn is_palindrome(text) = fail("未完成")
+
+fn count_vowels(text) = fail("未完成")
+
+fn title_case(text) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "回文"
+  assert_eq(is_palindrome("kayak"), true)
+  assert_eq(is_palindrome("Never odd or even"), true)
+  assert_eq(is_palindrome("rythme"), false)
+end
+
+test "母音"
+  assert_eq(count_vowels("Rythme"), 2)
+  assert_eq(count_vowels("AEIOU"), 5)
+  assert_eq(count_vowels("xkcd"), 0)
+end
+
+test "単語の頭を大文字に" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")
+"#,
         ),
-        ("19-sorting", ""),
+        ("19-sorting", "19-sorting"),
         (
             r#"# Exercise 19 · Sorting  ★★★
 #
@@ -5884,9 +6705,67 @@ test "merge sort"
   assert_eq(merge_sort(reverse(1..100)), 1..100)
 end
 "#,
-            "",
+            r#"# 練習問題 19 · 並べ替え  ★★★
+#
+# リストを並べ替える 2 つの古典的な方法を、再帰で書きます（組み込みの
+# `sort` は使わずに）。
+#
+# 問題
+#   - `insert(sorted, x)`：すでに並べ替えたリストの正しい位置に x を入れたもの
+#   - `insertion_sort(list)`：空から始めた並べ替え済みのリストに、要素を
+#     1 つずつ順に挿入してリストを並べ替える
+#   - `merge(a, b)`：並べ替えた 2 つのリストから作った、並べ替えた 1 つのリスト
+#   - `merge_sort(list)`：リストを半分に切り、それぞれを並べ替えてから
+#     マージする
+#
+# ヒント
+#   1. `insert([], x)` は `[x]` です。`insert([first, ..rest], x)` では、
+#      x <= first なら x が前に来て、そうでなければ first が先頭のままです。
+#   2. `insertion_sort([x, ..rest])` は `insert(insertion_sort(rest), x)` です
+#      （または `fold` と `insert` を使う）。
+#   3. `merge` は 2 つのリストの最初の要素を比べます：小さいほうが先に来て、
+#      その後に残りをマージしたものが続きます。
+#   4. `take(list, n)` と `drop(list, n)` で 2 つの半分が得られます
+#      （`n = len(list) // 2`）。要素が 0 個か 1 個のリストはすでに並んでいます。
+#
+# 答えをチェックする：  rythme exercise check 19-sorting.ry
+#             または：  rythme test 19-sorting.ry
+
+fn insert(sorted, x) = fail("未完成")
+
+fn insertion_sort(list) = fail("未完成")
+
+fn merge(a, b) = fail("未完成")
+
+fn merge_sort(list) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "挿入"
+  assert_eq(insert([1, 3, 5], 4), [1, 3, 4, 5])
+  assert_eq(insert([], 2), [2])
+  assert_eq(insert([1, 2], 9), [1, 2, 9])
+end
+
+test "挿入ソート"
+  assert_eq(insertion_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(insertion_sort([]), [])
+end
+
+test "マージ"
+  assert_eq(merge([1, 4, 6], [2, 3, 7]), [1, 2, 3, 4, 6, 7])
+  assert_eq(merge([], [1]), [1])
+  assert_eq(merge([1], []), [1])
+end
+
+test "マージソート"
+  assert_eq(merge_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(merge_sort(["pear", "apple", "fig"]), ["apple", "fig", "pear"])
+  assert_eq(merge_sort(reverse(1..100)), 1..100)
+end
+"#,
         ),
-        ("20-records", ""),
+        ("20-records", "20-records"),
         (
             r#"# Exercise 20 · Records  ★★☆
 #
@@ -5945,9 +6824,64 @@ test "distance"
   assert_eq(distance({x: 1, y: 1}, {x: 1, y: 1}), 0)
 end
 "#,
-            "",
+            r#"# 練習問題 20 · レコード  ★★☆
+#
+# レコードは名前の付いた値をまとめます：`{name: "Ada", born: 1815}`。
+# `ada.name` はフィールドを読みます。レコードは決して変わりません：
+# `{..ada, born: 1816}` は新しいレコードで、`born` だけが違う ada のコピーです。
+# 引数でレコードを分解することもできます：`fn hello({name}) = "こんにちは、{name}"`。
+#
+# 問題
+#   人はレコード `{name, born}`、点はレコード `{x, y}` です。
+#   - `age_in(person, year)`：その年の終わりの、その人の年齢
+#   - `label(person)`："Ada (1815)" のようなテキスト
+#   - `renamed(person, name)`：名前だけ違う同じ人
+#   - `moved(point, dx, dy)`：横に dx、縦に dy だけ動かした点
+#   - `distance(a, b)`：2 点間の距離
+#
+# ヒント
+#   1. `person.born`、または引数 `{born}`。
+#   2. `{..person, name: name}`。これは `{..person, name}` とも書けます。
+#   3. 距離は (xb - xa)² + (yb - ya)² の平方根です。
+#
+# 答えをチェックする：  rythme exercise check 20-records.ry
+#             または：  rythme test 20-records.ry
+
+fn age_in(person, year) = fail("未完成")
+
+fn label(person) = fail("未完成")
+
+fn renamed(person, name) = fail("未完成")
+
+fn moved(point, dx, dy) = fail("未完成")
+
+fn distance(a, b) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+ada = {name: "Ada", born: 1815}
+
+test "年齢" = assert_eq(age_in(ada, 1852), 37)
+
+test "ラベル" = assert_eq(label(ada), "Ada (1815)")
+
+test "名前の変更"
+  assert_eq(renamed(ada, "Augusta"), {name: "Augusta", born: 1815})
+  assert_eq(ada.name, "Ada")
+end
+
+test "移動"
+  assert_eq(moved({x: 1, y: 2}, 3, -1), {x: 4, y: 1})
+  assert_eq(moved({x: 0, y: 0}, 0, 0), {x: 0, y: 0})
+end
+
+test "距離"
+  assert_eq(distance({x: 0, y: 0}, {x: 3, y: 4}), 5)
+  assert_eq(distance({x: 1, y: 1}, {x: 1, y: 1}), 0)
+end
+"#,
         ),
-        ("21-lists-of-records", ""),
+        ("21-lists-of-records", "21-lists-of-records"),
         (
             r#"# Exercise 21 · Lists of records  ★★☆
 #
@@ -6005,9 +6939,63 @@ test "ranking" = assert_eq(ranking(classroom), ["Ada", "Barbara", "Grace", "Edsg
 
 test "group sizes" = assert_eq(group_sizes(classroom), {A: 3, B: 2})
 "#,
-            "",
+            r#"# 練習問題 21 · レコードのリスト  ★★☆
+#
+# 実際のデータは、生徒のクラスや注文の一覧など、レコードのリストであることが
+# 多いです。`map`、`filter`、`sort_by`、`max_by`、`group_by`、`sum` は、
+# どんなリストと同じようにそれにも使えます。
+#
+# 問題
+#   生徒はレコード `{name, score, group}`（点数は 0〜100）です。
+#   - `names_of_passed(students)`：点数が 50 以上の生徒の名前を同じ順で
+#   - `average_score(students)`：点数の平均
+#   - `best(students)`：最高点の生徒の名前
+#   - `ranking(students)`：最高点から最低点の順に並べた名前
+#   - `group_sizes(students)`：グループごとの生徒の数を与えるレコード
+#     （`{A: 2, B: 1}`）
+#
+# ヒント
+#   1. `filter` の後に `map(fn(s) = s.name)`。
+#   2. `max_by(list, key)` はキーが最大の要素を返します。
+#   3. `sort_by(list, fn(s) = -s.score)` は最高点から並べます。
+#   4. `group_by(list, key)` はリストのレコードを返し、
+#      `map_values(record, f)` はその各値に f を適用します。
+#
+# 答えをチェックする：  rythme exercise check 21-lists-of-records.ry
+#             または：  rythme test 21-lists-of-records.ry
+
+fn names_of_passed(students) = fail("未完成")
+
+fn average_score(students) = fail("未完成")
+
+fn best(students) = fail("未完成")
+
+fn ranking(students) = fail("未完成")
+
+fn group_sizes(students) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+classroom = [
+  {name: "Ada", score: 92, group: "A"},
+  {name: "Alan", score: 45, group: "B"},
+  {name: "Grace", score: 78, group: "A"},
+  {name: "Edsger", score: 50, group: "B"},
+  {name: "Barbara", score: 85, group: "A"},
+]
+
+test "合格" = assert_eq(names_of_passed(classroom), ["Ada", "Grace", "Edsger", "Barbara"])
+
+test "平均" = assert_eq(average_score(classroom), 70)
+
+test "最高点" = assert_eq(best(classroom), "Ada")
+
+test "順位" = assert_eq(ranking(classroom), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+
+test "グループの人数" = assert_eq(group_sizes(classroom), {A: 3, B: 2})
+"#,
         ),
-        ("22-own-types", ""),
+        ("22-own-types", "22-own-types"),
         (
             r#"# Exercise 22 · Your own types  ★★☆
 #
@@ -6062,9 +7050,61 @@ test "name" = assert_eq([Circle(1), Rect(1, 2), Square(3)] |> map(name_of), ["ci
 
 test "total area" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 11)
 "#,
-            "",
+            r#"# 練習問題 22 · 独自の型  ★★☆
+#
+# `type` は、とりうる形ごとに 1 つのコンストラクターを持つ、新しい種類の値を
+# 定義します：
+#   type Pet = Dog(name) | Cat(name, lives) | Fish
+# 関数はコンストラクターごとに 1 つの定義を持てます：
+#   fn sound(Dog(_)) = "ワン"
+#
+# 問題
+#   下の型 `Shape` には 3 つの形があります。
+#   - `area(shape)`：図形の面積
+#   - `perimeter(shape)`：周りの長さ
+#   - `name_of(shape)`："円"、"長方形"、"正方形" のどれか
+#   - `total_area(shapes)`：図形のリストの面積の合計
+#
+# ヒント
+#   1. `fn area(Circle(r)) = pi * r * r`、その後に他のコンストラクターごとに
+#      1 つずつ定義を書きます。
+#   2. 円の周りの長さは 2 × π × r です。
+#   3. コンストラクターを忘れると、`rythme check` がどれかを教えてくれます
+#      （警告 W002）。
+#
+# 答えをチェックする：  rythme exercise check 22-own-types.ry
+#             または：  rythme test 22-own-types.ry
+
+type Shape = Circle(radius) | Rect(width, height) | Square(side)
+
+fn area(shape) = fail("未完成")
+
+fn perimeter(shape) = fail("未完成")
+
+fn name_of(shape) = fail("未完成")
+
+fn total_area(shapes) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "面積"
+  assert_eq(area(Rect(2, 3)), 6)
+  assert_eq(area(Square(4)), 16)
+  assert_eq(round(area(Circle(1)), 2), 3.14)
+end
+
+test "周りの長さ"
+  assert_eq(perimeter(Rect(2, 3)), 10)
+  assert_eq(perimeter(Square(4)), 16)
+  assert_eq(round(perimeter(Circle(1)), 2), 6.28)
+end
+
+test "名前" = assert_eq([Circle(1), Rect(1, 2), Square(3)] |> map(name_of), ["円", "長方形", "正方形"])
+
+test "面積の合計" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 11)
+"#,
         ),
-        ("23-match", ""),
+        ("23-match", "23-match"),
         (
             r#"# Exercise 23 · Choosing with `match`  ★★☆
 #
@@ -6132,9 +7172,72 @@ test "greeting"
   assert_eq(greeting({name: "Grace"}), "Hello, Grace")
 end
 "#,
-            "",
+            r#"# 練習問題 23 · `match` で選ぶ  ★★☆
+#
+# `match` は値をパターンと順に比べ、最初に当てはまったものの結果を返します：
+#   fn describe(n) = match n
+#     0 -> "ゼロ"
+#     n if n < 0 -> "負"
+#     _ -> "正"
+#   end
+# パターンには、数、テキスト、コンストラクター、リスト（`[]`、`[x]`、
+# `[x, ..rest]`）、レコード（`{name}`）を使えます。
+#
+# 問題
+#   - `next_light(light)`：次の信号。Green、Orange、Red の順で、また Green に戻る
+#   - `can_go(light)`：Green のときだけ true
+#   - `describe(list)`：[] なら "空"、[7] なら "1 つ：7"、[1, 2] なら
+#     "2 つ：1 と 2"、それより長いリストなら "たくさん、最初は 5"
+#   - `greeting(person)`：フィールド `title` のあるレコードなら
+#     "こんにちは、Dr Hopper"。`name` だけなら "こんにちは、Grace"
+#
+# ヒント
+#   1. 3 つの信号のそれぞれが `match` の 1 つのケースです。
+#   2. `[a, b]` はちょうど 2 要素のリストに、`[first, ..]` は 1 要素以上の
+#      リストにマッチします：より厳密なパターンを先に置きます。
+#   3. `{title, last}` は少なくともこれらのフィールドを持つレコードにマッチします。
+#
+# 答えをチェックする：  rythme exercise check 23-match.ry
+#             または：  rythme test 23-match.ry
+
+type Light = Green | Orange | Red
+
+fn next_light(light) = fail("未完成")
+
+fn can_go(light) = fail("未完成")
+
+fn describe(list) = fail("未完成")
+
+fn greeting(person) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "次の信号"
+  assert_eq(next_light(Green), Orange)
+  assert_eq(next_light(Orange), Red)
+  assert_eq(next_light(Red), Green)
+end
+
+test "進めるか"
+  assert_eq(can_go(Green), true)
+  assert_eq(can_go(Orange), false)
+  assert_eq(can_go(Red), false)
+end
+
+test "説明"
+  assert_eq(describe([]), "空")
+  assert_eq(describe([7]), "1 つ：7")
+  assert_eq(describe([1, 2]), "2 つ：1 と 2")
+  assert_eq(describe([5, 6, 7]), "たくさん、最初は 5")
+end
+
+test "あいさつ"
+  assert_eq(greeting({title: "Dr", last: "Hopper", name: "Grace"}), "こんにちは、Dr Hopper")
+  assert_eq(greeting({name: "Grace"}), "こんにちは、Grace")
+end
+"#,
         ),
-        ("24-trees", ""),
+        ("24-trees", "24-trees"),
         (
             r#"# Exercise 24 · Trees  ★★★
 #
@@ -6206,9 +7309,76 @@ test "to list" = assert_eq(to_list(small), [1, 3, 5, 8])
 
 test "sorting with a tree" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> to_list, [1, 2, 4, 7, 9])
 "#,
-            "",
+            r#"# 練習問題 24 · 木  ★★★
+#
+# 型は自分自身を含められます。二分木は、空（`Leaf`）か、値と左右 2 つの
+# 小さな木を持つノードです。木を扱う関数は型の形に従います：`Leaf` に 1 つ、
+# 両側で自分自身を呼ぶ `Node` に 1 つのケースを書きます。
+#
+# 問題
+#   - `size(tree)`：木が持つ値の数
+#   - `total(tree)`：値の合計
+#   - `depth(tree)`：段の数（Leaf は 0）
+#   - `insert(tree, x)`：探索木とは、ノードの左の値がそのノードの値より
+#     小さく、それ以外が右にある木です。x を加えた探索木を返します
+#     （Leaf の場所に新しい Node を置く）
+#   - `to_list(tree)`：値を左から右へ並べたもの
+#
+# ヒント
+#   1. `fn size(Leaf) = 0` と `fn size(Node(left, _, right)) = ...`。
+#   2. `max(a, b)` は 2 つの数のうち大きいほうを返します。
+#   3. `insert` は新しい木を返します：x が左に行くなら
+#      `Node(insert(left, x), value, right)`。
+#   4. ノードの `to_list` は、左のリスト、値、右のリストの順です
+#      （`+` はリストをつなげます）。
+#
+# 答えをチェックする：  rythme exercise check 24-trees.ry
+#             または：  rythme test 24-trees.ry
+
+type Tree = Leaf | Node(left, value, right)
+
+fn size(tree) = fail("未完成")
+
+fn total(tree) = fail("未完成")
+
+fn depth(tree) = fail("未完成")
+
+fn insert(tree, x) = fail("未完成")
+
+fn to_list(tree) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+#       5
+#      / \
+#     3   8
+#    /
+#   1
+small = Node(Node(Node(Leaf, 1, Leaf), 3, Leaf), 5, Node(Leaf, 8, Leaf))
+
+test "大きさ"
+  assert_eq(size(Leaf), 0)
+  assert_eq(size(small), 4)
+end
+
+test "合計" = assert_eq(total(small), 17)
+
+test "深さ"
+  assert_eq(depth(Leaf), 0)
+  assert_eq(depth(small), 3)
+end
+
+test "挿入"
+  assert_eq(insert(Leaf, 4), Node(Leaf, 4, Leaf))
+  assert_eq(insert(Node(Leaf, 4, Leaf), 2), Node(Node(Leaf, 2, Leaf), 4, Leaf))
+end
+
+test "リストにする" = assert_eq(to_list(small), [1, 3, 5, 8])
+
+test "木で並べ替え" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> to_list, [1, 2, 4, 7, 9])
+"#,
         ),
-        ("25-expressions", ""),
+        ("25-expressions", "25-expressions"),
         (
             r#"# Exercise 25 · A small calculator  ★★★
 #
@@ -6271,9 +7441,66 @@ test "simplify"
   assert_eq(simplify(Neg(Mul(Num(3), Num(1)))), Neg(Num(3)))
 end
 "#,
-            "",
+            r#"# 練習問題 25 · 小さな電卓  ★★★
+#
+# (1 + 2) × 3 のような計算は木です：掛け算には足し算と 3 という 2 つの部分が
+# あります。型を使うと、プログラムは計算を持ち、計算して、表示できます。
+#
+# 問題
+#   - `evaluate(expr)`：計算の値
+#   - `show(expr)`：計算をテキストにしたもの。足し算と掛け算はすべて括弧で
+#     囲み（"((1 + 2) * 3)"）、符号反転は "-x" と書く（"-4"、"-(1 + 2)"）
+#   - `count_numbers(expr)`：計算に含まれる数の個数
+#   - `simplify(expr)`：同じ計算で、`Add(e, Num(0))`、`Mul(e, Num(1))`（と、
+#     数が左にある同様の形）を、すべての段で e に置き換えたもの
+#
+# ヒント
+#   1. コンストラクターごとに 1 つのケース：`fn evaluate(Num(n)) = n`、
+#      `fn evaluate(Add(a, b)) = evaluate(a) + evaluate(b)`...
+#   2. `show(Neg(e))` は "-" の後に `show(e)` が続いたものです。
+#   3. `simplify` では、まず両方の部分を単純化してから、その結果を `match` で
+#      調べます。
+#
+# 答えをチェックする：  rythme exercise check 25-expressions.ry
+#             または：  rythme test 25-expressions.ry
+
+type Expr = Num(value) | Add(left, right) | Mul(left, right) | Neg(inner)
+
+fn evaluate(expr) = fail("未完成")
+
+fn show(expr) = fail("未完成")
+
+fn count_numbers(expr) = fail("未完成")
+
+fn simplify(expr) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+calculation = Mul(Add(Num(1), Num(2)), Num(3))
+
+test "評価"
+  assert_eq(evaluate(Num(4)), 4)
+  assert_eq(evaluate(calculation), 9)
+  assert_eq(evaluate(Neg(calculation)), -9)
+end
+
+test "表示"
+  assert_eq(show(calculation), "((1 + 2) * 3)")
+  assert_eq(show(Neg(Num(4))), "-4")
+  assert_eq(show(Neg(Add(Num(1), Num(2)))), "-(1 + 2)")
+end
+
+test "数の個数" = assert_eq(count_numbers(Add(calculation, Neg(Num(5)))), 4)
+
+test "単純化"
+  assert_eq(simplify(Add(Num(7), Num(0))), Num(7))
+  assert_eq(simplify(Mul(Num(1), Add(Num(0), Num(2)))), Num(2))
+  assert_eq(simplify(calculation), calculation)
+  assert_eq(simplify(Neg(Mul(Num(3), Num(1)))), Neg(Num(3)))
+end
+"#,
         ),
-        ("26-option", ""),
+        ("26-option", "26-option"),
         (
             r#"# Exercise 26 · A value that may be missing: Option  ★★☆
 #
@@ -6343,9 +7570,75 @@ test "add options"
   assert_eq(add_options(None, None), None)
 end
 "#,
-            "",
+            r#"# 練習問題 26 · ないかもしれない値：Option  ★★☆
+#
+# Rythme に `null` はありません。何も見つからないかもしれない関数は Option を
+# 返します：値があれば `Some(value)`、なければ `None` です。`match` で両方の
+# ケースを扱い、`unwrap_or(option, default)` は値かデフォルト値を返します。
+#   fn first_of([]) = None
+#   fn first_of([x, ..]) = Some(x)
+#
+# 問題
+#   - `safe_divide(a, b)`：`Some(a / b)`、b が 0 なら `None`
+#   - `find_age(people, name)`：この名前の人の年齢を Option で（people は
+#     レコード `{name, age}` のリスト）
+#   - `age_or_unknown(people, name)`：テキスト。わかっている人なら "36"、
+#     そうでなければ "不明"
+#   - `first_long_word(words)`：5 文字より長い最初の単語を Option で
+#   - `add_options(a, b)`：a が `Some(x)` で b が `Some(y)` なら `Some(x + y)`、
+#     そうでなければ `None`
+#
+# ヒント
+#   1. `find(list, f)` は f が真になる最初の要素を Option で返します。
+#      `map(option, f)` は中に値があればそれに f を適用します。
+#   2. `match find_age(people, name)` で、ケース `Some(age)` と `None` を書きます。
+#   3. `match [a, b]` で、ケース `[Some(x), Some(y)]` とケース `_` を書きます。
+#
+# 答えをチェックする：  rythme exercise check 26-option.ry
+#             または：  rythme test 26-option.ry
+
+fn safe_divide(a, b) = fail("未完成")
+
+fn find_age(people, name) = fail("未完成")
+
+fn age_or_unknown(people, name) = fail("未完成")
+
+fn first_long_word(words) = fail("未完成")
+
+fn add_options(a, b) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+people = [{name: "Ada", age: 36}, {name: "Alan", age: 41}]
+
+test "安全な割り算"
+  assert_eq(safe_divide(10, 4), Some(2.5))
+  assert_eq(safe_divide(1, 0), None)
+end
+
+test "年齢を探す"
+  assert_eq(find_age(people, "Alan"), Some(41))
+  assert_eq(find_age(people, "Grace"), None)
+end
+
+test "年齢か不明"
+  assert_eq(age_or_unknown(people, "Ada"), "36")
+  assert_eq(age_or_unknown(people, "Grace"), "不明")
+end
+
+test "最初の長い単語"
+  assert_eq(first_long_word(["a", "functional", "language"]), Some("functional"))
+  assert_eq(first_long_word(["short", "words"]), None)
+end
+
+test "Option の足し算"
+  assert_eq(add_options(Some(2), Some(3)), Some(5))
+  assert_eq(add_options(Some(2), None), None)
+  assert_eq(add_options(None, None), None)
+end
+"#,
         ),
-        ("27-result", ""),
+        ("27-result", "27-result"),
         (
             r#"# Exercise 27 · An operation that may fail: Result  ★★☆
 #
@@ -6410,9 +7703,69 @@ test "check code"
   assert_eq(check_code("functional"), Err("no digit"))
 end
 "#,
-            "",
+            r#"# 練習問題 27 · 失敗するかもしれない操作：Result  ★★☆
+#
+# Rythme に例外はありません。失敗するかもしれない関数は Result を返します：
+# うまくいけば `Ok(value)`、そうでなければ `Err(message)` です。呼び出し側は
+# 両方のケースを見なければならないので、エラーを忘れることはありません。
+#   parse_int("42")       # Ok(42)
+#   parse_int("forty")    # Err("\"forty\" は整数ではない")
+#
+# 問題
+#   - `checked_divide(a, b)`：`Ok(a / b)`、または `Err("ゼロ除算")`
+#   - `parse_age(text)`：テキストに書かれた年齢を Result で：テキストが整数で
+#     なければ `Err("数ではない")`、0 未満なら `Err("年齢は負にならない")`、
+#     150 を超えたら `Err("年齢が大きすぎる")`、それ以外は `Ok(age)`
+#   - `describe(result)`：`Ok(42)` なら "成功：42"、`Err("年齢が大きすぎる")`
+#     なら "エラー：年齢が大きすぎる"
+#   - `check_code(code)`：8 文字以上で数字を含めば `Ok(code)`。そうでなければ
+#     最初に見つかった問題の Err："短すぎる" か "数字がない"
+#
+# ヒント
+#   1. `match parse_int(text)` で、ケース `Err(_)`、`Ok(n) if n < 0`、
+#      `Ok(n) if n > 150`、`Ok(n)` を書きます。
+#   2. `any(chars(code), is_digit)` で数字があるかどうかがわかります。
+#
+# 答えをチェックする：  rythme exercise check 27-result.ry
+#             または：  rythme test 27-result.ry
+
+fn checked_divide(a, b) = fail("未完成")
+
+fn parse_age(text) = fail("未完成")
+
+fn describe(result) = fail("未完成")
+
+fn check_code(code) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "チェック付きの割り算"
+  assert_eq(checked_divide(9, 3), Ok(3))
+  assert_eq(checked_divide(1, 0), Err("ゼロ除算"))
+end
+
+test "年齢を読む"
+  assert_eq(parse_age("36"), Ok(36))
+  assert_eq(parse_age(" 7 "), Ok(7))
+  assert_eq(parse_age("七"), Err("数ではない"))
+  assert_eq(parse_age("-1"), Err("年齢は負にならない"))
+  assert_eq(parse_age("200"), Err("年齢が大きすぎる"))
+end
+
+test "説明"
+  assert_eq(describe(Ok(42)), "成功：42")
+  assert_eq(describe(Err("年齢が大きすぎる")), "エラー：年齢が大きすぎる")
+  assert_eq(describe(parse_age("-5")), "エラー：年齢は負にならない")
+end
+
+test "コードのチェック"
+  assert_eq(check_code("rythme2024"), Ok("rythme2024"))
+  assert_eq(check_code("abc1"), Err("短すぎる"))
+  assert_eq(check_code("functional"), Err("数字がない"))
+end
+"#,
         ),
-        ("28-question-mark", ""),
+        ("28-question-mark", "28-question-mark"),
         (
             r#"# Exercise 28 · Passing errors on with `?`  ★★★
 #
@@ -6482,9 +7835,72 @@ test "ratio of texts"
   assert(is_err(ratio_of_texts("nine", "0")), "nine is not a number")
 end
 "#,
-            "",
+            r#"# 練習問題 28 · `?` でエラーを渡す  ★★★
+#
+# 失敗するかもしれないステップのたびに `match` を書くのは長くなります。
+# Result（または Option）の後の `?` は、`Ok(...)`（または `Some(...)`）から値を
+# 取り出すか、すぐに関数を止めて `Err(...)`（または `None`）を返します：
+#   fn double_text(t)
+#     n = parse_int(t)?          # t が数でなければここで止まる
+#     Ok(n * 2)
+#   end
+#
+# 問題
+#   - `add_texts(a, b)`：a と b に書かれた 2 つの数の和を `Ok(sum)` で返すか、
+#     `parse_int` のエラーを返す
+#   - `parse_point(text)`："3,4" なら `Ok({x: 3, y: 4})`。テキストがカンマで
+#     区切られたちょうど 2 つの部分でなければエラー `Err("x,y の形が必要")`、
+#     数でない部分があればその `parse_int` のエラー
+#   - `sum_of_texts(texts)`：テキストのリストに書かれた数の和か、最初のエラー
+#   - `ratio_of_texts(a, b)`：テキストに書かれた 2 つの数の a / b か、最初の
+#     エラー。b が 0 なら `Err("ゼロ除算")`
+#
+# ヒント
+#   1. `Ok(parse_int(a)? + parse_int(b)?)`
+#   2. `match split(text, ",")` で、ケース `[x, y]` と `_` を書きます。
+#   3. リストには再帰を使います：`sum_of_texts([])` は `Ok(0)`。
+#      `[t, ..rest]` なら、t の数と rest の和を、どちらも `?` を付けて取ります。
+#   4. `?` は Result を返すどんな関数にも使えます。自分で書いた関数にもです。
+#
+# 答えをチェックする：  rythme exercise check 28-question-mark.ry
+#             または：  rythme test 28-question-mark.ry
+
+fn add_texts(a, b) = fail("未完成")
+
+fn parse_point(text) = fail("未完成")
+
+fn sum_of_texts(texts) = fail("未完成")
+
+fn ratio_of_texts(a, b) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+test "テキストの足し算"
+  assert_eq(add_texts("2", "40"), Ok(42))
+  assert(is_err(add_texts("2", "四十")), "四十 は数ではない")
+end
+
+test "点を読む"
+  assert_eq(parse_point("3,4"), Ok({x: 3, y: 4}))
+  assert_eq(parse_point("3"), Err("x,y の形が必要"))
+  assert_eq(parse_point("1,2,3"), Err("x,y の形が必要"))
+  assert(is_err(parse_point("3,四")), "四 は数ではない")
+end
+
+test "テキストの和"
+  assert_eq(sum_of_texts(["1", "2", "3"]), Ok(6))
+  assert_eq(sum_of_texts([]), Ok(0))
+  assert_eq(sum_of_texts(["1", "x", "y"]), parse_int("x"))
+end
+
+test "テキストの比"
+  assert_eq(ratio_of_texts("9", "2"), Ok(4.5))
+  assert_eq(ratio_of_texts("9", "0"), Err("ゼロ除算"))
+  assert(is_err(ratio_of_texts("九", "0")), "九 は数ではない")
+end
+"#,
         ),
-        ("29-word-counts", ""),
+        ("29-word-counts", "29-word-counts"),
         (
             r#"# Exercise 29 · A small project: counting words  ★★★
 #
@@ -6542,9 +7958,62 @@ end
 
 test "report" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")
 "#,
-            "",
+            r#"# 練習問題 29 · 小さなプロジェクト：単語を数える  ★★★
+#
+# テキスト、リスト、レコード、パイプライン、Option を全部使って、テキストを
+# 分析するプログラムを作ります。
+#
+# 問題
+#   - `words_of(text)`：テキストの単語を小文字にし、句読点 `.`、`,`、`!`、`?` を
+#     取り除いたもの
+#   - `frequencies(text)`：`[word, count]` のペアのリスト。出てくる回数の多い
+#     単語から少ない単語の順で、同じ回数の単語はアルファベット順
+#   - `most_frequent(text)`：いちばん多く出てくる単語を Option で（単語のない
+#     テキストなら `None`）
+#   - `report(text, n)`：出てくる回数の多い n 個の単語を 1 行に 1 つずつ、
+#     それぞれ "単語: 回数" の形で
+#
+# ヒント
+#   1. `replace` を 4 回（またはリスト [".", ",", "!", "?"] で `fold`）、その後に
+#      `lower` と `split`。
+#   2. `group_by(words, fn(w) = w)` はレコード `{word: [word, word]}` を返し、
+#      `entries(record)` はその `[name, value]` のペアのリストを返します。
+#   3. `sort_by` は安定です：まず単語で並べ、次に回数で並べます（大きい順に
+#      するには `fn([_, n]) = -n`）。
+#   4. `first(list)` は Option を返し、`map(option, f)` は中の値を変えます。
+#   5. `join(lines, "\n")` は各要素を別々の行に置きます。
+#
+# 答えをチェックする：  rythme exercise check 29-word-counts.ry
+#             または：  rythme test 29-word-counts.ry
+
+fn words_of(text) = fail("未完成")
+
+fn frequencies(text) = fail("未完成")
+
+fn most_frequent(text) = fail("未完成")
+
+fn report(text, n) = fail("未完成")
+
+# --- テスト（変更しないでください）---
+
+poem = "The cat sat. The dog sat! Did the cat see the dog?"
+
+test "単語" = assert_eq(words_of("Hello, World! Hello?"), ["hello", "world", "hello"])
+
+test "頻度"
+  assert_eq(frequencies("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
+  assert_eq(frequencies(poem) |> take(3), [["the", 4], ["cat", 2], ["dog", 2]])
+end
+
+test "いちばん多い単語"
+  assert_eq(most_frequent(poem), Some("the"))
+  assert_eq(most_frequent(" ... "), None)
+end
+
+test "レポート" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")
+"#,
         ),
-        ("30-testing", ""),
+        ("30-testing", "30-testing"),
         (
             r#"# Exercise 30 · Tests find bugs  ★★★
 #
@@ -6605,34 +8074,92 @@ end
 
 # Your test:
 "#,
-            "",
+            r#"# 練習問題 30 · テストでバグを見つける  ★★★
+#
+# テストはコードの一部をチェックします：`test "name" = assert_eq(actual,
+# expected)`。失敗すると、`rythme test` は 2 つの値を表示します：バグは
+# その間のどこかにあります。
+#
+# 問題
+#   下の関数はすでに書かれていますが、それぞれにバグがあります。
+#   1. テストを実行して、何が失敗するかを読みます。
+#   2. すべてのテストが成功するまで、（テストではなく！）関数を直します。
+#   3. それから、ファイルの最後に `clamp` のテストを自分で書きます：
+#      `clamp(5, 5, 5)` は何を返すべきでしょう？
+#
+#   - `clamp(x, low, high)`：x を low と high の間に収めたもの
+#   - `median(list)`：並べ替えたリストの真ん中の値。リストの長さが偶数なら
+#     真ん中の 2 つの値の平均
+#   - `count_words(text)`：テキストの単語の数
+#
+# ヒント
+#   1. 最初の失敗の `得られた値：` と `期待した値：` の行を読み、関数がこれらの
+#      引数で何をするかを手で計算します。
+#   2. `debug(value)` はプログラムの実行中に値を表示し、そのまま返します：
+#      `debug(sorted)`。
+#   3. 区切り文字なしの `split` は、続いた空白をどう扱うでしょう？
+#
+# 答えをチェックする：  rythme exercise check 30-testing.ry
+#             または：  rythme test 30-testing.ry
+
+fn clamp(x, low, high) = max(high, min(x, low))
+
+fn median(list)
+  middle = len(list) // 2
+  if is_even(len(list)) then (list[middle - 1] + list[middle]) / 2 else list[middle]
+end
+
+fn count_words(text) = len(split(text, " "))
+
+# --- テスト（変更しないでください）---
+
+test "clamp"
+  assert_eq(clamp(15, 0, 10), 10)
+  assert_eq(clamp(-5, 0, 10), 0)
+  assert_eq(clamp(5, 0, 10), 5)
+end
+
+test "値の数が奇数のときの中央値"
+  assert_eq(median([1, 2, 3]), 2)
+  assert_eq(median([3, 1, 2]), 2)
+end
+
+test "値の数が偶数のときの中央値" = assert_eq(median([4, 1, 3, 2]), 2.5)
+
+test "単語を数える"
+  assert_eq(count_words("one two three"), 3)
+  assert_eq(count_words("  one   two "), 2)
+end
+
+# 自分のテスト：
+"#,
         ),
         // ----- CSV and seeded random (src/builtins/csv.rs, src/builtins.rs, src/main.rs, src/help.rs)
         // src/builtins/csv.rs
-        ("line {line}, column {column}: the quote that starts this field is never closed (a quote inside a field is written twice: \"\")", ""),
-        ("line {line}, column {column}: a quote in the middle of a field: put the whole field between quotes, and write each quote inside it twice (\"5\"\" screen\")", ""),
-        ("line {line}, column {column}: after the quote that closes a field comes {sep} or the end of the line, not {c}", ""),
-        ("line {line}: the header names the column \"{name}\" twice", ""),
-        ("line {line}: {got} field(s), but the header has {wanted} column(s)", ""),
-        ("line {line}: this table has too many rows or fields (more than {MAX_LIST})", ""),
-        ("a tab", ""),
-        ("a space", ""),
-        ("`{f}` cannot use {c} as separator: it has another meaning in CSV", ""),
-        ("the separator of `{f}` is one character, not \"{s}\"", ""),
-        ("the usual separators: \",\" (by default), \";\" (French spreadsheets), \"\\t\" (a tab)", ""),
-        ("`csv_format`: the field {column} of row {row} must be a text, a number or a Bool, but it is {got}", ""),
-        ("turn it into a text first, with `text(x)` or `unwrap_or(x, \"\")`", ""),
-        ("`csv_format`: record {number} has the fields {{{these}}}, but the first one has {{{wanted}}}: every record must have the same fields", ""),
-        ("a record, like the first row", ""),
-        ("a list of fields", ""),
-        ("`csv_format`: row {number} must be {wanted}, but it is {got}", ""),
-        ("`csv_format` takes a list of rows: lists of fields ([[\"name\", \"age\"], [\"Ada\", 36]]) or records ([{{name: \"Ada\", age: 36}}])", ""),
+        ("line {line}, column {column}: the quote that starts this field is never closed (a quote inside a field is written twice: \"\")", "{line} 行 {column} 列：このフィールドを始める引用符が閉じられていない（フィールド中の引用符は 2 回書く：\"\"）"),
+        ("line {line}, column {column}: a quote in the middle of a field: put the whole field between quotes, and write each quote inside it twice (\"5\"\" screen\")", "{line} 行 {column} 列：フィールドの途中に引用符がある：フィールド全体を引用符で囲み、中の引用符はそれぞれ 2 回書く（\"5\"\" screen\"）"),
+        ("line {line}, column {column}: after the quote that closes a field comes {sep} or the end of the line, not {c}", "{line} 行 {column} 列：フィールドを閉じる引用符の後には {sep} か行の終わりが来る（{c} ではなく）"),
+        ("line {line}: the header names the column \"{name}\" twice", "{line} 行：見出しで列 \"{name}\" が 2 回使われている"),
+        ("line {line}: {got} field(s), but the header has {wanted} column(s)", "{line} 行：フィールドが {got} 個あるが、見出しの列は {wanted} 個"),
+        ("line {line}: this table has too many rows or fields (more than {MAX_LIST})", "{line} 行：この表は行かフィールドが多すぎる（{MAX_LIST} を超える）"),
+        ("a tab", "タブ"),
+        ("a space", "空白"),
+        ("`{f}` cannot use {c} as separator: it has another meaning in CSV", "`{f}` は {c} を区切り文字に使えない：CSV では別の意味がある"),
+        ("the separator of `{f}` is one character, not \"{s}\"", "`{f}` の区切り文字は 1 文字（\"{s}\" は不可）"),
+        ("the usual separators: \",\" (by default), \";\" (French spreadsheets), \"\\t\" (a tab)", "よく使う区切り文字：\",\"（デフォルト）、\";\"（フランスの表計算ソフト）、\"\\t\"（タブ）"),
+        ("`csv_format`: the field {column} of row {row} must be a text, a number or a Bool, but it is {got}", "`csv_format`：行 {row} のフィールド {column} はテキスト、数、Bool のどれかでなければならないが、{got} だった"),
+        ("turn it into a text first, with `text(x)` or `unwrap_or(x, \"\")`", "先に `text(x)` か `unwrap_or(x, \"\")` でテキストに変える"),
+        ("`csv_format`: record {number} has the fields {{{these}}}, but the first one has {{{wanted}}}: every record must have the same fields", "`csv_format`：レコード {number} のフィールドは {{{these}}} だが、最初のレコードは {{{wanted}}}：すべてのレコードが同じフィールドを持たなければならない"),
+        ("a record, like the first row", "最初の行のようなレコード"),
+        ("a list of fields", "フィールドのリスト"),
+        ("`csv_format`: row {number} must be {wanted}, but it is {got}", "`csv_format`：行 {number} は{wanted}でなければならないが、{got} だった"),
+        ("`csv_format` takes a list of rows: lists of fields ([[\"name\", \"age\"], [\"Ada\", 36]]) or records ([{{name: \"Ada\", age: 36}}])", "`csv_format` は行のリストを取る：フィールドのリスト（[[\"name\", \"age\"], [\"Ada\", 36]]）かレコード（[{{name: \"Ada\", age: 36}}]）"),
         // src/main.rs
-        ("the seed must be a whole number, like `rythme run --seed 42 game.ry`, not `{v}`", ""),
-        ("`--seed` needs a whole number, like `rythme run --seed 42 game.ry`", ""),
+        ("the seed must be a whole number, like `rythme run --seed 42 game.ry`, not `{v}`", "シードは整数でなければならないが、`{v}` だった（例：`rythme run --seed 42 game.ry`）"),
+        ("`--seed` needs a whole number, like `rythme run --seed 42 game.ry`", "`--seed` には整数が必要（例：`rythme run --seed 42 game.ry`）"),
         // src/builtins.rs
-        ("Makes the draws of `random` and `shuffle` that follow the same on every run: the same seed (a whole number) gives the same draws, with the same version of Rythme. For tests and classes; `rythme run --seed N file.ry` does the same from the command line.", ""),
-        ("Reads a CSV table (a spreadsheet saved as text): `Ok(list of rows)`, each row a list of texts, or `Err(message)` saying at which line and column the text is not valid CSV. A field between quotes may hold separators, line breaks and quotes (written twice). The separator is \",\" unless given: \";\" for French spreadsheets, \"\\t\" for tabs. See `rythme help csv`.", ""),
+        ("Makes the draws of `random` and `shuffle` that follow the same on every run: the same seed (a whole number) gives the same draws, with the same version of Rythme. For tests and classes; `rythme run --seed N file.ry` does the same from the command line.", "この後の `random` と `shuffle` の結果を、毎回の実行で同じにします：同じシード（整数）からは、同じバージョンの Rythme なら同じ結果が出ます。テストや授業向けです。`rythme run --seed N file.ry` はコマンドラインから同じことをします。"),
+        ("Reads a CSV table (a spreadsheet saved as text): `Ok(list of rows)`, each row a list of texts, or `Err(message)` saying at which line and column the text is not valid CSV. A field between quotes may hold separators, line breaks and quotes (written twice). The separator is \",\" unless given: \";\" for French spreadsheets, \"\\t\" for tabs. See `rythme help csv`.", "CSV の表（テキストとして保存した表計算ファイル）を読みます：`Ok(行のリスト)`（各行はテキストのリスト）、または CSV として正しくない行と列を示す `Err(message)`。引用符で囲んだフィールドには区切り文字、改行、引用符（2 回書く）を入れられます。区切り文字は指定しなければ \",\" です：フランスの表計算ソフトなら \";\"、タブなら \"\\t\"。`rythme help csv` を参照してください。"),
         ("Reads a CSV table whose first line names the columns: `Ok(list of records)`, one record for each other line, with one field for each column, in their order, holding a text. `Err(message)` when the text is not valid CSV, when a line does not have as many fields as the header, or when two columns have the same name. To get numbers, use `parse_int` or `parse_float` on the fields.", ""),
         ("Writes rows as a CSV text, each one on its line, ended by a line break. The rows are lists of fields, or records: then a first line names their fields. A field is a text, a number or a Bool, put between quotes only when it needs them (a separator, a quote or a line break inside). The separator is \",\" unless given.", ""),
         // src/help.rs

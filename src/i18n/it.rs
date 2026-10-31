@@ -4936,7 +4936,7 @@ test "minuti e secondi"
 end
 "#,
         ),
-        ("04-choosing", ""),
+        ("04-choosing", "04-choosing"),
         (
             r#"# Exercise 04 · Choosing with `if`  ★☆☆
 #
@@ -5000,9 +5000,70 @@ test "ticket price"
   assert_eq(ticket_price(65), 12)
 end
 "#,
-            "",
+            r#"# Esercizio 04 · Scegliere con `if`  ★☆☆
+#
+# `if condition then value else other_value` è un'espressione: dà un
+# valore, quindi `else` serve sempre. `else if` concatena più condizioni.
+#
+# Consegna
+#   Senza usare le funzioni predefinite `abs`, `min` e `max`:
+#   - `absolute(n)`: n senza il suo segno (`absolute(-5)` è 5);
+#   - `larger(a, b)`: il più grande di due numeri;
+#   - `grade(score)`: per un punteggio da 0 a 100, "A" da 90, "B" da 80,
+#     "C" da 70, "D" da 60, e "F" sotto 60;
+#   - `ticket_price(age)`: 0 sotto i 4 anni, 5 sotto i 12, 12 dai 65, e 10
+#     altrimenti.
+#
+# Suggerimenti
+#   1. `if n < 0 then -n else n`
+#   2. Verifica prima il voto più alto: `if score >= 90 then "A" else if ...`.
+#   3. Un `if` lungo può continuare sulle righe seguenti, ognuna che inizia
+#      con `else if`.
+#
+# Controlla il tuo lavoro:  rythme exercise check 04-choosing.ry
+#                       o:  rythme test 04-choosing.ry
+
+fn absolute(n) = fail("da fare")
+
+fn larger(a, b) = fail("da fare")
+
+fn grade(score) = fail("da fare")
+
+fn ticket_price(age) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "valore assoluto"
+  assert_eq(absolute(-5), 5)
+  assert_eq(absolute(7), 7)
+  assert_eq(absolute(0), 0)
+end
+
+test "il più grande"
+  assert_eq(larger(3, 8), 8)
+  assert_eq(larger(8, 3), 8)
+  assert_eq(larger(-1, -2), -1)
+end
+
+test "voto"
+  assert_eq(grade(95), "A")
+  assert_eq(grade(90), "A")
+  assert_eq(grade(85), "B")
+  assert_eq(grade(70), "C")
+  assert_eq(grade(61), "D")
+  assert_eq(grade(12), "F")
+end
+
+test "prezzo del biglietto"
+  assert_eq(ticket_price(2), 0)
+  assert_eq(ticket_price(4), 5)
+  assert_eq(ticket_price(11), 5)
+  assert_eq(ticket_price(30), 10)
+  assert_eq(ticket_price(65), 12)
+end
+"#,
         ),
-        ("05-logic", ""),
+        ("05-logic", "05-logic"),
         (
             r#"# Exercise 05 · True or false  ★☆☆
 #
@@ -5067,9 +5128,71 @@ test "exclusive or"
   assert_eq(exclusive_or(false, false), false)
 end
 "#,
-            "",
+            r#"# Esercizio 05 · Vero o falso  ★☆☆
+#
+# I confronti (`==`, `!=`, `<`, `<=`, `>`, `>=`) danno un Bool: `true` o
+# `false`. `and`, `or` e `not` combinano i Bool.
+#
+# Consegna
+#   Ogni funzione dà un Bool, e nessuna ha bisogno di `if`:
+#   - `is_multiple(n, d)`: n è un multiplo di d?
+#   - `is_between(x, low, high)`: x è tra low e high (entrambi inclusi)?
+#   - `is_leap(year)`: un anno è bisestile quando è un multiplo di 4,
+#     tranne i multipli di 100 che non sono multipli di 400 (il 2000 è
+#     bisestile, il 1900 no); la libreria ce l'ha già, come
+#     `is_leap_year`, ma qui scrivi tu la regola;
+#   - `exclusive_or(a, b)`: esattamente uno tra a e b è vero?
+#
+# Suggerimenti
+#   1. n è un multiplo di d quando il resto `n % d` è 0.
+#   2. `x >= low and x <= high`
+#   3. Scrivi la regola degli anni bisestili con la prima funzione:
+#      `is_multiple(year, 4) and (...)`.
+#   4. Anche due Bool si possono confrontare con `!=`.
+#
+# Controlla il tuo lavoro:  rythme exercise check 05-logic.ry
+#                       o:  rythme test 05-logic.ry
+
+fn is_multiple(n, d) = fail("da fare")
+
+fn is_between(x, low, high) = fail("da fare")
+
+fn is_leap(year) = fail("da fare")
+
+fn exclusive_or(a, b) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "multipli"
+  assert(is_multiple(12, 3), "12 è un multiplo di 3")
+  assert(not is_multiple(12, 5), "12 non è un multiplo di 5")
+  assert(is_multiple(0, 7), "0 è un multiplo di ogni numero")
+end
+
+test "compreso tra"
+  assert(is_between(5, 1, 10), "5 è tra 1 e 10")
+  assert(is_between(1, 1, 10), "gli estremi sono inclusi")
+  assert(is_between(10, 1, 10), "gli estremi sono inclusi")
+  assert(not is_between(11, 1, 10), "11 è troppo grande")
+  assert(not is_between(0, 1, 10), "0 è troppo piccolo")
+end
+
+test "anni bisestili"
+  assert_eq(is_leap(2024), true)
+  assert_eq(is_leap(2023), false)
+  assert_eq(is_leap(1900), false)
+  assert_eq(is_leap(2000), true)
+end
+
+test "o esclusivo"
+  assert_eq(exclusive_or(true, false), true)
+  assert_eq(exclusive_or(false, true), true)
+  assert_eq(exclusive_or(true, true), false)
+  assert_eq(exclusive_or(false, false), false)
+end
+"#,
         ),
-        ("06-cases", ""),
+        ("06-cases", "06-cases"),
         (
             r#"# Exercise 06 · One definition per case  ★☆☆
 #
@@ -5128,9 +5251,66 @@ test "day kind"
   assert_eq(day_kind("Monday"), "weekday")
 end
 "#,
-            "",
+            r#"# Esercizio 06 · Una definizione per caso  ★☆☆
+#
+# Una funzione si può scrivere come più definizioni, provate in ordine. Un
+# parametro può essere un valore (`fn f(0) = ...`), e una guardia (`if ...`
+# prima dell'`=`) aggiunge una condizione:
+#   fn describe(0) = "zero"
+#   fn describe(n) if n < 0 = "negativo"
+#   fn describe(_) = "positivo"
+#
+# Consegna
+#   - `plural(n, word)`: il plurale inglese, "1 cat" per 1, ma "0 cats",
+#     "2 cats"...
+#   - `fizzbuzz(n)`: "FizzBuzz" se n è un multiplo di 3 e di 5, "Fizz"
+#     per gli altri multipli di 3, "Buzz" per gli altri multipli di 5,
+#     e il numero come testo altrimenti;
+#   - `day_kind(day)`: "fine settimana" per "sabato" e "domenica", "feriale"
+#     per qualsiasi altro testo.
+#
+# Suggerimenti
+#   1. Comincia dal caso particolare: `fn plural(1, word) = ...`, poi il
+#      caso generale sulla riga seguente.
+#   2. L'ordine conta: verifica "FizzBuzz" prima di "Fizz" e "Buzz".
+#   3. `text(15)` è "15".
+#   4. `_` accetta qualsiasi cosa, e di solito è l'ultimo caso.
+#
+# Controlla il tuo lavoro:  rythme exercise check 06-cases.ry
+#                       o:  rythme test 06-cases.ry
+
+fn plural(n, word) = fail("da fare")
+
+fn fizzbuzz(n) = fail("da fare")
+
+fn day_kind(day) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "plurale"
+  assert_eq(plural(1, "cat"), "1 cat")
+  assert_eq(plural(2, "cat"), "2 cats")
+  assert_eq(plural(0, "dog"), "0 dogs")
+end
+
+test "fizzbuzz"
+  assert_eq(fizzbuzz(1), "1")
+  assert_eq(fizzbuzz(3), "Fizz")
+  assert_eq(fizzbuzz(10), "Buzz")
+  assert_eq(fizzbuzz(30), "FizzBuzz")
+  assert_eq(fizzbuzz(31), "31")
+end
+
+test "i primi quindici" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+
+test "tipo di giorno"
+  assert_eq(day_kind("sabato"), "fine settimana")
+  assert_eq(day_kind("domenica"), "fine settimana")
+  assert_eq(day_kind("lunedì"), "feriale")
+end
+"#,
         ),
-        ("07-recursion", ""),
+        ("07-recursion", "07-recursion"),
         (
             r#"# Exercise 07 · Recursion  ★★☆
 #
@@ -5184,9 +5364,60 @@ test "power"
   assert_eq(power(1.5, 2), 2.25)
 end
 "#,
-            "",
+            r#"# Esercizio 07 · Ricorsione  ★★☆
+#
+# Rythme non ha cicli: per ripetere, una funzione chiama se stessa. Ogni
+# funzione ricorsiva ha bisogno di un caso base, che si ferma, e di un caso
+# ricorsivo, che avvicina il problema al caso base:
+#   fn countdown(0) = "decollo!"
+#   fn countdown(n) = "{n} " + countdown(n - 1)
+#
+# Consegna
+#   - `factorial(n)`: 1 × 2 × ... × n, e `factorial(0)` è 1;
+#   - `sum_to(n)`: 1 + 2 + ... + n, e `sum_to(0)` è 0;
+#   - `power(x, n)`: x elevato alla n, per n ≥ 0, senza `**` né `pow`.
+#
+# Suggerimenti
+#   1. `factorial(5)` è `5 * factorial(4)`.
+#   2. Quanto vale `power(x, 0)`? E `power(x, n)` rispetto a
+#      `power(x, n - 1)`?
+#   3. Una funzione che non arriva mai al suo caso base si ferma con
+#      l'errore E014: controlla che n diventi più piccolo a ogni chiamata.
+#
+# Controlla il tuo lavoro:  rythme exercise check 07-recursion.ry
+#                       o:  rythme test 07-recursion.ry
+
+fn factorial(n) = fail("da fare")
+
+fn sum_to(n) = fail("da fare")
+
+fn power(x, n) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "fattoriale"
+  assert_eq(factorial(0), 1)
+  assert_eq(factorial(1), 1)
+  assert_eq(factorial(5), 120)
+  assert_eq(factorial(10), 3628800)
+end
+
+test "somma fino a"
+  assert_eq(sum_to(0), 0)
+  assert_eq(sum_to(1), 1)
+  assert_eq(sum_to(10), 55)
+  assert_eq(sum_to(100), 5050)
+end
+
+test "potenza"
+  assert_eq(power(2, 0), 1)
+  assert_eq(power(2, 10), 1024)
+  assert_eq(power(3, 4), 81)
+  assert_eq(power(1.5, 2), 2.25)
+end
+"#,
         ),
-        ("08-digits", ""),
+        ("08-digits", "08-digits"),
         (
             r#"# Exercise 08 · The digits of a number  ★★☆
 #
@@ -5238,9 +5469,58 @@ test "reverse number"
   assert_eq(reverse_number(5), 5)
 end
 "#,
-            "",
+            r#"# Esercizio 08 · Le cifre di un numero  ★★☆
+#
+# `n % 10` è l'ultima cifra di n, e `n // 10` è n senza la sua ultima
+# cifra: per 472, sono 2 e 47.
+#
+# Consegna
+#   Per numeri interi n ≥ 0, e con la ricorsione (senza trasformare il
+#   numero in un testo):
+#   - `digit_count(n)`: quante cifre ha n (0 ha una cifra);
+#   - `digit_sum(n)`: la somma delle cifre di n;
+#   - `reverse_number(n)`: le cifre in ordine inverso (1230 dà 321).
+#
+# Suggerimenti
+#   1. Un numero sotto 10 ha una sola cifra: è il caso base.
+#   2. `digit_sum(472)` è `2 + digit_sum(47)`.
+#   3. Per `reverse_number`, scrivi una funzione d'aiuto con un parametro in
+#      più, il numero costruito finora: `reverse_from(n, built)`, con
+#      `reverse_from(0, built) = built`. Ogni passo sposta l'ultima cifra di n
+#      alla fine di `built`: `built * 10 + n % 10`.
+#
+# Controlla il tuo lavoro:  rythme exercise check 08-digits.ry
+#                       o:  rythme test 08-digits.ry
+
+fn digit_count(n) = fail("da fare")
+
+fn digit_sum(n) = fail("da fare")
+
+fn reverse_number(n) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "numero di cifre"
+  assert_eq(digit_count(0), 1)
+  assert_eq(digit_count(7), 1)
+  assert_eq(digit_count(472), 3)
+  assert_eq(digit_count(1000000), 7)
+end
+
+test "somma delle cifre"
+  assert_eq(digit_sum(0), 0)
+  assert_eq(digit_sum(472), 13)
+  assert_eq(digit_sum(99999), 45)
+end
+
+test "numero rovesciato"
+  assert_eq(reverse_number(472), 274)
+  assert_eq(reverse_number(1230), 321)
+  assert_eq(reverse_number(5), 5)
+end
+"#,
         ),
-        ("09-accumulators", ""),
+        ("09-accumulators", "09-accumulators"),
         (
             r#"# Exercise 09 · Accumulators and tail calls  ★★☆
 #
@@ -5295,9 +5575,63 @@ test "fibonacci"
   assert_eq(fib(90), 2880067194370816120)
 end
 "#,
-            "",
+            r#"# Esercizio 09 · Accumulatori e chiamate in coda  ★★☆
+#
+# In `n + sum_to(n - 1)`, l'addizione aspetta che la chiamata finisca: un
+# milione di chiamate annidate si ferma con l'errore E014 ("troppe chiamate
+# annidate"). Quando la chiamata ricorsiva è l'ultimissima cosa che la
+# funzione fa (una chiamata in coda), niente aspetta, e non c'è limite. Un
+# parametro in più, l'accumulatore, porta il risultato costruito finora:
+#   fn sum_from(0, total) = total
+#   fn sum_from(n, total) = sum_from(n - 1, total + n)
+#
+# Consegna
+#   - `big_sum(n)`: 1 + 2 + ... + n, che deve funzionare per n = 1000000;
+#   - `collatz_steps(n)`: per n ≥ 1, il numero di passi per arrivare a 1,
+#     dove un passo divide un numero pari per 2 e trasforma un numero
+#     dispari in 3 × n + 1 (6 → 3 → 10 → 5 → 16 → 8 → 4 → 2 → 1 richiede
+#     8 passi);
+#   - `fib(n)`: l'n-esimo numero di Fibonacci (0, 1, 1, 2, 3, 5, 8...: ognuno
+#     è la somma dei due precedenti), veloce anche per n = 90.
+#
+# Suggerimenti
+#   1. `big_sum(n)` può semplicemente chiamare una funzione d'aiuto:
+#      `sum_from(n, 0)`.
+#   2. `collatz_from(n, steps)`: quando n è 1, la risposta è `steps`.
+#   3. `fib(n) = fib(n - 1) + fib(n - 2)` è corretto ma molto lento, perché
+#      calcola gli stessi numeri ancora e ancora. Porta invece gli ultimi due
+#      numeri: `fib_from(n, a, b)`, dove a e b sono due numeri di Fibonacci
+#      vicini, partendo da `fib_from(n, 0, 1)`.
+#
+# Controlla il tuo lavoro:  rythme exercise check 09-accumulators.ry
+#                       o:  rythme test 09-accumulators.ry
+
+fn big_sum(n) = fail("da fare")
+
+fn collatz_steps(n) = fail("da fare")
+
+fn fib(n) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "grande somma"
+  assert_eq(big_sum(10), 55)
+  assert_eq(big_sum(1000000), 500000500000)
+end
+
+test "passi di Collatz"
+  assert_eq(collatz_steps(1), 0)
+  assert_eq(collatz_steps(6), 8)
+  assert_eq(collatz_steps(27), 111)
+end
+
+test "fibonacci"
+  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
+  assert_eq(fib(90), 2880067194370816120)
+end
+"#,
         ),
-        ("10-divisors", ""),
+        ("10-divisors", "10-divisors"),
         (
             r#"# Exercise 10 · Divisors and prime numbers  ★★☆
 #
@@ -5350,9 +5684,59 @@ test "next prime"
   assert_eq(next_prime(100), 101)
 end
 "#,
-            "",
+            r#"# Esercizio 10 · Divisori e numeri primi  ★★☆
+#
+# La ricorsione può anche provare ogni candidato, uno dopo l'altro, finché
+# non trova una risposta.
+#
+# Consegna
+#   - `my_gcd(a, b)`: il massimo comune divisore di due numeri interi ≥ 0,
+#     con il metodo di Euclide: il MCD di a e 0 è a, e il MCD di a e b è il
+#     MCD di b e `a % b` (senza la funzione predefinita `gcd`);
+#   - `is_prime(n)`: n è un numero primo (un numero ≥ 2 i cui unici divisori
+#     sono 1 e se stesso)?
+#   - `next_prime(n)`: il più piccolo numero primo strettamente maggiore di n.
+#
+# Suggerimenti
+#   1. Il metodo di Euclide è già scritto come due casi: traducilo.
+#   2. Per `is_prime`, scrivi una funzione d'aiuto `no_divisor_from(n, d)` che
+#      prova d, poi d + 1... Può fermarsi appena `d * d > n`.
+#   3. `next_prime(n)` prova n + 1: se è primo, è la risposta; altrimenti, la
+#      risposta è `next_prime(n + 1)`.
+#
+# Controlla il tuo lavoro:  rythme exercise check 10-divisors.ry
+#                       o:  rythme test 10-divisors.ry
+
+fn my_gcd(a, b) = fail("da fare")
+
+fn is_prime(n) = fail("da fare")
+
+fn next_prime(n) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "MCD"
+  assert_eq(my_gcd(12, 18), 6)
+  assert_eq(my_gcd(17, 5), 1)
+  assert_eq(my_gcd(7, 0), 7)
+  assert_eq(my_gcd(0, 9), 9)
+end
+
+test "numeri primi"
+  assert_eq(1..30 |> filter(is_prime), [2, 3, 5, 7, 11, 13, 17, 19, 23, 29])
+  assert_eq(is_prime(0), false)
+  assert_eq(is_prime(7919), true)
+  assert_eq(is_prime(7917), false)
+end
+
+test "primo successivo"
+  assert_eq(next_prime(1), 2)
+  assert_eq(next_prime(13), 17)
+  assert_eq(next_prime(100), 101)
+end
+"#,
         ),
-        ("11-list-patterns", ""),
+        ("11-list-patterns", "11-list-patterns"),
         (
             r#"# Exercise 11 · Taking lists apart  ★★☆
 #
@@ -5419,9 +5803,73 @@ test "last one"
   assert_eq(last_one(["only"]), "only")
 end
 "#,
-            "",
+            r#"# Esercizio 11 · Scomporre le liste  ★★☆
+#
+# Una lista è o vuota, `[]`, o un primo elemento seguito dal resto della
+# lista, `[first, ..rest]`. Una funzione sulle liste di solito ha una
+# definizione per ciascuno di questi due casi:
+#   fn count_items([]) = 0
+#   fn count_items([_, ..rest]) = 1 + count_items(rest)
+#
+# Consegna
+#   Con la ricorsione, e senza le funzioni predefinite `len`, `sum`, `max`
+#   e `contains`:
+#   - `total(list)`: la somma dei numeri della lista;
+#   - `largest(list)`: l'elemento più grande di una lista non vuota;
+#   - `has_value(list, x)`: x è un elemento della lista?
+#   - `last_one(list)`: l'ultimo elemento di una lista non vuota.
+#
+# Suggerimenti
+#   1. Il totale di una lista vuota è 0.
+#   2. Una lista di un elemento, `[x]`, è un buon caso base per `largest` e
+#      `last_one`.
+#   3. Il più grande di `[x, ..rest]` è il maggiore tra x e il più grande di
+#      rest.
+#   4. `has_value`: una lista vuota non contiene niente; altrimenti, o il
+#      primo elemento è x, o x è nel resto (`or`).
+#   5. `rythme check` avvisa (W002) di un caso dimenticato, qui la lista
+#      vuota. Non ha un elemento più grande: dillo con
+#      `fn largest([]) = fail("la lista è vuota")`.
+#
+# Controlla il tuo lavoro:  rythme exercise check 11-list-patterns.ry
+#                       o:  rythme test 11-list-patterns.ry
+
+fn total(list) = fail("da fare")
+
+fn largest(list) = fail("da fare")
+
+fn has_value(list, x) = fail("da fare")
+
+fn last_one(list) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "totale"
+  assert_eq(total([]), 0)
+  assert_eq(total([4]), 4)
+  assert_eq(total([1, 2, 3, 4]), 10)
+end
+
+test "il più grande"
+  assert_eq(largest([7]), 7)
+  assert_eq(largest([3, 9, 2]), 9)
+  assert_eq(largest([-3, -1, -2]), -1)
+end
+
+test "contiene il valore"
+  assert_eq(has_value([1, 2, 3], 2), true)
+  assert_eq(has_value([1, 2, 3], 5), false)
+  assert_eq(has_value([], 1), false)
+  assert_eq(has_value(["a", "b"], "b"), true)
+end
+
+test "l'ultimo"
+  assert_eq(last_one([1, 2, 3]), 3)
+  assert_eq(last_one(["unico"]), "unico")
+end
+"#,
         ),
-        ("12-building-lists", ""),
+        ("12-building-lists", "12-building-lists"),
         (
             r#"# Exercise 12 · Building lists  ★★☆
 #
@@ -5485,9 +5933,70 @@ test "the original list does not change"
   assert_eq(numbers, [1, 2, 3])
 end
 "#,
-            "",
+            r#"# Esercizio 12 · Costruire liste  ★★☆
+#
+# Anche `[x, ..rest]` costruisce una lista: x seguito dagli elementi di rest.
+# Le liste non cambiano mai: una funzione restituisce una nuova lista.
+#   fn zeros(0) = []
+#   fn zeros(n) = [0, ..zeros(n - 1)]
+#
+# Consegna
+#   Con la ricorsione, e senza `map`, `reverse` né intervalli (`1..n`):
+#   - `countdown(n)`: la lista [n, n - 1, ..., 1, 0];
+#   - `repeat_value(x, n)`: una lista con n volte il valore x;
+#   - `double_all(list)`: ogni numero della lista raddoppiato;
+#   - `reversed(list)`: gli elementi in ordine inverso.
+#
+# Suggerimenti
+#   1. `countdown(0)` è `[0]`.
+#   2. `double_all([x, ..rest])` inizia con `x * 2`.
+#   3. Per `reversed`, usa un accumulatore: `reversed_onto(list, done)` sposta
+#      il primo elemento di list in testa a done, finché list è vuota.
+#      `reversed_onto([1, 2], [])` → `reversed_onto([2], [1])` →
+#      `reversed_onto([], [2, 1])`.
+#
+# Controlla il tuo lavoro:  rythme exercise check 12-building-lists.ry
+#                       o:  rythme test 12-building-lists.ry
+
+fn countdown(n) = fail("da fare")
+
+fn repeat_value(x, n) = fail("da fare")
+
+fn double_all(list) = fail("da fare")
+
+fn reversed(list) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "conto alla rovescia"
+  assert_eq(countdown(0), [0])
+  assert_eq(countdown(3), [3, 2, 1, 0])
+end
+
+test "ripeti il valore"
+  assert_eq(repeat_value("a", 3), ["a", "a", "a"])
+  assert_eq(repeat_value(1, 0), [])
+end
+
+test "raddoppia tutto"
+  assert_eq(double_all([1, 2, 3]), [2, 4, 6])
+  assert_eq(double_all([]), [])
+end
+
+test "rovesciata"
+  assert_eq(reversed([1, 2, 3]), [3, 2, 1])
+  assert_eq(reversed([]), [])
+  assert_eq(reversed(["x"]), ["x"])
+end
+
+test "la lista originale non cambia"
+  numbers = [1, 2, 3]
+  reversed(numbers)
+  assert_eq(numbers, [1, 2, 3])
+end
+"#,
         ),
-        ("13-library", ""),
+        ("13-library", "13-library"),
         (
             r#"# Exercise 13 · The list functions  ★★☆
 #
@@ -5548,9 +6057,67 @@ test "smallest three"
   assert_eq(smallest_three([9, 8]), [8, 9])
 end
 "#,
-            "",
+            r#"# Esercizio 13 · Le funzioni delle liste  ★★☆
+#
+# La maggior parte del lavoro sulle liste non richiede ricorsione: lo fanno
+# le funzioni predefinite. `1..5` è la lista [1, 2, 3, 4, 5]; `map(list, f)`
+# applica f a ogni elemento; `filter(list, f)` tiene gli elementi per cui f dà
+# true; `sum`, `len`, `sort`, `reverse`, `take`... `rythme help lists` le mostra.
+#
+# Consegna
+#   - `squares(n)`: la lista [1, 4, 9, ..., n × n];
+#   - `evens(list)`: i numeri pari della lista, nello stesso ordine;
+#   - `sum_of_multiples(limit)`: la somma dei numeri da 1 a limit - 1 che
+#     sono multipli di 3 o di 5;
+#   - `mean(list)`: la media dei numeri di una lista non vuota;
+#   - `smallest_three(list)`: i tre numeri più piccoli, dal più piccolo.
+#
+# Suggerimenti
+#   1. `map(1..n, square)` con una funzione `square` scritta da te, oppure
+#      `map(1..n, fn(x) = x * x)` (una funzione anonima, vedi l'esercizio 14).
+#   2. `is_even` è una funzione predefinita: `filter(list, is_even)`.
+#   3. `1..0` è la lista vuota `[]`.
+#   4. `sort` poi `take`.
+#
+# Controlla il tuo lavoro:  rythme exercise check 13-library.ry
+#                       o:  rythme test 13-library.ry
+
+fn squares(n) = fail("da fare")
+
+fn evens(list) = fail("da fare")
+
+fn sum_of_multiples(limit) = fail("da fare")
+
+fn mean(list) = fail("da fare")
+
+fn smallest_three(list) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "quadrati"
+  assert_eq(squares(5), [1, 4, 9, 16, 25])
+  assert_eq(squares(0), [])
+end
+
+test "pari" = assert_eq(evens([5, 2, 8, 1, 4]), [2, 8, 4])
+
+test "somma dei multipli"
+  assert_eq(sum_of_multiples(10), 23)
+  assert_eq(sum_of_multiples(1000), 233168)
+end
+
+test "media"
+  assert_eq(mean([1, 2, 3, 4]), 2.5)
+  assert_eq(mean([7]), 7)
+end
+
+test "i tre più piccoli"
+  assert_eq(smallest_three([5, 1, 4, 2, 3]), [1, 2, 3])
+  assert_eq(smallest_three([9, 8]), [8, 9])
+end
+"#,
         ),
-        ("14-anonymous-functions", ""),
+        ("14-anonymous-functions", "14-anonymous-functions"),
         (
             r#"# Exercise 14 · Anonymous functions  ★★☆
 #
@@ -5603,9 +6170,59 @@ end
 
 test "count above" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
 "#,
-            "",
+            r#"# Esercizio 14 · Funzioni anonime  ★★☆
+#
+# `fn(x) = x * 2` è una funzione senza nome, scritta proprio dove serve.
+# Può usare i nomi che ha intorno:
+#   fn add_to_all(list, n) = map(list, fn(x) = x + n)
+#
+# Consegna
+#   - `with_tax(prices, percent)`: ogni prezzo aumentato del `percent` %;
+#   - `long_words(words, n)`: le parole che hanno più di n caratteri;
+#   - `lengths(words)`: la lunghezza di ogni parola;
+#   - `all_positive(list)`: tutti i numeri sono maggiori di 0?
+#   - `count_above(list, limit)`: quanti numeri sono maggiori di limit.
+#
+# Suggerimenti
+#   1. Un prezzo p aumentato del 20 % è `p + p * 20 / 100`.
+#   2. `len("word")` è 4.
+#   3. `all(list, f)` è vero quando f dà true per ogni elemento, e
+#      `count(list, f)` conta gli elementi per cui f dà true.
+#
+# Controlla il tuo lavoro:  rythme exercise check 14-anonymous-functions.ry
+#                       o:  rythme test 14-anonymous-functions.ry
+
+fn with_tax(prices, percent) = fail("da fare")
+
+fn long_words(words, n) = fail("da fare")
+
+fn lengths(words) = fail("da fare")
+
+fn all_positive(list) = fail("da fare")
+
+fn count_above(list, limit) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "con la tassa"
+  assert_eq(with_tax([100, 50], 20), [120, 60])
+  assert_eq(with_tax([10], 0), [10])
+end
+
+test "parole lunghe" = assert_eq(long_words(["a", "tree", "is", "green"], 3), ["tree", "green"])
+
+test "lunghezze" = assert_eq(lengths(["a", "tree", "is"]), [1, 4, 2])
+
+test "tutti positivi"
+  assert_eq(all_positive([1, 5, 3]), true)
+  assert_eq(all_positive([1, -5, 3]), false)
+  assert_eq(all_positive([]), true)
+end
+
+test "quanti sopra" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
+"#,
         ),
-        ("15-functions-as-values", ""),
+        ("15-functions-as-values", "15-functions-as-values"),
         (
             r#"# Exercise 15 · Functions are values  ★★☆
 #
@@ -5669,9 +6286,70 @@ test "my filter"
   assert_eq(my_filter(["a", "bb", "ccc"], fn(w) = len(w) > 1), ["bb", "ccc"])
 end
 "#,
-            "",
+            r#"# Esercizio 15 · Le funzioni sono valori  ★★☆
+#
+# Una funzione si può dare a un'altra funzione, e una funzione può
+# restituire una nuova funzione:
+#   fn twice(f) = fn(x) = f(f(x))
+#   add_two = twice(fn(x) = x + 1)      # add_two(5) è 7
+#
+# Consegna
+#   - `apply_twice(f, x)`: f applicata a x, poi f applicata al risultato;
+#   - `compose(f, g)`: una nuova funzione che applica g, poi f;
+#   - `adder(n)`: una nuova funzione che aggiunge n al suo argomento;
+#   - `my_map(list, f)` e `my_filter(list, f)`: le tue versioni di `map` e
+#     `filter`, con la ricorsione.
+#
+# Suggerimenti
+#   1. `compose(f, g)` dà `fn(x) = ...`.
+#   2. `my_map([x, ..rest], f)` inizia con `f(x)`.
+#   3. `my_filter([x, ..rest], f)`: tieni x solo se `f(x)` è vero, poi
+#      continua con rest.
+#
+# Controlla il tuo lavoro:  rythme exercise check 15-functions-as-values.ry
+#                       o:  rythme test 15-functions-as-values.ry
+
+fn apply_twice(f, x) = fail("da fare")
+
+fn compose(f, g) = fail("da fare")
+
+fn adder(n) = fail("da fare")
+
+fn my_map(list, f) = fail("da fare")
+
+fn my_filter(list, f) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "applica due volte"
+  assert_eq(apply_twice(fn(x) = x * 3, 2), 18)
+  assert_eq(apply_twice(upper, "hi"), "HI")
+end
+
+test "componi"
+  plus_one_then_double = compose(fn(x) = x * 2, fn(x) = x + 1)
+  assert_eq(plus_one_then_double(4), 10)
+  assert_eq(compose(len, trim)("  abc  "), 3)
+end
+
+test "sommatore"
+  add10 = adder(10)
+  assert_eq(add10(5), 15)
+  assert_eq(map([1, 2, 3], adder(100)), [101, 102, 103])
+end
+
+test "la mia map"
+  assert_eq(my_map([1, 2, 3], fn(x) = x * x), [1, 4, 9])
+  assert_eq(my_map([], fn(x) = x), [])
+end
+
+test "il mio filter"
+  assert_eq(my_filter([1, 2, 3, 4, 5, 6], is_even), [2, 4, 6])
+  assert_eq(my_filter(["a", "bb", "ccc"], fn(w) = len(w) > 1), ["bb", "ccc"])
+end
+"#,
         ),
-        ("16-fold", ""),
+        ("16-fold", "16-fold"),
         (
             r#"# Exercise 16 · Folding a list into one value  ★★☆
 #
@@ -5731,9 +6409,66 @@ test "count where"
   assert_eq(count_where(["a", "bb"], fn(w) = len(w) > 5), 0)
 end
 "#,
-            "",
+            r#"# Esercizio 16 · Ridurre una lista a un solo valore  ★★☆
+#
+# `fold(list, start, f)` combina tutti gli elementi in un solo valore: parte
+# da `start`, poi calcola `f(result, element)` per ogni elemento.
+#   fold([1, 2, 3], 0, fn(total, x) = total + x)     # 6
+#
+# Consegna
+#   Con `fold`, e senza ricorsione:
+#   - `product_of(list)`: il prodotto dei numeri (1 per una lista vuota);
+#   - `longest_word(words)`: la parola più lunga (la prima se più parole
+#     hanno la stessa lunghezza; "" per una lista vuota);
+#   - `to_number(digits)`: il numero scritto con queste cifre
+#     ([1, 2, 3] dà 123);
+#   - `count_where(list, f)`: quanti elementi danno true con f (senza
+#     `count` né `filter`).
+#
+# Suggerimenti
+#   1. Scegli bene `start`: è la risposta per la lista vuota.
+#   2. Per `longest_word`, il risultato finora è la parola più lunga vista
+#      finora: tienila, o prendi la nuova parola se è strettamente più lunga.
+#   3. `to_number`: con 12 finora e la cifra 3, il nuovo risultato è
+#      12 * 10 + 3.
+#
+# Controlla il tuo lavoro:  rythme exercise check 16-fold.ry
+#                       o:  rythme test 16-fold.ry
+
+fn product_of(list) = fail("da fare")
+
+fn longest_word(words) = fail("da fare")
+
+fn to_number(digits) = fail("da fare")
+
+fn count_where(list, f) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "prodotto"
+  assert_eq(product_of([2, 3, 4]), 24)
+  assert_eq(product_of([]), 1)
+end
+
+test "parola più lunga"
+  assert_eq(longest_word(["a", "tree", "is", "green"]), "green")
+  assert_eq(longest_word(["one", "two"]), "one")
+  assert_eq(longest_word([]), "")
+end
+
+test "in numero"
+  assert_eq(to_number([1, 2, 3]), 123)
+  assert_eq(to_number([0, 7]), 7)
+  assert_eq(to_number([]), 0)
+end
+
+test "conta dove"
+  assert_eq(count_where([1, 2, 3, 4, 5], is_odd), 3)
+  assert_eq(count_where(["a", "bb"], fn(w) = len(w) > 5), 0)
+end
+"#,
         ),
-        ("17-pipelines", ""),
+        ("17-pipelines", "17-pipelines"),
         (
             r#"# Exercise 17 · Pipelines  ★★☆
 #
@@ -5789,9 +6524,63 @@ test "initials of"
   assert_eq(initials_of("Rythme"), "R")
 end
 "#,
-            "",
+            r#"# Esercizio 17 · Pipeline  ★★☆
+#
+# `x |> f(a)` significa `f(x, a)`: il valore a sinistra diventa il primo
+# argomento. I passi si leggono da sinistra a destra, nell'ordine in cui
+# avvengono:
+#   [3, 1, 2] |> sort |> map(fn(x) = x * 10)        # [10, 20, 30]
+# Una riga che inizia con `|>` continua la riga precedente.
+#
+# Consegna
+#   Scrivi ogni funzione come una sola pipeline:
+#   - `sum_of_odd_squares(n)`: la somma dei quadrati dei numeri dispari
+#     da 1 a n;
+#   - `top_three(scores)`: i tre punteggi migliori, il migliore per primo;
+#   - `shout_words(sentence)`: ogni parola in maiuscolo, separate da un
+#     solo spazio ("hello  world" dà "HELLO WORLD");
+#   - `initials_of(sentence)`: la prima lettera di ogni parola, in maiuscolo
+#     ("portable network graphics" dà "PNG").
+#
+# Suggerimenti
+#   1. `filter`, poi `map`, poi `sum`.
+#   2. `sort`, `reverse`, `take(3)`.
+#   3. `split(text)` taglia un testo agli spazi (più spazi contano come
+#      uno); `join(words, " ")` rincolla le parole.
+#   4. `word[0]` è il primo carattere di `word`.
+#
+# Controlla il tuo lavoro:  rythme exercise check 17-pipelines.ry
+#                       o:  rythme test 17-pipelines.ry
+
+fn sum_of_odd_squares(n) = fail("da fare")
+
+fn top_three(scores) = fail("da fare")
+
+fn shout_words(sentence) = fail("da fare")
+
+fn initials_of(sentence) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "somma dei quadrati dispari"
+  assert_eq(sum_of_odd_squares(5), 35)
+  assert_eq(sum_of_odd_squares(1), 1)
+end
+
+test "i tre migliori"
+  assert_eq(top_three([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(top_three([4]), [4])
+end
+
+test "parole gridate" = assert_eq(shout_words("hello  world"), "HELLO WORLD")
+
+test "iniziali"
+  assert_eq(initials_of("portable network graphics"), "PNG")
+  assert_eq(initials_of("Rythme"), "R")
+end
+"#,
         ),
-        ("18-text-processing", ""),
+        ("18-text-processing", "18-text-processing"),
         (
             r#"# Exercise 18 · Working with texts  ★★☆
 #
@@ -5839,9 +6628,54 @@ end
 
 test "title case" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")
 "#,
-            "",
+            r#"# Esercizio 18 · Lavorare con i testi  ★★☆
+#
+# Un testo si può trasformare nella lista dei suoi caratteri con `chars`, e
+# le funzioni delle liste fanno il resto. `lower`, `upper`, `replace`,
+# `split`, `join`, `contains`... sono descritte da `rythme help text`.
+#
+# Consegna
+#   - `is_palindrome(text)`: il testo si legge allo stesso modo dai due
+#     lati, ignorando maiuscole e spazi? ("Never odd or even" sì.)
+#   - `count_vowels(text)`: quanti caratteri sono vocali (a, e, i, o, u
+#     o y, in minuscolo o in maiuscolo)?
+#   - `title_case(text)`: ogni parola inizia con una lettera maiuscola, il
+#     resto in minuscolo ("the LORD of the rings" dà
+#     "The Lord Of The Rings").
+#
+# Suggerimenti
+#   1. `replace(text, " ", "")` toglie gli spazi, e `reverse` funziona anche
+#      sui testi.
+#   2. `contains("aeiouy", c)` dice se il carattere c è una vocale.
+#   3. `capitalize("lord")` è "Lord".
+#
+# Controlla il tuo lavoro:  rythme exercise check 18-text-processing.ry
+#                       o:  rythme test 18-text-processing.ry
+
+fn is_palindrome(text) = fail("da fare")
+
+fn count_vowels(text) = fail("da fare")
+
+fn title_case(text) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "palindromi"
+  assert_eq(is_palindrome("kayak"), true)
+  assert_eq(is_palindrome("Never odd or even"), true)
+  assert_eq(is_palindrome("rythme"), false)
+end
+
+test "vocali"
+  assert_eq(count_vowels("Rythme"), 2)
+  assert_eq(count_vowels("AEIOU"), 5)
+  assert_eq(count_vowels("xkcd"), 0)
+end
+
+test "maiuscole iniziali" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")
+"#,
         ),
-        ("19-sorting", ""),
+        ("19-sorting", "19-sorting"),
         (
             r#"# Exercise 19 · Sorting  ★★★
 #
@@ -5903,9 +6737,67 @@ test "merge sort"
   assert_eq(merge_sort(reverse(1..100)), 1..100)
 end
 "#,
-            "",
+            r#"# Esercizio 19 · Ordinare  ★★★
+#
+# Due modi classici di ordinare una lista, scritti con la ricorsione (senza
+# la funzione predefinita `sort`).
+#
+# Consegna
+#   - `insert(sorted, x)`: x messo al suo posto in una lista già ordinata;
+#   - `insertion_sort(list)`: ordina la lista inserendo ogni elemento, uno
+#     dopo l'altro, in una lista ordinata che parte vuota;
+#   - `merge(a, b)`: una lista ordinata da due liste ordinate;
+#   - `merge_sort(list)`: taglia la lista in due metà, ordina ogni metà,
+#     e le fonde.
+#
+# Suggerimenti
+#   1. `insert([], x)` è `[x]`. Per `insert([first, ..rest], x)`: se
+#      x <= first, x va davanti; altrimenti first resta primo.
+#   2. `insertion_sort([x, ..rest])` è `insert(insertion_sort(rest), x)`
+#      (oppure usa `fold` con `insert`).
+#   3. `merge` confronta i primi elementi delle due liste: il più piccolo
+#      viene per primo, seguito dalla fusione di quello che resta.
+#   4. `take(list, n)` e `drop(list, n)` danno le due metà, con
+#      `n = len(list) // 2`. Una lista di 0 o 1 elemento è già ordinata.
+#
+# Controlla il tuo lavoro:  rythme exercise check 19-sorting.ry
+#                       o:  rythme test 19-sorting.ry
+
+fn insert(sorted, x) = fail("da fare")
+
+fn insertion_sort(list) = fail("da fare")
+
+fn merge(a, b) = fail("da fare")
+
+fn merge_sort(list) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "inserisci"
+  assert_eq(insert([1, 3, 5], 4), [1, 3, 4, 5])
+  assert_eq(insert([], 2), [2])
+  assert_eq(insert([1, 2], 9), [1, 2, 9])
+end
+
+test "ordinamento per inserimento"
+  assert_eq(insertion_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(insertion_sort([]), [])
+end
+
+test "fusione"
+  assert_eq(merge([1, 4, 6], [2, 3, 7]), [1, 2, 3, 4, 6, 7])
+  assert_eq(merge([], [1]), [1])
+  assert_eq(merge([1], []), [1])
+end
+
+test "ordinamento per fusione"
+  assert_eq(merge_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(merge_sort(["pera", "mela", "fico"]), ["fico", "mela", "pera"])
+  assert_eq(merge_sort(reverse(1..100)), 1..100)
+end
+"#,
         ),
-        ("20-records", ""),
+        ("20-records", "20-records"),
         (
             r#"# Exercise 20 · Records  ★★☆
 #
@@ -5964,9 +6856,65 @@ test "distance"
   assert_eq(distance({x: 1, y: 1}, {x: 1, y: 1}), 0)
 end
 "#,
-            "",
+            r#"# Esercizio 20 · Record  ★★☆
+#
+# Un record raggruppa valori con un nome: `{name: "Ada", born: 1815}`.
+# `ada.name` legge un campo. Un record non cambia mai: `{..ada, born: 1816}`
+# è un nuovo record, una copia di ada con un altro `born`. Un parametro può
+# scomporre un record: `fn hello({name}) = "Ciao, {name}"`.
+#
+# Consegna
+#   Una persona è un record `{name, born}`; un punto è un record `{x, y}`.
+#   - `age_in(person, year)`: l'età della persona alla fine dell'anno;
+#   - `label(person)`: un testo come "Ada (1815)";
+#   - `renamed(person, name)`: la stessa persona con un altro nome;
+#   - `moved(point, dx, dy)`: il punto spostato di dx in orizzontale e di
+#     dy in verticale;
+#   - `distance(a, b)`: la distanza tra due punti.
+#
+# Suggerimenti
+#   1. `person.born`, o un parametro `{born}`.
+#   2. `{..person, name: name}`, che si può scrivere `{..person, name}`.
+#   3. La distanza è la radice quadrata di (xb - xa)² + (yb - ya)².
+#
+# Controlla il tuo lavoro:  rythme exercise check 20-records.ry
+#                       o:  rythme test 20-records.ry
+
+fn age_in(person, year) = fail("da fare")
+
+fn label(person) = fail("da fare")
+
+fn renamed(person, name) = fail("da fare")
+
+fn moved(point, dx, dy) = fail("da fare")
+
+fn distance(a, b) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+ada = {name: "Ada", born: 1815}
+
+test "età" = assert_eq(age_in(ada, 1852), 37)
+
+test "etichetta" = assert_eq(label(ada), "Ada (1815)")
+
+test "rinominata"
+  assert_eq(renamed(ada, "Augusta"), {name: "Augusta", born: 1815})
+  assert_eq(ada.name, "Ada")
+end
+
+test "spostato"
+  assert_eq(moved({x: 1, y: 2}, 3, -1), {x: 4, y: 1})
+  assert_eq(moved({x: 0, y: 0}, 0, 0), {x: 0, y: 0})
+end
+
+test "distanza"
+  assert_eq(distance({x: 0, y: 0}, {x: 3, y: 4}), 5)
+  assert_eq(distance({x: 1, y: 1}, {x: 1, y: 1}), 0)
+end
+"#,
         ),
-        ("21-lists-of-records", ""),
+        ("21-lists-of-records", "21-lists-of-records"),
         (
             r#"# Exercise 21 · Lists of records  ★★☆
 #
@@ -6024,9 +6972,64 @@ test "ranking" = assert_eq(ranking(classroom), ["Ada", "Barbara", "Grace", "Edsg
 
 test "group sizes" = assert_eq(group_sizes(classroom), {A: 3, B: 2})
 "#,
-            "",
+            r#"# Esercizio 21 · Liste di record  ★★☆
+#
+# I dati reali sono spesso una lista di record: una classe di studenti, una
+# lista di ordini... `map`, `filter`, `sort_by`, `max_by`, `group_by` e `sum`
+# funzionano su di essi come su qualsiasi lista.
+#
+# Consegna
+#   Uno studente è un record `{name, score, group}` (un punteggio da 0 a 100).
+#   - `names_of_passed(students)`: i nomi degli studenti con un punteggio di
+#     almeno 50, nello stesso ordine;
+#   - `average_score(students)`: la media dei punteggi;
+#   - `best(students)`: il nome dello studente con il punteggio migliore;
+#   - `ranking(students)`: i nomi, dal punteggio migliore al più basso;
+#   - `group_sizes(students)`: un record che dà, per ogni gruppo, quanti
+#     studenti ci sono (`{A: 2, B: 1}`).
+#
+# Suggerimenti
+#   1. `filter` poi `map(fn(s) = s.name)`.
+#   2. `max_by(list, key)` dà l'elemento la cui chiave è la più grande.
+#   3. `sort_by(list, fn(s) = -s.score)` ordina dal punteggio migliore.
+#   4. `group_by(list, key)` dà un record di liste, e
+#      `map_values(record, f)` applica f a ognuno dei suoi valori.
+#
+# Controlla il tuo lavoro:  rythme exercise check 21-lists-of-records.ry
+#                       o:  rythme test 21-lists-of-records.ry
+
+fn names_of_passed(students) = fail("da fare")
+
+fn average_score(students) = fail("da fare")
+
+fn best(students) = fail("da fare")
+
+fn ranking(students) = fail("da fare")
+
+fn group_sizes(students) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+classroom = [
+  {name: "Ada", score: 92, group: "A"},
+  {name: "Alan", score: 45, group: "B"},
+  {name: "Grace", score: 78, group: "A"},
+  {name: "Edsger", score: 50, group: "B"},
+  {name: "Barbara", score: 85, group: "A"},
+]
+
+test "promossi" = assert_eq(names_of_passed(classroom), ["Ada", "Grace", "Edsger", "Barbara"])
+
+test "media" = assert_eq(average_score(classroom), 70)
+
+test "migliore" = assert_eq(best(classroom), "Ada")
+
+test "classifica" = assert_eq(ranking(classroom), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+
+test "dimensioni dei gruppi" = assert_eq(group_sizes(classroom), {A: 3, B: 2})
+"#,
         ),
-        ("22-own-types", ""),
+        ("22-own-types", "22-own-types"),
         (
             r#"# Exercise 22 · Your own types  ★★☆
 #
@@ -6081,9 +7084,61 @@ test "name" = assert_eq([Circle(1), Rect(1, 2), Square(3)] |> map(name_of), ["ci
 
 test "total area" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 11)
 "#,
-            "",
+            r#"# Esercizio 22 · I tuoi tipi  ★★☆
+#
+# `type` definisce un nuovo tipo di valore, con un costruttore per ogni
+# forma possibile:
+#   type Pet = Dog(name) | Cat(name, lives) | Fish
+# Una funzione può avere una definizione per costruttore:
+#   fn sound(Dog(_)) = "bau"
+#
+# Consegna
+#   Il tipo `Shape` qui sotto ha tre forme.
+#   - `area(shape)`: l'area della forma;
+#   - `perimeter(shape)`: la lunghezza del suo bordo;
+#   - `name_of(shape)`: "cerchio", "rettangolo" o "quadrato";
+#   - `total_area(shapes)`: la somma delle aree di una lista di forme.
+#
+# Suggerimenti
+#   1. `fn area(Circle(r)) = pi * r * r`, poi una definizione per ogni altro
+#      costruttore.
+#   2. Il perimetro di un cerchio è 2 × π × r.
+#   3. Se dimentichi un costruttore, `rythme check` ti dice quale
+#      (avviso W002).
+#
+# Controlla il tuo lavoro:  rythme exercise check 22-own-types.ry
+#                       o:  rythme test 22-own-types.ry
+
+type Shape = Circle(radius) | Rect(width, height) | Square(side)
+
+fn area(shape) = fail("da fare")
+
+fn perimeter(shape) = fail("da fare")
+
+fn name_of(shape) = fail("da fare")
+
+fn total_area(shapes) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "area"
+  assert_eq(area(Rect(2, 3)), 6)
+  assert_eq(area(Square(4)), 16)
+  assert_eq(round(area(Circle(1)), 2), 3.14)
+end
+
+test "perimetro"
+  assert_eq(perimeter(Rect(2, 3)), 10)
+  assert_eq(perimeter(Square(4)), 16)
+  assert_eq(round(perimeter(Circle(1)), 2), 6.28)
+end
+
+test "nome" = assert_eq([Circle(1), Rect(1, 2), Square(3)] |> map(name_of), ["cerchio", "rettangolo", "quadrato"])
+
+test "area totale" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 11)
+"#,
         ),
-        ("23-match", ""),
+        ("23-match", "23-match"),
         (
             r#"# Exercise 23 · Choosing with `match`  ★★☆
 #
@@ -6151,9 +7206,75 @@ test "greeting"
   assert_eq(greeting({name: "Grace"}), "Hello, Grace")
 end
 "#,
-            "",
+            r#"# Esercizio 23 · Scegliere con `match`  ★★☆
+#
+# `match` confronta un valore con dei pattern, in ordine, e dà il risultato
+# del primo che corrisponde:
+#   fn describe(n) = match n
+#     0 -> "zero"
+#     n if n < 0 -> "negativo"
+#     _ -> "positivo"
+#   end
+# I pattern possono essere numeri, testi, costruttori, liste (`[]`, `[x]`,
+# `[x, ..rest]`) o record (`{name}`).
+#
+# Consegna
+#   - `next_light(light)`: la luce che viene dopo: Green, poi Orange, poi
+#     Red, poi di nuovo Green;
+#   - `can_go(light)`: true solo per Green;
+#   - `describe(list)`: "vuota" per [], "uno: 7" per [7], "due: 1 e 2"
+#     per [1, 2], e "molti, a partire da 5" per le liste più lunghe;
+#   - `greeting(person)`: per un record con un campo `title`,
+#     "Ciao, Dr Hopper"; altrimenti, con solo `name`, "Ciao, Grace".
+#
+# Suggerimenti
+#   1. Ognuna delle tre luci è un caso del `match`.
+#   2. `[a, b]` corrisponde alle liste di esattamente due elementi,
+#      `[first, ..]` alle liste di almeno un elemento: metti per primi i
+#      pattern più precisi.
+#   3. `{title, last}` corrisponde ai record che hanno almeno questi campi.
+#
+# Controlla il tuo lavoro:  rythme exercise check 23-match.ry
+#                       o:  rythme test 23-match.ry
+
+type Light = Green | Orange | Red
+
+fn next_light(light) = fail("da fare")
+
+fn can_go(light) = fail("da fare")
+
+fn describe(list) = fail("da fare")
+
+fn greeting(person) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "luce successiva"
+  assert_eq(next_light(Green), Orange)
+  assert_eq(next_light(Orange), Red)
+  assert_eq(next_light(Red), Green)
+end
+
+test "si può passare"
+  assert_eq(can_go(Green), true)
+  assert_eq(can_go(Orange), false)
+  assert_eq(can_go(Red), false)
+end
+
+test "descrivi"
+  assert_eq(describe([]), "vuota")
+  assert_eq(describe([7]), "uno: 7")
+  assert_eq(describe([1, 2]), "due: 1 e 2")
+  assert_eq(describe([5, 6, 7]), "molti, a partire da 5")
+end
+
+test "saluto"
+  assert_eq(greeting({title: "Dr", last: "Hopper", name: "Grace"}), "Ciao, Dr Hopper")
+  assert_eq(greeting({name: "Grace"}), "Ciao, Grace")
+end
+"#,
         ),
-        ("24-trees", ""),
+        ("24-trees", "24-trees"),
         (
             r#"# Exercise 24 · Trees  ★★★
 #
@@ -6225,9 +7346,78 @@ test "to list" = assert_eq(to_list(small), [1, 3, 5, 8])
 
 test "sorting with a tree" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> to_list, [1, 2, 4, 7, 9])
 "#,
-            "",
+            r#"# Esercizio 24 · Alberi  ★★★
+#
+# Un tipo può contenere se stesso. Un albero binario è o vuoto (`Leaf`), o
+# un nodo con un valore e due alberi più piccoli, alla sua sinistra e alla sua
+# destra. Le funzioni sugli alberi seguono la forma del tipo: un caso per
+# `Leaf`, uno per `Node`, che chiama se stessa sui due lati.
+#
+# Consegna
+#   - `size(tree)`: quanti valori contiene l'albero;
+#   - `total(tree)`: la somma dei suoi valori;
+#   - `depth(tree)`: il numero di livelli (0 per una Leaf);
+#   - `insert(tree, x)`: un albero di ricerca è un albero in cui i valori a
+#     sinistra di un nodo sono più piccoli del suo valore, e gli altri a
+#     destra; dai l'albero di ricerca con x aggiunto (un nuovo Node al posto
+#     di una Leaf);
+#   - `to_list(tree)`: i valori, da sinistra a destra.
+#
+# Suggerimenti
+#   1. `fn size(Leaf) = 0` e `fn size(Node(left, _, right)) = ...`.
+#   2. `max(a, b)` dà il più grande di due numeri.
+#   3. `insert` dà un nuovo albero: `Node(insert(left, x), value, right)`
+#      quando x va a sinistra.
+#   4. `to_list` di un nodo è: la lista della sinistra, poi il valore, poi
+#      la lista della destra (`+` unisce le liste).
+#
+# Controlla il tuo lavoro:  rythme exercise check 24-trees.ry
+#                       o:  rythme test 24-trees.ry
+
+type Tree = Leaf | Node(left, value, right)
+
+fn size(tree) = fail("da fare")
+
+fn total(tree) = fail("da fare")
+
+fn depth(tree) = fail("da fare")
+
+fn insert(tree, x) = fail("da fare")
+
+fn to_list(tree) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+#       5
+#      / \
+#     3   8
+#    /
+#   1
+small = Node(Node(Node(Leaf, 1, Leaf), 3, Leaf), 5, Node(Leaf, 8, Leaf))
+
+test "dimensione"
+  assert_eq(size(Leaf), 0)
+  assert_eq(size(small), 4)
+end
+
+test "totale" = assert_eq(total(small), 17)
+
+test "profondità"
+  assert_eq(depth(Leaf), 0)
+  assert_eq(depth(small), 3)
+end
+
+test "inserisci"
+  assert_eq(insert(Leaf, 4), Node(Leaf, 4, Leaf))
+  assert_eq(insert(Node(Leaf, 4, Leaf), 2), Node(Node(Leaf, 2, Leaf), 4, Leaf))
+end
+
+test "in lista" = assert_eq(to_list(small), [1, 3, 5, 8])
+
+test "ordinare con un albero" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> to_list, [1, 2, 4, 7, 9])
+"#,
         ),
-        ("25-expressions", ""),
+        ("25-expressions", "25-expressions"),
         (
             r#"# Exercise 25 · A small calculator  ★★★
 #
@@ -6290,9 +7480,69 @@ test "simplify"
   assert_eq(simplify(Neg(Mul(Num(3), Num(1)))), Neg(Num(3)))
 end
 "#,
-            "",
+            r#"# Esercizio 25 · Una piccola calcolatrice  ★★★
+#
+# Un calcolo come (1 + 2) × 3 è un albero: la moltiplicazione ha due parti,
+# l'addizione e 3. Con un tipo, un programma può contenere dei calcoli,
+# calcolarli e mostrarli.
+#
+# Consegna
+#   - `evaluate(expr)`: il valore del calcolo;
+#   - `show(expr)`: il calcolo come testo, con le parentesi intorno a ogni
+#     addizione e moltiplicazione: "((1 + 2) * 3)", e una negazione scritta
+#     "-x" ("-4", "-(1 + 2)");
+#   - `count_numbers(expr)`: quanti numeri contiene il calcolo;
+#   - `simplify(expr)`: lo stesso calcolo, in cui `Add(e, Num(0))`,
+#     `Mul(e, Num(1))` (e lo stesso con il numero a sinistra) sono sostituiti
+#     da e, a ogni livello.
+#
+# Suggerimenti
+#   1. Un caso per costruttore: `fn evaluate(Num(n)) = n`,
+#      `fn evaluate(Add(a, b)) = evaluate(a) + evaluate(b)`...
+#   2. `show(Neg(e))` è "-" seguito da `show(e)`.
+#   3. In `simplify`, semplifica prima entrambe le parti, poi guarda il
+#      risultato con un `match`.
+#
+# Controlla il tuo lavoro:  rythme exercise check 25-expressions.ry
+#                       o:  rythme test 25-expressions.ry
+
+type Expr = Num(value) | Add(left, right) | Mul(left, right) | Neg(inner)
+
+fn evaluate(expr) = fail("da fare")
+
+fn show(expr) = fail("da fare")
+
+fn count_numbers(expr) = fail("da fare")
+
+fn simplify(expr) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+calculation = Mul(Add(Num(1), Num(2)), Num(3))
+
+test "valuta"
+  assert_eq(evaluate(Num(4)), 4)
+  assert_eq(evaluate(calculation), 9)
+  assert_eq(evaluate(Neg(calculation)), -9)
+end
+
+test "mostra"
+  assert_eq(show(calculation), "((1 + 2) * 3)")
+  assert_eq(show(Neg(Num(4))), "-4")
+  assert_eq(show(Neg(Add(Num(1), Num(2)))), "-(1 + 2)")
+end
+
+test "conta i numeri" = assert_eq(count_numbers(Add(calculation, Neg(Num(5)))), 4)
+
+test "semplifica"
+  assert_eq(simplify(Add(Num(7), Num(0))), Num(7))
+  assert_eq(simplify(Mul(Num(1), Add(Num(0), Num(2)))), Num(2))
+  assert_eq(simplify(calculation), calculation)
+  assert_eq(simplify(Neg(Mul(Num(3), Num(1)))), Neg(Num(3)))
+end
+"#,
         ),
-        ("26-option", ""),
+        ("26-option", "26-option"),
         (
             r#"# Exercise 26 · A value that may be missing: Option  ★★☆
 #
@@ -6362,9 +7612,77 @@ test "add options"
   assert_eq(add_options(None, None), None)
 end
 "#,
-            "",
+            r#"# Esercizio 26 · Un valore che può mancare: Option  ★★☆
+#
+# Rythme non ha `null`. Una funzione che può non trovare niente restituisce
+# un Option: `Some(value)` quando c'è un valore, `None` altrimenti. `match`
+# gestisce i due casi, e `unwrap_or(option, default)` dà il valore o uno
+# predefinito.
+#   fn first_of([]) = None
+#   fn first_of([x, ..]) = Some(x)
+#
+# Consegna
+#   - `safe_divide(a, b)`: `Some(a / b)`, o `None` quando b è 0;
+#   - `find_age(people, name)`: l'età della persona con questo nome, come
+#     Option (people è una lista di record `{name, age}`);
+#   - `age_or_unknown(people, name)`: un testo, "36" per una persona nota e
+#     "sconosciuta" altrimenti;
+#   - `first_long_word(words)`: la prima parola con più di 5 caratteri,
+#     come Option;
+#   - `add_options(a, b)`: `Some(x + y)` quando a è `Some(x)` e b è
+#     `Some(y)`, `None` altrimenti.
+#
+# Suggerimenti
+#   1. `find(list, f)` dà il primo elemento per cui f è vera, come Option;
+#      `map(option, f)` applica f al valore dentro, se c'è.
+#   2. `match find_age(people, name)` con i casi `Some(age)` e `None`.
+#   3. `match [a, b]` con un caso `[Some(x), Some(y)]` e un caso `_`.
+#
+# Controlla il tuo lavoro:  rythme exercise check 26-option.ry
+#                       o:  rythme test 26-option.ry
+
+fn safe_divide(a, b) = fail("da fare")
+
+fn find_age(people, name) = fail("da fare")
+
+fn age_or_unknown(people, name) = fail("da fare")
+
+fn first_long_word(words) = fail("da fare")
+
+fn add_options(a, b) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+people = [{name: "Ada", age: 36}, {name: "Alan", age: 41}]
+
+test "divisione sicura"
+  assert_eq(safe_divide(10, 4), Some(2.5))
+  assert_eq(safe_divide(1, 0), None)
+end
+
+test "trova l'età"
+  assert_eq(find_age(people, "Alan"), Some(41))
+  assert_eq(find_age(people, "Grace"), None)
+end
+
+test "età o sconosciuta"
+  assert_eq(age_or_unknown(people, "Ada"), "36")
+  assert_eq(age_or_unknown(people, "Grace"), "sconosciuta")
+end
+
+test "prima parola lunga"
+  assert_eq(first_long_word(["a", "functional", "language"]), Some("functional"))
+  assert_eq(first_long_word(["short", "words"]), None)
+end
+
+test "somma di Option"
+  assert_eq(add_options(Some(2), Some(3)), Some(5))
+  assert_eq(add_options(Some(2), None), None)
+  assert_eq(add_options(None, None), None)
+end
+"#,
         ),
-        ("27-result", ""),
+        ("27-result", "27-result"),
         (
             r#"# Exercise 27 · An operation that may fail: Result  ★★☆
 #
@@ -6429,9 +7747,71 @@ test "check code"
   assert_eq(check_code("functional"), Err("no digit"))
 end
 "#,
-            "",
+            r#"# Esercizio 27 · Un'operazione che può fallire: Result  ★★☆
+#
+# Rythme non ha eccezioni. Una funzione che può fallire restituisce un
+# Result: `Ok(value)` quando ha funzionato, `Err(message)` altrimenti. Chi
+# chiama deve guardare i due casi: nessun errore può essere dimenticato.
+#   parse_int("42")       # Ok(42)
+#   parse_int("forty")    # Err("\"forty\" non è un numero intero")
+#
+# Consegna
+#   - `checked_divide(a, b)`: `Ok(a / b)`, o `Err("divisione per zero")`;
+#   - `parse_age(text)`: l'età scritta nel testo, come Result:
+#     `Err("non è un numero")` se il testo non è un numero intero,
+#     `Err("un'età non può essere negativa")` sotto 0,
+#     `Err("troppo vecchio")` sopra 150, e `Ok(age)` altrimenti;
+#   - `describe(result)`: "ok: 42" per `Ok(42)` e "errore: troppo vecchio"
+#     per `Err("troppo vecchio")`;
+#   - `check_code(code)`: `Ok(code)` se ha almeno 8 caratteri e contiene
+#     una cifra; altrimenti un Err con il primo problema trovato:
+#     "troppo corto" o "nessuna cifra".
+#
+# Suggerimenti
+#   1. `match parse_int(text)` con i casi `Err(_)`, `Ok(n) if n < 0`,
+#      `Ok(n) if n > 150` e `Ok(n)`.
+#   2. `any(chars(code), is_digit)` dice se c'è una cifra.
+#
+# Controlla il tuo lavoro:  rythme exercise check 27-result.ry
+#                       o:  rythme test 27-result.ry
+
+fn checked_divide(a, b) = fail("da fare")
+
+fn parse_age(text) = fail("da fare")
+
+fn describe(result) = fail("da fare")
+
+fn check_code(code) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "divisione controllata"
+  assert_eq(checked_divide(9, 3), Ok(3))
+  assert_eq(checked_divide(1, 0), Err("divisione per zero"))
+end
+
+test "leggi l'età"
+  assert_eq(parse_age("36"), Ok(36))
+  assert_eq(parse_age(" 7 "), Ok(7))
+  assert_eq(parse_age("sette"), Err("non è un numero"))
+  assert_eq(parse_age("-1"), Err("un'età non può essere negativa"))
+  assert_eq(parse_age("200"), Err("troppo vecchio"))
+end
+
+test "descrivi"
+  assert_eq(describe(Ok(42)), "ok: 42")
+  assert_eq(describe(Err("troppo vecchio")), "errore: troppo vecchio")
+  assert_eq(describe(parse_age("-5")), "errore: un'età non può essere negativa")
+end
+
+test "controlla il codice"
+  assert_eq(check_code("rythme2024"), Ok("rythme2024"))
+  assert_eq(check_code("abc1"), Err("troppo corto"))
+  assert_eq(check_code("funzionale"), Err("nessuna cifra"))
+end
+"#,
         ),
-        ("28-question-mark", ""),
+        ("28-question-mark", "28-question-mark"),
         (
             r#"# Exercise 28 · Passing errors on with `?`  ★★★
 #
@@ -6501,9 +7881,76 @@ test "ratio of texts"
   assert(is_err(ratio_of_texts("nine", "0")), "nine is not a number")
 end
 "#,
-            "",
+            r#"# Esercizio 28 · Passare gli errori con `?`  ★★★
+#
+# Scrivere un `match` dopo ogni passo che può fallire è lungo. `?` dopo un
+# Result (o un Option) estrae il valore da `Ok(...)` (o `Some(...)`), oppure
+# ferma subito la funzione e restituisce l'`Err(...)` (o `None`):
+#   fn double_text(t)
+#     n = parse_int(t)?          # si ferma qui se t non è un numero
+#     Ok(n * 2)
+#   end
+#
+# Consegna
+#   - `add_texts(a, b)`: la somma dei due numeri scritti in a e b, come
+#     `Ok(sum)`, o l'errore di `parse_int`;
+#   - `parse_point(text)`: per "3,4", `Ok({x: 3, y: 4})`; l'errore
+#     `Err("atteso x,y")` se il testo non ha esattamente due parti separate
+#     da una virgola, o l'errore di `parse_int` per una parte che non è un
+#     numero;
+#   - `sum_of_texts(texts)`: la somma dei numeri scritti in una lista di
+#     testi, o il primo errore;
+#   - `ratio_of_texts(a, b)`: a / b per due numeri scritti in testi, o il
+#     primo errore, con `Err("divisione per zero")` quando b è 0.
+#
+# Suggerimenti
+#   1. `Ok(parse_int(a)? + parse_int(b)?)`
+#   2. `match split(text, ",")` con i casi `[x, y]` e `_`.
+#   3. Per una lista, usa la ricorsione: `sum_of_texts([])` è `Ok(0)`; per
+#      `[t, ..rest]`, prendi il numero di t e la somma di rest, entrambi con
+#      `?`.
+#   4. `?` si può usare su qualsiasi funzione che dà un Result, anche sulle
+#      tue.
+#
+# Controlla il tuo lavoro:  rythme exercise check 28-question-mark.ry
+#                       o:  rythme test 28-question-mark.ry
+
+fn add_texts(a, b) = fail("da fare")
+
+fn parse_point(text) = fail("da fare")
+
+fn sum_of_texts(texts) = fail("da fare")
+
+fn ratio_of_texts(a, b) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+test "somma di testi"
+  assert_eq(add_texts("2", "40"), Ok(42))
+  assert(is_err(add_texts("2", "quaranta")), "quaranta non è un numero")
+end
+
+test "leggi un punto"
+  assert_eq(parse_point("3,4"), Ok({x: 3, y: 4}))
+  assert_eq(parse_point("3"), Err("atteso x,y"))
+  assert_eq(parse_point("1,2,3"), Err("atteso x,y"))
+  assert(is_err(parse_point("3,quattro")), "quattro non è un numero")
+end
+
+test "somma dei testi"
+  assert_eq(sum_of_texts(["1", "2", "3"]), Ok(6))
+  assert_eq(sum_of_texts([]), Ok(0))
+  assert_eq(sum_of_texts(["1", "x", "y"]), parse_int("x"))
+end
+
+test "rapporto di testi"
+  assert_eq(ratio_of_texts("9", "2"), Ok(4.5))
+  assert_eq(ratio_of_texts("9", "0"), Err("divisione per zero"))
+  assert(is_err(ratio_of_texts("nove", "0")), "nove non è un numero")
+end
+"#,
         ),
-        ("29-word-counts", ""),
+        ("29-word-counts", "29-word-counts"),
         (
             r#"# Exercise 29 · A small project: counting words  ★★★
 #
@@ -6561,9 +8008,64 @@ end
 
 test "report" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")
 "#,
-            "",
+            r#"# Esercizio 29 · Un piccolo progetto: contare le parole  ★★★
+#
+# Tutto insieme: testi, liste, record, pipeline e Option, per un programma
+# che analizza un testo.
+#
+# Consegna
+#   - `words_of(text)`: le parole del testo, in minuscolo, senza la
+#     punteggiatura `.`, `,`, `!` e `?`;
+#   - `frequencies(text)`: una lista di coppie `[word, count]`, dalla parola
+#     più frequente alla meno frequente, e in ordine alfabetico per le
+#     parole che compaiono lo stesso numero di volte;
+#   - `most_frequent(text)`: la parola più frequente, come Option (`None`
+#     per un testo senza parole);
+#   - `report(text, n)`: le n parole più frequenti, una per riga, ognuna
+#     come "parola: conteggio".
+#
+# Suggerimenti
+#   1. `replace` quattro volte (o `fold` sulla lista [".", ",", "!", "?"]),
+#      poi `lower` e `split`.
+#   2. `group_by(words, fn(w) = w)` dà un record `{word: [word, word]}`,
+#      e `entries(record)` la lista delle sue coppie `[name, value]`.
+#   3. `sort_by` è stabile: ordina prima per parola, poi per conteggio (il
+#      più grande per primo, con `fn([_, n]) = -n`).
+#   4. `first(list)` dà un Option, e `map(option, f)` cambia il valore
+#      dentro.
+#   5. `join(lines, "\n")` mette ogni elemento su una riga a sé.
+#
+# Controlla il tuo lavoro:  rythme exercise check 29-word-counts.ry
+#                       o:  rythme test 29-word-counts.ry
+
+fn words_of(text) = fail("da fare")
+
+fn frequencies(text) = fail("da fare")
+
+fn most_frequent(text) = fail("da fare")
+
+fn report(text, n) = fail("da fare")
+
+# --- Test (non cambiarli) ---
+
+poem = "The cat sat. The dog sat! Did the cat see the dog?"
+
+test "parole" = assert_eq(words_of("Hello, World! Hello?"), ["hello", "world", "hello"])
+
+test "frequenze"
+  assert_eq(frequencies("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
+  assert_eq(frequencies(poem) |> take(3), [["the", 4], ["cat", 2], ["dog", 2]])
+end
+
+test "la più frequente"
+  assert_eq(most_frequent(poem), Some("the"))
+  assert_eq(most_frequent(" ... "), None)
+end
+
+test "resoconto" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")
+"#,
         ),
-        ("30-testing", ""),
+        ("30-testing", "30-testing"),
         (
             r#"# Exercise 30 · Tests find bugs  ★★★
 #
@@ -6624,34 +8126,92 @@ end
 
 # Your test:
 "#,
-            "",
+            r#"# Esercizio 30 · I test trovano i bug  ★★★
+#
+# Un test controlla un pezzo di codice: `test "nome" = assert_eq(actual,
+# expected)`. Quando fallisce, `rythme test` mostra i due valori: il bug è da
+# qualche parte tra di loro.
+#
+# Consegna
+#   Le funzioni qui sotto sono già scritte, ma ognuna ha un bug.
+#   1. Esegui i test e leggi cosa fallisce.
+#   2. Correggi le funzioni (non i test!) finché ogni test passa.
+#   3. Poi scrivi un tuo test per `clamp`, alla fine del file: cosa
+#      dovrebbe dare `clamp(5, 5, 5)`?
+#
+#   - `clamp(x, low, high)`: x riportato tra low e high;
+#   - `median(list)`: il valore centrale della lista ordinata, o la media dei
+#     due valori centrali quando la lista ha una lunghezza pari;
+#   - `count_words(text)`: quante parole ha il testo.
+#
+# Suggerimenti
+#   1. Leggi le righe `ottenuto:` e `atteso:` del primo fallimento, e
+#      calcola a mano cosa fa la funzione con questi argomenti.
+#   2. `debug(value)` mostra un valore mentre il programma gira, e lo
+#      restituisce invariato: `debug(sorted)`.
+#   3. Cosa fa `split` senza separatore con più spazi?
+#
+# Controlla il tuo lavoro:  rythme exercise check 30-testing.ry
+#                       o:  rythme test 30-testing.ry
+
+fn clamp(x, low, high) = max(high, min(x, low))
+
+fn median(list)
+  middle = len(list) // 2
+  if is_even(len(list)) then (list[middle - 1] + list[middle]) / 2 else list[middle]
+end
+
+fn count_words(text) = len(split(text, " "))
+
+# --- Test (non cambiarli) ---
+
+test "clamp"
+  assert_eq(clamp(15, 0, 10), 10)
+  assert_eq(clamp(-5, 0, 10), 0)
+  assert_eq(clamp(5, 0, 10), 5)
+end
+
+test "mediana di un numero dispari di valori"
+  assert_eq(median([1, 2, 3]), 2)
+  assert_eq(median([3, 1, 2]), 2)
+end
+
+test "mediana di un numero pari di valori" = assert_eq(median([4, 1, 3, 2]), 2.5)
+
+test "conta le parole"
+  assert_eq(count_words("one two three"), 3)
+  assert_eq(count_words("  one   two "), 2)
+end
+
+# Il tuo test:
+"#,
         ),
         // ----- CSV and seeded random (src/builtins/csv.rs, src/builtins.rs, src/main.rs, src/help.rs)
         // src/builtins/csv.rs
-        ("line {line}, column {column}: the quote that starts this field is never closed (a quote inside a field is written twice: \"\")", ""),
-        ("line {line}, column {column}: a quote in the middle of a field: put the whole field between quotes, and write each quote inside it twice (\"5\"\" screen\")", ""),
-        ("line {line}, column {column}: after the quote that closes a field comes {sep} or the end of the line, not {c}", ""),
-        ("line {line}: the header names the column \"{name}\" twice", ""),
-        ("line {line}: {got} field(s), but the header has {wanted} column(s)", ""),
-        ("line {line}: this table has too many rows or fields (more than {MAX_LIST})", ""),
-        ("a tab", ""),
-        ("a space", ""),
-        ("`{f}` cannot use {c} as separator: it has another meaning in CSV", ""),
-        ("the separator of `{f}` is one character, not \"{s}\"", ""),
-        ("the usual separators: \",\" (by default), \";\" (French spreadsheets), \"\\t\" (a tab)", ""),
-        ("`csv_format`: the field {column} of row {row} must be a text, a number or a Bool, but it is {got}", ""),
-        ("turn it into a text first, with `text(x)` or `unwrap_or(x, \"\")`", ""),
-        ("`csv_format`: record {number} has the fields {{{these}}}, but the first one has {{{wanted}}}: every record must have the same fields", ""),
-        ("a record, like the first row", ""),
-        ("a list of fields", ""),
-        ("`csv_format`: row {number} must be {wanted}, but it is {got}", ""),
-        ("`csv_format` takes a list of rows: lists of fields ([[\"name\", \"age\"], [\"Ada\", 36]]) or records ([{{name: \"Ada\", age: 36}}])", ""),
+        ("line {line}, column {column}: the quote that starts this field is never closed (a quote inside a field is written twice: \"\")", "riga {line}, colonna {column}: le virgolette che aprono questo campo non vengono mai chiuse (le virgolette dentro un campo si scrivono due volte: \"\")"),
+        ("line {line}, column {column}: a quote in the middle of a field: put the whole field between quotes, and write each quote inside it twice (\"5\"\" screen\")", "riga {line}, colonna {column}: virgolette in mezzo a un campo: metti tutto il campo tra virgolette, e scrivi due volte ogni virgoletta al suo interno (\"5\"\" schermo\")"),
+        ("line {line}, column {column}: after the quote that closes a field comes {sep} or the end of the line, not {c}", "riga {line}, colonna {column}: dopo le virgolette che chiudono un campo viene {sep} o la fine della riga, non {c}"),
+        ("line {line}: the header names the column \"{name}\" twice", "riga {line}: l'intestazione nomina due volte la colonna \"{name}\""),
+        ("line {line}: {got} field(s), but the header has {wanted} column(s)", "riga {line}: {got} campo/i, ma l'intestazione ha {wanted} colonna/e"),
+        ("line {line}: this table has too many rows or fields (more than {MAX_LIST})", "riga {line}: questa tabella ha troppe righe o troppi campi (più di {MAX_LIST})"),
+        ("a tab", "una tabulazione"),
+        ("a space", "uno spazio"),
+        ("`{f}` cannot use {c} as separator: it has another meaning in CSV", "`{f}` non può usare {c} come separatore: in CSV ha un altro significato"),
+        ("the separator of `{f}` is one character, not \"{s}\"", "il separatore di `{f}` è un solo carattere, non \"{s}\""),
+        ("the usual separators: \",\" (by default), \";\" (French spreadsheets), \"\\t\" (a tab)", "i separatori abituali: \",\" (predefinito), \";\" (fogli di calcolo francesi), \"\\t\" (una tabulazione)"),
+        ("`csv_format`: the field {column} of row {row} must be a text, a number or a Bool, but it is {got}", "`csv_format`: il campo {column} della riga {row} deve essere un testo, un numero o un Bool, ma è {got}"),
+        ("turn it into a text first, with `text(x)` or `unwrap_or(x, \"\")`", "trasformalo prima in testo, con `text(x)` o `unwrap_or(x, \"\")`"),
+        ("`csv_format`: record {number} has the fields {{{these}}}, but the first one has {{{wanted}}}: every record must have the same fields", "`csv_format`: il record {number} ha i campi {{{these}}}, ma il primo ha {{{wanted}}}: ogni record deve avere gli stessi campi"),
+        ("a record, like the first row", "un record, come la prima riga"),
+        ("a list of fields", "una lista di campi"),
+        ("`csv_format`: row {number} must be {wanted}, but it is {got}", "`csv_format`: la riga {number} deve essere {wanted}, ma è {got}"),
+        ("`csv_format` takes a list of rows: lists of fields ([[\"name\", \"age\"], [\"Ada\", 36]]) or records ([{{name: \"Ada\", age: 36}}])", "`csv_format` prende una lista di righe: liste di campi ([[\"name\", \"age\"], [\"Ada\", 36]]) o record ([{{name: \"Ada\", age: 36}}])"),
         // src/main.rs
-        ("the seed must be a whole number, like `rythme run --seed 42 game.ry`, not `{v}`", ""),
-        ("`--seed` needs a whole number, like `rythme run --seed 42 game.ry`", ""),
+        ("the seed must be a whole number, like `rythme run --seed 42 game.ry`, not `{v}`", "il seme deve essere un numero intero, come `rythme run --seed 42 game.ry`, non `{v}`"),
+        ("`--seed` needs a whole number, like `rythme run --seed 42 game.ry`", "`--seed` richiede un numero intero, come `rythme run --seed 42 game.ry`"),
         // src/builtins.rs
-        ("Makes the draws of `random` and `shuffle` that follow the same on every run: the same seed (a whole number) gives the same draws, with the same version of Rythme. For tests and classes; `rythme run --seed N file.ry` does the same from the command line.", ""),
-        ("Reads a CSV table (a spreadsheet saved as text): `Ok(list of rows)`, each row a list of texts, or `Err(message)` saying at which line and column the text is not valid CSV. A field between quotes may hold separators, line breaks and quotes (written twice). The separator is \",\" unless given: \";\" for French spreadsheets, \"\\t\" for tabs. See `rythme help csv`.", ""),
+        ("Makes the draws of `random` and `shuffle` that follow the same on every run: the same seed (a whole number) gives the same draws, with the same version of Rythme. For tests and classes; `rythme run --seed N file.ry` does the same from the command line.", "Rende uguali a ogni esecuzione le estrazioni di `random` e `shuffle` che seguono: lo stesso seme (un numero intero) dà le stesse estrazioni, con la stessa versione di Rythme. Per i test e le lezioni; `rythme run --seed N file.ry` fa lo stesso dalla riga di comando."),
+        ("Reads a CSV table (a spreadsheet saved as text): `Ok(list of rows)`, each row a list of texts, or `Err(message)` saying at which line and column the text is not valid CSV. A field between quotes may hold separators, line breaks and quotes (written twice). The separator is \",\" unless given: \";\" for French spreadsheets, \"\\t\" for tabs. See `rythme help csv`.", "Legge una tabella CSV (un foglio di calcolo salvato come testo): `Ok(lista di righe)`, ogni riga una lista di testi, o `Err(messaggio)` che dice a quale riga e colonna il testo non è CSV valido. Un campo tra virgolette può contenere separatori, a capo e virgolette (scritte due volte). Il separatore è \",\" se non indicato: \";\" per i fogli di calcolo francesi, \"\\t\" per le tabulazioni. Vedi `rythme help csv`."),
         ("Reads a CSV table whose first line names the columns: `Ok(list of records)`, one record for each other line, with one field for each column, in their order, holding a text. `Err(message)` when the text is not valid CSV, when a line does not have as many fields as the header, or when two columns have the same name. To get numbers, use `parse_int` or `parse_float` on the fields.", ""),
         ("Writes rows as a CSV text, each one on its line, ended by a line break. The rows are lists of fields, or records: then a first line names their fields. A field is a text, a number or a Bool, put between quotes only when it needs them (a separator, a quote or a line break inside). The separator is \",\" unless given.", ""),
         // src/help.rs

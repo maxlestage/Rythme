@@ -1,0 +1,45 @@
+# Esercizio 12 · Costruire liste  ★★☆
+# Soluzione di riferimento. Prova a fare l'esercizio prima di leggerla!
+
+fn countdown(0) = [0]
+fn countdown(n) = [n, ..countdown(n - 1)]
+
+fn repeat_value(_, 0) = []
+fn repeat_value(x, n) = [x, ..repeat_value(x, n - 1)]
+
+fn double_all([]) = []
+fn double_all([x, ..rest]) = [x * 2, ..double_all(rest)]
+
+fn reversed_onto([], done) = done
+fn reversed_onto([x, ..rest], done) = reversed_onto(rest, [x, ..done])
+
+fn reversed(list) = reversed_onto(list, [])
+
+# --- Test (non cambiarli) ---
+
+test "conto alla rovescia"
+  assert_eq(countdown(0), [0])
+  assert_eq(countdown(3), [3, 2, 1, 0])
+end
+
+test "ripeti il valore"
+  assert_eq(repeat_value("a", 3), ["a", "a", "a"])
+  assert_eq(repeat_value(1, 0), [])
+end
+
+test "raddoppia tutto"
+  assert_eq(double_all([1, 2, 3]), [2, 4, 6])
+  assert_eq(double_all([]), [])
+end
+
+test "rovesciata"
+  assert_eq(reversed([1, 2, 3]), [3, 2, 1])
+  assert_eq(reversed([]), [])
+  assert_eq(reversed(["x"]), ["x"])
+end
+
+test "la lista originale non cambia"
+  numbers = [1, 2, 3]
+  reversed(numbers)
+  assert_eq(numbers, [1, 2, 3])
+end

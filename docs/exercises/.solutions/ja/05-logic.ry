@@ -1,0 +1,40 @@
+# 練習問題 05 · 真か偽か  ★☆☆
+# 参考解答。読む前に、まず自分で練習問題に挑戦してください！
+
+fn is_multiple(n, d) = n % d == 0
+
+fn is_between(x, low, high) = x >= low and x <= high
+
+fn is_leap(year) = is_multiple(year, 4) and (not is_multiple(year, 100) or is_multiple(year, 400))
+
+fn exclusive_or(a, b) = a != b
+
+# --- テスト（変更しないでください）---
+
+test "倍数"
+  assert(is_multiple(12, 3), "12 は 3 の倍数")
+  assert(not is_multiple(12, 5), "12 は 5 の倍数ではない")
+  assert(is_multiple(0, 7), "0 はどの数の倍数でもある")
+end
+
+test "範囲内"
+  assert(is_between(5, 1, 10), "5 は 1 と 10 の間")
+  assert(is_between(1, 1, 10), "両端を含む")
+  assert(is_between(10, 1, 10), "両端を含む")
+  assert(not is_between(11, 1, 10), "11 は大きすぎる")
+  assert(not is_between(0, 1, 10), "0 は小さすぎる")
+end
+
+test "うるう年"
+  assert_eq(is_leap(2024), true)
+  assert_eq(is_leap(2023), false)
+  assert_eq(is_leap(1900), false)
+  assert_eq(is_leap(2000), true)
+end
+
+test "排他的論理和"
+  assert_eq(exclusive_or(true, false), true)
+  assert_eq(exclusive_or(false, true), true)
+  assert_eq(exclusive_or(true, true), false)
+  assert_eq(exclusive_or(false, false), false)
+end

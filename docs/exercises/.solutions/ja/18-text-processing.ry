@@ -1,0 +1,27 @@
+# 練習問題 18 · テキストを扱う  ★★☆
+# 参考解答。読む前に、まず自分で練習問題に挑戦してください！
+
+fn is_palindrome(text)
+  letters = text |> lower |> replace(" ", "")
+  letters == reverse(letters)
+end
+
+fn count_vowels(text) = text |> lower |> chars |> count(fn(c) = contains("aeiouy", c))
+
+fn title_case(text) = text |> split |> map(fn(w) = capitalize(lower(w))) |> join(" ")
+
+# --- テスト（変更しないでください）---
+
+test "回文"
+  assert_eq(is_palindrome("kayak"), true)
+  assert_eq(is_palindrome("Never odd or even"), true)
+  assert_eq(is_palindrome("rythme"), false)
+end
+
+test "母音"
+  assert_eq(count_vowels("Rythme"), 2)
+  assert_eq(count_vowels("AEIOU"), 5)
+  assert_eq(count_vowels("xkcd"), 0)
+end
+
+test "単語の頭を大文字に" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")
