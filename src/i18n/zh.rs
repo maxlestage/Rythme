@@ -10134,5 +10134,32 @@ see `rythme completions --help`"#, r#"{what} 请写 bash、zsh、fish、powershe
         ("See also", "另见"),
         ("no .ry file in `{a}`", "`{a}` 中没有 .ry 文件"),
         ("the standard input cannot be read: {e}", "无法读取标准输入：{e}"),
+        // src/cli.rs: the commands of the package index
+        ("search the package index", "在包索引中搜索"),
+        ("what the index says of a package: its versions, repository and license", "索引中关于某个包的信息：版本、仓库和许可证"),
+        ("add a package of the index to the project, then install it", "把索引中的包加入项目，然后安装"),
+        ("take the newest versions that the ranges of rythme.toml allow", "采用 rythme.toml 中的版本范围所允许的最新版本"),
+        ("check a package and print its entry for the index (sends nothing)", "检查一个包并打印它在索引中的条目（不发送任何东西）"),
+        (r#"  --update        download the newest copy of the index first
+  --format json   the packages found as JSON
+  Without words, every package of the index."#, r#"  --update        先下载索引的最新副本
+  --format json   以 JSON 输出找到的包
+  不给关键词时，列出索引中的所有包。"#),
+        (r#"  --update        download the newest copy of the index first
+  --format json   the entry of the package as JSON"#, r#"  --update        先下载索引的最新副本
+  --format json   以 JSON 输出包的条目"#),
+        (r#"  NAME@RANGE      a range of versions, like mathlib@1.2; without a range,
+                  the newest version
+  rythme.toml gets the range, rythme.lock the exact commit and its checksum."#, r#"  名称@范围       版本范围，例如 mathlib@1.2；不写范围时
+                  取最新版本
+  rythme.toml 记下范围，rythme.lock 记下确切的提交及其校验和。"#),
+        (r#"  Without names, every dependency. rythme.toml does not change;
+  rythme.lock gets the new versions."#, r#"  不给名称时，更新所有依赖。rythme.toml 不变；
+  rythme.lock 记下新版本。"#),
+        (r#"  Checks rythme.toml, the tag of the version (like v1.2.0), rythme check
+  and rythme test, then prints the entry and the steps of a pull request.
+  --verify FILE...  the index's own check of its entries (packages/NAME.toml)"#, r#"  检查 rythme.toml、版本的标签（例如 v1.2.0）、rythme check
+  和 rythme test，然后打印条目以及提交 pull request 的步骤。
+  --verify 文件...  索引自己对条目的检查（packages/名称.toml）"#),
     ],
 }

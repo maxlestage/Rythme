@@ -118,6 +118,46 @@ const COMMANDS: &[Command] = &[
         topic: Some("projects"),
     },
     Command {
+        name: "search",
+        aliases: &["chercher", "rechercher"],
+        synopsis: "rythme search [--update] [--format json] [WORDS...]",
+        options: &["--update", "--format"],
+        usage: Usage::Anywhere,
+        topic: Some("packages"),
+    },
+    Command {
+        name: "info",
+        aliases: &["infos"],
+        synopsis: "rythme info [--update] [--format json] NAME",
+        options: &["--update", "--format"],
+        usage: Usage::Anywhere,
+        topic: Some("packages"),
+    },
+    Command {
+        name: "add",
+        aliases: &["ajouter"],
+        synopsis: "rythme add NAME[@RANGE]...",
+        options: &[],
+        usage: Usage::Anywhere,
+        topic: Some("packages"),
+    },
+    Command {
+        name: "update",
+        aliases: &["mettre-a-jour", "mettre-à-jour"],
+        synopsis: "rythme update [NAME...]",
+        options: &[],
+        usage: Usage::Anywhere,
+        topic: Some("packages"),
+    },
+    Command {
+        name: "publish",
+        aliases: &["publier"],
+        synopsis: "rythme publish [--verify FILE...]",
+        options: &["--verify"],
+        usage: Usage::Anywhere,
+        topic: Some("packages"),
+    },
+    Command {
         name: "learn",
         aliases: &["apprendre", "tutorial", "tutoriel"],
         synopsis: "rythme learn",
@@ -199,6 +239,22 @@ fn about(name: &str) -> String {
         "exercise" => t!("exercises checked automatically", "des exercices vérifiés automatiquement"),
         "new" => t!("create a project (rythme.toml, src/, tests/)", "créer un projet (rythme.toml, src/, tests/)"),
         "install" => t!("download the dependencies of the project", "télécharger les dépendances du projet"),
+        "search" => t!("search the package index", "chercher dans l'index des paquets"),
+        "info" => t!(
+            "what the index says of a package: its versions, repository and license",
+            "ce que l'index dit d'un paquet : ses versions, son dépôt et sa licence"
+        ),
+        "add" => {
+            t!("add a package of the index to the project, then install it", "ajouter un paquet de l'index au projet, puis l'installer")
+        }
+        "update" => t!(
+            "take the newest versions that the ranges of rythme.toml allow",
+            "prendre les versions les plus récentes que permettent les intervalles de rythme.toml"
+        ),
+        "publish" => t!(
+            "check a package and print its entry for the index (sends nothing)",
+            "vérifier un paquet et afficher son entrée pour l'index (n'envoie rien)"
+        ),
         "learn" => t!("guided tour of the language, step by step", "visite guidée du langage, pas à pas"),
         "help" => t!("help on a topic, a function or an error code", "de l'aide sur un sujet, une fonction ou un code d'erreur"),
         "explain" => t!("explain an error or warning code, like E003", "expliquer un code d'erreur ou d'avertissement, comme E003"),
@@ -255,6 +311,26 @@ fn details(name: &str) -> String {
         "exercise" => t!(
             "  list            the exercises, from the easiest\n  start NAME      write the file of an exercise, to complete\n  check FILE.ry   run its tests and give hints",
             "  list            les exercices, du plus facile au plus difficile\n  start NOM       écrire le fichier d'un exercice, à compléter\n  check FICHIER   lancer ses tests et donner des indices"
+        ),
+        "search" => t!(
+            "  --update        download the newest copy of the index first\n  --format json   the packages found as JSON\n  Without words, every package of the index.",
+            "  --update        télécharger d'abord la copie la plus récente de l'index\n  --format json   les paquets trouvés en JSON\n  Sans mots, tous les paquets de l'index."
+        ),
+        "info" => t!(
+            "  --update        download the newest copy of the index first\n  --format json   the entry of the package as JSON",
+            "  --update        télécharger d'abord la copie la plus récente de l'index\n  --format json   l'entrée du paquet en JSON"
+        ),
+        "add" => t!(
+            "  NAME@RANGE      a range of versions, like mathlib@1.2; without a range,\n                  the newest version\n  rythme.toml gets the range, rythme.lock the exact commit and its checksum.",
+            "  NOM@INTERVALLE  un intervalle de versions, comme mathlib@1.2 ; sans\n                  intervalle, la version la plus récente\n  rythme.toml reçoit l'intervalle, rythme.lock le commit exact et sa somme de contrôle."
+        ),
+        "update" => t!(
+            "  Without names, every dependency. rythme.toml does not change;\n  rythme.lock gets the new versions.",
+            "  Sans noms, toutes les dépendances. rythme.toml ne change pas ;\n  rythme.lock reçoit les nouvelles versions."
+        ),
+        "publish" => t!(
+            "  Checks rythme.toml, the tag of the version (like v1.2.0), rythme check\n  and rythme test, then prints the entry and the steps of a pull request.\n  --verify FILE...  the index's own check of its entries (packages/NAME.toml)",
+            "  Vérifie rythme.toml, l'étiquette de la version (comme v1.2.0), rythme check\n  et rythme test, puis affiche l'entrée et les étapes d'une pull request.\n  --verify FICHIER...  la vérification des entrées par l'index lui-même (packages/NOM.toml)"
         ),
         "help" => t!(
             "  `rythme help` lists the topics, `rythme help builtins` every function,\n  `rythme help llms` the whole language in one text (for AI assistants).",
