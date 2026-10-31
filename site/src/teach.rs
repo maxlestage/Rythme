@@ -1,6 +1,7 @@
-//! The guide for teachers: `docs/teaching.md` and `docs/enseigner.md`, built into the
-//! site and rendered to HTML, with the links between files turned into links of the
-//! site. The languages without a guide of their own show the English one.
+//! The guide for teachers: `docs/teaching.md`, `docs/enseigner.md` and its translations
+//! (`docs/teaching.es.md`...), built into the site and rendered to HTML, with the links
+//! between files turned into links of the site. The languages without a guide of their
+//! own show the English one.
 
 use paquets::prelude::Node;
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
@@ -12,20 +13,26 @@ use crate::routes::{Page, Route};
 
 const REPO: &str = "https://github.com/maxlestage/Rythme";
 
+/// Each guide: its language, its file in `docs/` and its text. English first: the
+/// guide of the languages that have none.
+const GUIDES: [(Lang, &str, &str); 6] = [
+    (Lang::En, "teaching.md", include_str!("../../docs/teaching.md")),
+    (Lang::Fr, "enseigner.md", include_str!("../../docs/enseigner.md")),
+    (Lang::Es, "teaching.es.md", include_str!("../../docs/teaching.es.md")),
+    (Lang::De, "teaching.de.md", include_str!("../../docs/teaching.de.md")),
+    (Lang::Pt, "teaching.pt.md", include_str!("../../docs/teaching.pt.md")),
+    (Lang::Zh, "teaching.zh.md", include_str!("../../docs/teaching.zh.md")),
+];
+
 /// The language of the guide shown on the page of `lang`: its own when it has one,
 /// else English (the page then says so, `Texts::teach_note`).
 pub fn guide_lang(lang: Lang) -> Lang {
-    match lang {
-        Lang::Fr => Lang::Fr,
-        _ => Lang::En,
-    }
+    if GUIDES.iter().any(|(l, _, _)| *l == lang) { lang } else { Lang::En }
 }
 
 pub fn source(lang: Lang) -> &'static str {
-    match guide_lang(lang) {
-        Lang::Fr => include_str!("../../docs/enseigner.md"),
-        _ => include_str!("../../docs/teaching.md"),
-    }
+    let lang = guide_lang(lang);
+    GUIDES.iter().find(|(l, _, _)| *l == lang).map_or(GUIDES[0].2, |(_, _, text)| text)
 }
 
 pub struct Rendered {
@@ -36,20 +43,26 @@ pub struct Rendered {
     pub html: String,
 }
 
-/// `## Pourquoi il convient` → `pourquoi-il-convient`.
+/// `## Pourquoi il convient` → `pourquoi-il-convient`. Accented Latin letters lose
+/// their accent; other letters, such as Chinese ones, stay as they are.
 pub fn slug(text: &str) -> String {
     let mut out = String::new();
     for c in text.chars().flat_map(char::to_lowercase) {
         let c = match c {
-            'à' | 'â' | 'ä' => 'a',
+            'à' | 'â' | 'ä' | 'á' | 'ã' => 'a',
             'é' | 'è' | 'ê' | 'ë' => 'e',
-            'î' | 'ï' => 'i',
-            'ô' | 'ö' => 'o',
-            'ù' | 'û' | 'ü' => 'u',
+            'î' | 'ï' | 'í' => 'i',
+            'ô' | 'ö' | 'ó' | 'õ' => 'o',
+            'ù' | 'û' | 'ü' | 'ú' => 'u',
             'ç' => 'c',
+            'ñ' => 'n',
+            'ß' => {
+                out.push_str("ss");
+                continue;
+            }
             c => c,
         };
-        if c.is_ascii_alphanumeric() {
+        if c.is_alphanumeric() {
             out.push(c);
         } else if !out.is_empty() && !out.ends_with('-') {
             out.push('-');
@@ -69,9 +82,10 @@ pub fn rewrite_link(dest: &str, lang: Lang) -> (String, bool) {
     {
         return (format!("{}#{name}", Route::new(lang, Page::Examples).href()), false);
     }
+    if let Some((guide, _, _)) = GUIDES.iter().find(|(_, name, _)| *name == file) {
+        return (Route::new(*guide, Page::Teach).href(), false);
+    }
     match file {
-        "teaching.md" => (Route::new(Lang::En, Page::Teach).href(), false),
-        "enseigner.md" => (Route::new(Lang::Fr, Page::Teach).href(), false),
         // A file of the repository opens on GitHub (`tree/` for a folder).
         _ if file.contains('.') => (format!("{REPO}/blob/master/{file}"), true),
         _ => (format!("{REPO}/tree/master/{file}"), true),
@@ -244,6 +258,10 @@ mod tests {
             // Each cell of a table carries the title of its column, for phones.
             assert!(r.html.contains(r##"<td data-label="#">"##), "{lang:?}");
             assert!(!r.html.contains("<td>"), "{lang:?}");
+            // No cell lost: a `|` inside a cell is written `\|`, else it starts another
+            // cell and the last one (the example) disappears.
+            let examples = source(lang).matches("](../examples/").count();
+            assert_eq!(r.html.matches("/examples/#").count(), examples, "{lang:?}");
             // Code wraps line by line; Rythme is colored.
             assert!(r.html.contains(r#"<pre class="code-block"><code translate="no"><span class="line">"#), "{lang:?}");
             assert!(r.html.contains(r#"<span class="t-kw">"#), "{lang:?}");
@@ -268,5 +286,26 @@ mod tests {
         assert_eq!(rewrite_link("teaching.md", Lang::Fr).0, "/en/teach/");
         assert_eq!(rewrite_link("../editors/vscode", Lang::En), (format!("{REPO}/tree/master/editors/vscode"), true));
         assert_eq!(slug("Pourquoi il convient à un cours"), "pourquoi-il-convient-a-un-cours");
+        assert_eq!(slug("Ejercicios con corrección automática"), "ejercicios-con-correccion-automatica");
+        assert_eq!(slug("Übungen für größere Klassen"), "ubungen-fur-grossere-klassen");
+        assert_eq!(slug("用 --format json 评分"), "用-format-json-评分");
+        // The guides link each other: each link opens the page of the guide's language.
+        for (lang, file, text) in GUIDES {
+            assert_eq!(rewrite_link(file, Lang::En), (Route::new(lang, Page::Teach).href(), false));
+            for (other, other_file, _) in GUIDES {
+                assert_eq!(text.contains(&format!("]({other_file})")), other != lang, "{file} → {other_file}");
+            }
+        }
+    }
+
+    #[test]
+    fn each_guide_is_in_its_language() {
+        let english = render(Lang::En);
+        for lang in Lang::ALL {
+            let r = render(lang);
+            // A guide of its own has its own title, and every guide has the same sections.
+            assert_eq!(r.title != english.title, guide_lang(lang) == lang && lang != Lang::En, "{lang:?}");
+            assert_eq!(r.sections.len(), english.sections.len(), "{lang:?}");
+        }
     }
 }
