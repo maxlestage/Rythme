@@ -32,6 +32,7 @@ const STEPS: u64 = 3000;
 
 // ----- random numbers ----------------------------------------------------
 
+#[derive(Clone)]
 struct Rng(u64);
 
 impl Rng {
@@ -597,30 +598,33 @@ const EDGES: &[&str] = &[
 /// When `hidden`, every value goes through `hide`, whose result the checker
 /// does not know: these mistakes are found while running.
 fn edge_expr(rng: &mut Rng, depth: usize, hidden: bool) -> String {
+    edge_expr_wrapped(rng, depth, &|v| if hidden { format!("hide({v})") } else { v.to_string() })
+}
+
+/// [`edge_expr`], with every value (leaf or call) given to `wrap`. The random
+/// draws do not depend on `wrap`: two wraps give the same expression.
+fn edge_expr_wrapped(rng: &mut Rng, depth: usize, wrap: &dyn Fn(&str) -> String) -> String {
     if depth == 0 || rng.chance(35) {
-        let edge = rng.pick(EDGES);
-        return if hidden { format!("hide({edge})") } else { edge.to_string() };
+        return wrap(rng.pick(EDGES));
     }
     let d = depth - 1;
     let value = match rng.below(10) {
         0..=5 => {
             let b = &builtins::BUILTINS[rng.below(builtins::BUILTINS.len())];
-            let n = if rng.chance(90) { b.min + rng.below(b.max.min(b.min + 2) - b.min + 1) } else { rng.below(4) };
-            let args: Vec<String> = (0..n).map(|_| edge_expr(rng, d, hidden)).collect();
+            // Functions that take any number of arguments (`zip`, `max`...) get more of them now and then.
+            let extra = if b.max == usize::MAX && rng.chance(30) { 2 + rng.below(4) } else { 2 };
+            let n = if rng.chance(90) { b.min + rng.below(b.max.min(b.min + extra) - b.min + 1) } else { rng.below(4) };
+            let args: Vec<String> = (0..n).map(|_| edge_expr_wrapped(rng, d, wrap)).collect();
             format!("{}({})", b.name, args.join(", "))
         }
         6 | 7 => {
             let op = rng.pick(&["+", "-", "*", "/", "//", "%", "**", "==", "!=", "<", "<=", ">", ">=", ".."]);
-            format!("({} {op} {})", edge_expr(rng, d, hidden), edge_expr(rng, d, hidden))
+            format!("({} {op} {})", edge_expr_wrapped(rng, d, wrap), edge_expr_wrapped(rng, d, wrap))
         }
-        8 => format!("-({})", edge_expr(rng, d, hidden)),
-        _ => format!("{}[{}]", edge_expr(rng, d, hidden), edge_expr(rng, d, hidden)),
+        8 => format!("-({})", edge_expr_wrapped(rng, d, wrap)),
+        _ => format!("{}[{}]", edge_expr_wrapped(rng, d, wrap), edge_expr_wrapped(rng, d, wrap)),
     };
-    if hidden {
-        format!("hide({value})")
-    } else {
-        value
-    }
+    wrap(&value)
 }
 
 /// Half of these programs are checked with their values in plain sight, the
@@ -1202,6 +1206,470 @@ fn inputs_found_by_fuzzing() {
         survives(src);
     }
 }
+
+// ----- the checker never rejects a program that runs ---------------------------
+
+/// The same expression twice: once with its values in plain sight, once with
+/// every value hidden from the checker by `hide`. When the hidden one runs
+/// without an error, the plain one is a correct program: the checker must not
+/// stop it (it has zero false positives). `Err` gives the program and the
+/// message of the checker.
+fn checker_agrees(seed: u64, i: u64) -> Result<(), String> {
+    let mut rng = Rng(seed ^ i.wrapping_mul(0x9E37_79B9_7F4A_7C15));
+    let depth = 1 + rng.below(3);
+    let (mut plain_rng, mut hidden_rng) = (rng.clone(), rng);
+    let program = |e: String| format!("{PREAMBLE}fn hide(v) = v\nprint({e})\n");
+    let plain = edge_expr_wrapped(&mut plain_rng, depth, &|v| format!("({v})"));
+    let hidden = program(edge_expr_wrapped(&mut hidden_rng, depth, &|v| format!("hide({v})")));
+    // The sandbox's stand-ins for files, clock, network... accept anything.
+    if sandbox().iter().any(|b| plain.contains(&format!("{}(", b.name))) {
+        return Ok(());
+    }
+    let plain = program(plain);
+    let errors = |src: &str| -> Option<(Vec<Item>, Vec<Diagnostic>)> {
+        let file = source::add("agree.ry", src);
+        let items = parser::parse(lexer::lex(src, file).ok()?).ok()?;
+        let diags = check::check(&items, &Knowledge::from_interp(&sandboxed_interp()), false);
+        Some((items, diags.into_iter().filter(|d| d.is_error()).collect()))
+    };
+    let Some((_, mut wrong)) = errors(&plain) else { return Ok(()) };
+    // A function given to a built-in function that it can never accept is
+    // reported, even when the list it would be called on may be empty (or
+    // the Option `None`, or the regex find nothing): it is a mistake waiting
+    // for data. Only a list known to be empty (`[]`) keeps the checker quiet.
+    wrong.retain(|d| !d.message.starts_with("the function given to") && !d.message.contains("argument(s) to this function"));
+    if wrong.is_empty() {
+        return Ok(());
+    }
+    let Some((items, hidden_wrong)) = errors(&hidden) else { return Ok(()) };
+    if !hidden_wrong.is_empty() {
+        return Ok(());
+    }
+    io::capture();
+    let ran = sandboxed_interp().exec_items(&items, Mode::Run);
+    let _ = io::take_captured();
+    match ran {
+        Ok(_) => Err(format!("{plain}\nruns, but the checker says: [{}] {}", wrong[0].code, wrong[0].message)),
+        Err(_) => Ok(()),
+    }
+}
+
+fn agreement(seed: u64, first: u64, cases: u64) -> Vec<String> {
+    std::thread::Builder::new()
+        .stack_size(1 << 30)
+        .spawn(move || {
+            rythme::interp::set_stack_budget(768 << 20);
+            lang::set(Lang::En);
+            let mut failures = Vec::new();
+            for i in first..first + cases {
+                match std::panic::catch_unwind(AssertUnwindSafe(|| checker_agrees(seed, i))) {
+                    Ok(Ok(())) => {}
+                    Ok(Err(e)) => failures.push(e),
+                    Err(_) => failures.push(format!("case {i}: panic")),
+                }
+            }
+            failures
+        })
+        .unwrap()
+        .join()
+        .unwrap()
+}
+
+#[test]
+fn the_checker_never_rejects_what_runs() {
+    let cases: u64 = std::env::var("RYTHME_AGREE_CASES").ok().and_then(|s| s.parse().ok()).unwrap_or(4000);
+    let threads = std::thread::available_parallelism().map_or(4, |n| n.get()).min(8) as u64;
+    let per = cases.div_ceil(threads);
+    let handles: Vec<_> = (0..threads).map(|t| std::thread::spawn(move || agreement(11, t * per, per))).collect();
+    let mut failures: Vec<String> = handles.into_iter().flat_map(|h| h.join().unwrap()).collect();
+    failures.sort_by_key(|f| f.len());
+    failures.dedup_by(|a, b| a.lines().last() == b.lines().last());
+    assert!(
+        failures.is_empty(),
+        "{} false positive(s), the shortest of each kind:\n\n{}",
+        failures.len(),
+        failures.iter().take(30).cloned().collect::<Vec<_>>().join("\n\n")
+    );
+}
+
+// ----- every built-in function on edge values ------------------------------------
+
+/// More values at the limits, for the built-in functions called one by one:
+/// huge and negative sizes and counts, dates at the ends of the calendar,
+/// patterns of `format` and of dates.
+const MORE_EDGES: &[&str] = &[
+    "10 ** 18",
+    "-(10 ** 18)",
+    "100000000",
+    "-100000000",
+    "2 ** 70",
+    "\"\\u{FFFD}\"",
+    "\"a\\u{0}b\"",
+    "[\"é\", \"👍🏽\", \"日本\"]",
+    "[[1, 2], [3]]",
+    "[[1.0, 2.0], [3.0, 4.0]]",
+    "[\"a\", 1]",
+    "{year: 0, month: 1, day: 1}",
+    "{year: -1, month: 13, day: 0}",
+    "{year: 2024, month: 12, day: 31, hour: 24, minute: 60, second: 60}",
+    "\"0000-01-01\"",
+    "\"9999-12-31T23:59:59Z\"",
+    "\"2024-13-45\"",
+    "\"%b %a %Y-%m-%d %H:%M:%S %z %j %p %%\"",
+    "\"%\"",
+    "\".2f\"",
+    "\"é^9\"",
+    "\"👍>12,.3f\"",
+    "\"#x\"",
+    "\"08.1%\"",
+    "\".400e\"",
+    "\">99999999999999999999\"",
+    "\"<1000000000\"",
+    "\"\\{}\"",
+    "\"HéllöWörld_日本 👍🏽\"",
+    "\"ǅungla İstanbul ß ﬁ\"",
+    "\"  \\t\\n \"",
+    "\"a\\r\\nb\"",
+    "dict([[\"a\", 1], [\"b\", 2]])",
+    "dict()",
+    "set([1, 2])",
+    "set()",
+    "fn(a, b, c) = a",
+    "fn() = 1",
+    "fn(v) = [v]",
+    "fn(v) = Some(v)",
+    "fn(v) = None",
+    "fn(v) = \"t\"",
+    "fn(v) = Ok(v)",
+    "upper",
+    "B(1)",
+    "Leaf",
+];
+
+/// Each edge value, computed once.
+fn edge_values() -> Vec<(String, Value)> {
+    let mut it = sandboxed_interp();
+    let prelude = format!("{PREAMBLE}type T = A | B(v) | C(v, w)\ntype Tree = Leaf | Node(l, v, r)\n");
+    let file = source::add("edges.ry", &prelude);
+    let items = parser::parse(lexer::lex(&prelude, file).unwrap()).unwrap();
+    it.exec_items(&items, Mode::Repl).unwrap();
+    let mut out = Vec::new();
+    for e in EDGES.iter().chain(MORE_EDGES) {
+        let file = source::add("edge.ry", e);
+        let items = parser::parse(lexer::lex(e, file).unwrap()).unwrap();
+        match it.exec_items(&items, Mode::Repl) {
+            Ok(Some(v)) => out.push((e.to_string(), v)),
+            other => panic!("edge value {e}: {:?}", other.err().map(|d| d.message)),
+        }
+    }
+    out
+}
+
+/// Calls the built-in function `b` with `args`; `Err` when it panics, or
+/// stops with an error without a known code.
+fn call_one(it: &mut Interp, b: &Builtin, args: &[&(String, Value)]) -> Result<(), String> {
+    let values: Vec<Value> = args.iter().map(|(_, v)| v.clone()).collect();
+    let shown = || format!("{}({})", b.name, args.iter().map(|(s, _)| s.as_str()).collect::<Vec<_>>().join(", "));
+    it.set_step_limit(STEPS);
+    let r = std::panic::catch_unwind(AssertUnwindSafe(|| {
+        let r = (b.func)(it, &values, Span::default());
+        if let Ok(v) = &r {
+            let _ = (v.repr(), v.display());
+        }
+        r
+    }));
+    match r {
+        Err(payload) => {
+            let msg = payload.downcast_ref::<String>().cloned().or_else(|| payload.downcast_ref::<&str>().map(|s| s.to_string()));
+            Err(format!("{}: panic: {}", shown(), msg.unwrap_or_default()))
+        }
+        Ok(Err(d)) if d.code.is_empty() || !help::CODES.contains(&d.code) || d.message.trim().is_empty() => {
+            Err(format!("{}: an error without a known code: [{}] {}", shown(), d.code, d.message))
+        }
+        Ok(_) => Ok(()),
+    }
+}
+
+/// Every built-in function with every edge value (one argument), every pair
+/// of them (two), and random ones (three or more). `pairs`: the share of the
+/// pairs tried, in thousandths.
+fn builtins_on_edges(pairs: u64) -> Vec<String> {
+    std::thread::Builder::new()
+        .stack_size(1 << 30)
+        .spawn(move || {
+            rythme::interp::set_stack_budget(768 << 20);
+            lang::set(Lang::En);
+            io::capture();
+            let edges = edge_values();
+            let mut it = sandboxed_interp();
+            let fakes = sandbox();
+            let mut rng = Rng(5);
+            let mut failures = Vec::new();
+            for real in builtins::BUILTINS {
+                let b = fakes.iter().find(|f| f.name == real.name).copied().unwrap_or(real);
+                // `exit` is a stand-in; `input` waits for nothing; `help` prints only.
+                for n in b.min..=b.max.min(4) {
+                    let mut calls: Vec<Vec<&(String, Value)>> = Vec::new();
+                    match n {
+                        0 => calls.push(Vec::new()),
+                        1 => calls.extend(edges.iter().map(|e| vec![e])),
+                        2 => {
+                            for x in &edges {
+                                for y in &edges {
+                                    if rng.next() % 1000 < pairs {
+                                        calls.push(vec![x, y]);
+                                    }
+                                }
+                            }
+                        }
+                        _ => {
+                            for _ in 0..pairs * 4 {
+                                calls.push((0..n).map(|_| &edges[rng.below(edges.len())]).collect());
+                            }
+                        }
+                    }
+                    for args in calls {
+                        if let Err(e) = call_one(&mut it, b, &args) {
+                            failures.push(e);
+                        }
+                        let _ = io::take_captured();
+                        io::capture();
+                    }
+                }
+            }
+            failures
+        })
+        .unwrap()
+        .join()
+        .unwrap()
+}
+
+#[test]
+fn every_builtin_survives_edge_values() {
+    let failures = builtins_on_edges(30);
+    assert!(failures.is_empty(), "{} failure(s):\n{}", failures.len(), failures.iter().take(40).cloned().collect::<Vec<_>>().join("\n"));
+}
+
+/// Every pair of edge values, for every built-in function (a few minutes in release mode).
+#[test]
+#[ignore]
+fn every_builtin_on_every_pair_of_edge_values() {
+    let failures = builtins_on_edges(1000);
+    assert!(failures.is_empty(), "{} failure(s):\n{}", failures.len(), failures.iter().take(80).cloned().collect::<Vec<_>>().join("\n"));
+}
+
+// ----- the formatter on the fuzzer's programs -------------------------------------
+
+/// The syntax tree of a program without positions, or `None` if it does not parse.
+fn tree_without_places(src: &str) -> Option<String> {
+    let items = lexer::lex(src, 7).and_then(parser::parse).ok()?;
+    let debug = format!("{items:?}");
+    let mut out = String::new();
+    let mut rest = debug.as_str();
+    while let Some(i) = rest.find("Span {") {
+        out.push_str(&rest[..i]);
+        let end = rest[i..].find('}').unwrap() + i + 1;
+        rest = &rest[end..];
+    }
+    out.push_str(rest);
+    Some(out)
+}
+
+/// `rythme fmt` on a program that parses: it keeps its syntax tree, and
+/// formatting the result again changes nothing.
+fn formats_well(src: &str) -> Result<(), String> {
+    let Some(before) = tree_without_places(src) else { return Ok(()) };
+    let out = rythme::format::format(src).map_err(|d| format!("could not format: {}", d[0].message))?;
+    if tree_without_places(&out).as_ref() != Some(&before) {
+        return Err(format!("the meaning changed; it became:\n{out}"));
+    }
+    match rythme::format::format(&out) {
+        Ok(again) if again == out => Ok(()),
+        Ok(again) => Err(format!("formatting twice gives something else:\n{out}\n--- then ---\n{again}")),
+        Err(d) => Err(format!("the result does not format: {}\n{out}", d[0].message)),
+    }
+}
+
+/// The programs of the fuzzer (every built-in function, types with
+/// parameters, written types, the Ruby style, mutations of the examples).
+#[test]
+fn the_formatter_keeps_the_meaning_of_generated_programs() {
+    let cases: u64 = std::env::var("RYTHME_FMT_FUZZ_CASES").ok().and_then(|s| s.parse().ok()).unwrap_or(3000);
+    let failures: Vec<String> = std::thread::Builder::new()
+        .stack_size(1 << 30)
+        .spawn(move || {
+            let mut failures = Vec::new();
+            for i in 0..cases {
+                let src = case(0x464D_5400, i);
+                match std::panic::catch_unwind(AssertUnwindSafe(|| formats_well(&src))) {
+                    Ok(Ok(())) => {}
+                    Ok(Err(e)) => failures.push(format!("case {i}:\n{src}\n--- {e}")),
+                    Err(_) => failures.push(format!("case {i}: panic\n{src}")),
+                }
+            }
+            failures
+        })
+        .unwrap()
+        .join()
+        .unwrap();
+    let shortest = failures.iter().min_by_key(|f| f.len());
+    assert!(failures.is_empty(), "{} failure(s); the shortest:\n{}", failures.len(), shortest.unwrap());
+}
+
+// ----- fixes -----------------------------------------------------------------------
+
+/// The diagnostics of a text as `rythme fix` sees them, and the id of the text.
+fn diagnose_for_fixes(src: &str) -> (Vec<Diagnostic>, u32) {
+    rythme::diagnostic::keep_shown();
+    let _ = rythme::diagnostic::take_kept();
+    let mut driver = rythme::driver::Driver::new();
+    driver.color = false;
+    driver.load_source("fix.ry", src, None, Path::new("/rythme-fuzz-nowhere"));
+    let diags = rythme::diagnostic::take_kept();
+    let id = (0..u32::MAX).take_while(|i| source::get(*i).is_some()).filter(|i| source::get(*i).is_some_and(|f| f.name == "fix.ry")).last();
+    (diags, id.unwrap_or(u32::MAX))
+}
+
+/// Each fix of each diagnostic of `src`, applied alone: the diagnostic goes
+/// away (there is one fewer with its code and message), a fix of a syntax
+/// error gives code that goes past that error, and the fix is not offered
+/// again right after (applied twice, it would write its change twice).
+fn fixes_work(src: &str) -> Result<(), String> {
+    let (diags, id) = diagnose_for_fixes(src);
+    let same = |a: &Diagnostic, b: &Diagnostic| a.code == b.code && a.message == b.message;
+    for d in &diags {
+        for fix in &d.fixes {
+            if fix.edits.is_empty() || fix.edits.iter().any(|(sp, _)| sp.file != id) {
+                continue;
+            }
+            let edits: Vec<(usize, usize, String)> =
+                fix.edits.iter().map(|(sp, new)| (sp.start as usize, sp.end as usize, new.clone())).collect();
+            let fixed = rythme::fix::apply(src, &edits);
+            if fixed == src {
+                continue;
+            }
+            let (after, _) = diagnose_for_fixes(&fixed);
+            let what = || format!("[{}] {} — fix `{}` (safe: {}) gives:\n{fixed}", d.code, d.message, fix.title, fix.safe);
+            // Where the diagnostic would be now: moved by the edits before it.
+            let start = d.span.map_or(0, |sp| sp.start as usize);
+            let moved =
+                edits.iter().filter(|(_, e, _)| *e <= start).fold(start as i64, |at, (s, e, new)| at + new.len() as i64 - (e - s) as i64);
+            if after.iter().any(|x| same(x, d) && x.span.map(|sp| sp.start as i64) == Some(moved)) {
+                return Err(format!("the diagnostic is still there: {}", what()));
+            }
+            if after
+                .iter()
+                .any(|x| x.fixes.iter().any(|f| f.title == fix.title && f.edits.iter().map(|e| &e.1).eq(fix.edits.iter().map(|e| &e.1))))
+                && fix.edits.iter().all(|(sp, _)| sp.start == sp.end)
+            {
+                return Err(format!("the same insertion is offered again: {}", what()));
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn every_fix_removes_its_diagnostic() {
+    let cases: u64 = std::env::var("RYTHME_FIX_FUZZ_CASES").ok().and_then(|s| s.parse().ok()).unwrap_or(2000);
+    let failures: Vec<String> = std::thread::Builder::new()
+        .stack_size(1 << 30)
+        .spawn(move || {
+            rythme::interp::set_stack_budget(768 << 20);
+            lang::set(Lang::En);
+            let mut failures = Vec::new();
+            let mut rng = Rng(0x4649_5845);
+            for i in 0..cases {
+                // Code written as in other languages, then mutated: most fixes are there.
+                let src = match rng.below(3) {
+                    0 => case(0x4649_5800, i),
+                    1 => {
+                        let other = rng.pick(OTHER_LANGUAGES);
+                        let seed = seeds()[rng.below(seeds().len())].clone();
+                        let at = boundary(&mut rng, &seed);
+                        let at = seed[..at].rfind('\n').map_or(0, |n| n + 1);
+                        format!("{}{other}\n{}", &seed[..at], &seed[at..])
+                    }
+                    _ => rng.pick(OTHER_LANGUAGES).to_string(),
+                };
+                match std::panic::catch_unwind(AssertUnwindSafe(|| fixes_work(&src))) {
+                    Ok(Ok(())) => {}
+                    Ok(Err(e)) => failures.push(format!("case {i}:\n{src}\n--- {e}")),
+                    Err(_) => failures.push(format!("case {i}: panic\n{src}")),
+                }
+            }
+            failures
+        })
+        .unwrap()
+        .join()
+        .unwrap();
+    let mut kinds: Vec<&String> = Vec::new();
+    for f in &failures {
+        let kind = f.split("--- ").nth(1).and_then(|k| k.lines().next()).unwrap_or("");
+        if !kinds.iter().any(|k| k.split("--- ").nth(1).and_then(|k| k.lines().next()).unwrap_or("") == kind) {
+            kinds.push(f);
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} failure(s), one of each kind:\n\n{}",
+        failures.len(),
+        kinds.iter().take(25).map(|s| s.as_str()).collect::<Vec<_>>().join("\n\n")
+    );
+}
+
+/// Lines written as in Python, JavaScript, Ruby, C...: what the fixes are for.
+const OTHER_LANGUAGES: &[&str] = &[
+    "if x > 1 && y < 2 then print(x) else print(y)",
+    "z = !true",
+    "z = x || y",
+    "def f(x) = x + 1",
+    "function f(x) = x",
+    "let z = 3",
+    "const z = 3",
+    "var z = 3",
+    "z = f\"a {x}\"",
+    "z = x > 1 ? 1 : 2",
+    "z = null",
+    "z = nil",
+    "z = None",
+    "z = True",
+    "z = False",
+    "z = x === 1",
+    "z = x !== 1",
+    "print(\"a\" + 1)",
+    "print(\"a\" + x)",
+    "z = 10 % 3",
+    "z = xs[1:2]",
+    "z = x => x + 1",
+    "z = lenght([1])",
+    "z = pritn(1)",
+    "z = xs.length",
+    "z = xs.push(1)",
+    "z = x.toUpperCase()",
+    "z = s.strip()",
+    "for x in xs: print(x)",
+    "while true do print(1) end",
+    "return x",
+    "z = x++",
+    "z += 1",
+    "z = [1, 2, 3].size()",
+    "z = 'a'",
+    "z = \"é\" + 1",
+    "z = x->y",
+    "fn f(x) { x }",
+    "z = Math.max(1, 2)",
+    "z = elif",
+    "z = x == none",
+    "z = {\"a\": 1}[\"a\"]",
+    "z = 1_000_",
+    "z = sorted(xs)",
+    "z = str(1)",
+    "z = int(\"1\")",
+    "print(f\"{x}\")",
+    "z = x.nil?",
+    "z = puts(\"日本\" + 1)",
+];
 
 // ----- properties ------------------------------------------------------------
 
