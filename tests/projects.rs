@@ -135,7 +135,7 @@ fn ok(r: &Run) {
 
 #[test]
 fn a_new_project_runs_tests_checks_formats_and_documents_itself() {
-    for lang in ["en", "fr", "es", "de", "pt", "zh"] {
+    for lang in ["en", "fr", "es", "de", "pt", "zh", "it", "ja"] {
         let t = Temp::new(&format!("new-{lang}"));
         let r = t.rythme(lang, "", &["new", "hello"]);
         ok(&r);
@@ -159,6 +159,8 @@ fn a_new_project_runs_tests_checks_formats_and_documents_itself() {
             "de" => "Hallo, Welt!\n",
             "pt" => "Olá, mundo!\n",
             "zh" => "你好，世界！\n",
+            "it" => "Ciao, mondo!\n",
+            "ja" => "こんにちは、世界！\n",
             _ => "Hello, World!\n",
         };
         assert_eq!(r.stdout, greeting);
@@ -170,6 +172,8 @@ fn a_new_project_runs_tests_checks_formats_and_documents_itself() {
             "de" => "1 bestanden, 0 fehlgeschlagen",
             "pt" => "1 passaram, 0 falharam",
             "zh" => "1 个通过，0 个失败",
+            "it" => "1 superati, 0 falliti",
+            "ja" => "成功 1、失敗 0",
             _ => "1 passed, 0 failed",
         };
         assert!(r.stdout.contains(summary), "{}", r.stdout);
