@@ -199,6 +199,11 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
   `rythme`. Without the debugger, programs run at the same speed.
 - **More languages of the messages**, and the guide for teachers translated
   where it is not yet.
+  - [x] **The guide for teachers in Spanish, German, Portuguese and
+    Chinese** (`docs/teaching.*.md`), up to date with grading, the
+    playground, the debugger and AI assistants, each shown on its page of
+    the website; a language added later shows the English guide with a note
+    until it has its own.
 - **More of the library**: CSV, HTTP requests, `random` with a seed that a
   program can repeat, with the same care for errors as values.
   - [x] **CSV**: `csv_parse`, `csv_records`, `csv_format` (RFC 4180, any

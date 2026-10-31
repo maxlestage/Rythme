@@ -348,7 +348,11 @@ learn it fast and fix their own mistakes:
 
 [`docs/teaching.md`](docs/teaching.md) proposes a course outline built on
 Rythme, and explains why it fits a first programming course and a
-functional programming course alike.
+functional programming course alike: exercises checked and graded
+automatically, the playground and the debugger in class, and a policy for
+AI assistants. It also exists in [French](docs/enseigner.md),
+[Spanish](docs/teaching.es.md), [German](docs/teaching.de.md),
+[Portuguese](docs/teaching.pt.md) and [Chinese](docs/teaching.zh.md).
 [`docs/exercises/`](docs/exercises/README.md) holds 36 graded exercises (six about AI), with
 statements, hints, tests and solutions, that `rythme exercise` hands out and
 checks in every language of the messages.

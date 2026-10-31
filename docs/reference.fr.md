@@ -4186,7 +4186,8 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMANDE] [ARGUMENTS...]
 langue des messages : `rythme test --help`. Pour `run`, `steps`, `debug` et
 `-e`, `--help` ne compte qu'avant le fichier : après, les mots sont ceux du
 programme. `rythme run -` (ou `rythme -`) lance le programme lu sur l'entrée
-standard, dont `input` trouve alors la fin. `rythme check DOSSIER` vérifie
+standard, dont `input` trouve alors la fin (aussi avec `--format json`).
+`rythme check DOSSIER` vérifie
 chaque fichier `.ry` d'un dossier et de ses sous-dossiers (sauf les cachés),
 comme `rythme fmt`. `rythme completions bash` (ou `zsh`, `fish`,
 `powershell`) écrit un script qui complète les commandes, leurs options, les
@@ -4235,7 +4236,7 @@ comme en anglais (seuls ses commentaires sont traduits), et les `^` sous une
 erreur restent alignés : les caractères chinois prennent deux colonnes du
 terminal, dans le code comme dans les messages.
 
-**Exercices.** `rythme exercise` (ou `rythme exercise list`) liste les 30
+**Exercices.** `rythme exercise` (ou `rythme exercise list`) liste les 36
 exercices gradués intégrés au programme (les fichiers de
 [`docs/exercises/`](exercises/README.fr.md)). `start NOM` écrit l'exercice
 désigné par son numéro (`7`) ou son nom de fichier (`07-recursivite`,

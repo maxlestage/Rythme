@@ -6,8 +6,8 @@
 *[English version →](README.md) · [Version française →](README.fr.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md)*
 
 这份 README 是一个概要。Rythme 的消息、帮助和错误解释都有简体中文版
-（`--lang zh`）；完整的文档有英文版和法文版：[参考手册](docs/reference.md)
-和[教师指南](docs/teaching.md)。网站和在线试玩也有中文版：
+（`--lang zh`），[教师指南](docs/teaching.zh.md)也有中文版；完整的
+[参考手册](docs/reference.md)有英文版和法文版。网站和在线试玩也有中文版：
 <https://maxlestage.github.io/Rythme/zh/>。
 
 ```rythme

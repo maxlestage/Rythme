@@ -193,7 +193,7 @@ fn examples(ctx: &Ctx) -> String {
     out
 }
 
-/// The guide for teachers: its own Markdown (`docs/teaching.md`, `docs/enseigner.md`),
+/// The guide for teachers: its own Markdown (`docs/teaching.md`, `docs/enseigner.md`...),
 /// with its links leading to the site or to GitHub, and the note of a language without
 /// a guide of its own.
 fn teach(ctx: &Ctx) -> String {
