@@ -284,7 +284,7 @@ fn record_equal(text: &str, at: usize, w: &str) -> Option<String> {
         return None;
     }
     let head = text[..at].trim_end();
-    let start = head.rfind(|c: char| !is_name_char(c)).map_or(0, |i| i + 1);
+    let start = after_last(head, |c| !is_name_char(c));
     let field = &head[start..];
     let lead = head[..start].trim_end();
     (!field.is_empty() && (lead.ends_with('{') || lead.ends_with(','))).then(|| field.to_string())
@@ -418,7 +418,7 @@ fn slice_fix(text: &str, at: usize, sp: impl Fn(usize, usize) -> Span) -> Option
     let open = text[..at].rfind('[')?;
     let close = at + text[at..].find(']')?;
     let head = &text[..open];
-    let start = head.rfind(|c: char| !(is_name_char(c) || c == '.')).map_or(0, |i| i + 1);
+    let start = after_last(head, |c| !(is_name_char(c) || c == '.'));
     let list = &head[start..];
     let (a, b) = (text[open + 1..at].trim(), text[at + 1..close].trim());
     let simple = |x: &str| x.chars().all(|c| is_name_char(c) || c == '-' || c == ' ' || c == '+' || c == '*');
@@ -442,6 +442,12 @@ fn arrow_after(text: &str, at: usize) -> bool {
     text[at..end].contains("=>")
 }
 
+/// The position just after the last character of `head` for which `pred`
+/// is true (0 if none): a character may take several bytes (`é`, `👍`).
+fn after_last(head: &str, pred: impl Fn(char) -> bool) -> usize {
+    head.char_indices().rev().find(|&(_, c)| pred(c)).map_or(0, |(i, c)| i + c.len_utf8())
+}
+
 /// `x => x + 1` and `(a, b) => a + b` (or with `->`): `fn(x) = x + 1`.
 fn arrow_fix(text: &str, s: usize, e: usize, sp: impl Fn(usize, usize) -> Span) -> Option<Fix> {
     let head = text[..s].trim_end();
@@ -455,7 +461,7 @@ fn arrow_fix(text: &str, s: usize, e: usize, sp: impl Fn(usize, usize) -> Span) 
         }
         (open, inner[open + 1..].trim())
     } else {
-        let start = head.rfind(|c: char| !is_name_char(c)).map_or(0, |i| i + 1);
+        let start = after_last(head, |c| !is_name_char(c));
         let name = &head[start..];
         if name.is_empty() || head[..start].trim_end().ends_with(|c: char| is_name_char(c) || c == '.') {
             return None;
