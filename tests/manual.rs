@@ -2,11 +2,14 @@
 //! ```text block is run, and must print exactly that text (docs/reference.md in
 //! English, docs/reference.fr.md in French). A session of the debugger
 //! (`$ rythme debug fact.ry`, then the commands after its prompt `(debug) `)
-//! is typed again, and must print exactly the same.
+//! is typed again, and must print exactly the same. The guides for teachers
+//! (docs/teaching*.md, docs/enseigner.md) are checked the same way, each in its
+//! language.
 
 use std::fs::File;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 struct Block {
     kind: String,
@@ -89,7 +92,10 @@ fn run(lang: &str, command: Option<&str>, name: &str, code: &str) -> String {
 
 /// Like `run`, with `input` typed on the standard input.
 fn run_typing(lang: &str, command: Option<&str>, name: &str, code: &str, input: Option<&str>) -> String {
-    let dir = std::env::temp_dir().join(format!("rythme-manual-{}-{lang}-{}", std::process::id(), name.trim_end_matches(".ry")));
+    // A folder of its own for each run: the tests run at the same time, often with the same file names.
+    static RUNS: AtomicUsize = AtomicUsize::new(0);
+    let n = RUNS.fetch_add(1, Ordering::Relaxed);
+    let dir = std::env::temp_dir().join(format!("rythme-manual-{}-{n}-{lang}-{}", std::process::id(), name.trim_end_matches(".ry")));
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join(name), format!("{code}\n")).unwrap();
     // One file for both streams, so that they stay in the order they were written.
@@ -118,7 +124,8 @@ fn run_typing(lang: &str, command: Option<&str>, name: &str, code: &str, input: 
     printed.replace("\r\n", "\n")
 }
 
-fn check_manual(path: &str, lang: &str) {
+/// Checks the samples of a document: at least `at_least` of them must be found.
+fn check_samples(path: &str, lang: &str, at_least: usize) {
     let manual = std::fs::read_to_string(path).unwrap();
     let blocks = blocks(&manual);
     let mut checked = 0;
@@ -165,16 +172,31 @@ fn check_manual(path: &str, lang: &str) {
             failures.push(format!("{path}:{}: ({name})\n--- shown\n{}\n--- printed\n{got}", sample.line, shown.text));
         }
     }
-    assert!(checked >= 30, "{path}: only {checked} samples found");
+    assert!(checked >= at_least, "{path}: only {checked} samples found");
     assert!(failures.is_empty(), "{} sample(s) of {path} print something else:\n\n{}", failures.len(), failures.join("\n\n"));
 }
 
 #[test]
 fn the_english_manual_shows_real_output() {
-    check_manual(concat!(env!("CARGO_MANIFEST_DIR"), "/docs/reference.md"), "en");
+    check_samples(concat!(env!("CARGO_MANIFEST_DIR"), "/docs/reference.md"), "en", 30);
 }
 
 #[test]
 fn the_french_manual_shows_real_output() {
-    check_manual(concat!(env!("CARGO_MANIFEST_DIR"), "/docs/reference.fr.md"), "fr");
+    check_samples(concat!(env!("CARGO_MANIFEST_DIR"), "/docs/reference.fr.md"), "fr", 30);
+}
+
+/// Each guide for teachers shows the output of `rythme test` and of `rythme steps` in its language.
+#[test]
+fn the_guides_for_teachers_show_real_output() {
+    for (file, lang) in [
+        ("teaching.md", "en"),
+        ("enseigner.md", "fr"),
+        ("teaching.es.md", "es"),
+        ("teaching.de.md", "de"),
+        ("teaching.pt.md", "pt"),
+        ("teaching.zh.md", "zh"),
+    ] {
+        check_samples(&format!("{}/docs/{file}", env!("CARGO_MANIFEST_DIR")), lang, 2);
+    }
 }

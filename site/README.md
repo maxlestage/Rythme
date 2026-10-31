@@ -21,7 +21,7 @@ page as Markdown and structured data (see [For AI assistants](#for-ai-assistants
 | `/{lang}/learn/` | the language in two minutes; each piece of code opens in the playground |
 | `/{lang}/examples/` | the programs of `examples/` with their output |
 | `/{lang}/playground/` | the real interpreter, compiled to WebAssembly |
-| `/{lang}/teach/` | the guide for teachers (`docs/teaching.md`, `docs/enseigner.md`) |
+| `/{lang}/teach/` | the guide for teachers (`docs/teaching.md`, `docs/enseigner.md`, `docs/teaching.es.md`...) |
 | `/{lang}/ai/` | for AI assistants: how to give them Rythme, the MCP server, the loop of `--format json` and `rythme fix` |
 | `/{lang}/index.md`, `/{lang}/{page}/index.md` | the home page, *Learn*, the examples, the guide and the AI page as Markdown (`text/markdown`) |
 | `/llms.txt`, `/llms-full.txt` | the index and the whole language for AI assistants (`docs/llms.txt`, `docs/llms-full.txt`) |
@@ -233,10 +233,11 @@ French, English, Spanish, German, Portuguese (Brazilian, "você") and Chinese
   and its steps are in that language; its own texts come from `src/i18n/` (`data-ui`).
   It colors the messages by their first word in every language (`error`, `Fehler`,
   `错误`…), like `highlight.rs`; the tests check both lists against the catalogs.
-- **The guide for teachers** exists in English and French. The other languages show
-  the English guide (marked `lang="en"`) under a note in their language
-  (`Texts::teach_note`, `teach::guide_lang`): a guide added later only needs its line in
-  `teach.rs`.
+- **The guide for teachers** exists in English, French, Spanish, German, Portuguese
+  and Chinese, each shown on the page of its language. A language without a guide
+  shows the English one (marked `lang="en"`) under a note in its language
+  (`Texts::teach_note`, `teach::guide_lang`): a guide added later only needs its line
+  in `GUIDES` (`teach.rs`) and `teach_note: None`.
 - **Chinese.** The web fonts have no Chinese characters: on the pages in Chinese, a
   list of system fonts (`--cjk` in `site.css`: PingFang, Microsoft YaHei, Noto Sans
   CJK…) comes after the Latin font and before the generic family, in the text, the
