@@ -109,7 +109,7 @@ fn group(digits: &str, sep: char, every: usize) -> String {
     let n = digits.chars().count();
     let mut out = String::with_capacity(n + n / every);
     for (i, c) in digits.chars().enumerate() {
-        if i > 0 && (n - i) % every == 0 {
+        if i > 0 && (n - i).is_multiple_of(every) {
             out.push(sep);
         }
         out.push(c);
