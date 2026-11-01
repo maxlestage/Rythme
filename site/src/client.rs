@@ -5,10 +5,14 @@
 //!
 //! - every page loads `pkg/site.js` and `pkg/site_bg.wasm` (the menus, the themes, the
 //!   installable app); the playground loads `pkg/playground.js` and
-//!   `pkg/playground_bg.wasm` too (its editor and the interpreter: 3 MB, while its
-//!   menus already work). The page starts each bundle with one line, `import init from …;
+//!   `pkg/playground_bg.wasm` too (its editor and the interpreter, while its menus
+//!   already work). The page starts each bundle with one line, `import init from …;
 //!   init(…)`, the line that Paquets writes for its islands, allowed by its hash in
 //!   the Content-Security-Policy;
+//! - the interpreter of the playground has its messages in English and French only:
+//!   in another language, the page fetches the catalog of its language
+//!   (`pkg/catalog-de.txt`) while the interpreter downloads, and gives it to the
+//!   interpreter before the first run;
 //! - the playground runs programs in a web worker made from the same bundle, so that a
 //!   program that never stops can be stopped: `/pkg/worker.js` is that same line, with
 //!   the module the page has compiled (a worker starts from a script file, never from
@@ -72,6 +76,25 @@ impl Bundle {
 /// saves): the styles and the bundles of the pages.
 pub const PAGE_FILES: [&str; 4] = ["/pkg/site.js", "/pkg/site_bg.wasm", "/pkg/playground.js", "/pkg/playground_bg.wasm"];
 
+/// The catalogs of the interpreter's messages, one per language besides English and
+/// French (compiled into the interpreter): the playground fetches the one of its page
+/// (`client/src/bin/catalogs.rs` writes them, from `rythme::lang`).
+pub const CATALOG_FILES: [&str; 6] = [
+    "/pkg/catalog-es.txt",
+    "/pkg/catalog-de.txt",
+    "/pkg/catalog-pt.txt",
+    "/pkg/catalog-zh.txt",
+    "/pkg/catalog-it.txt",
+    "/pkg/catalog-ja.txt",
+];
+
+/// The catalog of the interpreter's messages in the language `code`, versioned;
+/// `None` for English and French, compiled into the interpreter.
+pub fn catalog_url(code: &str, version: &str) -> Option<String> {
+    let path = format!("/pkg/catalog-{code}.txt");
+    CATALOG_FILES.contains(&path.as_str()).then(|| format!("{}?v={version}", link(&path)))
+}
+
 /// The service worker's own bundle, loaded by `/sw.js`.
 pub const SW_FILES: [&str; 2] = ["/pkg/sw.js", "/pkg/sw_bg.wasm"];
 
@@ -130,6 +153,14 @@ fn base64(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_catalog_for_each_language_not_compiled_in() {
+        assert_eq!(catalog_url("de", "v").as_deref(), Some("/pkg/catalog-de.txt?v=v"));
+        assert_eq!(catalog_url("en", "v"), None);
+        assert_eq!(catalog_url("fr", "v"), None);
+        assert_eq!(catalog_url("../x", "v"), None);
+    }
 
     #[test]
     fn the_lines_that_start_the_bundles() {

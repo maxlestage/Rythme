@@ -42,6 +42,7 @@ page as Markdown and structured data (see [For AI assistants](#for-ai-assistants
 | What the browser side shares with the server, tested natively | `client/src/{highlight,messages,steps,share,assistant,editor}.rs` |
 | Manifests, service worker | `src/pwa.rs`, `client/src/sw.rs` |
 | Compression and caching (see [Speed](#speed)) | `src/compress.rs`, `client/src/compression.rs`, `client/src/bin/precompress.rs` |
+| The catalogs of the interpreter's messages in the languages it does not compile in | `client/src/bin/catalogs.rs` (written by `./build.sh`), `CATALOG_FILES` in `src/client.rs` |
 | The lines that start the browser side, the workers' scripts | `src/client.rs` |
 | `llms.txt`, the MCP configurations, the AI page's commands | `src/ai.rs` (the page itself in `src/pages.rs`) |
 | The pages as Markdown | `src/markdown.rs` |
@@ -196,8 +197,20 @@ for it.
   the network goes to the interpreter first.
 - **Small bundles.** The profile `wasm-release` of `Cargo.toml`: `opt-level = "z"`,
   fat LTO, one codegen unit, `panic = "abort"`, stripped; `wasm-opt -Oz` if installed.
-  The interpreter is mostly its own texts: its messages and its help in eight
-  languages (the playground's bundle is 4.5 MB, 1.0 MB in Brotli).
+- **The messages in one language.** The interpreter is mostly its own texts, its
+  messages and its help: with all eight languages compiled in, the playground's bundle
+  was 4.5 MB (1.05 MB in Brotli, 1.55 MB in gzip). It is built with the feature
+  `runtime-catalogs` of Rythme: only English and French are compiled in (2.06 MB, 0.58
+  MB in Brotli, 0.74 MB in gzip), and every other language is a catalog of its own,
+  `pkg/catalog-de.txt` (`client/src/bin/catalogs.rs` writes them from `rythme::lang`:
+  about 300 KB, 90 KB in Brotli, 115 KB in gzip). The playground prefetches the catalog
+  of its language with the bundle, then gives it to the interpreter of the page and of
+  its worker before the first run; it is versioned, compressed, kept a year and saved
+  by the service worker like the bundles. A new language adds a catalog, not a byte to
+  the bundle. On the slow phone (`speed.js`, server, median of 3, measured on the same
+  machine before and after): the first run went from 6.9 s to 4.6 s in French and from
+  7.0 s to 5.1 s in German (catalog included); 1263 KB downloaded before, 893 KB in
+  German now.
 - **Considered, not done.** Inlining the critical CSS: `site.css` is 11 KB in Brotli,
   fetched while the page arrives, and inlining it would grow every page and every copy
   the service worker keeps. Loading the playground's bundle later: its page needs it
@@ -231,6 +244,9 @@ French, English, Spanish, German, Portuguese (Brazilian, "você"), Chinese
 - **The playground** gives the interpreter the language of the page (its position in
   `LANGUAGES`, `Lang::interpreter`, checked by the tests), so its messages, its help
   and its steps are in that language; its own texts come from `src/i18n/` (`data-ui`).
+  Its interpreter has English and French compiled in; for another language the page
+  fetches the catalog of that language (`pkg/catalog-de.txt`, `data-catalog`, see
+  [Speed](#speed)), and if it cannot, the messages are in English with a quiet note.
   It colors the messages by their first word in every language (`error`, `Fehler`,
   `错误`…), like `highlight.rs`; the tests check both lists against the catalogs.
 - **The guide for teachers** exists in English, French, Spanish, German, Portuguese

@@ -14,17 +14,20 @@ use crate::compile::{FnCode, Sibling};
 pub use crate::dict::Map;
 use crate::symbol::Sym;
 
+// The values that hold no memory of their own come first: telling them from
+// the others (to copy or free a value) is then one comparison of the tag.
 #[derive(Clone)]
 pub enum Value {
     Unit,
     Bool(bool),
     Int(i64),
-    /// A whole number outside of the 64-bit range (never one that fits in an `Int`).
-    Big(Rc<BigInt>),
     Float(f64),
-    Text(Text),
     /// `:ok`: a value that is only its name.
     Symbol(Sym),
+    Builtin(&'static Builtin),
+    /// A whole number outside of the 64-bit range (never one that fits in an `Int`).
+    Big(Rc<BigInt>),
+    Text(Text),
     List(List),
     Record(Rc<Record>),
     Variant(Rc<Variant>),
@@ -33,7 +36,6 @@ pub enum Value {
     /// A set: values (but functions) without repetition.
     Set(Map),
     Func(Rc<Closure>),
-    Builtin(&'static Builtin),
     Ctor(Rc<CtorInfo>),
 }
 
@@ -235,6 +237,27 @@ fn same_key(a: &str, b: &str) -> bool {
 impl Record {
     pub fn new() -> Record {
         Record::default()
+    }
+
+    /// The names of its fields: the records that share them have each
+    /// field at the same position (`position`, `at`).
+    pub fn shape(&self) -> &Rc<Shape> {
+        &self.shape
+    }
+
+    /// The position of the field `key`.
+    pub fn position(&self, key: &str) -> Option<usize> {
+        self.shape.position(key)
+    }
+
+    /// The value of the field at `i` (see `position`).
+    pub fn at(&self, i: usize) -> &Value {
+        &self.vals[i]
+    }
+
+    /// The field at `i` (see `position`) becomes `val`.
+    pub fn set_at(&mut self, i: usize, val: Value) {
+        self.vals[i] = val;
     }
 
     /// A record with the fields of `shape`, in order.
