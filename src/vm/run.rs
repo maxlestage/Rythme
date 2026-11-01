@@ -136,7 +136,10 @@ impl Interp {
     /// functions of the program, and for the tools.
     pub(crate) fn call_value(&mut self, f: Value, argc: usize, span: Span) -> Fallible<Value> {
         let args = self.stack.len() - argc;
-        let r = self.call_fast(f, None, args, argc, span);
+        // `call_member` runs the calls in tail position of `f` in its own
+        // frame: a function given to `map` that calls `map` again last
+        // (`fn(x) = deep(x + 1)`) nests fewer frames on the machine's stack.
+        let r = self.call_nested(f, None, args, argc, span);
         // What is left above holds no memory: no need to free it value by value.
         self.pop_to(args);
         r
@@ -173,43 +176,76 @@ impl Interp {
     /// it does is what `call_member` and `call_loop` do then.
     #[inline(always)]
     fn call_fast(&mut self, f: Value, member: Option<u32>, args: usize, argc: usize, span: Span) -> Fallible<Value> {
-        if let Value::Func(clo) = &f {
-            let (calls, values) = call_limits();
-            let (def, code) = member_code(clo, member);
-            if argc == code.arity && self.steps_left != 0 && self.depth < calls && self.stack.len() <= values && !self.stack_too_deep() {
-                self.depth += 1;
-                self.steps_left -= 1;
-                let regs = code.chunk.regs;
-                self.ensure(args + regs);
-                match self.exec(code, Some(clo), member, args, Kind::Call, span) {
-                    Exec::Return(v) => {
-                        self.reset(args, args + regs);
-                        let r = if self.steps_left == 0 { self.return_hook(Ok(v)) } else { Ok(v) };
-                        self.depth -= 1;
-                        return r;
-                    }
-                    Exec::Error(d, called) => {
-                        let d = self.call_failed(d, called, def, args, regs);
-                        let r = if self.steps_left == 0 { self.return_hook(Err(d)) } else { Err(d) };
-                        self.depth -= 1;
-                        return r;
-                    }
-                    Exec::Tail(next, next_member, next_args, next_argc, next_span, next_test) => {
-                        let mut test = next_test.then_some(next_span);
-                        let mut r = self.tail_chain(next, next_member, args, regs, next_args, next_argc, next_span, &mut test);
-                        if self.steps_left == 0 {
-                            r = self.return_hook(r);
-                        }
-                        self.depth -= 1;
-                        return match test {
-                            Some(at) => r.and_then(|v| truth(&v, at).map(Value::Bool)),
-                            None => r,
-                        };
+        match f {
+            Value::Func(clo) => self.call_closure(clo, member, args, argc, span),
+            Value::Builtin(b) => self.call_builtin_fast(b, args, argc, span),
+            f => self.call_member(f, member, args, argc, span),
+        }
+    }
+
+    /// `call_fast` for a function of the program.
+    #[inline(always)]
+    fn call_closure(&mut self, clo: Rc<Closure>, member: Option<u32>, args: usize, argc: usize, span: Span) -> Fallible<Value> {
+        let (calls, values) = call_limits();
+        let (def, code) = member_code(&clo, member);
+        if argc == code.arity && self.steps_left != 0 && self.depth < calls && self.stack.len() <= values && !self.stack_too_deep() {
+            self.depth += 1;
+            self.steps_left -= 1;
+            let regs = code.chunk.regs;
+            self.ensure(args + regs);
+            let r = match self.exec(code, Some(&clo), member, args, Kind::Call, span) {
+                Exec::Return(v) => {
+                    self.reset(args, args + regs);
+                    if self.steps_left == 0 {
+                        self.return_hook(Ok(v))
+                    } else {
+                        Ok(v)
                     }
                 }
-            }
+                Exec::Error(d, called) => {
+                    let d = self.call_failed(d, called, def, args, regs);
+                    if self.steps_left == 0 {
+                        self.return_hook(Err(d))
+                    } else {
+                        Err(d)
+                    }
+                }
+                Exec::Tail(next, next_member, next_args, next_argc, next_span, next_test) => {
+                    let mut test = next_test.then_some(next_span);
+                    let mut r = self.tail_chain(next, next_member, args, regs, next_args, next_argc, next_span, &mut test);
+                    if self.steps_left == 0 {
+                        r = self.return_hook(r);
+                    }
+                    match test {
+                        Some(at) => r.and_then(|v| truth(&v, at).map(Value::Bool)),
+                        None => r,
+                    }
+                }
+            };
+            self.depth -= 1;
+            // The function, freed here without a call (`f` was one).
+            drop(clo);
+            return r;
         }
-        self.call_member(f, member, args, argc, span)
+        self.call_member(Value::Func(clo), member, args, argc, span)
+    }
+
+    /// A call of a built-in function: what `call_member`, `call_loop` and
+    /// `call_other` do for it, without their frames on the machine's stack
+    /// (a function given to `map` that calls `map` again nests these calls).
+    #[inline(never)]
+    fn call_builtin_fast(&mut self, b: &'static crate::builtins::Builtin, args: usize, argc: usize, span: Span) -> Fallible<Value> {
+        let (calls, values) = call_limits();
+        if self.steps_left != 0 && self.depth < calls && self.stack.len() <= values && !self.stack_too_deep() {
+            self.depth += 1;
+            self.steps_left -= 1;
+            let r = self.call_builtin(b, args, argc, span);
+            self.reset(args, args + argc);
+            let r = if self.steps_left == 0 { self.return_hook(r) } else { r };
+            self.depth -= 1;
+            return r;
+        }
+        self.call_member(Value::Builtin(b), None, args, argc, span)
     }
 
     /// The frame at `base` (of `regs` registers) of the function `def`,
@@ -262,6 +298,12 @@ impl Interp {
     /// `argc` values from `args` on the stack as arguments, which it uses up.
     #[inline(never)]
     fn call_member(&mut self, f: Value, member: Option<u32>, args: usize, argc: usize, span: Span) -> Fallible<Value> {
+        self.call_nested(f, member, args, argc, span)
+    }
+
+    /// `call_member`, in place.
+    #[inline(always)]
+    fn call_nested(&mut self, f: Value, member: Option<u32>, args: usize, argc: usize, span: Span) -> Fallible<Value> {
         let (calls, values) = call_limits();
         if self.depth >= calls || self.stack.len() > values || self.stack_too_deep() {
             self.reset(args, args + argc);
@@ -418,6 +460,19 @@ impl Interp {
                 set(unsafe { &mut *regs.add($r as usize) }, v)
             }};
         }
+        // A whole number written in a register: when it holds one already,
+        // only the number changes.
+        macro_rules! w_int {
+            ($r:expr, $n:expr) => {{
+                let n = $n;
+                // SAFETY: as for `w`.
+                let slot = unsafe { &mut *regs.add($r as usize) };
+                match slot {
+                    Value::Int(x) => *x = n,
+                    slot => set(slot, Value::Int(n)),
+                }
+            }};
+        }
         macro_rules! fail {
             ($e:expr) => {
                 match $e {
@@ -440,14 +495,16 @@ impl Interp {
             // SAFETY: `ip` is at an instruction of the chunk: it starts at the
             // first one, goes to the next one only after an instruction that
             // may go on (the last one does not), or jumps to one (`Chunk::check`).
-            let op = unsafe { *ip };
+            let op: &Op = unsafe { &*ip };
             ip = unsafe { ip.add(1) };
-            match op {
+            #[cfg(test)]
+            super::tests::saw(op);
+            match *op {
                 Op::Move { dst, src } => w!(dst, dup(r!(src))),
-                Op::Const { dst, k } => w!(dst, dup(&code.chunk.consts[k as usize])),
+                Op::Const { dst, k } => w!(dst, dup(&chunk!().consts[k as usize])),
                 Op::Captured { dst, i } => w!(dst, dup(&clo.expect("a closure").captured[i as usize])),
                 Op::Global { dst, g } => {
-                    let v = fail!(self.global(&code.chunk, g, pc!()));
+                    let v = fail!(self.global(chunk!(), g, pc!()));
                     w!(dst, v);
                 }
                 Op::Sibling { dst, i } => w!(dst, sibling(clo, i)),
@@ -462,36 +519,33 @@ impl Interp {
                 Op::SetSelf { dst } => w!(dst, Value::Func(clo.expect("a closure").clone())),
 
                 Op::Add { dst, a, b } => {
-                    let v = match (r!(a), r!(b)) {
-                        (Value::Int(x), Value::Int(y)) => x.checked_add(*y).map(Value::Int),
-                        _ => None,
-                    };
-                    let v = match v {
-                        Some(v) => v,
-                        None => fail!(binop(BinOp::Add, r!(a), r!(b), at!())),
-                    };
+                    if let (Value::Int(x), Value::Int(y)) = (r!(a), r!(b)) {
+                        if let Some(n) = x.checked_add(*y) {
+                            w_int!(dst, n);
+                            continue;
+                        }
+                    }
+                    let v = fail!(binop(BinOp::Add, r!(a), r!(b), at!()));
                     w!(dst, v);
                 }
                 Op::AddInt { dst, a, n } => {
-                    let v = match r!(a) {
-                        Value::Int(x) => x.checked_add(n as i64).map(Value::Int),
-                        _ => None,
-                    };
-                    let v = match v {
-                        Some(v) => v,
-                        None => fail!(binop(BinOp::Add, r!(a), &Value::Int(n as i64), at!())),
-                    };
+                    if let Value::Int(x) = r!(a) {
+                        if let Some(n) = x.checked_add(n as i64) {
+                            w_int!(dst, n);
+                            continue;
+                        }
+                    }
+                    let v = fail!(binop(BinOp::Add, r!(a), &Value::Int(n as i64), at!()));
                     w!(dst, v);
                 }
                 Op::SubInt { dst, a, n } => {
-                    let v = match r!(a) {
-                        Value::Int(x) => x.checked_sub(n as i64).map(Value::Int),
-                        _ => None,
-                    };
-                    let v = match v {
-                        Some(v) => v,
-                        None => fail!(binop(BinOp::Sub, r!(a), &Value::Int(n as i64), at!())),
-                    };
+                    if let Value::Int(x) = r!(a) {
+                        if let Some(n) = x.checked_sub(n as i64) {
+                            w_int!(dst, n);
+                            continue;
+                        }
+                    }
+                    let v = fail!(binop(BinOp::Sub, r!(a), &Value::Int(n as i64), at!()));
                     w!(dst, v);
                 }
                 Op::Binary { op, dst, a, b } => {
@@ -689,8 +743,13 @@ impl Interp {
                 Op::CallGlobal { dst, site } => {
                     let s = &chunk!().calls[site as usize];
                     let (args, argc) = (base + s.args as usize, s.argc as usize);
-                    let callee = fail!(self.global(chunk!(), s.g, pc!()));
-                    let v = self.call_fast(callee, None, args, argc, at!());
+                    let v = match self.global_fn(chunk!(), s.g) {
+                        Some(clo) => self.call_closure(clo, None, args, argc, at!()),
+                        None => {
+                            let callee = fail!(self.global(chunk!(), s.g, pc!()));
+                            self.call_fast(callee, None, args, argc, at!())
+                        }
+                    };
                     refresh!();
                     w!(dst, fail!(v));
                 }
@@ -699,10 +758,10 @@ impl Interp {
                     let (args, argc) = (s.args as usize, s.argc as usize);
                     // A function that calls itself last starts again here.
                     if let (Some(me), None) = (clo, member) {
-                        if argc == code.arity && !test && self.steps_left != 0 && self.is_global(chunk!(), s.g, me) {
+                        if argc == std::hint::black_box(code).arity && !test && self.steps_left != 0 && self.is_global(chunk!(), s.g, me) {
                             self.steps_left -= 1;
                             span = at!();
-                            self.restart(regs, args, argc, code.chunk.regs);
+                            self.restart(regs, args, argc, chunk!().regs);
                             ip = start;
                             continue;
                         }
@@ -734,10 +793,10 @@ impl Interp {
                     let argc = argc as usize;
                     // A function that calls itself last starts again here.
                     if let (Value::Func(c), Some(me), None) = (r!(f), clo, member) {
-                        if Rc::ptr_eq(c, me) && argc == code.arity && !test && self.steps_left != 0 {
+                        if Rc::ptr_eq(c, me) && argc == std::hint::black_box(code).arity && !test && self.steps_left != 0 {
                             self.steps_left -= 1;
                             span = at!();
-                            self.restart(regs, f as usize + 1, argc, code.chunk.regs);
+                            self.restart(regs, f as usize + 1, argc, chunk!().regs);
                             ip = start;
                             continue;
                         }
@@ -749,10 +808,10 @@ impl Interp {
                 Op::TailCallSibling { site, test } => {
                     let s = &chunk!().siblings[site as usize];
                     let (i, args, argc) = (s.i, s.args as usize, s.argc as usize);
-                    if member == Some(i) && argc == code.arity && !test && self.steps_left != 0 {
+                    if member == Some(i) && argc == std::hint::black_box(code).arity && !test && self.steps_left != 0 {
                         self.steps_left -= 1;
                         span = at!();
-                        self.restart(regs, args, argc, code.chunk.regs);
+                        self.restart(regs, args, argc, chunk!().regs);
                         ip = start;
                         continue;
                     }
@@ -777,8 +836,10 @@ impl Interp {
     #[inline(always)]
     fn restart(&mut self, frame: *mut Value, args: usize, argc: usize, regs: usize) {
         for i in 0..argc {
-            // SAFETY: registers of the frame (`Chunk::check`), distinct since `args >= argc`.
-            unsafe { std::ptr::swap(frame.add(i), frame.add(args + i)) };
+            // SAFETY: registers of the frame (`Chunk::check`), distinct since
+            // `args >= argc`; the references end at once.
+            let (param, arg) = unsafe { (&mut *frame.add(i), &mut *frame.add(args + i)) };
+            set(param, take(arg));
         }
         for i in argc..regs {
             // SAFETY: a register of the frame, the only reference to it.
@@ -806,36 +867,63 @@ impl Interp {
         self.look_up(site, chunk.spans[at].0)
     }
 
+    /// The function that the name of the program `chunk.globals[g]` has as
+    /// its value, when the instruction saw it already (else `global`).
+    #[inline(always)]
+    fn global_fn(&self, chunk: &Chunk, g: u32) -> Option<Rc<Closure>> {
+        let site = &chunk.globals[g as usize];
+        if site.seen.get() == self.globals.stamp() {
+            if let super::Seen::Func(f) = &*site.value.borrow() {
+                // The names of the program did not change: it is still alive.
+                return f.upgrade();
+            }
+        }
+        None
+    }
+
     /// Whether the name of the program `chunk.globals[g]` has the function
     /// `clo` as its value (without a copy of it, when it was seen already).
     #[inline(always)]
     fn is_global(&self, chunk: &Chunk, g: u32, clo: &Rc<Closure>) -> bool {
         let site = &chunk.globals[g as usize];
+        if site.seen.get() != self.globals.stamp() {
+            // Seen for the first time (a function that only calls itself
+            // last reads its name here only): remembered for the next times.
+            self.remember(site);
+        }
         if site.seen.get() == self.globals.stamp() {
-            if let super::Seen::Func(f) = &*site.value.borrow() {
-                return std::ptr::eq(f.as_ptr(), Rc::as_ptr(clo));
-            }
+            return std::ptr::eq(site.func.get(), Rc::as_ptr(clo));
         }
         matches!(self.globals.get(&site.name), Some(Value::Func(f)) if Rc::ptr_eq(f, clo))
     }
 
     #[inline(never)]
     fn look_up(&self, site: &super::GlobalSite, span: Span) -> Fallible<Value> {
-        match self.globals.get(&site.name) {
-            Some(v) => {
-                let seen = match v {
-                    Value::Func(f) => Some(super::Seen::Func(Rc::downgrade(f))),
-                    v if !is_container(v) => Some(super::Seen::Plain(v.clone())),
-                    _ => None,
-                };
-                if let Some(seen) = seen {
-                    *site.value.borrow_mut() = seen;
-                    site.seen.set(self.globals.stamp());
-                }
-                Ok(v.clone())
-            }
+        match self.remember(site) {
+            Some(v) => Ok(v.clone()),
             None => Err(self.unknown_name(site.name, &site.scope, span)),
         }
+    }
+
+    /// The value of the name of `site`, which the site keeps (see `Seen`)
+    /// until the names of the program change.
+    #[inline(never)]
+    fn remember(&self, site: &super::GlobalSite) -> Option<&Value> {
+        let v = self.globals.get(&site.name)?;
+        let seen = match v {
+            Value::Func(f) => Some(super::Seen::Func(Rc::downgrade(f))),
+            v if !is_container(v) => Some(super::Seen::Plain(v.clone())),
+            _ => None,
+        };
+        site.func.set(match v {
+            Value::Func(f) => Rc::as_ptr(f),
+            _ => std::ptr::null(),
+        });
+        if let Some(seen) = seen {
+            *site.value.borrow_mut() = seen;
+            site.seen.set(self.globals.stamp());
+        }
+        Some(v)
     }
 
     /// Gives the names of the pattern `chunk.pats[pat]` the parts of the
@@ -1111,12 +1199,21 @@ impl Interp {
     }
 }
 
-/// How many calls may nest, and how many values their frames may hold.
+/// How many calls may nest, and how many values their frames may hold
+/// (`limits`, found when the budget or the depth is set).
 #[inline(always)]
 fn call_limits() -> (usize, usize) {
-    let budget = STACK_BUDGET.load(std::sync::atomic::Ordering::Relaxed);
-    let calls = MAX_DEPTH.load(std::sync::atomic::Ordering::Relaxed).min(budget / CALL_COST);
-    (calls, budget / std::mem::size_of::<Value>())
+    (CALLS.load(std::sync::atomic::Ordering::Relaxed), VALUES.load(std::sync::atomic::Ordering::Relaxed))
+}
+
+static CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new((4 << 20) / CALL_COST);
+static VALUES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new((4 << 20) / std::mem::size_of::<Value>());
+
+/// Sets the limits of `call_limits` for a budget of stack and a maximum depth
+/// (`interp::set_stack_budget`, `interp::set_max_depth`).
+pub(crate) fn set_limits(budget: usize, depth: usize) {
+    CALLS.store(depth.min(budget / CALL_COST), std::sync::atomic::Ordering::Relaxed);
+    VALUES.store(budget / std::mem::size_of::<Value>(), std::sync::atomic::Ordering::Relaxed);
 }
 
 /// The function number `i` of the group of the closure `clo`, as a closure

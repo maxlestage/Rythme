@@ -391,6 +391,10 @@ pub struct GlobalSite {
     /// (`Globals::stamp`): still its value while they have it.
     pub seen: std::cell::Cell<u64>,
     pub value: std::cell::RefCell<Seen>,
+    /// The address of the function of `value` (null when it is not one), to
+    /// tell at once whether a call is a call of the running function. It is
+    /// only compared, never followed.
+    pub func: std::cell::Cell<*const crate::value::Closure>,
 }
 
 /// A value of a name of the program, as an instruction keeps it. A function
@@ -657,8 +661,91 @@ pub fn jumps(op: BinOp, when: bool) -> u8 {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
+    use super::Op;
     use crate::interp::{Interp, Mode};
+
+    /// The name of each kind of instruction, in the order of `kind`.
+    const KINDS: [&str; 51] = [
+        "Move", "Const", "Captured", "Global", "Sibling", "Closure", "Group", "SetSelf", "Binary", "BinaryInt", "Add", "AddInt", "SubInt", "Unary",
+        "Index", "Range", "Try", "Field", "List", "ListNew", "ListFrom", "ListPush", "ListSpread", "ListCheck", "Record", "RecordNew", "RecordSet",
+        "RecordSets", "RecordSpread", "TextLit", "TextVal", "Jump", "JumpIf", "JumpCmp", "JumpCmpInt", "Match", "MatchCtor", "Let", "NoCase",
+        "NoClause", "Stop", "Call", "TailCall", "CallGlobal", "TailCallGlobal", "CallSibling", "TailCallSibling", "MethodFn", "CallMethod",
+        "TailCallMethod", "Return",
+    ];
+
+    /// The number of the kind of `op` in `KINDS` (a new instruction must be added to both).
+    fn kind(op: &Op) -> usize {
+        match op {
+            Op::Move { .. } => 0,
+            Op::Const { .. } => 1,
+            Op::Captured { .. } => 2,
+            Op::Global { .. } => 3,
+            Op::Sibling { .. } => 4,
+            Op::Closure { .. } => 5,
+            Op::Group { .. } => 6,
+            Op::SetSelf { .. } => 7,
+            Op::Binary { .. } => 8,
+            Op::BinaryInt { .. } => 9,
+            Op::Add { .. } => 10,
+            Op::AddInt { .. } => 11,
+            Op::SubInt { .. } => 12,
+            Op::Unary { .. } => 13,
+            Op::Index { .. } => 14,
+            Op::Range { .. } => 15,
+            Op::Try { .. } => 16,
+            Op::Field { .. } => 17,
+            Op::List { .. } => 18,
+            Op::ListNew { .. } => 19,
+            Op::ListFrom { .. } => 20,
+            Op::ListPush { .. } => 21,
+            Op::ListSpread { .. } => 22,
+            Op::ListCheck { .. } => 23,
+            Op::Record { .. } => 24,
+            Op::RecordNew { .. } => 25,
+            Op::RecordSet { .. } => 26,
+            Op::RecordSets { .. } => 27,
+            Op::RecordSpread { .. } => 28,
+            Op::TextLit { .. } => 29,
+            Op::TextVal { .. } => 30,
+            Op::Jump { .. } => 31,
+            Op::JumpIf { .. } => 32,
+            Op::JumpCmp { .. } => 33,
+            Op::JumpCmpInt { .. } => 34,
+            Op::Match { .. } => 35,
+            Op::MatchCtor { .. } => 36,
+            Op::Let { .. } => 37,
+            Op::NoCase { .. } => 38,
+            Op::NoClause => 39,
+            Op::Stop { .. } => 40,
+            Op::Call { .. } => 41,
+            Op::TailCall { .. } => 42,
+            Op::CallGlobal { .. } => 43,
+            Op::TailCallGlobal { .. } => 44,
+            Op::CallSibling { .. } => 45,
+            Op::TailCallSibling { .. } => 46,
+            Op::MethodFn { .. } => 47,
+            Op::CallMethod { .. } => 48,
+            Op::TailCallMethod { .. } => 49,
+            Op::Return { .. } => 50,
+        }
+    }
+
+    thread_local! {
+        /// The kinds of instructions run by this thread (bit `kind`).
+        static SEEN: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    }
+
+    /// Called by `run` before each instruction, in tests.
+    pub(crate) fn saw(op: &Op) {
+        SEEN.with(|s| s.set(s.get() | 1 << kind(op)));
+    }
+
+    /// The kinds of instructions this thread did not run.
+    fn not_seen() -> Vec<&'static str> {
+        let seen = SEEN.with(|s| s.get());
+        KINDS.iter().enumerate().filter(|&(i, _)| seen & 1 << i == 0).map(|(_, k)| *k).collect()
+    }
 
     #[test]
     fn instructions_stay_small() {
@@ -674,6 +761,37 @@ mod tests {
             Ok(v) => v.map(|v| v.repr()).unwrap_or_default(),
             Err(d) => format!("error[{}] {}", d.code, d.trace.len()),
         }
+    }
+
+    /// Steps through `code` under the debugger, reading the frames, the local
+    /// names and an expression at each pause: its value and how many pauses.
+    fn debug(code: &str) -> String {
+        use crate::debug::{Breakpoints, Frontend, Paused, Resume, Session};
+        struct Steps(std::rc::Rc<std::cell::Cell<usize>>);
+        impl Frontend for Steps {
+            fn paused(&mut self, p: &mut Paused) -> Resume {
+                self.0.set(self.0.get() + 1);
+                let frames = p.frames();
+                for i in 0..frames.len() {
+                    let _ = p.locals(i);
+                }
+                let _ = p.eval(0, "1 + 2");
+                // Into the calls, then over them, then out of them.
+                [Resume::Step, Resume::Step, Resume::Next, Resume::Finish][self.0.get() % 4]
+            }
+        }
+        let pauses = std::rc::Rc::new(std::cell::Cell::new(0));
+        let file = crate::source::add("debugged.ry", code);
+        let items = crate::parser::parse(crate::lexer::lex(code, file).unwrap()).unwrap();
+        let mut it = Interp::new();
+        it.watched = true;
+        it.steps_left = 0;
+        it.debugger = Some(Box::new(Session::new(Box::new(Steps(pauses.clone())), Breakpoints::default(), Resume::Step, true)));
+        let r = match it.exec_items(&items, Mode::Run) {
+            Ok(v) => format!("ok {}", v.map(|v| v.repr()).unwrap_or_default()),
+            Err(d) => format!("error[{}]", d.code),
+        };
+        format!("{r}, pauses {}", pauses.get())
     }
 
     /// Programs that go through every kind of instruction: run under Miri
@@ -692,11 +810,31 @@ mod tests {
             ("fn h(x) = Some(x)?\nfn k(x) = None?\n[h(1), k(2)]", "[1, None]"),
             ("fn bad(n) = n + \"a\"\nfn outer(n) = 1 + bad(n)\nouter(1)", "error[E005] 2"),
             ("fn deep(n) = 1 + deep(n + 1)\ndeep(0)", "error[E014] 40"),
+            (
+                "fn outer(n)\n  fn a(k) = k + 1\n  fn b(k) = map([k, n], a)\n  go = fn(k) = if k == 0 then 0 else go(k - 1)\n  [b(n), go(3)]\nend\n\
+                 fn app(f, x) = f(x) * x\nfn up(s) = s.upper()\nfn pick(b, x) = if b then x * 2 else x == 3\n\
+                 fn ends(xs, r) = [[..xs, 1], {a: len(xs), ..r}, {..r, b: 2, c: 3}]\nfn firsts([a, ..rest]) = a\nfn firsts([]) = 0\n\
+                 [outer(4), app(fn(x) = x + 1, 5), up(\"ab\"), pick(true, 4), pick(false, 3), ends([7], {b: 1}), firsts([5, 6]), firsts([])]",
+                "[[[5, 5], 0], 30, \"AB\", 8, true, [[7, 1], {a: 1, b: 1}, {b: 2, c: 3}], 5, 0]",
+            ),
+            ("fn f(0) = 1\nfn g(n) = f(n) + 1\ng(2)", "error[E006] 1"),
+            ("x = Some(2)\nmatch x\n  None -> 0\nend", "error[E006] 0"),
         ];
         // More stack than the budget of nested calls (4 MB), as `rythme` has.
-        let runs = std::thread::Builder::new().stack_size(64 << 20).spawn(move || cases.map(|(code, _)| run(code))).unwrap();
-        for ((code, expected), got) in cases.iter().zip(runs.join().unwrap()) {
+        let runs = std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || {
+                let got = cases.map(|(code, _)| run(code));
+                // The places where the debugger pauses, with what it reads there.
+                let debugged = debug(cases[7].0);
+                (got, debugged, not_seen())
+            })
+            .unwrap();
+        let (got, debugged, missing) = runs.join().unwrap();
+        assert!(debugged.starts_with("ok [20, [1, 2, 3], 3, \"AB\"], pauses "), "{debugged}");
+        for ((code, expected), got) in cases.iter().zip(got) {
             assert_eq!(&got, expected, "{code}");
         }
+        assert!(missing.is_empty(), "instructions that no program runs: {missing:?}");
     }
 }
