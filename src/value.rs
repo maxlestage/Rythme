@@ -14,17 +14,20 @@ use crate::compile::{FnCode, Sibling};
 pub use crate::dict::Map;
 use crate::symbol::Sym;
 
+// The values that hold no memory of their own come first: telling them from
+// the others (to copy or free a value) is then one comparison of the tag.
 #[derive(Clone)]
 pub enum Value {
     Unit,
     Bool(bool),
     Int(i64),
-    /// A whole number outside of the 64-bit range (never one that fits in an `Int`).
-    Big(Rc<BigInt>),
     Float(f64),
-    Text(Text),
     /// `:ok`: a value that is only its name.
     Symbol(Sym),
+    Builtin(&'static Builtin),
+    /// A whole number outside of the 64-bit range (never one that fits in an `Int`).
+    Big(Rc<BigInt>),
+    Text(Text),
     List(List),
     Record(Rc<Record>),
     Variant(Rc<Variant>),
@@ -33,7 +36,6 @@ pub enum Value {
     /// A set: values (but functions) without repetition.
     Set(Map),
     Func(Rc<Closure>),
-    Builtin(&'static Builtin),
     Ctor(Rc<CtorInfo>),
 }
 
