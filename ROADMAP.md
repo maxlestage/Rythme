@@ -173,9 +173,19 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
     to `map`, `fold`... called in place, the positions of fields kept by the
     instructions that read and update them (`bench/`: `count`, `fib`,
     `match`, `records` about twice as fast as 1.0).
-  - [ ] Faster still: values of 16 bytes instead of 24, a compact list of
-    Floats (see below), and calls that do not go through a Rust call each
-    (tried as one loop for every frame: in safe Rust it was slower).
+  - [x] Faster still: values of 16 bytes instead of 24; values of types
+    and records that keep their first fields in place (one block of memory
+    instead of two); lists of Floats made by `matmul`, `vector_scale`...
+    kept as numbers; a value stack that keeps its room, so that functions
+    given to `map` or `fold` no longer write their registers again; values
+    built by their constructors and functions of a group that call each
+    other last without the path of calls (`bench/`: `local` 1.7 times as
+    fast as 1.0, `bst` 1.6, the others 1.05 to 1.25; the playground needs
+    no more stack than 1.0).
+  - [ ] Calls that do not go through a Rust call each (tried as one loop
+    for every frame: in safe Rust it was slower), and short texts kept in
+    the value itself (most of the time left in `bench/text.ry` is one block
+    of memory per text).
 - [x] **Faster where the virtual machine cannot help**: regexes (an engine
   that tries one way after the other with a table of the places reached,
   same answers, `bench/regex.ry` about twice as fast), built-in functions
