@@ -209,6 +209,7 @@ impl Interp {
         match f {
             Value::Func(clo) => self.call_closure(clo, member, args, argc, span),
             Value::Builtin(b) => self.call_builtin_fast(b, args, argc, span),
+            Value::Ctor(c) => self.construct_fast(c, args, argc, span),
             f => self.call_member(f, member, args, argc, span),
         }
     }
@@ -276,6 +277,20 @@ impl Interp {
             return r;
         }
         self.call_member(Value::Builtin(b), None, args, argc, span)
+    }
+
+    /// A value built by its constructor (`Circle(r)`): what `call_member`,
+    /// `call_loop` and `construct` do for it, without their frames.
+    #[inline(never)]
+    fn construct_fast(&mut self, c: Rc<CtorInfo>, args: usize, argc: usize, span: Span) -> Fallible<Value> {
+        let (calls, values) = call_limits();
+        if c.fields.len() == argc && self.steps_left != 0 && self.depth < calls && self.stack.len() <= values && !self.stack_too_deep() {
+            self.steps_left -= 1;
+            let fields = Fields::take_from(&mut self.stack[args..args + argc]);
+            let r = Ok(Value::Variant(Rc::new(Variant { ctor: c, fields })));
+            return if self.steps_left == 0 { self.return_hook(r) } else { r };
+        }
+        self.call_member(Value::Ctor(c), None, args, argc, span)
     }
 
     /// The frame at `base` (of `regs` registers) of the function `def`,
@@ -824,6 +839,11 @@ impl Interp {
                         }
                     }
                     let callee = fail!(self.global(chunk!(), s.g, pc!()));
+                    if let (Value::Ctor(_), false) = (&callee, test) {
+                        if let Some(v) = self.built_last(&callee, base + args, argc, test) {
+                            return Exec::Return(v);
+                        }
+                    }
                     return Exec::Tail(callee, None, base + args, argc, at!(), test);
                 }
                 Op::CallSibling { dst, site } => {
@@ -860,6 +880,11 @@ impl Interp {
                     }
                     // SAFETY: a register of the frame, the only reference to it.
                     let callee = take(unsafe { &mut *regs.add(f as usize) });
+                    if let (Value::Ctor(_), false) = (&callee, test) {
+                        if let Some(v) = self.built_last(&callee, base + f as usize + 1, argc, test) {
+                            return Exec::Return(v);
+                        }
+                    }
                     return Exec::Tail(callee, None, base + f as usize + 1, argc, at!(), test);
                 }
                 Op::TailCallSibling { site, test } => {
@@ -904,6 +929,20 @@ impl Interp {
             if !is_plain(v) {
                 *v = Value::Unit;
             }
+        }
+    }
+
+    /// A value built last (`Node(l, v, r)` in tail position), with its
+    /// fields taken from the `argc` registers from `args`: what `call_loop`
+    /// does with such a call (not counted as one), without going through it.
+    #[inline(never)]
+    fn built_last(&mut self, callee: &Value, args: usize, argc: usize, test: bool) -> Option<Value> {
+        match callee {
+            Value::Ctor(c) if c.fields.len() == argc && !test => {
+                let fields = Fields::take_from(&mut self.stack[args..args + argc]);
+                Some(Value::Variant(Rc::new(Variant { ctor: c.clone(), fields })))
+            }
+            _ => None,
         }
     }
 
