@@ -99,6 +99,26 @@ pub struct List {
 struct Shared {
     refs: Cell<usize>,
     buf: Buf<Value>,
+    /// The numbers of a list of Floats made by a function on numbers
+    /// (`matmul`, `vector_scale`...), 8 bytes each instead of 16: `buf`
+    /// is then empty (see `Floats`).
+    floats: Option<Box<Floats>>,
+}
+
+/// A list of Floats kept as numbers: functions on numbers read them as they
+/// are (`List::floats`), and they become values the first time something
+/// else reads the list (`List::as_slice`), once. The list is the same
+/// either way: printed, compared and matched as a list of Floats.
+struct Floats {
+    xs: Box<[f64]>,
+    values: std::cell::OnceCell<Buf<Value>>,
+}
+
+impl Floats {
+    #[inline(never)]
+    fn values(&self) -> &Buf<Value> {
+        self.values.get_or_init(|| Buf::from_vec(self.xs.iter().map(|&x| Value::Float(x)).collect()))
+    }
 }
 
 /// Lists start before this position in their memory (24 bits; less in the
@@ -114,8 +134,32 @@ impl List {
     /// The list of the elements `start..start + len` of `buf`, which no list shares.
     fn with(buf: Buf<Value>, start: usize, len: u32) -> List {
         debug_assert!(start < STARTS);
-        let shared = Box::new(Shared { refs: Cell::new(1), buf });
+        let shared = Box::new(Shared { refs: Cell::new(1), buf, floats: None });
         List { start: start_bytes(start), len, shared: NonNull::from(Box::leak(shared)) }
+    }
+
+    /// A list of Floats, kept as numbers (see `Floats`).
+    pub fn floats(xs: Vec<f64>) -> List {
+        let len = list_len(xs.len());
+        let floats = Some(Box::new(Floats { xs: xs.into_boxed_slice(), values: std::cell::OnceCell::new() }));
+        let shared = Box::new(Shared { refs: Cell::new(1), buf: Buf::from_vec(Vec::new()), floats });
+        List { start: [0; 3], len, shared: NonNull::from(Box::leak(shared)) }
+    }
+
+    /// Its numbers, when it is a list of Floats kept as numbers.
+    #[inline]
+    pub fn as_floats(&self) -> Option<&[f64]> {
+        Some(&self.shared().floats.as_ref()?.xs[self.start()..self.end()])
+    }
+
+    /// The memory of its values.
+    #[inline(always)]
+    fn values(&self) -> &Buf<Value> {
+        let shared = self.shared();
+        match &shared.floats {
+            None => &shared.buf,
+            Some(f) => f.values(),
+        }
     }
 
     #[inline(always)]
@@ -138,12 +182,15 @@ impl List {
 
     #[inline(always)]
     pub fn as_slice(&self) -> &[Value] {
-        self.shared().buf.slice(self.start(), self.end())
+        self.values().slice(self.start(), self.end())
     }
 
     /// This list followed by the elements of `tail`: in the room after it
     /// when it can, so that adding at the end again and again is fast.
     pub fn concat(&self, tail: &[Value]) -> List {
+        if self.shared().floats.is_some() {
+            return self.concat_floats(tail);
+        }
         let len = list_len(self.len() + tail.len());
         let in_place = self.may_grow_with(tail);
         match buffer::append(&self.shared().buf, self.start(), self.end(), tail, in_place) {
@@ -154,6 +201,15 @@ impl List {
             }
             Some(buf) => List::with(buf, 0, len),
         }
+    }
+
+    /// `concat` for a list of Floats kept as numbers: a copy.
+    #[inline(never)]
+    fn concat_floats(&self, tail: &[Value]) -> List {
+        let mut v = Vec::with_capacity(self.len() + tail.len());
+        v.extend_from_slice(self.as_slice());
+        v.extend_from_slice(tail);
+        List::new(v)
     }
 
     /// This list followed by `x`.
@@ -1268,6 +1324,26 @@ mod tests {
     fn values_are_16_bytes() {
         assert_eq!(std::mem::size_of::<Value>(), 16);
         assert_eq!(std::mem::size_of::<Option<Value>>(), 16);
+    }
+
+    /// A list of Floats kept as numbers is the same list as one of values.
+    #[test]
+    fn lists_of_floats_are_lists() {
+        let xs = [1.5, -0.0, f64::NAN, 3.0, 1e300];
+        let kept = List::floats(xs.to_vec());
+        let plain = List::new(xs.iter().map(|&x| Value::Float(x)).collect());
+        let bits = |f: &[f64]| f.iter().map(|x| x.to_bits()).collect::<Vec<_>>();
+        assert_eq!(kept.as_floats().map(bits), Some(bits(&xs)));
+        assert_eq!(plain.as_floats(), None);
+        let (k, p) = (Value::List(kept.slice(1, 4)), Value::List(plain.slice(1, 4)));
+        assert_eq!(kept.slice(3, 5).as_floats(), Some(&xs[3..5]));
+        assert_eq!(k.repr(), p.repr());
+        assert_eq!(k.repr(), "[-0.0, nan, 3.0]");
+        assert_eq!(k.total_cmp(&p), Ordering::Equal);
+        let grown = kept.push(Value::Int(7));
+        assert_eq!(Value::List(grown).repr(), "[1.5, -0.0, nan, 3.0, 1e300, 7]");
+        assert_eq!(Value::List(kept.slice(3, 5)).repr(), "[3.0, 1e300]");
+        assert!(Value::List(kept.slice(0, 2)).equals(&Value::List(plain.slice(0, 2))));
     }
 
     /// Lists that start beyond 24 bits are copied, the same.
