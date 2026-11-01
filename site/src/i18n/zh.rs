@@ -112,6 +112,7 @@ pub const ZH: Texts = Texts {
     pg_save: "下载",
     pg_save_title: "把程序下载为 .ry 文件",
     pg_offline: "访问过一次之后，在线试玩没有网络也能用，你正在写的代码会保存在这个浏览器里。把网站安装成应用，随时打开。",
+    pg_catalog_failed: "无法加载此语言的解释器消息：暂时以英文显示。",
     pg_share: "分享",
     pg_share_title: "复制一个能打开这个程序的链接：代码就在链接里，不会发送到任何地方",
     pg_share_link: "这个程序的链接",

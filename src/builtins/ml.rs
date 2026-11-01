@@ -447,7 +447,8 @@ fn filled(a: &[Value], f: &str, x: f64, span: Span) -> Fallible<Value> {
         return Ok(Value::list(vec![Value::Float(x); rows]));
     }
     let cols = count_arg(a, 1, f, span)?;
-    if rows.saturating_mul(cols.max(1)) > MAX_LIST {
+    // One row is made even when there are none: it must fit too.
+    if cols > MAX_LIST || rows.saturating_mul(cols.max(1)) > MAX_LIST {
         return Err(too_big(true, span));
     }
     let row = Value::list(vec![Value::Float(x); cols]);

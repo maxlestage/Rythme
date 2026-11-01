@@ -6,7 +6,8 @@
 //! It receives `{id, code, mode, lang, seed}` (the modes of `rythme_run`: 0 runs,
 //! 1 checks, 2 tests, 5 shows the steps of one expression; `lang` is the position of the
 //! language of the messages in `rythme::lang::LANGUAGES`; `seed` a whole number or
-//! `null`) and answers `{id, text, ms}`, or `{id, trap, ms}` when the run broke the
+//! `null`; the first job of a worker has `catalog` too, the catalog of the messages of
+//! that language when it is not compiled in, which it registers) and answers `{id, text, ms}`, or `{id, trap, ms}` when the run broke the
 //! WebAssembly itself (no more stack…): the page then starts a new worker, so that
 //! nothing is left of it. It says `{ready: true}` once it listens.
 
@@ -22,6 +23,9 @@ pub fn start() {
     // The run is called through JavaScript: a trap of the WebAssembly (the stack of the
     // browser exhausted…) comes back as an error rather than ending this code.
     let run = Closure::<dyn Fn(JsValue) -> JsValue>::new(|job: JsValue| {
+        if let Some(catalog) = js::string(&job, "catalog") {
+            let _ = rythme::lang::register(&catalog);
+        }
         let code = js::string(&job, "code").unwrap_or_default();
         let mode = js::get(&job, "mode").as_f64().unwrap_or(0.0) as u32;
         let lang = js::get(&job, "lang").as_f64().unwrap_or(0.0) as u32;

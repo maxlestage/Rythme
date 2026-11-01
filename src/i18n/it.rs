@@ -10198,7 +10198,7 @@ Le versioni e cosa è cambiato: https://github.com/maxlestage/Rythme/releases
 Nella 1.x, un programma che funziona continua a funzionare, con lo stesso output.
 "#,
         ),
-        ("unknown shell `{s}`", "shell sconosciuta `{s}`"),
+        ("unknown shell `{s}`.", "shell sconosciuta `{s}`."),
         ("which shell?", "quale shell?"),
         (
             r#"{what} Write one of bash, zsh, fish, powershell, like `rythme completions bash`
@@ -10267,5 +10267,6 @@ vedi `rythme completions --help`"#,
   e rythme test, poi stampa la voce e i passi di una pull request.
   --verify FILE...  il controllo dell'indice stesso sulle sue voci (packages/NOME.toml)"#,
         ),
+        ("the argument `{shown}` is not valid UTF-8: Rythme reads only names and words written in UTF-8; rename the file, or give the program its input another way", "l'argomento `{shown}` non è UTF-8 valido: Rythme legge solo nomi e parole scritti in UTF-8; rinomina il file, oppure dai al programma il suo input in un altro modo"),
     ],
 }

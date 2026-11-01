@@ -328,8 +328,15 @@ fn version_upgrade_completions_and_manual_page() {
     }
     assert_eq!(rythme(&["completions"]).code, 2);
     assert_eq!(rythme(&["completions", "tcsh"]).code, 2);
-    // The bash script is valid bash, when bash is there to say so.
-    if let Ok(out) = std::process::Command::new("bash").args(["-n", "-c", &rythme(&["completions", "bash"]).stdout]).output() {
+    // The bash script is valid bash, when bash is there to say so. Not on
+    // Windows: `bash` there may be the stub of WSL, which fails without a
+    // Linux installed, whatever the script.
+    let bash = if cfg!(windows) {
+        Err(std::io::ErrorKind::Unsupported.into())
+    } else {
+        std::process::Command::new("bash").args(["-n", "-c", &rythme(&["completions", "bash"]).stdout]).output()
+    };
+    if let Ok(out) = bash {
         assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
     }
     let r = rythme(&["man"]);

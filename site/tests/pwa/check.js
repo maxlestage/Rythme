@@ -502,6 +502,18 @@ async function verify(mode) {
   check(handed.data && handed.data.url === sheet && sheet.includes("#code=") && handed.msg === handed.ui, "iOS: Share opens the share sheet with the link", handed);
   await iphone.close();
 
+  // The catalog of the interpreter's messages cannot be fetched (German here): the
+  // playground still runs, its messages in English, with a quiet note saying so.
+  const nocatalog = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: "block" });
+  await nocatalog.route(/\/pkg\/catalog-[a-z]+\.txt/, (route) => route.abort());
+  const lost = await nocatalog.newPage();
+  await lost.goto(`${base}/de/playground/`);
+  await ran(lost);
+  await setCode(lost, "fn double(x) = x * 2\nprint(doubel(2))\n");
+  const english = await runAndRead(lost, "#check");
+  check(english.includes("error[E003]") && (await lost.isVisible("#catalog-note")), "without its catalog, the playground speaks English and says so", english);
+  await nocatalog.close();
+
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "fr-FR", acceptDownloads: true });
   context.on("page", watch);
   const page = await context.newPage();

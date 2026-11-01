@@ -12,6 +12,24 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### A lighter playground
+
+The website's playground downloads its interpreter with English and French
+only, and the catalog of the page's language beside it: adding a language no
+longer grows the download.
+
+- A feature of the crate, `runtime-catalogs`: `t!` and `lang::pick` find
+  the other languages in catalogs registered while running
+  (`lang::register`), files written by `lang::catalog`. Without the feature
+  (the command, the standalone playground), nothing changes.
+  `tests/catalogs.rs` checks that both give the same messages and help, in
+  every language.
+- The playground's WebAssembly goes from 4.5 MB to 2.1 MB (1.05 MB to
+  0.58 MB in Brotli); each catalog is about 90 KB in Brotli, fetched with it,
+  cached and kept offline. On a slow phone, the first run comes 2 s sooner.
+  If a catalog cannot be fetched, the messages are in English and a note
+  says so.
+
 ### Italian and Japanese
 
 Rythme now speaks eight languages: Italian (`--lang it`, `it_IT`) and
@@ -354,6 +372,26 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   gives `Եւ`, and Georgian letters stay as they are. A program that
   capitalizes one of these characters prints another text: a bug fix.
   `upper` does not change.
+- **Found by auditing the tools around the interpreter** (with new fuzzers
+  of the checker, the formatter, the fixes, the language server and every
+  built-in function on edge values):
+  - `from_base("0é", 16)` and `zeros(0, 10 ** 18)` (also `ones`) stopped
+    Rythme with an internal error; they give `Err(...)` and E023.
+  - The checker no longer reports a function that is never called on an
+    empty value written in the code: `map_keys({}, len)`,
+    `take_while("", len)`, `merge_with` of two records without a name in
+    common (as it already did for `[]`). For `sum(list, f)`, it says that
+    `f` must return a number (it said "true or false").
+  - `rythme fix`: `else ()` goes where `else` was expected (inside
+    `print(if x then y)`, not after the `)`), and `else ()` and `then` go
+    before a comment that ends the line, not inside it; `fn f"..."` is no
+    longer taken for an f-string.
+  - A command-line word that is not UTF-8 (a file name made on another
+    system) is a usage error (exit code 2) instead of a crash; `rythme fmt`
+    says why a file cannot be read like the other commands (not UTF-8, saved
+    in UTF-16...) and refuses unknown options written with one `-`.
+  - `rythme.lock` must give a commit in hexadecimal and an address that git
+    cannot take as an option.
 
 ### Performance
 

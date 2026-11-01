@@ -101,6 +101,16 @@ struct Playground {
     /// The position of the language of the page in `rythme::lang::LANGUAGES`: the
     /// language of the interpreter's messages.
     lang: u32,
+    /// The catalog of the interpreter's messages in that language, being fetched since
+    /// the page started (`None` once read, and for English and French, compiled in).
+    catalog_fetch: RefCell<Option<JsValue>>,
+    /// That catalog, once registered here (the help, formatting): the worker gets it
+    /// with its first job.
+    catalog: RefCell<Option<String>>,
+    /// The current worker has the catalog.
+    catalog_sent: Cell<bool>,
+    /// The note that says the messages are in English: the catalog could not be fetched.
+    catalog_note: Option<HtmlElement>,
     /// The welcome program, written in the page by the server.
     welcome: String,
     source: HtmlTextAreaElement,
@@ -189,12 +199,19 @@ pub fn start() {
     let lang_code = page.get_attribute("data-lang").unwrap_or_else(|| "en".into());
     let lang = rythme::lang::Lang::all().position(|l| l.code() == lang_code).unwrap_or(0) as u32;
     let ui = js_sys::JSON::parse(&page.get_attribute("data-ui").unwrap_or_default()).unwrap_or_else(|_| js_sys::Object::new().into());
+    // At once: the head has asked for it already (a prefetch), while the interpreter
+    // downloaded.
+    let catalog_fetch = page.get_attribute("data-catalog").map(|url| JsValue::from(dom::window().fetch_with_str(&url)));
     let source: HtmlTextAreaElement = id("source");
     let stepper: HtmlElement = id("stepper");
     let shared_text: HtmlElement = id("shared-text");
     let pg = Rc::new(Playground {
         t: Texts(ui),
         lang,
+        catalog_fetch: RefCell::new(catalog_fetch),
+        catalog: RefCell::new(None),
+        catalog_sent: Cell::new(false),
+        catalog_note: dom::by_id("catalog-note"),
         welcome: source.value(),
         highlight: id("highlight"),
         gutter: id("gutter"),
@@ -378,6 +395,7 @@ impl Playground {
             old.terminate();
         }
         self.ready.set(false);
+        self.catalog_sent.set(false);
         let options = WorkerOptions::new();
         options.set_type(WorkerType::Module);
         let url = self.page.get_attribute("data-worker").unwrap_or_default();
@@ -402,8 +420,9 @@ impl Playground {
             let data = msg.data();
             if js::get(&data, "ready").is_truthy() {
                 p.ready.set(true);
-                if let Some(job) = p.pending.borrow_mut().take() {
-                    let _ = w.post_message(&job);
+                let pending = p.pending.borrow_mut().take();
+                if let Some(job) = pending {
+                    p.send(&w, &job);
                 }
             } else {
                 p.finish(&data);
@@ -489,9 +508,45 @@ impl Playground {
         if self.ready.get()
             && let Some(worker) = self.worker.borrow().as_ref()
         {
-            let _ = worker.post_message(&job);
+            self.send(worker, &job);
         } else {
             *self.pending.borrow_mut() = Some(job);
+        }
+    }
+
+    /// Gives a job to the worker, with the catalog of the messages if it does not have
+    /// it yet.
+    fn send(&self, worker: &Worker, job: &JsValue) {
+        if !self.catalog_sent.get()
+            && let Some(catalog) = self.catalog.borrow().as_ref()
+        {
+            js::set(job, "catalog", &JsValue::from_str(catalog));
+            self.catalog_sent.set(true);
+        }
+        let _ = worker.post_message(job);
+    }
+
+    /// The catalog of the messages in the language of the page, registered here and kept
+    /// for the worker. If it cannot be fetched (offline before it was saved, a broken
+    /// deployment), the messages stay in English and a note says so.
+    async fn load_catalog(&self) {
+        let fetching = self.catalog_fetch.borrow_mut().take();
+        let Some(fetching) = fetching else { return };
+        let text = async {
+            let response = js::wait(fetching).await?;
+            if !js::get(&response, "ok").is_truthy() {
+                return Err(JsValue::NULL);
+            }
+            js::call_async(&response, "text", &[]).await
+        }
+        .await;
+        match text.ok().and_then(|t| t.as_string()) {
+            Some(text) if rythme::lang::register(&text).is_ok() => *self.catalog.borrow_mut() = Some(text),
+            _ => {
+                if let Some(note) = &self.catalog_note {
+                    note.set_hidden(false);
+                }
+            }
         }
     }
 
@@ -965,6 +1020,7 @@ impl Playground {
         if let Ok(examples) = fetch_json(&url).await {
             *self.examples.borrow_mut() = examples;
         }
+        self.load_catalog().await;
         match example.filter(|e| self.has_example(e)) {
             Some(example) => self.load_example(&example),
             None if asked.code.is_some() && asked.steps => self.show_steps(&asked.expr, asked.step),
