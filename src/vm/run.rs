@@ -68,8 +68,9 @@ enum Exec {
     /// An error; when the body of the definition had started, the place of
     /// the call, for the trace of calls (an error while the function chooses
     /// its definition does not show it, see `Chunk::choosing`). After the
-    /// function called itself last, the place of that call.
-    Error(Box<Diagnostic>, Option<Span>),
+    /// function called itself last, the place of that call. Then the
+    /// function of the group that was running (see `Op::TailCallSibling`).
+    Error(Box<Diagnostic>, Option<Span>, Option<u32>),
 }
 
 /// The nominal stack a nested call used in the tree-walking interpreter: the
@@ -123,7 +124,7 @@ impl Interp {
         let kind = if test { Kind::Test } else { Kind::Top };
         match self.exec(code, None, None, base, kind, span) {
             Exec::Return(v) => Ok(v),
-            Exec::Error(d, _) => Err(d),
+            Exec::Error(d, ..) => Err(d),
             Exec::Tail(..) => unreachable!("no call in tail position at the top level"),
         }
     }
@@ -164,12 +165,12 @@ impl Interp {
         let mut test = None;
         let r = match self.exec(code, Some(clo), None, args, Kind::Call, span) {
             Exec::Return(v) => Ok(v),
-            Exec::Error(mut d, called) => {
+            Exec::Error(mut d, called, member) => {
                 if let Some(span) = called {
                     if self.steps_left == 0 {
                         d = self.error_hook(d);
                     }
-                    add_frame(&mut d, &clo.def, span);
+                    add_frame(&mut d, member_code(clo, member).0, span);
                 }
                 Err(d)
             }
@@ -234,7 +235,8 @@ impl Interp {
                         Ok(v)
                     }
                 }
-                Exec::Error(d, called) => {
+                Exec::Error(d, called, now) => {
+                    let def = if now == member { def } else { member_code(&clo, now).0 };
                     let d = self.call_failed(d, called, def, args, regs);
                     if self.steps_left == 0 {
                         self.return_hook(Err(d))
@@ -422,12 +424,12 @@ impl Interp {
                     self.reset(base, base + regs);
                     return Ok(v);
                 }
-                Exec::Error(mut d, called) => {
+                Exec::Error(mut d, called, now) => {
                     if let Some(span) = called {
                         if self.steps_left == 0 {
                             d = self.error_hook(d);
                         }
-                        add_frame(&mut d, def, span);
+                        add_frame(&mut d, if now == member { def } else { member_code(clo, now).0 }, span);
                     }
                     self.reset(base, base + regs);
                     return Err(d);
@@ -476,11 +478,23 @@ impl Interp {
     /// Runs the instructions of `code` (of the closure `clo`, the function
     /// `member` of its group) in the frame at `base`, from the first one.
     /// `span`: where it was called, or the place of a top-level expression.
-    fn exec(&mut self, code: &FnCode, clo: Option<&Rc<Closure>>, member: Option<u32>, base: usize, kind: Kind, mut span: Span) -> Exec {
+    #[allow(clippy::too_many_arguments)]
+    fn exec<'a>(
+        &mut self,
+        mut code: &'a FnCode,
+        clo: Option<&'a Rc<Closure>>,
+        mut member: Option<u32>,
+        base: usize,
+        kind: Kind,
+        mut span: Span,
+    ) -> Exec {
         // What each instruction needs, kept in registers of the machine:
         // where the instruction is, and where the registers of the frame
         // are. The rest is read where it is needed.
-        let start: *const Op = code.chunk.ops.as_ptr();
+        let mut start: *const Op = code.chunk.ops.as_ptr();
+        // The registers of the frame: those of the function called (another
+        // function of its group may run in it, see `Op::TailCallSibling`).
+        let frame = code.chunk.regs;
         let mut ip = start;
         debug_assert!(base + code.chunk.regs <= self.stack.len());
         // SAFETY: the registers of the frame are on the stack (see the module).
@@ -541,7 +555,7 @@ impl Interp {
             ($e:expr) => {
                 match $e {
                     Ok(v) => v,
-                    Err(d) => return Exec::Error(d, (!chunk!().chooses(pc!())).then_some(span)),
+                    Err(d) => return Exec::Error(d, (!chunk!().chooses(pc!())).then_some(span), member),
                 }
             };
         }
@@ -658,7 +672,7 @@ impl Interp {
                     // Outside of any function: an error, not one the debugger stops on.
                     Wrap::None | Wrap::Err => {
                         self.question_at_top = true;
-                        return Exec::Error(question_outside(span), None);
+                        return Exec::Error(question_outside(span), None, member);
                     }
                 },
                 Op::Field { dst, src, site } => {
@@ -798,7 +812,7 @@ impl Interp {
                 Op::NoCase { src } => fail!(Err(no_case(r!(src), at!()))),
                 Op::NoClause => {
                     let def = member_code(clo.expect("a function"), member).0;
-                    return Exec::Error(no_clause(def, &self.stack[base..base + code.arity], span), None);
+                    return Exec::Error(no_clause(def, &self.stack[base..base + code.arity], span), None, member);
                 }
                 Op::Stop { info } => {
                     let info = chunk!().stops[info as usize].clone();
@@ -898,7 +912,24 @@ impl Interp {
                         ip = start;
                         continue;
                     }
-                    let group = Value::Func(clo.expect("a function of a group").clone());
+                    let me = clo.expect("a function of a group");
+                    // Another function of the group, whose registers fit in
+                    // the frame, runs in it at once: what `call_loop` does
+                    // with this call, without leaving `exec`.
+                    if !test && self.steps_left != 0 {
+                        let next = &me.siblings.as_ref().expect("a function of a group")[i as usize].code;
+                        if argc == next.arity && next.chunk.regs <= frame {
+                            self.steps_left -= 1;
+                            span = at!();
+                            self.restart(regs, args, argc, chunk!().regs);
+                            code = next;
+                            member = Some(i);
+                            start = code.chunk.ops.as_ptr();
+                            ip = start;
+                            continue;
+                        }
+                    }
+                    let group = Value::Func(me.clone());
                     return Exec::Tail(group, Some(i), base + args, argc, at!(), test);
                 }
                 Op::TailCallMethod { site, f, test } => {
