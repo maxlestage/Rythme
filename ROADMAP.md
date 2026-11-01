@@ -176,6 +176,17 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
   - [ ] Faster still: values of 16 bytes instead of 24, a compact list of
     Floats (see below), and calls that do not go through a Rust call each
     (tried as one loop for every frame: in safe Rust it was slower).
+- [x] **Faster where the virtual machine cannot help**: regexes (an engine
+  that tries one way after the other with a table of the places reached,
+  same answers, `bench/regex.ry` about twice as fast), built-in functions
+  that copied texts too much, the start of `rythme` (30 % fewer
+  instructions for a small program), and the checker, the formatter and the
+  language server on long programs (no longer quadratic: a program of
+  25 000 lines is checked in less than half the time).
+  - [ ] The start, further: the catalogs of messages are tables of
+    pointers that the system fixes at every start (about a third of the
+    page faults of `rythme hello.ry`); written as one text with positions,
+    they would cost nothing until a language uses them.
 - [x] **Types written by hand where they help**: optional, checked by
   `rythme check`, built on the inference that exists; code without them
   stays as it is. Done: `fn area(w: Int, h: Int) -> Int`, `total: Float =
