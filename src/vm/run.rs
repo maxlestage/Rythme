@@ -1125,8 +1125,8 @@ impl Interp {
     fn record(&mut self, chunk: &Chunk, shape: u32, base: usize, dst: Reg, first: Reg) {
         let shape = &chunk.shapes[shape as usize];
         let start = base + first as usize;
-        let vals = self.stack[start..start + shape.len()].iter_mut().map(take).collect();
-        set(&mut self.stack[base + dst as usize], Value::Record(Rc::new(Record::with_shape(shape.clone(), vals))));
+        let r = Record::taking(shape.clone(), &mut self.stack[start..start + shape.len()]);
+        set(&mut self.stack[base + dst as usize], Value::Record(Rc::new(r)));
     }
 
     /// The fields of `site` of the record in the register `dst` take the

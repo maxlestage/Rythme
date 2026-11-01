@@ -296,7 +296,7 @@ pub struct Record {
     /// The names of the fields, shared by the records made from one another
     /// (`{..r, x: 1}`) and by the records made by the same `{...}` in the code.
     shape: Rc<Shape>,
-    vals: Vec<Value>,
+    vals: Few<4>,
 }
 
 /// The names of the fields of records, in order.
@@ -385,7 +385,13 @@ impl Record {
     /// A record with the fields of `shape`, in order.
     pub fn with_shape(shape: Rc<Shape>, vals: Vec<Value>) -> Record {
         debug_assert_eq!(shape.len(), vals.len());
-        Record { shape, vals }
+        Record { shape, vals: vals.into() }
+    }
+
+    /// A record with the fields of `shape`, the values of `slots` taken from them.
+    pub fn taking(shape: Rc<Shape>, slots: &mut [Value]) -> Record {
+        debug_assert_eq!(shape.len(), slots.len());
+        Record { shape, vals: Few::take_from(slots) }
     }
 
     pub fn get(&self, key: &str) -> Option<&Value> {
@@ -461,59 +467,83 @@ pub struct Variant {
     pub fields: Fields,
 }
 
-/// How many fields a value of a type keeps in place.
-const FEW: usize = 3;
-
 /// The fields of a value of a type (`Node(l, v, r)`, `Some(x)`): up to
-/// three in place, in the memory of the value, more in a vector of their
-/// own. Most values of types have few fields, and making one then takes
-/// one block of memory instead of two.
+/// three in place (see `Few`).
+pub type Fields = Few<3>;
+
+/// Values kept in place, in the memory of the value they belong to, when
+/// there are at most `N` of them, else in a vector of their own: the fields
+/// of a value of a type (`Fields`) or of a record. Most have few, and
+/// making one then takes one block of memory instead of two.
 ///
-/// The places after the fields hold `()`. The fields are freed by `drop`,
+/// The places after the values hold `()`. The values are freed by `drop`,
 /// which leaves `()` everywhere: the places themselves need no freeing
 /// (`ManuallyDrop`), which saves looking at the empty ones again.
 #[derive(Clone)]
-pub enum Fields {
-    Few(u8, ManuallyDrop<[Value; FEW]>),
+pub enum Few<const N: usize> {
+    Here(u8, ManuallyDrop<[Value; N]>),
     Many(Vec<Value>),
 }
 
-impl Fields {
+impl<const N: usize> Few<N> {
     #[inline(always)]
-    fn few(n: usize, few: [Value; FEW]) -> Fields {
-        Fields::Few(n as u8, ManuallyDrop::new(few))
+    fn here(n: usize, here: [Value; N]) -> Few<N> {
+        Few::Here(n as u8, ManuallyDrop::new(here))
     }
 
-    /// No fields.
-    pub fn none() -> Fields {
-        Fields::few(0, [Value::Unit, Value::Unit, Value::Unit])
+    #[inline(always)]
+    fn units() -> [Value; N] {
+        std::array::from_fn(|_| Value::Unit)
     }
 
-    /// One field.
-    pub fn one(v: Value) -> Fields {
-        Fields::few(1, [v, Value::Unit, Value::Unit])
+    /// No values.
+    pub fn none() -> Few<N> {
+        Few::here(0, Few::units())
+    }
+
+    /// One value.
+    pub fn one(v: Value) -> Few<N> {
+        let mut here = Few::units();
+        here[0] = v;
+        Few::here(1, here)
     }
 
     /// The values of `slots`, taken from them (leaving `()`).
     #[inline(always)]
-    pub fn take_from(slots: &mut [Value]) -> Fields {
-        let n = slots.len();
-        let mut take = |i: usize| std::mem::replace(&mut slots[i], Value::Unit);
-        match n {
-            0 => Fields::none(),
-            1 => Fields::few(1, [take(0), Value::Unit, Value::Unit]),
-            2 => Fields::few(2, [take(0), take(1), Value::Unit]),
-            3 => Fields::few(3, [take(0), take(1), take(2)]),
-            _ => Fields::Many((0..n).map(take).collect()),
+    pub fn take_from(slots: &mut [Value]) -> Few<N> {
+        if slots.len() > N {
+            return Few::Many(slots.iter_mut().map(|v| std::mem::replace(v, Value::Unit)).collect());
+        }
+        let mut here = Few::units();
+        for (place, v) in here.iter_mut().zip(slots.iter_mut()) {
+            std::mem::forget(std::mem::replace(place, std::mem::replace(v, Value::Unit)));
+        }
+        Few::here(slots.len(), here)
+    }
+
+    /// Adds `v` after the values.
+    pub fn push(&mut self, v: Value) {
+        match self {
+            Few::Here(n, here) if (*n as usize) < N => {
+                here[*n as usize] = v;
+                *n += 1;
+            }
+            Few::Here(..) => {
+                let mut many = Vec::with_capacity(2 * N);
+                many.extend(self.iter_mut().map(|x| std::mem::replace(x, Value::Unit)));
+                many.push(v);
+                *self = Few::Many(many);
+            }
+            Few::Many(many) => many.push(v),
         }
     }
 }
 
-impl Drop for Fields {
+impl<const N: usize> Drop for Few<N> {
     #[inline]
     fn drop(&mut self) {
-        if let Fields::Few(n, few) = self {
-            for v in &mut few[..*n as usize] {
+        if let Few::Here(n, here) = self {
+            for v in &mut here[..*n as usize] {
                 if !is_plain(v) {
                     *v = Value::Unit;
                 }
@@ -522,67 +552,54 @@ impl Drop for Fields {
     }
 }
 
-impl Default for Fields {
-    fn default() -> Fields {
-        Fields::none()
+impl<const N: usize> Default for Few<N> {
+    fn default() -> Few<N> {
+        Few::none()
     }
 }
 
-impl From<Vec<Value>> for Fields {
-    fn from(v: Vec<Value>) -> Fields {
-        if v.len() > FEW {
-            return Fields::Many(v);
+impl<const N: usize> From<Vec<Value>> for Few<N> {
+    fn from(mut v: Vec<Value>) -> Few<N> {
+        if v.len() > N {
+            return Few::Many(v);
         }
-        v.into_iter().collect()
+        Few::take_from(&mut v)
     }
 }
 
-impl FromIterator<Value> for Fields {
-    fn from_iter<I: IntoIterator<Item = Value>>(items: I) -> Fields {
-        let mut items = items.into_iter();
-        let mut few = [Value::Unit, Value::Unit, Value::Unit];
-        for (n, slot) in few.iter_mut().enumerate() {
-            match items.next() {
-                Some(v) => *slot = v,
-                None => return Fields::few(n, few),
-            }
+impl<const N: usize> FromIterator<Value> for Few<N> {
+    fn from_iter<I: IntoIterator<Item = Value>>(items: I) -> Few<N> {
+        let mut few = Few::none();
+        for v in items {
+            few.push(v);
         }
-        match items.next() {
-            None => Fields::few(FEW, few),
-            Some(v) => {
-                let mut many = Vec::with_capacity(FEW + 1 + items.size_hint().0);
-                many.extend(few);
-                many.push(v);
-                many.extend(items);
-                Fields::Many(many)
-            }
-        }
+        few
     }
 }
 
-impl std::ops::Deref for Fields {
+impl<const N: usize> std::ops::Deref for Few<N> {
     type Target = [Value];
 
     #[inline(always)]
     fn deref(&self) -> &[Value] {
         match self {
-            Fields::Few(n, few) => &few[..*n as usize],
-            Fields::Many(many) => many,
+            Few::Here(n, here) => &here[..*n as usize],
+            Few::Many(many) => many,
         }
     }
 }
 
-impl std::ops::DerefMut for Fields {
+impl<const N: usize> std::ops::DerefMut for Few<N> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut [Value] {
         match self {
-            Fields::Few(n, few) => &mut few[..*n as usize],
-            Fields::Many(many) => many,
+            Few::Here(n, here) => &mut here[..*n as usize],
+            Few::Many(many) => many,
         }
     }
 }
 
-impl<'a> IntoIterator for &'a Fields {
+impl<'a, const N: usize> IntoIterator for &'a Few<N> {
     type Item = &'a Value;
     type IntoIter = std::slice::Iter<'a, Value>;
 
@@ -1160,7 +1177,7 @@ fn drop_iteratively(mut todo: Vec<Value>) {
             Value::Record(mut rc) => {
                 if let Some(r) = Rc::get_mut(&mut rc) {
                     if r.vals.iter().any(is_container) {
-                        todo.append(&mut r.vals);
+                        todo.extend(r.vals.iter_mut().map(|v| std::mem::replace(v, Value::Unit)));
                     }
                 }
             }
@@ -1198,7 +1215,7 @@ impl Drop for List {
 impl Drop for Record {
     fn drop(&mut self) {
         if self.vals.iter().any(is_container) {
-            free_parts(&mut self.vals);
+            free_fields(&mut self.vals);
         }
     }
 }
