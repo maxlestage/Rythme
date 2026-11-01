@@ -4,8 +4,10 @@
 #   site        every page: menus, themes, the installable app
 #   playground  the playground: the same, its editor and the interpreter
 #   sw          the service worker
-# then compresses the files of public/ worth it, once, at their best (Brotli and gzip
-# copies next to them, for the server). The examples are built into the server itself.
+# and the catalogs of the interpreter's messages in the languages it does not compile in
+# (catalog-de.txt…), then compresses the files of public/ worth it, once, at their best
+# (Brotli and gzip copies next to them, for the server). The examples are built into the
+# server itself.
 #
 # Needs the wasm32-unknown-unknown target of Rust and wasm-bindgen-cli at exactly the
 # version of the wasm-bindgen crate in Cargo.lock: both are installed when missing.
@@ -51,6 +53,11 @@ for bundle in site:page:web playground:playground:web sw:sw:no-modules; do
     fi
   fi
 done
+
+# The catalogs of the interpreter's messages, one per language besides English and
+# French (compiled into the playground's interpreter), which the playground fetches
+# (see client/src/bin/catalogs.rs).
+cargo run -p rythme-site-client --features catalogs --bin catalogs -- public/pkg
 
 # Brotli and gzip copies of the files worth it, at their best, for the server (see
 # client/src/bin/precompress.rs; GitHub Pages compresses with gzip by itself).

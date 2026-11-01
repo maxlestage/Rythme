@@ -12,6 +12,24 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### A lighter playground
+
+The website's playground downloads its interpreter with English and French
+only, and the catalog of the page's language beside it: adding a language no
+longer grows the download.
+
+- A feature of the crate, `runtime-catalogs`: `t!` and `lang::pick` find
+  the other languages in catalogs registered while running
+  (`lang::register`), files written by `lang::catalog`. Without the feature
+  (the command, the standalone playground), nothing changes.
+  `tests/catalogs.rs` checks that both give the same messages and help, in
+  every language.
+- The playground's WebAssembly goes from 4.5 MB to 2.1 MB (1.05 MB to
+  0.58 MB in Brotli); each catalog is about 90 KB in Brotli, fetched with it,
+  cached and kept offline. On a slow phone, the first run comes 2 s sooner.
+  If a catalog cannot be fetched, the messages are in English and a note
+  says so.
+
 ### Italian and Japanese
 
 Rythme now speaks eight languages: Italian (`--lang it`, `it_IT`) and
