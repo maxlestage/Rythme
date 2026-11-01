@@ -10353,7 +10353,7 @@ Para instalar la última versión, escribe:
 Las versiones y lo que cambió: https://github.com/maxlestage/Rythme/releases
 En las versiones 1.x, un programa que funciona sigue funcionando, con la misma salida.
 "#),
-        ("unknown shell `{s}`", "shell desconocido `{s}`"),
+        ("unknown shell `{s}`.", "shell desconocido `{s}`."),
         ("which shell?", "¿qué shell?"),
         (r#"{what} Write one of bash, zsh, fish, powershell, like `rythme completions bash`
 see `rythme completions --help`"#, r#"{what} Escribe uno de bash, zsh, fish, powershell, como `rythme completions bash`
@@ -10404,5 +10404,6 @@ consulta `rythme completions --help`"#),
   --verify FILE...  the index's own check of its entries (packages/NAME.toml)"#, r#"  Comprueba rythme.toml, la etiqueta de la versión (como v1.2.0), rythme check
   y rythme test, y luego muestra la entrada y los pasos de una pull request.
   --verify ARCHIVO...  la comprobación de sus entradas por el propio índice (packages/NOMBRE.toml)"#),
+        (r#"the argument `{shown}` is not valid UTF-8: Rythme reads only names and words written in UTF-8; rename the file, or give the program its input another way"#, r#"el argumento `{shown}` no es UTF-8 válido: Rythme solo lee nombres y palabras escritos en UTF-8; cambie el nombre del archivo, o dé su entrada al programa de otra manera"#),
     ],
 }

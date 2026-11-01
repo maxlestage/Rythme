@@ -2103,11 +2103,14 @@ impl<'a> Checker<'a> {
         let Some(b) = builtin else { return tys };
         for i in later {
             let ExprKind::Lambda(def) = &exprs[i].kind else { continue };
-            let Some(cb) = types::callback(b, i, &tys) else {
+            let Some(mut cb) = types::callback(b, i, &tys) else {
                 // What the function receives depends on what it is given (`filter`).
                 tys[i] = self.func(def, None);
                 continue;
             };
+            if no_character_given(b, exprs) {
+                cb.params.iter_mut().for_each(|p| *p = Ty::Never);
+            }
             tys[i] = if def.arity != cb.params.len() {
                 self.func(def, None)
             } else if matches!(b, "fold" | "scan") {
@@ -2122,6 +2125,9 @@ impl<'a> Checker<'a> {
     /// The functions given to a built-in function must take what it gives
     /// them, and return what it needs.
     fn callbacks(&mut self, b: &str, exprs: &[&Expr], tys: &[Ty]) {
+        if no_character_given(b, exprs) {
+            return;
+        }
         for (i, t) in tys.iter().enumerate() {
             let Some(cb) = types::callback(b, i, tys) else { continue };
             let Ty::Func(f) = t else { continue };
@@ -3961,4 +3967,10 @@ fn unused_value(e: &Expr) -> Diagnostic {
             "pour garder la valeur, donnez-lui un nom : `resultat = ...` ; pour l'afficher : `print(...)`.\nLes valeurs ne changent jamais : `x + 1` ne modifie pas `x`."
         ))
     }
+}
+
+/// `take_while("", f)`: an empty text has no character to give the function,
+/// which is never called (like with an empty list).
+fn no_character_given(builtin: &str, exprs: &[&Expr]) -> bool {
+    matches!(builtin, "take_while" | "drop_while") && matches!(exprs.first().map(|e| &e.kind), Some(ExprKind::Text(s)) if s.is_empty())
 }

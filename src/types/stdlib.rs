@@ -332,8 +332,14 @@ pub(super) fn callback(name: &str, index: usize, a: &[Ty]) -> Option<Callback> {
         ("unfold", 1) => (vec![Ty::Any], Some(OPTION)),
         ("merge_with", 2) => match (&first, a.get(1)) {
             (Ty::Dict(_, v), Some(Ty::Dict(_, w))) => (vec![(**v).clone(), (**w).clone()], None),
+            // Only the names both records have are merged: with none, the function is never called.
+            (Ty::Record(x), Some(Ty::Record(y))) if x.exact && y.exact && !x.fields.iter().any(|(k, _)| y.get(k).is_some()) => {
+                (vec![Ty::Never, Ty::Never], None)
+            }
             _ => (vec![Ty::Any, Ty::Any], None),
         },
+        // A record without any field: the function is never called.
+        ("map_keys", 1) if matches!(&first, Ty::Record(r) if r.exact && r.fields.is_empty()) => (vec![Ty::Never], None),
         // A record's names are texts, and must stay texts.
         ("map_keys", 1) => match &first {
             Ty::Dict(k, _) => (vec![(**k).clone()], None),

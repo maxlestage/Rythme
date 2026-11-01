@@ -48,7 +48,9 @@ folder and checks:
    (and two test runs) give the same output, after a reload too, the dice, a link
    with `&seed=` reproduces the draws in another page without changing the seed
    saved there; in every language the
-   playground shows its texts and the interpreter's messages in that language;
+   playground shows its texts and the interpreter's messages in that language (and,
+   online, when the catalog of German cannot be fetched, the messages in English with a
+   note that says so);
    `llms.txt` and `llms-full.txt` (with the addresses of the site), the copy button
    of an MCP configuration on the AI page, and *Copy for AI*: after Run, Check and
    Test, the program and its output or errors as Markdown with the address of
@@ -154,7 +156,7 @@ one visitor.
 ## `speed.js`: how fast on a slow phone
 
 ```sh
-NODE_PATH=… node tests/pwa/speed.js target/release/rythme-site [server|export] [runs] [devtools|shared]
+[SPEED_LANG=de] NODE_PATH=… node tests/pwa/speed.js target/release/rythme-site [server|export] [runs] [devtools|shared]
 ```
 
 Chromium with Lighthouse's mobile profile (the CPU 4× slower, 1.6 Mb/s down, 750 kb/s
@@ -166,7 +168,9 @@ the playground until its menus work, and until its first program has run. A firs
 visit, not counted, warms up the connection to Google Fonts. The network is slowed as
 DevTools and Lighthouse do (`devtools`, by default), which leaves the service worker
 out, or (`shared`) by one link in front of the site that the page, its workers and
-the service worker share, as on a real phone. It measures and checks nothing (see
+the service worker share, as on a real phone. The pages are French (`SPEED_LANG`
+changes it: French is compiled into the interpreter, the other languages, but English,
+fetch their catalog). It measures and checks nothing (see
 [Speed](../../README.md#speed) for the figures).
 
 ## `images.js`: icons and screenshots

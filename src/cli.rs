@@ -510,7 +510,7 @@ pub fn completions(args: &[String]) -> i32 {
         Some("powershell" | "pwsh") => powershell(),
         other => {
             let what = match other {
-                Some(s) => t!("unknown shell `{s}`", "shell inconnu `{s}`"),
+                Some(s) => t!("unknown shell `{s}`.", "shell inconnu `{s}`."),
                 None => t!("which shell?", "quel shell ?"),
             };
             crate::io::err_line(&t!(

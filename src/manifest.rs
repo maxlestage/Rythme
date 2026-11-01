@@ -786,7 +786,13 @@ pub fn load_lock(dir: &Path) -> Result<Vec<Locked>, Box<Diagnostic>> {
             _ => None,
         };
         match (s.name.as_str(), s.array, get.get("name"), get.get("git"), rev, get.get("commit"), from_index) {
-            ("package", true, Some(name), Some(url), Some(rev), Some(commit), Some(from_index)) => {
+            // The commit and the address go to git: a commit in hexadecimal, an
+            // address git takes as an address (never as an option, `-...`).
+            ("package", true, Some(name), Some(url), Some(rev), Some(commit), Some(from_index))
+                if !commit.is_empty()
+                    && commit.chars().all(|c| c.is_ascii_hexdigit())
+                    && crate::index::check_address(url, true).is_ok() =>
+            {
                 out.push(Locked { name: name.to_string(), url: url.to_string(), rev, commit: commit.to_string(), from_index })
             }
             _ => {

@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use paquets::prelude::*;
 
-use crate::client::{self, PAGE_FILES, SW_FILES};
+use crate::client::{self, CATALOG_FILES, PAGE_FILES, SW_FILES};
 use crate::i18n::{Lang, pick_lang};
 use crate::pages::{self, Ctx};
 use crate::routes::{Page as PageKind, Route, base, link};
@@ -20,8 +20,23 @@ use crate::routes::{Page as PageKind, Route, base, link};
 pub const ASSETS: [&str; 5] = ["/site.css", PAGE_FILES[0], PAGE_FILES[1], PAGE_FILES[2], PAGE_FILES[3]];
 
 /// Every file linked with `?v=`: the assets, the scripts the server writes for the
-/// workers. Asked at the current version, browsers keep them a year (`compress.rs`).
-pub const VERSIONED: [&str; 7] = [ASSETS[0], ASSETS[1], ASSETS[2], ASSETS[3], ASSETS[4], client::WORKER_PATH, client::SW_WASM_PATH];
+/// workers, the catalogs of the interpreter's messages. Asked at the current version,
+/// browsers keep them a year (`compress.rs`).
+pub const VERSIONED: [&str; 13] = [
+    ASSETS[0],
+    ASSETS[1],
+    ASSETS[2],
+    ASSETS[3],
+    ASSETS[4],
+    client::WORKER_PATH,
+    client::SW_WASM_PATH,
+    CATALOG_FILES[0],
+    CATALOG_FILES[1],
+    CATALOG_FILES[2],
+    CATALOG_FILES[3],
+    CATALOG_FILES[4],
+    CATALOG_FILES[5],
+];
 
 /// The cookie that remembers the language chosen with the switch (set by the browser
 /// side, `client/src/layout.rs`).
@@ -31,7 +46,8 @@ pub struct Site {
     /// The public address, with the base path (`SITE_URL`); `None`: taken from each
     /// request.
     pub site_url: Option<String>,
-    /// Short hash of the styles and of the browser side, for `?v=` in their links.
+    /// Short hash of the styles and of the browser side (with the catalogs of the
+    /// interpreter's messages), for `?v=` in their links.
     pub version: String,
     /// The service worker, with the version of everything it saves.
     pub worker: String,
@@ -65,7 +81,7 @@ impl Site {
         let public = site_dir().join("public");
         let read = |file: &str| std::fs::read(public.join(file.trim_start_matches('/'))).unwrap_or_default();
         let mut bytes = Vec::new();
-        for file in ASSETS.iter().chain(&SW_FILES) {
+        for file in ASSETS.iter().chain(&SW_FILES).chain(&CATALOG_FILES) {
             bytes.extend(read(file));
         }
         let site_url = site_url.map(|u| u.trim().trim_end_matches('/').to_owned()).filter(|u| !u.is_empty());

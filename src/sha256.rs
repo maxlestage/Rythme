@@ -46,21 +46,21 @@ impl Sha256 {
                 return;
             }
             let block = std::mem::take(&mut self.pending);
-            self.block(&block);
+            self.block(block.as_slice().try_into().expect("64 bytes"));
             self.pending = block;
             self.pending.clear();
         }
-        let mut blocks = bytes.chunks_exact(64);
-        for block in &mut blocks {
+        let (blocks, rest) = bytes.as_chunks::<64>();
+        for block in blocks {
             self.block(block);
         }
-        self.pending.extend_from_slice(blocks.remainder());
+        self.pending.extend_from_slice(rest);
     }
 
-    fn block(&mut self, block: &[u8]) {
+    fn block(&mut self, block: &[u8; 64]) {
         let mut w = [0u32; 64];
-        for (i, word) in block.chunks_exact(4).enumerate() {
-            w[i] = u32::from_be_bytes([word[0], word[1], word[2], word[3]]);
+        for (i, word) in block.as_chunks::<4>().0.iter().enumerate() {
+            w[i] = u32::from_be_bytes(*word);
         }
         for i in 16..64 {
             let s0 = w[i - 15].rotate_right(7) ^ w[i - 15].rotate_right(18) ^ (w[i - 15] >> 3);
@@ -98,7 +98,7 @@ impl Sha256 {
             tail.push(0);
         }
         tail.extend_from_slice(&bits.to_be_bytes());
-        for block in tail.chunks_exact(64) {
+        for block in tail.as_chunks::<64>().0 {
             self.block(block);
         }
         self.state.iter().map(|s| format!("{s:08x}")).collect()

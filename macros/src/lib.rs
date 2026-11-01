@@ -6,6 +6,12 @@
 //! adds one `format!` per translation found, so a translation is checked by the
 //! compiler like the two texts of the call (same `{names}`). A text missing
 //! from a catalog is shown in English. `tests/i18n.rs` reports what is missing.
+//!
+//! With the feature `runtime-catalogs` of Rythme (the website's playground, in
+//! WebAssembly), only English and French are compiled in: the other languages
+//! come from tables registered while running, looked up by a key of the English
+//! text, and this macro formats the placeholders of their translations from the
+//! arguments (each with `format!`, so the text is the same as compiled in).
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -17,16 +23,54 @@ use proc_macro::{Delimiter, Group, Ident, Literal, Punct, Spacing, Span, TokenSt
 /// One catalog: its language code and its translations, by English text.
 struct Catalog {
     code: String,
+    name: String,
     texts: HashMap<String, String>,
 }
 
-/// `__tr!($crate; "English", "Français" [, arguments])`, called by `t!`.
+/// `__tr!($crate; "English", "Français" [, arguments])`, called by `t!`; with
+/// `runtime;` after the crate (the feature `runtime-catalogs` of Rythme), the
+/// languages of the catalogs come from tables registered while running.
 #[proc_macro]
 pub fn __tr(input: TokenStream) -> TokenStream {
     match expand(input) {
         Ok(ts) => ts,
         Err((message, span)) => error(&message, span),
     }
+}
+
+/// `__language!("es")`: `Language { code: "es", name: "Español", texts: &[] }`, the
+/// code and the name of a catalog without its texts (the feature
+/// `runtime-catalogs` of Rythme, whose texts are registered while running). The
+/// catalog is included in a constant that nothing uses, so that the compiler
+/// builds again when it changes (the placeholders of `t!` come from it).
+#[proc_macro]
+pub fn __language(input: TokenStream) -> TokenStream {
+    let first = input.into_iter().next();
+    let span = first.as_ref().map_or(Span::call_site(), |t| t.span());
+    let code = match literal(first, span).map(|l| unescape(&l.to_string())) {
+        Ok(Some(code)) => code,
+        _ => return error("__language!: expected the code of a catalog, like \"es\"", span),
+    };
+    let catalogs = match catalogs() {
+        Ok(c) => c,
+        Err(e) => return error(e, span),
+    };
+    let Some(c) = catalogs.iter().find(|c| c.code == code) else {
+        return error(&format!("__language!: no catalog `src/i18n/{code}.rs`"), span);
+    };
+    let file = format!("i18n/{code}.rs");
+    let source = format!(
+        "Language {{ code: {code:?}, name: {name:?}, texts: {{ const _: &str = include_str!({file:?}); &[] }} }}",
+        code = c.code,
+        name = c.name
+    );
+    TokenStream::from_str(&source).unwrap_or_else(|e| error(&format!("__language!: {e}"), span))
+}
+
+/// An argument of `t!` after the two texts: `name = value`, or a value.
+struct Arg {
+    name: Option<String>,
+    value: Vec<TokenTree>,
 }
 
 fn expand(input: TokenStream) -> Result<TokenStream, (String, Span)> {
@@ -38,6 +82,12 @@ fn expand(input: TokenStream) -> Result<TokenStream, (String, Span)> {
             break;
         }
         krate.push(tt);
+    }
+    // `runtime;`: the catalogs are registered while running.
+    let runtime = matches!(tokens.peek(), Some(TokenTree::Ident(i)) if i.to_string() == "runtime");
+    if runtime {
+        tokens.next();
+        tokens.next();
     }
     let en = literal(tokens.next(), Span::call_site())?;
     expect_comma(tokens.next(), en.span())?;
@@ -51,15 +101,7 @@ fn expand(input: TokenStream) -> Result<TokenStream, (String, Span)> {
     };
 
     let format = |text: TokenTree| -> TokenStream {
-        let mut ts: Vec<TokenTree> = vec![
-            Punct::new(':', Spacing::Joint).into(),
-            Punct::new(':', Spacing::Alone).into(),
-            Ident::new("std", Span::call_site()).into(),
-            Punct::new(':', Spacing::Joint).into(),
-            Punct::new(':', Spacing::Alone).into(),
-            Ident::new("format", Span::call_site()).into(),
-            Punct::new('!', Spacing::Alone).into(),
-        ];
+        let mut ts = code("::std::format!");
         let mut args = vec![text];
         args.extend(rest.iter().cloned());
         ts.push(Group::new(Delimiter::Parenthesis, args.into_iter().collect()).into());
@@ -74,31 +116,192 @@ fn expand(input: TokenStream) -> Result<TokenStream, (String, Span)> {
             Group::new(Delimiter::Brace, body).into(),
         ]
     };
+    // `$crate::lang::<name>`
+    let lang_fn = |name: &str| -> Vec<TokenTree> {
+        let mut path = krate.clone();
+        path.extend(code(&format!("::lang::{name}")));
+        path
+    };
 
     // match $crate::lang::code() { "fr" => format!(fr, ..), "es" => format!(es, ..), _ => format!(en, ..) }
     let mut arms = arm("fr", format(fr.into()));
+    // With `runtime`, the placeholders of the translations registered while running,
+    // formatted here from the arguments: the translations stay out of the program.
+    let mut placeholders = Vec::new();
+    let mut at_runtime = false;
     for c in catalogs {
-        if let Some(text) = c.texts.get(&key) {
-            let mut lit = Literal::string(text);
-            // The `{names}` of the text are the names written at the call.
+        let Some(text) = c.texts.get(&key) else { continue };
+        if runtime {
+            if let Some(found) = placeholders_of(text) {
+                at_runtime = true;
+                for p in found {
+                    if !placeholders.contains(&p) {
+                        placeholders.push(p);
+                    }
+                }
+                continue;
+            }
+            // A width or a precision taken from the arguments (`{:1$}`, `{:.*}`): too
+            // rare to fill while running, compiled in as without `runtime`.
+        }
+        let mut lit = Literal::string(text);
+        // The `{names}` of the text are the names written at the call.
+        lit.set_span(en.span());
+        arms.extend(arm(&c.code, format(lit.into())));
+    }
+    if !at_runtime {
+        arms.extend(arm("_", format(en.into())));
+    } else {
+        // match $crate::lang::__runtime(KEY) {
+        //     Some(__rythme_tr) => match (&(..), &(..),) {
+        //         (name, __rythme_p0,) => $crate::lang::__fill(__rythme_tr, &[("name", format!("{name}")), ("0", format!("{__rythme_p0}"))]),
+        //     },
+        //     None => format!(en, ..),
+        // }
+        // The arguments are evaluated once, like `format!` does, and each placeholder
+        // is formatted by `format!` itself: the same text as the translation compiled in.
+        let args = arguments(&rest);
+        let mut names: Vec<TokenTree> = Vec::new();
+        let mut values: Vec<TokenTree> = Vec::new();
+        let mut position = 0;
+        for arg in &args {
+            let name = match &arg.name {
+                Some(name) => name.clone(),
+                None => {
+                    position += 1;
+                    format!("__rythme_p{}", position - 1)
+                }
+            };
+            names.push(Ident::new(&name, en.span()).into());
+            names.push(Punct::new(',', Spacing::Alone).into());
+            values.push(Punct::new('&', Spacing::Alone).into());
+            values.push(Group::new(Delimiter::Parenthesis, arg.value.iter().cloned().collect()).into());
+            values.push(Punct::new(',', Spacing::Alone).into());
+        }
+        let mut pairs: Vec<TokenTree> = Vec::new();
+        for p in &placeholders {
+            let mut lit = Literal::string(&rust_placeholder(p));
             lit.set_span(en.span());
-            arms.extend(arm(&c.code, format(lit.into())));
+            let mut pair = vec![Literal::string(p).into(), Punct::new(',', Spacing::Alone).into()];
+            pair.extend(code("::std::format!"));
+            pair.push(Group::new(Delimiter::Parenthesis, TokenTree::from(lit).into()).into());
+            pairs.push(Group::new(Delimiter::Parenthesis, pair.into_iter().collect()).into());
+            pairs.push(Punct::new(',', Spacing::Alone).into());
+        }
+        let mut fill = lang_fn("__fill");
+        let mut fill_args = code("__rythme_tr, &");
+        fill_args.push(Group::new(Delimiter::Bracket, pairs.into_iter().collect()).into());
+        fill.push(Group::new(Delimiter::Parenthesis, fill_args.into_iter().collect()).into());
+        // A `match` rather than a `let`: the temporaries of the arguments live until
+        // the text is made, as with `format!`.
+        let mut body: Vec<TokenTree> = vec![Ident::new("match", Span::call_site()).into()];
+        body.push(Group::new(Delimiter::Parenthesis, values.into_iter().collect()).into());
+        let mut case = code("#[allow(unused_variables)]");
+        case.push(Group::new(Delimiter::Parenthesis, names.into_iter().collect()).into());
+        case.extend(code("=>"));
+        case.push(Group::new(Delimiter::Brace, fill.into_iter().collect()).into());
+        body.push(Group::new(Delimiter::Brace, case.into_iter().collect()).into());
+
+        let mut lookup: Vec<TokenTree> = vec![Ident::new("match", Span::call_site()).into()];
+        lookup.extend(lang_fn("__runtime"));
+        lookup.push(Group::new(Delimiter::Parenthesis, TokenTree::from(Literal::u32_suffixed(key_of(&key))).into()).into());
+        let mut cases = code("::std::option::Option::Some(__rythme_tr) =>");
+        cases.push(Group::new(Delimiter::Brace, body.into_iter().collect()).into());
+        cases.extend(code("::std::option::Option::None =>"));
+        cases.push(Group::new(Delimiter::Brace, format(en.into())).into());
+        lookup.push(Group::new(Delimiter::Brace, cases.into_iter().collect()).into());
+        arms.extend(arm("_", lookup.into_iter().collect()));
+    }
+    let mut out: Vec<TokenTree> = vec![Ident::new("match", Span::call_site()).into()];
+    out.extend(lang_fn("code"));
+    out.push(Group::new(Delimiter::Parenthesis, TokenStream::new()).into());
+    out.push(Group::new(Delimiter::Brace, arms.into_iter().collect()).into());
+    Ok(out.into_iter().collect())
+}
+
+/// Tokens of fixed code, at the call.
+fn code(source: &str) -> Vec<TokenTree> {
+    TokenStream::from_str(source).expect("valid tokens").into_iter().collect()
+}
+
+/// The arguments after the two texts (`rest` starts with their comma).
+fn arguments(rest: &[TokenTree]) -> Vec<Arg> {
+    let mut parts: Vec<Vec<TokenTree>> = vec![Vec::new()];
+    for tt in rest {
+        match tt {
+            TokenTree::Punct(p) if p.as_char() == ',' => parts.push(Vec::new()),
+            other => parts.last_mut().expect("a part").push(other.clone()),
         }
     }
-    arms.extend(arm("_", format(en.into())));
-    let mut out: Vec<TokenTree> = vec![Ident::new("match", Span::call_site()).into()];
-    out.extend(krate);
-    out.extend([
-        Punct::new(':', Spacing::Joint).into(),
-        Punct::new(':', Spacing::Alone).into(),
-        Ident::new("lang", Span::call_site()).into(),
-        Punct::new(':', Spacing::Joint).into(),
-        Punct::new(':', Spacing::Alone).into(),
-        Ident::new("code", Span::call_site()).into(),
-        Group::new(Delimiter::Parenthesis, TokenStream::new()).into(),
-        Group::new(Delimiter::Brace, arms.into_iter().collect()).into(),
-    ]);
-    Ok(out.into_iter().collect())
+    parts
+        .into_iter()
+        .filter(|p| !p.is_empty())
+        .map(|part| match (part.first(), part.get(1)) {
+            (Some(TokenTree::Ident(name)), Some(TokenTree::Punct(eq))) if eq.as_char() == '=' && eq.spacing() == Spacing::Alone && part.len() > 2 => {
+                Arg { name: Some(name.to_string()), value: part[2..].to_vec() }
+            }
+            _ => Arg { name: None, value: part },
+        })
+        .collect()
+}
+
+/// The placeholders of a text of `format!`, each as `name`, `name:spec`, `position`
+/// or `position:spec` (`{}` numbered as `format!` does); `None` when one takes its
+/// width or precision from the arguments. `rythme::lang::__fill` reads them the
+/// same way.
+fn placeholders_of(text: &str) -> Option<Vec<String>> {
+    let mut found = Vec::new();
+    let mut next = 0;
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c != '{' {
+            continue;
+        }
+        if chars.peek() == Some(&'{') {
+            chars.next();
+            continue;
+        }
+        let inner: String = chars.by_ref().take_while(|c| *c != '}').collect();
+        let (arg, spec) = match inner.split_once(':') {
+            Some((arg, spec)) => (arg.trim(), Some(spec)),
+            None => (inner.trim(), None),
+        };
+        if spec.is_some_and(|s| s.contains(['$', '*'])) {
+            return None;
+        }
+        let arg = if arg.is_empty() {
+            next += 1;
+            (next - 1).to_string()
+        } else {
+            arg.to_string()
+        };
+        found.push(match spec {
+            Some(spec) => format!("{arg}:{spec}"),
+            None => arg,
+        });
+    }
+    Some(found)
+}
+
+/// A placeholder of [`placeholders_of`] as `format!` reads it, a position becoming
+/// the name it is bound to: `0:>3` is `{__rythme_p0:>3}`.
+fn rust_placeholder(p: &str) -> String {
+    let (arg, spec) = match p.split_once(':') {
+        Some((arg, spec)) => (arg, Some(spec)),
+        None => (p, None),
+    };
+    let arg = if arg.chars().all(|c| c.is_ascii_digit()) { format!("__rythme_p{arg}") } else { arg.to_string() };
+    match spec {
+        Some(spec) => format!("{{{arg}:{spec}}}"),
+        None => format!("{{{arg}}}"),
+    }
+}
+
+/// The key of an English text in the tables registered while running: FNV-1a on
+/// 32 bits (`rythme::lang::key` must give the same). [`catalogs`] checks that no
+/// two texts have the same.
+fn key_of(text: &str) -> u32 {
+    text.bytes().fold(0x811c_9dc5_u32, |h, b| (h ^ u32::from(b)).wrapping_mul(0x0100_0193))
 }
 
 /// A string literal, also when `macro_rules!` wrapped it in an invisible group.
@@ -160,7 +363,20 @@ fn catalogs() -> &'static Result<Vec<Catalog>, String> {
             .filter(|p| p.extension().is_some_and(|x| x == "rs"))
             .collect();
         files.sort();
-        files.iter().map(|p| read_catalog(p)).collect()
+        let catalogs: Vec<Catalog> = files.iter().map(|p| read_catalog(p)).collect::<Result<_, _>>()?;
+        // Each English text has its own key in the tables registered while running.
+        let mut keys: HashMap<u32, &str> = HashMap::new();
+        for text in catalogs.iter().flat_map(|c| c.texts.keys()) {
+            if let Some(other) = keys.insert(key_of(text), text) {
+                if other != text {
+                    return Err(format!(
+                        "t!: two English texts have the same key ({:08x}): {other:?} and {text:?}; change one of them a little, or the function `key_of` here and `rythme::lang::key`",
+                        key_of(text)
+                    ));
+                }
+            }
+        }
+        Ok(catalogs)
     })
 }
 
@@ -177,6 +393,7 @@ fn read_catalog(path: &Path) -> Result<Catalog, String> {
         })
         .ok_or_else(|| fail("expected `Language { ... }`"))?;
     let mut code = None;
+    let mut name = None;
     let mut texts = HashMap::new();
     let mut previous: Option<String> = None;
     for tt in body {
@@ -184,6 +401,10 @@ fn read_catalog(path: &Path) -> Result<Catalog, String> {
             TokenTree::Ident(i) => previous = Some(i.to_string()),
             TokenTree::Literal(l) if previous.as_deref() == Some("code") => {
                 code = unescape(&l.to_string());
+                previous = None;
+            }
+            TokenTree::Literal(l) if previous.as_deref() == Some("name") => {
+                name = unescape(&l.to_string());
                 previous = None;
             }
             TokenTree::Group(g) if g.delimiter() == Delimiter::Bracket && previous.as_deref() == Some("texts") => {
@@ -208,7 +429,8 @@ fn read_catalog(path: &Path) -> Result<Catalog, String> {
         }
     }
     let code = code.ok_or_else(|| fail("no `code: \"..\"`"))?;
-    Ok(Catalog { code, texts })
+    let name = name.ok_or_else(|| fail("no `name: \"..\"`"))?;
+    Ok(Catalog { code, name, texts })
 }
 
 /// The value of a string literal as written in Rust: `"a\n"`, `r#"a"#`.

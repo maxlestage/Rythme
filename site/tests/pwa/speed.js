@@ -2,7 +2,7 @@
 // CPU 4× slower, 1.6 Mb/s down, 750 kb/s up, 150 ms of latency), a fresh browser for
 // each measure (nothing cached, the service worker allowed), as deployed:
 //
-//   node speed.js <rythme-site binary> [server|export] [runs] [devtools|shared]
+//   [SPEED_LANG=de] node speed.js <rythme-site binary> [server|export] [runs] [devtools|shared]
 //
 // `devtools` (by default) slows the network as Chrome's DevTools and Lighthouse do: for
 // the page and its workers, but not for the service worker. `shared` puts the site
@@ -27,6 +27,9 @@ const BIN = binary(process.argv[2]);
 const MODE = process.argv[3] || "server";
 const RUNS = Number(process.argv[4] || 3);
 const SHARED = process.argv[5] === "shared";
+// The language of the pages (`SPEED_LANG`, French by default): French messages are
+// compiled into the interpreter, the others come in a catalog fetched with it.
+const LANG = process.env.SPEED_LANG || "fr";
 const RATE = (1.6 * 1024 * 1024) / 8 / 1000; // bytes per millisecond
 
 // One link in front of the site: each answer waits 150 ms, then its bytes go through the
@@ -100,13 +103,13 @@ const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
   const browser = await launch();
   const all = { home: [], menus: [], run: [] };
   try {
-    await measure(browser, `${base}/fr/`, ["menus"]);
+    await measure(browser, `${base}/${LANG}/`, ["menus"]);
     for (let n = 1; n <= RUNS; n++) {
       // The server answers 100 requests a second to one visitor: a pause between visits.
       await sleep(1500);
-      const home = await measure(browser, `${base}/fr/`, ["menus"]);
+      const home = await measure(browser, `${base}/${LANG}/`, ["menus"]);
       await sleep(1500);
-      const playground = await measure(browser, `${base}/fr/playground/`, ["menus", "run"]);
+      const playground = await measure(browser, `${base}/${LANG}/playground/`, ["menus", "run"]);
       all.home.push(home.menus);
       all.menus.push(playground.menus);
       all.run.push(playground.run);
@@ -117,7 +120,7 @@ const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
     if (link) await link.stop();
     await site.stop();
   }
-  console.log(`${MODE}, ${SHARED ? "shared link" : "DevTools throttling"}, median of ${RUNS}: home ${Math.round(median(all.home))} ms, playground menus ${Math.round(median(all.menus))} ms, first run ${Math.round(median(all.run))} ms`);
+  console.log(`${MODE}, /${LANG}/, ${SHARED ? "shared link" : "DevTools throttling"}, median of ${RUNS}: home ${Math.round(median(all.home))} ms, playground menus ${Math.round(median(all.menus))} ms, first run ${Math.round(median(all.run))} ms`);
 })().catch((err) => {
   console.error(err);
   process.exit(1);

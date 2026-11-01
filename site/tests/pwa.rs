@@ -135,7 +135,10 @@ async fn the_service_worker_saves_only_urls_that_exist() {
     // The browser side, once built (`./build.sh`): the bundles of the pages, with the
     // interpreter, and the playground's worker.
     if std::path::Path::new("public/pkg/playground_bg.wasm").is_file() {
-        for file in ["/pkg/site.js", "/pkg/site_bg.wasm", "/pkg/playground.js", "/pkg/playground_bg.wasm", "/pkg/worker.js"] {
+        let files = ["/pkg/site.js", "/pkg/site_bg.wasm", "/pkg/playground.js", "/pkg/playground_bg.wasm", "/pkg/worker.js"];
+        // The catalogs of the interpreter's messages: the playground offline in every
+        // language.
+        for file in files.into_iter().chain(rythme_site::client::CATALOG_FILES) {
             assert!(precache.contains(&format!("{file}?v={}", site.version)), "{file}");
         }
     }

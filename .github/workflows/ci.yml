@@ -144,7 +144,9 @@ jobs:
 
   browser:
     name: Website in Chromium (layout, phones, themes, offline app)
-    runs-on: ubuntu-latest
+    # Playwright installs its browser only on the Ubuntu versions it knows:
+    # ubuntu-latest moved to 26.04, which playwright@1.56.1 refuses.
+    runs-on: ubuntu-24.04
     env:
       PLAYWRIGHT: playwright@1.56.1
     steps:
