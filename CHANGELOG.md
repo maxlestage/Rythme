@@ -397,15 +397,25 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
 
 - **A bytecode virtual machine runs programs** instead of the interpreter
   that walked the syntax tree: functions are compiled once to instructions
-  on registers (`src/vm/`), and the programs of `bench/` run 1.1 to 2
-  times faster, printing exactly the same (output, errors with their
+  on registers (`src/vm/`), and the programs of `bench/` run up to about
+  twice as fast (`count`, `fib`, `match`, `records`; 1.1 to 1.8 times for
+  the others, as fast for `regex` and `ml`, which spend their time in
+  built-in functions), printing exactly the same (output, errors with their
   places and traces, what the debugger and `rythme steps` show, the draws
-  of `random_seed`). Every program of the repository and thousands of
-  generated ones print the same as with 1.0.
+  of `random_seed`). Calls are cheap: built-in functions are called
+  directly, functions given to `map`, `fold`, `sort_by`... are called in
+  place, and the instructions that read or update a field keep its
+  position for records with the same fields.
+- Every program of the repository (examples, exercises, benchmarks, the
+  samples of the manual, the code in the tests) and millions of generated
+  ones print the same as with 1.0, with `rythme run` and `rythme test`, in
+  the debugger, with `rythme steps` and in the REPL; every kind of
+  instruction runs under Miri (`cargo +nightly miri test --lib vm`).
 - The limit of nested calls (E014) is now the same for every function:
   917 504 with `rythme` (it was about 900 000, fewer for functions that do
   more in each call), still 600 in the playground, which needs less of the
-  browser's stack.
+  browser's stack than 1.0, also when functions given to `map` or `fold`
+  call them again.
 - **`find_all`, `split_by` and `replace_all` are no longer quadratic** on
   regexes that read far ahead: their searches skip the ways that an earlier
   search showed to lead nowhere, and share their memory. `a*b|a` on 40 000

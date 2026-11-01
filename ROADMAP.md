@@ -163,9 +163,19 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
   print exactly the same thing. Done: functions are compiled to register
   instructions (`src/vm/`), with instructions of their own for the common
   cases and a cache of the names of the program; the programs of `bench/`
-  run 1.1 to 2 times faster than with 1.0 and print the same.
+  run up to about twice as fast as with 1.0 and print the same.
+  - [x] Hardened: compared with the tree-walking interpreter of 1.0 on every
+    program of the repository and on millions of generated ones (`run` and
+    `rythme test`, the debugger, `rythme steps`, the REPL), every kind of
+    instruction run under Miri, and deep programs measured in the
+    playground's WebAssembly (it needs less stack than 1.0).
+  - [x] Cheaper calls: built-in functions called directly, functions given
+    to `map`, `fold`... called in place, the positions of fields kept by the
+    instructions that read and update them (`bench/`: `count`, `fib`,
+    `match`, `records` about twice as fast as 1.0).
   - [ ] Faster still: values of 16 bytes instead of 24, a compact list of
-    Floats (see below), and calls that do not go through a Rust call each.
+    Floats (see below), and calls that do not go through a Rust call each
+    (tried as one loop for every frame: in safe Rust it was slower).
 - [x] **Types written by hand where they help**: optional, checked by
   `rythme check`, built on the inference that exists; code without them
   stays as it is. Done: `fn area(w: Int, h: Int) -> Int`, `total: Float =
