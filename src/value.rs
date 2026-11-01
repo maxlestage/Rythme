@@ -239,6 +239,27 @@ impl Record {
         Record::default()
     }
 
+    /// The names of its fields: the records that share them have each
+    /// field at the same position (`position`, `at`).
+    pub fn shape(&self) -> &Rc<Shape> {
+        &self.shape
+    }
+
+    /// The position of the field `key`.
+    pub fn position(&self, key: &str) -> Option<usize> {
+        self.shape.position(key)
+    }
+
+    /// The value of the field at `i` (see `position`).
+    pub fn at(&self, i: usize) -> &Value {
+        &self.vals[i]
+    }
+
+    /// The field at `i` (see `position`) becomes `val`.
+    pub fn set_at(&mut self, i: usize, val: Value) {
+        self.vals[i] = val;
+    }
+
     /// A record with the fields of `shape`, in order.
     pub fn with_shape(shape: Rc<Shape>, vals: Vec<Value>) -> Record {
         debug_assert_eq!(shape.len(), vals.len());

@@ -14,15 +14,18 @@
 //! counts, and every copy avoided is work saved. (A stack machine would need
 //! three instructions and two copies for `n - 1`.)
 //!
-//! **Calls.** A call of a function of the program pushes a frame and goes on
-//! in the same loop: the depth of recursion of a program does not use the
-//! stack of the machine. The arguments of a call are evaluated into the last
-//! registers of the caller, which become the first slots of the callee: they
-//! are not copied. A call in tail position puts its arguments in place of
-//! the frame of its caller, so that a function that calls itself last loops
-//! forever without growing the stack. Built-in functions that call functions
-//! of the program (`map`, `fold`...) enter the loop again: only those calls
-//! nest on the machine's stack.
+//! **Calls.** A call of a function of the program pushes a frame on the value
+//! stack and runs the callee's instructions in a nested `run::exec` (a loop
+//! that keeps every frame on the value stack was tried: in safe Rust, it
+//! keeps less in the machine's registers and was slower). The arguments of
+//! a call are evaluated into the last registers of the caller, which become
+//! the first slots of the callee: they are not copied. A call in tail
+//! position puts its arguments in place of the frame of its caller, so that
+//! a function that calls itself (or another one) last loops forever without
+//! growing either stack. Built-in functions that call functions of the
+//! program (`map`, `fold`...) enter `exec` again (`Interp::call_given`). The
+//! limit of nested calls (E014) counts every call, and the machine's stack
+//! is measured at each one (`interp::set_stack_budget`).
 //!
 //! **Same behavior.** Every instruction does what the tree-walking
 //! interpreter of Rythme 1.0 did, in the same order: the same values, the
@@ -369,6 +372,42 @@ pub struct FieldSite {
     pub func: Callee,
     /// The register for the value when the function is called with it.
     pub arg: Reg,
+    /// The fields of the last record read here, and the position of `key`
+    /// in them: the same for every record with the same fields.
+    pub seen: ShapeSeen,
+}
+
+/// The positions of names in the fields of records with one shape, kept by
+/// an instruction (`FieldSite`, `UpdateSite`): records with the same fields
+/// (`Rc<Shape>`) have each name at the same position. The shape is kept
+/// alive, so that its address is never one of another shape; and a shape
+/// kept here is shared, so it never changes (`Rc::make_mut` copies it).
+pub struct ShapeSeen {
+    /// Its address, only compared.
+    pub addr: std::cell::Cell<*const Shape>,
+    pub shape: std::cell::RefCell<Option<Rc<Shape>>>,
+    pub at: std::cell::RefCell<Vec<usize>>,
+}
+
+impl Default for ShapeSeen {
+    fn default() -> ShapeSeen {
+        ShapeSeen { addr: std::cell::Cell::new(std::ptr::null()), shape: Default::default(), at: Default::default() }
+    }
+}
+
+impl ShapeSeen {
+    /// The positions seen for the fields of `r`, if they are the same as last time.
+    #[inline(always)]
+    pub fn get(&self, r: &crate::value::Record) -> Option<std::cell::Ref<'_, Vec<usize>>> {
+        std::ptr::eq(self.addr.get(), Rc::as_ptr(r.shape())).then(|| self.at.borrow())
+    }
+
+    /// Keeps the positions `at` of the fields of `r`.
+    pub fn keep(&self, r: &crate::value::Record, at: Vec<usize>) {
+        self.addr.set(Rc::as_ptr(r.shape()));
+        *self.shape.borrow_mut() = Some(r.shape().clone());
+        *self.at.borrow_mut() = at;
+    }
 }
 
 /// `value.name(args)` (see `Op::MethodFn`).
@@ -440,6 +479,8 @@ pub struct UpdateSite {
     pub keys: Box<[Rc<str>]>,
     /// The register of the value of the first one; the others follow.
     pub first: Reg,
+    /// The positions of `keys` in the fields of the last record updated here.
+    pub seen: ShapeSeen,
 }
 
 /// Local functions written one after the other (see `compile::Stmt::Group`).
@@ -667,11 +708,57 @@ pub(crate) mod tests {
 
     /// The name of each kind of instruction, in the order of `kind`.
     const KINDS: [&str; 51] = [
-        "Move", "Const", "Captured", "Global", "Sibling", "Closure", "Group", "SetSelf", "Binary", "BinaryInt", "Add", "AddInt", "SubInt", "Unary",
-        "Index", "Range", "Try", "Field", "List", "ListNew", "ListFrom", "ListPush", "ListSpread", "ListCheck", "Record", "RecordNew", "RecordSet",
-        "RecordSets", "RecordSpread", "TextLit", "TextVal", "Jump", "JumpIf", "JumpCmp", "JumpCmpInt", "Match", "MatchCtor", "Let", "NoCase",
-        "NoClause", "Stop", "Call", "TailCall", "CallGlobal", "TailCallGlobal", "CallSibling", "TailCallSibling", "MethodFn", "CallMethod",
-        "TailCallMethod", "Return",
+        "Move",
+        "Const",
+        "Captured",
+        "Global",
+        "Sibling",
+        "Closure",
+        "Group",
+        "SetSelf",
+        "Binary",
+        "BinaryInt",
+        "Add",
+        "AddInt",
+        "SubInt",
+        "Unary",
+        "Index",
+        "Range",
+        "Try",
+        "Field",
+        "List",
+        "ListNew",
+        "ListFrom",
+        "ListPush",
+        "ListSpread",
+        "ListCheck",
+        "Record",
+        "RecordNew",
+        "RecordSet",
+        "RecordSets",
+        "RecordSpread",
+        "TextLit",
+        "TextVal",
+        "Jump",
+        "JumpIf",
+        "JumpCmp",
+        "JumpCmpInt",
+        "Match",
+        "MatchCtor",
+        "Let",
+        "NoCase",
+        "NoClause",
+        "Stop",
+        "Call",
+        "TailCall",
+        "CallGlobal",
+        "TailCallGlobal",
+        "CallSibling",
+        "TailCallSibling",
+        "MethodFn",
+        "CallMethod",
+        "TailCallMethod",
+        "Return",
     ];
 
     /// The number of the kind of `op` in `KINDS` (a new instruction must be added to both).
@@ -818,6 +905,11 @@ pub(crate) mod tests {
                 "[[[5, 5], 0], 30, \"AB\", 8, true, [[7, 1], {a: 1, b: 1}, {b: 2, c: 3}], 5, 0]",
             ),
             ("fn f(0) = 1\nfn g(n) = f(n) + 1\ng(2)", "error[E006] 1"),
+            // The positions of fields kept by the instructions that read and update them.
+            (
+                "rs = [{a: 1, b: 0}, {a: 2, b: 0}, {b: 5, a: 3}]\n[fold(rs, 0, fn(acc, r) = acc + r.a), fold(1..3, {n: 0, m: 1}, fn(s, i) = {..s, n: s.n + i})]",
+                "[6, {n: 6, m: 1}]",
+            ),
             ("x = Some(2)\nmatch x\n  None -> 0\nend", "error[E006] 0"),
         ];
         // More stack than the budget of nested calls (4 MB), as `rythme` has.
