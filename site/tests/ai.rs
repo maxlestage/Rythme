@@ -164,7 +164,7 @@ async fn every_page_has_its_markdown() {
         assert!(markdown.contains(&format!("<{ORIGIN}{}>", route.path())), "{path}: the address of the page");
     }
     // Only the pages with content, and never in the sitemap (it lists the canonical pages).
-    for path in ["/en/playground/index.md", "/en/offline/index.md", "/en/nothing/index.md", "/it/index.md", "/en/learn/more/index.md"] {
+    for path in ["/en/playground/index.md", "/en/offline/index.md", "/en/nothing/index.md", "/ru/index.md", "/en/learn/more/index.md"] {
         assert_eq!(client.get(path).await.status(), 404, "{path}");
     }
     assert!(!get(&client, "/sitemap.xml").await.2.contains("index.md"));

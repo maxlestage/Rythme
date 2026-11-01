@@ -9,6 +9,8 @@
   "config.language.de": "Alemán.",
   "config.language.pt": "Portugués.",
   "config.language.zh": "Chino (simplificado).",
+  "config.language.it": "Italiano.",
+  "config.language.ja": "Japonés.",
   "config.trace": "Muestra los mensajes intercambiados con el servidor de lenguaje en la salida *Rythme*, para buscar un problema.",
   "command.restart": "Reiniciar el servidor de lenguaje",
   "command.run": "Ejecutar este archivo",

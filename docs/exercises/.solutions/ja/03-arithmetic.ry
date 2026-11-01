@@ -1,0 +1,42 @@
+# 練習問題 03 · 算術  ★☆☆
+# 参考解答。読む前に、まず自分で練習問題に挑戦してください！
+
+fn square(x) = x * x
+
+fn average(a, b) = (a + b) / 2
+
+fn fahrenheit(celsius) = celsius * 9 / 5 + 32
+
+fn hypotenuse(a, b) = sqrt(square(a) + square(b))
+
+fn minutes_and_seconds(total) = "{total // 60} min {total % 60} s"
+
+# --- テスト（変更しないでください）---
+
+test "2 乗"
+  assert_eq(square(3), 9)
+  assert_eq(square(-4), 16)
+  assert_eq(square(1.5), 2.25)
+end
+
+test "平均"
+  assert_eq(average(2, 4), 3)
+  assert_eq(average(1, 2), 1.5)
+end
+
+test "華氏"
+  assert_eq(fahrenheit(0), 32)
+  assert_eq(fahrenheit(100), 212)
+  assert_eq(fahrenheit(-40), -40)
+end
+
+test "斜辺"
+  assert_eq(hypotenuse(3, 4), 5)
+  assert_eq(hypotenuse(5, 12), 13)
+end
+
+test "分と秒"
+  assert_eq(minutes_and_seconds(125), "2 min 5 s")
+  assert_eq(minutes_and_seconds(59), "0 min 59 s")
+  assert_eq(minutes_and_seconds(600), "10 min 0 s")
+end

@@ -1,0 +1,34 @@
+# Esercizio 16 · Ridurre una lista a un solo valore  ★★☆
+# Soluzione di riferimento. Prova a fare l'esercizio prima di leggerla!
+
+fn product_of(list) = fold(list, 1, fn(result, x) = result * x)
+
+fn longest_word(words) = fold(words, "", fn(best, w) = if len(w) > len(best) then w else best)
+
+fn to_number(digits) = fold(digits, 0, fn(n, d) = n * 10 + d)
+
+fn count_where(list, f) = fold(list, 0, fn(n, x) = if f(x) then n + 1 else n)
+
+# --- Test (non cambiarli) ---
+
+test "prodotto"
+  assert_eq(product_of([2, 3, 4]), 24)
+  assert_eq(product_of([]), 1)
+end
+
+test "parola più lunga"
+  assert_eq(longest_word(["a", "tree", "is", "green"]), "green")
+  assert_eq(longest_word(["one", "two"]), "one")
+  assert_eq(longest_word([]), "")
+end
+
+test "in numero"
+  assert_eq(to_number([1, 2, 3]), 123)
+  assert_eq(to_number([0, 7]), 7)
+  assert_eq(to_number([]), 0)
+end
+
+test "conta dove"
+  assert_eq(count_where([1, 2, 3, 4, 5], is_odd), 3)
+  assert_eq(count_where(["a", "bb"], fn(w) = len(w) > 5), 0)
+end

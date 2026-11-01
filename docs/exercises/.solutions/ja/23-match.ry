@@ -1,0 +1,53 @@
+# 練習問題 23 · `match` で選ぶ  ★★☆
+# 参考解答。読む前に、まず自分で練習問題に挑戦してください！
+
+type Light = Green | Orange | Red
+
+fn next_light(light) = match light
+  Green -> Orange
+  Orange -> Red
+  Red -> Green
+end
+
+fn can_go(light) = match light
+  Green -> true
+  _ -> false
+end
+
+fn describe(list) = match list
+  [] -> "空"
+  [x] -> "1 つ：{x}"
+  [a, b] -> "2 つ：{a} と {b}"
+  [first, ..] -> "たくさん、最初は {first}"
+end
+
+fn greeting(person) = match person
+  {title, last} -> "こんにちは、{title} {last}"
+  {name} -> "こんにちは、{name}"
+end
+
+# --- テスト（変更しないでください）---
+
+test "次の信号"
+  assert_eq(next_light(Green), Orange)
+  assert_eq(next_light(Orange), Red)
+  assert_eq(next_light(Red), Green)
+end
+
+test "進めるか"
+  assert_eq(can_go(Green), true)
+  assert_eq(can_go(Orange), false)
+  assert_eq(can_go(Red), false)
+end
+
+test "説明"
+  assert_eq(describe([]), "空")
+  assert_eq(describe([7]), "1 つ：7")
+  assert_eq(describe([1, 2]), "2 つ：1 と 2")
+  assert_eq(describe([5, 6, 7]), "たくさん、最初は 5")
+end
+
+test "あいさつ"
+  assert_eq(greeting({title: "Dr", last: "Hopper", name: "Grace"}), "こんにちは、Dr Hopper")
+  assert_eq(greeting({name: "Grace"}), "こんにちは、Grace")
+end

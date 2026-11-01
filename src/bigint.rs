@@ -405,6 +405,45 @@ impl BigInt {
         BigInt::new(false, a)
     }
 
+    /// The digits of the number without its sign in base `radix` (2 to 36),
+    /// the most significant first: `[0]` for zero. Several digits come out
+    /// of each division (as many as fit in 32 bits), for speed.
+    pub fn digits_in(&self, radix: u32) -> Vec<u8> {
+        let (mut per, mut chunk) = (1u32, radix);
+        while let Some(next) = chunk.checked_mul(radix) {
+            chunk = next;
+            per += 1;
+        }
+        let mut rest = self.mag.clone();
+        let mut out = Vec::new();
+        while !rest.is_empty() {
+            let mut r = div_small_in_place(&mut rest, chunk);
+            for _ in 0..per {
+                out.push((r % radix) as u8);
+                r /= radix;
+                if rest.is_empty() && r == 0 {
+                    break;
+                }
+            }
+        }
+        if out.is_empty() {
+            out.push(0);
+        }
+        out.reverse();
+        out
+    }
+
+    /// The number written with these digits in base `radix` (2 to 36), the
+    /// most significant first.
+    pub fn from_digits_in(neg: bool, digits: &[u8], radix: u32) -> BigInt {
+        let mut mag = Vec::new();
+        for group in digits.chunks(6) {
+            let value = group.iter().fold(0u32, |acc, &d| acc * radix + u32::from(d));
+            mul_small_add(&mut mag, radix.pow(group.len() as u32), value);
+        }
+        BigInt::new(neg, mag)
+    }
+
     /// Whether the number has more than `MAX_DIGITS` digits.
     pub fn too_large(&self) -> bool {
         match self.bits() {

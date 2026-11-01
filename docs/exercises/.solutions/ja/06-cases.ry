@@ -1,0 +1,38 @@
+# 練習問題 06 · ケースごとに 1 つの定義  ★☆☆
+# 参考解答。読む前に、まず自分で練習問題に挑戦してください！
+
+fn plural(1, word) = "1 {word}"
+fn plural(n, word) = "{n} {word}s"
+
+fn fizzbuzz(n) if n % 15 == 0 = "FizzBuzz"
+fn fizzbuzz(n) if n % 3 == 0 = "Fizz"
+fn fizzbuzz(n) if n % 5 == 0 = "Buzz"
+fn fizzbuzz(n) = text(n)
+
+fn day_kind("土曜日") = "週末"
+fn day_kind("日曜日") = "週末"
+fn day_kind(_) = "平日"
+
+# --- テスト（変更しないでください）---
+
+test "複数形"
+  assert_eq(plural(1, "cat"), "1 cat")
+  assert_eq(plural(2, "cat"), "2 cats")
+  assert_eq(plural(0, "dog"), "0 dogs")
+end
+
+test "fizzbuzz"
+  assert_eq(fizzbuzz(1), "1")
+  assert_eq(fizzbuzz(3), "Fizz")
+  assert_eq(fizzbuzz(10), "Buzz")
+  assert_eq(fizzbuzz(30), "FizzBuzz")
+  assert_eq(fizzbuzz(31), "31")
+end
+
+test "最初の 15 個" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+
+test "曜日の種類"
+  assert_eq(day_kind("土曜日"), "週末")
+  assert_eq(day_kind("日曜日"), "週末")
+  assert_eq(day_kind("月曜日"), "平日")
+end

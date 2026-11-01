@@ -4,7 +4,7 @@ version = "1.0.0"
 edition = "2024"
 publish = false
 license = "MIT"
-description = "The website of Rythme, written with Paquets: home, playground, examples and guide, in six languages."
+description = "The website of Rythme, written with Paquets: home, playground, examples and guide, in eight languages."
 
 # Standalone crate, with its own workspace: the interpreter does not depend on it. The
 # browser side of the site, in Rust too, is compiled to WebAssembly from `client/`.
@@ -12,8 +12,14 @@ description = "The website of Rythme, written with Paquets: home, playground, ex
 members = ["client"]
 
 [dependencies]
-# Pages rendered on the server by active, served by vitesse behind securite.
-paquets = { git = "https://github.com/maxlestage/Paquets", default-features = false }
+# Pages rendered on the server by active, served by vitesse behind securite; `compress`:
+# the pages and other answers compressed with Brotli or gzip.
+paquets = { git = "https://github.com/maxlestage/Paquets", default-features = false, features = ["compress"] }
+# The copies of public/ compressed by the build (client/src/bin/precompress.rs) are
+# checked against their files at startup (src/compress.rs): the libraries of Paquets'
+# compression.
+brotli = "9"
+flate2 = "1"
 pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
 # The parts of the browser side that the server shares (the colors of Rythme code, the
 # words of the interpreter's messages), compiled natively, without the browser.

@@ -775,6 +775,11 @@ impl<'a> Shaper<'a> {
     fn type_def(&mut self) -> Option<usize> {
         let k = self.advance()?;
         self.advance()?;
+        // `type Tree(a)`: its type variables, written like the types a type takes.
+        if *self.raw() == Tok::LParen {
+            let open = self.take(Role::Call)?;
+            self.comma_list(open, &Tok::RParen, Self::ty)?;
+        }
         if *self.peek() != Tok::Eq {
             return None;
         }
@@ -1810,7 +1815,8 @@ pub fn command(args: &[String]) -> i32 {
     for a in args {
         match a.as_str() {
             "--check" | "--verifier" | "--vérifier" => check = true,
-            o if o.starts_with("--") => {
+            // `-` alone is the standard input; a file whose name starts with `-` is written `./-x.ry`.
+            o if o.starts_with('-') && o != "-" => {
                 let mut msg = t!("unknown option `{o}` for `rythme fmt`", "option inconnue `{o}` pour `rythme fmt`");
                 if let Some(best) = suggest::closest(o, ["--check"]) {
                     msg.push_str(&t!("\ndid you mean `{best}`?", "\nvouliez-vous dire `{best}` ?"));
@@ -1889,13 +1895,11 @@ impl Run {
 
     fn file(&mut self, path: &Path) {
         let shown = path.display().to_string();
-        let src = match std::fs::read_to_string(path) {
+        // The messages of the other commands: not UTF-8 (and maybe UTF-16), no permission...
+        let src = match crate::driver::read_source(path) {
             Ok(s) => s,
-            Err(e) => {
-                self.report(&Diagnostic::error(
-                    "E017",
-                    t!("cannot read the file `{shown}`: {e}", "impossible de lire le fichier `{shown}` : {e}"),
-                ));
+            Err(d) => {
+                self.report(&d);
                 self.errors += 1;
                 return;
             }

@@ -39,9 +39,11 @@ async fn exports_every_page_behind_the_base_path() {
     let root = std::fs::read_to_string(out.join("index.html")).unwrap();
     assert!(root.contains(r#"data-base="/Rythme""#));
     assert!(root.contains(r#"url=/Rythme/fr/"#));
+    // Described for search engines, like every page.
+    assert!(root.contains(r#"<meta name="description" content="Rythme est un langage"#), "{root}");
     // `/` picks any language of the site (the browser side, which it loads), and links
     // them all.
-    assert!(root.contains(r#"data-pick-language="fr en es de pt zh""#), "{root}");
+    assert!(root.contains(r#"data-pick-language="fr en es de pt zh it ja""#), "{root}");
     assert!(root.contains(r#"<script type="module">import init from "/Rythme/pkg/site.js?v="#), "{root}");
     assert!(!root.contains("<script>"), "no inline script but the bundle's start: {root}");
     for lang in Lang::ALL {
@@ -61,12 +63,20 @@ async fn exports_every_page_behind_the_base_path() {
         "fr/offline/index.html",
         "zh/offline/index.html",
         "zh/teach/index.html",
+        "it/teach/index.html",
+        "ja/offline/index.html",
         "en/manifest.webmanifest",
         "pt/manifest.webmanifest",
+        "ja/manifest.webmanifest",
     ] {
         assert!(out.join(file).is_file(), "{file}");
     }
     assert!(std::fs::read_to_string(out.join("sitemap.xml")).unwrap().contains("<loc>https://example.com/Rythme/en/learn/</loc>"));
+    // The compressed copies that ./build.sh writes for the server stay out: GitHub Pages
+    // compresses by itself.
+    for copy in ["site.css.br", "site.css.gz", "pkg/playground_bg.wasm.br", "pkg/site.js.gz"] {
+        assert!(!out.join(copy).exists(), "{copy}");
+    }
     installable(&out);
     for_assistants(&out);
     let _ = std::fs::remove_dir_all(&out);

@@ -10,7 +10,7 @@ const path = require("path");
 const { launch } = require("./browser");
 
 // The languages of the site (src/i18n.rs).
-const LANGS = ["fr", "en", "es", "de", "pt", "zh"];
+const LANGS = ["fr", "en", "es", "de", "pt", "zh", "it", "ja"];
 const PUBLIC = path.join(__dirname, "..", "..", "public");
 const LOGO = fs.readFileSync(path.join(PUBLIC, "assets", "logo.svg"), "utf8");
 const BLUE = LOGO.match(/fill="(#[0-9a-f]{6})"/i)[1];

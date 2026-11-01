@@ -821,6 +821,7 @@ Commands
   rythme exercise           exercises checked automatically (list, start, check)
   rythme new NAME           create a project (rythme.toml, src/, tests/)
   rythme install            download the dependencies of the project
+  rythme add NAME           add a package of the index to the project (rythme search WORDS finds them)
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
@@ -828,7 +829,7 @@ Commands
   rythme -e "code"          run a piece of code
   rythme lsp                language server, for editors (VS Code, Neovim...)
   rythme mcp                server for AI assistants (Model Context Protocol)
-  option --lang CODE        language of the messages: en, fr, es, de, pt, zh (or RYTHME_LANG)
+  option --lang CODE        language of the messages: en, fr, es, de, pt, zh, it, ja (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
   start       the language in one minute
@@ -838,7 +839,7 @@ Topics (rythme help TOPIC)
   text        texts
   records     records {{name: value}}
   dicts       dictionaries and sets: dict(...), set(...)
-  types       your own types
+  types       your own types, and types written in the code
   match       choosing according to the shape of a value
   errors      Option, Result and ?
   functional  no loops: what to do instead
@@ -847,6 +848,7 @@ Topics (rythme help TOPIC)
   modules     using several files
   system      files, folders, paths, options, input, exit codes
   projects    projects and packages: rythme new, rythme.toml, rythme install
+  packages    the package index: rythme search, add, update, publish
   dates       dates and times: now(), today(), calendar, ISO 8601
   regex       searching, cutting and replacing with regular expressions
   csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
@@ -879,6 +881,7 @@ A specific function: rythme help map
   rythme exercise           自动检查的练习（list、start、check）
   rythme new NAME           创建项目（rythme.toml、src/、tests/）
   rythme install            下载项目的依赖
+  rythme add NAME           把索引中的包加入项目（rythme search 关键词 查找包）
   rythme learn              一步一步的语言导览
   rythme help TOPIC         某个主题或函数的帮助
   rythme explain E003       解释错误代码
@@ -886,7 +889,7 @@ A specific function: rythme help map
   rythme -e "code"          运行一段代码
   rythme lsp                语言服务器，供编辑器使用（VS Code、Neovim……）
   rythme mcp                供 AI 助手使用的服务器（Model Context Protocol）
-  选项 --lang CODE          消息的语言：en、fr、es、de、pt、zh（或 RYTHME_LANG）
+  选项 --lang CODE          消息的语言：en、fr、es、de、pt、zh、it、ja（或 RYTHME_LANG）
 
 主题（rythme help TOPIC）
   start       一分钟了解这门语言
@@ -896,7 +899,7 @@ A specific function: rythme help map
   text        文本
   records     记录 {{name: value}}
   dicts       字典和集合：dict(...)、set(...)
-  types       你自己的类型
+  types       你自己的类型，以及写在代码中的类型
   match       根据值的形状进行选择
   errors      Option、Result 和 ?
   functional  没有循环：该怎么做
@@ -905,6 +908,7 @@ A specific function: rythme help map
   modules     使用多个文件
   system      文件、文件夹、路径、选项、输入、退出码
   projects    项目和包：rythme new、rythme.toml、rythme install
+  packages    包索引：rythme search、add、update、publish
   dates       日期和时间：now()、today()、日历、ISO 8601
   regex       用正则表达式搜索、切分和替换
   csv         电子表格中的表格：csv_parse、csv_records、csv_format
@@ -1287,13 +1291,13 @@ Its definitions are used through the name `{n}`: `{n}.name`"#,
         ("add a line like `name = \"hello\"` at the top", "在开头加上一行，例如 `name = \"hello\"`"),
         ("`{shown}` has no `version`", "`{shown}` 没有 `version`"),
         ("add a line like `version = \"0.1.0\"` at the top", "在开头加上一行，例如 `version = \"0.1.0\"`"),
-        ("write `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (or `commit = \"...\"`), or `{name} = {{ path = \"../folder\" }}`", "请写 `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}`（或 `commit = \"...\"`），或者 `{name} = {{ path = \"../folder\" }}`"),
+        ("write `{name} = {{ version = \"^1.0.0\" }}` (from the package index), `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (or `commit = \"...\"`), or `{name} = {{ path = \"../folder\" }}`", "请写 `{name} = {{ version = \"^1.0.0\" }}`（来自包索引）、`{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}`（或 `commit = \"...\"`），或者 `{name} = {{ path = \"../folder\" }}`"),
         ("call it `{b}`", "把它命名为 `{b}`"),
         ("the project `{own}` cannot depend on itself", "项目 `{own}` 不能依赖它自己"),
         ("`use {own}/file` already reaches its own files", "`use {own}/file` 已经可以访问它自己的文件"),
         ("the dependency `{name}` is written as a table", "依赖 `{name}` 写成了表格"),
         ("the dependency `{name}` has both `git` and `path`", "依赖 `{name}` 同时有 `git` 和 `path`"),
-        ("the dependency `{name}` needs `git` or `path`", "依赖 `{name}` 需要 `git` 或 `path`"),
+        ("the dependency `{name}` needs `version`, `git` or `path`", "依赖 `{name}` 需要 `version`、`git` 或 `path`"),
         ("`tag` and `commit` are for a dependency from git, not from a folder", "`tag` 和 `commit` 用于来自 git 的依赖，而不是来自文件夹的依赖"),
         ("`{c}` is not a commit", "`{c}` 不是提交"),
         ("give a `tag` or a `commit`, not both", "请给出 `tag` 或 `commit`，不要两个都给"),
@@ -1692,17 +1696,11 @@ example: rythme steps fibonacci.ry "fib(4)""#,
         ("write a range with `..`: `1..10` is the list from 1 to 10 (included), and `0..10 |> step_by(2)` counts by 2", "范围用 `..` 来写：`1..10` 是从 1 到 10 的列表（包括 10），`0..10 |> step_by(2)` 则以 2 为步长计数"),
         ("use the operator `//` for a whole division: `7 // 2` is 3", "整数除法请使用运算符 `//`：`7 // 2` 等于 3"),
         ("use the operator `%` for the remainder: `7 % 3` is 1", "求余数请使用运算符 `%`：`7 % 3` 等于 1"),
-        ("use the operators `//` and `%`: `7 // 2` is 3 and `7 % 2` is 1", "请使用运算符 `//` 和 `%`：`7 // 2` 等于 3，`7 % 2` 等于 1"),
         ("to put values in a text, use braces: \"total: {{x}}\"; to write a number with 2 decimals: `text(x, 2)`", "要把值放进文本，请使用花括号：\"total: {{x}}\"；要把数字写成 2 位小数：`text(x, 2)`"),
         ("read the whole file with `read_file(path)`, then cut it with `lines(text)`; the lines of the standard input are `input_lines()`", "用 `read_file(path)` 读取整个文件，再用 `lines(text)` 切分；标准输入的各行是 `input_lines()`"),
         ("to merge two records, write `{{..a, ..b}}`: the fields of `b` replace those of `a`; for two dicts or two sets, `union(a, b)`", "要合并两个记录，请写 `{{..a, ..b}}`：`b` 的字段会替换 `a` 的字段；对于两个字典或两个集合，请用 `union(a, b)`"),
         ("write `unwrap_or(get(x, key), default)`: the value, or the default if it is missing", "请写 `unwrap_or(get(x, key), default)`：得到这个值，如果缺失则得到默认值"),
-        ("pair the lists, then combine each pair: `zip(a, b) |> map(fn([x, y]) = x + y)`", "先把列表配对，再组合每一对：`zip(a, b) |> map(fn([x, y]) = x + y)`"),
-        ("sort from the largest to the smallest with `sort(list) |> reverse`", "用 `sort(list) |> reverse` 从大到小排序"),
         ("compute the average with `sum(list) / len(list)`", "用 `sum(list) / len(list)` 计算平均值"),
-        ("keep x between low and high with `max(low, min(x, high))`", "用 `max(low, min(x, high))` 把 x 限制在 low 和 high 之间"),
-        ("count how many times each value appears with `group_by(list, fn(x) = x) |> map_values(len)`", "用 `group_by(list, fn(x) = x) |> map_values(len)` 统计每个值出现的次数"),
-        ("a decimal number x is NaN (not a number) when `x != x`", "当 `x != x` 时，小数 x 是 NaN（不是数字）"),
         ("`n.times do |i| ... end` is written `(0..n - 1).each do |i| ... end`", "`n.times do |i| ... end` 写作 `(0..n - 1).each do |i| ... end`"),
         ("to use another file, write `use other_file`, then `other_file.name`", "要使用另一个文件，请写 `use other_file`，然后 `other_file.name`"),
         ("there is no `new`: build values directly, like `{{name: \"Ada\"}}` or `Circle(2.0)`", "没有 `new`：直接构造值，例如 `{{name: \"Ada\"}}` 或 `Circle(2.0)`"),
@@ -1931,6 +1929,11 @@ Several steps inside an expression
 Your own types
   type Shape = Circle(radius) | Rect(width, height)
 
+Types written in the code (optional, checked by rythme check)
+  fn area(w: Int, h: Int) -> Int = w * h
+  total: Float = 0.0
+  type Box(a) = Box(value: a)    a type that takes a type: Box(Int), Box(Text)
+
 Tests and other files
   test "double works" = assert_eq(double(2), 4)
   use geometry                   then geometry.area(2)
@@ -2002,6 +2005,11 @@ Comments
 
 你自己的类型
   type Shape = Circle(radius) | Rect(width, height)
+
+写在代码中的类型（可选，由 rythme check 检查）
+  fn area(w: Int, h: Int) -> Int = w * h
+  total: Float = 0.0
+  type Box(a) = Box(value: a)    接受一个类型的类型：Box(Int)、Box(Text)
 
 测试和其他文件
   test "double works" = assert_eq(double(2), 4)
@@ -2852,7 +2860,8 @@ same code. Then:
   use hello/greeting        # a file of the project itself, from tests/
 
 A file next to the one that contains `use` comes first. Packages from git
-are kept in ~/.rythme/packages (or RYTHME_HOME/packages)."#,
+are kept in ~/.rythme/packages (or RYTHME_HOME/packages). Finding packages
+by name and sharing yours: `rythme help packages`."#,
             r#"项目和包
 
   rythme new hello        # 创建一个文件夹 hello/，其中是一个新项目：
@@ -2882,7 +2891,8 @@ rythme.toml 描述了这个项目：
   use hello/greeting        # 项目自己的一个文件，在 tests/ 中使用
 
 与包含 `use` 的文件在同一位置的文件优先。来自 git 的包保存在
-~/.rythme/packages（或 RYTHME_HOME/packages）中。"#,
+~/.rythme/packages（或 RYTHME_HOME/packages）中。按名字查找包、
+分享你的包：`rythme help packages`。"#,
         ),
         (
             r#"DATES AND TIMES
@@ -3034,7 +3044,7 @@ Definitions are kept from one line to the next. If a line is not finished
 Commands
   :help           this help              :quit          leave (or Ctrl-D)
   :doc map        help on a name         :load f.ry     load a file
-  :reset          forget everything      :lang fr       change the language (en, fr, es, de, pt, zh)
+  :reset          forget everything      :lang fr       change the language (en, fr, es, de, pt, zh, it, ja)
   :learn          guided tour            :explain E003  explain an error
   :steps fib(4)   show the calculation step by step
 The Tab key completes names."#,
@@ -3049,7 +3059,7 @@ The Tab key completes names."#,
 命令
   :help           这份帮助               :quit          退出（或 Ctrl-D）
   :doc map        某个名字的帮助         :load f.ry     加载一个文件
-  :reset          清除所有内容           :lang zh       切换语言（en、fr、es、de、pt、zh）
+  :reset          清除所有内容           :lang zh       切换语言（en、fr、es、de、pt、zh、it、ja）
   :learn          导览                   :explain E003  解释一个错误
   :steps fib(4)   一步一步显示计算过程
 Tab 键可以补全名字。"#,
@@ -3267,7 +3277,7 @@ starts by itself:
 
 VS Code
   the extension in editors/vscode: colors, snippets and the language server.
-  Settings: rythme.path (the program), rythme.language (en, fr, es, de, pt, zh or auto).
+  Settings: rythme.path (the program), rythme.language (en, fr, es, de, pt, zh, it, ja or auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   every editor that speaks the Language Server Protocol: tell it to start
@@ -3281,7 +3291,7 @@ Zed
 Colors in Neovim, Helix and Zed
   the Tree-sitter grammar in editors/tree-sitter-rythme (see editors/README.md).
 
-The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh) or
+The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh, it, ja) or
 RYTHME_LANG chooses it: rythme --lang fr lsp"#,
             r#"在你的编辑器中使用 RYTHME
 
@@ -3295,7 +3305,7 @@ Rythme 在编辑器中也能提供帮助：输入时显示问题，鼠标悬停�
 
 VS Code
   editors/vscode 中的扩展：着色、代码片段和语言服务器。
-  设置：rythme.path（程序），rythme.language（en、fr、es、de、pt、zh 或 auto）。
+  设置：rythme.path（程序），rythme.language（en、fr、es、de、pt、zh、it、ja 或 auto）。
 
 Neovim、Helix、Zed、Emacs、Sublime Text、Kate……
   所有支持 Language Server Protocol 的编辑器：让它为 .ry 文件启动
@@ -3309,7 +3319,7 @@ Zed
 Neovim、Helix 和 Zed 中的着色
   editors/tree-sitter-rythme 中的 Tree-sitter 语法（参见 editors/README.md）。
 
-消息的语言跟随编辑器，除非用 `--lang`（en、fr、es、de、pt、zh）或
+消息的语言跟随编辑器，除非用 `--lang`（en、fr、es、de、pt、zh、it、ja）或
 RYTHME_LANG 指定：rythme --lang zh lsp"#,
         ),
         (
@@ -4009,8 +4019,10 @@ To show a value, print it:  print(x + 1)"#,
             r#"E025 — Project or package problem
 
 The `rythme.toml` of the project (or the `rythme.lock` written by
-`rythme install`) cannot be read, a dependency is not installed, or
-`rythme install` cannot download one. A `rythme.toml` looks like this:
+`rythme install`) cannot be read, a dependency is not installed,
+`rythme install` cannot download one, or the package index (`rythme
+search`, `add`, `publish`) cannot be read or does not have what was asked.
+A `rythme.toml` looks like this:
 
   name = "hello"                 # a Rythme name in lower case
   version = "0.1.0"              # three numbers
@@ -4019,16 +4031,19 @@ The `rythme.toml` of the project (or the `rythme.lock` written by
   [dependencies]
   mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
   tools = { path = "../tools" }
+  geometry = { version = "^1.2.0" }   # from the package index
 
 Every value is a text, in quotes. A dependency from git needs a fixed
 version, a `tag` or a `commit`, and the program `git`
 (https://git-scm.com). After a change of `[dependencies]`, run
-`rythme install` in the folder of the project. More: `rythme help projects`."#,
+`rythme install` in the folder of the project. More: `rythme help projects`
+and `rythme help packages`."#,
             r#"E025 — 项目或包的问题
 
 无法读取项目的 `rythme.toml`（或者由 `rythme install` 写入的 `rythme.lock`），
-某个依赖没有安装，或者 `rythme install` 无法下载某个依赖。`rythme.toml` 的
-样子是这样的：
+某个依赖没有安装，`rythme install` 无法下载某个依赖，或者无法读取包索引
+（`rythme search`、`add`、`publish`），或者包索引中没有所要的东西。
+`rythme.toml` 的样子是这样的：
 
   name = "hello"                 # 小写的 Rythme 名字
   version = "0.1.0"              # 三个数字
@@ -4037,10 +4052,12 @@ version, a `tag` or a `commit`, and the program `git`
   [dependencies]
   mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
   tools = { path = "../tools" }
+  geometry = { version = "^1.2.0" }   # 来自包索引
 
 每个值都是写在引号里的文本。来自 git 的依赖需要固定的版本（`tag` 或
 `commit`），还需要程序 `git`（https://git-scm.com）。修改 `[dependencies]`
-之后，请在项目文件夹中运行 `rythme install`。更多信息：`rythme help projects`。"#,
+之后，请在项目文件夹中运行 `rythme install`。更多信息：`rythme help projects`
+和 `rythme help packages`。"#,
         ),
         (
             r#"E026 — Invalid regex
@@ -4438,7 +4455,6 @@ Or give the parameter another name: fn twice(n) = n * 2"#,
         ("One element out of n of a list (or text), starting with the first. On a range: the numbers with a step.", "列表（或文本）中每 n 个取一个元素，从第一个开始。对于范围：按步长取数字。"),
         ("Cuts a list (or text) into pieces of n elements; the last piece may be shorter.", "把列表（或文本）切成每段 n 个元素；最后一段可能更短。"),
         ("Every group of n neighbouring elements of a list (or text), in order: handy to compare each element with the next one.", "列表（或文本）中每组 n 个相邻的元素，按顺序排列：方便把每个元素和下一个比较。"),
-        ("Pairs the elements of two lists: [[a1, b1], [a2, b2], ...]. It stops at the end of the shorter list.", "把两个列表的元素配对：[[a1, b1], [a2, b2], ...]。在较短的列表结束时停止。"),
         ("Pairs each element with its position: [[0, x0], [1, x1], ...].", "把每个元素和它的位置配对：[[0, x0], [1, x1], ...]。"),
         ("Is f true for at least one element?", "f 是否至少对一个元素为真？"),
         ("Is f true for every element?", "f 是否对每个元素都为真？"),
@@ -4489,8 +4505,6 @@ Or give the parameter another name: fn twice(n) = n * 2"#,
         ("The parts of a path, split at each `/` or `\\`; the first part of an absolute path is its root (`/`, `C:\\`...). `join_path` puts them back together.", "路径的各个部分，在每个 `/` 或 `\\` 处切分；绝对路径的第一部分是它的根（`/`、`C:\\`……）。`join_path` 可以把它们重新组合起来。"),
         ("The date and time now, where the program runs: a record {year, month, day, hour, minute, second, offset}, where `offset` is the number of minutes the local time is ahead of UTC (0 when the system does not tell).", "程序运行所在地的当前日期和时间：一个记录 {year, month, day, hour, minute, second, offset}，其中 `offset` 是当地时间比 UTC 快的分钟数（系统没有提供时为 0）。"),
         ("The date of today, where the program runs: a record {year, month, day}.", "程序运行所在地的今天的日期：一个记录 {year, month, day}。"),
-        ("Reads a date written as ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date.", "读取按 ISO 8601 书写的日期（\"2024-02-29\"、\"2024-02-29T13:05:00\"，需要时带 `Z` 或像 `+01:00` 这样的时差）：`Ok(date)`，如果不是有效的日期则为 `Err(message)`。"),
-        ("Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one.", "把日期写成 ISO 8601 格式：\"2024-02-29\"，如果日期带有时间则包括时间，如果带有时差则包括 `Z` 或时差。"),
         ("Is the value a valid date: a record {year, month, day} (with `hour`, `minute`, `second`, `offset` if needed) for a day that exists?", "这个值是否是有效的日期：一个表示存在的某一天的记录 {year, month, day}（需要时带 `hour`、`minute`、`second`、`offset`）？"),
         ("The date n days later (or earlier, when n is negative), at the same time of day.", "n 天之后（n 为负数时是之前）的日期，一天中的时间不变。"),
         ("The date and time n seconds later (or earlier, when n is negative). Add `60 * minutes` or `3600 * hours` the same way.", "n 秒之后（n 为负数时是之前）的日期和时间。用同样的方法可以加上 `60 * minutes` 或 `3600 * hours`。"),
@@ -8402,6 +8416,8 @@ Wrong:   fn label(n: Int) -> Text = n  # gives an Int
 Right:   fn label(n: Int) -> Text = text(n)
 Wrong:   fn twice(x: int) = x * 2      # type names start with an uppercase letter
 Right:   fn twice(x: Int) = x * 2
+Wrong:   fn depth(t: Tree(Int, Text))  # type Tree(a) takes one type
+Right:   fn depth(t: Tree(Int))
 
 Written types are optional: removing one never changes what a program does.
 More: `rythme help types`."#,
@@ -8419,6 +8435,8 @@ More: `rythme help types`."#,
 正确：   fn label(n: Int) -> Text = text(n)
 错误：   fn twice(x: int) = x * 2      # 类型名以大写字母开头
 正确：   fn twice(x: Int) = x * 2
+错误：   fn depth(t: Tree(Int, Text))  # type Tree(a) 只接受一个类型
+正确：   fn depth(t: Tree(Int))
 
 写出的类型是可选的：去掉一个类型，永远不会改变程序的行为。
 更多：`rythme help types`。"#,
@@ -8441,12 +8459,26 @@ The types
   fn(Int, Int) -> Int          a function
   Shape                        a type defined with `type` (geometry.Shape
                                for a type of `use geometry`)
+  Tree(Int)                    a type defined with parameters, with its types
   a                            any type: one lowercase letter, the same type
                                everywhere in a definition
   List, Dict, Set, Option, Result, Record, Function alone: any content
+  (Tree alone too)
 
   fn first_of(xs: List(a)) -> a = xs[0]
   first_of([1, 2]) + 1         # the checker knows it is an Int
+
+Types with parameters: a type can take types, like List(Int)
+  type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+  type Pair(a, b) = Pair(first: a, second: b)
+
+  fn depth(t: Tree(a)) -> Int = ...      a Tree of anything
+  fn total(t: Tree(Int)) -> Int = ...    a Tree of whole numbers
+  total(Node(Leaf, "two", Leaf))         E027: this is a Tree(Text)
+
+A type variable is one letter: a lowercase word, like `int` or `string`, is
+taken for a type named as in another language, and `rythme check` gives its
+Rythme name.
 
 Written types are never needed and change nothing when the program runs;
 the editors and `rythme doc` show them."#,
@@ -8467,12 +8499,25 @@ Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把�
   fn(Int, Int) -> Int          一个函数
   Shape                        用 `type` 定义的类型（`use geometry` 中的类型
                                写作 geometry.Shape）
+  Tree(Int)                    带参数定义的类型，连同它的类型
   a                            任意类型：一个小写字母，在一个定义中处处
                                代表同一个类型
   单独的 List、Dict、Set、Option、Result、Record、Function：内容不限
+  （单独的 Tree 也可以）
 
   fn first_of(xs: List(a)) -> a = xs[0]
   first_of([1, 2]) + 1         # 检查器知道这是一个 Int
+
+带参数的类型：一个类型可以接受类型，就像 List(Int)
+  type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+  type Pair(a, b) = Pair(first: a, second: b)
+
+  fn depth(t: Tree(a)) -> Int = ...      任意内容的 Tree
+  fn total(t: Tree(Int)) -> Int = ...    整数的 Tree
+  total(Node(Leaf, "two", Leaf))         E027：这是一个 Tree(Text)
+
+类型变量是一个字母：像 `int` 或 `string` 这样的小写单词，会被当作按其他
+语言命名的类型，`rythme check` 会给出它在 Rythme 中的名字。
 
 写出的类型从来不是必需的，程序运行时也不会因此有任何不同；
 编辑器和 `rythme doc` 会显示它们。"#,
@@ -9440,5 +9485,682 @@ genetic; exercises 31 to 36 (rythme exercise list)."#,
 knn、naive_bayes、markov、tictactoe、pathfinding 和 genetic；练习 31 到 36
 （rythme exercise list）。"#,
         ),
+        // Types with parameters: src/check/annot.rs, src/help.rs, src/lsp/features.rs, src/parser.rs
+        ("the type variable `{name}` appears twice in `{ty}`", "类型变量 `{name}` 在 `{ty}` 中出现了两次"),
+        ("give each one its own letter: `type Pair(a, b)`", "给每个类型变量一个自己的字母：`type Pair(a, b)`"),
+        ("`{name}` cannot be a type variable: a type variable is one lowercase letter", "`{name}` 不能作为类型变量：类型变量是一个小写字母"),
+        ("write one letter, like `{letter}`, here and in the fields", "写一个字母，比如 `{letter}`，这里和字段中都要改"),
+        ("`{v}` is not a parameter of `{ty}`", "`{v}` 不是 `{ty}` 的参数"),
+        ("not among `{header}`", "不在 `{header}` 之中"),
+        ("add it to the parameters of the type: `type {with} = ...`", "把它加到类型的参数中：`type {with} = ...`"),
+        ("`{name}` takes {count} types: `{example}`", "`{name}` 接受 {count} 个类型：`{example}`"),
+        (
+            r#"Types may also be written in the code, where they help to read it:
+  fn area(s: Shape) -> Float
+`rythme check` verifies them; they are never needed (rythme help types)."#,
+            r#"类型也可以写在代码中，在有助于阅读的地方：
+  fn area(s: Shape) -> Float
+`rythme check` 会检查它们；它们从来不是必需的（rythme help types）。"#,
+        ),
+        ("A whole number, as large as needed: `42`, `-7`.", "一个整数，要多大有多大：`42`、`-7`。"),
+        ("A decimal number: `3.14`, `2.0`.", "一个小数：`3.14`、`2.0`。"),
+        ("A text: `\"hello\"`.", "一个文本：`\"你好\"`。"),
+        ("`true` or `false`.", "`true` 或 `false`。"),
+        ("`()`: what a function gives when it gives nothing, like `print`.", "`()`：不给出任何东西的函数所给出的值，比如 `print`。"),
+        ("A value that is only its name: `:ok`, `:error`.", "只是自己名字的值：`:ok`、`:error`。"),
+        ("A list whose elements all have the type between parentheses; `List` alone: any list.", "元素都具有括号中类型的列表；单独的 `List`：任意列表。"),
+        ("A set of values of this type: `set([1, 2])`.", "这个类型的值的集合：`set([1, 2])`。"),
+        ("A dictionary: keys of the first type, values of the second.", "一个字典：键是第一个类型，值是第二个类型。"),
+        ("`Some(value)` or `None`: a value that may be missing.", "`Some(value)` 或 `None`：可能缺失的值。"),
+        ("`Ok(value)` or `Err(error)`: the result of what may fail.", "`Ok(value)` 或 `Err(error)`：可能失败的操作的结果。"),
+        ("Any record; `{{name: Text}}` is a record with at least these fields.", "任意记录；`{{name: Text}}` 是至少有这些字段的记录。"),
+        ("Any function; `fn(Int) -> Int` is a function with these types.", "任意函数；`fn(Int) -> Int` 是具有这些类型的函数。"),
+        ("A type of Rythme: `rythme help types`", "Rythme 的一个类型：`rythme help types`"),
+        ("type variable", "类型变量"),
+        ("used file", "被使用的文件"),
+        ("a type variable, like `a`", "一个类型变量，比如 `a`"),
+        ("a type without parameters is written without parentheses: `type {name} = ...`", "没有参数的类型写的时候不带括号：`type {name} = ...`"),
+        ("the parameters of a type are type variables, one lowercase letter each: `type Box(a) = Box(value: a)`", "类型的参数是类型变量，每个都是一个小写字母：`type Box(a) = Box(value: a)`"),
+        // src/index.rs, src/packages.rs, src/project.rs, src/manifest.rs, src/help.rs: the package index
+        ("the address is empty", "地址是空的"),
+        ("`{a}` is not an address that Rythme accepts: no spaces, and no `-` at the start", "`{a}` 不是 Rythme 接受的地址：不能有空格，开头也不能是 `-`"),
+        ("Rythme downloads packages only with `https://`, `ssh://` or from this computer (`file://`), not with `{other}`", "Rythme 只通过 `https://`、`ssh://` 或从这台电脑（`file://`）下载包，不用 `{other}`"),
+        ("`{a}` is not the address of a repository: write `https://...`, `ssh://...` or `file://...`", "`{a}` 不是仓库的地址：请写 `https://...`、`ssh://...` 或 `file://...`"),
+        ("set by `index` in `rythme.toml`", "由 `rythme.toml` 中的 `index` 指定"),
+        ("set by the variable RYTHME_INDEX", "由变量 RYTHME_INDEX 指定"),
+        ("`{url}` is not a package index: it has no folder `packages`", "`{url}` 不是包索引：它没有 `packages` 文件夹"),
+        ("an index holds one file per package, like `packages/mathlib.toml` (see `rythme help packages`)", "索引中每个包有一个文件，比如 `packages/mathlib.toml`（见 `rythme help packages`）"),
+        ("an unknown day", "未知日期"),
+        ("cannot update the package index from `{url}`: using the copy of {date}", "无法从 `{url}` 更新包索引：使用 {date} 的副本"),
+        ("cannot download the package index from `{url}`", "无法从 `{url}` 下载包索引"),
+        ("check the connection to the network, or give another index with the variable RYTHME_INDEX (an address or a folder); dependencies from git or from a folder work without the index", "请检查网络连接，或者用变量 RYTHME_INDEX 指定另一个索引（地址或文件夹）；来自 git 或文件夹的依赖不需要索引"),
+        ("no package `{name}` in the package index", "包索引中没有包 `{name}`"),
+        ("`rythme search WORDS` finds packages by the words of their name and description", "`rythme search 关键词` 按名字和描述中的词查找包"),
+        ("the index: {place}", "索引：{place}"),
+        ("{url} (copy of {date})", "{url}（{date} 的副本）"),
+        ("{} (withdrawn)", "{}（已撤回）"),
+        ("none", "无"),
+        ("no version of `{name}` in the package index fits `{range}`", "包索引中 `{name}` 没有符合 `{range}` 的版本"),
+        ("its versions: {}", "它的版本：{}"),
+        ("for the newest one, write `{name} = {{ version = \"^{v}\" }}`", "要用最新版本，请写 `{name} = {{ version = \"^{v}\" }}`"),
+        ("every version of `{name}` was withdrawn", "`{name}` 的所有版本都已撤回"),
+        ("`{shown}` is too large for an entry of the package index", "`{shown}` 太大，不能作为包索引的条目"),
+        ("`{key}` is a list of texts", "`{key}` 是文本列表"),
+        ("this entry of the package index is for `{found}`, but its file is named for `{name}`", "包索引的这个条目是 `{found}` 的，但它的文件名是 `{name}`"),
+        ("the entry of `{name}` has no `repository`", "`{name}` 的条目没有 `repository`"),
+        ("the entry of `{name}` has no `{key}`", "`{name}` 的条目没有 `{key}`"),
+        ("each version is written under `[[version]]`", "每个版本写在 `[[version]]` 下面"),
+        ("this version of `{name}` has no `{k}`", "`{name}` 的这个版本没有 `{k}`"),
+        ("`{commit}` is not a full commit: 40 hexadecimal digits in lower case", "`{commit}` 不是完整的 commit：应为 40 位小写十六进制数字"),
+        ("`{checksum}` is not a checksum: `sha256:` and 64 hexadecimal digits, as `rythme publish` writes it", "`{checksum}` 不是校验和：应为 `sha256:` 加 64 位十六进制数字，和 `rythme publish` 写的一样"),
+        ("`{t}` is not a tag", "`{t}` 不是 tag"),
+        ("the version {v} is written twice", "版本 {v} 写了两次"),
+        ("the entry of `{name}` has no version", "`{name}` 的条目没有版本"),
+        ("expected `,` or `]` here", "这里应该是 `,` 或 `]`"),
+        ("a list is written on one line: `[\"math\", \"vectors\"]`", "列表写在一行里：`[\"math\", \"vectors\"]`"),
+        ("like `{key} = {example}`", "例如 `{key} = {example}`"),
+        ("write `\"^1.2.0\"` (1.2.0 or a newer compatible version, below 2.0.0), `\"~1.2.0\"` (1.2.x), `\"=1.2.0\"` (exactly this one) or `\">=1.2.0, <1.5.0\"`", "请写 `\"^1.2.0\"`（1.2.0 或更新的兼容版本，低于 2.0.0）、`\"~1.2.0\"`（1.2.x）、`\"=1.2.0\"`（正好这个版本）或 `\">=1.2.0, <1.5.0\"`"),
+        ("for a version from the package index, write `{name} = {{ version = \"{v}\" }}`", "要使用包索引中的版本，请写 `{name} = {{ version = \"{v}\" }}`"),
+        ("a dependency comes from the package index (`version`), from git (`git`) or from a folder (`path`): give only one", "依赖来自包索引（`version`）、git（`git`）或文件夹（`path`）：只能给一个"),
+        ("`{v}` is not a range of versions", "`{v}` 不是版本范围"),
+        (
+            r#"unknown option `{bad}` for `rythme {command}`
+see `rythme help packages`"#,
+            r#"`rythme {command}` 没有选项 `{bad}`
+见 `rythme help packages`"#,
+        ),
+        ("{bad} file(s) of the package index could not be read", "包索引中有 {bad} 个文件无法读取"),
+        ("{n} package(s) in {place}", "{place} 中有 {n} 个包"),
+        ("No package found for `{query}` in {place}", "在 {place} 中没有找到 `{query}` 的包"),
+        ("{n} package(s) found for `{query}` in {place}", "在 {place} 中找到 `{query}` 的 {n} 个包"),
+        ("More about one: `rythme info {name}`; add it to a project: `rythme add {name}`", "了解某个包：`rythme info {name}`；把它加入项目：`rythme add {name}`"),
+        ("`rythme search --update{words}` searches the newest copy of the index", "`rythme search --update{words}` 在最新的索引副本中查找"),
+        ("which package? Example: rythme info mathlib", "哪个包？例如：rythme info mathlib"),
+        ("repository", "仓库"),
+        ("license", "许可证"),
+        ("keywords", "关键词"),
+        ("authors", "作者"),
+        ("versions", "版本"),
+        ("  {v} was withdrawn: {}", "  {v} 已撤回：{}"),
+        ("Add it to a project: `rythme add {name}` (writes `{name} = {{ version = \"^{v}\" }}` in rythme.toml)", "把它加入项目：`rythme add {name}`（在 rythme.toml 中写入 `{name} = {{ version = \"^{v}\" }}`）"),
+        ("Every version of this package was withdrawn.", "这个包的所有版本都已撤回。"),
+        ("which package? Example: rythme add mathlib (or rythme add mathlib@1.2)", "哪个包？例如：rythme add mathlib（或 rythme add mathlib@1.2）"),
+        ("cannot read `{}`: {e}", "无法读取 `{}`：{e}"),
+        ("`{range_text}` is not a range of versions", "`{range_text}` 不是版本范围"),
+        ("`{name}` came from {from}: it now comes from the package index", "`{name}` 原来来自 {from}：现在改为来自包索引"),
+        ("`rythme.toml` was left as it was", "`rythme.toml` 保持原样"),
+        ("Added `{line}` to rythme.toml ({version})", "已把 `{line}` 加入 rythme.toml（{version}）"),
+        ("  use it with `use {name}/FILE` (see `rythme info {name}`)", "  用 `use {name}/FILE` 使用它（见 `rythme info {name}`）"),
+        ("which entries? Example: rythme publish --verify packages/mathlib.toml", "哪些条目？例如：rythme publish --verify packages/mathlib.toml"),
+        (
+            r#"`rythme publish` takes no argument (`{a}`): it checks the package of the current folder
+see `rythme help packages`"#,
+            r#"`rythme publish` 不接受参数（`{a}`）：它检查当前文件夹的包
+见 `rythme help packages`"#,
+        ),
+        ("`rythme.toml` has no `{key}`", "`rythme.toml` 没有 `{key}`"),
+        ("the package index shows it, and needs it", "包索引会显示它，也需要它"),
+        ("add a line like `{example}` at the top", "请在开头加一行，比如 `{example}`"),
+        ("Checking `{name}` {version} before it goes into the package index", "在 `{name}` {version} 进入包索引之前进行检查"),
+        ("`{version}` is not a version of semantic versioning", "`{version}` 不是语义化版本"),
+        ("like `version = \"1.2.0\"`, without zeros at the start of a number", "例如 `version = \"1.2.0\"`，数字开头不能有 0"),
+        ("description = \"What `{name}` is for, in one sentence\"", "description = \"用一句话说明 `{name}` 的用途\""),
+        ("the `description` is too long: one sentence, at most 200 characters", "`description` 太长：一句话，最多 200 个字符"),
+        ("YOU", "你的名字"),
+        ("`{k}` is not a keyword: a word in lower case, at most 24 characters", "`{k}` 不是关键词：应为一个小写的词，最多 24 个字符"),
+        ("at most 5 keywords", "最多 5 个关键词"),
+        ("a published package cannot use a folder of this computer: `{dep_name}` comes from `{p}`", "已发布的包不能使用这台电脑上的文件夹：`{dep_name}` 来自 `{p}`"),
+        ("publish `{dep_name}` too, then write `{dep_name} = {{ version = \"^...\" }}`", "也发布 `{dep_name}`，然后写 `{dep_name} = {{ version = \"^...\" }}`"),
+        ("`{name}` is not in a git repository", "`{name}` 不在 git 仓库中"),
+        ("the package index gives the commit of each version: a package is published from its git repository", "包索引给出每个版本的 commit：包要从它的 git 仓库发布"),
+        ("`git init`, `git add .`, `git commit`, then push it to its `repository`", "`git init`、`git add .`、`git commit`，然后推送到它的 `repository`"),
+        ("`rythme.toml` must be at the root of its git repository", "`rythme.toml` 必须在它的 git 仓库的根目录"),
+        ("the root of the repository: {top}", "仓库的根目录：{top}"),
+        ("give the package a repository of its own", "给这个包一个单独的仓库"),
+        ("some changes are not committed", "有些更改还没有提交（commit）"),
+        ("for example: {}", "例如：{}"),
+        ("commit them (`git add`, `git commit`), or set them aside, then tag the commit", "提交它们（`git add`、`git commit`），或者先放到一边，然后给 commit 打 tag"),
+        ("no tag `v{version}` for the version {version}", "版本 {version} 没有 tag `v{version}`"),
+        ("tag the commit and push the tag: `git tag v{version}`, then `git push origin v{version}`", "给 commit 打 tag 并推送：`git tag v{version}`，然后 `git push origin v{version}`"),
+        ("the tag `{t}` is not the current commit", "tag `{t}` 不是当前的 commit"),
+        ("what is checked must be what is published", "检查的内容必须就是发布的内容"),
+        ("publish from the tag (`git checkout {t}`), or move the tag to this commit (`git tag --force {t}`) before pushing it", "从 tag 发布（`git checkout {t}`），或者在推送之前把 tag 移到这个 commit（`git tag --force {t}`）"),
+        ("Running `rythme check`", "正在运行 `rythme check`"),
+        ("`rythme check` found errors", "`rythme check` 发现了错误"),
+        ("fix them first: a package must pass `rythme check`", "请先修正它们：包必须通过 `rythme check`"),
+        ("Running `rythme test`", "正在运行 `rythme test`"),
+        ("`rythme test` failed", "`rythme test` 失败了"),
+        ("fix them first: a package must pass its tests", "请先修正它们：包必须通过自己的测试"),
+        ("the name `{name}` is already taken in the package index", "名字 `{name}` 在包索引中已被占用"),
+        ("by the repository {repo}", "被仓库 {repo} 占用"),
+        ("choose another `name` for your package", "请给你的包换一个 `name`"),
+        ("the version {version} of `{name}` is already in the package index", "`{name}` 的版本 {version} 已经在包索引中"),
+        ("a published version never changes: raise `version` in `rythme.toml`, commit and tag again", "已发布的版本永远不变：请提高 `rythme.toml` 中的 `version`，再提交并打 tag"),
+        ("cannot read the package index `{url}`: it will check the name and the version itself", "无法读取包索引 `{url}`：它会自己检查名字和版本"),
+        ("the tag `{t}` is not in {repo}", "tag `{t}` 不在 {repo} 中"),
+        ("push it: `git push origin {t}`", "请推送它：`git push origin {t}`"),
+        ("the tag `{t}` of {repo} is not this commit", "{repo} 中的 tag `{t}` 不是这个 commit"),
+        ("push the tag again: `git push --force origin {t}`", "请重新推送 tag：`git push --force origin {t}`"),
+        ("cannot reach {repo} to check that the tag `{t}` is there", "无法连接 {repo} 来检查 tag `{t}` 是否在那里"),
+        ("cannot read the files of the commit `{commit}`", "无法读取 commit `{commit}` 的文件"),
+        ("✓ `{name}` {version} is ready for the package index.", "✓ `{name}` {version} 已经可以进入包索引。"),
+        ("Rythme never publishes anything by itself: a version goes into the index with a pull request on its repository, {}.", "Rythme 从不自己发布任何东西：版本通过在索引仓库 {} 上的 pull request 进入索引。"),
+        ("1. Fork the repository of the index and clone your fork. Create the file {file} with:", "1. Fork 索引的仓库，再 clone 你的 fork。创建文件 {file}，内容是："),
+        ("1. Fork the repository of the index and clone your fork. Add at the end of {file}:", "1. Fork 索引的仓库，再 clone 你的 fork。在 {file} 的末尾加上："),
+        ("2. Commit it on a branch of your fork and push it:", "2. 在你的 fork 的一个分支上提交并推送："),
+        ("3. Open a pull request on {}: its checks run `rythme publish --verify {file}`, then a maintainer merges it.", "3. 在 {} 上开一个 pull request：它的检查会运行 `rythme publish --verify {file}`，然后由维护者合并。"),
+        (
+            r#"
+{problems} problem(s) to fix before publishing: nothing was sent anywhere"#,
+            r#"
+发布前要修正 {problems} 个问题：没有向任何地方发送任何东西"#,
+        ),
+        ("`{f}` is not an entry of the index: `packages/NAME.toml`", "`{f}` 不是索引的条目：应为 `packages/NAME.toml`"),
+        ("✓ {f}: `{stem}`, {count} version(s) verified", "✓ {f}：`{stem}`，已验证 {count} 个版本"),
+        ("✗ {f}", "✗ {f}"),
+        ("{v}: the commit `{commit}` is not in `{url}`", "{v}：commit `{commit}` 不在 `{url}` 中"),
+        ("{v}: the tag `{tag}` of `{url}` is not the commit `{commit}`", "{v}：`{url}` 中的 tag `{tag}` 不是 commit `{commit}`"),
+        ("{v}: the files of the commit do not have the checksum of the entry", "{v}：commit 的文件与条目中的校验和不符"),
+        (
+            r#"expected: {}
+found:    {found}"#,
+            r#"应为：{}
+实际：{found}"#,
+        ),
+        ("`rythme publish` in the package, at its tag, writes the right one", "在包里、在它的 tag 上运行 `rythme publish`，会写出正确的校验和"),
+        ("{v}: the commit has no `rythme.toml` at its root", "{v}：commit 的根目录中没有 `rythme.toml`"),
+        ("{v}: the `rythme.toml` of the commit says `{found_name}` {found_version}", "{v}：commit 中的 `rythme.toml` 写的是 `{found_name}` {found_version}"),
+        ("{v}: the dependency `{dep_name}` is a folder of the computer of the author", "{v}：依赖 `{dep_name}` 是作者电脑上的文件夹"),
+        ("the package index, version {range}", "包索引，版本 {range}"),
+        ("the commit `{commit}` of `{name}` {version} does not exist in `{url}`", "`{name}` {version} 的 commit `{commit}` 在 `{url}` 中不存在"),
+        ("the package index gives this commit for this version", "包索引为这个版本给出的是这个 commit"),
+        ("tell the authors of `{name}`: the history of their repository may have been rewritten", "请告诉 `{name}` 的作者：他们仓库的历史可能被改写了"),
+        ("cannot read the files of `{name}` {version}", "无法读取 `{name}` {version} 的文件"),
+        ("the files of `{name}` {version} do not match the checksum of the package index", "`{name}` {version} 的文件与包索引中的校验和不符"),
+        ("nothing was installed, and nothing of the package ran", "什么都没有安装，包里的任何东西都没有运行"),
+        ("do not use this version; tell the maintainers of the package index", "不要使用这个版本；请告诉包索引的维护者"),
+        ("Updating the dependencies of `{name}`", "正在更新 `{name}` 的依赖"),
+        ("{range} from the index, commit {short} ({how})", "来自索引的 {range}，commit {short}（{how}）"),
+        ("the package index gives `{dep_name}` {wanted}, but its `rythme.toml` says `{found}` {version}", "包索引给出的是 `{dep_name}` {wanted}，但它的 `rythme.toml` 写的是 `{found}` {version}"),
+        ("tell the maintainers of the package index", "请告诉包索引的维护者"),
+        ("`rythme update` takes the names of dependencies, not `{bad}`: `rythme update` (all of them) or `rythme update mathlib`", "`rythme update` 接受依赖的名字，不接受 `{bad}`：`rythme update`（全部）或 `rythme update mathlib`"),
+        ("`{a}` is not a dependency of `{}`", "`{a}` 不是 `{}` 的依赖"),
+        ("did you mean `rythme update {best}`?", "你是不是想写 `rythme update {best}`？"),
+        ("`rythme add {a}` adds it from the package index", "`rythme add {a}` 会从包索引添加它"),
+        ("Everything was already up to date", "一切都已经是最新的"),
+        ("Updated:", "已更新："),
+        ("{} {} (new)", "{} {}（新）"),
+        (
+            r#"THE PACKAGE INDEX
+
+  rythme search vectors      # the packages whose name, description or keywords say it
+  rythme info mathlib        # its description, repository, license, versions
+  rythme add mathlib         # adds `mathlib = { version = "^1.2.0" }` to rythme.toml,
+                             #   then installs it (rythme.lock keeps the exact commit)
+  rythme add mathlib@1.1     # a range of versions of your choice
+  rythme update              # the newest version in the range of each dependency
+  rythme publish             # checks your package, then says how to add it
+
+A dependency from the index gives a range of versions:
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 or newer, below 2.0.0 (the default)
+  geometry = { version = "~0.3.1" }   # 0.3.x, from 0.3.1
+  tools = { version = "=1.0.0" }      # exactly this one
+
+`rythme install` takes the version of rythme.lock while it is in the range,
+and `rythme update` the newest one; a withdrawn version is never chosen.
+
+The index is a git repository, one file per package (packages/NAME.toml):
+its name, description, repository, license, keywords, and for each version
+its tag, its commit and the checksum of its files. Rythme keeps a copy in
+~/.rythme/index and reads it without a network: `rythme search --update`
+gets the newest one. Another index: `index = "..."` in rythme.toml, or the
+variable RYTHME_INDEX (an address, or a folder of this computer); by
+default https://github.com/maxlestage/rythme-index.
+
+Safety: names are Rythme names (no `/`, no `..`), addresses use https, ssh
+or file://, git runs without hooks, the files of each version must have the
+checksum of the index, and nothing of a package runs when it is installed.
+
+Publishing: tag the version (git tag v1.2.0, git push origin v1.2.0), then
+`rythme publish` checks rythme.toml (description, license, repository),
+`rythme check`, `rythme test` and the tag, and prints the entry to add to
+the index with a pull request. Rythme never sends anything by itself."#,
+            r#"包索引
+
+  rythme search vectors      # 名字、描述或关键词中包含这个词的包
+  rythme info mathlib        # 它的描述、仓库、许可证、版本
+  rythme add mathlib         # 在 rythme.toml 中加入 `mathlib = { version = "^1.2.0" }`，
+                             #   然后安装它（rythme.lock 记下确切的 commit）
+  rythme add mathlib@1.1     # 你自己选择的版本范围
+  rythme update              # 每个依赖在其范围内的最新版本
+  rythme publish             # 检查你的包，然后说明如何把它加入索引
+
+来自索引的依赖给出一个版本范围：
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 或更新，低于 2.0.0（默认）
+  geometry = { version = "~0.3.1" }   # 0.3.x，从 0.3.1 起
+  tools = { version = "=1.0.0" }      # 正好这个版本
+
+只要 rythme.lock 中的版本还在范围内，`rythme install` 就用它；
+`rythme update` 则取最新的版本；已撤回的版本永远不会被选中。
+
+索引是一个 git 仓库，每个包一个文件（packages/NAME.toml）：包的名字、描述、
+仓库、许可证、关键词，以及每个版本的 tag、commit 和文件的校验和。Rythme 在
+~/.rythme/index 中保存一份副本，不联网也能读取：`rythme search --update`
+获取最新的副本。使用另一个索引：在 rythme.toml 中写 `index = "..."`，或者
+设置变量 RYTHME_INDEX（一个地址，或这台电脑上的一个文件夹）；默认是
+https://github.com/maxlestage/rythme-index。
+
+安全：名字都是 Rythme 名字（不能有 `/` 或 `..`），地址只用 https、ssh 或
+file://，git 运行时不执行 hooks，每个版本的文件必须符合索引中的校验和，安装
+包的时候包里的任何东西都不会运行。
+
+发布：给版本打 tag（git tag v1.2.0，git push origin v1.2.0），然后
+`rythme publish` 会检查 rythme.toml（description、license、repository）、
+`rythme check`、`rythme test` 和 tag，并显示要通过 pull request 加入索引的
+条目。Rythme 从不自己发送任何东西。"#,
+        ),
+        ("The index is the folder {url}, where Rythme writes nothing.", "索引是文件夹 {url}，Rythme 不会往里面写任何东西。"),
+        ("Create its file {file} with:", "创建它的文件 {file}，内容是："),
+        ("Add at the end of its file {file}:", "在它的文件 {file} 末尾加上："),
+        ("the pattern \"{pattern}\" has an unknown directive `%{c}`", "模式 \"{pattern}\" 有一个未知的指令 `%{c}`"),
+        ("the directives are %Y (year), %m (month), %d (day), %H (hour), %M (minute), %S (second), %y (year in 2 digits), %B and %b (month name), %A and %a (day name), %I and %p (12-hour clock), %j (day of the year), %z (offset) and %% (a %)", "指令有 %Y（年）、%m（月）、%d（日）、%H（时）、%M（分）、%S（秒）、%y（两位数的年）、%B 和 %b（月份名）、%A 和 %a（星期名）、%I 和 %p（12 小时制）、%j（一年中的第几天）、%z（时差）以及 %%（一个 %）"),
+        (r#""{text}" does not follow the pattern "{pattern}""#, r#""{text}" 不符合模式 "{pattern}""#),
+        ("the hour must go from 1 to 12 with AM or PM, not {}", "使用 AM 或 PM 时，小时必须在 1 到 12 之间，而不是 {}"),
+        ("the day of the year must go from 1 to {len}, not {n}", "一年中的第几天必须在 1 到 {len} 之间，而不是 {n}"),
+        ("`{c}` is not a Base64 character", "`{c}` 不是 Base64 字符"),
+        ("this Base64 text is cut short", "这段 Base64 文本被截断了"),
+        ("the decoded bytes are not a text (UTF-8)", "解码后的字节不是文本（UTF-8）"),
+        ("a `%` must be followed by two hexadecimal digits, like `%20`", "`%` 后面必须跟两个十六进制数字，例如 `%20`"),
+        ("`{f}` would give {count} lists: too many (at most {MAX_COMBINED} elements in all)", "`{f}` 会得到 {count} 个列表：太多了（总共最多 {MAX_COMBINED} 个元素）"),
+        ("the number of combinations grows very fast: try with a shorter list, or fewer elements in each one", "组合的数量增长得非常快：试试更短的列表，或者每个组合里更少的元素"),
+        ("`unzip` needs a list of lists, but its element {k} is {}", "`unzip` 需要一个由列表组成的列表，但它的第 {k} 个元素是 {}"),
+        ("the function given to `unfold` must return `Some([value, next])` or `None`, but it returned Some({})", "传给 `unfold` 的函数必须返回 `Some([值, 下一个])` 或 `None`，但它返回了 Some({})"),
+        ("`{f}` needs at least two numbers in each list", "`{f}` 需要每个列表至少有两个数"),
+        ("`correlation` needs numbers that vary: one of the lists has all its numbers equal", "`correlation` 需要会变化的数：其中一个列表的所有数都相等"),
+        ("`{f}` cannot compare {} and {}", "`{f}` 无法比较 {} 和 {}"),
+        ("the value and its bounds must be of the same kind: all numbers, or all texts...", "值和它的边界必须是同一种：都是数，或者都是文本……"),
+        ("`constrain`: the lower bound {} is above the upper bound {}", "`constrain`：下界 {} 大于上界 {}"),
+        ("`binomial` needs a number of 0 or more, not {n}", "`binomial` 需要一个大于或等于 0 的数，而不是 {n}"),
+        ("`expect` found `None`: there is no value", "`expect` 遇到了 `None`：没有值"),
+        ("`expect` found an error: {}", "`expect` 遇到了一个错误：{}"),
+        ("`all_ok` needs a list of Results (Ok or Err), but its element {k} is {}", "`all_ok` 需要一个由 Result（Ok 或 Err）组成的列表，但它的第 {k} 个元素是 {}"),
+        ("to keep the values of a list of Options, use `filter_map(list, fn(x) = x)`", "要保留一个 Option 列表中的值，请使用 `filter_map(list, fn(x) = x)`"),
+        ("`format` cannot use \"{spec}\": {why}", "`format` 无法使用 \"{spec}\"：{why}"),
+        (r#"a spec is written [[fill]align][sign][#][0][width][,][.precision][type]: ">8" (8 wide, on the right), "^8" (centered), "08.2f" (2 decimals, zeros before), ",d" (thousands), ".1%" (a percentage), "x" (hexadecimal), "b" (binary), "e" (exponent)"#, r#"格式说明写作 [[填充]对齐][符号][#][0][宽度][,][.精度][类型]：">8"（宽 8，靠右）、"^8"（居中）、"08.2f"（2 位小数，前面补零）、",d"（千位分隔）、".1%"（百分比）、"x"（十六进制）、"b"（二进制）、"e"（指数）"#),
+        ("the width is at most {MAX_WIDTH}", "宽度最多为 {MAX_WIDTH}"),
+        ("the precision is at most {MAX_PRECISION}", "精度最多为 {MAX_PRECISION}"),
+        ("a number must follow the `.`", "`.` 后面必须跟一个数"),
+        ("`{c}` is not a type of format", "`{c}` 不是一种格式类型"),
+        ("this is not a format spec", "这不是格式说明"),
+        ("`{kind}` cannot write {what}", "`{kind}` 不能写出{what}"),
+        ("a whole number", "整数"),
+        ("a whole number has no decimals: write a type like `f` for them", "整数没有小数：要显示小数，请写一个类型，例如 `f`"),
+        ("`,` groups decimal digits only: use `_`", "`,` 只对十进制数字分组：请使用 `_`"),
+        ("a decimal number", "小数"),
+        ("signs, `#`, `0` and `,` are for numbers", "符号、`#`、`0` 和 `,` 只用于数"),
+        ("`{f}`: the base must go from 2 to 36, not {b}", "`{f}`：进制必须在 2 到 36 之间，而不是 {b}"),
+        ("\"{s}\" is not a whole number in base {radix}", "\"{s}\" 不是 {radix} 进制的整数"),
+        ("`digits` needs a number of 0 or more, not {}", "`digits` 需要一个大于或等于 0 的数，而不是 {}"),
+        ("`{f}`: the text to look for is empty", "`{f}`：要查找的文本是空的"),
+        ("`{f}` cannot replace an empty text", "`{f}` 不能替换空文本"),
+        ("`edit_distance` compares texts of at most {MAX_DISTANCE_WORK} pairs of characters, not {} by {}", "`edit_distance` 比较的文本最多有 {MAX_DISTANCE_WORK} 对字符，而不是 {} 乘 {}"),
+        ("to count a piece of text in a text, use `occurrences(text, piece)`", "要统计一段文本在文本中出现的次数，请使用 `occurrences(text, piece)`"),
+        ("to count the elements equal to a value, use `occurrences(list, x)`", "要统计等于某个值的元素个数，请使用 `occurrences(list, x)`"),
+        ("the value comes first, then the spec: `format(42, \"05\")`; to put values in a text, use braces", "先写值，再写格式说明：`format(42, \"05\")`；要把值放进文本里，请使用花括号"),
+        ("return `Some(x)` to keep x, or `None` to leave the element out", "返回 `Some(x)` 来保留 x，返回 `None` 来跳过这个元素"),
+        ("return `Some([value, next])` to go on, or `None` to stop", "返回 `Some([值, 下一个])` 继续，返回 `None` 停止"),
+        ("Pairs the elements of two lists (or more: one element of each list in every group): [[a1, b1], [a2, b2], ...]. It stops at the end of the shortest list.", "把两个（或更多）列表的元素配对（每组里每个列表各一个元素）：[[a1, b1], [a2, b2], ...]。在最短的列表结束时停止。"),
+        (r#"Reads a date written as ISO 8601 ("2024-02-29", "2024-02-29T13:05:00", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date. With a pattern like "%d/%m/%Y" (the directives of `format_date`), reads a date written that way."#, r#"读取按 ISO 8601 书写的日期（"2024-02-29"、"2024-02-29T13:05:00"，需要时可带 `Z` 或像 `+01:00` 这样的时差）：`Ok(date)`，如果不是有效日期则为 `Err(message)`。给出像 "%d/%m/%Y" 这样的模式（即 `format_date` 的指令）时，读取按这种方式书写的日期。"#),
+        ("Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one. With a pattern, writes it the way `strftime` does: %Y year, %m month, %d day, %H hour, %M minute, %S second, %y year in two digits, %B and %b the month, %A and %a the day of the week (in English), %I and %p the 12-hour clock, %j the day of the year, %z the offset, %% a %.", "按 ISO 8601 写出日期：\"2024-02-29\"，如果日期有时间则带上时间，如果有时差则带上 `Z` 或时差。给出模式时，像 `strftime` 那样写出：%Y 年，%m 月，%d 日，%H 时，%M 分，%S 秒，%y 两位数的年，%B 和 %b 月份，%A 和 %a 星期几（英文），%I 和 %p 12 小时制，%j 一年中的第几天，%z 时差，%% 一个 %。"),
+        ("The text that shows a value the way the REPL and `debug` show it: a text between quotes, with its special characters written as escapes. `text` gives a text as it is.", "按 REPL 和 `debug` 的方式显示一个值的文本：文本放在引号里，特殊字符写成转义序列。`text` 则原样给出文本。"),
+        ("Shows values on the error output (stderr), separated by spaces, then goes to the next line: for messages that must not mix with the results of a program, which go to the standard output.", "在错误输出（stderr）上显示值，用空格分隔，然后换行：用于不应和程序结果混在一起的消息，程序结果写到标准输出。"),
+        ("The value kept between two bounds: `low` if it is below, `high` if it is above, itself otherwise. For numbers, texts... any values that can be compared.", "把值限制在两个边界之间：小于下界时为 `low`，大于上界时为 `high`，否则为它本身。适用于数、文本……任何可以比较的值。"),
+        ("The whole quotient and the remainder of a division at once: `[a // b, a % b]`.", "同时给出除法的整数商和余数：`[a // b, a % b]`。"),
+        ("The binomial coefficient \"n choose k\": the number of ways to choose k elements among n, exact even when it is very large.", "二项式系数“从 n 个中选 k 个”：从 n 个元素中选出 k 个的方法数，即使非常大也是精确的。"),
+        ("The digits of a whole number (0 or more), the most significant first, in base 10 or in the base given (from 2 to 36).", "整数（大于或等于 0）的各位数字，最高位在前，使用十进制或给定的进制（2 到 36）。"),
+        ("Writes a whole number in a base from 2 to 36, with the digits 0 to 9 then the letters a to z.", "用 2 到 36 之间的进制写出整数，使用数字 0 到 9，然后是字母 a 到 z。"),
+        ("Reads a whole number written in a base from 2 to 36: `Ok(number)`, or `Err(message)` if the text is not a number in this base. `0x`, `0o` and `0b` may come before a number in base 16, 8 and 2.", "读取用 2 到 36 之间的进制写的整数：`Ok(number)`，如果文本不是这个进制的数则为 `Err(message)`。16、8、2 进制的数前面可以有 `0x`、`0o`、`0b`。"),
+        ("Is the number greater than 0?", "这个数大于 0 吗？"),
+        ("Is the number less than 0?", "这个数小于 0 吗？"),
+        ("Is the number 0 (or 0.0)?", "这个数是 0（或 0.0）吗？"),
+        ("Is the decimal number `nan` (\"not a number\")? It is never equal to anything, not even to itself.", "这个小数是 `nan`（“不是一个数”）吗？它不等于任何值，甚至不等于它自己。"),
+        ("Is the number finite: neither an infinity nor `nan`? Whole numbers always are.", "这个数是有限的吗：既不是无穷大也不是 `nan`？整数总是有限的。"),
+        ("Adds `fill` (a space by default) on both sides of the text until it is `width` characters long: titles and cells of tables stay centered. A character left over goes to the right.", "在文本两边添加 `fill`（默认是空格），直到它有 `width` 个字符：标题和表格单元格保持居中。多出的一个字符放在右边。"),
+        (r##"Writes a value following a format spec, like Python's `format`: ".2f" for 2 decimals, ">8" to fill 8 characters on the right ("<" on the left, "^" centered), "08.2f" with zeros before, "," with the thousands separated, "%" as a percentage, "x", "o" and "b" in hexadecimal, octal and binary ("#" adds 0x, 0o, 0b), "e" with an exponent. To put values in a text, use braces."##, r##"按格式说明写出值，就像 Python 的 `format`：".2f" 表示 2 位小数，">8" 表示在右边对齐占 8 个字符（"<" 靠左，"^" 居中），"08.2f" 前面补零，"," 分隔千位，"%" 写成百分比，"x"、"o"、"b" 分别是十六进制、八进制和二进制（"#" 会加上 0x、0o、0b），"e" 带指数。要把值放进文本里，请使用花括号。"##),
+        ("Replaces the first occurrence of `old` by `new`, and only that one.", "把第一次出现的 `old` 替换为 `new`，只替换这一次。"),
+        ("How many times an element is in a list, or a piece of text in a text (pieces that do not overlap).", "一个元素在列表中出现几次，或一段文本在文本中出现几次（互不重叠的片段）。"),
+        ("The position of the last occurrence of an element in a list, or of a piece of text in a text: `Some(position)`, or `None` if it is not there.", "元素在列表中最后一次出现的位置，或一段文本在文本中最后一次出现的位置：`Some(position)`，如果不存在则为 `None`。"),
+        ("The text without this start, if it starts with it; otherwise the text unchanged.", "如果文本以它开头，去掉这个开头；否则原样返回文本。"),
+        ("The text without this end, if it ends with it; otherwise the text unchanged.", "如果文本以它结尾，去掉这个结尾；否则原样返回文本。"),
+        ("The text with the first character of each word in uppercase (the rest is unchanged). Words are separated by spaces.", "把每个单词的第一个字符变成大写（其余不变）的文本。单词之间用空格分隔。"),
+        ("Writes a name in snake_case: its words in lowercase, joined by `_`. Reads names written in any style: camelCase, PascalCase, kebab-case, with spaces...", "把名字写成 snake_case：单词小写，用 `_` 连接。能读懂任何风格的名字：camelCase、PascalCase、kebab-case、带空格的……"),
+        ("Writes a name in camelCase: its words glued together, each with an uppercase first letter but the first word.", "把名字写成 camelCase：单词连在一起，除第一个单词外每个单词首字母大写。"),
+        ("Writes a name in kebab-case: its words in lowercase, joined by `-`, as in web addresses.", "把名字写成 kebab-case：单词小写，用 `-` 连接，就像网址里那样。"),
+        ("The text with its uppercase letters in lowercase, and its lowercase letters in uppercase.", "把大写字母变成小写、小写字母变成大写的文本。"),
+        ("Has the text letters, all of them in uppercase? (The other characters do not count.)", "文本有字母并且全部是大写吗？（其他字符不算。）"),
+        ("Has the text letters, all of them in lowercase? (The other characters do not count.)", "文本有字母并且全部是小写吗？（其他字符不算。）"),
+        ("The bytes of a text in UTF-8, as whole numbers from 0 to 255: an accented letter takes two of them, an emoji four.", "文本的 UTF-8 字节，用 0 到 255 的整数表示：一个带重音的字母占两个字节，一个表情符号占四个。"),
+        ("Cuts a text in two at the first separator: `Some([before, after])`, or `None` if the separator is not there. For lines like `key=value`.", "在第一个分隔符处把文本切成两段：`Some([前, 后])`，如果没有分隔符则为 `None`。用于像 `key=value` 这样的行。"),
+        ("Cuts the lines of a text between words so that none is longer than `width` characters (a longer word stays whole on its own line).", "在单词之间折行，使每行不超过 `width` 个字符（更长的单词独占一行，保持完整）。"),
+        ("The edit distance (Levenshtein) between two texts: the fewest characters to add, remove or replace to go from one to the other. For spelling checkers, and to find the closest word.", "两个文本之间的编辑距离（Levenshtein）：从一个变成另一个最少需要添加、删除或替换的字符数。用于拼写检查，以及找出最接近的单词。"),
+        ("The position of the first element for which f is true: `Some(position)`, or `None` if there is none.", "第一个使 f 为真的元素的位置：`Some(position)`，如果没有则为 `None`。"),
+        ("The list with the element at position i replaced by f(element). A negative position counts from the end.", "把位置 i 的元素替换为 f(元素) 后的列表。负数位置从末尾开始数。"),
+        ("The list or text turned by n places to the left (1 by default): the first elements go to the end. A negative n turns it to the right.", "把列表或文本向左旋转 n 位（默认 1 位）：前面的元素移到末尾。n 为负数时向右旋转。"),
+        ("The list with `x` between every two elements.", "在每两个相邻元素之间插入 `x` 的列表。"),
+        ("The elements of two lists taken in turn, one from each; what is left of the longer list comes at the end.", "轮流从两个列表中各取一个元素；较长列表剩下的元素放在最后。"),
+        ("Counts how many times each value is in a list: a dict from each value to its count (like Python's `Counter`).", "统计每个值在列表中出现的次数：从每个值到它的次数的字典（就像 Python 的 `Counter`）。"),
+        ("Counts the elements by the key that f gives them: a dict from each key to how many elements have it.", "按 f 给出的键统计元素：从每个键到具有该键的元素个数的字典。"),
+        ("The values that come most often, with their counts: a list of `[value, count]` pairs, the most frequent first (on a tie, the one seen first). With n, only the first n.", "出现最频繁的值及其次数：由 `[值, 次数]` 组成的列表，最频繁的在前（次数相同时，先出现的在前）。给出 n 时，只取前 n 个。"),
+        ("The list without the elements whose key (given by f) was already seen: the first element of each key stays.", "去掉键（由 f 给出）已经出现过的元素后的列表：每个键保留第一个元素。"),
+        ("The list sorted from the largest to the smallest.", "从大到小排序的列表。"),
+        ("The list sorted by the key that the function gives, from the largest key to the smallest; elements with the same key keep their order.", "按函数给出的键排序的列表，键从大到小；键相同的元素保持原来的顺序。"),
+        ("Cuts a list into runs of neighbour elements that have the same key (given by f).", "把列表切分成若干段，每段由键（由 f 给出）相同的相邻元素组成。"),
+        ("Cuts a list or a text in two at position i: `[before, from i on]`. A negative position counts from the end.", "在位置 i 把列表或文本切成两段：`[之前, 从 i 开始]`。负数位置从末尾开始数。"),
+        ("Every way to choose k elements of the list, each kept in the order of the list.", "从列表中选出 k 个元素的所有方式，每种都保持列表中的顺序。"),
+        ("Every order of the elements of the list, or of k of them.", "列表元素（或其中 k 个元素）的所有排列。"),
+        ("Every way to take one element of each list: the cartesian product.", "从每个列表各取一个元素的所有方式：笛卡尔积。"),
+        ("The opposite of `zip`: a list of pairs (or of lists of the same length) becomes the list of the first elements, the list of the second ones...", "`zip` 的反操作：由数对（或等长列表）组成的列表变成第一个元素组成的列表、第二个元素组成的列表……"),
+        ("A list of n values: `start`, then f(start), then f of that... For sequences where each value comes from the one before.", "由 n 个值组成的列表：`start`，然后 f(start)，再然后对它应用 f……用于每个值都由前一个值得到的数列。"),
+        ("Builds a list from a starting state: f receives the state and gives `Some([value, next state])` to add a value and go on, or `None` to stop.", "从一个初始状态构造列表：f 接收状态，返回 `Some([值, 下一个状态])` 表示添加一个值并继续，返回 `None` 表示停止。"),
+        ("Applies f to each element and keeps the values of the `Some(...)` it gives, leaving out the `None`: filtering and transforming at once.", "对每个元素应用 f，保留它返回的 `Some(...)` 里的值，丢掉 `None`：同时完成过滤和转换。"),
+        ("The value found by following a path of keys into records, dicts and lists nested in one another (names of fields, keys, positions): `Some(value)`, or `None` as soon as one is missing. For data read with `parse_json`.", "沿着一串键（字段名、键、位置）深入嵌套的记录、字典和列表找到的值：`Some(值)`，一旦缺少某个键就为 `None`。适用于用 `parse_json` 读取的数据。"),
+        ("Merges two records or two dicts; for a key in both, f receives the two values and gives the one kept.", "合并两个记录或两个字典；对于两边都有的键，f 接收两个值并返回要保留的那个。"),
+        ("A dict where the values of a record or a dict have become the keys, and the keys the values. When a value comes several times, the last key wins.", "把记录或字典的值变成键、键变成值的字典。某个值出现多次时，以最后一个键为准。"),
+        ("The record or dict with only the keys given (in a list or a set); a key that is missing is ignored.", "只保留给定键（放在列表或集合中）的记录或字典；不存在的键会被忽略。"),
+        ("The record or dict without the keys given (in a list or a set).", "去掉给定键（放在列表或集合中）的记录或字典。"),
+        ("The record or dict with each key replaced by f(key); for a record, f must give a text.", "把每个键替换为 f(键) 的记录或字典；对于记录，f 必须返回文本。"),
+        ("The record or dict where the value of `key` is replaced by f(value); when the key is missing, it is added with `default`. Handy to count: `update(counts, word, 1, fn(n) = n + 1)`.", "把 `key` 的值替换为 f(值) 的记录或字典；如果没有这个键，就以 `default` 添加它。很适合计数：`update(counts, word, 1, fn(n) = n + 1)`。"),
+        ("The elements that are in exactly one of the two sets.", "恰好只在两个集合之一中的元素。"),
+        ("Have the two sets no element in common?", "两个集合没有共同的元素吗？"),
+        ("The value inside `Some(x)` or `Ok(x)`; otherwise what f gives: f receives nothing for `None`, and the error for `Err(e)`. The default is computed only when it is needed.", "`Some(x)` 或 `Ok(x)` 里的值；否则为 f 给出的值：对于 `None`，f 不接收参数；对于 `Err(e)`，f 接收错误。默认值只在需要时才计算。"),
+        ("The value inside `Some(x)` or `Ok(x)`, like `unwrap`; otherwise stops the program with your message, which says what was expected.", "`Some(x)` 或 `Ok(x)` 里的值，和 `unwrap` 一样；否则用你的消息停止程序，消息说明期望的是什么。"),
+        ("Makes one Result of a list of Results: `Ok(list of the values)` if they are all `Ok`, or else the first `Err`. When reading many values where one mistake must stop everything.", "把一个 Result 列表合成一个 Result：如果全部是 `Ok`，得到 `Ok(值的列表)`，否则得到第一个 `Err`。用于读取许多值、只要有一个错误就全部停止的情况。"),
+        ("The date n months later (earlier if n is negative). A day that the new month does not have becomes its last day: 31 January plus one month is the end of February.", "n 个月之后的日期（n 为负数时为之前）。新月份没有的日子会变成该月的最后一天：1 月 31 日加一个月是 2 月底。"),
+        ("The number of the day in its year, from 1 (1 January) to 365, or 366 in a leap year.", "这一天是一年中的第几天，从 1（1 月 1 日）到 365，闰年到 366。"),
+        ("n decimal numbers evenly spaced from `start` to `end`, both included: to draw a function with `plot`, or to try values.", "从 `start` 到 `end`（都包含）等间距的 n 个小数：用于用 `plot` 画函数，或尝试一些值。"),
+        ("The correlation (Pearson) of two lists of numbers of the same length: from -1 (they vary in opposite ways) to 1 (they vary together); about 0 when they are not linearly related.", "两个等长数列的（皮尔逊）相关系数：从 -1（变化方向相反）到 1（一起变化）；没有线性关系时接近 0。"),
+        ("The covariance of two lists of numbers of the same length, divided by their length like `variance`.", "两个等长数列的协方差，像 `variance` 一样除以长度。"),
+        ("Encodes a text in Base64 (its UTF-8 bytes), as in emails, web pages and the headers of HTTP requests.", "把文本（它的 UTF-8 字节）编码为 Base64，就像电子邮件、网页和 HTTP 请求头里那样。"),
+        ("Decodes a Base64 text: `Ok(text)`, or `Err(message)` if it is not valid Base64, or not a text once decoded.", "解码 Base64 文本：`Ok(text)`；如果不是有效的 Base64，或解码后不是文本，则为 `Err(message)`。"),
+        ("Encodes a text to put it in a web address: every character but the letters, the digits and `-_.~` becomes `%` and two hexadecimal digits (a space is `%20`).", "编码文本以便放进网址：除字母、数字和 `-_.~` 以外的每个字符都变成 `%` 加两个十六进制数字（空格是 `%20`）。"),
+        ("Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.", "解码网址中的文本（`%20`……）：`Ok(text)`；如果 `%` 后面不是两个十六进制数字，则为 `Err(message)`。"),
+        (r#"More functions on lists
+  find_index([3, 8, 5], is_even)          # Some(1)
+  sort_desc([3, 1, 2])                    # [3, 2, 1]  (sort_by_desc with a key)
+  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(words, 3)                   # the 3 most frequent, with their counts
+  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
+  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
+  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  permutations(xs)   cartesian_product(xs, ys)   unzip(pairs)   zip(xs, ys, zs)
+  filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#, r#"列表的更多函数
+  find_index([3, 8, 5], is_even)          # Some(1)
+  sort_desc([3, 1, 2])                    # [3, 2, 1]（带键时用 sort_by_desc）
+  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(words, 3)                   # 最频繁的 3 个，以及它们的次数
+  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
+  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
+  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  permutations(xs)   cartesian_product(xs, ys)   unzip(pairs)   zip(xs, ys, zs)
+  filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#),
+        (r##"More functions on texts
+  format(3.14159, ".2f")         # "3.14"  (the format specs of Python: ">8", ",d", ".1%", "#x"...)
+  center("hi", 6, "*")           # "**hi**"
+  replace_first("a-b-c", "-", "+")          # "a+b-c"
+  occurrences("banana", "an")    # 2
+  remove_prefix("Mr Smith", "Mr ")          # "Smith"  (and remove_suffix)
+  split_once("key=value", "=")   # Some(["key", "value"])
+  snake_case("helloWorld")       # "hello_world"  (and camel_case, kebab_case)
+  capitalize_words("ada lovelace")          # "Ada Lovelace"
+  word_wrap(text, 40)            # lines of at most 40 characters
+  to_base(255, 16)   from_base("ff", 16)    # "ff" and Ok(255)
+  edit_distance("kitten", "sitting")        # 3"##, r##"文本的更多函数
+  format(3.14159, ".2f")         # "3.14"（Python 的格式说明：">8"、",d"、".1%"、"#x"……）
+  center("hi", 6, "*")           # "**hi**"
+  replace_first("a-b-c", "-", "+")          # "a+b-c"
+  occurrences("banana", "an")    # 2
+  remove_prefix("Mr Smith", "Mr ")          # "Smith"（还有 remove_suffix）
+  split_once("key=value", "=")   # Some(["key", "value"])
+  snake_case("helloWorld")       # "hello_world"（还有 camel_case、kebab_case）
+  capitalize_words("ada lovelace")          # "Ada Lovelace"
+  word_wrap(text, 40)            # 每行最多 40 个字符
+  to_base(255, 16)   from_base("ff", 16)    # "ff" 和 Ok(255)
+  edit_distance("kitten", "sitting")        # 3"##),
+        (r#"More functions on records and dicts
+  dig(data, ["user", "langs", 0])           # Some(...), or None: deep inside
+  select_keys(person, ["name", "age"])      # only these keys (reject_keys: without them)
+  merge_with(a, b, fn(x, y) = x + y)        # f decides for a key in both
+  update(counts, "apples", 1, fn(n) = n + 1)  # +1, or 1 when missing
+  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#, r#"记录和字典的更多函数
+  dig(data, ["user", "langs", 0])           # Some(...) 或 None：深入内部
+  select_keys(person, ["name", "age"])      # 只保留这些键（reject_keys：去掉它们）
+  merge_with(a, b, fn(x, y) = x + y)        # 两边都有的键由 f 决定
+  update(counts, "apples", 1, fn(n) = n + 1)  # 加 1，缺少时为 1
+  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#),
+        (r#"More helpers
+  unwrap_or_else(x, fn(e) = ...)   # the default, computed only when it is needed
+  expect(x, "a config file")       # like unwrap, with your message if it fails
+  all_ok(map(texts, parse_int))    # Ok([...]), or the first Err
+  filter_map(xs, f)                # the values of the Some(...) that f gives"#, r#"更多工具
+  unwrap_or_else(x, fn(e) = ...)   # 默认值，只在需要时才计算
+  expect(x, "a config file")       # 和 unwrap 一样，失败时显示你的消息
+  all_ok(map(texts, parse_int))    # Ok([...])，或者第一个 Err
+  filter_map(xs, f)                # f 返回的 Some(...) 里的值"#),
+        (r#"More on dates
+  add_months(date, 1)                       # 31 January + 1 month: the end of February
+  day_of_year(date)                         # from 1 to 366
+  format_date(date, "%d/%m/%Y %H:%M")       # with a pattern: %Y %m %d %H %M %S %B %A...
+  parse_date("29/02/2024", "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#, r#"日期的更多用法
+  add_months(date, 1)                       # 1 月 31 日 + 1 个月：2 月底
+  day_of_year(date)                         # 从 1 到 366
+  format_date(date, "%Y年%m月%d日 %H:%M")    # 用模式：%Y %m %d %H %M %S %B %A……
+  parse_date("2024-02-29", "%Y-%m-%d")      # Ok({year: 2024, month: 2, day: 29})"#),
+        // src/cli.rs
+        ("run a program; the words after the file are its arguments", "运行程序；文件后面的词是它的参数"),
+        ("find problems without running the program", "不运行程序就找出问题"),
+        ("run the tests of a file or of a folder", "运行一个文件或文件夹中的测试"),
+        ("give the code its official layout", "给代码统一的官方格式"),
+        ("write the documentation of a file from its ## comments", "根据 ## 注释写出文件的文档"),
+        ("apply the safe fixes of the problems that `rythme check` finds", "应用 `rythme check` 找到的问题的安全修复"),
+        ("show a calculation step by step", "一步一步地展示计算"),
+        ("pause a program where you want and look at its values", "在你想要的地方暂停程序并查看它的值"),
+        ("the debugger for editors (Debug Adapter Protocol)", "供编辑器使用的调试器（Debug Adapter Protocol）"),
+        ("exercises checked automatically", "自动检查的练习"),
+        ("create a project (rythme.toml, src/, tests/)", "创建项目（rythme.toml、src/、tests/）"),
+        ("download the dependencies of the project", "下载项目的依赖"),
+        ("guided tour of the language, step by step", "语言导览，一步一步"),
+        ("help on a topic, a function or an error code", "关于某个主题、函数或错误代码的帮助"),
+        ("explain an error or warning code, like E003", "解释错误或警告代码，例如 E003"),
+        ("run a piece of code given on the command line", "运行在命令行中给出的一段代码"),
+        ("interactive mode: try code line by line (also `rythme` alone)", "交互模式：逐行尝试代码（也可以只输入 `rythme`）"),
+        ("language server, for editors (VS Code, Neovim...)", "语言服务器，供编辑器使用（VS Code、Neovim……）"),
+        ("server for AI assistants (Model Context Protocol)", "供 AI 助手使用的服务器（Model Context Protocol）"),
+        ("the version of Rythme", "Rythme 的版本"),
+        ("completion of the commands in a shell", "在 shell 中补全命令"),
+        ("the manual page of the command, to install with `man`", "命令的手册页，可安装后用 `man` 查看"),
+        ("how to install the latest version of Rythme", "如何安装最新版本的 Rythme"),
+        (r#"  --seed N        the same draws of random and shuffle on every run
+  --sandbox       no files, folders, environment variables nor network
+  --format json   the output and the errors as JSON, for tools
+  FILE may be `-`: the program is read from the standard input.
+  At the root of a project, `rythme run` runs its program."#, r#"  --seed N        每次运行时 random 和 shuffle 抽到相同的结果
+  --sandbox       不能使用文件、文件夹、环境变量和网络
+  --format json   以 JSON 输出结果和错误，供工具使用
+  FILE 可以是 `-`：从标准输入读取程序。
+  在项目根目录下，`rythme run` 运行项目的程序。"#),
+        (r#"  --format json   the problems as JSON, for tools and AI assistants
+  A folder checks every .ry file inside it; at the root of a project,
+  `rythme check` checks the files of the project.
+  Exit code: 0 without errors (warnings allowed), 1 with errors."#, r#"  --format json   以 JSON 输出问题，供工具和 AI 助手使用
+  文件夹会检查其中的每个 .ry 文件；在项目根目录下，
+  `rythme check` 检查项目的文件。
+  退出码：没有错误时为 0（允许有警告），有错误时为 1。"#),
+        (r#"  --filter NAME   only the tests whose name contains NAME
+  --seed N        the same draws of random on every run
+  --watch         run the tests again whenever a file changes
+  --sandbox       no files, folders, environment variables nor network
+  --format json   the results as JSON
+  Exit code: 0 when every test passes, 1 otherwise."#, r#"  --filter NAME   只运行名字包含 NAME 的测试
+  --seed N        每次运行时 random 抽到相同的结果
+  --watch         文件一改变就重新运行测试
+  --sandbox       不能使用文件、文件夹、环境变量和网络
+  --format json   以 JSON 输出结果
+  退出码：所有测试都通过时为 0，否则为 1。"#),
+        (r#"  --check         only check, for continuous integration: exit code 1 when a
+                  file must be formatted
+  A folder formats all its .ry files; `-` reads the code from the standard
+  input and writes it formatted."#, r#"  --check         只检查，用于持续集成：有文件需要格式化时
+                  退出码为 1
+  文件夹会格式化其中所有的 .ry 文件；`-` 从标准输入读取代码，
+  并输出格式化后的代码。"#),
+        (r#"  --dry-run       only show the changes, as a diff
+  --all           also apply the fixes that are only likely
+  --format json   the fixes as JSON
+  Exit code: 0 when no error is left, 1 otherwise (with --dry-run: 1 when
+  something would change)."#, r#"  --dry-run       只显示改动，以 diff 的形式
+  --all           也应用只是可能正确的修复
+  --format json   以 JSON 输出修复
+  退出码：没有剩余错误时为 0，否则为 1（使用 --dry-run 时：
+  如果会有改动则为 1）。"#),
+        (r#"  --max N         show at most N steps
+  --width N       cut the lines at N characters (20 at least)
+  Without an expression, the steps of the last line of the file."#, r#"  --max N         最多显示 N 步
+  --width N       在第 N 个字符处换行（至少 20）
+  不给表达式时，显示文件最后一行的步骤。"#),
+        (r#"  In the debugger, `help` lists its commands: break, run, next, step,
+  finish, where, print, locals, quit."#, r#"  在调试器中，`help` 会列出它的命令：break、run、next、step、
+  finish、where、print、locals、quit。"#),
+        ("  Your editor starts it: the VS Code extension does, for the debugger type `rythme`.", "  由编辑器启动它：VS Code 扩展会为调试器类型 `rythme` 启动它。"),
+        (r#"  list            the exercises, from the easiest
+  start NAME      write the file of an exercise, to complete
+  check FILE.ry   run its tests and give hints"#, r#"  list            列出练习，从最简单的开始
+  start NAME      写出某个练习的文件，等你完成
+  check FILE.ry   运行它的测试并给出提示"#),
+        (r#"  `rythme help` lists the topics, `rythme help builtins` every function,
+  `rythme help llms` the whole language in one text (for AI assistants)."#, r#"  `rythme help` 列出所有主题，`rythme help builtins` 列出每个函数，
+  `rythme help llms` 用一个文本给出整个语言（供 AI 助手使用）。"#),
+        ("  Without a code, the list of the codes; --format json gives them all.", "  不给代码时列出所有代码；--format json 会给出全部内容。"),
+        ("  The value of the last expression is shown, unless it is ().", "  会显示最后一个表达式的值，除非它是 ()。"),
+        ("  `:help` lists the commands of the interactive mode.", "  `:help` 会列出交互模式的命令。"),
+        ("  --verbose       also the system, the languages, the functions and the formats", "  --verbose       同时显示系统、语言、函数和格式"),
+        ("Then open a new shell.", "然后打开一个新的 shell。"),
+        (r#"  rythme man > rythme.1 && man ./rythme.1
+  To install it: put rythme.1 in a folder of the manual pages, like
+  ~/.local/share/man/man1."#, r#"  rythme man > rythme.1 && man ./rythme.1
+  安装方法：把 rythme.1 放进手册页的文件夹，
+  例如 ~/.local/share/man/man1。"#),
+        (r#"
+Options of every command: --lang CODE ({codes}), --no-color
+"#, r#"
+所有命令的选项：--lang CODE（{codes}）、--no-color
+"#),
+        (r#"See also `rythme help {topic}`.
+"#, r#"另见 `rythme help {topic}`。
+"#),
+        (r#"
+Tools
+  rythme CMD --help         the options of a command, like rythme test --help
+  rythme run -              run the program read from the standard input
+  rythme check FOLDER       check every .ry file of a folder
+  rythme completions SHELL  completion of the commands: bash, zsh, fish, powershell
+  rythme man                the manual page of the command (rythme man > rythme.1)
+  rythme version --verbose  the version, with the system and what Rythme contains
+  rythme upgrade            how to install the latest version
+"#, r#"
+工具
+  rythme CMD --help         某个命令的选项，例如 rythme test --help
+  rythme run -              运行从标准输入读取的程序
+  rythme check FOLDER       检查文件夹中的每个 .ry 文件
+  rythme completions SHELL  命令补全：bash、zsh、fish、powershell
+  rythme man                命令的手册页（rythme man > rythme.1）
+  rythme version --verbose  版本，以及系统和 Rythme 包含的内容
+  rythme upgrade            如何安装最新版本
+"#),
+        ("unknown option `{bad}` for `rythme version`: the option is --verbose", "`rythme version` 没有选项 `{bad}`：唯一的选项是 --verbose"),
+        (r#"system: {os} {arch}
+languages of the messages: {codes} (now: {now})
+built-in functions: {functions} (and {ruby} Ruby names)
+codes: {errors} errors ({e_range}), {warnings} warnings ({w_range})
+JSON output (--format json): version {json}
+program: {exe}
+"#, r#"系统：{os} {arch}
+消息语言：{codes}（当前：{now}）
+内置函数：{functions} 个（以及 {ruby} 个 Ruby 名字）
+代码：{errors} 个错误（{e_range}），{warnings} 个警告（{w_range}）
+JSON 输出（--format json）：版本 {json}
+程序：{exe}
+"#),
+        ("`rythme upgrade` takes no argument, not `{bad}`", "`rythme upgrade` 不接受参数，`{bad}` 也不行"),
+        (r#"This is rythme {v} ({exe}).
+To install the latest version, type:
+  {how}
+The versions and what changed: https://github.com/maxlestage/Rythme/releases
+Within 1.x, a program that runs keeps running, with the same output.
+"#, r#"这是 rythme {v}（{exe}）。
+要安装最新版本，请输入：
+  {how}
+各个版本及其变化：https://github.com/maxlestage/Rythme/releases
+在 1.x 版本中，能运行的程序会一直能运行，并且输出相同。
+"#),
+        ("unknown shell `{s}`.", "未知的 shell `{s}`。"),
+        ("which shell?", "哪个 shell？"),
+        (r#"{what} Write one of bash, zsh, fish, powershell, like `rythme completions bash`
+see `rythme completions --help`"#, r#"{what} 请写 bash、zsh、fish、powershell 之一，例如 `rythme completions bash`
+参见 `rythme completions --help`"#),
+        ("`rythme man` takes no argument, not `{bad}`", "`rythme man` 不接受参数，`{bad}` 也不行"),
+        ("Name", "名称"),
+        ("rythme - a small, purely functional language with help everywhere", "rythme - 一门小巧的纯函数式语言，处处有帮助"),
+        ("Synopsis", "概要"),
+        ("Description", "描述"),
+        ("Rythme runs, checks, tests and formats programs written in Rythme. Without a command, `rythme` starts the interactive mode; `rythme file.ry` runs a program. Every message has a code explained by `rythme explain CODE`, and `rythme help` shows help on the language and its functions.", "Rythme 运行、检查、测试并格式化用 Rythme 写的程序。不带命令时，`rythme` 启动交互模式；`rythme file.ry` 运行一个程序。每条消息都有一个代码，可以用 `rythme explain CODE` 查看解释，`rythme help` 显示关于语言及其函数的帮助。"),
+        ("Commands", "命令"),
+        ("Options", "选项"),
+        ("the language of the messages: {codes}", "消息的语言：{codes}"),
+        ("messages without colors", "不带颜色的消息"),
+        ("the help; after a command, its options", "帮助；放在命令后面时显示该命令的选项"),
+        ("Environment", "环境"),
+        ("the language of the messages, before LC_ALL, LC_MESSAGES and LANG", "消息的语言，优先于 LC_ALL、LC_MESSAGES 和 LANG"),
+        ("when set, messages without colors", "设置后，消息不带颜色"),
+        ("Exit status", "退出状态"),
+        ("0 when everything went well; 1 after an error in the program, a failed test or a problem found; 2 for a command written wrongly. A program may choose its own code with exit(code).", "一切正常时为 0；程序出错、测试失败或发现问题时为 1；命令写错时为 2。程序可以用 exit(code) 选择自己的退出码。"),
+        ("See also", "另见"),
+        ("no .ry file in `{a}`", "`{a}` 中没有 .ry 文件"),
+        ("the standard input cannot be read: {e}", "无法读取标准输入：{e}"),
+        // src/cli.rs: the commands of the package index
+        ("search the package index", "在包索引中搜索"),
+        ("what the index says of a package: its versions, repository and license", "索引中关于某个包的信息：版本、仓库和许可证"),
+        ("add a package of the index to the project, then install it", "把索引中的包加入项目，然后安装"),
+        ("take the newest versions that the ranges of rythme.toml allow", "采用 rythme.toml 中的版本范围所允许的最新版本"),
+        ("check a package and print its entry for the index (sends nothing)", "检查一个包并打印它在索引中的条目（不发送任何东西）"),
+        (r#"  --update        download the newest copy of the index first
+  --format json   the packages found as JSON
+  Without words, every package of the index."#, r#"  --update        先下载索引的最新副本
+  --format json   以 JSON 输出找到的包
+  不给关键词时，列出索引中的所有包。"#),
+        (r#"  --update        download the newest copy of the index first
+  --format json   the entry of the package as JSON"#, r#"  --update        先下载索引的最新副本
+  --format json   以 JSON 输出包的条目"#),
+        (r#"  NAME@RANGE      a range of versions, like mathlib@1.2; without a range,
+                  the newest version
+  rythme.toml gets the range, rythme.lock the exact commit and its checksum."#, r#"  名称@范围       版本范围，例如 mathlib@1.2；不写范围时
+                  取最新版本
+  rythme.toml 记下范围，rythme.lock 记下确切的提交及其校验和。"#),
+        (r#"  Without names, every dependency. rythme.toml does not change;
+  rythme.lock gets the new versions."#, r#"  不给名称时，更新所有依赖。rythme.toml 不变；
+  rythme.lock 记下新版本。"#),
+        (r#"  Checks rythme.toml, the tag of the version (like v1.2.0), rythme check
+  and rythme test, then prints the entry and the steps of a pull request.
+  --verify FILE...  the index's own check of its entries (packages/NAME.toml)"#, r#"  检查 rythme.toml、版本的标签（例如 v1.2.0）、rythme check
+  和 rythme test，然后打印条目以及提交 pull request 的步骤。
+  --verify 文件...  索引自己对条目的检查（packages/名称.toml）"#),
+        (r#"the argument `{shown}` is not valid UTF-8: Rythme reads only names and words written in UTF-8; rename the file, or give the program its input another way"#, r#"参数 `{shown}` 不是有效的 UTF-8：Rythme 只读取用 UTF-8 书写的名称和单词；请重命名该文件，或用其他方式给程序提供输入"#),
     ],
 }

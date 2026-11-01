@@ -20,7 +20,7 @@ use rythme::lang::{self, Lang, LANGUAGES};
 
 /// The languages whose catalog must have every text. A new language can
 /// start partial (shown in English where missing) and join this list once done.
-const COMPLETE: &[&str] = &["es", "de", "pt", "zh"];
+const COMPLETE: &[&str] = &["es", "de", "pt", "zh", "it", "ja"];
 
 /// One text of the program: English, French, and where it is.
 struct Text {
@@ -166,9 +166,9 @@ fn spanish_messages() {
         .output()
         .unwrap();
     assert!(String::from_utf8_lossy(&out.stderr).contains("división entre cero"));
-    let r = common::rythme(&["--lang", "it", "help"]);
+    let r = common::rythme(&["--lang", "ru", "help"]);
     assert_eq!(r.code, 2);
-    assert!(r.stderr.contains("unknown language `it`: write `--lang` and one of en, fr, es, de, pt, zh"), "{}", r.stderr);
+    assert!(r.stderr.contains("unknown language `ru`: write `--lang` and one of en, fr, es, de, pt, zh, it, ja"), "{}", r.stderr);
 }
 
 /// Real error messages, help and explanations in German, Portuguese and
@@ -242,10 +242,16 @@ fn german_portuguese_and_chinese_messages() {
     assert!(r.stderr.contains("错误[E017]: 找不到文件 `missing.ry`"), "{}", r.stderr);
 }
 
-/// `LANG=de_DE.UTF-8`, `pt_BR`, `zh_CN` choose the language without `--lang`.
+/// `LANG=de_DE.UTF-8`, `pt_BR`, `zh_CN`, `it_IT`, `ja_JP` choose the language without `--lang`.
 #[test]
 fn the_locale_chooses_german_portuguese_or_chinese() {
-    for (locale, expected) in [("de_DE.UTF-8", "Division durch null"), ("pt_BR.UTF-8", "divisão por zero"), ("zh_CN.UTF-8", "除以零")] {
+    for (locale, expected) in [
+        ("de_DE.UTF-8", "Division durch null"),
+        ("pt_BR.UTF-8", "divisão por zero"),
+        ("zh_CN.UTF-8", "除以零"),
+        ("it_IT.UTF-8", "divisione per zero"),
+        ("ja_JP.UTF-8", "ゼロ除算"),
+    ] {
         let out = std::process::Command::new(env!("CARGO_BIN_EXE_rythme"))
             .args(["-e", "print(1 / 0)"])
             .env_remove("RYTHME_LANG")
@@ -277,6 +283,79 @@ fn carets_stay_aligned_with_chinese_text() {
     assert_eq!(padded("español", 10), "español   ");
 }
 
+/// Real error messages, help and explanations in Italian and Japanese:
+/// (language, program, what its error output says).
+#[test]
+fn italian_and_japanese_messages() {
+    let errors = [
+        ("it", "x = [1, 2]\nprint(lenght(x))", "errore[E003]: nome sconosciuto `lenght`"),
+        ("it", "x = [1, 2]\nprint(lenght(x))", "= aiuto: in Rythme, questo si chiama `len`"),
+        ("it", "x = [1, 2]\nprint(lenght(x))", "= altro su questo errore: `rythme explain E003`"),
+        ("it", "print(1 / 0)", "errore[E008]: divisione per zero"),
+        ("it", "fn add(a, b) = a + b\nprint(add(1))", "`add` prende 2 argomento/i, ma ne ha ricevuti 1"),
+        (
+            "it",
+            "print(len(42))",
+            "`len` si aspetta un testo, una lista, un record, un dizionario o un insieme come argomento 1, ma ha ricevuto Int 42",
+        ),
+        ("ja", "x = [1, 2]\nprint(lenght(x))", "エラー[E003]: 不明な名前 `lenght`"),
+        ("ja", "x = [1, 2]\nprint(lenght(x))", "= ヘルプ: Rythme ではこれを `len` と呼ぶ"),
+        ("ja", "x = [1, 2]\nprint(lenght(x))", "= このエラーについて詳しく：`rythme explain E003`"),
+        ("ja", "print(1 / 0)", "エラー[E008]: ゼロ除算"),
+        ("ja", "fn add(a, b) = a + b\nprint(add(1))", "`add` は 2 個の引数を取るが、受け取ったのは 1 個"),
+        ("ja", "print(len(42))", "`len` の第 1 引数にはテキスト、リスト、レコード、辞書、集合のいずれかが必要だが、Int 42 を受け取った"),
+    ];
+    for (lang, code, expected) in errors {
+        let r = common::rythme_lang(lang, &["-e", code]);
+        assert_eq!(r.code, 1, "{lang}: {code}");
+        assert!(r.stderr.contains(expected), "{lang}: {expected}\n{}", r.stderr);
+    }
+
+    // The months in the messages of dates.
+    let dates =
+        [("it", "il giorno deve andare da 1 a 28 a febbraio 2023, non 30"), ("ja", "2023年2月の日は 1 から 28 までで、30 は範囲外")];
+    for (lang, expected) in dates {
+        let r = common::rythme_lang(lang, &["-e", "print(parse_date(\"2023-02-30\"))"]);
+        assert!(r.stdout.contains(expected), "{lang}: {}", r.stdout);
+    }
+
+    // The help, the explanations, the documentation of functions, and the
+    // topics under their names in each language.
+    let pages = [
+        ("it", vec!["help"], format!("Rythme {} — aiuto", rythme::VERSION)),
+        ("it", vec!["help", "liste"], "LISTE".to_string()),
+        ("it", vec!["explain", "E001"], "E001 — Errore di sintassi".to_string()),
+        ("it", vec!["help", "map"], "map(list, f)\n  Applica la funzione f a ogni elemento".to_string()),
+        ("ja", vec!["help"], format!("Rythme {} — ヘルプ", rythme::VERSION)),
+        ("ja", vec!["help", "リスト"], "リスト".to_string()),
+        ("ja", vec!["explain", "E001"], "E001 — 構文エラー".to_string()),
+        ("ja", vec!["help", "map"], "map(list, f)\n  各要素に関数 f を適用し".to_string()),
+    ];
+    for (lang, args, start) in pages {
+        let r = common::rythme_lang(lang, &args);
+        assert!(r.stdout.starts_with(&start), "{lang} {args:?}: {}", r.stdout);
+    }
+    // The list of functions gives the first sentence, also in Japanese.
+    let r = common::rythme_lang("ja", &["help", "builtins"]);
+    assert!(r.stdout.contains("  abs(x)                       絶対値：符号を取り除いた数\n"), "{}", r.stdout);
+    let r = common::rythme_lang("ja", &["check", "missing.ry"]);
+    assert!(r.stderr.contains("エラー[E017]: ファイル `missing.ry` が見つからない"), "{}", r.stderr);
+    let r = common::rythme_lang("it", &["check", "missing.ry"]);
+    assert!(r.stderr.contains("errore[E017]: file `missing.ry` non trovato"), "{}", r.stderr);
+}
+
+/// Japanese characters take two columns too: the `^` stay under the code.
+#[test]
+fn carets_stay_aligned_with_japanese_text() {
+    let r = common::rythme_lang("ja", &["-e", "x = \"日本語\" + nope"]);
+    assert!(r.stderr.contains("1 | x = \"日本語\" + nope\n"), "{}", r.stderr);
+    assert!(r.stderr.contains(&format!("  | {}^^^^ 未定義\n", " ".repeat(15))), "{}", r.stderr);
+    let r = common::rythme_lang("ja", &["-e", "名前 = 1\nprint(名称)"]);
+    assert!(r.stderr.contains(&format!("2 | print(名称)\n  | {}^^^^ 未定義\n", " ".repeat(6))), "{}", r.stderr);
+    assert_eq!(padded("日本語", 10), "日本語    ");
+    assert_eq!(padded("italiano", 10), "italiano  ");
+}
+
 /// The playground passes the position of a language in `LANGUAGES`: the site's
 /// (Rust, `site/client`) finds it in that very list, by the code of the page.
 #[test]
@@ -297,14 +376,18 @@ fn languages_are_chosen_by_code_or_locale() {
     assert_eq!(lang::parse("ES"), Some(es));
     assert_eq!(lang::parse("español"), Some(es));
     assert_eq!(lang::parse("fr_CA"), Some(Lang::Fr));
-    assert_eq!(lang::parse("it_IT"), None);
+    assert_eq!(lang::parse("ru_RU"), None);
+    assert_eq!(lang::parse("it_IT.UTF-8").map(Lang::code), Some("it"));
+    assert_eq!(lang::parse("italiano").map(Lang::code), Some("it"));
+    assert_eq!(lang::parse("ja_JP.UTF-8").map(Lang::code), Some("ja"));
+    assert_eq!(lang::parse("ja-JP").map(Lang::code), Some("ja"));
     assert_eq!(lang::parse("de_AT.UTF-8").map(Lang::code), Some("de"));
     assert_eq!(lang::parse("Deutsch").map(Lang::code), Some("de"));
     assert_eq!(lang::parse("pt_BR.UTF-8").map(Lang::code), Some("pt"));
     assert_eq!(lang::parse("pt_PT").map(Lang::code), Some("pt"));
     assert_eq!(lang::parse("zh_CN.UTF-8").map(Lang::code), Some("zh"));
     assert_eq!(lang::parse("zh-Hans").map(Lang::code), Some("zh"));
-    assert_eq!(lang::codes(), "en, fr, es, de, pt, zh");
+    assert_eq!(lang::codes(), "en, fr, es, de, pt, zh, it, ja");
     let codes: BTreeSet<&str> = LANGUAGES.iter().map(|l| l.code).collect();
     assert_eq!(codes.len(), LANGUAGES.len(), "two languages with the same code");
 }

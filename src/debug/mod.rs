@@ -25,7 +25,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::Path;
 use std::rc::Rc;
 
-use crate::ast::{Expr, ExprKind, FnDef, Item, PatKind, Stmt};
+use crate::ast::{Clause, Expr, ExprKind, FnDef, Item, PatKind, Pattern, Stmt};
 use crate::compile::{self, FnCode, StopInfo};
 use crate::diagnostic::{Diagnostic, Fallible};
 use crate::driver::{Driver, Module};
@@ -209,7 +209,7 @@ impl Paused<'_> {
             let (name, builtin, args) = match &f.what {
                 What::Top => (String::new(), false, Vec::new()),
                 What::Func { def, .. } => {
-                    let names = param_names(def);
+                    let names = param_names(def, f);
                     let args = names.into_iter().zip(f.args.iter().cloned()).collect();
                     (fn_name(def), false, args)
                 }
@@ -262,7 +262,7 @@ impl Paused<'_> {
             }
             None => {
                 if let What::Func { def, .. } = &f.what {
-                    for (name, v) in param_names(def).into_iter().zip(&f.args) {
+                    for (name, v) in param_names(def, f).into_iter().zip(&f.args) {
                         out.push((Sym::new(&name), v.clone()));
                     }
                 }
@@ -320,8 +320,12 @@ impl Paused<'_> {
     }
 }
 
-/// The names of the parameters of a function: those of its definitions, or `arg1`...
-fn param_names(def: &FnDef) -> Vec<String> {
+/// The names of the parameters of a function called in the frame `f`:
+/// those of its definitions; for a parameter that every definition writes as
+/// a pattern, the pattern of the definition that runs, as written
+/// (`total([x, ..rest] = [1, 2], acc = 0)`); `arg1`... when it is not known.
+fn param_names(def: &FnDef, f: &Frame) -> Vec<String> {
+    let running = running_clause(def, f);
     (0..def.arity)
         .map(|i| {
             def.clauses
@@ -330,9 +334,38 @@ fn param_names(def: &FnDef) -> Vec<String> {
                     PatKind::Bind(s) => Some(s.name().to_string()),
                     _ => None,
                 })
+                .or_else(|| match running {
+                    Some(c) => pattern_text(&c.params[i]),
+                    // Not in a body yet: the pattern if every definition writes the same.
+                    None => {
+                        let mut texts = def.clauses.iter().map(|c| pattern_text(&c.params[i]));
+                        let first = texts.next().flatten();
+                        texts.all(|t| t == first).then_some(first).flatten()
+                    }
+                })
                 .unwrap_or_else(|| format!("arg{}", i + 1))
         })
         .collect()
+}
+
+/// The definition of a function whose body the frame `f` has reached.
+fn running_clause<'a>(def: &'a FnDef, f: &Frame) -> Option<&'a Clause> {
+    let (at, _) = f.stop.as_ref()?;
+    def.clauses
+        .iter()
+        .find(|c| c.span.file == at.file && c.span.start <= at.start && at.end <= c.body.span.end.max(c.span.end))
+        .map(|c| &**c)
+}
+
+/// A pattern as written in the code, on one line and short: `[x, ..rest]`.
+fn pattern_text(p: &Pattern) -> Option<String> {
+    let file = source::get(p.span.file)?;
+    let text = file.text.get(p.span.start as usize..p.span.end as usize)?;
+    let one_line = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if one_line.is_empty() {
+        return None;
+    }
+    Some(if one_line.chars().count() > 30 { format!("{}…", one_line.chars().take(29).collect::<String>()) } else { one_line })
 }
 
 fn fn_name(def: &FnDef) -> String {
@@ -411,8 +444,8 @@ pub(crate) fn stop(it: &mut Interp, at: Span, info: &Rc<StopInfo>, base: usize) 
     })
 }
 
-/// A call starts: `f`, with its arguments from `base` on.
-pub(crate) fn call(it: &mut Interp, f: &Value, member: Option<u32>, base: usize, span: Span) -> Fallible<()> {
+/// A call starts: `f`, with its `argc` arguments from `base` on.
+pub(crate) fn call(it: &mut Interp, f: &Value, member: Option<u32>, base: usize, argc: usize, span: Span) -> Fallible<()> {
     with_session(it, Ok(()), |s, it, _| {
         let depth = it.call_depth();
         s.ensure_top();
@@ -432,7 +465,7 @@ pub(crate) fn call(it: &mut Interp, f: &Value, member: Option<u32>, base: usize,
                 What::Top => None,
             };
         }
-        let args = it.stack_values().get(base..).map(<[Value]>::to_vec).unwrap_or_default();
+        let args = it.stack_values().get(base..base + argc).map(<[Value]>::to_vec).unwrap_or_default();
         let what = match f {
             Value::Func(clo) => {
                 let (def, code) = match member {

@@ -2024,11 +2024,10 @@ an argument, an operand (`n * fact(n - 1)`), a condition, or followed by `?`
 is not in tail position.
 
 Other calls nest, and nesting is limited by the stack: beyond a limit, the
-program stops with E014. The limit depends on the function; with the
-`rythme` command it is several hundred thousand nested calls (about 900 000
-for `total` below, more than 400 000 even for a function that does much more
-in each call), and 600 in the web playground. The list functions (`map`,
-`fold`...) do not nest.
+program stops with E014. With the `rythme` command the limit is 917 504
+nested calls, whatever the function (a little fewer when the calls go
+through functions such as `map` that call the function given to them), and
+600 in the web playground. The list functions (`map`, `fold`...) do not nest.
 
 ```rythme
 fn count_down(0, acc) = acc
@@ -2045,7 +2044,7 @@ print(total(1..5000000))
 
 ```text
 1000000 false
-error[E014]: too many nested calls (917503 calls in progress)
+error[E014]: too many nested calls (917504 calls in progress)
  --> 44-tail.ry:9:29
   |
 9 | fn total([x, ..rest]) = x + total(rest)               # not a tail call: + comes after
@@ -2059,11 +2058,11 @@ error[E014]: too many nested calls (917503 calls in progress)
       or use `fold`, `map`, `filter`, which have no limit.
   = call trace (most recent first):
       in `total` (×40) called at 44-tail.ry:9:29
-      … and 917463 more calls
+      … and 917464 more calls
   = more about this error: `rythme explain E014`
 ```
 
-(The number of calls in progress varies with the function and the machine.)
+(The number of calls in progress may change with the version of Rythme.)
 
 ### 4.7 Types
 
@@ -2089,7 +2088,9 @@ type Name = Variant | Variant(field, field) | ...
 - `##` comments written above a `type` document it: `help` shows them for
   each of its constructors, after the name of the type.
 - The type of a field may be written after its name, for the checker:
-  `Circle(radius: Float)` (see [4.10](#410-written-types)).
+  `Circle(radius: Float)`, and a type may take types, written as type
+  variables after its name: `type Tree(a) = Leaf | Node(left: Tree(a),
+  value: a, right: Tree(a))` (see [4.10](#410-written-types)).
 
 ```rythme
 ## A shape to draw.
@@ -2421,6 +2422,7 @@ error[E017]: `pong.ry` and `ping.ry` use each other
 fn name(parameter: Type, ...) -> Type = ...
 name: Type = value
 type Name = Variant(field: Type, ...) | ...
+type Name(a, b) = Variant(field: a, ...) | ...
 xs.map do |x: Type| ... end
 ```
 
@@ -2440,10 +2442,12 @@ changes nothing.
   `List(Int)` (or `[Int]`), `Set(Text)`, `Dict(Text, Int)`, `Option(Int)`,
   `Result(Int, Text)`; `{name: Text, age: Int}`, a record with at least
   these fields; `fn(Int, Int) -> Bool`, a function; the types defined with
-  `type` (`Shape`, and `geometry.Shape` for a type of `use geometry`); and
+  `type` (`Shape`, and `geometry.Shape` for a type of `use geometry`), with
+  the types they take when they have parameters (`Tree(Int)`, below); and
   **type variables**, one lowercase letter (`a`, `t`), for any type, the
   same one everywhere in a definition. `List`, `Set`, `Dict`, `Option`,
-  `Result`, `Record` and `Function` alone hold anything.
+  `Result`, `Record` and `Function` alone hold anything, and so does a type
+  with parameters written alone (`Tree`).
 - **What the checker does**: a value that surely has another type is E027,
   where it is given: the value of a name, an argument (the message names
   the parameter and shows its type), the result of a function or what its
@@ -2582,6 +2586,120 @@ error[E005]: cannot use `+` with Int and Text
   = help: to build a text with a value inside, use braces: "total: {x}"
       or convert the value first: text(x)
   = more about this error: `rythme explain E005`
+
+✗ sample.ry: 3 error(s)
+```
+
+**Types with parameters.** A type defined with `type` may take types, as
+`List` does: its **parameters**, type variables written between parentheses
+after its name, stand in the types of its fields. A written type then gives
+it its types: `Tree(Int)` is a `Tree` whose values are Ints, `Pair(Text,
+Int)` a pair of a Text and an Int.
+
+- A parameter is one lowercase letter, written once (E027 otherwise); in a
+  type with parameters, a type variable written in a field is one of them
+  (E027: `type Box(a) = Box(value: b)`). In a type without parameters, a
+  type variable in a field still means any type.
+- A type with parameters takes all its types or none (`Tree` alone holds
+  anything); another number (`Tree(Int, Text)`, or `Shape(Int)` for a type
+  without parameters) is E027.
+- The checker uses them as it uses those of `List`: a value of another type
+  (`Node(Leaf, "two", Leaf)` given for a `Tree(Int)`) is E027, and the
+  message shows its type, `Tree(Text)`; a constructor keeps a type variable
+  to one type (`Node(Leaf, 1, Node(Leaf, "x", Leaf))` is E027); a call gives
+  the types found in its arguments (`first_of(Pair(1, "x"))` is an Int); in a
+  case `Node(l, v, r)` of a `Tree(Int)`, `v` is an Int. This works across
+  files given to `use` too (`geometry.Tree(Int)`).
+- The fields keep their names: `Node(left: Tree(a), value: a, right:
+  Tree(a))`. A lowercase word alone in a variant is the name of a field, in
+  every program, and the values are read by these names (`node.value`).
+- **Why one letter.** In a function, a type variable is not declared
+  (`fn first_of(xs: List(a)) -> a`), so a lowercase word written as a type is
+  read as what it most often is, a type named as in another language (`int`,
+  `string`, `list`), and `rythme check` gives its Rythme name. A longer name
+  for a type variable could not be told apart from such a mistake.
+- Running never looks at the parameters: `type Tree(a)` runs exactly like
+  `type Tree`. In the REPL, a type of an earlier line takes any types (only
+  the interpreter knows it there); `help(Node)` shows the types of the fields
+  and the parameters of the type.
+
+```rythme
+## A binary tree: its values have the type `a`.
+type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+
+fn insert(t: Tree(Int), x: Int) -> Tree(Int) = match t
+  Leaf -> Node(Leaf, x, Leaf)
+  Node(l, v, r) if x < v -> Node(insert(l, x), v, r)
+  Node(l, v, r) -> Node(l, v, insert(r, x))
+end
+
+fn to_list(t: Tree(a)) -> List(a) = match t
+  Leaf -> []
+  Node(l, v, r) -> to_list(l) + [v] + to_list(r)
+end
+
+tree = [5, 2, 8, 1].reduce(Leaf) do |t, x| insert(t, x) end
+print(to_list(tree), tree.value)
+help(Node)
+```
+
+```text
+[1, 2, 5, 8] 5
+Node(left: Tree(a), value: a, right: Tree(a))
+  A constructor of the type `Tree(a)`.
+  A binary tree: its values have the type `a`.
+```
+
+The mistakes, found before running:
+
+```rythme
+type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+type Pair(a, b) = Pair(first: a, second: b)
+
+fn total(t: Tree(Int)) -> Int = match t
+  Leaf -> 0
+  Node(l, v, r) -> total(l) + v + total(r)
+end
+
+fn first_of(p: Pair(a, b)) -> a = p.first
+fn size(t: Tree(Int, Text)) -> Int = 0
+
+print(total(Node(Leaf, "two", Leaf)))
+print(first_of(Pair(1, "one")) + "!")
+```
+
+`rythme check`:
+
+```text
+error[E027]: `Tree` takes one type: `Tree(Int)`
+  --> sample.ry:10:12
+   |
+10 | fn size(t: Tree(Int, Text)) -> Int = 0
+   |            ^^^^^^^^^^^^^^^
+   |
+   = more about this error: `rythme explain E027`
+
+error[E027]: `total` expects `Tree(Int)` for `t`, but receives a value of type Tree(Text)
+  --> sample.ry:12:13
+   |
+12 | print(total(Node(Leaf, "two", Leaf)))
+   |             ^^^^^^^^^^^^^^^^^^^^^^^ not `Tree(Int)`
+   |
+ 4 | fn total(t: Tree(Int)) -> Int = match t
+   |             --------- the type written for `t`
+   |
+   = help: change the value, or the type written for it; types written in the code are checked before running, and are never needed (see `rythme help types`)
+   = more about this error: `rythme explain E027`
+
+error[E005]: cannot use `+` with Int and Text
+  --> sample.ry:13:32
+   |
+13 | print(first_of(Pair(1, "one")) + "!")
+   |                                ^ Int + Text "!"
+   |
+   = help: to build a text with a value inside, use braces: "total: {x}"
+       or convert the value first: text(x)
+   = more about this error: `rythme explain E005`
 
 ✗ sample.ry: 3 error(s)
 ```
@@ -2988,7 +3106,7 @@ with examples; the code may be written in lowercase.
 
 ## 6. Standard library
 
-The 211 built-in functions are always available, without `use`. Like the
+The 283 built-in functions are always available, without `use`. Like the
 keywords, their names are in English. `rythme help builtins` lists all of
 them by category, one line each; `rythme help NAME` (or `help(NAME)` in a
 program, or `:doc NAME` in the REPL) shows the documentation of one, with
@@ -3014,7 +3132,7 @@ reference for the details of each function.
 - The texts of `Err(...)` values made by built-ins (for example by
   `parse_int`) are written in the language of the messages.
 - Mistakes get a hint: the name of a function of another language gives its
-  Rythme name (`ord` → `char_code`, `padStart` → `pad_left`, `takeWhile` →
+  Rythme name (`charCodeAt` → `char_code`, `padStart` → `pad_left`, `takeWhile` →
   `take_while`, `stringify` → `to_json`...), and a value of a neighbouring
   kind points to the right function (a text given where a list is expected:
   `chars`; a record: `entries`, `keys` or `values`; a list given to `put`,
@@ -3462,6 +3580,104 @@ print(http_get("ftp://example.com/data.csv"))
 Err("a web address starts with http:// or https://, not \"ftp://example.com/data.csv\"")
 ```
 
+**More of the library.** Functions that students and professionals expect
+from Ruby, Python and Elixir, added after 1.0 (the audit that chose them is
+[`stdlib-audit.md`](stdlib-audit.md)):
+
+- text: `center(x, width, fill)`, `format(value, spec)` (the format specs of
+  Python: `[[fill]align][sign][#][0][width][,|_][.precision][type]`, with the
+  types `d`, `b`, `o`, `x`, `X`, `c`, `e`, `f`, `g`, `%` and `s`; a wrong spec
+  is E023), `replace_first`, `occurrences(x, item)` (in a list, or pieces of
+  a text that do not overlap), `last_index_of`, `remove_prefix` and
+  `remove_suffix`, `capitalize_words`, `snake_case`, `camel_case` and
+  `kebab_case` (they read names written in any of these styles),
+  `swap_case`, `is_upper` and `is_lower`, `bytes` (UTF-8), `split_once`
+  (an Option of `[before, after]`), `word_wrap(text, width)`,
+  `edit_distance` (Levenshtein), `inspect(value)` (the code form of a value,
+  as a text) and `print_error(values...)` (like `print`, on the error output);
+- numbers: `constrain(x, low, high)` (Ruby's `clamp`, for any values that
+  compare), `divmod(a, b)` (`[a // b, a % b]`), `binomial(n, k)` (exact),
+  `digits(n, base)` (the most significant first), `to_base(n, base)` and
+  `from_base(text, base)` (bases 2 to 36, numbers of any size; a Result),
+  `is_positive`, `is_negative`, `is_zero`, `is_nan`, `is_finite`;
+- lists: `find_index`, `update_at(list, i, f)`, `rotate_by(x, n)`,
+  `intersperse`, `interleave`, `tally` (a dict of counts), `count_by`,
+  `most_common(list, n)`, `unique_by`, `sort_desc`, `sort_by_desc` (stable),
+  `chunk_by` (runs of neighbours with the same key), `split_at`,
+  `combinations`, `permutations`, `cartesian_product` (at most 10 million
+  elements in all, else E023), `unzip`, `iterate(start, n, f)`,
+  `unfold(start, f)` (f gives `Some([value, next])` or `None`) and
+  `filter_map`; `zip` takes two lists or more;
+- records and dicts: `dig(x, path)` (an Option, through nested records,
+  dicts and lists), `merge_with(a, b, f)`, `invert`, `select_keys` and
+  `reject_keys`, `map_keys`, `update(x, key, default, f)`; sets:
+  `symmetric_difference`, `is_disjoint`;
+- Option and Result: `unwrap_or_else(x, f)` (f receives nothing for `None`,
+  the error for `Err(e)`), `expect(x, message)` (E013 with the message),
+  `all_ok(list)` (a list of Results made one Result);
+- dates: `add_months` (the day is kept within the month), `day_of_year`, and
+  patterns for `format_date(date, pattern)` and `parse_date(text, pattern)`:
+  `%Y`, `%m`, `%d`, `%H`, `%M`, `%S`, `%y`, `%B`/`%b` and `%A`/`%a` (names in
+  English, whatever the language of the messages), `%I` and `%p`, `%j`, `%z`
+  and `%%`;
+- the web and statistics: `base64_encode`, `base64_decode`, `url_encode`,
+  `url_decode` (decoding gives a Result), `linspace(start, end, n)`,
+  `correlation` and `covariance`.
+
+```rythme
+print(format(3.14159, ".2f"), format(1234567, ","), format(42, ">6"), format(255, "#x"), format(0.256, ".1%"))
+print(center("menu", 10, "*"), replace_first("a-b-c", "-", "+"), occurrences("banana", "an"), split_once("key=value", "="))
+print(snake_case("HTTPServer"), camel_case("user name"), kebab_case("Hello World"), capitalize_words("ada lovelace"))
+print(to_base(255, 2), from_base("ff", 16), digits(2024), divmod(17, 5), binomial(52, 5), constrain(15, 0, 10))
+```
+
+```text
+3.14 1,234,567     42 0xff 25.6%
+***menu*** a+b-c 2 Some(["key", "value"])
+http_server userName hello-world Ada Lovelace
+11111111 Ok(255) [2, 0, 2, 4] [3, 2] 2598960 10
+```
+
+```rythme
+tokens = split("the cat and the dog and the bird")
+print(tally(tokens), most_common(tokens, 2))
+print(sort_desc([3, 1, 2]), sort_by_desc(tokens, len) |> take(2), find_index(tokens, fn(w) = len(w) > 3))
+print(combinations([1, 2, 3], 2), cartesian_product([1, 2], ["a", "b"]))
+print(chunk_by([1, 1, 2, 3, 3], fn(x) = x), split_at([1, 2, 3, 4], 1), rotate_by([1, 2, 3], 1), unzip([[1, "a"], [2, "b"]]))
+print(iterate(1, 6, fn(x) = x * 2), unfold(10, fn(n) = if n == 0 then None else Some([n, n // 2])))
+print(["1", "x", "3"] |> filter_map(fn(t) = if is_digit(t) then Some(int(t)) else None))
+```
+
+```text
+dict("and" => 2, "bird" => 1, "cat" => 1, "dog" => 1, "the" => 3) [["the", 3], ["and", 2]]
+[3, 2, 1] ["bird", "the"] Some(7)
+[[1, 2], [1, 3], [2, 3]] [[1, "a"], [1, "b"], [2, "a"], [2, "b"]]
+[[1, 1], [2], [3, 3]] [[1], [2, 3, 4]] [2, 3, 1] [[1, 2], ["a", "b"]]
+[1, 2, 4, 8, 16, 32] [10, 5, 2, 1]
+[1, 3]
+```
+
+```rythme
+data = {user: {name: "Ada", langs: ["fr", "en"]}}
+print(dig(data, ["user", "langs", 1]), dig(data, ["user", "age"]))
+counts = fold(["a", "b", "a"], {}, fn(c, w) = update(c, w, 1, fn(n) = n + 1))
+print(counts, merge_with(counts, {a: 10, c: 1}, fn(x, y) = x + y), invert(counts))
+print(select_keys(data.user, ["name"]), map_keys({a: 1}, upper))
+print(all_ok(map(["1", "2"], parse_int)), all_ok(map(["1", "x"], parse_int)), unwrap_or_else(None, fn() = 0))
+d = {year: 2024, month: 1, day: 31}
+print(add_months(d, 1), day_of_year(d), format_date(d, "%A %d %B %Y"), parse_date("29/02/2024", "%d/%m/%Y"))
+print(base64_encode("Hi!"), url_encode("a b&c"), url_decode("caf%C3%A9"))
+```
+
+```text
+Some("en") None
+{a: 2, b: 1} {a: 12, b: 1, c: 1} dict(1 => "b", 2 => "a")
+{name: "Ada"} {A: 1}
+Ok([1, 2]) Err("\"x\" is not a whole number") 0
+{year: 2024, month: 2, day: 29} 31 Wednesday 31 January 2024 Ok({year: 2024, month: 2, day: 29})
+SGkh a%20b%26c Ok("café")
+```
+
 **Ruby names.** Some functions have a second name, the one Ruby gives them.
 Each one is exactly the function it names (same arguments, same messages):
 `rythme help upcase` says so, and `rythme help builtins` lists them by
@@ -3481,10 +3697,21 @@ without a warning.
 | `start_with?` | `starts_with` | `any?`, `all?` | `any`, `all` |
 | `end_with?` | `ends_with` | `key?` | `has` |
 | `lstrip`, `rstrip` | `trim_start`, `trim_end` | `casecmp?` | `equals_ignore_case` |
+| `clamp` | `constrain` | `swapcase` | `swap_case` |
+| `ljust`, `rjust` | `pad_right`, `pad_left` | `ord`, `chr` | `char_code`, `char` |
+| `delete_prefix`, `delete_suffix` | `remove_prefix`, `remove_suffix` | `rindex` | `last_index_of` |
+| `detect` | `find` | `collect` | `map` |
+| `rotate` | `rotate_by` | `combination`, `permutation` | `combinations`, `permutations` |
+| `transform_values`, `transform_keys` | `map_values`, `map_keys` | `each_pair` | `each` |
+| `positive?`, `negative?`, `zero?` | `is_positive`, `is_negative`, `is_zero` | `nan?`, `finite?` | `is_nan`, `is_finite` |
+| `subset?`, `disjoint?` | `is_subset`, `is_disjoint` | `to_h`, `warn` | `dict`, `print_error` |
 
 `sort_by`, `min_by`, `max_by`, `group_by`, `zip`, `flatten`, `sum`, `count`,
-`first`, `last`, `find`, `map`, `each`, `reject` and `each_with_index` have the
-same name in both languages. With method calls and blocks
+`first`, `last`, `find`, `map`, `each`, `reject`, `each_with_index`, `tally`,
+`find_index`, `filter_map`, `dig`, `invert`, `divmod`, `center`, `bytes` and
+`inspect` have the same name in both languages; `digits` gives the most
+significant digit first, where Ruby gives them in reverse, and `format` takes
+the specs of Python, not the `%` of Ruby. With method calls and blocks
 ([3.8](#38-fields-and-method-calls), [3.14](#314-blocks-given-to-calls)),
 Ruby code often works as it is:
 
@@ -3566,16 +3793,16 @@ before the program runs:
 
 ```rythme
 word = "hello"
-print(ord(word[0]))
+print(charCodeAt(word[0]))
 print(map(word, upper))
 ```
 
 ```text
-error[E003]: unknown name `ord`
+error[E003]: unknown name `charCodeAt`
  --> 62-hints.ry:2:7
   |
-2 | print(ord(word[0]))
-  |       ^^^ not defined
+2 | print(charCodeAt(word[0]))
+  |       ^^^^^^^^^^ not defined
   |
   = help: in Rythme, this is called `char_code`
   = more about this error: `rythme explain E003`
@@ -3755,6 +3982,11 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMAND] [ARGUMENTS...]
 | `doc [--html] [--out FILE] FILE...` | `documenter` | writes the documentation of files or folders, in Markdown or as a web page (see [7.6](#76-documentation-rythme-doc)) |
 | `new NAME` | `nouveau` | creates the folder of a new project (see [7.7](#77-projects-and-packages)) |
 | `install` | `installer` | downloads the dependencies of the project and writes `rythme.lock` (see [7.7](#77-projects-and-packages)) |
+| `search [WORDS...]` | `chercher`, `rechercher` | finds packages in the package index (see [7.11](#711-the-package-index)) |
+| `info NAME` | `infos` | what the package index says of a package (see [7.11](#711-the-package-index)) |
+| `add NAME[@RANGE]...` | `ajouter` | adds packages of the index to `rythme.toml`, then installs them (see [7.11](#711-the-package-index)) |
+| `update [NAME...]` | `mettre-a-jour` | the newest version in the range of each dependency, in `rythme.lock` (see [7.11](#711-the-package-index)) |
+| `publish [--verify FILE...]` | `publier` | checks a package before it goes into the index, and prints its entry; never sends anything (see [7.11](#711-the-package-index)) |
 | `exercise [list \| start NAME \| check FILE]` | `exercises`, `exercice`, `exercices` | the built-in exercises (see below) |
 | `steps FILE [EXPRESSION] [--max N] [--width N]` | `etapes`, `étapes` | shows the evaluation step by step (see [7.8](#78-step-by-step-rythme-steps)) |
 | `-e CODE [ARGS...]` | `eval CODE [ARGS...]` | runs the code given as an argument, and shows the value of its last expression unless it is `()`; `ARGS` are given to `args()` |
@@ -3767,9 +3999,34 @@ rythme [--lang en|fr|es|de|pt|zh] [--no-color] [COMMAND] [ARGUMENTS...]
 | `explain [CODE]` | `expliquer` | the explanation of an error or warning code; without a code, the list of codes |
 | `learn` | `apprendre`, `tutorial`, `tutoriel` | the guided tour: the 13 topics in order, with a pause after each one when run in a terminal |
 | `version` | `--version`, `-V` | prints `rythme 1.0.0` |
+| `version --verbose` | | also the system, the languages, the numbers of built-in functions and of codes, and the version of the JSON output |
+| `completions SHELL` | | a completion script for `bash`, `zsh`, `fish` or `powershell` (see below) |
+| `man` | | the manual page of the command, in roff: `rythme man > rythme.1` |
+| `upgrade` | | which command installs the latest version, guessed from where Rythme is installed (nothing is downloaded) |
+
+**Help, completions and the manual page.** Every command answers `--help`
+(or `-h`) with its usage, its options and its exit codes, in the language of
+the messages: `rythme test --help`. For `run`, `steps`, `debug` and `-e`,
+`--help` counts only before the file: after it, the words are the
+program's. `rythme run -` (or `rythme -`) runs the program read from the
+standard input, which `input` then finds at its end (also with `--format
+json`). `rythme check FOLDER`
+checks every `.ry` file of a folder and of its subfolders (hidden ones
+excepted), like `rythme fmt`. `rythme completions bash` (or `zsh`, `fish`,
+`powershell`) writes a script that completes the commands, their options,
+the topics of `rythme help`, the codes of `rythme explain`, the languages of
+`--lang` and the `.ry` files; install it once:
+
+```text
+rythme completions bash > ~/.local/share/bash-completion/completions/rythme
+rythme completions zsh > "${fpath[1]}/_rythme"
+rythme completions fish > ~/.config/fish/completions/rythme.fish
+rythme completions powershell >> $PROFILE
+rythme man > ~/.local/share/man/man1/rythme.1
+```
 
 **For programs and AI assistants.** `check`, `run`, `test`, `fix`,
-`explain` and `help` accept `--format json`: one JSON document instead of
+`explain`, `help`, `search` and `info` accept `--format json`: one JSON document instead of
 the messages for people; `run` and `test` accept `--sandbox`; `rythme help
 llms` prints the whole language in one text (see
 [7.10](#710-rythme-and-ai-assistants)).
@@ -3784,22 +4041,22 @@ else is an unknown command, with a suggestion.
 **Options.** `--lang` and `--no-color` must come **before** the command;
 anything after the file name goes to the program (for `rythme test`, what
 comes after `--`). `--lang` accepts any value
-that starts with the code of a language, `en`, `fr`, `es`, `de`, `pt` or `zh`
+that starts with the code of a language, `en`, `fr`, `es`, `de`, `pt`, `zh`, `it` or `ja`
 (`--lang es`, `--lang=en`, `--lang pt_BR`); another value, or `--lang` without
 a value, is reported, with exit code 2.
 
 **Languages of the messages.** Every message, help topic, explanation of a
 code and page of `rythme learn` exists in English, French, Spanish
-(`--lang es`), German (`--lang de`), Brazilian Portuguese (`--lang pt`) and
-simplified Chinese (`--lang zh`); the keywords, the names of the built-in functions and the
+(`--lang es`), German (`--lang de`), Brazilian Portuguese (`--lang pt`),
+simplified Chinese (`--lang zh`), Italian (`--lang it`) and Japanese (`--lang ja`); the keywords, the names of the built-in functions and the
 commands stay the same in every language. The files written by `rythme new`
 and the exercises of `rythme exercise` follow the language too. The texts of other languages are kept in
 catalogs (`src/i18n/`); CONTRIBUTING.md explains how to add one. In
-Chinese, the code in the help stays as written in English (only its comments
-are translated), and the `^` under a mistake stay aligned: Chinese characters
+Chinese, Italian and Japanese, the code in the help stays as written in English (only its comments
+are translated), and the `^` under a mistake stay aligned: Chinese and Japanese characters
 take two columns of the terminal, in the code as in the messages.
 
-**Exercises.** `rythme exercise` (or `rythme exercise list`) lists the 30
+**Exercises.** `rythme exercise` (or `rythme exercise list`) lists the 36
 graded exercises built into the program (the files of
 [`docs/exercises/`](exercises/README.md)). `start NAME` writes the exercise
 named by its number (`7`) or its file name (`07-recursion`, `recursion`) into
@@ -3814,7 +4071,7 @@ unknown action or exercise is exit code 2.
 
 **Help topics.** `rythme help TOPIC` accepts `start`, `syntax`, `functions`,
 `lists`, `text`, `records`, `types`, `match`, `errors`, `functional`,
-`tests`, `exercises`, `modules`, `system`, `projects`, `dates`, `csv`, `random`, `repl`,
+`tests`, `exercises`, `modules`, `system`, `projects`, `packages`, `dates`, `csv`, `random`, `repl`,
 `fmt`, `doc`, `steps`, `editors`, `ruby` and `builtins`, and French or
 alternative names: `syntaxe`, `fonctions`, `listes`, `texte`,
 `enregistrements`, `motifs`, `erreurs`, `fonctionnel`, `boucles`,
@@ -3826,8 +4083,11 @@ names: `sintaxis`, `funciones`, `listas`, `registros`, `tipos`, `patrones`,
 names: `funktionen`, `listen`, `typen`, `muster`, `fehler`, `übungen`,
 `projekte`, `datum`, `schritte`..., Portuguese names: `sintaxe`, `funções`,
 `listas`, `tipos`, `padrões`, `erros`, `testes`, `exercícios`, `projetos`,
-`datas`, `passos`..., and Chinese names: `语法`, `函数`, `列表`, `文本`,
-`记录`, `字典`, `类型`, `模式`, `错误`, `测试`, `练习`, `项目`, `日期`...
+`datas`, `passos`..., Chinese names: `语法`, `函数`, `列表`, `文本`,
+`记录`, `字典`, `类型`, `模式`, `错误`, `测试`, `练习`, `项目`, `日期`..., Italian
+names: `sintassi`, `funzioni`, `liste`, `testo`, `tipi`, `errori`, `esercizi`,
+`progetti`, `pacchetti`, `passi`..., and Japanese names: `構文`, `関数`,
+`リスト`, `テキスト`, `型`, `エラー`, `テスト`, `練習問題`, `プロジェクト`, `日付`...
 
 **Exit codes.**
 
@@ -3852,7 +4112,11 @@ names: `funktionen`, `listen`, `typen`, `muster`, `fehler`, `übungen`,
   terminal (on Windows, only in terminals known to support them).
 - `HOME` (`USERPROFILE` on Windows): where the REPL keeps its history, and
   where `rythme install` keeps packages (`~/.rythme/packages`).
-- `RYTHME_HOME`: another folder for the packages (`RYTHME_HOME/packages`).
+- `RYTHME_HOME`: another folder for the packages (`RYTHME_HOME/packages`)
+  and the copy of the package index (`RYTHME_HOME/index`).
+- `RYTHME_INDEX`: another package index, an address or a folder (see
+  [7.11](#711-the-package-index)); `index = "..."` in `rythme.toml` wins
+  over it.
 
 **Outputs.** What the program prints (`print`, the prompt of `input`, the
 results of `check`, `test` and `fmt`) goes to the standard output; error and
@@ -3875,8 +4139,8 @@ $ rythme help lenght
 No help found for `lenght`.
 in Rythme, this is called `len`
 See the list of topics with `rythme help`.
-$ rythme --lang it hello.ry
-unknown language `it`: write `--lang` and one of en, fr, es, de, pt, zh, like `rythme --lang fr hello.ry`
+$ rythme --lang ru hello.ry
+unknown language `ru`: write `--lang` and one of en, fr, es, de, pt, zh, it, ja, like `rythme --lang fr hello.ry`
 ```
 
 The last three exit with code 2 (the last one is written in the language of
@@ -4271,8 +4535,8 @@ E025, with the help `try rythme new my_app` (exit code 2). A folder that
 already exists and is not empty is never touched (exit code 1). The files
 are written in the language of the messages (`src/salutation.ry` in
 French, `src/saludo.ry` in Spanish, `src/gruss.ry` in German,
-`src/saudacao.ry` in Portuguese; in Chinese the names stay those of English
-and the texts are in Chinese).
+`src/saudacao.ry` in Portuguese; in Chinese, Italian and Japanese the names stay
+those of English and the texts are in the language of the messages).
 
 **`rythme.toml`.** Every value is a text in quotes; `#` starts a comment.
 
@@ -4285,13 +4549,18 @@ entry = "src/main.ry"     # the program; this one when it is not given
 mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
 geometry = { git = "https://github.com/someone/geometry", commit = "4d868c2" }
 tools = { path = "../tools" }
+plot = { version = "^1.2.0" }
 ```
 
 A dependency from git gives its address and a fixed version: a `tag` or a
 `commit` (at least 4 hexadecimal digits). A dependency from a folder gives
-its `path`, relative to the project. The name before `=` is the name used in
-`use`. This is a small part of TOML, read by Rythme itself: texts with `"`
-(with `\"`, `\\`, `\n`, `\t`) or `'`, and tables on one line. Any other key,
+its `path`, relative to the project. A dependency from the package index
+gives a range of versions (see [7.11](#711-the-package-index)). The name
+before `=` is the name used in `use`. The keys `description`, `license`,
+`repository`, `keywords`, `authors` and `index` are for the package index
+(see [7.11](#711-the-package-index)). This is a small part of TOML, read by
+Rythme itself: texts with `"` (with `\"`, `\\`, `\n`, `\t`) or `'`, tables
+and lists of texts on one line. Any other key,
 section (`[package]` included) or kind of value is E025, shown at its place
 in `rythme.toml`, with a suggestion when a close key exists:
 
@@ -4302,7 +4571,7 @@ error[E025]: unknown key `tga`
 6 | tools = { path = "../tools", tga = "x" }
   |                              ^^^
   |
-  = note: the keys here are `git`, `tag`, `commit`, `path`
+  = note: the keys here are `version`, `git`, `tag`, `commit`, `path`
   = help: did you mean `tag`?
   = more about this error: `rythme explain E025`
 ```
@@ -4503,6 +4772,9 @@ An empty line repeats `next`, `step`, `finish` or `continue`.
   (`fact(n = 2)`), and the **depth**: the number of calls of the program's
   functions in progress, with how many of them are the same function when it
   calls itself. Places on the same line of the same call pause only once.
+  A parameter that every definition writes as a pattern is shown by the
+  pattern of the definition that runs: `total([x, ..rest] = [10, 20], acc =
+  0)`.
 - **Tail calls.** A call in tail position takes the place of the frame of its
   caller (see [4.6](#46-recursion-and-tail-calls)): the pause says so, and
   `where` shows the call it replaced and the place where the first one was
@@ -4568,11 +4840,11 @@ breakpoint 2 at the start of `total`
 (debug) continue
 6
 ● breakpoint 2: `total` starts
-→ fact.ry:5  total(arg1 = [10, 20], acc = 0) · depth 1
+→ fact.ry:5  total([x, ..rest] = [10, 20], acc = 0) · depth 1
   5 | fn total([x, ..rest], acc) = total(rest, acc + x)
 (debug) next
 ● breakpoint 2: `total` starts
-→ fact.ry:5  total(arg1 = [20], acc = 10) · depth 1
+→ fact.ry:5  total([x, ..rest] = [20], acc = 10) · depth 1
   (a call in tail position: it took the place of the frame of `total`)
   5 | fn total([x, ..rest], acc) = total(rest, acc + x)
 (debug) locals
@@ -4777,6 +5049,195 @@ If `rythme` is not on the `PATH` of the assistant, give its full path as
 of the repository, tells the agents of contributors how to build and test
 Rythme and what its conventions are.
 
+### 7.11 The package index
+
+The **package index** finds and shares packages by name, beside the
+dependencies from a git repository or a folder (see
+[7.7](#77-projects-and-packages)). It needs no server: it is a public git
+repository with one file per package, and adding a version is a pull
+request on it.
+
+```text
+$ rythme search vectors
+mathlib 1.2.0   Vectors, matrices and a few numbers
+1 package(s) found for `vectors` in https://github.com/maxlestage/rythme-index (copy of 2026-10-31)
+More about one: `rythme info mathlib`; add it to a project: `rythme add mathlib`
+`rythme search --update vectors` searches the newest copy of the index
+$ rythme add mathlib
+Installing the dependencies of `hello`
+  ✓ mathlib 1.2.0: ^1.2.0 from the index, commit 4d868c2 (downloaded)
+1 package(s) ready
+Added `mathlib = { version = "^1.2.0" }` to rythme.toml (1.2.0)
+  mathlib: Vectors, matrices and a few numbers
+  use it with `use mathlib/FILE` (see `rythme info mathlib`)
+```
+
+| Command | What it does |
+|---------|--------------|
+| `search [WORDS...] [--update] [--format json]` | the packages whose name, description or keywords contain every word (every package without words), the best first: a word that is the name, then a word in the name, a keyword, a word of the description |
+| `info NAME [--update] [--format json]` | the description, repository, license, keywords, authors and versions of a package, and why a version was withdrawn |
+| `add NAME[@RANGE]...` | adds `NAME = { version = "^1.2.0" }` (the newest version) or the range given (`mathlib@1.1` is `^1.1`, `mathlib@=1.1.0` exactly) at the end of `[dependencies]`, then installs; the rest of `rythme.toml` stays as it was, and if installing fails it is left as it was. A dependency of the same name is replaced |
+| `update [NAME...]` | takes again the dependencies (all of them, or those named) without `rythme.lock`: the newest version of the range of each package of the index, from the newest copy of the index, and the commit of each tag of git now; then lists what changed. `rythme.toml` does not change |
+| `publish` | checks the package of the current folder, then prints its entry for the index and the steps of the pull request |
+| `publish --verify FILE...` | checks entries of the index, for the checks of its pull requests |
+
+`rythme install` and `rythme update` work as in
+[7.7](#77-projects-and-packages); a dependency from the index is shown as
+`^1.2.0 from the index`. `search`, `info`, `add`, `update` and `publish`
+have French names too: `chercher`, `infos`, `ajouter`, `mettre-a-jour`,
+`publier`.
+
+**Versions.** A dependency from the index gives a range of versions of
+[semantic versioning](https://semver.org), with the meanings of Cargo and
+npm:
+
+```toml
+[dependencies]
+mathlib = { version = "^1.2.0" }   # 1.2.0 or newer, below 2.0.0 (also written "1.2.0")
+geometry = { version = "~0.3.1" }  # 0.3.1 or newer, below 0.4.0
+tools = { version = "=1.0.0" }     # exactly 1.0.0
+plot = { version = ">=1.2.0, <1.5.0" }
+```
+
+`^0.3.1` stops below 0.4.0 and `^0.0.3` takes only 0.0.3: before 1.0, the
+second number counts as the first. `*` takes any version, `1.*` any 1.x.y.
+A pre-release (`1.0.0-beta.2`) is taken only by a range that names a
+pre-release of the same three numbers. `rythme install` installs the version
+of `rythme.lock` while it is in the range, and otherwise the newest version
+of the range that is not withdrawn; `rythme update` always takes the newest.
+A range that cannot be read, or that no version fits, is E025, with the
+versions there are.
+
+**`rythme.lock`.** A package of the index is locked like a dependency from
+git, with three more lines: its version, the index, and the checksum of its
+files.
+
+```toml
+[[package]]
+name = "mathlib"
+version = "1.2.0"
+index = "https://github.com/maxlestage/rythme-index"
+git = "https://github.com/someone/mathlib"
+tag = "v1.2.0"
+commit = "4d868c2b0f6c1e1a8d7b8f5d3c2a1b0e9f8d7c6b"
+checksum = "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+```
+
+With `rythme.lock` and the packages already downloaded, `rythme install`
+needs neither the index nor the network. The packages used by a package of
+the index take their versions from the `rythme.lock` of the project that
+uses it.
+
+**The index.** A git repository with one file per package,
+`packages/NAME.toml`, in the TOML of `rythme.toml`:
+
+```toml
+name = "mathlib"
+description = "Vectors, matrices and a few numbers"
+repository = "https://github.com/someone/mathlib"
+license = "MIT"
+keywords = ["math", "vectors"]
+authors = ["Someone <someone@example.com>"]
+
+[[version]]
+version = "1.2.0"
+tag = "v1.2.0"
+commit = "4d868c2b0f6c1e1a8d7b8f5d3c2a1b0e9f8d7c6b"
+checksum = "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+```
+
+`yanked = "why"` in a `[[version]]` withdraws it: it is never chosen again,
+but a project whose `rythme.lock` has it still installs it. Rythme keeps a
+copy of the index in `RYTHME_HOME/index` (`~/.rythme/index`) and reads it
+without a network: `search` and `info` read the copy (and download it the
+first time), `--update` gets the newest one, `add` and `update` get the
+newest one before choosing a version, and a package that the copy does not
+have makes Rythme get the newest copy once. Without a network, the copy
+there is used, with a warning; without a copy, it is E025, which says to
+check the connection or to choose another index.
+
+**Which index.** In this order: `index = "..."` at the top of `rythme.toml`
+(an address, or a folder relative to the project), the variable
+`RYTHME_INDEX`, and otherwise `https://github.com/maxlestage/rythme-index`.
+An address uses `https://`, `ssh://` (or `git@host:path`) or `file://`; a
+folder of the computer with a folder `packages` is read as it is, without
+git and without a copy, which suits an index shared in a school or a team.
+
+**`rythme.toml` for the index.** These keys, at the top, describe a package;
+`rythme publish` needs the first three:
+
+| Key | Value |
+|-----|-------|
+| `description` | what the package is for, in one sentence (at most 200 characters) |
+| `license` | its license, like `"MIT"` or `"Apache-2.0"` |
+| `repository` | the address of its git repository, from which the index gives it |
+| `keywords` | at most five words in lower case, like `["math", "vectors"]` |
+| `authors` | like `["Ada Lovelace <ada@example.com>"]` |
+| `index` | another package index for the project |
+
+**Publishing a version.** In the folder of the package, at the root of its
+git repository: commit everything, tag the version with the version of
+`rythme.toml` (`git tag v1.2.0`, or `1.2.0`), push the tag
+(`git push origin v1.2.0`), then run `rythme publish`. It checks, and lists
+every problem with the way to fix it:
+
+- `rythme.toml`: a version of semantic versioning, `description`,
+  `license` and `repository`, keywords, and no dependency from a folder
+  (dependencies from the index and from git are fine);
+- git: the package at the root of its repository, nothing left to commit,
+  the tag of the version on the current commit, and that tag in the
+  `repository` with the same commit (when it cannot be reached, a warning);
+- `rythme check` and `rythme test` pass;
+- the index: the name is not taken by another repository, and the version
+  is not there yet (a published version never changes).
+
+Then it prints the entry to add to the index (the whole file for a new
+package, the `[[version]]` block otherwise), with its checksum, and the
+steps of the pull request. **Rythme never sends anything by itself**: the
+pull request is yours, and the checks of the index run
+`rythme publish --verify packages/NAME.toml`. Exit code 0 when the package
+is ready, 1 otherwise.
+
+**`rythme publish --verify FILE...`** checks entries: every key known,
+`description`, `license`, `repository`, at least one version and a `tag`
+for each one, a file named after its package; then, for
+each version, that the commit is in the repository, that the tag is that
+commit, that the files have the checksum, and that the `rythme.toml` of the
+commit has this name and this version and no dependency from a folder. It
+prints `✓ FILE` or the problem, with exit code 1 if one entry is wrong.
+
+**Checksums.** The checksum of a version is `sha256:` followed by the
+SHA-256 of, for each file of the commit in the order of the bytes of its
+path: its mode (`100644`), a space, its path and a zero byte, then its size
+in bytes, a zero byte and its content (for a submodule: its commit and a
+zero byte). It is computed from what git keeps, so it is the same on every
+system, whatever git does to the ends of lines.
+
+**Safety.** Everything that comes from the index is checked before it is
+used: names of packages are Rythme names (so `rythme info ../x` is refused
+before any file is opened); addresses use only https, ssh or file (git
+itself is limited to these protocols); git runs without hooks, without a
+file system monitor and with links written as plain files; the files of
+each version must have the checksum of the index, or nothing is installed;
+the `rythme.toml` of the version must have the name and the version that the
+index gives; texts of the index are shown without control characters; and
+nothing of a package runs when it is installed, added or verified (only
+`rythme publish` runs `rythme check` and `rythme test`, on your own
+package).
+
+**For programs.** `search` and `info` accept `--format json`: one document
+(`"command": "search"` or `"info"`, see
+[`rythme-output.schema.json`](rythme-output.schema.json)) with `ok`,
+`exit_code`, the `index` (`url`, and `updated`, when its copy was
+downloaded), the `packages` found (or the `package`, with its `versions`),
+and the `diagnostics`.
+
+**Creating the index.** The index of Rythme is
+`https://github.com/maxlestage/rythme-index`, created by the owner of
+Rythme from [`packaging/index-template/`](../packaging/index-template), which
+holds its README, an example entry and the workflow that checks each pull
+request. Any team can make its own index the same way.
+
 ---
 
 ## Appendix A. Grammar
@@ -4804,7 +5265,7 @@ body         = "=" result
              | NL block_end ;
 result       = command | expression ;              (* 3.15 *)
 block_end    = { statement NL } [ statement ] "end" ;
-type_def     = "type" CTOR "=" [ "|" ] variant { "|" variant } ;
+type_def     = "type" CTOR [ "(" NAME { "," NAME } ")" ] "=" [ "|" ] variant { "|" variant } ;
 variant      = CTOR [ "(" [ field { "," field } ] ")" ] ;
 field        = NAME [ ":" type ] ;
 test_def     = "test" PLAIN_TEXT body ;
@@ -4918,7 +5379,7 @@ Notes:
 | nesting of brackets, blocks and other constructs in the code | 256 levels | E001 |
 | depth of an expression: each operator, call, index or field is one level, so `1 + 1 + ...` holds at most 1000 numbers | 1000 levels | E001 |
 | texts nested in `{...}` of texts | 32 levels | E001 |
-| nested (non-tail) calls | depends on the function and on the stack: several hundred thousand with `rythme` (about 900 000 for a simple recursion), 600 in the playground | E014 |
+| nested (non-tail) calls | 917 504 with `rythme` (a little fewer through functions like `map`), 600 in the playground | E014 |
 | steps of `rythme steps`: shown for each expression; in all; depth of an expression being evaluated | 200 (`--max`); 10 000 000; 10 000 levels, 1 200 in the playground | — |
 | digits of `round(x, digits)` | clamped to −15...15 | — |
 | decimals of `text(x, decimals)` | 0 to 100 | E023 |

@@ -211,11 +211,13 @@ impl Docs {
                 Item::Type(t) => {
                     // With the types written for the fields, if any: `Circle(radius: Float)`.
                     let variants: Vec<String> = t.variants.iter().map(|v| v.signature()).collect();
-                    let one_line = format!("type {} = {}", t.name.name(), variants.join(" | "));
+                    // With its parameters, if any: `type Tree(a) = ...`.
+                    let header = t.header();
+                    let one_line = format!("type {header} = {}", variants.join(" | "));
                     let code = if one_line.chars().count() <= 80 {
                         one_line
                     } else {
-                        format!("type {} =\n{}", t.name.name(), variants.iter().map(|v| format!("  | {v}")).collect::<Vec<_>>().join("\n"))
+                        format!("type {header} =\n{}", variants.iter().map(|v| format!("  | {v}")).collect::<Vec<_>>().join("\n"))
                     };
                     doc.types.push(Entry { name: t.name.name().to_string(), code, doc: t.doc.as_deref().map(str::to_string) });
                 }

@@ -1,4 +1,7 @@
 /target
 # Built by ./build.sh
 /public/pkg
+# The compressed copies of public/, written by ./build.sh (client/src/bin/precompress.rs)
+/public/**/*.br
+/public/**/*.gz
 /dist

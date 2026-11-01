@@ -1,0 +1,32 @@
+# Esercizio 02 · Testi  ★☆☆
+# Soluzione di riferimento. Prova a fare l'esercizio prima di leggerla!
+
+## Un saluto per `name`.
+fn greet(name) = "Ciao, {name}!"
+
+## Il testo in maiuscolo, seguito da "!".
+fn shout(text) = upper(text) + "!"
+
+## Le iniziali di una persona, ognuna seguita da un punto.
+fn initials(first, last) = "{first[0]}.{last[0]}."
+
+## Una frase che presenta una persona.
+fn introduce(name, age) = "{name} ha {age} anni."
+
+# --- Test (non cambiarli) ---
+
+test "saluta" = assert_eq(greet("Ada"), "Ciao, Ada!")
+
+test "saluta un'altra persona" = assert_eq(greet("Alan"), "Ciao, Alan!")
+
+test "grida"
+  assert_eq(shout("ciao"), "CIAO!")
+  assert_eq(shout("Stop"), "STOP!")
+end
+
+test "iniziali"
+  assert_eq(initials("Ada", "Lovelace"), "A.L.")
+  assert_eq(initials("grace", "hopper"), "g.h.")
+end
+
+test "presenta" = assert_eq(introduce("Ada", 36), "Ada ha 36 anni.")

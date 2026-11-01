@@ -77,6 +77,13 @@ pub struct Knowledge {
     /// The functions and constructors defined before whose code writes
     /// types (`fn area(w: Int)`, `Circle(radius: Float)`).
     pub written: HashMap<Sym, Rc<Written>>,
+    /// The types defined with parameters (`type Tree(a) = ...`): the names
+    /// of their type variables.
+    pub type_params: HashMap<Sym, Vec<Sym>>,
+    /// Types whose parameters are not known: those of the earlier lines of
+    /// the REPL, known only by the interpreter. Any written type arguments
+    /// are accepted for them.
+    pub params_unknown: HashSet<Sym>,
 }
 
 /// What the checker knows of a file used with a name.
@@ -162,6 +169,7 @@ impl Knowledge {
         }
         for (t, ctors) in it.types.iter().filter(|(t, _)| !t.is_stored()) {
             k.types.insert(*t, ctors.iter().map(|c| c.name).collect());
+            k.params_unknown.insert(*t);
             for c in ctors {
                 k.ctors.insert(c.name, CtorMeta { type_name: *t, arity: c.fields.len(), fields: c.fields.clone() });
             }
@@ -253,6 +261,15 @@ impl Knowledge {
                     if let Some(cs) = module.types.get(&c.type_name) {
                         self.types.insert(qt, cs.iter().map(|c| q(*c)).collect());
                     }
+                    match module.type_params.get(&c.type_name) {
+                        Some(ps) => self.type_params.insert(qt, ps.clone()),
+                        None => self.type_params.remove(&qt),
+                    };
+                    if module.params_unknown.contains(&c.type_name) {
+                        self.params_unknown.insert(qt);
+                    } else {
+                        self.params_unknown.remove(&qt);
+                    }
                 }
             }
         }
@@ -295,6 +312,7 @@ impl Knowledge {
                         self.types_defined_again.insert(t.name);
                     }
                     self.types.insert(t.name, t.variants.iter().map(|v| v.name).collect());
+                    set_params(&mut self.type_params, &mut self.params_unknown, t);
                     for v in &t.variants {
                         self.value_types.remove(&v.name);
                         self.ctors.insert(v.name, CtorMeta { type_name: t.name, arity: v.fields.len(), fields: v.fields.clone() });
@@ -308,6 +326,16 @@ impl Knowledge {
                 _ => {}
             }
         }
+    }
+}
+
+/// Notes the parameters of a type defined in the code: known from now on.
+fn set_params(params: &mut HashMap<Sym, Vec<Sym>>, unknown: &mut HashSet<Sym>, t: &TypeDef) {
+    unknown.remove(&t.name);
+    if t.params.is_empty() {
+        params.remove(&t.name);
+    } else {
+        params.insert(t.name, t.params.iter().map(|(p, _)| *p).collect());
     }
 }
 
@@ -457,6 +485,11 @@ struct Checker<'a> {
     name_types: Option<HashMap<Span, Ty>>,
     /// The functions and constructors of this module whose code writes types.
     own_written: HashMap<Sym, Rc<Written>>,
+    /// The type variables of the types with parameters, those of this
+    /// module included (see [`Knowledge::type_params`]).
+    type_params: HashMap<Sym, Vec<Sym>>,
+    /// Types whose parameters are not known (see [`Knowledge::params_unknown`]).
+    params_unknown: HashSet<Sym>,
 }
 
 /// Built-in functions that only compute a value: no effect, no function of
@@ -541,6 +574,8 @@ impl<'a> Checker<'a> {
             needs: needs::Needs::default(),
             name_types: None,
             own_written: HashMap::new(),
+            type_params: know.type_params.clone(),
+            params_unknown: know.params_unknown.clone(),
         };
         for item in items {
             match item {
@@ -626,6 +661,7 @@ impl<'a> Checker<'a> {
                         }
                     }
                     self.types.insert(t.name, t.variants.iter().map(|v| v.name).collect());
+                    set_params(&mut self.type_params, &mut self.params_unknown, t);
                 }
                 _ => {}
             }
@@ -2067,11 +2103,14 @@ impl<'a> Checker<'a> {
         let Some(b) = builtin else { return tys };
         for i in later {
             let ExprKind::Lambda(def) = &exprs[i].kind else { continue };
-            let Some(cb) = types::callback(b, i, &tys) else {
+            let Some(mut cb) = types::callback(b, i, &tys) else {
                 // What the function receives depends on what it is given (`filter`).
                 tys[i] = self.func(def, None);
                 continue;
             };
+            if no_character_given(b, exprs) {
+                cb.params.iter_mut().for_each(|p| *p = Ty::Never);
+            }
             tys[i] = if def.arity != cb.params.len() {
                 self.func(def, None)
             } else if matches!(b, "fold" | "scan") {
@@ -2086,6 +2125,9 @@ impl<'a> Checker<'a> {
     /// The functions given to a built-in function must take what it gives
     /// them, and return what it needs.
     fn callbacks(&mut self, b: &str, exprs: &[&Expr], tys: &[Ty]) {
+        if no_character_given(b, exprs) {
+            return;
+        }
         for (i, t) in tys.iter().enumerate() {
             let Some(cb) = types::callback(b, i, tys) else { continue };
             let Ty::Func(f) = t else { continue };
@@ -3925,4 +3967,10 @@ fn unused_value(e: &Expr) -> Diagnostic {
             "pour garder la valeur, donnez-lui un nom : `resultat = ...` ; pour l'afficher : `print(...)`.\nLes valeurs ne changent jamais : `x + 1` ne modifie pas `x`."
         ))
     }
+}
+
+/// `take_while("", f)`: an empty text has no character to give the function,
+/// which is never called (like with an empty list).
+fn no_character_given(builtin: &str, exprs: &[&Expr]) -> bool {
+    matches!(builtin, "take_while" | "drop_while") && matches!(exprs.first().map(|e| &e.kind), Some(ExprKind::Text(s)) if s.is_empty())
 }

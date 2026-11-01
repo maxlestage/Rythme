@@ -83,12 +83,12 @@ fn breakpoints_where_print_finish_and_tail_calls() {
             // `finish`: the result, where the function was called.
             "(debug) finish\n`fact` gave 2\n→ main.ry:2  fact(n = 3) · depth 1\n",
             "breakpoint 2 at the start of `total`",
-            "6\n● breakpoint 2: `total` starts\n→ main.ry:5  total(arg1 = [1, 2, 3], acc = 0) · depth 1\n",
+            "6\n● breakpoint 2: `total` starts\n→ main.ry:5  total([x, ..rest] = [1, 2, 3], acc = 0) · depth 1\n",
             // A call in tail position takes the place of its caller.
-            "(debug) next\n● breakpoint 2: `total` starts\n→ main.ry:5  total(arg1 = [2, 3], acc = 1) · depth 1\n  (a call in tail position: it took the place of the frame of `total`)\n",
-            "(debug) where\n→ #0 total(arg1 = [2, 3], acc = 1)  main.ry:5 (replaced `total`: tail call)\n  #1 top level  main.ry:8\n",
+            "(debug) next\n● breakpoint 2: `total` starts\n→ main.ry:5  total([x, ..rest] = [2, 3], acc = 1) · depth 1\n  (a call in tail position: it took the place of the frame of `total`)\n",
+            "(debug) where\n→ #0 total([x, ..rest] = [2, 3], acc = 1)  main.ry:5 (replaced `total`: tail call)\n  #1 top level  main.ry:8\n",
             // An empty line repeats `continue`.
-            "total(arg1 = [], acc = 6)",
+            "total([] = [], acc = 6)",
             "6\nThe program finished. `run` starts it again, `quit` leaves.\n(debug) quit\ndebugger stopped\n",
         ],
     );
@@ -276,6 +276,21 @@ fn sessions_in_every_language() {
             ],
         ),
         ("zh", &["正在调试 main.ry。", "断点 1 位于 main.ry:2", "· 深度 1", "顶层", "`fact` 得出 6", "调试器已停止"]),
+        (
+            "it",
+            &[
+                "Debug di main.ry.",
+                "punto di interruzione 1 in main.ry:2",
+                "· profondità 1",
+                "livello principale",
+                "`fact` ha dato 6",
+                "debugger fermato",
+            ],
+        ),
+        (
+            "ja",
+            &["main.ry をデバッグ中。", "ブレークポイント 1：main.ry:2", "· 深さ 1", "最上位", "`fact` の結果は 6", "デバッガーを停止した"],
+        ),
     ];
     for (lang, wanted) in cases {
         let (out, code) = session(lang, &[("main.ry", FACT)], input);

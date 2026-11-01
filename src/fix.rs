@@ -14,6 +14,17 @@ fn is_name_char(c: char) -> bool {
     c.is_alphanumeric() || c == '_'
 }
 
+/// Where the name at the end of `text` starts.
+fn name_start(text: &str) -> usize {
+    run_start(text, is_name_char)
+}
+
+/// Where the characters that `keep` accepts at the end of `text` start:
+/// after the last other one, which may take several bytes (`👍`).
+fn run_start(text: &str, keep: impl Fn(char) -> bool) -> usize {
+    text.char_indices().rev().find(|(_, c)| !keep(*c)).map_or(0, |(i, c)| i + c.len_utf8())
+}
+
 /// The last place inside `span` where the name `word` is written.
 pub fn word_in(span: Span, word: &str) -> Option<Span> {
     let f = source::get(span.file)?;
@@ -114,6 +125,15 @@ fn line_around(text: &str, at: usize) -> (usize, usize) {
     let start = text[..at].rfind('\n').map_or(0, |i| i + 1);
     let end = text[at..].find('\n').map_or(text.len(), |i| at + i);
     (start, end.max(start))
+}
+
+/// The end of the last token before `at`: where to add a word at the end of
+/// a line, before the comment that may end it. Nothing when the code before
+/// does not lex.
+fn after_last_token(text: &str, at: usize) -> Option<usize> {
+    let toks = crate::lexer::lex(text.get(..at)?, u32::MAX).ok()?.tokens;
+    let last = toks.iter().rev().find(|t| !matches!(t.tok, crate::lexer::Tok::Newline | crate::lexer::Tok::Eof))?;
+    Some(last.span.end as usize)
 }
 
 /// Adds the help and the fix that the text around a diagnostic gives, when
@@ -225,11 +245,15 @@ pub fn complete(d: &mut Diagnostic) {
             })
             .or_else(|| {
                 // `if x then print(x)` on one line: `else ()`, a guess (the value may be used).
-                one_line_if(text, s).then(|| {
-                    let (_, end) = line_around(text, s);
-                    let at = text[..end].trim_end().len();
-                    Fix::replace(sp(at, at), " else ()", false)
-                })
+                if !one_line_if(text, s) {
+                    return None;
+                }
+                // Where `else` was expected (`print(if x then y)`: before
+                // the `)`), or the end of the line; before a comment.
+                let (_, end) = line_around(text, s);
+                let expected = d.secondary.first().map(|(at, _)| at.start as usize).filter(|&at| at > s && at <= end);
+                let at = after_last_token(text, expected.unwrap_or(end))?;
+                Some(Fix::replace(sp(at, at), " else ()", false))
             }),
         _ => None,
     };
@@ -249,7 +273,10 @@ fn f_string_help() -> String {
 
 /// `f"..."`: a Python format text, its `f` right before the text `w`.
 fn f_prefix(w: &str, before: &str) -> bool {
-    w.starts_with('"') && before.ends_with('f') && !before[..before.len() - 1].ends_with(is_name_char)
+    let Some(head) = before.strip_suffix('f') else { return false };
+    // `fn f"..."`: `f` is the name of a function, not the prefix of a text.
+    let after_fn = head.ends_with(char::is_whitespace) && head.trim_end().rsplit(|c| !is_name_char(c)).next() == Some("fn");
+    w.starts_with('"') && !head.ends_with(is_name_char) && !after_fn
 }
 
 /// Does the line of `at` start with one of these words?
@@ -284,7 +311,7 @@ fn record_equal(text: &str, at: usize, w: &str) -> Option<String> {
         return None;
     }
     let head = text[..at].trim_end();
-    let start = head.rfind(|c: char| !is_name_char(c)).map_or(0, |i| i + 1);
+    let start = name_start(head);
     let field = &head[start..];
     let lead = head[..start].trim_end();
     (!field.is_empty() && (lead.ends_with('{') || lead.ends_with(','))).then(|| field.to_string())
@@ -396,11 +423,13 @@ fn syntax_fix(text: &str, s: usize, e: usize, w: &str, sp: impl Fn(usize, usize)
         }
         _ if f_prefix(w, before) => Fix::replace(sp(s - 1, s), "", true),
         _ if missing_then(text, s, w) => {
-            let (_, end) = line_around(text, s);
-            let line_end = text[..end].trim_end().len();
-            match text[..line_end].strip_suffix(':') {
-                Some(head) => Fix::replace(sp(head.trim_end().len(), line_end), " then", true),
-                None => Fix::replace(sp(line_end, line_end), " then", true),
+            // After the last token of the condition, not after a comment that ends the line.
+            let b = after_last_token(text, s)?;
+            match text[..b].strip_suffix(':') {
+                // `if x > 1:` as in Python: the `:` becomes `then`.
+                _ if w == ":" => Fix::replace(sp(before.trim_end().len(), e), " then", true),
+                Some(head) => Fix::replace(sp(head.trim_end().len(), b), " then", true),
+                None => Fix::replace(sp(b, b), " then", true),
             }
         }
         // `(a, b) => a + b`: the error is inside the parameters, before the `=>`.
@@ -418,7 +447,7 @@ fn slice_fix(text: &str, at: usize, sp: impl Fn(usize, usize) -> Span) -> Option
     let open = text[..at].rfind('[')?;
     let close = at + text[at..].find(']')?;
     let head = &text[..open];
-    let start = head.rfind(|c: char| !(is_name_char(c) || c == '.')).map_or(0, |i| i + 1);
+    let start = run_start(head, |c| is_name_char(c) || c == '.');
     let list = &head[start..];
     let (a, b) = (text[open + 1..at].trim(), text[at + 1..close].trim());
     let simple = |x: &str| x.chars().all(|c| is_name_char(c) || c == '-' || c == ' ' || c == '+' || c == '*');
@@ -455,7 +484,7 @@ fn arrow_fix(text: &str, s: usize, e: usize, sp: impl Fn(usize, usize) -> Span) 
         }
         (open, inner[open + 1..].trim())
     } else {
-        let start = head.rfind(|c: char| !is_name_char(c)).map_or(0, |i| i + 1);
+        let start = name_start(head);
         let name = &head[start..];
         if name.is_empty() || head[..start].trim_end().ends_with(|c: char| is_name_char(c) || c == '.') {
             return None;

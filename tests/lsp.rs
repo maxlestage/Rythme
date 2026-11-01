@@ -529,6 +529,89 @@ fn written_types_in_hover_signature_help_hints_and_problems() {
 }
 
 #[test]
+fn type_names_are_completed_and_explained() {
+    let (mut lsp, _) = Lsp::start("en", INIT);
+    let u = "file:///nowhere/trees.ry";
+    let text = "## A tree of values.\ntype Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))\nfn total(t: Tree(Int)) -> Int = match t\n  Leaf -> 0\n  Node(l, v, r) -> total(l) + v + total(r)\nend\nprint(total(Node(Leaf, 1, Leaf)))\n";
+    assert!(lsp.open(u, text).is_empty());
+    // Hover on a type of the program, written in a type: its definition.
+    let h = hover_text(&lsp.at("textDocument/hover", u, 2, 13));
+    assert!(h.contains("type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))") && h.contains("A tree of values."), "{h}");
+    // On a type of Rythme.
+    let h = hover_text(&lsp.at("textDocument/hover", u, 2, 18));
+    assert!(h.contains("A whole number") && h.contains("rythme help types"), "{h}");
+    let h = hover_text(&lsp.at("textDocument/hover", u, 2, 27));
+    assert!(h.contains("A whole number"), "{h}");
+    // On a constructor: its fields with their types, and its type with its parameters.
+    let h = hover_text(&lsp.at("textDocument/hover", u, 6, 13));
+    assert!(h.contains("Node(left: Tree(a), value: a, right: Tree(a))") && h.contains("constructor of the type `Tree(a)`"), "{h}");
+    // Go to definition from a written type.
+    let d = lsp.at("textDocument/definition", u, 2, 13);
+    assert_eq!(range(&d), (1, 5, 1, 9), "{d}");
+    // Completion of types: after `:`, after `->`, inside `List(`, in the fields of a type.
+    let typed = |rest: &str| format!("{text}{rest}");
+    let types = |lsp: &mut Lsp, rest: &str| {
+        let t = typed(rest);
+        lsp.change(u, 2, &t);
+        let line = t.lines().count() as u32 - 1;
+        let col = t.lines().last().unwrap().chars().count() as u32;
+        labels(&lsp.at("textDocument/completion", u, line, col))
+    };
+    for rest in [
+        "fn f(x: ",
+        "fn f(x: Int, y: ",
+        "fn f(x) -> ",
+        "n: ",
+        "fn f(xs: List(",
+        "fn f(d: Dict(Text, ",
+        "fn f(g: fn(Int) -> ",
+        "ys = [1].map do |y: ",
+    ] {
+        let found = types(&mut lsp, rest);
+        assert!(found.contains(&"Tree".to_string()) && found.contains(&"Int".to_string()), "{rest}: {found:?}");
+        assert!(!found.contains(&"total".to_string()) && !found.contains(&"print".to_string()), "{rest}: {found:?}");
+    }
+    let found = types(&mut lsp, "type Pair(a, b) = Pair(first: ");
+    assert!(found.starts_with(&["a".to_string(), "b".to_string()]) && found.contains(&"Tree".to_string()), "{found:?}");
+    // Elsewhere, values: a record, a case of `match`, an argument.
+    for rest in ["r = {name: ", "x = match 1\n  1 -> ", "print(total("] {
+        let found = types(&mut lsp, rest);
+        assert!(found.contains(&"total".to_string()) && !found.contains(&"Int".to_string()), "{rest}: {found:?}");
+    }
+    assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
+fn type_names_of_used_files() {
+    let dir = temp_dir("types-used");
+    std::fs::write(
+        dir.join("trees.ry"),
+        "## A tree.\ntype Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))\ntype Shape = Dot\n",
+    )
+    .unwrap();
+    let main = dir.join("main.ry");
+    let text = "use trees\nfn size(t: trees.Tree(Int)) -> Int = 0\nx: trees.\n";
+    std::fs::write(&main, text).unwrap();
+    let init = format!(r#"{{"processId":null,"rootUri":{},"capabilities":{{}}}}"#, s(&uri(&dir)));
+    let (mut lsp, _) = Lsp::start("en", &init);
+    let mu = uri(&main);
+    lsp.open(&mu, text);
+    // Hover and definition on `trees.Tree`, written in a type.
+    let h = hover_text(&lsp.at("textDocument/hover", &mu, 1, 18));
+    assert!(h.contains("type Tree(a) = Leaf") && h.contains("A tree.") && h.contains("trees.ry"), "{h}");
+    let d = lsp.at("textDocument/definition", &mu, 1, 18);
+    assert_eq!(d.get("uri").as_str(), Some(uri(&dir.join("trees.ry")).as_str()));
+    // After `trees.` in a type: the types of that file only.
+    let found = labels(&lsp.at("textDocument/completion", &mu, 2, 9));
+    assert_eq!(found, ["Shape", "Tree"], "{found:?}");
+    // After `:`, the name of the file is offered, for `trees.Tree`.
+    lsp.change(&mu, 2, "use trees\nx: \n");
+    let found = labels(&lsp.at("textDocument/completion", &mu, 1, 3));
+    assert!(found.contains(&"trees".to_string()) && found.contains(&"Int".to_string()), "{found:?}");
+    assert_eq!(lsp.stop(), 0);
+}
+
+#[test]
 fn signature_help_for_calls_without_parentheses() {
     let (mut lsp, _) = Lsp::start("en", INIT);
     let u = "file:///nowhere/command.ry";
@@ -1328,6 +1411,8 @@ fn csv_and_random_seed_in_the_editor() {
         ("de", "Liest eine CSV-Tabelle"),
         ("pt", "Lê uma tabela CSV"),
         ("zh", "读取一个 CSV 表格"),
+        ("it", "Legge una tabella CSV"),
+        ("ja", "CSV の表"),
     ] {
         let (mut lsp, _) = Lsp::start(lang, INIT);
         lsp.open(u, "x = csv_parse(\"a\")\n");

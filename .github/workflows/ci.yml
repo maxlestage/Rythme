@@ -116,7 +116,7 @@ jobs:
       - name: The browser side (site/client), natively and as each of its bundles
         working-directory: site
         run: |
-          cargo clippy -p rythme-site-client --all-targets --features playground,sw,host-imports -- -D warnings
+          cargo clippy -p rythme-site-client --all-targets --features playground,sw,host-imports,precompress -- -D warnings
           for bundle in page playground sw; do
             cargo clippy -p rythme-site-client --target wasm32-unknown-unknown --features "$bundle" -- -D warnings
           done
@@ -137,10 +137,16 @@ jobs:
           for path in /pkg/site.js /pkg/playground.js /pkg/worker.js /sw.js /pkg/sw.js /pkg/sw_wasm.js; do
             curl -fsS -o /dev/null -w '%{content_type}\n' "localhost:5000$path" | grep javascript
           done
+          # Compressed: the bundles from the copies made by site/build.sh, the pages on the fly.
+          for path in /pkg/playground_bg.wasm /pkg/site.js /site.css /en/ /llms-full.txt; do
+            curl -fsS -o /dev/null -H 'Accept-Encoding: br' -w "%header{content-encoding} $path\n" "localhost:5000$path" | grep '^br '
+          done
 
   browser:
     name: Website in Chromium (layout, phones, themes, offline app)
-    runs-on: ubuntu-latest
+    # Playwright installs its browser only on the Ubuntu versions it knows:
+    # ubuntu-latest moved to 26.04, which playwright@1.56.1 refuses.
+    runs-on: ubuntu-24.04
     env:
       PLAYWRIGHT: playwright@1.56.1
     steps:
@@ -195,4 +201,5 @@ jobs:
             curl -fsS -o /dev/null -w '%{content_type}\n' "localhost:5000$path" | grep application/wasm
           done
           curl -fsS -o /dev/null -w '%{content_type}\n' localhost:5000/pkg/sw_wasm.js | grep javascript
+          curl -fsS -o /dev/null -H 'Accept-Encoding: br' -w '%header{content-encoding}\n' localhost:5000/pkg/playground_bg.wasm | grep -x br
           docker logs site

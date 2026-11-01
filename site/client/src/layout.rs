@@ -21,6 +21,12 @@ use crate::js;
 const THEME_KEY: &str = "rythme-theme";
 /// The cookie of the language switch, read by the server at `/`.
 const LANG_COOKIE: &str = "rythme-lang";
+/// The event of the document by which the playground says that its first program has
+/// run (it also sets `data-ready` on `.playground`): the service worker may now take the
+/// network to save the site.
+pub const PLAYGROUND_READY: &str = "rythme-playground-ready";
+/// How long the service worker waits for the playground at most, in milliseconds.
+const PLAYGROUND_WAIT: i32 = 30_000;
 
 pub fn start() {
     if dom::query::<Element>("[data-pick-language]").is_some() {
@@ -66,7 +72,7 @@ impl Menu {
 }
 
 /// The bottom of the bar, where the menu panel and the language list start: the bar
-/// wraps on two lines when the text is enlarged, and scrolls away on a short screen.
+/// wraps on two lines when the text is enlarged, and scrolls away while the keyboard is open.
 fn measure_bar() {
     if let Some(bar) = dom::query::<Element>(".bar") {
         // Whole pixels, as integers: no formatting of floats in the bundle.
@@ -260,15 +266,43 @@ fn service_worker() {
             });
         });
     };
-    // The bundle may start after the page has loaded.
-    if dom::document().ready_state() == "complete" {
-        register();
-    } else {
-        let mut register = Some(register);
-        on::<Event>(&dom::window(), "load", move |_| {
-            if let Some(register) = register.take() {
+    // Once the page has loaded (the bundle may start after that). On the playground, the
+    // network goes to the interpreter first: the worker, which saves the whole site at
+    // install (the interpreter too, 3 MB), comes once the first program has run (the
+    // playground says so, `PLAYGROUND_READY`), or after `PLAYGROUND_WAIT` at the latest.
+    let register = Rc::new(RefCell::new(Some(register)));
+    let loaded = Rc::new(Cell::new(dom::document().ready_state() == "complete"));
+    let ready = Rc::new(Cell::new(dom::query::<Element>(".playground").is_none_or(|p| p.has_attribute("data-ready"))));
+    let attempt = {
+        let (loaded, ready) = (loaded.clone(), ready.clone());
+        move || {
+            if loaded.get()
+                && ready.get()
+                && let Some(register) = register.borrow_mut().take()
+            {
                 register();
             }
+        }
+    };
+    if !ready.get() {
+        let done = {
+            let (ready, attempt) = (ready.clone(), attempt.clone());
+            move || {
+                ready.set(true);
+                attempt();
+            }
+        };
+        let first = done.clone();
+        on::<Event>(&dom::document(), PLAYGROUND_READY, move |_| first());
+        dom::later(PLAYGROUND_WAIT, done);
+    }
+    if loaded.get() {
+        attempt();
+    } else {
+        let attempt = attempt.clone();
+        on::<Event>(&dom::window(), "load", move |_| {
+            loaded.set(true);
+            attempt();
         });
     }
     on::<Event>(&container, "controllerchange", {

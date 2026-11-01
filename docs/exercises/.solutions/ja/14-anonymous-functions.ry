@@ -1,0 +1,31 @@
+# 練習問題 14 · 無名関数  ★★☆
+# 参考解答。読む前に、まず自分で練習問題に挑戦してください！
+
+fn with_tax(prices, percent) = map(prices, fn(p) = p + p * percent / 100)
+
+fn long_words(words, n) = filter(words, fn(w) = len(w) > n)
+
+fn lengths(words) = map(words, len)
+
+fn all_positive(list) = all(list, fn(x) = x > 0)
+
+fn count_above(list, limit) = count(list, fn(x) = x > limit)
+
+# --- テスト（変更しないでください）---
+
+test "税込み"
+  assert_eq(with_tax([100, 50], 20), [120, 60])
+  assert_eq(with_tax([10], 0), [10])
+end
+
+test "長い単語" = assert_eq(long_words(["a", "tree", "is", "green"], 3), ["tree", "green"])
+
+test "長さ" = assert_eq(lengths(["a", "tree", "is"]), [1, 4, 2])
+
+test "すべて正"
+  assert_eq(all_positive([1, 5, 3]), true)
+  assert_eq(all_positive([1, -5, 3]), false)
+  assert_eq(all_positive([]), true)
+end
+
+test "より大きい数の個数" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
