@@ -9,13 +9,8 @@
 //! then removes them: with a plain vector, every call wrote all of these
 //! registers again (and freed them one by one).
 
+pub(crate) use crate::value::is_plain;
 use crate::value::Value;
-
-/// Values that hold no memory of their own: they may stay above the length.
-#[inline(always)]
-pub(crate) fn is_plain(v: &Value) -> bool {
-    matches!(v, Value::Unit | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::Symbol(_) | Value::Builtin(_))
-}
 
 /// A stack of values (see the module). Every value of `vals` above `len`
 /// holds no memory of its own (`is_plain`).
