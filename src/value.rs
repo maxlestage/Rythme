@@ -1,8 +1,10 @@
 //! Runtime values. All of them are immutable: "changing" a value builds a new one.
 
+use std::cell::Cell;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fmt::Write;
+use std::ptr::NonNull;
 use std::rc::Rc;
 
 use crate::ast::FnDef;
@@ -42,34 +44,78 @@ pub enum Value {
 /// An immutable list. Taking the rest of a list (`[first, ..rest]`) shares the
 /// elements instead of copying them, and adding at the end of a list often
 /// writes in the room its memory has left (see `buffer`).
-#[derive(Clone)]
+///
+/// A list is 15 bytes, aligned on 1: in a `Value`, it takes the 15 bytes
+/// after the tag, and the value is 16 bytes instead of 24. Where it starts
+/// in its memory takes 24 bits (a list that would start further is copied,
+/// which happens at most once every 16 million elements, see `slice`), its
+/// length 32 bits, and its memory is counted by hand, like the memory of
+/// texts.
+#[repr(C, packed)]
 pub struct List {
-    data: Rc<Buf<Value>>,
-    // 32-bit positions keep every value small (a list of 4 billion
-    // elements would not fit in memory anyway).
-    start: u32,
-    end: u32,
+    start: [u8; 3],
+    len: u32,
+    shared: NonNull<Shared>,
 }
+
+/// The memory of lists, and how many lists share it.
+struct Shared {
+    refs: Cell<usize>,
+    buf: Buf<Value>,
+}
+
+/// Lists start before this position in their memory (24 bits; less in the
+/// tests of the crate, which then copy lists more often).
+const STARTS: usize = if cfg!(test) { 1 << 8 } else { 1 << 24 };
 
 impl List {
     pub fn new(v: Vec<Value>) -> List {
-        let end = u32::try_from(v.len()).expect("a list of more than 4 billion elements");
-        List { data: Rc::new(Buf::from_vec(v)), start: 0, end }
+        let len = list_len(v.len());
+        List::with(Buf::from_vec(v), 0, len)
+    }
+
+    /// The list of the elements `start..start + len` of `buf`, which no list shares.
+    fn with(buf: Buf<Value>, start: usize, len: u32) -> List {
+        debug_assert!(start < STARTS);
+        let shared = Box::new(Shared { refs: Cell::new(1), buf });
+        List { start: start_bytes(start), len, shared: NonNull::from(Box::leak(shared)) }
+    }
+
+    #[inline(always)]
+    fn shared(&self) -> &Shared {
+        let shared = self.shared;
+        // SAFETY: the memory lives as long as one list shares it.
+        unsafe { &*shared.as_ptr() }
+    }
+
+    #[inline(always)]
+    fn start(&self) -> usize {
+        let s = self.start;
+        u32::from_le_bytes([s[0], s[1], s[2], 0]) as usize
+    }
+
+    #[inline(always)]
+    fn end(&self) -> usize {
+        self.start() + self.len()
     }
 
     #[inline(always)]
     pub fn as_slice(&self) -> &[Value] {
-        self.data.slice(self.start as usize, self.end as usize)
+        self.shared().buf.slice(self.start(), self.end())
     }
 
     /// This list followed by the elements of `tail`: in the room after it
     /// when it can, so that adding at the end again and again is fast.
     pub fn concat(&self, tail: &[Value]) -> List {
-        let end = self.end + u32::try_from(tail.len()).expect("a list of more than 4 billion elements");
+        let len = list_len(self.len() + tail.len());
         let in_place = self.may_grow_with(tail);
-        match buffer::append(&self.data, self.start as usize, self.end as usize, tail, in_place) {
-            None => List { data: self.data.clone(), start: self.start, end },
-            Some(data) => List { data, start: 0, end: end - self.start },
+        match buffer::append(&self.shared().buf, self.start(), self.end(), tail, in_place) {
+            None => {
+                let mut l = self.clone();
+                l.len = len;
+                l
+            }
+            Some(buf) => List::with(buf, 0, len),
         }
     }
 
@@ -92,17 +138,17 @@ impl List {
     /// Whether `tail` may be written in the memory of this list: not when
     /// it holds this memory, which would then hold itself and never be freed.
     fn may_grow_with(&self, tail: &[Value]) -> bool {
-        self.data.used() == self.end as usize
-            && self.data.room() >= tail.len()
-            && (Rc::strong_count(&self.data) == 1 || !holds(tail, &self.data))
+        let shared = self.shared();
+        shared.buf.used() == self.end() && shared.buf.room() >= tail.len() && (shared.refs.get() == 1 || !holds(tail, self.shared))
     }
 
+    #[inline(always)]
     pub fn len(&self) -> usize {
-        (self.end - self.start) as usize
+        self.len as usize
     }
 
     pub fn is_empty(&self) -> bool {
-        self.start == self.end
+        self.len == 0
     }
 
     pub fn iter(&self) -> std::slice::Iter<'_, Value> {
@@ -113,17 +159,56 @@ impl List {
     pub fn slice(&self, from: usize, to: usize) -> List {
         let to = to.min(self.len());
         let from = from.min(to);
-        List { data: self.data.clone(), start: self.start + from as u32, end: self.start + to as u32 }
+        let start = self.start() + from;
+        if start >= STARTS {
+            // Beyond what 24 bits hold: a copy, which starts at 0.
+            return List::new(self.as_slice()[from..to].to_vec());
+        }
+        let mut l = self.clone();
+        l.start = start_bytes(start);
+        l.len = (to - from) as u32;
+        l
     }
 
     pub fn get(&self, i: usize) -> Option<&Value> {
         self.as_slice().get(i)
     }
+
+    /// The memory of the list, when no other list shares it.
+    fn only_buf(&mut self) -> Option<&mut Buf<Value>> {
+        let shared = self.shared;
+        // SAFETY: the memory lives as long as this list, the only one that
+        // shares it: nothing else reads or writes it meanwhile.
+        (self.shared().refs.get() == 1).then(|| unsafe { &mut (*shared.as_ptr()).buf })
+    }
+}
+
+/// The length of a list, which fits in 32 bits (a list of 4 billion
+/// elements would not fit in memory anyway).
+#[inline(always)]
+fn list_len(len: usize) -> u32 {
+    u32::try_from(len).expect("a list of more than 4 billion elements")
+}
+
+/// Where a list starts, in 24 bits.
+#[inline(always)]
+fn start_bytes(start: usize) -> [u8; 3] {
+    let s = (start as u32).to_le_bytes();
+    [s[0], s[1], s[2]]
+}
+
+impl Clone for List {
+    #[inline]
+    fn clone(&self) -> List {
+        let refs = &self.shared().refs;
+        refs.set(refs.get().checked_add(1).unwrap_or_else(|| std::process::abort()));
+        List { start: self.start, len: self.len, shared: self.shared }
+    }
 }
 
 /// Whether one of `values` may hold `data`, the memory of a list. Values
 /// with many parts are not looked at in full: they are assumed to hold it.
-fn holds(values: &[Value], data: &Rc<Buf<Value>>) -> bool {
+fn holds(values: &[Value], data: NonNull<Shared>) -> bool {
     /// The values made of other values.
     fn parts(v: &Value) -> Option<&[Value]> {
         match v {
@@ -159,7 +244,7 @@ fn holds(values: &[Value], data: &Rc<Buf<Value>>) -> bool {
         }
         budget -= vs.len();
         for v in vs {
-            if map(v) || matches!(v, Value::List(l) if Rc::ptr_eq(&l.data, data)) {
+            if map(v) || matches!(v, Value::List(l) if { l.shared } == data) {
                 return true;
             }
             todo.extend(parts(v));
@@ -877,7 +962,7 @@ fn drop_iteratively(mut todo: Vec<Value>) {
                 }
             }
             Value::List(mut l) => {
-                if let Some(buf) = Rc::get_mut(&mut l.data) {
+                if let Some(buf) = l.only_buf() {
                     if buf.slice(0, buf.used()).iter().any(is_container) {
                         todo.append(&mut buf.take());
                     }
@@ -906,10 +991,17 @@ impl Drop for Variant {
 
 impl Drop for List {
     fn drop(&mut self) {
-        if let Some(buf) = Rc::get_mut(&mut self.data) {
-            if buf.slice(0, buf.used()).iter().any(is_container) {
-                free_parts(&mut buf.take());
-            }
+        let refs = &self.shared().refs;
+        if refs.get() > 1 {
+            refs.set(refs.get() - 1);
+            return;
+        }
+        let shared = self.shared;
+        // SAFETY: the last list that shares the memory, made by `Box::leak`.
+        let mut shared = unsafe { Box::from_raw(shared.as_ptr()) };
+        let buf = &mut shared.buf;
+        if buf.slice(0, buf.used()).iter().any(is_container) {
+            free_parts(&mut buf.take());
         }
     }
 }
@@ -966,6 +1058,24 @@ pub fn fmt_float(f: f64) -> String {
 mod tests {
     use super::*;
 
+    #[test]
+    fn values_are_16_bytes() {
+        assert_eq!(std::mem::size_of::<Value>(), 16);
+        assert_eq!(std::mem::size_of::<Option<Value>>(), 16);
+    }
+
+    /// Lists that start beyond 24 bits are copied, the same.
+    #[test]
+    fn lists_start_anywhere() {
+        let n = STARTS + 3;
+        let xs = List::new((0..n as i64).map(Value::Int).collect());
+        let tail = xs.slice(STARTS - 1, n);
+        let rest = tail.slice(2, 4);
+        assert_eq!(Value::List(rest.clone()).repr(), format!("[{}, {}]", STARTS + 1, STARTS + 2));
+        assert_eq!(rest.start(), 0, "a copy");
+        assert_eq!(tail.start(), STARTS - 1);
+    }
+
     /// A list whose memory has room after it.
     fn roomy() -> List {
         List::new(vec![Value::Int(1)]).push(Value::Int(2)).push(Value::Int(3))
@@ -975,10 +1085,10 @@ mod tests {
     fn lists_grow_in_place_but_never_hold_their_own_memory() {
         let xs = roomy();
         let ys = xs.push(Value::Int(4));
-        assert!(Rc::ptr_eq(&xs.data, &ys.data), "in the room after `xs`");
+        assert_eq!({ xs.shared }, { ys.shared }, "in the room after `xs`");
         assert_eq!((xs.len(), ys.len()), (3, 4));
         // `xs` no longer ends where its memory is used: copied.
-        assert!(!Rc::ptr_eq(&xs.data, &xs.push(Value::Int(5)).data));
+        assert_ne!({ xs.shared }, { xs.push(Value::Int(5)).shared });
         let ctor = Rc::new(CtorInfo {
             type_name: Sym::new("T"),
             name: Sym::new("A"),
@@ -994,10 +1104,10 @@ mod tests {
         ];
         for v in with_itself {
             let grown = ys.push(v);
-            assert!(!Rc::ptr_eq(&ys.data, &grown.data), "a list that would hold itself is copied");
+            assert_ne!({ ys.shared }, { grown.shared }, "a list that would hold itself is copied");
         }
         let zs = ys.push(Value::list(vec![Value::Int(7)]));
-        assert!(Rc::ptr_eq(&ys.data, &zs.data));
+        assert_eq!({ ys.shared }, { zs.shared });
         assert_eq!(Value::List(zs).repr(), "[1, 2, 3, 4, [7]]");
     }
 }
