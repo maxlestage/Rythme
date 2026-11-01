@@ -237,7 +237,9 @@ fn arguments(rest: &[TokenTree]) -> Vec<Arg> {
         .into_iter()
         .filter(|p| !p.is_empty())
         .map(|part| match (part.first(), part.get(1)) {
-            (Some(TokenTree::Ident(name)), Some(TokenTree::Punct(eq))) if eq.as_char() == '=' && eq.spacing() == Spacing::Alone && part.len() > 2 => {
+            (Some(TokenTree::Ident(name)), Some(TokenTree::Punct(eq)))
+                if eq.as_char() == '=' && eq.spacing() == Spacing::Alone && part.len() > 2 =>
+            {
                 Arg { name: Some(name.to_string()), value: part[2..].to_vec() }
             }
             _ => Arg { name: None, value: part },
