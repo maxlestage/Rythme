@@ -416,6 +416,23 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   more in each call), still 600 in the playground, which needs less of the
   browser's stack than 1.0, also when functions given to `map` or `fold`
   call them again.
+- **The virtual machine is faster still**, printing the same: a value is
+  16 bytes instead of 24 (a text or a list takes the 15 bytes after its
+  tag); a value of a type keeps up to three fields in place and a record up
+  to four, so making `Node(l, v, r)` or `{..r, a: 1}` takes one block of
+  memory instead of two; the lists of Floats made by `matmul`,
+  `transpose`, `vector_scale`, `softmax`... keep their numbers as they are
+  (8 bytes each), read as they are by these functions; the value stack
+  keeps its room, so that a function given to `map` or `fold` no longer
+  writes its registers again at each call; a constructor called last, and
+  a function of a group calling another one last, skip the path of calls;
+  `None` and `Leaf` are kept by the instructions that read them. `bench/`
+  (instructions, against 1.0): `local` −32 %, `bst` −20 %, `ml` −15 %,
+  `records` −14 %, `match` and `sort` −13 %, `pipeline` −10 %, `closures`
+  −9 %, `count` −5 %, `fib` −4 %, `append` −3 %; in time, `bst` 0.91 s to
+  0.57 s, `local` 0.28 s to 0.17 s. The limits of nested calls are the same
+  (917 504; 600 in the playground, which needs no more of the browser's
+  stack than 1.0).
 - **`find_all`, `split_by` and `replace_all` are no longer quadratic** on
   regexes that read far ahead: their searches skip the ways that an earlier
   search showed to lead nowhere, and share their memory. `a*b|a` on 40 000
