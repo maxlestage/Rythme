@@ -34,6 +34,9 @@ const MAX_WORK: f64 = 1e10;
 /// Argument `i` of `f` as a vector: a list of numbers.
 pub(super) fn vector(a: &[Value], i: usize, f: &str, span: Span) -> Fallible<Vec<f64>> {
     let l = list(a, i, f, span)?;
+    if let Some(xs) = l.as_floats() {
+        return Ok(xs.to_vec());
+    }
     numbers_of(l.as_slice(), f, i, span)
 }
 
@@ -127,6 +130,10 @@ fn matrix(a: &[Value], i: usize, f: &str, span: Span) -> Fallible<Matrix> {
             .help(t!("every row of a matrix has the same length", "toutes les lignes d'une matrice ont la même longueur"))
             .boxed());
         }
+        if let Some(xs) = row.as_floats() {
+            cells.extend_from_slice(xs);
+            continue;
+        }
         for (k, v) in row.iter().enumerate() {
             let x = as_number(v).ok_or_else(|| {
                 let got = v.describe();
@@ -152,7 +159,7 @@ fn total(xs: impl Iterator<Item = f64>) -> f64 {
 }
 
 fn floats_value(xs: &[f64]) -> Value {
-    Value::list(xs.iter().map(|&x| Value::Float(x)).collect())
+    Value::List(List::floats(xs.to_vec()))
 }
 
 /// The shape of a value, in words: "a number", "a vector of 3 numbers",
@@ -220,6 +227,9 @@ fn combine_in(f: &str, x: &Value, y: &Value, op: fn(f64, f64) -> f64, depth: usi
             if a.len() != b.len() {
                 return Err(shape_mismatch(f, &top[0], &top[1], span));
             }
+            if let (Some(p), Some(q)) = (a.as_floats(), b.as_floats()) {
+                return Ok(Value::List(List::floats(p.iter().zip(q).map(|(&p, &q)| op(p, q)).collect())));
+            }
             let mut out = Vec::with_capacity(a.len());
             for (p, q) in a.iter().zip(b.iter()) {
                 out.push(combine_in(f, p, q, op, depth + 1, top, span)?);
@@ -256,6 +266,9 @@ fn each_number(f: &str, x: &Value, op: &dyn Fn(f64) -> f64, depth: usize, span: 
     }
     match x {
         Value::List(l) => {
+            if let Some(xs) = l.as_floats() {
+                return Ok(Value::List(List::floats(xs.iter().map(|&x| op(x)).collect())));
+            }
             let mut out = Vec::with_capacity(l.len());
             for v in l.iter() {
                 out.push(each_number(f, v, op, depth + 1, span)?);
