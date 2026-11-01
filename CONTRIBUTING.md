@@ -142,6 +142,14 @@ Language {
   compiling and adds a `format!` for each translation: the compiler checks
   its `{names}` like those of the two texts of the call. A text missing from
   a catalog is shown in English.
+- **The website's playground** builds Rythme with the feature
+  `runtime-catalogs`: only English and French are compiled into its
+  WebAssembly, and the page fetches the catalog of its language, a file
+  written by `lang::catalog` (`site/build.sh`), which it gives to
+  `lang::register`. `t!` then looks the translation up by a key of the English
+  text and fills its placeholders with `format!`. `tests/catalogs.rs` builds
+  Rythme that way and checks that its messages and help are the same as
+  those compiled in, in every language.
 - **The check.** `tests/i18n.rs` reads every `t!` and `pick` of the sources
   (and the fixed texts given by `help::fixed_texts`), prints how many texts
   each language translates, and fails when a complete language (`COMPLETE`
@@ -151,7 +159,7 @@ Language {
 - **Changing an English text** therefore means updating its entry in each
   catalog: the test names it.
 - **Adding a language** (Italian, Japanese...): add a line to
-  `LANGUAGES` in `src/lang.rs` (`include!("i18n/it.rs")`), create
+  `LANGUAGES` in `src/lang.rs` (`catalog!("it")`), create
   `src/i18n/it.rs` with `code`, `name` and an empty list, then run
   `RYTHME_I18N_MISSING=missing.rs cargo test --test i18n`: `missing.rs` lists
   every text to translate, in the order of the sources, with the French text

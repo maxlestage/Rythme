@@ -405,8 +405,9 @@ messages in eight languages. What it contains is in
 - **Speed.** Programs are compiled to the instructions of a virtual machine
   on registers before running: local names are numbered slots, and most
   calls allocate nothing. The programs of [`bench/`](bench) (`bench/run.sh`)
-  run 1.1 to 2 times faster than with Rythme 1.0, whose interpreter
-  walked the syntax tree, and print exactly the same; that is in the range
+  run up to about twice as fast as with Rythme 1.0, whose interpreter
+  walked the syntax tree (as fast when they spend their time in built-in
+  functions, like `regex`), and print exactly the same; that is in the range
   of Python, far from compiled Rust.
   Building a text with `+` or `"{acc}..."` and adding to a list (`push`,
   `xs + [x]`, `[..xs, x]`) take constant time per addition: 100 000 of them

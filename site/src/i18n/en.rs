@@ -118,6 +118,7 @@ pub const EN: Texts = Texts {
     pg_save: "Download",
     pg_save_title: "Download the program as a .ry file",
     pg_offline: "Once visited, the playground works without a network too, and the code you are writing stays in this browser. Install the site as an app to keep it at hand.",
+    pg_catalog_failed: "The interpreter's messages could not be loaded in this language: they are in English for now.",
     pg_share: "Share",
     pg_share_title: "Copy a link that opens this program: the code travels in the link itself, nothing is sent anywhere",
     pg_share_link: "Link to this program",

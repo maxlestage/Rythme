@@ -149,7 +149,13 @@ impl Gen {
     }
 
     fn global(&mut self, s: Sym, scope: &crate::compile::Scope) -> u32 {
-        let site = super::GlobalSite { name: s, scope: scope.clone(), seen: Default::default(), value: Default::default() };
+        let site = super::GlobalSite {
+            name: s,
+            scope: scope.clone(),
+            seen: Default::default(),
+            value: Default::default(),
+            func: std::cell::Cell::new(std::ptr::null()),
+        };
         Gen::index(&mut self.c.globals, site)
     }
 
@@ -234,7 +240,7 @@ impl Gen {
                 let src = self.operand(obj);
                 let func = self.callee(func);
                 let arg = self.temp();
-                let site = Gen::index(&mut self.c.fields, FieldSite { key: name.clone(), func, arg });
+                let site = Gen::index(&mut self.c.fields, FieldSite { key: name.clone(), func, arg, seen: Default::default() });
                 self.emit2(Op::Field { dst, src, site }, span, *name_span);
             }
             Kind::Index(obj, idx) => {
@@ -645,7 +651,7 @@ impl Gen {
                         keys.push(k.clone());
                     }
                 }
-                let site = Gen::index(&mut self.c.updates, super::UpdateSite { keys: keys.into(), first });
+                let site = Gen::index(&mut self.c.updates, super::UpdateSite { keys: keys.into(), first, seen: Default::default() });
                 self.emit(Op::RecordSets { dst, site }, span);
                 return;
             }

@@ -83,6 +83,7 @@ pub(crate) static STACK_BUDGET: std::sync::atomic::AtomicUsize = std::sync::atom
 
 pub fn set_stack_budget(bytes: usize) {
     STACK_BUDGET.store(bytes, std::sync::atomic::Ordering::Relaxed);
+    crate::vm::run::set_limits(bytes, MAX_DEPTH.load(std::sync::atomic::Ordering::Relaxed));
 }
 
 /// Maximum number of nested calls, for hosts whose stack cannot be measured
@@ -91,6 +92,7 @@ pub(crate) static MAX_DEPTH: std::sync::atomic::AtomicUsize = std::sync::atomic:
 
 pub fn set_max_depth(depth: usize) {
     MAX_DEPTH.store(depth, std::sync::atomic::Ordering::Relaxed);
+    crate::vm::run::set_limits(STACK_BUDGET.load(std::sync::atomic::Ordering::Relaxed), depth);
 }
 
 /// Approximate address of the top of the stack.
@@ -628,6 +630,9 @@ impl Interp {
     /// Calls a function value with one argument (like `call`, without a vector).
     pub fn call1(&mut self, f: &Value, a: Value, span: Span) -> Fallible<Value> {
         self.stack.push(a);
+        if let Some(r) = self.call_given(f, 1, span) {
+            return r;
+        }
         self.call_value(f.clone(), 1, span)
     }
 
@@ -635,6 +640,9 @@ impl Interp {
     pub fn call2(&mut self, f: &Value, a: Value, b: Value, span: Span) -> Fallible<Value> {
         self.stack.push(a);
         self.stack.push(b);
+        if let Some(r) = self.call_given(f, 2, span) {
+            return r;
+        }
         self.call_value(f.clone(), 2, span)
     }
 
@@ -1165,7 +1173,7 @@ fn op_error(op: BinOp, l: &Value, r: &Value, span: Span) -> Box<Diagnostic> {
 #[inline(always)]
 pub(crate) fn discard(v: Value) {
     match v {
-        Value::Unit | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::Builtin(_) => std::mem::forget(v),
+        Value::Unit | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::Symbol(_) | Value::Builtin(_) => std::mem::forget(v),
         v => drop(v),
     }
 }
@@ -1174,7 +1182,7 @@ pub(crate) fn discard(v: Value) {
 /// most hold no memory, and are only written over).
 #[inline(always)]
 pub(crate) fn set(slot: &mut Value, v: Value) {
-    if matches!(slot, Value::Unit | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::Builtin(_)) {
+    if matches!(slot, Value::Unit | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::Symbol(_) | Value::Builtin(_)) {
         std::mem::forget(std::mem::replace(slot, v));
     } else {
         *slot = v;

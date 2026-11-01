@@ -373,9 +373,10 @@ et des messages en huit langues. Son contenu est décrit dans
 - **Vitesse.** Les programmes sont compilés en instructions d'une machine
   virtuelle à registres avant l'exécution : les noms locaux sont des cases
   numérotées, et la plupart des appels n'allouent rien. Les programmes de
-  [`bench/`](bench) (`bench/run.sh`) tournent 1,1 à 2 fois plus vite
-  qu'avec Rythme 1.0, dont l'interpréteur parcourait l'arbre du programme,
-  et affichent exactement la même chose ;
+  [`bench/`](bench) (`bench/run.sh`) tournent jusqu'à environ deux fois
+  plus vite qu'avec Rythme 1.0, dont l'interpréteur parcourait l'arbre du
+  programme (aussi vite quand ils passent leur temps dans des fonctions
+  intégrées, comme `regex`), et affichent exactement la même chose ;
   c'est de l'ordre de Python, loin de Rust compilé. Construire un texte avec
   `+` ou `"{acc}..."` et ajouter à une liste (`push`, `xs + [x]`,
   `[..xs, x]`) prennent un temps constant par ajout : 100 000 ajouts
