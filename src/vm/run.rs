@@ -1280,13 +1280,17 @@ fn call_limits() -> (usize, usize) {
 }
 
 static CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new((4 << 20) / CALL_COST);
-static VALUES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new((4 << 20) / std::mem::size_of::<Value>());
+static VALUES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new((4 << 20) / VALUE_COST);
+
+/// What a value counts for in the budget of stack: its size in Rythme 1.0,
+/// so that the limits of nested calls stay the same with smaller values.
+const VALUE_COST: usize = 24;
 
 /// Sets the limits of `call_limits` for a budget of stack and a maximum depth
 /// (`interp::set_stack_budget`, `interp::set_max_depth`).
 pub(crate) fn set_limits(budget: usize, depth: usize) {
     CALLS.store(depth.min(budget / CALL_COST), std::sync::atomic::Ordering::Relaxed);
-    VALUES.store(budget / std::mem::size_of::<Value>(), std::sync::atomic::Ordering::Relaxed);
+    VALUES.store(budget / VALUE_COST, std::sync::atomic::Ordering::Relaxed);
 }
 
 /// The function number `i` of the group of the closure `clo`, as a closure
