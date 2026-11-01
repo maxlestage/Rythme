@@ -135,6 +135,9 @@ impl Interp {
     /// arguments, and removes them: for built-in functions that call
     /// functions of the program, and for the tools.
     pub(crate) fn call_value(&mut self, f: Value, argc: usize, span: Span) -> Fallible<Value> {
+        if let Some(r) = self.call_given(&f, argc, span) {
+            return r;
+        }
         let args = self.stack.len() - argc;
         // `call_member` runs the calls in tail position of `f` in its own
         // frame: a function given to `map` that calls `map` again last
@@ -143,6 +146,49 @@ impl Interp {
         // What is left above holds no memory: no need to free it value by value.
         self.pop_to(args);
         r
+    }
+
+    /// `call_value` for a function of the program given to a built-in
+    /// function (`map`...), when no debugger watches and no limit is reached:
+    /// what `call_member` and `call_loop` do then, in place, its frame freed
+    /// with the arguments. `None`: not this case, nothing was done.
+    #[inline(always)]
+    pub(crate) fn call_given(&mut self, f: &Value, argc: usize, span: Span) -> Option<Fallible<Value>> {
+        let Value::Func(clo) = f else { return None };
+        let code = &clo.code;
+        let (calls, values) = call_limits();
+        if argc != code.arity || self.steps_left == 0 || self.depth >= calls || self.stack.len() > values || self.stack_too_deep() {
+            return None;
+        }
+        let args = self.stack.len() - argc;
+        self.depth += 1;
+        self.steps_left -= 1;
+        self.ensure(args + code.chunk.regs);
+        let mut test = None;
+        let r = match self.exec(code, Some(clo), None, args, Kind::Call, span) {
+            Exec::Return(v) => Ok(v),
+            Exec::Error(mut d, called) => {
+                if let Some(span) = called {
+                    if self.steps_left == 0 {
+                        d = self.error_hook(d);
+                    }
+                    add_frame(&mut d, &clo.def, span);
+                }
+                Err(d)
+            }
+            Exec::Tail(next, next_member, next_args, next_argc, next_span, next_test) => {
+                test = next_test.then_some(next_span);
+                self.tail_chain(next, next_member, args, code.chunk.regs, next_args, next_argc, next_span, &mut test)
+            }
+        };
+        // The registers and the arguments: nothing is left above `args`.
+        self.pop_to(args);
+        let r = if self.steps_left == 0 { self.return_hook(r) } else { r };
+        self.depth -= 1;
+        Some(match test {
+            Some(at) => r.and_then(|v| truth(&v, at).map(Value::Bool)),
+            None => r,
+        })
     }
 
     /// Makes room on the stack for registers up to `len`.
@@ -598,6 +644,15 @@ impl Interp {
                     }
                 },
                 Op::Field { dst, src, site } => {
+                    // A record with the fields of the last one read here.
+                    if let Value::Record(rec) = r!(src) {
+                        if let Some(at) = chunk!().fields[site as usize].seen.get(rec) {
+                            let v = rec.at(at[0]).clone();
+                            drop(at);
+                            w!(dst, v);
+                            continue;
+                        }
+                    }
                     let found = self.field_or_fn(chunk!(), site, base, src, clo, pc!());
                     refresh!();
                     match fail!(found) {
@@ -964,6 +1019,12 @@ impl Interp {
     ) -> Fallible<Result<Value, (Value, Reg)>> {
         let s = &chunk.fields[site as usize];
         let v = &self.stack[base + src as usize];
+        if let Value::Record(r) = v {
+            if let Some(i) = r.position(&s.key) {
+                s.seen.keep(r, vec![i]);
+                return Ok(Ok(r.at(i).clone()));
+            }
+        }
         if let Some(x) = field_of(v, &s.key) {
             return Ok(Ok(x));
         }
@@ -1002,9 +1063,19 @@ impl Interp {
             _ => unreachable!("a record being built"),
         };
         let fields = Rc::make_mut(&mut r);
-        for (i, key) in site.keys.iter().enumerate() {
-            let v = take(&mut self.stack[first + i]);
-            fields.set(key.clone(), v);
+        if let Some(at) = site.seen.get(fields) {
+            // The same fields as last time: their positions are known.
+            for (i, &p) in at.iter().enumerate() {
+                fields.set_at(p, take(&mut self.stack[first + i]));
+            }
+        } else {
+            for (i, key) in site.keys.iter().enumerate() {
+                let v = take(&mut self.stack[first + i]);
+                fields.set(key.clone(), v);
+            }
+            if let Some(at) = site.keys.iter().map(|k| fields.position(k)).collect() {
+                site.seen.keep(fields, at);
+            }
         }
         self.stack[base + dst as usize] = Value::Record(r);
     }

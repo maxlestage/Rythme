@@ -630,6 +630,9 @@ impl Interp {
     /// Calls a function value with one argument (like `call`, without a vector).
     pub fn call1(&mut self, f: &Value, a: Value, span: Span) -> Fallible<Value> {
         self.stack.push(a);
+        if let Some(r) = self.call_given(f, 1, span) {
+            return r;
+        }
         self.call_value(f.clone(), 1, span)
     }
 
@@ -637,6 +640,9 @@ impl Interp {
     pub fn call2(&mut self, f: &Value, a: Value, b: Value, span: Span) -> Fallible<Value> {
         self.stack.push(a);
         self.stack.push(b);
+        if let Some(r) = self.call_given(f, 2, span) {
+            return r;
+        }
         self.call_value(f.clone(), 2, span)
     }
 
