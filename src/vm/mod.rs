@@ -42,6 +42,9 @@ use crate::value::{Shape, Value};
 
 pub mod gen;
 pub mod run;
+mod stack;
+
+pub use stack::Stack;
 
 /// A register: a slot of the frame of the running function.
 pub type Reg = u32;
