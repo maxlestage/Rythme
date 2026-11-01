@@ -849,7 +849,11 @@ pub(crate) mod tests {
         let mut it = Interp::new();
         match it.exec_items(&items, Mode::Run) {
             Ok(v) => v.map(|v| v.repr()).unwrap_or_default(),
-            Err(d) => format!("error[{}] {}", d.code, d.trace.len()),
+            Err(d) => {
+                // The functions of a short trace.
+                let names: Vec<&str> = d.trace.iter().take_while(|_| d.trace.len() <= 8).map(|(name, _)| name.as_str()).collect();
+                format!("error[{}] {} {}", d.code, d.trace.len(), names.join(" ")).trim_end().to_string()
+            }
         }
     }
 
@@ -898,7 +902,7 @@ pub(crate) mod tests {
             ("fn even(0) = true\nfn even(n) = odd(n - 1)\nfn odd(0) = false\nfn odd(n) = even(n - 1)\n[even(10), odd(7), not even(3)]", "[true, true, true]"),
             ("fn g(n)\n  fn a(0) = 0\n  fn a(k) = b(k - 1) + 1\n  fn b(k) = a(k)\n  a(n)\nend\n[g(20), 1..3, [1, 2].sum, \"ab\".upper()]", "[20, [1, 2, 3], 3, \"AB\"]"),
             ("fn h(x) = Some(x)?\nfn k(x) = None?\n[h(1), k(2)]", "[1, None]"),
-            ("fn bad(n) = n + \"a\"\nfn outer(n) = 1 + bad(n)\nouter(1)", "error[E005] 2"),
+            ("fn bad(n) = n + \"a\"\nfn outer(n) = 1 + bad(n)\nouter(1)", "error[E005] 2 bad outer"),
             ("fn deep(n) = 1 + deep(n + 1)\ndeep(0)", "error[E014] 40"),
             (
                 "fn outer(n)\n  fn a(k) = k + 1\n  fn b(k) = map([k, n], a)\n  go = fn(k) = if k == 0 then 0 else go(k - 1)\n  [b(n), go(3)]\nend\n\
@@ -907,13 +911,16 @@ pub(crate) mod tests {
                  [outer(4), app(fn(x) = x + 1, 5), up(\"ab\"), pick(true, 4), pick(false, 3), ends([7], {b: 1}), firsts([5, 6]), firsts([])]",
                 "[[[5, 5], 0], 30, \"AB\", 8, true, [[7, 1], {a: 1, b: 1}, {b: 2, c: 3}], 5, 0]",
             ),
-            ("fn f(0) = 1\nfn g(n) = f(n) + 1\ng(2)", "error[E006] 1"),
+            ("fn f(0) = 1\nfn g(n) = f(n) + 1\ng(2)", "error[E006] 1 g"),
             // The positions of fields kept by the instructions that read and update them.
             (
                 "rs = [{a: 1, b: 0}, {a: 2, b: 0}, {b: 5, a: 3}]\n[fold(rs, 0, fn(acc, r) = acc + r.a), fold(1..3, {n: 0, m: 1}, fn(s, i) = {..s, n: s.n + i})]",
                 "[6, {n: 6, m: 1}]",
             ),
             ("x = Some(2)\nmatch x\n  None -> 0\nend", "error[E006] 0"),
+            // Functions of a group that call each other last, in one frame;
+            // the trace of an error names the one that failed.
+            ("fn g(n)\n  fn a(k) = if k == 0 then [1, 2][k + 7] else b(k - 1)\n  fn b(k) = 1 * c(k)\n  fn c(k) = a(k)\n  fn d(k) = c(k)\n  1 + d(n)\nend\ng(3)", "error[E007] 5 a b b b g"),
         ];
         // More stack than the budget of nested calls (4 MB), as `rythme` has.
         let runs = std::thread::Builder::new()
