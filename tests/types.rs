@@ -68,7 +68,7 @@ fn samples(it: &Interp) -> Vec<Value> {
         it.none(),
         it.ok(text("x")),
         it.err(text("e")),
-        Value::Variant(Rc::new(Variant { ctor: leaf, fields: vec![int(1)] })),
+        Value::Variant(Rc::new(Variant { ctor: leaf, fields: vec![int(1)].into() })),
         Value::Builtin(lookup("is_even").unwrap()),
         Value::Builtin(lookup("text").unwrap()),
         Value::Builtin(lookup("pow").unwrap()),

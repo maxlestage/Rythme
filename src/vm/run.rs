@@ -68,8 +68,9 @@ enum Exec {
     /// An error; when the body of the definition had started, the place of
     /// the call, for the trace of calls (an error while the function chooses
     /// its definition does not show it, see `Chunk::choosing`). After the
-    /// function called itself last, the place of that call.
-    Error(Box<Diagnostic>, Option<Span>),
+    /// function called itself last, the place of that call. Then the
+    /// function of the group that was running (see `Op::TailCallSibling`).
+    Error(Box<Diagnostic>, Option<Span>, Option<u32>),
 }
 
 /// The nominal stack a nested call used in the tree-walking interpreter: the
@@ -104,15 +105,12 @@ fn dup(v: &Value) -> Value {
         Value::Bool(b) => Value::Bool(*b),
         Value::Unit => Value::Unit,
         Value::Func(f) => Value::Func(f.clone()),
+        Value::Variant(var) => Value::Variant(var.clone()),
         v => v.clone(),
     }
 }
 
-/// Values that hold no memory of their own.
-#[inline(always)]
-fn is_plain(v: &Value) -> bool {
-    matches!(v, Value::Unit | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::Symbol(_) | Value::Builtin(_))
-}
+use super::stack::is_plain;
 
 impl Interp {
     /// Runs `code` as a top-level expression whose first slots hold `values`
@@ -122,11 +120,11 @@ impl Interp {
         let base = self.stack.len();
         let n = values.len();
         self.stack.extend(values);
-        self.stack.resize_with(base + code.chunk.regs.max(n), || Value::Unit);
+        self.stack.grow_to(base + code.chunk.regs.max(n));
         let kind = if test { Kind::Test } else { Kind::Top };
         match self.exec(code, None, None, base, kind, span) {
             Exec::Return(v) => Ok(v),
-            Exec::Error(d, _) => Err(d),
+            Exec::Error(d, ..) => Err(d),
             Exec::Tail(..) => unreachable!("no call in tail position at the top level"),
         }
     }
@@ -167,22 +165,17 @@ impl Interp {
         let mut test = None;
         let r = match self.exec(code, Some(clo), None, args, Kind::Call, span) {
             Exec::Return(v) => Ok(v),
-            Exec::Error(mut d, called) => {
-                if let Some(span) = called {
-                    if self.steps_left == 0 {
-                        d = self.error_hook(d);
-                    }
-                    add_frame(&mut d, &clo.def, span);
-                }
-                Err(d)
-            }
+            // The registers are freed below.
+            Exec::Error(d, called, member) => Err(self.call_failed(d, called, clo, member, args, 0)),
             Exec::Tail(next, next_member, next_args, next_argc, next_span, next_test) => {
                 test = next_test.then_some(next_span);
                 self.tail_chain_here(next, next_member, args, code.chunk.regs, next_args, next_argc, next_span, &mut test)
             }
         };
-        // The registers and the arguments: nothing is left above `args`.
-        self.pop_to(args);
+        // The registers and the arguments: nothing is left above `args`
+        // (the frames of the calls it made were freed when they ended).
+        self.reset(args, args + code.chunk.regs);
+        self.stack.drop_plain(args);
         let r = if self.steps_left == 0 { self.return_hook(r) } else { r };
         self.depth -= 1;
         Some(match test {
@@ -194,27 +187,13 @@ impl Interp {
     /// Makes room on the stack for registers up to `len`.
     #[inline(always)]
     fn ensure(&mut self, len: usize) {
-        if self.stack.len() < len {
-            self.grow(len);
-        }
-    }
-
-    #[inline(never)]
-    fn grow(&mut self, len: usize) {
-        self.stack.resize_with(len, || Value::Unit);
+        self.stack.grow_to(len);
     }
 
     /// Frees the values of the registers `from..to`.
     #[inline(always)]
     fn reset(&mut self, from: usize, to: usize) {
-        let to = to.min(self.stack.len());
-        if let Some(regs) = self.stack.get_mut(from..to) {
-            for v in regs {
-                if !is_plain(v) {
-                    *v = Value::Unit;
-                }
-            }
-        }
+        self.stack.reset(from, to);
     }
 
     /// `call_member`, with the common call of a function of the program (no
@@ -225,6 +204,7 @@ impl Interp {
         match f {
             Value::Func(clo) => self.call_closure(clo, member, args, argc, span),
             Value::Builtin(b) => self.call_builtin_fast(b, args, argc, span),
+            Value::Ctor(c) => self.construct_fast(c, args, argc, span),
             f => self.call_member(f, member, args, argc, span),
         }
     }
@@ -233,7 +213,7 @@ impl Interp {
     #[inline(always)]
     fn call_closure(&mut self, clo: Rc<Closure>, member: Option<u32>, args: usize, argc: usize, span: Span) -> Fallible<Value> {
         let (calls, values) = call_limits();
-        let (def, code) = member_code(&clo, member);
+        let code = member_code(&clo, member).1;
         if argc == code.arity && self.steps_left != 0 && self.depth < calls && self.stack.len() <= values && !self.stack_too_deep() {
             self.depth += 1;
             self.steps_left -= 1;
@@ -248,8 +228,8 @@ impl Interp {
                         Ok(v)
                     }
                 }
-                Exec::Error(d, called) => {
-                    let d = self.call_failed(d, called, def, args, regs);
+                Exec::Error(d, called, now) => {
+                    let d = self.call_failed(d, called, &clo, now, args, regs);
                     if self.steps_left == 0 {
                         self.return_hook(Err(d))
                     } else {
@@ -294,16 +274,38 @@ impl Interp {
         self.call_member(Value::Builtin(b), None, args, argc, span)
     }
 
+    /// A value built by its constructor (`Circle(r)`): what `call_member`,
+    /// `call_loop` and `construct` do for it, without their frames.
+    #[inline(never)]
+    fn construct_fast(&mut self, c: Rc<CtorInfo>, args: usize, argc: usize, span: Span) -> Fallible<Value> {
+        let (calls, values) = call_limits();
+        if c.fields.len() == argc && self.steps_left != 0 && self.depth < calls && self.stack.len() <= values && !self.stack_too_deep() {
+            self.steps_left -= 1;
+            let fields = Fields::take_from(&mut self.stack[args..args + argc]);
+            let r = Ok(Value::Variant(Rc::new(Variant { ctor: c, fields })));
+            return if self.steps_left == 0 { self.return_hook(r) } else { r };
+        }
+        self.call_member(Value::Ctor(c), None, args, argc, span)
+    }
+
     /// The frame at `base` (of `regs` registers) of the function `def`,
     /// called at `span`, stopped with the error `d`.
     #[cold]
     #[inline(never)]
-    fn call_failed(&mut self, mut d: Box<Diagnostic>, called: Option<Span>, def: &FnDef, base: usize, regs: usize) -> Box<Diagnostic> {
+    fn call_failed(
+        &mut self,
+        mut d: Box<Diagnostic>,
+        called: Option<Span>,
+        clo: &Closure,
+        member: Option<u32>,
+        base: usize,
+        regs: usize,
+    ) -> Box<Diagnostic> {
         if let Some(span) = called {
             if self.steps_left == 0 {
                 d = self.error_hook(d);
             }
-            add_frame(&mut d, def, span);
+            add_frame(&mut d, member_code(clo, member).0, span);
         }
         self.reset(base, base + regs);
         d
@@ -346,7 +348,7 @@ impl Interp {
         // are, without counting as a call.
         if let Value::Ctor(c) = &next {
             if c.fields.len() == argc {
-                let fields = self.stack[args..args + argc].iter_mut().map(take).collect();
+                let fields = Fields::take_from(&mut self.stack[args..args + argc]);
                 self.reset(base, base + regs);
                 return Ok(Value::Variant(Rc::new(Variant { ctor: c.clone(), fields })));
             }
@@ -422,12 +424,12 @@ impl Interp {
                     self.reset(base, base + regs);
                     return Ok(v);
                 }
-                Exec::Error(mut d, called) => {
+                Exec::Error(mut d, called, now) => {
                     if let Some(span) = called {
                         if self.steps_left == 0 {
                             d = self.error_hook(d);
                         }
-                        add_frame(&mut d, def, span);
+                        add_frame(&mut d, member_code(clo, now).0, span);
                     }
                     self.reset(base, base + regs);
                     return Err(d);
@@ -440,7 +442,7 @@ impl Interp {
                     // where they are, without counting as a call.
                     if let Value::Ctor(c) = &next {
                         if c.fields.len() == next_argc {
-                            let fields = self.stack[args..args + next_argc].iter_mut().map(take).collect();
+                            let fields = Fields::take_from(&mut self.stack[args..args + next_argc]);
                             self.reset(base, base + regs);
                             return Ok(Value::Variant(Rc::new(Variant { ctor: c.clone(), fields })));
                         }
@@ -476,11 +478,23 @@ impl Interp {
     /// Runs the instructions of `code` (of the closure `clo`, the function
     /// `member` of its group) in the frame at `base`, from the first one.
     /// `span`: where it was called, or the place of a top-level expression.
-    fn exec(&mut self, code: &FnCode, clo: Option<&Rc<Closure>>, member: Option<u32>, base: usize, kind: Kind, mut span: Span) -> Exec {
+    #[allow(clippy::too_many_arguments)]
+    fn exec<'a>(
+        &mut self,
+        mut code: &'a FnCode,
+        clo: Option<&'a Rc<Closure>>,
+        mut member: Option<u32>,
+        base: usize,
+        kind: Kind,
+        mut span: Span,
+    ) -> Exec {
         // What each instruction needs, kept in registers of the machine:
         // where the instruction is, and where the registers of the frame
         // are. The rest is read where it is needed.
-        let start: *const Op = code.chunk.ops.as_ptr();
+        let mut start: *const Op = code.chunk.ops.as_ptr();
+        // The registers of the frame: those of the function called (another
+        // function of its group may run in it, see `Op::TailCallSibling`).
+        let frame = code.chunk.regs;
         let mut ip = start;
         debug_assert!(base + code.chunk.regs <= self.stack.len());
         // SAFETY: the registers of the frame are on the stack (see the module).
@@ -541,7 +555,7 @@ impl Interp {
             ($e:expr) => {
                 match $e {
                     Ok(v) => v,
-                    Err(d) => return Exec::Error(d, (!chunk!().chooses(pc!())).then_some(span)),
+                    Err(d) => return failed(d, code, pc!(), span, member),
                 }
             };
         }
@@ -658,7 +672,7 @@ impl Interp {
                     // Outside of any function: an error, not one the debugger stops on.
                     Wrap::None | Wrap::Err => {
                         self.question_at_top = true;
-                        return Exec::Error(question_outside(span), None);
+                        return Exec::Error(question_outside(span), None, member);
                     }
                 },
                 Op::Field { dst, src, site } => {
@@ -774,7 +788,7 @@ impl Interp {
                             for (bind, v) in s.binds.iter().zip(&var.fields) {
                                 if let Some(slot) = *bind {
                                     // A slot of a name, never `src`: `var` stays as it is.
-                                    w!(slot, v.clone());
+                                    w!(slot, dup(v));
                                 }
                             }
                         }
@@ -798,7 +812,7 @@ impl Interp {
                 Op::NoCase { src } => fail!(Err(no_case(r!(src), at!()))),
                 Op::NoClause => {
                     let def = member_code(clo.expect("a function"), member).0;
-                    return Exec::Error(no_clause(def, &self.stack[base..base + code.arity], span), None);
+                    return Exec::Error(no_clause(def, &self.stack[base..base + code.arity], span), None, member);
                 }
                 Op::Stop { info } => {
                     let info = chunk!().stops[info as usize].clone();
@@ -840,6 +854,11 @@ impl Interp {
                         }
                     }
                     let callee = fail!(self.global(chunk!(), s.g, pc!()));
+                    if let (Value::Ctor(_), false) = (&callee, test) {
+                        if let Some(v) = self.built_last(&callee, base + args, argc, test) {
+                            return Exec::Return(v);
+                        }
+                    }
                     return Exec::Tail(callee, None, base + args, argc, at!(), test);
                 }
                 Op::CallSibling { dst, site } => {
@@ -876,6 +895,11 @@ impl Interp {
                     }
                     // SAFETY: a register of the frame, the only reference to it.
                     let callee = take(unsafe { &mut *regs.add(f as usize) });
+                    if let (Value::Ctor(_), false) = (&callee, test) {
+                        if let Some(v) = self.built_last(&callee, base + f as usize + 1, argc, test) {
+                            return Exec::Return(v);
+                        }
+                    }
                     return Exec::Tail(callee, None, base + f as usize + 1, argc, at!(), test);
                 }
                 Op::TailCallSibling { site, test } => {
@@ -888,7 +912,21 @@ impl Interp {
                         ip = start;
                         continue;
                     }
-                    let group = Value::Func(clo.expect("a function of a group").clone());
+                    let me = clo.expect("a function of a group");
+                    // Another function of the group, whose registers fit in
+                    // the frame, runs in it at once: what `call_loop` does
+                    // with this call, without leaving `exec`.
+                    if !test {
+                        if let Some(next) = self.enter_sibling(me, s, base, code, frame) {
+                            span = at!();
+                            code = next;
+                            member = Some(i);
+                            start = code.chunk.ops.as_ptr();
+                            ip = start;
+                            continue;
+                        }
+                    }
+                    let group = Value::Func(me.clone());
                     return Exec::Tail(group, Some(i), base + args, argc, at!(), test);
                 }
                 Op::TailCallMethod { site, f, test } => {
@@ -920,6 +958,47 @@ impl Interp {
             if !is_plain(v) {
                 *v = Value::Unit;
             }
+        }
+    }
+
+    /// The code of the function of the group of `me` called last at `s`,
+    /// from the frame at `base` (of `regs` registers, those of the function
+    /// called first) where `running` runs, when it runs in the frame at
+    /// once: its arguments are then in place (see `Op::TailCallSibling`).
+    /// Kept out of `exec`, whose frame on the machine's stack stays small.
+    #[inline(never)]
+    fn enter_sibling<'a>(
+        &mut self,
+        me: &'a Closure,
+        s: &super::SiblingSite,
+        base: usize,
+        running: &FnCode,
+        regs: usize,
+    ) -> Option<&'a FnCode> {
+        let (args, argc) = (s.args as usize, s.argc as usize);
+        let next = &me.siblings.as_ref().expect("a function of a group")[s.i as usize].code;
+        if self.steps_left == 0 || argc != next.arity || next.chunk.regs > regs {
+            return None;
+        }
+        self.steps_left -= 1;
+        debug_assert!(base + regs <= self.stack.len());
+        // SAFETY: the registers of the frame are on the stack (see the module).
+        let frame = unsafe { self.stack.as_mut_ptr().add(base) };
+        self.restart(frame, args, argc, running.chunk.regs);
+        Some(next)
+    }
+
+    /// A value built last (`Node(l, v, r)` in tail position), with its
+    /// fields taken from the `argc` registers from `args`: what `call_loop`
+    /// does with such a call (not counted as one), without going through it.
+    #[inline(never)]
+    fn built_last(&mut self, callee: &Value, args: usize, argc: usize, test: bool) -> Option<Value> {
+        match callee {
+            Value::Ctor(c) if c.fields.len() == argc && !test => {
+                let fields = Fields::take_from(&mut self.stack[args..args + argc]);
+                Some(Value::Variant(Rc::new(Variant { ctor: c.clone(), fields })))
+            }
+            _ => None,
         }
     }
 
@@ -985,6 +1064,9 @@ impl Interp {
         let v = self.globals.get(&site.name)?;
         let seen = match v {
             Value::Func(f) => Some(super::Seen::Func(Rc::downgrade(f))),
+            // Not the values that may hold functions; but `None` or `Leaf`
+            // (a value of a type whose fields hold no memory) is kept.
+            Value::Variant(var) if var.fields.iter().all(is_plain) => Some(super::Seen::Plain(v.clone())),
             v if !is_container(v) => Some(super::Seen::Plain(v.clone())),
             _ => None,
         };
@@ -1067,8 +1149,8 @@ impl Interp {
     fn record(&mut self, chunk: &Chunk, shape: u32, base: usize, dst: Reg, first: Reg) {
         let shape = &chunk.shapes[shape as usize];
         let start = base + first as usize;
-        let vals = self.stack[start..start + shape.len()].iter_mut().map(take).collect();
-        set(&mut self.stack[base + dst as usize], Value::Record(Rc::new(Record::with_shape(shape.clone(), vals))));
+        let r = Record::taking(shape.clone(), &mut self.stack[start..start + shape.len()]);
+        set(&mut self.stack[base + dst as usize], Value::Record(Rc::new(r)));
     }
 
     /// The fields of `site` of the record in the register `dst` take the
@@ -1296,13 +1378,17 @@ fn call_limits() -> (usize, usize) {
 }
 
 static CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new((4 << 20) / CALL_COST);
-static VALUES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new((4 << 20) / std::mem::size_of::<Value>());
+static VALUES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new((4 << 20) / VALUE_COST);
+
+/// What a value counts for in the budget of stack: its size in Rythme 1.0,
+/// so that the limits of nested calls stay the same with smaller values.
+const VALUE_COST: usize = 24;
 
 /// Sets the limits of `call_limits` for a budget of stack and a maximum depth
 /// (`interp::set_stack_budget`, `interp::set_max_depth`).
 pub(crate) fn set_limits(budget: usize, depth: usize) {
     CALLS.store(depth.min(budget / CALL_COST), std::sync::atomic::Ordering::Relaxed);
-    VALUES.store(budget / std::mem::size_of::<Value>(), std::sync::atomic::Ordering::Relaxed);
+    VALUES.store(budget / VALUE_COST, std::sync::atomic::Ordering::Relaxed);
 }
 
 /// The function number `i` of the group of the closure `clo`, as a closure
@@ -1318,6 +1404,14 @@ fn sibling(clo: Option<&Rc<Closure>>, i: u32) -> Value {
         captured: clo.captured.clone(),
         siblings: Some(group.clone()),
     }))
+}
+
+/// How `exec` stops with the error `d` at the instruction `pc` of `code`
+/// (see `Exec::Error`), out of line: `exec` stays small.
+#[cold]
+#[inline(never)]
+fn failed(d: Box<Diagnostic>, code: &FnCode, pc: usize, span: Span, member: Option<u32>) -> Exec {
+    Exec::Error(d, (!code.chunk.chooses(pc)).then_some(span), member)
 }
 
 /// A comparison of any two values, true or false.

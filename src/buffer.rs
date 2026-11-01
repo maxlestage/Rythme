@@ -118,12 +118,12 @@ fn joined<T: Clone>(head: &[T], tail: &[T], grows: bool) -> Buf<T> {
 /// (`None`) if `in_place` allows it, the slice ends where the written
 /// elements end and there is room, else in a new buffer, with room if this
 /// one already grew.
-pub fn append<T: Clone>(buf: &Rc<Buf<T>>, start: usize, end: usize, tail: &[T], in_place: bool) -> Option<Rc<Buf<T>>> {
+pub fn append<T: Clone>(buf: &Buf<T>, start: usize, end: usize, tail: &[T], in_place: bool) -> Option<Buf<T>> {
     if in_place && buf.extend_at(end, tail) {
         return None;
     }
     let grows = buf.grows && end == buf.used();
-    Some(Rc::new(joined(buf.slice(start, end), tail, grows)))
+    Some(joined(buf.slice(start, end), tail, grows))
 }
 
 // ----- texts ------------------------------------------------------------
@@ -132,9 +132,14 @@ pub fn append<T: Clone>(buf: &Rc<Buf<T>>, start: usize, end: usize, tail: &[T], 
 /// (see the module). Like `Rc<str>`, a text is one block of memory: a count
 /// of the texts that share it, the bytes written and the room, then the
 /// bytes.
+///
+/// A text is 12 bytes, aligned on 4: in a `Value`, it takes the 12 bytes
+/// after the tag, and the value is 16 bytes instead of 24 (the length is
+/// first, so that the pointer is aligned there).
+#[repr(C, packed(4))]
 pub struct Text {
+    len: u32,
     ptr: NonNull<TextHead>,
-    len: usize,
 }
 
 /// The start of the memory of texts, before the bytes.
@@ -149,6 +154,13 @@ struct TextHead {
     grows: bool,
 }
 
+/// The length of a text, which fits in 32 bits: texts the program builds
+/// are at most `interp::MAX_TEXT` bytes long.
+#[inline(always)]
+fn text_len(len: usize) -> u32 {
+    u32::try_from(len).expect("a text of more than 4 GB")
+}
+
 /// Where the bytes start, after the head (whose size is a multiple of its alignment).
 const HEAD: usize = std::mem::size_of::<TextHead>();
 
@@ -161,6 +173,7 @@ impl Text {
     /// A new text with `parts` one after the other, with room for `cap` bytes in all.
     fn with(parts: [&[u8]; 2], cap: usize, grows: bool) -> Text {
         let len = parts[0].len() + parts[1].len();
+        let short = text_len(len);
         debug_assert!(len <= cap);
         let layout = text_layout(cap);
         // SAFETY: the layout has a size (the head at least).
@@ -174,26 +187,34 @@ impl Text {
             std::ptr::copy_nonoverlapping(parts[0].as_ptr(), data, parts[0].len());
             std::ptr::copy_nonoverlapping(parts[1].as_ptr(), data.add(parts[0].len()), parts[1].len());
         }
-        Text { ptr, len }
+        Text { ptr, len: short }
+    }
+
+    /// Its length in bytes.
+    #[inline(always)]
+    fn size(&self) -> usize {
+        self.len as usize
     }
 
     #[inline(always)]
     fn head(&self) -> &TextHead {
+        let ptr = self.ptr;
         // SAFETY: the head lives as long as one text shares the memory.
-        unsafe { self.ptr.as_ref() }
+        unsafe { &*ptr.as_ptr() }
     }
 
     #[inline(always)]
     fn data(&self) -> *mut u8 {
+        let ptr = self.ptr;
         // SAFETY: the bytes come right after the head, in the same memory.
-        unsafe { self.ptr.as_ptr().cast::<u8>().add(HEAD) }
+        unsafe { ptr.as_ptr().cast::<u8>().add(HEAD) }
     }
 
     #[inline(always)]
     pub fn as_str(&self) -> &str {
         // SAFETY: the first `len` bytes are written and never change; they
         // are whole UTF-8 texts written one after the other.
-        unsafe { std::str::from_utf8_unchecked(std::slice::from_raw_parts(self.data(), self.len)) }
+        unsafe { std::str::from_utf8_unchecked(std::slice::from_raw_parts(self.data(), self.size())) }
     }
 
     /// This text followed by `tail`: in the room after it when it ends where
@@ -201,17 +222,17 @@ impl Text {
     pub fn concat(&self, tail: &str) -> Text {
         let head = self.head();
         let used = head.used.get();
-        let len = self.len + tail.len();
-        if used == self.len && head.cap - used >= tail.len() {
+        let len = self.size() + tail.len();
+        if used == self.size() && head.cap - used >= tail.len() {
             // SAFETY: the room is allocated and no text sees it; `tail` is
             // among the written bytes, or elsewhere.
             unsafe { std::ptr::copy_nonoverlapping(tail.as_ptr(), self.data().add(used), tail.len()) };
             head.used.set(len);
             let mut t = self.clone();
-            t.len = len;
+            t.len = text_len(len);
             return t;
         }
-        let grows = head.grows && used == self.len;
+        let grows = head.grows && used == self.size();
         let cap = if grows { len.max(16).saturating_mul(2) } else { len };
         Text::with([self.as_bytes(), tail.as_bytes()], cap, true)
     }
@@ -227,11 +248,11 @@ impl Text {
     pub fn push_str(&mut self, tail: &str) {
         let head = self.head();
         let used = head.used.get();
-        if used == self.len && head.cap - used >= tail.len() {
+        if used == self.size() && head.cap - used >= tail.len() {
             // SAFETY: as in `concat`: the room is allocated and no text sees it.
             unsafe { std::ptr::copy_nonoverlapping(tail.as_ptr(), self.data().add(used), tail.len()) };
             head.used.set(used + tail.len());
-            self.len += tail.len();
+            self.len = text_len(used + tail.len());
         } else {
             *self = self.concat(tail);
         }
@@ -255,8 +276,9 @@ impl Drop for Text {
         head.refs.set(refs);
         if refs == 0 {
             let layout = text_layout(head.cap);
+            let ptr = self.ptr;
             // SAFETY: no other text shares the memory, allocated with this layout.
-            unsafe { std::alloc::dealloc(self.ptr.as_ptr().cast::<u8>(), layout) }
+            unsafe { std::alloc::dealloc(ptr.as_ptr().cast::<u8>(), layout) }
         }
     }
 }
@@ -338,7 +360,8 @@ impl From<Text> for Rc<str> {
 
 impl PartialEq for Text {
     fn eq(&self, other: &Text) -> bool {
-        self.len == other.len && (self.ptr == other.ptr || self.as_str() == other.as_str())
+        let (p, q) = (self.ptr, other.ptr);
+        self.size() == other.size() && (p == q || self.as_str() == other.as_str())
     }
 }
 
@@ -409,9 +432,9 @@ mod tests {
         let c = b.concat("ef");
         let d = c.concat("gh");
         // `d` grew in the room `c` left, without changing `c`.
-        assert_eq!(c.ptr, d.ptr);
+        assert_eq!({ c.ptr }, { d.ptr });
         let e = c.concat("XY");
-        assert_ne!(c.ptr, e.ptr);
+        assert_ne!({ c.ptr }, { e.ptr });
         assert_eq!((&*a, &*b, &*c, &*d, &*e), ("ab", "abcd", "abcdef", "abcdefgh", "abcdefXY"));
         let f = d.concat(&d);
         assert_eq!(&*f, "abcdefghabcdefgh");
@@ -421,7 +444,7 @@ mod tests {
     #[test]
     fn a_shared_buffer_frees_its_elements_once() {
         let x = Rc::new(5);
-        let buf = Rc::new(Buf::from_vec(vec![x.clone()]));
+        let buf = Buf::from_vec(vec![x.clone()]);
         assert!(append(&buf, 0, 1, &[x.clone(), x.clone()], true).is_some());
         // The first copy is exact, the next ones leave room.
         let grown = append(&buf, 0, 1, std::slice::from_ref(&x), true).unwrap();

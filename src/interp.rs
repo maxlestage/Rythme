@@ -172,9 +172,9 @@ pub struct Interp {
     pub(crate) stack_base: usize,
     /// The registers of the running functions, one frame after the other:
     /// their arguments, local names and temporary values.
-    pub(crate) stack: Vec<Value>,
+    pub(crate) stack: crate::vm::Stack,
     /// The stack of the functions that a builtin calls, kept between calls.
-    spare: Vec<Value>,
+    spare: crate::vm::Stack,
     /// A `?` ended a top-level expression (an error, but not one of the program
     /// that the debugger stops on).
     pub(crate) question_at_top: bool,
@@ -227,7 +227,7 @@ impl Interp {
         let none_info = ctor(option, "None", &[], 0);
         let ok = ctor(result, "Ok", &["value"], 0);
         let err = ctor(result, "Err", &["error"], 1);
-        let none = Value::Variant(Rc::new(Variant { ctor: none_info.clone(), fields: Vec::new() }));
+        let none = Value::Variant(Rc::new(Variant { ctor: none_info.clone(), fields: Fields::none() }));
 
         let mut globals = Globals::default();
         for b in BUILTINS {
@@ -262,8 +262,8 @@ impl Interp {
             names: compile::Names::default(),
             depth: 0,
             stack_base: stack_position(),
-            stack: Vec::new(),
-            spare: Vec::new(),
+            stack: crate::vm::Stack::new(),
+            spare: crate::vm::Stack::new(),
             question_at_top: false,
             scratch: String::new(),
             pending: SymMap::default(),
@@ -283,7 +283,7 @@ impl Interp {
     // ----- Option and Result ------------------------------------------
 
     pub fn some(&self, v: Value) -> Value {
-        Value::Variant(Rc::new(Variant { ctor: self.some.clone(), fields: vec![v] }))
+        Value::Variant(Rc::new(Variant { ctor: self.some.clone(), fields: Fields::one(v) }))
     }
 
     pub fn none(&self) -> Value {
@@ -291,11 +291,11 @@ impl Interp {
     }
 
     pub fn ok(&self, v: Value) -> Value {
-        Value::Variant(Rc::new(Variant { ctor: self.ok.clone(), fields: vec![v] }))
+        Value::Variant(Rc::new(Variant { ctor: self.ok.clone(), fields: Fields::one(v) }))
     }
 
     pub fn err(&self, v: Value) -> Value {
-        Value::Variant(Rc::new(Variant { ctor: self.err.clone(), fields: vec![v] }))
+        Value::Variant(Rc::new(Variant { ctor: self.err.clone(), fields: Fields::one(v) }))
     }
 
     pub fn option(&self, v: Option<Value>) -> Value {
@@ -375,7 +375,7 @@ impl Interp {
                 doc: t.doc.clone(),
             });
             let value = if v.fields.is_empty() {
-                Value::Variant(Rc::new(Variant { ctor: info.clone(), fields: Vec::new() }))
+                Value::Variant(Rc::new(Variant { ctor: info.clone(), fields: Fields::none() }))
             } else {
                 Value::Ctor(info.clone())
             };
@@ -515,19 +515,15 @@ impl Interp {
     fn end_top(&mut self, base: usize) {
         self.stack.truncate(base);
         if base == 0 && self.stack.capacity() > 1 << 16 {
-            self.stack = Vec::new();
-            self.spare = Vec::new();
+            self.stack = crate::vm::Stack::new();
+            self.spare = crate::vm::Stack::new();
         }
     }
 
     /// Removes the values above `len` from the stack.
     #[inline(always)]
     pub(crate) fn pop_to(&mut self, len: usize) {
-        while self.stack.len() > len {
-            if let Some(v) = self.stack.pop() {
-                discard(v);
-            }
-        }
+        self.stack.truncate(len);
     }
 
     pub fn unknown_name(&self, s: Sym, scope: &Scope, span: Span) -> Box<Diagnostic> {
@@ -662,7 +658,7 @@ impl Interp {
         let stack = std::mem::replace(&mut self.stack, spare);
         let r = (b.func)(self, &stack[base..base + argc], span);
         let mut spare = std::mem::replace(&mut self.stack, stack);
-        spare.clear();
+        spare.truncate(0);
         self.spare = spare;
         r
     }
@@ -736,7 +732,7 @@ impl Interp {
         if argc != c.fields.len() {
             return Err(ctor_arity_error(&c, argc, span));
         }
-        let fields = self.stack[base..base + argc].iter_mut().map(|v| std::mem::replace(v, Value::Unit)).collect();
+        let fields = Fields::take_from(&mut self.stack[base..base + argc]);
         Ok(Value::Variant(Rc::new(Variant { ctor: c, fields })))
     }
 }
@@ -1166,16 +1162,6 @@ fn op_error(op: BinOp, l: &Value, r: &Value, span: Span) -> Box<Diagnostic> {
         ));
     }
     d.boxed()
-}
-
-/// Drops a value. Most values hold no memory: they need no call to the
-/// general (and large) code that frees values.
-#[inline(always)]
-pub(crate) fn discard(v: Value) {
-    match v {
-        Value::Unit | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::Symbol(_) | Value::Builtin(_) => std::mem::forget(v),
-        v => drop(v),
-    }
 }
 
 /// Puts a value in a slot, dropping the one it replaces (looked at first:

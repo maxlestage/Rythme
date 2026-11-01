@@ -310,7 +310,9 @@ impl Driver {
         crate::modules::qualify(&mut items, &names);
         let repl_fn = if self.repl { self.merge_repl_definitions(&mut items) } else { None };
         let mut know = Knowledge::from_interp(&self.interp);
-        let base_know = know.clone();
+        // What the files used with a name know: only built-ins (a copy, made
+        // only when there are such files).
+        let base_know = if named.is_empty() { None } else { Some(know.clone()) };
         let mut seen = HashSet::new();
         let mut origin: HashMap<Sym, Rc<str>> = HashMap::new();
         let mut twice = Vec::new();
@@ -339,8 +341,10 @@ impl Driver {
         if !twice.is_empty() {
             return None;
         }
-        for (n, key) in &named {
-            self.add_module_knowledge(*n, key, &base_know, &mut know);
+        if let Some(base_know) = &base_know {
+            for (n, key) in &named {
+                self.add_module_knowledge(*n, key, base_know, &mut know);
+            }
         }
         let mut diags = check::check(&items, &know, self.repl);
         if diags.iter().any(|d| d.code == "E003") {

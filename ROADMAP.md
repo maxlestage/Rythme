@@ -173,9 +173,30 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
     to `map`, `fold`... called in place, the positions of fields kept by the
     instructions that read and update them (`bench/`: `count`, `fib`,
     `match`, `records` about twice as fast as 1.0).
-  - [ ] Faster still: values of 16 bytes instead of 24, a compact list of
-    Floats (see below), and calls that do not go through a Rust call each
-    (tried as one loop for every frame: in safe Rust it was slower).
+  - [x] Faster still: values of 16 bytes instead of 24; values of types
+    and records that keep their first fields in place (one block of memory
+    instead of two); lists of Floats made by `matmul`, `vector_scale`...
+    kept as numbers; a value stack that keeps its room, so that functions
+    given to `map` or `fold` no longer write their registers again; values
+    built by their constructors and functions of a group that call each
+    other last without the path of calls (`bench/`: `local` 1.7 times as
+    fast as 1.0, `bst` 1.6, the others 1.05 to 1.25; the playground needs
+    no more stack than 1.0).
+  - [ ] Calls that do not go through a Rust call each (tried as one loop
+    for every frame: in safe Rust it was slower), and short texts kept in
+    the value itself (most of the time left in `bench/text.ry` is one block
+    of memory per text).
+- [x] **Faster where the virtual machine cannot help**: regexes (an engine
+  that tries one way after the other with a table of the places reached,
+  same answers, `bench/regex.ry` about twice as fast), built-in functions
+  that copied texts too much, the start of `rythme` (30 % fewer
+  instructions for a small program), and the checker, the formatter and the
+  language server on long programs (no longer quadratic: a program of
+  25 000 lines is checked in less than half the time).
+  - [ ] The start, further: the catalogs of messages are tables of
+    pointers that the system fixes at every start (about a third of the
+    page faults of `rythme hello.ry`); written as one text with positions,
+    they would cost nothing until a language uses them.
 - [x] **Types written by hand where they help**: optional, checked by
   `rythme check`, built on the inference that exists; code without them
   stays as it is. Done: `fn area(w: Int, h: Int) -> Int`, `total: Float =
