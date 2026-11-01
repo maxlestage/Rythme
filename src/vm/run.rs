@@ -108,11 +108,7 @@ fn dup(v: &Value) -> Value {
     }
 }
 
-/// Values that hold no memory of their own.
-#[inline(always)]
-fn is_plain(v: &Value) -> bool {
-    matches!(v, Value::Unit | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::Symbol(_) | Value::Builtin(_))
-}
+use super::stack::is_plain;
 
 impl Interp {
     /// Runs `code` as a top-level expression whose first slots hold `values`
@@ -122,7 +118,7 @@ impl Interp {
         let base = self.stack.len();
         let n = values.len();
         self.stack.extend(values);
-        self.stack.resize_with(base + code.chunk.regs.max(n), || Value::Unit);
+        self.stack.grow_to(base + code.chunk.regs.max(n));
         let kind = if test { Kind::Test } else { Kind::Top };
         match self.exec(code, None, None, base, kind, span) {
             Exec::Return(v) => Ok(v),
@@ -181,8 +177,10 @@ impl Interp {
                 self.tail_chain_here(next, next_member, args, code.chunk.regs, next_args, next_argc, next_span, &mut test)
             }
         };
-        // The registers and the arguments: nothing is left above `args`.
-        self.pop_to(args);
+        // The registers and the arguments: nothing is left above `args`
+        // (the frames of the calls it made were freed when they ended).
+        self.reset(args, args + code.chunk.regs);
+        self.stack.drop_plain(args);
         let r = if self.steps_left == 0 { self.return_hook(r) } else { r };
         self.depth -= 1;
         Some(match test {
@@ -194,27 +192,13 @@ impl Interp {
     /// Makes room on the stack for registers up to `len`.
     #[inline(always)]
     fn ensure(&mut self, len: usize) {
-        if self.stack.len() < len {
-            self.grow(len);
-        }
-    }
-
-    #[inline(never)]
-    fn grow(&mut self, len: usize) {
-        self.stack.resize_with(len, || Value::Unit);
+        self.stack.grow_to(len);
     }
 
     /// Frees the values of the registers `from..to`.
     #[inline(always)]
     fn reset(&mut self, from: usize, to: usize) {
-        let to = to.min(self.stack.len());
-        if let Some(regs) = self.stack.get_mut(from..to) {
-            for v in regs {
-                if !is_plain(v) {
-                    *v = Value::Unit;
-                }
-            }
-        }
+        self.stack.reset(from, to);
     }
 
     /// `call_member`, with the common call of a function of the program (no
