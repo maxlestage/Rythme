@@ -7,6 +7,7 @@
 //! run: `"age: " + 36`, `len(5)`, a field that a record does not have...
 //! When the checker is not sure, it says nothing.
 
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
@@ -16,7 +17,7 @@ use crate::interp::{arity_error, Interp};
 use crate::parser::immutable_help;
 use crate::source::Span;
 use crate::suggest;
-use crate::symbol::Sym;
+use crate::symbol::{Sym, SymMap};
 use crate::types::{self, Outcome, Ty, BOOL, DATA, DICT, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, SET, SYMBOL, TEXT, UNIT};
 use crate::value::{Record, Value};
 
@@ -39,7 +40,9 @@ pub enum GKind {
 pub struct GlobalInfo {
     pub kind: GKind,
     pub arity: Option<(usize, usize)>,
-    pub sig: String,
+    /// Its signature: borrowed from `BUILTINS` for a built-in, which saves
+    /// a copy of each at every start.
+    pub sig: Cow<'static, str>,
     pub span: Option<Span>,
 }
 
@@ -57,7 +60,8 @@ const BUILTIN_TYPES: &[&str] = &["Unit", "Bool", "Int", "Float", "Text", "List",
 /// What is known before checking a module: built-ins, and what earlier code defined.
 #[derive(Clone, Default)]
 pub struct Knowledge {
-    pub globals: HashMap<Sym, GlobalInfo>,
+    /// Keyed with the fast hasher of names: made with every built-in at each start.
+    pub globals: SymMap<GlobalInfo>,
     pub ctors: HashMap<Sym, CtorMeta>,
     pub types: HashMap<Sym, Vec<Sym>>,
     /// The types of the values defined by the `use`d files, when certain.
@@ -127,7 +131,7 @@ fn host_value_type(v: &Value) -> Ty {
 }
 
 fn func_info(def: &FnDef) -> GlobalInfo {
-    GlobalInfo { kind: GKind::Func, arity: Some((def.arity, def.arity)), sig: def.signature(), span: Some(def.span) }
+    GlobalInfo { kind: GKind::Func, arity: Some((def.arity, def.arity)), sig: def.signature().into(), span: Some(def.span) }
 }
 
 fn ctor_sig(name: Sym, fields: &[Sym]) -> String {
@@ -138,9 +142,12 @@ fn ctor_sig(name: Sym, fields: &[Sym]) -> String {
 impl Knowledge {
     pub fn from_interp(it: &Interp) -> Knowledge {
         let mut k = Knowledge::default();
+        k.globals.reserve(it.globals.len());
         for (s, v) in it.globals.iter().filter(|(s, _)| !s.is_stored()) {
             let info = match v {
-                Value::Builtin(b) => GlobalInfo { kind: GKind::Builtin, arity: Some((b.min, b.max)), sig: b.sig.to_string(), span: None },
+                Value::Builtin(b) => {
+                    GlobalInfo { kind: GKind::Builtin, arity: Some((b.min, b.max)), sig: Cow::Borrowed(b.sig), span: None }
+                }
                 Value::Func(c) => {
                     if let Some(w) = Written::of_fn(&c.def) {
                         k.written.insert(*s, Rc::new(w));
@@ -150,20 +157,22 @@ impl Knowledge {
                 Value::Ctor(c) => GlobalInfo {
                     kind: GKind::Ctor,
                     arity: Some((c.fields.len(), c.fields.len())),
-                    sig: ctor_sig(c.name, &c.fields),
+                    sig: ctor_sig(c.name, &c.fields).into(),
                     span: None,
                 },
                 Value::Variant(var) if var.fields.is_empty() && var.ctor.name == *s => {
-                    GlobalInfo { kind: GKind::CtorValue, arity: None, sig: s.name().to_string(), span: None }
+                    GlobalInfo { kind: GKind::CtorValue, arity: None, sig: s.name().to_string().into(), span: None }
                 }
-                Value::Float(_) if &*s.name() == "pi" => GlobalInfo { kind: GKind::Builtin, arity: None, sig: "pi".into(), span: None },
+                Value::Float(_) if &*s.name() == "pi" => {
+                    GlobalInfo { kind: GKind::Builtin, arity: None, sig: Cow::Borrowed("pi"), span: None }
+                }
                 // A record given by a program that embeds Rythme (`db.all(q)`):
                 // its fields are known, so a misspelled one is reported.
                 Value::Record(_) => {
                     k.value_types.insert(*s, host_value_type(v));
-                    GlobalInfo { kind: GKind::Value, arity: None, sig: String::new(), span: None }
+                    GlobalInfo { kind: GKind::Value, arity: None, sig: Cow::Borrowed(""), span: None }
                 }
-                _ => GlobalInfo { kind: GKind::Value, arity: None, sig: String::new(), span: None },
+                _ => GlobalInfo { kind: GKind::Value, arity: None, sig: Cow::Borrowed(""), span: None },
             };
             k.globals.insert(*s, info);
         }
@@ -241,7 +250,7 @@ impl Knowledge {
                 meta.names.push(s);
                 let mut g = g.clone();
                 if g.kind != GKind::Value {
-                    g.sig = format!("{name}.{}", g.sig);
+                    g.sig = format!("{name}.{}", g.sig).into();
                 }
                 self.globals.insert(q(s), g);
                 match module.written.get(&s) {
@@ -304,7 +313,7 @@ impl Knowledge {
                             Some(t) if !again => self.value_types.insert(s, t.without_results()),
                             _ => self.value_types.remove(&s),
                         };
-                        self.globals.insert(s, GlobalInfo { kind: GKind::Value, arity: None, sig: String::new(), span: Some(sp) });
+                        self.globals.insert(s, GlobalInfo { kind: GKind::Value, arity: None, sig: Cow::Borrowed(""), span: Some(sp) });
                     }
                 }
                 Item::Type(t) => {
@@ -341,9 +350,9 @@ fn set_params(params: &mut HashMap<Sym, Vec<Sym>>, unknown: &mut HashSet<Sym>, t
 
 fn ctor_info(v: &VariantDef) -> GlobalInfo {
     if v.fields.is_empty() {
-        GlobalInfo { kind: GKind::CtorValue, arity: None, sig: v.name.name().to_string(), span: Some(v.span) }
+        GlobalInfo { kind: GKind::CtorValue, arity: None, sig: v.name.name().to_string().into(), span: Some(v.span) }
     } else {
-        GlobalInfo { kind: GKind::Ctor, arity: Some((v.fields.len(), v.fields.len())), sig: v.signature(), span: Some(v.span) }
+        GlobalInfo { kind: GKind::Ctor, arity: Some((v.fields.len(), v.fields.len())), sig: v.signature().into(), span: Some(v.span) }
     }
 }
 
@@ -448,6 +457,10 @@ struct Checker<'a> {
     know: &'a Knowledge,
     own: HashMap<Sym, GlobalInfo>,
     ctors: HashMap<Sym, CtorMeta>,
+    /// For each field name, the kinds of the values built by the constructors
+    /// that have it (see `need_field`): made when needed from `ctors`, and
+    /// forgotten when `ctors` changes.
+    field_kinds: Option<SymMap<types::Kinds>>,
     types: HashMap<Sym, Vec<Sym>>,
     /// Top-level values already defined at this point of the file.
     defined: HashSet<Sym>,
@@ -554,6 +567,7 @@ impl<'a> Checker<'a> {
             know,
             own: HashMap::new(),
             ctors: know.ctors.clone(),
+            field_kinds: None,
             types: know.types.clone(),
             defined: HashSet::new(),
             scopes: Vec::new(),
@@ -610,7 +624,7 @@ impl<'a> Checker<'a> {
                     let mut b = Vec::new();
                     p.bindings(&mut b);
                     for (s, sp) in b {
-                        let info = GlobalInfo { kind: GKind::Value, arity: None, sig: String::new(), span: Some(sp) };
+                        let info = GlobalInfo { kind: GKind::Value, arity: None, sig: Cow::Borrowed(""), span: Some(sp) };
                         if self.declare_global(s, sp, info, &mut first) {
                             self.gtypes.insert(s, Ty::Never);
                         }
@@ -656,6 +670,7 @@ impl<'a> Checker<'a> {
                         }
                         self.declare_global(v.name, v.span, ctor_info(v), &mut first);
                         self.ctors.insert(v.name, CtorMeta { type_name: t.name, arity: v.fields.len(), fields: v.fields.clone() });
+                        self.field_kinds = None;
                         if let Some(w) = Written::of_variant(v) {
                             self.own_written.insert(v.name, Rc::new(w));
                         }
@@ -1125,7 +1140,7 @@ impl<'a> Checker<'a> {
                 Some(b) => self.builtin_types.entry(b.name).or_insert_with(|| types::builtin_value(b)).clone(),
                 None => Ty::Any,
             },
-            GKind::Func => Ty::func(g.arity, Ty::Any, Some(g.sig.as_str().into())),
+            GKind::Func => Ty::func(g.arity, Ty::Any, Some(Rc::from(&*g.sig))),
             GKind::Ctor => self.ctor_fn_type(s),
             GKind::CtorValue => self.ctor_value_type(s),
             GKind::Value => self.know.value_types.get(&s).cloned().unwrap_or(Ty::Any),
@@ -1508,8 +1523,8 @@ impl<'a> Checker<'a> {
                     last = Ty::Unit;
                     if let (PatKind::Bind(name), ExprKind::Lambda(def)) = (&p.kind, &e.kind) {
                         // `name = fn(...)` sees its own name, so that it can be recursive.
-                        let info = GlobalInfo { sig: def.signature().replacen("fn(", &format!("{name}("), 1), ..func_info(def) };
-                        let first = Ty::func(Some((def.arity, def.arity)), Ty::Any, Some(info.sig.as_str().into()));
+                        let info = GlobalInfo { sig: def.signature().replacen("fn(", &format!("{name}("), 1).into(), ..func_info(def) };
+                        let first = Ty::func(Some((def.arity, def.arity)), Ty::Any, Some(Rc::from(&*info.sig)));
                         self.declare_local_fn(*name, p.span, true, Some(info), first, Some(def.clone()));
                         self.forget_local(def);
                         let t = self.func(def, None);
@@ -2591,8 +2606,9 @@ impl<'a> Checker<'a> {
                     None => self.types.get(&d.name)?.clone(),
                 };
                 let mut found = false;
+                let field = Sym::new(name);
                 for c in &ctors {
-                    found |= self.ctors.get(c)?.fields.iter().any(|f| &*f.name() == name);
+                    found |= self.ctors.get(c)?.fields.contains(&field);
                 }
                 // Some constructors have it: reading it is what is meant.
                 (!ctors.is_empty()).then_some(found)
