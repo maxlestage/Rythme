@@ -8,14 +8,20 @@ use std::rc::Rc;
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Sym(u32);
 
-#[derive(Default)]
 struct Interner {
-    map: HashMap<Rc<str>, Sym>,
+    /// Hashed with [`SymHasher`]: the names are those of programs, and the
+    /// default hasher (made to resist chosen keys) was most of the time spent
+    /// making the names of the built-ins at each start.
+    map: HashMap<Rc<str>, Sym, std::hash::BuildHasherDefault<SymHasher>>,
     names: Vec<Rc<str>>,
 }
 
+/// Room for the names of the built-ins and of a program, made at each start.
+const NAMES: usize = 2048;
+
 thread_local! {
-    static INTERNER: RefCell<Interner> = RefCell::new(Interner::default());
+    static INTERNER: RefCell<Interner> =
+        RefCell::new(Interner { map: HashMap::with_capacity_and_hasher(NAMES, Default::default()), names: Vec::with_capacity(NAMES) });
 }
 
 impl Sym {
@@ -96,9 +102,19 @@ impl std::hash::Hasher for SymHasher {
     }
 
     fn write(&mut self, bytes: &[u8]) {
-        for &b in bytes {
+        // Eight bytes at a time (FxHash, as in the Rust compiler).
+        let (chunks, rest) = bytes.as_chunks::<8>();
+        for chunk in chunks {
+            let word = u64::from_le_bytes(*chunk);
+            self.0 = (self.0.rotate_left(5) ^ word).wrapping_mul(0x517c_c1b7_2722_0a95);
+        }
+        for &b in rest {
             self.0 = (self.0.rotate_left(5) ^ b as u64).wrapping_mul(0x517c_c1b7_2722_0a95);
         }
+    }
+
+    fn write_u8(&mut self, n: u8) {
+        self.0 = (self.0.rotate_left(5) ^ n as u64).wrapping_mul(0x517c_c1b7_2722_0a95);
     }
 
     fn write_u32(&mut self, n: u32) {

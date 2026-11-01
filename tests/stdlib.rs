@@ -714,3 +714,25 @@ fn ruby_names_added_after_one_point_zero() {
     let r = common::rythme(&["check", "examples/cipher.ry"]);
     assert!(r.stdout.contains("no problems found"), "{}{}", r.stdout, r.stderr);
 }
+
+/// Parts of texts are cut by characters, not bytes, with ASCII and other
+/// characters, at the start, in the middle and past the end (these functions
+/// cut the text in one piece instead of character by character).
+#[test]
+fn parts_of_texts_are_cut_by_characters() {
+    ok(
+        "print(take(\"héllo😀\", 2), drop(\"héllo😀\", 4), slice(\"héllo😀\", 1, 5), rest(\"é😀a\"), last(\"abc😀\"), first(\"😀b\"))",
+        "hé o😀 éllo 😀a Some(\"😀\") Some(\"😀\")",
+    );
+    ok(
+        "print([slice(\"héllo\", 3, 99), slice(\"héllo\", 9, 12), take(\"abc\", 0), rest(\"\"), last(\"abc\", 2), first(\"é😀x\", 2), slice(\"abcdef\", -3)])",
+        "[\"lo\", \"\", \"\", \"\", \"bc\", \"é😀\", \"def\"]",
+    );
+    ok("print(last(\"\"), first(\"\"), chars(\"aé😀\"), split(\"aé😀\", \"\"))", "None None [\"a\", \"é\", \"😀\"] [\"a\", \"é\", \"😀\"]");
+    // Upper and lower case: ASCII on its own, and with other letters.
+    ok("print(upper(\"abc-Z1\"), lower(\"ÀB ç\"), upper(\"straße\"), lower(\"ΣΑΣ\"), len(upper(\"\")))", "ABC-Z1 àb ç STRASSE σας 0");
+    ok(
+        "print(text(0), text(-9223372036854775807 - 1), \"{12 * -3}\", text(9223372036854775807))",
+        "0 -9223372036854775808 -36 9223372036854775807",
+    );
+}

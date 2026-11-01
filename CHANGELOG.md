@@ -421,6 +421,29 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   search showed to lead nowhere, and share their memory. `a*b|a` on 40 000
   `a`s took about 30 seconds and now takes a few milliseconds; the matches
   are the same (`bench/regex.ry`).
+- **Regexes about twice as fast**: a search tries the ways of a match one
+  after the other, in order of preference, remembering each step and place
+  it reached (so it never takes forever, and finds exactly the same matches
+  and groups as before); it goes straight to the characters that can start
+  a match, and reads classes like `[a-z]` from a table for ASCII characters.
+  `bench/regex.ry`: 2.8 to 1.1 billion instructions (0.23 s to 0.11 s).
+- **Fewer copies in the built-in functions**: numbers are written in texts
+  without the machinery of Rust's `format!` (`bench/textbuild.ry`: 13 %
+  fewer instructions), `take`, `drop`, `slice`, `first`, `last` and `rest`
+  of a text copy the part once (`last` read the whole text), `chars` is
+  20 % faster, `upper` and `lower` of short ASCII texts skip a copy.
+- **A faster start**: the names of the built-ins are made with a faster
+  hasher, and what the checker knows of them is no longer copied. `rythme
+  hello.ry` runs 1.5 million instructions instead of 2.1 (most of the time
+  left is the system starting the program).
+- **Long programs are checked and formatted much faster**: reading a field
+  (`p.name`) made the checker look at every constructor of the program
+  (quadratic), it searched the list of built-ins at each call, and `rythme
+  fmt` compared the syntax trees again when the code was already formatted.
+  On a program of 25 000 lines: `rythme check` 3.6 to 1.6 billion
+  instructions, `rythme fmt --check` 3.6 to 1.4, `rythme run` 3.8 to 1.7; in
+  the language server, the diagnostics after opening it come in 0.34 s
+  instead of 0.65 s, and formatting it takes 0.23 s instead of 0.48 s.
 
 ### Messages
 
