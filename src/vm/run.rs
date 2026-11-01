@@ -165,15 +165,8 @@ impl Interp {
         let mut test = None;
         let r = match self.exec(code, Some(clo), None, args, Kind::Call, span) {
             Exec::Return(v) => Ok(v),
-            Exec::Error(mut d, called, member) => {
-                if let Some(span) = called {
-                    if self.steps_left == 0 {
-                        d = self.error_hook(d);
-                    }
-                    add_frame(&mut d, member_code(clo, member).0, span);
-                }
-                Err(d)
-            }
+            // The registers are freed below.
+            Exec::Error(d, called, member) => Err(self.call_failed(d, called, clo, member, args, 0)),
             Exec::Tail(next, next_member, next_args, next_argc, next_span, next_test) => {
                 test = next_test.then_some(next_span);
                 self.tail_chain_here(next, next_member, args, code.chunk.regs, next_args, next_argc, next_span, &mut test)
@@ -220,7 +213,7 @@ impl Interp {
     #[inline(always)]
     fn call_closure(&mut self, clo: Rc<Closure>, member: Option<u32>, args: usize, argc: usize, span: Span) -> Fallible<Value> {
         let (calls, values) = call_limits();
-        let (def, code) = member_code(&clo, member);
+        let code = member_code(&clo, member).1;
         if argc == code.arity && self.steps_left != 0 && self.depth < calls && self.stack.len() <= values && !self.stack_too_deep() {
             self.depth += 1;
             self.steps_left -= 1;
@@ -236,8 +229,7 @@ impl Interp {
                     }
                 }
                 Exec::Error(d, called, now) => {
-                    let def = if now == member { def } else { member_code(&clo, now).0 };
-                    let d = self.call_failed(d, called, def, args, regs);
+                    let d = self.call_failed(d, called, &clo, now, args, regs);
                     if self.steps_left == 0 {
                         self.return_hook(Err(d))
                     } else {
@@ -300,12 +292,20 @@ impl Interp {
     /// called at `span`, stopped with the error `d`.
     #[cold]
     #[inline(never)]
-    fn call_failed(&mut self, mut d: Box<Diagnostic>, called: Option<Span>, def: &FnDef, base: usize, regs: usize) -> Box<Diagnostic> {
+    fn call_failed(
+        &mut self,
+        mut d: Box<Diagnostic>,
+        called: Option<Span>,
+        clo: &Closure,
+        member: Option<u32>,
+        base: usize,
+        regs: usize,
+    ) -> Box<Diagnostic> {
         if let Some(span) = called {
             if self.steps_left == 0 {
                 d = self.error_hook(d);
             }
-            add_frame(&mut d, def, span);
+            add_frame(&mut d, member_code(clo, member).0, span);
         }
         self.reset(base, base + regs);
         d
@@ -429,7 +429,7 @@ impl Interp {
                         if self.steps_left == 0 {
                             d = self.error_hook(d);
                         }
-                        add_frame(&mut d, if now == member { def } else { member_code(clo, now).0 }, span);
+                        add_frame(&mut d, member_code(clo, now).0, span);
                     }
                     self.reset(base, base + regs);
                     return Err(d);
@@ -555,7 +555,7 @@ impl Interp {
             ($e:expr) => {
                 match $e {
                     Ok(v) => v,
-                    Err(d) => return Exec::Error(d, (!chunk!().chooses(pc!())).then_some(span), member),
+                    Err(d) => return failed(d, code, pc!(), span, member),
                 }
             };
         }
@@ -916,12 +916,9 @@ impl Interp {
                     // Another function of the group, whose registers fit in
                     // the frame, runs in it at once: what `call_loop` does
                     // with this call, without leaving `exec`.
-                    if !test && self.steps_left != 0 {
-                        let next = &me.siblings.as_ref().expect("a function of a group")[i as usize].code;
-                        if argc == next.arity && next.chunk.regs <= frame {
-                            self.steps_left -= 1;
+                    if !test {
+                        if let Some(next) = self.enter_sibling(me, s, base, code, frame) {
                             span = at!();
-                            self.restart(regs, args, argc, chunk!().regs);
                             code = next;
                             member = Some(i);
                             start = code.chunk.ops.as_ptr();
@@ -962,6 +959,33 @@ impl Interp {
                 *v = Value::Unit;
             }
         }
+    }
+
+    /// The code of the function of the group of `me` called last at `s`,
+    /// from the frame at `base` (of `regs` registers, those of the function
+    /// called first) where `running` runs, when it runs in the frame at
+    /// once: its arguments are then in place (see `Op::TailCallSibling`).
+    /// Kept out of `exec`, whose frame on the machine's stack stays small.
+    #[inline(never)]
+    fn enter_sibling<'a>(
+        &mut self,
+        me: &'a Closure,
+        s: &super::SiblingSite,
+        base: usize,
+        running: &FnCode,
+        regs: usize,
+    ) -> Option<&'a FnCode> {
+        let (args, argc) = (s.args as usize, s.argc as usize);
+        let next = &me.siblings.as_ref().expect("a function of a group")[s.i as usize].code;
+        if self.steps_left == 0 || argc != next.arity || next.chunk.regs > regs {
+            return None;
+        }
+        self.steps_left -= 1;
+        debug_assert!(base + regs <= self.stack.len());
+        // SAFETY: the registers of the frame are on the stack (see the module).
+        let frame = unsafe { self.stack.as_mut_ptr().add(base) };
+        self.restart(frame, args, argc, running.chunk.regs);
+        Some(next)
     }
 
     /// A value built last (`Node(l, v, r)` in tail position), with its
@@ -1380,6 +1404,14 @@ fn sibling(clo: Option<&Rc<Closure>>, i: u32) -> Value {
         captured: clo.captured.clone(),
         siblings: Some(group.clone()),
     }))
+}
+
+/// How `exec` stops with the error `d` at the instruction `pc` of `code`
+/// (see `Exec::Error`), out of line: `exec` stays small.
+#[cold]
+#[inline(never)]
+fn failed(d: Box<Diagnostic>, code: &FnCode, pc: usize, span: Span, member: Option<u32>) -> Exec {
+    Exec::Error(d, (!code.chunk.chooses(pc)).then_some(span), member)
 }
 
 /// A comparison of any two values, true or false.

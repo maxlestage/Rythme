@@ -42,9 +42,20 @@ pub enum Value {
 }
 
 impl Clone for Value {
-    /// The values that hold no memory are copied in place, the others by a call.
+    /// Whole numbers are copied in place, the other values by a call.
     #[inline(always)]
     fn clone(&self) -> Value {
+        match self {
+            Value::Int(n) => Value::Int(*n),
+            v => v.clone_shared(),
+        }
+    }
+}
+
+impl Value {
+    /// A copy of a value other than a whole number: one more count of its memory.
+    #[inline(never)]
+    fn clone_shared(&self) -> Value {
         match self {
             Value::Unit => Value::Unit,
             Value::Bool(b) => Value::Bool(*b),
@@ -52,16 +63,6 @@ impl Clone for Value {
             Value::Float(x) => Value::Float(*x),
             Value::Symbol(s) => Value::Symbol(*s),
             Value::Builtin(b) => Value::Builtin(b),
-            v => v.clone_shared(),
-        }
-    }
-}
-
-impl Value {
-    /// A copy of a value that holds memory: one more count of it.
-    #[inline(never)]
-    fn clone_shared(&self) -> Value {
-        match self {
             Value::Big(n) => Value::Big(n.clone()),
             Value::Text(t) => Value::Text(t.clone()),
             Value::List(l) => Value::List(l.clone()),
@@ -71,9 +72,6 @@ impl Value {
             Value::Set(m) => Value::Set(m.clone()),
             Value::Func(f) => Value::Func(f.clone()),
             Value::Ctor(c) => Value::Ctor(c.clone()),
-            Value::Unit | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::Symbol(_) | Value::Builtin(_) => {
-                unreachable!("copied in place")
-            }
         }
     }
 }
