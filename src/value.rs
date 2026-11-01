@@ -766,9 +766,7 @@ impl Value {
                 Item::Value(v) => match v {
                     Value::Unit => out.push_str("()"),
                     Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
-                    Value::Int(n) => {
-                        let _ = write!(out, "{n}");
-                    }
+                    Value::Int(n) => out.push_str(int_digits(*n, &mut [0; 20])),
                     Value::Big(n) => {
                         let _ = write!(out, "{n}");
                     }
@@ -1295,6 +1293,27 @@ pub fn write_text_repr(s: &str, out: &mut String) {
     out.push('"');
 }
 
+/// The digits of a whole number, written in `buf`: the same text as
+/// `n.to_string()`, without the machinery of `format!`, which is most of the
+/// time spent putting numbers in texts.
+pub fn int_digits(n: i64, buf: &mut [u8; 20]) -> &str {
+    let mut i = buf.len();
+    let mut m = n.unsigned_abs();
+    loop {
+        i -= 1;
+        buf[i] = b'0' + (m % 10) as u8;
+        m /= 10;
+        if m == 0 {
+            break;
+        }
+    }
+    if n < 0 {
+        i -= 1;
+        buf[i] = b'-';
+    }
+    std::str::from_utf8(&buf[i..]).unwrap_or_default()
+}
+
 /// Decimal numbers always show a decimal point: `3.0`, `0.5`, `1e300`.
 pub fn fmt_float(f: f64) -> String {
     if f.is_nan() {
@@ -1389,5 +1408,18 @@ mod tests {
         let zs = ys.push(Value::list(vec![Value::Int(7)]));
         assert_eq!({ ys.shared }, { zs.shared });
         assert_eq!(Value::List(zs).repr(), "[1, 2, 3, 4, [7]]");
+    }
+
+    #[test]
+    fn whole_numbers_are_written_as_rust_writes_them() {
+        let mut n: i64 = 1;
+        let mut cases = vec![0, i64::MIN, i64::MAX, i64::MIN + 1, -1];
+        for _ in 0..19 {
+            cases.extend([n, n - 1, n + 1, -n, 1 - n]);
+            n = n.saturating_mul(10);
+        }
+        for n in cases {
+            assert_eq!(int_digits(n, &mut [0; 20]), n.to_string());
+        }
     }
 }
