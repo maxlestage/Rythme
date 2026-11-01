@@ -121,6 +121,7 @@ pub const IT: Texts = Texts {
     pg_save: "Scarica",
     pg_save_title: "Scarica il programma come file .ry",
     pg_offline: "Una volta visitato, il playground funziona anche senza rete, e il codice che stai scrivendo resta in questo browser. Installa il sito come app per averlo sempre a portata di mano.",
+    pg_catalog_failed: "Non è stato possibile caricare i messaggi dell'interprete in questa lingua: per ora sono in inglese.",
     pg_share: "Condividi",
     pg_share_title: "Copia un link che apre questo programma: il codice viaggia nel link stesso, non viene inviato niente da nessuna parte",
     pg_share_link: "Link a questo programma",

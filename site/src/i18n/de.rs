@@ -121,6 +121,7 @@ pub const DE: Texts = Texts {
     pg_save: "Herunterladen",
     pg_save_title: "Das Programm als .ry-Datei herunterladen",
     pg_offline: "Einmal besucht, funktioniert der Playground auch ohne Netz, und dein Code bleibt in diesem Browser. Installiere die Website als App, um sie griffbereit zu haben.",
+    pg_catalog_failed: "Die Meldungen des Interpreters konnten in dieser Sprache nicht geladen werden: Sie erscheinen vorerst auf Englisch.",
     pg_share: "Teilen",
     pg_share_title: "Einen Link kopieren, der dieses Programm öffnet: Der Code steckt im Link selbst, nichts wird irgendwohin gesendet",
     pg_share_link: "Link zu diesem Programm",

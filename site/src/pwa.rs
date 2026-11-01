@@ -125,8 +125,9 @@ pub fn manifest(lang: Lang) -> String {
 
 /// Every URL the service worker saves when it installs: every page in every language
 /// with the offline pages, the styles and the browser side (with the interpreter) at
-/// their current version, the playground's worker, the examples, the manifests and the
-/// icons. Only files that exist (`public/pkg/` is built by `./build.sh`).
+/// their current version, the playground's worker and the catalogs of its messages, the
+/// examples, the manifests and the icons. Only files that exist (`public/pkg/` is built
+/// by `./build.sh`).
 pub fn precache(site: &Site) -> Vec<String> {
     let public = site_dir().join("public");
     let exists = |path: &str| public.join(path.trim_start_matches('/')).is_file();
@@ -135,6 +136,9 @@ pub fn precache(site: &Site) -> Vec<String> {
     if exists(crate::client::PAGE_FILES[3]) {
         urls.push(crate::client::worker_url(&site.version));
     }
+    // The catalogs of the interpreter's messages: the playground offline in every
+    // language.
+    urls.extend(crate::client::CATALOG_FILES.iter().filter(|c| exists(c)).map(|c| format!("{}?v={}", link(c), site.version)));
     urls.push(link("/examples.json"));
     // The whole language for AI assistants, linked by the AI page: offline too.
     urls.extend([crate::ai::LLMS_PATH, crate::ai::LLMS_FULL_PATH].map(link));
