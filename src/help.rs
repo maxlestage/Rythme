@@ -2,25 +2,89 @@
 //! a guided tour, in English and in French (and in the languages of
 //! `src/i18n/`, see [`crate::lang`]).
 
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::io::{BufRead, IsTerminal, Write};
 
+use crate::ast::Item;
 use crate::builtins::{self, Builtin, Category, BUILTINS};
 use crate::interp::{Interp, Wrap};
 use crate::lang::pick;
 use crate::source;
 use crate::suggest;
+use crate::symbol::Sym;
 use crate::value::Value;
+
+thread_local! {
+    /// The constructors of the program that is running whose code writes
+    /// types (`Circle(radius: Float)`) or whose type has parameters
+    /// (`type Tree(a)`), by the name the interpreter stores each one under:
+    /// their signature and their type, for `help(Circle)`.
+    static WRITTEN: RefCell<HashMap<Sym, (String, String)>> = RefCell::new(HashMap::new());
+}
+
+/// Notes the types written for the constructors of a module about to run
+/// (`stored`: the name the interpreter stores a name of the module under),
+/// so that `help(Circle)` shows them. Running never looks at them.
+pub fn note_types(items: &[Item], stored: impl Fn(Sym) -> Sym) {
+    WRITTEN.with(|w| {
+        let mut w = w.borrow_mut();
+        for item in items {
+            let Item::Type(t) = item else { continue };
+            for v in &t.variants {
+                if t.params.is_empty() && v.types.iter().all(Option::is_none) {
+                    w.remove(&stored(v.name));
+                } else {
+                    w.insert(stored(v.name), (v.signature(), t.header()));
+                }
+            }
+        }
+    });
+}
+
+mod more;
 
 /// Topic names, in the order of the guided tour, with their aliases in the other languages.
 pub const TOPICS: &[(&str, &[&str])] = &[
-    ("start", &["intro", "debut", "début", "commencer", "inicio", "empezar", "einstieg", "anfang", "comecar", "começar", "开始", "入门"]),
-    ("syntax", &["syntaxe", "sintaxis", "sintaxe", "语法"]),
-    ("functions", &["fonctions", "fn", "funciones", "funktionen", "funcoes", "funções", "函数"]),
-    ("lists", &["listes", "list", "liste", "listas", "listen", "列表"]),
-    ("text", &["texte", "texts", "textes", "string", "texto", "textos", "文本"]),
+    (
+        "start",
+        &[
+            "intro",
+            "debut",
+            "début",
+            "commencer",
+            "inicio",
+            "empezar",
+            "einstieg",
+            "anfang",
+            "comecar",
+            "começar",
+            "开始",
+            "入门",
+            "inizio",
+            "iniziare",
+            "はじめに",
+            "入門",
+        ],
+    ),
+    ("syntax", &["syntaxe", "sintaxis", "sintaxe", "语法", "sintassi", "構文"]),
+    ("functions", &["fonctions", "fn", "funciones", "funktionen", "funcoes", "funções", "函数", "funzioni", "関数"]),
+    ("lists", &["listes", "list", "liste", "listas", "listen", "列表", "lista", "リスト"]),
+    ("text", &["texte", "texts", "textes", "string", "texto", "textos", "文本", "testo", "testi", "テキスト", "文字列"]),
     (
         "records",
-        &["enregistrements", "record", "enregistrement", "registros", "registro", "datensatz", "datensaetze", "datensätze", "记录"],
+        &[
+            "enregistrements",
+            "record",
+            "enregistrement",
+            "registros",
+            "registro",
+            "datensatz",
+            "datensaetze",
+            "datensätze",
+            "记录",
+            "レコード",
+        ],
     ),
     (
         "dicts",
@@ -50,6 +114,11 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "dicionário",
             "字典",
             "集合",
+            "dizionari",
+            "dizionario",
+            "insiemi",
+            "insieme",
+            "辞書",
         ],
     ),
     (
@@ -70,20 +139,72 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "anotacoes",
             "anotações",
             "类型注解",
+            "tipi",
+            "tipo",
+            "型",
         ],
     ),
-    ("match", &["patterns", "motifs", "patrones", "muster", "padroes", "padrões", "模式", "匹配"]),
-    ("errors", &["erreurs", "option", "result", "?", "errores", "fehler", "erros", "错误"]),
+    ("match", &["patterns", "motifs", "patrones", "muster", "padroes", "padrões", "模式", "匹配", "パターン"]),
+    ("errors", &["erreurs", "option", "result", "?", "errores", "fehler", "erros", "错误", "errori", "エラー"]),
     (
         "functional",
-        &["fonctionnel", "loops", "boucles", "funcional", "bucles", "funktional", "schleifen", "lacos", "laços", "函数式", "循环"],
+        &[
+            "fonctionnel",
+            "loops",
+            "boucles",
+            "funcional",
+            "bucles",
+            "funktional",
+            "schleifen",
+            "lacos",
+            "laços",
+            "函数式",
+            "循环",
+            "funzionale",
+            "cicli",
+            "関数型",
+            "ループ",
+        ],
     ),
-    ("tests", &["test", "pruebas", "prueba", "testes", "teste", "测试"]),
+    ("tests", &["test", "pruebas", "prueba", "testes", "teste", "测试", "テスト"]),
     (
         "exercises",
-        &["exercices", "exercise", "exercice", "ejercicios", "ejercicio", "uebungen", "übungen", "exercicios", "exercícios", "练习"],
+        &[
+            "exercices",
+            "exercise",
+            "exercice",
+            "ejercicios",
+            "ejercicio",
+            "uebungen",
+            "übungen",
+            "exercicios",
+            "exercícios",
+            "练习",
+            "esercizi",
+            "esercizio",
+            "練習問題",
+            "練習",
+        ],
     ),
-    ("modules", &["use", "files", "fichiers", "modulos", "módulos", "archivos", "module", "dateien", "arquivos", "模块", "文件"]),
+    (
+        "modules",
+        &[
+            "use",
+            "files",
+            "fichiers",
+            "modulos",
+            "módulos",
+            "archivos",
+            "module",
+            "dateien",
+            "arquivos",
+            "模块",
+            "文件",
+            "moduli",
+            "モジュール",
+            "ファイル",
+        ],
+    ),
     (
         "system",
         &[
@@ -107,6 +228,9 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "pastas",
             "caminhos",
             "系统",
+            "cartelle",
+            "percorsi",
+            "システム",
         ],
     ),
     (
@@ -115,10 +239,6 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "project",
             "projet",
             "projets",
-            "packages",
-            "package",
-            "paquets",
-            "paquet",
             "new",
             "install",
             "dependencies",
@@ -127,15 +247,38 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "rythme.toml",
             "proyectos",
             "proyecto",
-            "paquetes",
             "projekte",
             "projekt",
-            "pakete",
             "projetos",
             "projeto",
-            "pacotes",
             "项目",
+            "progetti",
+            "progetto",
+            "プロジェクト",
+        ],
+    ),
+    (
+        "packages",
+        &[
+            "package",
+            "paquets",
+            "paquet",
+            "index",
+            "registry",
+            "publish",
+            "publier",
+            "semver",
+            "paquetes",
+            "paquete",
+            "pakete",
+            "paket",
+            "pacotes",
+            "pacote",
             "包",
+            "软件包",
+            "pacchetti",
+            "pacchetto",
+            "パッケージ",
         ],
     ),
     (
@@ -159,6 +302,8 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "horas",
             "日期",
             "时间",
+            "日付",
+            "日時",
         ],
     ),
     (
@@ -177,6 +322,7 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "expressões-regulares",
             "正则表达式",
             "正则",
+            "正規表現",
         ],
     ),
     (
@@ -210,6 +356,8 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "semente",
             "随机",
             "种子",
+            "caso",
+            "乱数",
         ],
     ),
     (
@@ -230,9 +378,10 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "neurones",
             "人工智能",
             "机器学习",
+            "機械学習",
         ],
     ),
-    ("repl", &["interactive", "interactif", "interactivo", "interaktiv", "interativo", "交互"]),
+    ("repl", &["interactive", "interactif", "interactivo", "interaktiv", "interativo", "交互", "対話モード"]),
     (
         "fmt",
         &[
@@ -248,11 +397,24 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "formatacao",
             "formatação",
             "格式化",
+            "整形",
         ],
     ),
     (
         "doc",
-        &["documentation", "documenter", "docs", "documentacion", "documentación", "dokumentation", "documentacao", "documentação", "文档"],
+        &[
+            "documentation",
+            "documenter",
+            "docs",
+            "documentacion",
+            "documentación",
+            "dokumentation",
+            "documentacao",
+            "documentação",
+            "文档",
+            "documentazione",
+            "ドキュメント",
+        ],
     ),
     (
         "steps",
@@ -274,6 +436,8 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "passos",
             "passo-a-passo",
             "步骤",
+            "passi",
+            "ステップ",
         ],
     ),
     (
@@ -292,9 +456,14 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "debuggen",
             "调试",
             "调试器",
+            "デバッガー",
+            "デバッグ",
         ],
     ),
-    ("editors", &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide", "editores", "editoren", "编辑器"]),
+    (
+        "editors",
+        &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide", "editores", "editoren", "编辑器", "エディター"],
+    ),
     ("ruby", &["rb", "rubyist", "blocks", "blocs", "symbols", "symboles"]),
     (
         "builtins",
@@ -312,6 +481,8 @@ pub const TOPICS: &[(&str, &[&str])] = &[
             "funcoes-embutidas",
             "funções-embutidas",
             "内置函数",
+            "predefinite",
+            "組み込み関数",
         ],
     ),
 ];
@@ -340,6 +511,7 @@ Commands
   rythme exercise           exercises checked automatically (list, start, check)
   rythme new NAME           create a project (rythme.toml, src/, tests/)
   rythme install            download the dependencies of the project
+  rythme add NAME           add a package of the index to the project (rythme search WORDS finds them)
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
@@ -347,7 +519,7 @@ Commands
   rythme -e "code"          run a piece of code
   rythme lsp                language server, for editors (VS Code, Neovim...)
   rythme mcp                server for AI assistants (Model Context Protocol)
-  option --lang CODE        language of the messages: en, fr, es, de, pt, zh (or RYTHME_LANG)
+  option --lang CODE        language of the messages: en, fr, es, de, pt, zh, it, ja (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
   start       the language in one minute
@@ -357,7 +529,7 @@ Topics (rythme help TOPIC)
   text        texts
   records     records {{name: value}}
   dicts       dictionaries and sets: dict(...), set(...)
-  types       your own types
+  types       your own types, and types written in the code
   match       choosing according to the shape of a value
   errors      Option, Result and ?
   functional  no loops: what to do instead
@@ -366,6 +538,7 @@ Topics (rythme help TOPIC)
   modules     using several files
   system      files, folders, paths, options, input, exit codes
   projects    projects and packages: rythme new, rythme.toml, rythme install
+  packages    the package index: rythme search, add, update, publish
   dates       dates and times: now(), today(), calendar, ISO 8601
   regex       searching, cutting and replacing with regular expressions
   csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
@@ -398,6 +571,7 @@ Commandes
   rythme exercise           exercices corrigés automatiquement (list, start, check)
   rythme new NOM            créer un projet (rythme.toml, src/, tests/)
   rythme install            télécharger les dépendances du projet
+  rythme add NOM            ajouter un paquet de l'index au projet (rythme search MOTS les trouve)
   rythme learn              visite guidée du langage, pas à pas
   rythme help SUJET         aide sur un sujet ou une fonction
   rythme explain E003       expliquer un code d'erreur
@@ -405,7 +579,7 @@ Commandes
   rythme -e "code"          exécuter un morceau de code
   rythme lsp                serveur de langage, pour les éditeurs (VS Code, Neovim...)
   rythme mcp                serveur pour les assistants d'IA (Model Context Protocol)
-  option --lang CODE        langue des messages : en, fr, es, de, pt, zh (ou variable RYTHME_LANG)
+  option --lang CODE        langue des messages : en, fr, es, de, pt, zh, it, ja (ou variable RYTHME_LANG)
 
 Sujets (rythme help SUJET)
   start       le langage en une minute
@@ -415,7 +589,7 @@ Sujets (rythme help SUJET)
   text        textes
   records     enregistrements {{nom: valeur}}
   dicts       dictionnaires et ensembles : dict(...), set(...)
-  types       vos propres types
+  types       vos propres types, et les types écrits dans le code
   match       choisir selon la forme d'une valeur
   errors      Option, Result et ?
   functional  pas de boucles : comment faire à la place
@@ -424,6 +598,7 @@ Sujets (rythme help SUJET)
   modules     utiliser plusieurs fichiers
   system      fichiers, dossiers, chemins, options, entrée, codes de sortie
   projects    projets et paquets : rythme new, rythme.toml, rythme install
+  packages    l'index des paquets : rythme search, add, update, publish
   dates       dates et heures : now(), today(), calendrier, ISO 8601
   regex       chercher, découper et remplacer avec des expressions régulières
   csv         les tableaux des tableurs : csv_parse, csv_records, csv_format
@@ -468,6 +643,11 @@ pub fn topic(name: &str) -> Option<String> {
         if let Some(text) = keyword_help(name.trim()) {
             return Some(text);
         }
+        // `rythme help run`: the usage of the command.
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(text) = crate::cli::usage(name.trim()) {
+            return Some(text);
+        }
     }
     let t = canonical_topic(name)?;
     if t == "builtins" {
@@ -476,6 +656,9 @@ pub fn topic(name: &str) -> Option<String> {
     let mut text = topic_text(t).to_string();
     if t == "types" {
         text.push_str(&format!("\n\n{}", pick(WRITTEN_EN, WRITTEN_FR)));
+    }
+    if let Some(extra) = more::extra(t) {
+        text.push_str(&format!("\n\n{extra}"));
     }
     if let Some(b) = builtin {
         // `text` is both a topic and a function: show both.
@@ -719,13 +902,15 @@ pub fn help_for_value(it: &Interp, v: Option<&Value>) -> String {
         }
         Value::Ctor(c) => {
             let fields: Vec<String> = c.fields.iter().map(|f| f.to_string()).collect();
-            let mut out = t!(
-                "{}({})\n  A constructor of the type `{}`.\n",
-                "{}({})\n  Un constructeur du type `{}`.\n",
-                c.name,
-                fields.join(", "),
-                c.type_name
-            );
+            // With the types written for its fields (`Circle(radius: Float)`),
+            // and the parameters of its type (`Tree(a)`).
+            let written = WRITTEN.with(|w| w.borrow().get(&c.id).cloned()).and_then(|(sig, ty)| {
+                let inside = sig.strip_prefix(&format!("{}(", c.name))?.strip_suffix(')')?.to_string();
+                Some((inside, ty))
+            });
+            let (fields, ty) = written.unwrap_or_else(|| (fields.join(", "), c.type_name.to_string()));
+            let mut out =
+                t!("{}({})\n  A constructor of the type `{}`.\n", "{}({})\n  Un constructeur du type `{}`.\n", c.name, fields, ty);
             push_type_doc(&mut out, c);
             out
         }
@@ -788,6 +973,15 @@ pub fn learn() {
     for (i, name) in order.iter().enumerate() {
         crate::io::out_line(&format!("── {}/{} ──\n", i + 1, order.len()));
         crate::io::out_line(topic_text(name).trim_end());
+        if *name == "types" {
+            crate::io::out_line(&format!(
+                "\n{}",
+                t!(
+                    "Types may also be written in the code, where they help to read it:\n  fn area(s: Shape) -> Float\n`rythme check` verifies them; they are never needed (rythme help types).",
+                    "Les types peuvent aussi être écrits dans le code, là où ils aident à le lire :\n  fn aire(f: Forme) -> Float\n`rythme check` les vérifie ; ils ne sont jamais obligatoires (rythme help types)."
+                )
+            ));
+        }
         if interactive && i + 1 < order.len() {
             crate::io::out(&format!("\n{}", t!("[Enter] next   [q] quit > ", "[Entrée] suite   [q] quitter > ")));
             let _ = std::io::stdout().flush();
@@ -996,6 +1190,7 @@ fn topic_texts(name: &str) -> (&'static str, &'static str) {
         "modules" => (MODULES_EN, MODULES_FR),
         "system" => (SYSTEM_EN, SYSTEM_FR),
         "projects" => (PROJECTS_EN, PROJECTS_FR),
+        "packages" => (PACKAGES_EN, PACKAGES_FR),
         "dates" => (DATES_EN, DATES_FR),
         "regex" => (REGEX_EN, REGEX_FR),
         "csv" => (CSV_EN, CSV_FR),
@@ -1127,6 +1322,11 @@ Several steps inside an expression
 Your own types
   type Shape = Circle(radius) | Rect(width, height)
 
+Types written in the code (optional, checked by rythme check)
+  fn area(w: Int, h: Int) -> Int = w * h
+  total: Float = 0.0
+  type Box(a) = Box(value: a)    a type that takes a type: Box(Int), Box(Text)
+
 Tests and other files
   test "double works" = assert_eq(double(2), 4)
   use geometry                   then geometry.area(2)
@@ -1199,6 +1399,11 @@ Plusieurs étapes dans une expression
 
 Vos propres types
   type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+
+Types écrits dans le code (facultatifs, vérifiés par rythme check)
+  fn aire(l: Int, h: Int) -> Int = l * h
+  total: Float = 0.0
+  type Boite(a) = Boite(valeur: a)   un type qui prend un type : Boite(Int), Boite(Text)
 
 Tests et autres fichiers
   test "double marche" = assert_eq(double(2), 4)
@@ -2047,12 +2252,26 @@ The types
   fn(Int, Int) -> Int          a function
   Shape                        a type defined with `type` (geometry.Shape
                                for a type of `use geometry`)
+  Tree(Int)                    a type defined with parameters, with its types
   a                            any type: one lowercase letter, the same type
                                everywhere in a definition
   List, Dict, Set, Option, Result, Record, Function alone: any content
+  (Tree alone too)
 
   fn first_of(xs: List(a)) -> a = xs[0]
   first_of([1, 2]) + 1         # the checker knows it is an Int
+
+Types with parameters: a type can take types, like List(Int)
+  type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+  type Pair(a, b) = Pair(first: a, second: b)
+
+  fn depth(t: Tree(a)) -> Int = ...      a Tree of anything
+  fn total(t: Tree(Int)) -> Int = ...    a Tree of whole numbers
+  total(Node(Leaf, "two", Leaf))         E027: this is a Tree(Text)
+
+A type variable is one letter: a lowercase word, like `int` or `string`, is
+taken for a type named as in another language, and `rythme check` gives its
+Rythme name.
 
 Written types are never needed and change nothing when the program runs;
 the editors and `rythme doc` show them."#;
@@ -2074,12 +2293,26 @@ Les types
   fn(Int, Int) -> Int          une fonction
   Forme                        un type défini avec `type` (geometrie.Forme
                                pour un type de `use geometrie`)
+  Arbre(Int)                   un type défini avec des paramètres, et ses types
   a                            n'importe quel type : une lettre minuscule, le
                                même type partout dans une définition
   List, Dict, Set, Option, Result, Record, Function seuls : contenu quelconque
+  (Arbre seul aussi)
 
   fn premier(xs: List(a)) -> a = xs[0]
   premier([1, 2]) + 1          # le vérificateur sait que c'est un Int
+
+Types avec paramètres : un type peut prendre des types, comme List(Int)
+  type Arbre(a) = Feuille | Noeud(gauche: Arbre(a), valeur: a, droite: Arbre(a))
+  type Paire(a, b) = Paire(premier: a, second: b)
+
+  fn profondeur(t: Arbre(a)) -> Int = ...   un Arbre de n'importe quoi
+  fn total(t: Arbre(Int)) -> Int = ...      un Arbre de nombres entiers
+  total(Noeud(Feuille, "deux", Feuille))    E027 : c'est un Arbre(Text)
+
+Une variable de type est une lettre : un mot en minuscules, comme `int` ou
+`string`, est pris pour un type nommé comme dans un autre langage, et
+`rythme check` donne son nom en Rythme.
 
 Les types écrits ne sont jamais obligatoires et ne changent rien quand le
 programme tourne ; les éditeurs et `rythme doc` les montrent."#;
@@ -2480,7 +2713,85 @@ same code. Then:
   use hello/greeting        # a file of the project itself, from tests/
 
 A file next to the one that contains `use` comes first. Packages from git
-are kept in ~/.rythme/packages (or RYTHME_HOME/packages)."#;
+are kept in ~/.rythme/packages (or RYTHME_HOME/packages). Finding packages
+by name and sharing yours: `rythme help packages`."#;
+
+const PACKAGES_EN: &str = r#"THE PACKAGE INDEX
+
+  rythme search vectors      # the packages whose name, description or keywords say it
+  rythme info mathlib        # its description, repository, license, versions
+  rythme add mathlib         # adds `mathlib = { version = "^1.2.0" }` to rythme.toml,
+                             #   then installs it (rythme.lock keeps the exact commit)
+  rythme add mathlib@1.1     # a range of versions of your choice
+  rythme update              # the newest version in the range of each dependency
+  rythme publish             # checks your package, then says how to add it
+
+A dependency from the index gives a range of versions:
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 or newer, below 2.0.0 (the default)
+  geometry = { version = "~0.3.1" }   # 0.3.x, from 0.3.1
+  tools = { version = "=1.0.0" }      # exactly this one
+
+`rythme install` takes the version of rythme.lock while it is in the range,
+and `rythme update` the newest one; a withdrawn version is never chosen.
+
+The index is a git repository, one file per package (packages/NAME.toml):
+its name, description, repository, license, keywords, and for each version
+its tag, its commit and the checksum of its files. Rythme keeps a copy in
+~/.rythme/index and reads it without a network: `rythme search --update`
+gets the newest one. Another index: `index = "..."` in rythme.toml, or the
+variable RYTHME_INDEX (an address, or a folder of this computer); by
+default https://github.com/maxlestage/rythme-index.
+
+Safety: names are Rythme names (no `/`, no `..`), addresses use https, ssh
+or file://, git runs without hooks, the files of each version must have the
+checksum of the index, and nothing of a package runs when it is installed.
+
+Publishing: tag the version (git tag v1.2.0, git push origin v1.2.0), then
+`rythme publish` checks rythme.toml (description, license, repository),
+`rythme check`, `rythme test` and the tag, and prints the entry to add to
+the index with a pull request. Rythme never sends anything by itself."#;
+
+const PACKAGES_FR: &str = r#"L'INDEX DES PAQUETS
+
+  rythme search vecteurs     # les paquets dont le nom, la description ou les mots-clés le disent
+  rythme info mathlib        # sa description, son dépôt, sa licence, ses versions
+  rythme add mathlib         # ajoute `mathlib = { version = "^1.2.0" }` à rythme.toml,
+                             #   puis l'installe (rythme.lock garde le commit exact)
+  rythme add mathlib@1.1     # un intervalle de versions de votre choix
+  rythme update              # la version la plus récente de l'intervalle de chaque dépendance
+  rythme publish             # vérifie votre paquet, puis dit comment l'ajouter
+
+Une dépendance venant de l'index donne un intervalle de versions :
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 ou plus récente, sous 2.0.0 (par défaut)
+  geometrie = { version = "~0.3.1" }  # 0.3.x, à partir de 0.3.1
+  outils = { version = "=1.0.0" }     # exactement celle-ci
+
+`rythme install` prend la version de rythme.lock tant qu'elle est dans
+l'intervalle, et `rythme update` la plus récente ; une version retirée n'est
+jamais choisie.
+
+L'index est un dépôt git, un fichier par paquet (packages/NOM.toml) : son
+nom, sa description, son dépôt, sa licence, ses mots-clés, et pour chaque
+version son tag, son commit et la somme de contrôle de ses fichiers. Rythme
+en garde une copie dans ~/.rythme/index et la lit sans réseau :
+`rythme search --update` prend la plus récente. Un autre index :
+`index = "..."` dans rythme.toml, ou la variable RYTHME_INDEX (une adresse,
+ou un dossier de cet ordinateur) ; par défaut
+https://github.com/maxlestage/rythme-index.
+
+Sécurité : les noms sont des noms Rythme (pas de `/`, pas de `..`), les
+adresses utilisent https, ssh ou file://, git tourne sans hooks, les
+fichiers de chaque version doivent avoir la somme de contrôle de l'index, et
+rien d'un paquet ne tourne quand il est installé.
+
+Publier : étiquetez la version (git tag v1.2.0, git push origin v1.2.0),
+puis `rythme publish` vérifie rythme.toml (description, licence, dépôt),
+`rythme check`, `rythme test` et le tag, et affiche l'entrée à ajouter à
+l'index par une pull request. Rythme n'envoie jamais rien lui-même."#;
 
 const PROJECTS_FR: &str = r#"PROJETS ET PAQUETS
 
@@ -2512,7 +2823,8 @@ même code. Ensuite :
   use bonjour/salutation    # un fichier du projet lui-même, depuis tests/
 
 Un fichier à côté de celui qui contient `use` passe en premier. Les paquets
-venant de git sont gardés dans ~/.rythme/packages (ou RYTHME_HOME/packages)."#;
+venant de git sont gardés dans ~/.rythme/packages (ou RYTHME_HOME/packages).
+Trouver des paquets par leur nom et partager les vôtres : `rythme help packages`."#;
 
 const EDITORS_EN: &str = r#"RYTHME IN YOUR EDITOR
 
@@ -2529,7 +2841,7 @@ starts by itself:
 
 VS Code
   the extension in editors/vscode: colors, snippets and the language server.
-  Settings: rythme.path (the program), rythme.language (en, fr, es, de, pt, zh or auto).
+  Settings: rythme.path (the program), rythme.language (en, fr, es, de, pt, zh, it, ja or auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   every editor that speaks the Language Server Protocol: tell it to start
@@ -2543,7 +2855,7 @@ Zed
 Colors in Neovim, Helix and Zed
   the Tree-sitter grammar in editors/tree-sitter-rythme (see editors/README.md).
 
-The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh) or
+The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh, it, ja) or
 RYTHME_LANG chooses it: rythme --lang fr lsp"#;
 
 const EDITORS_FR: &str = r#"RYTHME DANS VOTRE ÉDITEUR
@@ -2561,7 +2873,7 @@ serveur de langage, que l'éditeur lance tout seul :
 
 VS Code
   l'extension dans editors/vscode : couleurs, extraits de code et serveur de
-  langage. Réglages : rythme.path (le programme), rythme.language (en, fr, es, de, pt, zh ou auto).
+  langage. Réglages : rythme.path (le programme), rythme.language (en, fr, es, de, pt, zh, it, ja ou auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   tout éditeur qui parle le Language Server Protocol : demandez-lui de lancer
@@ -2576,7 +2888,7 @@ Zed
 Couleurs dans Neovim, Helix et Zed
   la grammaire Tree-sitter dans editors/tree-sitter-rythme (voir editors/README.fr.md).
 
-La langue des messages suit celle de l'éditeur, sauf si `--lang` (en, fr, es, de, pt, zh) ou
+La langue des messages suit celle de l'éditeur, sauf si `--lang` (en, fr, es, de, pt, zh, it, ja) ou
 RYTHME_LANG la choisit : rythme --lang fr lsp"#;
 
 const REPL_EN: &str = r#"THE INTERACTIVE MODE
@@ -2590,7 +2902,7 @@ Definitions are kept from one line to the next. If a line is not finished
 Commands
   :help           this help              :quit          leave (or Ctrl-D)
   :doc map        help on a name         :load f.ry     load a file
-  :reset          forget everything      :lang fr       change the language (en, fr, es, de, pt, zh)
+  :reset          forget everything      :lang fr       change the language (en, fr, es, de, pt, zh, it, ja)
   :learn          guided tour            :explain E003  explain an error
   :steps fib(4)   show the calculation step by step
 The Tab key completes names."#;
@@ -2607,7 +2919,7 @@ suivante.
 Commandes
   :help           cette aide             :quit          quitter (ou Ctrl-D)
   :doc map        aide sur un nom        :load f.ry     charger un fichier
-  :reset          tout oublier           :lang en       changer de langue (en, fr, es, de, pt, zh)
+  :reset          tout oublier           :lang en       changer de langue (en, fr, es, de, pt, zh, it, ja)
   :learn          visite guidée          :explain E003  expliquer une erreur
   :etapes fib(4)  montrer le calcul étape par étape
 La touche Tab complète les noms."#;
@@ -3371,8 +3683,10 @@ la saisie au clavier a été fermée (Ctrl-D), ou le texte envoyé au programme
             r#"E025 — Project or package problem
 
 The `rythme.toml` of the project (or the `rythme.lock` written by
-`rythme install`) cannot be read, a dependency is not installed, or
-`rythme install` cannot download one. A `rythme.toml` looks like this:
+`rythme install`) cannot be read, a dependency is not installed,
+`rythme install` cannot download one, or the package index (`rythme
+search`, `add`, `publish`) cannot be read or does not have what was asked.
+A `rythme.toml` looks like this:
 
   name = "hello"                 # a Rythme name in lower case
   version = "0.1.0"              # three numbers
@@ -3381,17 +3695,20 @@ The `rythme.toml` of the project (or the `rythme.lock` written by
   [dependencies]
   mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
   tools = { path = "../tools" }
+  geometry = { version = "^1.2.0" }   # from the package index
 
 Every value is a text, in quotes. A dependency from git needs a fixed
 version, a `tag` or a `commit`, and the program `git`
 (https://git-scm.com). After a change of `[dependencies]`, run
-`rythme install` in the folder of the project. More: `rythme help projects`."#,
+`rythme install` in the folder of the project. More: `rythme help projects`
+and `rythme help packages`."#,
             r#"E025 — Problème de projet ou de paquet
 
 Le `rythme.toml` du projet (ou le `rythme.lock` écrit par `rythme install`)
-ne peut pas être lu, une dépendance n'est pas installée, ou
-`rythme install` ne peut pas en télécharger une. Un `rythme.toml`
-ressemble à ceci :
+ne peut pas être lu, une dépendance n'est pas installée, `rythme install`
+ne peut pas en télécharger une, ou l'index des paquets (`rythme search`,
+`add`, `publish`) ne peut pas être lu ou n'a pas ce qui est demandé. Un
+`rythme.toml` ressemble à ceci :
 
   name = "bonjour"               # un nom Rythme en minuscules
   version = "0.1.0"              # trois nombres
@@ -3400,11 +3717,13 @@ ressemble à ceci :
   [dependencies]
   mathlib = { git = "https://github.com/quelqu-un/mathlib", tag = "v1.0.0" }
   outils = { path = "../outils" }
+  geometrie = { version = "^1.2.0" }  # depuis l'index des paquets
 
 Chaque valeur est un texte, entre guillemets. Une dépendance venant de git
 a besoin d'une version fixe, un `tag` ou un `commit`, et du programme `git`
 (https://git-scm.com). Après un changement de `[dependencies]`, lancez
-`rythme install` dans le dossier du projet. Plus : `rythme help projects`."#,
+`rythme install` dans le dossier du projet. Plus : `rythme help projects`
+et `rythme help packages`."#,
         ),
         "E018" => (
             r#"E018 — Unexpected character
@@ -3553,6 +3872,8 @@ Wrong:   fn label(n: Int) -> Text = n  # gives an Int
 Right:   fn label(n: Int) -> Text = text(n)
 Wrong:   fn twice(x: int) = x * 2      # type names start with an uppercase letter
 Right:   fn twice(x: Int) = x * 2
+Wrong:   fn depth(t: Tree(Int, Text))  # type Tree(a) takes one type
+Right:   fn depth(t: Tree(Int))
 
 Written types are optional: removing one never changes what a program does.
 More: `rythme help types`."#,
@@ -3571,6 +3892,8 @@ Faux :   fn etiquette(n: Int) -> Text = n   # donne un Int
 Juste :  fn etiquette(n: Int) -> Text = text(n)
 Faux :   fn double(x: int) = x * 2     # les noms de types commencent par une majuscule
 Juste :  fn double(x: Int) = x * 2
+Faux :   fn profondeur(t: Arbre(Int, Text))  # type Arbre(a) prend un seul type
+Juste :  fn profondeur(t: Arbre(Int))
 
 Les types écrits sont facultatifs : en retirer un ne change jamais ce que
 fait un programme. Plus : `rythme help types`."#,
@@ -3873,6 +4196,7 @@ pub fn fixed_texts() -> Vec<&'static str> {
     texts.extend(BUILTINS.iter().map(|b| b.en));
     texts.extend(builtins::date::MONTHS_EN);
     texts.extend(crate::exercise::fixed_texts());
+    texts.extend(more::fixed_texts());
     texts
 }
 

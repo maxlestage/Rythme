@@ -15,7 +15,19 @@ use rythme::{help, lang, repl, suggest, t};
 const STACK_SIZE: usize = 1 << 30;
 
 fn main() {
-    let args: Vec<String> = std::env::args().skip(1).collect();
+    // A word that is not UTF-8 (a file name made on another system) cannot
+    // become a text of Rythme: said plainly, instead of the panic of `env::args`.
+    let args: Vec<String> = match std::env::args_os().skip(1).map(|a| a.into_string()).collect::<Result<_, _>>() {
+        Ok(args) => args,
+        Err(bad) => {
+            lang::set(lang::detect());
+            let shown = bad.to_string_lossy();
+            std::process::exit(usage_error(t!(
+                "the argument `{shown}` is not valid UTF-8: Rythme reads only names and words written in UTF-8; rename the file, or give the program its input another way",
+                "l'argument `{shown}` n'est pas de l'UTF-8 valide : Rythme ne lit que des noms et des mots écrits en UTF-8 ; renommez le fichier, ou donnez son entrée au programme autrement"
+            )));
+        }
+    };
     std::panic::set_hook(Box::new(|info| {
         // Written directly: the hook must never fail, even if the error output is closed.
         let _ = writeln!(
@@ -79,6 +91,10 @@ fn cli(mut args: Vec<String>) -> i32 {
     }
     let Some(cmd) = args.first().cloned() else { return repl::run() };
     let mut rest: Vec<String> = args[1..].to_vec();
+    // `rythme test --help`: the usage of the command.
+    if let Some(code) = rythme::cli::command_help(&cmd, &rest) {
+        return code;
+    }
     // `--format json`, anywhere after these commands.
     let format = match cmd.as_str() {
         "check" | "verifier" | "vérifier" | "explain" | "expliquer" | "test" | "tester" => match machine::take_format(&mut rest) {
@@ -112,7 +128,7 @@ fn cli(mut args: Vec<String>) -> i32 {
                 _ => {}
             }
             match rest.first() {
-                None => rythme::io::out(&help::overview()),
+                None => rythme::io::out(&(help::overview() + &rythme::cli::overview_more())),
                 Some(name) => match help::topic(name) {
                     Some(text) => rythme::io::out_line(text.trim_end()),
                     None => {
@@ -152,10 +168,7 @@ fn cli(mut args: Vec<String>) -> i32 {
             help::learn();
             0
         }
-        "version" | "--version" | "-V" => {
-            rythme::io::out_line(&format!("rythme {}", rythme::VERSION));
-            0
-        }
+        "version" | "--version" | "-V" => rythme::cli::version_command(&rest),
         "run" | "lancer" => {
             let (opts, rest) = match run_options(&rest) {
                 Ok(found) => found,
@@ -166,6 +179,9 @@ fn cli(mut args: Vec<String>) -> i32 {
                 Format::Text => run_file(file, args, opts.seed, opts.sandbox),
             };
             match rest.first() {
+                Some(file) if file == "-" && opts.format == Format::Text => {
+                    rythme::cli::run_stdin(rest[1..].to_vec(), opts.seed, opts.sandbox)
+                }
                 Some(file) => run(file, rest[1..].to_vec()),
                 None => in_project(Cmd::Run, |files| run(&files[0], Vec::new())).unwrap_or_else(|| {
                     usage_error(t!("which file? Example: rythme run hello.ry", "quel fichier ? Exemple : rythme run bonjour.ry"))
@@ -176,14 +192,14 @@ fn cli(mut args: Vec<String>) -> i32 {
         "test" | "tester" if format == Format::Json => machine::test_command(&rest),
         "test" | "tester" => rythme::testing::command(&rest),
         "check" | "verifier" | "vérifier" if format == Format::Json => match rest.first() {
-            Some(_) => machine::check_command(&rest),
+            Some(_) => machine::check_command(&rythme::cli::expand_folders(&rest)),
             None => in_project(Cmd::Check, machine::check_command).unwrap_or_else(|| {
                 usage_error(t!("which file? Example: rythme check hello.ry", "quel fichier ? Exemple : rythme check bonjour.ry"))
             }),
         },
         "check" | "verifier" | "vérifier" => match rest.first() {
             // Every file is checked, even after one with errors.
-            Some(_) => rest.iter().map(|file| check_file(file)).fold(0, i32::max),
+            Some(_) => rythme::cli::expand_folders(&rest).iter().map(|file| check_file(file)).fold(0, i32::max),
             None => in_project(Cmd::Check, |files| files.iter().map(|file| check_file(file)).fold(0, i32::max)).unwrap_or_else(|| {
                 usage_error(t!("which file? Example: rythme check hello.ry", "quel fichier ? Exemple : rythme check bonjour.ry"))
             }),
@@ -202,11 +218,21 @@ fn cli(mut args: Vec<String>) -> i32 {
         "fix" | "corriger" => machine::fix_command(&rest),
         "mcp" => rythme::mcp::run(&rest),
         "install" | "installer" => rythme::project::install_command(&rest),
+        // The package index: rythme help packages.
+        "search" | "chercher" | "rechercher" => rythme::packages::search_command(&rest),
+        "info" | "infos" => rythme::packages::info_command(&rest),
+        "add" | "ajouter" => rythme::packages::add_command(&rest),
+        "update" | "mettre-a-jour" | "mettre-à-jour" => rythme::project::update_command(&rest),
+        "publish" | "publier" => rythme::packages::publish_command(&rest),
         "exercise" | "exercises" | "exercice" | "exercices" => rythme::exercise::command(&rest),
         "steps" | "etapes" | "étapes" => rythme::steps::command(&rest),
         "lsp" => rythme::lsp::run(&rest, chosen),
         "debug" | "deboguer" | "déboguer" => rythme::debug::term::command(&rest),
         "dap" => rythme::debug::dap::command(&rest),
+        "completions" => rythme::cli::completions(&rest),
+        "man" => rythme::cli::man(&rest),
+        "upgrade" => rythme::cli::upgrade(&rest),
+        "-" => rythme::cli::run_stdin(rest, None, false),
         "-e" | "eval" => match rest.first() {
             Some(code) => eval_code(code, rest[1..].to_vec()),
             None => usage_error(t!("which code? Example: rythme -e 'print(1 + 2)'", "quel code ? Exemple : rythme -e 'print(1 + 2)'")),
@@ -216,8 +242,33 @@ fn cli(mut args: Vec<String>) -> i32 {
                 return run_file(&cmd, rest, None, false);
             }
             let commands = [
-                "run", "check", "test", "fmt", "doc", "help", "explain", "learn", "repl", "version", "lsp", "exercise", "new", "install",
-                "steps", "debug", "dap", "fix", "mcp",
+                "run",
+                "check",
+                "test",
+                "fmt",
+                "doc",
+                "help",
+                "explain",
+                "learn",
+                "repl",
+                "version",
+                "lsp",
+                "exercise",
+                "new",
+                "install",
+                "steps",
+                "debug",
+                "dap",
+                "fix",
+                "mcp",
+                "search",
+                "info",
+                "add",
+                "update",
+                "publish",
+                "completions",
+                "man",
+                "upgrade",
             ];
             let mut msg = t!("unknown command or file `{cmd}`", "commande ou fichier inconnu `{cmd}`");
             if let Some(best) = suggest::closest(&cmd, commands.iter().copied()) {

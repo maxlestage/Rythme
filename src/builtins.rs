@@ -42,6 +42,28 @@ use ml::{
     zip_with,
 };
 use plot::{histogram, plot};
+mod encoding;
+mod keyed;
+mod lists_more;
+mod numbers;
+mod results;
+mod spec;
+mod text_more;
+use date::{add_months, day_of_year};
+use encoding::{base64_decode, base64_encode, url_decode, url_encode};
+use keyed::{dig, invert, is_disjoint, map_keys, merge_with, reject_keys, select_keys, symmetric_difference, update};
+use lists_more::{
+    cartesian_product, chunk_by, combinations, count_by, filter_map, find_index, interleave, intersperse, iterate, most_common,
+    permutations, rotate_by, sort_by_desc, sort_desc, split_at, tally, unfold, unique_by, unzip, update_at,
+};
+use ml::{correlation, covariance, linspace};
+use numbers::{binomial, constrain, divmod, is_finite, is_nan, is_negative, is_positive, is_zero};
+use results::{all_ok, expect, unwrap_or_else};
+use spec::{digits, format, from_base, to_base};
+use text_more::{
+    bytes, camel_case, capitalize_words, center, edit_distance, inspect, is_lower, is_upper, kebab_case, last_index_of, occurrences,
+    print_error, remove_prefix, remove_suffix, replace_first, snake_case, split_once, swap_case, word_wrap,
+};
 
 pub type BuiltinFn = fn(&mut Interp, &[Value], Span) -> Fallible<Value>;
 
@@ -170,6 +192,32 @@ pub static ALIASES: &[Alias] = &[
     alias("lstrip", "trim_start"),
     alias("rstrip", "trim_end"),
     alias("casecmp?", "equals_ignore_case"),
+    alias("clamp", "constrain"),
+    alias("swapcase", "swap_case"),
+    alias("ljust", "pad_right"),
+    alias("rjust", "pad_left"),
+    alias("ord", "char_code"),
+    alias("chr", "char"),
+    alias("delete_prefix", "remove_prefix"),
+    alias("delete_suffix", "remove_suffix"),
+    alias("rindex", "last_index_of"),
+    alias("positive?", "is_positive"),
+    alias("negative?", "is_negative"),
+    alias("zero?", "is_zero"),
+    alias("nan?", "is_nan"),
+    alias("finite?", "is_finite"),
+    alias("detect", "find"),
+    alias("collect", "map"),
+    alias("rotate", "rotate_by"),
+    alias("combination", "combinations"),
+    alias("permutation", "permutations"),
+    alias("transform_values", "map_values"),
+    alias("transform_keys", "map_keys"),
+    alias("each_pair", "each"),
+    alias("to_h", "dict"),
+    alias("subset?", "is_subset"),
+    alias("disjoint?", "is_disjoint"),
+    alias("warn", "print_error"),
 ];
 
 /// The function that `name` is a Ruby name of: `upper` for `upcase`.
@@ -583,10 +631,10 @@ pub static BUILTINS: &[Builtin] = &[
        "Every group of n neighbouring elements of a list (or text), in order: handy to compare each element with the next one.",
        "Chaque groupe de n éléments voisins d'une liste (ou d'un texte), dans l'ordre : pratique pour comparer chaque élément au suivant.",
        "windows([1, 2, 3, 4], 2)   # [[1, 2], [2, 3], [3, 4]]"),
-    b!("zip", "zip(a, b)", 2, 2, Lists, zip,
-       "Pairs the elements of two lists: [[a1, b1], [a2, b2], ...]. It stops at the end of the shorter list.",
-       "Associe les éléments de deux listes : [[a1, b1], [a2, b2], ...]. S'arrête à la fin de la liste la plus courte.",
-       "zip([1, 2], [\"a\", \"b\"])    # [[1, \"a\"], [2, \"b\"]]"),
+    b!("zip", "zip(a, b, ...)", 2, MANY, Lists, zip,
+       "Pairs the elements of two lists (or more: one element of each list in every group): [[a1, b1], [a2, b2], ...]. It stops at the end of the shortest list.",
+       "Associe les éléments de deux listes (ou plus : un élément de chaque liste dans chaque groupe) : [[a1, b1], [a2, b2], ...]. S'arrête à la fin de la liste la plus courte.",
+       "zip([1, 2], [\"a\", \"b\"])    # [[1, \"a\"], [2, \"b\"]]\nzip([1, 2], [\"a\", \"b\"], [true, false])   # [[1, \"a\", true], [2, \"b\", false]]"),
     b!("enumerate", "enumerate(list)", 1, 1, Lists, enumerate,
        "Pairs each element with its position: [[0, x0], [1, x1], ...].",
        "Associe chaque élément à sa position : [[0, x0], [1, x1], ...].",
@@ -771,14 +819,14 @@ pub static BUILTINS: &[Builtin] = &[
        "The date of today, where the program runs: a record {year, month, day}.",
        "La date d'aujourd'hui, là où le programme tourne : un enregistrement {year, month, day}.",
        "today()                    # {year: 2026, month: 10, day: 18}"),
-    b!("parse_date", "parse_date(text)", 1, 1, Dates, parse_date,
-       "Reads a date written as ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date.",
-       "Lit une date écrite en ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", avec `Z` ou un décalage comme `+01:00` si besoin) : `Ok(date)`, ou `Err(message)` si ce n'est pas une date valide.",
-       "parse_date(\"2024-02-29\")   # Ok({year: 2024, month: 2, day: 29})\nparse_date(\"2023-02-29\")   # Err(\"\\\"2023-02-29\\\" is not a valid date: ...\")"),
-    b!("format_date", "format_date(date)", 1, 1, Dates, format_date,
-       "Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one.",
-       "Écrit une date en ISO 8601 : \"2024-02-29\", avec l'heure si la date en a une, et `Z` ou le décalage si elle en a un.",
-       "format_date({year: 2024, month: 2, day: 29, hour: 9, minute: 5})   # \"2024-02-29T09:05:00\""),
+    b!("parse_date", "parse_date(text, pattern)", 1, 2, Dates, parse_date,
+       "Reads a date written as ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date. With a pattern like \"%d/%m/%Y\" (the directives of `format_date`), reads a date written that way.",
+       "Lit une date écrite en ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", avec `Z` ou un décalage comme `+01:00` si besoin) : `Ok(date)`, ou `Err(message)` si ce n'est pas une date valide. Avec un motif comme \"%d/%m/%Y\" (les directives de `format_date`), lit une date écrite de cette façon.",
+       "parse_date(\"2024-02-29\")   # Ok({year: 2024, month: 2, day: 29})\nparse_date(\"2023-02-29\")   # Err(\"\\\"2023-02-29\\\" is not a valid date: ...\")\nparse_date(\"29/02/2024 14:30\", \"%d/%m/%Y %H:%M\")   # Ok({year: 2024, month: 2, day: 29, hour: 14, minute: 30, second: 0})"),
+    b!("format_date", "format_date(date, pattern)", 1, 2, Dates, format_date,
+       "Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one. With a pattern, writes it the way `strftime` does: %Y year, %m month, %d day, %H hour, %M minute, %S second, %y year in two digits, %B and %b the month, %A and %a the day of the week (in English), %I and %p the 12-hour clock, %j the day of the year, %z the offset, %% a %.",
+       "Écrit une date en ISO 8601 : \"2024-02-29\", avec l'heure si la date en a une, et `Z` ou le décalage si elle en a un. Avec un motif, l'écrit comme le fait `strftime` : %Y l'année, %m le mois, %d le jour, %H l'heure, %M la minute, %S la seconde, %y l'année en deux chiffres, %B et %b le mois, %A et %a le jour de la semaine (en anglais), %I et %p l'horloge de 12 heures, %j le jour de l'année, %z le décalage, %% un %.",
+       "format_date({year: 2024, month: 2, day: 29, hour: 9, minute: 5})   # \"2024-02-29T09:05:00\"\nformat_date({year: 2024, month: 2, day: 29}, \"%d/%m/%Y\")   # \"29/02/2024\"\nformat_date({year: 2024, month: 2, day: 29}, \"%A %d %B %Y\")   # \"Thursday 29 February 2024\""),
     b!("is_date", "is_date(value)", 1, 1, Dates, is_date,
        "Is the value a valid date: a record {year, month, day} (with `hour`, `minute`, `second`, `offset` if needed) for a day that exists?",
        "La valeur est-elle une date valide : un enregistrement {year, month, day} (avec `hour`, `minute`, `second`, `offset` si besoin) pour un jour qui existe ?",
@@ -982,6 +1030,286 @@ pub static BUILTINS: &[Builtin] = &[
        "Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`. To call a web service or a language model: `http_post(url, to_json(request), {\"content-type\": \"application/json\"})`. Keep keys out of your code: read them with `env`.",
        "Envoie un texte (souvent du JSON, fait avec `to_json`) à une adresse web et donne `Ok(texte de la réponse)` ou `Err(message)`, comme `http_get`. Pour appeler un service web ou un modèle de langage : `http_post(url, to_json(requete), {\"content-type\": \"application/json\"})`. Gardez les clés hors de votre code : lisez-les avec `env`.",
        "headers = {\"content-type\": \"application/json\"}\nhttp_post(\"https://httpbin.org/post\", to_json({n: 1}), headers)"),
+    // ----- More of the library: what Ruby, Python and Elixir have too -----
+    b!("inspect", "inspect(value)", 1, 1, Basics, inspect,
+       "The text that shows a value the way the REPL and `debug` show it: a text between quotes, with its special characters written as escapes. `text` gives a text as it is.",
+       "Le texte qui montre une valeur comme le REPL et `debug` la montrent : un texte entre guillemets, avec ses caractères spéciaux écrits en séquences d'échappement. `text` donne un texte tel quel.",
+       "inspect(\"hi\")              # \"\\\"hi\\\"\"\ninspect([1, \"a\"])          # \"[1, \\\"a\\\"]\""),
+    b!("print_error", "print_error(value, ...)", 0, MANY, Basics, print_error,
+       "Shows values on the error output (stderr), separated by spaces, then goes to the next line: for messages that must not mix with the results of a program, which go to the standard output.",
+       "Affiche des valeurs sur la sortie d'erreur (stderr), séparées par des espaces, puis passe à la ligne : pour les messages qui ne doivent pas se mêler aux résultats d'un programme, qui vont sur la sortie standard.",
+       "print_error(\"Error: no file given\")"),
+    b!("constrain", "constrain(x, low, high)", 3, 3, Numbers, constrain,
+       "The value kept between two bounds: `low` if it is below, `high` if it is above, itself otherwise. For numbers, texts... any values that can be compared.",
+       "La valeur gardée entre deux bornes : `low` si elle est en dessous, `high` si elle est au-dessus, elle-même sinon. Pour des nombres, des textes... toutes les valeurs comparables.",
+       "constrain(15, 0, 10)       # 10\nconstrain(-3, 0, 10)       # 0\nconstrain(5, 0, 10)        # 5"),
+    b!("divmod", "divmod(a, b)", 2, 2, Numbers, divmod,
+       "The whole quotient and the remainder of a division at once: `[a // b, a % b]`.",
+       "Le quotient entier et le reste d'une division à la fois : `[a // b, a % b]`.",
+       "divmod(17, 5)              # [3, 2]\ndivmod(-7, 2)              # [-4, 1]"),
+    b!("binomial", "binomial(n, k)", 2, 2, Numbers, binomial,
+       "The binomial coefficient \"n choose k\": the number of ways to choose k elements among n, exact even when it is very large.",
+       "Le coefficient binomial « k parmi n » : le nombre de façons de choisir k éléments parmi n, exact même quand il est très grand.",
+       "binomial(5, 2)             # 10\nbinomial(52, 5)            # 2598960"),
+    b!("digits", "digits(n, base)", 1, 2, Numbers, digits,
+       "The digits of a whole number (0 or more), the most significant first, in base 10 or in the base given (from 2 to 36).",
+       "Les chiffres d'un nombre entier (positif ou nul), le plus significatif en premier, en base 10 ou dans la base donnée (de 2 à 36).",
+       "digits(1234)               # [1, 2, 3, 4]\ndigits(6, 2)               # [1, 1, 0]"),
+    b!("to_base", "to_base(n, base)", 2, 2, Numbers, to_base,
+       "Writes a whole number in a base from 2 to 36, with the digits 0 to 9 then the letters a to z.",
+       "Écrit un nombre entier dans une base de 2 à 36, avec les chiffres 0 à 9 puis les lettres a à z.",
+       "to_base(255, 16)           # \"ff\"\nto_base(10, 2)             # \"1010\""),
+    b!("from_base", "from_base(text, base)", 2, 2, Numbers, from_base,
+       "Reads a whole number written in a base from 2 to 36: `Ok(number)`, or `Err(message)` if the text is not a number in this base. `0x`, `0o` and `0b` may come before a number in base 16, 8 and 2.",
+       "Lit un nombre entier écrit dans une base de 2 à 36 : `Ok(nombre)`, ou `Err(message)` si le texte n'est pas un nombre dans cette base. `0x`, `0o` et `0b` peuvent précéder un nombre en base 16, 8 et 2.",
+       "from_base(\"ff\", 16)        # Ok(255)\nfrom_base(\"102\", 2)        # Err(...)"),
+    b!("is_positive", "is_positive(x)", 1, 1, Numbers, is_positive, "Is the number greater than 0?", "Le nombre est-il plus grand que 0 ?", "is_positive(3)             # true\nis_positive(0)             # false"),
+    b!("is_negative", "is_negative(x)", 1, 1, Numbers, is_negative, "Is the number less than 0?", "Le nombre est-il plus petit que 0 ?", "is_negative(-0.5)          # true"),
+    b!("is_zero", "is_zero(x)", 1, 1, Numbers, is_zero, "Is the number 0 (or 0.0)?", "Le nombre vaut-il 0 (ou 0.0) ?", "is_zero(0.0)               # true"),
+    b!("is_nan", "is_nan(x)", 1, 1, Numbers, is_nan,
+       "Is the decimal number `nan` (\"not a number\")? It is never equal to anything, not even to itself.",
+       "Le nombre décimal est-il `nan` (« pas un nombre ») ? Il n'est jamais égal à rien, pas même à lui-même.",
+       "is_nan(float(\"nan\"))       # true\nis_nan(1.5)                # false"),
+    b!("is_finite", "is_finite(x)", 1, 1, Numbers, is_finite,
+       "Is the number finite: neither an infinity nor `nan`? Whole numbers always are.",
+       "Le nombre est-il fini : ni un infini, ni `nan` ? Les nombres entiers le sont toujours.",
+       "is_finite(1.5)             # true\nis_finite(float(\"inf\"))    # false"),
+    b!("center", "center(text, width, fill)", 2, 3, Text, center,
+       "Adds `fill` (a space by default) on both sides of the text until it is `width` characters long: titles and cells of tables stay centered. A character left over goes to the right.",
+       "Ajoute `fill` (un espace par défaut) des deux côtés du texte jusqu'à ce qu'il fasse `width` caractères : les titres et les cases des tableaux restent centrés. Un caractère en trop va à droite.",
+       "center(\"hi\", 6, \"*\")       # \"**hi**\"\ncenter(\"abc\", 6)          # \" abc  \""),
+    b!("format", "format(value, spec)", 2, 2, Text, format,
+       "Writes a value following a format spec, like Python's `format`: \".2f\" for 2 decimals, \">8\" to fill 8 characters on the right (\"<\" on the left, \"^\" centered), \"08.2f\" with zeros before, \",\" with the thousands separated, \"%\" as a percentage, \"x\", \"o\" and \"b\" in hexadecimal, octal and binary (\"#\" adds 0x, 0o, 0b), \"e\" with an exponent. To put values in a text, use braces.",
+       "Écrit une valeur selon une spécification de format, comme `format` en Python : \".2f\" pour 2 décimales, \">8\" pour remplir 8 caractères à droite (\"<\" à gauche, \"^\" centré), \"08.2f\" avec des zéros devant, \",\" avec les milliers séparés, \"%\" en pourcentage, \"x\", \"o\" et \"b\" en hexadécimal, octal et binaire (\"#\" ajoute 0x, 0o, 0b), \"e\" avec un exposant. Pour mettre des valeurs dans un texte, utilisez des accolades.",
+       "format(3.14159, \".2f\")     # \"3.14\"\nformat(42, \">6\")           # \"    42\"\nformat(7, \"03\")            # \"007\"\nformat(1234567.891, \",.2f\")   # \"1,234,567.89\"\nformat(0.256, \".1%\")       # \"25.6%\"\nformat(255, \"#x\")          # \"0xff\""),
+    b!("replace_first", "replace_first(text, old, new)", 3, 3, Text, replace_first,
+       "Replaces the first occurrence of `old` by `new`, and only that one.",
+       "Remplace la première occurrence de `old` par `new`, et seulement celle-là.",
+       "replace_first(\"a-b-c\", \"-\", \"+\")   # \"a+b-c\""),
+    b!("occurrences", "occurrences(x, item)", 2, 2, Text, occurrences,
+       "How many times an element is in a list, or a piece of text in a text (pieces that do not overlap).",
+       "Combien de fois un élément est dans une liste, ou un morceau de texte dans un texte (des morceaux qui ne se chevauchent pas).",
+       "occurrences([1, 2, 1, 1], 1)   # 3\noccurrences(\"banana\", \"an\")    # 2"),
+    b!("last_index_of", "last_index_of(x, item)", 2, 2, Text, last_index_of,
+       "The position of the last occurrence of an element in a list, or of a piece of text in a text: `Some(position)`, or `None` if it is not there.",
+       "La position de la dernière occurrence d'un élément dans une liste, ou d'un morceau de texte dans un texte : `Some(position)`, ou `None` s'il n'y est pas.",
+       "last_index_of([5, 6, 5], 5)   # Some(2)\nlast_index_of(\"a/b/c\", \"/\")   # Some(3)"),
+    b!("remove_prefix", "remove_prefix(text, start)", 2, 2, Text, remove_prefix,
+       "The text without this start, if it starts with it; otherwise the text unchanged.",
+       "Le texte sans ce début, s'il commence par lui ; sinon le texte tel quel.",
+       "remove_prefix(\"Mr Smith\", \"Mr \")   # \"Smith\"\nremove_prefix(\"Smith\", \"Mr \")      # \"Smith\""),
+    b!("remove_suffix", "remove_suffix(text, end)", 2, 2, Text, remove_suffix,
+       "The text without this end, if it ends with it; otherwise the text unchanged.",
+       "Le texte sans cette fin, s'il finit par elle ; sinon le texte tel quel.",
+       "remove_suffix(\"photo.png\", \".png\")   # \"photo\""),
+    b!("capitalize_words", "capitalize_words(text)", 1, 1, Text, capitalize_words,
+       "The text with the first character of each word in uppercase (the rest is unchanged). Words are separated by spaces.",
+       "Le texte avec le premier caractère de chaque mot en majuscule (le reste ne change pas). Les mots sont séparés par des espaces.",
+       "capitalize_words(\"ada lovelace\")   # \"Ada Lovelace\""),
+    b!("snake_case", "snake_case(text)", 1, 1, Text, snake_case,
+       "Writes a name in snake_case: its words in lowercase, joined by `_`. Reads names written in any style: camelCase, PascalCase, kebab-case, with spaces...",
+       "Écrit un nom en snake_case : ses mots en minuscules, reliés par `_`. Lit les noms écrits dans n'importe quel style : camelCase, PascalCase, kebab-case, avec des espaces...",
+       "snake_case(\"helloWorld\")     # \"hello_world\"\nsnake_case(\"HTTP Server\")    # \"http_server\""),
+    b!("camel_case", "camel_case(text)", 1, 1, Text, camel_case,
+       "Writes a name in camelCase: its words glued together, each with an uppercase first letter but the first word.",
+       "Écrit un nom en camelCase : ses mots collés, chacun avec une majuscule au début sauf le premier mot.",
+       "camel_case(\"hello_world\")    # \"helloWorld\""),
+    b!("kebab_case", "kebab_case(text)", 1, 1, Text, kebab_case,
+       "Writes a name in kebab-case: its words in lowercase, joined by `-`, as in web addresses.",
+       "Écrit un nom en kebab-case : ses mots en minuscules, reliés par `-`, comme dans les adresses web.",
+       "kebab_case(\"Hello World\")    # \"hello-world\""),
+    b!("swap_case", "swap_case(text)", 1, 1, Text, swap_case,
+       "The text with its uppercase letters in lowercase, and its lowercase letters in uppercase.",
+       "Le texte avec ses majuscules en minuscules, et ses minuscules en majuscules.",
+       "swap_case(\"Hello\")          # \"hELLO\""),
+    b!("is_upper", "is_upper(text)", 1, 1, Text, is_upper,
+       "Has the text letters, all of them in uppercase? (The other characters do not count.)",
+       "Le texte a-t-il des lettres, toutes en majuscules ? (Les autres caractères ne comptent pas.)",
+       "is_upper(\"ABC 123\")         # true\nis_upper(\"Abc\")             # false"),
+    b!("is_lower", "is_lower(text)", 1, 1, Text, is_lower,
+       "Has the text letters, all of them in lowercase? (The other characters do not count.)",
+       "Le texte a-t-il des lettres, toutes en minuscules ? (Les autres caractères ne comptent pas.)",
+       "is_lower(\"abc!\")            # true"),
+    b!("bytes", "bytes(text)", 1, 1, Text, bytes,
+       "The bytes of a text in UTF-8, as whole numbers from 0 to 255: an accented letter takes two of them, an emoji four.",
+       "Les octets d'un texte en UTF-8, en nombres entiers de 0 à 255 : une lettre accentuée en prend deux, un emoji quatre.",
+       "bytes(\"Aé\")                 # [65, 195, 169]"),
+    b!("split_once", "split_once(text, separator)", 2, 2, Text, split_once,
+       "Cuts a text in two at the first separator: `Some([before, after])`, or `None` if the separator is not there. For lines like `key=value`.",
+       "Coupe un texte en deux au premier séparateur : `Some([avant, après])`, ou `None` si le séparateur n'y est pas. Pour des lignes comme `clé=valeur`.",
+       "split_once(\"name=Ada=1\", \"=\")   # Some([\"name\", \"Ada=1\"])\nsplit_once(\"hello\", \"=\")        # None"),
+    b!("word_wrap", "word_wrap(text, width)", 2, 2, Text, word_wrap,
+       "Cuts the lines of a text between words so that none is longer than `width` characters (a longer word stays whole on its own line).",
+       "Coupe les lignes d'un texte entre les mots pour qu'aucune ne dépasse `width` caractères (un mot plus long reste entier sur sa ligne).",
+       "word_wrap(\"the quick brown fox\", 10)   # \"the quick\\nbrown fox\""),
+    b!("edit_distance", "edit_distance(a, b)", 2, 2, Text, edit_distance,
+       "The edit distance (Levenshtein) between two texts: the fewest characters to add, remove or replace to go from one to the other. For spelling checkers, and to find the closest word.",
+       "La distance d'édition (Levenshtein) entre deux textes : le moins de caractères à ajouter, enlever ou remplacer pour passer de l'un à l'autre. Pour les correcteurs d'orthographe, et pour trouver le mot le plus proche.",
+       "edit_distance(\"kitten\", \"sitting\")   # 3"),
+    b!("find_index", "find_index(list, f)", 2, 2, Lists, find_index,
+       "The position of the first element for which f is true: `Some(position)`, or `None` if there is none.",
+       "La position du premier élément pour lequel f est vraie : `Some(position)`, ou `None` s'il n'y en a pas.",
+       "find_index([3, 8, 5], is_even)   # Some(1)"),
+    b!("update_at", "update_at(list, i, f)", 3, 3, Lists, update_at,
+       "The list with the element at position i replaced by f(element). A negative position counts from the end.",
+       "La liste avec l'élément à la position i remplacé par f(élément). Une position négative compte depuis la fin.",
+       "update_at([1, 2, 3], 1, fn(x) = x * 10)   # [1, 20, 3]"),
+    b!("rotate_by", "rotate_by(x, n)", 1, 2, Lists, rotate_by,
+       "The list or text turned by n places to the left (1 by default): the first elements go to the end. A negative n turns it to the right.",
+       "La liste ou le texte tourné de n places vers la gauche (1 par défaut) : les premiers éléments passent à la fin. Un n négatif le tourne vers la droite.",
+       "rotate_by([1, 2, 3, 4], 1)   # [2, 3, 4, 1]\nrotate_by(\"abcde\", -2)     # \"deabc\""),
+    b!("intersperse", "intersperse(list, x)", 2, 2, Lists, intersperse,
+       "The list with `x` between every two elements.",
+       "La liste avec `x` entre chaque paire d'éléments voisins.",
+       "intersperse([1, 2, 3], 0)  # [1, 0, 2, 0, 3]"),
+    b!("interleave", "interleave(a, b)", 2, 2, Lists, interleave,
+       "The elements of two lists taken in turn, one from each; what is left of the longer list comes at the end.",
+       "Les éléments de deux listes pris tour à tour, un de chaque ; ce qui reste de la liste la plus longue vient à la fin.",
+       "interleave([1, 2, 3], [\"a\", \"b\"])   # [1, \"a\", 2, \"b\", 3]"),
+    b!("tally", "tally(list)", 1, 1, Lists, tally,
+       "Counts how many times each value is in a list: a dict from each value to its count (like Python's `Counter`).",
+       "Compte combien de fois chaque valeur est dans une liste : un dictionnaire de chaque valeur vers son nombre (comme `Counter` en Python).",
+       "tally([\"a\", \"b\", \"a\"])      # dict(\"a\" => 2, \"b\" => 1)"),
+    b!("count_by", "count_by(list, f)", 2, 2, Lists, count_by,
+       "Counts the elements by the key that f gives them: a dict from each key to how many elements have it.",
+       "Compte les éléments selon la clé que f leur donne : un dictionnaire de chaque clé vers le nombre d'éléments qui l'ont.",
+       "count_by([\"ox\", \"cat\", \"dog\"], len)   # dict(2 => 1, 3 => 2)"),
+    b!("most_common", "most_common(list, n)", 1, 2, Lists, most_common,
+       "The values that come most often, with their counts: a list of `[value, count]` pairs, the most frequent first (on a tie, the one seen first). With n, only the first n.",
+       "Les valeurs qui reviennent le plus souvent, avec leur nombre : une liste de paires `[valeur, nombre]`, la plus fréquente en premier (à égalité, celle vue en premier). Avec n, seulement les n premières.",
+       "most_common([\"a\", \"b\", \"a\", \"c\", \"b\", \"a\"], 2)   # [[\"a\", 3], [\"b\", 2]]"),
+    b!("unique_by", "unique_by(list, f)", 2, 2, Lists, unique_by,
+       "The list without the elements whose key (given by f) was already seen: the first element of each key stays.",
+       "La liste sans les éléments dont la clé (donnée par f) a déjà été vue : le premier élément de chaque clé reste.",
+       "unique_by([\"one\", \"two\", \"three\", \"four\"], len)   # [\"one\", \"three\", \"four\"]"),
+    b!("sort_desc", "sort_desc(list)", 1, 1, Lists, sort_desc,
+       "The list sorted from the largest to the smallest.",
+       "La liste triée du plus grand au plus petit.",
+       "sort_desc([3, 1, 2])       # [3, 2, 1]"),
+    b!("sort_by_desc", "sort_by_desc(list, key)", 2, 2, Lists, sort_by_desc,
+       "The list sorted by the key that the function gives, from the largest key to the smallest; elements with the same key keep their order.",
+       "La liste triée selon la clé que donne la fonction, de la plus grande clé à la plus petite ; les éléments de même clé gardent leur ordre.",
+       "sort_by_desc([\"a\", \"ccc\", \"bb\"], len)   # [\"ccc\", \"bb\", \"a\"]"),
+    b!("chunk_by", "chunk_by(list, f)", 2, 2, Lists, chunk_by,
+       "Cuts a list into runs of neighbour elements that have the same key (given by f).",
+       "Découpe une liste en suites d'éléments voisins qui ont la même clé (donnée par f).",
+       "chunk_by([1, 3, 2, 4, 5], is_odd)   # [[1, 3], [2, 4], [5]]"),
+    b!("split_at", "split_at(x, i)", 2, 2, Lists, split_at,
+       "Cuts a list or a text in two at position i: `[before, from i on]`. A negative position counts from the end.",
+       "Coupe une liste ou un texte en deux à la position i : `[avant, à partir de i]`. Une position négative compte depuis la fin.",
+       "split_at([1, 2, 3, 4], 1)  # [[1], [2, 3, 4]]\nsplit_at(\"hello\", -2)      # [\"hel\", \"lo\"]"),
+    b!("combinations", "combinations(list, k)", 2, 2, Lists, combinations,
+       "Every way to choose k elements of the list, each kept in the order of the list.",
+       "Toutes les façons de choisir k éléments de la liste, chacune dans l'ordre de la liste.",
+       "combinations([1, 2, 3], 2)   # [[1, 2], [1, 3], [2, 3]]"),
+    b!("permutations", "permutations(list, k)", 1, 2, Lists, permutations,
+       "Every order of the elements of the list, or of k of them.",
+       "Tous les ordres des éléments de la liste, ou de k d'entre eux.",
+       "permutations([1, 2, 3])    # [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]\npermutations([\"a\", \"b\", \"c\"], 2)   # [[\"a\", \"b\"], [\"a\", \"c\"], [\"b\", \"a\"], [\"b\", \"c\"], [\"c\", \"a\"], [\"c\", \"b\"]]"),
+    b!("cartesian_product", "cartesian_product(a, b, ...)", 2, MANY, Lists, cartesian_product,
+       "Every way to take one element of each list: the cartesian product.",
+       "Toutes les façons de prendre un élément de chaque liste : le produit cartésien.",
+       "cartesian_product([1, 2], [\"a\", \"b\"])   # [[1, \"a\"], [1, \"b\"], [2, \"a\"], [2, \"b\"]]"),
+    b!("unzip", "unzip(list)", 1, 1, Lists, unzip,
+       "The opposite of `zip`: a list of pairs (or of lists of the same length) becomes the list of the first elements, the list of the second ones...",
+       "L'inverse de `zip` : une liste de paires (ou de listes de même longueur) devient la liste des premiers éléments, la liste des deuxièmes...",
+       "unzip([[1, \"a\"], [2, \"b\"]])   # [[1, 2], [\"a\", \"b\"]]"),
+    b!("iterate", "iterate(start, n, f)", 3, 3, Lists, iterate,
+       "A list of n values: `start`, then f(start), then f of that... For sequences where each value comes from the one before.",
+       "Une liste de n valeurs : `start`, puis f(start), puis f de celle-ci... Pour les suites où chaque valeur vient de la précédente.",
+       "iterate(1, 5, fn(x) = x * 2)   # [1, 2, 4, 8, 16]"),
+    b!("unfold", "unfold(start, f)", 2, 2, Lists, unfold,
+       "Builds a list from a starting state: f receives the state and gives `Some([value, next state])` to add a value and go on, or `None` to stop.",
+       "Construit une liste à partir d'un état de départ : f reçoit l'état et donne `Some([valeur, état suivant])` pour ajouter une valeur et continuer, ou `None` pour s'arrêter.",
+       "unfold(1, fn(n) = if n > 100 then None else Some([n, n * 3]))   # [1, 3, 9, 27, 81]"),
+    b!("filter_map", "filter_map(list, f)", 2, 2, Lists, filter_map,
+       "Applies f to each element and keeps the values of the `Some(...)` it gives, leaving out the `None`: filtering and transforming at once.",
+       "Applique f à chaque élément et garde les valeurs des `Some(...)` qu'elle donne, en laissant de côté les `None` : filtrer et transformer à la fois.",
+       "filter_map([1, 2, 3, 4], fn(x) = if is_even(x) then Some(x * 10) else None)   # [20, 40]"),
+    b!("dig", "dig(x, path)", 2, 2, Records, dig,
+       "The value found by following a path of keys into records, dicts and lists nested in one another (names of fields, keys, positions): `Some(value)`, or `None` as soon as one is missing. For data read with `parse_json`.",
+       "La valeur trouvée en suivant un chemin de clés dans des enregistrements, dictionnaires et listes imbriqués (noms de champs, clés, positions) : `Some(valeur)`, ou `None` dès que l'une manque. Pour des données lues avec `parse_json`.",
+       "dig({user: {langs: [\"fr\", \"en\"]}}, [\"user\", \"langs\", 1])   # Some(\"en\")\ndig({a: 1}, [\"b\"])         # None"),
+    b!("merge_with", "merge_with(a, b, f)", 3, 3, Records, merge_with,
+       "Merges two records or two dicts; for a key in both, f receives the two values and gives the one kept.",
+       "Fusionne deux enregistrements ou deux dictionnaires ; pour une clé présente dans les deux, f reçoit les deux valeurs et donne celle qui est gardée.",
+       "merge_with({a: 1, b: 2}, {b: 10, c: 3}, fn(x, y) = x + y)   # {a: 1, b: 12, c: 3}"),
+    b!("invert", "invert(x)", 1, 1, Records, invert,
+       "A dict where the values of a record or a dict have become the keys, and the keys the values. When a value comes several times, the last key wins.",
+       "Un dictionnaire où les valeurs d'un enregistrement ou d'un dictionnaire sont devenues les clés, et les clés les valeurs. Quand une valeur revient plusieurs fois, la dernière clé l'emporte.",
+       "invert({a: 1, b: 2})       # dict(1 => \"a\", 2 => \"b\")"),
+    b!("select_keys", "select_keys(x, keys)", 2, 2, Records, select_keys,
+       "The record or dict with only the keys given (in a list or a set); a key that is missing is ignored.",
+       "L'enregistrement ou le dictionnaire avec seulement les clés données (dans une liste ou un ensemble) ; une clé absente est ignorée.",
+       "select_keys({name: \"Ada\", age: 36, city: \"London\"}, [\"name\", \"age\"])   # {name: \"Ada\", age: 36}"),
+    b!("reject_keys", "reject_keys(x, keys)", 2, 2, Records, reject_keys,
+       "The record or dict without the keys given (in a list or a set).",
+       "L'enregistrement ou le dictionnaire sans les clés données (dans une liste ou un ensemble).",
+       "reject_keys({name: \"Ada\", password: \"x\"}, [\"password\"])   # {name: \"Ada\"}"),
+    b!("map_keys", "map_keys(x, f)", 2, 2, Records, map_keys,
+       "The record or dict with each key replaced by f(key); for a record, f must give a text.",
+       "L'enregistrement ou le dictionnaire avec chaque clé remplacée par f(clé) ; pour un enregistrement, f doit donner un texte.",
+       "map_keys({a: 1, b: 2}, upper)   # {A: 1, B: 2}"),
+    b!("update", "update(x, key, default, f)", 4, 4, Records, update,
+       "The record or dict where the value of `key` is replaced by f(value); when the key is missing, it is added with `default`. Handy to count: `update(counts, word, 1, fn(n) = n + 1)`.",
+       "L'enregistrement ou le dictionnaire où la valeur de `key` est remplacée par f(valeur) ; quand la clé manque, elle est ajoutée avec `default`. Pratique pour compter : `update(compte, mot, 1, fn(n) = n + 1)`.",
+       "update({apples: 3}, \"apples\", 1, fn(n) = n + 1)   # {apples: 4}\nupdate({apples: 3}, \"pears\", 1, fn(n) = n + 1)    # {apples: 3, pears: 1}"),
+    b!("symmetric_difference", "symmetric_difference(a, b)", 2, 2, Dicts, symmetric_difference,
+       "The elements that are in exactly one of the two sets.",
+       "Les éléments qui sont dans exactement un des deux ensembles.",
+       "symmetric_difference(set([1, 2, 3]), set([3, 4]))   # set(1, 2, 4)"),
+    b!("is_disjoint", "is_disjoint(a, b)", 2, 2, Dicts, is_disjoint,
+       "Have the two sets no element in common?",
+       "Les deux ensembles n'ont-ils aucun élément en commun ?",
+       "is_disjoint(set([1, 2]), set([3]))   # true"),
+    b!("unwrap_or_else", "unwrap_or_else(x, f)", 2, 2, Options, unwrap_or_else,
+       "The value inside `Some(x)` or `Ok(x)`; otherwise what f gives: f receives nothing for `None`, and the error for `Err(e)`. The default is computed only when it is needed.",
+       "La valeur dans `Some(x)` ou `Ok(x)` ; sinon ce que donne f : f ne reçoit rien pour `None`, et l'erreur pour `Err(e)`. La valeur par défaut n'est calculée que si elle sert.",
+       "unwrap_or_else(None, fn() = 0)   # 0\nunwrap_or_else(Err(\"bad\"), fn(e) = len(e))   # 3"),
+    b!("expect", "expect(x, message)", 2, 2, Options, expect,
+       "The value inside `Some(x)` or `Ok(x)`, like `unwrap`; otherwise stops the program with your message, which says what was expected.",
+       "La valeur dans `Some(x)` ou `Ok(x)`, comme `unwrap` ; sinon arrête le programme avec votre message, qui dit ce qui était attendu.",
+       "expect(Some(3), \"a number\")   # 3"),
+    b!("all_ok", "all_ok(list)", 1, 1, Options, all_ok,
+       "Makes one Result of a list of Results: `Ok(list of the values)` if they are all `Ok`, or else the first `Err`. When reading many values where one mistake must stop everything.",
+       "Fait un seul Result d'une liste de Results : `Ok(liste des valeurs)` s'ils sont tous `Ok`, ou sinon le premier `Err`. Pour lire beaucoup de valeurs quand une seule erreur doit tout arrêter.",
+       "all_ok([Ok(1), Ok(2)])     # Ok([1, 2])\nall_ok(map([\"1\", \"x\"], parse_int))   # Err(...)"),
+    b!("add_months", "add_months(date, n)", 2, 2, Dates, add_months,
+       "The date n months later (earlier if n is negative). A day that the new month does not have becomes its last day: 31 January plus one month is the end of February.",
+       "La date n mois plus tard (plus tôt si n est négatif). Un jour que le nouveau mois n'a pas devient son dernier jour : le 31 janvier plus un mois est la fin de février.",
+       "add_months({year: 2024, month: 1, day: 31}, 1)   # {year: 2024, month: 2, day: 29}"),
+    b!("day_of_year", "day_of_year(date)", 1, 1, Dates, day_of_year,
+       "The number of the day in its year, from 1 (1 January) to 365, or 366 in a leap year.",
+       "Le numéro du jour dans son année, de 1 (le 1er janvier) à 365, ou 366 une année bissextile.",
+       "day_of_year({year: 2024, month: 3, day: 1})   # 61"),
+    b!("linspace", "linspace(start, end, n)", 3, 3, Ml, linspace,
+       "n decimal numbers evenly spaced from `start` to `end`, both included: to draw a function with `plot`, or to try values.",
+       "n nombres décimaux régulièrement espacés de `start` à `end`, tous deux compris : pour tracer une fonction avec `plot`, ou essayer des valeurs.",
+       "linspace(0, 1, 5)          # [0.0, 0.25, 0.5, 0.75, 1.0]"),
+    b!("correlation", "correlation(xs, ys)", 2, 2, Ml, correlation,
+       "The correlation (Pearson) of two lists of numbers of the same length: from -1 (they vary in opposite ways) to 1 (they vary together); about 0 when they are not linearly related.",
+       "La corrélation (de Pearson) de deux listes de nombres de même longueur : de -1 (elles varient en sens contraires) à 1 (elles varient ensemble) ; environ 0 quand elles ne sont pas liées linéairement.",
+       "correlation([1, 2, 3], [2, 4, 6])   # 1.0"),
+    b!("covariance", "covariance(xs, ys)", 2, 2, Ml, covariance,
+       "The covariance of two lists of numbers of the same length, divided by their length like `variance`.",
+       "La covariance de deux listes de nombres de même longueur, divisée par leur longueur comme `variance`.",
+       "covariance([1, 2, 3], [2, 4, 6])   # 1.3333333333333333"),
+    b!("base64_encode", "base64_encode(text)", 1, 1, Web, base64_encode,
+       "Encodes a text in Base64 (its UTF-8 bytes), as in emails, web pages and the headers of HTTP requests.",
+       "Encode un texte en Base64 (ses octets UTF-8), comme dans les e-mails, les pages web et les en-têtes des requêtes HTTP.",
+       "base64_encode(\"Hi!\")       # \"SGkh\""),
+    b!("base64_decode", "base64_decode(text)", 1, 1, Web, base64_decode,
+       "Decodes a Base64 text: `Ok(text)`, or `Err(message)` if it is not valid Base64, or not a text once decoded.",
+       "Décode un texte en Base64 : `Ok(texte)`, ou `Err(message)` si ce n'est pas du Base64 valide, ou pas un texte une fois décodé.",
+       "base64_decode(\"SGkh\")      # Ok(\"Hi!\")"),
+    b!("url_encode", "url_encode(text)", 1, 1, Web, url_encode,
+       "Encodes a text to put it in a web address: every character but the letters, the digits and `-_.~` becomes `%` and two hexadecimal digits (a space is `%20`).",
+       "Encode un texte pour le mettre dans une adresse web : chaque caractère sauf les lettres, les chiffres et `-_.~` devient `%` et deux chiffres hexadécimaux (une espace est `%20`).",
+       "url_encode(\"a b&c=é\")      # \"a%20b%26c%3D%C3%A9\""),
+    b!("url_decode", "url_decode(text)", 1, 1, Web, url_decode,
+       "Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.",
+       "Décode un texte d'une adresse web (`%20`...) : `Ok(texte)`, ou `Err(message)` si un `%` n'est pas suivi de deux chiffres hexadécimaux.",
+       "url_decode(\"caf%C3%A9%20au%20lait\")   # Ok(\"café au lait\")"),
 ];
 
 // ----- argument helpers --------------------------------------------------
@@ -1182,6 +1510,26 @@ pub fn wrong_argument(f: &str, i: usize, expected: Expected, got: &str, kinds: K
     if f == "flat_map" && i == 0 && is(OPTION | RESULT) {
         d = d.help(t!("for an Option or a Result, use `and_then(x, f)`", "pour une Option ou un Result, utilisez `and_then(x, f)`"));
     }
+    // Python's `text.count(piece)` and Ruby's `list.count(x)`.
+    if f == "count" && i == 0 && is(TEXT) {
+        d = d.help(t!(
+            "to count a piece of text in a text, use `occurrences(text, piece)`",
+            "pour compter un morceau de texte dans un texte, utilisez `occurrences(texte, morceau)`"
+        ));
+    }
+    if f == "count" && i == 1 && kinds != 0 && kinds & FUNC == 0 {
+        d = d.help(t!(
+            "to count the elements equal to a value, use `occurrences(list, x)`",
+            "pour compter les éléments égaux à une valeur, utilisez `occurrences(liste, x)`"
+        ));
+    }
+    // Ruby's `format("%05d", 42)`: the template first.
+    if f == "format" && i == 1 && is(NUMBER) {
+        d = d.help(t!(
+            "the value comes first, then the spec: `format(42, \"05\")`; to put values in a text, use braces",
+            "la valeur vient d'abord, puis la spécification : `format(42, \"05\")` ; pour mettre des valeurs dans un texte, utilisez des accolades"
+        ));
+    }
     d.boxed()
 }
 
@@ -1198,6 +1546,14 @@ pub fn wrong_return(f: &str, wanted: Kinds, got: &str, span: Span) -> Box<Diagno
             t!(
                 "the function given to `{f}` must return a list, but it returned {got}",
                 "la fonction donnée à `{f}` doit renvoyer une liste, mais elle a renvoyé {got}"
+            ),
+            span,
+        ),
+        // `sum(list, f)`: the error of the run time is about the numbers to add (E023).
+        NUMBER => invalid(
+            t!(
+                "the function given to `{f}` must return a number, but it returned {got}",
+                "la fonction donnée à `{f}` doit renvoyer un nombre, mais elle a renvoyé {got}"
             ),
             span,
         ),
@@ -1225,10 +1581,20 @@ pub fn wrong_return(f: &str, wanted: Kinds, got: &str, span: Span) -> Box<Diagno
                 ),
             )
             .at(span)
-            .help(t!(
-                "to change the value inside without another check, use `map(x, f)`",
-                "pour changer la valeur à l'intérieur sans autre vérification, utilisez `map(x, f)`"
-            ))
+            .help(match f {
+                "filter_map" => t!(
+                    "return `Some(x)` to keep x, or `None` to leave the element out",
+                    "renvoyez `Some(x)` pour garder x, ou `None` pour laisser l'élément de côté"
+                ),
+                "unfold" => t!(
+                    "return `Some([value, next])` to go on, or `None` to stop",
+                    "renvoyez `Some([valeur, suivant])` pour continuer, ou `None` pour vous arrêter"
+                ),
+                _ => t!(
+                    "to change the value inside without another check, use `map(x, f)`",
+                    "pour changer la valeur à l'intérieur sans autre vérification, utilisez `map(x, f)`"
+                ),
+            })
             .boxed()
         }
         _ => Diagnostic::error(
@@ -3361,7 +3727,16 @@ fn windows(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 fn zip(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let x = list(a, 0, "zip", span)?;
     let y = list(a, 1, "zip", span)?;
-    Ok(Value::list(x.iter().zip(y.iter()).map(|(p, q)| Value::list(vec![p.clone(), q.clone()])).collect()))
+    if a.len() == 2 {
+        return Ok(Value::list(x.iter().zip(y.iter()).map(|(p, q)| Value::list(vec![p.clone(), q.clone()])).collect()));
+    }
+    // Three lists or more: one element of each in every group.
+    let mut lists = vec![x.as_slice(), y.as_slice()];
+    for i in 2..a.len() {
+        lists.push(list(a, i, "zip", span)?.as_slice());
+    }
+    let n = lists.iter().map(|l| l.len()).min().unwrap_or(0);
+    Ok(Value::list((0..n).map(|i| Value::list(lists.iter().map(|l| l[i].clone()).collect())).collect()))
 }
 
 fn enumerate(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {

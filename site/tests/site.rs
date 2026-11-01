@@ -173,8 +173,10 @@ async fn redirects_and_not_found() {
         ("pt-BR", "pt"),
         ("zh-CN,zh;q=0.9", "zh"),
         ("zh-Hant-TW", "zh"),
-        ("it, en;q=0.4", "en"),
-        ("it, ja", "fr"),
+        ("it-IT,it;q=0.9", "it"),
+        ("ja", "ja"),
+        ("ru, en;q=0.4", "en"),
+        ("ru, ko", "fr"),
         ("", "fr"),
     ] {
         let res = client.get("/").header("accept-language", header).await;
@@ -188,7 +190,7 @@ async fn redirects_and_not_found() {
     let res = client.get("/en/learn").await;
     assert_eq!(res.status(), 301);
     assert_eq!(res.header("location"), Some("/en/learn/"));
-    for path in ["/en/nothing/", "/fr/learn/more/", "/it/", "/nothing"] {
+    for path in ["/en/nothing/", "/fr/learn/more/", "/ru/", "/nothing"] {
         let res = client.get(path).await;
         assert_eq!(res.status(), 404, "{path}");
         assert!(res.text().contains("noindex"), "{path}");

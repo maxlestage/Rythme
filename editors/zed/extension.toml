@@ -14,7 +14,7 @@ repository = "https://github.com/maxlestage/Rythme"
 # commit of the default branch that has the grammar.
 [grammars.rythme]
 repository = "https://github.com/maxlestage/Rythme"
-rev = "dfad31b1b0db77ba12fefa4ad062a0f0ea5694b5"
+rev = "87b7cb55c5b0055ad1970ed880e180402abe6346"
 path = "editors/tree-sitter-rythme"
 
 [language_servers.rythme]

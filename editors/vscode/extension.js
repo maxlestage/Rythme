@@ -28,9 +28,9 @@ let watcher;
 const pages = new Map();
 const pagesChanged = new vscode.EventEmitter();
 
-/** The text in the language of VS Code: English, French, Spanish, German, Portuguese or Chinese. */
-function t(en, fr, es, de, pt, zh) {
-  const texts = { fr, es, de, pt, zh };
+/** The text in the language of VS Code: English, French, Spanish, German, Portuguese, Chinese, Italian or Japanese. */
+function t(en, fr, es, de, pt, zh, it, ja) {
+  const texts = { fr, es, de, pt, zh, it, ja };
   return texts[vscode.env.language.toLowerCase().slice(0, 2)] || en;
 }
 
@@ -84,7 +84,7 @@ function program() {
 }
 
 /** The languages of the messages of Rythme. */
-const LANGUAGES = ['en', 'fr', 'es', 'de', 'pt', 'zh'];
+const LANGUAGES = ['en', 'fr', 'es', 'de', 'pt', 'zh', 'it', 'ja'];
 
 /** The language chosen in the settings: one of `LANGUAGES`, or 'auto'. */
 function languageSetting() {
@@ -106,8 +106,8 @@ function langArgs() {
 }
 
 function notFound(command) {
-  const install = t('How to install', 'Comment installer', 'Cómo instalarlo', 'Installationsanleitung', 'Como instalar', '如何安装');
-  const settingsButton = t('Settings', 'Réglages', 'Ajustes', 'Einstellungen', 'Configurações', '设置');
+  const install = t('How to install', 'Comment installer', 'Cómo instalarlo', 'Installationsanleitung', 'Como instalar', '如何安装', 'Come installare', 'インストール方法');
+  const settingsButton = t('Settings', 'Réglages', 'Ajustes', 'Einstellungen', 'Configurações', '设置', 'Impostazioni', '設定');
   vscode.window
     .showErrorMessage(
       t(
@@ -116,7 +116,9 @@ function notFound(command) {
         `Rythme: no se encontró el programa \`${command}\`. Instala Rythme, o indica su ruta en el ajuste \`rythme.path\`. Los colores y los fragmentos funcionan sin él.`,
         `Rythme: das Programm \`${command}\` wurde nicht gefunden. Installiere Rythme, oder gib seinen Pfad in der Einstellung \`rythme.path\` an. Farben und Snippets funktionieren auch ohne es.`,
         `Rythme: o programa \`${command}\` não foi encontrado. Instale o Rythme, ou informe o caminho dele na configuração \`rythme.path\`. As cores e os snippets funcionam sem ele.`,
-        `Rythme：找不到程序 \`${command}\`。请安装 Rythme，或者在设置 \`rythme.path\` 中给出它的路径。没有它，着色和代码片段也能使用。`
+        `Rythme：找不到程序 \`${command}\`。请安装 Rythme，或者在设置 \`rythme.path\` 中给出它的路径。没有它，着色和代码片段也能使用。`,
+        `Rythme: il programma \`${command}\` non è stato trovato. Installa Rythme, o indica il suo percorso nell'impostazione \`rythme.path\`. Colori e snippet funzionano anche senza.`,
+        `Rythme：プログラム \`${command}\` が見つかりません。Rythme をインストールするか、設定 \`rythme.path\` にそのパスを指定してください。色分けとスニペットはなくても使えます。`
       ),
       install,
       settingsButton
@@ -175,7 +177,9 @@ async function startServer() {
         `Rythme: el servidor de lenguaje no arrancó (${reason}). Hace falta una versión reciente de Rythme, que tenga el comando \`rythme lsp\`. Más detalles en la salida Rythme.`,
         `Rythme: der Sprachserver ist nicht gestartet (${reason}). Er braucht eine aktuelle Version von Rythme, die den Befehl \`rythme lsp\` hat. Mehr in der Ausgabe Rythme.`,
         `Rythme: o servidor de linguagem não iniciou (${reason}). É preciso uma versão recente do Rythme, que tenha o comando \`rythme lsp\`. Mais detalhes na saída Rythme.`,
-        `Rythme：语言服务器没有启动（${reason}）。它需要较新版本的 Rythme，带有命令 \`rythme lsp\`。更多信息见 Rythme 输出。`
+        `Rythme：语言服务器没有启动（${reason}）。它需要较新版本的 Rythme，带有命令 \`rythme lsp\`。更多信息见 Rythme 输出。`,
+        `Rythme: il server del linguaggio non è partito (${reason}). Serve una versione recente di Rythme, che abbia il comando \`rythme lsp\`. Altro nell'output Rythme.`,
+        `Rythme：言語サーバーが起動しませんでした（${reason}）。コマンド \`rythme lsp\` を持つ新しいバージョンの Rythme が必要です。詳しくは Rythme の出力を参照してください。`
       )
     );
   }
@@ -206,7 +210,9 @@ function restartServer() {
           'Rythme: servidor de lenguaje reiniciado',
           'Rythme: Sprachserver neu gestartet',
           'Rythme: servidor de linguagem reiniciado',
-          'Rythme：语言服务器已重启'
+          'Rythme：语言服务器已重启',
+          'Rythme: server del linguaggio riavviato',
+          'Rythme：言語サーバーを再起動しました'
         ), 3000);
     }
   });
@@ -268,7 +274,9 @@ async function runInTerminal(subcommand, target, extra = []) {
         'Abre antes un archivo de Rythme (.ry).',
         'Öffne zuerst eine Rythme-Datei (.ry).',
         'Abra antes um arquivo do Rythme (.ry).',
-        '请先打开一个 Rythme 文件（.ry）。'
+        '请先打开一个 Rythme 文件（.ry）。',
+        'Apri prima un file Rythme (.ry).',
+        '先に Rythme ファイル（.ry）を開いてください。'
       ));
     return;
   }
@@ -327,7 +335,7 @@ async function explainError() {
     }
   }
   const asked = await vscode.window.showInputBox({
-    prompt: t('Error code to explain', "Code d'erreur à expliquer", 'Código de error que explicar', 'Zu erklärender Fehlercode', 'Código de erro a explicar', '要解释的错误代码'),
+    prompt: t('Error code to explain', "Code d'erreur à expliquer", 'Código de error que explicar', 'Zu erklärender Fehlercode', 'Código de erro a explicar', '要解释的错误代码', 'Codice di errore da spiegare', '説明するエラーコード'),
     placeHolder: 'E003',
     value: code,
   });
@@ -344,7 +352,9 @@ async function showHelp() {
       'Un tema o una función (vacío: la lista de temas)',
       'Ein Thema oder eine Funktion (leer: die Liste der Themen)',
       'Um tema ou uma função (vazio: a lista de temas)',
-      '一个主题或一个函数（留空：主题列表）'
+      '一个主题或一个函数（留空：主题列表）',
+      'Un argomento o una funzione (vuoto: l\'elenco degli argomenti)',
+      'トピックか関数（空ならトピックの一覧）'
     ),
     placeHolder: 'map, lists, match, errors…',
   });
@@ -373,7 +383,9 @@ function debugName() {
     'Depurar este archivo Rythme',
     'Diese Rythme-Datei debuggen',
     'Depurar este arquivo Rythme',
-    '调试此 Rythme 文件'
+    '调试此 Rythme 文件',
+    'Esegui il debug di questo file Rythme',
+    'この Rythme ファイルをデバッグ'
   );
 }
 
@@ -396,7 +408,9 @@ const debugConfigurationProvider = {
           'Abre antes un archivo de Rythme (.ry).',
           'Öffne zuerst eine Rythme-Datei (.ry).',
           'Abra antes um arquivo do Rythme (.ry).',
-          '请先打开一个 Rythme 文件（.ry）。'
+          '请先打开一个 Rythme 文件（.ry）。',
+          'Apri prima un file Rythme (.ry).',
+          '先に Rythme ファイル（.ry）を開いてください。'
         ));
       return undefined;
     }

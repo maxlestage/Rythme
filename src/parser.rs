@@ -1377,6 +1377,35 @@ impl Parser {
             }
             _ => return Err(self.unexpected_token(&t, t!("a type name", "un nom de type"))),
         };
+        // `type Tree(a) = ...`: the type variables it takes. Before them,
+        // a `(` here was always a mistake (`=` was expected).
+        let mut params = Vec::new();
+        if matches!(self.raw(), Tok::LParen) {
+            self.advance();
+            params = self.comma_list(&Tok::RParen, |p| {
+                let t = p.advance();
+                match t.tok {
+                    Tok::Ident(s) => Ok((s, t.span)),
+                    _ => {
+                        let mut d = p.unexpected_token(&t, t!("a type variable, like `a`", "une variable de type, comme `a`"));
+                        d.helps.push(type_params_help());
+                        Err(d)
+                    }
+                }
+            })?;
+            if params.is_empty() {
+                let close = self.last;
+                let mut d = self.unexpected_token(
+                    &Token { tok: Tok::RParen, span: close },
+                    t!("a type variable, like `a`", "une variable de type, comme `a`"),
+                );
+                d.helps.push(t!(
+                    "a type without parameters is written without parentheses: `type {name} = ...`",
+                    "un type sans paramètres s'écrit sans parenthèses : `type {name} = ...`"
+                ));
+                return Err(d);
+            }
+        }
         if !self.eat(&Tok::Eq) {
             let mut d = self.unexpected(t!("`=`", "`=`"));
             d.helps
@@ -1441,7 +1470,7 @@ impl Parser {
             }
             break;
         }
-        Ok(Item::Type(TypeDef { name, variants, doc, span: kw.span.to(t.span) }))
+        Ok(Item::Type(TypeDef { name, params, variants, doc, span: kw.span.to(t.span) }))
     }
 
     fn test_def(&mut self) -> Fallible<Item> {
@@ -2755,6 +2784,13 @@ fn type_help() -> String {
     t!(
         "a type is written like `Int`, `Text`, `List(Int)`, `[Int]`, `{{name: Text}}`, `fn(Int) -> Int` or `Shape`; see `rythme help types`",
         "un type s'écrit comme `Int`, `Text`, `List(Int)`, `[Int]`, `{{nom: Text}}`, `fn(Int) -> Int` ou `Forme` ; voir `rythme help types`"
+    )
+}
+
+fn type_params_help() -> String {
+    t!(
+        "the parameters of a type are type variables, one lowercase letter each: `type Box(a) = Box(value: a)`",
+        "les paramètres d'un type sont des variables de type, d'une lettre minuscule chacune : `type Boite(a) = Boite(valeur: a)`"
     )
 }
 

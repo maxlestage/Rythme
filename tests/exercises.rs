@@ -28,6 +28,8 @@ const WORDS: &[(&str, &str, &str, &str)] = &[
     ("de", "Übung", "# Aufgabe", "# Hinweise"),
     ("pt", "Exercício", "# Enunciado", "# Dicas"),
     ("zh", "练习", "# 题目", "# 提示"),
+    ("it", "Esercizio", "# Consegna", "# Suggerimenti"),
+    ("ja", "練習問題", "# 問題", "# ヒント"),
 ];
 
 /// Runs `rythme` in a folder, with the messages in a language.
@@ -209,7 +211,7 @@ fn exercise_list_and_start() {
     let r = rythme_in(&dir, "de", &["exercise", "list"]);
     assert!(r.stdout.contains("01  Erste Werte") && r.stdout.contains("28-fragezeichen.ry"), "{}", r.stdout);
     // The levels line up, also when the titles are in Chinese.
-    for code in ["en", "zh"] {
+    for code in ["en", "zh", "ja"] {
         let r = rythme_in(&dir, code, &["exercise", "list"]);
         let columns: Vec<usize> = r
             .stdout
@@ -272,9 +274,14 @@ fn exercise_check_gives_friendly_feedback() {
     assert_eq!(r.code, 0);
     let r = rythme_in(&dir, "fr", &["exercise", "check", "2"]);
     assert!(r.stdout.contains("remplacez chaque `fail(\"à faire\")`"), "{}", r.stdout);
-    for (code, hint) in
-        [("es", "`fail(\"por hacer\")`"), ("de", "`fail(\"zu tun\")`"), ("pt", "`fail(\"a fazer\")`"), ("zh", "`fail(\"待完成\")`")]
-    {
+    for (code, hint) in [
+        ("es", "`fail(\"por hacer\")`"),
+        ("de", "`fail(\"zu tun\")`"),
+        ("pt", "`fail(\"a fazer\")`"),
+        ("zh", "`fail(\"待完成\")`"),
+        ("it", "`fail(\"da fare\")`"),
+        ("ja", "`fail(\"未完成\")`"),
+    ] {
         let here = dir.join(code);
         std::fs::create_dir_all(&here).unwrap();
         let r = rythme_in(&here, code, &["exercise", "start", "3"]);

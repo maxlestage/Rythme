@@ -26,11 +26,16 @@ struct Out {
 }
 
 fn rythme_in(dir: &Path, lang: &str, args: &[&str]) -> Out {
+    rythme_in_env(dir, lang, args, &[])
+}
+
+fn rythme_in_env(dir: &Path, lang: &str, args: &[&str], envs: &[(&str, &Path)]) -> Out {
     let out = Command::new(env!("CARGO_BIN_EXE_rythme"))
         .args(args)
         .current_dir(dir)
         .env("RYTHME_LANG", lang)
         .env("NO_COLOR", "1")
+        .envs(envs.iter().copied())
         .output()
         .expect("run rythme");
     Out {
@@ -44,7 +49,13 @@ fn rythme_in(dir: &Path, lang: &str, args: &[&str]) -> Out {
 /// schema definition `def`, and returns it with the exit code.
 #[track_caller]
 fn json(dir: &Path, lang: &str, args: &[&str], def: &str) -> (Json, i32) {
-    let out = rythme_in(dir, lang, args);
+    json_env(dir, lang, args, def, &[])
+}
+
+/// [`json`], with environment variables.
+#[track_caller]
+fn json_env(dir: &Path, lang: &str, args: &[&str], def: &str, envs: &[(&str, &Path)]) -> (Json, i32) {
+    let out = rythme_in_env(dir, lang, args, envs);
     assert_eq!(out.stdout.lines().count(), 1, "one line of JSON for {args:?}:\n{}\nstderr:\n{}", out.stdout, out.stderr);
     let doc = Json::parse(&out.stdout).unwrap_or_else(|e| panic!("{args:?} printed no JSON ({e}):\n{}", out.stdout));
     let schema = schema();
@@ -403,9 +414,69 @@ fn the_schema_knows_every_code_and_language() {
     assert_eq!(langs.iter().filter_map(Json::as_str).collect::<Vec<_>>(), codes);
     // Every definition is reachable from the top.
     let tops: Vec<&str> = schema.get("anyOf").as_array().iter().filter_map(|r| r.get("$ref").as_str()).collect();
-    for name in ["check", "run", "test", "fix_report", "explain_one", "explain_all", "help_all", "help_one"] {
+    for name in ["check", "run", "test", "fix_report", "explain_one", "explain_all", "help_all", "help_one", "search", "info"] {
         assert!(tops.contains(&format!("#/$defs/{name}").as_str()), "{name}");
     }
+}
+
+// ----- search and info ----------------------------------------------------------------
+
+#[test]
+fn search_and_info_describe_the_packages_of_the_index() {
+    let entry = |name: &str, description: &str, more: &str| {
+        format!(
+            "name = \"{name}\"\ndescription = \"{description}\"\nrepository = \"https://example.com/{name}\"\nlicense = \"MIT\"\nkeywords = [\"math\"]\n\n[[version]]\nversion = \"1.0.0\"\ntag = \"v1.0.0\"\ncommit = \"{}\"\nchecksum = \"sha256:{}\"\n{more}",
+            "a".repeat(40),
+            "b".repeat(64)
+        )
+    };
+    let dir = folder("index", &[]);
+    std::fs::create_dir_all(dir.join("packages")).unwrap();
+    let yanked = "\n[[version]]\nversion = \"1.1.0\"\ntag = \"v1.1.0\"\ncommit = \"".to_string()
+        + &"c".repeat(40)
+        + "\"\nchecksum = \"sha256:"
+        + &"d".repeat(64)
+        + "\"\nyanked = \"a bug\"\n";
+    std::fs::write(dir.join("packages/mathlib.toml"), entry("mathlib", "Vectors and numbers", &yanked)).unwrap();
+    std::fs::write(dir.join("packages/geometry.toml"), entry("geometry", "Shapes", "")).unwrap();
+    std::fs::write(dir.join("packages/broken.toml"), "name = \n").unwrap();
+    let index = dir.join("packages").parent().unwrap().to_path_buf();
+    let envs: &[(&str, &Path)] = &[("RYTHME_INDEX", &index)];
+
+    let (doc, code) = json_env(&dir, "en", &["search", "vectors", "--format", "json"], "search", envs);
+    assert_eq!(code, 0);
+    assert_eq!(doc.get("command").as_str(), Some("search"));
+    assert_eq!(doc.get_path(&["index", "updated"]), &Json::Null, "a folder has no copy");
+    let packages = doc.get("packages").as_array();
+    assert_eq!(packages.len(), 1);
+    assert_eq!(packages[0].get("name").as_str(), Some("mathlib"));
+    assert_eq!(packages[0].get("version").as_str(), Some("1.0.0"), "1.1.0 is withdrawn");
+    // One file of the index could not be read: a warning, not an error.
+    assert_eq!(doc.get("diagnostics").as_array().len(), 1);
+    assert_eq!(doc.get("diagnostics").as_array()[0].get("severity").as_str(), Some("warning"));
+    let (doc, _) = json_env(&dir, "fr", &["search", "--format", "json"], "search", envs);
+    assert_eq!(doc.get("packages").as_array().len(), 2);
+    assert_eq!(doc.get("query").as_array().len(), 0);
+
+    let (doc, code) = json_env(&dir, "en", &["info", "mathlib", "--format", "json"], "info", envs);
+    assert_eq!(code, 0);
+    let versions = doc.get_path(&["package", "versions"]).as_array();
+    assert_eq!(versions.len(), 2);
+    assert_eq!(versions[0].get("version").as_str(), Some("1.1.0"));
+    assert_eq!(versions[0].get("yanked").as_str(), Some("a bug"));
+    assert_eq!(versions[1].get("yanked"), &Json::Null);
+    let (doc, code) = json_env(&dir, "en", &["info", "mathlab", "--format", "json"], "info", envs);
+    assert_eq!(code, 1);
+    assert_eq!(doc.get("package"), &Json::Null);
+    let d = &doc.get("diagnostics").as_array()[0];
+    assert_eq!(d.get("code").as_str(), Some("E025"));
+    assert_eq!(d.get("help").as_array()[0].as_str(), Some("did you mean `mathlib`?"));
+    // No index at all: still one document.
+    let nowhere = dir.join("nowhere");
+    let (doc, code) = json_env(&dir, "en", &["search", "--format", "json"], "search", &[("RYTHME_INDEX", &nowhere)]);
+    assert_eq!(code, 1);
+    assert_eq!(doc.get("index"), &Json::Null);
+    assert!(doc.get("diagnostics").as_array()[0].get("message").as_str().unwrap().contains("is not a package index"));
 }
 
 // ----- fix ----------------------------------------------------------------------------

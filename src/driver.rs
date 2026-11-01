@@ -510,6 +510,8 @@ impl Driver {
             self.executed.insert((p.clone(), m.ns));
         }
         self.interp.names = self.names_of(m);
+        let interp = &self.interp;
+        crate::help::note_types(&m.items, |s| interp.stored(s));
         Ok(())
     }
 

@@ -6,12 +6,13 @@ rendered on the server with their SEO tags and a strict Content-Security-Policy.
 the pages do in the browser is Rust too, compiled to WebAssembly: the menus, the
 themes, the installable app and its service worker, the playground and its
 interpreter (see [Architecture: what is Rust where](#architecture-what-is-rust-where)).
-In the six languages of the interpreter (see [Languages](#languages)), mobile first.
+In the eight languages of the interpreter (see [Languages](#languages)), mobile first.
 It installs as an app and works offline (see
 [The installable app](#the-installable-app)), has color themes and never scrolls
-sideways (see [Themes and layout](#themes-and-layout)). AI assistants and the tools
-that read the web for them find the whole language in `/llms.txt`, every page as
-Markdown and structured data (see [For AI assistants](#for-ai-assistants)).
+sideways (see [Themes and layout](#themes-and-layout)), and is quick on a slow phone:
+compressed, cached, the interpreter compiled once (see [Speed](#speed)). AI assistants
+and the tools that read the web for them find the whole language in `/llms.txt`, every
+page as Markdown and structured data (see [For AI assistants](#for-ai-assistants)).
 
 | Path | Page |
 |---|---|
@@ -20,7 +21,7 @@ Markdown and structured data (see [For AI assistants](#for-ai-assistants)).
 | `/{lang}/learn/` | the language in two minutes; each piece of code opens in the playground |
 | `/{lang}/examples/` | the programs of `examples/` with their output |
 | `/{lang}/playground/` | the real interpreter, compiled to WebAssembly |
-| `/{lang}/teach/` | the guide for teachers (`docs/teaching.md`, `docs/enseigner.md`) |
+| `/{lang}/teach/` | the guide for teachers (`docs/teaching.md`, `docs/enseigner.md`, `docs/teaching.es.md`...) |
 | `/{lang}/ai/` | for AI assistants: how to give them Rythme, the MCP server, the loop of `--format json` and `rythme fix` |
 | `/{lang}/index.md`, `/{lang}/{page}/index.md` | the home page, *Learn*, the examples, the guide and the AI page as Markdown (`text/markdown`) |
 | `/llms.txt`, `/llms-full.txt` | the index and the whole language for AI assistants (`docs/llms.txt`, `docs/llms-full.txt`) |
@@ -40,6 +41,7 @@ Markdown and structured data (see [For AI assistants](#for-ai-assistants)).
 | The playground: editor, runs, steps, links, Copy for AI; its worker | `client/src/playground/` |
 | What the browser side shares with the server, tested natively | `client/src/{highlight,messages,steps,share,assistant,editor}.rs` |
 | Manifests, service worker | `src/pwa.rs`, `client/src/sw.rs` |
+| Compression and caching (see [Speed](#speed)) | `src/compress.rs`, `client/src/compression.rs`, `client/src/bin/precompress.rs` |
 | The lines that start the browser side, the workers' scripts | `src/client.rs` |
 | `llms.txt`, the MCP configurations, the AI page's commands | `src/ai.rs` (the page itself in `src/pages.rs`) |
 | The pages as Markdown | `src/markdown.rs` |
@@ -61,8 +63,11 @@ cargo run --release        # http://localhost:3000 (PORT on Heroku)
 `./build.sh` needs the `wasm32-unknown-unknown` target of Rust and `wasm-bindgen-cli` at
 exactly the version of the `wasm-bindgen` crate in `Cargo.lock` (0.2.129): it installs
 whichever is missing (`cargo install wasm-bindgen-cli --version 0.2.129 --locked`, a few
-minutes, once). Paquets is fetched from its git repository. Without `public/pkg/` the
-server serves every page, but they do nothing in the browser (no playground, no menu on
+minutes, once). Its last step compresses the files of `public/` once, at their best
+(`site.css.br`, `site.css.gz`…, see [Speed](#speed)); binaryen's `wasm-opt`, when
+installed, shrinks the bundles a little more (optional: nothing breaks without it).
+Paquets is fetched from its git repository. Without `public/pkg/` the server serves
+every page, but they do nothing in the browser (no playground, no menu on
 a phone): the server says so when it starts. `SITE_URL` sets the public address used in
 canonical and Open Graph links (taken from each request otherwise).
 
@@ -81,7 +86,7 @@ Everything is Rust, on both sides, in two crates of one workspace:
 | Bundle | Loaded by | What it does |
 |---|---|---|
 | `site.js`, `site_bg.wasm` (feature `page`) | every page, and `/` of the static export | `client/src/layout.rs`: the burger menu, the language menu and its cookie, the copy buttons, the theme picker, the service worker and its updates, the install button, the hint for iOS, the language of `/` |
-| `playground.js`, `playground_bg.wasm` (feature `playground`) | the playground (after the first: its menus work while these 3 MB arrive), and its worker | `client/src/playground/`: the editor, Run, Check, Test, Format, the steps, Seed, Share, Copy for AI, the files; the interpreter itself (`rythme-playground`, `../playground`), run in a web worker made from the same bundle (`playground/worker.rs`) so that *Stop* can end a program that never stops |
+| `playground.js`, `playground_bg.wasm` (feature `playground`) | the playground (after the first: its menus work while these 3 MB arrive), and its worker | `client/src/playground/`: the editor, Run, Check, Test, Format, the steps, Seed, Share, Copy for AI, the files; the interpreter itself (`rythme-playground`, `../playground`), run in a web worker made from the same bundle (`playground/worker.rs`) so that *Stop* can end a program that never stops. The page compiles it once and hands the compiled module to its worker |
 | `sw.js`, `sw_bg.wasm` (feature `sw`) | the service worker | `client/src/sw.rs`: the files saved, the pages offline, the updates |
 
 **The only JavaScript**, each piece because a browser needs it:
@@ -92,8 +97,11 @@ Everything is Rust, on both sides, in two crates of one workspace:
    inline in the head of each page with a preload of its WebAssembly, as Paquets writes
    it for its islands (`client::Bundle`), allowed by its hash in the
    Content-Security-Policy: a browser runs WebAssembly only when a script asks for it.
-3. *`/pkg/worker.js`*, the same line for the playground's worker, written by the
-   server: a worker starts from a script file, never from inline code.
+3. *`/pkg/worker.js`*, the line that starts the playground's bundle in its worker,
+   written by the server: a worker starts from a script file, never from inline code.
+   It waits for its first message, the module the page has compiled already
+   (`WebAssembly.Module`), and only instantiates it; given `null` (a browser that cannot
+   pass a module), it downloads and compiles the bundle itself.
 4. *`/sw.js` and `/pkg/sw_wasm.js`*, written by the server: the service worker loads its
    glue and its WebAssembly (in base64, compiled at once with `initSync`), then calls
    `serve({…})` with the version, the base path, the URLs to save, the offline pages and
@@ -123,12 +131,83 @@ needed.
 once downloaded and compiled, a few milliseconds after the page's `load` event (the
 old `site.js` ran just before it). The first thing it does is to show the burger
 menu: the browser tests wait for that (`started` in `tests/pwa/serve.js`) before they
-use the page.
+use the page. The service worker is registered at `load`; on the playground, once its
+first program has run (the playground sets `data-ready` and says so with the event
+`rythme-playground-ready`, or after 30 seconds at the latest): it saves the whole site
+at install, the interpreter too, and would take the network from the interpreter the
+visitor is waiting for.
+
+## Speed
+
+A phone on a slow network is the case the site is made for. Measured with
+[`tests/pwa/speed.js`](tests/pwa/README.md#speedjs-how-fast-on-a-slow-phone): Chromium
+with Lighthouse's mobile profile (the CPU 4× slower, 1.6 Mb/s, 150 ms of latency),
+nothing cached, the server (as on Heroku), from the start of the navigation, median
+of 3:
+
+| | Before | Now |
+|---|---|---|
+| Home page, menus working | 1.5 s | 0.8 s |
+| Playground, menus working | 2.1 s | 0.9 s |
+| Playground, first program run | 18.4 s | 5.7 s |
+| Playground, first run, the link shared with the service worker (`shared`) | 28.5 s | 5.0 s |
+| The same on GitHub Pages (gzip by GitHub), `export shared` | 9.4 s | 6.6 s |
+
+Before is the site just before this work (the files sent as they are, the service
+worker registered at `load` on every page). DevTools' throttling (the first rows, as
+Lighthouse measures) leaves the service worker's traffic out: with a link shared by
+the page and the service worker, as on a real phone, the old site's service worker
+downloaded the whole site, the interpreter a second time, while the visitor waited
+for it.
+
+- **Compressed.** The files of `public/` worth it (the bundles, `site.css`) are
+  compressed once, when the site is built, at their best: `./build.sh` ends with
+  `precompress` (`client/src/bin/precompress.rs`), which writes `site.css.br` (Brotli,
+  quality 11) and `site.css.gz` (gzip, level 9) next to each file, when it saves 5% or
+  more (`client/src/compression.rs`). The server (`src/compress.rs`) sends the copy the
+  browser accepts (`Accept-Encoding`, Brotli first) with `Content-Encoding` and `Vary:
+  Accept-Encoding`; at startup it keeps only the copies that decode to their file, and
+  at each request checks that the file has kept its size and date: a file changed
+  since the build is compressed on the fly. Everything else (the pages, their
+  Markdown, `llms-full.txt`, `examples.json`, the scripts of the workers, the manifests)
+  is compressed per request by Paquets' `compress` middleware (Brotli level 5, or
+  gzip). The interpreter goes from 3.2 MB to 0.8 MB (1.1 MB in gzip), a page to about
+  7 KB. The service worker saves the answers as the browser decodes them: offline,
+  nothing changes. The static export leaves the copies out: GitHub Pages compresses
+  with gzip by itself.
+- **Cached.** The files the pages link with `?v=` (the styles, the bundles, the
+  playground's worker, the service worker's WebAssembly: `server::VERSIONED`) are kept
+  a year without being asked again (`Cache-Control: public, max-age=31536000,
+  immutable`) when asked at the current version: their address changes with them.
+  Pages are revalidated (`no-cache`) with an `ETag`, a hash of their HTML: the browser
+  or the service worker that has the page gets `304 Not Modified`. `/sw.js` stays
+  `no-cache`.
+- **The interpreter compiled once.** WebAssembly is served as `application/wasm`, so
+  the glue compiles it while it downloads (`instantiateStreaming`). The page hands the
+  compiled module (`wasm_bindgen::module()`) to its worker, which only instantiates it:
+  one compilation instead of two, no second download, and a worker started again after
+  *Stop* is ready at once.
+- **What the first run needs, early.** The head preloads each bundle (its glue as
+  `modulepreload`, its WebAssembly as `preload`); the playground also prefetches
+  `examples.json` and its worker's script, so both are there when the interpreter
+  arrives (a `preload` would be reported in the console as unused when the network is
+  slow: the interpreter takes more than a few seconds). On the playground the service
+  worker waits for the first run (see [When it starts](#architecture-what-is-rust-where)):
+  the network goes to the interpreter first.
+- **Small bundles.** The profile `wasm-release` of `Cargo.toml`: `opt-level = "z"`,
+  fat LTO, one codegen unit, `panic = "abort"`, stripped; `wasm-opt -Oz` if installed.
+  The interpreter is mostly its own texts: its messages and its help in eight
+  languages (the playground's bundle is 4.5 MB, 1.0 MB in Brotli).
+- **Considered, not done.** Inlining the critical CSS: `site.css` is 11 KB in Brotli,
+  fetched while the page arrives, and inlining it would grow every page and every copy
+  the service worker keeps. Loading the playground's bundle later: its page needs it
+  for the editor, and its menus already work before it arrives (the site's bundle is
+  ten times smaller and starts first).
 
 ## Languages
 
-French, English, Spanish, German, Portuguese (Brazilian, "você") and Chinese
-(simplified): the languages of the interpreter (`LANGUAGES` in `src/lang.rs`).
+French, English, Spanish, German, Portuguese (Brazilian, "você"), Chinese
+(simplified), Italian and Japanese: the languages of the interpreter (`LANGUAGES` in `src/lang.rs`).
 
 - **Texts.** `src/i18n.rs` has `Lang` and the `Texts` structure; each language is a
   `Texts` constant in `src/i18n/<code>.rs`. Everything else that depends on the
@@ -154,10 +233,11 @@ French, English, Spanish, German, Portuguese (Brazilian, "você") and Chinese
   and its steps are in that language; its own texts come from `src/i18n/` (`data-ui`).
   It colors the messages by their first word in every language (`error`, `Fehler`,
   `错误`…), like `highlight.rs`; the tests check both lists against the catalogs.
-- **The guide for teachers** exists in English and French. The other languages show
-  the English guide (marked `lang="en"`) under a note in their language
-  (`Texts::teach_note`, `teach::guide_lang`): a guide added later only needs its line in
-  `teach.rs`.
+- **The guide for teachers** exists in English, French, Spanish, German, Portuguese
+  and Chinese, each shown on the page of its language. A language without a guide
+  shows the English one (marked `lang="en"`) under a note in its language
+  (`Texts::teach_note`, `teach::guide_lang`): a guide added later only needs its line
+  in `GUIDES` (`teach.rs`) and `teach_note: None`.
 - **Chinese.** The web fonts have no Chinese characters: on the pages in Chinese, a
   list of system fonts (`--cjk` in `site.css`: PingFang, Microsoft YaHei, Noto Sans
   CJK…) comes after the Latin font and before the generic family, in the text, the
@@ -335,7 +415,8 @@ export; and that no page scrolls sideways, in every language and theme, with the
 contrast of each, and that the language menu fits the screen (`layout.js`); and that
 real phones never scroll sideways either, text enlarged, page zoomed, in landscape,
 keyboard open and every menu open, with fields at 16px and targets at 44px
-(`mobile.js`). The `browser` job of CI runs all three.
+(`mobile.js`). The `browser` job of CI runs all three. `speed.js` measures how fast
+the site is on a slow phone (see [Speed](#speed)); it checks nothing.
 
 ## Themes and layout
 
@@ -391,11 +472,14 @@ sideways. So:
   editor is 14px only with a mouse and no touch screen);
 - every control is 44×44px or more for a finger (smaller only with `pointer: fine`);
   nothing is shown only on hover;
-- the bar sticks to the top only when the screen is 520px high or more; the menu
-  panel and the language list start under its real bottom (`--bar-bottom`, measured
-  by the browser side: it wraps when the text is enlarged), the language list hangs under the
-  bar and scrolls when the screen is short; titles shrink with the height too, so a
-  phone in landscape shows the playground's tools and editor;
+- the bar sticks to the top, so the burger is always at hand: 60px high from 520px of
+  height, compact under it (48px, the logo smaller: a phone in landscape), and while
+  the keyboard is open in the playground it scrolls away with the page, leaving the
+  editor the whole height above the keyboard; the menu panel and the language list
+  start under its real bottom (`--bar-bottom`, measured by the browser side: it wraps
+  when the text is enlarged), the language list hangs under the bar and scrolls when
+  the screen is short; titles shrink with the height too, so a phone in landscape
+  shows the playground's tools and editor;
 - the playground: Run in sight when it opens, the page never scrolls by itself (only
   a run asked by a tap brings its output into view), and with the keyboard open the
   editor is no taller than the part of the screen above it (`--keyboard-free`, from
@@ -470,7 +554,8 @@ The repository deploys this site, with its playground, on Heroku in two ways:
 | Docker | `heroku.yml`, `Dockerfile` | `container` |
 
 `heroku-build.sh` (run by the buildpack once Rust is installed, or by hand from the
-repository) builds the browser side into `site/public/pkg/` (`site/build.sh`), then the server to
+repository) builds the browser side into `site/public/pkg/` (`site/build.sh`, with the
+compressed copies of `site/public/`), then the server to
 `site/target/release/rythme-site`; the `Procfile` starts it from `site/`. The
 `Dockerfile` does the same in an image of about 120 MB, run as a non-root user.
 The server listens on `PORT`, set by Heroku.
@@ -503,9 +588,16 @@ BASE_PATH=/Rythme SITE_URL=https://maxlestage.github.io/Rythme cargo run --relea
 Every page is rendered by the app itself through Paquets' test client and written to
 `dist/<path>/index.html`, with `404.html`, `sitemap.xml`, `robots.txt`,
 `examples.json`, `sw.js`, the manifests, `llms.txt`, `llms-full.txt`, the Markdown of the
-pages (`dist/<path>/index.md`) and `public/`. Every link is behind `BASE_PATH`. `/` picks the language
+pages (`dist/<path>/index.md`) and `public/` (but the compressed copies: GitHub Pages
+compresses with gzip by itself, the WebAssembly too, 3.2 MB of interpreter in 1.1 MB,
+and keeps every file 10 minutes). Every link is behind `BASE_PATH`. `/` picks the language
 in the browser. In the repository settings, Pages must use **GitHub Actions** as its
-source (with "Deploy from a branch", GitHub shows the README instead).
+source: with "Deploy from a branch", GitHub also builds the README with Jekyll at each
+push, and whichever deployment ends last is the site. The workflow says in its job
+summary whether the source is right (`build_type` of the Pages API) and, while it is
+not, waits for GitHub's own run ("pages build and deployment" of the same commit) to
+end before deploying, so that the site comes last; with the right source it waits for
+nothing.
 
 ## Checks
 
@@ -514,7 +606,7 @@ cargo fmt --all --check
 cargo clippy --all-targets -- -D warnings
 cargo test
 # The browser side: natively, then as each of its bundles.
-cargo clippy -p rythme-site-client --all-targets --features playground,sw,host-imports -- -D warnings
+cargo clippy -p rythme-site-client --all-targets --features playground,sw,host-imports,precompress -- -D warnings
 for bundle in page playground sw; do
   cargo clippy -p rythme-site-client --target wasm32-unknown-unknown --features $bundle -- -D warnings
 done
@@ -524,7 +616,7 @@ cargo test -p rythme-site-client --features playground,sw
 The tests of `client/` check what needs no browser: the colors of the code, the lines of
 the messages, the steps, base64 and the inflate of the links (with blocks made by zlib),
 Copy for AI, the indentation of the editor and the names of files, the fonts the
-service worker keeps. The tests render every page in every language through Paquets' test client (status,
+service worker keeps, which files are worth compressing. The tests render every page in every language through Paquets' test client (status,
 `lang`, canonical and `hreflang` links, burger menu, CSP), check the redirections, the
 404 page, the sitemap and `/examples.json`, that every program of `examples/` is listed,
 and run every piece of code the site shows through the real interpreter, in the language
@@ -533,3 +625,8 @@ of each page: the home page's error message must be exactly the interpreter's.
 Markdown of every page (well formed, every link existing, every piece of Rythme code
 run through the interpreter, printing exactly the text that follows it), the JSON-LD
 of every page, the titles and descriptions, the AI page and Copy for AI.
+`tests/compress.rs` checks what is sent compressed (pages, Markdown, texts, scripts:
+Brotli or gzip as the browser asks, the same once decoded), the bundles sent from their
+copies (once built: decoded to their files, `HEAD`, `304`), the year of cache of the
+versioned files only, and the `ETag` of the pages; `src/compress.rs` that a copy older
+than its file is never sent.

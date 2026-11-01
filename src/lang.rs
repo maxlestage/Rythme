@@ -33,6 +33,8 @@ pub static LANGUAGES: &[Language] = &[
     include!("i18n/de.rs"),
     include!("i18n/pt.rs"),
     include!("i18n/zh.rs"),
+    include!("i18n/it.rs"),
+    include!("i18n/ja.rs"),
 ];
 
 /// A language of [`LANGUAGES`].

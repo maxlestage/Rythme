@@ -4,13 +4,13 @@
 Programmiersprache, mit Hilfe überall.**
 Programme sind Dateien, die auf `.ry` enden. Der Interpreter ist in Rust geschrieben.
 
-*[English version →](README.md) · [Version française →](README.fr.md) · [En español →](README.es.md) · [Em português →](README.pt.md) · [中文 →](README.zh.md)*
+*[English version →](README.md) · [Version française →](README.fr.md) · [En español →](README.es.md) · [Em português →](README.pt.md) · [中文 →](README.zh.md) · [In italiano →](README.it.md) · [日本語 →](README.ja.md)*
 
 Diese README ist eine Zusammenfassung. Die Meldungen, die Hilfe und die
-Erklärungen von Rythme gibt es auf Deutsch (`--lang de`); die vollständige
-Dokumentation ist auf Englisch und Französisch: das
-[Referenzhandbuch](docs/reference.md) und der
-[Leitfaden für Lehrkräfte](docs/teaching.md). Die Website und ihr Playground
+Erklärungen von Rythme gibt es auf Deutsch (`--lang de`), ebenso den
+[Leitfaden für Lehrkräfte](docs/teaching.de.md); das vollständige
+[Referenzhandbuch](docs/reference.md) ist auf Englisch und Französisch. Die
+Website und ihr Playground
 gibt es auch auf Deutsch: <https://maxlestage.github.io/Rythme/de/>.
 
 ```rythme
@@ -96,6 +96,7 @@ Weitere Möglichkeiten in der [englischen README](README.md#install).
 | `rythme test hallo.ry`      | die Tests in der Datei ausführen                  |
 | `rythme fmt hallo.ry`       | dem Code sein offizielles Layout geben            |
 | `rythme new hallo`          | ein neues Projekt: `rythme.toml`, `src/`, `tests/` |
+| `rythme add mathlib`        | ein Paket aus dem [Paketindex](docs/reference.md#711-the-package-index) hinzufügen (`rythme search WÖRTER` findet sie) |
 | `rythme help [thema]`       | Hilfe zu einem Thema oder einer Funktion (`rythme help listen`) |
 | `rythme explain E003`       | einen Fehlercode erklären                         |
 | `rythme learn`              | geführte Tour durch die Sprache                   |

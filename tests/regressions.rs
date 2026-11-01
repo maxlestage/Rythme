@@ -670,3 +670,14 @@ fn padding_counts_the_size_of_the_text_like_every_text() {
     assert!(r.stderr.contains("more than 100 MB"), "{}", r.stderr);
     ok("print(len(pad_left(\"a\", 3, \"é\")))", "3");
 }
+
+#[test]
+fn the_fix_of_an_arrow_function_after_a_character_of_several_bytes() {
+    // The name before `=>` was found one byte after the character before it.
+    for code in ["\"{}\u{feff}=>", "\"{}👍=> 1", "print(map([1], 👍x => x + 1))", "f = \u{feff}x => x"] {
+        let r = rythme(&["-e", code]);
+        assert_eq!(r.code, 1, "{code}: {}", r.stderr);
+        assert!(!r.stderr.contains("internal problem"), "{code}: {}", r.stderr);
+    }
+    fails("print(map([1], éa => 1))", "E001");
+}

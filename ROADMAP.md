@@ -159,16 +159,41 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 Ideas, not promises: each one would be weighed against the rules above, and
 none may break the [stability promise](README.md#stability-promise) of 1.x.
 
-- **A bytecode virtual machine**, for programs several times faster that
-  print exactly the same thing.
+- [x] **A bytecode virtual machine**, for programs several times faster that
+  print exactly the same thing. Done: functions are compiled to register
+  instructions (`src/vm/`), with instructions of their own for the common
+  cases and a cache of the names of the program; the programs of `bench/`
+  run 1.1 to 2 times faster than with 1.0 and print the same.
+  - [ ] Faster still: values of 16 bytes instead of 24, a compact list of
+    Floats (see below), and calls that do not go through a Rust call each.
 - [x] **Types written by hand where they help**: optional, checked by
   `rythme check`, built on the inference that exists; code without them
   stays as it is. Done: `fn area(w: Int, h: Int) -> Int`, `total: Float =
   0.0`, `Circle(radius: Float)`, `do |n: Int|`, with type variables (`a`);
   E027 for a value that surely does not fit or a type that does not exist;
   every 1.0 program keeps its syntax tree (manual 4.10, `rythme help types`).
-- **A package index**: finding and sharing packages by name, beside the
-  dependencies from a repository or a folder of `rythme.toml`.
+  - [x] **Types with parameters**: `type Tree(a) = Leaf | Node(left:
+    Tree(a), value: a, right: Tree(a))`, then `Tree(Int)` in written types,
+    checked (E027) and used like `List(Int)`; type names completed and
+    explained by the language server, `help(Node)` with the types of the
+    fields, the debugger naming parameters written as patterns. Type
+    variables stay one letter: a lowercase word written as a type is taken
+    for a type named as in another language (manual 4.10).
+- [x] **A package index**: finding and sharing packages by name, beside the
+  dependencies from a repository or a folder of `rythme.toml`. Done, with no
+  server: the index is a public git repository with one file per package
+  (`packages/NAME.toml`, its versions with their tags, commits and
+  checksums), copied into `RYTHME_HOME/index` and read without a network;
+  `rythme search`, `info` (both with `--format json`), `add NAME[@RANGE]`
+  (`{ version = "^1.2.0" }` in `rythme.toml`, the exact commit and checksum
+  in `rythme.lock`), `update` within the ranges of semantic versioning, and
+  `publish`, which checks a package and prints its entry and the steps of a
+  pull request, never sending anything (`--verify` for the index's own
+  checks). Names, addresses (https, ssh, file) and checksums are checked,
+  git runs without hooks, and nothing of a package runs when it is
+  installed (manual 7.11, `rythme help packages`). Left to the owner:
+  creating `https://github.com/maxlestage/rythme-index` from
+  [`packaging/index-template/`](packaging/index-template).
 - [x] **A debugger in the editors** (breakpoints, values of the names), building
   on `rythme steps` and the language server. Done: `rythme debug file.ry`
   in a terminal (breakpoints on lines and functions, `next`, `step`,
@@ -179,6 +204,11 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
   `rythme`. Without the debugger, programs run at the same speed.
 - **More languages of the messages**, and the guide for teachers translated
   where it is not yet.
+  - [x] **The guide for teachers in Spanish, German, Portuguese and
+    Chinese** (`docs/teaching.*.md`), up to date with grading, the
+    playground, the debugger and AI assistants, each shown on its page of
+    the website; a language added later shows the English guide with a note
+    until it has its own.
 - **More of the library**: CSV, HTTP requests, `random` with a seed that a
   program can repeat, with the same care for errors as values.
   - [x] **CSV**: `csv_parse`, `csv_records`, `csv_format` (RFC 4180, any
@@ -192,6 +222,18 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
   - [x] **HTTP requests**: `http_get` and `http_post`, `Ok(text)` or
     `Err(message)`, through the program curl (no dependency; keys never on a
     command line); an `Err` in the playground.
+  - [x] **The library, completed**: an audit against Ruby's core, Python's
+    builtins, `itertools`, `statistics` and `string`, and Elixir's `Enum`,
+    `String` and `Map` ([`docs/stdlib-audit.md`](docs/stdlib-audit.md)),
+    then 72 pure functions where Rythme had a gap (`format` with Python's
+    specs, `tally`, `combinations`, `dig`, `update`, `all_ok`,
+    `add_months`, date patterns, Base64...) and 26 Ruby names, each known to
+    the checker, documented and translated; names the exercises define stay
+    free.
+- [x] **A command line that feels finished**: `--help` for every command in
+  the eight languages, `rythme run -` (the standard input), `rythme check
+  FOLDER`, `rythme completions bash|zsh|fish|powershell`, `rythme man`,
+  `rythme version --verbose` and `rythme upgrade`.
 - [x] **Rythme for AI assistants**: models learn the language fast, write
   it, and fix their own mistakes without a person. Done: `--format json`
   for `check`, `run`, `test`, `fix`, `explain` and `help` (versioned, with a
@@ -199,7 +241,11 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
   (`docs/llms.txt`, `docs/llms-full.txt`, generated and tested), the MCP
   server `rythme mcp` (sandboxed, time and memory limited), `AGENTS.md` in
   the repository and in new projects, and targeted messages for the habits
-  of other languages (manual 7.10). The website does not show it yet.
+  of other languages (manual 7.10). The website shows it too: the AI page
+  (`/{lang}/ai/`: what to give an assistant, the MCP configurations, the
+  loop of `--format json` and `rythme fix`), `/llms.txt` and
+  `/llms-full.txt`, every page as Markdown, and *Copy for AI* in the
+  playground (see [site/README.md](site/README.md#for-ai-assistants)).
 - [x] **Artificial intelligence in class**: what a course needs to write
   machine learning, neural networks, search, games and calls to language
   models, pure and readable. Done: vectors and matrices over lists (`dot`,

@@ -1,0 +1,45 @@
+# 練習問題 12 · リストを作る  ★★☆
+# 参考解答。読む前に、まず自分で練習問題に挑戦してください！
+
+fn countdown(0) = [0]
+fn countdown(n) = [n, ..countdown(n - 1)]
+
+fn repeat_value(_, 0) = []
+fn repeat_value(x, n) = [x, ..repeat_value(x, n - 1)]
+
+fn double_all([]) = []
+fn double_all([x, ..rest]) = [x * 2, ..double_all(rest)]
+
+fn reversed_onto([], done) = done
+fn reversed_onto([x, ..rest], done) = reversed_onto(rest, [x, ..done])
+
+fn reversed(list) = reversed_onto(list, [])
+
+# --- テスト（変更しないでください）---
+
+test "カウントダウン"
+  assert_eq(countdown(0), [0])
+  assert_eq(countdown(3), [3, 2, 1, 0])
+end
+
+test "値の繰り返し"
+  assert_eq(repeat_value("a", 3), ["a", "a", "a"])
+  assert_eq(repeat_value(1, 0), [])
+end
+
+test "すべて 2 倍"
+  assert_eq(double_all([1, 2, 3]), [2, 4, 6])
+  assert_eq(double_all([]), [])
+end
+
+test "逆順"
+  assert_eq(reversed([1, 2, 3]), [3, 2, 1])
+  assert_eq(reversed([]), [])
+  assert_eq(reversed(["x"]), ["x"])
+end
+
+test "元のリストは変わらない"
+  numbers = [1, 2, 3]
+  reversed(numbers)
+  assert_eq(numbers, [1, 2, 3])
+end

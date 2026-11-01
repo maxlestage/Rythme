@@ -12,6 +12,66 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Italian and Japanese
+
+Rythme now speaks eight languages: Italian (`--lang it`, `it_IT`) and
+Japanese (`--lang ja`, `ja_JP`) join English, French, Spanish, German,
+Portuguese and Chinese.
+
+- Every message, help page, explanation of a code, documentation of a
+  function, page of `rythme learn`, file of `rythme new` and exercise of
+  `rythme exercise` (with its reference solution) in both languages; the
+  topics of `rythme help` under their Italian and Japanese names
+  (`rythme help liste`, `rythme help リスト`). Japanese characters take two
+  columns: the `^` stay under the code.
+- The website in both languages (`/it/`, `/ja/`), with its playground, its
+  examples and the guide for teachers (`docs/teaching.it.md`,
+  `docs/teaching.ja.md`); `README.it.md` and `README.ja.md`; the VS Code
+  extension (`package.nls.it.json`, `package.nls.ja.json`, and `it`, `ja` for
+  `rythme.language`); `"it"` and `"ja"` for `language` in the JSON output.
+- The playground's WebAssembly grows by about 0.85 MB (0.15 MB in Brotli)
+  with the two catalogs.
+
+### The package index
+
+Packages are found and shared by name, beside the dependencies from git or
+a folder (manual 7.11, `rythme help packages`). The index needs no server:
+it is a public git repository with one file per package
+(`packages/NAME.toml`: description, repository, license, keywords, authors,
+and for each version its tag, its commit and a checksum of its files), by
+default `https://github.com/maxlestage/rythme-index` (to be created by the
+owner from `packaging/index-template/`, which has its README, an example
+entry and the workflow that checks its pull requests).
+
+- **`rythme search WORDS`** and **`rythme info NAME`** read a copy of the
+  index kept in `RYTHME_HOME/index`, without a network (`--update` gets the
+  newest one; without a network the copy is used, with a warning), with
+  `--format json` (`"command": "search"` and `"info"` in
+  `docs/rythme-output.schema.json`).
+- **`rythme add NAME[@RANGE]`** writes `NAME = { version = "^1.2.0" }` at the
+  end of `[dependencies]` (the rest of `rythme.toml` untouched), then
+  installs; `rythme.lock` keeps the version, the exact commit and the
+  checksum, so `rythme install` needs neither the index nor the network
+  afterwards.
+- **`rythme update [NAME...]`** takes the newest version within the range of
+  each dependency (`^1.2.0`, `~1.2`, `=1.2.0`, `>=1.2.0, <1.5.0`, as in
+  Cargo and npm; withdrawn versions are never chosen) and the commit of each
+  tag of git now, and lists what changed.
+- **`rythme publish`** checks a package (`description`, `license` and
+  `repository` in `rythme.toml`, a clean git repository, the tag of the
+  version on the current commit and in the repository, `rythme check` and
+  `rythme test`, a name and a version free in the index), then prints its
+  entry and the steps of the pull request: it never sends anything.
+  `rythme publish --verify FILE...` checks entries for the index's CI.
+- **Safety**: names of packages are Rythme names (no path in them),
+  addresses use https, ssh or file only (git is limited to these
+  protocols), git runs without hooks, the files of each version must have
+  the checksum of the index, and nothing of a package runs when it is
+  installed.
+- `rythme.toml` accepts `description`, `license`, `repository`, `keywords`,
+  `authors` and `index` (another index: an address, or a folder read as it
+  is; or the variable `RYTHME_INDEX`), lists of texts on one line, and
+  dependencies `{ version = "..." }`. Files of 1.0 read the same.
 ### Embedding
 
 - **Programs that embed Rythme can give records of functions** (`db.all(q)`,
@@ -93,6 +153,26 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   tests and 260 000 generated programs). `rythme fmt`, hover and signature
   help of the language server, `rythme doc`, the Tree-sitter, Helix, Zed
   and VS Code grammars, `rythme help types` and the manual (4.10) know them.
+- **Types with parameters**: `type Tree(a) = Leaf | Node(left: Tree(a),
+  value: a, right: Tree(a))`, `type Pair(a, b) = Pair(first: a, second: b)`,
+  then `fn total(t: Tree(Int)) -> Int` or `p: Pair(Text, Int) = ...`. The
+  parameters are type variables (one lowercase letter: a longer word stays
+  a type named as in another language, which `rythme check` renames), used
+  in the types of the fields; running never looks at them. `rythme check`
+  reports, with E027, a value whose contents surely have another type
+  (`Node(Leaf, "two", Leaf)` for a `Tree(Int)`, shown as `Tree(Text)`), a
+  constructor whose type variable gets two types, a wrong number of types
+  (`Tree(Int, Text)`), and parameters that are not one letter, written twice
+  or missing (`type Box(a) = Box(value: b)`); it uses them as it uses those
+  of `List`: the fields of a `Tree(Int)` are Ints in patterns, a call gives
+  the types found in its arguments (`fn first_of(p: Pair(a, b)) -> a`),
+  across used files too. `Tree` alone holds anything. Read only where `=`
+  was the only thing allowed after the name of a type: every program of the
+  repository, the manual and 457 000 generated programs (292 000 that parse)
+  keep exactly the same syntax tree. `rythme fmt`, `rythme doc`, the
+  Tree-sitter (regenerated) and VS Code grammars, `rythme help types`,
+  `rythme help syntax`, `rythme learn`, E027's explanation and the manual
+  (4.10, Appendix A) know them.
 - **A symbol may end with `?`**, as in Ruby: `:even?` is one symbol. It was
   read as `:even` followed by the operator `?`, which the checker always
   refuses (E016) before running, so no program that ran changes meaning (a
@@ -150,13 +230,67 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   genetic algorithm) and `examples/ask_claude.ry` (a language model asked
   through its HTTP API, with a key read by `env`), and six AI exercises
   (31 to 36) in every language of `rythme exercise`.
-- 211 built-in functions. Names from other languages point to the new ones
+- **The library, completed** after an audit against Ruby's core, Python's
+  builtins, `itertools`, `statistics` and `string`, and Elixir's `Enum`,
+  `String` and `Map` ([`docs/stdlib-audit.md`](docs/stdlib-audit.md)): 72
+  new functions, all pure.
+  - Text: `center`, `format(value, spec)` (the format specs of Python:
+    `".2f"`, `">8"`, `"08,.2f"`, `"#x"`, `".1%"`...), `replace_first`,
+    `occurrences`, `last_index_of`, `remove_prefix`, `remove_suffix`,
+    `capitalize_words`, `snake_case`, `camel_case`, `kebab_case`,
+    `swap_case`, `is_upper`, `is_lower`, `bytes`, `split_once`, `word_wrap`,
+    `edit_distance`, `inspect`, `print_error`.
+  - Numbers: `constrain` (Ruby's `clamp`), `divmod`, `binomial` (exact),
+    `digits`, `to_base` and `from_base` (bases 2 to 36, any size),
+    `is_positive`, `is_negative`, `is_zero`, `is_nan`, `is_finite`.
+  - Lists: `find_index`, `update_at`, `rotate_by`, `intersperse`,
+    `interleave`, `tally`, `count_by`, `most_common`, `unique_by`,
+    `sort_desc`, `sort_by_desc`, `chunk_by`, `split_at`, `combinations`,
+    `permutations`, `cartesian_product` (bounded: E023 beyond 10 million
+    elements), `unzip`, `iterate`, `unfold`, `filter_map`; `zip` takes two
+    lists or more.
+  - Records and dicts: `dig`, `merge_with`, `invert`, `select_keys`,
+    `reject_keys`, `map_keys`, `update(x, key, default, f)`; sets:
+    `symmetric_difference`, `is_disjoint`.
+  - Option and Result: `unwrap_or_else`, `expect`, `all_ok`.
+  - Dates: `add_months`, `day_of_year`, and patterns for `format_date` and
+    `parse_date` (`%Y %m %d %H %M %S %y %B %b %A %a %I %p %j %z %%`).
+  - The web and statistics: `base64_encode`, `base64_decode`, `url_encode`,
+    `url_decode`, `linspace`, `correlation`, `covariance`.
+  - 26 more Ruby names: `clamp`, `swapcase`, `ljust`, `rjust`, `ord`, `chr`,
+    `delete_prefix`, `delete_suffix`, `rindex`, `detect`, `collect`,
+    `rotate`, `combination`, `permutation`, `transform_values`,
+    `transform_keys`, `each_pair`, `to_h`, `warn`, `positive?`,
+    `negative?`, `zero?`, `nan?`, `finite?`, `subset?`, `disjoint?`.
+  - Each one is known to the checker (an argument that never fits is
+    reported before running), documented with an example run by the tests,
+    in the six languages, in `rythme help` (a block at the end of the topics
+    `lists`, `text`, `dicts`, `errors` and `dates`), the manual (6, *More of
+    the library*), the lists of the site, the playground and VS Code, and
+    `docs/llms-full.txt`. Names that the examples and the exercises define
+    (`is_prime`, `mean`, `median`, `clamp`, `merge`, `title_case`,
+    `frequencies`, `factorial`, `sign`...) were left free.
+- 283 built-in functions. Names from other languages point to the new ones
   (`parse_csv`, `DictReader`, `to_csv`, `srand`, `median`, `stdev`, `eye`,
-  `randn`, `logistic`...). As the stability promise says, a function of a
-  program with one of these names stays its own (W003).
+  `randn`, `logistic`, `removeprefix`, `Counter`, `levenshtein`, `btoa`,
+  `encodeURIComponent`, `strptime`...). As the stability promise says, a
+  function of a program with one of these names stays its own (W003).
 
 ### Tools
 
+- **`rythme CMD --help`** (or `-h`) for every command: its usage, its
+  options and its exit codes, in the six languages (before the file for
+  `run`, `steps`, `debug` and `-e`, whose following words belong to the
+  program).
+- **`rythme run -`** and `rythme -` run the program read from the standard
+  input (also with `--format json`); **`rythme check FOLDER`** checks every `.ry` file of a folder.
+- **`rythme completions bash|zsh|fish|powershell`** writes a completion
+  script (commands, options, topics of `help`, codes of `explain`,
+  languages, `.ry` files), and **`rythme man`** the manual page, in roff.
+- **`rythme version --verbose`** adds the system, the languages, the numbers
+  of functions and codes, and the version of the JSON output;
+  **`rythme upgrade`** says which command installs the latest version,
+  guessed from where Rythme is installed (nothing is downloaded).
 - **A debugger: `rythme debug file.ry`.** Breakpoints on lines (`break 12`,
   `break geometry.ry:3`; a line without code moves to the next one) and on
   functions (`break fact`), `run`, `next`, `step`, `finish` (which shows the
@@ -179,9 +313,40 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   may pause are only added to the code of a program it runs, and calls are
   followed through a check that the interpreter already makes (the
   instructions counted on `bench/` differ by 0.0 to 1.2 %).
+- **The debugger names the parameters written as patterns** by their
+  pattern in the definition that runs: `total([x, ..rest] = [1, 2], acc =
+  0)` instead of `total(arg1 = [1, 2], acc = 0)`, in `where`, the pauses,
+  `locals` and the call stack of `rythme dap`.
+- **The language server completes the names of types** where a type is
+  written: after the `:` of a parameter, of a name given a value, of a field
+  of a variant or of a block's parameter, after `->`, inside `List(` or
+  `Dict(Text, `, after `geometry.` for the types of a used file, with the
+  type variables of the type being defined; it shows what a type of Rythme
+  is, or the definition of a type of the program, on hover, goes to that
+  definition, renames it and colors it (semantic tokens). The hover of a
+  constructor shows the types of its fields and its type with its
+  parameters (`constructor of the type `Tree(a)``), and so does
+  `help(Node)` in a program.
+
+### Documentation
+
+- **The guide for teachers, up to date and in six languages**: grading a
+  class with `rythme test --sandbox --format json` (and a Rythme program
+  that turns the results into grades), the playground for students without
+  an installation, `rythme steps` and the debugger to show how code runs,
+  the messages in the students' language, the AI unit (exercises 31 to 36),
+  types written in the code, and a policy for AI assistants in class.
+  [`docs/teaching.md`](docs/teaching.md) and
+  [`docs/enseigner.md`](docs/enseigner.md) are translated into Spanish,
+  German, Portuguese and Chinese (`docs/teaching.es.md`, `.de.md`, `.pt.md`,
+  `.zh.md`); the website shows each language its own guide, and each README
+  links its own. The tests run the samples of every guide in its language.
 
 ### Fixed
 
+- `rythme fix` and the suggestions for `x => ...` and `{name = ...}` no
+  longer stop with an internal error when a character of several bytes
+  comes right before the name (found by fuzzing).
 - **`capitalize` uses the titlecase of Unicode** where it differs from the
   uppercase: `capitalize("ǆungla")` gives `ǅungla` (not `Ǆungla`), and so do
   `ǈ ǋ ǲ`; `ß` gives `Ss`, the ligatures `ﬁ ﬂ ﬀ...` give `Fi Fl Ff...`, the
@@ -189,9 +354,40 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   gives `Եւ`, and Georgian letters stay as they are. A program that
   capitalizes one of these characters prints another text: a bug fix.
   `upper` does not change.
+- **Found by auditing the tools around the interpreter** (with new fuzzers
+  of the checker, the formatter, the fixes, the language server and every
+  built-in function on edge values):
+  - `from_base("0é", 16)` and `zeros(0, 10 ** 18)` (also `ones`) stopped
+    Rythme with an internal error; they give `Err(...)` and E023.
+  - The checker no longer reports a function that is never called on an
+    empty value written in the code: `map_keys({}, len)`,
+    `take_while("", len)`, `merge_with` of two records without a name in
+    common (as it already did for `[]`). For `sum(list, f)`, it says that
+    `f` must return a number (it said "true or false").
+  - `rythme fix`: `else ()` goes where `else` was expected (inside
+    `print(if x then y)`, not after the `)`), and `else ()` and `then` go
+    before a comment that ends the line, not inside it; `fn f"..."` is no
+    longer taken for an f-string.
+  - A command-line word that is not UTF-8 (a file name made on another
+    system) is a usage error (exit code 2) instead of a crash; `rythme fmt`
+    says why a file cannot be read like the other commands (not UTF-8, saved
+    in UTF-16...) and refuses unknown options written with one `-`.
+  - `rythme.lock` must give a commit in hexadecimal and an address that git
+    cannot take as an option.
 
 ### Performance
 
+- **A bytecode virtual machine runs programs** instead of the interpreter
+  that walked the syntax tree: functions are compiled once to instructions
+  on registers (`src/vm/`), and the programs of `bench/` run 1.1 to 2
+  times faster, printing exactly the same (output, errors with their
+  places and traces, what the debugger and `rythme steps` show, the draws
+  of `random_seed`). Every program of the repository and thousands of
+  generated ones print the same as with 1.0.
+- The limit of nested calls (E014) is now the same for every function:
+  917 504 with `rythme` (it was about 900 000, fewer for functions that do
+  more in each call), still 600 in the playground, which needs less of the
+  browser's stack.
 - **`find_all`, `split_by` and `replace_all` are no longer quadratic** on
   regexes that read far ahead: their searches skip the ways that an earlier
   search showed to lead nowhere, and share their memory. `a*b|a` on 40 000
@@ -266,7 +462,7 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   wrap, runs of spaces in an output wrap, deep code lines keep room to wrap.
   The editor's text is 16px on every touch screen, landscape included: iOS
   zoomed into it at 14px and the page then scrolled sideways. Every control is
-  44px at least for a finger; the bar stops sticking on short screens,
+  44px at least for a finger; the bar gets compact on short screens,
   titles shrink with the height in landscape, the editor fits above the
   keyboard, and opening the playground no longer scrolls the page by itself.
   The media queries only add room (`min-width`, `min-height`).
@@ -278,6 +474,28 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   edited, and at the next launch. The banner stays for the other cases, and
   nothing reloads while something is being typed. Pages are revalidated with
   the server by the service worker (GitHub Pages kept them 10 minutes).
+- **The website is fast on a slow phone**: on Lighthouse's mobile profile (CPU
+  4× slower, 1.6 Mb/s, 150 ms), the home page works in 0.8 s instead of 1.5,
+  the playground's menus in 0.9 s instead of 2.1, and its first run comes in
+  5.7 s instead of 18.4 (5.0 instead of 28.5 when the service worker shares
+  the network, as on a real phone). The server sends everything compressed:
+  the bundles from Brotli and gzip copies made once at build time
+  (`site/build.sh`, the interpreter 3.2 MB → 0.8 MB), the pages and the rest
+  on the fly; files linked with `?v=` are kept a year
+  (`immutable`), pages are revalidated with an `ETag`. The playground compiles
+  the interpreter once and hands it to its worker (no second download, a
+  worker started again after *Stop* is ready at once), fetches its examples
+  and its worker's script while the interpreter downloads, and lets the
+  service worker save the site only after its first run. On GitHub Pages,
+  GitHub's gzip does the compression. `site/tests/pwa/speed.js` measures it.
+- **The bar stays at hand in landscape**: on a short screen it is compact and
+  still sticks to the top, so the burger is always reachable; with the keyboard
+  open in the playground it scrolls away, leaving the editor the height above
+  the keyboard.
+- **GitHub Pages**: the `Website` workflow says in its summary whether the
+  source of Pages is "GitHub Actions", and while it is "Deploy from a branch"
+  waits for GitHub's own build of the README to end, so that the site always
+  deploys last instead of sometimes being replaced (a 404).
 - **The website is Rust in the browser too**: its menus, themes, installable
   app, service worker and playground were hand-written JavaScript (about 1,700
   lines); they are now Rust compiled to WebAssembly (`site/client`), and the

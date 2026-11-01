@@ -2,7 +2,8 @@
 //! numbered slot in the frame of its function, or a value captured by a
 //! closure, so that running a program never searches for a local name. Only
 //! the names of the program (globals) are still looked up by name, when they
-//! are used: they may be defined later.
+//! are used: they may be defined later. The tree of slots is then turned into
+//! the instructions of the virtual machine (`vm::gen`).
 
 use std::rc::Rc;
 
@@ -10,6 +11,7 @@ use crate::ast::{BinOp, Expr, ExprKind, FnDef, ListItem, Num, PatKind, Pattern, 
 use crate::source::Span;
 use crate::symbol::{Sym, SymMap};
 use crate::value::{Shape, Value};
+use crate::vm::{gen, Chunk};
 
 /// An expression ready to run.
 pub struct Node {
@@ -26,8 +28,9 @@ pub enum Kind {
     Captured(u32),
     /// Another function of the group of the running function (see `Sibling`).
     Sibling(u32),
-    /// A name of the program, with the local names visible here (for "did you mean").
-    Global(Sym, Scope),
+    /// A name of the program, with the local names visible here (for "did
+    /// you mean"), and whether it surely has a value when the code runs.
+    Global(Sym, Scope, bool),
     Template(Vec<Part>),
     List(Vec<Item>),
     Record(Vec<Field>),
@@ -129,6 +132,7 @@ pub struct Sibling {
 }
 
 /// A pattern whose names are slots.
+#[derive(Clone)]
 pub enum Pat {
     /// Matches anything, binds nothing: `_`.
     Any,
@@ -151,22 +155,24 @@ pub enum Pat {
 }
 
 /// A function ready to run. Its frame holds the arguments in the first slots,
-/// then itself (for a local function that calls itself), then its other names.
+/// then itself (for a local function that calls itself), then its other
+/// names, then the temporary values of its instructions.
 pub struct FnCode {
     pub arity: usize,
-    pub slots: usize,
     /// Where a local function sees itself, when it uses its own name.
     pub self_slot: Option<u32>,
     /// Where a new closure takes the values it captures, in the frame that creates it.
     pub captures: Vec<Capture>,
     /// The names of the captured values, in the same order (for the debugger).
     pub capture_names: Vec<Sym>,
-    pub clauses: Vec<ClauseCode>,
     /// One definition whose parameters are plain names, without guard: no
     /// pattern to try when it is called.
     pub simple: bool,
+    /// Its instructions.
+    pub chunk: Chunk,
 }
 
+/// A definition of a function, before it becomes instructions.
 pub struct ClauseCode {
     /// The parameters that are not plain names: their position and pattern.
     pub tests: Vec<(usize, Pat)>,
@@ -182,10 +188,20 @@ pub enum Capture {
     Sibling(u32),
 }
 
-/// A top-level expression or test, with the size of its frame.
+/// A top-level expression or test, ready to run.
 pub struct Code {
-    pub node: Node,
-    pub slots: usize,
+    pub code: Rc<FnCode>,
+    /// The place of the whole expression.
+    pub span: Span,
+}
+
+impl Code {
+    /// The instructions of `node`, whose local names take `slots` slots.
+    fn new(node: &Node, slots: u32) -> Code {
+        let chunk = gen::top(node, slots as usize);
+        let code = FnCode { arity: 0, self_slot: None, captures: Vec::new(), capture_names: Vec::new(), simple: true, chunk };
+        Code { code: Rc::new(code), span: node.span }
+    }
 }
 
 /// The local names visible at some point of the program, innermost first.
@@ -231,6 +247,16 @@ impl Drop for Scope {
 /// with a name, and `geo.area` for the file used as `geo`.
 pub type Names = Rc<SymMap<Sym>>;
 
+/// Which names of the program surely have a value when the code runs (names
+/// are never removed): a call of one of them needs no check before its
+/// arguments (see `vm::Op::CallGlobal`).
+pub type Known<'a> = &'a dyn Fn(Sym) -> bool;
+
+/// No name is known to have a value.
+fn none_known(_: Sym) -> bool {
+    false
+}
+
 /// Prepares a function of the program (it captures nothing).
 pub fn function(def: &FnDef, names: &Names) -> FnCode {
     function_for(def, names, false)
@@ -240,7 +266,12 @@ pub fn function(def: &FnDef, names: &Names) -> FnCode {
 /// debugger may pause (`Stmt::Stop`). Without it, the code has none and runs
 /// as fast as ever.
 pub fn function_for(def: &FnDef, names: &Names, debug: bool) -> FnCode {
-    Compiler { names: names.clone(), debug, ..Compiler::default() }.func(def, None, Vec::new(), Vec::new())
+    function_known(def, names, debug, &none_known)
+}
+
+/// Like [`function_for`], knowing the names that have a value.
+pub fn function_known(def: &FnDef, names: &Names, debug: bool, known: Known) -> FnCode {
+    Compiler::new(names, debug, known).func(def, None, Vec::new(), Vec::new())
 }
 
 /// Prepares an expression that runs outside of any function.
@@ -250,26 +281,31 @@ pub fn top(e: &Expr, names: &Names) -> Code {
 
 /// Like [`top`], with the places where the debugger may pause when `debug`.
 pub fn top_for(e: &Expr, names: &Names, debug: bool) -> Code {
-    let mut c = Compiler { names: names.clone(), debug, ..Compiler::default() };
+    top_known(e, names, debug, &none_known)
+}
+
+/// Like [`top_for`], knowing the names that have a value.
+pub fn top_known(e: &Expr, names: &Names, debug: bool, known: Known) -> Code {
+    let mut c = Compiler::new(names, debug, known);
     c.funcs.push(Func::new(0));
     let node = c.expr(e);
     let node = c.stop(node, e.span);
     let f = c.funcs.pop().unwrap();
-    Code { node, slots: f.max as usize }
+    Code::new(&node, f.max)
 }
 
 /// Prepares an expression that sees the local names `locals`, whose values
 /// are in the first slots of its frame, in this order (the debugger's
 /// `print`, in a paused function).
 pub fn with_locals(e: &Expr, names: &Names, locals: &[Sym]) -> Code {
-    let mut c = Compiler { names: names.clone(), ..Compiler::default() };
+    let mut c = Compiler::new(names, false, &none_known);
     c.funcs.push(Func::new(locals.len() as u32));
     for (i, &s) in locals.iter().enumerate() {
         c.bind(s, i as u32);
     }
     let node = c.expr(e);
     let f = c.funcs.pop().unwrap();
-    Code { node, slots: f.max as usize }
+    Code::new(&node, f.max)
 }
 
 /// The same name of a record field everywhere in the code (finding a field
@@ -314,17 +350,21 @@ impl Func {
     }
 }
 
-#[derive(Default)]
-struct Compiler {
+struct Compiler<'a> {
     funcs: Vec<Func>,
     /// The same names as `funcs`, all functions together, for messages.
     scope: Scope,
     names: Names,
     /// Add the places where the debugger may pause.
     debug: bool,
+    known: Known<'a>,
 }
 
-impl Compiler {
+impl<'a> Compiler<'a> {
+    fn new(names: &Names, debug: bool, known: Known<'a>) -> Compiler<'a> {
+        Compiler { funcs: Vec::new(), scope: Scope::default(), names: names.clone(), debug, known }
+    }
+
     /// Prepares a function that captures at least `captures` and sees the
     /// functions of its group, `siblings`.
     fn func(&mut self, def: &FnDef, self_name: Option<Sym>, captures: Vec<(Capture, Sym)>, siblings: Vec<(Sym, u32)>) -> FnCode {
@@ -366,15 +406,9 @@ impl Compiler {
         self.scope = outer;
         let simple = matches!(def.clauses.as_slice(), [c] if c.guard.is_none()
             && c.params.iter().all(|p| matches!(p.kind, PatKind::Bind(_) | PatKind::Wildcard)));
-        FnCode {
-            arity,
-            slots: f.max as usize,
-            self_slot: if f.self_used { self_slot } else { None },
-            captures: f.captures,
-            capture_names: f.capture_names,
-            clauses,
-            simple,
-        }
+        let self_slot = if f.self_used { self_slot } else { None };
+        let chunk = gen::function(f.max as usize, self_slot, simple, &clauses);
+        FnCode { arity, self_slot, captures: f.captures, capture_names: f.capture_names, simple, chunk }
     }
 
     fn current(&mut self) -> &mut Func {
@@ -445,7 +479,10 @@ impl Compiler {
             Some(Loc::Local(slot)) => Kind::Local(slot),
             Some(Loc::Captured(i)) => Kind::Captured(i),
             Some(Loc::Sibling(i)) => Kind::Sibling(i),
-            None => Kind::Global(self.names.get(&sym).copied().unwrap_or(sym), self.scope.clone()),
+            None => {
+                let stored = self.names.get(&sym).copied().unwrap_or(sym);
+                Kind::Global(stored, self.scope.clone(), (self.known)(stored))
+            }
         }
     }
 
@@ -661,8 +698,11 @@ impl Compiler {
                     }
                     (PatKind::Bind(name), _) => {
                         self.stop_before(&mut out, p.span.to(x.span));
-                        let value = self.expr(x);
+                        // The slot is taken before the value is prepared: the
+                        // value is computed right into it, so the names of the
+                        // value's own blocks and cases must have other slots.
                         let slot = self.new_slot();
+                        let value = self.expr(x);
                         self.bind(*name, slot);
                         out.push(Stmt::Set(slot, value));
                     }

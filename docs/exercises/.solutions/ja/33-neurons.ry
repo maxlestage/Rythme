@@ -1,0 +1,26 @@
+# 練習問題 33 · 人工ニューロン  ★★☆
+# 参考解答。読む前に、まず自分で練習問題に挑戦してください！
+
+fn neuron(weights, bias, inputs) = sigmoid(dot(weights, inputs) + bias)
+
+fn fires(weights, bias, inputs) = neuron(weights, bias, inputs) >= 0.5
+
+fn layer(matrix, biases, inputs) = map(vector_add(matmul(matrix, inputs), biases), sigmoid)
+
+# --- テスト（変更しないでください）---
+
+test "ニューロン"
+  assert_eq(neuron([1, -1], 0, [2, 2]), 0.5)
+  assert_eq(round(neuron([2, 1], -1, [1, 1]), 3), 0.881)
+end
+
+test "AND を計算するニューロン"
+  assert(fires([10, 10], -15, [1, 1]))
+  assert(not fires([10, 10], -15, [1, 0]))
+  assert(not fires([10, 10], -15, [0, 0]))
+end
+
+test "層"
+  outputs = layer([[1, -1], [1, 1]], [0, 1], [2, 2])
+  assert_eq(map(outputs, fn(x) = round(x, 3)), [0.5, 0.993])
+end

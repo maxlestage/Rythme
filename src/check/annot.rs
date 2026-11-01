@@ -18,7 +18,7 @@ use crate::ast::*;
 use crate::diagnostic::Diagnostic;
 use crate::source::Span;
 use crate::symbol::Sym;
-use crate::types::{Ty, DATA, FLOAT, INT};
+use crate::types::{DataTy, Ty, DATA, FLOAT, INT};
 
 /// What the code writes of the types of a function or a constructor.
 #[derive(Clone, Debug)]
@@ -89,37 +89,6 @@ fn other_name(name: &str) -> Option<&'static str> {
     })
 }
 
-/// A type, as shown in a message: `Int`, `List(Text)`, `Option(Int)`,
-/// `{name: Text}`... (`_` for what is not known inside it).
-pub(super) fn show(t: &Ty) -> String {
-    let inner = |t: &Ty| if t.is_known() { show(t) } else { "_".to_string() };
-    match t {
-        Ty::List(x) if x.is_known() => format!("List({})", show(x)),
-        Ty::Set(x) if x.is_known() => format!("Set({})", show(x)),
-        Ty::Dict(k, v) if k.is_known() || v.is_known() => format!("Dict({}, {})", inner(k), inner(v)),
-        Ty::Record(r) if !r.fields.is_empty() => {
-            let fs: Vec<String> = r.fields.iter().map(|(k, t)| format!("{k}: {}", inner(t))).collect();
-            format!("{{{}}}", fs.join(", "))
-        }
-        Ty::Data(d) if matches!(&*d.name.name(), "Option" | "Result") => {
-            let field = |c: &str| d.fields_of(c, 1).and_then(|f| f.into_iter().next()).unwrap_or(Ty::Any);
-            if &*d.name.name() == "Option" {
-                let x = field("Some");
-                if x.is_known() {
-                    return format!("Option({})", show(&x));
-                }
-            } else {
-                let (ok, err) = (field("Ok"), field("Err"));
-                if ok.is_known() || err.is_known() {
-                    return format!("Result({}, {})", inner(&ok), inner(&err));
-                }
-            }
-            t.name()
-        }
-        _ => t.name(),
-    }
-}
-
 /// Is a value of type `actual` surely not of the type `written`? Only true
 /// when it is certain: a type that is not known never conflicts.
 pub(super) fn conflicts(actual: &Ty, written: &Ty) -> bool {
@@ -168,39 +137,9 @@ fn has_vars(t: &TypeExpr) -> bool {
 /// The type variables of a call, each with the type it was found to be and where.
 type Vars = HashMap<Sym, (Ty, Span)>;
 
-/// Finds what the type variables of `written` are in a value of type
-/// `actual` (given at `at`); gives a variable already found to be a type
-/// that `actual` surely is not: the variable, what it was, and where.
-fn bind_vars(written: &TypeExpr, actual: &Ty, at: Span, vars: &mut Vars) -> Option<(Sym, Ty, Span)> {
-    if !actual.is_known() {
-        return None;
-    }
-    let mut go = |w: &TypeExpr, a: &Ty| bind_vars(w, a, at, vars);
-    match (&written.kind, actual) {
-        (TypeKind::Var(v), _) => match vars.get(v) {
-            Some((before, where_)) if conflicts(actual, before) => Some((*v, before.clone(), *where_)),
-            Some(_) => None,
-            None => {
-                vars.insert(*v, (actual.clone(), at));
-                None
-            }
-        },
-        (TypeKind::List(x), Ty::List(e)) => go(x, e),
-        (TypeKind::Named(n, args), _) => match (&*n.name(), args.as_slice(), actual) {
-            ("List", [x], Ty::List(e)) | ("Set", [x], Ty::Set(e)) => go(x, e),
-            ("Dict", [k, v], Ty::Dict(a, b)) => go(k, a).or_else(|| go(v, b)),
-            ("Option", [x], Ty::Data(d)) if &*d.name.name() == "Option" => go(x, &d.payload()),
-            ("Result", [x, y], Ty::Data(d)) if &*d.name.name() == "Result" => {
-                let err = d.fields_of("Err", 1).and_then(|f| f.into_iter().next()).unwrap_or(Ty::Never);
-                go(x, &d.payload()).or_else(|| go(y, &err))
-            }
-            _ => None,
-        },
-        (TypeKind::Record(fields), Ty::Record(r)) => fields.iter().find_map(|(k, t)| r.get(k).and_then(|a| go(t, a))),
-        (TypeKind::Func(_, ret), Ty::Func(f)) => go(ret, &f.ret),
-        _ => None,
-    }
-}
+/// How many times a type of the program with parameters is unfolded inside
+/// itself (`Tree(Int)` holds two `Tree(Int)`): deeper, nothing is known.
+const UNFOLD: usize = 2;
 
 /// The help for a number written where the other kind is expected.
 fn number_help(actual: &Ty, written: &Ty) -> Option<String> {
@@ -224,15 +163,6 @@ fn written_help() -> String {
     )
 }
 
-/// How a value is shown in an E027 message: like at run time for a value
-/// written in the code (`Int 0`), or else by its whole type (`List(Text)`).
-fn shown(e: Option<&Expr>, t: &Ty) -> String {
-    match e.and_then(literal) {
-        Some(v) => v.describe(),
-        None => t!("a value of type {}", "une valeur de type {}", show(t)),
-    }
-}
-
 impl Checker<'_> {
     /// Reports an E027 once: the same code may be checked several times.
     fn report(&mut self, d: Diagnostic) {
@@ -243,10 +173,83 @@ impl Checker<'_> {
 
     // ----- from written types to the checker's types ----------------------
 
+    /// A type, as shown in a message: `Int`, `List(Text)`, `Option(Int)`,
+    /// `Tree(Int)`, `{name: Text}`... (`_` for what is not known inside it).
+    fn show(&self, t: &Ty) -> String {
+        let inner = |t: &Ty| if t.is_known() { self.show(t) } else { "_".to_string() };
+        match t {
+            Ty::List(x) if x.is_known() => format!("List({})", self.show(x)),
+            Ty::Set(x) if x.is_known() => format!("Set({})", self.show(x)),
+            Ty::Dict(k, v) if k.is_known() || v.is_known() => format!("Dict({}, {})", inner(k), inner(v)),
+            Ty::Record(r) if !r.fields.is_empty() => {
+                let fs: Vec<String> = r.fields.iter().map(|(k, t)| format!("{k}: {}", inner(t))).collect();
+                format!("{{{}}}", fs.join(", "))
+            }
+            Ty::Data(d) if matches!(&*d.name.name(), "Option" | "Result") => {
+                let field = |c: &str| d.fields_of(c, 1).and_then(|f| f.into_iter().next()).unwrap_or(Ty::Any);
+                if &*d.name.name() == "Option" {
+                    let x = field("Some");
+                    if x.is_known() {
+                        return format!("Option({})", self.show(&x));
+                    }
+                } else {
+                    let (ok, err) = (field("Ok"), field("Err"));
+                    if ok.is_known() || err.is_known() {
+                        return format!("Result({}, {})", inner(&ok), inner(&err));
+                    }
+                }
+                t.name()
+            }
+            // `Tree(Int)`: the type variables of the type, as found in the value.
+            Ty::Data(d) => match self.params_in(d) {
+                Some((params, found)) if !found.is_empty() => {
+                    let shown: Vec<String> = params.iter().map(|p| found.get(p).map_or("_".to_string(), |(t, _)| inner(t))).collect();
+                    format!("{}({})", d.name, shown.join(", "))
+                }
+                _ => t.name(),
+            },
+            _ => t.name(),
+        }
+    }
+
+    /// How a value is shown in an E027 message: like at run time for a value
+    /// written in the code (`Int 0`), or else by its whole type (`List(Text)`).
+    fn shown(&self, e: Option<&Expr>, t: &Ty) -> String {
+        match e.and_then(literal) {
+            Some(v) => v.describe(),
+            None => t!("a value of type {}", "une valeur de type {}", self.show(t)),
+        }
+    }
+
+    /// What the type variables of the type of a value of type `d` are
+    /// (`type Tree(a)`), found in the fields of the constructors it may have
+    /// been built with: a type of the program with parameters only.
+    fn params_in(&self, d: &DataTy) -> Option<(&[Sym], Vars)> {
+        // A type defined again (in the REPL): its values may come from either definition.
+        let known = self.is_program_type(d.name) && !self.types_defined_again.contains(&d.name);
+        let params = self.type_params.get(&d.name).filter(|_| known)?;
+        let mut found = Vars::new();
+        for (c, fields) in d.ctors.iter().flatten() {
+            let Some(w) = self.written_ctor(*c).filter(|w| w.params.len() == fields.len()) else { continue };
+            for ((_, ft), f) in w.params.iter().zip(fields) {
+                if let Some(ft) = ft {
+                    // A value that does not keep to its own type: its first one counts.
+                    let _ = self.bind_vars(ft, f, Span::default(), &mut found, w.module);
+                }
+            }
+        }
+        Some((params, found))
+    }
+
     /// The type a written type means. Type variables are what `vars` says,
     /// or anything; a type that does not exist (already reported) is anything.
     pub(super) fn written(&self, t: &TypeExpr, vars: &Vars, module: Option<Sym>) -> Ty {
-        let w = |t: &TypeExpr| self.written(t, vars, module);
+        self.written_in(t, vars, module, 0)
+    }
+
+    /// `written`, `unfolded` levels deep inside types of the program with parameters.
+    fn written_in(&self, t: &TypeExpr, vars: &Vars, module: Option<Sym>, unfolded: usize) -> Ty {
+        let w = |t: &TypeExpr| self.written_in(t, vars, module, unfolded);
         match &t.kind {
             TypeKind::Var(v) => vars.get(v).map_or(Ty::Any, |(t, _)| t.clone()),
             TypeKind::List(x) => Ty::list(w(x)),
@@ -255,12 +258,9 @@ impl Checker<'_> {
             TypeKind::Named(n, args) => {
                 let arg = |i: usize| args.get(i).map_or(Ty::Any, w);
                 // A type of the program: maybe of a file used with a name.
-                let own = match module {
-                    Some(m) if !n.name().contains('.') => Sym::new(&format!("{m}.{n}")),
-                    _ => *n,
-                };
+                let own = own_type(*n, module);
                 if self.is_program_type(own) {
-                    return Ty::data(own, None);
+                    return self.program_type(own, args, vars, module, unfolded);
                 }
                 match &*n.name() {
                     "Int" => Ty::Int,
@@ -280,6 +280,82 @@ impl Checker<'_> {
                     _ => Ty::Any,
                 }
             }
+        }
+    }
+
+    /// A type of the program: `Tree(Int)`, with the types it takes, is a
+    /// Tree whose constructors have the types written for their fields, its
+    /// type variables (`type Tree(a)`) being these types. Without them, or
+    /// for a type without parameters, nothing is known of its fields here.
+    fn program_type(&self, own: Sym, args: &[TypeExpr], vars: &Vars, module: Option<Sym>, unfolded: usize) -> Ty {
+        let (Some(params), Some(ctors)) = (self.type_params.get(&own), self.types.get(&own)) else { return Ty::data(own, None) };
+        if args.len() != params.len() || unfolded >= UNFOLD || self.types_defined_again.contains(&own) {
+            return Ty::data(own, None);
+        }
+        let given: Vars =
+            params.iter().zip(args).map(|(p, a)| (*p, (self.written_in(a, vars, module, unfolded + 1), Span::default()))).collect();
+        let ctors = ctors
+            .iter()
+            .map(|c| {
+                let fields = match self.written_ctor(*c) {
+                    Some(w) => w
+                        .params
+                        .iter()
+                        .map(|(_, t)| t.as_ref().map_or(Ty::Any, |t| self.written_in(t, &given, w.module, unfolded + 1)))
+                        .collect(),
+                    None => vec![Ty::Any; self.ctors.get(c).map_or(0, |m| m.arity)],
+                };
+                (*c, fields)
+            })
+            .collect();
+        Ty::data(own, Some(ctors)).limit()
+    }
+
+    /// What is written of the types of the fields of a constructor.
+    fn written_ctor(&self, ctor: Sym) -> Option<&Rc<Written>> {
+        self.own_written.get(&ctor).or_else(|| self.know.written.get(&ctor))
+    }
+
+    /// Finds what the type variables of `written` (written in the file used
+    /// as `module`, if any) are in a value of type `actual` (given at `at`);
+    /// gives a variable already found to be a type that `actual` surely is
+    /// not: the variable, what it was, where, and what it is here.
+    fn bind_vars(&self, written: &TypeExpr, actual: &Ty, at: Span, vars: &mut Vars, module: Option<Sym>) -> Option<(Sym, Ty, Span, Ty)> {
+        if !actual.is_known() {
+            return None;
+        }
+        let mut go = |w: &TypeExpr, a: &Ty| self.bind_vars(w, a, at, vars, module);
+        match (&written.kind, actual) {
+            (TypeKind::Var(v), _) => match vars.get(v) {
+                Some((before, where_)) if conflicts(actual, before) => Some((*v, before.clone(), *where_, actual.clone())),
+                Some(_) => None,
+                None => {
+                    vars.insert(*v, (actual.clone(), at));
+                    None
+                }
+            },
+            (TypeKind::List(x), Ty::List(e)) => go(x, e),
+            (TypeKind::Named(n, args), Ty::Data(d))
+                if !args.is_empty() && d.name == own_type(*n, module) && self.is_program_type(d.name) =>
+            {
+                // `Tree(a)`: what the type variables of `type Tree(t)` are in
+                // the value, then `a`.
+                let (params, found) = self.params_in(d).filter(|(ps, _)| ps.len() == args.len())?;
+                params.iter().zip(args).find_map(|(p, a)| found.get(p).and_then(|(t, _)| go(a, t)))
+            }
+            (TypeKind::Named(n, args), _) => match (&*n.name(), args.as_slice(), actual) {
+                ("List", [x], Ty::List(e)) | ("Set", [x], Ty::Set(e)) => go(x, e),
+                ("Dict", [k, v], Ty::Dict(a, b)) => go(k, a).or_else(|| go(v, b)),
+                ("Option", [x], Ty::Data(d)) if &*d.name.name() == "Option" => go(x, &d.payload()),
+                ("Result", [x, y], Ty::Data(d)) if &*d.name.name() == "Result" => {
+                    let err = d.fields_of("Err", 1).and_then(|f| f.into_iter().next()).unwrap_or(Ty::Never);
+                    go(x, &d.payload()).or_else(|| go(y, &err))
+                }
+                _ => None,
+            },
+            (TypeKind::Record(fields), Ty::Record(r)) => fields.iter().find_map(|(k, t)| r.get(k).and_then(|a| go(t, a))),
+            (TypeKind::Func(_, ret), Ty::Func(f)) => go(ret, &f.ret),
+            _ => None,
         }
     }
 
@@ -320,7 +396,7 @@ impl Checker<'_> {
         let Some(written) = &p.ty else { return t.clone() };
         let wt = self.written(written, &Vars::new(), None);
         if conflicts(t, &wt) {
-            let what = shown(Some(e), t);
+            let what = self.shown(Some(e), t);
             let w = written.to_string();
             let (msg, secondary) = match &p.kind {
                 PatKind::Bind(name) => (
@@ -360,7 +436,7 @@ impl Checker<'_> {
         if self.needs.specializing > 0 {
             for ((_, written), (e, t)) in w.params.iter().zip(exprs.iter().zip(tys)) {
                 if let Some(written) = written {
-                    bind_vars(written, t, e.span, &mut vars);
+                    self.bind_vars(written, t, e.span, &mut vars, w.module);
                 }
             }
             return (false, vars);
@@ -369,8 +445,8 @@ impl Checker<'_> {
         let f = &w.name;
         for ((param, written), (e, t)) in w.params.iter().zip(exprs.iter().zip(tys)) {
             let Some(written) = written else { continue };
-            if let Some((v, before, at)) = bind_vars(written, t, e.span, &mut vars) {
-                let (a, b) = (show(&before), show(t));
+            if let Some((v, before, at, now)) = self.bind_vars(written, t, e.span, &mut vars, w.module) {
+                let (a, b) = (self.show(&before), self.show(&now));
                 self.report(
                     Diagnostic::error(
                         "E027",
@@ -392,9 +468,9 @@ impl Checker<'_> {
             }
             let wt = self.written(written, &vars, w.module);
             if conflicts(t, &wt) {
-                let what = shown(Some(e), t);
+                let what = self.shown(Some(e), t);
                 // `Shape` of a file used with a name is `geometry.Shape` here.
-                let ws = if w.module.is_some() && matches!(wt, Ty::Data(_)) { show(&wt) } else { written.to_string() };
+                let ws = if w.module.is_some() && matches!(wt, Ty::Data(_)) { self.show(&wt) } else { written.to_string() };
                 let mut d = Diagnostic::error(
                     "E027",
                     t!("`{f}` expects `{ws}` for `{param}`, but receives {what}", "`{f}` attend `{ws}` pour `{param}`, mais reçoit {what}"),
@@ -433,7 +509,7 @@ impl Checker<'_> {
         if !conflicts(given, &wt) {
             return;
         }
-        let (what, w) = (shown(None, given), written.to_string());
+        let (what, w) = (self.shown(None, given), written.to_string());
         let param = match &p.kind {
             PatKind::Bind(s) => s.to_string(),
             _ => "_".to_string(),
@@ -463,7 +539,7 @@ impl Checker<'_> {
             return;
         }
         let at = result_expr(body);
-        let (f, what, w) = (def.name.map_or_else(|| "fn".to_string(), |n| n.to_string()), shown(Some(at), t), ret.to_string());
+        let (f, what, w) = (def.name.map_or_else(|| "fn".to_string(), |n| n.to_string()), self.shown(Some(at), t), ret.to_string());
         let mut d = Diagnostic::error(
             "E027",
             t!("`{f}` is written to give `{w}`, but gives {what}", "`{f}` est écrite pour donner `{w}`, mais donne {what}"),
@@ -485,7 +561,7 @@ impl Checker<'_> {
         if !conflicts(early, &wt) {
             return;
         }
-        let (f, what, w) = (def.name.map_or_else(|| "fn".to_string(), |n| n.to_string()), shown(None, early), ret.to_string());
+        let (f, what, w) = (def.name.map_or_else(|| "fn".to_string(), |n| n.to_string()), self.shown(None, early), ret.to_string());
         self.report(
             Diagnostic::error(
                 "E027",
@@ -524,18 +600,85 @@ impl Checker<'_> {
         for item in items {
             match item {
                 Item::Stmt(s) => written_in_stmt(s, &mut found),
-                Item::Type(t) => found.extend(t.variants.iter().flat_map(|v| v.types.iter().flatten().cloned())),
+                Item::Type(t) => self.check_type_def(t),
                 Item::Test(_, body, _) => written_in_expr(body, &mut found),
                 Item::Use(_) => {}
             }
         }
         for t in found {
-            t.each(&mut |x| self.check_written(x));
+            t.each(&mut |x| self.check_written(x, None));
         }
     }
 
-    fn check_written(&mut self, t: &TypeExpr) {
+    /// The parameters of a type defined with `type` (`type Tree(a)`), and
+    /// the types written for the fields of its constructors.
+    fn check_type_def(&mut self, def: &TypeDef) {
+        let mut seen: Vec<Sym> = Vec::new();
+        for (p, span) in &def.params {
+            let name = p.name();
+            let ty = def.name;
+            if seen.contains(p) {
+                self.report(
+                    Diagnostic::error(
+                        "E027",
+                        t!(
+                            "the type variable `{name}` appears twice in `{ty}`",
+                            "la variable de type `{name}` apparaît deux fois dans `{ty}`"
+                        ),
+                    )
+                    .at(*span)
+                    .help(t!("give each one its own letter: `type Pair(a, b)`", "donnez à chacune sa propre lettre : `type Paire(a, b)`")),
+                );
+            } else if name.chars().count() != 1 {
+                let letter: String = name.chars().filter(char::is_ascii_lowercase).take(1).collect();
+                let letter = if letter.is_empty() { "a".to_string() } else { letter };
+                self.report(
+                    Diagnostic::error(
+                        "E027",
+                        t!(
+                            "`{name}` cannot be a type variable: a type variable is one lowercase letter",
+                            "`{name}` ne peut pas être une variable de type : une variable de type est une seule lettre minuscule"
+                        ),
+                    )
+                    .at(*span)
+                    .help(t!(
+                        "write one letter, like `{letter}`, here and in the fields",
+                        "écrivez une lettre, comme `{letter}`, ici et dans les champs"
+                    ))
+                    .note(type_var_note()),
+                );
+            }
+            seen.push(*p);
+        }
+        for v in &def.variants {
+            for t in v.types.iter().flatten() {
+                t.each(&mut |x| self.check_written(x, Some(def)));
+            }
+        }
+    }
+
+    /// Reports a written type that names no type, or takes a wrong number of
+    /// types; `def`: the type whose field it is written for, if any.
+    fn check_written(&mut self, t: &TypeExpr, def: Option<&TypeDef>) {
         match &t.kind {
+            // In a type with parameters, the type variables are its parameters.
+            TypeKind::Var(v) if def.is_some_and(|d| d.params.iter().any(|(p, _)| p == v)) => {}
+            TypeKind::Var(v) if def.is_some_and(|d| !d.params.is_empty()) && v.name().chars().count() == 1 => {
+                let Some(d) = def else { return };
+                let (ty, header) = (d.name, d.header());
+                let mut params: Vec<String> = d.params.iter().map(|(p, _)| p.to_string()).collect();
+                params.push(v.to_string());
+                let with = format!("{ty}({})", params.join(", "));
+                self.report(
+                    Diagnostic::error("E027", t!("`{v}` is not a parameter of `{ty}`", "`{v}` n'est pas un paramètre de `{ty}`"))
+                        .at(t.span)
+                        .label(t!("not among `{header}`", "pas parmi `{header}`"))
+                        .help(t!(
+                            "add it to the parameters of the type: `type {with} = ...`",
+                            "ajoutez-la aux paramètres du type : `type {with} = ...`"
+                        )),
+                );
+            }
             TypeKind::Var(v) => {
                 let name = v.name();
                 if name.chars().count() == 1 {
@@ -549,24 +692,40 @@ impl Checker<'_> {
                 } else if let Some(best) = crate::suggest::closest(&capitalized(&name), self.type_names().iter().map(|s| &**s)) {
                     d = crate::fix::guess(d.help(t!("did you mean `{best}`?", "vouliez-vous dire `{best}` ?")), t.span, &name, &best);
                 }
-                self.report(d.note(t!(
-                    "the names of types start with an uppercase letter; a type variable, which stands for any type, is one lowercase letter, like `a`",
-                    "les noms de types commencent par une majuscule ; une variable de type, qui désigne n'importe quel type, est une seule lettre minuscule, comme `a`"
-                )));
+                self.report(d.note(type_var_note()));
             }
             TypeKind::Named(n, args) => {
                 let name = n.name();
                 if self.is_program_type(*n) {
-                    if !args.is_empty() {
-                        self.report(
-                            Diagnostic::error(
-                                "E027",
-                                t!("`{name}` takes no type between parentheses", "`{name}` ne prend pas de type entre parenthèses"),
-                            )
-                            .at(t.span)
-                            .help(t!("write `{name}` alone", "écrivez `{name}` seul")),
-                        );
+                    // Alone, a type with parameters may hold anything (like `List`).
+                    let count = self.type_params.get(n).map_or(0, Vec::len);
+                    if args.is_empty() || args.len() == count || self.params_unknown.contains(n) {
+                        return;
                     }
+                    let example = format!(
+                        "{name}({})",
+                        ["Int", "Text", "Bool", "Float"].iter().cycle().take(count).copied().collect::<Vec<_>>().join(", ")
+                    );
+                    let d = match count {
+                        0 => Diagnostic::error(
+                            "E027",
+                            t!("`{name}` takes no type between parentheses", "`{name}` ne prend pas de type entre parenthèses"),
+                        )
+                        .help(t!("write `{name}` alone", "écrivez `{name}` seul")),
+                        1 => Diagnostic::error(
+                            "E027",
+                            t!("`{name}` takes one type: `{example}`", "`{name}` prend un seul type : `{example}`"),
+                        ),
+                        2 => Diagnostic::error(
+                            "E027",
+                            t!("`{name}` takes two types: `{example}`", "`{name}` prend deux types : `{example}`"),
+                        ),
+                        _ => Diagnostic::error(
+                            "E027",
+                            t!("`{name}` takes {count} types: `{example}`", "`{name}` prend {count} types : `{example}`"),
+                        ),
+                    };
+                    self.report(d.at(t.span));
                     return;
                 }
                 let Some(counts) = builtin_type(&name) else {
@@ -629,6 +788,22 @@ impl Checker<'_> {
                 .collect();
         names.extend(self.types.keys().map(|t| t.name()));
         names
+    }
+}
+
+fn type_var_note() -> String {
+    t!(
+        "the names of types start with an uppercase letter; a type variable, which stands for any type, is one lowercase letter, like `a`",
+        "les noms de types commencent par une majuscule ; une variable de type, qui désigne n'importe quel type, est une seule lettre minuscule, comme `a`"
+    )
+}
+
+/// The name of a type written in the file used as `module` (if any), as the
+/// checker knows it: `Shape` of `use geometry` is `geometry.Shape`.
+fn own_type(n: Sym, module: Option<Sym>) -> Sym {
+    match module {
+        Some(m) if !n.name().contains('.') => Sym::new(&format!("{m}.{n}")),
+        _ => n,
     }
 }
 

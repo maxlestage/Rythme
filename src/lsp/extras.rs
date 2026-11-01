@@ -433,6 +433,7 @@ pub fn semantic_tokens(cx: &Ctx, a: &Analysis) -> Vec<u32> {
             Target::Builtin(_) => (0, 2),
             Target::Pi => (1, 2),
             Target::Prelude(_) => (4, 2),
+            Target::Type(_) => (3, 2),
             Target::Unknown => continue,
         };
         if occ.def {

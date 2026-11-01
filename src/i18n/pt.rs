@@ -821,6 +821,7 @@ Commands
   rythme exercise           exercises checked automatically (list, start, check)
   rythme new NAME           create a project (rythme.toml, src/, tests/)
   rythme install            download the dependencies of the project
+  rythme add NAME           add a package of the index to the project (rythme search WORDS finds them)
   rythme learn              guided tour of the language, step by step
   rythme help TOPIC         help on a topic or a function
   rythme explain E003       explain an error code
@@ -828,7 +829,7 @@ Commands
   rythme -e "code"          run a piece of code
   rythme lsp                language server, for editors (VS Code, Neovim...)
   rythme mcp                server for AI assistants (Model Context Protocol)
-  option --lang CODE        language of the messages: en, fr, es, de, pt, zh (or RYTHME_LANG)
+  option --lang CODE        language of the messages: en, fr, es, de, pt, zh, it, ja (or RYTHME_LANG)
 
 Topics (rythme help TOPIC)
   start       the language in one minute
@@ -838,7 +839,7 @@ Topics (rythme help TOPIC)
   text        texts
   records     records {{name: value}}
   dicts       dictionaries and sets: dict(...), set(...)
-  types       your own types
+  types       your own types, and types written in the code
   match       choosing according to the shape of a value
   errors      Option, Result and ?
   functional  no loops: what to do instead
@@ -847,6 +848,7 @@ Topics (rythme help TOPIC)
   modules     using several files
   system      files, folders, paths, options, input, exit codes
   projects    projects and packages: rythme new, rythme.toml, rythme install
+  packages    the package index: rythme search, add, update, publish
   dates       dates and times: now(), today(), calendar, ISO 8601
   regex       searching, cutting and replacing with regular expressions
   csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
@@ -879,6 +881,7 @@ Comandos
   rythme exercise           exercícios verificados automaticamente (list, start, check)
   rythme new NOME           criar um projeto (rythme.toml, src/, tests/)
   rythme install            baixar as dependências do projeto
+  rythme add NOME           adicionar um pacote do índice ao projeto (rythme search PALAVRAS os encontra)
   rythme learn              visita guiada pela linguagem, passo a passo
   rythme help TEMA          ajuda sobre um tema ou uma função
   rythme explain E003       explicar um código de erro
@@ -886,7 +889,7 @@ Comandos
   rythme -e "código"        executar um trecho de código
   rythme lsp                servidor de linguagem, para editores (VS Code, Neovim...)
   rythme mcp                servidor para os assistentes de IA (Model Context Protocol)
-  opção --lang CÓDIGO       idioma das mensagens: en, fr, es, de, pt, zh (ou RYTHME_LANG)
+  opção --lang CÓDIGO       idioma das mensagens: en, fr, es, de, pt, zh, it, ja (ou RYTHME_LANG)
 
 Temas (rythme help TEMA)
   start       a linguagem em um minuto
@@ -896,7 +899,7 @@ Temas (rythme help TEMA)
   text        textos
   records     registros {{name: value}}
   dicts       dicionários e conjuntos: dict(...), set(...)
-  types       os seus próprios tipos
+  types       os seus próprios tipos, e os tipos escritos no código
   match       escolher de acordo com a forma de um valor
   errors      Option, Result e ?
   functional  sem laços: o que fazer em vez disso
@@ -905,6 +908,7 @@ Temas (rythme help TEMA)
   modules     usar vários arquivos
   system      arquivos, pastas, caminhos, opções, entrada, códigos de saída
   projects    projetos e pacotes: rythme new, rythme.toml, rythme install
+  packages    o índice de pacotes: rythme search, add, update, publish
   dates       datas e horas: now(), today(), calendário, ISO 8601
   regex       buscar, cortar e substituir com expressões regulares
   csv         as tabelas das planilhas: csv_parse, csv_records, csv_format
@@ -1287,13 +1291,13 @@ As definições dele são usadas pelo nome `{n}`: `{n}.name`"#,
         ("add a line like `name = \"hello\"` at the top", "adicione uma linha como `name = \"ola\"` no início"),
         ("`{shown}` has no `version`", "`{shown}` não tem `version`"),
         ("add a line like `version = \"0.1.0\"` at the top", "adicione uma linha como `version = \"0.1.0\"` no início"),
-        ("write `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (or `commit = \"...\"`), or `{name} = {{ path = \"../folder\" }}`", "escreva `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (ou `commit = \"...\"`), ou `{name} = {{ path = \"../pasta\" }}`"),
+        ("write `{name} = {{ version = \"^1.0.0\" }}` (from the package index), `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (or `commit = \"...\"`), or `{name} = {{ path = \"../folder\" }}`", "escreva `{name} = {{ version = \"^1.0.0\" }}` (do índice de pacotes), `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (ou `commit = \"...\"`), ou `{name} = {{ path = \"../pasta\" }}`"),
         ("call it `{b}`", "chame-o de `{b}`"),
         ("the project `{own}` cannot depend on itself", "o projeto `{own}` não pode depender de si mesmo"),
         ("`use {own}/file` already reaches its own files", "`use {own}/file` já alcança os próprios arquivos dele"),
         ("the dependency `{name}` is written as a table", "a dependência `{name}` é escrita como uma tabela"),
         ("the dependency `{name}` has both `git` and `path`", "a dependência `{name}` tem `git` e `path` ao mesmo tempo"),
-        ("the dependency `{name}` needs `git` or `path`", "a dependência `{name}` precisa de `git` ou de `path`"),
+        ("the dependency `{name}` needs `version`, `git` or `path`", "a dependência `{name}` precisa de `version`, de `git` ou de `path`"),
         ("`tag` and `commit` are for a dependency from git, not from a folder", "`tag` e `commit` são para uma dependência vinda do git, não de uma pasta"),
         ("`{c}` is not a commit", "`{c}` não é um commit"),
         ("give a `tag` or a `commit`, not both", "dê uma `tag` ou um `commit`, não os dois"),
@@ -1692,17 +1696,11 @@ exemplo: rythme steps fibonacci.ry "fib(4)""#,
         ("write a range with `..`: `1..10` is the list from 1 to 10 (included), and `0..10 |> step_by(2)` counts by 2", "escreva um intervalo com `..`: `1..10` é a lista de 1 a 10 (incluído), e `0..10 |> step_by(2)` conta de 2 em 2"),
         ("use the operator `//` for a whole division: `7 // 2` is 3", "use o operador `//` para uma divisão inteira: `7 // 2` é 3"),
         ("use the operator `%` for the remainder: `7 % 3` is 1", "use o operador `%` para o resto: `7 % 3` é 1"),
-        ("use the operators `//` and `%`: `7 // 2` is 3 and `7 % 2` is 1", "use os operadores `//` e `%`: `7 // 2` é 3 e `7 % 2` é 1"),
         ("to put values in a text, use braces: \"total: {{x}}\"; to write a number with 2 decimals: `text(x, 2)`", "para colocar valores em um texto, use chaves: \"total: {{x}}\"; para escrever um número com 2 casas decimais: `text(x, 2)`"),
         ("read the whole file with `read_file(path)`, then cut it with `lines(text)`; the lines of the standard input are `input_lines()`", "leia o arquivo inteiro com `read_file(path)`, depois corte-o com `lines(text)`; as linhas da entrada padrão são `input_lines()`"),
         ("to merge two records, write `{{..a, ..b}}`: the fields of `b` replace those of `a`; for two dicts or two sets, `union(a, b)`", "para juntar dois registros, escreva `{{..a, ..b}}`: os campos de `b` substituem os de `a`; para dois dicionários ou dois conjuntos, `union(a, b)`"),
         ("write `unwrap_or(get(x, key), default)`: the value, or the default if it is missing", "escreva `unwrap_or(get(x, key), default)`: o valor, ou o valor padrão se ele faltar"),
-        ("pair the lists, then combine each pair: `zip(a, b) |> map(fn([x, y]) = x + y)`", "junte as listas em pares, depois combine cada par: `zip(a, b) |> map(fn([x, y]) = x + y)`"),
-        ("sort from the largest to the smallest with `sort(list) |> reverse`", "ordene do maior para o menor com `sort(list) |> reverse`"),
         ("compute the average with `sum(list) / len(list)`", "calcule a média com `sum(list) / len(list)`"),
-        ("keep x between low and high with `max(low, min(x, high))`", "mantenha x entre low e high com `max(low, min(x, high))`"),
-        ("count how many times each value appears with `group_by(list, fn(x) = x) |> map_values(len)`", "conte quantas vezes cada valor aparece com `group_by(list, fn(x) = x) |> map_values(len)`"),
-        ("a decimal number x is NaN (not a number) when `x != x`", "um número decimal x é NaN (não é um número) quando `x != x`"),
         ("`n.times do |i| ... end` is written `(0..n - 1).each do |i| ... end`", "`n.times do |i| ... end` se escreve `(0..n - 1).each do |i| ... end`"),
         ("to use another file, write `use other_file`, then `other_file.name`", "para usar outro arquivo, escreva `use other_file`, depois `other_file.name`"),
         ("there is no `new`: build values directly, like `{{name: \"Ada\"}}` or `Circle(2.0)`", "não existe `new`: crie os valores diretamente, como `{{name: \"Ada\"}}` ou `Circle(2.0)`"),
@@ -1931,6 +1929,11 @@ Several steps inside an expression
 Your own types
   type Shape = Circle(radius) | Rect(width, height)
 
+Types written in the code (optional, checked by rythme check)
+  fn area(w: Int, h: Int) -> Int = w * h
+  total: Float = 0.0
+  type Box(a) = Box(value: a)    a type that takes a type: Box(Int), Box(Text)
+
 Tests and other files
   test "double works" = assert_eq(double(2), 4)
   use geometry                   then geometry.area(2)
@@ -2002,6 +2005,11 @@ Várias etapas dentro de uma expressão
 
 Os seus próprios tipos
   type Shape = Circle(radius) | Rect(width, height)
+
+Tipos escritos no código (opcionais, verificados pelo rythme check)
+  fn area(w: Int, h: Int) -> Int = w * h
+  total: Float = 0.0
+  type Box(a) = Box(value: a)    um tipo que recebe um tipo: Box(Int), Box(Text)
 
 Testes e outros arquivos
   test "dobro funciona" = assert_eq(dobro(2), 4)
@@ -2861,7 +2869,8 @@ same code. Then:
   use hello/greeting        # a file of the project itself, from tests/
 
 A file next to the one that contains `use` comes first. Packages from git
-are kept in ~/.rythme/packages (or RYTHME_HOME/packages)."#,
+are kept in ~/.rythme/packages (or RYTHME_HOME/packages). Finding packages
+by name and sharing yours: `rythme help packages`."#,
             r#"PROJETOS E PACOTES
 
   rythme new hello        # uma pasta hello/ com um projeto novo:
@@ -2892,7 +2901,8 @@ mesmo código. Depois:
   use hello/saudacao        # um arquivo do próprio projeto, a partir de tests/
 
 Um arquivo ao lado daquele que contém `use` vem primeiro. Os pacotes do git
-ficam guardados em ~/.rythme/packages (ou RYTHME_HOME/packages)."#,
+ficam guardados em ~/.rythme/packages (ou RYTHME_HOME/packages). Encontrar pacotes
+pelo nome e compartilhar os seus: `rythme help packages`."#,
         ),
         (
             r#"DATES AND TIMES
@@ -3044,7 +3054,7 @@ Definitions are kept from one line to the next. If a line is not finished
 Commands
   :help           this help              :quit          leave (or Ctrl-D)
   :doc map        help on a name         :load f.ry     load a file
-  :reset          forget everything      :lang fr       change the language (en, fr, es, de, pt, zh)
+  :reset          forget everything      :lang fr       change the language (en, fr, es, de, pt, zh, it, ja)
   :learn          guided tour            :explain E003  explain an error
   :steps fib(4)   show the calculation step by step
 The Tab key completes names."#,
@@ -3059,7 +3069,7 @@ terminada (parêntese aberto, bloco sem `end`...), ela continua na linha seguint
 Comandos
   :help           esta ajuda             :quit          sair (ou Ctrl-D)
   :doc map        ajuda sobre um nome    :load f.ry     carregar um arquivo
-  :reset          esquecer tudo          :lang pt       mudar o idioma (en, fr, es, de, pt, zh)
+  :reset          esquecer tudo          :lang pt       mudar o idioma (en, fr, es, de, pt, zh, it, ja)
   :learn          visita guiada          :explain E003  explicar um erro
   :steps fib(4)   mostrar o cálculo passo a passo
 A tecla Tab completa os nomes."#,
@@ -3286,7 +3296,7 @@ starts by itself:
 
 VS Code
   the extension in editors/vscode: colors, snippets and the language server.
-  Settings: rythme.path (the program), rythme.language (en, fr, es, de, pt, zh or auto).
+  Settings: rythme.path (the program), rythme.language (en, fr, es, de, pt, zh, it, ja or auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   every editor that speaks the Language Server Protocol: tell it to start
@@ -3300,7 +3310,7 @@ Zed
 Colors in Neovim, Helix and Zed
   the Tree-sitter grammar in editors/tree-sitter-rythme (see editors/README.md).
 
-The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh) or
+The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh, it, ja) or
 RYTHME_LANG chooses it: rythme --lang fr lsp"#,
             r#"O RYTHME NO SEU EDITOR
 
@@ -3316,7 +3326,7 @@ dobra de código. Isso é o servidor de linguagem, que o editor inicia sozinho:
 
 VS Code
   a extensão em editors/vscode: cores, snippets e o servidor de linguagem.
-  Configurações: rythme.path (o programa), rythme.language (en, fr, es, de, pt, zh ou auto).
+  Configurações: rythme.path (o programa), rythme.language (en, fr, es, de, pt, zh, it, ja ou auto).
 
 Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
   todo editor que fala o Language Server Protocol: diga a ele para iniciar
@@ -3330,7 +3340,7 @@ Zed
 Cores no Neovim, no Helix e no Zed
   a gramática Tree-sitter em editors/tree-sitter-rythme (veja editors/README.md).
 
-O idioma das mensagens segue o do editor, a não ser que `--lang` (en, fr, es, de, pt, zh)
+O idioma das mensagens segue o do editor, a não ser que `--lang` (en, fr, es, de, pt, zh, it, ja)
 ou RYTHME_LANG o escolha: rythme --lang pt lsp"#,
         ),
         (
@@ -4046,8 +4056,10 @@ Para mostrar um valor, mostre-o com print:  print(x + 1)"#,
             r#"E025 — Project or package problem
 
 The `rythme.toml` of the project (or the `rythme.lock` written by
-`rythme install`) cannot be read, a dependency is not installed, or
-`rythme install` cannot download one. A `rythme.toml` looks like this:
+`rythme install`) cannot be read, a dependency is not installed,
+`rythme install` cannot download one, or the package index (`rythme
+search`, `add`, `publish`) cannot be read or does not have what was asked.
+A `rythme.toml` looks like this:
 
   name = "hello"                 # a Rythme name in lower case
   version = "0.1.0"              # three numbers
@@ -4056,16 +4068,19 @@ The `rythme.toml` of the project (or the `rythme.lock` written by
   [dependencies]
   mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
   tools = { path = "../tools" }
+  geometry = { version = "^1.2.0" }   # from the package index
 
 Every value is a text, in quotes. A dependency from git needs a fixed
 version, a `tag` or a `commit`, and the program `git`
 (https://git-scm.com). After a change of `[dependencies]`, run
-`rythme install` in the folder of the project. More: `rythme help projects`."#,
+`rythme install` in the folder of the project. More: `rythme help projects`
+and `rythme help packages`."#,
             r#"E025 — Problema de projeto ou de pacote
 
 O `rythme.toml` do projeto (ou o `rythme.lock` escrito por `rythme install`) não
-pode ser lido, uma dependência não está instalada, ou `rythme install` não
-consegue baixar uma. Um `rythme.toml` é assim:
+pode ser lido, uma dependência não está instalada, `rythme install` não
+consegue baixar uma, ou o índice de pacotes (`rythme search`, `add`,
+`publish`) não pode ser lido ou não tem o que foi pedido. Um `rythme.toml` é assim:
 
   name = "hello"                 # um nome do Rythme em minúsculas
   version = "0.1.0"              # três números
@@ -4074,11 +4089,12 @@ consegue baixar uma. Um `rythme.toml` é assim:
   [dependencies]
   mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
   tools = { path = "../tools" }
+  geometry = { version = "^1.2.0" }   # do índice de pacotes
 
 Cada valor é um texto, entre aspas. Uma dependência do git precisa de uma versão
 fixa, uma `tag` ou um `commit`, e do programa `git` (https://git-scm.com).
 Depois de mudar `[dependencies]`, execute `rythme install` na pasta do projeto.
-Mais: `rythme help projects`."#,
+Mais: `rythme help projects` e `rythme help packages`."#,
         ),
         (
             r#"E026 — Invalid regex
@@ -4486,7 +4502,6 @@ Ou dê outro nome ao parâmetro: fn twice(n) = n * 2"#,
         ("One element out of n of a list (or text), starting with the first. On a range: the numbers with a step.", "Um elemento a cada n de uma lista (ou de um texto), começando pelo primeiro. Em um intervalo: os números com um passo."),
         ("Cuts a list (or text) into pieces of n elements; the last piece may be shorter.", "Corta uma lista (ou um texto) em pedaços de n elementos; o último pedaço pode ser mais curto."),
         ("Every group of n neighbouring elements of a list (or text), in order: handy to compare each element with the next one.", "Cada grupo de n elementos vizinhos de uma lista (ou de um texto), em ordem: útil para comparar cada elemento com o seguinte."),
-        ("Pairs the elements of two lists: [[a1, b1], [a2, b2], ...]. It stops at the end of the shorter list.", "Junta em pares os elementos de duas listas: [[a1, b1], [a2, b2], ...]. Para no fim da lista mais curta."),
         ("Pairs each element with its position: [[0, x0], [1, x1], ...].", "Junta cada elemento com a sua posição: [[0, x0], [1, x1], ...]."),
         ("Is f true for at least one element?", "f é verdadeira para pelo menos um elemento?"),
         ("Is f true for every element?", "f é verdadeira para todos os elementos?"),
@@ -4537,8 +4552,6 @@ Ou dê outro nome ao parâmetro: fn twice(n) = n * 2"#,
         ("The parts of a path, split at each `/` or `\\`; the first part of an absolute path is its root (`/`, `C:\\`...). `join_path` puts them back together.", "As partes de um caminho, separadas em cada `/` ou `\\`; a primeira parte de um caminho absoluto é a raiz dele (`/`, `C:\\`...). `join_path` as junta de novo."),
         ("The date and time now, where the program runs: a record {year, month, day, hour, minute, second, offset}, where `offset` is the number of minutes the local time is ahead of UTC (0 when the system does not tell).", "A data e a hora de agora, onde o programa roda: um registro {year, month, day, hour, minute, second, offset}, em que `offset` é o número de minutos que a hora local está à frente do UTC (0 quando o sistema não informa)."),
         ("The date of today, where the program runs: a record {year, month, day}.", "A data de hoje, onde o programa roda: um registro {year, month, day}."),
-        ("Reads a date written as ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date.", "Lê uma data escrita em ISO 8601 (\"2024-02-29\", \"2024-02-29T13:05:00\", com `Z` ou um deslocamento como `+01:00` se necessário): `Ok(date)`, ou `Err(message)` se não for uma data válida."),
-        ("Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one.", "Escreve uma data em ISO 8601: \"2024-02-29\", com a hora se a data tiver uma, e `Z` ou o deslocamento se tiver um."),
         ("Is the value a valid date: a record {year, month, day} (with `hour`, `minute`, `second`, `offset` if needed) for a day that exists?", "O valor é uma data válida: um registro {year, month, day} (com `hour`, `minute`, `second`, `offset` se necessário) de um dia que existe?"),
         ("The date n days later (or earlier, when n is negative), at the same time of day.", "A data n dias depois (ou antes, quando n é negativo), na mesma hora do dia."),
         ("The date and time n seconds later (or earlier, when n is negative). Add `60 * minutes` or `3600 * hours` the same way.", "A data e a hora n segundos depois (ou antes, quando n é negativo). Some `60 * minutes` ou `3600 * hours` do mesmo jeito."),
@@ -8548,6 +8561,8 @@ Wrong:   fn label(n: Int) -> Text = n  # gives an Int
 Right:   fn label(n: Int) -> Text = text(n)
 Wrong:   fn twice(x: int) = x * 2      # type names start with an uppercase letter
 Right:   fn twice(x: Int) = x * 2
+Wrong:   fn depth(t: Tree(Int, Text))  # type Tree(a) takes one type
+Right:   fn depth(t: Tree(Int))
 
 Written types are optional: removing one never changes what a program does.
 More: `rythme help types`."#,
@@ -8566,6 +8581,8 @@ Errado:  fn rotulo(n: Int) -> Text = n      # dá um Int
 Certo:   fn rotulo(n: Int) -> Text = text(n)
 Errado:  fn dobro(x: int) = x * 2      # os nomes de tipos começam com maiúscula
 Certo:   fn dobro(x: Int) = x * 2
+Errado:  fn profundidade(t: Arvore(Int, Text))  # type Arvore(a) recebe um só tipo
+Certo:   fn profundidade(t: Arvore(Int))
 
 Os tipos escritos são opcionais: tirar um nunca muda o que um programa faz.
 Mais: `rythme help types`."#,
@@ -8588,12 +8605,26 @@ The types
   fn(Int, Int) -> Int          a function
   Shape                        a type defined with `type` (geometry.Shape
                                for a type of `use geometry`)
+  Tree(Int)                    a type defined with parameters, with its types
   a                            any type: one lowercase letter, the same type
                                everywhere in a definition
   List, Dict, Set, Option, Result, Record, Function alone: any content
+  (Tree alone too)
 
   fn first_of(xs: List(a)) -> a = xs[0]
   first_of([1, 2]) + 1         # the checker knows it is an Int
+
+Types with parameters: a type can take types, like List(Int)
+  type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+  type Pair(a, b) = Pair(first: a, second: b)
+
+  fn depth(t: Tree(a)) -> Int = ...      a Tree of anything
+  fn total(t: Tree(Int)) -> Int = ...    a Tree of whole numbers
+  total(Node(Leaf, "two", Leaf))         E027: this is a Tree(Text)
+
+A type variable is one letter: a lowercase word, like `int` or `string`, is
+taken for a type named as in another language, and `rythme check` gives its
+Rythme name.
 
 Written types are never needed and change nothing when the program runs;
 the editors and `rythme doc` show them."#,
@@ -8614,12 +8645,26 @@ Os tipos
   fn(Int, Int) -> Int          uma função
   Forma                        um tipo definido com `type` (geometria.Forma
                                para um tipo de `use geometria`)
+  Arvore(Int)                  um tipo definido com parâmetros, com seus tipos
   a                            qualquer tipo: uma letra minúscula, o mesmo
                                tipo em toda uma definição
   List, Dict, Set, Option, Result, Record, Function sozinhos: qualquer conteúdo
+  (Arvore sozinho também)
 
   fn primeiro(xs: List(a)) -> a = xs[0]
   primeiro([1, 2]) + 1         # o verificador sabe que é um Int
+
+Tipos com parâmetros: um tipo pode receber tipos, como List(Int)
+  type Arvore(a) = Folha | No(esquerda: Arvore(a), valor: a, direita: Arvore(a))
+  type Par(a, b) = Par(primeiro: a, segundo: b)
+
+  fn profundidade(t: Arvore(a)) -> Int = ...   uma Arvore de qualquer coisa
+  fn total(t: Arvore(Int)) -> Int = ...        uma Arvore de números inteiros
+  total(No(Folha, "dois", Folha))              E027: isto é uma Arvore(Text)
+
+Uma variável de tipo é uma letra: uma palavra em minúsculas, como `int` ou
+`string`, é tomada por um tipo nomeado como em outra linguagem, e
+`rythme check` dá o nome dele em Rythme.
 
 Os tipos escritos nunca são obrigatórios e não mudam nada quando o programa
 roda; os editores e `rythme doc` os mostram."#,
@@ -9645,5 +9690,687 @@ Um erro de forma nomeia as duas formas ("não pode multiplicar uma matriz
 perceptron, xor_network, kmeans, knn, naive_bayes, markov, tictactoe,
 pathfinding e genetic; os exercícios 31 a 36 (rythme exercise list)."#,
         ),
+        // Types with parameters: src/check/annot.rs, src/help.rs, src/lsp/features.rs, src/parser.rs
+        ("the type variable `{name}` appears twice in `{ty}`", "a variável de tipo `{name}` aparece duas vezes em `{ty}`"),
+        ("give each one its own letter: `type Pair(a, b)`", "dê a cada uma a sua própria letra: `type Par(a, b)`"),
+        ("`{name}` cannot be a type variable: a type variable is one lowercase letter", "`{name}` não pode ser uma variável de tipo: uma variável de tipo é uma só letra minúscula"),
+        ("write one letter, like `{letter}`, here and in the fields", "escreva uma letra, como `{letter}`, aqui e nos campos"),
+        ("`{v}` is not a parameter of `{ty}`", "`{v}` não é um parâmetro de `{ty}`"),
+        ("not among `{header}`", "não está entre `{header}`"),
+        ("add it to the parameters of the type: `type {with} = ...`", "acrescente-a aos parâmetros do tipo: `type {with} = ...`"),
+        ("`{name}` takes {count} types: `{example}`", "`{name}` recebe {count} tipos: `{example}`"),
+        (
+            r#"Types may also be written in the code, where they help to read it:
+  fn area(s: Shape) -> Float
+`rythme check` verifies them; they are never needed (rythme help types)."#,
+            r#"Os tipos também podem ser escritos no código, onde ajudam a lê-lo:
+  fn area(f: Forma) -> Float
+`rythme check` os verifica; nunca são obrigatórios (rythme help types)."#,
+        ),
+        ("A whole number, as large as needed: `42`, `-7`.", "Um número inteiro, tão grande quanto for preciso: `42`, `-7`."),
+        ("A decimal number: `3.14`, `2.0`.", "Um número decimal: `3.14`, `2.0`."),
+        ("A text: `\"hello\"`.", "Um texto: `\"olá\"`."),
+        ("`true` or `false`.", "`true` ou `false`."),
+        ("`()`: what a function gives when it gives nothing, like `print`.", "`()`: o que uma função dá quando não dá nada, como `print`."),
+        ("A value that is only its name: `:ok`, `:error`.", "Um valor que é só o seu nome: `:ok`, `:error`."),
+        ("A list whose elements all have the type between parentheses; `List` alone: any list.", "Uma lista cujos elementos têm todos o tipo entre parênteses; `List` sozinho: qualquer lista."),
+        ("A set of values of this type: `set([1, 2])`.", "Um conjunto de valores deste tipo: `set([1, 2])`."),
+        ("A dictionary: keys of the first type, values of the second.", "Um dicionário: chaves do primeiro tipo, valores do segundo."),
+        ("`Some(value)` or `None`: a value that may be missing.", "`Some(valor)` ou `None`: um valor que pode faltar."),
+        ("`Ok(value)` or `Err(error)`: the result of what may fail.", "`Ok(valor)` ou `Err(erro)`: o resultado do que pode falhar."),
+        ("Any record; `{{name: Text}}` is a record with at least these fields.", "Qualquer registro; `{{name: Text}}` é um registro com pelo menos estes campos."),
+        ("Any function; `fn(Int) -> Int` is a function with these types.", "Qualquer função; `fn(Int) -> Int` é uma função com estes tipos."),
+        ("A type of Rythme: `rythme help types`", "Um tipo do Rythme: `rythme help types`"),
+        ("type variable", "variável de tipo"),
+        ("used file", "arquivo usado"),
+        ("a type variable, like `a`", "uma variável de tipo, como `a`"),
+        ("a type without parameters is written without parentheses: `type {name} = ...`", "um tipo sem parâmetros se escreve sem parênteses: `type {name} = ...`"),
+        ("the parameters of a type are type variables, one lowercase letter each: `type Box(a) = Box(value: a)`", "os parâmetros de um tipo são variáveis de tipo, de uma letra minúscula cada: `type Caixa(a) = Caixa(valor: a)`"),
+        // src/index.rs, src/packages.rs, src/project.rs, src/manifest.rs, src/help.rs: the package index
+        ("the address is empty", "o endereço está vazio"),
+        ("`{a}` is not an address that Rythme accepts: no spaces, and no `-` at the start", "`{a}` não é um endereço que o Rythme aceite: sem espaços, e sem `-` no começo"),
+        ("Rythme downloads packages only with `https://`, `ssh://` or from this computer (`file://`), not with `{other}`", "O Rythme só baixa pacotes com `https://`, `ssh://` ou deste computador (`file://`), não com `{other}`"),
+        ("`{a}` is not the address of a repository: write `https://...`, `ssh://...` or `file://...`", "`{a}` não é o endereço de um repositório: escreva `https://...`, `ssh://...` ou `file://...`"),
+        ("set by `index` in `rythme.toml`", "definido por `index` no `rythme.toml`"),
+        ("set by the variable RYTHME_INDEX", "definido pela variável RYTHME_INDEX"),
+        ("`{url}` is not a package index: it has no folder `packages`", "`{url}` não é um índice de pacotes: não tem a pasta `packages`"),
+        ("an index holds one file per package, like `packages/mathlib.toml` (see `rythme help packages`)", "um índice tem um arquivo por pacote, como `packages/mathlib.toml` (veja `rythme help packages`)"),
+        ("an unknown day", "um dia desconhecido"),
+        ("cannot update the package index from `{url}`: using the copy of {date}", "não é possível atualizar o índice de pacotes a partir de `{url}`: a cópia de {date} é usada"),
+        ("cannot download the package index from `{url}`", "não é possível baixar o índice de pacotes de `{url}`"),
+        ("check the connection to the network, or give another index with the variable RYTHME_INDEX (an address or a folder); dependencies from git or from a folder work without the index", "verifique a conexão com a rede, ou indique outro índice com a variável RYTHME_INDEX (um endereço ou uma pasta); as dependências do git ou de uma pasta funcionam sem o índice"),
+        ("no package `{name}` in the package index", "nenhum pacote `{name}` no índice de pacotes"),
+        ("`rythme search WORDS` finds packages by the words of their name and description", "`rythme search PALAVRAS` encontra pacotes pelas palavras do nome e da descrição"),
+        ("the index: {place}", "o índice: {place}"),
+        ("{url} (copy of {date})", "{url} (cópia de {date})"),
+        ("{} (withdrawn)", "{} (retirada)"),
+        ("none", "nenhuma"),
+        ("no version of `{name}` in the package index fits `{range}`", "nenhuma versão de `{name}` do índice de pacotes cabe em `{range}`"),
+        ("its versions: {}", "as versões dele: {}"),
+        ("for the newest one, write `{name} = {{ version = \"^{v}\" }}`", "para a mais recente, escreva `{name} = {{ version = \"^{v}\" }}`"),
+        ("every version of `{name}` was withdrawn", "todas as versões de `{name}` foram retiradas"),
+        ("`{shown}` is too large for an entry of the package index", "`{shown}` é grande demais para uma entrada do índice de pacotes"),
+        ("`{key}` is a list of texts", "`{key}` é uma lista de textos"),
+        ("this entry of the package index is for `{found}`, but its file is named for `{name}`", "esta entrada do índice de pacotes é para `{found}`, mas o arquivo dela tem o nome de `{name}`"),
+        ("the entry of `{name}` has no `repository`", "a entrada de `{name}` não tem `repository`"),
+        ("the entry of `{name}` has no `{key}`", "a entrada de `{name}` não tem `{key}`"),
+        ("each version is written under `[[version]]`", "cada versão é escrita sob `[[version]]`"),
+        ("this version of `{name}` has no `{k}`", "esta versão de `{name}` não tem `{k}`"),
+        ("`{commit}` is not a full commit: 40 hexadecimal digits in lower case", "`{commit}` não é um commit completo: 40 dígitos hexadecimais em minúsculas"),
+        ("`{checksum}` is not a checksum: `sha256:` and 64 hexadecimal digits, as `rythme publish` writes it", "`{checksum}` não é uma soma de verificação: `sha256:` e 64 dígitos hexadecimais, como `rythme publish` a escreve"),
+        ("`{t}` is not a tag", "`{t}` não é uma tag"),
+        ("the version {v} is written twice", "a versão {v} está escrita duas vezes"),
+        ("the entry of `{name}` has no version", "a entrada de `{name}` não tem nenhuma versão"),
+        ("expected `,` or `]` here", "era esperado `,` ou `]` aqui"),
+        ("a list is written on one line: `[\"math\", \"vectors\"]`", "uma lista é escrita em uma linha: `[\"matematica\", \"vetores\"]`"),
+        ("like `{key} = {example}`", "como `{key} = {example}`"),
+        ("write `\"^1.2.0\"` (1.2.0 or a newer compatible version, below 2.0.0), `\"~1.2.0\"` (1.2.x), `\"=1.2.0\"` (exactly this one) or `\">=1.2.0, <1.5.0\"`", "escreva `\"^1.2.0\"` (1.2.0 ou uma versão compatível mais recente, abaixo de 2.0.0), `\"~1.2.0\"` (1.2.x), `\"=1.2.0\"` (exatamente esta) ou `\">=1.2.0, <1.5.0\"`"),
+        ("for a version from the package index, write `{name} = {{ version = \"{v}\" }}`", "para uma versão do índice de pacotes, escreva `{name} = {{ version = \"{v}\" }}`"),
+        ("a dependency comes from the package index (`version`), from git (`git`) or from a folder (`path`): give only one", "uma dependência vem do índice de pacotes (`version`), do git (`git`) ou de uma pasta (`path`): indique só um"),
+        ("`{v}` is not a range of versions", "`{v}` não é um intervalo de versões"),
+        (
+            r#"unknown option `{bad}` for `rythme {command}`
+see `rythme help packages`"#,
+            r#"opção desconhecida `{bad}` para `rythme {command}`
+veja `rythme help packages`"#,
+        ),
+        ("{bad} file(s) of the package index could not be read", "{bad} arquivo(s) do índice de pacotes não puderam ser lidos"),
+        ("{n} package(s) in {place}", "{n} pacote(s) em {place}"),
+        ("No package found for `{query}` in {place}", "Nenhum pacote encontrado para `{query}` em {place}"),
+        ("{n} package(s) found for `{query}` in {place}", "{n} pacote(s) encontrado(s) para `{query}` em {place}"),
+        ("More about one: `rythme info {name}`; add it to a project: `rythme add {name}`", "Mais sobre um deles: `rythme info {name}`; adicioná-lo a um projeto: `rythme add {name}`"),
+        ("`rythme search --update{words}` searches the newest copy of the index", "`rythme search --update{words}` procura na cópia mais recente do índice"),
+        ("which package? Example: rythme info mathlib", "qual pacote? Exemplo: rythme info mathlib"),
+        ("repository", "repositório"),
+        ("license", "licença"),
+        ("keywords", "palavras-chave"),
+        ("authors", "autores"),
+        ("versions", "versões"),
+        ("  {v} was withdrawn: {}", "  {v} foi retirada: {}"),
+        ("Add it to a project: `rythme add {name}` (writes `{name} = {{ version = \"^{v}\" }}` in rythme.toml)", "Adicioná-lo a um projeto: `rythme add {name}` (escreve `{name} = {{ version = \"^{v}\" }}` no rythme.toml)"),
+        ("Every version of this package was withdrawn.", "Todas as versões deste pacote foram retiradas."),
+        ("which package? Example: rythme add mathlib (or rythme add mathlib@1.2)", "qual pacote? Exemplo: rythme add mathlib (ou rythme add mathlib@1.2)"),
+        ("cannot read `{}`: {e}", "não é possível ler `{}`: {e}"),
+        ("`{range_text}` is not a range of versions", "`{range_text}` não é um intervalo de versões"),
+        ("`{name}` came from {from}: it now comes from the package index", "`{name}` vinha de {from}: agora vem do índice de pacotes"),
+        ("`rythme.toml` was left as it was", "o `rythme.toml` foi deixado como estava"),
+        ("Added `{line}` to rythme.toml ({version})", "Adicionado `{line}` ao rythme.toml ({version})"),
+        ("  use it with `use {name}/FILE` (see `rythme info {name}`)", "  use-o com `use {name}/ARQUIVO` (veja `rythme info {name}`)"),
+        ("which entries? Example: rythme publish --verify packages/mathlib.toml", "quais entradas? Exemplo: rythme publish --verify packages/mathlib.toml"),
+        (
+            r#"`rythme publish` takes no argument (`{a}`): it checks the package of the current folder
+see `rythme help packages`"#,
+            r#"`rythme publish` não recebe argumentos (`{a}`): ele verifica o pacote da pasta atual
+veja `rythme help packages`"#,
+        ),
+        ("`rythme.toml` has no `{key}`", "o `rythme.toml` não tem `{key}`"),
+        ("the package index shows it, and needs it", "o índice de pacotes mostra isso, e precisa disso"),
+        ("add a line like `{example}` at the top", "adicione uma linha como `{example}` no começo"),
+        ("Checking `{name}` {version} before it goes into the package index", "Verificando `{name}` {version} antes de entrar no índice de pacotes"),
+        ("`{version}` is not a version of semantic versioning", "`{version}` não é uma versão do versionamento semântico"),
+        ("like `version = \"1.2.0\"`, without zeros at the start of a number", "como `version = \"1.2.0\"`, sem zeros no começo de um número"),
+        ("description = \"What `{name}` is for, in one sentence\"", "description = \"Para que serve `{name}`, em uma frase\""),
+        ("the `description` is too long: one sentence, at most 200 characters", "a `description` é longa demais: uma frase, no máximo 200 caracteres"),
+        ("YOU", "SEU-NOME"),
+        ("`{k}` is not a keyword: a word in lower case, at most 24 characters", "`{k}` não é uma palavra-chave: uma palavra em minúsculas, no máximo 24 caracteres"),
+        ("at most 5 keywords", "no máximo 5 palavras-chave"),
+        ("a published package cannot use a folder of this computer: `{dep_name}` comes from `{p}`", "um pacote publicado não pode usar uma pasta deste computador: `{dep_name}` vem de `{p}`"),
+        ("publish `{dep_name}` too, then write `{dep_name} = {{ version = \"^...\" }}`", "publique também `{dep_name}`, e depois escreva `{dep_name} = {{ version = \"^...\" }}`"),
+        ("`{name}` is not in a git repository", "`{name}` não está em um repositório git"),
+        ("the package index gives the commit of each version: a package is published from its git repository", "o índice de pacotes dá o commit de cada versão: um pacote é publicado a partir do repositório git dele"),
+        ("`git init`, `git add .`, `git commit`, then push it to its `repository`", "`git init`, `git add .`, `git commit`, e depois envie para o `repository` dele"),
+        ("`rythme.toml` must be at the root of its git repository", "o `rythme.toml` precisa estar na raiz do repositório git dele"),
+        ("the root of the repository: {top}", "a raiz do repositório: {top}"),
+        ("give the package a repository of its own", "dê ao pacote um repositório próprio"),
+        ("some changes are not committed", "algumas mudanças não foram confirmadas (commit)"),
+        ("for example: {}", "por exemplo: {}"),
+        ("commit them (`git add`, `git commit`), or set them aside, then tag the commit", "confirme-as (`git add`, `git commit`), ou deixe-as de lado, e depois marque o commit com uma tag"),
+        ("no tag `v{version}` for the version {version}", "nenhuma tag `v{version}` para a versão {version}"),
+        ("tag the commit and push the tag: `git tag v{version}`, then `git push origin v{version}`", "marque o commit com a tag e envie a tag: `git tag v{version}`, depois `git push origin v{version}`"),
+        ("the tag `{t}` is not the current commit", "a tag `{t}` não é o commit atual"),
+        ("what is checked must be what is published", "o que é verificado precisa ser o que é publicado"),
+        ("publish from the tag (`git checkout {t}`), or move the tag to this commit (`git tag --force {t}`) before pushing it", "publique a partir da tag (`git checkout {t}`), ou mova a tag para este commit (`git tag --force {t}`) antes de enviá-la"),
+        ("Running `rythme check`", "Executando `rythme check`"),
+        ("`rythme check` found errors", "`rythme check` encontrou erros"),
+        ("fix them first: a package must pass `rythme check`", "corrija-os primeiro: um pacote precisa passar no `rythme check`"),
+        ("Running `rythme test`", "Executando `rythme test`"),
+        ("`rythme test` failed", "`rythme test` falhou"),
+        ("fix them first: a package must pass its tests", "corrija-os primeiro: um pacote precisa passar nos testes dele"),
+        ("the name `{name}` is already taken in the package index", "o nome `{name}` já está em uso no índice de pacotes"),
+        ("by the repository {repo}", "pelo repositório {repo}"),
+        ("choose another `name` for your package", "escolha outro `name` para o seu pacote"),
+        ("the version {version} of `{name}` is already in the package index", "a versão {version} de `{name}` já está no índice de pacotes"),
+        ("a published version never changes: raise `version` in `rythme.toml`, commit and tag again", "uma versão publicada nunca muda: aumente `version` no `rythme.toml`, confirme e marque com uma tag de novo"),
+        ("cannot read the package index `{url}`: it will check the name and the version itself", "não é possível ler o índice de pacotes `{url}`: ele mesmo vai verificar o nome e a versão"),
+        ("the tag `{t}` is not in {repo}", "a tag `{t}` não está em {repo}"),
+        ("push it: `git push origin {t}`", "envie-a: `git push origin {t}`"),
+        ("the tag `{t}` of {repo} is not this commit", "a tag `{t}` de {repo} não é este commit"),
+        ("push the tag again: `git push --force origin {t}`", "envie a tag de novo: `git push --force origin {t}`"),
+        ("cannot reach {repo} to check that the tag `{t}` is there", "não é possível acessar {repo} para verificar que a tag `{t}` está lá"),
+        ("cannot read the files of the commit `{commit}`", "não é possível ler os arquivos do commit `{commit}`"),
+        ("✓ `{name}` {version} is ready for the package index.", "✓ `{name}` {version} está pronto para o índice de pacotes."),
+        ("Rythme never publishes anything by itself: a version goes into the index with a pull request on its repository, {}.", "O Rythme nunca publica nada sozinho: uma versão entra no índice com um pull request no repositório dele, {}."),
+        ("1. Fork the repository of the index and clone your fork. Create the file {file} with:", "1. Faça um fork do repositório do índice e clone o seu fork. Crie o arquivo {file} com:"),
+        ("1. Fork the repository of the index and clone your fork. Add at the end of {file}:", "1. Faça um fork do repositório do índice e clone o seu fork. Adicione no final de {file}:"),
+        ("2. Commit it on a branch of your fork and push it:", "2. Confirme em um branch do seu fork e envie-o:"),
+        ("3. Open a pull request on {}: its checks run `rythme publish --verify {file}`, then a maintainer merges it.", "3. Abra um pull request em {}: as verificações dele executam `rythme publish --verify {file}`, e depois um mantenedor faz o merge."),
+        (
+            r#"
+{problems} problem(s) to fix before publishing: nothing was sent anywhere"#,
+            r#"
+{problems} problema(s) para corrigir antes de publicar: nada foi enviado para lugar nenhum"#,
+        ),
+        ("`{f}` is not an entry of the index: `packages/NAME.toml`", "`{f}` não é uma entrada do índice: `packages/NOME.toml`"),
+        ("✓ {f}: `{stem}`, {count} version(s) verified", "✓ {f}: `{stem}`, {count} versão(ões) verificada(s)"),
+        ("✗ {f}", "✗ {f}"),
+        ("{v}: the commit `{commit}` is not in `{url}`", "{v}: o commit `{commit}` não está em `{url}`"),
+        ("{v}: the tag `{tag}` of `{url}` is not the commit `{commit}`", "{v}: a tag `{tag}` de `{url}` não é o commit `{commit}`"),
+        ("{v}: the files of the commit do not have the checksum of the entry", "{v}: os arquivos do commit não têm a soma de verificação da entrada"),
+        (
+            r#"expected: {}
+found:    {found}"#,
+            r#"esperada:   {}
+encontrada: {found}"#,
+        ),
+        ("`rythme publish` in the package, at its tag, writes the right one", "`rythme publish` no pacote, na tag dele, escreve a correta"),
+        ("{v}: the commit has no `rythme.toml` at its root", "{v}: o commit não tem `rythme.toml` na raiz"),
+        ("{v}: the `rythme.toml` of the commit says `{found_name}` {found_version}", "{v}: o `rythme.toml` do commit diz `{found_name}` {found_version}"),
+        ("{v}: the dependency `{dep_name}` is a folder of the computer of the author", "{v}: a dependência `{dep_name}` é uma pasta do computador do autor"),
+        ("the package index, version {range}", "o índice de pacotes, versão {range}"),
+        ("the commit `{commit}` of `{name}` {version} does not exist in `{url}`", "o commit `{commit}` de `{name}` {version} não existe em `{url}`"),
+        ("the package index gives this commit for this version", "o índice de pacotes dá este commit para esta versão"),
+        ("tell the authors of `{name}`: the history of their repository may have been rewritten", "avise os autores de `{name}`: o histórico do repositório deles pode ter sido reescrito"),
+        ("cannot read the files of `{name}` {version}", "não é possível ler os arquivos de `{name}` {version}"),
+        ("the files of `{name}` {version} do not match the checksum of the package index", "os arquivos de `{name}` {version} não correspondem à soma de verificação do índice de pacotes"),
+        ("nothing was installed, and nothing of the package ran", "nada foi instalado, e nada do pacote foi executado"),
+        ("do not use this version; tell the maintainers of the package index", "não use esta versão; avise os mantenedores do índice de pacotes"),
+        ("Updating the dependencies of `{name}`", "Atualizando as dependências de `{name}`"),
+        ("{range} from the index, commit {short} ({how})", "{range} do índice, commit {short} ({how})"),
+        ("the package index gives `{dep_name}` {wanted}, but its `rythme.toml` says `{found}` {version}", "o índice de pacotes dá `{dep_name}` {wanted}, mas o `rythme.toml` dele diz `{found}` {version}"),
+        ("tell the maintainers of the package index", "avise os mantenedores do índice de pacotes"),
+        ("`rythme update` takes the names of dependencies, not `{bad}`: `rythme update` (all of them) or `rythme update mathlib`", "`rythme update` recebe nomes de dependências, não `{bad}`: `rythme update` (todas) ou `rythme update mathlib`"),
+        ("`{a}` is not a dependency of `{}`", "`{a}` não é uma dependência de `{}`"),
+        ("did you mean `rythme update {best}`?", "você quis dizer `rythme update {best}`?"),
+        ("`rythme add {a}` adds it from the package index", "`rythme add {a}` o adiciona a partir do índice de pacotes"),
+        ("Everything was already up to date", "Tudo já estava atualizado"),
+        ("Updated:", "Atualizado:"),
+        ("{} {} (new)", "{} {} (novo)"),
+        (
+            r#"THE PACKAGE INDEX
+
+  rythme search vectors      # the packages whose name, description or keywords say it
+  rythme info mathlib        # its description, repository, license, versions
+  rythme add mathlib         # adds `mathlib = { version = "^1.2.0" }` to rythme.toml,
+                             #   then installs it (rythme.lock keeps the exact commit)
+  rythme add mathlib@1.1     # a range of versions of your choice
+  rythme update              # the newest version in the range of each dependency
+  rythme publish             # checks your package, then says how to add it
+
+A dependency from the index gives a range of versions:
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 or newer, below 2.0.0 (the default)
+  geometry = { version = "~0.3.1" }   # 0.3.x, from 0.3.1
+  tools = { version = "=1.0.0" }      # exactly this one
+
+`rythme install` takes the version of rythme.lock while it is in the range,
+and `rythme update` the newest one; a withdrawn version is never chosen.
+
+The index is a git repository, one file per package (packages/NAME.toml):
+its name, description, repository, license, keywords, and for each version
+its tag, its commit and the checksum of its files. Rythme keeps a copy in
+~/.rythme/index and reads it without a network: `rythme search --update`
+gets the newest one. Another index: `index = "..."` in rythme.toml, or the
+variable RYTHME_INDEX (an address, or a folder of this computer); by
+default https://github.com/maxlestage/rythme-index.
+
+Safety: names are Rythme names (no `/`, no `..`), addresses use https, ssh
+or file://, git runs without hooks, the files of each version must have the
+checksum of the index, and nothing of a package runs when it is installed.
+
+Publishing: tag the version (git tag v1.2.0, git push origin v1.2.0), then
+`rythme publish` checks rythme.toml (description, license, repository),
+`rythme check`, `rythme test` and the tag, and prints the entry to add to
+the index with a pull request. Rythme never sends anything by itself."#,
+            r#"O ÍNDICE DE PACOTES
+
+  rythme search vetores      # os pacotes cujo nome, descrição ou palavras-chave dizem isso
+  rythme info mathlib        # a descrição, o repositório, a licença e as versões dele
+  rythme add mathlib         # adiciona `mathlib = { version = "^1.2.0" }` ao rythme.toml,
+                             #   e depois o instala (o rythme.lock guarda o commit exato)
+  rythme add mathlib@1.1     # um intervalo de versões à sua escolha
+  rythme update              # a versão mais recente do intervalo de cada dependência
+  rythme publish             # verifica o seu pacote, e depois diz como adicioná-lo
+
+Uma dependência do índice dá um intervalo de versões:
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 ou mais recente, abaixo de 2.0.0 (o padrão)
+  geometria = { version = "~0.3.1" }  # 0.3.x, a partir de 0.3.1
+  ferramentas = { version = "=1.0.0" }  # exatamente esta
+
+`rythme install` pega a versão do rythme.lock enquanto ela estiver no
+intervalo, e `rythme update` a mais recente; uma versão retirada nunca é
+escolhida.
+
+O índice é um repositório git, um arquivo por pacote (packages/NOME.toml):
+o nome, a descrição, o repositório, a licença, as palavras-chave, e para
+cada versão a tag, o commit e a soma de verificação dos arquivos dela. O
+Rythme guarda uma cópia em ~/.rythme/index e a lê sem rede:
+`rythme search --update` pega a mais recente. Outro índice:
+`index = "..."` no rythme.toml, ou a variável RYTHME_INDEX (um endereço, ou
+uma pasta deste computador); por padrão
+https://github.com/maxlestage/rythme-index.
+
+Segurança: os nomes são nomes do Rythme (sem `/`, sem `..`), os endereços
+usam https, ssh ou file://, o git roda sem hooks, os arquivos de cada versão
+precisam ter a soma de verificação do índice, e nada de um pacote roda
+quando ele é instalado.
+
+Publicar: marque a versão com uma tag (git tag v1.2.0, git push origin
+v1.2.0), depois `rythme publish` verifica o rythme.toml (description,
+license, repository), `rythme check`, `rythme test` e a tag, e mostra a
+entrada a adicionar ao índice com um pull request. O Rythme nunca envia
+nada sozinho."#,
+        ),
+        ("The index is the folder {url}, where Rythme writes nothing.", "O índice é a pasta {url}, onde o Rythme não escreve nada."),
+        ("Create its file {file} with:", "Crie o arquivo {file} dele com:"),
+        ("Add at the end of its file {file}:", "Adicione no final do arquivo {file} dele:"),
+        ("the pattern \"{pattern}\" has an unknown directive `%{c}`", "o padrão \"{pattern}\" tem uma diretiva desconhecida `%{c}`"),
+        ("the directives are %Y (year), %m (month), %d (day), %H (hour), %M (minute), %S (second), %y (year in 2 digits), %B and %b (month name), %A and %a (day name), %I and %p (12-hour clock), %j (day of the year), %z (offset) and %% (a %)", "as diretivas são %Y (ano), %m (mês), %d (dia), %H (hora), %M (minuto), %S (segundo), %y (ano com 2 dígitos), %B e %b (nome do mês), %A e %a (nome do dia), %I e %p (relógio de 12 horas), %j (dia do ano), %z (deslocamento) e %% (um %)"),
+        (r#""{text}" does not follow the pattern "{pattern}""#, r#""{text}" não segue o padrão "{pattern}""#),
+        ("the hour must go from 1 to 12 with AM or PM, not {}", "a hora deve ir de 1 a 12 com AM ou PM, não {}"),
+        ("the day of the year must go from 1 to {len}, not {n}", "o dia do ano deve ir de 1 a {len}, não {n}"),
+        ("`{c}` is not a Base64 character", "`{c}` não é um caractere Base64"),
+        ("this Base64 text is cut short", "este texto em Base64 está cortado"),
+        ("the decoded bytes are not a text (UTF-8)", "os bytes decodificados não são um texto (UTF-8)"),
+        ("a `%` must be followed by two hexadecimal digits, like `%20`", "um `%` deve ser seguido de dois dígitos hexadecimais, como `%20`"),
+        ("`{f}` would give {count} lists: too many (at most {MAX_COMBINED} elements in all)", "`{f}` daria {count} listas: demais (no máximo {MAX_COMBINED} elementos no total)"),
+        ("the number of combinations grows very fast: try with a shorter list, or fewer elements in each one", "o número de combinações cresce muito rápido: tente com uma lista mais curta, ou menos elementos em cada uma"),
+        ("`unzip` needs a list of lists, but its element {k} is {}", "`unzip` precisa de uma lista de listas, mas o seu elemento {k} é {}"),
+        ("the function given to `unfold` must return `Some([value, next])` or `None`, but it returned Some({})", "a função dada a `unfold` deve retornar `Some([valor, próximo])` ou `None`, mas retornou Some({})"),
+        ("`{f}` needs at least two numbers in each list", "`{f}` precisa de pelo menos dois números em cada lista"),
+        ("`correlation` needs numbers that vary: one of the lists has all its numbers equal", "`correlation` precisa de números que variem: uma das listas tem todos os números iguais"),
+        ("`{f}` cannot compare {} and {}", "`{f}` não pode comparar {} e {}"),
+        ("the value and its bounds must be of the same kind: all numbers, or all texts...", "o valor e os seus limites devem ser do mesmo tipo: todos números, ou todos textos..."),
+        ("`constrain`: the lower bound {} is above the upper bound {}", "`constrain`: o limite inferior {} está acima do limite superior {}"),
+        ("`binomial` needs a number of 0 or more, not {n}", "`binomial` precisa de um número maior ou igual a 0, não {n}"),
+        ("`expect` found `None`: there is no value", "`expect` encontrou `None`: não há valor"),
+        ("`expect` found an error: {}", "`expect` encontrou um erro: {}"),
+        ("`all_ok` needs a list of Results (Ok or Err), but its element {k} is {}", "`all_ok` precisa de uma lista de Results (Ok ou Err), mas o seu elemento {k} é {}"),
+        ("to keep the values of a list of Options, use `filter_map(list, fn(x) = x)`", "para manter os valores de uma lista de Options, use `filter_map(lista, fn(x) = x)`"),
+        ("`format` cannot use \"{spec}\": {why}", "`format` não pode usar \"{spec}\": {why}"),
+        (r#"a spec is written [[fill]align][sign][#][0][width][,][.precision][type]: ">8" (8 wide, on the right), "^8" (centered), "08.2f" (2 decimals, zeros before), ",d" (thousands), ".1%" (a percentage), "x" (hexadecimal), "b" (binary), "e" (exponent)"#, r#"uma especificação se escreve [[preenchimento]alinhamento][sinal][#][0][largura][,][.precisão][tipo]: ">8" (largura 8, à direita), "^8" (centralizado), "08.2f" (2 casas decimais, zeros na frente), ",d" (milhares), ".1%" (uma porcentagem), "x" (hexadecimal), "b" (binário), "e" (expoente)"#),
+        ("the width is at most {MAX_WIDTH}", "a largura é no máximo {MAX_WIDTH}"),
+        ("the precision is at most {MAX_PRECISION}", "a precisão é no máximo {MAX_PRECISION}"),
+        ("a number must follow the `.`", "um número deve vir depois do `.`"),
+        ("`{c}` is not a type of format", "`{c}` não é um tipo de formato"),
+        ("this is not a format spec", "isto não é uma especificação de formato"),
+        ("`{kind}` cannot write {what}", "`{kind}` não pode escrever {what}"),
+        ("a whole number", "um número inteiro"),
+        ("a whole number has no decimals: write a type like `f` for them", "um número inteiro não tem casas decimais: escreva um tipo como `f` para tê-las"),
+        ("`,` groups decimal digits only: use `_`", "`,` só agrupa dígitos decimais: use `_`"),
+        ("a decimal number", "um número decimal"),
+        ("signs, `#`, `0` and `,` are for numbers", "os sinais, `#`, `0` e `,` são para números"),
+        ("`{f}`: the base must go from 2 to 36, not {b}", "`{f}`: a base deve ir de 2 a 36, não {b}"),
+        ("\"{s}\" is not a whole number in base {radix}", "\"{s}\" não é um número inteiro na base {radix}"),
+        ("`digits` needs a number of 0 or more, not {}", "`digits` precisa de um número maior ou igual a 0, não {}"),
+        ("`{f}`: the text to look for is empty", "`{f}`: o texto a procurar está vazio"),
+        ("`{f}` cannot replace an empty text", "`{f}` não pode substituir um texto vazio"),
+        ("`edit_distance` compares texts of at most {MAX_DISTANCE_WORK} pairs of characters, not {} by {}", "`edit_distance` compara textos de no máximo {MAX_DISTANCE_WORK} pares de caracteres, não {} por {}"),
+        ("to count a piece of text in a text, use `occurrences(text, piece)`", "para contar um trecho de texto em um texto, use `occurrences(texto, trecho)`"),
+        ("to count the elements equal to a value, use `occurrences(list, x)`", "para contar os elementos iguais a um valor, use `occurrences(lista, x)`"),
+        ("the value comes first, then the spec: `format(42, \"05\")`; to put values in a text, use braces", "o valor vem primeiro, depois a especificação: `format(42, \"05\")`; para colocar valores em um texto, use chaves"),
+        ("return `Some(x)` to keep x, or `None` to leave the element out", "retorne `Some(x)` para manter x, ou `None` para deixar o elemento de fora"),
+        ("return `Some([value, next])` to go on, or `None` to stop", "retorne `Some([valor, próximo])` para continuar, ou `None` para parar"),
+        ("Pairs the elements of two lists (or more: one element of each list in every group): [[a1, b1], [a2, b2], ...]. It stops at the end of the shortest list.", "Emparelha os elementos de duas listas (ou mais: um elemento de cada lista em cada grupo): [[a1, b1], [a2, b2], ...]. Para no fim da lista mais curta."),
+        (r#"Reads a date written as ISO 8601 ("2024-02-29", "2024-02-29T13:05:00", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date. With a pattern like "%d/%m/%Y" (the directives of `format_date`), reads a date written that way."#, r#"Lê uma data escrita em ISO 8601 ("2024-02-29", "2024-02-29T13:05:00", com `Z` ou um deslocamento como `+01:00` se necessário): `Ok(date)`, ou `Err(message)` se não for uma data válida. Com um padrão como "%d/%m/%Y" (as diretivas de `format_date`), lê uma data escrita dessa forma."#),
+        ("Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one. With a pattern, writes it the way `strftime` does: %Y year, %m month, %d day, %H hour, %M minute, %S second, %y year in two digits, %B and %b the month, %A and %a the day of the week (in English), %I and %p the 12-hour clock, %j the day of the year, %z the offset, %% a %.", "Escreve uma data em ISO 8601: \"2024-02-29\", com a hora se a data tiver uma, e `Z` ou o deslocamento se tiver um. Com um padrão, escreve-a como `strftime`: %Y o ano, %m o mês, %d o dia, %H a hora, %M o minuto, %S o segundo, %y o ano com dois dígitos, %B e %b o mês, %A e %a o dia da semana (em inglês), %I e %p o relógio de 12 horas, %j o dia do ano, %z o deslocamento, %% um %."),
+        ("The text that shows a value the way the REPL and `debug` show it: a text between quotes, with its special characters written as escapes. `text` gives a text as it is.", "O texto que mostra um valor como o REPL e `debug` o mostram: um texto entre aspas, com os seus caracteres especiais escritos como sequências de escape. `text` dá um texto tal como é."),
+        ("Shows values on the error output (stderr), separated by spaces, then goes to the next line: for messages that must not mix with the results of a program, which go to the standard output.", "Mostra valores na saída de erro (stderr), separados por espaços, e passa para a próxima linha: para mensagens que não devem se misturar com os resultados de um programa, que vão para a saída padrão."),
+        ("The value kept between two bounds: `low` if it is below, `high` if it is above, itself otherwise. For numbers, texts... any values that can be compared.", "O valor mantido entre dois limites: `low` se estiver abaixo, `high` se estiver acima, ele mesmo caso contrário. Para números, textos... quaisquer valores comparáveis."),
+        ("The whole quotient and the remainder of a division at once: `[a // b, a % b]`.", "O quociente inteiro e o resto de uma divisão de uma só vez: `[a // b, a % b]`."),
+        ("The binomial coefficient \"n choose k\": the number of ways to choose k elements among n, exact even when it is very large.", "O coeficiente binomial \"n escolhe k\": o número de maneiras de escolher k elementos entre n, exato mesmo quando é muito grande."),
+        ("The digits of a whole number (0 or more), the most significant first, in base 10 or in the base given (from 2 to 36).", "Os dígitos de um número inteiro (maior ou igual a 0), o mais significativo primeiro, na base 10 ou na base dada (de 2 a 36)."),
+        ("Writes a whole number in a base from 2 to 36, with the digits 0 to 9 then the letters a to z.", "Escreve um número inteiro em uma base de 2 a 36, com os dígitos 0 a 9 e depois as letras a a z."),
+        ("Reads a whole number written in a base from 2 to 36: `Ok(number)`, or `Err(message)` if the text is not a number in this base. `0x`, `0o` and `0b` may come before a number in base 16, 8 and 2.", "Lê um número inteiro escrito em uma base de 2 a 36: `Ok(number)`, ou `Err(message)` se o texto não for um número nessa base. `0x`, `0o` e `0b` podem vir antes de um número na base 16, 8 e 2."),
+        ("Is the number greater than 0?", "O número é maior que 0?"),
+        ("Is the number less than 0?", "O número é menor que 0?"),
+        ("Is the number 0 (or 0.0)?", "O número é 0 (ou 0.0)?"),
+        ("Is the decimal number `nan` (\"not a number\")? It is never equal to anything, not even to itself.", "O número decimal é `nan` (\"não é um número\")? Ele nunca é igual a nada, nem a si mesmo."),
+        ("Is the number finite: neither an infinity nor `nan`? Whole numbers always are.", "O número é finito: nem um infinito nem `nan`? Os números inteiros sempre são."),
+        ("Adds `fill` (a space by default) on both sides of the text until it is `width` characters long: titles and cells of tables stay centered. A character left over goes to the right.", "Adiciona `fill` (um espaço por padrão) dos dois lados do texto até ele ter `width` caracteres: os títulos e as células das tabelas ficam centralizados. Um caractere que sobra vai para a direita."),
+        (r##"Writes a value following a format spec, like Python's `format`: ".2f" for 2 decimals, ">8" to fill 8 characters on the right ("<" on the left, "^" centered), "08.2f" with zeros before, "," with the thousands separated, "%" as a percentage, "x", "o" and "b" in hexadecimal, octal and binary ("#" adds 0x, 0o, 0b), "e" with an exponent. To put values in a text, use braces."##, r##"Escreve um valor seguindo uma especificação de formato, como `format` em Python: ".2f" para 2 casas decimais, ">8" para preencher 8 caracteres à direita ("<" à esquerda, "^" centralizado), "08.2f" com zeros na frente, "," com os milhares separados, "%" como porcentagem, "x", "o" e "b" em hexadecimal, octal e binário ("#" adiciona 0x, 0o, 0b), "e" com um expoente. Para colocar valores em um texto, use chaves."##),
+        ("Replaces the first occurrence of `old` by `new`, and only that one.", "Substitui a primeira ocorrência de `old` por `new`, e só essa."),
+        ("How many times an element is in a list, or a piece of text in a text (pieces that do not overlap).", "Quantas vezes um elemento está em uma lista, ou um trecho de texto em um texto (trechos que não se sobrepõem)."),
+        ("The position of the last occurrence of an element in a list, or of a piece of text in a text: `Some(position)`, or `None` if it is not there.", "A posição da última ocorrência de um elemento em uma lista, ou de um trecho de texto em um texto: `Some(position)`, ou `None` se não estiver lá."),
+        ("The text without this start, if it starts with it; otherwise the text unchanged.", "O texto sem este começo, se começar por ele; caso contrário, o texto inalterado."),
+        ("The text without this end, if it ends with it; otherwise the text unchanged.", "O texto sem este final, se terminar com ele; caso contrário, o texto inalterado."),
+        ("The text with the first character of each word in uppercase (the rest is unchanged). Words are separated by spaces.", "O texto com o primeiro caractere de cada palavra em maiúscula (o resto não muda). As palavras são separadas por espaços."),
+        ("Writes a name in snake_case: its words in lowercase, joined by `_`. Reads names written in any style: camelCase, PascalCase, kebab-case, with spaces...", "Escreve um nome em snake_case: as suas palavras em minúsculas, unidas por `_`. Lê nomes escritos em qualquer estilo: camelCase, PascalCase, kebab-case, com espaços..."),
+        ("Writes a name in camelCase: its words glued together, each with an uppercase first letter but the first word.", "Escreve um nome em camelCase: as suas palavras juntas, cada uma com a primeira letra maiúscula, menos a primeira palavra."),
+        ("Writes a name in kebab-case: its words in lowercase, joined by `-`, as in web addresses.", "Escreve um nome em kebab-case: as suas palavras em minúsculas, unidas por `-`, como nos endereços web."),
+        ("The text with its uppercase letters in lowercase, and its lowercase letters in uppercase.", "O texto com as suas maiúsculas em minúsculas, e as suas minúsculas em maiúsculas."),
+        ("Has the text letters, all of them in uppercase? (The other characters do not count.)", "O texto tem letras, todas maiúsculas? (Os outros caracteres não contam.)"),
+        ("Has the text letters, all of them in lowercase? (The other characters do not count.)", "O texto tem letras, todas minúsculas? (Os outros caracteres não contam.)"),
+        ("The bytes of a text in UTF-8, as whole numbers from 0 to 255: an accented letter takes two of them, an emoji four.", "Os bytes de um texto em UTF-8, como números inteiros de 0 a 255: uma letra acentuada ocupa dois, um emoji quatro."),
+        ("Cuts a text in two at the first separator: `Some([before, after])`, or `None` if the separator is not there. For lines like `key=value`.", "Corta um texto em dois no primeiro separador: `Some([antes, depois])`, ou `None` se o separador não estiver lá. Para linhas como `chave=valor`."),
+        ("Cuts the lines of a text between words so that none is longer than `width` characters (a longer word stays whole on its own line).", "Quebra as linhas de um texto entre as palavras para que nenhuma passe de `width` caracteres (uma palavra mais longa fica inteira na sua linha)."),
+        ("The edit distance (Levenshtein) between two texts: the fewest characters to add, remove or replace to go from one to the other. For spelling checkers, and to find the closest word.", "A distância de edição (Levenshtein) entre dois textos: o mínimo de caracteres a adicionar, remover ou substituir para passar de um ao outro. Para corretores ortográficos e para encontrar a palavra mais próxima."),
+        ("The position of the first element for which f is true: `Some(position)`, or `None` if there is none.", "A posição do primeiro elemento para o qual f é verdadeira: `Some(position)`, ou `None` se não houver nenhum."),
+        ("The list with the element at position i replaced by f(element). A negative position counts from the end.", "A lista com o elemento na posição i substituído por f(elemento). Uma posição negativa conta a partir do fim."),
+        ("The list or text turned by n places to the left (1 by default): the first elements go to the end. A negative n turns it to the right.", "A lista ou o texto girado n posições para a esquerda (1 por padrão): os primeiros elementos vão para o fim. Um n negativo gira para a direita."),
+        ("The list with `x` between every two elements.", "A lista com `x` entre cada dois elementos."),
+        ("The elements of two lists taken in turn, one from each; what is left of the longer list comes at the end.", "Os elementos de duas listas tomados alternadamente, um de cada; o que sobra da lista mais longa vai para o fim."),
+        ("Counts how many times each value is in a list: a dict from each value to its count (like Python's `Counter`).", "Conta quantas vezes cada valor está em uma lista: um dicionário de cada valor para a sua contagem (como `Counter` em Python)."),
+        ("Counts the elements by the key that f gives them: a dict from each key to how many elements have it.", "Conta os elementos pela chave que f lhes dá: um dicionário de cada chave para quantos elementos a têm."),
+        ("The values that come most often, with their counts: a list of `[value, count]` pairs, the most frequent first (on a tie, the one seen first). With n, only the first n.", "Os valores que aparecem com mais frequência, com as suas contagens: uma lista de pares `[valor, contagem]`, o mais frequente primeiro (em caso de empate, o visto primeiro). Com n, só os n primeiros."),
+        ("The list without the elements whose key (given by f) was already seen: the first element of each key stays.", "A lista sem os elementos cuja chave (dada por f) já foi vista: fica o primeiro elemento de cada chave."),
+        ("The list sorted from the largest to the smallest.", "A lista ordenada do maior para o menor."),
+        ("The list sorted by the key that the function gives, from the largest key to the smallest; elements with the same key keep their order.", "A lista ordenada pela chave que a função dá, da maior chave para a menor; os elementos com a mesma chave mantêm a sua ordem."),
+        ("Cuts a list into runs of neighbour elements that have the same key (given by f).", "Corta uma lista em sequências de elementos vizinhos que têm a mesma chave (dada por f)."),
+        ("Cuts a list or a text in two at position i: `[before, from i on]`. A negative position counts from the end.", "Corta uma lista ou um texto em dois na posição i: `[antes, a partir de i]`. Uma posição negativa conta a partir do fim."),
+        ("Every way to choose k elements of the list, each kept in the order of the list.", "Todas as maneiras de escolher k elementos da lista, cada uma na ordem da lista."),
+        ("Every order of the elements of the list, or of k of them.", "Todas as ordens dos elementos da lista, ou de k deles."),
+        ("Every way to take one element of each list: the cartesian product.", "Todas as maneiras de pegar um elemento de cada lista: o produto cartesiano."),
+        ("The opposite of `zip`: a list of pairs (or of lists of the same length) becomes the list of the first elements, the list of the second ones...", "O contrário de `zip`: uma lista de pares (ou de listas do mesmo tamanho) se torna a lista dos primeiros elementos, a lista dos segundos..."),
+        ("A list of n values: `start`, then f(start), then f of that... For sequences where each value comes from the one before.", "Uma lista de n valores: `start`, depois f(start), depois f desse... Para sequências em que cada valor vem do anterior."),
+        ("Builds a list from a starting state: f receives the state and gives `Some([value, next state])` to add a value and go on, or `None` to stop.", "Constrói uma lista a partir de um estado inicial: f recebe o estado e dá `Some([valor, próximo estado])` para adicionar um valor e continuar, ou `None` para parar."),
+        ("Applies f to each element and keeps the values of the `Some(...)` it gives, leaving out the `None`: filtering and transforming at once.", "Aplica f a cada elemento e mantém os valores dos `Some(...)` que ela dá, deixando de fora os `None`: filtrar e transformar ao mesmo tempo."),
+        ("The value found by following a path of keys into records, dicts and lists nested in one another (names of fields, keys, positions): `Some(value)`, or `None` as soon as one is missing. For data read with `parse_json`.", "O valor encontrado seguindo um caminho de chaves por registros, dicionários e listas aninhados (nomes de campos, chaves, posições): `Some(valor)`, ou `None` assim que uma faltar. Para dados lidos com `parse_json`."),
+        ("Merges two records or two dicts; for a key in both, f receives the two values and gives the one kept.", "Mescla dois registros ou dois dicionários; para uma chave presente nos dois, f recebe os dois valores e dá o que é mantido."),
+        ("A dict where the values of a record or a dict have become the keys, and the keys the values. When a value comes several times, the last key wins.", "Um dicionário em que os valores de um registro ou de um dicionário se tornaram as chaves, e as chaves os valores. Quando um valor aparece várias vezes, a última chave vence."),
+        ("The record or dict with only the keys given (in a list or a set); a key that is missing is ignored.", "O registro ou o dicionário só com as chaves dadas (em uma lista ou um conjunto); uma chave ausente é ignorada."),
+        ("The record or dict without the keys given (in a list or a set).", "O registro ou o dicionário sem as chaves dadas (em uma lista ou um conjunto)."),
+        ("The record or dict with each key replaced by f(key); for a record, f must give a text.", "O registro ou o dicionário com cada chave substituída por f(chave); para um registro, f deve dar um texto."),
+        ("The record or dict where the value of `key` is replaced by f(value); when the key is missing, it is added with `default`. Handy to count: `update(counts, word, 1, fn(n) = n + 1)`.", "O registro ou o dicionário em que o valor de `key` é substituído por f(valor); quando a chave falta, ela é adicionada com `default`. Prático para contar: `update(contagens, palavra, 1, fn(n) = n + 1)`."),
+        ("The elements that are in exactly one of the two sets.", "Os elementos que estão em exatamente um dos dois conjuntos."),
+        ("Have the two sets no element in common?", "Os dois conjuntos não têm nenhum elemento em comum?"),
+        ("The value inside `Some(x)` or `Ok(x)`; otherwise what f gives: f receives nothing for `None`, and the error for `Err(e)`. The default is computed only when it is needed.", "O valor dentro de `Some(x)` ou `Ok(x)`; caso contrário, o que f dá: f não recebe nada para `None`, e o erro para `Err(e)`. O valor padrão só é calculado quando é necessário."),
+        ("The value inside `Some(x)` or `Ok(x)`, like `unwrap`; otherwise stops the program with your message, which says what was expected.", "O valor dentro de `Some(x)` ou `Ok(x)`, como `unwrap`; caso contrário, para o programa com a sua mensagem, que diz o que era esperado."),
+        ("Makes one Result of a list of Results: `Ok(list of the values)` if they are all `Ok`, or else the first `Err`. When reading many values where one mistake must stop everything.", "Faz um único Result de uma lista de Results: `Ok(lista dos valores)` se todos forem `Ok`, ou senão o primeiro `Err`. Para ler muitos valores quando um único erro deve parar tudo."),
+        ("The date n months later (earlier if n is negative). A day that the new month does not have becomes its last day: 31 January plus one month is the end of February.", "A data n meses depois (antes se n for negativo). Um dia que o novo mês não tem se torna o seu último dia: 31 de janeiro mais um mês é o fim de fevereiro."),
+        ("The number of the day in its year, from 1 (1 January) to 365, or 366 in a leap year.", "O número do dia no seu ano, de 1 (1º de janeiro) a 365, ou 366 em um ano bissexto."),
+        ("n decimal numbers evenly spaced from `start` to `end`, both included: to draw a function with `plot`, or to try values.", "n números decimais igualmente espaçados de `start` a `end`, ambos incluídos: para desenhar uma função com `plot`, ou testar valores."),
+        ("The correlation (Pearson) of two lists of numbers of the same length: from -1 (they vary in opposite ways) to 1 (they vary together); about 0 when they are not linearly related.", "A correlação (de Pearson) de duas listas de números do mesmo tamanho: de -1 (variam em sentidos opostos) a 1 (variam juntas); perto de 0 quando não têm relação linear."),
+        ("The covariance of two lists of numbers of the same length, divided by their length like `variance`.", "A covariância de duas listas de números do mesmo tamanho, dividida pelo seu tamanho como `variance`."),
+        ("Encodes a text in Base64 (its UTF-8 bytes), as in emails, web pages and the headers of HTTP requests.", "Codifica um texto em Base64 (os seus bytes UTF-8), como em e-mails, páginas web e cabeçalhos de requisições HTTP."),
+        ("Decodes a Base64 text: `Ok(text)`, or `Err(message)` if it is not valid Base64, or not a text once decoded.", "Decodifica um texto em Base64: `Ok(text)`, ou `Err(message)` se não for Base64 válido, ou não for um texto depois de decodificado."),
+        ("Encodes a text to put it in a web address: every character but the letters, the digits and `-_.~` becomes `%` and two hexadecimal digits (a space is `%20`).", "Codifica um texto para colocá-lo em um endereço web: cada caractere, exceto as letras, os dígitos e `-_.~`, se torna `%` e dois dígitos hexadecimais (um espaço é `%20`)."),
+        ("Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.", "Decodifica um texto de um endereço web (`%20`...): `Ok(text)`, ou `Err(message)` se um `%` não for seguido de dois dígitos hexadecimais."),
+        (r#"More functions on lists
+  find_index([3, 8, 5], is_even)          # Some(1)
+  sort_desc([3, 1, 2])                    # [3, 2, 1]  (sort_by_desc with a key)
+  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(words, 3)                   # the 3 most frequent, with their counts
+  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
+  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
+  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  permutations(xs)   cartesian_product(xs, ys)   unzip(pairs)   zip(xs, ys, zs)
+  filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#, r#"Mais funções sobre listas
+  find_index([3, 8, 5], is_even)          # Some(1)
+  sort_desc([3, 1, 2])                    # [3, 2, 1]  (sort_by_desc com uma chave)
+  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(palavras, 3)                # as 3 mais frequentes, com as suas contagens
+  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
+  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
+  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  permutations(xs)   cartesian_product(xs, ys)   unzip(pares)   zip(xs, ys, zs)
+  filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#),
+        (r##"More functions on texts
+  format(3.14159, ".2f")         # "3.14"  (the format specs of Python: ">8", ",d", ".1%", "#x"...)
+  center("hi", 6, "*")           # "**hi**"
+  replace_first("a-b-c", "-", "+")          # "a+b-c"
+  occurrences("banana", "an")    # 2
+  remove_prefix("Mr Smith", "Mr ")          # "Smith"  (and remove_suffix)
+  split_once("key=value", "=")   # Some(["key", "value"])
+  snake_case("helloWorld")       # "hello_world"  (and camel_case, kebab_case)
+  capitalize_words("ada lovelace")          # "Ada Lovelace"
+  word_wrap(text, 40)            # lines of at most 40 characters
+  to_base(255, 16)   from_base("ff", 16)    # "ff" and Ok(255)
+  edit_distance("kitten", "sitting")        # 3"##, r##"Mais funções sobre textos
+  format(3.14159, ".2f")         # "3.14"  (as especificações de formato de Python: ">8", ",d", ".1%", "#x"...)
+  center("hi", 6, "*")           # "**hi**"
+  replace_first("a-b-c", "-", "+")          # "a+b-c"
+  occurrences("banana", "an")    # 2
+  remove_prefix("Sr. Silva", "Sr. ")        # "Silva"  (e remove_suffix)
+  split_once("chave=valor", "=") # Some(["chave", "valor"])
+  snake_case("helloWorld")       # "hello_world"  (e camel_case, kebab_case)
+  capitalize_words("ada lovelace")          # "Ada Lovelace"
+  word_wrap(texto, 40)           # linhas de no máximo 40 caracteres
+  to_base(255, 16)   from_base("ff", 16)    # "ff" e Ok(255)
+  edit_distance("casa", "caso")             # 1"##),
+        (r#"More functions on records and dicts
+  dig(data, ["user", "langs", 0])           # Some(...), or None: deep inside
+  select_keys(person, ["name", "age"])      # only these keys (reject_keys: without them)
+  merge_with(a, b, fn(x, y) = x + y)        # f decides for a key in both
+  update(counts, "apples", 1, fn(n) = n + 1)  # +1, or 1 when missing
+  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#, r#"Mais funções sobre registros e dicionários
+  dig(dados, ["user", "langs", 0])          # Some(...), ou None: lá no fundo
+  select_keys(pessoa, ["nome", "idade"])    # só essas chaves (reject_keys: sem elas)
+  merge_with(a, b, fn(x, y) = x + y)        # f decide para uma chave presente nos dois
+  update(contagens, "macas", 1, fn(n) = n + 1)  # +1, ou 1 quando falta
+  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#),
+        (r#"More helpers
+  unwrap_or_else(x, fn(e) = ...)   # the default, computed only when it is needed
+  expect(x, "a config file")       # like unwrap, with your message if it fails
+  all_ok(map(texts, parse_int))    # Ok([...]), or the first Err
+  filter_map(xs, f)                # the values of the Some(...) that f gives"#, r#"Mais ferramentas
+  unwrap_or_else(x, fn(e) = ...)   # o valor padrão, calculado só quando é necessário
+  expect(x, "um arquivo de configuração")  # como unwrap, com a sua mensagem se falhar
+  all_ok(map(textos, parse_int))   # Ok([...]), ou o primeiro Err
+  filter_map(xs, f)                # os valores dos Some(...) que f dá"#),
+        (r#"More on dates
+  add_months(date, 1)                       # 31 January + 1 month: the end of February
+  day_of_year(date)                         # from 1 to 366
+  format_date(date, "%d/%m/%Y %H:%M")       # with a pattern: %Y %m %d %H %M %S %B %A...
+  parse_date("29/02/2024", "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#, r#"Mais sobre datas
+  add_months(data, 1)                       # 31 de janeiro + 1 mês: o fim de fevereiro
+  day_of_year(data)                         # de 1 a 366
+  format_date(data, "%d/%m/%Y %H:%M")       # com um padrão: %Y %m %d %H %M %S %B %A...
+  parse_date("29/02/2024", "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#),
+        // src/cli.rs
+        ("run a program; the words after the file are its arguments", "executar um programa; as palavras depois do arquivo são os seus argumentos"),
+        ("find problems without running the program", "encontrar os problemas sem executar o programa"),
+        ("run the tests of a file or of a folder", "executar os testes de um arquivo ou de uma pasta"),
+        ("give the code its official layout", "dar ao código a sua formatação oficial"),
+        ("write the documentation of a file from its ## comments", "escrever a documentação de um arquivo a partir dos seus comentários ##"),
+        ("apply the safe fixes of the problems that `rythme check` finds", "aplicar as correções seguras dos problemas que `rythme check` encontra"),
+        ("show a calculation step by step", "mostrar um cálculo passo a passo"),
+        ("pause a program where you want and look at its values", "pausar um programa onde você quiser e olhar os seus valores"),
+        ("the debugger for editors (Debug Adapter Protocol)", "o depurador para os editores (Debug Adapter Protocol)"),
+        ("exercises checked automatically", "exercícios verificados automaticamente"),
+        ("create a project (rythme.toml, src/, tests/)", "criar um projeto (rythme.toml, src/, tests/)"),
+        ("download the dependencies of the project", "baixar as dependências do projeto"),
+        ("guided tour of the language, step by step", "visita guiada pela linguagem, passo a passo"),
+        ("help on a topic, a function or an error code", "ajuda sobre um tópico, uma função ou um código de erro"),
+        ("explain an error or warning code, like E003", "explicar um código de erro ou de aviso, como E003"),
+        ("run a piece of code given on the command line", "executar um trecho de código dado na linha de comando"),
+        ("interactive mode: try code line by line (also `rythme` alone)", "modo interativo: experimentar código linha por linha (também `rythme` sozinho)"),
+        ("language server, for editors (VS Code, Neovim...)", "servidor de linguagem, para os editores (VS Code, Neovim...)"),
+        ("server for AI assistants (Model Context Protocol)", "servidor para assistentes de IA (Model Context Protocol)"),
+        ("the version of Rythme", "a versão do Rythme"),
+        ("completion of the commands in a shell", "completação dos comandos em um shell"),
+        ("the manual page of the command, to install with `man`", "a página de manual do comando, para instalar com `man`"),
+        ("how to install the latest version of Rythme", "como instalar a versão mais recente do Rythme"),
+        (r#"  --seed N        the same draws of random and shuffle on every run
+  --sandbox       no files, folders, environment variables nor network
+  --format json   the output and the errors as JSON, for tools
+  FILE may be `-`: the program is read from the standard input.
+  At the root of a project, `rythme run` runs its program."#, r#"  --seed N        os mesmos sorteios de random e shuffle a cada execução
+  --sandbox       sem arquivos, pastas, variáveis de ambiente nem rede
+  --format json   a saída e os erros em JSON, para as ferramentas
+  ARQUIVO pode ser `-`: o programa é lido da entrada padrão.
+  Na raiz de um projeto, `rythme run` executa o seu programa."#),
+        (r#"  --format json   the problems as JSON, for tools and AI assistants
+  A folder checks every .ry file inside it; at the root of a project,
+  `rythme check` checks the files of the project.
+  Exit code: 0 without errors (warnings allowed), 1 with errors."#, r#"  --format json   os problemas em JSON, para as ferramentas e os assistentes de IA
+  Uma pasta verifica cada arquivo .ry dentro dela; na raiz de um projeto,
+  `rythme check` verifica os arquivos do projeto.
+  Código de saída: 0 sem erros (avisos permitidos), 1 com erros."#),
+        (r#"  --filter NAME   only the tests whose name contains NAME
+  --seed N        the same draws of random on every run
+  --watch         run the tests again whenever a file changes
+  --sandbox       no files, folders, environment variables nor network
+  --format json   the results as JSON
+  Exit code: 0 when every test passes, 1 otherwise."#, r#"  --filter NOME   só os testes cujo nome contém NOME
+  --seed N        os mesmos sorteios de random a cada execução
+  --watch         executar os testes de novo sempre que um arquivo mudar
+  --sandbox       sem arquivos, pastas, variáveis de ambiente nem rede
+  --format json   os resultados em JSON
+  Código de saída: 0 quando todos os testes passam, 1 caso contrário."#),
+        (r#"  --check         only check, for continuous integration: exit code 1 when a
+                  file must be formatted
+  A folder formats all its .ry files; `-` reads the code from the standard
+  input and writes it formatted."#, r#"  --check         só verificar, para a integração contínua: código de saída 1
+                  quando um arquivo precisa ser formatado
+  Uma pasta formata todos os seus arquivos .ry; `-` lê o código da entrada
+  padrão e o escreve formatado."#),
+        (r#"  --dry-run       only show the changes, as a diff
+  --all           also apply the fixes that are only likely
+  --format json   the fixes as JSON
+  Exit code: 0 when no error is left, 1 otherwise (with --dry-run: 1 when
+  something would change)."#, r#"  --dry-run       só mostrar as mudanças, como um diff
+  --all           aplicar também as correções apenas prováveis
+  --format json   as correções em JSON
+  Código de saída: 0 quando não resta nenhum erro, 1 caso contrário (com
+  --dry-run: 1 quando algo mudaria)."#),
+        (r#"  --max N         show at most N steps
+  --width N       cut the lines at N characters (20 at least)
+  Without an expression, the steps of the last line of the file."#, r#"  --max N         mostrar no máximo N passos
+  --width N       cortar as linhas em N caracteres (no mínimo 20)
+  Sem expressão, os passos da última linha do arquivo."#),
+        (r#"  In the debugger, `help` lists its commands: break, run, next, step,
+  finish, where, print, locals, quit."#, r#"  No depurador, `help` lista os seus comandos: break, run, next, step,
+  finish, where, print, locals, quit."#),
+        ("  Your editor starts it: the VS Code extension does, for the debugger type `rythme`.", "  O seu editor o inicia: a extensão do VS Code faz isso, para o tipo de depurador `rythme`."),
+        (r#"  list            the exercises, from the easiest
+  start NAME      write the file of an exercise, to complete
+  check FILE.ry   run its tests and give hints"#, r#"  list            os exercícios, do mais fácil ao mais difícil
+  start NOME      escrever o arquivo de um exercício, para completar
+  check ARQUIVO   executar os seus testes e dar dicas"#),
+        (r#"  `rythme help` lists the topics, `rythme help builtins` every function,
+  `rythme help llms` the whole language in one text (for AI assistants)."#, r#"  `rythme help` lista os tópicos, `rythme help builtins` cada função,
+  `rythme help llms` a linguagem inteira em um texto (para assistentes de IA)."#),
+        ("  Without a code, the list of the codes; --format json gives them all.", "  Sem código, a lista dos códigos; --format json dá todos eles."),
+        ("  The value of the last expression is shown, unless it is ().", "  O valor da última expressão é mostrado, a menos que seja ()."),
+        ("  `:help` lists the commands of the interactive mode.", "  `:help` lista os comandos do modo interativo."),
+        ("  --verbose       also the system, the languages, the functions and the formats", "  --verbose       também o sistema, os idiomas, as funções e os formatos"),
+        ("Then open a new shell.", "Depois abra um novo shell."),
+        (r#"  rythme man > rythme.1 && man ./rythme.1
+  To install it: put rythme.1 in a folder of the manual pages, like
+  ~/.local/share/man/man1."#, r#"  rythme man > rythme.1 && man ./rythme.1
+  Para instalá-la: coloque rythme.1 em uma pasta das páginas de manual,
+  como ~/.local/share/man/man1."#),
+        (r#"
+Options of every command: --lang CODE ({codes}), --no-color
+"#, r#"
+Opções de todos os comandos: --lang CÓDIGO ({codes}), --no-color
+"#),
+        (r#"See also `rythme help {topic}`.
+"#, r#"Veja também `rythme help {topic}`.
+"#),
+        (r#"
+Tools
+  rythme CMD --help         the options of a command, like rythme test --help
+  rythme run -              run the program read from the standard input
+  rythme check FOLDER       check every .ry file of a folder
+  rythme completions SHELL  completion of the commands: bash, zsh, fish, powershell
+  rythme man                the manual page of the command (rythme man > rythme.1)
+  rythme version --verbose  the version, with the system and what Rythme contains
+  rythme upgrade            how to install the latest version
+"#, r#"
+Ferramentas
+  rythme CMD --help         as opções de um comando, como rythme test --help
+  rythme run -              executar o programa lido da entrada padrão
+  rythme check PASTA        verificar cada arquivo .ry de uma pasta
+  rythme completions SHELL  completação dos comandos: bash, zsh, fish, powershell
+  rythme man                a página de manual do comando (rythme man > rythme.1)
+  rythme version --verbose  a versão, com o sistema e o que o Rythme contém
+  rythme upgrade            como instalar a versão mais recente
+"#),
+        ("unknown option `{bad}` for `rythme version`: the option is --verbose", "opção desconhecida `{bad}` para `rythme version`: a opção é --verbose"),
+        (r#"system: {os} {arch}
+languages of the messages: {codes} (now: {now})
+built-in functions: {functions} (and {ruby} Ruby names)
+codes: {errors} errors ({e_range}), {warnings} warnings ({w_range})
+JSON output (--format json): version {json}
+program: {exe}
+"#, r#"sistema: {os} {arch}
+idiomas das mensagens: {codes} (agora: {now})
+funções embutidas: {functions} (e {ruby} nomes Ruby)
+códigos: {errors} erros ({e_range}), {warnings} avisos ({w_range})
+saída JSON (--format json): versão {json}
+programa: {exe}
+"#),
+        ("`rythme upgrade` takes no argument, not `{bad}`", "`rythme upgrade` não recebe argumento, não `{bad}`"),
+        (r#"This is rythme {v} ({exe}).
+To install the latest version, type:
+  {how}
+The versions and what changed: https://github.com/maxlestage/Rythme/releases
+Within 1.x, a program that runs keeps running, with the same output.
+"#, r#"Este é o rythme {v} ({exe}).
+Para instalar a versão mais recente, digite:
+  {how}
+As versões e o que mudou: https://github.com/maxlestage/Rythme/releases
+Nas versões 1.x, um programa que funciona continua funcionando, com a mesma saída.
+"#),
+        ("unknown shell `{s}`.", "shell desconhecido `{s}`."),
+        ("which shell?", "qual shell?"),
+        (r#"{what} Write one of bash, zsh, fish, powershell, like `rythme completions bash`
+see `rythme completions --help`"#, r#"{what} Escreva um de bash, zsh, fish, powershell, como `rythme completions bash`
+veja `rythme completions --help`"#),
+        ("`rythme man` takes no argument, not `{bad}`", "`rythme man` não recebe argumento, não `{bad}`"),
+        ("Name", "Nome"),
+        ("rythme - a small, purely functional language with help everywhere", "rythme - uma pequena linguagem puramente funcional, com ajuda em todo lugar"),
+        ("Synopsis", "Sinopse"),
+        ("Description", "Descrição"),
+        ("Rythme runs, checks, tests and formats programs written in Rythme. Without a command, `rythme` starts the interactive mode; `rythme file.ry` runs a program. Every message has a code explained by `rythme explain CODE`, and `rythme help` shows help on the language and its functions.", "O Rythme executa, verifica, testa e formata programas escritos em Rythme. Sem comando, `rythme` inicia o modo interativo; `rythme arquivo.ry` executa um programa. Cada mensagem tem um código explicado por `rythme explain CÓDIGO`, e `rythme help` mostra ajuda sobre a linguagem e as suas funções."),
+        ("Commands", "Comandos"),
+        ("Options", "Opções"),
+        ("the language of the messages: {codes}", "o idioma das mensagens: {codes}"),
+        ("messages without colors", "mensagens sem cores"),
+        ("the help; after a command, its options", "a ajuda; depois de um comando, as suas opções"),
+        ("Environment", "Ambiente"),
+        ("the language of the messages, before LC_ALL, LC_MESSAGES and LANG", "o idioma das mensagens, antes de LC_ALL, LC_MESSAGES e LANG"),
+        ("when set, messages without colors", "quando definida, mensagens sem cores"),
+        ("Exit status", "Código de saída"),
+        ("0 when everything went well; 1 after an error in the program, a failed test or a problem found; 2 for a command written wrongly. A program may choose its own code with exit(code).", "0 quando tudo correu bem; 1 depois de um erro no programa, um teste que falhou ou um problema encontrado; 2 para um comando escrito errado. Um programa pode escolher o seu próprio código com exit(código)."),
+        ("See also", "Veja também"),
+        ("no .ry file in `{a}`", "nenhum arquivo .ry em `{a}`"),
+        ("the standard input cannot be read: {e}", "não é possível ler a entrada padrão: {e}"),
+        // src/cli.rs: the commands of the package index
+        ("search the package index", "procurar no índice de pacotes"),
+        ("what the index says of a package: its versions, repository and license", "o que o índice diz de um pacote: suas versões, seu repositório e sua licença"),
+        ("add a package of the index to the project, then install it", "adicionar um pacote do índice ao projeto e depois instalá-lo"),
+        ("take the newest versions that the ranges of rythme.toml allow", "usar as versões mais recentes que os intervalos de rythme.toml permitem"),
+        ("check a package and print its entry for the index (sends nothing)", "verificar um pacote e mostrar sua entrada para o índice (não envia nada)"),
+        (r#"  --update        download the newest copy of the index first
+  --format json   the packages found as JSON
+  Without words, every package of the index."#, r#"  --update        baixar primeiro a cópia mais recente do índice
+  --format json   os pacotes encontrados em JSON
+  Sem palavras, todos os pacotes do índice."#),
+        (r#"  --update        download the newest copy of the index first
+  --format json   the entry of the package as JSON"#, r#"  --update        baixar primeiro a cópia mais recente do índice
+  --format json   a entrada do pacote em JSON"#),
+        (r#"  NAME@RANGE      a range of versions, like mathlib@1.2; without a range,
+                  the newest version
+  rythme.toml gets the range, rythme.lock the exact commit and its checksum."#, r#"  NOME@INTERVALO  um intervalo de versões, como mathlib@1.2; sem intervalo,
+                  a versão mais recente
+  rythme.toml recebe o intervalo, rythme.lock o commit exato e sua soma de verificação."#),
+        (r#"  Without names, every dependency. rythme.toml does not change;
+  rythme.lock gets the new versions."#, r#"  Sem nomes, todas as dependências. rythme.toml não muda;
+  rythme.lock recebe as novas versões."#),
+        (r#"  Checks rythme.toml, the tag of the version (like v1.2.0), rythme check
+  and rythme test, then prints the entry and the steps of a pull request.
+  --verify FILE...  the index's own check of its entries (packages/NAME.toml)"#, r#"  Verifica rythme.toml, a tag da versão (como v1.2.0), rythme check
+  e rythme test, e depois mostra a entrada e os passos de um pull request.
+  --verify ARQUIVO...  a verificação das entradas pelo próprio índice (packages/NOME.toml)"#),
+        (r#"the argument `{shown}` is not valid UTF-8: Rythme reads only names and words written in UTF-8; rename the file, or give the program its input another way"#, r#"o argumento `{shown}` não é UTF-8 válido: Rythme só lê nomes e palavras escritos em UTF-8; renomeie o ficheiro, ou dê a entrada ao programa de outra forma"#),
     ],
 }

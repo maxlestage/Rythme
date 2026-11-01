@@ -4,7 +4,7 @@
 programming language, with help everywhere.**
 Programs are files ending in `.ry`. The interpreter is written in Rust.
 
-*[Version française →](README.fr.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md) · [中文 →](README.zh.md)*
+*[Version française →](README.fr.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md) · [中文 →](README.zh.md) · [In italiano →](README.it.md) · [日本語 →](README.ja.md)*
 
 **Documentation:** the [reference manual](docs/reference.md) (the whole
 language, precisely), the [guide for teachers](docs/teaching.md), and
@@ -74,9 +74,9 @@ puts total                 # 20
     the mouse, completion, go to definition, rename (`rythme lsp`, the
     language server, for VS Code, Neovim, Helix, Emacs...).
   - Every message, every piece of documentation exists in **English, French,
-    Spanish, German, Portuguese and Chinese** (`--lang fr`, `--lang es`,
-    `--lang de`, `--lang pt`, `--lang zh`, or automatically from your system
-    language).
+    Spanish, German, Portuguese, Chinese, Italian and Japanese** (`--lang fr`,
+    `--lang es`, `--lang de`, `--lang pt`, `--lang zh`, `--lang it`, `--lang ja`,
+    or automatically from your system language).
 
 Here is what a mistake looks like:
 
@@ -110,13 +110,13 @@ error[E001]: `for` is not used in Rythme
 The website <https://maxlestage.github.io/Rythme/> has a playground that runs
 the real interpreter, compiled to WebAssembly ([`playground/`](playground)):
 edit code, run it, check it, run tests, format it, read the help, in English,
-French, Spanish, German, Portuguese or Chinese, without installing anything. The website also installs as an app
+French, Spanish, German, Portuguese, Chinese, Italian or Japanese, without installing anything. The website also installs as an app
 (a Progressive Web App) and works offline, playground included. Its menu offers color
 themes (Auto, Light, Dark, High contrast, Sepia, Tempo), and no page scrolls
 sideways, from a 320px phone to a wide screen.
 
 The [`site/`](site) folder is the website of Rythme (home, tour of the
-language, examples, playground and guide for teachers, in six languages),
+language, examples, playground and guide for teachers, in eight languages),
 written in Rust with Paquets.
 
 ### Deploy the website on Heroku
@@ -205,6 +205,7 @@ cargo install --path .       # or install it in your PATH
 | `rythme doc hello.ry`       | its documentation from the `##` comments, in Markdown (`--html`: one web page) |
 | `rythme new hello`          | a new project: `rythme.toml`, `src/`, `tests/`; then `rythme run`, `rythme test`... without a file |
 | `rythme install`            | download the dependencies of `rythme.toml` (git or folders), and write `rythme.lock` |
+| `rythme search vectors`     | find packages in the [package index](docs/reference.md#711-the-package-index); `rythme add mathlib` adds one to the project, `rythme update` takes the newest versions, `rythme publish` shares yours |
 | `rythme help [topic]`       | help on a topic or a function                  |
 | `rythme explain E003`       | explain an error code                          |
 | `rythme learn`              | guided tour of the language                    |
@@ -214,8 +215,10 @@ cargo install --path .       # or install it in your PATH
 | `rythme -e 'print(1 + 2)'`  | run a piece of code                            |
 | `rythme lsp`                | language server, started by your editor ([editors](editors)) |
 | `rythme mcp`                | server for AI assistants ([below](#ai-assistants)) |
+| `rythme test --help`        | the usage and the options of any command, in your language |
+| `rythme completions bash`   | completion of the commands for bash, zsh, fish or PowerShell; `rythme man`: the manual page |
 
-Add `--lang` and a language (`en`, `fr`, `es`, `de`, `pt` or `zh`) before the
+Add `--lang` and a language (`en`, `fr`, `es`, `de`, `pt`, `zh`, `it` or `ja`) before the
 command to choose the language of the messages, or set `RYTHME_LANG`.
 
 ## The language in two minutes
@@ -294,6 +297,7 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 | [`calendar.ry`](examples/calendar.ry) | dates: the page of a month, ISO 8601 texts, `days_between`, `add_days` |
 | [`logs.ry`](examples/logs.ry) | reading a log with regexes: `named_captures`, `matches`, `find_all`, `replace_all`, `format_number` |
 | [`grades.ry`](examples/grades.ry) | grades from a spreadsheet: `csv_records` with `;`, `csv_format`, a repeatable draw with `random_seed` |
+| [`report.ry`](examples/report.ry) | a table written with `format` specs and `center`, `tally`, `most_common`, `sort_by_desc`, a date pattern, `word_wrap` |
 | [`tree.ry`](examples/tree.ry) | a recursive type: binary search tree |
 | [`primes.ry`](examples/primes.ry) | a recursive sieve, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | `test` blocks |
@@ -344,7 +348,12 @@ learn it fast and fix their own mistakes:
 
 [`docs/teaching.md`](docs/teaching.md) proposes a course outline built on
 Rythme, and explains why it fits a first programming course and a
-functional programming course alike.
+functional programming course alike: exercises checked and graded
+automatically, the playground and the debugger in class, and a policy for
+AI assistants. It also exists in [French](docs/enseigner.md),
+[Spanish](docs/teaching.es.md), [German](docs/teaching.de.md),
+[Portuguese](docs/teaching.pt.md), [Chinese](docs/teaching.zh.md),
+[Italian](docs/teaching.it.md) and [Japanese](docs/teaching.ja.md).
 [`docs/exercises/`](docs/exercises/README.md) holds 36 graded exercises (six about AI), with
 statements, hints, tests and solutions, that `rythme exercise` hands out and
 checks in every language of the messages.
@@ -362,15 +371,17 @@ mode) and is organised as a pipeline:
 | [`src/types.rs`](src/types.rs) | what the checker knows for sure about values: their types |
 | [`src/check/needs.rs`](src/check/needs.rs) | what the parameters of each function must be, and the calls that always fail |
 | [`src/compile.rs`](src/compile.rs) | prepares functions: each local name becomes a numbered slot |
-| [`src/interp.rs`](src/interp.rs) | evaluation, with tail calls that do not grow the stack |
+| [`src/vm/`](src/vm) | the virtual machine: instructions on registers, with tail calls that do not grow the stack |
+| [`src/interp.rs`](src/interp.rs) | the interpreter: names of the program, calls, what the tools need |
 | [`src/bigint.rs`](src/bigint.rs) | whole numbers beyond 64 bits, without a dependency |
 | [`src/dict.rs`](src/dict.rs) | the persistent ordered tree behind dictionaries and sets, and the order of their keys |
-| [`src/builtins.rs`](src/builtins.rs) | 211 built-in functions (and their Ruby names), documented in two languages, JSON, CSV, HTTP and machine learning included |
+| [`src/builtins.rs`](src/builtins.rs) | 283 built-in functions (and their Ruby names), documented in eight languages, JSON, CSV, HTTP and machine learning included ([compared with Ruby, Python and Elixir](docs/stdlib-audit.md)) |
 | [`src/builtins/`](src/builtins) | dates, files and the system, dictionaries and sets, regexes and text tools, CSV, generators of property tests |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
 | [`src/repl.rs`](src/repl.rs) | interactive mode with completion |
 | [`src/project.rs`](src/project.rs), [`src/manifest.rs`](src/manifest.rs) | projects and packages: `rythme new`, `rythme install`, `rythme.toml`, `use package/file` |
+| [`src/index.rs`](src/index.rs), [`src/packages.rs`](src/packages.rs) | the package index, a git repository without a server: `rythme search`, `info`, `add`, `update`, `publish`, checksums ([`src/sha256.rs`](src/sha256.rs)) and ranges of versions ([`src/semver.rs`](src/semver.rs)) |
 | [`src/testing.rs`](src/testing.rs) | `rythme test`: files and folders, `--filter`, `--watch`, the summary |
 | [`src/format.rs`](src/format.rs) | `rythme fmt`: the official layout, which never changes the meaning |
 | [`src/steps.rs`](src/steps.rs) | `rythme steps`: the evaluation shown step by step, for teaching |
@@ -387,15 +398,16 @@ formatter, the language server and the commands, fuzzing included.
 
 Rythme 1.0 is a complete, tested language: the interpreter, the checker, the
 formatter, the language server, the editors, the playground, the manual and
-messages in six languages. What it contains is in
+messages in eight languages. What it contains is in
 [`CHANGELOG.md`](CHANGELOG.md); ideas for what comes next are at the end of
 [`ROADMAP.md`](ROADMAP.md#after-10). Honest limits:
 
-- **Speed.** It is a tree-walking interpreter: local names become numbered
-  slots before running, and most calls allocate nothing. The programs of
-  [`bench/`](bench) (`bench/run.sh`) run 1.2 to 4.3 times faster than with
-  the first version, Rythme 0.1; that is in the range of Python, far from
-  compiled Rust.
+- **Speed.** Programs are compiled to the instructions of a virtual machine
+  on registers before running: local names are numbered slots, and most
+  calls allocate nothing. The programs of [`bench/`](bench) (`bench/run.sh`)
+  run 1.1 to 2 times faster than with Rythme 1.0, whose interpreter
+  walked the syntax tree, and print exactly the same; that is in the range
+  of Python, far from compiled Rust.
   Building a text with `+` or `"{acc}..."` and adding to a list (`push`,
   `xs + [x]`, `[..xs, x]`) take constant time per addition: 100 000 of them
   take 0.1 s, instead of 23 s (texts) and 150 s (lists) before. Local
@@ -406,17 +418,20 @@ messages in six languages. What it contains is in
   infers what the parameters of each function must be, to report the calls
   that always fail, and the editor shows these signatures on hover. Types
   may also be written where they help to read the code, and are then checked
-  (`fn area(w: Int, h: Int) -> Int`, `total: Float = 0.0`); they are never
+  (`fn area(w: Int, h: Int) -> Int`, `total: Float = 0.0`, `type Tree(a) =
+  Leaf | Node(left: Tree(a), value: a, right: Tree(a))`); they are never
   needed (see `rythme help types`).
 - **Tooling.** `rythme fmt` formats the code in the official style (see
   `rythme help fmt`), `rythme doc` writes the documentation of files and
   folders from their `##` comments (see `rythme help doc`), `rythme new` and
   `rythme install` make projects with dependencies (see `rythme help
-  projects`), and the language server (`rythme lsp`) brings errors and
+  projects`), `rythme search`, `add` and `publish` find and share packages
+  through a package index that needs no server (see `rythme help
+  packages`), and the language server (`rythme lsp`) brings errors and
   documentation inside every editor (see `rythme help editors`). The web
   playground runs the interpreter compiled to WebAssembly.
 - **Languages.** Messages exist in English, French, Spanish, German,
-  Portuguese and simplified Chinese; adding a language means writing one
+  Portuguese, simplified Chinese, Italian and Japanese; adding a language means writing one
   catalog file, `src/i18n/<code>.rs`, which a test checks against every text
   of the program (see [CONTRIBUTING](CONTRIBUTING.md#messages-in-every-language)).
   Contributions are welcome.

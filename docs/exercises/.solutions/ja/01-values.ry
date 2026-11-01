@@ -1,0 +1,18 @@
+# 練習問題 01 · 最初の値  ★☆☆
+# 参考解答。読む前に、まず自分で練習問題に挑戦してください！
+
+seconds_per_minute = 60
+seconds_per_hour = 60 * seconds_per_minute
+seconds_per_day = 24 * seconds_per_hour
+seconds_per_week = 7 * seconds_per_day
+summary = "1 週間は {seconds_per_week} 秒です。"
+
+# --- テスト（変更しないでください）---
+
+test "1 時間の秒数" = assert_eq(seconds_per_hour, 3600)
+
+test "1 日の秒数" = assert_eq(seconds_per_day, 86400)
+
+test "1 週間の秒数" = assert_eq(seconds_per_week, 604800)
+
+test "まとめ" = assert_eq(summary, "1 週間は 604800 秒です。")

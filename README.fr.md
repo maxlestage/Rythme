@@ -4,7 +4,7 @@
 programmation purement fonctionnel, avec de l'aide partout.**
 Les programmes sont des fichiers qui finissent par `.ry`. L'interpréteur est écrit en Rust.
 
-*[English version →](README.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md) · [中文 →](README.zh.md)*
+*[English version →](README.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md) · [中文 →](README.zh.md) · [In italiano →](README.it.md) · [日本語 →](README.ja.md)*
 
 **Documentation :** le [manuel de référence](docs/reference.fr.md) (tout le
 langage, avec précision), le [guide pour les enseignants](docs/enseigner.md),
@@ -79,9 +79,9 @@ puts total                 # 20
     sous la souris, la complétion, aller à la définition, renommer
     (`rythme lsp`, le serveur de langage, pour VS Code, Neovim, Helix, Emacs...).
   - Chaque message, chaque documentation existe en **français, en anglais, en
-    espagnol, en allemand, en portugais et en chinois** (`--lang fr`,
-    `--lang es`, `--lang de`, `--lang pt`, `--lang zh`, ou automatiquement
-    selon la langue du système).
+    espagnol, en allemand, en portugais, en chinois, en italien et en japonais**
+    (`--lang fr`, `--lang es`, `--lang de`, `--lang pt`, `--lang zh`,
+    `--lang it`, `--lang ja`, ou automatiquement selon la langue du système).
 
 Voici à quoi ressemble une erreur :
 
@@ -102,7 +102,7 @@ erreur[E005]: impossible d'utiliser `+` avec Text et Int
 Le site <https://maxlestage.github.io/Rythme/> a un playground qui fait
 tourner le vrai interpréteur, compilé en WebAssembly ([`playground/`](playground)) :
 modifier du code, le lancer, le vérifier, lancer des tests, le mettre en
-forme, lire l'aide, en français, anglais, espagnol, allemand, portugais ou chinois,
+forme, lire l'aide, en français, anglais, espagnol, allemand, portugais, chinois, italien ou japonais,
 sans rien installer. Le site
 s'installe aussi comme une application (une Progressive Web App) et fonctionne
 hors ligne, playground compris. Son menu propose des thèmes de couleurs
@@ -110,7 +110,7 @@ hors ligne, playground compris. Son menu propose des thèmes de couleurs
 de côté, d'un téléphone de 320 px à un grand écran.
 
 Le dossier [`site/`](site) est le site web de Rythme (accueil, visite du
-langage, exemples, playground et guide pour les enseignants, en six
+langage, exemples, playground et guide pour les enseignants, en huit
 langues), écrit en Rust avec Paquets.
 
 ### Déployer le site sur Heroku
@@ -205,14 +205,17 @@ cargo install --path .       # ou l'installer dans le PATH
 | `rythme learn`              | visite guidée du langage                            |
 | `rythme new bonjour`        | un nouveau projet : `rythme.toml`, `src/`, `tests/` ; puis `rythme run`, `rythme test`... sans fichier |
 | `rythme install`            | télécharger les dépendances de `rythme.toml` (git ou dossiers), et écrire `rythme.lock` |
+| `rythme search vecteurs`    | trouver des paquets dans l'[index des paquets](docs/reference.fr.md#711-lindex-des-paquets) ; `rythme add mathlib` en ajoute un au projet, `rythme update` prend les versions les plus récentes, `rythme publish` partage les vôtres |
 | `rythme exercise`           | [36 exercices gradués](docs/exercises/README.fr.md) : `list`, `start 1`, `check FICHIER` |
 | `rythme etapes fib.ry "fib(4)"` | le calcul étape par étape : `fib(4)` → `fib(3) + fib(2)` → ... |
 | `rythme debug fib.ry`       | le débogueur : `break 12`, `run`, `next`, `step`, `where`, `print n * 2` ([manuel](docs/reference.fr.md#79-le-débogueur--rythme-debug)) |
 | `rythme -e 'print(1 + 2)'`  | exécuter un morceau de code                         |
 | `rythme lsp`                | serveur de langage, lancé par votre éditeur ([éditeurs](editors/README.fr.md)) |
 | `rythme mcp`                | serveur pour les assistants d'IA ([plus bas](#assistants-dia)) |
+| `rythme test --help`        | l'utilisation et les options de n'importe quelle commande, dans votre langue |
+| `rythme completions bash`   | complétion des commandes pour bash, zsh, fish ou PowerShell ; `rythme man` : la page de manuel |
 
-Ajoutez `--lang` et une langue (`fr`, `en`, `es`, `de`, `pt` ou `zh`) avant la
+Ajoutez `--lang` et une langue (`fr`, `en`, `es`, `de`, `pt`, `zh`, `it` ou `ja`) avant la
 commande pour choisir la langue des messages, ou définissez `RYTHME_LANG`.
 
 ## Le langage en deux minutes
@@ -296,6 +299,7 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 | [`calendar.ry`](examples/calendar.ry) | des dates : la page d'un mois, des textes ISO 8601, `days_between`, `add_days` |
 | [`logs.ry`](examples/logs.ry) | lire un journal avec des regex : `named_captures`, `matches`, `find_all`, `replace_all`, `format_number` |
 | [`grades.ry`](examples/grades.ry) | les notes d'un tableur : `csv_records` avec `;`, `csv_format`, un tirage répétable avec `random_seed` |
+| [`report.ry`](examples/report.ry) | un tableau écrit avec des spécifications de `format` et `center`, `tally`, `most_common`, `sort_by_desc`, un motif de date, `word_wrap` |
 | [`tree.ry`](examples/tree.ry) | un type récursif : arbre binaire de recherche |
 | [`primes.ry`](examples/primes.ry) | un crible récursif, `all`, `and` |
 | [`testing.ry`](examples/testing.ry) | les blocs `test` |
@@ -347,7 +351,13 @@ il est fait pour qu'ils l'apprennent vite et corrigent leurs propres erreurs :
 
 [`docs/enseigner.md`](docs/enseigner.md) propose un plan de cours construit
 sur Rythme, et explique pourquoi il convient aussi bien à un premier cours de
-programmation qu'à un cours de programmation fonctionnelle.
+programmation qu'à un cours de programmation fonctionnelle : des exercices
+corrigés et notés automatiquement, le playground et le débogueur en cours,
+et une politique pour les assistants d'IA. Il existe aussi en
+[anglais](docs/teaching.md), en [espagnol](docs/teaching.es.md), en
+[allemand](docs/teaching.de.md), en [portugais](docs/teaching.pt.md), en
+[chinois](docs/teaching.zh.md), en [italien](docs/teaching.it.md) et en
+[japonais](docs/teaching.ja.md).
 [`docs/exercises/`](docs/exercises/README.fr.md) contient 36 exercices
 gradués (dont six sur l'IA), avec énoncé, indices, tests et solutions, que `rythme exercise`
 distribue et vérifie dans chaque langue des messages.
@@ -356,15 +366,16 @@ distribue et vérifie dans chaque langue des messages.
 
 Rythme 1.0 est un langage complet et testé : l'interpréteur, le vérificateur,
 le formateur, le serveur de langage, les éditeurs, le bac à sable, le manuel
-et des messages en six langues. Son contenu est décrit dans
+et des messages en huit langues. Son contenu est décrit dans
 [`CHANGELOG.md`](CHANGELOG.md) ; des idées pour la suite sont à la fin de
 [`ROADMAP.md`](ROADMAP.md#after-10). Les limites, honnêtement :
 
-- **Vitesse.** C'est un interpréteur qui parcourt l'arbre du programme : les
-  noms locaux deviennent des cases numérotées avant l'exécution, et la
-  plupart des appels n'allouent rien. Les programmes de [`bench/`](bench)
-  (`bench/run.sh`) tournent 1,2 à 4,3 fois plus vite qu'avec la première
-  version, Rythme 0.1 ;
+- **Vitesse.** Les programmes sont compilés en instructions d'une machine
+  virtuelle à registres avant l'exécution : les noms locaux sont des cases
+  numérotées, et la plupart des appels n'allouent rien. Les programmes de
+  [`bench/`](bench) (`bench/run.sh`) tournent 1,1 à 2 fois plus vite
+  qu'avec Rythme 1.0, dont l'interpréteur parcourait l'arbre du programme,
+  et affichent exactement la même chose ;
   c'est de l'ordre de Python, loin de Rust compilé. Construire un texte avec
   `+` ou `"{acc}..."` et ajouter à une liste (`push`, `xs + [x]`,
   `[..xs, x]`) prennent un temps constant par ajout : 100 000 ajouts
@@ -378,18 +389,21 @@ et des messages en six langues. Son contenu est décrit dans
   paramètres de chaque fonction, pour signaler les appels qui échouent à
   coup sûr, et l'éditeur montre ces signatures au survol. Les types peuvent
   aussi être écrits là où ils aident à lire le code, et sont alors vérifiés
-  (`fn aire(l: Int, h: Int) -> Int`, `total: Float = 0.0`) ; ils ne sont
-  jamais obligatoires (voir `rythme help types`).
+  (`fn aire(l: Int, h: Int) -> Int`, `total: Float = 0.0`, `type Arbre(a) =
+  Feuille | Noeud(gauche: Arbre(a), valeur: a, droite: Arbre(a))`) ; ils ne
+  sont jamais obligatoires (voir `rythme help types`).
 - **Outils.** `rythme fmt` met le code en forme dans le style officiel (voir
   `rythme help fmt`), `rythme doc` écrit la documentation de fichiers et de
   dossiers à partir de leurs commentaires `##` (voir `rythme help doc`),
   `rythme new` et `rythme install` créent des projets avec leurs dépendances
-  (voir `rythme help projets`), et le serveur de langage (`rythme lsp`)
+  (voir `rythme help projets`), `rythme search`, `add` et `publish` trouvent
+  et partagent des paquets grâce à un index des paquets qui n'a besoin d'aucun
+  serveur (voir `rythme help paquets`), et le serveur de langage (`rythme lsp`)
   apporte les erreurs et la documentation dans tous les éditeurs (voir
   `rythme help editors`). Le bac à sable en ligne fait tourner l'interpréteur
   compilé en WebAssembly.
 - **Langues.** Les messages existent en anglais, en français, en espagnol, en
-  allemand, en portugais et en chinois simplifié ; ajouter une langue consiste
+  allemand, en portugais, en chinois simplifié, en italien et en japonais ; ajouter une langue consiste
   à écrire un fichier de catalogue, `src/i18n/<code>.rs`, qu'un test compare à
   tous les textes du programme (voir
   [CONTRIBUTING](CONTRIBUTING.md#messages-in-every-language)). Les

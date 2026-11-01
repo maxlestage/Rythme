@@ -1,0 +1,36 @@
+# 練習問題 22 · 独自の型  ★★☆
+# 参考解答。読む前に、まず自分で練習問題に挑戦してください！
+
+type Shape = Circle(radius) | Rect(width, height) | Square(side)
+
+fn area(Circle(r)) = pi * r * r
+fn area(Rect(w, h)) = w * h
+fn area(Square(s)) = s * s
+
+fn perimeter(Circle(r)) = 2 * pi * r
+fn perimeter(Rect(w, h)) = 2 * (w + h)
+fn perimeter(Square(s)) = 4 * s
+
+fn name_of(Circle(_)) = "円"
+fn name_of(Rect(_, _)) = "長方形"
+fn name_of(Square(_)) = "正方形"
+
+fn total_area(shapes) = shapes |> map(area) |> sum
+
+# --- テスト（変更しないでください）---
+
+test "面積"
+  assert_eq(area(Rect(2, 3)), 6)
+  assert_eq(area(Square(4)), 16)
+  assert_eq(round(area(Circle(1)), 2), 3.14)
+end
+
+test "周りの長さ"
+  assert_eq(perimeter(Rect(2, 3)), 10)
+  assert_eq(perimeter(Square(4)), 16)
+  assert_eq(round(perimeter(Circle(1)), 2), 6.28)
+end
+
+test "名前" = assert_eq([Circle(1), Rect(1, 2), Square(3)] |> map(name_of), ["円", "長方形", "正方形"])
+
+test "面積の合計" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 11)

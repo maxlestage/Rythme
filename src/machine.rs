@@ -290,6 +290,20 @@ fn run_inner(name: &str, script_args: Vec<String>, seed: Option<i64>, sandbox: b
         driver.interp.seed_random(seed);
     }
     driver.interp.sandboxed = sandbox;
+    // `-`: the program is read from the standard input, as `rythme run -` does.
+    if name == "-" {
+        use std::io::Read;
+        let mut code = String::new();
+        if let Err(e) = std::io::stdin().read_to_string(&mut code) {
+            crate::io::err_line(&t!("the standard input cannot be read: {e}", "l'entrée standard ne peut pas être lue : {e}"));
+            return 1;
+        }
+        crate::io::close_input();
+        driver.interp.script_args = script_args;
+        let cwd = std::env::current_dir().unwrap_or_default();
+        let Some(module) = driver.load_source("<stdin>", &code, None, &cwd) else { return 1 };
+        return i32::from(driver.execute(&module, Mode::Run).is_err());
+    }
     let path = match script(name) {
         Ok(p) => p,
         Err(d) => {

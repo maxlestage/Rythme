@@ -3,11 +3,11 @@
 **比 Python 和 Ruby 更简单，和 Ruby 一样好用：一门纯函数式编程语言，处处都有帮助。**
 程序是以 `.ry` 结尾的文件。解释器用 Rust 编写。
 
-*[English version →](README.md) · [Version française →](README.fr.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md)*
+*[English version →](README.md) · [Version française →](README.fr.md) · [En español →](README.es.md) · [Auf Deutsch →](README.de.md) · [Em português →](README.pt.md) · [In italiano →](README.it.md) · [日本語 →](README.ja.md)*
 
 这份 README 是一个概要。Rythme 的消息、帮助和错误解释都有简体中文版
-（`--lang zh`）；完整的文档有英文版和法文版：[参考手册](docs/reference.md)
-和[教师指南](docs/teaching.md)。网站和在线试玩也有中文版：
+（`--lang zh`），[教师指南](docs/teaching.zh.md)也有中文版；完整的
+[参考手册](docs/reference.md)有英文版和法文版。网站和在线试玩也有中文版：
 <https://maxlestage.github.io/Rythme/zh/>。
 
 ```rythme
@@ -93,6 +93,7 @@ irm https://raw.githubusercontent.com/maxlestage/Rythme/master/install.ps1 | iex
 | `rythme test hello.ry`      | 运行文件中写的测试                               |
 | `rythme fmt hello.ry`       | 把代码整理成官方格式                             |
 | `rythme new hello`          | 新项目：`rythme.toml`、`src/`、`tests/`          |
+| `rythme add mathlib`        | 从[包索引](docs/reference.md#711-the-package-index)添加一个包（`rythme search 关键词` 查找包） |
 | `rythme help [主题]`        | 某个主题或函数的帮助（`rythme help 列表`）       |
 | `rythme explain E003`       | 解释错误代码                                     |
 | `rythme learn`              | 语言导览                                         |
