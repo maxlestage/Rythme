@@ -220,6 +220,9 @@ pub struct Texts {
     pub pg_save: &'static str,
     pub pg_save_title: &'static str,
     pub pg_offline: &'static str,
+    /// The interpreter's messages in English: the catalog of the page's language could
+    /// not be fetched.
+    pub pg_catalog_failed: &'static str,
     /// The Share button, its tooltip, the label of the field that holds the link, the
     /// buttons of that box; the notice of a program opened from a link, its button.
     pub pg_share: &'static str,

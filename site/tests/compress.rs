@@ -123,6 +123,35 @@ async fn the_bundles_come_from_their_compressed_copies() {
     assert_eq!(head.header("content-length"), Some(copy.to_string().as_str()));
 }
 
+/// The catalogs of the interpreter's messages, once built (`./build.sh`): one per
+/// language not compiled into the playground's interpreter, the very texts of the
+/// interpreter (`rythme::lang::catalog`), compressed and kept a year at their version.
+#[tokio::test]
+async fn the_catalogs_are_those_of_the_interpreter() {
+    use rythme::lang::{Lang, catalog};
+    let public = std::path::Path::new("public");
+    if !public.join("pkg/playground_bg.wasm").is_file() {
+        eprintln!("public/pkg/ is not built (./build.sh): nothing to check");
+        return;
+    }
+    let files: Vec<String> =
+        Lang::all().filter(|l| *l != Lang::En && *l != Lang::Fr).map(|l| format!("/pkg/catalog-{}.txt", l.code())).collect();
+    assert_eq!(files, rythme_site::client::CATALOG_FILES, "a catalog for each language of rythme::lang besides English and French");
+    let (client, version) = client().await;
+    for l in Lang::all().filter(|l| *l != Lang::En && *l != Lang::Fr) {
+        let file = format!("/pkg/catalog-{}.txt", l.code());
+        let text = catalog(l);
+        assert_eq!(std::fs::read_to_string(public.join(&file[1..])).unwrap(), text, "{file}: run ./build.sh again");
+        let url = format!("{file}?v={version}");
+        let res = client.get(&url).header("accept-encoding", "br").await;
+        assert_eq!(res.status(), 200, "{url}");
+        assert_eq!(res.header("content-encoding"), Some("br"), "{url}");
+        assert_eq!(res.header("content-type"), Some("text/plain; charset=utf-8"), "{url}");
+        assert_eq!(res.header("cache-control"), Some(IMMUTABLE), "{url}");
+        assert_eq!(decode(res.bytes(), "br"), text.as_bytes(), "{url}");
+    }
+}
+
 /// The playground fetches what its first run needs while the interpreter downloads: its
 /// bundle preloaded, the examples and the worker's script prefetched; the other pages
 /// load the site's bundle only.
@@ -138,6 +167,14 @@ async fn the_playground_fetches_early_what_its_first_run_needs() {
     ] {
         assert!(html.contains(&tag), "{tag}");
     }
+    // French and English are compiled into the interpreter; another language fetches its
+    // catalog, and the page says where it is.
+    assert!(!html.contains("catalog-") && !html.contains("data-catalog"));
+    let de = client.get("/de/playground/").await.text();
+    let catalog = format!("/pkg/catalog-de.txt?v={version}");
+    assert!(de.contains(&format!(r#"<link rel="prefetch" href="{catalog}"/>"#)), "{de}");
+    assert!(de.contains(&format!(r#"data-catalog="{catalog}""#)));
+    assert!(de.contains(r#"id="catalog-note""#));
     let home = client.get("/fr/").await.text();
     assert!(home.contains(&format!(r#"<link rel="preload" href="/pkg/site_bg.wasm?v={version}""#)));
     assert!(!home.contains("playground_bg.wasm") && !home.contains(r#"rel="prefetch""#));

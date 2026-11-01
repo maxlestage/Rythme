@@ -442,9 +442,11 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
         client.push_str(&Bundle::Playground.head(&ctx.version));
         // What the first run needs once the interpreter is there, fetched while it
         // downloads and kept by the browser until then: the examples of the menu, the
-        // worker's script. (A preload not used within seconds of `load` is reported in
-        // the console: on a slow network, the interpreter takes longer than that.)
-        for url in [link("/examples.json"), crate::client::worker_url(&ctx.version)] {
+        // worker's script, the catalog of the interpreter's messages in the language of
+        // the page. (A preload not used within seconds of `load` is reported in the
+        // console: on a slow network, the interpreter takes longer than that.)
+        let catalog = crate::client::catalog_url(ctx.lang().code(), &ctx.version);
+        for url in [link("/examples.json"), crate::client::worker_url(&ctx.version)].into_iter().chain(catalog) {
             client.push_str(&format!(r#"<link rel="prefetch" href="{url}"/>"#));
         }
     }
@@ -969,17 +971,29 @@ pub fn playground(ctx: &Ctx) -> Page {
                 ),
         )
         .child(pre().class("help__text").id("help-text").attr("tabindex", "0"));
-    let content = main()
+    // Besides English and French, the interpreter's messages come from the catalog of
+    // the language, which the browser side fetches; if it cannot, a quiet note says
+    // they are in English.
+    let catalog = crate::client::catalog_url(ctx.lang().code(), &ctx.version);
+    let mut content = main()
         .class("page page--wide playground")
         .attr("data-lang", ctx.lang().code())
         .attr("data-ui", playground_ui(t))
         .attr("data-worker", crate::client::worker_url(&ctx.version))
         .attr("data-examples", link("/examples.json"))
-        .attr("data-llms", link(crate::ai::LLMS_FULL_PATH))
+        .attr("data-llms", link(crate::ai::LLMS_FULL_PATH));
+    if let Some(url) = &catalog {
+        content = content.attr("data-catalog", url.clone());
+    }
+    content = content
         .child(page_head(t.pg_title, t.pg_lead))
         .child(noscript().child(p().class("note note--box").text(t.pg_noscript)))
         .child(toolbar)
-        .child(shared_note(t))
+        .child(shared_note(t));
+    if catalog.is_some() {
+        content = content.child(p().class("note").id("catalog-note").attr("role", "status").attr("hidden", "").text(t.pg_catalog_failed));
+    }
+    let content = content
         .child(share_box(t))
         .child(workspace)
         .child(help)

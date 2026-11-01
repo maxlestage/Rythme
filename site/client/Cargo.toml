@@ -15,8 +15,14 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 page = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:js-sys", "dep:web-sys"]
-playground = ["page", "dep:rythme", "dep:rythme-playground"]
+# The interpreter with its messages in English and French only: the page fetches the
+# catalog of its language (written by the step `catalogs`).
+playground = ["page", "dep:rythme", "rythme/runtime-catalogs", "dep:rythme-playground"]
 sw = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:js-sys", "dep:web-sys"]
+# The step of the build that writes the catalogs of the interpreter's messages into
+# public/pkg/, from the interpreter with every language compiled in
+# (src/bin/catalogs.rs).
+catalogs = ["dep:rythme"]
 # The step of the build that gives the interpreter its clock (src/bin/host_imports.rs).
 host-imports = ["dep:walrus"]
 # The step of the build that compresses the files of public/ once, at their best
@@ -32,6 +38,11 @@ required-features = ["host-imports"]
 name = "precompress"
 path = "src/bin/precompress.rs"
 required-features = ["precompress"]
+
+[[bin]]
+name = "catalogs"
+path = "src/bin/catalogs.rs"
+required-features = ["catalogs"]
 
 [dependencies]
 # The interpreter itself, run in the page and in its worker.
