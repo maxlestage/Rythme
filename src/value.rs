@@ -19,7 +19,6 @@ use crate::symbol::Sym;
 
 // The values that hold no memory of their own come first: telling them from
 // the others (to copy or free a value) is then one comparison of the tag.
-#[derive(Clone)]
 pub enum Value {
     Unit,
     Bool(bool),
@@ -40,6 +39,43 @@ pub enum Value {
     Set(Map),
     Func(Rc<Closure>),
     Ctor(Rc<CtorInfo>),
+}
+
+impl Clone for Value {
+    /// The values that hold no memory are copied in place, the others by a call.
+    #[inline(always)]
+    fn clone(&self) -> Value {
+        match self {
+            Value::Unit => Value::Unit,
+            Value::Bool(b) => Value::Bool(*b),
+            Value::Int(n) => Value::Int(*n),
+            Value::Float(x) => Value::Float(*x),
+            Value::Symbol(s) => Value::Symbol(*s),
+            Value::Builtin(b) => Value::Builtin(b),
+            v => v.clone_shared(),
+        }
+    }
+}
+
+impl Value {
+    /// A copy of a value that holds memory: one more count of it.
+    #[inline(never)]
+    fn clone_shared(&self) -> Value {
+        match self {
+            Value::Big(n) => Value::Big(n.clone()),
+            Value::Text(t) => Value::Text(t.clone()),
+            Value::List(l) => Value::List(l.clone()),
+            Value::Record(r) => Value::Record(r.clone()),
+            Value::Variant(v) => Value::Variant(v.clone()),
+            Value::Dict(m) => Value::Dict(m.clone()),
+            Value::Set(m) => Value::Set(m.clone()),
+            Value::Func(f) => Value::Func(f.clone()),
+            Value::Ctor(c) => Value::Ctor(c.clone()),
+            Value::Unit | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::Symbol(_) | Value::Builtin(_) => {
+                unreachable!("copied in place")
+            }
+        }
+    }
 }
 
 /// An immutable list. Taking the rest of a list (`[first, ..rest]`) shares the

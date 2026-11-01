@@ -104,6 +104,7 @@ fn dup(v: &Value) -> Value {
         Value::Bool(b) => Value::Bool(*b),
         Value::Unit => Value::Unit,
         Value::Func(f) => Value::Func(f.clone()),
+        Value::Variant(var) => Value::Variant(var.clone()),
         v => v.clone(),
     }
 }
@@ -773,7 +774,7 @@ impl Interp {
                             for (bind, v) in s.binds.iter().zip(&var.fields) {
                                 if let Some(slot) = *bind {
                                     // A slot of a name, never `src`: `var` stays as it is.
-                                    w!(slot, v.clone());
+                                    w!(slot, dup(v));
                                 }
                             }
                         }
@@ -1008,6 +1009,9 @@ impl Interp {
         let v = self.globals.get(&site.name)?;
         let seen = match v {
             Value::Func(f) => Some(super::Seen::Func(Rc::downgrade(f))),
+            // Not the values that may hold functions; but `None` or `Leaf`
+            // (a value of a type whose fields hold no memory) is kept.
+            Value::Variant(var) if var.fields.iter().all(is_plain) => Some(super::Seen::Plain(v.clone())),
             v if !is_container(v) => Some(super::Seen::Plain(v.clone())),
             _ => None,
         };

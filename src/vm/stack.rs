@@ -49,7 +49,8 @@ impl Stack {
     #[inline(always)]
     pub fn push(&mut self, v: Value) {
         if self.len < self.vals.len() {
-            self.vals[self.len] = v;
+            // What is left there holds no memory: written over, not freed.
+            std::mem::forget(std::mem::replace(&mut self.vals[self.len], v));
         } else {
             self.vals.push(v);
         }
