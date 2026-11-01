@@ -373,6 +373,37 @@ fn no_regex_takes_forever() {
     ok("print(matches(repeat(\"a\", 5000), \"(a*)*b\"), len(find_all(repeat(\"ab\", 5000), \"(a|b)+?\")))", "false 10000");
 }
 
+/// A search goes straight to the characters that can start a match, and
+/// answers for ASCII characters from a table: the same answers for the other
+/// characters, the case ignored or not, at the start of the text or after it.
+#[test]
+fn searches_that_skip_ahead_see_every_character() {
+    let found = |text: &str, pattern: &str| -> Vec<String> {
+        let re = Regex::new(pattern).unwrap();
+        re.find_all(text, usize::MAX).unwrap().iter().map(|m| m[0].map_or("", |(a, b)| &text[a..b]).to_string()).collect()
+    };
+    assert_eq!(found("Été ÉTÉ été ete", "(?i)été"), ["Été", "ÉTÉ", "été"]);
+    assert_eq!(found("ΣΑΣ σας", "(?i)σ"), ["Σ", "Σ", "σ", "ς"]);
+    assert_eq!(found("naïve café 😀x", "[à-ÿ]|😀"), ["ï", "é", "😀"]);
+    assert_eq!(found("éa ÉA", "(?i)[é]a"), ["éa", "ÉA"]);
+    // The Kelvin sign is a `k` when the case is ignored, both ways.
+    assert_eq!(found("k K \u{212a}", "(?i)\u{212a}"), ["k", "K", "\u{212a}"]);
+    assert_eq!(found("k K \u{212a}", "(?i)k"), ["k", "K", "\u{212a}"]);
+    assert_eq!(found("ab\ncd", "^c|d$|\\bc"), ["c", "d"]);
+    assert_eq!(found("x1 y22 z", "[0-9]+|z"), ["1", "22", "z"]);
+    // Empty matches are found everywhere, skipping nothing.
+    assert_eq!(found("éé", "x*").len(), 3);
+    // A text too long for the table of the faster engine: the other one.
+    let long = format!("{}é", "a".repeat(9_000_000));
+    assert_eq!(found(&long, "a*é|b"), [long.clone()]);
+    let re = Regex::new("(a|é)+$").unwrap();
+    assert_eq!(re.find_at(&long, 0), Some(vec![Some((0, long.len())), Some((long.len() - 2, long.len()))]));
+    ok(
+        "print(find_all(\"Ça ça ÇA\", \"(?i)ça\"), split_by(\"a—b–c\", \"[—–]\"), replace_all(\"Straße\", \"ß|s\", \"_\"))",
+        "[\"Ça\", \"ça\", \"ÇA\"] [\"a\", \"b\", \"c\"] Stra_e",
+    );
+}
+
 // ----- the regexes in Rythme --------------------------------------------------------
 
 #[test]
