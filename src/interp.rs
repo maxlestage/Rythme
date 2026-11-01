@@ -227,7 +227,7 @@ impl Interp {
         let none_info = ctor(option, "None", &[], 0);
         let ok = ctor(result, "Ok", &["value"], 0);
         let err = ctor(result, "Err", &["error"], 1);
-        let none = Value::Variant(Rc::new(Variant { ctor: none_info.clone(), fields: Vec::new() }));
+        let none = Value::Variant(Rc::new(Variant { ctor: none_info.clone(), fields: Fields::none() }));
 
         let mut globals = Globals::default();
         for b in BUILTINS {
@@ -283,7 +283,7 @@ impl Interp {
     // ----- Option and Result ------------------------------------------
 
     pub fn some(&self, v: Value) -> Value {
-        Value::Variant(Rc::new(Variant { ctor: self.some.clone(), fields: vec![v] }))
+        Value::Variant(Rc::new(Variant { ctor: self.some.clone(), fields: Fields::one(v) }))
     }
 
     pub fn none(&self) -> Value {
@@ -291,11 +291,11 @@ impl Interp {
     }
 
     pub fn ok(&self, v: Value) -> Value {
-        Value::Variant(Rc::new(Variant { ctor: self.ok.clone(), fields: vec![v] }))
+        Value::Variant(Rc::new(Variant { ctor: self.ok.clone(), fields: Fields::one(v) }))
     }
 
     pub fn err(&self, v: Value) -> Value {
-        Value::Variant(Rc::new(Variant { ctor: self.err.clone(), fields: vec![v] }))
+        Value::Variant(Rc::new(Variant { ctor: self.err.clone(), fields: Fields::one(v) }))
     }
 
     pub fn option(&self, v: Option<Value>) -> Value {
@@ -375,7 +375,7 @@ impl Interp {
                 doc: t.doc.clone(),
             });
             let value = if v.fields.is_empty() {
-                Value::Variant(Rc::new(Variant { ctor: info.clone(), fields: Vec::new() }))
+                Value::Variant(Rc::new(Variant { ctor: info.clone(), fields: Fields::none() }))
             } else {
                 Value::Ctor(info.clone())
             };
@@ -732,7 +732,7 @@ impl Interp {
         if argc != c.fields.len() {
             return Err(ctor_arity_error(&c, argc, span));
         }
-        let fields = self.stack[base..base + argc].iter_mut().map(|v| std::mem::replace(v, Value::Unit)).collect();
+        let fields = Fields::take_from(&mut self.stack[base..base + argc]);
         Ok(Value::Variant(Rc::new(Variant { ctor: c, fields })))
     }
 }

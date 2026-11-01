@@ -330,7 +330,7 @@ impl Interp {
         // are, without counting as a call.
         if let Value::Ctor(c) = &next {
             if c.fields.len() == argc {
-                let fields = self.stack[args..args + argc].iter_mut().map(take).collect();
+                let fields = Fields::take_from(&mut self.stack[args..args + argc]);
                 self.reset(base, base + regs);
                 return Ok(Value::Variant(Rc::new(Variant { ctor: c.clone(), fields })));
             }
@@ -424,7 +424,7 @@ impl Interp {
                     // where they are, without counting as a call.
                     if let Value::Ctor(c) = &next {
                         if c.fields.len() == next_argc {
-                            let fields = self.stack[args..args + next_argc].iter_mut().map(take).collect();
+                            let fields = Fields::take_from(&mut self.stack[args..args + next_argc]);
                             self.reset(base, base + regs);
                             return Ok(Value::Variant(Rc::new(Variant { ctor: c.clone(), fields })));
                         }
