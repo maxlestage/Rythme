@@ -78,13 +78,28 @@ impl Item {
 struct Class {
     negated: bool,
     items: Vec<Item>,
+    /// The answers of `matches` for the ASCII characters, one bit each:
+    /// most texts are mostly ASCII, and a bit is faster than the items.
+    ascii: u128,
 }
 
 impl Class {
     fn matches(&self, c: char, fold: bool) -> bool {
+        if c.is_ascii() {
+            return self.ascii & (1 << c as u32) != 0;
+        }
+        self.matches_slowly(c, fold)
+    }
+
+    fn matches_slowly(&self, c: char, fold: bool) -> bool {
         let has = |c: char| self.items.iter().any(|i| i.has(c));
         let found = has(c) || (fold && (has(lower(c)) || has(upper(c)) || has(fold_case(c))));
         found != self.negated
+    }
+
+    /// Writes down the answers for the ASCII characters (see `ascii`).
+    fn learn_ascii(&mut self, fold: bool) {
+        self.ascii = (0..128u8).filter(|&b| self.matches_slowly(char::from(b), fold)).fold(0, |bits, b| bits | (1 << b));
     }
 }
 
@@ -105,8 +120,22 @@ fn upper(c: char) -> char {
     }
 }
 
+/// The character as compared: its case folded when the case is ignored.
+#[inline]
+fn fold_if(c: char, fold: bool) -> char {
+    if fold {
+        fold_case(c)
+    } else {
+        c
+    }
+}
+
 /// The same character for every case: `A`, `a` → `a`; `Σ`, `σ`, `ς` → `σ`.
 fn fold_case(c: char) -> char {
+    // The case of an ASCII character is an ASCII character: the same answer, faster.
+    if c.is_ascii() {
+        return c.to_ascii_lowercase();
+    }
     lower(upper(c))
 }
 
@@ -227,7 +256,7 @@ impl Parser {
             '\\' => match self.escape(at, false)? {
                 Escape::Char(c) => Node::Char(c),
                 Escape::Item(i) => {
-                    self.classes.push(Class { negated: false, items: vec![i] });
+                    self.classes.push(Class { negated: false, items: vec![i], ascii: 0 });
                     Node::Class(self.classes.len() - 1)
                 }
                 Escape::Assert(a) => Node::Assert(a),
@@ -572,7 +601,7 @@ impl Parser {
                 items.push(Item::Range(lo, lo));
             }
         }
-        self.classes.push(Class { negated, items });
+        self.classes.push(Class { negated, items, ascii: 0 });
         Ok(Node::Class(self.classes.len() - 1))
     }
 }
@@ -693,6 +722,20 @@ pub struct Regex {
     fold: bool,
     /// The names of the groups, by number; group 0 is the whole match.
     names: Vec<Option<Rc<str>>>,
+    /// The characters a match can start with, when every match reads one.
+    first: Option<First>,
+    /// The memory of the last search, kept for the next one: `matches`
+    /// called on each line of a long list would allocate it each time.
+    spare: RefCell<Option<Vm>>,
+}
+
+/// The characters a match can start with (see [`Regex::skip`]).
+#[derive(Debug)]
+struct First {
+    /// The steps that read the first character.
+    steps: Vec<usize>,
+    /// Whether one of them reads each ASCII character, one bit each.
+    ascii: u128,
 }
 
 /// Where a match and each of its groups start and end (bytes), by group
@@ -710,6 +753,7 @@ enum Mode {
 }
 
 /// The ways being followed at one position of the text, in order of preference.
+#[derive(Debug)]
 struct Threads {
     sparse: Vec<usize>,
     dense: Vec<usize>,
@@ -735,6 +779,7 @@ impl Threads {
     }
 }
 
+#[derive(Debug)]
 enum Frame {
     Explore(usize),
     Restore(usize, usize),
@@ -742,11 +787,97 @@ enum Frame {
 
 /// The lists and the scratch space of a search, kept from one search to the
 /// next by `find_all`.
+#[derive(Debug)]
 struct Vm {
     clist: Threads,
     nlist: Threads,
     stack: Vec<Frame>,
     scratch: Vec<usize>,
+    /// The slots of the best match found so far.
+    best: Vec<usize>,
+    track: Track,
+}
+
+/// One thing to do while following the ways of a match (see [`Track`]).
+#[derive(Clone, Copy, Debug)]
+enum Job {
+    /// Follow the way at a step and a place.
+    Explore(usize, usize),
+    /// Give back its value to a slot, when the ways after a `Save` failed.
+    Restore(usize, usize),
+}
+
+/// The memory of the engine that tries one way after the other, in order of
+/// preference, and stops at the first that reaches a match ("backtracking",
+/// as Perl does): faster than following every way at the same time, and
+/// with the same answers, because it remembers each step and place that it
+/// reached. The first way to reach them is the preferred one (as when every
+/// way is followed at the same time); a way that comes back to them later is
+/// dropped, so no search reads the text more than (length of the text) ×
+/// (size of the program) times. Those that failed stay failed for the next
+/// searches of `find_all` (see [`Dead`]).
+#[derive(Debug, Default)]
+struct Track {
+    /// One bit per step of the program and place in the text, from `base`.
+    bits: Vec<u64>,
+    steps: usize,
+    base: usize,
+    /// The last place reached: the bits after it are all zero.
+    hi: usize,
+    jobs: Vec<Job>,
+}
+
+/// The table of [`Track`] kept between searches (in 64 bits): 64 KB.
+const KEEP_TRACK_WORDS: usize = 1 << 13;
+
+impl Track {
+    /// Ready to follow `places` places from `base`, with no bit set.
+    fn begin(&mut self, steps: usize, base: usize, places: usize) {
+        let words = (steps * places).div_ceil(64);
+        if self.bits.len() < words {
+            self.bits.resize(words, 0);
+        }
+        self.steps = steps;
+        self.base = base;
+        self.hi = base;
+    }
+
+    /// Was step `pc` at place `pos` reached already? Then it is now.
+    #[inline]
+    fn seen(&mut self, pc: usize, pos: usize) -> bool {
+        let i = (pos - self.base) * self.steps + pc;
+        let (word, bit) = (i / 64, 1u64 << (i % 64));
+        if self.bits[word] & bit != 0 {
+            return true;
+        }
+        // `hi` is moved by the caller, when it reads a character.
+        self.bits[word] |= bit;
+        false
+    }
+
+    /// The words holding the bits of the places `from..=to`.
+    fn words(&self, from: usize, to: usize) -> std::ops::Range<usize> {
+        let first = (from - self.base) * self.steps / 64;
+        let last = ((to - self.base + 1) * self.steps).div_ceil(64).min(self.bits.len());
+        first..last.max(first)
+    }
+
+    /// Forgets the steps reached at `pos` (and maybe some around it, which
+    /// only costs time).
+    fn forget(&mut self, pos: usize) {
+        let words = self.words(pos, pos);
+        self.bits[words].fill(0);
+    }
+
+    /// Sets every bit back to zero, for the next search.
+    fn end(&mut self) {
+        if self.bits.len() > KEEP_TRACK_WORDS {
+            self.bits = Vec::new();
+        } else {
+            let words = self.words(self.base, self.hi);
+            self.bits[words].fill(0);
+        }
+    }
 }
 
 /// The largest table of [`Dead`] (bits): 8 MB.
@@ -832,7 +963,71 @@ impl Regex {
             ));
         }
         let prog = c.prog;
-        Ok(Regex { prog, classes: p.classes, fold, names: p.names })
+        let mut classes = p.classes;
+        for class in &mut classes {
+            class.learn_ascii(fold);
+        }
+        let mut re = Regex { prog, classes, fold, names: p.names, first: None, spare: RefCell::new(None) };
+        re.first = re.first_steps().map(|steps| {
+            let ascii = (0..128u8).filter(|&b| steps.iter().any(|&pc| re.reads(pc, char::from(b)))).fold(0, |bits, b| bits | (1 << b));
+            First { steps, ascii }
+        });
+        Ok(re)
+    }
+
+    /// The steps that can read the first character of a match, or `None`
+    /// when a match can be empty: the steps reached from the start without
+    /// reading (an assertion is passed as if it held: more steps, never fewer).
+    fn first_steps(&self) -> Option<Vec<usize>> {
+        let mut seen = vec![false; self.prog.len()];
+        let mut todo = vec![0];
+        let mut steps = Vec::new();
+        while let Some(pc) = todo.pop() {
+            if std::mem::replace(&mut seen[pc], true) {
+                continue;
+            }
+            match self.prog[pc] {
+                Inst::Jmp(to) => todo.push(to),
+                Inst::Split(a, b) => todo.extend([a, b]),
+                Inst::Save(_) | Inst::Assert(_) => todo.push(pc + 1),
+                Inst::Char(_) | Inst::Any | Inst::Class(_) => steps.push(pc),
+                Inst::Match => return None,
+            }
+        }
+        Some(steps)
+    }
+
+    /// Does step `pc` read the character `c`?
+    #[inline]
+    fn reads(&self, pc: usize, c: char) -> bool {
+        match self.prog[pc] {
+            Inst::Char(x) => fold_if(c, self.fold) == x,
+            Inst::Any => c != '\n',
+            Inst::Class(k) => self.classes[k].matches(c, self.fold),
+            _ => false,
+        }
+    }
+
+    /// The first place at `pos` or after where a match can start: the next
+    /// character that a first step reads (the end of the text if none).
+    /// Searching for `word[0-9]+` then only stops at the `w`s.
+    fn skip(&self, first: &First, text: &str, mut pos: usize) -> usize {
+        let bytes = text.as_bytes();
+        while let Some(&b) = bytes.get(pos) {
+            if b.is_ascii() {
+                if first.ascii & (1 << b) != 0 {
+                    return pos;
+                }
+                pos += 1;
+            } else {
+                let Some(c) = text[pos..].chars().next() else { break };
+                if first.steps.iter().any(|&pc| self.reads(pc, c)) {
+                    return pos;
+                }
+                pos += c.len_utf8();
+            }
+        }
+        pos
     }
 
     /// The number of groups, the whole match (group 0) included.
@@ -847,17 +1042,144 @@ impl Regex {
 
     /// Does the regex match the whole text? Then where its groups are.
     pub fn whole(&self, text: &str) -> Option<Captures> {
-        self.run(&mut self.vm(), text, 0, Mode::Whole, None)
+        self.with_vm(|vm| self.search(vm, text, 0, Mode::Whole))
     }
 
     /// The leftmost match starting at byte `start` or after.
     pub fn find_at(&self, text: &str, start: usize) -> Option<Captures> {
-        self.run(&mut self.vm(), text, start, Mode::Search, None)
+        self.with_vm(|vm| self.search(vm, text, start, Mode::Search))
     }
 
-    fn vm(&self) -> Vm {
-        let (size, n) = (self.prog.len(), 2 * self.names.len());
-        Vm { clist: Threads::new(size, n), nlist: Threads::new(size, n), stack: Vec::new(), scratch: vec![NONE; n] }
+    /// One search, with the faster engine when its table is small enough.
+    fn search(&self, vm: &mut Vm, text: &str, start: usize, mode: Mode) -> Option<Captures> {
+        if !self.trackable(text.len() - start) {
+            return self.run(vm, text, start, mode, None).then(|| groups_of(&vm.best));
+        }
+        vm.track.begin(self.prog.len(), start, text.len() - start + 1);
+        let found = self.track_search(vm, text, start, mode);
+        vm.track.end();
+        found.then(|| groups_of(&vm.scratch))
+    }
+
+    /// Can [`Regex::track`] follow a text of `len` bytes (its table of
+    /// steps and places is not too large)?
+    fn trackable(&self, len: usize) -> bool {
+        self.prog.len().checked_mul(len + 1).is_some_and(|n| n <= MAX_DEAD_BITS)
+    }
+
+    /// The leftmost match from `start` (or the match of the whole text), by
+    /// trying one way after the other in order of preference (see [`Track`]).
+    /// True when found, with the slots of the match in `vm.scratch`.
+    fn track_search(&self, vm: &mut Vm, text: &str, start: usize, mode: Mode) -> bool {
+        let mut at = start;
+        loop {
+            if mode == Mode::Search {
+                if let Some(first) = &self.first {
+                    at = self.skip(first, text, at);
+                    if at == text.len() {
+                        return false;
+                    }
+                }
+            }
+            if self.track(vm, text, at, mode) {
+                return true;
+            }
+            if mode == Mode::Whole {
+                return false;
+            }
+            match text[at..].chars().next() {
+                Some(c) => at += c.len_utf8(),
+                None => return false,
+            }
+        }
+    }
+
+    /// Follows the ways of a match starting at `at`, the preferred one first,
+    /// each until it fails; true when one reaches the end of the regex, with
+    /// its groups in `vm.scratch`.
+    fn track(&self, vm: &mut Vm, text: &str, at: usize, mode: Mode) -> bool {
+        let Vm { scratch, track, .. } = vm;
+        let bytes = text.as_bytes();
+        scratch.fill(NONE);
+        track.jobs.clear();
+        track.jobs.push(Job::Explore(0, at));
+        track.hi = track.hi.max(at);
+        while let Some(job) = track.jobs.pop() {
+            let (mut pc, mut pos) = match job {
+                Job::Restore(slot, value) => {
+                    scratch[slot] = value;
+                    continue;
+                }
+                Job::Explore(pc, pos) => (pc, pos),
+            };
+            while !track.seen(pc, pos) {
+                match self.prog[pc] {
+                    step @ (Inst::Char(_) | Inst::Any | Inst::Class(_)) => {
+                        let c = match bytes.get(pos) {
+                            Some(&b) if b.is_ascii() => char::from(b),
+                            Some(_) => text[pos..].chars().next().unwrap_or_default(),
+                            None => break,
+                        };
+                        let reads = match step {
+                            Inst::Char(x) => fold_if(c, self.fold) == x,
+                            Inst::Any => c != '\n',
+                            Inst::Class(k) => self.classes[k].matches(c, self.fold),
+                            _ => false,
+                        };
+                        if !reads {
+                            break;
+                        }
+                        pc += 1;
+                        pos += c.len_utf8();
+                        track.hi = track.hi.max(pos);
+                    }
+                    Inst::Split(a, b) => {
+                        track.jobs.push(Job::Explore(b, pos));
+                        pc = a;
+                    }
+                    Inst::Jmp(to) => pc = to,
+                    Inst::Save(slot) => {
+                        track.jobs.push(Job::Restore(slot, scratch[slot]));
+                        scratch[slot] = pos;
+                        pc += 1;
+                    }
+                    Inst::Assert(a) => {
+                        if !self.holds(a, text, pos) {
+                            break;
+                        }
+                        pc += 1;
+                    }
+                    Inst::Match => {
+                        if mode == Mode::Whole && pos != text.len() {
+                            break;
+                        }
+                        track.jobs.clear();
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    /// Calls `f` with the memory of a search: the one kept from the last
+    /// search, or a new one. Taken out while `f` runs, so a search inside
+    /// it would only make its own.
+    fn with_vm<T>(&self, f: impl FnOnce(&mut Vm) -> T) -> T {
+        let mut vm = self.spare.borrow_mut().take().unwrap_or_else(|| {
+            let (size, n) = (self.prog.len(), 2 * self.names.len());
+            Vm {
+                clist: Threads::new(size, n),
+                nlist: Threads::new(size, n),
+                stack: Vec::new(),
+                scratch: vec![NONE; n],
+                best: vec![NONE; n],
+                track: Track::default(),
+            }
+        });
+        let result = f(&mut vm);
+        *self.spare.borrow_mut() = Some(vm);
+        result
     }
 
     /// Every match, from left to right, without overlapping. An empty match
@@ -865,14 +1187,49 @@ impl Regex {
     /// "" and "aaa" in "baaa". The same matches as calling [`Regex::find_at`]
     /// again and again, but the searches share what they learned (see [`Dead`]).
     pub fn find_all(&self, text: &str, max: usize) -> Result<Vec<Captures>, usize> {
+        let slots = self.find_all_slots(text, max)?;
+        Ok(slots.chunks(2 * self.names.len()).map(groups_of).collect())
+    }
+
+    /// The matches of [`Regex::find_all`], each as the start and the end of
+    /// every group one after the other (`usize::MAX` for a group that took no
+    /// part in it): one list for all, faster to make than a list for each.
+    pub fn find_all_slots(&self, text: &str, max: usize) -> Result<Vec<usize>, usize> {
+        self.with_vm(|vm| self.find_all_with(vm, text, max))
+    }
+
+    fn find_all_with(&self, vm: &mut Vm, text: &str, max: usize) -> Result<Vec<usize>, usize> {
+        let tracked = self.trackable(text.len());
+        if tracked {
+            vm.track.begin(self.prog.len(), 0, text.len() + 1);
+        }
+        let found = self.find_all_in(vm, text, max, tracked);
+        if tracked {
+            vm.track.end();
+        }
+        found
+    }
+
+    fn find_all_in(&self, vm: &mut Vm, text: &str, max: usize, tracked: bool) -> Result<Vec<usize>, usize> {
         let mut out = Vec::new();
+        let mut count = 0;
         let mut pos = 0;
         let mut last_end = None;
-        let mut vm = self.vm();
-        let mut dead = Dead::new(self.prog.len(), text);
+        let mut dead = if tracked { None } else { Dead::new(self.prog.len(), text) };
         while pos <= text.len() {
-            let Some(m) = self.run(&mut vm, text, pos, Mode::Search, dead.as_mut()) else { break };
-            let (s, e) = m[0].unwrap_or((pos, pos));
+            let found =
+                if tracked { self.track_search(vm, text, pos, Mode::Search) } else { self.run(vm, text, pos, Mode::Search, dead.as_mut()) };
+            if !found {
+                break;
+            }
+            let m = if tracked { &vm.scratch } else { &vm.best };
+            // Group 0 always takes part in a match.
+            let (s, e) = (m[0], m[1]);
+            if tracked {
+                // The ways that failed stay failed for the next searches, which
+                // start at `e` or after; the way that matched ends at `e`.
+                vm.track.forget(e);
+            }
             if s == e && last_end == Some(e) {
                 match text[pos..].chars().next() {
                     Some(c) => pos += c.len_utf8(),
@@ -880,10 +1237,11 @@ impl Regex {
                 }
                 continue;
             }
-            if out.len() >= max {
-                return Err(out.len());
+            if count >= max {
+                return Err(count);
             }
-            out.push(m);
+            out.extend_from_slice(if tracked { &vm.scratch } else { &vm.best });
+            count += 1;
             pos = e;
             last_end = Some(e);
         }
@@ -952,15 +1310,27 @@ impl Regex {
         }
     }
 
-    fn run(&self, vm: &mut Vm, text: &str, start: usize, mode: Mode, mut dead: Option<&mut Dead>) -> Option<Captures> {
+    /// True when found, with the slots of the match in `vm.best`.
+    fn run(&self, vm: &mut Vm, text: &str, start: usize, mode: Mode, mut dead: Option<&mut Dead>) -> bool {
         let n = 2 * self.names.len();
-        let Vm { clist, nlist, stack, scratch } = vm;
+        let Vm { clist, nlist, stack, scratch, best, .. } = vm;
         clist.len = 0;
         nlist.len = 0;
-        let mut matched: Option<Vec<usize>> = None;
+        let mut matched = false;
         let mut pos = start;
         loop {
-            if matched.is_none() && (pos == start || mode == Mode::Search) {
+            if !matched && (pos == start || mode == Mode::Search) {
+                if clist.len == 0 && mode == Mode::Search {
+                    if let Some(first) = &self.first {
+                        // No way is being followed: go straight to the next
+                        // place where one can start. None at the end, where a
+                        // match would be empty.
+                        pos = self.skip(first, text, pos);
+                        if pos == text.len() {
+                            break;
+                        }
+                    }
+                }
                 scratch.fill(NONE);
                 self.add(clist, stack, scratch, 0, text, pos, dead.as_deref());
             }
@@ -976,22 +1346,20 @@ impl Regex {
             for i in 0..clist.len {
                 let pc = clist.dense[i];
                 let reads = match self.prog[pc] {
-                    Inst::Char(x) => c.is_some_and(|c| (if self.fold { fold_case(c) } else { c }) == x),
-                    Inst::Any => c.is_some_and(|c| c != '\n'),
-                    Inst::Class(k) => c.is_some_and(|c| self.classes[k].matches(c, self.fold)),
                     Inst::Match => {
                         if mode == Mode::Whole && pos != text.len() {
                             continue;
                         }
                         // The ways after this one are less preferred: they stop here.
-                        matched = Some(clist.slots[pc * n..(pc + 1) * n].to_vec());
+                        best.copy_from_slice(&clist.slots[pc * n..(pc + 1) * n]);
+                        matched = true;
                         // The ways followed so far are not known to be dead.
                         if let Some(d) = dead.as_deref_mut() {
                             d.pending.clear();
                         }
                         break;
                     }
-                    _ => false,
+                    _ => c.is_some_and(|c| self.reads(pc, c)),
                 };
                 if reads {
                     scratch.copy_from_slice(&clist.slots[pc * n..(pc + 1) * n]);
@@ -1008,8 +1376,13 @@ impl Regex {
         if let Some(d) = dead {
             d.write_down();
         }
-        matched.map(|slots| slots.chunks(2).map(|g| if g[0] == NONE || g[1] == NONE { None } else { Some((g[0], g[1])) }).collect())
+        matched
     }
+}
+
+/// The groups of a match, from its slots.
+fn groups_of(slots: &[usize]) -> Captures {
+    slots.chunks(2).map(|g| if g[0] == NONE || g[1] == NONE { None } else { Some((g[0], g[1])) }).collect()
 }
 
 // ----- the replacement of `replace_all` ------------------------------------
@@ -1268,8 +1641,17 @@ fn group_text(s: &str, g: Option<(usize, usize)>) -> Value {
     text_value(g.map_or("", |(a, b)| &s[a..b]))
 }
 
-fn all(s: &str, re: &Regex, span: Span) -> Fallible<Vec<Captures>> {
-    re.find_all(s, MAX_LIST).map_err(|_| too_big(true, span))
+/// Every match: its groups, as slots (see [`Regex::find_all_slots`]).
+fn all(s: &str, re: &Regex, span: Span) -> Fallible<Vec<usize>> {
+    re.find_all_slots(s, MAX_LIST).map_err(|_| too_big(true, span))
+}
+
+/// The text of group `g` of a match given by its slots.
+fn slot_text<'a>(s: &'a str, m: &[usize], g: usize) -> &'a str {
+    match (m[2 * g], m[2 * g + 1]) {
+        (NONE, _) | (_, NONE) => "",
+        (a, b) => &s[a..b],
+    }
 }
 
 fn whole_text(m: &Captures, s: &str) -> Value {
@@ -1288,7 +1670,7 @@ pub(super) fn find_first(it: &mut Interp, a: &[Value], span: Span) -> Fallible<V
 
 pub(super) fn find_all(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let (s, re) = text_and_regex(a, "find_all", span)?;
-    Ok(Value::list(all(s, &re, span)?.iter().map(|m| whole_text(m, s)).collect()))
+    Ok(Value::list(all(s, &re, span)?.chunks(2 * re.groups()).map(|m| text_value(slot_text(s, m, 0))).collect()))
 }
 
 fn groups_list(m: &Captures, s: &str) -> Value {
@@ -1302,7 +1684,10 @@ pub(super) fn captures(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Val
 
 pub(super) fn captures_all(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let (s, re) = text_and_regex(a, "captures_all", span)?;
-    Ok(Value::list(all(s, &re, span)?.iter().map(|m| groups_list(m, s)).collect()))
+    let groups = re.groups();
+    Ok(Value::list(
+        all(s, &re, span)?.chunks(2 * groups).map(|m| Value::list((0..groups).map(|g| text_value(slot_text(s, m, g))).collect())).collect(),
+    ))
 }
 
 pub(super) fn named_captures(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -1335,8 +1720,9 @@ pub(super) fn split_by(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Valu
     let mut parts = Vec::new();
     let mut from = 0;
     // An empty match never cuts: `split_by(text, " *")` cuts at the spaces only.
-    for m in all(s, &re, span)? {
-        if let Some((start, end)) = m[0].filter(|(start, end)| start != end) {
+    for m in all(s, &re, span)?.chunks(2 * re.groups()) {
+        let (start, end) = (m[0], m[1]);
+        if start != end {
             parts.push(text_value(&s[from..start]));
             from = end;
         }
@@ -1360,15 +1746,15 @@ pub(super) fn replace_all(it: &mut Interp, a: &[Value], span: Span) -> Fallible<
     };
     let mut out = String::new();
     let mut from = 0;
-    for m in all(s, &re, span)? {
-        let Some((start, end)) = m[0] else { continue };
+    for m in all(s, &re, span)?.chunks(2 * re.groups()) {
+        let (start, end) = (m[0], m[1]);
         out.push_str(&s[from..start]);
         match &pieces {
             Some(pieces) => {
                 for p in pieces {
                     match p {
                         Piece::Text(t) => out.push_str(t),
-                        Piece::Group(g) => out.push_str(m[*g].map_or("", |(a, b)| &s[a..b])),
+                        Piece::Group(g) => out.push_str(slot_text(s, m, *g)),
                     }
                 }
             }
@@ -1384,4 +1770,75 @@ pub(super) fn replace_all(it: &mut Interp, a: &[Value], span: Span) -> Fallible<
     }
     out.push_str(&s[from..]);
     Ok(text_value(out))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A small generator of random numbers (xorshift), for the same cases each time.
+    struct Rng(u64);
+
+    impl Rng {
+        fn below(&mut self, n: usize) -> usize {
+            self.0 ^= self.0 << 13;
+            self.0 ^= self.0 >> 7;
+            self.0 ^= self.0 << 17;
+            (self.0 % n as u64) as usize
+        }
+
+        fn pick<'a>(&mut self, items: &[&'a str]) -> &'a str {
+            items[self.below(items.len())]
+        }
+    }
+
+    fn pattern(rng: &mut Rng, depth: usize) -> String {
+        const ATOMS: &[&str] =
+            &["a", "b", "é", "σ", "Σ", " ", ".", "[ab]", "[^a]", "[a-zé]", "[σς]", "\\w", "\\W", "\\d", "\\s", "\\b", "\\B", "^", "$"];
+        const REPEATS: &[&str] = &["", "", "", "*", "+", "?", "*?", "+?", "??", "{1,2}", "{2}", "{0,}"];
+        let mut out = String::new();
+        for _ in 0..1 + rng.below(3) {
+            let atom = match rng.below(6) {
+                0 if depth > 0 => format!("({})", pattern(rng, depth - 1)),
+                1 if depth > 0 => format!("(?:{}|{})", pattern(rng, depth - 1), pattern(rng, depth - 1)),
+                _ => rng.pick(ATOMS).to_string(),
+            };
+            let repeat = if matches!(atom.as_str(), "^" | "$" | "\\b" | "\\B") { "" } else { rng.pick(REPEATS) };
+            out += &atom;
+            out += repeat;
+        }
+        if rng.below(4) == 0 {
+            out += "|";
+            out += &pattern(rng, depth.saturating_sub(1));
+        }
+        out
+    }
+
+    /// The engine that tries one way after the other gives exactly the answers
+    /// of the one that follows every way at the same time (which it replaces
+    /// when its table would be too large), groups included, with Unicode
+    /// texts and ignoring the case.
+    #[test]
+    fn both_engines_give_the_same_answers() {
+        let mut rng = Rng(0x9e37_79b9_7f4a_7c15);
+        const CHARS: &[&str] = &["a", "A", "b", "é", "É", " ", "\n", "σ", "Σ", "ς", "1", "_"];
+        for case in 0..20_000 {
+            let mut p = pattern(&mut rng, 3);
+            if case % 5 == 0 {
+                p = format!("(?i){p}");
+            }
+            let Ok(re) = Regex::new(&p) else { continue };
+            for _ in 0..4 {
+                let text: String = (0..rng.below(12)).map(|_| rng.pick(CHARS)).collect();
+                let slow_whole = re.with_vm(|vm| re.run(vm, &text, 0, Mode::Whole, None).then(|| groups_of(&vm.best)));
+                assert_eq!(re.whole(&text), slow_whole, "whole {text:?} {p:?}");
+                for (start, _) in text.char_indices().chain([(text.len(), ' ')]) {
+                    let slow = re.with_vm(|vm| re.run(vm, &text, start, Mode::Search, None).then(|| groups_of(&vm.best)));
+                    assert_eq!(re.find_at(&text, start), slow, "find_at {text:?} {start} {p:?}");
+                }
+                let slow_all = re.with_vm(|vm| re.find_all_in(vm, &text, usize::MAX, false));
+                assert_eq!(re.find_all_slots(&text, usize::MAX), slow_all, "find_all {text:?} {p:?}");
+            }
+        }
+    }
 }

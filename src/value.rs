@@ -1,8 +1,11 @@
 //! Runtime values. All of them are immutable: "changing" a value builds a new one.
 
+use std::cell::Cell;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fmt::Write;
+use std::mem::ManuallyDrop;
+use std::ptr::NonNull;
 use std::rc::Rc;
 
 use crate::ast::FnDef;
@@ -16,7 +19,6 @@ use crate::symbol::Sym;
 
 // The values that hold no memory of their own come first: telling them from
 // the others (to copy or free a value) is then one comparison of the tag.
-#[derive(Clone)]
 pub enum Value {
     Unit,
     Bool(bool),
@@ -39,38 +41,173 @@ pub enum Value {
     Ctor(Rc<CtorInfo>),
 }
 
+impl Clone for Value {
+    /// Whole numbers are copied in place, the other values by a call.
+    #[inline(always)]
+    fn clone(&self) -> Value {
+        match self {
+            Value::Int(n) => Value::Int(*n),
+            v => v.clone_shared(),
+        }
+    }
+}
+
+impl Value {
+    /// A copy of a value other than a whole number: one more count of its memory.
+    #[inline(never)]
+    fn clone_shared(&self) -> Value {
+        match self {
+            Value::Unit => Value::Unit,
+            Value::Bool(b) => Value::Bool(*b),
+            Value::Int(n) => Value::Int(*n),
+            Value::Float(x) => Value::Float(*x),
+            Value::Symbol(s) => Value::Symbol(*s),
+            Value::Builtin(b) => Value::Builtin(b),
+            Value::Big(n) => Value::Big(n.clone()),
+            Value::Text(t) => Value::Text(t.clone()),
+            Value::List(l) => Value::List(l.clone()),
+            Value::Record(r) => Value::Record(r.clone()),
+            Value::Variant(v) => Value::Variant(v.clone()),
+            Value::Dict(m) => Value::Dict(m.clone()),
+            Value::Set(m) => Value::Set(m.clone()),
+            Value::Func(f) => Value::Func(f.clone()),
+            Value::Ctor(c) => Value::Ctor(c.clone()),
+        }
+    }
+}
+
 /// An immutable list. Taking the rest of a list (`[first, ..rest]`) shares the
 /// elements instead of copying them, and adding at the end of a list often
 /// writes in the room its memory has left (see `buffer`).
-#[derive(Clone)]
+///
+/// A list is 15 bytes, aligned on 1: in a `Value`, it takes the 15 bytes
+/// after the tag, and the value is 16 bytes instead of 24. Where it starts
+/// in its memory takes 24 bits (a list that would start further is copied,
+/// which happens at most once every 16 million elements, see `slice`), its
+/// length 32 bits, and its memory is counted by hand, like the memory of
+/// texts.
+#[repr(C, packed)]
 pub struct List {
-    data: Rc<Buf<Value>>,
-    // 32-bit positions keep every value small (a list of 4 billion
-    // elements would not fit in memory anyway).
-    start: u32,
-    end: u32,
+    start: [u8; 3],
+    len: u32,
+    shared: NonNull<Shared>,
 }
+
+/// The memory of lists, and how many lists share it.
+struct Shared {
+    refs: Cell<usize>,
+    buf: Buf<Value>,
+    /// The numbers of a list of Floats made by a function on numbers
+    /// (`matmul`, `vector_scale`...), 8 bytes each instead of 16: `buf`
+    /// is then empty (see `Floats`).
+    floats: Option<Box<Floats>>,
+}
+
+/// A list of Floats kept as numbers: functions on numbers read them as they
+/// are (`List::floats`), and they become values the first time something
+/// else reads the list (`List::as_slice`), once. The list is the same
+/// either way: printed, compared and matched as a list of Floats.
+struct Floats {
+    xs: Box<[f64]>,
+    values: std::cell::OnceCell<Buf<Value>>,
+}
+
+impl Floats {
+    #[inline(never)]
+    fn values(&self) -> &Buf<Value> {
+        self.values.get_or_init(|| Buf::from_vec(self.xs.iter().map(|&x| Value::Float(x)).collect()))
+    }
+}
+
+/// Lists start before this position in their memory (24 bits; less in the
+/// tests of the crate, which then copy lists more often).
+const STARTS: usize = if cfg!(test) { 1 << 8 } else { 1 << 24 };
 
 impl List {
     pub fn new(v: Vec<Value>) -> List {
-        let end = u32::try_from(v.len()).expect("a list of more than 4 billion elements");
-        List { data: Rc::new(Buf::from_vec(v)), start: 0, end }
+        let len = list_len(v.len());
+        List::with(Buf::from_vec(v), 0, len)
+    }
+
+    /// The list of the elements `start..start + len` of `buf`, which no list shares.
+    fn with(buf: Buf<Value>, start: usize, len: u32) -> List {
+        debug_assert!(start < STARTS);
+        let shared = Box::new(Shared { refs: Cell::new(1), buf, floats: None });
+        List { start: start_bytes(start), len, shared: NonNull::from(Box::leak(shared)) }
+    }
+
+    /// A list of Floats, kept as numbers (see `Floats`).
+    pub fn floats(xs: Vec<f64>) -> List {
+        let len = list_len(xs.len());
+        let floats = Some(Box::new(Floats { xs: xs.into_boxed_slice(), values: std::cell::OnceCell::new() }));
+        let shared = Box::new(Shared { refs: Cell::new(1), buf: Buf::from_vec(Vec::new()), floats });
+        List { start: [0; 3], len, shared: NonNull::from(Box::leak(shared)) }
+    }
+
+    /// Its numbers, when it is a list of Floats kept as numbers.
+    #[inline]
+    pub fn as_floats(&self) -> Option<&[f64]> {
+        Some(&self.shared().floats.as_ref()?.xs[self.start()..self.end()])
+    }
+
+    /// The memory of its values.
+    #[inline(always)]
+    fn values(&self) -> &Buf<Value> {
+        let shared = self.shared();
+        match &shared.floats {
+            None => &shared.buf,
+            Some(f) => f.values(),
+        }
+    }
+
+    #[inline(always)]
+    fn shared(&self) -> &Shared {
+        let shared = self.shared;
+        // SAFETY: the memory lives as long as one list shares it.
+        unsafe { &*shared.as_ptr() }
+    }
+
+    #[inline(always)]
+    fn start(&self) -> usize {
+        let s = self.start;
+        u32::from_le_bytes([s[0], s[1], s[2], 0]) as usize
+    }
+
+    #[inline(always)]
+    fn end(&self) -> usize {
+        self.start() + self.len()
     }
 
     #[inline(always)]
     pub fn as_slice(&self) -> &[Value] {
-        self.data.slice(self.start as usize, self.end as usize)
+        self.values().slice(self.start(), self.end())
     }
 
     /// This list followed by the elements of `tail`: in the room after it
     /// when it can, so that adding at the end again and again is fast.
     pub fn concat(&self, tail: &[Value]) -> List {
-        let end = self.end + u32::try_from(tail.len()).expect("a list of more than 4 billion elements");
-        let in_place = self.may_grow_with(tail);
-        match buffer::append(&self.data, self.start as usize, self.end as usize, tail, in_place) {
-            None => List { data: self.data.clone(), start: self.start, end },
-            Some(data) => List { data, start: 0, end: end - self.start },
+        if self.shared().floats.is_some() {
+            return self.concat_floats(tail);
         }
+        let len = list_len(self.len() + tail.len());
+        let in_place = self.may_grow_with(tail);
+        match buffer::append(&self.shared().buf, self.start(), self.end(), tail, in_place) {
+            None => {
+                let mut l = self.clone();
+                l.len = len;
+                l
+            }
+            Some(buf) => List::with(buf, 0, len),
+        }
+    }
+
+    /// `concat` for a list of Floats kept as numbers: a copy.
+    #[inline(never)]
+    fn concat_floats(&self, tail: &[Value]) -> List {
+        let mut v = Vec::with_capacity(self.len() + tail.len());
+        v.extend_from_slice(self.as_slice());
+        v.extend_from_slice(tail);
+        List::new(v)
     }
 
     /// This list followed by `x`.
@@ -92,17 +229,17 @@ impl List {
     /// Whether `tail` may be written in the memory of this list: not when
     /// it holds this memory, which would then hold itself and never be freed.
     fn may_grow_with(&self, tail: &[Value]) -> bool {
-        self.data.used() == self.end as usize
-            && self.data.room() >= tail.len()
-            && (Rc::strong_count(&self.data) == 1 || !holds(tail, &self.data))
+        let shared = self.shared();
+        shared.buf.used() == self.end() && shared.buf.room() >= tail.len() && (shared.refs.get() == 1 || !holds(tail, self.shared))
     }
 
+    #[inline(always)]
     pub fn len(&self) -> usize {
-        (self.end - self.start) as usize
+        self.len as usize
     }
 
     pub fn is_empty(&self) -> bool {
-        self.start == self.end
+        self.len == 0
     }
 
     pub fn iter(&self) -> std::slice::Iter<'_, Value> {
@@ -113,17 +250,56 @@ impl List {
     pub fn slice(&self, from: usize, to: usize) -> List {
         let to = to.min(self.len());
         let from = from.min(to);
-        List { data: self.data.clone(), start: self.start + from as u32, end: self.start + to as u32 }
+        let start = self.start() + from;
+        if start >= STARTS {
+            // Beyond what 24 bits hold: a copy, which starts at 0.
+            return List::new(self.as_slice()[from..to].to_vec());
+        }
+        let mut l = self.clone();
+        l.start = start_bytes(start);
+        l.len = (to - from) as u32;
+        l
     }
 
     pub fn get(&self, i: usize) -> Option<&Value> {
         self.as_slice().get(i)
     }
+
+    /// The memory of the list, when no other list shares it.
+    fn only_buf(&mut self) -> Option<&mut Buf<Value>> {
+        let shared = self.shared;
+        // SAFETY: the memory lives as long as this list, the only one that
+        // shares it: nothing else reads or writes it meanwhile.
+        (self.shared().refs.get() == 1).then(|| unsafe { &mut (*shared.as_ptr()).buf })
+    }
+}
+
+/// The length of a list, which fits in 32 bits (a list of 4 billion
+/// elements would not fit in memory anyway).
+#[inline(always)]
+fn list_len(len: usize) -> u32 {
+    u32::try_from(len).expect("a list of more than 4 billion elements")
+}
+
+/// Where a list starts, in 24 bits.
+#[inline(always)]
+fn start_bytes(start: usize) -> [u8; 3] {
+    let s = (start as u32).to_le_bytes();
+    [s[0], s[1], s[2]]
+}
+
+impl Clone for List {
+    #[inline]
+    fn clone(&self) -> List {
+        let refs = &self.shared().refs;
+        refs.set(refs.get().checked_add(1).unwrap_or_else(|| std::process::abort()));
+        List { start: self.start, len: self.len, shared: self.shared }
+    }
 }
 
 /// Whether one of `values` may hold `data`, the memory of a list. Values
 /// with many parts are not looked at in full: they are assumed to hold it.
-fn holds(values: &[Value], data: &Rc<Buf<Value>>) -> bool {
+fn holds(values: &[Value], data: NonNull<Shared>) -> bool {
     /// The values made of other values.
     fn parts(v: &Value) -> Option<&[Value]> {
         match v {
@@ -159,7 +335,7 @@ fn holds(values: &[Value], data: &Rc<Buf<Value>>) -> bool {
         }
         budget -= vs.len();
         for v in vs {
-            if map(v) || matches!(v, Value::List(l) if Rc::ptr_eq(&l.data, data)) {
+            if map(v) || matches!(v, Value::List(l) if { l.shared } == data) {
                 return true;
             }
             todo.extend(parts(v));
@@ -174,7 +350,7 @@ pub struct Record {
     /// The names of the fields, shared by the records made from one another
     /// (`{..r, x: 1}`) and by the records made by the same `{...}` in the code.
     shape: Rc<Shape>,
-    vals: Vec<Value>,
+    vals: Few<4>,
 }
 
 /// The names of the fields of records, in order.
@@ -263,7 +439,13 @@ impl Record {
     /// A record with the fields of `shape`, in order.
     pub fn with_shape(shape: Rc<Shape>, vals: Vec<Value>) -> Record {
         debug_assert_eq!(shape.len(), vals.len());
-        Record { shape, vals }
+        Record { shape, vals: vals.into() }
+    }
+
+    /// A record with the fields of `shape`, the values of `slots` taken from them.
+    pub fn taking(shape: Rc<Shape>, slots: &mut [Value]) -> Record {
+        debug_assert_eq!(shape.len(), slots.len());
+        Record { shape, vals: Few::take_from(slots) }
     }
 
     pub fn get(&self, key: &str) -> Option<&Value> {
@@ -336,7 +518,148 @@ pub struct CtorInfo {
 
 pub struct Variant {
     pub ctor: Rc<CtorInfo>,
-    pub fields: Vec<Value>,
+    pub fields: Fields,
+}
+
+/// The fields of a value of a type (`Node(l, v, r)`, `Some(x)`): up to
+/// three in place (see `Few`).
+pub type Fields = Few<3>;
+
+/// Values kept in place, in the memory of the value they belong to, when
+/// there are at most `N` of them, else in a vector of their own: the fields
+/// of a value of a type (`Fields`) or of a record. Most have few, and
+/// making one then takes one block of memory instead of two.
+///
+/// The places after the values hold `()`. The values are freed by `drop`,
+/// which leaves `()` everywhere: the places themselves need no freeing
+/// (`ManuallyDrop`), which saves looking at the empty ones again.
+#[derive(Clone)]
+pub enum Few<const N: usize> {
+    Here(u8, ManuallyDrop<[Value; N]>),
+    Many(Vec<Value>),
+}
+
+impl<const N: usize> Few<N> {
+    #[inline(always)]
+    fn here(n: usize, here: [Value; N]) -> Few<N> {
+        Few::Here(n as u8, ManuallyDrop::new(here))
+    }
+
+    #[inline(always)]
+    fn units() -> [Value; N] {
+        std::array::from_fn(|_| Value::Unit)
+    }
+
+    /// No values.
+    pub fn none() -> Few<N> {
+        Few::here(0, Few::units())
+    }
+
+    /// One value.
+    pub fn one(v: Value) -> Few<N> {
+        let mut here = Few::units();
+        here[0] = v;
+        Few::here(1, here)
+    }
+
+    /// The values of `slots`, taken from them (leaving `()`).
+    #[inline(always)]
+    pub fn take_from(slots: &mut [Value]) -> Few<N> {
+        if slots.len() > N {
+            return Few::Many(slots.iter_mut().map(|v| std::mem::replace(v, Value::Unit)).collect());
+        }
+        let mut here = Few::units();
+        for (place, v) in here.iter_mut().zip(slots.iter_mut()) {
+            std::mem::forget(std::mem::replace(place, std::mem::replace(v, Value::Unit)));
+        }
+        Few::here(slots.len(), here)
+    }
+
+    /// Adds `v` after the values.
+    pub fn push(&mut self, v: Value) {
+        match self {
+            Few::Here(n, here) if (*n as usize) < N => {
+                here[*n as usize] = v;
+                *n += 1;
+            }
+            Few::Here(..) => {
+                let mut many = Vec::with_capacity(2 * N);
+                many.extend(self.iter_mut().map(|x| std::mem::replace(x, Value::Unit)));
+                many.push(v);
+                *self = Few::Many(many);
+            }
+            Few::Many(many) => many.push(v),
+        }
+    }
+}
+
+impl<const N: usize> Drop for Few<N> {
+    #[inline]
+    fn drop(&mut self) {
+        if let Few::Here(n, here) = self {
+            for v in &mut here[..*n as usize] {
+                if !is_plain(v) {
+                    *v = Value::Unit;
+                }
+            }
+        }
+    }
+}
+
+impl<const N: usize> Default for Few<N> {
+    fn default() -> Few<N> {
+        Few::none()
+    }
+}
+
+impl<const N: usize> From<Vec<Value>> for Few<N> {
+    fn from(mut v: Vec<Value>) -> Few<N> {
+        if v.len() > N {
+            return Few::Many(v);
+        }
+        Few::take_from(&mut v)
+    }
+}
+
+impl<const N: usize> FromIterator<Value> for Few<N> {
+    fn from_iter<I: IntoIterator<Item = Value>>(items: I) -> Few<N> {
+        let mut few = Few::none();
+        for v in items {
+            few.push(v);
+        }
+        few
+    }
+}
+
+impl<const N: usize> std::ops::Deref for Few<N> {
+    type Target = [Value];
+
+    #[inline(always)]
+    fn deref(&self) -> &[Value] {
+        match self {
+            Few::Here(n, here) => &here[..*n as usize],
+            Few::Many(many) => many,
+        }
+    }
+}
+
+impl<const N: usize> std::ops::DerefMut for Few<N> {
+    #[inline(always)]
+    fn deref_mut(&mut self) -> &mut [Value] {
+        match self {
+            Few::Here(n, here) => &mut here[..*n as usize],
+            Few::Many(many) => many,
+        }
+    }
+}
+
+impl<'a, const N: usize> IntoIterator for &'a Few<N> {
+    type Item = &'a Value;
+    type IntoIter = std::slice::Iter<'a, Value>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
 }
 
 impl Value {
@@ -443,9 +766,7 @@ impl Value {
                 Item::Value(v) => match v {
                     Value::Unit => out.push_str("()"),
                     Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
-                    Value::Int(n) => {
-                        let _ = write!(out, "{n}");
-                    }
+                    Value::Int(n) => out.push_str(int_digits(*n, &mut [0; 20])),
                     Value::Big(n) => {
                         let _ = write!(out, "{n}");
                     }
@@ -839,6 +1160,12 @@ pub fn in_range(lo: crate::ast::Num, hi: crate::ast::Num, v: &Value) -> bool {
     }
 }
 
+/// Values that hold no memory of their own.
+#[inline(always)]
+pub(crate) fn is_plain(v: &Value) -> bool {
+    matches!(v, Value::Unit | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::Symbol(_) | Value::Builtin(_))
+}
+
 /// Values that may hold other values.
 pub(crate) fn is_container(v: &Value) -> bool {
     matches!(v, Value::List(_) | Value::Record(_) | Value::Variant(_) | Value::Dict(_) | Value::Set(_))
@@ -853,7 +1180,6 @@ thread_local! {
 /// faster; deeper ones one by one, so that a structure nested millions of
 /// levels deep does not overflow the stack when it is freed.
 pub(crate) fn free_parts(parts: &mut Vec<Value>) {
-    const RECURSIVE: usize = 32;
     let depth = FREEING.with(|d| d.get());
     if depth < RECURSIVE {
         FREEING.with(|d| d.set(depth + 1));
@@ -864,6 +1190,23 @@ pub(crate) fn free_parts(parts: &mut Vec<Value>) {
     }
 }
 
+/// `free_parts` for values kept elsewhere than in a vector: they become `()`.
+fn free_fields(parts: &mut [Value]) {
+    let depth = FREEING.with(|d| d.get());
+    if depth < RECURSIVE {
+        FREEING.with(|d| d.set(depth + 1));
+        for v in parts.iter_mut() {
+            *v = Value::Unit;
+        }
+        FREEING.with(|d| d.set(depth));
+    } else {
+        drop_iteratively(parts.iter_mut().map(|v| std::mem::replace(v, Value::Unit)).collect());
+    }
+}
+
+/// How many levels of nested values are freed recursively (see `free_parts`).
+const RECURSIVE: usize = 32;
+
 /// Frees nested values one by one instead of recursively.
 fn drop_iteratively(mut todo: Vec<Value>) {
     while let Some(v) = todo.pop() {
@@ -872,12 +1215,12 @@ fn drop_iteratively(mut todo: Vec<Value>) {
             Value::Variant(mut rc) => {
                 if let Some(var) = Rc::get_mut(&mut rc) {
                     if var.fields.iter().any(is_container) {
-                        todo.append(&mut var.fields);
+                        todo.extend(var.fields.iter_mut().map(|v| std::mem::replace(v, Value::Unit)));
                     }
                 }
             }
             Value::List(mut l) => {
-                if let Some(buf) = Rc::get_mut(&mut l.data) {
+                if let Some(buf) = l.only_buf() {
                     if buf.slice(0, buf.used()).iter().any(is_container) {
                         todo.append(&mut buf.take());
                     }
@@ -886,7 +1229,7 @@ fn drop_iteratively(mut todo: Vec<Value>) {
             Value::Record(mut rc) => {
                 if let Some(r) = Rc::get_mut(&mut rc) {
                     if r.vals.iter().any(is_container) {
-                        todo.append(&mut r.vals);
+                        todo.extend(r.vals.iter_mut().map(|v| std::mem::replace(v, Value::Unit)));
                     }
                 }
             }
@@ -899,17 +1242,24 @@ fn drop_iteratively(mut todo: Vec<Value>) {
 impl Drop for Variant {
     fn drop(&mut self) {
         if self.fields.iter().any(is_container) {
-            free_parts(&mut self.fields);
+            free_fields(&mut self.fields);
         }
     }
 }
 
 impl Drop for List {
     fn drop(&mut self) {
-        if let Some(buf) = Rc::get_mut(&mut self.data) {
-            if buf.slice(0, buf.used()).iter().any(is_container) {
-                free_parts(&mut buf.take());
-            }
+        let refs = &self.shared().refs;
+        if refs.get() > 1 {
+            refs.set(refs.get() - 1);
+            return;
+        }
+        let shared = self.shared;
+        // SAFETY: the last list that shares the memory, made by `Box::leak`.
+        let mut shared = unsafe { Box::from_raw(shared.as_ptr()) };
+        let buf = &mut shared.buf;
+        if buf.slice(0, buf.used()).iter().any(is_container) {
+            free_parts(&mut buf.take());
         }
     }
 }
@@ -917,7 +1267,7 @@ impl Drop for List {
 impl Drop for Record {
     fn drop(&mut self) {
         if self.vals.iter().any(is_container) {
-            free_parts(&mut self.vals);
+            free_fields(&mut self.vals);
         }
     }
 }
@@ -943,6 +1293,27 @@ pub fn write_text_repr(s: &str, out: &mut String) {
     out.push('"');
 }
 
+/// The digits of a whole number, written in `buf`: the same text as
+/// `n.to_string()`, without the machinery of `format!`, which is most of the
+/// time spent putting numbers in texts.
+pub fn int_digits(n: i64, buf: &mut [u8; 20]) -> &str {
+    let mut i = buf.len();
+    let mut m = n.unsigned_abs();
+    loop {
+        i -= 1;
+        buf[i] = b'0' + (m % 10) as u8;
+        m /= 10;
+        if m == 0 {
+            break;
+        }
+    }
+    if n < 0 {
+        i -= 1;
+        buf[i] = b'-';
+    }
+    std::str::from_utf8(&buf[i..]).unwrap_or_default()
+}
+
 /// Decimal numbers always show a decimal point: `3.0`, `0.5`, `1e300`.
 pub fn fmt_float(f: f64) -> String {
     if f.is_nan() {
@@ -966,6 +1337,44 @@ pub fn fmt_float(f: f64) -> String {
 mod tests {
     use super::*;
 
+    #[test]
+    fn values_are_16_bytes() {
+        assert_eq!(std::mem::size_of::<Value>(), 16);
+        assert_eq!(std::mem::size_of::<Option<Value>>(), 16);
+    }
+
+    /// A list of Floats kept as numbers is the same list as one of values.
+    #[test]
+    fn lists_of_floats_are_lists() {
+        let xs = [1.5, -0.0, f64::NAN, 3.0, 1e300];
+        let kept = List::floats(xs.to_vec());
+        let plain = List::new(xs.iter().map(|&x| Value::Float(x)).collect());
+        let bits = |f: &[f64]| f.iter().map(|x| x.to_bits()).collect::<Vec<_>>();
+        assert_eq!(kept.as_floats().map(bits), Some(bits(&xs)));
+        assert_eq!(plain.as_floats(), None);
+        let (k, p) = (Value::List(kept.slice(1, 4)), Value::List(plain.slice(1, 4)));
+        assert_eq!(kept.slice(3, 5).as_floats(), Some(&xs[3..5]));
+        assert_eq!(k.repr(), p.repr());
+        assert_eq!(k.repr(), "[-0.0, nan, 3.0]");
+        assert_eq!(k.total_cmp(&p), Ordering::Equal);
+        let grown = kept.push(Value::Int(7));
+        assert_eq!(Value::List(grown).repr(), "[1.5, -0.0, nan, 3.0, 1e300, 7]");
+        assert_eq!(Value::List(kept.slice(3, 5)).repr(), "[3.0, 1e300]");
+        assert!(Value::List(kept.slice(0, 2)).equals(&Value::List(plain.slice(0, 2))));
+    }
+
+    /// Lists that start beyond 24 bits are copied, the same.
+    #[test]
+    fn lists_start_anywhere() {
+        let n = STARTS + 3;
+        let xs = List::new((0..n as i64).map(Value::Int).collect());
+        let tail = xs.slice(STARTS - 1, n);
+        let rest = tail.slice(2, 4);
+        assert_eq!(Value::List(rest.clone()).repr(), format!("[{}, {}]", STARTS + 1, STARTS + 2));
+        assert_eq!(rest.start(), 0, "a copy");
+        assert_eq!(tail.start(), STARTS - 1);
+    }
+
     /// A list whose memory has room after it.
     fn roomy() -> List {
         List::new(vec![Value::Int(1)]).push(Value::Int(2)).push(Value::Int(3))
@@ -975,10 +1384,10 @@ mod tests {
     fn lists_grow_in_place_but_never_hold_their_own_memory() {
         let xs = roomy();
         let ys = xs.push(Value::Int(4));
-        assert!(Rc::ptr_eq(&xs.data, &ys.data), "in the room after `xs`");
+        assert_eq!({ xs.shared }, { ys.shared }, "in the room after `xs`");
         assert_eq!((xs.len(), ys.len()), (3, 4));
         // `xs` no longer ends where its memory is used: copied.
-        assert!(!Rc::ptr_eq(&xs.data, &xs.push(Value::Int(5)).data));
+        assert_ne!({ xs.shared }, { xs.push(Value::Int(5)).shared });
         let ctor = Rc::new(CtorInfo {
             type_name: Sym::new("T"),
             name: Sym::new("A"),
@@ -990,14 +1399,27 @@ mod tests {
         });
         let with_itself = [
             Value::List(ys.clone()),
-            Value::Variant(Rc::new(Variant { ctor, fields: vec![Value::list(vec![Value::Int(0), Value::List(ys.clone())])] })),
+            Value::Variant(Rc::new(Variant { ctor, fields: Fields::one(Value::list(vec![Value::Int(0), Value::List(ys.clone())])) })),
         ];
         for v in with_itself {
             let grown = ys.push(v);
-            assert!(!Rc::ptr_eq(&ys.data, &grown.data), "a list that would hold itself is copied");
+            assert_ne!({ ys.shared }, { grown.shared }, "a list that would hold itself is copied");
         }
         let zs = ys.push(Value::list(vec![Value::Int(7)]));
-        assert!(Rc::ptr_eq(&ys.data, &zs.data));
+        assert_eq!({ ys.shared }, { zs.shared });
         assert_eq!(Value::List(zs).repr(), "[1, 2, 3, 4, [7]]");
+    }
+
+    #[test]
+    fn whole_numbers_are_written_as_rust_writes_them() {
+        let mut n: i64 = 1;
+        let mut cases = vec![0, i64::MIN, i64::MAX, i64::MIN + 1, -1];
+        for _ in 0..19 {
+            cases.extend([n, n - 1, n + 1, -n, 1 - n]);
+            n = n.saturating_mul(10);
+        }
+        for n in cases {
+            assert_eq!(int_digits(n, &mut [0; 20]), n.to_string());
+        }
     }
 }

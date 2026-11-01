@@ -67,8 +67,11 @@ pub fn format(source: &str) -> Result<String, Vec<Diagnostic>> {
 /// code nested thousands of levels deep needs a thread with a big stack, as
 /// `rythme` has.
 pub fn format_named(name: &str, source: &str) -> Result<String, Vec<Diagnostic>> {
-    let Some(before) = syntax_tree(source) else { return Err(vec![syntax_error(name, source)]) };
-    let out = layout(&short_uses(source)).filter(|out| syntax_tree(out).as_ref() == Some(&before) && comments(out) == comments(source));
+    let Some(items) = parse(source) else { return Err(vec![syntax_error(name, source)]) };
+    // The same text as the code (already formatted, the usual case): nothing
+    // to compare, which is most of the work.
+    let out = layout(&short_uses(source))
+        .filter(|out| out == source || syntax_tree(out).as_ref() == Some(&tree_text(&items)) && comments(out) == comments(source));
     match out {
         Some(out) if uses_crlf(source) => Ok(out.replace('\n', "\r\n")),
         Some(out) => Ok(out),
@@ -115,7 +118,15 @@ fn short_path(path: &str) -> Option<String> {
 /// The syntax tree of a program, without the positions: two programs that mean
 /// the same thing give the same text.
 fn syntax_tree(src: &str) -> Option<String> {
-    let items = lexer::lex(src, UNSHOWN).and_then(parser::parse).ok()?;
+    Some(tree_text(&parse(src)?))
+}
+
+fn parse(src: &str) -> Option<Vec<crate::ast::Item>> {
+    lexer::lex(src, UNSHOWN).and_then(parser::parse).ok()
+}
+
+/// The text of [`syntax_tree`], for items already read.
+fn tree_text(items: &[crate::ast::Item]) -> String {
     let debug = format!("{items:?}");
     let mut out = String::with_capacity(debug.len());
     let mut rest = debug.as_str();
@@ -127,7 +138,7 @@ fn syntax_tree(src: &str) -> Option<String> {
         rest = &rest[len..];
     }
     out.push_str(rest);
-    Some(out)
+    out
 }
 
 /// The length of the `Span { file: 0, start: 12, end: 15 }` that `s` starts with.
