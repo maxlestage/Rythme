@@ -147,8 +147,28 @@ macro_rules! b {
 
 /// The built-in function `name`, also under its Ruby name (`upcase` gives `upper`).
 pub fn lookup(name: &str) -> Option<&'static Builtin> {
-    let name = alias_of(name).unwrap_or(name);
-    BUILTINS.iter().find(|b| b.name == name)
+    type Index = std::collections::HashMap<&'static str, Option<&'static Builtin>, std::hash::BuildHasherDefault<crate::symbol::SymHasher>>;
+    // The checker searches for each call of a built-in, and reading the
+    // whole list each time made long programs slow; but making the index
+    // costs more than the few searches of a small program.
+    static INDEX: std::sync::OnceLock<Index> = std::sync::OnceLock::new();
+    static SEARCHES: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+    if INDEX.get().is_none() && SEARCHES.fetch_add(1, std::sync::atomic::Ordering::Relaxed) < 64 {
+        let name = alias_of(name).unwrap_or(name);
+        return BUILTINS.iter().find(|b| b.name == name);
+    }
+    let index = INDEX.get_or_init(|| {
+        let mut index = Index::default();
+        // The Ruby names first: `alias_of` is asked before the list.
+        for a in ALIASES {
+            index.entry(a.name).or_insert_with(|| BUILTINS.iter().find(|b| b.name == a.of));
+        }
+        for b in BUILTINS {
+            index.entry(b.name).or_insert(Some(b));
+        }
+        index
+    });
+    index.get(name).copied().flatten()
 }
 
 /// A second name of a built-in function: the name Ruby gives it.
@@ -1869,6 +1889,7 @@ fn to_text(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     }
     Ok(match &a[0] {
         Value::Text(_) => a[0].clone(),
+        Value::Int(n) => text_value(int_digits(*n, &mut [0; 20])),
         v => text_value(v.display()),
     })
 }
@@ -2427,11 +2448,25 @@ fn len(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 }
 
 fn upper(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    Ok(text_value(text(a, 0, "upper", span)?.to_uppercase()))
+    let s = text(a, 0, "upper", span)?;
+    Ok(ascii_case(s, u8::to_ascii_uppercase).unwrap_or_else(|| text_value(s.to_uppercase())))
 }
 
 fn lower(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
-    Ok(text_value(text(a, 0, "lower", span)?.to_lowercase()))
+    let s = text(a, 0, "lower", span)?;
+    Ok(ascii_case(s, u8::to_ascii_lowercase).unwrap_or_else(|| text_value(s.to_lowercase())))
+}
+
+/// A short ASCII text with the case of each letter changed, written on the
+/// stack instead of in a `String` first: the same as `to_uppercase` and
+/// `to_lowercase` for ASCII.
+fn ascii_case(s: &str, change: fn(&u8) -> u8) -> Option<Value> {
+    let mut buf = [0u8; 128];
+    let out = buf.get_mut(..s.len()).filter(|_| s.is_ascii())?;
+    for (o, b) in out.iter_mut().zip(s.as_bytes()) {
+        *o = change(b);
+    }
+    std::str::from_utf8(out).ok().map(text_value)
 }
 
 fn capitalize(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -2552,7 +2587,7 @@ fn split(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     } else {
         let sep = text(a, 1, "split", span)?;
         match single_char(sep) {
-            _ if sep.is_empty() => s.chars().map(|c| text_value(c.to_string())).collect(),
+            _ if sep.is_empty() => s.chars().map(char_value).collect(),
             // Same result, found much faster.
             Some(c) => s.split(c).map(text_value).collect(),
             None => s.split(sep).map(text_value).collect(),
@@ -2603,6 +2638,11 @@ fn replace(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     }))
 }
 
+/// A text of one character, made without a `String` first.
+fn char_value(c: char) -> Value {
+    text_value(&*c.encode_utf8(&mut [0; 4]))
+}
+
 /// The character, if the text is one character: searching for a character is
 /// much faster than searching for a text.
 fn single_char(s: &str) -> Option<char> {
@@ -2618,7 +2658,7 @@ fn chars(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     if s.len() > MAX_LIST && s.chars().count() > MAX_LIST {
         return Err(too_big(true, span));
     }
-    Ok(Value::list(s.chars().map(|c| text_value(c.to_string())).collect()))
+    Ok(Value::list(s.chars().map(char_value).collect()))
 }
 
 fn lines(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
@@ -3401,7 +3441,7 @@ fn first(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     }
     Ok(match &a[0] {
         Value::List(l) => it.option(l.get(0).cloned()),
-        Value::Text(s) => it.option(s.chars().next().map(|c| text_value(c.to_string()))),
+        Value::Text(s) => it.option(s.chars().next().map(char_value)),
         v => return Err(wrong("first", 0, Expected::ListOrText, v, span)),
     })
 }
@@ -3414,7 +3454,8 @@ fn last(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     }
     Ok(match &a[0] {
         Value::List(l) => it.option(l.as_slice().last().cloned()),
-        Value::Text(s) => it.option(s.chars().last().map(|c| text_value(c.to_string()))),
+        // From the end: `last` would read the whole text.
+        Value::Text(s) => it.option(s.chars().next_back().map(char_value)),
         v => return Err(wrong("last", 0, Expected::ListOrText, v, span)),
     })
 }
@@ -3422,7 +3463,7 @@ fn last(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 fn rest(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     Ok(match &a[0] {
         Value::List(l) => Value::List(l.slice(1, l.len())),
-        Value::Text(s) => text_value(s.chars().skip(1).collect::<String>()),
+        Value::Text(s) => text_value(chars_between(s, 1, usize::MAX)),
         v => return Err(wrong("rest", 0, Expected::ListOrText, v, span)),
     })
 }
@@ -3617,9 +3658,21 @@ fn bounds(len: usize, start: i64, end: Option<i64>) -> (usize, usize) {
 fn cut(v: &Value, from: usize, to: usize) -> Value {
     match v {
         Value::List(l) => Value::List(l.slice(from, to)),
-        Value::Text(s) => text_value(s.chars().skip(from).take(to - from).collect::<String>()),
+        Value::Text(s) => text_value(chars_between(s, from, to)),
         _ => Value::Unit,
     }
+}
+
+/// The characters `from..to` of a text (fewer at its end), as a part of it:
+/// copied once, not character by character.
+fn chars_between(s: &str, from: usize, to: usize) -> &str {
+    if s.is_ascii() {
+        return &s[from.min(s.len())..to.min(s.len()).max(from.min(s.len()))];
+    }
+    let mut places = s.char_indices().map(|(i, _)| i).chain([s.len()]);
+    let Some(start) = places.nth(from) else { return "" };
+    let end = if to <= from { start } else { places.nth(to - from - 1).unwrap_or(s.len()) };
+    &s[start..end]
 }
 
 fn length_of(v: &Value, name: &str, span: Span) -> Fallible<usize> {

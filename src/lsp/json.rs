@@ -166,7 +166,7 @@ impl fmt::Display for Json {
                 if !n.is_finite() {
                     f.write_str("null")
                 } else if n.fract() == 0.0 && n.abs() < 1e15 {
-                    write!(f, "{}", *n as i64)
+                    f.write_str(crate::value::int_digits(*n as i64, &mut [0; 20]))
                 } else {
                     write!(f, "{n}")
                 }
@@ -178,7 +178,7 @@ impl fmt::Display for Json {
                     if i > 0 {
                         f.write_char(',')?;
                     }
-                    write!(f, "{v}")?;
+                    fmt::Display::fmt(v, f)?;
                 }
                 f.write_char(']')
             }
@@ -189,7 +189,8 @@ impl fmt::Display for Json {
                         f.write_char(',')?;
                     }
                     write_str(f, k)?;
-                    write!(f, ":{v}")?;
+                    f.write_char(':')?;
+                    fmt::Display::fmt(v, f)?;
                 }
                 f.write_char('}')
             }
@@ -199,17 +200,29 @@ impl fmt::Display for Json {
 
 fn write_str(f: &mut fmt::Formatter<'_>, s: &str) -> fmt::Result {
     f.write_char('"')?;
-    for c in s.chars() {
-        match c {
-            '"' => f.write_str("\\\"")?,
-            '\\' => f.write_str("\\\\")?,
-            '\n' => f.write_str("\\n")?,
-            '\r' => f.write_str("\\r")?,
-            '\t' => f.write_str("\\t")?,
-            c if (c as u32) < 0x20 => write!(f, "\\u{:04x}", c as u32)?,
-            c => f.write_char(c)?,
+    // The characters to escape are ASCII: the text between them is written
+    // in one piece (one character at a time was most of the time spent
+    // sending long answers).
+    let mut from = 0;
+    for (i, b) in s.bytes().enumerate() {
+        let escaped = match b {
+            b'"' => "\\\"",
+            b'\\' => "\\\\",
+            b'\n' => "\\n",
+            b'\r' => "\\r",
+            b'\t' => "\\t",
+            0..0x20 => "",
+            _ => continue,
+        };
+        f.write_str(&s[from..i])?;
+        if escaped.is_empty() {
+            write!(f, "\\u{:04x}", b)?;
+        } else {
+            f.write_str(escaped)?;
         }
+        from = i + 1;
     }
+    f.write_str(&s[from..])?;
     f.write_char('"')
 }
 
@@ -440,6 +453,12 @@ mod tests {
         assert_eq!(Json::parse("-7").unwrap().as_i64(), Some(-7));
         assert_eq!(Json::Num(0.5).to_string(), "0.5");
         assert_eq!(Json::Str("\u{1}".into()).to_string(), "\"\\u0001\"");
+        // Escapes between, before and after other characters, of every width.
+        assert_eq!(Json::Str("\té\u{1f}x\r\"😀\\".into()).to_string(), r#""\té\u001fx\r\"😀\\""#);
+        assert_eq!(Json::Str(String::new()).to_string(), r#""""#);
+        let numbers = [0.0, -0.0, 1.0, -1.0, 42.0, -987654321.0, 999_999_999_999_999.0, 1e15, 2.5, -1e-7];
+        let shown: Vec<String> = numbers.iter().map(|&n| Json::Num(n).to_string()).collect();
+        assert_eq!(shown, ["0", "0", "1", "-1", "42", "-987654321", "999999999999999", "1000000000000000", "2.5", "-0.0000001"]);
     }
 
     #[test]

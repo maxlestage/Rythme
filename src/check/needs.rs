@@ -24,7 +24,7 @@ use super::{comparable, literal, may_be_equal, Checker, GKind, Res};
 use crate::ast::*;
 use crate::diagnostic::Diagnostic;
 use crate::source::Span;
-use crate::symbol::Sym;
+use crate::symbol::{Sym, SymMap};
 use crate::types::{
     self, Kinds, Outcome, Ty, ALL, BOOL, DATA, DICT, FLOAT, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, SET, SYMBOL, TEXT, UNIT,
 };
@@ -407,12 +407,19 @@ impl Checker<'_> {
         if self.tracked(obj).is_none() {
             return;
         }
-        let mut k = RECORD;
-        for m in self.ctors.values() {
-            if m.fields.iter().any(|f| &*f.name() == name) {
-                k |= Ty::data(m.type_name, None).kinds();
+        // Every constructor with such a field: from an index, as reading
+        // every constructor for each field read made long programs slow.
+        let ctors = &self.ctors;
+        let index = self.field_kinds.get_or_insert_with(|| {
+            let mut index = SymMap::default();
+            for m in ctors.values() {
+                for f in &m.fields {
+                    *index.entry(*f).or_insert(0) |= Ty::data(m.type_name, None).kinds();
+                }
             }
-        }
+            index
+        });
+        let mut k = RECORD | index.get(&Sym::new(name)).copied().unwrap_or(0);
         // `t.upcase`: without such a field, the function `upcase` is called with the value.
         let mut exits = false;
         if let Some((need, may_exit)) = self.function_need(Sym::new(name), &[], &[]) {
