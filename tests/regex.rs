@@ -395,7 +395,7 @@ fn searches_that_skip_ahead_see_every_character() {
     assert_eq!(found("éé", "x*").len(), 3);
     // A text too long for the table of the faster engine: the other one.
     let long = format!("{}é", "a".repeat(9_000_000));
-    assert_eq!(found(&long, "a*é|b"), [long.clone()]);
+    assert_eq!(found(&long, "a*é|b"), [long.as_str()]);
     let re = Regex::new("(a|é)+$").unwrap();
     assert_eq!(re.find_at(&long, 0), Some(vec![Some((0, long.len())), Some((long.len() - 2, long.len()))]));
     ok(
