@@ -178,7 +178,7 @@ impl Interp {
             }
             Exec::Tail(next, next_member, next_args, next_argc, next_span, next_test) => {
                 test = next_test.then_some(next_span);
-                self.tail_chain(next, next_member, args, code.chunk.regs, next_args, next_argc, next_span, &mut test)
+                self.tail_chain_here(next, next_member, args, code.chunk.regs, next_args, next_argc, next_span, &mut test)
             }
         };
         // The registers and the arguments: nothing is left above `args`.
@@ -314,6 +314,24 @@ impl Interp {
     #[allow(clippy::too_many_arguments)]
     #[inline(never)]
     fn tail_chain(
+        &mut self,
+        next: Value,
+        member: Option<u32>,
+        base: usize,
+        regs: usize,
+        args: usize,
+        argc: usize,
+        span: Span,
+        test: &mut Option<Span>,
+    ) -> Fallible<Value> {
+        self.tail_chain_here(next, member, base, regs, args, argc, span, test)
+    }
+
+    /// `tail_chain`, in place: a function given to `map` that calls `map`
+    /// again last nests one frame fewer on the machine's stack.
+    #[allow(clippy::too_many_arguments)]
+    #[inline(always)]
+    fn tail_chain_here(
         &mut self,
         next: Value,
         member: Option<u32>,
