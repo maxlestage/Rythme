@@ -156,6 +156,10 @@ async fn the_service_worker_saves_only_urls_that_exist() {
     ] {
         assert!(precache.contains(&file.to_owned()), "{file}");
     }
+    // The worker asks for them all at once: within the burst of the rate limit, with
+    // room for the page that registers it and its files (a refused one, 429, would
+    // cancel the installation).
+    assert!(precache.len() + 50 <= rythme_site::server::BURST as usize, "{} URLs to save", precache.len());
     // A URL that fails would cancel the installation of the worker.
     for url in &precache {
         assert_eq!(client.get(url).await.status(), 200, "{url}");
