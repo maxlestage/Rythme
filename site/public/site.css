@@ -1014,7 +1014,7 @@ select {
 }
 .fn:target, .code-entry:target { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .fn__name, .code-entry__title { font: 600 17px/1.3 var(--body); margin: 0; }
-.fn__name a, .code-entry__title a { display: inline-flex; align-items: center; min-height: 44px; margin-block: -8px; text-decoration: none; }
+.fn__name a, .code-entry__title a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; margin-block: -8px; text-decoration: none; }
 .fn__name code, .code-entry__title code { font-size: 16px; font-weight: 600; color: var(--accent); }
 .fn__sig { font-size: 14px; }
 .fn__doc { color: var(--ink-soft); font-size: 15px; }
