@@ -322,6 +322,16 @@ fn every_piece_of_code_runs() {
         let shown: Vec<&str> = t.errors_message.lines().collect();
         let real: Vec<&str> = out.trim_matches(['\u{1}', '\u{2}', '\n']).lines().collect();
         assert_eq!(shown, real, "{lang:?}");
+        // The programs of Rythme at work print what the page shows, without a warning; the
+        // file of its part about CI passes its tests.
+        for sample in &rythme_site::sections::WORK_SAMPLES {
+            let (out, failed) = run(sample.code, lang, false);
+            assert!(!failed && !warns(&out), "{lang:?} {}: {out}", sample.file);
+            assert_eq!(out.trim_end(), sample.output, "{lang:?} {}", sample.file);
+        }
+        let ci = &rythme_site::sections::CI_SAMPLE;
+        let (out, failed) = run(ci.code, lang, true);
+        assert!(!failed && !warns(&out), "{lang:?} {}: {out}", ci.file);
     }
 }
 
