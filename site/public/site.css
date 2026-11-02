@@ -354,7 +354,7 @@ ul, ol { margin: 0; padding: 0; }
   .js .nav__list { flex-wrap: nowrap; }
   .js .nav__list li { border: 0; }
   .js .nav__link, .js .nav__link--github, .js .nav__install {
-    width: auto; min-height: 40px; padding: 0 12px; font: 500 15px/1 var(--body); color: var(--ink-soft); border-radius: 8px;
+    width: auto; min-height: 40px; padding: 0 var(--nav-pad, 9px); font: 500 15px/1 var(--body); color: var(--ink-soft); border-radius: 8px;
   }
   .js .nav__link:hover { color: var(--ink); background: var(--accent-soft); }
   .js .nav__link.is-active, .js .nav__install { color: var(--accent); }
@@ -958,7 +958,7 @@ select {
   .js .nav__item--more { display: block; position: relative; }
   .js .nav__more-toggle:not([hidden]) {
     display: inline-flex; border: 0; background: none; cursor: pointer;
-    min-height: 40px; padding: 0 12px; font: 500 15px/1 var(--body); color: var(--ink-soft); border-radius: 8px;
+    min-height: 40px; padding: 0 var(--nav-pad, 9px); font: 500 15px/1 var(--body); color: var(--ink-soft); border-radius: 8px;
   }
   .js .nav__more-toggle:hover { color: var(--ink); background: var(--accent-soft); }
   .js .nav__more-toggle.is-active { color: var(--accent); }
@@ -968,7 +968,7 @@ select {
   }
   .nav__item--more.is-open .nav__more-toggle::after { margin-top: 3px; transform: rotate(-135deg); }
   .js .nav__more-toggle:not([hidden]) + .nav__sub {
-    display: grid; position: absolute; left: 0; top: calc(100% + 8px); z-index: 70;
+    display: grid; position: absolute; right: 0; top: calc(100% + 8px); z-index: 70;
     width: max-content; min-width: 13em; max-width: min(20em, 100vw - 2 * var(--gutter)); padding: 6px;
     background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow);
   }
@@ -977,6 +977,9 @@ select {
   .js .nav__sub .nav__link { width: 100%; min-height: 44px; font: 500 15px/1.2 var(--body); color: var(--ink); }
   .js .nav__sub .nav__link.is-active { color: var(--accent); }
 }
+/* The links of the bar get closer on a narrow computer, where five links, "More" and the
+   buttons must hold on one line in every language. */
+@media (min-width: 1000px) { :root { --nav-pad: 12px; } }
 
 /* Lists of commands, cards and steps keep to the width of a phone. */
 .more .steps--ways { grid-template-columns: minmax(0, 1fr); }
