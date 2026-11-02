@@ -116,7 +116,8 @@ themes (Auto, Light, Dark, High contrast, Sepia, Tempo), and no page scrolls
 sideways, from a 320px phone to a wide screen.
 
 The [`site/`](site) folder is the website of Rythme (home, tour of the
-language, examples, playground and guide for teachers, in eight languages),
+language, examples, playground, guide for teachers, install and tools,
+reference, packages, Rythme at work and exercises, in eight languages),
 written in Rust with Paquets.
 
 ### Deploy the website on Heroku
