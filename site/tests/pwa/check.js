@@ -16,7 +16,7 @@ const { workspace, freePort, startServer, startExport, binary, checker, started 
 
 const BIN = binary(process.argv[2]);
 const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
-const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "ai/"];
+const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "ai/", "install/", "reference/", "packages/", "work/", "exercises/"];
 // Every language of the site (src/i18n.rs), with the title of its offline page and the
 // word that starts the interpreter's error messages in it.
 const LANGS = ["fr", "en", "es", "de", "pt", "zh", "it", "ja"];

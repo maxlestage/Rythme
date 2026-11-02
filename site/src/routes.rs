@@ -42,6 +42,17 @@ pub enum Page {
     Teach,
     /// For AI assistants: how to give them Rythme.
     Ai,
+    /// Installing Rythme, and its tools: completions, editors, the language server, the
+    /// debugger, the MCP server.
+    Install,
+    /// Every built-in function and every code, from the interpreter.
+    Reference,
+    /// The package index: finding, adding and publishing packages.
+    Packages,
+    /// Rythme at work: scripts, data, CI, JSON for tools, stability, performance.
+    Work,
+    /// The exercises of `rythme exercise`, by level.
+    Exercises,
     /// Shown by the service worker for a page that was not saved, without network.
     Offline,
     NotFound,
@@ -49,7 +60,19 @@ pub enum Page {
 
 impl Page {
     /// Every page that has an address, in the order of the navigation.
-    pub const ALL: [Page; 6] = [Page::Home, Page::Learn, Page::Examples, Page::Playground, Page::Teach, Page::Ai];
+    pub const ALL: [Page; 11] = [
+        Page::Home,
+        Page::Learn,
+        Page::Examples,
+        Page::Playground,
+        Page::Teach,
+        Page::Ai,
+        Page::Install,
+        Page::Reference,
+        Page::Packages,
+        Page::Work,
+        Page::Exercises,
+    ];
     /// The pages that have an address but are not in the navigation nor the sitemap.
     pub const EXTRA: [Page; 1] = [Page::Offline];
 
@@ -62,6 +85,11 @@ impl Page {
             Page::Playground => "playground",
             Page::Teach => "teach",
             Page::Ai => "ai",
+            Page::Install => "install",
+            Page::Reference => "reference",
+            Page::Packages => "packages",
+            Page::Work => "work",
+            Page::Exercises => "exercises",
             Page::Offline => "offline",
             Page::NotFound => "404",
         }
@@ -69,7 +97,7 @@ impl Page {
 
     /// The pages that also exist as Markdown (`index.md`): those with content to read.
     pub fn has_markdown(self) -> bool {
-        matches!(self, Page::Home | Page::Learn | Page::Examples | Page::Teach | Page::Ai)
+        !matches!(self, Page::Playground | Page::Offline | Page::NotFound)
     }
 }
 

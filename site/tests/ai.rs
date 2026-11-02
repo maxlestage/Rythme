@@ -74,7 +74,7 @@ async fn the_llms_files_are_served() {
         })
         .collect();
     assert!(links.contains(&format!("{ORIGIN}/llms-full.txt")), "{links:?}");
-    for page in [Page::Home, Page::Learn, Page::Examples, Page::Teach, Page::Ai] {
+    for page in Page::ALL.into_iter().filter(|p| p.has_markdown()) {
         assert!(links.contains(&format!("{ORIGIN}{}", Route::new(Lang::En, page).markdown_path())), "{page:?}");
     }
     for url in &links {
@@ -151,7 +151,7 @@ async fn every_page_has_its_markdown() {
         assert_eq!(headings, 1, "{path}: one title");
         let blocks = code_blocks(&markdown);
         for (lang, _) in &blocks {
-            assert!(["rythme", "text", "sh", "json"].contains(&lang.as_str()), "{path}: ```{lang}");
+            assert!(["rythme", "text", "sh", "json", "toml", "yaml"].contains(&lang.as_str()), "{path}: ```{lang}");
         }
         let rythme = blocks.iter().filter(|(l, _)| l == "rythme").count();
         let t = route.lang.texts();
@@ -159,6 +159,10 @@ async fn every_page_has_its_markdown() {
             Page::Learn => assert_eq!(rythme, t.tour.len(), "{path}"),
             Page::Examples => assert_eq!(rythme, EXAMPLES.len(), "{path}"),
             Page::Home => assert_eq!(rythme, 2, "{path}"),
+            // Every built-in function with its example; the samples of Rythme at work and
+            // the file with its tests.
+            Page::Reference => assert_eq!(rythme, rythme::builtins::BUILTINS.len(), "{path}"),
+            Page::Work => assert_eq!(rythme, rythme_site::sections::WORK_SAMPLES.len() + 1, "{path}"),
             _ => {}
         }
         assert!(markdown.contains(&format!("<{ORIGIN}{}>", route.path())), "{path}: the address of the page");
@@ -199,7 +203,9 @@ fn run(code: &str, lang: Lang, test: bool) -> (String, bool) {
 async fn the_code_of_the_markdown_runs() {
     let client = client().await;
     for lang in Lang::ALL {
-        for page in [Page::Home, Page::Learn, Page::Examples, Page::Ai] {
+        // The reference shows the examples of `rythme help`, which the interpreter's own
+        // tests run (some read files or the network).
+        for page in [Page::Home, Page::Learn, Page::Examples, Page::Ai, Page::Work] {
             let path = Route::new(lang, page).markdown_path();
             let blocks = code_blocks(&get(&client, &path).await.2);
             for (n, (kind, code)) in blocks.iter().enumerate() {
@@ -264,7 +270,15 @@ async fn the_structured_data_parses() {
                 assert_eq!(source["programmingLanguage"]["name"], "Rust");
                 assert_eq!(source["codeRepository"], "https://github.com/maxlestage/Rythme");
             }
-            Page::Learn | Page::Examples | Page::Teach | Page::Ai => {
+            Page::Learn
+            | Page::Examples
+            | Page::Teach
+            | Page::Ai
+            | Page::Install
+            | Page::Reference
+            | Page::Packages
+            | Page::Work
+            | Page::Exercises => {
                 assert_eq!(data.len(), 1, "{path}");
                 let article = &data[0];
                 assert_eq!(article["@type"], "TechArticle", "{path}");
@@ -272,10 +286,23 @@ async fn the_structured_data_parses() {
                 assert_eq!(article["inLanguage"], route.lang.tag());
                 assert_eq!(article["encoding"]["contentUrl"], format!("{ORIGIN}{}", route.markdown_path()));
                 let parts = article["hasPart"].as_array().map(Vec::as_slice).unwrap_or_default();
+                if route.page == Page::Exercises {
+                    // Each exercise as a resource to learn with, at its anchor.
+                    assert_eq!(parts.len(), rythme::exercise::EXERCISES.len(), "{path}");
+                    for (part, e) in parts.iter().zip(rythme::exercise::EXERCISES) {
+                        assert_eq!(part["@type"], "LearningResource");
+                        assert_eq!(part["url"], format!("{ORIGIN}{path}#exercise-{}", e.number()));
+                        assert!(["Beginner", "Intermediate", "Advanced"].contains(&part["educationalLevel"].as_str().unwrap()), "{path}");
+                    }
+                    continue;
+                }
                 let codes: Vec<&str> = parts.iter().map(|p| p["text"].as_str().unwrap()).collect();
                 match route.page {
                     Page::Learn => assert_eq!(codes, t.tour.iter().map(|s| s.code).collect::<Vec<_>>(), "{path}"),
                     Page::Examples => assert_eq!(codes, EXAMPLES.iter().map(|e| e.code).collect::<Vec<_>>(), "{path}"),
+                    Page::Work => {
+                        assert_eq!(codes, rythme_site::sections::WORK_SAMPLES.iter().map(|s| s.code).collect::<Vec<_>>(), "{path}")
+                    }
                     _ => assert!(codes.is_empty(), "{path}"),
                 }
                 for part in parts {
@@ -301,7 +328,9 @@ async fn titles_and_descriptions() {
             assert!(html.contains(r#"<meta name="description" content=""#), "{lang:?} {page:?}");
             let at = html.find(r#"<meta name="description" content=""#).unwrap() + 34;
             let text = &html[at..at + html[at..].find('"').unwrap()];
-            assert!(text.chars().count() >= 20 && text.chars().count() <= 300, "{lang:?} {page:?}: {text}");
+            // What search engines show of it: at most 160 characters.
+            let text = unescape(text);
+            assert!(text.chars().count() >= 20 && text.chars().count() <= 160, "{lang:?} {page:?}: {} {text}", text.chars().count());
             titles.push(title.to_owned());
         }
         let mut unique = titles.clone();
@@ -342,7 +371,7 @@ async fn the_ai_page() {
             assert!(unescape(&html).contains(text), "{lang:?}: {text}");
         }
         for cmd in ai::LOOP {
-            assert!(html.contains(cmd), "{lang:?}: {cmd}");
+            assert!(unescape(&html).contains(cmd), "{lang:?}: {cmd}");
         }
         assert!(t.ai_prompt.contains("{url}") && t.pg_ai_intro.contains("{url}"), "{lang:?}");
         // Copy for AI in the playground: hidden until the browser side shows it, with the

@@ -23,7 +23,12 @@ page as Markdown and structured data (see [For AI assistants](#for-ai-assistants
 | `/{lang}/playground/` | the real interpreter, compiled to WebAssembly |
 | `/{lang}/teach/` | the guide for teachers (`docs/teaching.md`, `docs/enseigner.md`, `docs/teaching.es.md`...) |
 | `/{lang}/ai/` | for AI assistants: how to give them Rythme, the MCP server, the loop of `--format json` and `rythme fix` |
-| `/{lang}/index.md`, `/{lang}/{page}/index.md` | the home page, *Learn*, the examples, the guide and the AI page as Markdown (`text/markdown`) |
+| `/{lang}/install/` | *Install & tools*: the ways to install of the README, `rythme upgrade`, completions, editors, the language server, the debugger, `rythme mcp` |
+| `/{lang}/reference/` | every built-in function (`BUILTINS`) and every code (`help::CODES`), made from the interpreter, with a filter; `#fn-map`, `#E014` |
+| `/{lang}/packages/` | the package index: `search`, `info`, `add`, `update`, `publish`, `rythme.toml` and versions |
+| `/{lang}/work/` | *Rythme at work*: scripts and data that run in the playground, tests and CI, `--format json`, stability, performance |
+| `/{lang}/exercises/` | the 36 exercises of `rythme exercise` by level, each opening in the playground with its tests |
+| `/{lang}/index.md`, `/{lang}/{page}/index.md` | every page but the playground as Markdown (`text/markdown`) |
 | `/llms.txt`, `/llms-full.txt` | the index and the whole language for AI assistants (`docs/llms.txt`, `docs/llms-full.txt`) |
 | `/{lang}/offline/` | shown by the service worker for a page it has not saved, without network |
 | `/examples.json`, `/sitemap.xml`, `/robots.txt` | for the playground and search engines |
@@ -33,6 +38,7 @@ page as Markdown and structured data (see [For AI assistants](#for-ai-assistants
 |---|---|
 | The languages, their texts | `src/i18n.rs`, `src/i18n/<code>.rs` (a missing translation does not compile) |
 | Pages, header with the burger menu and the language menu | `src/pages.rs` |
+| The five sections (install, reference, packages, at work, exercises), their texts | `src/sections.rs`, `src/i18n/sections/<code>.rs` |
 | Server and routes | `src/server.rs`, `src/routes.rs` |
 | Rythme code colors, code blocks that wrap line by line | `src/highlight.rs` |
 | Color themes: names, `theme-color`, the inline script of the head | `src/themes.rs` (colors in `public/site.css`) |
@@ -49,8 +55,10 @@ page as Markdown and structured data (see [For AI assistants](#for-ai-assistants
 | Structured data (JSON-LD) | `src/structured.rs`, written by `src/json.rs` (the manifests too) |
 | Icons, `favicon.ico`, screenshots of the install dialog | `public/icons/`, `public/screenshots/`, made by `tests/pwa/images.js` |
 
-The examples and the guide are built into the server (`include_str!`): nothing to copy
-when deploying, besides `public/`.
+The examples and the guide are built into the server (`include_str!`), and so is the
+interpreter (`rythme`, a dependency of the server): the reference, the exercises and the
+documentation of each function come from it, in every language, so they cannot fall behind
+it. Nothing to copy when deploying, besides `public/`.
 
 ## Build and run
 
@@ -236,6 +244,10 @@ French, English, Spanish, German, Portuguese (Brazilian, "você"), Chinese
   sitemap. `/` follows the cookie of the language switch, else `Accept-Language`
   (`zh-TW` and `pt-PT` go to `zh` and `pt`), else French; the static export does the
   same in the browser.
+- **The menu.** On a phone, the burger menu lists every page; on a computer, the bar
+  shows *Learn*, *Examples*, *Playground*, *Teach* and *AI*, and *More* opens the
+  five sections (a list under it, closed by Escape, a click elsewhere or the focus
+  leaving it). Without the browser side every link is in the bar, which wraps.
 - **The language menu.** In the bar, a button with the code of the language opens the
   list of languages, each named in itself (a `details`: it works without a script;
   the browser side closes it with Escape, which gives the focus back to the button, a click
@@ -519,7 +531,8 @@ of the manual).
   `robots.txt` names them, and the service worker saves them, so the AI page works
   offline with its links.
 - **Markdown**: `/{lang}/index.md`, `/{lang}/learn/index.md`, `/{lang}/examples/index.md`,
-  `/{lang}/teach/index.md` and `/{lang}/ai/index.md` (`text/markdown; charset=utf-8`),
+  `/{lang}/teach/index.md`, `/{lang}/ai/index.md` and those of the five sections
+  (`/{lang}/reference/index.md`...) (`text/markdown; charset=utf-8`),
   written by `src/markdown.rs` from the texts, code and examples of the HTML pages:
   one `#` title, the lead as a quote, the code fenced as ```` ```rythme ````, what it
   prints as ```` ```text ````, every link absolute, no HTML. The guide for teachers is
@@ -534,9 +547,11 @@ of the manual).
   `ComputerLanguage`, its interpreter as a `SoftwareApplication` (version from the
   interpreter's `Cargo.toml`, MIT license, the Releases page as `downloadUrl`,
   operating systems, free) and its `SoftwareSourceCode` (written in Rust, the
-  repository); on *Learn*, the examples, the guide and the AI page, a `TechArticle`
-  in the language of the page with its Markdown as `encoding`, and on *Learn* and
-  the examples each piece of code as a `SoftwareSourceCode` in Rythme. JSON-LD is
+  repository); on *Learn*, the examples, the guide, the AI page and the five sections,
+  a `TechArticle` in the language of the page with its Markdown as `encoding`; on
+  *Learn*, the examples and *Rythme at work* each piece of code as a
+  `SoftwareSourceCode` in Rythme, and on *Exercises* each exercise as a
+  `LearningResource` with its level. JSON-LD is
   data, not a script: the Content-Security-Policy computes no hash for it and still
   forbids every inline script but the theme's.
 - **The AI page** (`/{lang}/ai/`, *AI* in the menu and the footer): the cards of
