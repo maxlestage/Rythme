@@ -692,6 +692,20 @@ const KEYWORD_DOCS: &[(&str, &str, &str, &str, &str)] = &[
         "functions",
     ),
     (
+        "async",
+        "Before `fn`, at the top level of a file: `async fn name(x) = ...` defines a function whose call starts it at once and gives a Task; `await task` gives its result. Tasks run at the same time, on other cores: start several, then await them. `async` is a keyword only before `fn`; elsewhere it is a name like any other.",
+        "Devant `fn`, au premier niveau d'un fichier : `async fn nom(x) = ...` définit une fonction dont l'appel la lance aussitôt et donne une Task ; `await tâche` donne son résultat. Les tâches tournent en même temps, sur d'autres cœurs : lancez-en plusieurs, puis attendez-les. `async` n'est un mot-clé que devant `fn` ; ailleurs, c'est un nom comme un autre.",
+        "async fn square(x) = x * x\ntasks = [1, 2, 3] |> map(square)\nprint(await_all(tasks))    # [1, 4, 9]",
+        "functions",
+    ),
+    (
+        "await",
+        "Before a value: `await task` waits for a task (the call of an `async fn`) and gives its result, like `await(task)`. An error in the task stops the program at the `await`. `await_all(tasks)` waits for a list of tasks.",
+        "Devant une valeur : `await tâche` attend une tâche (l'appel d'une `async fn`) et donne son résultat, comme `await(tâche)`. Une erreur dans la tâche arrête le programme au `await`. `await_all(tâches)` attend une liste de tâches.",
+        "async fn square(x) = x * x\nprint(await square(7) + 1)    # 50",
+        "functions",
+    ),
+    (
         "if",
         "Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.",
         "Choisit entre deux valeurs : `if condition then valeur else autre`. Chaque `if` a un `else`, car un `if` donne toujours une valeur.",

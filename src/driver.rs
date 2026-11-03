@@ -161,6 +161,8 @@ pub struct Driver {
     /// The next source read has a tail from somewhere else (see
     /// [`source::add_with_tail`]): where it starts, and its name.
     pub tail: Option<(usize, String)>,
+    /// Shows no message (the workers of tasks load the program again).
+    pub quiet: bool,
 }
 
 impl Default for Driver {
@@ -185,6 +187,7 @@ impl Driver {
             repl: false,
             last_repl_fn: None,
             tail: None,
+            quiet: false,
         }
     }
 
@@ -193,7 +196,9 @@ impl Driver {
             Severity::Error => self.errors += 1,
             Severity::Warning => self.warnings += 1,
         }
-        crate::diagnostic::show(d, self.color);
+        if !self.quiet {
+            crate::diagnostic::show(d, self.color);
+        }
     }
 
     pub fn parse(&mut self, name: &str, src: &str) -> Result<Vec<Item>, Box<Diagnostic>> {
@@ -216,6 +221,14 @@ impl Driver {
 
     /// Parses and checks a program and the files it uses, reporting any problem.
     pub fn load_file(&mut self, path: &Path) -> Option<Rc<Module>> {
+        if !self.repl && !self.quiet && self.loading.is_empty() {
+            if let Ok(src) = read_source(path) {
+                let base = path.parent().map(Path::to_path_buf).unwrap_or_default();
+                let canon = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+                let name = path.display().to_string();
+                crate::tasks::set_program(Some(crate::tasks::Program { name, src, path: Some(canon), base }));
+            }
+        }
         self.load_unit(path, 0, false)
     }
 
@@ -246,6 +259,15 @@ impl Driver {
 
     /// Parses and checks source code. `base` is the folder used to find `use`d files.
     pub fn load_source(&mut self, name: &str, src: &str, path: Option<PathBuf>, base: &Path) -> Option<Rc<Module>> {
+        if !self.quiet {
+            let program = (!self.repl && self.tail.is_none()).then(|| crate::tasks::Program {
+                name: name.to_string(),
+                src: src.to_string(),
+                path: path.clone(),
+                base: base.to_path_buf(),
+            });
+            crate::tasks::set_program(program);
+        }
         self.load_in(name, src, path, base, 0, false)
     }
 
@@ -394,6 +416,7 @@ impl Driver {
             arity: def.arity,
             doc: prev.doc.clone().or_else(|| def.doc.clone()),
             span: prev.span,
+            is_async: prev.is_async || def.is_async,
         });
         let (name, n) = (def.name.map(|s| s.to_string()).unwrap_or_default(), merged.clauses.len());
         out_line(&t!(
@@ -517,6 +540,28 @@ impl Driver {
         let interp = &self.interp;
         crate::help::note_types(&m.items, |s| interp.stored(s));
         Ok(())
+    }
+
+    /// Makes a checked module ready for its tasks: the modules it uses run,
+    /// its types, functions and top-level names are defined, but its other
+    /// statements (`print`...) do not run, and nothing is shown.
+    pub fn prepare_definitions(&mut self, m: &Rc<Module>) -> Result<(), Reported> {
+        crate::io::capture();
+        let done = self.prepare(m, Mode::Run).and_then(|()| {
+            self.interp.define_items(&m.items);
+            for item in &m.items {
+                if let Item::Stmt(Stmt::Let(pat, e)) = item {
+                    let bound = self.interp.eval_top(e).and_then(|v| self.interp.bind_global(pat, v));
+                    if let Err(d) = bound {
+                        self.report(&d);
+                        return Err(Reported);
+                    }
+                }
+            }
+            Ok(())
+        });
+        crate::io::take_captured();
+        done
     }
 
     /// Runs the collected tests and prints a summary. Returns true if all passed.

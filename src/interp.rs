@@ -81,6 +81,11 @@ pub fn too_big(list: bool, span: Span) -> Box<Diagnostic> {
 /// are measured on the stack.
 pub(crate) static STACK_BUDGET: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(4 << 20);
 
+/// The budget of stack set by `set_stack_budget` (the workers of tasks get as much).
+pub fn stack_budget() -> usize {
+    STACK_BUDGET.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 pub fn set_stack_budget(bytes: usize) {
     STACK_BUDGET.store(bytes, std::sync::atomic::Ordering::Relaxed);
     crate::vm::run::set_limits(bytes, MAX_DEPTH.load(std::sync::atomic::Ordering::Relaxed));
@@ -240,6 +245,7 @@ impl Interp {
             }
         }
         globals.insert(Sym::new("pi"), Value::Float(std::f64::consts::PI));
+        globals.insert(Sym::new(crate::tasks::SPAWN_NAME), Value::Builtin(&crate::tasks::SPAWN));
         globals.insert(some.name, Value::Ctor(some.clone()));
         globals.insert(none_info.name, none.clone());
         globals.insert(ok.name, Value::Ctor(ok.clone()));
@@ -397,6 +403,17 @@ impl Interp {
             let known = |s: Sym| self.globals.contains_key(&s) || defined.contains_key(&s);
             let code = compile::function_known(def, &self.names, self.watched, &known);
             let clo = Closure { def: def.clone(), code: Rc::new(code), captured: Vec::new(), siblings: None };
+            if def.is_async {
+                // The body is kept under a hidden name, and the name of the
+                // function calls `#spawn` with it: a call gives a Task.
+                let body = crate::tasks::body_name(self.stored(name));
+                self.globals.insert(body, Value::Func(Rc::new(clo)));
+                let starter = async_starter(def, body);
+                let code = compile::function_known(&starter, &self.names, self.watched, &|_| true);
+                let clo = Closure { def: starter, code: Rc::new(code), captured: Vec::new(), siblings: None };
+                self.globals.insert(self.stored(name), Value::Func(Rc::new(clo)));
+                return;
+            }
             self.globals.insert(self.stored(name), Value::Func(Rc::new(clo)));
         }
     }
@@ -1571,4 +1588,19 @@ pub fn resolve_index(n: i64, len: usize) -> Option<usize> {
     } else {
         None
     }
+}
+
+/// The function that stands for the `async fn` `def` (whose body is stored as
+/// `body`): `fn name(#a0, #a1...) = #spawn("#async.name", [#a0, #a1...])`.
+fn async_starter(def: &Rc<FnDef>, body: Sym) -> Rc<FnDef> {
+    use crate::ast::{Clause, Expr, ExprKind, ListItem, PatKind, Pattern};
+    let span = def.span;
+    let params: Vec<Sym> = (0..def.arity).map(|i| Sym::new(&format!("#a{i}"))).collect();
+    let var = |s: Sym| Expr::new(ExprKind::Var(s), span);
+    let args = Expr::new(ExprKind::List(params.iter().map(|&p| ListItem::One(var(p))).collect()), span);
+    let name = Expr::new(ExprKind::Text(Rc::from(&*body.name())), span);
+    let call = Expr::new(ExprKind::Call(Box::new(var(Sym::new(crate::tasks::SPAWN_NAME))), vec![name, args]), span);
+    let clause =
+        Clause { params: params.iter().map(|&p| Pattern::new(PatKind::Bind(p), span)).collect(), guard: None, body: call, span, ret: None };
+    Rc::new(FnDef { name: def.name, clauses: vec![Rc::new(clause)], arity: def.arity, doc: def.doc.clone(), span, is_async: true })
 }

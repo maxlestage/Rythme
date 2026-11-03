@@ -6,6 +6,11 @@
 
 "fn" @keyword.function
 
+((async_marker) @keyword.coroutine
+  (#eq? @keyword.coroutine "async"))
+
+"await" @keyword.coroutine
+
 [
   "if"
   "then"

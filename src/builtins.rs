@@ -10,6 +10,7 @@ use crate::bigint::{self, BigInt};
 use crate::diagnostic::{Diagnostic, Fallible};
 use crate::interp::{binop, resolve_index, too_big, Interp, Wrap, MAX_LIST, MAX_TEXT};
 use crate::source::{self, Span};
+use crate::tasks::{await_all, await_task};
 use crate::types::{self, Kinds, BOOL, DICT, FUNC, INT, LIST, NUMBER, OPTION, RECORD, RESULT, SET, TEXT};
 use crate::value::*;
 
@@ -1050,6 +1051,14 @@ pub static BUILTINS: &[Builtin] = &[
        "Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`. To call a web service or a language model: `http_post(url, to_json(request), {\"content-type\": \"application/json\"})`. Keep keys out of your code: read them with `env`.",
        "Envoie un texte (souvent du JSON, fait avec `to_json`) à une adresse web et donne `Ok(texte de la réponse)` ou `Err(message)`, comme `http_get`. Pour appeler un service web ou un modèle de langage : `http_post(url, to_json(requete), {\"content-type\": \"application/json\"})`. Gardez les clés hors de votre code : lisez-les avec `env`.",
        "headers = {\"content-type\": \"application/json\"}\nhttp_post(\"https://httpbin.org/post\", to_json({n: 1}), headers)"),
+    b!("await", "await(task)", 1, 1, Basics, await_task,
+       "The result of a task: the call of an `async fn` starts the function and gives a Task at once; `await` waits until it is done and gives what it returned (an error in the task stops the program here). Tasks run at the same time, on other cores: start several, then await them. A task can be awaited again: it gives the same result.",
+       "Le résultat d'une tâche : l'appel d'une `async fn` lance la fonction et donne aussitôt une Task ; `await` attend qu'elle ait fini et donne ce qu'elle a renvoyé (une erreur dans la tâche arrête le programme ici). Les tâches tournent en même temps, sur d'autres cœurs : lancez-en plusieurs, puis attendez-les. Une tâche peut être attendue à nouveau : elle donne le même résultat.",
+       "async fn square(x) = x * x\ntask = square(7)\nawait task             # 49"),
+    b!("await_all", "await_all(tasks)", 1, 1, Basics, await_all,
+       "The results of a list of tasks (calls of `async fn`), in the order of the list, once all are done: the tasks run at the same time, so the whole takes about as long as the slowest one.",
+       "Les résultats d'une liste de tâches (appels d'`async fn`), dans l'ordre de la liste, une fois toutes finies : les tâches tournent en même temps, donc l'ensemble dure à peu près autant que la plus lente.",
+       "async fn square(x) = x * x\n[1, 2, 3] |> map(square) |> await_all    # [1, 4, 9]"),
     // ----- More of the library: what Ruby, Python and Elixir have too -----
     b!("inspect", "inspect(value)", 1, 1, Basics, inspect,
        "The text that shows a value the way the REPL and `debug` show it: a text between quotes, with its special characters written as escapes. `text` gives a text as it is.",

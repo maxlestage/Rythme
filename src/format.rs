@@ -536,10 +536,17 @@ impl<'a> Shaper<'a> {
             if *self.raw() == Tok::Eof {
                 return Some(());
             }
+            let async_fn = self.word_at("async") && matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Fn));
             let first = match self.peek() {
                 Tok::Type => self.type_def()?,
                 Tok::Test => self.test_def()?,
                 Tok::Use => self.use_def()?,
+                // `async fn name(...)`, like the parser.
+                _ if async_fn => {
+                    let a = self.take(Role::Word)?;
+                    self.fn_def(true)?;
+                    a
+                }
                 _ => self.stmt()?,
             };
             self.set(first, Indent::Top);
@@ -1062,7 +1069,22 @@ impl<'a> Shaper<'a> {
         self.operators(&[Tok::Star, Tok::Slash, Tok::SlashSlash, Tok::Percent], Self::unary)
     }
 
+    /// The name `word` is the next token.
+    fn word_at(&mut self, word: &str) -> bool {
+        self.skip_soft();
+        matches!(self.raw(), Tok::Ident(s) if &*s.name() == word)
+    }
+
     fn unary(&mut self) -> Option<usize> {
+        // `await task`, like the parser.
+        if self.word_at("await")
+            && matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Ident(_) | Tok::Ctor(_) | Tok::LBracket))
+        {
+            let w = self.take(Role::Word)?;
+            let e = self.unary()?;
+            self.set(e, Indent::Inner(w));
+            return Some(w);
+        }
         if *self.peek() != Tok::Minus {
             return self.power();
         }

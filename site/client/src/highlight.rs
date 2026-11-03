@@ -222,6 +222,8 @@ pub const BUILTINS: &[&str] = &[
     "histogram",
     "http_get",
     "http_post",
+    "await",
+    "await_all",
     "inspect",
     "print_error",
     "constrain",

@@ -151,6 +151,9 @@ module.exports = grammar({
 
     function_definition: $ =>
       seq(
+        // `async fn fetch(url) = ...`: a call starts it and gives a Task.
+        // A name, not a keyword: `async` stays a name everywhere else.
+        optional(field('async', alias($.identifier, $.async_marker))),
         'fn',
         field('name', choice($.identifier, $.predicate)),
         field('parameters', $.parameters),
@@ -241,6 +244,7 @@ module.exports = grammar({
         $.method_call,
         $.try_expression,
         $.unary_expression,
+        $.await_expression,
         $.not_expression,
         $.binary_expression,
         $.pipe_expression,
@@ -326,6 +330,9 @@ module.exports = grammar({
     unary_expression: $ => prec(PREC.unary, seq(field('operator', '-'), field('operand', $._expression))),
 
     not_expression: $ => prec(PREC.not, seq(field('operator', 'not'), field('operand', $._expression))),
+
+    /** `await task`: the result of a task (the call of an `async fn`). */
+    await_expression: $ => prec(PREC.unary, seq(field('operator', 'await'), field('operand', $._expression))),
 
     binary_expression: $ => {
       /** @type {[number, RuleOrLiteral, 'left' | 'right'][]} */

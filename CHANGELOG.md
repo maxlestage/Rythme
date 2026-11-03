@@ -12,6 +12,30 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Tasks: `async fn` and `await`
+
+Functions that run at the same time, on the other cores: `async fn fetch(url)
+= ...` starts when it is called and gives a `Task` at once; `await task`
+gives its result, and `await_all(tasks)` the results of a list of tasks.
+
+- No program changes meaning: `async` is a keyword only right before `fn` and
+  a function name, and `await` is a built-in function that can also be
+  written without parentheses before a name, a constructor or a list
+  (`await task`, `await fetch(url) + 1`); elsewhere both stay names.
+- Values never change, so tasks need no locks: each one runs on a worker
+  thread with an interpreter of its own and the program loaded again (its
+  definitions, without its other top-level statements); arguments and
+  results are copied. Where that is not possible (the REPL, the playground,
+  an argument that is a function), the task runs when it is called, with the
+  same result.
+- An error in a task stops the program at its `await`, with the task's
+  message. `rythme check` knows that a call of an `async fn` gives a `Task`
+  (`Task + Int` is E005, with a help that says to write `await`), and what
+  `await` gives.
+- The formatter, `rythme help async` and `rythme help await`, the manual
+  (4.11, EN and FR), the VS Code and Tree-sitter grammars, the site and the
+  playground know them.
+
 ### A lighter playground
 
 The website's playground downloads its interpreter with English and French

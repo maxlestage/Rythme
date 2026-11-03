@@ -159,6 +159,9 @@ pub struct FnDef {
     pub arity: usize,
     pub doc: Option<Rc<str>>,
     pub span: Span,
+    /// `async fn`: a call starts the function and gives a `Task` at once;
+    /// `await` gives its result (see `crate::tasks`).
+    pub is_async: bool,
 }
 
 impl FnDef {

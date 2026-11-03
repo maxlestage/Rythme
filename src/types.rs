@@ -121,6 +121,21 @@ impl Ty {
         Ty::data(Sym::new("Option"), Some(vec![(Sym::new("Some"), vec![t]), (Sym::new("None"), Vec::new())]))
     }
 
+    /// A task giving a `t` (the call of an `async fn`): `Task(t)`.
+    pub fn task(t: Ty) -> Ty {
+        Ty::data(Sym::new("Task"), Some(vec![(Sym::new("Task"), vec![t])]))
+    }
+
+    /// What `await` gives from a value of this type: the result of a task.
+    pub fn awaited(&self) -> Ty {
+        match self {
+            Ty::Data(d) if d.name == Sym::new("Task") => {
+                d.ctors.as_ref().and_then(|c| c.first()).and_then(|(_, f)| f.first().cloned()).unwrap_or(Ty::Any)
+            }
+            _ => Ty::Any,
+        }
+    }
+
     /// `Ok(ok)` or `Err(err)`.
     pub fn result(ok: Ty, err: Ty) -> Ty {
         Ty::data(Sym::new("Result"), Some(vec![(Sym::new("Ok"), vec![ok]), (Sym::new("Err"), vec![err])]))
@@ -1375,6 +1390,12 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                 need(a, 1, Expected::Int)?;
                 Ty::Text
             }
+            // Lenient on purpose: a value it cannot tell is a task is not refused.
+            "await" => arg(0).awaited(),
+            "await_all" => match arg(0) {
+                Ty::List(t) => Ty::list(t.awaited()),
+                _ => Ty::list(Ty::Any),
+            },
             "http_get" => {
                 need(a, 0, Expected::Text)?;
                 need(a, 1, Expected::RecordOrDict)?;

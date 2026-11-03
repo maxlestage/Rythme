@@ -108,6 +108,30 @@ static bool command_follows(TSLexer *lexer) {
   return !word_in(word, NOT_VALUES, sizeof NOT_VALUES / sizeof NOT_VALUES[0]);
 }
 
+/// After `async` (the token end is marked): ` fn name`? Then `async` starts
+/// an `async fn` and is not called without parentheses (as in the parser).
+static bool async_fn_follows(TSLexer *lexer) {
+  while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+    advance(lexer);
+  }
+  if (lexer->lookahead != 'f') {
+    return false;
+  }
+  advance(lexer);
+  if (lexer->lookahead != 'n') {
+    return false;
+  }
+  advance(lexer);
+  if (lexer->lookahead != ' ' && lexer->lookahead != '\t') {
+    return false;
+  }
+  while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+    advance(lexer);
+  }
+  int32_t c = lexer->lookahead;
+  return c == '_' || (c >= 'a' && c <= 'z') || c >= 0x80;
+}
+
 /// A name at the lexer's position: `even?` (a name directly followed by `?`,
 /// which is a part of it when `(` follows directly or when it is a built-in
 /// name), the keyword `unless`, or the name of a call without parentheses.
@@ -147,6 +171,9 @@ static bool scan_name(TSLexer *lexer, const bool *valid_symbols) {
     name[len] = 0;
     if (!word_in(name, KEYWORDS, sizeof KEYWORDS / sizeof KEYWORDS[0])) {
       lexer->mark_end(lexer);
+      if (len == 5 && name[0] == 'a' && name[1] == 's' && name[2] == 'y' && name[3] == 'n' && name[4] == 'c' && async_fn_follows(lexer)) {
+        return false;
+      }
       bool question = lexer->lookahead == '?';
       if (question) {
         // `even?(4)` stays a predicate; `even? 4` is called without parentheses.
