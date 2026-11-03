@@ -1030,7 +1030,7 @@ select {
 .crumbs ol { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 0; margin: 0; font-size: 14px; color: var(--ink-soft); }
 .crumbs li { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .crumbs li + li::before { content: "›"; color: var(--ink-soft); }
-.crumbs a { display: inline-flex; align-items: center; min-height: 44px; }
+.crumbs a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; }
 .fn-page .page-head h1 code { font-size: inherit; color: var(--accent); overflow-wrap: anywhere; }
 .fn-page__parts { display: grid; gap: 28px; min-width: 0; max-width: 52em; }
 .fn-page__part { display: grid; gap: 10px; min-width: 0; scroll-margin-top: calc(var(--bar-h) + 12px); }
@@ -1042,16 +1042,17 @@ select {
 .fn-page__names code { overflow-wrap: anywhere; }
 .fn-page__see { gap: 10px; }
 .fn-page__see li { display: grid; min-width: 0; overflow-wrap: anywhere; }
-.fn-page__see a { display: inline-flex; align-items: center; justify-self: start; min-height: 44px; margin-block: -8px; }
+.fn-page__see a { display: inline-flex; align-items: center; justify-self: start; min-height: 44px; min-width: 44px; margin-block: -8px; }
 .fn-page__short { color: var(--ink-soft); font-size: 15px; }
-.pager { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; max-width: 52em; padding-top: 16px; border-top: 1px solid var(--rule); }
+/* On a phone, the link to the whole list goes under the previous and the next. */
+.pager { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 10px; max-width: 52em; padding-top: 16px; border-top: 1px solid var(--rule); }
 .pager__link { display: grid; gap: 2px; min-width: 0; min-height: 44px; align-content: center; text-decoration: none; overflow-wrap: anywhere; }
 .pager__next { text-align: right; }
 .pager__label { font-size: 13px; color: var(--ink-soft); }
-.pager__all { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; text-align: center; }
-@media (max-width: 520px) {
-  .pager { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .pager__all { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
+.pager__all { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; text-align: center; grid-column: 1 / -1; grid-row: 2; justify-self: center; }
+@media (min-width: 521px) {
+  .pager { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .pager__all { grid-column: 2; grid-row: 1; }
 }
 
 /* Exercises. */
