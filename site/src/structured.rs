@@ -123,6 +123,12 @@ pub fn json_ld(ctx: &Ctx) -> Option<String> {
                 .collect();
             article(x.exo_title, x.exo_lead, parts)
         }
+        Page::Function(name) => {
+            let b = crate::sections::builtin(name);
+            let doc = crate::sections::doc(b, lang);
+            let example = code(ctx, b.name, &crate::sections::first_sentence(doc).replace('`', ""), b.example, "code snippet", None);
+            article(&lang.sections().fn_title.replace("{name}", b.name), doc, vec![example])
+        }
         Page::Install | Page::Reference | Page::Packages => {
             let (title, lead) = crate::sections::head(lang.sections(), ctx.route.page).expect("a section");
             article(title, lead, Vec::new())

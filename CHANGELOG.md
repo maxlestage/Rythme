@@ -37,6 +37,14 @@ after 1.0, a program that defines one of these names gets the warning W003;
 `sign` is not added for that reason, since the manual and the help define
 their own `sign` as an example.
 
+The site has a page for each built-in function, like MDN's, in the eight
+languages (`/en/reference/find_last/`): its syntax and documentation, its
+example with a button that opens it in the playground, its Ruby names, what
+JavaScript writes for it, the command of the terminal, the functions to see
+with it, and the ones before and after it in the reference. The list of the
+reference links to them; they are in the sitemap, the static export and as
+Markdown for AI assistants (`index.md`).
+
 ### Tasks: `async fn` and `await`
 
 Functions that run at the same time, on the other cores: `async fn fetch(url)

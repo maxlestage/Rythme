@@ -48,6 +48,63 @@ fn text_of(html: &str) -> String {
 
 const SECTIONS: [Page; 5] = [Page::Install, Page::Reference, Page::Packages, Page::Work, Page::Exercises];
 
+/// Every built-in function has a page of its own, in every language, like MDN's: its
+/// syntax, its documentation, its example (which opens in the playground), its Ruby
+/// names and what JavaScript writes for it, the functions to see with it, and the ones
+/// before and after it; as Markdown too.
+#[tokio::test]
+async fn every_function_has_its_page() {
+    let client = client().await;
+    for lang in Lang::ALL {
+        let x = lang.sections();
+        for b in BUILTINS {
+            let route = Route::new(lang, Page::Function(b.name));
+            let path = route.path();
+            assert_eq!(path, format!("/{}/reference/{}/", lang.code(), b.name));
+            let html = get(&client, &path).await;
+            let text = text_of(&html);
+            assert!(html.contains(&format!(r#"<h1><code translate="no">{}</code></h1>"#, b.name)), "{path}");
+            assert!(text.contains(b.sig), "{path}");
+            let doc = sections::doc(b, lang);
+            assert!(text.contains(doc.split('`').next().unwrap_or(doc).trim()), "{path}");
+            assert!(html.contains(&format!(r#"<link rel="canonical" href="http://localhost{path}"/>"#)), "{path}");
+            assert!(html.contains("#code=1:"), "{path}: the example opens in the playground");
+            assert!(html.contains(&format!(r#"href="/{}/reference/#functions""#, lang.code())), "{path}");
+            assert!(text.contains(&format!("rythme help {}", b.name)), "{path}");
+            for alias in rythme::builtins::aliases(b.name) {
+                assert!(text.contains(alias), "{path}: {alias}");
+            }
+            for js in rythme::javascript::equivalents(b.name) {
+                assert!(text.contains(js), "{path}: {js}");
+            }
+            for o in sections::related(b) {
+                assert!(html.contains(&format!(r#"href="/{}/reference/{}/""#, lang.code(), o.name)), "{path}: {}", o.name);
+            }
+            // The page of the reference is the active one of the menu.
+            assert!(
+                html.contains(&format!(r#"href="/{}/reference/" aria-current="page""#, lang.code()))
+                    || html.contains(&format!(r#"class="nav__link is-active" href="/{}/reference/""#, lang.code())),
+                "{path}"
+            );
+            let markdown = get(&client, &route.markdown_path()).await;
+            assert!(markdown.starts_with(&format!("# `{}`", b.name)), "{path}");
+            assert!(markdown.contains(b.example.lines().next().unwrap_or("")), "{path}");
+        }
+        let find_last = get(&client, &Route::new(lang, Page::Function("find_last")).path()).await;
+        assert!(text_of(&find_last).contains("a.findLast(f)") && find_last.contains(x.fn_javascript), "{lang:?}");
+        let fold = text_of(&get(&client, &Route::new(lang, Page::Function("fold")).path()).await);
+        assert!(fold.contains("reduce") && fold.contains("inject") && fold.contains(x.fn_ruby), "{lang:?}");
+    }
+    // Before and after: the order of the reference, the first and the last without one.
+    let first = get(&client, "/en/reference/print/").await;
+    assert!(!first.contains(r#"rel="prev""#) && first.contains(r#"rel="next""#));
+    // A Ruby name has no page: it is on the page of its function; nor has an unknown name.
+    for path in ["/en/reference/upcase/", "/en/reference/nothing_like_this/", "/en/reference/map/more/"] {
+        assert_eq!(client.get(path).await.status(), 404, "{path}");
+    }
+    assert_eq!(client.get("/en/reference/map").await.status(), 301);
+}
+
 #[tokio::test]
 async fn the_reference_lists_every_function_and_every_code() {
     let client = client().await;
@@ -64,7 +121,9 @@ async fn the_reference_lists_every_function_and_every_code() {
             let doc = sections::doc(b, lang);
             let first = doc.split('`').next().unwrap_or(doc).trim();
             assert!(text.contains(first), "{lang:?}: {}: {first}", b.name);
-            assert!(markdown.contains(&format!("#### `{}`", b.name)), "{lang:?}: {}", b.name);
+            // Each one is linked to its own page, in the HTML and in the Markdown.
+            assert!(html.contains(&format!(r#"href="/{}/reference/{}/""#, lang.code(), b.name)), "{lang:?}: {}", b.name);
+            assert!(markdown.contains(&format!("#### [`{}`](<", b.name)), "{lang:?}: {}", b.name);
         }
         for code in CODES {
             assert!(html.contains(&format!(r#"<article class="code-entry" id="{code}""#)), "{lang:?}: {code}");

@@ -53,6 +53,9 @@ pub enum Page {
     Work,
     /// The exercises of `rythme exercise`, by level.
     Exercises,
+    /// The page of one built-in function (`/{lang}/reference/map/`), like MDN's:
+    /// under the reference, not in the navigation.
+    Function(&'static str),
     /// Shown by the service worker for a page that was not saved, without network.
     Offline,
     NotFound,
@@ -86,13 +89,28 @@ impl Page {
             Page::Teach => "teach",
             Page::Ai => "ai",
             Page::Install => "install",
-            Page::Reference => "reference",
+            Page::Reference | Page::Function(_) => "reference",
             Page::Packages => "packages",
             Page::Work => "work",
             Page::Exercises => "exercises",
             Page::Offline => "offline",
             Page::NotFound => "404",
         }
+    }
+
+    /// The page of the navigation that this one belongs to: the reference, for the page
+    /// of a function.
+    pub fn section(self) -> Page {
+        match self {
+            Page::Function(_) => Page::Reference,
+            page => page,
+        }
+    }
+
+    /// The page of a built-in function, by its name (not by a Ruby name: those are
+    /// on the page of the function they name).
+    pub fn function(name: &str) -> Option<Page> {
+        rythme::builtins::BUILTINS.iter().find(|b| b.name == name).map(|b| Page::Function(b.name))
     }
 
     /// The pages that also exist as Markdown (`index.md`): those with content to read.
@@ -119,6 +137,7 @@ impl Route {
         let page = match parts[1..] {
             [] => Page::Home,
             [slug] => Page::ALL.into_iter().chain(Page::EXTRA).find(|p| p.slug() == slug && *p != Page::Home).unwrap_or(Page::NotFound),
+            ["reference", name] => Page::function(name).unwrap_or(Page::NotFound),
             _ => Page::NotFound,
         };
         Some(Route { lang, page })
@@ -128,6 +147,7 @@ impl Route {
     pub fn path(&self) -> String {
         match self.page {
             Page::Home => format!("/{}/", self.lang.code()),
+            Page::Function(name) => format!("/{}/reference/{name}/", self.lang.code()),
             page => format!("/{}/{}/", self.lang.code(), page.slug()),
         }
     }
@@ -153,9 +173,20 @@ impl Route {
         Route { lang, ..*self }
     }
 
-    /// Every page in every language, for the sitemap.
+    /// Every page of the navigation in every language (what the installable app saves).
     pub fn all() -> impl Iterator<Item = Route> {
         Lang::ALL.into_iter().flat_map(|l| Page::ALL.into_iter().map(move |p| Route::new(l, p)))
+    }
+
+    /// The page of every built-in function in every language, in the order of `BUILTINS`.
+    pub fn functions() -> impl Iterator<Item = Route> {
+        Lang::ALL.into_iter().flat_map(|l| rythme::builtins::BUILTINS.iter().map(move |b| Route::new(l, Page::Function(b.name))))
+    }
+
+    /// Every page with an address in the sitemap and in the static export: those of the
+    /// navigation, then those of the functions.
+    pub fn everything() -> impl Iterator<Item = Route> {
+        Route::all().chain(Route::functions())
     }
 }
 
@@ -165,7 +196,7 @@ mod tests {
 
     #[test]
     fn paths_round_trip() {
-        for route in Route::all() {
+        for route in Route::everything() {
             assert_eq!(Route::parse(&route.path()), Some(route));
         }
         assert_eq!(Route::parse("/en/offline/"), Some(Route::new(Lang::En, Page::Offline)));
@@ -178,11 +209,16 @@ mod tests {
         assert_eq!(Route::parse("/zh/learn/"), Some(Route::new(Lang::Zh, Page::Learn)));
         assert_eq!(Route::parse("/fr/nothing/").map(|r| r.page), Some(Page::NotFound));
         assert_eq!(Route::parse("/en/learn/more/").map(|r| r.page), Some(Page::NotFound));
+        assert_eq!(Route::parse("/fr/reference/find_last/"), Some(Route::new(Lang::Fr, Page::Function("find_last"))));
+        // A Ruby name is not a page of its own, and a function is under the reference only.
+        assert_eq!(Route::parse("/en/reference/upcase/").map(|r| r.page), Some(Page::NotFound));
+        assert_eq!(Route::parse("/en/learn/map/").map(|r| r.page), Some(Page::NotFound));
+        assert_eq!(Route::parse("/en/reference/map/more/").map(|r| r.page), Some(Page::NotFound));
     }
 
     #[test]
     fn markdown_paths() {
-        for route in Route::all().filter(|r| r.page.has_markdown()) {
+        for route in Route::everything().filter(|r| r.page.has_markdown()) {
             assert_eq!(Route::parse_markdown(&route.markdown_path()), Some(route));
         }
         assert_eq!(Route::parse_markdown("/en/index.md"), Some(Route::new(Lang::En, Page::Home)));

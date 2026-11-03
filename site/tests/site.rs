@@ -209,7 +209,8 @@ async fn examples_json_sitemap_and_robots() {
         assert!(json.contains(&format!("\"{}\":", e.name)), "{}", e.name);
     }
     let sitemap = client.get("/sitemap.xml").header("host", "example.com").await.text();
-    assert_eq!(sitemap.matches("<loc>").count(), Route::all().count());
+    assert_eq!(sitemap.matches("<loc>").count(), Route::everything().count());
+    assert!(sitemap.contains("<loc>http://example.com/ja/reference/find_last/</loc>"));
     assert!(client.get("/robots.txt").header("host", "example.com").await.text().contains("http://example.com/sitemap.xml"));
 }
 
@@ -333,6 +334,41 @@ fn every_piece_of_code_runs() {
         let (out, failed) = run(ci.code, lang, true);
         assert!(!failed && !warns(&out), "{lang:?} {}: {out}", ci.file);
     }
+}
+
+/// The example of the page of each function opens in the playground as a program that
+/// prints its values: it runs there (but the functions that read files, the network or
+/// the keyboard, or wait).
+#[test]
+fn the_examples_of_the_function_pages_run() {
+    const OUTSIDE: &[&str] = &[
+        "input",
+        "input_lines",
+        "fail",
+        "exit",
+        "read_file",
+        "write_file",
+        "append_file",
+        "file_exists",
+        "file_info",
+        "list_folder",
+        "create_folder",
+        "delete_file",
+        "http_get",
+        "http_post",
+        "sleep",
+        "args",
+        "options",
+    ];
+    let mut failures = Vec::new();
+    for b in rythme::builtins::BUILTINS.iter().filter(|b| !OUTSIDE.contains(&b.name)) {
+        let code = rythme_site::sections::runnable(b.example);
+        let (out, failed) = run(&code, Lang::En, false);
+        if failed {
+            failures.push(format!("{}:\n{code}\n{out}", b.name));
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n\n"));
 }
 
 /// The theme picker of every page, and the inline script that applies the theme before
