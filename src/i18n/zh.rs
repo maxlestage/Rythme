@@ -68,6 +68,9 @@ see `rythme help`"#,
         ("keys and elements must be values that can be compared: anything but functions and `nan`", "键和元素必须是可以比较的值：除了函数和 `nan` 之外都可以"),
         ("`{f}` needs a list of [key, value] pairs, but it contains {}", "`{f}` 需要一个由 [键, 值] 对组成的列表，但其中包含 {}"),
         ("each pair is a list of two elements, like `dict([[\"Ada\", 36], [\"Alan\", 41]])`", "每一对都是包含两个元素的列表，例如 `dict([[\"Ada\", 36], [\"Alan\", 41]])`"),
+        // src/builtins/numbers.rs
+        ("`acosh` needs a number of 1 or more, not {x}", "`acosh` 需要一个大于或等于 1 的数，而不是 {x}"),
+        ("`atanh` needs a number between -1 and 1 (both excluded), not {x}", "`atanh` 需要一个在 -1 和 1 之间（不含两端）的数，而不是 {x}"),
         // src/builtins/property.rs
         ("this is not a generator: {}", "这不是生成器：{}"),
         ("not a generator", "不是生成器"),
@@ -194,10 +197,19 @@ their opposites \D, \W, \S, \B, \n, \t, and `\` before a sign for the sign itsel
         ("`{w}` cannot be an option: the field `args` holds the words that are not options", "`{w}` 不能作为选项：字段 `args` 存放的是不是选项的单词"),
         ("the option `{name}` is given twice", "选项 `{name}` 给了两次"),
         ("`options` needs a list of texts, like the one of `args()`, but it contains {}", "`options` 需要一个文本列表，比如 `args()` 给出的那种，但其中包含 {}"),
+        ("`sleep` needs a number of seconds of 0 or more, not {secs}", "`sleep` 需要一个大于或等于 0 的秒数，而不是 {secs}"),
+        ("`sleep({secs})` would wait too long", "`sleep({secs})` 会等待太久"),
         // src/builtins/text_tools.rs
         ("`{f}` writes at most 100 decimals, not {d}", "`{f}` 最多写 100 位小数，不能是 {d}"),
         ("`{f}` does not know the language \"{l}\"", "`{f}` 不认识语言 \"{l}\""),
         ("the languages: \"en\" (1,234.5), \"fr\" (1 234,5), \"de\", \"es\", \"it\", \"nl\" and \"pt\" (1.234,5)", "可用的语言：\"en\"（1,234.5）、\"fr\"（1 234,5）、\"de\"、\"es\"、\"it\"、\"nl\" 和 \"pt\"（1.234,5）"),
+        // src/builtins/web.rs
+        ("a web address cannot contain spaces, tabs or line breaks: write a space `%20`", "网址不能包含空格、制表符或换行：空格请写成 `%20`"),
+        ("this web address does not start with its scheme: write it like `https://example.com/page`", "这个网址不是以协议开头的：请像 `https://example.com/page` 这样写"),
+        ("the host `{host_port}` opens a `[` that no `]` closes", "主机 `{host_port}` 打开了一个 `[`，却没有 `]` 把它闭合"),
+        ("the host `{host}` cannot contain `{c}`", "主机 `{host}` 不能包含 `{c}`"),
+        ("an address `{scheme}:` names a host: write it like `{scheme}://example.com/page`", "`{scheme}:` 地址要写明主机：请像 `{scheme}://example.com/page` 这样写"),
+        ("the port `{port}` is not a number from 0 to 65535", "端口 `{port}` 不是 0 到 65535 之间的数"),
         // src/builtins.rs
         ("Basics", "基础"),
         ("Numbers", "数字"),
@@ -862,6 +874,7 @@ Topics (rythme help TOPIC)
   debug       the debugger: breakpoints, line by line, values (rythme debug)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
   ruby        coming from Ruby: blocks, symbols, method chains
+  javascript  coming from JavaScript: its standard library in Rythme
   builtins    every built-in function
 
 A specific function: rythme help map
@@ -922,6 +935,7 @@ A specific function: rythme help map
   debug       调试器：断点、逐行执行、查看值（rythme debug）
   editors     在你的编辑器中使用 Rythme（VS Code、Neovim、Helix……）
   ruby        从 Ruby 转过来：代码块、符号、方法链
+  javascript  从 JavaScript 转过来：它的标准库在 Rythme 中的写法
   builtins    所有内置函数
 
 查看某个函数：rythme help map
@@ -3493,6 +3507,157 @@ x.name 是怎么工作的
   even?(4)、xs.include?(3)、fn adult?(p)：紧跟在名字后面、在 `(` 前面。
   不带 `(` 的 even?：当存在这样的函数时（内置的，或在文件中用 fn 定义的）。
   否则 value? 中的 ? 是遇到 None 或 Err 就停止的 ?，而 (value)? 总是如此。"#,
+        ),
+        (
+            r#"COMING FROM JAVASCRIPT
+
+Rythme looks like modern JavaScript without its traps: every value is a
+const that never changes (arrays and objects too), there is no null, no
+undefined and no exceptions, and == never converts. What you write every
+day has a short equivalent:
+
+  names = ["Ada", "Grace", "Alan"]
+  names.each(fn(n) = print("Hi {n}!"))
+
+  [3, 1, 2]
+    .filter(fn(x) = x > 1)
+    .map(fn(x) = x * 10)
+    .sort()                      # [20, 30]
+
+  person = {name: "Ada", langs: ["fr"]}
+  older = {..person, age: 36}    # {...person, age: 36}
+
+The language
+  const x = 1                    x = 1 (a name never changes)
+  x => x * 2                     fn(x) = x * 2
+  `Hi ${name}!`                  "Hi {name}!"
+  a === b                        a == b (never converts: 1 == "1" is false)
+  c ? a : b, if/else             if c then a else b (always with else)
+  switch                         match value ... end, one case per line
+  null, undefined                None, or Some(x)
+  try/catch, throw               Ok(x) or Err(message), and ? to pass it on
+  async function, await          async fn, await (tasks run on other cores)
+  Promise.all(ps)                await_all(tasks)
+  [...xs, 3], {...a, b: 2}       [..xs, 3], {..a, b: 2}
+  a?.b?.c                        dig(a, ["b", "c"])
+  import { f } from "./geo.js"   use geo, then geo.f(x)
+  class, new, this               records {name: "Ada"} and types:
+                                 type Shape = Circle(r) | Square(s)
+  for, while                     each, map, filter, fold, or recursion
+  x += 1, push, pop, sort()      new values: total2 = total + 1, push(xs, x)
+
+Methods are functions
+  xs.map(f) is map(xs, f), and both are written in Rythme: x.name(...)
+  calls the function `name` with x first. Its names are in snake_case, and a
+  JavaScript name gives the Rythme one: findLast says "did you mean
+  `find_last`?". The most used:
+
+  Math.floor, ceil, round, trunc floor, ceil, round, int
+  Math.max(...xs), Math.min      max(xs), min(xs)
+  Math.random()                  random(), random(1, 6), random_seed(n)
+  Math.atan2(y, x), Math.log2(x) atan(y, x), log(x, 2)
+  parseInt, parseFloat           parse_int, parse_float (a Result, never NaN)
+  n.toFixed(2)                   text(n, 2)
+  s.length, a.length             len(s), len(a)
+  s.toUpperCase(), s.trim()      upper(s), trim(s)
+  s.includes(x), startsWith      contains, starts_with
+  s.padStart(3, "0")             pad_left(s, 3, "0")
+  s.replace, s.replaceAll        replace_first, replace
+  s.split(","), a.join(", ")     split(s, ","), join(a, ", ")
+  a.find, findIndex, findLast    find, find_index, find_last (an Option)
+  a.some(f), a.every(f)          any, all
+  a.reduce(f, init)              fold(a, init, f)
+  a.flat(), a.flatMap(f)         flatten, flat_map
+  a.toSorted(), a.toReversed()   sort, reverse
+  a.at(-1)                       get(a, -1) (an Option), last(a)
+  Object.keys, values, entries   keys, values, entries
+  new Map(), get, set            dict(), get(d, k), put(d, k, v)
+  new Set(a), s.has(x)           set(a), has(s, x)
+  JSON.parse, JSON.stringify     parse_json (a Result), to_json
+  new URL(s)                     parse_url(s) (a Result)
+  new URLSearchParams(s)         parse_query(s), format_query(record)
+  crypto.randomUUID()            uuid()
+  setTimeout                     sleep(seconds)
+  fetch(url)                     http_get(url), http_post(url, body)
+  console.log, console.error     print, print_error
+
+The whole standard library of JavaScript, with what is absent on purpose
+and why: docs/javascript.md in the sources of Rythme; on its site, the page
+of each function says what JavaScript writes for it."#,
+            r#"从 JAVASCRIPT 转过来
+
+Rythme 看起来像没有陷阱的现代 JavaScript：每个值都是永远不会改变的常量
+（数组和对象也是），没有 null，没有 undefined，也没有异常，而且 == 从不
+做类型转换。你每天写的东西都有简短的对应写法：
+
+  names = ["Ada", "Grace", "Alan"]
+  names.each(fn(n) = print("Hi {n}!"))
+
+  [3, 1, 2]
+    .filter(fn(x) = x > 1)
+    .map(fn(x) = x * 10)
+    .sort()                      # [20, 30]
+
+  person = {name: "Ada", langs: ["fr"]}
+  older = {..person, age: 36}    # {...person, age: 36}
+
+语言本身
+  const x = 1                    x = 1（名字永远不会改变）
+  x => x * 2                     fn(x) = x * 2
+  `Hi ${name}!`                  "Hi {name}!"
+  a === b                        a == b（从不转换：1 == "1" 是 false）
+  c ? a : b, if/else             if c then a else b（总是带 else）
+  switch                         match value ... end，每行一种情况
+  null, undefined                None 或 Some(x)
+  try/catch, throw               Ok(x) 或 Err(message)，用 ? 传递出去
+  async function, await          async fn, await（任务在其他核心上运行）
+  Promise.all(ps)                await_all(tasks)
+  [...xs, 3], {...a, b: 2}       [..xs, 3], {..a, b: 2}
+  a?.b?.c                        dig(a, ["b", "c"])
+  import { f } from "./geo.js"   use geo，然后 geo.f(x)
+  class, new, this               记录 {name: "Ada"} 和类型：
+                                 type Shape = Circle(r) | Square(s)
+  for, while                     each, map, filter, fold 或递归
+  x += 1, push, pop, sort()      新的值：total2 = total + 1, push(xs, x)
+
+方法就是函数
+  xs.map(f) 就是 map(xs, f)，两种写法在 Rythme 中都可以：x.name(...) 以 x
+  作为第一个参数调用函数 `name`。Rythme 的名字用 snake_case，JavaScript 的
+  名字会引出 Rythme 的名字：写 findLast 会得到“你是想写 `find_last` 吗？”。
+  最常用的：
+
+  Math.floor, ceil, round, trunc floor, ceil, round, int
+  Math.max(...xs), Math.min      max(xs), min(xs)
+  Math.random()                  random(), random(1, 6), random_seed(n)
+  Math.atan2(y, x), Math.log2(x) atan(y, x), log(x, 2)
+  parseInt, parseFloat           parse_int, parse_float（一个 Result，没有 NaN）
+  n.toFixed(2)                   text(n, 2)
+  s.length, a.length             len(s), len(a)
+  s.toUpperCase(), s.trim()      upper(s), trim(s)
+  s.includes(x), startsWith      contains, starts_with
+  s.padStart(3, "0")             pad_left(s, 3, "0")
+  s.replace, s.replaceAll        replace_first, replace
+  s.split(","), a.join(", ")     split(s, ","), join(a, ", ")
+  a.find, findIndex, findLast    find, find_index, find_last（一个 Option）
+  a.some(f), a.every(f)          any, all
+  a.reduce(f, init)              fold(a, init, f)
+  a.flat(), a.flatMap(f)         flatten, flat_map
+  a.toSorted(), a.toReversed()   sort, reverse
+  a.at(-1)                       get(a, -1)（一个 Option）, last(a)
+  Object.keys, values, entries   keys, values, entries
+  new Map(), get, set            dict(), get(d, k), put(d, k, v)
+  new Set(a), s.has(x)           set(a), has(s, x)
+  JSON.parse, JSON.stringify     parse_json（一个 Result）, to_json
+  new URL(s)                     parse_url(s)（一个 Result）
+  new URLSearchParams(s)         parse_query(s), format_query(record)
+  crypto.randomUUID()            uuid()
+  setTimeout                     sleep(seconds)
+  fetch(url)                     http_get(url), http_post(url, body)
+  console.log, console.error     print, print_error
+
+JavaScript 的整个标准库，以及哪些是故意没有的、为什么：见 Rythme 源代码中
+的 docs/javascript.md；在 Rythme 的网站上，每个函数的页面都会说明 JavaScript
+中对应的写法。"#,
         ),
         (
             r#"E001 — Syntax error
@@ -9905,6 +10070,21 @@ file://，git 运行时不执行 hooks，每个版本的文件必须符合索引
         ("Decodes a Base64 text: `Ok(text)`, or `Err(message)` if it is not valid Base64, or not a text once decoded.", "解码 Base64 文本：`Ok(text)`；如果不是有效的 Base64，或解码后不是文本，则为 `Err(message)`。"),
         ("Encodes a text to put it in a web address: every character but the letters, the digits and `-_.~` becomes `%` and two hexadecimal digits (a space is `%20`).", "编码文本以便放进网址：除字母、数字和 `-_.~` 以外的每个字符都变成 `%` 加两个十六进制数字（空格是 `%20`）。"),
         ("Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.", "解码网址中的文本（`%20`……）：`Ok(text)`；如果 `%` 后面不是两个十六进制数字，则为 `Err(message)`。"),
+        ("Cube root: the number whose cube is x, for negative numbers too.", "立方根：立方等于 x 的数，负数也可以。"),
+        ("The length of the hypotenuse, or the distance from (0, 0) to the point (x, y): `sqrt(x * x + y * y)`, without overflow for very large numbers.", "斜边的长度，也就是从 (0, 0) 到点 (x, y) 的距离：`sqrt(x * x + y * y)`，对非常大的数也不会溢出。"),
+        ("Hyperbolic sine.", "双曲正弦。"),
+        ("Hyperbolic cosine.", "双曲余弦。"),
+        ("Inverse hyperbolic sine: the number whose `sinh` is x.", "反双曲正弦：`sinh` 等于 x 的数。"),
+        ("Inverse hyperbolic cosine: the number (0 or more) whose `cosh` is x, for x of 1 or more.", "反双曲余弦：`cosh` 等于 x 的数（大于或等于 0），x 要大于或等于 1。"),
+        ("Inverse hyperbolic tangent: the number whose `tanh` is x, for x between -1 and 1 (both excluded).", "反双曲正切：`tanh` 等于 x 的数，x 在 -1 和 1 之间（不含两端）。"),
+        ("The last element for which f is true: `Some(element)`, or `None` if there is none.", "最后一个使 f 为真的元素：`Some(element)`，如果没有则为 `None`。"),
+        ("The position of the last element for which f is true: `Some(position)`, or `None` if there is none.", "最后一个使 f 为真的元素的位置：`Some(position)`，如果没有则为 `None`。"),
+        ("Waits `seconds` seconds (0.5 for half a second), then the program goes on: between two requests to a web service, or to show something step by step.", "等待 `seconds` 秒（0.5 是半秒），然后程序继续运行：用在两次请求网络服务之间，或者用来一步一步地展示内容。"),
+        ("A new random identifier (UUID version 4): a text of 36 characters, to name the records of a database or files. Its numbers come from `random` (`random_seed` makes them repeatable): it is not for secrets.", "一个新的随机标识符（UUID 第 4 版）：一个 36 个字符的文本，用来给数据库的记录或文件命名。它的数字来自 `random`（`random_seed` 让它们可以重现）：它不能用于机密。"),
+        ("The SHA-256 digest of a text (of its UTF-8 bytes), in 64 hexadecimal digits: to check that a text or a file did not change. Not for passwords, which need a slow hash.", "文本（它的 UTF-8 字节）的 SHA-256 摘要，由 64 个十六进制数字组成：用来检查文本或文件有没有改变。不能用于密码，密码需要慢速的哈希。"),
+        ("Cuts a web address into its parts: `Ok({scheme, user, password, host, port, path, query, fragment})`, or `Err(message)` if it is not a web address. The parts are texts as written, still encoded (empty when absent: `url_decode` decodes them, `parse_query` reads the query), except `port`, an `Option`; the scheme and the host are in lower case.", "把网址拆成各个部分：`Ok({scheme, user, password, host, port, path, query, fragment})`；如果不是网址，则为 `Err(message)`。各部分都是按原样写的文本，仍然是编码过的（缺少时为空：`url_decode` 可以解码它们，`parse_query` 可以读取查询部分），只有 `port` 是 `Option`；协议和主机名都是小写。"),
+        ("Reads the query of a web address (what follows the `?`, like `q=caf%C3%A9&page=2`) into a dict of texts, decoded (`+` is a space). A name given several times keeps its last value. Never fails: what cannot be decoded stays as it is.", "把网址的查询部分（`?` 后面的内容，比如 `q=caf%C3%A9&page=2`）读成一个由文本组成的字典，并且已经解码（`+` 是空格）。同一个名字出现多次时保留最后一个值。从不失败：无法解码的部分保持原样。"),
+        ("Writes a record or a dict as the query of a web address: `name=value` joined by `&`, encoded like `url_encode`. A value that is not a text is shown as `print` shows it; a list gives the name once for each element.", "把记录或字典写成网址的查询部分：用 `&` 连接的 `name=value`，编码方式和 `url_encode` 一样。不是文本的值按 `print` 显示它的方式写出；列表会为每个元素各写一次名字。"),
         (r#"More functions on lists
   find_index([3, 8, 5], is_even)          # Some(1)
   sort_desc([3, 1, 2])                    # [3, 2, 1]  (sort_by_desc with a key)

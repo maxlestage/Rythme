@@ -68,6 +68,9 @@ see `rythme help`"#,
         ("keys and elements must be values that can be compared: anything but functions and `nan`", "キーと要素は比較できる値でなければならない：関数と `nan` 以外なら何でもよい"),
         ("`{f}` needs a list of [key, value] pairs, but it contains {}", "`{f}` には [キー, 値] のペアのリストが必要だが、{} が含まれている"),
         ("each pair is a list of two elements, like `dict([[\"Ada\", 36], [\"Alan\", 41]])`", "各ペアは 2 つの要素のリスト。例：`dict([[\"Ada\", 36], [\"Alan\", 41]])`"),
+        // src/builtins/numbers.rs
+        ("`acosh` needs a number of 1 or more, not {x}", "`acosh` には 1 以上の数が必要（{x} は不可）"),
+        ("`atanh` needs a number between -1 and 1 (both excluded), not {x}", "`atanh` には -1 と 1 の間（両端を除く）の数が必要（{x} は不可）"),
         // src/builtins/property.rs
         ("this is not a generator: {}", "これはジェネレーターではない：{}"),
         ("not a generator", "ジェネレーターではない"),
@@ -194,10 +197,19 @@ their opposites \D, \W, \S, \B, \n, \t, and `\` before a sign for the sign itsel
         ("`{w}` cannot be an option: the field `args` holds the words that are not options", "`{w}` はオプションにできない：フィールド `args` にはオプションでない単語が入る"),
         ("the option `{name}` is given twice", "オプション `{name}` が 2 回指定されている"),
         ("`options` needs a list of texts, like the one of `args()`, but it contains {}", "`options` には `args()` が返すようなテキストのリストが必要だが、{} が含まれている"),
+        ("`sleep` needs a number of seconds of 0 or more, not {secs}", "`sleep` には 0 以上の秒数が必要（{secs} は不可）"),
+        ("`sleep({secs})` would wait too long", "`sleep({secs})` では待ち時間が長すぎる"),
         // src/builtins/text_tools.rs
         ("`{f}` writes at most 100 decimals, not {d}", "`{f}` が書ける小数は最大 100 桁（{d} は不可）"),
         ("`{f}` does not know the language \"{l}\"", "`{f}` は言語 \"{l}\" を知らない"),
         ("the languages: \"en\" (1,234.5), \"fr\" (1 234,5), \"de\", \"es\", \"it\", \"nl\" and \"pt\" (1.234,5)", "使える言語：\"en\"（1,234.5）、\"fr\"（1 234,5）、\"de\"、\"es\"、\"it\"、\"nl\"、\"pt\"（1.234,5）"),
+        // src/builtins/web.rs
+        ("a web address cannot contain spaces, tabs or line breaks: write a space `%20`", "Web アドレスには空白、タブ、改行を入れられない：空白は `%20` と書く"),
+        ("this web address does not start with its scheme: write it like `https://example.com/page`", "この Web アドレスはスキームで始まっていない：`https://example.com/page` のように書く"),
+        ("the host `{host_port}` opens a `[` that no `]` closes", "ホスト `{host_port}` で開いた `[` を閉じる `]` がない"),
+        ("the host `{host}` cannot contain `{c}`", "ホスト `{host}` には `{c}` を入れられない"),
+        ("an address `{scheme}:` names a host: write it like `{scheme}://example.com/page`", "`{scheme}:` のアドレスにはホストが必要：`{scheme}://example.com/page` のように書く"),
+        ("the port `{port}` is not a number from 0 to 65535", "ポート `{port}` が 0 から 65535 までの数ではない"),
         // src/builtins.rs
         ("Basics", "基本"),
         ("Numbers", "数値"),
@@ -864,6 +876,7 @@ Topics (rythme help TOPIC)
   debug       the debugger: breakpoints, line by line, values (rythme debug)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
   ruby        coming from Ruby: blocks, symbols, method chains
+  javascript  coming from JavaScript: its standard library in Rythme
   builtins    every built-in function
 
 A specific function: rythme help map
@@ -924,6 +937,7 @@ A specific function: rythme help map
   debug       デバッガー：ブレークポイント、1 行ずつの実行、値（rythme debug）
   editors     エディターで使う Rythme（VS Code、Neovim、Helix...）
   ruby        Ruby から来た人へ：ブロック、シンボル、メソッドチェーン
+  javascript  JavaScript から来た人へ：その標準ライブラリを Rythme で
   builtins    すべての組み込み関数
 
 特定の関数について：rythme help map
@@ -3536,6 +3550,157 @@ x.name の仕組み
   `(` のない even?：そういう関数がある（組み込み、またはファイルの中で fn で
   定義した）とき。それ以外では value? は None や Err で止まる ? で、
   (value)? は常にそうなります。"#,
+        ),
+        (
+            r#"COMING FROM JAVASCRIPT
+
+Rythme looks like modern JavaScript without its traps: every value is a
+const that never changes (arrays and objects too), there is no null, no
+undefined and no exceptions, and == never converts. What you write every
+day has a short equivalent:
+
+  names = ["Ada", "Grace", "Alan"]
+  names.each(fn(n) = print("Hi {n}!"))
+
+  [3, 1, 2]
+    .filter(fn(x) = x > 1)
+    .map(fn(x) = x * 10)
+    .sort()                      # [20, 30]
+
+  person = {name: "Ada", langs: ["fr"]}
+  older = {..person, age: 36}    # {...person, age: 36}
+
+The language
+  const x = 1                    x = 1 (a name never changes)
+  x => x * 2                     fn(x) = x * 2
+  `Hi ${name}!`                  "Hi {name}!"
+  a === b                        a == b (never converts: 1 == "1" is false)
+  c ? a : b, if/else             if c then a else b (always with else)
+  switch                         match value ... end, one case per line
+  null, undefined                None, or Some(x)
+  try/catch, throw               Ok(x) or Err(message), and ? to pass it on
+  async function, await          async fn, await (tasks run on other cores)
+  Promise.all(ps)                await_all(tasks)
+  [...xs, 3], {...a, b: 2}       [..xs, 3], {..a, b: 2}
+  a?.b?.c                        dig(a, ["b", "c"])
+  import { f } from "./geo.js"   use geo, then geo.f(x)
+  class, new, this               records {name: "Ada"} and types:
+                                 type Shape = Circle(r) | Square(s)
+  for, while                     each, map, filter, fold, or recursion
+  x += 1, push, pop, sort()      new values: total2 = total + 1, push(xs, x)
+
+Methods are functions
+  xs.map(f) is map(xs, f), and both are written in Rythme: x.name(...)
+  calls the function `name` with x first. Its names are in snake_case, and a
+  JavaScript name gives the Rythme one: findLast says "did you mean
+  `find_last`?". The most used:
+
+  Math.floor, ceil, round, trunc floor, ceil, round, int
+  Math.max(...xs), Math.min      max(xs), min(xs)
+  Math.random()                  random(), random(1, 6), random_seed(n)
+  Math.atan2(y, x), Math.log2(x) atan(y, x), log(x, 2)
+  parseInt, parseFloat           parse_int, parse_float (a Result, never NaN)
+  n.toFixed(2)                   text(n, 2)
+  s.length, a.length             len(s), len(a)
+  s.toUpperCase(), s.trim()      upper(s), trim(s)
+  s.includes(x), startsWith      contains, starts_with
+  s.padStart(3, "0")             pad_left(s, 3, "0")
+  s.replace, s.replaceAll        replace_first, replace
+  s.split(","), a.join(", ")     split(s, ","), join(a, ", ")
+  a.find, findIndex, findLast    find, find_index, find_last (an Option)
+  a.some(f), a.every(f)          any, all
+  a.reduce(f, init)              fold(a, init, f)
+  a.flat(), a.flatMap(f)         flatten, flat_map
+  a.toSorted(), a.toReversed()   sort, reverse
+  a.at(-1)                       get(a, -1) (an Option), last(a)
+  Object.keys, values, entries   keys, values, entries
+  new Map(), get, set            dict(), get(d, k), put(d, k, v)
+  new Set(a), s.has(x)           set(a), has(s, x)
+  JSON.parse, JSON.stringify     parse_json (a Result), to_json
+  new URL(s)                     parse_url(s) (a Result)
+  new URLSearchParams(s)         parse_query(s), format_query(record)
+  crypto.randomUUID()            uuid()
+  setTimeout                     sleep(seconds)
+  fetch(url)                     http_get(url), http_post(url, body)
+  console.log, console.error     print, print_error
+
+The whole standard library of JavaScript, with what is absent on purpose
+and why: docs/javascript.md in the sources of Rythme; on its site, the page
+of each function says what JavaScript writes for it."#,
+            r#"JAVASCRIPT から来た人へ
+
+Rythme は落とし穴のない現代的な JavaScript のように見えます：どの値も決して
+変わらない定数で（配列もオブジェクトも）、null も undefined も例外もなく、
+== は決して型を変換しません。毎日書くものには短い書き方があります：
+
+  names = ["Ada", "Grace", "Alan"]
+  names.each(fn(n) = print("Hi {n}!"))
+
+  [3, 1, 2]
+    .filter(fn(x) = x > 1)
+    .map(fn(x) = x * 10)
+    .sort()                      # [20, 30]
+
+  person = {name: "Ada", langs: ["fr"]}
+  older = {..person, age: 36}    # {...person, age: 36}
+
+言語
+  const x = 1                    x = 1（名前は決して変わらない）
+  x => x * 2                     fn(x) = x * 2
+  `Hi ${name}!`                  "Hi {name}!"
+  a === b                        a == b（変換しない：1 == "1" は false）
+  c ? a : b, if/else             if c then a else b（必ず else を付ける）
+  switch                         match value ... end。1 行に 1 ケース
+  null, undefined                None か Some(x)
+  try/catch, throw               Ok(x) か Err(message)。? で呼び出し元に渡す
+  async function, await          async fn, await（タスクは別のコアで動く）
+  Promise.all(ps)                await_all(tasks)
+  [...xs, 3], {...a, b: 2}       [..xs, 3], {..a, b: 2}
+  a?.b?.c                        dig(a, ["b", "c"])
+  import { f } from "./geo.js"   use geo のあと geo.f(x)
+  class, new, this               レコード {name: "Ada"} と型：
+                                 type Shape = Circle(r) | Square(s)
+  for, while                     each, map, filter, fold か再帰
+  x += 1, push, pop, sort()      新しい値：total2 = total + 1, push(xs, x)
+
+メソッドは関数
+  xs.map(f) は map(xs, f) で、どちらも Rythme で書けます：x.name(...) は x を
+  最初の引数にして関数 `name` を呼びます。Rythme の名前は snake_case で、
+  JavaScript の名前を書くと Rythme の名前が出ます：findLast には「もしかして
+  `find_last`？」と出ます。よく使うもの：
+
+  Math.floor, ceil, round, trunc floor, ceil, round, int
+  Math.max(...xs), Math.min      max(xs), min(xs)
+  Math.random()                  random(), random(1, 6), random_seed(n)
+  Math.atan2(y, x), Math.log2(x) atan(y, x), log(x, 2)
+  parseInt, parseFloat           parse_int, parse_float（Result、NaN なし）
+  n.toFixed(2)                   text(n, 2)
+  s.length, a.length             len(s), len(a)
+  s.toUpperCase(), s.trim()      upper(s), trim(s)
+  s.includes(x), startsWith      contains, starts_with
+  s.padStart(3, "0")             pad_left(s, 3, "0")
+  s.replace, s.replaceAll        replace_first, replace
+  s.split(","), a.join(", ")     split(s, ","), join(a, ", ")
+  a.find, findIndex, findLast    find, find_index, find_last（Option を返す）
+  a.some(f), a.every(f)          any, all
+  a.reduce(f, init)              fold(a, init, f)
+  a.flat(), a.flatMap(f)         flatten, flat_map
+  a.toSorted(), a.toReversed()   sort, reverse
+  a.at(-1)                       get(a, -1)（Option を返す）, last(a)
+  Object.keys, values, entries   keys, values, entries
+  new Map(), get, set            dict(), get(d, k), put(d, k, v)
+  new Set(a), s.has(x)           set(a), has(s, x)
+  JSON.parse, JSON.stringify     parse_json（Result を返す）, to_json
+  new URL(s)                     parse_url(s)（Result を返す）
+  new URLSearchParams(s)         parse_query(s), format_query(record)
+  crypto.randomUUID()            uuid()
+  setTimeout                     sleep(seconds)
+  fetch(url)                     http_get(url), http_post(url, body)
+  console.log, console.error     print, print_error
+
+JavaScript の標準ライブラリ全体と、わざと入れていないものとその理由は、
+Rythme のソースの docs/javascript.md にあります。Rythme のサイトでは、各関数
+のページに JavaScript での書き方が載っています。"#,
         ),
         (
             r#"E001 — Syntax error
@@ -9868,6 +10033,21 @@ file:// を使い、git はフックなしで実行され、各バージョン�
         ("Decodes a Base64 text: `Ok(text)`, or `Err(message)` if it is not valid Base64, or not a text once decoded.", "Base64 テキストをデコードします：`Ok(テキスト)`、正しい Base64 でないかデコードしてもテキストにならなければ `Err(message)`。"),
         ("Encodes a text to put it in a web address: every character but the letters, the digits and `-_.~` becomes `%` and two hexadecimal digits (a space is `%20`).", "Web アドレスに入れるためにテキストをエンコードします：英字、数字、`-_.~` 以外の文字は `%` と 16 進数 2 桁になります（空白は `%20`）。"),
         ("Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.", "Web アドレスのテキスト（`%20` など）をデコードします：`Ok(テキスト)`、`%` の後に 16 進数 2 桁がなければ `Err(message)`。"),
+        ("Cube root: the number whose cube is x, for negative numbers too.", "立方根：3 乗すると x になる数。負の数でも使えます。"),
+        ("The length of the hypotenuse, or the distance from (0, 0) to the point (x, y): `sqrt(x * x + y * y)`, without overflow for very large numbers.", "斜辺の長さ、つまり (0, 0) から点 (x, y) までの距離：`sqrt(x * x + y * y)`。とても大きな数でもオーバーフローしません。"),
+        ("Hyperbolic sine.", "双曲線正弦。"),
+        ("Hyperbolic cosine.", "双曲線余弦。"),
+        ("Inverse hyperbolic sine: the number whose `sinh` is x.", "逆双曲線正弦：`sinh` が x になる数。"),
+        ("Inverse hyperbolic cosine: the number (0 or more) whose `cosh` is x, for x of 1 or more.", "逆双曲線余弦：`cosh` が x になる数（0 以上）。x は 1 以上。"),
+        ("Inverse hyperbolic tangent: the number whose `tanh` is x, for x between -1 and 1 (both excluded).", "逆双曲線正接：`tanh` が x になる数。x は -1 と 1 の間（両端を除く）。"),
+        ("The last element for which f is true: `Some(element)`, or `None` if there is none.", "f が真になる最後の要素：`Some(要素)`、なければ `None`。"),
+        ("The position of the last element for which f is true: `Some(position)`, or `None` if there is none.", "f が真になる最後の要素の位置：`Some(位置)`、なければ `None`。"),
+        ("Waits `seconds` seconds (0.5 for half a second), then the program goes on: between two requests to a web service, or to show something step by step.", "`seconds` 秒（0.5 なら半秒）待ってから、プログラムを続けます：Web サービスへの 2 つのリクエストの間や、何かを一歩ずつ見せるときに使います。"),
+        ("A new random identifier (UUID version 4): a text of 36 characters, to name the records of a database or files. Its numbers come from `random` (`random_seed` makes them repeatable): it is not for secrets.", "新しいランダムな識別子（UUID バージョン 4）：36 文字のテキストで、データベースのレコードやファイルに名前を付けるのに使います。その数字は `random` から来ます（`random_seed` で再現できます）：秘密には使えません。"),
+        ("The SHA-256 digest of a text (of its UTF-8 bytes), in 64 hexadecimal digits: to check that a text or a file did not change. Not for passwords, which need a slow hash.", "テキスト（その UTF-8 のバイト）の SHA-256 ダイジェストを 16 進数 64 桁で返します：テキストやファイルが変わっていないことを確かめるためのものです。パスワードには使えません。パスワードには遅いハッシュが必要です。"),
+        ("Cuts a web address into its parts: `Ok({scheme, user, password, host, port, path, query, fragment})`, or `Err(message)` if it is not a web address. The parts are texts as written, still encoded (empty when absent: `url_decode` decodes them, `parse_query` reads the query), except `port`, an `Option`; the scheme and the host are in lower case.", "Web アドレスを部分に分けます：`Ok({scheme, user, password, host, port, path, query, fragment})`、Web アドレスでなければ `Err(message)`。各部分は書かれたままのテキストで、エンコードされたままです（ないときは空。`url_decode` でデコードし、`parse_query` でクエリを読みます）。ただし `port` は `Option` です。スキームとホストは小文字になります。"),
+        ("Reads the query of a web address (what follows the `?`, like `q=caf%C3%A9&page=2`) into a dict of texts, decoded (`+` is a space). A name given several times keeps its last value. Never fails: what cannot be decoded stays as it is.", "Web アドレスのクエリ（`?` の後の部分、たとえば `q=caf%C3%A9&page=2`）を、デコードしたテキストの辞書として読みます（`+` は空白）。何度も出てくる名前は最後の値になります。失敗はしません：デコードできない部分はそのまま残ります。"),
+        ("Writes a record or a dict as the query of a web address: `name=value` joined by `&`, encoded like `url_encode`. A value that is not a text is shown as `print` shows it; a list gives the name once for each element.", "レコードか辞書を Web アドレスのクエリとして書きます：`&` でつないだ `name=value` で、`url_encode` と同じようにエンコードします。テキストでない値は `print` と同じように表示し、リストは要素ごとに 1 回ずつ名前を書きます。"),
         (
             r#"More functions on lists
   find_index([3, 8, 5], is_even)          # Some(1)

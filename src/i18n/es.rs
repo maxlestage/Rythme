@@ -68,6 +68,9 @@ consulta `rythme help`"#,
         ("keys and elements must be values that can be compared: anything but functions and `nan`", "las claves y los elementos deben ser valores comparables: todo menos las funciones y `nan`"),
         ("`{f}` needs a list of [key, value] pairs, but it contains {}", "`{f}` necesita una lista de pares [clave, valor], pero contiene {}"),
         ("each pair is a list of two elements, like `dict([[\"Ada\", 36], [\"Alan\", 41]])`", "cada par es una lista de dos elementos, como `dict([[\"Ada\", 36], [\"Alan\", 41]])`"),
+        // src/builtins/numbers.rs
+        ("`acosh` needs a number of 1 or more, not {x}", "`acosh` necesita un número mayor o igual que 1, no {x}"),
+        ("`atanh` needs a number between -1 and 1 (both excluded), not {x}", "`atanh` necesita un número entre -1 y 1 (ambos excluidos), no {x}"),
         // src/builtins/property.rs
         ("this is not a generator: {}", "esto no es un generador: {}"),
         ("not a generator", "no es un generador"),
@@ -194,10 +197,19 @@ sus contrarios \D, \W, \S, \B, \n, \t, y `\` delante de un signo para el signo e
         ("`{w}` cannot be an option: the field `args` holds the words that are not options", "`{w}` no puede ser una opción: el campo `args` contiene las palabras que no son opciones"),
         ("the option `{name}` is given twice", "la opción `{name}` se da dos veces"),
         ("`options` needs a list of texts, like the one of `args()`, but it contains {}", "`options` necesita una lista de textos, como la de `args()`, pero contiene {}"),
+        ("`sleep` needs a number of seconds of 0 or more, not {secs}", "`sleep` necesita un número de segundos mayor o igual que 0, no {secs}"),
+        ("`sleep({secs})` would wait too long", "`sleep({secs})` esperaría demasiado tiempo"),
         // src/builtins/text_tools.rs
         ("`{f}` writes at most 100 decimals, not {d}", "`{f}` escribe 100 decimales como máximo, no {d}"),
         ("`{f}` does not know the language \"{l}\"", "`{f}` no conoce el idioma \"{l}\""),
         ("the languages: \"en\" (1,234.5), \"fr\" (1 234,5), \"de\", \"es\", \"it\", \"nl\" and \"pt\" (1.234,5)", "los idiomas: \"en\" (1,234.5), \"fr\" (1 234,5), \"de\", \"es\", \"it\", \"nl\" y \"pt\" (1.234,5)"),
+        // src/builtins/web.rs
+        ("a web address cannot contain spaces, tabs or line breaks: write a space `%20`", "una dirección web no puede contener espacios, tabulaciones ni saltos de línea: escribe un espacio como `%20`"),
+        ("this web address does not start with its scheme: write it like `https://example.com/page`", "esta dirección web no empieza por su esquema: escríbela como `https://example.com/page`"),
+        ("the host `{host_port}` opens a `[` that no `]` closes", "el host `{host_port}` abre un `[` que ningún `]` cierra"),
+        ("the host `{host}` cannot contain `{c}`", "el host `{host}` no puede contener `{c}`"),
+        ("an address `{scheme}:` names a host: write it like `{scheme}://example.com/page`", "una dirección `{scheme}:` nombra un host: escríbela como `{scheme}://example.com/page`"),
+        ("the port `{port}` is not a number from 0 to 65535", "el puerto `{port}` no es un número de 0 a 65535"),
         // src/builtins.rs
         ("Basics", "Lo básico"),
         ("Numbers", "Números"),
@@ -862,6 +874,7 @@ Topics (rythme help TOPIC)
   debug       the debugger: breakpoints, line by line, values (rythme debug)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
   ruby        coming from Ruby: blocks, symbols, method chains
+  javascript  coming from JavaScript: its standard library in Rythme
   builtins    every built-in function
 
 A specific function: rythme help map
@@ -922,6 +935,7 @@ Temas (rythme help TEMA)
   debug       el depurador: puntos de interrupción, línea a línea, valores (rythme debug)
   editors     Rythme en tu editor (VS Code, Neovim, Helix...)
   ruby        si vienes de Ruby: bloques, símbolos, cadenas de métodos
+  javascript  si vienes de JavaScript: su biblioteca estándar en Rythme
   builtins    todas las funciones integradas
 
 Una función concreta: rythme help map
@@ -3525,6 +3539,158 @@ Cuándo ? forma parte de un nombre
   even? sin `(`: cuando existe una función así (integrada, o definida con fn
   en el archivo). Si no, valor? es el ? que se detiene con None o Err, y
   (valor)? siempre lo es."#,
+        ),
+        (
+            r#"COMING FROM JAVASCRIPT
+
+Rythme looks like modern JavaScript without its traps: every value is a
+const that never changes (arrays and objects too), there is no null, no
+undefined and no exceptions, and == never converts. What you write every
+day has a short equivalent:
+
+  names = ["Ada", "Grace", "Alan"]
+  names.each(fn(n) = print("Hi {n}!"))
+
+  [3, 1, 2]
+    .filter(fn(x) = x > 1)
+    .map(fn(x) = x * 10)
+    .sort()                      # [20, 30]
+
+  person = {name: "Ada", langs: ["fr"]}
+  older = {..person, age: 36}    # {...person, age: 36}
+
+The language
+  const x = 1                    x = 1 (a name never changes)
+  x => x * 2                     fn(x) = x * 2
+  `Hi ${name}!`                  "Hi {name}!"
+  a === b                        a == b (never converts: 1 == "1" is false)
+  c ? a : b, if/else             if c then a else b (always with else)
+  switch                         match value ... end, one case per line
+  null, undefined                None, or Some(x)
+  try/catch, throw               Ok(x) or Err(message), and ? to pass it on
+  async function, await          async fn, await (tasks run on other cores)
+  Promise.all(ps)                await_all(tasks)
+  [...xs, 3], {...a, b: 2}       [..xs, 3], {..a, b: 2}
+  a?.b?.c                        dig(a, ["b", "c"])
+  import { f } from "./geo.js"   use geo, then geo.f(x)
+  class, new, this               records {name: "Ada"} and types:
+                                 type Shape = Circle(r) | Square(s)
+  for, while                     each, map, filter, fold, or recursion
+  x += 1, push, pop, sort()      new values: total2 = total + 1, push(xs, x)
+
+Methods are functions
+  xs.map(f) is map(xs, f), and both are written in Rythme: x.name(...)
+  calls the function `name` with x first. Its names are in snake_case, and a
+  JavaScript name gives the Rythme one: findLast says "did you mean
+  `find_last`?". The most used:
+
+  Math.floor, ceil, round, trunc floor, ceil, round, int
+  Math.max(...xs), Math.min      max(xs), min(xs)
+  Math.random()                  random(), random(1, 6), random_seed(n)
+  Math.atan2(y, x), Math.log2(x) atan(y, x), log(x, 2)
+  parseInt, parseFloat           parse_int, parse_float (a Result, never NaN)
+  n.toFixed(2)                   text(n, 2)
+  s.length, a.length             len(s), len(a)
+  s.toUpperCase(), s.trim()      upper(s), trim(s)
+  s.includes(x), startsWith      contains, starts_with
+  s.padStart(3, "0")             pad_left(s, 3, "0")
+  s.replace, s.replaceAll        replace_first, replace
+  s.split(","), a.join(", ")     split(s, ","), join(a, ", ")
+  a.find, findIndex, findLast    find, find_index, find_last (an Option)
+  a.some(f), a.every(f)          any, all
+  a.reduce(f, init)              fold(a, init, f)
+  a.flat(), a.flatMap(f)         flatten, flat_map
+  a.toSorted(), a.toReversed()   sort, reverse
+  a.at(-1)                       get(a, -1) (an Option), last(a)
+  Object.keys, values, entries   keys, values, entries
+  new Map(), get, set            dict(), get(d, k), put(d, k, v)
+  new Set(a), s.has(x)           set(a), has(s, x)
+  JSON.parse, JSON.stringify     parse_json (a Result), to_json
+  new URL(s)                     parse_url(s) (a Result)
+  new URLSearchParams(s)         parse_query(s), format_query(record)
+  crypto.randomUUID()            uuid()
+  setTimeout                     sleep(seconds)
+  fetch(url)                     http_get(url), http_post(url, body)
+  console.log, console.error     print, print_error
+
+The whole standard library of JavaScript, with what is absent on purpose
+and why: docs/javascript.md in the sources of Rythme; on its site, the page
+of each function says what JavaScript writes for it."#,
+            r#"SI VIENES DE JAVASCRIPT
+
+Rythme se parece al JavaScript moderno sin sus trampas: cada valor es una
+constante que nunca cambia (los arrays y los objetos también), no hay null,
+ni undefined, ni excepciones, y == nunca convierte. Lo que escribes todos
+los días tiene un equivalente corto:
+
+  names = ["Ada", "Grace", "Alan"]
+  names.each(fn(n) = print("Hi {n}!"))
+
+  [3, 1, 2]
+    .filter(fn(x) = x > 1)
+    .map(fn(x) = x * 10)
+    .sort()                      # [20, 30]
+
+  person = {name: "Ada", langs: ["fr"]}
+  older = {..person, age: 36}    # {...person, age: 36}
+
+El lenguaje
+  const x = 1                    x = 1 (un nombre nunca cambia)
+  x => x * 2                     fn(x) = x * 2
+  `Hi ${name}!`                  "Hi {name}!"
+  a === b                        a == b (nunca convierte: 1 == "1" es false)
+  c ? a : b, if/else             if c then a else b (siempre con else)
+  switch                         match value ... end, un caso por línea
+  null, undefined                None, o Some(x)
+  try/catch, throw               Ok(x) o Err(message), y ? para transmitirlo
+  async function, await          async fn, await (tareas en otros núcleos)
+  Promise.all(ps)                await_all(tasks)
+  [...xs, 3], {...a, b: 2}       [..xs, 3], {..a, b: 2}
+  a?.b?.c                        dig(a, ["b", "c"])
+  import { f } from "./geo.js"   use geo, y luego geo.f(x)
+  class, new, this               registros {name: "Ada"} y tipos:
+                                 type Shape = Circle(r) | Square(s)
+  for, while                     each, map, filter, fold, o la recursión
+  x += 1, push, pop, sort()      valores nuevos: total2 = total + 1, push(xs, x)
+
+Los métodos son funciones
+  xs.map(f) es map(xs, f), y las dos formas se escriben en Rythme: x.name(...)
+  llama a la función `name` con x primero. Sus nombres están en snake_case,
+  y un nombre de JavaScript lleva al de Rythme: findLast responde «¿quisiste
+  decir `find_last`?». Los más usados:
+
+  Math.floor, ceil, round, trunc floor, ceil, round, int
+  Math.max(...xs), Math.min      max(xs), min(xs)
+  Math.random()                  random(), random(1, 6), random_seed(n)
+  Math.atan2(y, x), Math.log2(x) atan(y, x), log(x, 2)
+  parseInt, parseFloat           parse_int, parse_float (un Result, nunca NaN)
+  n.toFixed(2)                   text(n, 2)
+  s.length, a.length             len(s), len(a)
+  s.toUpperCase(), s.trim()      upper(s), trim(s)
+  s.includes(x), startsWith      contains, starts_with
+  s.padStart(3, "0")             pad_left(s, 3, "0")
+  s.replace, s.replaceAll        replace_first, replace
+  s.split(","), a.join(", ")     split(s, ","), join(a, ", ")
+  a.find, findIndex, findLast    find, find_index, find_last (una Option)
+  a.some(f), a.every(f)          any, all
+  a.reduce(f, init)              fold(a, init, f)
+  a.flat(), a.flatMap(f)         flatten, flat_map
+  a.toSorted(), a.toReversed()   sort, reverse
+  a.at(-1)                       get(a, -1) (una Option), last(a)
+  Object.keys, values, entries   keys, values, entries
+  new Map(), get, set            dict(), get(d, k), put(d, k, v)
+  new Set(a), s.has(x)           set(a), has(s, x)
+  JSON.parse, JSON.stringify     parse_json (un Result), to_json
+  new URL(s)                     parse_url(s) (un Result)
+  new URLSearchParams(s)         parse_query(s), format_query(record)
+  crypto.randomUUID()            uuid()
+  setTimeout                     sleep(seconds)
+  fetch(url)                     http_get(url), http_post(url, body)
+  console.log, console.error     print, print_error
+
+Toda la biblioteca estándar de JavaScript, con lo que falta a propósito y
+por qué: docs/javascript.md en el código fuente de Rythme; en su sitio web,
+la página de cada función dice lo que JavaScript escribe para ella."#,
         ),
         (
             r#"E001 — Syntax error
@@ -10148,6 +10314,21 @@ mismo."#,
         ("Decodes a Base64 text: `Ok(text)`, or `Err(message)` if it is not valid Base64, or not a text once decoded.", "Decodifica un texto en Base64: `Ok(texto)`, o `Err(mensaje)` si no es Base64 válido, o no es un texto una vez decodificado."),
         ("Encodes a text to put it in a web address: every character but the letters, the digits and `-_.~` becomes `%` and two hexadecimal digits (a space is `%20`).", "Codifica un texto para ponerlo en una dirección web: cada carácter salvo las letras, las cifras y `-_.~` se convierte en `%` y dos cifras hexadecimales (un espacio es `%20`)."),
         ("Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.", "Decodifica un texto de una dirección web (`%20`...): `Ok(texto)`, o `Err(mensaje)` si un `%` no va seguido de dos cifras hexadecimales."),
+        ("Cube root: the number whose cube is x, for negative numbers too.", "Raíz cúbica: el número cuyo cubo es x, también para los números negativos."),
+        ("The length of the hypotenuse, or the distance from (0, 0) to the point (x, y): `sqrt(x * x + y * y)`, without overflow for very large numbers.", "La longitud de la hipotenusa, o la distancia de (0, 0) al punto (x, y): `sqrt(x * x + y * y)`, sin desbordamiento para los números muy grandes."),
+        ("Hyperbolic sine.", "Seno hiperbólico."),
+        ("Hyperbolic cosine.", "Coseno hiperbólico."),
+        ("Inverse hyperbolic sine: the number whose `sinh` is x.", "Seno hiperbólico inverso: el número cuyo `sinh` es x."),
+        ("Inverse hyperbolic cosine: the number (0 or more) whose `cosh` is x, for x of 1 or more.", "Coseno hiperbólico inverso: el número (mayor o igual que 0) cuyo `cosh` es x, para x mayor o igual que 1."),
+        ("Inverse hyperbolic tangent: the number whose `tanh` is x, for x between -1 and 1 (both excluded).", "Tangente hiperbólica inversa: el número cuya `tanh` es x, para x entre -1 y 1 (ambos excluidos)."),
+        ("The last element for which f is true: `Some(element)`, or `None` if there is none.", "El último elemento para el que f es verdadera: `Some(elemento)`, o `None` si no hay ninguno."),
+        ("The position of the last element for which f is true: `Some(position)`, or `None` if there is none.", "La posición del último elemento para el que f es verdadera: `Some(posición)`, o `None` si no hay ninguno."),
+        ("Waits `seconds` seconds (0.5 for half a second), then the program goes on: between two requests to a web service, or to show something step by step.", "Espera `seconds` segundos (0.5 para medio segundo), y luego el programa continúa: entre dos peticiones a un servicio web, o para mostrar algo paso a paso."),
+        ("A new random identifier (UUID version 4): a text of 36 characters, to name the records of a database or files. Its numbers come from `random` (`random_seed` makes them repeatable): it is not for secrets.", "Un nuevo identificador aleatorio (UUID versión 4): un texto de 36 caracteres, para nombrar los registros de una base de datos o archivos. Sus números vienen de `random` (`random_seed` los hace repetibles): no sirve para secretos."),
+        ("The SHA-256 digest of a text (of its UTF-8 bytes), in 64 hexadecimal digits: to check that a text or a file did not change. Not for passwords, which need a slow hash.", "El resumen SHA-256 de un texto (de sus bytes UTF-8), en 64 cifras hexadecimales: para comprobar que un texto o un archivo no ha cambiado. No sirve para contraseñas, que necesitan un hash lento."),
+        ("Cuts a web address into its parts: `Ok({scheme, user, password, host, port, path, query, fragment})`, or `Err(message)` if it is not a web address. The parts are texts as written, still encoded (empty when absent: `url_decode` decodes them, `parse_query` reads the query), except `port`, an `Option`; the scheme and the host are in lower case.", "Divide una dirección web en sus partes: `Ok({scheme, user, password, host, port, path, query, fragment})`, o `Err(mensaje)` si no es una dirección web. Las partes son textos tal como están escritos, todavía codificados (vacíos cuando faltan: `url_decode` los decodifica, `parse_query` lee la consulta), salvo `port`, una `Option`; el esquema y el host están en minúsculas."),
+        ("Reads the query of a web address (what follows the `?`, like `q=caf%C3%A9&page=2`) into a dict of texts, decoded (`+` is a space). A name given several times keeps its last value. Never fails: what cannot be decoded stays as it is.", "Lee la consulta de una dirección web (lo que sigue al `?`, como `q=caf%C3%A9&page=2`) como un diccionario de textos, decodificados (`+` es un espacio). Un nombre dado varias veces conserva su último valor. Nunca falla: lo que no se puede decodificar se queda tal cual."),
+        ("Writes a record or a dict as the query of a web address: `name=value` joined by `&`, encoded like `url_encode`. A value that is not a text is shown as `print` shows it; a list gives the name once for each element.", "Escribe un registro o un diccionario como la consulta de una dirección web: `nombre=valor` unidos por `&`, codificados como con `url_encode`. Un valor que no es un texto se muestra como lo muestra `print`; una lista da el nombre una vez por cada elemento."),
         (r#"More functions on lists
   find_index([3, 8, 5], is_even)          # Some(1)
   sort_desc([3, 1, 2])                    # [3, 2, 1]  (sort_by_desc with a key)
