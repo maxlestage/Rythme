@@ -2,7 +2,8 @@
 //! assistants that read the web: on the home page, Rythme as a `ComputerLanguage`, its
 //! interpreter as a `SoftwareApplication` (version, license, download) and its source
 //! code (`SoftwareSourceCode`, written in Rust); on the pages that teach, a
-//! `TechArticle` with each piece of code as a `SoftwareSourceCode` in Rythme. JSON-LD is
+//! `TechArticle` with each piece of code as a `SoftwareSourceCode` in Rythme (and on the
+//! page of the exercises, each one as a `LearningResource`). JSON-LD is
 //! data, not a script: the Content-Security-Policy does not run it.
 
 use crate::ai;
@@ -93,6 +94,39 @@ pub fn json_ld(ctx: &Ctx) -> Option<String> {
         }
         Page::Teach => article(&crate::teach::render(lang).title, t.teach_lead, Vec::new()),
         Page::Ai => article(t.ai_title, t.ai_lead, Vec::new()),
+        Page::Work => {
+            let x = lang.sections();
+            let parts = x
+                .work_samples
+                .iter()
+                .zip(&crate::sections::WORK_SAMPLES)
+                .map(|(item, sample)| code(ctx, sample.file, item.text, sample.code, "code snippet", None))
+                .collect();
+            article(x.work_title, x.work_lead, parts)
+        }
+        Page::Exercises => {
+            let x = lang.sections();
+            let levels = ["Beginner", "Intermediate", "Advanced"];
+            let parts = rythme::exercise::EXERCISES
+                .iter()
+                .map(|e| {
+                    let e = crate::sections::exercise(e, lang);
+                    Json::Obj(vec![
+                        ("@type", s("LearningResource")),
+                        ("name", s(format!("{} · {}", e.number, e.title))),
+                        ("learningResourceType", s("exercise")),
+                        ("educationalLevel", s(levels[e.level - 1])),
+                        ("inLanguage", s(lang.tag())),
+                        ("url", s(format!("{url}#exercise-{}", e.number))),
+                    ])
+                })
+                .collect();
+            article(x.exo_title, x.exo_lead, parts)
+        }
+        Page::Install | Page::Reference | Page::Packages => {
+            let (title, lead) = crate::sections::head(lang.sections(), ctx.route.page).expect("a section");
+            article(title, lead, Vec::new())
+        }
         _ => return None,
     };
     Some(json.to_string())

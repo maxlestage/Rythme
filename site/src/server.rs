@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use paquets::prelude::*;
+use paquets::securite::prelude::{Quota, RateLimit};
 
 use crate::client::{self, CATALOG_FILES, PAGE_FILES, SW_FILES};
 use crate::i18n::{Lang, pick_lang};
@@ -37,6 +38,10 @@ pub const VERSIONED: [&str; 13] = [
     CATALOG_FILES[4],
     CATALOG_FILES[5],
 ];
+
+/// The most requests an address may send at once (see [`app`]): what the service worker
+/// saves at install, and room for the page that registers it.
+pub const BURST: u32 = 400;
 
 /// The cookie that remembers the language chosen with the switch (set by the browser
 /// side, `client/src/layout.rs`).
@@ -287,6 +292,11 @@ fn route(app: &mut App, path: &str, site: &Arc<Site>, handler: fn(&Site, &Reques
 /// The application, ready to run or to test.
 pub fn app(site: Arc<Site>) -> App {
     let mut app = App::new();
+    // Paquets' recommended shield, but for the bursts of its rate limit: the service
+    // worker saves the whole site when it installs, every page in every language, more
+    // requests at once than the 100 the preset allows (the page itself and its files
+    // come first). The same 20 requests per second per address on average.
+    app.security(paquets::shield().guard(RateLimit::new(Quota::per_second(20).burst(BURST))).build());
     // The compressed copies of the files of `public/` and the cache of the versioned
     // ones, then everything else compressed on the fly (`compress.rs`).
     let precompressed = crate::compress::Precompressed::scan(&site_dir().join("public"));

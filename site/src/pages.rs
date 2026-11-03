@@ -26,15 +26,15 @@ pub struct Ctx {
 }
 
 impl Ctx {
-    fn t(&self) -> &'static Texts {
+    pub(crate) fn t(&self) -> &'static Texts {
         self.route.lang.texts()
     }
 
-    fn lang(&self) -> Lang {
+    pub(crate) fn lang(&self) -> Lang {
         self.route.lang
     }
 
-    fn href(&self, page: PageKind) -> String {
+    pub(crate) fn href(&self, page: PageKind) -> String {
         Route::new(self.lang(), page).href()
     }
 
@@ -55,16 +55,16 @@ fn beats() -> Element {
     span().class("beats").attr("aria-hidden", "true").children((0..4).map(|_| i()))
 }
 
-fn external(link: Element) -> Element {
+pub(crate) fn external(link: Element) -> Element {
     link.attr("target", "_blank").attr("rel", "noopener")
 }
 
-fn button_link(href: impl Into<String>, class: &str, text: &str) -> Element {
+pub(crate) fn button_link(href: impl Into<String>, class: &str, text: &str) -> Element {
     a().class("btn").class(class.to_owned()).href(href.into()).text(text.to_owned())
 }
 
 /// The heading of a section: a small label, a title and a lead.
-fn section_head(id: &str, title: &str, lead: &str) -> Element {
+pub(crate) fn section_head(id: &str, title: &str, lead: &str) -> Element {
     header()
         .class("section__head")
         .child(h2().id(format!("{id}-title")).text(title.to_owned()))
@@ -72,7 +72,7 @@ fn section_head(id: &str, title: &str, lead: &str) -> Element {
 }
 
 /// A shell command with a copy button (made to work by the browser side, `client/`).
-fn command(t: &Texts, text: &str) -> Element {
+pub(crate) fn command(t: &Texts, text: &str) -> Element {
     div()
         .class("command")
         .child(
@@ -316,11 +316,28 @@ fn notices(t: &Texts) -> Element {
 
 fn site_header(ctx: &Ctx) -> Element {
     let t = ctx.t();
-    let links = nav_pages(t).map(|(page, text)| {
+    let item = |(page, text): (PageKind, &'static str)| {
         let link = a().class("nav__link").href(ctx.href(page)).text(text);
         let link = if page == ctx.route.page { link.class("is-active").attr("aria-current", "page") } else { link };
         li().child(link)
-    });
+    };
+    let links = nav_pages(t).map(item);
+    let x = ctx.lang().sections();
+    let more = crate::sections::nav_pages(x);
+    let here = more.iter().any(|(page, _)| *page == ctx.route.page);
+    // The five sections: in the menu of a phone (and without the browser side) they
+    // follow the other links; on a computer they open from "More", which the browser
+    // side shows and opens.
+    let toggle = button()
+        .class("nav__link nav__more-toggle")
+        .attr("type", "button")
+        .id("nav-more-toggle")
+        .attr("aria-expanded", "false")
+        .attr("aria-controls", "nav-more")
+        .attr("hidden", "")
+        .text(x.nav_more);
+    let toggle = if here { toggle.class("is-active") } else { toggle };
+    let more = li().class("nav__item--more").child(toggle).child(ul().class("nav__sub").id("nav-more").children(more.map(item)));
     header().class("bar").id("top").child(
         div()
             .class("bar__inner")
@@ -335,6 +352,7 @@ fn site_header(ctx: &Ctx) -> Element {
                 nav().class("nav").id("nav").attr("aria-label", t.nav_aria).child(
                     ul().class("nav__list")
                         .children(links)
+                        .child(more)
                         .child(li().class("nav__item--github").child(external(
                             a().class("nav__link nav__link--github").href(REPO).child(github_icon()).child(span().text("GitHub")),
                         )))
@@ -385,10 +403,12 @@ fn site_footer(ctx: &Ctx) -> Element {
                     .child(p().text(t.footer_tagline)),
             )
             .child(
-                nav()
-                    .class("foot__links")
-                    .attr("aria-label", t.nav_aria)
-                    .children(nav_pages(t).map(|(page, text)| a().href(ctx.href(page)).text(text))),
+                nav().class("foot__links").attr("aria-label", t.nav_aria).children(
+                    nav_pages(t)
+                        .into_iter()
+                        .chain(crate::sections::nav_pages(ctx.lang().sections()))
+                        .map(|(page, text)| a().href(ctx.href(page)).text(text)),
+                ),
             )
             .child(
                 div()
@@ -402,7 +422,7 @@ fn site_footer(ctx: &Ctx) -> Element {
 }
 
 /// The page around `content`: head tags, header with the burger menu, footer.
-fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
+pub(crate) fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
     let lang = ctx.lang();
     let route = ctx.route;
     let mut seo =
@@ -505,7 +525,7 @@ fn layout(ctx: &Ctx, title: &str, description: &str, content: Element) -> Page {
 
 pub fn home(ctx: &Ctx) -> Page {
     let t = ctx.t();
-    let content = main().class("home").child(hero(ctx)).child(why(t)).child(errors(t)).child(habits(t)).child(install(t)).child(cta(ctx));
+    let content = main().class("home").child(hero(ctx)).child(why(t)).child(errors(t)).child(habits(t)).child(install(ctx)).child(cta(ctx));
     layout(ctx, t.meta_title, t.meta_description, content)
 }
 
@@ -599,7 +619,8 @@ fn habits(t: &Texts) -> Element {
         )
 }
 
-fn install(t: &Texts) -> Element {
+fn install(ctx: &Ctx) -> Element {
+    let t = ctx.t();
     let steps = t.install_steps.iter().enumerate().map(|(n, step)| {
         let body = if n == 0 {
             div().child(p().text(step.text)).child(external(a().class("btn btn--ghost").href(RELEASES).text("Releases →")))
@@ -620,6 +641,16 @@ fn install(t: &Texts) -> Element {
         })))
         .child(p().class("note").text(t.commands_lang))
         .child(p().class("note note--box").text(t.install_app))
+        .child(more_links(ctx, &[PageKind::Install, PageKind::Packages, PageKind::Work]))
+}
+
+/// Links to some of the five sections, as buttons.
+fn more_links(ctx: &Ctx, pages: &[PageKind]) -> Element {
+    let names = crate::sections::nav_pages(ctx.lang().sections());
+    div().class("more__links").children(pages.iter().filter_map(|page| {
+        let (_, name) = names.iter().find(|(p, _)| p == page)?;
+        Some(button_link(ctx.href(*page), "btn--ghost", &format!("{name} →")))
+    }))
 }
 
 fn cta(ctx: &Ctx) -> Element {
@@ -636,7 +667,7 @@ fn cta(ctx: &Ctx) -> Element {
 // ----- Learn ------------------------------------------------------------------------------
 
 /// The top of an inner page.
-fn page_head(title: &str, lead: &str) -> Element {
+pub(crate) fn page_head(title: &str, lead: &str) -> Element {
     header().class("page-head").child(h1().text(title.to_owned())).child(p().class("lead").text(lead.to_owned()))
 }
 
@@ -683,7 +714,8 @@ pub fn learn(ctx: &Ctx) -> Page {
                 .class("section")
                 .attr("aria-labelledby", "next-title")
                 .child(h2().id("next-title").text(t.learn_next_title))
-                .child(ul().class("cards cards--3").children(next)),
+                .child(ul().class("cards cards--3").children(next))
+                .child(more_links(ctx, &[PageKind::Reference, PageKind::Exercises])),
         );
     layout(ctx, &format!("{} — Rythme", t.learn_title), t.learn_lead, content)
 }
@@ -1136,7 +1168,7 @@ pub fn teach(ctx: &Ctx) -> Page {
 
 /// A piece of text to copy as it is (a configuration, a message for a chat): its name,
 /// where it goes, a copy button (made to work by the browser side) and the text, which wraps.
-fn snippet(t: &Texts, name: &str, place: Option<&str>, text: &str) -> Element {
+pub(crate) fn snippet(t: &Texts, name: &str, place: Option<&str>, text: &str) -> Element {
     let head = div().class("snippet__head").child(span().class("snippet__name file").text(name.to_owned()));
     let head = match place {
         Some(place) => head.child(span().class("snippet__where").text(place.to_owned())),
@@ -1206,7 +1238,7 @@ pub fn ai(ctx: &Ctx) -> Page {
         .child(button_link(ctx.href(PageKind::Playground), "btn--primary", t.cta_try));
     let content =
         main().class("page ai").child(page_head(t.ai_title, t.ai_lead)).child(give).child(mcp).child(fix).child(agents).child(play);
-    layout(ctx, &format!("{} — Rythme", t.ai_title), t.ai_lead, content)
+    layout(ctx, &format!("{} — Rythme", t.ai_title), ctx.lang().sections().ai_description, content)
 }
 
 // ----- Not found ------------------------------------------------------------------------
@@ -1284,6 +1316,11 @@ pub fn render(ctx: &Ctx) -> Page {
         PageKind::Playground => playground(ctx),
         PageKind::Teach => teach(ctx),
         PageKind::Ai => ai(ctx),
+        PageKind::Install => crate::sections::install(ctx),
+        PageKind::Reference => crate::sections::reference(ctx),
+        PageKind::Packages => crate::sections::packages(ctx),
+        PageKind::Work => crate::sections::work(ctx),
+        PageKind::Exercises => crate::sections::exercises(ctx),
         PageKind::Offline => offline(ctx),
         PageKind::NotFound => not_found(ctx),
     }

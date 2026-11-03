@@ -16,7 +16,7 @@ const BIN = binary(process.argv[2]);
 const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
 // Every language of the site (src/i18n.rs).
 const LANGS = ["fr", "en", "es", "de", "pt", "zh", "it", "ja"];
-const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "ai/", "offline/", "nothing-here/"];
+const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "ai/", "install/", "reference/", "packages/", "work/", "exercises/", "offline/", "nothing-here/"];
 const WIDTHS = [320, 360, 375, 390, 414, 600, 768, 1024, 1280, 1440, 1920];
 // The color themes, as `site.css` defines them; `auto` follows the system.
 const THEMES = ["auto", "light", "dark", "contrast", "sepia", "tempo"];
@@ -235,6 +235,115 @@ async function languageMenu(browser, base, mode) {
   await page.mouse.click(8, 600);
   check(!(await page.evaluate(() => document.querySelector(".lang--bar").open)), `${mode}: a click elsewhere closes the language menu`);
   await context.close();
+}
+
+// "More", in the bar of a computer: the five sections open under it, inside the screen,
+// in every language; Escape closes the list and gives the focus back to its button, a
+// click elsewhere closes it. On a phone the sections are in the burger menu, and
+// without the browser side they follow the other links under the logo.
+async function moreMenu(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 860, height: 800 } });
+  const page = await context.newPage();
+  for (const lang of LANGS) {
+    await page.goto(`${base}/${lang}/reference/`);
+    await started(page);
+    for (const width of [860, 1024, 1280, 1920]) {
+      await page.setViewportSize({ width, height: 800 });
+      await settle(page);
+      await page.click("#nav-more-toggle");
+      await settle(page);
+      const m = await page.evaluate(measure);
+      const menu = await page.evaluate(() => {
+        const links = [...document.querySelectorAll("#nav-more a")];
+        const vw = document.documentElement.clientWidth;
+        return {
+          count: links.length,
+          inside: links.every((a) => { const r = a.getBoundingClientRect(); return r.left >= 0 && r.right <= vw && r.width > 0 && r.height >= 44; }),
+          expanded: document.getElementById("nav-more-toggle").getAttribute("aria-expanded"),
+          current: (document.querySelector('#nav-more [aria-current="page"]') || {}).pathname,
+        };
+      });
+      check(m.scrollWidth <= m.clientWidth && !m.wide.length && menu.count === 5 && menu.inside && menu.expanded === "true" && menu.current.endsWith(`/${lang}/reference/`),
+        `${mode}: /${lang}/ "More" opens inside the screen at ${width}px`, { m, menu });
+      await page.keyboard.press("Escape");
+      const closed = await page.evaluate(() => ({
+        shown: getComputedStyle(document.getElementById("nav-more")).display !== "none",
+        focus: document.activeElement.id,
+      }));
+      check(!closed.shown && closed.focus === "nav-more-toggle", `${mode}: /${lang}/ Escape closes "More" at ${width}px`, closed);
+    }
+  }
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`${base}/en/`);
+  await started(page);
+  await page.click("#nav-more-toggle");
+  await page.mouse.click(8, 600);
+  const open = await page.evaluate(() => getComputedStyle(document.getElementById("nav-more")).display !== "none");
+  check(!open, `${mode}: a click elsewhere closes "More"`);
+  // On a phone: in the burger menu, with the other links; the button stays out of sight.
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto(`${base}/en/`);
+  await started(page);
+  await page.click(".burger");
+  await settle(page);
+  const phone = await page.evaluate(() => ({
+    toggle: getComputedStyle(document.getElementById("nav-more-toggle")).display,
+    links: [...document.querySelectorAll("#nav-more a")].filter((a) => a.getBoundingClientRect().height >= 44).length,
+  }));
+  check(phone.toggle === "none" && phone.links === 5, `${mode}: on a phone the five sections are in the burger menu`, phone);
+  await context.close();
+  // Without the browser side, every link is there, under the logo.
+  const plain = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1280, height: 800 } });
+  const still = await plain.newPage();
+  await still.goto(`${base}/en/work/`);
+  const links = await still.evaluate(() => [...document.querySelectorAll("#nav-more a")].filter((a) => a.getBoundingClientRect().width > 0).length);
+  const m = await still.evaluate(measure);
+  check(links === 5 && m.scrollWidth <= m.clientWidth, `${mode}: without the browser side the five sections are links of the bar`, { links, m });
+  await plain.close();
+}
+
+// The filter of the reference: the functions that hold every word typed, the groups
+// that keep one, the count, the message when nothing matches; without the browser side,
+// no field and the whole list.
+async function referenceFilter(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 360, height: 740 } });
+  const page = await context.newPage();
+  await page.goto(`${base}/en/reference/`);
+  await started(page);
+  const state = () => page.evaluate(() => ({
+    shown: [...document.querySelectorAll(".fn")].filter((f) => !f.hidden).map((f) => f.dataset.name),
+    groups: [...document.querySelectorAll(".ref-group")].filter((g) => !g.hidden).map((g) => g.id),
+    count: document.getElementById("ref-count").textContent,
+    none: !document.getElementById("ref-none").hidden,
+    field: !document.getElementById("ref-filter").hidden,
+  }));
+  const all = await state();
+  check(all.field && all.shown.length > 250 && !all.none, `${mode}: the reference shows its filter and every function`, { field: all.field, count: all.count });
+  await page.fill("#ref-search", "csv");
+  const csv = await state();
+  check(csv.shown.includes("csv_records") && csv.shown.includes("csv_parse") && csv.shown.length < 10 && csv.groups.length >= 1 && csv.count.startsWith(`${csv.shown.length} of`),
+    `${mode}: "csv" keeps the functions about CSV, and their groups`, csv);
+  await page.fill("#ref-search", "sort desc");
+  const two = await state();
+  check(two.shown.includes("sort_desc") && !two.shown.includes("sort"), `${mode}: every word typed must be found`, two.shown);
+  await page.fill("#ref-search", "zzzz");
+  const none = await state();
+  check(none.shown.length === 0 && none.groups.length === 0 && none.none, `${mode}: nothing matches: a message says so`, none);
+  await page.fill("#ref-search", "");
+  check((await state()).shown.length === all.shown.length, `${mode}: an empty filter shows every function again`);
+  const m = await page.evaluate(measure);
+  check(m.scrollWidth <= m.clientWidth && !m.wide.length && !m.small.length, `${mode}: the filter fits a phone, its field at 16px`, m);
+  await context.close();
+  const plain = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 360, height: 740 } });
+  const still = await plain.newPage();
+  await still.goto(`${base}/en/reference/`);
+  const without = await still.evaluate(() => ({
+    field: getComputedStyle(document.getElementById("ref-filter")).display,
+    shown: [...document.querySelectorAll(".fn")].filter((f) => f.getBoundingClientRect().height > 0).length,
+    total: document.querySelectorAll(".fn").length,
+  }));
+  check(without.field === "none" && without.shown === without.total, `${mode}: without the browser side, no filter and the whole list`, without);
+  await plain.close();
 }
 
 // The editor wraps long lines; each line number stays level with its line.
@@ -564,6 +673,8 @@ async function verify(mode) {
   try {
     await noHorizontalScroll(browser, base, mode);
     await languageMenu(browser, base, mode);
+    await moreMenu(browser, base, mode);
+    await referenceFilter(browser, base, mode);
     await editorWraps(browser, base);
     await shareLayout(browser, base, mode);
     await copyForAiLayout(browser, base, mode);

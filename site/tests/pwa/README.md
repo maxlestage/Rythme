@@ -79,7 +79,8 @@ The same two deployments (`server` or `export` to run one), with service workers
 blocked. It checks:
 
 1. no horizontal scrolling: every page in every language (home, learn, examples,
-   playground, teach, AI, offline, 404), at 320, 360, 375, 390, 414, 600, 768, 1024,
+   playground, teach, AI, install, reference, packages, work, exercises, offline,
+   404), at 320, 360, 375, 390, 414, 600, 768, 1024,
    1280, 1440 and 1920px, in each of the six themes: the document is no wider than
    the window, no element sticks out of it, none scrolls sideways, the bar keeps
    one line, and under 700px every text field is at 16px or more (iOS zooms into a
@@ -87,7 +88,11 @@ blocked. It checks:
 2. the language menu of the bar, open in every language at 320, 375, 768 and
    1280px: it lists every language and stays inside the screen; Enter opens it,
    Escape closes it and gives the focus back to its button, a click elsewhere closes
-   it;
+   it; *More*, in the bar of a computer, open in every language at 860, 1024, 1280 and
+   1920px: its five links inside the screen, Escape and a click elsewhere close it; on
+   a phone the five sections are in the burger menu, and without the browser side they
+   are links of the bar; the filter of the reference (a word, two words, nothing found,
+   empty again), and without the browser side no field and the whole list;
 3. the notice of a program opened from a link and the box of the link made by
    *Share*, open together in every language, at 320 to 1280px in every theme: no
    horizontal scroll, every text at the contrast of the theme; *Copy for AI* when the

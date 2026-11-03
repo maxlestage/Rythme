@@ -3227,6 +3227,12 @@ pub fn explain(code: &str) -> Option<String> {
     explanation(code).map(|(en, fr)| pick(en, fr).to_string())
 }
 
+/// The same in a given language, without changing the current one: the website
+/// renders its reference in every language at once.
+pub fn explain_in(lang: crate::lang::Lang, code: &str) -> Option<&'static str> {
+    explanation(code).map(|(en, fr)| crate::lang::pick_in(lang, en, fr))
+}
+
 /// The title of a code, from the first line of its explanation:
 /// "Syntax error" for `E001`.
 pub fn code_title(code: &str) -> Option<String> {
