@@ -3747,7 +3747,7 @@ and `rythme help javascript` sums it up):
   `random_seed` makes it repeatable: it is not for secrets.
 
 ```rythme
-print(cbrt(-27), hypot(3, 4), atanh(0.5), find_last([1, 4, 6, 7], is_even), find_last_index([1, 4, 6, 7], is_even))
+print(cbrt(-27), hypot(3, 4), round(atanh(0.5), 6), find_last([1, 4, 6, 7], is_even), find_last_index([1, 4, 6, 7], is_even))
 match parse_url("https://example.com/search?q=caf%C3%A9&page=2#results")
   Ok(u) -> print(u.host, u.port, u.path, parse_query(u.query), u.fragment)
   Err(e) -> print(e)
@@ -3756,7 +3756,7 @@ print(format_query({q: "café", page: 3}), slice(sha256(""), 0, 8), len(uuid()))
 ```
 
 ```text
--3.0 5.0 0.5493061443340548 Some(6) Some(2)
+-3.0 5.0 0.549306 Some(6) Some(2)
 example.com None /search dict("page" => "2", "q" => "café") results
 q=caf%C3%A9&page=3 e3b0c442 36
 ```
