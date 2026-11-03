@@ -4,7 +4,7 @@ use super::{Texts, habit, item, step};
 
 pub const FR: Texts = Texts {
     meta_title: "Rythme — un langage simple, purement fonctionnel, avec de l'aide partout",
-    meta_description: "Rythme est un langage de programmation simple et purement fonctionnel : 15 mots-clés, pas de null, pas d'exceptions, et des erreurs qui expliquent comment les corriger. Essayez-le dans le navigateur.",
+    meta_description: "Rythme est un langage simple et purement fonctionnel : 15 mots-clés, ni null ni exceptions, des erreurs qui expliquent la correction. Essayez-le en ligne.",
     skip: "Aller au contenu",
     brand_aria: "Rythme, accueil",
     nav_aria: "Navigation principale",
@@ -85,6 +85,10 @@ pub const FR: Texts = Texts {
         ("rythme new projet", "créer un projet : rythme.toml, src/, tests/"),
         ("rythme install", "télécharger les dépendances du projet (rythme.toml)"),
         ("rythme -e 'print(1 + 2)'", "lancer un bout de code"),
+        ("rythme search vectors", "trouver des paquets dans l'index ; rythme add mathlib en ajoute un au projet"),
+        ("rythme exercise", "36 exercices gradués : list, start 1, check FICHIER"),
+        ("rythme debug fib.ry", "le débogueur : break 12, run, next, step, where"),
+        ("rythme upgrade", "quelle commande installe la dernière version (rien n'est téléchargé)"),
     ],
     commands_lang: "Ajoutez --lang et fr, en, es, de, pt, zh, it ou ja avant la commande pour choisir la langue des messages (rythme --lang fr bonjour.ry), ou définissez RYTHME_LANG.",
     copy: "Copier",
@@ -169,7 +173,7 @@ pub const FR: Texts = Texts {
     ex_open: "Ouvrir dans le playground",
     ex_jump: "Aller à un exemple",
     learn_title: "Le langage en deux minutes",
-    learn_lead: "Huit idées, et vous savez lire tout programme Rythme. Chaque morceau de code s'ouvre dans le playground.",
+    learn_lead: "Neuf idées, et vous savez lire tout programme Rythme. Chaque morceau de code s'ouvre dans le playground.",
     learn_try: "Essayer",
     learn_steps: "Voir les étapes",
     tour: [
@@ -212,6 +216,11 @@ pub const FR: Texts = Texts {
             "Les tests vivent à côté du code",
             "rythme test fichier.ry lance les tests et montre, pour chaque échec, la valeur attendue et l'obtenue.",
             "fn double(x) = x * 2\n\ntest \"double marche\" = assert_eq(double(21), 42)\ntest \"double de zéro\" = assert_eq(double(0), 0)\n",
+        ),
+        step(
+            "Des types, quand ils aident",
+            "On peut écrire des types là où ils aident à lire le code, et rythme check les vérifie avant l'exécution. Arbre(a) est un arbre de valeurs d'un même type.",
+            "type Arbre(a) = Feuille | Noeud(gauche: Arbre(a), valeur: a, droite: Arbre(a))\n\nfn insérer(Feuille, x) = Noeud(Feuille, x, Feuille)\nfn insérer(Noeud(l, v, r), x) = if x < v then Noeud(insérer(l, x), v, r) else Noeud(l, v, insérer(r, x))\n\nfn total(t: Arbre(Int)) -> Int = match t\n  Feuille -> 0\n  Noeud(l, v, r) -> total(l) + v + total(r)\nend\n\nprint(total(fold([5, 2, 8, 1], Feuille, insérer)))\n# total(Noeud(Feuille, \"deux\", Feuille)) est refusé avant de tourner: E027\n",
         ),
     ],
     learn_names: "Les mots-clés et les fonctions intégrées sont en anglais, comme dans tous les langages répandus, mais vos propres noms peuvent être en français, accents compris : prénom, âge, résultat.",
@@ -275,6 +284,7 @@ pub const FR: Texts = Texts {
         "explique un code d'erreur (--format json aussi)",
         "lance les tests : chacun avec passed et son échec",
         "la sortie, les erreurs et le code de sortie",
+        "un programme lu sur l'entrée standard, pour un outil sans fichier",
     ],
     ai_agents_title: "Dans vos projets : AGENTS.md",
     ai_agents_lead: "rythme new écrit un AGENTS.md (et un AGENTS.md qui y renvoie) qui dit aux agents de code comment travailler dans le projet : lire rythme help llms, puis boucler sur check, fix, test et run.",

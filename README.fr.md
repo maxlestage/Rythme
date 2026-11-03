@@ -110,7 +110,8 @@ hors ligne, playground compris. Son menu propose des thèmes de couleurs
 de côté, d'un téléphone de 320 px à un grand écran.
 
 Le dossier [`site/`](site) est le site web de Rythme (accueil, visite du
-langage, exemples, playground et guide pour les enseignants, en huit
+langage, exemples, playground, guide pour les enseignants, installation et
+outils, référence, paquets, Rythme au travail et exercices, en huit
 langues), écrit en Rust avec Paquets.
 
 ### Déployer le site sur Heroku

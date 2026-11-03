@@ -40,12 +40,13 @@ pub const MCP: [(&str, &str, &str); 3] =
     [("AI assistants", "sh", MCP_COMMAND), ("desktop assistants · Cursor · .mcp.json", "json", MCP_JSON), ("VS Code", "json", VSCODE_JSON)];
 
 /// The commands of the loop, in the order of `Texts::ai_loop`.
-pub const LOOP: [&str; 5] = [
+pub const LOOP: [&str; 6] = [
     "rythme check --format json main.ry",
     "rythme fix main.ry",
     "rythme explain E003",
     "rythme test --format json",
     "rythme run --format json main.ry",
+    "echo 'print(1 + 2)' | rythme run --format json -",
 ];
 
 /// What `rythme fix` does, from the manual (section 7.10).
@@ -78,11 +79,17 @@ pub fn llms_txt(origin: &str) -> String {
             Route::new(Lang::En, Page::Playground).path(),
             t.pg_lead
         ),
-        format!(
-            "- [The same pages in other languages]({origin}/fr/index.md): French, Spanish, German, Portuguese and Chinese, with {} in place of `/en/`",
-            others.join(", ")
-        ),
     ];
+    let x = Lang::En.sections();
+    let mut website = website.to_vec();
+    for page in [Page::Reference, Page::Install, Page::Packages, Page::Work, Page::Exercises] {
+        let (title, lead) = crate::sections::head(x, page).expect("a section");
+        website.push(format!("- [{title}]({}): {lead}", md(page)));
+    }
+    website.push(format!(
+        "- [The same pages in other languages]({origin}/fr/index.md): French, Spanish, German, Portuguese, Chinese, Italian and Japanese, with {} in place of `/en/`",
+        others.join(", ")
+    ));
     let section = format!("## Website\n\n{}\n\n", website.join("\n"));
     let text = LLMS.replace(LLMS_FULL_ON_GITHUB, &format!("{origin}{LLMS_FULL_PATH}"));
     match text.find("## Optional") {

@@ -574,6 +574,34 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   the bundles, and the one line that applies the theme before the first paint.
   Building the site needs `wasm-bindgen-cli` 0.2.129 (`site/build.sh`
   installs it).
+- **Five new sections of the website**, in the eight languages, each with its
+  Markdown, structured data, place in the sitemap and in the offline app:
+  *Install & tools* (`/{lang}/install/`: the ways to install of the README,
+  `rythme upgrade`, the completions and `rythme man`, VS Code, Zed, Helix and
+  Tree-sitter, the language server, the debugger and `rythme dap`, `rythme
+  mcp`); *Reference* (`/{lang}/reference/`: every built-in function with its
+  signature, documentation and example, and every error and warning code
+  with its explanation, one anchor each, like `/en/reference/#E014`, made from
+  `BUILTINS` and `help::CODES` at build time, with a filter that leaves the
+  whole list without the browser side); *Packages* (`/{lang}/packages/`: the
+  index, `rythme.toml` and ranges of versions, publishing, safety); *Rythme at
+  work* (`/{lang}/work/`: CSV, JSON, logs and a command-line tool that run in
+  the playground, tests and CI, `--format json`, the stability promise, the
+  speed of the virtual machine as `bench/` measures it); *Exercises*
+  (`/{lang}/exercises/`: the 36 exercises of `rythme exercise` by level, each
+  opening in the playground with its tests, in the language of the page). The
+  site's server now depends on the interpreter, so these pages cannot fall
+  behind it.
+- **The menu**: the five sections follow the other links in the burger menu
+  of a phone, and open from *More* in the bar of a computer; without the
+  browser side they are plain links. The footer lists every page.
+- **Up to date with the language**: *Learn* has a ninth idea, types written
+  in the code with a type with parameters (`type Tree(a)`) and E027; the
+  commands of the home page add `rythme search`, `rythme exercise`, `rythme
+  debug` and `rythme upgrade`; the AI page shows `run --format json -` from
+  the standard input; `/llms.txt` lists the new pages and the eight
+  languages; every description for search engines has 160 characters or
+  fewer.
 
 ## [1.0.0] - 2026-10-18
 

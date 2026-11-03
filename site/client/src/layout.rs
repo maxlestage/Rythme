@@ -41,6 +41,8 @@ pub fn start() {
     service_worker();
     install_button();
     ios_hint();
+    more_menu(wide.clone());
+    reference_filter();
     themes(wide);
 }
 
@@ -525,6 +527,102 @@ fn themes(wide: Option<MediaQueryList>) {
     if let Some(wide) = wide {
         on::<Event>(&wide, "change", move |_| set_open(false));
     }
+}
+
+/// "More" in the bar of a computer: the five sections (install, reference, packages,
+/// at work, exercises) in a list that opens under it. On a phone they are in the burger
+/// menu with the other links, and without this code they follow them under the logo.
+/// Escape, a click elsewhere or the focus leaving it closes the list.
+fn more_menu(wide: Option<MediaQueryList>) {
+    let Some(item) = dom::query::<HtmlElement>(".nav__item--more") else { return };
+    let Some(toggle) = dom::by_id::<HtmlElement>("nav-more-toggle") else { return };
+    toggle.set_hidden(false);
+    let set_open = {
+        let (toggle, item) = (toggle.clone(), item.clone());
+        Rc::new(move |open: bool| {
+            let _ = toggle.set_attribute("aria-expanded", if open { "true" } else { "false" });
+            let _ = item.class_list().toggle_with_force("is-open", open);
+        })
+    };
+    let (t, s) = (toggle.clone(), set_open.clone());
+    on::<Event>(&toggle, "click", move |_| {
+        let open = t.get_attribute("aria-expanded").as_deref() != Some("true");
+        s(open);
+        if open && let Some(first) = dom::query::<HtmlElement>("#nav-more a") {
+            let _ = first.focus();
+        }
+    });
+    let (i, s, t) = (item.clone(), set_open.clone(), toggle.clone());
+    on::<KeyboardEvent>(&item, "keydown", move |ev| {
+        if ev.key() == "Escape" && i.class_list().contains("is-open") {
+            ev.stop_propagation();
+            s(false);
+            let _ = t.focus();
+        }
+    });
+    let (i, s) = (item.clone(), set_open.clone());
+    on::<Event>(&dom::document(), "click", move |ev| {
+        if !dom::holds(&i, ev.target()) {
+            s(false);
+        }
+    });
+    let (i, s) = (item.clone(), set_open.clone());
+    on::<FocusEvent>(&item, "focusout", move |ev| {
+        if let Some(next) = ev.related_target()
+            && !dom::holds(&i, Some(next))
+        {
+            s(false);
+        }
+    });
+    if let Some(wide) = wide {
+        on::<Event>(&wide, "change", move |_| set_open(false));
+    }
+}
+
+/// The filter of the reference: the functions whose name, signature, documentation or
+/// example hold every word typed, and the groups that keep one. Without this code, the
+/// field stays hidden and the whole list is there.
+fn reference_filter() {
+    let Some(filter) = dom::by_id::<HtmlElement>("ref-filter") else { return };
+    let Some(field) = dom::by_id::<HtmlInputElement>("ref-search") else { return };
+    let count = dom::by_id::<HtmlElement>("ref-count");
+    let none = dom::by_id::<HtmlElement>("ref-none");
+    let template = filter.get_attribute("data-count").unwrap_or_default();
+    let groups: Vec<Element> = dom::query_all(None, ".ref-group");
+    // The text of each function, once, in lower case.
+    let items: Rc<Vec<(Element, String)>> = Rc::new(
+        dom::query_all::<Element>(None, ".fn")
+            .into_iter()
+            .map(|el| {
+                let text = el.text_content().unwrap_or_default().to_lowercase();
+                (el, text)
+            })
+            .collect(),
+    );
+    let total = items.len();
+    filter.set_hidden(false);
+    let apply = move || {
+        let query = field.value().to_lowercase();
+        let words: Vec<&str> = query.split_whitespace().collect();
+        let mut shown = 0;
+        for (el, text) in items.iter() {
+            let keep = words.iter().all(|w| text.contains(w));
+            dom::set_hidden(el, !keep);
+            shown += usize::from(keep);
+        }
+        for group in &groups {
+            let visible = dom::query_all::<Element>(Some(group), ".fn").iter().any(|f| !dom::is_hidden(f));
+            dom::set_hidden(group, !visible);
+        }
+        if let Some(count) = &count {
+            count.set_text_content(Some(&template.replace("{n}", &shown.to_string()).replace("{total}", &total.to_string())));
+        }
+        if let Some(none) = &none {
+            none.set_hidden(shown != 0);
+        }
+    };
+    let field = dom::id::<HtmlInputElement>("ref-search");
+    on::<Event>(&field, "input", move |_| apply());
 }
 
 /// `/` of the static export (GitHub Pages has no server to redirect): the language

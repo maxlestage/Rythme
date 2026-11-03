@@ -22,7 +22,7 @@ const { SITE, workspace, freePort, startServer, startExport, binary, checker, st
 const BIN = binary(process.argv[2]);
 const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
 const LANGS = ["fr", "en", "es", "de", "pt", "zh", "it", "ja"];
-const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "ai/", "offline/", "nothing-here/"];
+const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "ai/", "install/", "reference/", "packages/", "work/", "exercises/", "offline/", "nothing-here/"];
 const SHOTS = process.env.MOBILE_SHOTS || null;
 
 // The phones: portrait and landscape, the page zoomed (a narrower window, as Chrome on

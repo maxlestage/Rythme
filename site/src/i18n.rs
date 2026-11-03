@@ -13,6 +13,7 @@ mod fr;
 mod it;
 mod ja;
 mod pt;
+mod sections;
 mod zh;
 
 pub use de::DE;
@@ -22,6 +23,7 @@ pub use fr::FR;
 pub use it::IT;
 pub use ja::JA;
 pub use pt::PT;
+pub use sections::Sections;
 pub use zh::ZH;
 
 /// The number of languages.
@@ -89,6 +91,12 @@ impl Lang {
     pub fn texts(self) -> &'static Texts {
         self.pick([&FR, &EN, &ES, &DE, &PT, &ZH, &IT, &JA])
     }
+
+    /// The texts of the five sections (install, reference, packages, work, exercises).
+    pub fn sections(self) -> &'static Sections {
+        use sections as x;
+        self.pick([&x::FR, &x::EN, &x::ES, &x::DE, &x::PT, &x::ZH, &x::IT, &x::JA])
+    }
 }
 
 /// The preferred supported language of an `Accept-Language` header, French by default.
@@ -113,7 +121,7 @@ pub struct Item {
     pub text: &'static str,
 }
 
-const fn item(title: &'static str, text: &'static str) -> Item {
+pub(crate) const fn item(title: &'static str, text: &'static str) -> Item {
     Item { title, text }
 }
 
@@ -181,7 +189,7 @@ pub struct Texts {
     pub install_lead: &'static str,
     pub install_steps: [Item; 3],
     pub commands_title: &'static str,
-    pub commands: [(&'static str, &'static str); 12],
+    pub commands: [(&'static str, &'static str); 16],
     pub commands_lang: &'static str,
     pub copy: &'static str,
     pub copied: &'static str,
@@ -290,7 +298,7 @@ pub struct Texts {
     /// The link of a step of the tour that opens the playground on the steps of a
     /// calculation.
     pub learn_steps: &'static str,
-    pub tour: [Step; 8],
+    pub tour: [Step; 9],
     pub learn_names: &'static str,
     pub learn_next_title: &'static str,
     pub learn_next: [Item; 3],
@@ -346,7 +354,7 @@ pub struct Texts {
     /// does.
     pub ai_loop_title: &'static str,
     pub ai_loop_lead: &'static str,
-    pub ai_loop: [&'static str; 5],
+    pub ai_loop: [&'static str; 6],
     pub ai_agents_title: &'static str,
     pub ai_agents_lead: &'static str,
     pub ai_play_title: &'static str,
