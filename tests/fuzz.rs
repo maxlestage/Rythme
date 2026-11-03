@@ -840,7 +840,21 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
     fn split(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
         seeded("train_test_split", it, a, span)
     }
-    let fakes: [(&str, builtins::BuiltinFn); 24] = [
+    fn identifier(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+        seeded("uuid", it, a, span)
+    }
+    /// `sleep` checks its argument like the real one, but never waits: the edge
+    /// values hold numbers of seconds that would outlast the test.
+    fn no_wait(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+        let real = builtins::lookup("sleep").unwrap().func;
+        match a.first() {
+            Some(Value::Int(n)) if *n > 0 => real(it, &[Value::Int(0)], span),
+            Some(Value::Big(n)) if !n.is_negative() => real(it, &[Value::Int(0)], span),
+            Some(Value::Float(x)) if *x > 0.0 => real(it, &[Value::Int(0)], span),
+            _ => real(it, a, span),
+        }
+    }
+    let fakes: [(&str, builtins::BuiltinFn); 26] = [
         ("print", quiet),
         ("debug", same),
         ("input", empty_text),
@@ -865,6 +879,8 @@ fn sandbox() -> &'static Vec<&'static Builtin> {
         ("train_test_split", split),
         ("http_get", no_file),
         ("http_post", no_file),
+        ("sleep", no_wait),
+        ("uuid", identifier),
     ];
     SANDBOX.get_or_init(|| {
         fakes
