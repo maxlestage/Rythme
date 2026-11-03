@@ -278,6 +278,8 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `await_all(tasks)`: The results of a list of tasks (calls of `async fn`), in the order of the list, once all are done: the tasks run at the same time, so the whole takes about as long as the slowest one.
 - `inspect(value)`: The text that shows a value the way the REPL and `debug` show it: a text between quotes, with its special characters written as escapes.
 - `print_error(value, ...)`: Shows values on the error output (stderr), separated by spaces, then goes to the next line: for messages that must not mix with the results of a program, which go to the standard output.
+- `sleep(seconds)`: Waits `seconds` seconds (0.5 for half a second), then the program goes on: between two requests to a web service, or to show something step by step.
+- `uuid()`: A new random identifier (UUID version 4): a text of 36 characters, to name the records of a database or files.
 
 ### Numbers
 
@@ -314,6 +316,13 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `is_zero(x)`: Is the number 0 (or 0.0)?
 - `is_nan(x)`: Is the decimal number `nan` ("not a number")? It is never equal to anything, not even to itself.
 - `is_finite(x)`: Is the number finite: neither an infinity nor `nan`? Whole numbers always are.
+- `cbrt(x)`: Cube root: the number whose cube is x, for negative numbers too.
+- `hypot(x, y)`: The length of the hypotenuse, or the distance from (0, 0) to the point (x, y): `sqrt(x * x + y * y)`, without overflow for very large numbers.
+- `sinh(x)`: Hyperbolic sine.
+- `cosh(x)`: Hyperbolic cosine.
+- `asinh(x)`: Inverse hyperbolic sine: the number whose `sinh` is x.
+- `acosh(x)`: Inverse hyperbolic cosine: the number (0 or more) whose `cosh` is x, for x of 1 or more.
+- `atanh(x)`: Inverse hyperbolic tangent: the number whose `tanh` is x, for x between -1 and 1 (both excluded).
 - `pi`: the number π (a value, not a function)
 
 ### Text
@@ -445,6 +454,8 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `iterate(start, n, f)`: A list of n values: `start`, then f(start), then f of that...
 - `unfold(start, f)`: Builds a list from a starting state: f receives the state and gives `Some([value, next state])` to add a value and go on, or `None` to stop.
 - `filter_map(list, f)`: Applies f to each element and keeps the values of the `Some(...)` it gives, leaving out the `None`: filtering and transforming at once.
+- `find_last(list, f)`: The last element for which f is true: `Some(element)`, or `None` if there is none.
+- `find_last_index(list, f)`: The position of the last element for which f is true: `Some(position)`, or `None` if there is none.
 
 ### Records
 
@@ -577,6 +588,10 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `base64_decode(text)`: Decodes a Base64 text: `Ok(text)`, or `Err(message)` if it is not valid Base64, or not a text once decoded.
 - `url_encode(text)`: Encodes a text to put it in a web address: every character but the letters, the digits and `-_.~` becomes `%` and two hexadecimal digits (a space is `%20`).
 - `url_decode(text)`: Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.
+- `sha256(text)`: The SHA-256 digest of a text (of its UTF-8 bytes), in 64 hexadecimal digits: to check that a text or a file did not change.
+- `parse_url(text)`: Cuts a web address into its parts: `Ok({scheme, user, password, host, port, path, query, fragment})`, or `Err(message)` if it is not a web address.
+- `parse_query(text)`: Reads the query of a web address (what follows the `?`, like `q=caf%C3%A9&page=2`) into a dict of texts, decoded (`+` is a space).
+- `format_query(x)`: Writes a record or a dict as the query of a web address: `name=value` joined by `&`, encoded like `url_encode`.
 
 Ruby names, exactly the same functions: `puts` = `print`, `to_s` = `text`, `to_i` = `int`, `to_f` = `float`, `even?` = `is_even`, `odd?` = `is_odd`, `length` = `len`, `size` = `len`, `upcase` = `upper`, `downcase` = `lower`, `strip` = `trim`, `include?` = `contains`, `start_with?` = `starts_with`, `end_with?` = `ends_with`, `select` = `filter`, `reduce` = `fold`, `inject` = `fold`, `uniq` = `unique`, `each_slice` = `chunks`, `each_cons` = `windows`, `any?` = `any`, `all?` = `all`, `empty?` = `is_empty`, `key?` = `has`, `lstrip` = `trim_start`, `rstrip` = `trim_end`, `casecmp?` = `equals_ignore_case`, `clamp` = `constrain`, `swapcase` = `swap_case`, `ljust` = `pad_right`, `rjust` = `pad_left`, `ord` = `char_code`, `chr` = `char`, `delete_prefix` = `remove_prefix`, `delete_suffix` = `remove_suffix`, `rindex` = `last_index_of`, `positive?` = `is_positive`, `negative?` = `is_negative`, `zero?` = `is_zero`, `nan?` = `is_nan`, `finite?` = `is_finite`, `detect` = `find`, `collect` = `map`, `rotate` = `rotate_by`, `combination` = `combinations`, `permutation` = `permutations`, `transform_values` = `map_values`, `transform_keys` = `map_keys`, `each_pair` = `each`, `to_h` = `dict`, `subset?` = `is_subset`, `disjoint?` = `is_disjoint`, `warn` = `print_error`.
 

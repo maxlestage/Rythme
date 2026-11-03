@@ -11,6 +11,7 @@ builtins, `itertools`, `statistics` and `string`, and Elixir's `Enum`,
 `String` and `Map`, against what Rythme has. This audit was made after 1.0:
 the functions marked **new** were added then (72 functions, 26 Ruby names);
 `rythme help NAME` documents each one, with an example that the tests run.
+The same inventory for JavaScript is [`javascript.md`](javascript.md).
 
 Legend: a name is the Rythme function; **new** marks one added after 1.0;
 *absent* says why Rythme has none on purpose. Rythme is purely functional:

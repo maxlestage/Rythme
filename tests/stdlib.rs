@@ -38,6 +38,7 @@ const EFFECTS: &[&str] = &[
     "http_get",
     "http_post",
     "print_error",
+    "sleep",
 ];
 
 /// Runs a program inside this process and returns what it printed, or the error.

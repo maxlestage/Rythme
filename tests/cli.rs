@@ -36,6 +36,7 @@ fn help_overview_and_topics() {
         "debug",
         "editors",
         "ruby",
+        "javascript",
         "builtins",
     ] {
         let r = rythme(&["help", topic]);
@@ -57,6 +58,10 @@ fn help_overview_and_topics() {
     assert!(r.stdout.starts_with("COMING FROM RUBY"), "{}", r.stdout);
     let r = common::rythme_lang("fr", &["help", "ruby"]);
     assert!(r.stdout.starts_with("VENIR DE RUBY"), "{}", r.stdout);
+    for name in ["javascript", "js", "typescript"] {
+        let r = rythme(&["help", name]);
+        assert!(r.stdout.starts_with("COMING FROM JAVASCRIPT") && r.stdout.contains("find_last"), "{}", r.stdout);
+    }
     let r = rythme(&["help", "builtins"]);
     assert!(r.stdout.contains("upcase (same as upper)"), "{}", r.stdout);
 }

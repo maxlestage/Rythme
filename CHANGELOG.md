@@ -12,6 +12,31 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### What JavaScript has too
+
+[`docs/javascript.md`](docs/javascript.md) goes through the standard library
+of JavaScript (`Math`, `Number`, `String`, `Array`, `Object`, `Map`, `Set`,
+`JSON`, `Date`, `RegExp`, `Promise`, and the web APIs `console`,
+`setTimeout`, `URL`, `URLSearchParams`, `crypto`): what Rythme has under
+another name, and what it leaves out on purpose. The 15 functions it was
+missing are added (300 built-in functions now):
+
+- numbers: `cbrt`, `hypot(x, y)`, `sinh`, `cosh`, `asinh`, `acosh`, `atanh`
+  (outside their domain, E023 like `asin`);
+- lists: `find_last` and `find_last_index`;
+- `sleep(seconds)`, and `uuid()` (version 4, from the numbers of `random`:
+  `random_seed` makes it repeatable);
+- the web: `parse_url` (a Result of the parts of an address), `parse_query`
+  (a dict of decoded texts) and `format_query` (a record or a dict as a
+  query), `sha256(text)`.
+
+`rythme help javascript` (or `js`, `typescript`) sums it up, and a
+JavaScript name gives the Rythme one in the messages: `xs.findLast(f)` says
+"in Rythme, this is called `find_last`". Like every built-in function added
+after 1.0, a program that defines one of these names gets the warning W003;
+`sign` is not added for that reason, since the manual and the help define
+their own `sign` as an example.
+
 ### Tasks: `async fn` and `await`
 
 Functions that run at the same time, on the other cores: `async fn fetch(url)

@@ -29,6 +29,7 @@ pub mod help;
 pub mod index;
 pub mod interp;
 pub mod io;
+pub mod javascript;
 pub mod lexer;
 pub mod llms;
 // Output for programs (`--format json`) and `rythme fix`, written with the JSON of the language server.
