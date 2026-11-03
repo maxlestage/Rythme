@@ -176,7 +176,12 @@ a `use` (`use geometry as geo`). `unless` is not a keyword either: it starts
 `unless condition then a else b` ([3.9](#39-if)) only when the start of a
 value follows it on the same line (a name, a number, a text, a symbol,
 `not`, `if`, `match`, `fn`, or a bracket after a space); `unless(x)` and
-`unless[0]`, without a space, use a value named `unless`.
+`unless[0]`, without a space, use a value named `unless`. `async` and
+`await` are not keywords either ([4.11](#411-tasks-async-fn-and-await)):
+`async` starts an `async fn` only right before `fn` and a function name, and
+`await` is the built-in function `await`, which can also be written without
+parentheses before a name, a constructor or a list (`await task`); anywhere
+else, both are names like any other.
 
 The following words, taken from other languages, are **reserved**: using one
 as a name is an error (E001) whose message explains how to do the same thing
@@ -2704,6 +2709,49 @@ error[E005]: cannot use `+` with Int and Text
 ✗ sample.ry: 3 error(s)
 ```
 
+### 4.11 Tasks: `async fn` and `await`
+
+A function defined with `async fn`, at the top level of a file, starts when
+it is called and gives at once a value of type `Task`; `await` waits until
+the task is done and gives its result. Several tasks run at the same time,
+on the other cores of the computer: start them all, then await them.
+`await_all(tasks)` waits for a list of tasks and gives their results in the
+order of the list.
+
+```rythme
+fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
+
+async fn slow_fib(n) = fib(n)
+
+tasks = [20, 21, 22] |> map(slow_fib)
+print(await_all(tasks))
+print(await slow_fib(10) + 1)
+```
+
+```text
+[6765, 10946, 17711]
+56
+```
+
+- `await task` and `await(task)` are the same call. A task can be awaited
+  again: it gives the same result.
+- A task cannot change anything outside of it: values never change, so tasks
+  need no locks and give the same results as if they ran one after the other.
+- Each task runs in an interpreter of its own, with the program loaded
+  again: its arguments and its result are copied, so they cannot be
+  functions. The definitions of the program (functions, types, names given a
+  value at the top level) are there; its other top-level statements (`print`
+  ...) do not run again.
+- An error in a task stops the program at the `await` that waits for it,
+  with the message of the task.
+- Where tasks cannot run elsewhere (the REPL, the playground in a browser,
+  an argument that is a function), the task runs at once, when it is called,
+  and `await` gives its result: the program prints the same thing.
+- `rythme check` knows that the call of an `async fn` gives a `Task`:
+  `slow_fib(10) + 1` is an error (E005) whose help says to write `await`.
+- `async fn` is only allowed at the top level of a file (E001): a task runs
+  apart from the values around it.
+
 ---
 
 ## 5. Errors
@@ -3106,7 +3154,7 @@ with examples; the code may be written in lowercase.
 
 ## 6. Standard library
 
-The 283 built-in functions are always available, without `use`. Like the
+The 285 built-in functions are always available, without `use`. Like the
 keywords, their names are in English. `rythme help builtins` lists all of
 them by category, one line each; `rythme help NAME` (or `help(NAME)` in a
 program, or `:doc NAME` in the REPL) shows the documentation of one, with

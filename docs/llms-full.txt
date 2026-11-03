@@ -274,6 +274,8 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 - `time()`: Returns the current time in seconds (a Float), counted from 1 January 1970.
 - `random(a, b), random(list)`: random() gives a decimal number between 0 and 1; random(a, b) a whole number from a to b (included); random(list) a random element.
 - `random_seed(n)`: Makes the draws of `random` and `shuffle` that follow the same on every run: the same seed (a whole number) gives the same draws, with the same version of Rythme.
+- `await(task)`: The result of a task: the call of an `async fn` starts the function and gives a Task at once; `await` waits until it is done and gives what it returned (an error in the task stops the program here).
+- `await_all(tasks)`: The results of a list of tasks (calls of `async fn`), in the order of the list, once all are done: the tasks run at the same time, so the whole takes about as long as the slowest one.
 - `inspect(value)`: The text that shows a value the way the REPL and `debug` show it: a text between quotes, with its special characters written as escapes.
 - `print_error(value, ...)`: Shows values on the error output (stderr), separated by spaces, then goes to the next line: for messages that must not mix with the results of a program, which go to the standard output.
 
@@ -581,6 +583,8 @@ Ruby names, exactly the same functions: `puts` = `print`, `to_s` = `text`, `to_i
 ## Keywords
 
 - `fn`: Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.
+- `async`: Before `fn`, at the top level of a file: `async fn name(x) = ...` defines a function whose call starts it at once and gives a Task; `await task` gives its result. Tasks run at the same time, on other cores: start several, then await them. `async` is a keyword only before `fn`; elsewhere it is a name like any other.
+- `await`: Before a value: `await task` waits for a task (the call of an `async fn`) and gives its result, like `await(task)`. An error in the task stops the program at the `await`. `await_all(tasks)` waits for a list of tasks.
 - `if`: Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.
 - `then`: Separates the condition of an `if` from the value it gives when the condition is true.
 - `else`: Gives the value of an `if` when the condition is false. It is always required; `else if` chains several conditions.

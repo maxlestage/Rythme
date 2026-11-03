@@ -227,3 +227,33 @@ Some(value) = find(xs, f)
     (parenthesized_pattern
       (identifier))
     (integer)))
+
+================================================================================
+Async functions and await
+================================================================================
+
+async fn double(x) = x * 2
+n = await double(21)
+async = 1
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    async: (async_marker)
+    name: (identifier)
+    parameters: (parameters
+      (identifier))
+    body: (binary_expression
+      left: (identifier)
+      right: (integer)))
+  (definition
+    pattern: (identifier)
+    value: (await_expression
+      operand: (call
+        function: (identifier)
+        arguments: (arguments
+          (integer)))))
+  (definition
+    pattern: (identifier)
+    value: (integer)))

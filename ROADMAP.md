@@ -159,6 +159,11 @@ No new keyword or syntax unless an item says so and nothing simpler works.
 Ideas, not promises: each one would be weighed against the rules above, and
 none may break the [stability promise](README.md#stability-promise) of 1.x.
 
+- [x] **Tasks: `async fn` and `await`**, functions that run at the same
+  time on the other cores, without locks since values never change; no new
+  reserved word (`async` only before `fn`, `await` a built-in function also
+  written without parentheses), so every 1.x program keeps its meaning
+  (manual 4.11).
 - [x] **A bytecode virtual machine**, for programs several times faster that
   print exactly the same thing. Done: functions are compiled to register
   instructions (`src/vm/`), with instructions of their own for the common

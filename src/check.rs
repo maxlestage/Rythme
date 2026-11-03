@@ -1491,6 +1491,8 @@ impl<'a> Checker<'a> {
         self.fn_depth -= 1;
         self.need_leave(def);
         let ret = self.with_written_result(def, ret.join(&early));
+        // A call of an `async fn` gives a task, whose result is the body's.
+        let ret = if def.is_async { Ty::task(ret) } else { ret };
         Ty::func(Some((def.arity, def.arity)), ret, Some(def.signature().into()))
     }
 
@@ -2953,7 +2955,13 @@ impl<'a> Checker<'a> {
             }
             _ => None,
         };
-        if let Some(name) = spaced_minus {
+        let task = |t: &Ty| matches!(t, Ty::Data(d) if d.name == Sym::new("Task"));
+        if task(lt) || task(rt) {
+            d = d.help(t!(
+                "this is a task, the call of an `async fn`: write `await` before it to use its result, like `await total(x) + 1`",
+                "c'est une tâche, l'appel d'une `async fn` : écrivez `await` devant pour utiliser son résultat, comme `await total(x) + 1`"
+            ));
+        } else if let Some(name) = spaced_minus {
             d = d.help(t!(
                 "`{name} -x` subtracts here; to call `{name}`, write `{name}(-x)` (a call without parentheses starts a statement or a result, such as a branch of `if` or the body after the `=` of a function, and its name is not given a value with `=` or as a parameter)",
                 "`{name} -x` soustrait ici ; pour appeler `{name}`, écrivez `{name}(-x)` (un appel sans parenthèses commence une instruction ou un résultat, comme une branche de `if` ou le corps après le `=` d'une fonction, et son nom ne reçoit pas de valeur avec `=` ni comme paramètre)"

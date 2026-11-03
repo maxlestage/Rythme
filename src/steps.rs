@@ -567,7 +567,7 @@ impl<'a> Stepper<'a> {
         };
         let params = env.iter().map(|(s, _)| Pattern::new(PatKind::Bind(*s), span)).collect();
         let clause = Rc::new(Clause { params, guard: None, body, span, ret: None });
-        let maker = FnDef { name: None, clauses: vec![clause], arity: env.len(), doc: None, span };
+        let maker = FnDef { name: None, clauses: vec![clause], arity: env.len(), doc: None, span, is_async: false };
         let code = compile::function(&maker, &self.it.names);
         let maker = Closure { def: Rc::new(maker), code: Rc::new(code), captured: Vec::new(), siblings: None };
         let made = self.it.call(Value::Func(Rc::new(maker)), env.iter().map(|(_, v)| v.clone()).collect(), span)?;

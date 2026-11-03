@@ -364,9 +364,33 @@ fn names_of_values(toks: &[Token], out: &mut HashMap<Sym, Span>) {
 /// keep their meaning, `x[0]` and `x - 1`, when `x` is a value. A `(` right
 /// after the name, or after a space, is the usual call. Gives the index of
 /// the first token of the arguments.
+/// An `async fn` inside a function or a block.
+fn nested_async(span: Span) -> Box<Diagnostic> {
+    Diagnostic::error(
+        "E001",
+        t!(
+            "an `async fn` can only be defined at the top level of a file",
+            "une `async fn` ne peut être définie qu'au premier niveau d'un fichier"
+        ),
+    )
+    .at(span)
+    .help(t!(
+        "move it outside of the function or block: its task runs on its own, apart from the values around it",
+        "déplacez-la en dehors de la fonction ou du bloc : sa tâche tourne seule, à part des valeurs qui l'entourent"
+    ))
+    .boxed()
+}
+
+/// `async fn name`: the start of an `async fn`, never a call of `async`.
+pub(crate) fn async_fn_at(toks: &[Token], i: usize) -> bool {
+    matches!(toks.get(i).map(|t| &t.tok), Some(Tok::Ident(s)) if &*s.name() == "async")
+        && matches!(toks.get(i + 1).map(|t| &t.tok), Some(Tok::Fn))
+        && matches!(toks.get(i + 2).map(|t| &t.tok), Some(Tok::Ident(_)))
+}
+
 pub(crate) fn command_at(toks: &[Token], i: usize, preds: &[Sym], values: &HashSet<Sym>) -> Option<usize> {
     let Tok::Ident(s) = &toks[i].tok else { return None };
-    if &*s.name() == "_" || unless_at(toks, i) {
+    if &*s.name() == "_" || unless_at(toks, i) || async_fn_at(toks, i) {
         return None;
     }
     let (name, j) = match predicate_at(toks, i, preds) {
@@ -500,6 +524,7 @@ fn merge_fn(prev: &mut Rc<FnDef>, new: &mut Option<Rc<FnDef>>) -> Fallible<()> {
     let n = Rc::try_unwrap(new.take().unwrap()).expect("fresh definition");
     let p = Rc::get_mut(prev).expect("fresh definition");
     p.clauses.extend(n.clauses);
+    p.is_async |= n.is_async;
     if p.doc.is_none() {
         p.doc = n.doc;
     }
@@ -697,10 +722,12 @@ impl Parser {
             if matches!(self.raw(), Tok::Eof) {
                 return Ok(items);
             }
+            let async_fn = self.at_async_fn();
             let item = match self.peek() {
                 Tok::Type => self.type_def()?,
                 Tok::Test => self.test_def()?,
                 Tok::Use => self.use_def()?,
+                _ if async_fn => Item::Stmt(self.async_fn_def()?),
                 _ => Item::Stmt(self.stmt()?),
             };
             let stmt = if let Item::Stmt(s) = &item { Some(s) } else { None };
@@ -773,8 +800,27 @@ impl Parser {
         Err(d.boxed())
     }
 
+    /// `async fn name(...)`: `async` is a word like any other, except right
+    /// before `fn` and a function name (so a program using `async` as a name
+    /// keeps working).
+    fn at_async_fn(&self) -> bool {
+        async_fn_at(&self.toks, self.pos)
+    }
+
+    /// `async fn name(params) = body`, at the top level of a file.
+    fn async_fn_def(&mut self) -> Fallible<Stmt> {
+        let start = self.advance().span;
+        let mut def = self.fn_def(true)?;
+        def.is_async = true;
+        def.span = start.to(def.span);
+        Ok(Stmt::Fn(Rc::new(def)))
+    }
+
     fn stmt(&mut self) -> Fallible<Stmt> {
         let tok = self.peek_token();
+        if self.at_async_fn() {
+            return Err(nested_async(tok.span));
+        }
         match tok.tok {
             Tok::Fn if matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Ident(_))) => {
                 return Ok(Stmt::Fn(Rc::new(self.fn_def(true)?)));
@@ -922,6 +968,9 @@ impl Parser {
     /// would: at `else`, `end`, `}`, `)`, a new line...
     fn result(&mut self) -> Fallible<Expr> {
         self.skip_soft();
+        if self.at_async_fn() {
+            return Err(nested_async(self.toks[self.pos].span));
+        }
         if let Some(first) = command_at(&self.toks, self.pos, &self.preds, &self.values) {
             return self.command(first);
         }
@@ -1217,7 +1266,14 @@ impl Parser {
             }
         };
         let arity = params.len();
-        Ok(FnDef { name, clauses: vec![Rc::new(Clause { params, guard, body, span: head, ret })], arity, doc, span: name_span })
+        Ok(FnDef {
+            name,
+            clauses: vec![Rc::new(Clause { params, guard, body, span: head, ret })],
+            arity,
+            doc,
+            span: name_span,
+            is_async: false,
+        })
     }
 
     // ----- written types -----------------------------------------------
@@ -1797,6 +1853,7 @@ impl Parser {
                 arity,
                 doc: None,
                 span: open.span,
+                is_async: false,
             };
             Ok(Expr::new(ExprKind::Lambda(Rc::new(def)), span))
         })
@@ -1885,6 +1942,15 @@ impl Parser {
     }
 
     fn unary(&mut self) -> Fallible<Expr> {
+        self.peek();
+        if self.at_await() {
+            // `await task`: the call `await(task)`, written like a keyword.
+            let t = self.advance();
+            let e = self.deeper(|p| p.unary())?;
+            let span = t.span.to(e.span);
+            let callee = Expr::new(ExprKind::Var(Sym::new("await")), t.span);
+            return Ok(Expr::new(ExprKind::Call(Box::new(callee), vec![e]), span));
+        }
         match self.peek() {
             Tok::Minus => {
                 let t = self.advance();
@@ -1899,6 +1965,14 @@ impl Parser {
             Tok::Bang => Err(self.unexpected(t!("an expression", "une expression"))),
             _ => self.power(),
         }
+    }
+
+    /// `await` followed on the same line by a name, a constructor or a list:
+    /// `await task`, `await fetch(url)`. Anywhere else `await` is a name like
+    /// any other (`await(task)` is a call, and a program may use the name).
+    fn at_await(&self) -> bool {
+        matches!(self.toks.get(self.pos).map(|t| &t.tok), Some(Tok::Ident(s)) if &*s.name() == "await")
+            && matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Ident(_) | Tok::Ctor(_) | Tok::LBracket))
     }
 
     fn power(&mut self) -> Fallible<Expr> {

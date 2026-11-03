@@ -55,6 +55,7 @@ pub mod source;
 pub mod steps;
 pub mod suggest;
 pub mod symbol;
+pub mod tasks;
 pub mod testing;
 pub mod types;
 pub mod value;

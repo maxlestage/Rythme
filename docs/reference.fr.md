@@ -190,7 +190,12 @@ n'en est pas un non plus : il commence `unless condition then a else b`
 ([3.9](#39-if)) seulement quand le début d'une valeur le suit sur la même
 ligne (un nom, un nombre, un texte, un symbole, `not`, `if`, `match`, `fn`,
 ou un crochet après une espace) ; `unless(x)` et `unless[0]`, sans espace,
-utilisent une valeur nommée `unless`.
+utilisent une valeur nommée `unless`. `async` et `await` n'en sont pas non
+plus ([4.11](#411-tâches--async-fn-et-await)) : `async` commence une
+`async fn` seulement juste devant `fn` et un nom de fonction, et `await` est
+la fonction prédéfinie `await`, qui peut aussi s'écrire sans parenthèses
+devant un nom, un constructeur ou une liste (`await tache`) ; partout
+ailleurs, ce sont des noms comme les autres.
 
 Les mots suivants, venus d'autres langages, sont **réservés** : en utiliser
 un comme nom est une erreur (E001) dont le message explique comment faire la
@@ -2820,6 +2825,51 @@ erreur[E005]: impossible d'utiliser `+` avec Int et Text
 ✗ sample.ry : 3 erreur(s)
 ```
 
+### 4.11 Tâches : `async fn` et `await`
+
+Une fonction définie avec `async fn`, au premier niveau d'un fichier, se lance
+quand on l'appelle et donne aussitôt une valeur de type `Task` ; `await`
+attend que la tâche ait fini et donne son résultat. Plusieurs tâches tournent
+en même temps, sur les autres cœurs de l'ordinateur : lancez-les toutes, puis
+attendez-les. `await_all(taches)` attend une liste de tâches et donne leurs
+résultats dans l'ordre de la liste.
+
+```rythme
+fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
+
+async fn fib_lent(n) = fib(n)
+
+taches = [20, 21, 22] |> map(fib_lent)
+print(await_all(taches))
+print(await fib_lent(10) + 1)
+```
+
+```text
+[6765, 10946, 17711]
+56
+```
+
+- `await tache` et `await(tache)` sont le même appel. Une tâche peut être
+  attendue à nouveau : elle donne le même résultat.
+- Une tâche ne peut rien changer en dehors d'elle : les valeurs ne changent
+  jamais, donc les tâches n'ont besoin d'aucun verrou et donnent les mêmes
+  résultats que si elles tournaient l'une après l'autre.
+- Chaque tâche tourne dans un interpréteur à elle, avec le programme chargé
+  à nouveau : ses arguments et son résultat sont copiés, ils ne peuvent donc
+  pas être des fonctions. Les définitions du programme (fonctions, types, noms
+  qui reçoivent une valeur au premier niveau) y sont ; ses autres
+  instructions du premier niveau (`print`...) ne sont pas exécutées à nouveau.
+- Une erreur dans une tâche arrête le programme au `await` qui l'attend, avec
+  le message de la tâche.
+- Là où les tâches ne peuvent pas tourner ailleurs (le REPL, le playground
+  dans un navigateur, un argument qui est une fonction), la tâche tourne tout
+  de suite, quand on l'appelle, et `await` donne son résultat : le programme
+  affiche la même chose.
+- `rythme check` sait que l'appel d'une `async fn` donne une `Task` :
+  `fib_lent(10) + 1` est une erreur (E005) dont l'aide dit d'écrire `await`.
+- `async fn` n'est permise qu'au premier niveau d'un fichier (E001) : une
+  tâche tourne à part des valeurs qui l'entourent.
+
 ---
 
 ## 5. Erreurs
@@ -3237,7 +3287,7 @@ minuscules.
 
 ## 6. Bibliothèque standard
 
-Les 283 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
+Les 285 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
 mots-clés, leurs noms sont en anglais. `rythme help builtins` les liste
 toutes par catégorie, une ligne chacune ; `rythme help NOM` (ou `help(NOM)`
 dans un programme, ou `:doc NOM` dans le mode interactif) affiche la

@@ -4,6 +4,10 @@
     "named": true,
     "subtypes": [
       {
+        "type": "await_expression",
+        "named": true
+      },
+      {
         "type": "binary_expression",
         "named": true
       },
@@ -200,6 +204,32 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "await_expression",
+    "named": true,
+    "fields": {
+      "operand": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      },
+      "operator": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "await",
+            "named": false
+          }
+        ]
+      }
     }
   },
   {
@@ -716,6 +746,16 @@
     "type": "function_definition",
     "named": true,
     "fields": {
+      "async": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "async_marker",
+            "named": true
+          }
+        ]
+      },
       "body": {
         "multiple": false,
         "required": true,
@@ -2279,6 +2319,14 @@
   },
   {
     "type": "as",
+    "named": false
+  },
+  {
+    "type": "async_marker",
+    "named": true
+  },
+  {
+    "type": "await",
     "named": false
   },
   {
