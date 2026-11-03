@@ -195,8 +195,8 @@ function added for this audit; *absent* says why there is none on purpose.
 
 | JavaScript | Rythme |
 |---|---|
-| `new URL(s)` (`protocol`, `hostname`, `port`, `pathname`, `search`, `hash`) | **new** `parse_url(s)`: `Ok({scheme, user, host, port, path, query, fragment})` or `Err(message)` |
-| `new URLSearchParams(s)`, `params.get(k)` | **new** `parse_query(s)`: a dict of texts, then `get(d, k)` |
+| `new URL(s)` (`protocol`, `hostname`, `port`, `pathname`, `search`, `hash`) | **new** `parse_url(s)`: `Ok({scheme, user, password, host, port, path, query, fragment})` (`port` an `Option`) or `Err(message)` |
+| `new URLSearchParams(s)`, `params.get(k)` | **new** `parse_query(s)`: a dict of decoded texts, then `get(d, k)` (a name given twice keeps its last value, where `params.get` gives the first) |
 | `new URLSearchParams(obj).toString()` | **new** `format_query(x)`: a record or dict as `a=1&b=x%20y` |
 | `crypto.randomUUID()` | **new** `uuid()`: a random UUID (version 4); `random_seed` makes it repeatable |
 | `crypto.subtle.digest("SHA-256", data)` | **new** `sha256(text)`: the hash in hexadecimal |
