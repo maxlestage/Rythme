@@ -318,13 +318,13 @@ fn site_header(ctx: &Ctx) -> Element {
     let t = ctx.t();
     let item = |(page, text): (PageKind, &'static str)| {
         let link = a().class("nav__link").href(ctx.href(page)).text(text);
-        let link = if page == ctx.route.page { link.class("is-active").attr("aria-current", "page") } else { link };
+        let link = if page == ctx.route.page.section() { link.class("is-active").attr("aria-current", "page") } else { link };
         li().child(link)
     };
     let links = nav_pages(t).map(item);
     let x = ctx.lang().sections();
     let more = crate::sections::nav_pages(x);
-    let here = more.iter().any(|(page, _)| *page == ctx.route.page);
+    let here = more.iter().any(|(page, _)| *page == ctx.route.page.section());
     // The five sections: in the menu of a phone (and without the browser side) they
     // follow the other links; on a computer they open from "More", which the browser
     // side shows and opens.
@@ -1321,6 +1321,7 @@ pub fn render(ctx: &Ctx) -> Page {
         PageKind::Packages => crate::sections::packages(ctx),
         PageKind::Work => crate::sections::work(ctx),
         PageKind::Exercises => crate::sections::exercises(ctx),
+        PageKind::Function(name) => crate::sections::function(ctx, name),
         PageKind::Offline => offline(ctx),
         PageKind::NotFound => not_found(ctx),
     }

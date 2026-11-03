@@ -497,7 +497,7 @@ pub fn reference(ctx: &Ctx) -> Page {
                     .id(fn_id(b))
                     .attr("data-name", b.name)
                     .child(
-                        h4().class("fn__name").child(a().href(format!("#{}", fn_id(b))).child(code().attr("translate", "no").text(b.name))),
+                        h4().class("fn__name").child(a().href(function_href(lang, b)).child(code().attr("translate", "no").text(b.name))),
                     )
                     .child(p().class("fn__sig").child(code_inline(b.sig)))
                     .child(p().class("fn__doc").children(doc_text(doc(b, lang))))
@@ -540,6 +540,163 @@ pub fn reference(ctx: &Ctx) -> Page {
         .child(fns)
         .child(codes_section);
     layout(ctx, &title(x.ref_title), x.ref_lead, content)
+}
+
+// ----- The page of a function ---------------------------------------------------------------
+
+/// The built-in function of a page of the reference.
+pub fn builtin(name: &str) -> &'static Builtin {
+    BUILTINS.iter().find(|b| b.name == name).expect("a page of a built-in function")
+}
+
+/// The link to the page of a built-in function.
+pub fn function_href(lang: Lang, b: &Builtin) -> String {
+    crate::routes::Route::new(lang, PageKind::Function(b.name)).href()
+}
+
+/// The example of a function as a program for the playground: a line `code  # value`
+/// prints its value (as the tests check it), but a line that prints by itself.
+pub fn runnable(example: &str) -> String {
+    let mut out = String::new();
+    for line in example.lines() {
+        match line.split_once("  # ") {
+            Some((code, value)) if !code.contains("print") => out.push_str(&format!("print({})   # {}\n", code.trim(), value.trim())),
+            _ => {
+                out.push_str(line);
+                out.push('\n');
+            }
+        }
+    }
+    out
+}
+
+/// The first sentence of a documentation, for the description of the page.
+pub fn first_sentence(doc: &str) -> String {
+    let short = doc.split(". ").next().unwrap_or(doc);
+    match short.split_once('。') {
+        Some((first, _)) => format!("{first}。"),
+        None => format!("{}.", short.trim_end_matches('.')),
+    }
+}
+
+/// The functions to see with this one: those its documentation names, then those whose
+/// name starts with the same word (`find`, `find_index`, `find_last`...), at most 8.
+pub fn related(b: &Builtin) -> Vec<&'static Builtin> {
+    let mut out: Vec<&'static Builtin> = Vec::new();
+    let mut add = |o: &'static Builtin| {
+        if o.name != b.name && !out.iter().any(|x| x.name == o.name) {
+            out.push(o);
+        }
+    };
+    for (n, piece) in b.en.split('`').enumerate() {
+        let name = piece.split(['(', ' ']).next().unwrap_or("");
+        if n % 2 == 1
+            && let Some(o) = BUILTINS.iter().find(|o| o.name == name)
+        {
+            add(o);
+        }
+    }
+    let stem = b.name.split('_').next().unwrap_or(b.name);
+    if stem.len() >= 3 {
+        for o in BUILTINS.iter().filter(|o| o.name == stem || o.name.starts_with(&format!("{stem}_"))) {
+            add(o);
+        }
+    }
+    out.truncate(8);
+    out
+}
+
+/// A part of the page of a function: its title and what it holds.
+fn fn_part(id: &str, title: &str) -> Element {
+    section()
+        .class("fn-page__part")
+        .attr("aria-labelledby", format!("{id}-title"))
+        .child(h2().id(format!("{id}-title")).text(title.to_owned()))
+}
+
+/// `/{lang}/reference/map/`: one built-in function, like a page of MDN: its syntax,
+/// what it does, an example to run, its other names, what JavaScript writes for it,
+/// the functions to see with it, and the ones before and after it in the reference.
+pub fn function(ctx: &Ctx, name: &str) -> Page {
+    let (lang, x) = (ctx.lang(), s(ctx));
+    let b = builtin(name);
+    let groups = groups();
+    let (group, category, _) = groups.iter().find(|(_, _, fns)| fns.iter().any(|o| o.name == b.name)).expect("its group");
+    let order: Vec<&'static Builtin> = groups.iter().flat_map(|(_, _, fns)| fns.iter().copied()).collect();
+    let at = order.iter().position(|o| o.name == b.name).unwrap_or(0);
+    let reference = ctx.href(PageKind::Reference);
+    let fn_link = |o: &Builtin| a().href(function_href(lang, o)).child(code().attr("translate", "no").text(o.name));
+
+    let crumbs = nav().class("crumbs").attr("aria-label", x.ref_title).child(
+        ol().child(li().child(a().href(reference.clone()).text(x.ref_title)))
+            .child(li().child(a().href(format!("{reference}#{group}")).text(x.ref_categories[*category])))
+            .child(li().attr("aria-current", "page").child(code().attr("translate", "no").text(b.name))),
+    );
+    let head = header()
+        .class("page-head")
+        .child(h1().child(code().attr("translate", "no").text(b.name)))
+        .child(p().class("lead").children(doc_text(doc(b, lang))));
+
+    let mut parts = vec![
+        fn_part("syntax", x.fn_syntax).child(div().class("fn-page__code").child(code_block(b.sig))),
+        fn_part("example", x.ref_example).child(div().class("fn-page__code").child(code_block(b.example))).child(button_link(
+            packed_link(lang, &runnable(b.example), false),
+            "btn--ghost",
+            x.exo_try,
+        )),
+    ];
+    let ruby: Vec<&str> = rythme::builtins::aliases(b.name).collect();
+    if !ruby.is_empty() {
+        parts.push(
+            fn_part("ruby", x.fn_ruby)
+                .child(p().text(x.fn_ruby_lead))
+                .child(ul().class("fn-page__names").children(ruby.iter().map(|r| li().child(code_inline(r))))),
+        );
+    }
+    let js: Vec<&str> = rythme::javascript::equivalents(b.name).collect();
+    if !js.is_empty() {
+        parts.push(
+            fn_part("javascript", x.fn_javascript)
+                .child(p().text(x.fn_javascript_lead))
+                .child(ul().class("fn-page__names").children(js.iter().map(|j| li().child(code_el(j)))))
+                .child(p().child(external(a().href(repo_link("docs/javascript.md")).text(x.fn_javascript_more)))),
+        );
+    }
+    parts.push(fn_part("terminal", x.fn_terminal).child(command(ctx.t(), &format!("rythme help {}", b.name))));
+    let see = related(b);
+    if !see.is_empty() {
+        parts.push(fn_part("see-also", x.fn_see_also).child(
+            ul().class("fn-page__see").children(
+                see.iter().map(|o| {
+                    li().child(fn_link(o)).child(span().class("fn-page__short").children(doc_text(&first_sentence(doc(o, lang)))))
+                }),
+            ),
+        ));
+    }
+    let side = |o: Option<&&'static Builtin>, label: &str, class: &str| match o {
+        Some(o) => a()
+            .class(format!("pager__link {class}"))
+            .href(function_href(lang, o))
+            .attr("rel", class.strip_prefix("pager__").unwrap_or(class).to_owned())
+            .child(span().class("pager__label").text(label.to_owned()))
+            .child(code().attr("translate", "no").text(o.name)),
+        None => span().class(format!("pager__link {class}")),
+    };
+    let pager = nav()
+        .class("pager")
+        .attr("aria-label", x.fn_all)
+        .child(side(at.checked_sub(1).and_then(|i| order.get(i)), x.fn_previous, "pager__prev"))
+        .child(a().class("pager__all").href(format!("{reference}#functions")).text(x.fn_all))
+        .child(side(order.get(at + 1), x.fn_next, "pager__next"));
+    let content = main()
+        .class("page more fn-page")
+        .child(crumbs)
+        .child(head)
+        .child(div().class("fn-page__parts").children(parts))
+        .child(pager)
+        .child(p().class("note").text(x.ref_generated.replace("{version}", crate::ai::version())));
+    let title = x.fn_title.replace("{name}", b.name);
+    layout(ctx, &format!("{title} — Rythme"), &first_sentence(doc(b, lang)).replace('`', ""), content)
 }
 
 fn code_el(text: &str) -> Element {

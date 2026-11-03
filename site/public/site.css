@@ -1025,6 +1025,35 @@ select {
 .codes { display: grid; gap: 12px; min-width: 0; }
 .code-entry__cmd { color: var(--ink-soft); font-size: 14px; }
 
+/* The page of a function (`/{lang}/reference/map/`): a path back to the reference, its
+   parts one after the other, and the functions before and after it. */
+.crumbs ol { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 0; margin: 0; font-size: 14px; color: var(--ink-soft); }
+.crumbs li { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.crumbs li + li::before { content: "›"; color: var(--ink-soft); }
+.crumbs a { display: inline-flex; align-items: center; min-height: 44px; }
+.fn-page .page-head h1 code { font-size: inherit; color: var(--accent); overflow-wrap: anywhere; }
+.fn-page__parts { display: grid; gap: 28px; min-width: 0; max-width: 52em; }
+.fn-page__part { display: grid; gap: 10px; min-width: 0; scroll-margin-top: calc(var(--bar-h) + 12px); }
+.fn-page__part h2 { font-size: 22px; margin: 0; }
+.fn-page__part > .btn { justify-self: start; }
+.fn-page__code .code-block { padding: 10px 12px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); }
+.fn-page__names, .fn-page__see { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; min-width: 0; }
+.fn-page__names { grid-template-columns: repeat(auto-fill, minmax(min(100%, 16em), 1fr)); }
+.fn-page__names code { overflow-wrap: anywhere; }
+.fn-page__see { gap: 10px; }
+.fn-page__see li { display: grid; min-width: 0; overflow-wrap: anywhere; }
+.fn-page__see a { display: inline-flex; align-items: center; justify-self: start; min-height: 44px; margin-block: -8px; }
+.fn-page__short { color: var(--ink-soft); font-size: 15px; }
+.pager { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; max-width: 52em; padding-top: 16px; border-top: 1px solid var(--rule); }
+.pager__link { display: grid; gap: 2px; min-width: 0; min-height: 44px; align-content: center; text-decoration: none; overflow-wrap: anywhere; }
+.pager__next { text-align: right; }
+.pager__label { font-size: 13px; color: var(--ink-soft); }
+.pager__all { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; text-align: center; }
+@media (max-width: 520px) {
+  .pager { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .pager__all { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
+}
+
 /* Exercises. */
 .cards--exos { grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 640px) { .cards--exos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

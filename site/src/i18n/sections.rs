@@ -85,6 +85,22 @@ pub struct Sections {
     pub ref_warnings: &'static str,
     /// `{version}`: the version of Rythme the page was made from.
     pub ref_generated: &'static str,
+    // The page of a function (`/{lang}/reference/map/`), made like MDN's.
+    /// The title of the tab: `{name}` is the function.
+    pub fn_title: &'static str,
+    pub fn_syntax: &'static str,
+    pub fn_ruby: &'static str,
+    pub fn_ruby_lead: &'static str,
+    pub fn_javascript: &'static str,
+    pub fn_javascript_lead: &'static str,
+    /// The link to `docs/javascript.md`.
+    pub fn_javascript_more: &'static str,
+    pub fn_terminal: &'static str,
+    pub fn_see_also: &'static str,
+    pub fn_previous: &'static str,
+    pub fn_next: &'static str,
+    /// The link back to the list of the reference.
+    pub fn_all: &'static str,
 
     // Packages (`/{lang}/packages/`)
     pub pkg_title: &'static str,

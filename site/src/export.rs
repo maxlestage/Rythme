@@ -62,7 +62,7 @@ pub async fn export(out: &Path, base_path: &str, site_url: Option<String>) -> io
         }
     };
 
-    for route in Route::all() {
+    for route in Route::everything() {
         write(&format!("{}index.html", route.path()), get(route.path(), 200).await?.as_bytes())?;
         // The page as Markdown, for AI assistants: `/{lang}/learn/index.md`.
         if route.page.has_markdown() {

@@ -26,6 +26,7 @@ pub fn render(ctx: &Ctx) -> Option<String> {
         Page::Packages => packages(ctx),
         Page::Work => work(ctx),
         Page::Exercises => exercises(ctx),
+        Page::Function(name) => function(ctx, name),
         _ => return None,
     };
     let canonical = ctx.url(ctx.route);
@@ -380,13 +381,8 @@ fn reference(ctx: &Ctx) -> String {
     for (_, n, fns) in sections::groups() {
         out.push_str(&format!("### {}\n\n", escape(x.ref_categories[n])));
         for b in fns {
-            // The documentation keeps its code between backticks; the rest is escaped.
-            let doc: Vec<String> = sections::doc(b, lang)
-                .split('`')
-                .enumerate()
-                .map(|(k, part)| if k % 2 == 1 { code_span(part) } else { escape(part) })
-                .collect();
-            out.push_str(&format!("#### {}\n\n{}\n\n{}\n\n", code_span(b.name), code_span(b.sig), doc.concat()));
+            let page = md_function_link(ctx, b);
+            out.push_str(&format!("#### {page}\n\n{}\n\n{}\n\n", code_span(b.sig), md_doc(sections::doc(b, lang))));
             // The examples of `rythme help`, which the interpreter's own tests check
             // (some of them read a file or the network).
             out.push_str(&fence("rythme", b.example));
@@ -398,6 +394,47 @@ fn reference(ctx: &Ctx) -> String {
         out.push_str(&format!("### {code} {}\n\n{}\n\n", escape(&name), md_link(&format!("#{code}"), &format!("{canonical}#{code}"))));
         out.push_str(&fence("text", &text));
     }
+    out
+}
+
+/// A documentation of the interpreter: its code between backticks kept, the rest escaped.
+fn md_doc(text: &str) -> String {
+    text.split('`').enumerate().map(|(k, part)| if k % 2 == 1 { code_span(part) } else { escape(part) }).collect()
+}
+
+/// The name of a built-in function, linked to its page.
+fn md_function_link(ctx: &Ctx, b: &rythme::builtins::Builtin) -> String {
+    format!("[{}](<{}>)", code_span(b.name), ctx.url(Route::new(ctx.route.lang, Page::Function(b.name))))
+}
+
+/// `/{lang}/reference/map/index.md`: the page of a function, part by part.
+fn function(ctx: &Ctx, name: &str) -> String {
+    let lang = ctx.route.lang;
+    let x = lang.sections();
+    let b = sections::builtin(name);
+    let mut out = format!("# {}\n\n{}\n\n", code_span(b.name), md_doc(sections::doc(b, lang)));
+    out.push_str(&format!("## {}\n\n", escape(x.fn_syntax)));
+    out.push_str(&fence("rythme", b.sig));
+    out.push_str(&format!("## {}\n\n", escape(x.ref_example)));
+    out.push_str(&fence("rythme", b.example));
+    let run = sections::packed_link(lang, &sections::runnable(b.example), false);
+    out.push_str(&format!("{}\n\n", md_link(&format!("▶ {}", x.exo_try), &absolute(ctx, &run))));
+    let ruby: Vec<String> = rythme::builtins::aliases(b.name).map(code_span).collect();
+    if !ruby.is_empty() {
+        out.push_str(&format!("## {}\n\n{} {}\n\n", escape(x.fn_ruby), escape(x.fn_ruby_lead), ruby.join(", ")));
+    }
+    let js: Vec<String> = rythme::javascript::equivalents(b.name).map(|j| format!("- {}\n", code_span(j))).collect();
+    if !js.is_empty() {
+        out.push_str(&format!("## {}\n\n{}\n\n{}\n", escape(x.fn_javascript), escape(x.fn_javascript_lead), js.concat()));
+        out.push_str(&format!("{}\n\n", md_link(x.fn_javascript_more, &sections::repo_link("docs/javascript.md"))));
+    }
+    out.push_str(&format!("## {}\n\n", escape(x.fn_terminal)));
+    out.push_str(&fence("sh", &format!("rythme help {}", b.name)));
+    let see: Vec<String> = sections::related(b).into_iter().map(|o| format!("- {}\n", md_function_link(ctx, o))).collect();
+    if !see.is_empty() {
+        out.push_str(&format!("## {}\n\n{}\n", escape(x.fn_see_also), see.concat()));
+    }
+    out.push_str(&format!("{}\n", md_link(x.fn_all, &page_url(ctx, Page::Reference))));
     out
 }
 

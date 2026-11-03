@@ -252,7 +252,7 @@ fn sitemap(site: &Site, req: &Request) -> Response {
     let mut xml = String::from(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:xhtml=\"http://www.w3.org/1999/xhtml\">\n",
     );
-    for route in Route::all() {
+    for route in Route::everything() {
         xml.push_str(&format!("<url><loc>{origin}{}</loc>", route.path()));
         for lang in Lang::ALL {
             xml.push_str(&format!(
@@ -312,7 +312,7 @@ pub fn app(site: Arc<Site>) -> App {
     route(&mut app, client::WORKER_PATH, &site, playground_worker);
     route(&mut app, client::SW_WASM_PATH, &site, worker_wasm);
     route(&mut app, "/:lang/manifest.webmanifest", &site, manifest);
-    for path in ["/:lang", "/:lang/:page"] {
+    for path in ["/:lang", "/:lang/:page", "/:lang/:page/:name"] {
         route(&mut app, path, &site, page);
     }
     let fallback = site.clone();
