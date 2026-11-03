@@ -268,7 +268,6 @@ pub fn rythme_name(name: &str) -> Option<&'static str> {
         "isSubsetOf" => "is_subset",
         "toSorted" => "sort",
         "toReversed" => "reverse",
-        "toFixed" => "text",
         "hasOwn" => "has",
         "groupBy" => "group_by",
         "log2" | "log10" => "log",
