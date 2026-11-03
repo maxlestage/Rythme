@@ -323,6 +323,34 @@ pub(super) fn options(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Valu
     Ok(done(it, parsed))
 }
 
+/// Waits, then the program goes on. In the playground there is no way to
+/// pause a WebAssembly program, so it watches the clock instead: it runs in
+/// a worker, and the page stays responsive.
+pub(super) fn sleep(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let secs = number(a, 0, "sleep", span)?;
+    if secs.is_nan() || secs < 0.0 {
+        return Err(invalid(
+            t!(
+                "`sleep` needs a number of seconds of 0 or more, not {secs}",
+                "`sleep` a besoin d'un nombre de secondes positif ou nul, pas {secs}"
+            ),
+            span,
+        ));
+    }
+    let Ok(wait) = std::time::Duration::try_from_secs_f64(secs) else {
+        return Err(invalid(t!("`sleep({secs})` would wait too long", "`sleep({secs})` attendrait trop longtemps"), span));
+    };
+    if cfg!(target_arch = "wasm32") {
+        let end = crate::io::now() + wait.as_secs_f64();
+        while crate::io::now() < end {
+            std::hint::spin_loop();
+        }
+    } else {
+        std::thread::sleep(wait);
+    }
+    Ok(Value::Unit)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

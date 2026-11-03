@@ -24,7 +24,9 @@ use date::{
 };
 use dicts::{dict, difference, intersection, is_subset, set, union};
 use property::{bools, check_all, floats, ints, lists_of, one_of, records_of, sample, texts};
-use system::{create_folder, delete_file, file_info, in_browser, input_lines, io_message, join_path, list_folder, options, split_path};
+use system::{
+    create_folder, delete_file, file_info, in_browser, input_lines, io_message, join_path, list_folder, options, sleep, split_path,
+};
 pub mod regex;
 use regex::{captures, captures_all, find_all, find_first, matches, named_captures, replace_all, split_by};
 pub mod csv;
@@ -44,6 +46,8 @@ use ml::{
 };
 use plot::{histogram, plot};
 mod encoding;
+mod web;
+use web::{format_query, parse_query, parse_url, sha256, uuid};
 mod keyed;
 mod lists_more;
 mod numbers;
@@ -54,11 +58,13 @@ use date::{add_months, day_of_year};
 use encoding::{base64_decode, base64_encode, url_decode, url_encode};
 use keyed::{dig, invert, is_disjoint, map_keys, merge_with, reject_keys, select_keys, symmetric_difference, update};
 use lists_more::{
-    cartesian_product, chunk_by, combinations, count_by, filter_map, find_index, interleave, intersperse, iterate, most_common,
-    permutations, rotate_by, sort_by_desc, sort_desc, split_at, tally, unfold, unique_by, unzip, update_at,
+    cartesian_product, chunk_by, combinations, count_by, filter_map, find_index, find_last, find_last_index, interleave, intersperse,
+    iterate, most_common, permutations, rotate_by, sort_by_desc, sort_desc, split_at, tally, unfold, unique_by, unzip, update_at,
 };
 use ml::{correlation, covariance, linspace};
-use numbers::{binomial, constrain, divmod, is_finite, is_nan, is_negative, is_positive, is_zero};
+use numbers::{
+    acosh, asinh, atanh, binomial, cbrt, constrain, cosh, divmod, hypot, is_finite, is_nan, is_negative, is_positive, is_zero, sinh,
+};
 use results::{all_ok, expect, unwrap_or_else};
 use spec::{digits, format, from_base, to_base};
 use text_more::{
@@ -1339,6 +1345,61 @@ pub static BUILTINS: &[Builtin] = &[
        "Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.",
        "Décode un texte d'une adresse web (`%20`...) : `Ok(texte)`, ou `Err(message)` si un `%` n'est pas suivi de deux chiffres hexadécimaux.",
        "url_decode(\"caf%C3%A9%20au%20lait\")   # Ok(\"café au lait\")"),
+    // ----- What JavaScript has too (docs/javascript.md) -----
+    b!("cbrt", "cbrt(x)", 1, 1, Numbers, cbrt,
+       "Cube root: the number whose cube is x, for negative numbers too.",
+       "Racine cubique : le nombre dont le cube est x, pour les nombres négatifs aussi.",
+       "cbrt(27)                   # 3.0\ncbrt(-8)                   # -2.0"),
+    b!("hypot", "hypot(x, y)", 2, 2, Numbers, hypot,
+       "The length of the hypotenuse, or the distance from (0, 0) to the point (x, y): `sqrt(x * x + y * y)`, without overflow for very large numbers.",
+       "La longueur de l'hypoténuse, ou la distance de (0, 0) au point (x, y) : `sqrt(x * x + y * y)`, sans dépassement pour les très grands nombres.",
+       "hypot(3, 4)                # 5.0"),
+    b!("sinh", "sinh(x)", 1, 1, Numbers, sinh, "Hyperbolic sine.", "Sinus hyperbolique.", "sinh(0)                    # 0.0"),
+    b!("cosh", "cosh(x)", 1, 1, Numbers, cosh, "Hyperbolic cosine.", "Cosinus hyperbolique.", "cosh(0)                    # 1.0"),
+    b!("asinh", "asinh(x)", 1, 1, Numbers, asinh,
+       "Inverse hyperbolic sine: the number whose `sinh` is x.",
+       "Sinus hyperbolique inverse : le nombre dont le `sinh` est x.",
+       "asinh(0)                   # 0.0"),
+    b!("acosh", "acosh(x)", 1, 1, Numbers, acosh,
+       "Inverse hyperbolic cosine: the number (0 or more) whose `cosh` is x, for x of 1 or more.",
+       "Cosinus hyperbolique inverse : le nombre (positif ou nul) dont le `cosh` est x, pour x supérieur ou égal à 1.",
+       "acosh(1)                   # 0.0"),
+    b!("atanh", "atanh(x)", 1, 1, Numbers, atanh,
+       "Inverse hyperbolic tangent: the number whose `tanh` is x, for x between -1 and 1 (both excluded).",
+       "Tangente hyperbolique inverse : le nombre dont la `tanh` est x, pour x entre -1 et 1 (exclus).",
+       "atanh(0)                   # 0.0"),
+    b!("find_last", "find_last(list, f)", 2, 2, Lists, find_last,
+       "The last element for which f is true: `Some(element)`, or `None` if there is none.",
+       "Le dernier élément pour lequel f est vraie : `Some(élément)`, ou `None` s'il n'y en a pas.",
+       "find_last([3, 8, 5, 6], is_odd)   # Some(5)"),
+    b!("find_last_index", "find_last_index(list, f)", 2, 2, Lists, find_last_index,
+       "The position of the last element for which f is true: `Some(position)`, or `None` if there is none.",
+       "La position du dernier élément pour lequel f est vraie : `Some(position)`, ou `None` s'il n'y en a pas.",
+       "find_last_index([3, 8, 5, 6], is_odd)   # Some(2)"),
+    b!("sleep", "sleep(seconds)", 1, 1, Basics, sleep,
+       "Waits `seconds` seconds (0.5 for half a second), then the program goes on: between two requests to a web service, or to show something step by step.",
+       "Attend `seconds` secondes (0.5 pour une demi-seconde), puis le programme continue : entre deux requêtes à un service web, ou pour montrer quelque chose pas à pas.",
+       "print(\"Ready...\")\nsleep(1)\nprint(\"Go!\")"),
+    b!("uuid", "uuid()", 0, 0, Basics, uuid,
+       "A new random identifier (UUID version 4): a text of 36 characters, to name the records of a database or files. Its numbers come from `random` (`random_seed` makes them repeatable): it is not for secrets.",
+       "Un nouvel identifiant au hasard (UUID version 4) : un texte de 36 caractères, pour nommer les enregistrements d'une base de données ou des fichiers. Ses nombres viennent de `random` (`random_seed` les rend reproductibles) : il n'est pas fait pour les secrets.",
+       "random_seed(1)\nuuid()                     # \"4b46a55d-f361-4b9b-97e1-f1410e763ef4\"\nlen(uuid())                # 36"),
+    b!("sha256", "sha256(text)", 1, 1, Web, sha256,
+       "The SHA-256 digest of a text (of its UTF-8 bytes), in 64 hexadecimal digits: to check that a text or a file did not change. Not for passwords, which need a slow hash.",
+       "L'empreinte SHA-256 d'un texte (de ses octets UTF-8), en 64 chiffres hexadécimaux : pour vérifier qu'un texte ou un fichier n'a pas changé. Pas pour les mots de passe, qui demandent un hachage lent.",
+       "sha256(\"abc\")              # \"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\""),
+    b!("parse_url", "parse_url(text)", 1, 1, Web, parse_url,
+       "Cuts a web address into its parts: `Ok({scheme, user, password, host, port, path, query, fragment})`, or `Err(message)` if it is not a web address. The parts are texts as written, still encoded (empty when absent: `url_decode` decodes them, `parse_query` reads the query), except `port`, an `Option`; the scheme and the host are in lower case.",
+       "Découpe une adresse web en ses parties : `Ok({scheme, user, password, host, port, path, query, fragment})`, ou `Err(message)` si ce n'est pas une adresse web. Les parties sont des textes tels qu'ils sont écrits, encore encodés (vides quand elles manquent : `url_decode` les décode, `parse_query` lit la requête), sauf `port`, une `Option` ; le schéma et l'hôte sont en minuscules.",
+       "parse_url(\"https://example.com:8080/docs?page=2#top\")   # Ok({scheme: \"https\", user: \"\", password: \"\", host: \"example.com\", port: Some(8080), path: \"/docs\", query: \"page=2\", fragment: \"top\"})\nparse_url(\"example.com\")   # Err(\"...\")"),
+    b!("parse_query", "parse_query(text)", 1, 1, Web, parse_query,
+       "Reads the query of a web address (what follows the `?`, like `q=caf%C3%A9&page=2`) into a dict of texts, decoded (`+` is a space). A name given several times keeps its last value. Never fails: what cannot be decoded stays as it is.",
+       "Lit la requête d'une adresse web (ce qui suit le `?`, comme `q=caf%C3%A9&page=2`) en un dictionnaire de textes, décodés (`+` est une espace). Un nom donné plusieurs fois garde sa dernière valeur. N'échoue jamais : ce qui ne peut pas être décodé reste tel quel.",
+       "parse_query(\"?q=caf%C3%A9&page=2\")   # dict(\"page\" => \"2\", \"q\" => \"café\")"),
+    b!("format_query", "format_query(x)", 1, 1, Web, format_query,
+       "Writes a record or a dict as the query of a web address: `name=value` joined by `&`, encoded like `url_encode`. A value that is not a text is shown as `print` shows it; a list gives the name once for each element.",
+       "Écrit un enregistrement ou un dictionnaire comme la requête d'une adresse web : des `nom=valeur` reliés par `&`, encodés comme `url_encode`. Une valeur qui n'est pas un texte est montrée comme `print` la montre ; une liste donne le nom une fois pour chaque élément.",
+       "format_query({q: \"café au lait\", page: 2})   # \"q=caf%C3%A9%20au%20lait&page=2\"\nformat_query({tag: [\"a\", \"b\"]})   # \"tag=a&tag=b\""),
 ];
 
 // ----- argument helpers --------------------------------------------------

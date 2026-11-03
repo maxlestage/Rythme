@@ -315,6 +315,58 @@ pub(super) fn call(name: &str, a: &[Ty]) -> Result<Ty, Outcome> {
             need(a, 0, Expected::Text)?;
             Ty::result(Ty::Text, Ty::Text)
         }
+        // What JavaScript has too.
+        "cbrt" | "sinh" | "cosh" | "asinh" | "acosh" | "atanh" => {
+            need(a, 0, Expected::Number)?;
+            Ty::Float
+        }
+        "hypot" => {
+            need(a, 0, Expected::Number)?;
+            need(a, 1, Expected::Number)?;
+            Ty::Float
+        }
+        "find_last" => {
+            need(a, 0, Expected::List)?;
+            need(a, 1, Expected::Function)?;
+            Ty::option(arg(0).elem())
+        }
+        "find_last_index" => {
+            need(a, 0, Expected::List)?;
+            need(a, 1, Expected::Function)?;
+            Ty::option(Ty::Int)
+        }
+        "sleep" => {
+            need(a, 0, Expected::Number)?;
+            Ty::Unit
+        }
+        "uuid" => Ty::Text,
+        "sha256" => {
+            need(a, 0, Expected::Text)?;
+            Ty::Text
+        }
+        "parse_url" => {
+            need(a, 0, Expected::Text)?;
+            let text = |name: &str| (Rc::from(name), Ty::Text);
+            let parts = vec![
+                text("scheme"),
+                text("user"),
+                text("password"),
+                text("host"),
+                (Rc::from("port"), Ty::option(Ty::Int)),
+                text("path"),
+                text("query"),
+                text("fragment"),
+            ];
+            Ty::result(Ty::record(parts, true), Ty::Text)
+        }
+        "parse_query" => {
+            need(a, 0, Expected::Text)?;
+            Ty::dict(Ty::Text, Ty::Text)
+        }
+        "format_query" => {
+            need(a, 0, Expected::RecordOrDict)?;
+            Ty::Text
+        }
         _ => return Err(Outcome::Gives(Ty::Any)),
     })
 }
@@ -324,7 +376,7 @@ pub(super) fn callback(name: &str, index: usize, a: &[Ty]) -> Option<Callback> {
     let first = a.first().cloned().unwrap_or(Ty::Any);
     let elem = first.elem();
     let (params, returns) = match (name, index) {
-        ("find_index", 1) => (vec![elem], Some(BOOL)),
+        ("find_index" | "find_last" | "find_last_index", 1) => (vec![elem], Some(BOOL)),
         ("update_at", 2) => (vec![elem], None),
         ("count_by" | "unique_by" | "sort_by_desc" | "chunk_by", 1) => (vec![elem], None),
         ("filter_map", 1) => (vec![elem], Some(OPTION)),

@@ -19,6 +19,30 @@ pub(super) fn find_index(it: &mut Interp, a: &[Value], span: Span) -> Fallible<V
     Ok(it.none())
 }
 
+/// From the end, so that the function is called only on the elements after
+/// the one found, as JavaScript's `findLast` does.
+pub(super) fn find_last(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let l = list(a, 0, "find_last", span)?;
+    let f = func(a, 1, "find_last", span)?;
+    for x in l.iter().rev() {
+        if test(it, &f, x, "find_last", span)? {
+            return Ok(it.some(x.clone()));
+        }
+    }
+    Ok(it.none())
+}
+
+pub(super) fn find_last_index(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let l = list(a, 0, "find_last_index", span)?;
+    let f = func(a, 1, "find_last_index", span)?;
+    for (i, x) in l.iter().enumerate().rev() {
+        if test(it, &f, x, "find_last_index", span)? {
+            return Ok(it.some(Value::Int(i as i64)));
+        }
+    }
+    Ok(it.none())
+}
+
 pub(super) fn update_at(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let l = list(a, 0, "update_at", span)?;
     int(a, 1, "update_at", span)?;

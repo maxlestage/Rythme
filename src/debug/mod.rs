@@ -551,6 +551,8 @@ pub(crate) fn has_effect(name: &str) -> bool {
             | "train_test_split"
             | "http_get"
             | "http_post"
+            | "sleep"
+            | "uuid"
     )
 }
 

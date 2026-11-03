@@ -3287,7 +3287,7 @@ minuscules.
 
 ## 6. Bibliothèque standard
 
-Les 285 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
+Les 300 fonctions intégrées sont toujours disponibles, sans `use`. Comme les
 mots-clés, leurs noms sont en anglais. `rythme help builtins` les liste
 toutes par catégorie, une ligne chacune ; `rythme help NOM` (ou `help(NOM)`
 dans un programme, ou `:doc NOM` dans le mode interactif) affiche la
@@ -3902,6 +3902,42 @@ Some("en") None
 Ok([1, 2]) Err("\"x\" n'est pas un nombre entier") 0
 {year: 2024, month: 2, day: 29} 31 Wednesday 31 January 2024 Ok({year: 2024, month: 2, day: 29})
 SGkh a%20b%26c Ok("café")
+```
+
+**Ce que JavaScript a aussi.** Des fonctions que les développeurs JavaScript
+trouvent dans `Math`, `Array`, `URL`, `URLSearchParams` et `crypto`, ajoutées
+après la 1.0 ([`javascript.md`](javascript.md) passe en revue toute sa
+bibliothèque standard, et `rythme help javascript` la résume) :
+
+- nombres : `cbrt` (les nombres négatifs aussi), `hypot(x, y)` (sans
+  dépassement), `sinh`, `cosh`, `asinh`, `acosh` et `atanh` (hors de leur
+  domaine, E023 comme `asin`) ;
+- listes : `find_last` et `find_last_index` (des Options, comme `find` et
+  `find_index`) ;
+- temps : `sleep(secondes)` attend, puis le programme continue ;
+- le web : `parse_url(texte)` donne `Ok({scheme, user, password, host, port,
+  path, query, fragment})` (des textes tels qu'ils sont écrits, vides quand
+  ils manquent, et `port` une Option) ou `Err(message)` ; `parse_query(texte)`
+  lit une requête en un dictionnaire de textes décodés et n'échoue jamais ;
+  `format_query(x)` écrit un enregistrement ou un dictionnaire comme une
+  requête, une liste donnant son nom une fois par élément ; `sha256(texte)`
+  est l'empreinte en hexadécimal, et `uuid()` un identifiant au hasard
+  (version 4) fait des nombres de `random`, si bien que `random_seed` le rend
+  reproductible : il n'est pas fait pour les secrets.
+
+```rythme
+print(cbrt(-27), hypot(3, 4), atanh(0.5), find_last([1, 4, 6, 7], is_even), find_last_index([1, 4, 6, 7], is_even))
+match parse_url("https://example.com/search?q=caf%C3%A9&page=2#results")
+  Ok(u) -> print(u.host, u.port, u.path, parse_query(u.query), u.fragment)
+  Err(e) -> print(e)
+end
+print(format_query({q: "café", page: 3}), slice(sha256(""), 0, 8), len(uuid()))
+```
+
+```text
+-3.0 5.0 0.5493061443340548 Some(6) Some(2)
+example.com None /search dict("page" => "2", "q" => "café") results
+q=caf%C3%A9&page=3 e3b0c442 36
 ```
 
 **Noms Ruby.** Certaines fonctions ont un second nom, celui que Ruby leur

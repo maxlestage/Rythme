@@ -465,6 +465,7 @@ pub const TOPICS: &[(&str, &[&str])] = &[
         &["editor", "lsp", "editeurs", "éditeurs", "editeur", "éditeur", "vscode", "ide", "editores", "editoren", "编辑器", "エディター"],
     ),
     ("ruby", &["rb", "rubyist", "blocks", "blocs", "symbols", "symboles"]),
+    ("javascript", &["js", "node", "nodejs", "deno", "typescript", "ts", "ecmascript", "mdn"]),
     (
         "builtins",
         &[
@@ -551,6 +552,7 @@ Topics (rythme help TOPIC)
   debug       the debugger: breakpoints, line by line, values (rythme debug)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
   ruby        coming from Ruby: blocks, symbols, method chains
+  javascript  coming from JavaScript: its standard library in Rythme
   builtins    every built-in function
 
 A specific function: rythme help map
@@ -611,6 +613,7 @@ Sujets (rythme help SUJET)
   debug       le débogueur : points d'arrêt, ligne par ligne, valeurs (rythme debug)
   editors     Rythme dans votre éditeur (VS Code, Neovim, Helix...)
   ruby        venir de Ruby : blocs, symboles, enchaînements de méthodes
+  javascript  venir de JavaScript : sa bibliothèque standard en Rythme
   builtins    toutes les fonctions intégrées
 
 Une fonction précise : rythme help map
@@ -1012,6 +1015,158 @@ pub fn learn() {
     ));
 }
 
+const JAVASCRIPT_EN: &str = r#"COMING FROM JAVASCRIPT
+
+Rythme looks like modern JavaScript without its traps: every value is a
+const that never changes (arrays and objects too), there is no null, no
+undefined and no exceptions, and == never converts. What you write every
+day has a short equivalent:
+
+  names = ["Ada", "Grace", "Alan"]
+  names.each(fn(n) = print("Hi {n}!"))
+
+  [3, 1, 2]
+    .filter(fn(x) = x > 1)
+    .map(fn(x) = x * 10)
+    .sort()                      # [20, 30]
+
+  person = {name: "Ada", langs: ["fr"]}
+  older = {..person, age: 36}    # {...person, age: 36}
+
+The language
+  const x = 1                    x = 1 (a name never changes)
+  x => x * 2                     fn(x) = x * 2
+  `Hi ${name}!`                  "Hi {name}!"
+  a === b                        a == b (never converts: 1 == "1" is false)
+  c ? a : b, if/else             if c then a else b (always with else)
+  switch                         match value ... end, one case per line
+  null, undefined                None, or Some(x)
+  try/catch, throw               Ok(x) or Err(message), and ? to pass it on
+  async function, await          async fn, await (tasks run on other cores)
+  Promise.all(ps)                await_all(tasks)
+  [...xs, 3], {...a, b: 2}       [..xs, 3], {..a, b: 2}
+  a?.b?.c                        dig(a, ["b", "c"])
+  import { f } from "./geo.js"   use geo, then geo.f(x)
+  class, new, this               records {name: "Ada"} and types:
+                                 type Shape = Circle(r) | Square(s)
+  for, while                     each, map, filter, fold, or recursion
+  x += 1, push, pop, sort()      new values: total2 = total + 1, push(xs, x)
+
+Methods are functions
+  xs.map(f) is map(xs, f), and both are written in Rythme: x.name(...)
+  calls the function `name` with x first. Its names are in snake_case, and a
+  JavaScript name gives the Rythme one: findLast says "did you mean
+  `find_last`?". The most used:
+
+  Math.floor, ceil, round, trunc floor, ceil, round, int
+  Math.max(...xs), Math.min      max(xs), min(xs)
+  Math.random()                  random(), random(1, 6), random_seed(n)
+  Math.atan2(y, x), Math.log2(x) atan(y, x), log(x, 2)
+  parseInt, parseFloat           parse_int, parse_float (a Result, never NaN)
+  n.toFixed(2)                   text(n, 2)
+  s.length, a.length             len(s), len(a)
+  s.toUpperCase(), s.trim()      upper(s), trim(s)
+  s.includes(x), startsWith      contains, starts_with
+  s.padStart(3, "0")             pad_left(s, 3, "0")
+  s.replace, s.replaceAll        replace_first, replace
+  s.split(","), a.join(", ")     split(s, ","), join(a, ", ")
+  a.find, findIndex, findLast    find, find_index, find_last (an Option)
+  a.some(f), a.every(f)          any, all
+  a.reduce(f, init)              fold(a, init, f)
+  a.flat(), a.flatMap(f)         flatten, flat_map
+  a.toSorted(), a.toReversed()   sort, reverse
+  a.at(-1)                       get(a, -1) (an Option), last(a)
+  Object.keys, values, entries   keys, values, entries
+  new Map(), get, set            dict(), get(d, k), put(d, k, v)
+  new Set(a), s.has(x)           set(a), has(s, x)
+  JSON.parse, JSON.stringify     parse_json (a Result), to_json
+  new URL(s)                     parse_url(s) (a Result)
+  new URLSearchParams(s)         parse_query(s), format_query(record)
+  crypto.randomUUID()            uuid()
+  setTimeout                     sleep(seconds)
+  fetch(url)                     http_get(url), http_post(url, body)
+  console.log, console.error     print, print_error
+
+The whole standard library of JavaScript, with what is absent on purpose
+and why: docs/javascript.md in the sources of Rythme; on its site, the page
+of each function says what JavaScript writes for it."#;
+
+const JAVASCRIPT_FR: &str = r#"VENIR DE JAVASCRIPT
+
+Rythme ressemble au JavaScript moderne sans ses pièges : chaque valeur est
+une constante qui ne change jamais (tableaux et objets aussi), il n'y a ni
+null, ni undefined, ni exceptions, et == ne convertit jamais. Ce que vous
+écrivez tous les jours a un équivalent court :
+
+  names = ["Ada", "Grace", "Alan"]
+  names.each(fn(n) = print("Salut {n} !"))
+
+  [3, 1, 2]
+    .filter(fn(x) = x > 1)
+    .map(fn(x) = x * 10)
+    .sort()                      # [20, 30]
+
+  personne = {name: "Ada", langs: ["fr"]}
+  plus_age = {..personne, age: 36}   # {...personne, age: 36}
+
+Le langage
+  const x = 1                    x = 1 (un nom ne change jamais)
+  x => x * 2                     fn(x) = x * 2
+  `Salut ${nom} !`               "Salut {nom} !"
+  a === b                        a == b (ne convertit jamais : 1 == "1" est false)
+  c ? a : b, if/else             if c then a else b (toujours avec else)
+  switch                         match valeur ... end, un cas par ligne
+  null, undefined                None, ou Some(x)
+  try/catch, throw               Ok(x) ou Err(message), et ? pour le transmettre
+  async function, await          async fn, await (des tâches sur d'autres cœurs)
+  Promise.all(ps)                await_all(taches)
+  [...xs, 3], {...a, b: 2}       [..xs, 3], {..a, b: 2}
+  a?.b?.c                        dig(a, ["b", "c"])
+  import { f } from "./geo.js"   use geo, puis geo.f(x)
+  class, new, this               des enregistrements {name: "Ada"} et des types :
+                                 type Shape = Circle(r) | Square(s)
+  for, while                     each, map, filter, fold, ou la récursion
+  x += 1, push, pop, sort()      des valeurs neuves : total2 = total + 1, push(xs, x)
+
+Les méthodes sont des fonctions
+  xs.map(f) est map(xs, f), et les deux s'écrivent en Rythme : x.nom(...)
+  appelle la fonction `nom` avec x en premier. Ses noms sont en snake_case, et
+  un nom JavaScript donne celui de Rythme : findLast répond « vouliez-vous
+  dire `find_last` ? ». Les plus utilisés :
+
+  Math.floor, ceil, round, trunc floor, ceil, round, int
+  Math.max(...xs), Math.min      max(xs), min(xs)
+  Math.random()                  random(), random(1, 6), random_seed(n)
+  Math.atan2(y, x), Math.log2(x) atan(y, x), log(x, 2)
+  parseInt, parseFloat           parse_int, parse_float (un Result, jamais NaN)
+  n.toFixed(2)                   text(n, 2)
+  s.length, a.length             len(s), len(a)
+  s.toUpperCase(), s.trim()      upper(s), trim(s)
+  s.includes(x), startsWith      contains, starts_with
+  s.padStart(3, "0")             pad_left(s, 3, "0")
+  s.replace, s.replaceAll        replace_first, replace
+  s.split(","), a.join(", ")     split(s, ","), join(a, ", ")
+  a.find, findIndex, findLast    find, find_index, find_last (une Option)
+  a.some(f), a.every(f)          any, all
+  a.reduce(f, init)              fold(a, init, f)
+  a.flat(), a.flatMap(f)         flatten, flat_map
+  a.toSorted(), a.toReversed()   sort, reverse
+  a.at(-1)                       get(a, -1) (une Option), last(a)
+  Object.keys, values, entries   keys, values, entries
+  new Map(), get, set            dict(), get(d, k), put(d, k, v)
+  new Set(a), s.has(x)           set(a), has(s, x)
+  JSON.parse, JSON.stringify     parse_json (un Result), to_json
+  new URL(s)                     parse_url(s) (un Result)
+  new URLSearchParams(s)         parse_query(s), format_query(enregistrement)
+  crypto.randomUUID()            uuid()
+  setTimeout                     sleep(secondes)
+  fetch(url)                     http_get(url), http_post(url, corps)
+  console.log, console.error     print, print_error
+
+Toute la bibliothèque standard de JavaScript, avec ce qui manque exprès et
+pourquoi : docs/javascript.md dans les sources de Rythme ; sur son site, la
+page de chaque fonction dit ce que JavaScript écrit pour elle."#;
+
 const RUBY_EN: &str = r#"COMING FROM RUBY
 
 Rythme reads like Ruby, but its values never change: no mutation, no nil,
@@ -1217,6 +1372,7 @@ fn topic_texts(name: &str) -> (&'static str, &'static str) {
         "debug" => (DEBUG_EN, DEBUG_FR),
         "editors" => (EDITORS_EN, EDITORS_FR),
         "ruby" => (RUBY_EN, RUBY_FR),
+        "javascript" => (JAVASCRIPT_EN, JAVASCRIPT_FR),
         _ => ("", ""),
     }
 }

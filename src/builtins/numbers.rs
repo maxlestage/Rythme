@@ -116,3 +116,54 @@ pub(super) fn is_finite(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Val
         }
     }))
 }
+
+// ----- what JavaScript's Math has too ------------------------------------
+
+pub(super) fn cbrt(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    Ok(Value::Float(number(a, 0, "cbrt", span)?.cbrt()))
+}
+
+/// The length of (x, y), computed without overflow: `sqrt(x * x + y * y)`
+/// would give infinity for numbers above 1e154.
+pub(super) fn hypot(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    Ok(Value::Float(number(a, 0, "hypot", span)?.hypot(number(a, 1, "hypot", span)?)))
+}
+
+pub(super) fn sinh(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    Ok(Value::Float(number(a, 0, "sinh", span)?.sinh()))
+}
+
+pub(super) fn cosh(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    Ok(Value::Float(number(a, 0, "cosh", span)?.cosh()))
+}
+
+pub(super) fn asinh(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    Ok(Value::Float(number(a, 0, "asinh", span)?.asinh()))
+}
+
+/// Like `asin` and `log`, a number outside the domain is an error, not NaN.
+pub(super) fn acosh(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let x = number(a, 0, "acosh", span)?;
+    if x.is_nan() || x < 1.0 {
+        return Err(invalid(
+            t!("`acosh` needs a number of 1 or more, not {x}", "`acosh` a besoin d'un nombre de 1 ou plus, pas {x}"),
+            span,
+        ));
+    }
+    Ok(Value::Float(x.acosh()))
+}
+
+/// At -1 and 1 the result would be infinite: an error, like `log(0)`.
+pub(super) fn atanh(_: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let x = number(a, 0, "atanh", span)?;
+    if x.is_nan() || x <= -1.0 || x >= 1.0 {
+        return Err(invalid(
+            t!(
+                "`atanh` needs a number between -1 and 1 (both excluded), not {x}",
+                "`atanh` a besoin d'un nombre entre -1 et 1 (exclus), pas {x}"
+            ),
+            span,
+        ));
+    }
+    Ok(Value::Float(x.atanh()))
+}

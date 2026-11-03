@@ -3154,7 +3154,7 @@ with examples; the code may be written in lowercase.
 
 ## 6. Standard library
 
-The 285 built-in functions are always available, without `use`. Like the
+The 300 built-in functions are always available, without `use`. Like the
 keywords, their names are in English. `rythme help builtins` lists all of
 them by category, one line each; `rythme help NAME` (or `help(NAME)` in a
 program, or `:doc NAME` in the REPL) shows the documentation of one, with
@@ -3724,6 +3724,41 @@ Some("en") None
 Ok([1, 2]) Err("\"x\" is not a whole number") 0
 {year: 2024, month: 2, day: 29} 31 Wednesday 31 January 2024 Ok({year: 2024, month: 2, day: 29})
 SGkh a%20b%26c Ok("café")
+```
+
+**What JavaScript has too.** Functions that JavaScript developers reach for
+in `Math`, `Array`, `URL`, `URLSearchParams` and `crypto`, added after 1.0
+([`javascript.md`](javascript.md) goes through its whole standard library,
+and `rythme help javascript` sums it up):
+
+- numbers: `cbrt` (negative numbers too), `hypot(x, y)` (without
+  overflow), `sinh`, `cosh`, `asinh`, `acosh` and `atanh` (outside their
+  domain, E023 like `asin`);
+- lists: `find_last` and `find_last_index` (Options, like `find` and
+  `find_index`);
+- time: `sleep(seconds)` waits, then the program goes on;
+- the web: `parse_url(text)` gives `Ok({scheme, user, password, host, port,
+  path, query, fragment})` (texts as written, empty when absent, and `port`
+  an Option) or `Err(message)`; `parse_query(text)` reads a query into a dict
+  of decoded texts and never fails; `format_query(x)` writes a record or a
+  dict as a query, a list giving its name once for each element;
+  `sha256(text)` is the digest in hexadecimal, and `uuid()` a random
+  identifier (version 4) made from the numbers of `random`, so that
+  `random_seed` makes it repeatable: it is not for secrets.
+
+```rythme
+print(cbrt(-27), hypot(3, 4), atanh(0.5), find_last([1, 4, 6, 7], is_even), find_last_index([1, 4, 6, 7], is_even))
+match parse_url("https://example.com/search?q=caf%C3%A9&page=2#results")
+  Ok(u) -> print(u.host, u.port, u.path, parse_query(u.query), u.fragment)
+  Err(e) -> print(e)
+end
+print(format_query({q: "café", page: 3}), slice(sha256(""), 0, 8), len(uuid()))
+```
+
+```text
+-3.0 5.0 0.5493061443340548 Some(6) Some(2)
+example.com None /search dict("page" => "2", "q" => "café") results
+q=caf%C3%A9&page=3 e3b0c442 36
 ```
 
 **Ruby names.** Some functions have a second name, the one Ruby gives them.
