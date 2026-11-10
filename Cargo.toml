@@ -42,7 +42,7 @@ runtime-catalogs = []
 
 # The interactive mode needs a terminal; the web playground (wasm32) has none.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-rustyline = "14"
+rustyline = "19"
 
 [profile.release]
 opt-level = 3

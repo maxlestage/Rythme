@@ -658,6 +658,15 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   languages; every description for search engines has 160 characters or
   fewer.
 
+### Dependencies
+
+- Every dependency at its latest version. The interactive mode uses
+  `rustyline` 19 (was 14): history, completion, colors and code on several
+  lines work as before. The website builds with `walrus` 0.28 (was 0.27) and
+  `wasm-bindgen` 0.2.130 (was 0.2.129): building it needs `wasm-bindgen-cli`
+  0.2.130 (`site/build.sh` and the Dockerfile install it). No minimum
+  version of Rust is set: the latest stable one builds Rythme.
+
 ## [1.0.0] - 2026-10-18
 
 The first stable version: every item of the [roadmap](ROADMAP.md) is done.

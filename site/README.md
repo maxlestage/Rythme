@@ -70,8 +70,8 @@ cargo run --release        # http://localhost:3000 (PORT on Heroku)
 ```
 
 `./build.sh` needs the `wasm32-unknown-unknown` target of Rust and `wasm-bindgen-cli` at
-exactly the version of the `wasm-bindgen` crate in `Cargo.lock` (0.2.129): it installs
-whichever is missing (`cargo install wasm-bindgen-cli --version 0.2.129 --locked`, a few
+exactly the version of the `wasm-bindgen` crate in `Cargo.lock` (0.2.130): it installs
+whichever is missing (`cargo install wasm-bindgen-cli --version 0.2.130 --locked`, a few
 minutes, once). Its last step compresses the files of `public/` once, at their best
 (`site.css.br`, `site.css.gz`…, see [Speed](#speed)); binaryen's `wasm-opt`, when
 installed, shrinks the bundles a little more (optional: nothing breaks without it).

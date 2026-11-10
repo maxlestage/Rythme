@@ -9,7 +9,7 @@ FROM rust:1-slim-bookworm AS build
 # The browser side is compiled to WebAssembly, and its glue written by wasm-bindgen-cli
 # at the version of the wasm-bindgen crate in site/Cargo.lock (site/build.sh checks it).
 RUN rustup target add wasm32-unknown-unknown \
-    && cargo install wasm-bindgen-cli --version 0.2.129 --locked
+    && cargo install wasm-bindgen-cli --version 0.2.130 --locked
 WORKDIR /src
 COPY . .
 # The browser side: site/public/pkg/.
