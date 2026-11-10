@@ -8849,12 +8849,10 @@ Rythme は型を自分で見つけます。コードが読みやすくなる場�
         (
             r#"rythme mcp: a Model Context Protocol server for AI assistants, on the standard input and output.
 Its tools run (in a sandbox), check, test, format and fix Rythme code, and explain errors and functions.
-Add it to AI assistants: rythme mcp
-desktop assistants, Cursor and others: see the manual, section 7.10."#,
+Cursor and others: see the manual, section 7.10."#,
             r#"rythme mcp：標準入出力を使う、AI アシスタント向けの Model Context Protocol サーバーです。
 そのツールは Rythme のコードを（サンドボックスで）実行し、チェック、テスト、整形、修正を行い、エラーと関数を説明します。
-AI assistants に追加するには：rythme mcp
-desktop assistants、Cursor などはマニュアルの 7.10 節を参照してください。"#,
+Cursor などはマニュアルの 7.10 節を参照してください。"#,
         ),
         ("the program was stopped after {seconds} seconds: it may never end (a recursion without a base case?)", "{seconds} 秒でプログラムを止めた：終わらないのかもしれない（基底ケースのない再帰？）"),
         ("the program was stopped: it took more than {mb} MB of memory", "プログラムを止めた：{mb} MB を超えるメモリを使った"),
@@ -9576,8 +9574,7 @@ Charts as text
 
 The web and language models
   http_get(url)  http_post(url, body, headers)   # Ok(text) or Err(message)
-  Keep API keys out of the code: env("API_KEY"). The example
-  examples/ask_model.ry asks assistant a question with http_post and JSON.
+  Keep API keys out of the code: env("API_KEY").
 
 A mistake of shape names both shapes ("cannot multiply a 2×3 matrix by a
 2×2 matrix"). Programs to read: the examples linear_regression, perceptron,
@@ -9618,8 +9615,7 @@ genetic; exercises 31 to 36 (rythme exercise list)."#,
 
 Web と言語モデル
   http_get(url)  http_post(url, body, headers)   # Ok(テキスト) か Err(message)
-  API キーはコードに書かない：env("API_KEY")。例
-  examples/ask_model.ry は http_post と JSON で assistant に質問します。
+  API キーはコードに書かない：env("API_KEY")。
 
 形の誤りは両方の形を示します（「2×3 の行列に 2×2 の行列を掛けられない」）。
 読んでみるプログラム：例 linear_regression、perceptron、xor_network、kmeans、

@@ -289,7 +289,7 @@ none may break the [stability promise](README.md#stability-promise) of 1.x.
   activations, chance that follows `random_seed` (`random_normal`,
   `train_test_split`...), numerical slopes (`derivative`, `gradient`), charts
   as text (`plot`, `histogram`), HTTP (see above); `rythme help ml`, the
-  manual, ten examples and `examples/ask_model.ry`, six exercises (31 to
+  manual, ten examples, six exercises (31 to
   36) in every language.
   - [ ] Exact derivatives (automatic differentiation), if it can stay
     invisible: dual numbers would have to go through every operation and

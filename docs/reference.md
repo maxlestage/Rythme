@@ -3617,8 +3617,6 @@ program curl, which Windows 10 and later, macOS and most Linux systems have
 the body are given to it on its standard input, never on its command line,
 so that an API key stays out of the list of processes. Keep keys out of the
 code too: read them with `env`. In the playground, both give an `Err`.
-[`examples/ask_model.ry`](../examples/ask_model.ry) asks a question to a
-language model this way.
 
 ```rythme
 print(http_get("ftp://example.com/data.csv"))
@@ -4601,7 +4599,6 @@ Created the project `hello`:
   hello/README.md
   hello/.gitignore
   hello/AGENTS.md
-  hello/AGENTS.md
 Next: `cd hello`, then `rythme run` to run it and `rythme test` to test it (see `rythme help projects`)
 $ cd hello
 $ rythme run
@@ -4958,8 +4955,7 @@ end of the input (the standard input carries the protocol).
 
 ### 7.10 Rythme and AI assistants
 
-AI assistants and coding agents (assistant, ChatGPT, Copilot, Cursor, assistant
-Code...) were trained before Rythme existed. Rythme gives them what they
+AI assistants and coding agents (ChatGPT, Copilot, Cursor...) were trained before Rythme existed. Rythme gives them what they
 need to learn it fast, write it, and fix their own mistakes in a loop,
 without a person in between: the whole language in one text, output for
 programs, exact fixes, and a server they can call.
@@ -5066,8 +5062,7 @@ functions of files give `Err` with a message, `file_exists` gives `false`,
 `env` gives `None`. The program still reads its standard input and its
 arguments.
 
-**In a project.** `rythme new` also writes an `AGENTS.md` (with a
-`AGENTS.md` that points to it) telling an AI assistant how to work in the
+**In a project.** `rythme new` also writes an `AGENTS.md` telling an AI assistant how to work in the
 project: read `rythme help llms`, then loop on `rythme check --format
 json`, `rythme fix`, `rythme test --format json` and `rythme run --format
 json`, which all work at the root of the project without a file name.
@@ -5097,15 +5092,8 @@ again for each call, in the sandbox, and stop it after 10 seconds (the
 memory: a program that never ends never blocks the assistant. The messages
 are in the language of the server: `rythme --lang fr mcp`.
 
-To add it to **AI assistants**:
-
-```sh
-rythme mcp
-```
-
-or, for everyone working on a project, a `.mcp.json` at its root (assistant
-Code), `.cursor/mcp.json` (**Cursor**) or `mcp.json`
-(**desktop assistants**, *Settings → Developer → Edit Config*):
+To add it to **Cursor**, a `.cursor/mcp.json` (or `.mcp.json` at the root of
+a project, for the assistants that read it):
 
 ```json
 {
@@ -5126,7 +5114,7 @@ Code), `.cursor/mcp.json` (**Cursor**) or `mcp.json`
 ```
 
 If `rythme` is not on the `PATH` of the assistant, give its full path as
-`command`. `rythme mcp --help` repeats the command for AI assistants.
+`command`.
 
 **Contributing with an agent.** [`AGENTS.md`](../AGENTS.md), at the root
 of the repository, tells the agents of contributors how to build and test

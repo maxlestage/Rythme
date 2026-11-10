@@ -265,8 +265,7 @@ pub const JA: Texts = Texts {
     ai_mcp_title: "コードを実行・チェックさせる：rythme mcp",
     ai_mcp_lead: "rythme mcp は Model Context Protocol サーバーです。アシスタントは自分でプログラムをサンドボックスで実行し、チェック、テスト、整形、修正を行い、ヘルプとリファレンスを読みます。Rythme をインストールしてから、このサーバーをアシスタントに追加してください。",
     ai_mcp_where: [
-        "ターミナルで、AI assistants 向け",
-        "mcp.json（desktop assistants：設定 → 開発者 → 構成を編集）、.cursor/mcp.json（Cursor）、またはプロジェクトのルートの .mcp.json（AI assistants）",
+        ".cursor/mcp.json（Cursor）、またはプロジェクトのルートの .mcp.json",
         ".vscode/mcp.json、VS Code の GitHub Copilot 向け",
     ],
     ai_mcp_path: "rythme がアシスタントの PATH にない場合は、command にフルパスを指定してください。ツール：run（サンドボックスで、10 秒で停止）、check、test、fix、format、explain、help、steps、reference。",
@@ -281,7 +280,7 @@ pub const JA: Texts = Texts {
         "標準入力から読んだプログラム。ファイルのないツール向け",
     ],
     ai_agents_title: "プロジェクトでは：AGENTS.md",
-    ai_agents_lead: "rythme new は AGENTS.md（とそれを指す AGENTS.md）を書き、コーディングエージェントにプロジェクトでの作業方法を伝えます：rythme help llms を読み、check、fix、test、run を繰り返します。",
+    ai_agents_lead: "rythme new は AGENTS.mdを書き、コーディングエージェントにプロジェクトでの作業方法を伝えます：rythme help llms を読み、check、fix、test、run を繰り返します。",
     ai_play_title: "プレイグラウンドから",
     ai_play_lead: "プレイグラウンドの「AI 用にコピー」は、プログラムとその出力またはエラーを、リファレンスのアドレスとともに Markdown でコピーします：チャットに貼り付けて助けを求めてください。",
     pg_ai: "AI 用にコピー",

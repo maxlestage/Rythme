@@ -345,7 +345,7 @@ async fn the_ai_page() {
     let client = client().await;
     // The configurations are those of the manual.
     let manual = std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("../docs/reference.md")).unwrap();
-    for snippet in [ai::MCP_COMMAND, ai::MCP_JSON, ai::VSCODE_JSON, ai::FIX_EXAMPLE] {
+    for snippet in [ai::MCP_JSON, ai::VSCODE_JSON, ai::FIX_EXAMPLE] {
         assert!(manual.contains(snippet), "not in docs/reference.md: {snippet}");
     }
     for lang in Lang::ALL {
@@ -364,7 +364,7 @@ async fn the_ai_page() {
         let copies = attributes(&html, "data-copy");
         let prompt = ai::prompt(lang, ORIGIN);
         assert!(prompt.contains(&format!("{ORIGIN}/llms-full.txt")), "{prompt}");
-        for text in [prompt.as_str(), ai::MCP_COMMAND, ai::MCP_JSON, ai::VSCODE_JSON, ai::NEW_PROJECT] {
+        for text in [prompt.as_str(), ai::MCP_JSON, ai::VSCODE_JSON, ai::NEW_PROJECT] {
             assert!(copies.iter().any(|c| c == text), "{lang:?}: {text}");
         }
         for text in [t.ai_title, t.ai_mcp_title, t.ai_loop_title, t.ai_agents_title, t.ai_play_title] {

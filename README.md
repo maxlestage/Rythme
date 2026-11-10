@@ -314,7 +314,6 @@ More: the [reference manual](docs/reference.md), [`examples/`](examples),
 | [`tictactoe.ry`](examples/tictactoe.ry) | minimax plays tic-tac-toe perfectly: recursion, set_at, max_by |
 | [`pathfinding.ry`](examples/pathfinding.ry) | the shortest way through a maze: breadth-first search, dict, put |
 | [`genetic.ry`](examples/genetic.ry) | a genetic algorithm evolves a sentence: selection, crossover, mutation |
-| [`ask_model.ry`](examples/ask_model.ry) | asking a language model a question: http_post, to_json, parse_json, env (needs an API key) |
 
 ## Editors
 
@@ -339,9 +338,8 @@ learn it fast and fix their own mistakes:
   places, help that names the fix, and fixes as text edits;
   `rythme fix` applies the safe ones.
 - `rythme mcp` is a [Model Context Protocol](https://modelcontextprotocol.io)
-  server (run in a sandbox, check, test, fix, format, explain, help):
-  `rythme mcp` for AI assistants; desktop assistants,
-  Cursor and VS Code in the [manual](docs/reference.md#710-rythme-and-ai-assistants).
+  server (run in a sandbox, check, test, fix, format, explain, help): how to
+  add it to Cursor or VS Code in the [manual](docs/reference.md#710-rythme-and-ai-assistants).
 - `rythme new` writes an `AGENTS.md` for the agents working in the project,
   and [`AGENTS.md`](AGENTS.md) guides those working on Rythme itself.
 

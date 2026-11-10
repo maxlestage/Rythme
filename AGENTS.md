@@ -1,6 +1,6 @@
 # AGENTS.md: working on Rythme with an AI coding agent
 
-Instructions for AI coding agents (AI assistants, Codex, Copilot, Cursor...)
+Instructions for AI coding agents (Codex, Copilot, Cursor...)
 that change this repository: the Rust implementation of the Rythme language,
 its tools, editors and website. People: [CONTRIBUTING.md](CONTRIBUTING.md)
 says the same at length. To *write Rythme programs* instead, read

@@ -274,8 +274,7 @@ pub const DE: Texts = Texts {
     ai_mcp_title: "Code ausführen und prüfen lassen: rythme mcp",
     ai_mcp_lead: "rythme mcp ist ein Model-Context-Protocol-Server: Der Assistent führt Programme in einer Sandbox aus, prüft, testet, formatiert und korrigiert sie und liest die Hilfe und die Referenz, ganz allein. Installiere Rythme und füge den Server deinem Assistenten hinzu.",
     ai_mcp_where: [
-        "In einem Terminal, für AI assistants",
-        "mcp.json (desktop assistants: Settings → Developer → Edit Config), .cursor/mcp.json (Cursor) oder .mcp.json im Hauptordner eines Projekts (AI assistants)",
+        ".cursor/mcp.json (Cursor) oder .mcp.json im Hauptordner eines Projekts",
         ".vscode/mcp.json, für GitHub Copilot in VS Code",
     ],
     ai_mcp_path: "Wenn rythme nicht im PATH des Assistenten liegt, gib den vollständigen Pfad als command an. Die Werkzeuge: run (in einer Sandbox, nach 10 Sekunden gestoppt), check, test, fix, format, explain, help, steps und reference.",
@@ -290,7 +289,7 @@ pub const DE: Texts = Texts {
         "ein Programm von der Standardeingabe, für ein Werkzeug ohne Datei",
     ],
     ai_agents_title: "In deinen Projekten: AGENTS.md",
-    ai_agents_lead: "rythme new schreibt eine AGENTS.md (und eine AGENTS.md, die darauf verweist), die Coding-Agenten erklärt, wie sie im Projekt arbeiten: rythme help llms lesen, dann check, fix, test und run wiederholen.",
+    ai_agents_lead: "rythme new schreibt eine AGENTS.md, die Coding-Agenten erklärt, wie sie im Projekt arbeiten: rythme help llms lesen, dann check, fix, test und run wiederholen.",
     ai_play_title: "Aus dem Playground",
     ai_play_lead: "Für KI kopieren kopiert im Playground das Programm und seine Ausgabe oder seine Fehler als Markdown, mit der Adresse der Referenz: Füge sie in einen Chat ein, um Hilfe zu bekommen.",
     pg_ai: "Für KI kopieren",

@@ -316,7 +316,6 @@ Pour aller plus loin : le [manuel de référence](docs/reference.fr.md),
 | [`tictactoe.ry`](examples/tictactoe.ry) | le minimax joue parfaitement au morpion : récursion, set_at, max_by |
 | [`pathfinding.ry`](examples/pathfinding.ry) | le plus court chemin dans un labyrinthe : parcours en largeur, dict, put |
 | [`genetic.ry`](examples/genetic.ry) | un algorithme génétique fait évoluer une phrase : sélection, croisement, mutation |
-| [`ask_model.ry`](examples/ask_model.ry) | poser une question à un modèle de langage : http_post, to_json, parse_json, env (une clé d'API est nécessaire) |
 
 ## Éditeurs
 
@@ -343,8 +342,8 @@ il est fait pour qu'ils l'apprennent vite et corrigent leurs propres erreurs :
   de modifications du texte ; `rythme fix` applique les corrections sûres.
 - `rythme mcp` est un serveur [Model Context Protocol](https://modelcontextprotocol.io)
   (lancer dans un bac à sable, vérifier, tester, corriger, mettre en forme,
-  expliquer, aider) : `rythme mcp` pour AI assistants ;
-  desktop assistants, Cursor et VS Code dans le [manuel](docs/reference.fr.md#710-rythme-et-les-assistants-dia).
+  expliquer, aider) : comment l'ajouter à Cursor ou à VS Code dans le
+  [manuel](docs/reference.fr.md#710-rythme-et-les-assistants-dia).
 - `rythme new` écrit un `AGENTS.md` pour les agents qui travaillent dans le
   projet, et [`AGENTS.md`](AGENTS.md) guide ceux qui travaillent sur Rythme lui-même.
 

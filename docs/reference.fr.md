@@ -3790,8 +3790,6 @@ en-têtes et le corps lui sont donnés sur son entrée standard, jamais sur sa
 ligne de commande, pour qu'une clé d'API reste hors de la liste des
 processus. Gardez aussi les clés hors du code : lisez-les avec `env`. Dans
 le playground, les deux donnent un `Err`.
-[`examples/ask_model.ry`](../examples/ask_model.ry) pose ainsi une
-question à un modèle de langage.
 
 ```rythme
 print(http_get("ftp://example.com/data.csv"))
@@ -4799,7 +4797,6 @@ Projet `bonjour` créé :
   bonjour/README.md
   bonjour/.gitignore
   bonjour/AGENTS.md
-  bonjour/AGENTS.md
 Ensuite : `cd bonjour`, puis `rythme run` pour le lancer et `rythme test` pour le tester (voir `rythme help projects`)
 $ cd bonjour
 $ rythme run
@@ -5173,8 +5170,8 @@ porte le protocole).
 
 ### 7.10 Rythme et les assistants d'IA
 
-Les assistants d'IA et les agents de programmation (assistant, ChatGPT,
-Copilot, Cursor, AI assistants...) ont été entraînés avant que Rythme existe.
+Les assistants d'IA et les agents de programmation (ChatGPT, Copilot,
+Cursor...) ont été entraînés avant que Rythme existe.
 Rythme leur donne de quoi l'apprendre vite, l'écrire, et corriger leurs
 propres erreurs en boucle, sans personne entre les deux : tout le langage en
 un texte, une sortie pour les programmes, des corrections exactes, et un
@@ -5291,8 +5288,7 @@ qui ne doit pas toucher à l'ordinateur : `read_file`, `write_file`,
 message, `file_exists` donne `false`, `env` donne `None`. Le programme lit
 toujours son entrée standard et ses arguments.
 
-**Dans un projet.** `rythme new` écrit aussi un `AGENTS.md` (avec un
-`AGENTS.md` qui y renvoie) qui dit à un assistant d'IA comment travailler
+**Dans un projet.** `rythme new` écrit aussi un `AGENTS.md` qui dit à un assistant d'IA comment travailler
 dans le projet : lire `rythme help llms`, puis boucler sur `rythme check
 --format json`, `rythme fix`, `rythme test --format json` et `rythme run
 --format json`, qui marchent tous à la racine du projet sans nom de fichier.
@@ -5324,16 +5320,8 @@ au-delà de 512 Mo de mémoire : un programme qui ne finit jamais ne bloque
 jamais l'assistant. Les messages sont dans la langue du serveur :
 `rythme --lang fr mcp`.
 
-Pour l'ajouter à **AI assistants** :
-
-```sh
-rythme mcp
-```
-
-ou, pour tous ceux qui travaillent sur un projet, un `.mcp.json` à sa racine
-(AI assistants), `.cursor/mcp.json` (**Cursor**) ou
-`mcp.json` (**desktop assistants**, *Settings → Developer →
-Edit Config*) :
+Pour l'ajouter à **Cursor**, un `.cursor/mcp.json` (ou un `.mcp.json` à la
+racine d'un projet, pour les assistants qui le lisent) :
 
 ```json
 {
@@ -5354,8 +5342,7 @@ Edit Config*) :
 ```
 
 Si `rythme` n'est pas dans le `PATH` de l'assistant, donnez son chemin
-complet comme `command`. `rythme mcp --help` rappelle la commande pour
-AI assistants.
+complet comme `command`.
 
 **Contribuer avec un agent.** [`AGENTS.md`](../AGENTS.md), à la racine du
 dépôt, dit aux agents des contributeurs comment construire et tester Rythme

@@ -8889,12 +8889,10 @@ roda; os editores e `rythme doc` os mostram."#,
         (
             r#"rythme mcp: a Model Context Protocol server for AI assistants, on the standard input and output.
 Its tools run (in a sandbox), check, test, format and fix Rythme code, and explain errors and functions.
-Add it to AI assistants: rythme mcp
-desktop assistants, Cursor and others: see the manual, section 7.10."#,
+Cursor and others: see the manual, section 7.10."#,
             r#"rythme mcp: um servidor Model Context Protocol para assistentes de IA, na entrada e na saída padrão.
 Suas ferramentas executam (em uma sandbox), verificam, testam, formatam e corrigem código Rythme, e explicam erros e funções.
-Adicione ao AI assistants: rythme mcp
-desktop assistants, Cursor e outros: veja o manual, seção 7.10."#,
+Cursor e outros: veja o manual, seção 7.10."#,
         ),
         ("the program was stopped after {seconds} seconds: it may never end (a recursion without a base case?)", "o programa foi interrompido após {seconds} segundos: talvez ele nunca termine (uma recursão sem caso base?)"),
         ("the program was stopped: it took more than {mb} MB of memory", "o programa foi interrompido: ocupava mais de {mb} MB de memória"),
@@ -9821,8 +9819,7 @@ Charts as text
 
 The web and language models
   http_get(url)  http_post(url, body, headers)   # Ok(text) or Err(message)
-  Keep API keys out of the code: env("API_KEY"). The example
-  examples/ask_model.ry asks assistant a question with http_post and JSON.
+  Keep API keys out of the code: env("API_KEY").
 
 A mistake of shape names both shapes ("cannot multiply a 2×3 matrix by a
 2×2 matrix"). Programs to read: the examples linear_regression, perceptron,
@@ -9864,9 +9861,7 @@ Gráficos de texto
 
 A web e os modelos de linguagem
   http_get(url)  http_post(url, corpo, cabecalhos)   # Ok(texto) ou Err(mensagem)
-  Mantenha as chaves de API fora do código: env("API_KEY"). O
-  exemplo examples/ask_model.ry faz uma pergunta ao assistant com http_post e
-  JSON.
+  Mantenha as chaves de API fora do código: env("API_KEY").
 
 Um erro de forma nomeia as duas formas ("não pode multiplicar uma matriz
 2×3 por uma matriz 2×2"). Programas para ler: os exemplos linear_regression,

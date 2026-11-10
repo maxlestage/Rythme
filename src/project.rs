@@ -1061,7 +1061,6 @@ entry = "src/main.ry"
         ("README.md", readme),
         (".gitignore", ignore),
         ("AGENTS.md", AGENTS.replace("{name}", name)),
-        ("AGENTS.md", "See [AGENTS.md](AGENTS.md).\n\n@AGENTS.md\n".to_string()),
     ]
 }
 
@@ -1112,7 +1111,7 @@ code its official layout.
   one for each new function.
 
 `rythme mcp` gives these commands to AI assistants through the Model Context
-Protocol: `rythme mcp` for AI assistants.
+Protocol.
 "#;
 
 // ----- commands without a file, at the root of a project -----------------------------

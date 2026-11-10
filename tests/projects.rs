@@ -146,7 +146,7 @@ fn a_new_project_runs_tests_checks_formats_and_documents_itself() {
             "pt" => ("src/saudacao.ry", "tests/saudacao_test.ry"),
             _ => ("src/greeting.ry", "tests/greeting_test.ry"),
         };
-        for f in ["rythme.toml", "src/main.ry", lib, test, "README.md", ".gitignore", "AGENTS.md", "AGENTS.md"] {
+        for f in ["rythme.toml", "src/main.ry", lib, test, "README.md", ".gitignore", "AGENTS.md"] {
             assert!(t.path("hello").join(f).is_file(), "{lang}: {f} is missing");
             assert!(r.stdout.contains(&format!("hello/{f}")), "{lang}: {}", r.stdout);
         }

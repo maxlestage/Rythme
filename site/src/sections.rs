@@ -66,8 +66,8 @@ pub const DEBUG: [&str; 6] = [
     "rythme dap",
 ];
 
-/// The MCP server for AI assistants (the other assistants: the AI page).
-pub const MCP: &str = crate::ai::MCP_COMMAND;
+/// The MCP server, as an assistant starts it (how to add it: the AI page).
+pub const MCP: &str = crate::ai::COMMAND;
 
 /// The commands of the package index, in the order of `Sections::pkg_find`.
 pub const PACKAGE_COMMANDS: [&str; 6] =

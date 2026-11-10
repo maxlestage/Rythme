@@ -54,7 +54,7 @@ How to work with Rythme as an AI assistant:
 
 - [Rythme for language models, complete]({REPO}/docs/llms-full.txt): the syntax, every construct with an example, every built-in function, common mistakes from other languages and every error code, in one file
 - [Reference manual]({REPO}/docs/reference.md): the precise definition of the language and its tools
-- [Rythme and AI assistants]({REPO}/docs/reference.md#710-rythme-and-ai-assistants): JSON output, `rythme fix`, the MCP server and how to add it to AI assistants, desktop assistants or Cursor
+- [Rythme and AI assistants]({REPO}/docs/reference.md#710-rythme-and-ai-assistants): JSON output, `rythme fix`, the MCP server and how to add it to Cursor or VS Code
 - [JSON output schema]({REPO}/docs/rythme-output.schema.json): the documents printed by `--format json`
 
 ## Optional

@@ -231,7 +231,7 @@ fn protocol_errors_are_answered() {
 fn help_and_wrong_arguments() {
     let out = Command::new(env!("CARGO_BIN_EXE_rythme")).args(["mcp", "--help"]).env("RYTHME_LANG", "en").output().unwrap();
     assert_eq!(out.status.code(), Some(0));
-    assert!(String::from_utf8_lossy(&out.stdout).contains("rythme mcp"));
+    assert!(String::from_utf8_lossy(&out.stdout).contains("see the manual, section 7.10"));
     let out = Command::new(env!("CARGO_BIN_EXE_rythme")).args(["mcp", "extra"]).env("RYTHME_LANG", "en").output().unwrap();
     assert_eq!(out.status.code(), Some(2));
 }

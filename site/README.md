@@ -557,7 +557,7 @@ of the manual).
 - **The AI page** (`/{lang}/ai/`, *AI* in the menu and the footer): the cards of
   `llms-full.txt`, `llms.txt` and the Markdown, a first message to paste into a chat
   (with the address of `llms-full.txt`), the configurations of `rythme mcp` for
-  AI assistants, desktop assistants, Cursor and VS Code (`src/ai.rs`, the same text as the
+  Cursor and VS Code (`src/ai.rs`, the same text as the
   manual: a test checks it), the commands of the loop and what `rythme fix` does,
   `rythme new` and its `AGENTS.md`. Each text to copy has its button (the browser side, as
   the commands of the home page) and wraps like code: nothing scrolls sideways.

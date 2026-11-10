@@ -405,19 +405,6 @@ pub const EXAMPLES: &[Example] = &[
             "遺伝的アルゴリズムが文を進化させる：選択、交叉、突然変異",
         ]
     ),
-    example!(
-        "ask_model",
-        [
-            "poser une question à un modèle de langage : http_post, to_json, parse_json, env (une clé d'API est nécessaire)",
-            "asking a language model a question: http_post, to_json, parse_json, env (needs an API key)",
-            "preguntar a un modelo de lenguaje: http_post, to_json, parse_json, env (necesita una clave de API)",
-            "einem Sprachmodell eine Frage stellen: http_post, to_json, parse_json, env (braucht einen API-Schlüssel)",
-            "fazer uma pergunta a um modelo de linguagem: http_post, to_json, parse_json, env (precisa de uma chave de API)",
-            "向语言模型提问：http_post、to_json、parse_json、env（需要 API 密钥）",
-            "fare una domanda a un modello linguistico: http_post, to_json, parse_json, env (serve una chiave API)",
-            "言語モデルに質問する：http_post、to_json、parse_json、env（API キーが必要）",
-        ]
-    ),
 ];
 
 pub fn find(name: &str) -> Option<&'static Example> {

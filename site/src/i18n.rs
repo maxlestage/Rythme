@@ -344,11 +344,11 @@ pub struct Texts {
     pub ai_give: [Item; 3],
     pub ai_prompt_label: &'static str,
     pub ai_prompt: &'static str,
-    /// The MCP server: where each configuration goes (AI assistants; desktop assistants,
-    /// Cursor and `.mcp.json`; VS Code), and its tools.
+    /// The MCP server: where each configuration goes (Cursor and `.mcp.json`; VS
+    /// Code), and its tools.
     pub ai_mcp_title: &'static str,
     pub ai_mcp_lead: &'static str,
-    pub ai_mcp_where: [&'static str; 3],
+    pub ai_mcp_where: [&'static str; 2],
     pub ai_mcp_path: &'static str,
     /// The loop of `--format json` and `rythme fix`: what each command of `ai::LOOP`
     /// does.

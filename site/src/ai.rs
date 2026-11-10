@@ -25,10 +25,10 @@ pub fn version() -> &'static str {
         .expect("the version of Rythme in Cargo.toml")
 }
 
-/// Adds the MCP server to AI assistants (section 7.10 of the manual).
-pub const MCP_COMMAND: &str = "rythme mcp";
-/// `.mcp.json` (AI assistants), `.cursor/mcp.json` (Cursor), `mcp.json`
-/// (desktop assistants): the same configuration (section 7.10 of the manual).
+/// The command an assistant starts (section 7.10 of the manual).
+pub const COMMAND: &str = "rythme mcp";
+/// `.cursor/mcp.json` (Cursor), or `.mcp.json` at the root of a project: the same
+/// configuration (section 7.10 of the manual).
 pub const MCP_JSON: &str = "{\n  \"mcpServers\": {\n    \"rythme\": { \"command\": \"rythme\", \"args\": [\"mcp\"] }\n  }\n}";
 /// `.vscode/mcp.json`: GitHub Copilot in VS Code (section 7.10 of the manual).
 pub const VSCODE_JSON: &str =
@@ -36,8 +36,7 @@ pub const VSCODE_JSON: &str =
 
 /// The configurations of the MCP server: (the assistants, the language of the snippet,
 /// the snippet), in the order of `Texts::ai_mcp_where`.
-pub const MCP: [(&str, &str, &str); 3] =
-    [("AI assistants", "sh", MCP_COMMAND), ("desktop assistants · Cursor · .mcp.json", "json", MCP_JSON), ("VS Code", "json", VSCODE_JSON)];
+pub const MCP: [(&str, &str, &str); 2] = [("Cursor · .mcp.json", "json", MCP_JSON), ("VS Code", "json", VSCODE_JSON)];
 
 /// The commands of the loop, in the order of `Texts::ai_loop`.
 pub const LOOP: [&str; 6] = [

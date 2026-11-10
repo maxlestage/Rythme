@@ -1,5 +1,5 @@
 //! `rythme mcp`: a server of the Model Context Protocol, so that AI
-//! assistants (AI assistants, desktop assistants, Cursor...) can run, check, test,
+//! assistants (Cursor, VS Code...) can run, check, test,
 //! format and fix Rythme code, and read its documentation, by themselves.
 //!
 //! The protocol is JSON-RPC 2.0, one message per line on the standard input
@@ -92,8 +92,8 @@ pub fn run(args: &[String]) -> i32 {
 /// What `rythme mcp --help` (and a terminal) shows.
 fn usage() -> String {
     t!(
-        "rythme mcp: a Model Context Protocol server for AI assistants, on the standard input and output.\nIts tools run (in a sandbox), check, test, format and fix Rythme code, and explain errors and functions.\nAdd it to AI assistants: rythme mcp\ndesktop assistants, Cursor and others: see the manual, section 7.10.",
-        "rythme mcp : un serveur Model Context Protocol pour les assistants d'IA, sur l'entrée et la sortie standard.\nSes outils lancent (dans un bac à sable), vérifient, testent, mettent en forme et corrigent du code Rythme, et expliquent les erreurs et les fonctions.\nL'ajouter à AI assistants : rythme mcp\ndesktop assistants, Cursor et les autres : voir le manuel, section 7.10."
+        "rythme mcp: a Model Context Protocol server for AI assistants, on the standard input and output.\nIts tools run (in a sandbox), check, test, format and fix Rythme code, and explain errors and functions.\nCursor and others: see the manual, section 7.10.",
+        "rythme mcp : un serveur Model Context Protocol pour les assistants d'IA, sur l'entrée et la sortie standard.\nSes outils lancent (dans un bac à sable), vérifient, testent, mettent en forme et corrigent du code Rythme, et expliquent les erreurs et les fonctions.\nCursor et les autres : voir le manuel, section 7.10."
     )
 }
 

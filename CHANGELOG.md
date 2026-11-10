@@ -189,7 +189,7 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   help, steps, and the reference as a resource. `rythme run --sandbox`,
   `rythme test --sandbox` and `RYTHME_SANDBOX=1` keep a program away from
   files, folders and environment variables.
-- **`AGENTS.md`** (and `AGENTS.md`) for the agents of contributors, and in
+- **`AGENTS.md`** for the agents of contributors, and in
   every project made by `rythme new`.
 - **Messages for the habits of other languages**: named arguments, `n = n +
   1`, `x += 1`, slices, `|x|` and `->` lambdas, Kotlin blocks, format
@@ -203,8 +203,7 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   structured data (JSON-LD: Rythme, its interpreter with version, license
   and download, the code of *Learn* and of the examples); a page *For AI
   assistants* (`/{lang}/ai/`, in the six languages) with the message to
-  paste, the MCP configurations for AI assistants, desktop assistants, Cursor and
-  VS Code with copy buttons, the loop of `--format json` and `rythme fix`,
+  paste, the MCP configurations for Cursor and VS Code with copy buttons, the loop of `--format json` and `rythme fix`,
   and `AGENTS.md`; and **Copy for AI** in the playground, which copies the
   program and its output or errors as Markdown, ready for a chat.
 
@@ -302,8 +301,7 @@ own mistakes in a loop (manual 7.10, README "AI assistants"):
   learning*, *Charts as text*, *The web*), `bench/ml.ry`, ten AI examples
   (linear regression, perceptron, a network learning XOR, k-means, k nearest
   neighbours, naive Bayes, a Markov chain, minimax, breadth-first search, a
-  genetic algorithm) and `examples/ask_model.ry` (a language model asked
-  through its HTTP API, with a key read by `env`), and six AI exercises
+  genetic algorithm), and six AI exercises
   (31 to 36) in every language of `rythme exercise`.
 - **The library, completed** after an audit against Ruby's core, Python's
   builtins, `itertools`, `statistics` and `string`, and Elixir's `Enum`,

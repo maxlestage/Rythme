@@ -8917,12 +8917,10 @@ programa; los editores y `rythme doc` los muestran."#,
         (
             r#"rythme mcp: a Model Context Protocol server for AI assistants, on the standard input and output.
 Its tools run (in a sandbox), check, test, format and fix Rythme code, and explain errors and functions.
-Add it to AI assistants: rythme mcp
-desktop assistants, Cursor and others: see the manual, section 7.10."#,
+Cursor and others: see the manual, section 7.10."#,
             r#"rythme mcp: un servidor Model Context Protocol para asistentes de IA, en la entrada y la salida estándar.
 Sus herramientas ejecutan (en un entorno aislado), verifican, prueban, formatean y corrigen código Rythme, y explican errores y funciones.
-Añádelo a AI assistants: rythme mcp
-desktop assistants, Cursor y otros: consulta el manual, sección 7.10."#,
+Cursor y otros: consulta el manual, sección 7.10."#,
         ),
         ("the program was stopped after {seconds} seconds: it may never end (a recursion without a base case?)", "el programa se detuvo después de {seconds} segundos: puede que no termine nunca (¿una recursión sin caso base?)"),
         ("the program was stopped: it took more than {mb} MB of memory", "el programa se detuvo: ocupaba más de {mb} MB de memoria"),
@@ -9853,8 +9851,7 @@ Charts as text
 
 The web and language models
   http_get(url)  http_post(url, body, headers)   # Ok(text) or Err(message)
-  Keep API keys out of the code: env("API_KEY"). The example
-  examples/ask_model.ry asks assistant a question with http_post and JSON.
+  Keep API keys out of the code: env("API_KEY").
 
 A mistake of shape names both shapes ("cannot multiply a 2×3 matrix by a
 2×2 matrix"). Programs to read: the examples linear_regression, perceptron,
@@ -9896,9 +9893,7 @@ Gráficos de texto
 
 La web y los modelos de lenguaje
   http_get(url)  http_post(url, cuerpo, cabeceras)   # Ok(texto) o Err(mensaje)
-  Deja las claves de API fuera del código: env("API_KEY"). El
-  ejemplo examples/ask_model.ry hace una pregunta a assistant con http_post y
-  JSON.
+  Deja las claves de API fuera del código: env("API_KEY").
 
 Un error de forma nombra las dos formas ("no puede multiplicar una matriz
 2×3 por una matriz 2×2"). Programas para leer: los ejemplos

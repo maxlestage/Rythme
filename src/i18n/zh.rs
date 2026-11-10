@@ -8741,12 +8741,10 @@ Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把�
         (
             r#"rythme mcp: a Model Context Protocol server for AI assistants, on the standard input and output.
 Its tools run (in a sandbox), check, test, format and fix Rythme code, and explain errors and functions.
-Add it to AI assistants: rythme mcp
-desktop assistants, Cursor and others: see the manual, section 7.10."#,
+Cursor and others: see the manual, section 7.10."#,
             r#"rythme mcp：面向 AI 助手的 Model Context Protocol 服务器，使用标准输入和输出。
 它的工具可以运行（在沙箱中）、检查、测试、格式化和修正 Rythme 代码，并解释错误和函数。
-添加到 AI assistants：rythme mcp
-desktop assistants、Cursor 等：见手册第 7.10 节。"#,
+Cursor 等：见手册第 7.10 节。"#,
         ),
         ("the program was stopped after {seconds} seconds: it may never end (a recursion without a base case?)", "程序在 {seconds} 秒后被停止：它可能永远不会结束（递归缺少基本情况？）"),
         ("the program was stopped: it took more than {mb} MB of memory", "程序被停止：它占用了超过 {mb} MB 的内存"),
@@ -9617,8 +9615,7 @@ Charts as text
 
 The web and language models
   http_get(url)  http_post(url, body, headers)   # Ok(text) or Err(message)
-  Keep API keys out of the code: env("API_KEY"). The example
-  examples/ask_model.ry asks assistant a question with http_post and JSON.
+  Keep API keys out of the code: env("API_KEY").
 
 A mistake of shape names both shapes ("cannot multiply a 2×3 matrix by a
 2×2 matrix"). Programs to read: the examples linear_regression, perceptron,
@@ -9659,8 +9656,7 @@ genetic; exercises 31 to 36 (rythme exercise list)."#,
 
 网络与语言模型
   http_get(url)  http_post(url, body, headers)   # Ok(文本) 或 Err(消息)
-  不要把 API 密钥写进代码：用 env("API_KEY")。示例
-  examples/ask_model.ry 用 http_post 和 JSON 向 assistant 提问。
+  不要把 API 密钥写进代码：用 env("API_KEY")。
 
 形状错误会同时给出两个形状（“无法将一个 2×3 矩阵乘以一个 2×2 矩阵”）。
 可以阅读的程序：示例 linear_regression、perceptron、xor_network、kmeans、

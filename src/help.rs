@@ -2271,8 +2271,7 @@ Charts as text
 
 The web and language models
   http_get(url)  http_post(url, body, headers)   # Ok(text) or Err(message)
-  Keep API keys out of the code: env("API_KEY"). The example
-  examples/ask_model.ry asks assistant a question with http_post and JSON.
+  Keep API keys out of the code: env("API_KEY").
 
 A mistake of shape names both shapes ("cannot multiply a 2×3 matrix by a
 2×2 matrix"). Programs to read: the examples linear_regression, perceptron,
@@ -2315,8 +2314,7 @@ Des graphiques en texte
 
 Le web et les modèles de langage
   http_get(url)  http_post(url, corps, en_tetes)   # Ok(texte) ou Err(message)
-  Gardez les clés d'API hors du code : env("API_KEY"). L'exemple
-  examples/ask_model.ry pose une question à assistant avec http_post et du JSON.
+  Gardez les clés d'API hors du code : env("API_KEY").
 
 Une erreur de forme nomme les deux formes (« impossible de multiplier une
 matrice 2×3 par une matrice 2×2 »). Des programmes à lire : les exemples
