@@ -91,6 +91,8 @@ pub struct Sections {
     pub fn_syntax: &'static str,
     pub fn_ruby: &'static str,
     pub fn_ruby_lead: &'static str,
+    pub fn_rebol: &'static str,
+    pub fn_rebol_lead: &'static str,
     pub fn_javascript: &'static str,
     pub fn_javascript_lead: &'static str,
     /// The link to `docs/javascript.md`.

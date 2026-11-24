@@ -178,83 +178,146 @@ pub fn lookup(name: &str) -> Option<&'static Builtin> {
     index.get(name).copied().flatten()
 }
 
-/// A second name of a built-in function: the name Ruby gives it.
+/// The language a second name of a built-in function comes from.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Origin {
+    Ruby,
+    /// REBOL: short words that say what they do (`probe`, `ask`, `length?`).
+    Rebol,
+}
+
+impl Origin {
+    pub const ALL: [Origin; 2] = [Origin::Ruby, Origin::Rebol];
+
+    /// The name of the language, the same in every language of the messages.
+    pub fn title(self) -> &'static str {
+        match self {
+            Origin::Ruby => "Ruby",
+            Origin::Rebol => "REBOL",
+        }
+    }
+}
+
+/// A second name of a built-in function: the name Ruby or REBOL gives it.
 pub struct Alias {
     pub name: &'static str,
     /// The built-in function it names.
     pub of: &'static str,
+    /// The language the name comes from.
+    pub from: Origin,
 }
 
-const fn alias(name: &'static str, of: &'static str) -> Alias {
-    Alias { name, of }
+const fn ruby(name: &'static str, of: &'static str) -> Alias {
+    Alias { name, of, from: Origin::Ruby }
 }
 
-/// The Ruby names of built-in functions: `xs.select(is_even)`,
-/// `"hi".upcase`, `n.even?`. Each one is exactly the function it names.
+const fn rebol(name: &'static str, of: &'static str) -> Alias {
+    Alias { name, of, from: Origin::Rebol }
+}
+
+/// The Ruby and REBOL names of built-in functions: `xs.select(is_even)`,
+/// `"hi".upcase`, `n.even?`, `probe(x)`, `ask("Name? ")`. Each one is exactly
+/// the function it names. REBOL names that Ruby has too (`empty?`, `zero?`)
+/// are listed once, as Ruby names.
 pub static ALIASES: &[Alias] = &[
-    alias("puts", "print"),
-    alias("to_s", "text"),
-    alias("to_i", "int"),
-    alias("to_f", "float"),
-    alias("even?", "is_even"),
-    alias("odd?", "is_odd"),
-    alias("length", "len"),
-    alias("size", "len"),
-    alias("upcase", "upper"),
-    alias("downcase", "lower"),
-    alias("strip", "trim"),
-    alias("include?", "contains"),
-    alias("start_with?", "starts_with"),
-    alias("end_with?", "ends_with"),
-    alias("select", "filter"),
-    alias("reduce", "fold"),
-    alias("inject", "fold"),
-    alias("uniq", "unique"),
-    alias("each_slice", "chunks"),
-    alias("each_cons", "windows"),
-    alias("any?", "any"),
-    alias("all?", "all"),
-    alias("empty?", "is_empty"),
-    alias("key?", "has"),
-    alias("lstrip", "trim_start"),
-    alias("rstrip", "trim_end"),
-    alias("casecmp?", "equals_ignore_case"),
-    alias("clamp", "constrain"),
-    alias("swapcase", "swap_case"),
-    alias("ljust", "pad_right"),
-    alias("rjust", "pad_left"),
-    alias("ord", "char_code"),
-    alias("chr", "char"),
-    alias("delete_prefix", "remove_prefix"),
-    alias("delete_suffix", "remove_suffix"),
-    alias("rindex", "last_index_of"),
-    alias("positive?", "is_positive"),
-    alias("negative?", "is_negative"),
-    alias("zero?", "is_zero"),
-    alias("nan?", "is_nan"),
-    alias("finite?", "is_finite"),
-    alias("detect", "find"),
-    alias("collect", "map"),
-    alias("rotate", "rotate_by"),
-    alias("combination", "combinations"),
-    alias("permutation", "permutations"),
-    alias("transform_values", "map_values"),
-    alias("transform_keys", "map_keys"),
-    alias("each_pair", "each"),
-    alias("to_h", "dict"),
-    alias("subset?", "is_subset"),
-    alias("disjoint?", "is_disjoint"),
-    alias("warn", "print_error"),
+    ruby("puts", "print"),
+    ruby("to_s", "text"),
+    ruby("to_i", "int"),
+    ruby("to_f", "float"),
+    ruby("even?", "is_even"),
+    ruby("odd?", "is_odd"),
+    ruby("length", "len"),
+    ruby("size", "len"),
+    ruby("upcase", "upper"),
+    ruby("downcase", "lower"),
+    ruby("strip", "trim"),
+    ruby("include?", "contains"),
+    ruby("start_with?", "starts_with"),
+    ruby("end_with?", "ends_with"),
+    ruby("select", "filter"),
+    ruby("reduce", "fold"),
+    ruby("inject", "fold"),
+    ruby("uniq", "unique"),
+    ruby("each_slice", "chunks"),
+    ruby("each_cons", "windows"),
+    ruby("any?", "any"),
+    ruby("all?", "all"),
+    ruby("empty?", "is_empty"),
+    ruby("key?", "has"),
+    ruby("lstrip", "trim_start"),
+    ruby("rstrip", "trim_end"),
+    ruby("casecmp?", "equals_ignore_case"),
+    ruby("clamp", "constrain"),
+    ruby("swapcase", "swap_case"),
+    ruby("ljust", "pad_right"),
+    ruby("rjust", "pad_left"),
+    ruby("ord", "char_code"),
+    ruby("chr", "char"),
+    ruby("delete_prefix", "remove_prefix"),
+    ruby("delete_suffix", "remove_suffix"),
+    ruby("rindex", "last_index_of"),
+    ruby("positive?", "is_positive"),
+    ruby("negative?", "is_negative"),
+    ruby("zero?", "is_zero"),
+    ruby("nan?", "is_nan"),
+    ruby("finite?", "is_finite"),
+    ruby("detect", "find"),
+    ruby("collect", "map"),
+    ruby("rotate", "rotate_by"),
+    ruby("combination", "combinations"),
+    ruby("permutation", "permutations"),
+    ruby("transform_values", "map_values"),
+    ruby("transform_keys", "map_keys"),
+    ruby("each_pair", "each"),
+    ruby("to_h", "dict"),
+    ruby("subset?", "is_subset"),
+    ruby("disjoint?", "is_disjoint"),
+    ruby("warn", "print_error"),
+    // REBOL: a few words, each saying what it does, for the same functions.
+    // Its names with a `-` (`remove-each`) are written with `_` in Rythme.
+    rebol("probe", "debug"),
+    rebol("ask", "input"),
+    rebol("form", "text"),
+    rebol("mold", "inspect"),
+    rebol("rejoin", "join"),
+    rebol("length?", "len"),
+    rebol("uppercase", "upper"),
+    rebol("lowercase", "lower"),
+    rebol("foreach", "each"),
+    rebol("map_each", "map"),
+    rebol("remove_each", "reject"),
+    rebol("found?", "is_some"),
+    rebol("none?", "is_none"),
+    rebol("write", "write_file"),
+    rebol("exists?", "file_exists"),
+    rebol("info?", "file_info"),
+    rebol("delete", "delete_file"),
+    rebol("make_dir", "create_folder"),
+    rebol("enbase", "base64_encode"),
+    rebol("debase", "base64_decode"),
+    rebol("dehex", "url_decode"),
+    rebol("wait", "sleep"),
+    rebol("quit", "exit"),
 ];
 
-/// The function that `name` is a Ruby name of: `upper` for `upcase`.
+/// The function that `name` is a Ruby or REBOL name of: `upper` for `upcase`.
 pub fn alias_of(name: &str) -> Option<&'static str> {
-    ALIASES.iter().find(|a| a.name == name).map(|a| a.of)
+    alias(name).map(|a| a.of)
 }
 
-/// The Ruby names of the built-in function `name`.
+/// The second name `name`, with the function it names and its language.
+pub fn alias(name: &str) -> Option<&'static Alias> {
+    ALIASES.iter().find(|a| a.name == name)
+}
+
+/// The Ruby and REBOL names of the built-in function `name`.
 pub fn aliases(name: &str) -> impl Iterator<Item = &'static str> + '_ {
     ALIASES.iter().filter(move |a| a.of == name).map(|a| a.name)
+}
+
+/// The names that one language gives the built-in function `name`.
+pub fn aliases_from(name: &str, from: Origin) -> impl Iterator<Item = &'static str> + '_ {
+    ALIASES.iter().filter(move |a| a.of == name && a.from == from).map(|a| a.name)
 }
 
 pub static BUILTINS: &[Builtin] = &[
@@ -801,6 +864,10 @@ pub static BUILTINS: &[Builtin] = &[
        "Reads a whole text file: `Ok(text)`, or `Err(message)` if it cannot be read.",
        "Lit un fichier texte entier : `Ok(texte)`, ou `Err(message)` s'il ne peut pas être lu.",
        "match read_file(\"notes.txt\")\n  Ok(text) -> print(text)\n  Err(e) -> print(\"Error: {e}\")\nend"),
+    b!("read", "read(source)", 1, 1, Files, read,
+       "Reads a whole text from a file or from a web address (http:// or https://), as REBOL does: `Ok(text)`, or `Err(message)`. The same as `read_file` for a file and `http_get` for a web address; `write` writes it back.",
+       "Lit tout un texte depuis un fichier ou une adresse web (http:// ou https://), comme REBOL : `Ok(texte)`, ou `Err(message)`. Pareil que `read_file` pour un fichier et `http_get` pour une adresse web ; `write` l'écrit à nouveau.",
+       "read(\"notes.txt\")              # Ok(\"the text of the file\")\nread(\"https://example.com\")    # Ok(\"<!doctype html>...\")"),
     b!("write_file", "write_file(path, text)", 2, 2, Files, write_file,
        "Writes a text in a file (replacing its content): `Ok(())` or `Err(message)`.",
        "Écrit un texte dans un fichier (en remplaçant son contenu) : `Ok(())` ou `Err(message)`.",
@@ -4249,13 +4316,34 @@ fn map_err(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
 
 fn read_file(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
     let path = text(a, 0, "read_file", span)?;
-    if let Some(e) = in_browser(it, "read_file", false) {
-        return Ok(e);
+    Ok(read_text_file(it, path, "read_file"))
+}
+
+/// The text of a file, for `read_file` and `read` (`f`, named in the errors).
+fn read_text_file(it: &mut Interp, path: &str, f: &str) -> Value {
+    if let Some(e) = in_browser(it, f, false) {
+        return e;
     }
-    Ok(match std::fs::read_to_string(path) {
+    match std::fs::read_to_string(path) {
         Ok(s) => it.ok(text_value(s)),
         Err(e) => it.err(text_value(io_message(&e, path, false))),
-    })
+    }
+}
+
+/// `read("notes.txt")` and `read("https://example.com")`: one word for every
+/// place a text comes from, as in REBOL (`read %notes.txt`, `read http://...`).
+fn read(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {
+    let source = text(a, 0, "read", span)?;
+    if is_web_address(source) {
+        return http_get(it, a, span);
+    }
+    Ok(read_text_file(it, source, "read"))
+}
+
+/// Does the text name a web address rather than a file (`https://...`)?
+pub fn is_web_address(source: &str) -> bool {
+    let start = source.get(..8).unwrap_or(source).to_ascii_lowercase();
+    start.starts_with("http://") || start.starts_with("https://")
 }
 
 fn write_file(it: &mut Interp, a: &[Value], span: Span) -> Fallible<Value> {

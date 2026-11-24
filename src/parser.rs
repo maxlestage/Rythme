@@ -700,6 +700,11 @@ impl Parser {
                 "Rythme does not use `:` to start a block; see `rythme help syntax`",
                 "Rythme n'utilise pas `:` pour commencer un bloc ; voir `rythme help syntax`"
             )),
+            // `read %notes.txt`: REBOL names its files with `%`.
+            Tok::Percent => d.help(t!(
+                "a file is named by a text: `read(\"notes.txt\")` (REBOL writes `%notes.txt`); `%` gives the remainder of a division: `7 % 3`",
+                "un fichier se nomme par un texte : `read(\"notes.txt\")` (REBOL écrit `%notes.txt`) ; `%` donne le reste d'une division : `7 % 3`"
+            )),
             _ => d,
         }
     }
@@ -844,8 +849,10 @@ impl Parser {
         // `total: Float = 0.0`: a name, its type, then its value.
         if let (Tok::Ident(s), Some(Tok::Colon)) = (&tok.tok, self.toks.get(self.pos + 1).map(|t| &t.tok)) {
             let kind = if &*s.name() == "_" { PatKind::Wildcard } else { PatKind::Bind(*s) };
+            let (name, colon) = (*s, self.toks[self.pos + 1].span);
+            let set_word = !eq_on_line(&self.toks, self.pos + 2);
             self.advance();
-            let pat = self.typed(Pattern::new(kind, tok.span))?;
+            let pat = self.typed(Pattern::new(kind, tok.span)).map_err(|d| if set_word { set_word_help(d, name, colon) } else { d })?;
             return self.typed_value(pat);
         }
         if let Some(first) = command_at(&self.toks, self.pos, &self.preds, &self.values) {
@@ -2852,6 +2859,33 @@ fn prefix_help() -> String {
         "a text that starts with a text is written `\"Mr \" + name`: `name` is the rest of the text",
         "un texte qui commence par un texte s'écrit `\"M. \" + nom` : `nom` est le reste du texte"
     )
+}
+
+/// Is there an `=` outside of brackets between `from` and the end of the line?
+fn eq_on_line(toks: &[Token], from: usize) -> bool {
+    let mut depth = 0i32;
+    for t in toks.iter().skip(from) {
+        match t.tok {
+            Tok::LParen | Tok::LBracket | Tok::LBrace => depth += 1,
+            Tok::RParen | Tok::RBracket | Tok::RBrace => depth -= 1,
+            Tok::Eq if depth <= 0 => return true,
+            Tok::Newline | Tok::Eof => return false,
+            _ => {}
+        }
+    }
+    false
+}
+
+/// `x: 10` is how REBOL (and YAML) give a name its value; in Rythme the `:`
+/// after a name starts its type, and the value comes after `=`.
+fn set_word_help(mut d: Box<Diagnostic>, name: Sym, colon: Span) -> Box<Diagnostic> {
+    d.helps.clear();
+    d.helps.push(t!(
+        "to give `{name}` a value, write `{name} = ...`: `{name}: value` is how REBOL writes it, but in Rythme a `:` after a name starts its type, as in `total: Int = 10`",
+        "pour donner une valeur à `{name}`, écrivez `{name} = ...` : `{name}: valeur` est la façon de REBOL, mais en Rythme un `:` après un nom commence son type, comme dans `total: Int = 10`"
+    ));
+    d.fixes.push(crate::diagnostic::Fix::replace(colon, " =", true));
+    d
 }
 
 fn type_help() -> String {

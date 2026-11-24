@@ -12,6 +12,42 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### As few words as REBOL
+
+REBOL showed how far a small language goes with a few words that say what
+they do. Rythme takes that simplicity, keeping its values that never change
+and its errors that are values:
+
+- `read(source)`: one word for every place a text comes from, a file
+  (`read("notes.txt")`, like `read_file`) or a web address
+  (`read("https://example.com")`, like `http_get`), as REBOL's `read`; the
+  checker knows it, the debugger refuses it in its `print` (the network may
+  answer), and the sandbox and the browser give an `Err` (301 built-in
+  functions now).
+- REBOL names, second names exactly like the Ruby ones (same function, same
+  messages, free for a program to use for something else, without W003):
+  `probe` (`debug`), `ask` (`input`), `form` (`text`), `mold` (`inspect`),
+  `rejoin` (`join`), `length?` (`len`), `uppercase` and `lowercase`,
+  `foreach` (`each`), `map_each` (`map`), `remove_each` (`reject`), `found?`
+  and `none?`, `write` (`write_file`), `exists?`, `info?`, `delete`
+  (`delete_file`), `make_dir` (`create_folder`), `enbase`, `debase`, `dehex`,
+  `wait` (`sleep`) and `quit` (`exit`). `rythme help NAME`, `rythme help
+  builtins`, the language server, `rythme doc`, the site's page of each
+  function and `docs/llms-full.txt` name them as REBOL names;
+  `rythme version --verbose` counts them apart.
+- The habits of REBOL get a message that says how Rythme writes them:
+  `x: 10` (`x = 10`, with a fix for `rythme fix`), `%notes.txt` (a text),
+  `'ok` (the symbol `:ok`), `either`, `func`, `does`, `prin`, `forever`,
+  `until`, `attempt`, `halt`, `make`, `pick`, `second`, `what`.
+- `rythme help rebol` (or `rebol3`, `r3`) sums up what is the same and what
+  is written differently, in the eight languages; the manual (EN and FR,
+  section 6), the READMEs and the grammars of VS Code (`length?`, `found?`,
+  `none?`, `exists?`, `info?`) know it.
+
+Nothing else changes: every program that ran before runs the same, and no
+syntax is added (REBOL's lists without commas, `[1 2 3]`, keep their message
+asking for commas).
+
 ### What JavaScript has too
 
 [`docs/javascript.md`](docs/javascript.md) goes through the standard library

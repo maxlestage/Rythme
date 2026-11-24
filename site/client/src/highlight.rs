@@ -159,6 +159,7 @@ pub const BUILTINS: &[&str] = &[
     "ok_or",
     "map_err",
     "read_file",
+    "read",
     "write_file",
     "append_file",
     "file_exists",

@@ -120,6 +120,8 @@ pub const EN: Sections = Sections {
     fn_syntax: "Syntax",
     fn_ruby: "Ruby names",
     fn_ruby_lead: "The same function, under the names Ruby gives it:",
+    fn_rebol: "REBOL names",
+    fn_rebol_lead: "The same function, under the names REBOL gives it:",
     fn_javascript: "In JavaScript",
     fn_javascript_lead: "What JavaScript writes to do the same:",
     fn_javascript_more: "The whole standard library of JavaScript, compared",

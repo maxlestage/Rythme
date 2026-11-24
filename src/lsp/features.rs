@@ -142,12 +142,16 @@ fn markup(cx: &Ctx, value: String) -> Json {
 }
 
 pub fn builtin_markdown(b: &Builtin) -> String {
-    let ruby: Vec<String> = builtins::aliases(b.name).map(|a| format!("`{a}`")).collect();
-    let same = if ruby.is_empty() {
+    let ruby: Vec<String> = builtins::aliases_from(b.name, builtins::Origin::Ruby).map(|a| format!("`{a}`")).collect();
+    let mut same = if ruby.is_empty() {
         String::new()
     } else {
         t!("\n\nSame as: {} (its Ruby names)", "\n\nPareil que : {} (ses noms Ruby)", ruby.join(", "))
     };
+    let rebol: Vec<String> = builtins::aliases_from(b.name, builtins::Origin::Rebol).map(|a| format!("`{a}`")).collect();
+    if !rebol.is_empty() {
+        same.push_str(&t!("\n\nSame as: {} (its REBOL names)", "\n\nPareil que : {} (ses noms REBOL)", rebol.join(", ")));
+    }
     format!(
         "{}\n\n{}{same}\n\n**{}**\n{}\n\n`rythme help {}`",
         code_block(b.sig),
@@ -160,7 +164,12 @@ pub fn builtin_markdown(b: &Builtin) -> String {
 
 /// `upcase` is the Ruby name of `upper`.
 fn alias_line(alias: &str, of: &str) -> String {
-    t!("**{alias}** — the Ruby name of `{of}`: the same function", "**{alias}** — le nom Ruby de `{of}` : la même fonction")
+    match builtins::alias(alias).map(|a| a.from) {
+        Some(builtins::Origin::Rebol) => {
+            t!("**{alias}** — the REBOL name of `{of}`: the same function", "**{alias}** — le nom REBOL de `{of}` : la même fonction")
+        }
+        _ => t!("**{alias}** — the Ruby name of `{of}`: the same function", "**{alias}** — le nom Ruby de `{of}` : la même fonction"),
+    }
 }
 
 /// The kind of the value written just before `.`, when it is a literal:
@@ -736,7 +745,7 @@ pub fn completion(cx: &Ctx, a: &Analysis, offset: usize, trigger: Option<&str>) 
             items.push(item(b.name, kind::FUNCTION, Some(b.sig.to_string()), Some(builtin_markdown(b)), "3", cx));
         }
     }
-    // The Ruby names: `upcase`, `select`, `empty?`...
+    // The Ruby and REBOL names: `upcase`, `select`, `empty?`, `probe`...
     for alias in builtins::ALIASES {
         let Some(b) = builtins::lookup(alias.of) else { continue };
         if fits(b) && seen.insert(alias.name.to_string()) {

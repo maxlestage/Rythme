@@ -51,6 +51,11 @@ puts total                 # 20
   Ruby de la bibliothèque (`puts`, `upcase`, `select`, `reject`, `reduce`,
   `each_with_index`...). `rythme help ruby` montre ce qui est pareil et ce
   qui change.
+- **Aussi peu de mots que REBOL.** Un mot lit un fichier ou une page web
+  (`read("notes.txt")`, `read("https://example.com")`), un autre l'écrit
+  (`write`), et les noms REBOL de la bibliothèque marchent tels quels
+  (`probe`, `ask`, `rejoin`, `length?`, `foreach`, `exists?`...).
+  `rythme help rebol` montre ce qui est pareil et ce qui change.
 - **Purement fonctionnel.** Les valeurs sont immuables, les fonctions sont des
   valeurs, chaque `if` et chaque `match` est une expression. La récursion en
   position terminale n'épuise jamais la pile.

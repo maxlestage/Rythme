@@ -100,8 +100,11 @@ fn builtin_section() -> String {
         }
     }
     out.push_str("\nRuby names, exactly the same functions: ");
-    let ruby: Vec<String> = builtins::ALIASES.iter().map(|a| format!("`{}` = `{}`", a.name, a.of)).collect();
-    out.push_str(&ruby.join(", "));
+    let names = |from| builtins::ALIASES.iter().filter(move |a| a.from == from).map(|a| format!("`{}` = `{}`", a.name, a.of));
+    out.push_str(&names(builtins::Origin::Ruby).collect::<Vec<_>>().join(", "));
+    out.push_str(".\n");
+    out.push_str("\nREBOL names, exactly the same functions: ");
+    out.push_str(&names(builtins::Origin::Rebol).collect::<Vec<_>>().join(", "));
     out.push_str(".\n");
     out
 }
@@ -424,6 +427,8 @@ const MISTAKES: &str = r#"
 | `import math` / `require "x"` | `use math` (a file `math.ry`), then `math.f(...)` |
 | `print("a", end="")` | `print("a")` writes a line; build the text first |
 | `switch x { case 1: ... }` | `match x` with `1 -> ...` cases, then `end` |
+| `x: 10`, `%notes.txt`, `'ok` (REBOL) | `x = 10`, `"notes.txt"`, `:ok` |
+| `either c [a] [b]`, `func [x] [x * 2]` (REBOL) | `if c then a else b`, `fn(x) = x * 2` |
 | `{ ... }` for a block | `do ... end` |
 "#;
 

@@ -1151,7 +1151,7 @@ pub fn builtin_call(name: &str, a: &[Ty]) -> Option<Outcome> {
                     _ => Ty::result(Ty::Any, e),
                 }
             }
-            "read_file" => {
+            "read_file" | "read" => {
                 need(a, 0, Expected::Text)?;
                 Ty::result(Ty::Text, Ty::Text)
             }

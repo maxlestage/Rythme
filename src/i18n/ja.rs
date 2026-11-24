@@ -877,6 +877,7 @@ Topics (rythme help TOPIC)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
   ruby        coming from Ruby: blocks, symbols, method chains
   javascript  coming from JavaScript: its standard library in Rythme
+  rebol       coming from REBOL: a few words, read and write, probe
   builtins    every built-in function
 
 A specific function: rythme help map
@@ -938,6 +939,7 @@ A specific function: rythme help map
   editors     エディターで使う Rythme（VS Code、Neovim、Helix...）
   ruby        Ruby から来た人へ：ブロック、シンボル、メソッドチェーン
   javascript  JavaScript から来た人へ：その標準ライブラリを Rythme で
+  rebol       REBOL から来た人へ：少しの単語、read と write、probe
   builtins    すべての組み込み関数
 
 特定の関数について：rythme help map
@@ -10298,14 +10300,14 @@ Tools
         (
             r#"system: {os} {arch}
 languages of the messages: {codes} (now: {now})
-built-in functions: {functions} (and {ruby} Ruby names)
+built-in functions: {functions} (and {ruby} Ruby names, {rebol} REBOL names)
 codes: {errors} errors ({e_range}), {warnings} warnings ({w_range})
 JSON output (--format json): version {json}
 program: {exe}
 "#,
             r#"システム：{os} {arch}
 メッセージの言語：{codes}（現在：{now}）
-組み込み関数：{functions}（と Ruby での名前 {ruby} 個）
+組み込み関数：{functions}（と Ruby での名前 {ruby} 個、REBOL での名前 {rebol} 個）
 コード：エラー {errors} 個（{e_range}）、警告 {warnings} 個（{w_range}）
 JSON 出力（--format json）：バージョン {json}
 プログラム：{exe}
@@ -10396,5 +10398,136 @@ see `rythme completions --help`"#,
   --verify FILE...  インデックス自身による項目のチェック（packages/NAME.toml）"#,
         ),
         ("the argument `{shown}` is not valid UTF-8: Rythme reads only names and words written in UTF-8; rename the file, or give the program its input another way", "引数 `{shown}` は正しい UTF-8 ではありません：Rythme は UTF-8 で書かれた名前と言葉しか読めません。ファイル名を変えるか、別の方法で入力を渡してください"),
+        // REBOL: its names, read, the help of its habits, rythme help rebol
+        (" Same as: {} (its REBOL names).", " {} と同じ（REBOL での名前）。"),
+        ("{alias}  (the REBOL name of `{of}`: the same function)", "{alias}  （`{of}` の REBOL での名前：同じ関数）"),
+        (r#"  Same as: {} (its REBOL names)
+"#, r#"  {} と同じ（REBOL での名前）
+"#),
+        ("  REBOL names:", "  REBOL での名前："),
+        ("a word given as a value is a symbol, written with `:` before it: `:{word}` (REBOL writes `'{word}`); a text is written with double quotes: \"{word}\"", r#"値として渡す単語はシンボルで、前に `:` を付けて書きます：`:{word}`（REBOL では `'{word}`）。テキストはダブルクォートで書きます："{word}""#),
+        (r#"
+
+Same as: {} (its REBOL names)"#, r#"
+
+{} と同じ（REBOL での名前）"#),
+        ("**{alias}** — the REBOL name of `{of}`: the same function", "**{alias}** — `{of}` の REBOL での名前：同じ関数"),
+        ("a file is named by a text: `read(\"notes.txt\")` (REBOL writes `%notes.txt`); `%` gives the remainder of a division: `7 % 3`", r#"ファイルはテキストで指定します：`read("notes.txt")`（REBOL では `%notes.txt`）。`%` は割り算の余りです：`7 % 3`"#),
+        ("to give `{name}` a value, write `{name} = ...`: `{name}: value` is how REBOL writes it, but in Rythme a `:` after a name starts its type, as in `total: Int = 10`", r#"`{name}` に値を与えるには `{name} = ...` と書きます：`{name}: 値` は REBOL の書き方ですが、Rythme では名前の後の `:` はその型の始まりです（`total: Int = 10` のように）"#),
+        ("`either condition [a] [b]` is written `if condition then a else b`", r#"`either 条件 [a] [b]` は `if 条件 then a else b` と書きます"#),
+        ("functions are written `fn name(x) = x * 2`, without parameters `fn hello() = print(\"hi\")`, and anonymous ones `fn(x) = x * 2`", r#"関数は `fn name(x) = x * 2`、引数なしなら `fn hello() = print("hi")`、無名関数は `fn(x) = x * 2` と書きます"#),
+        ("`print` writes a whole line: build the text first, with `\"{{a}}{{b}}\"` or `rejoin([a, b])`", r#"`print` は 1 行まるごと書きます：先にテキストを組み立ててください（`"{{a}}{{b}}"` か `rejoin([a, b])`）"#),
+        ("Rythme has no loops. Work on the whole list (`each`, `map`, `filter`, `fold`, `1..10`), or write a recursive function. See `rythme help functional`.", r#"Rythme にはループがありません。リスト全体を扱うか（`each`、`map`、`filter`、`fold`、`1..10`）、再帰関数を書いてください。`rythme help functional` を参照。"#),
+        ("errors are values in Rythme: an operation that may fail gives `Ok(value)` or `Err(message)`; `unwrap_or(result, default)` keeps a default", r#"Rythme ではエラーは値です：失敗するかもしれない操作は `Ok(値)` か `Err(メッセージ)` を返します。`unwrap_or(結果, 既定値)` で既定値を残せます"#),
+        ("`exit()` stops the program (`quit` too)", r#"`exit()` でプログラムを止めます（`quit` も同じ）"#),
+        ("there is no `make`: write a record directly, like `{{name: \"Ada\", age: 36}}`, or a changed copy, `{{..person, age: 37}}`", r#"`make` はありません：レコードを直接書いてください（`{{name: "Ada", age: 36}}`）、または変更したコピー（`{{..person, age: 37}}`）"#),
+        ("write `get(list, i)`: an Option, with positions counted from 0 (`get(xs, 1)` is the second element); `xs[1]` stops the program if it is missing", r#"`get(list, i)` と書いてください：Option で、位置は 0 から数えます（`get(xs, 1)` は 2 番目の要素）。`xs[1]` は要素がないとプログラムを止めます"#),
+        ("`rythme help builtins` lists every built-in function, and `help(f)` explains one", r#"`rythme help builtins` ですべての組み込み関数を一覧でき、`help(f)` で 1 つを説明します"#),
+        (r#"COMING FROM REBOL
+
+REBOL showed that a language can be small and still do a lot: a few words
+that say what they do, one word to read a file or a web page, values that
+can be printed and read again. Rythme keeps that spirit, with values that
+never change and errors that are values:
+
+  page = read("https://example.com")       # read http://example.com
+  write("copy.html", unwrap_or(page, ""))  # write %copy.html page
+  name = ask("Your name? ")                # name: ask "Your name? "
+  print(rejoin(["Hello, ", name, "!"]))    # print rejoin ["Hello, " name "!"]
+  [1, 2, 3] |> probe |> sum |> print       # probe shows [1, 2, 3], then 6
+
+The same as in REBOL
+  words that say what they do   print probe ask read write now random
+  names with ?                  length? empty? exists? found? none? zero?
+                                even? odd? (a question gives true or false)
+  symbols                       :ok, like 'ok in REBOL (a word as a value)
+  blocks are lists              [1, 2, 3], with first, last, reverse, sort,
+                                unique; first and last give an Option
+  help                          help(map), rythme help map; rythme help
+                                builtins lists every function, as what does
+
+REBOL names, exactly the same functions (see rythme help builtins)
+  probe ask form mold rejoin length? uppercase lowercase foreach map_each
+  remove_each found? none? write exists? info? delete make_dir enbase
+  debase dehex wait quit. read gives the text of a file, or of a web
+  address. A REBOL name with a - is written with _: remove_each.
+
+What is written differently
+  x: 10                         x = 10 (x: Int = 10 gives its type too)
+  %notes.txt                    "notes.txt": a file is named by a text
+  'ok                           :ok
+  func [x] [x * 2]              fn(x) = x * 2, or fn double(x) = x * 2
+  does [print "hi"]             fn hello() = print("hi")
+  either c [a] [b], if c [a]    if c then a else b: if gives a value, so
+                                it always has an else
+  loop 3 [...], repeat i 3 [...]
+                                (1..3).each do |i| ... end
+  foreach x xs [...]            foreach xs do |x| ... end, or xs.each(f)
+  [1 2 3]                       [1, 2, 3]: elements are separated by commas
+  f a b                         f(a, b), or f a, b at the start of a line
+  ; a comment                   # a comment
+  obj/field, make object! [...] obj.field, and records {name: "Ada", age: 36}
+  append xs 4                   push(xs, 4): a new list, xs stays as it was
+  pick xs 2                     get(xs, 1): an Option, positions from 0
+  attempt [...], try            Ok(x) or Err(message), and ? to pass it on
+  switch, case                  match value ... end, one case per line
+  parse                         split, find_all, captures: regular
+                                expressions (rythme help regex)
+
+Operators follow the rules of mathematics, not the order of the line:
+1 + 2 * 3 is 7 (REBOL gives 9). Write (1 + 2) * 3 for 9."#, r#"REBOL から来た人へ
+
+REBOL は、言語が小さくても多くのことができると示しました：何をするかを語る
+少しの単語、ファイルも Web ページも 1 つの単語で読めること、表示してまた読み
+込める値。Rythme はその精神を受け継ぎ、値は決して変わらず、エラーも値です：
+
+  page = read("https://example.com")       # read http://example.com
+  write("copy.html", unwrap_or(page, ""))  # write %copy.html page
+  name = ask("お名前は？")                 # name: ask "お名前は？"
+  print(rejoin(["こんにちは、", name, "！"]))  # print rejoin [...]
+  [1, 2, 3] |> probe |> sum |> print       # probe は [1, 2, 3] を表示、次に 6
+
+REBOL と同じもの
+  わかりやすい単語              print probe ask read write now random
+  ? の付く名前                  length? empty? exists? found? none? zero?
+                                even? odd?（質問は true か false を返す）
+  シンボル                      :ok、REBOL の 'ok と同じ（値としての単語）
+  ブロックはリスト              [1, 2, 3]、first、last、reverse、sort、
+                                unique 付き。first と last は Option を返す
+  ヘルプ                        help(map)、rythme help map。rythme help
+                                builtins で what のようにすべての関数を一覧
+
+REBOL での名前、まったく同じ関数（rythme help builtins を参照）
+  probe ask form mold rejoin length? uppercase lowercase foreach map_each
+  remove_each found? none? write exists? info? delete make_dir enbase
+  debase dehex wait quit。read はファイルか Web アドレスのテキストを返し
+  ます。- の付く REBOL の名前は _ で書きます：remove_each。
+
+書き方が違うもの
+  x: 10                         x = 10（x: Int = 10 で型も書ける）
+  %notes.txt                    "notes.txt"：ファイルはテキストで指定する
+  'ok                           :ok
+  func [x] [x * 2]              fn(x) = x * 2、または fn double(x) = x * 2
+  does [print "hi"]             fn hello() = print("hi")
+  either c [a] [b], if c [a]    if c then a else b：if は値を返すので、
+                                必ず else がある
+  loop 3 [...], repeat i 3 [...]
+                                (1..3).each do |i| ... end
+  foreach x xs [...]            foreach xs do |x| ... end、または xs.each(f)
+  [1 2 3]                       [1, 2, 3]：要素はカンマで区切る
+  f a b                         f(a, b)、または行頭で f a, b
+  ; コメント                    # コメント
+  obj/field, make object! [...] obj.field、そしてレコード
+                                {name: "Ada", age: 36}
+  append xs 4                   push(xs, 4)：新しいリスト、xs はそのまま
+  pick xs 2                     get(xs, 1)：Option、位置は 0 から
+  attempt [...], try            Ok(x) か Err(メッセージ)、? で受け渡す
+  switch, case                  match 値 ... end、1 行に 1 ケース
+  parse                         split、find_all、captures：正規表現
+                                （rythme help regex）
+
+演算子は行の順番ではなく数学の規則に従います：1 + 2 * 3 は 7（REBOL では
+9）。9 にするには (1 + 2) * 3 と書きます。"#),
+        ("Reads a whole text from a file or from a web address (http:// or https://), as REBOL does: `Ok(text)`, or `Err(message)`. The same as `read_file` for a file and `http_get` for a web address; `write` writes it back.", r#"ファイルまたは Web アドレス（http:// か https://）からテキスト全体を読みます。REBOL と同じです：`Ok(テキスト)` か `Err(メッセージ)`。ファイルなら `read_file`、Web アドレスなら `http_get` と同じで、`write` で書き戻せます。"#),
     ],
 }

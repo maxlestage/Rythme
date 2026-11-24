@@ -440,13 +440,19 @@ fn plan<'a>(files: &'a [FileDoc], title: &str) -> Plan<'a> {
     Plan { files: planned, builtins, builtins_anchor, targets }
 }
 
-/// ` Same as: `upcase` (its Ruby names).` after the documentation of `upper`.
+/// ` Same as: `upcase` (its Ruby names).` after the documentation of `upper`
+/// (and ` Same as: `probe` (its REBOL names).` after that of `debug`).
 fn ruby_names(b: &Builtin) -> String {
-    let names: Vec<String> = builtins::aliases(b.name).map(|a| format!("`{a}`")).collect();
-    if names.is_empty() {
-        return String::new();
+    let mut out = String::new();
+    let names: Vec<String> = builtins::aliases_from(b.name, builtins::Origin::Ruby).map(|a| format!("`{a}`")).collect();
+    if !names.is_empty() {
+        out.push_str(&t!(" Same as: {} (its Ruby names).", " Pareil que : {} (ses noms Ruby).", names.join(", ")));
     }
-    t!(" Same as: {} (its Ruby names).", " Pareil que : {} (ses noms Ruby).", names.join(", "))
+    let names: Vec<String> = builtins::aliases_from(b.name, builtins::Origin::Rebol).map(|a| format!("`{a}`")).collect();
+    if !names.is_empty() {
+        out.push_str(&t!(" Same as: {} (its REBOL names).", " Pareil que : {} (ses noms REBOL).", names.join(", ")));
+    }
+    out
 }
 
 /// The parts of a comment written between backticks: (code, byte range of the whole span).

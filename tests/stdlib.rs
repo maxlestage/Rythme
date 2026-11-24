@@ -26,6 +26,7 @@ const EFFECTS: &[&str] = &[
     "shuffle",
     "env",
     "read_file",
+    "read",
     "write_file",
     "append_file",
     "file_exists",

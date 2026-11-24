@@ -3154,7 +3154,7 @@ with examples; the code may be written in lowercase.
 
 ## 6. Standard library
 
-The 300 built-in functions are always available, without `use`. Like the
+The 301 built-in functions are always available, without `use`. Like the
 keywords, their names are in English. `rythme help builtins` lists all of
 them by category, one line each; `rythme help NAME` (or `help(NAME)` in a
 program, or `:doc NAME` in the REPL) shows the documentation of one, with
@@ -3342,7 +3342,9 @@ dict("a" => 3, "b" => 2, "c" => 1) [["a", 3], ["b", 2], ["c", 1]]
 Result, ready for `?`), `map_err(result, f)`, and the constructors `Some`,
 `None`, `Ok`, `Err`.
 
-**Files.** `read_file(path)` (`Ok(text)` or `Err(message)`),
+**Files.** `read_file(path)` (`Ok(text)` or `Err(message)`), `read(source)`
+(the same for a file, and `http_get` for a web address `http://` or
+`https://`: one word for every place a text comes from, as in REBOL),
 `write_file(path, value)` (writes the display form, replacing the content:
 `Ok(())` or `Err(message)`), `append_file(path, value)` (adds at the end,
 creating the file if needed), `file_exists(path)` (a Bool, for a file or a
@@ -3809,6 +3811,48 @@ print([1, 2, 3].reduce(0) do |acc, x| acc + x end, [3, 1, 2].sort_by { |x| -x })
 ["pear", "fig"] ["fig"] 4 16
 [["pear", "fig", "banana"], ["fig"]] rythme 42! 8
 6 [3, 2, 1]
+```
+
+**REBOL names.** REBOL showed how far a few words that say what they do can
+go, and it gives some functions names of its own. They are second names too:
+each one is exactly the function it names, and a program may give one of them
+to something of its own without a warning. A REBOL name with a `-` is written
+with `_` (`remove-each` is `remove_each`); `rythme help rebol` shows what else
+is written differently (`x: 10` is `x = 10`, `%notes.txt` is `"notes.txt"`,
+`'ok` is `:ok`, `either c [a] [b]` is `if c then a else b`).
+
+| REBOL name | Same as | REBOL name | Same as |
+|------------|---------|------------|---------|
+| `probe` | `debug` | `foreach` | `each` |
+| `ask` | `input` | `map_each`, `remove_each` | `map`, `reject` |
+| `form`, `mold` | `text`, `inspect` | `found?`, `none?` | `is_some`, `is_none` |
+| `rejoin` | `join` | `write` | `write_file` |
+| `length?` | `len` | `exists?`, `info?` | `file_exists`, `file_info` |
+| `uppercase`, `lowercase` | `upper`, `lower` | `delete`, `make_dir` | `delete_file`, `create_folder` |
+| `wait`, `quit` | `sleep`, `exit` | `enbase`, `debase`, `dehex` | `base64_encode`, `base64_decode`, `url_decode` |
+
+`empty?`, `zero?`, `even?`, `odd?`, `positive?` and `negative?` are written
+the same way in both languages (they are in the table above, as Ruby names),
+like `print`, `first`, `last`, `reverse`, `sort`, `unique`, `trim` and `now`;
+`first` and `last` give an Option. `read` reads a file or a web address, as
+REBOL's `read` does (see Files above).
+
+```rythme
+name = "Ada"
+print(rejoin(["Hello, ", name, "!"]), length?([1, 2, 3]), uppercase("rebol"))
+print(found?(Some(1)), none?(None), form(3.5), mold("hi"))
+foreach [1, 2] do |x| print(x * 10) end
+print(map_each([1, 2, 3], fn(x) = x * x), remove_each([1, 2, 3, 4], is_even))
+print(enbase("Hi!"), debase("SGkh"), dehex("caf%C3%A9"))
+```
+
+```text
+Hello, Ada! 3 REBOL
+true true 3.5 "hi"
+10
+20
+[1, 4, 9] [1, 3]
+SGkh Ok("Hi!") Ok("café")
 ```
 
 ```rythme
@@ -4567,7 +4611,7 @@ How many sides a square has.
 len(x)
 ~~~
 
-Length of a text (in characters), a list, a record, a dict or a set. Same as: `length`, `size` (its Ruby names).
+Length of a text (in characters), a list, a record, a dict or a set. Same as: `length`, `size` (its Ruby names). Same as: `length?` (its REBOL names).
 
 Example:
 

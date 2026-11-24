@@ -645,12 +645,20 @@ pub fn function(ctx: &Ctx, name: &str) -> Page {
             x.exo_try,
         )),
     ];
-    let ruby: Vec<&str> = rythme::builtins::aliases(b.name).collect();
+    let ruby: Vec<&str> = rythme::builtins::aliases_from(b.name, rythme::builtins::Origin::Ruby).collect();
     if !ruby.is_empty() {
         parts.push(
             fn_part("ruby", x.fn_ruby)
                 .child(p().text(x.fn_ruby_lead))
                 .child(ul().class("fn-page__names").children(ruby.iter().map(|r| li().child(code_inline(r))))),
+        );
+    }
+    let rebol: Vec<&str> = rythme::builtins::aliases_from(b.name, rythme::builtins::Origin::Rebol).collect();
+    if !rebol.is_empty() {
+        parts.push(
+            fn_part("rebol", x.fn_rebol)
+                .child(p().text(x.fn_rebol_lead))
+                .child(ul().class("fn-page__names").children(rebol.iter().map(|r| li().child(code_inline(r))))),
         );
     }
     let js: Vec<&str> = rythme::javascript::equivalents(b.name).collect();

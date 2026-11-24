@@ -505,6 +505,7 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 ### Files
 
 - `read_file(path)`: Reads a whole text file: `Ok(text)`, or `Err(message)` if it cannot be read.
+- `read(source)`: Reads a whole text from a file or from a web address (http:// or https://), as REBOL does: `Ok(text)`, or `Err(message)`.
 - `write_file(path, text)`: Writes a text in a file (replacing its content): `Ok(())` or `Err(message)`.
 - `append_file(path, text)`: Adds a text at the end of a file, creating the file if needed: `Ok(())` or `Err(message)`.
 - `file_exists(path)`: Does this file (or folder) exist? Always `false` in the browser.
@@ -595,6 +596,8 @@ Always available, no import. `f(x, y)` can also be written `x.f(y)` or `x |> f(y
 
 Ruby names, exactly the same functions: `puts` = `print`, `to_s` = `text`, `to_i` = `int`, `to_f` = `float`, `even?` = `is_even`, `odd?` = `is_odd`, `length` = `len`, `size` = `len`, `upcase` = `upper`, `downcase` = `lower`, `strip` = `trim`, `include?` = `contains`, `start_with?` = `starts_with`, `end_with?` = `ends_with`, `select` = `filter`, `reduce` = `fold`, `inject` = `fold`, `uniq` = `unique`, `each_slice` = `chunks`, `each_cons` = `windows`, `any?` = `any`, `all?` = `all`, `empty?` = `is_empty`, `key?` = `has`, `lstrip` = `trim_start`, `rstrip` = `trim_end`, `casecmp?` = `equals_ignore_case`, `clamp` = `constrain`, `swapcase` = `swap_case`, `ljust` = `pad_right`, `rjust` = `pad_left`, `ord` = `char_code`, `chr` = `char`, `delete_prefix` = `remove_prefix`, `delete_suffix` = `remove_suffix`, `rindex` = `last_index_of`, `positive?` = `is_positive`, `negative?` = `is_negative`, `zero?` = `is_zero`, `nan?` = `is_nan`, `finite?` = `is_finite`, `detect` = `find`, `collect` = `map`, `rotate` = `rotate_by`, `combination` = `combinations`, `permutation` = `permutations`, `transform_values` = `map_values`, `transform_keys` = `map_keys`, `each_pair` = `each`, `to_h` = `dict`, `subset?` = `is_subset`, `disjoint?` = `is_disjoint`, `warn` = `print_error`.
 
+REBOL names, exactly the same functions: `probe` = `debug`, `ask` = `input`, `form` = `text`, `mold` = `inspect`, `rejoin` = `join`, `length?` = `len`, `uppercase` = `upper`, `lowercase` = `lower`, `foreach` = `each`, `map_each` = `map`, `remove_each` = `reject`, `found?` = `is_some`, `none?` = `is_none`, `write` = `write_file`, `exists?` = `file_exists`, `info?` = `file_info`, `delete` = `delete_file`, `make_dir` = `create_folder`, `enbase` = `base64_encode`, `debase` = `base64_decode`, `dehex` = `url_decode`, `wait` = `sleep`, `quit` = `exit`.
+
 ## Keywords
 
 - `fn`: Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.
@@ -653,6 +656,8 @@ Reserved because other languages use them (each gives a message saying what to w
 | `import math` / `require "x"` | `use math` (a file `math.ry`), then `math.f(...)` |
 | `print("a", end="")` | `print("a")` writes a line; build the text first |
 | `switch x { case 1: ... }` | `match x` with `1 -> ...` cases, then `end` |
+| `x: 10`, `%notes.txt`, `'ok` (REBOL) | `x = 10`, `"notes.txt"`, `:ok` |
+| `either c [a] [b]`, `func [x] [x * 2]` (REBOL) | `if c then a else b`, `fn(x) = x * 2` |
 | `{ ... }` for a block | `do ... end` |
 
 ## Error and warning codes

@@ -419,9 +419,13 @@ fn function(ctx: &Ctx, name: &str) -> String {
     out.push_str(&fence("rythme", b.example));
     let run = sections::packed_link(lang, &sections::runnable(b.example), false);
     out.push_str(&format!("{}\n\n", md_link(&format!("▶ {}", x.exo_try), &absolute(ctx, &run))));
-    let ruby: Vec<String> = rythme::builtins::aliases(b.name).map(code_span).collect();
+    let ruby: Vec<String> = rythme::builtins::aliases_from(b.name, rythme::builtins::Origin::Ruby).map(code_span).collect();
     if !ruby.is_empty() {
         out.push_str(&format!("## {}\n\n{} {}\n\n", escape(x.fn_ruby), escape(x.fn_ruby_lead), ruby.join(", ")));
+    }
+    let rebol: Vec<String> = rythme::builtins::aliases_from(b.name, rythme::builtins::Origin::Rebol).map(code_span).collect();
+    if !rebol.is_empty() {
+        out.push_str(&format!("## {}\n\n{} {}\n\n", escape(x.fn_rebol), escape(x.fn_rebol_lead), rebol.join(", ")));
     }
     let js: Vec<String> = rythme::javascript::equivalents(b.name).map(|j| format!("- {}\n", code_span(j))).collect();
     if !js.is_empty() {

@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::io::{BufRead, IsTerminal, Write};
 
 use crate::ast::Item;
-use crate::builtins::{self, Builtin, Category, BUILTINS};
+use crate::builtins::{self, Builtin, Category, Origin, BUILTINS};
 use crate::interp::{Interp, Wrap};
 use crate::lang::pick;
 use crate::source;
@@ -466,6 +466,7 @@ pub const TOPICS: &[(&str, &[&str])] = &[
     ),
     ("ruby", &["rb", "rubyist", "blocks", "blocs", "symbols", "symboles"]),
     ("javascript", &["js", "node", "nodejs", "deno", "typescript", "ts", "ecmascript", "mdn"]),
+    ("rebol", &["rebol2", "rebol3", "r3"]),
     (
         "builtins",
         &[
@@ -553,6 +554,7 @@ Topics (rythme help TOPIC)
   editors     Rythme in your editor (VS Code, Neovim, Helix...)
   ruby        coming from Ruby: blocks, symbols, method chains
   javascript  coming from JavaScript: its standard library in Rythme
+  rebol       coming from REBOL: a few words, read and write, probe
   builtins    every built-in function
 
 A specific function: rythme help map
@@ -614,6 +616,7 @@ Sujets (rythme help SUJET)
   editors     Rythme dans votre éditeur (VS Code, Neovim, Helix...)
   ruby        venir de Ruby : blocs, symboles, enchaînements de méthodes
   javascript  venir de JavaScript : sa bibliothèque standard en Rythme
+  rebol       venir de REBOL : quelques mots, read et write, probe
   builtins    toutes les fonctions intégrées
 
 Une fonction précise : rythme help map
@@ -625,14 +628,18 @@ Une fonction précise : rythme help map
 pub fn topic(name: &str) -> Option<String> {
     let builtin = builtins::lookup(name.trim());
     if let (Some(b), None) = (builtin, canonical_topic(name)) {
-        if builtins::alias_of(name.trim()).is_some() {
+        if let Some(a) = builtins::alias(name.trim()) {
             let alias = name.trim();
             let of = b.name;
-            return Some(format!(
-                "{}\n{}",
-                t!("{alias}  (the Ruby name of `{of}`: the same function)", "{alias}  (le nom Ruby de `{of}` : la même fonction)"),
-                builtin_doc(b)
-            ));
+            let line = match a.from {
+                Origin::Ruby => {
+                    t!("{alias}  (the Ruby name of `{of}`: the same function)", "{alias}  (le nom Ruby de `{of}` : la même fonction)")
+                }
+                Origin::Rebol => {
+                    t!("{alias}  (the REBOL name of `{of}`: the same function)", "{alias}  (le nom REBOL de `{of}` : la même fonction)")
+                }
+            };
+            return Some(format!("{line}\n{}", builtin_doc(b)));
         }
         return Some(builtin_doc(b));
     }
@@ -821,9 +828,13 @@ pub fn keyword_help(word: &str) -> Option<String> {
 
 pub fn builtin_doc(b: &Builtin) -> String {
     let mut out = format!("{}\n  {}\n", b.sig, b.doc());
-    let ruby: Vec<String> = builtins::aliases(b.name).map(|a| format!("`{a}`")).collect();
+    let ruby: Vec<String> = builtins::aliases_from(b.name, Origin::Ruby).map(|a| format!("`{a}`")).collect();
     if !ruby.is_empty() {
         out.push_str(&t!("  Same as: {} (its Ruby names)\n", "  Pareil que : {} (ses noms Ruby)\n", ruby.join(", ")));
+    }
+    let rebol: Vec<String> = builtins::aliases_from(b.name, Origin::Rebol).map(|a| format!("`{a}`")).collect();
+    if !rebol.is_empty() {
+        out.push_str(&t!("  Same as: {} (its REBOL names)\n", "  Pareil que : {} (ses noms REBOL)\n", rebol.join(", ")));
     }
     out.push_str(&format!("  {}\n", t!("Example:", "Exemple :")));
     for line in b.example.lines() {
@@ -845,16 +856,22 @@ pub fn builtins_list() -> String {
         if cat == Category::Numbers {
             out.push_str(&format!("  {:<28} {}\n", "pi", t!("the number π", "le nombre π")));
         }
-        // The Ruby names of the functions of the category: `upcase` (same as `upper`).
-        let ruby: Vec<String> = builtins::ALIASES
-            .iter()
-            .filter(|a| builtins::lookup(a.of).is_some_and(|b| b.cat == cat))
-            .map(|a| t!("{} (same as {})", "{} (pareil que {})", a.name, a.of))
-            .collect();
-        if !ruby.is_empty() {
-            let mut line = t!("  Ruby names:", "  Noms Ruby :");
-            for (i, r) in ruby.iter().enumerate() {
-                let piece = if i + 1 < ruby.len() { format!(" {r},") } else { format!(" {r}") };
+        // The Ruby and REBOL names of the functions of the category: `upcase` (same as `upper`).
+        for from in Origin::ALL {
+            let names: Vec<String> = builtins::ALIASES
+                .iter()
+                .filter(|a| a.from == from && builtins::lookup(a.of).is_some_and(|b| b.cat == cat))
+                .map(|a| t!("{} (same as {})", "{} (pareil que {})", a.name, a.of))
+                .collect();
+            if names.is_empty() {
+                continue;
+            }
+            let mut line = match from {
+                Origin::Ruby => t!("  Ruby names:", "  Noms Ruby :"),
+                Origin::Rebol => t!("  REBOL names:", "  Noms REBOL :"),
+            };
+            for (i, r) in names.iter().enumerate() {
+                let piece = if i + 1 < names.len() { format!(" {r},") } else { format!(" {r}") };
                 if crate::diagnostic::display_width(&line) + crate::diagnostic::display_width(&piece) > 96 {
                     out.push_str(&line);
                     out.push('\n');
@@ -1335,6 +1352,117 @@ Quand ? fait partie d'un nom
   avec fn dans le fichier). Sinon valeur? est le ? qui s'arrête sur None ou
   Err, et (valeur)? l'est toujours."#;
 
+const REBOL_EN: &str = r#"COMING FROM REBOL
+
+REBOL showed that a language can be small and still do a lot: a few words
+that say what they do, one word to read a file or a web page, values that
+can be printed and read again. Rythme keeps that spirit, with values that
+never change and errors that are values:
+
+  page = read("https://example.com")       # read http://example.com
+  write("copy.html", unwrap_or(page, ""))  # write %copy.html page
+  name = ask("Your name? ")                # name: ask "Your name? "
+  print(rejoin(["Hello, ", name, "!"]))    # print rejoin ["Hello, " name "!"]
+  [1, 2, 3] |> probe |> sum |> print       # probe shows [1, 2, 3], then 6
+
+The same as in REBOL
+  words that say what they do   print probe ask read write now random
+  names with ?                  length? empty? exists? found? none? zero?
+                                even? odd? (a question gives true or false)
+  symbols                       :ok, like 'ok in REBOL (a word as a value)
+  blocks are lists              [1, 2, 3], with first, last, reverse, sort,
+                                unique; first and last give an Option
+  help                          help(map), rythme help map; rythme help
+                                builtins lists every function, as what does
+
+REBOL names, exactly the same functions (see rythme help builtins)
+  probe ask form mold rejoin length? uppercase lowercase foreach map_each
+  remove_each found? none? write exists? info? delete make_dir enbase
+  debase dehex wait quit. read gives the text of a file, or of a web
+  address. A REBOL name with a - is written with _: remove_each.
+
+What is written differently
+  x: 10                         x = 10 (x: Int = 10 gives its type too)
+  %notes.txt                    "notes.txt": a file is named by a text
+  'ok                           :ok
+  func [x] [x * 2]              fn(x) = x * 2, or fn double(x) = x * 2
+  does [print "hi"]             fn hello() = print("hi")
+  either c [a] [b], if c [a]    if c then a else b: if gives a value, so
+                                it always has an else
+  loop 3 [...], repeat i 3 [...]
+                                (1..3).each do |i| ... end
+  foreach x xs [...]            foreach xs do |x| ... end, or xs.each(f)
+  [1 2 3]                       [1, 2, 3]: elements are separated by commas
+  f a b                         f(a, b), or f a, b at the start of a line
+  ; a comment                   # a comment
+  obj/field, make object! [...] obj.field, and records {name: "Ada", age: 36}
+  append xs 4                   push(xs, 4): a new list, xs stays as it was
+  pick xs 2                     get(xs, 1): an Option, positions from 0
+  attempt [...], try            Ok(x) or Err(message), and ? to pass it on
+  switch, case                  match value ... end, one case per line
+  parse                         split, find_all, captures: regular
+                                expressions (rythme help regex)
+
+Operators follow the rules of mathematics, not the order of the line:
+1 + 2 * 3 is 7 (REBOL gives 9). Write (1 + 2) * 3 for 9."#;
+
+const REBOL_FR: &str = r#"VENIR DE REBOL
+
+REBOL a montré qu'un langage peut être petit et faire beaucoup : quelques
+mots qui disent ce qu'ils font, un seul mot pour lire un fichier ou une page
+web, des valeurs qu'on peut afficher puis relire. Rythme garde cet esprit,
+avec des valeurs qui ne changent jamais et des erreurs qui sont des valeurs :
+
+  page = read("https://example.com")       # read http://example.com
+  write("copie.html", unwrap_or(page, "")) # write %copie.html page
+  nom = ask("Votre nom ? ")                # nom: ask "Votre nom ? "
+  print(rejoin(["Bonjour, ", nom, " !"]))  # print rejoin ["Bonjour, " nom " !"]
+  [1, 2, 3] |> probe |> sum |> print       # probe montre [1, 2, 3], puis 6
+
+Comme en REBOL
+  des mots clairs               print probe ask read write now random
+  des noms avec ?               length? empty? exists? found? none? zero?
+                                even? odd? (une question donne true ou false)
+  les symboles                  :ok, comme 'ok en REBOL (un mot comme valeur)
+  les blocs sont des listes     [1, 2, 3], avec first, last, reverse, sort,
+                                unique ; first et last donnent une Option
+  l'aide                        help(map), rythme help map ; rythme help
+                                builtins liste toutes les fonctions, comme what
+
+Noms REBOL, exactement les mêmes fonctions (voir rythme help builtins)
+  probe ask form mold rejoin length? uppercase lowercase foreach map_each
+  remove_each found? none? write exists? info? delete make_dir enbase
+  debase dehex wait quit. read donne le texte d'un fichier, ou d'une adresse
+  web. Un nom REBOL avec un - s'écrit avec _ : remove_each.
+
+Ce qui s'écrit autrement
+  x: 10                         x = 10 (x: Int = 10 donne aussi son type)
+  %notes.txt                    "notes.txt" : un fichier se nomme par un texte
+  'ok                           :ok
+  func [x] [x * 2]              fn(x) = x * 2, ou fn double(x) = x * 2
+  does [print "salut"]          fn salut() = print("salut")
+  either c [a] [b], if c [a]    if c then a else b : if donne une valeur, il
+                                a donc toujours un else
+  loop 3 [...], repeat i 3 [...]
+                                (1..3).each do |i| ... end
+  foreach x xs [...]            foreach xs do |x| ... end, ou xs.each(f)
+  [1 2 3]                       [1, 2, 3] : les éléments sont séparés par des
+                                virgules
+  f a b                         f(a, b), ou f a, b en début de ligne
+  ; un commentaire              # un commentaire
+  obj/champ, make object! [...] obj.champ, et les enregistrements
+                                {nom: "Ada", age: 36}
+  append xs 4                   push(xs, 4) : une nouvelle liste, xs reste tel
+                                quel
+  pick xs 2                     get(xs, 1) : une Option, positions depuis 0
+  attempt [...], try            Ok(x) ou Err(message), et ? pour transmettre
+  switch, case                  match valeur ... end, un cas par ligne
+  parse                         split, find_all, captures : les expressions
+                                régulières (rythme help regex)
+
+Les opérateurs suivent les règles des mathématiques, pas l'ordre de la ligne :
+1 + 2 * 3 vaut 7 (REBOL donne 9). Écrivez (1 + 2) * 3 pour 9."#;
+
 fn topic_text(name: &str) -> &'static str {
     let (en, fr) = topic_texts(name);
     pick(en, fr)
@@ -1373,6 +1501,7 @@ fn topic_texts(name: &str) -> (&'static str, &'static str) {
         "editors" => (EDITORS_EN, EDITORS_FR),
         "ruby" => (RUBY_EN, RUBY_FR),
         "javascript" => (JAVASCRIPT_EN, JAVASCRIPT_FR),
+        "rebol" => (REBOL_EN, REBOL_FR),
         _ => ("", ""),
     }
 }

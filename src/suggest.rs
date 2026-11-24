@@ -362,6 +362,40 @@ pub fn alias_hint(name: &str) -> Option<String> {
             "there is no `new`: build values directly, like `{{name: \"Ada\"}}` or `Circle(2.0)`",
             "il n'y a pas de `new` : construisez les valeurs directement, comme `{{nom: \"Ada\"}}` ou `Cercle(2.0)`"
         ),
+        // REBOL: words for what Rythme writes with its keywords.
+        "either" => t!(
+            "`either condition [a] [b]` is written `if condition then a else b`",
+            "`either condition [a] [b]` s'écrit `if condition then a else b`"
+        ),
+        "func" | "does" | "funct" | "has" => t!(
+            "functions are written `fn name(x) = x * 2`, without parameters `fn hello() = print(\"hi\")`, and anonymous ones `fn(x) = x * 2`",
+            "les fonctions s'écrivent `fn nom(x) = x * 2`, sans paramètres `fn salut() = print(\"salut\")`, et les anonymes `fn(x) = x * 2`"
+        ),
+        "prin" => t!(
+            "`print` writes a whole line: build the text first, with `\"{{a}}{{b}}\"` or `rejoin([a, b])`",
+            "`print` écrit une ligne entière : construisez d'abord le texte, avec `\"{{a}}{{b}}\"` ou `rejoin([a, b])`"
+        ),
+        "forever" | "until" | "forall" | "forskip" => t!(
+            "Rythme has no loops. Work on the whole list (`each`, `map`, `filter`, `fold`, `1..10`), or write a recursive function. See `rythme help functional`.",
+            "Rythme n'a pas de boucles. Travaillez sur toute la liste (`each`, `map`, `filter`, `fold`, `1..10`), ou écrivez une fonction récursive. Voir `rythme help functional`."
+        ),
+        "attempt" => t!(
+            "errors are values in Rythme: an operation that may fail gives `Ok(value)` or `Err(message)`; `unwrap_or(result, default)` keeps a default",
+            "les erreurs sont des valeurs en Rythme : une opération qui peut échouer donne `Ok(valeur)` ou `Err(message)` ; `unwrap_or(resultat, defaut)` garde une valeur par défaut"
+        ),
+        "halt" => t!("`exit()` stops the program (`quit` too)", "`exit()` arrête le programme (`quit` aussi)"),
+        "make" | "context" | "object" => t!(
+            "there is no `make`: write a record directly, like `{{name: \"Ada\", age: 36}}`, or a changed copy, `{{..person, age: 37}}`",
+            "il n'y a pas de `make` : écrivez directement un enregistrement, comme `{{nom: \"Ada\", age: 36}}`, ou une copie changée, `{{..personne, age: 37}}`"
+        ),
+        "pick" | "second" | "third" => t!(
+            "write `get(list, i)`: an Option, with positions counted from 0 (`get(xs, 1)` is the second element); `xs[1]` stops the program if it is missing",
+            "écrivez `get(liste, i)` : une Option, avec des positions comptées à partir de 0 (`get(xs, 1)` est le deuxième élément) ; `xs[1]` arrête le programme s'il manque"
+        ),
+        "what" => t!(
+            "`rythme help builtins` lists every built-in function, and `help(f)` explains one",
+            "`rythme help builtins` liste toutes les fonctions intégrées, et `help(f)` en explique une"
+        ),
         "mut" | "set" | "setattr" => t!(
             "values never change in Rythme: build a new value instead",
             "les valeurs ne changent jamais en Rythme : construisez une nouvelle valeur à la place"
