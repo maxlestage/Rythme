@@ -52,11 +52,12 @@ const PREC = {
 const KEYWORDS = ['fn', 'if', 'then', 'else', 'match', 'end', 'do', 'type', 'test', 'use', 'and', 'or', 'not', 'true', 'false'];
 
 /**
- * `rule, rule, ...` with an optional trailing comma.
+ * `rule, rule, ...` with an optional trailing comma; the commas may be left
+ * out, as in REBOL: `rule rule ...`.
  * @param {RuleOrLiteral} rule
  */
-function commaSep(rule) {
-  return optional(seq(rule, repeat(seq(',', rule)), optional(',')));
+function commaSep(rule, loose = rule) {
+  return optional(seq(rule, repeat(choice(seq(',', rule), prec.dynamic(-1, loose))), optional(',')));
 }
 
 /**
@@ -78,6 +79,18 @@ module.exports = grammar({
   word: $ => $.identifier,
 
   conflicts: $ => [
+    [$._loose_pattern, $.constructor_pattern],
+    [$._expression, $._loose_expression],
+    [$._type, $.generic_type],
+    [$.parenthesized_expression, $.arguments],
+    [$.do_block, $.do_expression],
+    [$.unit, $.arguments],
+    [$.rest_pattern],
+    [$._pattern, $._number_pattern],
+    [$._pattern, $.constructor_pattern],
+    [$._expression, $._pattern, $.constructor_pattern],
+    [$._expression, $._pattern, $._number_pattern],
+    [$.spread, $.rest_pattern],
     [$._expression, $._pattern],
     [$.list, $.list_pattern],
     [$.record, $.record_pattern],
@@ -110,7 +123,7 @@ module.exports = grammar({
         ),
       ),
 
-    command_arguments: $ => prec.right(seq($._expression, repeat(seq(',', $._expression)))),
+    command_arguments: $ => prec.right(seq($._expression, repeat(choice(seq(',', $._expression), prec.dynamic(-1, $._loose_expression))))),
 
     comment: _ => token(seq('#', /[^\n]*/)),
 
@@ -162,7 +175,7 @@ module.exports = grammar({
         $._body,
       ),
 
-    parameters: $ => seq('(', commaSep(choice($._pattern, $.typed_parameter)), ')'),
+    parameters: $ => seq('(', commaSep(choice($._pattern, $.typed_parameter), choice($._loose_pattern, $.typed_parameter)), ')'),
 
     /** `w: Int`: a parameter and its written type. */
     typed_parameter: $ => seq(field('pattern', $._pattern), field('type', $.type_annotation)),
@@ -256,11 +269,41 @@ module.exports = grammar({
         $.lambda,
       ),
 
+    /** An element written without a comma before it: not `-x` or `(x)`, which continue the one before. */
+    _loose_expression: $ =>
+      choice(
+        $.identifier,
+        $.predicate,
+        $.constructor,
+        $.integer,
+        $.float,
+        $.string,
+        $.symbol,
+        $.boolean,
+        $.list,
+        $.record,
+        $.call,
+        $.index_expression,
+        $.field_expression,
+        $.method_call,
+        $.try_expression,
+        $.await_expression,
+        $.not_expression,
+        $.binary_expression,
+        $.pipe_expression,
+        $.range_expression,
+        $.if_expression,
+        $.unless_expression,
+        $.match_expression,
+        $.do_expression,
+        $.lambda,
+      ),
+
     parenthesized_expression: $ => seq('(', $._expression, ')'),
 
     unit: _ => seq('(', ')'),
 
-    list: $ => seq('[', commaSep(choice($._expression, $.spread)), ']'),
+    list: $ => seq('[', commaSep(choice($._expression, $.spread), choice($._loose_expression, $.spread)), ']'),
 
     spread: $ => seq('..', $._expression),
 
@@ -306,7 +349,7 @@ module.exports = grammar({
     /** `|n: Int|`. */
     typed_block_parameter: $ => seq(field('pattern', $._block_parameter), field('type', $.type_annotation)),
 
-    arguments: $ => seq('(', commaSep($._expression), ')'),
+    arguments: $ => seq('(', commaSep($._expression, $._loose_expression), ')'),
 
     index_expression: $ =>
       prec(PREC.postfix, seq(field('value', $._expression), '[', field('index', $._expression), ']')),
@@ -412,6 +455,24 @@ module.exports = grammar({
         $.boolean,
         $.unit_pattern,
         $.parenthesized_pattern,
+        $.list_pattern,
+        $.record_pattern,
+        $.or_pattern,
+        $.range_pattern,
+        $.prefix_pattern,
+      ),
+
+    /** A pattern written without a comma before it: not `-1`, or a symbol that touches the name before. */
+    _loose_pattern: $ =>
+      choice(
+        $.identifier,
+        $.constructor,
+        $.constructor_pattern,
+        $.qualified_constructor,
+        $.integer,
+        $.float,
+        $.string,
+        $.boolean,
         $.list_pattern,
         $.record_pattern,
         $.or_pattern,

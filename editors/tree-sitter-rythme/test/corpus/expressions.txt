@@ -332,3 +332,50 @@ x = 1..9
     (range_expression
       (integer)
       (integer))))
+
+================================================================================
+Without commas, as in REBOL
+================================================================================
+
+xs = [1 2 3]
+p = {name: "Ada" age: 36}
+print add(1 2) xs
+m = [[1 2] [3 4]]
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (definition
+    (identifier)
+    (list
+      (integer)
+      (integer)
+      (integer)))
+  (definition
+    (identifier)
+    (record
+      (record_field
+        (field_name)
+        (string
+          (string_content)))
+      (record_field
+        (field_name)
+        (integer))))
+  (command_call
+    (identifier)
+    (command_arguments
+      (call
+        (identifier)
+        (arguments
+          (integer)
+          (integer)))
+      (identifier)))
+  (definition
+    (identifier)
+    (list
+      (list
+        (integer)
+        (integer))
+      (list
+        (integer)
+        (integer)))))

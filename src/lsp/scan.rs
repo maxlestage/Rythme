@@ -75,6 +75,10 @@ pub fn scan(text: &str, offset: usize) -> Scan {
     let mut test_name = false;
     let mut block_open = false;
     let mut block_params = false;
+    // Without commas (`f(a b`): the last token ended a value, and spaces
+    // followed it; the start of a value then starts the next argument.
+    let mut ended_value = false;
+    let mut spaced = false;
     let mut chars = src.char_indices().peekable();
     while let Some((i, c)) = chars.next() {
         if comment {
@@ -93,6 +97,8 @@ pub fn scan(text: &str, offset: usize) -> Scan {
                 }
                 '"' => {
                     stack.pop();
+                    ended_value = true;
+                    spaced = false;
                 }
                 '{' => stack.push(Frame::Insert),
                 _ => {}
@@ -100,6 +106,7 @@ pub fn scan(text: &str, offset: usize) -> Scan {
             continue;
         }
         if c.is_whitespace() {
+            spaced = true;
             if c == '\n' {
                 if matches!(stack.last(), Some(Frame::Command(_))) {
                     stack.pop();
@@ -112,6 +119,23 @@ pub fn scan(text: &str, offset: usize) -> Scan {
             }
             continue;
         }
+        let next_char = src[i + c.len_utf8()..].chars().next();
+        let starts_value = c == '"'
+            || c == '['
+            || c == '('
+            || c == '{'
+            || c.is_ascii_digit()
+            || (is_name_start(c) && !word_is(src, i, &["and", "or", "then", "else", "end", "do", "if"]))
+            || (c == ':' && next_char.is_some_and(is_name_start))
+            || (c == '-' && next_char.is_some_and(|n| !n.is_whitespace()));
+        if std::mem::take(&mut spaced) && ended_value && starts_value {
+            if let Some(Frame::Paren(Some(call), _) | Frame::Command(call)) = stack.last_mut() {
+                call.commas += 1;
+            }
+        }
+        ended_value = matches!(c, ')' | ']' | '}')
+            || c.is_ascii_digit()
+            || (is_name_start(c) && !word_is(src, i, &["and", "or", "not", "then", "else", "do", "if", "fn", "match", "fn", "unless"]));
         let starts_line = std::mem::replace(&mut line_start, false);
         let prev_starts_line = std::mem::replace(&mut last_starts_line, false);
         let name = last.take();
@@ -259,6 +283,12 @@ pub fn scan(text: &str, offset: usize) -> Scan {
     } else {
         Place::Code
     };
+    // `f(a ` with the cursor after the space: at the next argument.
+    if spaced && ended_value && place == Place::Code {
+        if let Some(Frame::Paren(Some(call), _) | Frame::Command(call)) = stack.last_mut() {
+            call.commas += 1;
+        }
+    }
     let text_start = stack.iter().rev().find_map(|f| if let Frame::Text(i) = f { Some(*i) } else { None });
     // `puts ` with nothing after it yet.
     if let Some(call) = command {
@@ -273,6 +303,12 @@ pub fn scan(text: &str, offset: usize) -> Scan {
         })
         .collect();
     Scan { place, text_start, calls }
+}
+
+/// Is the word that starts at `i` one of these?
+fn word_is(src: &str, i: usize, words: &[&str]) -> bool {
+    let end = src[i..].find(|d: char| !is_name_char(d)).map_or(src.len(), |k| i + k);
+    words.contains(&&src[i..end])
 }
 
 /// The name around a byte offset (or ending there), and its byte range.
@@ -297,6 +333,16 @@ mod tests {
         assert_eq!(s.place, Place::Code);
         let names: Vec<(&str, usize)> = s.calls.iter().map(|c| (c.name.as_str(), c.commas)).collect();
         assert_eq!(names, [("print", 0), ("map", 1)]);
+        // Without commas, as in REBOL: each value after a space is one more.
+        let s = scan("print(map(xs fn(x) = x * 2) \"a b\" [1 2] ", 41);
+        let names: Vec<(&str, usize)> = s.calls.iter().map(|c| (c.name.as_str(), c.commas)).collect();
+        assert_eq!(names, [("print", 3)]);
+        let s = scan("fold(xs 0 ", 10);
+        assert_eq!(s.calls[0].commas, 2);
+        let s = scan("puts x y", 8);
+        assert_eq!(s.calls[0].commas, 1);
+        let s = scan("f(a", 3);
+        assert_eq!(s.calls[0].commas, 0);
         let s = scan("xs |> filter(", 13);
         assert!(s.calls[0].first_given);
         let s = scan("f([1, 2], ", 10);

@@ -2,7 +2,7 @@
 Types written in the code
 ================================================================================
 
-fn area(w: Int, h:Int) -> Int = w * h
+fn area(w: Int, h: Int) -> Int = w * h
 total: Float = 0.0
 type Shape = Circle(radius: Float) | Rect(w: Float, h) | Dot
 fn first_of(xs: List(a)) -> a
