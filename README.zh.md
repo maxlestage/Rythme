@@ -28,6 +28,10 @@ fn square(x) = x * x
 - **和 Ruby 一样好用。** 代码块（`xs.map do |x| x * 2 end`）、方法链、不带括号
   的调用（`puts "hello"`）、像 `even?` 这样的名字、`unless`、符号（`:ok`），
   以及标准库中的 Ruby 名字。
+- **和 REBOL 一样用词少。** 一个单词就能读文件或网页（`read("notes.txt")`、
+  `read("https://example.com")`），一个单词写回去（`write`），标准库里的
+  REBOL 名字也能直接用（`probe`、`ask`、`rejoin`、`length?`、`foreach`、
+  `exists?`……）。`rythme help rebol` 说明哪些相同、哪些不同。
 - **像 Rust 一样安全。** 可能缺失的值是 `Option`（`Some(x)` 或 `None`）；可能
   失败的操作返回 `Result`（`Ok(x)` 或 `Err(e)`），`?` 会把错误向上传递。程序在
   运行**之前**就会被检查。

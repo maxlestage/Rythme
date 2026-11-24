@@ -123,6 +123,8 @@ pub const JA: Sections = Sections {
     fn_syntax: "構文",
     fn_ruby: "Ruby での名前",
     fn_ruby_lead: "同じ関数の、Ruby での名前：",
+    fn_rebol: "REBOL での名前",
+    fn_rebol_lead: "同じ関数の、REBOL での名前：",
     fn_javascript: "JavaScript では",
     fn_javascript_lead: "JavaScript で同じことをする書き方：",
     fn_javascript_more: "JavaScript の標準ライブラリ全体との比較",

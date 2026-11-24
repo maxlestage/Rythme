@@ -459,6 +459,16 @@ impl<'a> Lexer<'a> {
             .incomplete()
     }
 
+    /// The word after the `'` at `start`, when the quote does not start a
+    /// text: `'ok` but not `'ok'` (a text in single quotes).
+    fn lit_word(&self, start: usize) -> Option<String> {
+        let rest = &self.src[start + 1..];
+        let word: String = rest.chars().take_while(|c| c.is_alphanumeric() || *c == '_' || *c == '?').collect();
+        let after = rest[word.len()..].chars().next();
+        let first = word.chars().next()?;
+        (is_ident_start(first) && after != Some('\'')).then_some(word)
+    }
+
     fn unexpected_char(&self, c: char, start: usize) -> Diagnostic {
         // Spaces and marks that cannot be seen, often copied from a document or a web page.
         let space = matches!(c, '\u{a0}' | '\u{2000}'..='\u{200a}' | '\u{202f}' | '\u{205f}' | '\u{3000}');
@@ -482,6 +492,15 @@ impl<'a> Lexer<'a> {
         let d = self.error("E018", start, t!("unexpected character `{c}`", "caractère inattendu `{c}`"));
         let instead = |s: &str| d.clone().help(t!("write `{s}` instead", "écrivez plutôt `{s}`"));
         match c {
+            '\'' if self.lit_word(start).is_some() => {
+                // `'ok`, a word not closed by a quote: a lit-word of REBOL, a symbol of Lisp.
+                let word = self.lit_word(start).unwrap_or_default();
+                let d = d.help(t!(
+                    "a word given as a value is a symbol, written with `:` before it: `:{word}` (REBOL writes `'{word}`); a text is written with double quotes: \"{word}\"",
+                    "un mot donné comme valeur est un symbole, écrit avec `:` devant : `:{word}` (REBOL écrit `'{word}`) ; un texte s'écrit entre guillemets droits : \"{word}\""
+                ));
+                d.fix(crate::diagnostic::Fix::replace(Span::new(self.file, start, start + 1), ":", false))
+            }
             '\'' | '‘' | '’' | '‚' => {
                 d.help(t!("texts use double quotes: \"hello\"", "les textes s'écrivent entre guillemets droits : \"bonjour\""))
             }

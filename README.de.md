@@ -32,6 +32,11 @@ fn quadrat(x) = x * x
 - **So angenehm wie Ruby.** Blöcke (`xs.map do |x| x * 2 end`),
   Methodenketten, Aufrufe ohne Klammern (`puts "hallo"`), Namen wie `even?`,
   `unless`, Symbole (`:ok`) und die Ruby-Namen der Bibliothek.
+- **So wenige Wörter wie REBOL.** Ein Wort liest eine Datei oder eine
+  Webseite (`read("notizen.txt")`, `read("https://example.com")`), eines
+  schreibt sie zurück (`write`), und die REBOL-Namen der Bibliothek
+  funktionieren, wie sie sind (`probe`, `ask`, `rejoin`, `length?`, `foreach`,
+  `exists?`...). `rythme help rebol` zeigt, was gleich ist und was anders.
 - **Sicher wie Rust.** Ein Wert, der fehlen kann, ist eine `Option`
   (`Some(x)` oder `None`); eine Operation, die scheitern kann, liefert ein
   `Result` (`Ok(x)` oder `Err(e)`), und `?` gibt Fehler nach oben weiter. Das

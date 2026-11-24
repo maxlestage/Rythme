@@ -433,7 +433,9 @@ pub fn version_text(verbose: bool) -> String {
     }
     let (os, arch) = (std::env::consts::OS, std::env::consts::ARCH);
     let (codes, now) = (lang::codes(), lang::code());
-    let (functions, ruby) = (crate::builtins::BUILTINS.len(), crate::builtins::ALIASES.len());
+    let functions = crate::builtins::BUILTINS.len();
+    let names = |from| crate::builtins::ALIASES.iter().filter(|a| a.from == from).count();
+    let (ruby, rebol) = (names(crate::builtins::Origin::Ruby), names(crate::builtins::Origin::Rebol));
     let count = |prefix: char| help::CODES.iter().filter(|c| c.starts_with(prefix)).count();
     let range = |prefix: char| {
         let all: Vec<&&str> = help::CODES.iter().filter(|c| c.starts_with(prefix)).collect();
@@ -443,8 +445,8 @@ pub fn version_text(verbose: bool) -> String {
     let json = crate::machine::VERSION;
     let exe = std::env::current_exe().map(|p| p.display().to_string()).unwrap_or_default();
     out.push_str(&t!(
-        "system: {os} {arch}\nlanguages of the messages: {codes} (now: {now})\nbuilt-in functions: {functions} (and {ruby} Ruby names)\ncodes: {errors} errors ({e_range}), {warnings} warnings ({w_range})\nJSON output (--format json): version {json}\nprogram: {exe}\n",
-        "système : {os} {arch}\nlangues des messages : {codes} (maintenant : {now})\nfonctions intégrées : {functions} (et {ruby} noms Ruby)\ncodes : {errors} erreurs ({e_range}), {warnings} avertissements ({w_range})\nsortie JSON (--format json) : version {json}\nprogramme : {exe}\n"
+        "system: {os} {arch}\nlanguages of the messages: {codes} (now: {now})\nbuilt-in functions: {functions} (and {ruby} Ruby names, {rebol} REBOL names)\ncodes: {errors} errors ({e_range}), {warnings} warnings ({w_range})\nJSON output (--format json): version {json}\nprogram: {exe}\n",
+        "système : {os} {arch}\nlangues des messages : {codes} (maintenant : {now})\nfonctions intégrées : {functions} (et {ruby} noms Ruby, {rebol} noms REBOL)\ncodes : {errors} erreurs ({e_range}), {warnings} avertissements ({w_range})\nsortie JSON (--format json) : version {json}\nprogramme : {exe}\n"
     ));
     out
 }

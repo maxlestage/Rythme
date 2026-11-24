@@ -114,6 +114,8 @@ pub const ZH: Sections = Sections {
     fn_syntax: "语法",
     fn_ruby: "Ruby 名称",
     fn_ruby_lead: "同一个函数，用 Ruby 给它起的名字：",
+    fn_rebol: "REBOL 名称",
+    fn_rebol_lead: "同一个函数，用 REBOL 给它起的名字：",
     fn_javascript: "在 JavaScript 中",
     fn_javascript_lead: "JavaScript 做同样的事这样写：",
     fn_javascript_more: "与 JavaScript 整个标准库的对照",

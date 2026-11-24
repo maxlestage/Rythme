@@ -49,6 +49,11 @@ puts total                 # 20
   `"Hello #{name}"`, and the Ruby names of the library (`puts`, `upcase`,
   `select`, `reject`, `reduce`, `each_with_index`...). `rythme help ruby`
   shows what is the same and what is different.
+- **As few words as REBOL.** One word reads a file or a web page
+  (`read("notes.txt")`, `read("https://example.com")`), one writes it back
+  (`write`), and the REBOL names of the library work as they are (`probe`,
+  `ask`, `rejoin`, `length?`, `foreach`, `exists?`...). `rythme help rebol`
+  shows what is the same and what is different.
 - **Purely functional.** Values are immutable, functions are values, every
   `if` and `match` is an expression. Recursion in tail position never runs
   out of stack.
@@ -374,7 +379,7 @@ mode) and is organised as a pipeline:
 | [`src/interp.rs`](src/interp.rs) | the interpreter: names of the program, calls, what the tools need |
 | [`src/bigint.rs`](src/bigint.rs) | whole numbers beyond 64 bits, without a dependency |
 | [`src/dict.rs`](src/dict.rs) | the persistent ordered tree behind dictionaries and sets, and the order of their keys |
-| [`src/builtins.rs`](src/builtins.rs) | 300 built-in functions (and their Ruby names), documented in eight languages, JSON, CSV, HTTP and machine learning included ([compared with Ruby, Python and Elixir](docs/stdlib-audit.md), [and with JavaScript](docs/javascript.md)) |
+| [`src/builtins.rs`](src/builtins.rs) | 301 built-in functions (and their Ruby and REBOL names), documented in eight languages, JSON, CSV, HTTP and machine learning included ([compared with Ruby, Python and Elixir](docs/stdlib-audit.md), [and with JavaScript](docs/javascript.md)) |
 | [`src/builtins/`](src/builtins) | dates, files and the system, dictionaries and sets, regexes and text tools, CSV, generators of property tests |
 | [`src/help.rs`](src/help.rs) | topics, error explanations, guided tour |
 | [`src/diagnostic.rs`](src/diagnostic.rs) | Rust-style error messages |
