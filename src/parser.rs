@@ -15,6 +15,11 @@ use crate::symbol::Sym;
 use crate::value::Value;
 
 pub fn parse(lexed: Lexed) -> Fallible<Vec<Item>> {
+    parse_with_layout(lexed).map(|(items, _)| items)
+}
+
+/// Like [`parse`], with the separators of the program (see [`Layout`]).
+pub fn parse_with_layout(lexed: Lexed) -> Fallible<(Vec<Item>, Layout)> {
     let preds = Rc::new(predicates(&lexed.tokens));
     let value_spans = Rc::new(value_places(&lexed.tokens));
     let values = Rc::new(value_spans.keys().copied().collect());
@@ -31,12 +36,19 @@ pub fn parse(lexed: Lexed) -> Fallible<Vec<Item>> {
         value_spans,
         no_do: false,
         commands: HashSet::new(),
+        command_ends: HashSet::new(),
+        jux: false,
+        fallbacks: 0,
+        commaless: HashSet::new(),
+        layout: Layout::default(),
+        split_wanted: false,
     };
-    p.program().map_err(|d| {
+    let items = p.program().map_err(|d| {
         let mut d = ternary(&p.toks, d);
         crate::fix::complete(&mut d);
         d
-    })
+    })?;
+    Ok((items, p.layout))
 }
 
 /// Marks the name that starts `e` with the place where the code gives it a
@@ -450,6 +462,62 @@ struct Parser {
     no_do: bool,
     /// The places of the calls without parentheses read so far.
     commands: HashSet<Span>,
+    /// Where those calls end, to know that one ends just before a comma.
+    command_ends: HashSet<u32>,
+    /// Reading the elements of a bracket written without commas, as REBOL
+    /// does (`[1 2 3]`): a `[`, `(`, `-x` or `..x` after a space starts the
+    /// next element instead of continuing this one.
+    jux: bool,
+    /// How many brackets were read without commas so far: a bracket inside
+    /// which one was is read without commas too (see `comma_list`).
+    fallbacks: u32,
+    /// The brackets (by the position of their first element) known to be
+    /// written without commas, so that reading them again goes straight there.
+    commaless: HashSet<usize>,
+    /// The brackets and their separators, for the formatter.
+    layout: Layout,
+    /// An index failed where a list without commas would not have: `[a [1 2]]`.
+    split_wanted: bool,
+}
+
+/// What the formatter needs to know of the separators of a program: where a
+/// comma is implied (`[1 2]`), and every bracket with its commas.
+#[derive(Default, Debug, Clone)]
+pub struct Layout {
+    /// The places (offsets in the file) after an element where a comma is
+    /// implied, because the next element follows without one.
+    pub implied: Vec<u32>,
+    pub brackets: Vec<Bracket>,
+}
+
+/// A list of things separated by commas: `[a, b]`, `f(a, b)`, `{a: 1}`,
+/// `print a, b`, `fn f(a, b)`, `|a, b|`...
+#[derive(Debug, Clone)]
+pub struct Bracket {
+    /// From the first element to the last (offsets in the file).
+    pub start: u32,
+    pub end: u32,
+    /// Its elements are expressions, read with the rules of `jux`.
+    pub values: bool,
+    /// Read the same with or without commas, never depending on the brackets
+    /// around (the parameters of a block, a list pattern).
+    pub free: bool,
+    pub seps: Vec<Sep>,
+}
+
+/// The place between two elements of a bracket.
+#[derive(Debug, Clone)]
+pub struct Sep {
+    /// The comma written there, if any (its offset).
+    pub comma: Option<u32>,
+    /// The next element starts with a token that would continue the one
+    /// before if nothing separated them: `[`, `(`, `-`, `..`.
+    pub joins: bool,
+    /// The element before ends with a call without parentheses, which would
+    /// take the next element as one more argument.
+    pub absorbs: bool,
+    /// A comma after the last element (`[a, b,]`).
+    pub trailing: bool,
 }
 
 /// Deeper nesting is surely a mistake, and would exhaust the stack.
@@ -481,6 +549,19 @@ pub(crate) fn is_continuation(t: &Tok) -> bool {
             | Tok::Or
             | Tok::DotDot
     )
+}
+
+/// Can an element of a bracket start with this token (written without a comma
+/// before it)? An expression, a spread `..x`, a negative number, a pattern, a
+/// type or a field.
+fn starts_element(t: &Tok) -> bool {
+    starts_expression(t) || matches!(t, Tok::Minus | Tok::DotDot | Tok::Not | Tok::If | Tok::Match)
+}
+
+/// Would this token, after an element, continue it if no comma separated
+/// them? `[a, [0]]` without its comma is `[a[0]]` (see `Parser::splits`).
+fn joins(t: &Tok) -> bool {
+    matches!(t, Tok::LBracket | Tok::LParen | Tok::Minus | Tok::DotDot)
 }
 
 fn starts_expression(t: &Tok) -> bool {
@@ -645,13 +726,42 @@ impl Parser {
         }
     }
 
-    fn nested<T>(&mut self, sig: bool, f: impl FnOnce(&mut Self) -> Fallible<T>) -> Fallible<T> {
+    fn nested<T, E>(&mut self, sig: bool, f: impl FnOnce(&mut Self) -> Result<T, E>) -> Result<T, E> {
         self.sig.push(sig);
         let no_do = std::mem::replace(&mut self.no_do, false);
+        let jux = std::mem::replace(&mut self.jux, false);
         let r = f(self);
+        self.jux = jux;
         self.no_do = no_do;
         self.sig.pop();
         r
+    }
+
+    /// In a bracket written without commas, does the token here start the
+    /// next element, after a space, rather than continue this one? `[a [0]]`,
+    /// `[a (b)]`, `[a -1]`, `[a ..b]` (a `-` or `..` touching what follows).
+    fn splits(&self) -> bool {
+        if !self.jux {
+            return false;
+        }
+        let t = &self.toks[self.pos];
+        if t.span.start <= self.last.end {
+            return false;
+        }
+        match t.tok {
+            Tok::LBracket | Tok::LParen => true,
+            Tok::Minus | Tok::DotDot => self.toks.get(self.pos + 1).is_some_and(|n| n.span.start == t.span.end),
+            _ => false,
+        }
+    }
+
+    /// The position of the next token that is not a new line.
+    fn next_pos(&self) -> usize {
+        let mut i = self.pos;
+        while matches!(self.toks[i].tok, Tok::Newline) {
+            i += 1;
+        }
+        i
     }
 
     // ----- errors -------------------------------------------------------
@@ -957,6 +1067,7 @@ impl Parser {
                 e = with_block(e, block);
             }
             p.commands.insert(e.span);
+            p.command_ends.insert(e.span.end);
             Ok(e)
         })
     }
@@ -1000,14 +1111,60 @@ impl Parser {
 
     /// `a, b, c`: the arguments of a call without parentheses, up to the end
     /// of the line (a new line may follow a comma).
+    /// The commas may be left out, as in REBOL (`print a b`): read as in
+    /// [`comma_list`](Self::comma_list), with commas first.
     fn command_args(&mut self) -> Fallible<Vec<Expr>> {
-        let mut args = vec![self.expr()?];
-        while matches!(self.raw(), Tok::Comma) {
-            self.advance();
-            self.skip_newlines();
-            args.push(self.expr()?);
+        let (pos, last, fallbacks, marks) = (self.pos, self.last, self.fallbacks, self.layout_marks());
+        if !self.commaless.contains(&pos) {
+            let wanted = std::mem::replace(&mut self.split_wanted, false);
+            let strict = self.command_items(false);
+            let split = std::mem::replace(&mut self.split_wanted, wanted);
+            match strict {
+                Ok(args) if self.fallbacks == fallbacks && !self.command_goes_on() => return Ok(args),
+                Err(d) if self.fallbacks == fallbacks && !split => return Err(d),
+                _ => {}
+            }
+            self.commaless.insert(pos);
         }
-        Ok(args)
+        self.pos = pos;
+        self.last = last;
+        self.layout_reset(marks);
+        let r = self.command_items(true);
+        self.fallbacks += 1;
+        r
+    }
+
+    /// After the arguments of a call without parentheses, on the same line,
+    /// the start of one more (a `do` block is given to the call).
+    fn command_goes_on(&self) -> bool {
+        starts_element(self.raw()) && !matches!(self.raw(), Tok::Do)
+    }
+
+    fn command_items(&mut self, commaless: bool) -> Fallible<Vec<Expr>> {
+        let start = self.toks[self.pos].span.start;
+        let jux = std::mem::replace(&mut self.jux, commaless);
+        let r = (|| {
+            let mut seps = Vec::new();
+            let mut args = vec![self.expr()?];
+            loop {
+                let absorbs = self.command_ends.contains(&self.last.end);
+                if matches!(self.raw(), Tok::Comma) {
+                    let comma = self.advance();
+                    self.skip_newlines();
+                    seps.push(Sep { comma: Some(comma.span.start), joins: joins(self.raw()), absorbs, trailing: false });
+                    args.push(self.expr()?);
+                } else if commaless && self.command_goes_on() {
+                    self.layout.implied.push(self.last.end);
+                    seps.push(Sep { comma: None, joins: joins(self.raw()), absorbs, trailing: false });
+                    args.push(self.expr()?);
+                } else {
+                    self.push_bracket(start, true, false, seps);
+                    return Ok(args);
+                }
+            }
+        })();
+        self.jux = jux;
+        r
     }
 
     /// Does a definition with a bracketed pattern start here: `[first, ..] = list`,
@@ -1738,7 +1895,7 @@ impl Parser {
         let arithmetic = matches!(
             self.peek_cont(),
             Tok::Plus | Tok::Minus | Tok::Star | Tok::Slash | Tok::SlashSlash | Tok::Percent | Tok::StarStar | Tok::DotDot
-        );
+        ) && !self.splits();
         if piped && arithmetic {
             let op = self.peek_token();
             let sym = lexer::symbol_text(&op.tok);
@@ -1765,7 +1922,7 @@ impl Parser {
             let (name, name_span) = self.member()?;
             if matches!(self.raw(), Tok::LParen) {
                 self.advance();
-                let mut args = self.comma_list(&Tok::RParen, |p| p.expr())?;
+                let mut args = self.value_list(&Tok::RParen, |p| p.expr())?;
                 args.insert(0, input);
                 let call = Expr::new(ExprKind::Method(Box::new(callee), Sym::new(&name), args, name_span), start.to(self.last));
                 return self.postfix_ops(call);
@@ -1776,7 +1933,7 @@ impl Parser {
         let mut args = vec![input];
         if matches!(self.raw(), Tok::LParen) {
             self.advance();
-            args.extend(self.comma_list(&Tok::RParen, |p| p.expr())?);
+            args.extend(self.value_list(&Tok::RParen, |p| p.expr())?);
         }
         let call = Expr::new(ExprKind::Call(Box::new(callee), args), start.to(self.last));
         self.postfix_ops(call)
@@ -1826,17 +1983,35 @@ impl Parser {
                     p.advance();
                     params = p.nested(false, |p| {
                         let mut params = Vec::new();
+                        let start = p.next_offset();
+                        let mut seps = Vec::new();
                         loop {
                             if p.eat(&Tok::Bar) {
+                                p.push_bracket(start, false, true, seps);
                                 return Ok(params);
                             }
                             let param = p.deeper(|p| p.pattern_atom())?;
                             params.push(p.typed(param)?);
-                            if p.eat(&Tok::Comma) {
+                            if matches!(p.peek(), Tok::Comma) {
+                                let comma = p.advance();
+                                let trailing = matches!(p.peek(), Tok::Bar);
+                                seps.push(Sep {
+                                    comma: Some(comma.span.start),
+                                    joins: matches!(p.peek(), Tok::LParen),
+                                    absorbs: false,
+                                    trailing,
+                                });
                                 continue;
                             }
                             if p.eat(&Tok::Bar) {
+                                p.push_bracket(start, false, true, seps);
                                 return Ok(params);
+                            }
+                            // `do |acc x|`: the parameters without commas.
+                            if starts_element(p.peek()) {
+                                p.layout.implied.push(p.last.end);
+                                seps.push(Sep { comma: None, joins: matches!(p.peek(), Tok::LParen), absorbs: false, trailing: false });
+                                continue;
                             }
                             let mut d = p.unexpected(t!("`,` or `|`", "`,` ou `|`"));
                             d.helps.push(t!(
@@ -1906,7 +2081,7 @@ impl Parser {
 
     fn range_expr(&mut self) -> Fallible<Expr> {
         let l = self.add_expr()?;
-        if matches!(self.peek_cont(), Tok::DotDot) {
+        if matches!(self.peek_cont(), Tok::DotDot) && !self.splits() {
             self.take_cont();
             self.skip_newlines();
             let r = self.add_expr()?;
@@ -1924,6 +2099,9 @@ impl Parser {
                 Tok::Minus => BinOp::Sub,
                 _ => return Ok(l),
             };
+            if op == BinOp::Sub && self.splits() {
+                return Ok(l);
+            }
             let t = self.take_cont();
             self.skip_newlines();
             let r = self.mul_expr()?;
@@ -2018,10 +2196,13 @@ impl Parser {
                 continue;
             }
             self.skip_soft();
+            if self.splits() {
+                return Ok(e);
+            }
             match self.raw() {
                 Tok::LParen => {
                     self.advance();
-                    let args = self.comma_list(&Tok::RParen, |p| p.expr())?;
+                    let args = self.value_list(&Tok::RParen, |p| p.expr())?;
                     let span = e.span.to(self.last);
                     e = Expr::new(ExprKind::Call(Box::new(e), args), span);
                 }
@@ -2030,6 +2211,11 @@ impl Parser {
                     let idx = self.nested(false, |p| {
                         let i = p.expr()?;
                         if !p.eat(&Tok::RBracket) {
+                            // `[xs ["a" "b"]]`: a list without commas after a
+                            // space, read as an index while commas are expected.
+                            if starts_element(p.peek()) || matches!(p.peek(), Tok::Comma) {
+                                p.split_wanted = true;
+                            }
                             return Err(p.unexpected(t!("`]`", "`]`")));
                         }
                         Ok(i)
@@ -2050,7 +2236,7 @@ impl Parser {
                     let (name, name_span) = self.member()?;
                     if matches!(self.raw(), Tok::LParen) {
                         self.advance();
-                        let args = self.comma_list(&Tok::RParen, |p| p.expr())?;
+                        let args = self.value_list(&Tok::RParen, |p| p.expr())?;
                         let span = e.span.to(self.last);
                         e = Expr::new(ExprKind::Method(Box::new(e), Sym::new(&name), args, name_span), span);
                     } else {
@@ -2062,34 +2248,119 @@ impl Parser {
         }
     }
 
-    /// Parses `item, item, ...` up to `close` (the opening bracket is already consumed).
-    fn comma_list<T>(&mut self, close: &Tok, mut item: impl FnMut(&mut Self) -> Fallible<T>) -> Fallible<Vec<T>> {
+    /// Parses `item, item, ...` up to `close` (the opening bracket is already
+    /// consumed). The commas may be left out, as in REBOL: `[1 2 3]`,
+    /// `f(a b)`, `{name: "Ada" age: 36}`. Every program written with commas
+    /// keeps its meaning: the bracket is read with commas first, and read
+    /// again without them only when that fails between two elements (`[1 2]`)
+    /// or when a bracket inside it was itself written without commas
+    /// (`[[1 2] [3 4]]`, two lists, not an index). Without commas, a `[`, a
+    /// `(`, a `-x` or a `..x` after a space starts the next element.
+    fn comma_list<T>(&mut self, close: &Tok, item: impl FnMut(&mut Self) -> Fallible<T>) -> Fallible<Vec<T>> {
+        self.separated(close, false, item)
+    }
+
+    /// A [`comma_list`](Self::comma_list) of expressions: a list, a record,
+    /// the arguments of a call.
+    fn value_list<T>(&mut self, close: &Tok, item: impl FnMut(&mut Self) -> Fallible<T>) -> Fallible<Vec<T>> {
+        self.separated(close, true, item)
+    }
+
+    fn separated<T>(&mut self, close: &Tok, values: bool, mut item: impl FnMut(&mut Self) -> Fallible<T>) -> Fallible<Vec<T>> {
         let open_span = self.last;
         let close = close.clone();
-        self.nested(false, |p| {
-            let mut items = Vec::new();
-            loop {
-                if p.eat(&close) {
-                    return Ok(items);
-                }
-                items.push(item(p)?);
-                if p.eat(&Tok::Comma) {
-                    continue;
-                }
-                if p.eat(&close) {
-                    return Ok(items);
-                }
-                let closing = lexer::symbol_text(&close);
-                let mut d = p.unexpected(t!("`,` or `{closing}`", "`,` ou `{closing}`"));
-                if starts_expression(p.peek()) {
-                    d.helps.push(t!("separate the elements with commas", "séparez les éléments par des virgules"));
-                }
-                if d.incomplete {
-                    d.secondary.push((open_span, t!("opened here", "ouvert ici")));
-                }
-                return Err(d);
+        let (pos, last, fallbacks, marks) = (self.pos, self.last, self.fallbacks, self.layout_marks());
+        if !self.commaless.contains(&pos) {
+            let wanted = std::mem::replace(&mut self.split_wanted, false);
+            let strict = self.nested(false, |p| p.items(&close, values, false, open_span, &mut item));
+            let split = std::mem::replace(&mut self.split_wanted, wanted);
+            match strict {
+                Ok(items) if self.fallbacks == fallbacks => return Ok(items),
+                Err((d, false)) if self.fallbacks == fallbacks && !split => return Err(d),
+                _ => {}
             }
-        })
+            self.commaless.insert(pos);
+        }
+        self.pos = pos;
+        self.last = last;
+        self.layout_reset(marks);
+        let r = self.nested(false, |p| p.items(&close, values, true, open_span, &mut item)).map_err(|(d, _)| d);
+        self.fallbacks += 1;
+        r
+    }
+
+    /// The elements of a bracket, with commas (`commaless` false) or without.
+    /// An error between two elements says so (`true`): the bracket may be
+    /// written without commas.
+    fn items<T>(
+        &mut self,
+        close: &Tok,
+        values: bool,
+        commaless: bool,
+        open_span: Span,
+        item: &mut impl FnMut(&mut Self) -> Fallible<T>,
+    ) -> Result<Vec<T>, (Box<Diagnostic>, bool)> {
+        let start = self.next_offset();
+        let mut seps = Vec::new();
+        let mut items = Vec::new();
+        loop {
+            if self.eat(close) {
+                self.push_bracket(start, values, false, seps);
+                return Ok(items);
+            }
+            let jux = std::mem::replace(&mut self.jux, commaless && values);
+            let one = item(self);
+            self.jux = jux;
+            items.push(one.map_err(|d| (d, false))?);
+            let absorbs = self.command_ends.contains(&self.last.end);
+            if matches!(self.peek(), Tok::Comma) {
+                let comma = self.advance();
+                let trailing = matches!(self.peek(), t if t == close);
+                let joins = joins(self.peek());
+                seps.push(Sep { comma: Some(comma.span.start), joins, absorbs, trailing });
+                continue;
+            }
+            if self.eat(close) {
+                self.push_bracket(start, values, false, seps);
+                return Ok(items);
+            }
+            if commaless && starts_element(self.peek()) {
+                self.layout.implied.push(self.last.end);
+                seps.push(Sep { comma: None, joins: joins(self.peek()), absorbs, trailing: false });
+                continue;
+            }
+            let closing = lexer::symbol_text(close);
+            // `xs.map { x -> x * 2 }`: a block written as in another language,
+            // not a record without a comma before it.
+            let block = matches!(self.peek(), Tok::LBrace)
+                && matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Ident(_)))
+                && matches!(self.toks.get(self.pos + 2).map(|t| &t.tok), Some(Tok::Arrow | Tok::FatArrow | Tok::Comma));
+            let between = starts_element(self.peek()) && !block;
+            let mut d = self.unexpected(t!("`,` or `{closing}`", "`,` ou `{closing}`"));
+            if d.incomplete {
+                d.secondary.push((open_span, t!("opened here", "ouvert ici")));
+            }
+            return Err((d, between));
+        }
+    }
+
+    /// The offset of the next token, new lines skipped.
+    fn next_offset(&self) -> u32 {
+        self.toks[self.next_pos()].span.start
+    }
+
+    fn push_bracket(&mut self, start: u32, values: bool, free: bool, seps: Vec<Sep>) {
+        let end = self.last.end;
+        self.layout.brackets.push(Bracket { start, end, values, free, seps });
+    }
+
+    fn layout_marks(&self) -> (usize, usize) {
+        (self.layout.implied.len(), self.layout.brackets.len())
+    }
+
+    fn layout_reset(&mut self, (implied, brackets): (usize, usize)) {
+        self.layout.implied.truncate(implied);
+        self.layout.brackets.truncate(brackets);
     }
 
     /// Runs `f` one nesting level deeper, refusing absurdly deep code.
@@ -2208,7 +2479,7 @@ impl Parser {
             }
             Tok::LBracket => {
                 self.advance();
-                let items = self.comma_list(&Tok::RBracket, |p| {
+                let items = self.value_list(&Tok::RBracket, |p| {
                     if p.eat(&Tok::DotDot) {
                         Ok(ListItem::Spread(p.expr()?))
                     } else {
@@ -2220,7 +2491,7 @@ impl Parser {
             Tok::LBrace if self.block_follows() => Err(self.lone_block()),
             Tok::LBrace => {
                 self.advance();
-                let items = self.comma_list(&Tok::RBrace, |p| p.record_item())?;
+                let items = self.value_list(&Tok::RBrace, |p| p.record_item())?;
                 Ok(Expr::new(ExprKind::Record(items), span.to(self.last)))
             }
             Tok::Fn => {
@@ -2313,6 +2584,12 @@ impl Parser {
                         value_spans: self.value_spans.clone(),
                         no_do: false,
                         commands: HashSet::new(),
+                        command_ends: HashSet::new(),
+                        jux: false,
+                        fallbacks: 0,
+                        commaless: HashSet::new(),
+                        layout: Layout::default(),
+                        split_wanted: false,
                     };
                     let e =
                         sub.expr().and_then(
@@ -2520,6 +2797,15 @@ impl Parser {
     /// text, `"Mr " + name`.
     fn pattern_part(&mut self) -> Fallible<Pattern> {
         let first = self.pattern_atom()?;
+        self.peek();
+        // `[first ..rest]`: a list pattern without commas, not a range (only a
+        // number can start one).
+        let rest = matches!(self.raw(), Tok::DotDot)
+            && range_bound(&first).is_err()
+            && self.toks.get(self.pos + 1).is_some_and(|n| matches!(n.tok, Tok::Ident(_)) && n.span.start == self.toks[self.pos].span.end);
+        if rest {
+            return Ok(first);
+        }
         match self.peek() {
             Tok::DotDot => {
                 self.advance();
@@ -2674,6 +2960,8 @@ impl Parser {
                 return self.nested(false, |p| {
                     let mut elems = Vec::new();
                     let mut rest = None;
+                    let start = p.next_offset();
+                    let mut seps = Vec::new();
                     loop {
                         if matches!(p.peek(), Tok::RBracket) {
                             break;
@@ -2691,7 +2979,10 @@ impl Parser {
                                 _ => None,
                             };
                             rest = Some(name);
-                            p.eat(&Tok::Comma);
+                            if matches!(p.peek(), Tok::Comma) {
+                                let comma = p.advance();
+                                seps.push(Sep { comma: Some(comma.span.start), joins: false, absorbs: false, trailing: true });
+                            }
                             if !matches!(p.peek(), Tok::RBracket) {
                                 let mut d = p.unexpected(t!("`]`", "`]`"));
                                 d.helps.push(t!(
@@ -2702,14 +2993,34 @@ impl Parser {
                             }
                             break;
                         }
-                        elems.push(p.pattern()?);
-                        if !p.eat(&Tok::Comma) {
-                            break;
+                        let elem = p.pattern()?;
+                        // `[1, ..9]` without its comma is the range `1..9`.
+                        let joins = |p: &mut Self, elem: &Pattern| match p.peek() {
+                            Tok::LParen => true,
+                            Tok::DotDot => range_bound(elem).is_ok(),
+                            _ => false,
+                        };
+                        if matches!(p.peek(), Tok::Comma) {
+                            let comma = p.advance();
+                            let trailing = matches!(p.peek(), Tok::RBracket);
+                            seps.push(Sep { comma: Some(comma.span.start), joins: joins(p, &elem), absorbs: false, trailing });
+                            elems.push(elem);
+                            continue;
                         }
+                        // `[first second ..rest]`: the elements without commas.
+                        if starts_element(p.peek()) {
+                            p.layout.implied.push(p.last.end);
+                            seps.push(Sep { comma: None, joins: joins(p, &elem), absorbs: false, trailing: false });
+                            elems.push(elem);
+                            continue;
+                        }
+                        elems.push(elem);
+                        break;
                     }
                     if !p.eat(&Tok::RBracket) {
                         return Err(p.unexpected(t!("`,` or `]`", "`,` ou `]`")));
                     }
+                    p.push_bracket(start, false, true, seps);
                     Ok(Pattern::new(PatKind::List(elems, rest), span.to(p.last)))
                 });
             }

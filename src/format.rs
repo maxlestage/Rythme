@@ -3,8 +3,8 @@
 //! The style, as in `examples/`:
 //! - two spaces of indentation per level, never tabs;
 //! - one space around operators (`a + b`, `x |> f`, `n -> n * 2`, `x = 1`),
-//!   after commas and after `:` in records; none inside brackets (`f(x)`,
-//!   `[1, 2]`, `{name: "Ada"}`), around `..` (`1..10`, `[first, ..rest]`) or
+//!   between elements and after `:` in records; none inside brackets (`f(x)`,
+//!   `[1 2]`, `{name: "Ada"}`), around `..` (`1..10`, `[first ..rest]`) or
 //!   after a minus sign (`-x`);
 //! - the inside of a block, a `match` or a bracket one level deeper than the
 //!   line that opens it, and `end` or the closing bracket back at that level;
@@ -12,13 +12,16 @@
 //! - a `|>` pipeline written on several lines gets one step per line, `|>`
 //!   first; a type written on several lines gets one variant per line, each
 //!   after `|`;
-//! - a list written on several lines ends with a comma; on one line, without;
+//! - no commas between the elements of a bracket, as in REBOL (`[1 2 3]`,
+//!   `f(a b)`, `{name: "Ada" age: 36}`, `print x y`), except where the next
+//!   element would otherwise continue the one before (`[x, -1]`, `[a, [0]]`,
+//!   `[0, ..xs]`); never one after the last element;
 //! - a block given to a call (`do |x| ... end`, `{ |x| ... }`) written on one
 //!   line stays on one line, with one space around its parts
 //!   (`xs.map do |x| x * 2 end`, `xs.map { |x| x * 2 }`); on several lines,
 //!   its statements are one level deeper than the line of `do`;
 //! - a call without parentheses keeps them out, with one space after its
-//!   name (`puts "Hello"`, `print x, y`); a name followed by `[` or `-` that
+//!   name (`puts "Hello"`, `print x y`); a name followed by `[` or `-` that
 //!   is not such a call is written as what it is (`xs[0]`, `x - 1`);
 //! - statements separated by `;` go on their own lines, and `end` too;
 //! - a top-level definition written on several lines is separated from what
@@ -67,16 +70,107 @@ pub fn format(source: &str) -> Result<String, Vec<Diagnostic>> {
 /// code nested thousands of levels deep needs a thread with a big stack, as
 /// `rythme` has.
 pub fn format_named(name: &str, source: &str) -> Result<String, Vec<Diagnostic>> {
-    let Some(items) = parse(source) else { return Err(vec![syntax_error(name, source)]) };
-    // The same text as the code (already formatted, the usual case): nothing
-    // to compare, which is most of the work.
-    let out = layout(&short_uses(source))
-        .filter(|out| out == source || syntax_tree(out).as_ref() == Some(&tree_text(&items)) && comments(out) == comments(source));
+    let Some((items, seps)) = lexer::lex(source, UNSHOWN).and_then(parser::parse_with_layout).ok() else {
+        return Err(vec![syntax_error(name, source)]);
+    };
+    // Code written without commas (`[1 2]`) is laid out with them, then they
+    // are taken out again where the meaning stays the same.
+    let with_commas = insert_commas(source, &seps.implied);
+    let tree = tree_text(&items);
+    let source_comments = comments(source);
+    let same = |out: &String| out == source || syntax_tree(out).as_ref() == Some(&tree) && comments(out) == source_comments;
+    let out = layout(&short_uses(&with_commas))
+        .filter(|out| *out == with_commas || same(out))
+        .map(|out| drop_commas(&out).filter(&same).unwrap_or(out));
     match out {
         Some(out) if uses_crlf(source) => Ok(out.replace('\n', "\r\n")),
         Some(out) => Ok(out),
         None => Err(vec![bug(name)]),
     }
+}
+
+/// The code with a comma at each of the places given (offsets, in order):
+/// `[1 2]` becomes `[1, 2]`.
+fn insert_commas(src: &str, at: &[u32]) -> String {
+    if at.is_empty() {
+        return src.to_string();
+    }
+    let mut at = at.to_vec();
+    at.sort_unstable();
+    at.dedup();
+    let mut out = String::with_capacity(src.len() + at.len());
+    let mut from = 0;
+    for &i in &at {
+        out.push_str(&src[from..i as usize]);
+        out.push(',');
+        from = i as usize;
+    }
+    out.push_str(&src[from..]);
+    out
+}
+
+/// The code laid out with commas, without the commas that can be left out,
+/// as in REBOL: `[1, 2]` is written `[1 2]`, `f(a, b)` `f(a b)`, `print x,
+/// y` `print x y`. A comma stays where the next element would otherwise
+/// continue the one before (`[x, -1]`, `[a, [0]]`, `[1, ..xs]`), unless the
+/// bracket is read without commas anyway, because an element there or in a
+/// bracket inside it follows without one: `[[1 2] [3 4]]`. It also stays
+/// after a call without parentheses, which would take the next element as
+/// an argument (`[fn(v) = puts v, 2]`).
+fn drop_commas(code: &str) -> Option<String> {
+    let (_, layout) = lexer::lex(code, UNSHOWN).and_then(parser::parse_with_layout).ok()?;
+    let brackets = &layout.brackets;
+    // A bracket is read without commas when one of its separators, or one of
+    // a bracket inside it, has its comma taken out without continuing the
+    // element before.
+    let loose = |b: &parser::Bracket| !b.free && b.seps.iter().any(|s| s.comma.is_some() && !s.trailing && !s.joins && !s.absorbs);
+    let mut starts: Vec<u32> = brackets.iter().filter(|b| loose(b)).map(|b| b.start).collect();
+    starts.sort_unstable();
+    let mut drop = Vec::new();
+    for b in brackets {
+        let forced = b.free || {
+            // A loose bracket starts inside this one (or is this one).
+            let i = starts.partition_point(|&s| s < b.start);
+            starts.get(i).is_some_and(|&s| s <= b.end)
+        };
+        for sep in &b.seps {
+            let Some(at) = sep.comma else { continue };
+            // A comma after the last element separates nothing: it always goes.
+            let keep = !sep.trailing && (!forced || sep.absorbs || (sep.joins && (b.free || !b.values)));
+            if !keep {
+                drop.push(at as usize);
+            }
+        }
+    }
+    if drop.is_empty() {
+        return Some(code.to_string());
+    }
+    drop.sort_unstable();
+    drop.dedup();
+    let mut out = String::with_capacity(code.len());
+    let mut from = 0;
+    for i in drop {
+        if code.as_bytes().get(i) != Some(&b',') || i < from {
+            return None;
+        }
+        let line_start = code[..i].rfind('\n').map_or(0, |n| n + 1);
+        let line_end = code[i..].find('\n').map_or(code.len(), |n| i + n);
+        let before = code[line_start..i].chars().all(|c| c == ' ');
+        let after = code[i + 1..line_end].trim_end_matches('\r').chars().all(|c| c == ' ');
+        let (cut, resume) = if before && after && line_end < code.len() && line_start >= from {
+            // A comma alone on its line: the line goes.
+            (line_start, line_end + 1)
+        } else if before && code[i + 1..].starts_with(' ') {
+            // A comma that starts a line (`f(a\n  , b)`): its space goes too.
+            (i, i + 2)
+        } else {
+            (i, i + 1)
+        };
+        out.push_str(&code[from..cut]);
+        from = resume;
+    }
+    out.push_str(&code[from..]);
+    Some(out)
 }
 
 /// `use "geometry.ry" as geo` written in the recommended form, `use
@@ -2067,14 +2161,14 @@ mod tests {
     #[test]
     fn spaces() {
         gives("x=1+2*3\n", "x = 1 + 2 * 3\n");
-        gives("print( f (1 ,2) , [ 1,2 ] , { a : 1 , ..r } )\n", "print(f(1, 2), [1, 2], {a: 1, ..r})\n");
+        gives("print( f (1 ,2) , [ 1,2 ] , { a : 1 , ..r } )\n", "print(f(1 2) [1 2] {a: 1, ..r})\n");
         gives("y = - x + -1 - - 2\n", "y = -x + -1 - -2\n");
         gives("y = --x\n", "y = - -x\n");
         gives("z = 1 .. 10\nw = [ p , .. rest ]\n", "z = 1..10\nw = [p, ..rest]\n");
         gives("v = xs . map ( f ) [ 0 ] ?\n", "v = xs.map(f)[0]?\n");
         gives("f = fn ( x ) = not x and(x or  y)\n", "f = fn(x) = not x and (x or y)\n");
         gives("b = 2**-1\n", "b = 2 ** -1\n");
-        same("r = {type: 1, \"full name\": 2}\n");
+        same("r = {type: 1 \"full name\": 2}\n");
         gives("fn f(1 .. 9 | - 2.5 .. -1) = 1\nfn f(\"Mr \"+name) = name\n", "fn f(1..9 | -2.5..-1) = 1\nfn f(\"Mr \" + name) = name\n");
     }
 
@@ -2084,18 +2178,15 @@ mod tests {
         gives("fn f(x) = match x\n0 -> 1\n    _ -> 2 end\n", "fn f(x) = match x\n  0 -> 1\n  _ -> 2\nend\n");
         gives("x = do a = 1; a + 1 end\n", "x = do\n  a = 1\n  a + 1\nend\n");
         same("xs |> each(fn(x)\n  print(x)\nend)\n");
-        same("students = [\n  {name: \"Ada\"},\n  {name: \"Alan\"},\n]\n");
-        gives(
-            "students = [\n  {name: \"Ada\"},\n    {name: \"Alan\"}\n  ]\n",
-            "students = [\n  {name: \"Ada\"},\n  {name: \"Alan\"},\n]\n",
-        );
+        same("students = [\n  {name: \"Ada\"}\n  {name: \"Alan\"}\n]\n");
+        gives("students = [\n  {name: \"Ada\"},\n    {name: \"Alan\"}\n  ]\n", "students = [\n  {name: \"Ada\"}\n  {name: \"Alan\"}\n]\n");
     }
 
     #[test]
     fn calls_without_parentheses() {
-        same("puts \"Hello\"\nprint x, y\nassert_eq total, 42\nputs -1\nputs [1, 2]\n");
+        same("puts \"Hello\"\nprint x y\nassert_eq total 42\nputs -1\nputs [1 2]\n");
         same("xs.each do |x| puts x end\n");
-        gives("puts\"a\"\nprint  x ,y\n", "puts \"a\"\nprint x, y\n");
+        gives("puts\"a\"\nprint  x ,y\n", "puts \"a\"\nprint x y\n");
         // The author's choice stays: with or without parentheses.
         same("puts(\"a\")\nputs \"a\"\n");
         // Values: an index and a subtraction, written as such.
@@ -2103,7 +2194,7 @@ mod tests {
         gives("x = 1\nx -1\n", "x = 1\nx - 1\n");
         gives("each xs do |v|\nprint v\n  end\n", "each xs do |v|\n  print v\nend\n");
         // In results: branches, cases, the body after `=`.
-        same("fn check(ok) = if ok then puts \"yes\" else puts \"no\"\nf = fn(x) = puts x\ntest \"t\" = assert_eq 1, 1\n");
+        same("fn check(ok) = if ok then puts \"yes\" else puts \"no\"\nf = fn(x) = puts x\ntest \"t\" = assert_eq 1 1\n");
         same("match name\n  \"Dr \" + n -> puts n\n  _ -> puts \"?\"\nend\n");
         gives("fn f(x) =\nif x then\nputs  1\nelse\nputs 2\n", "fn f(x) =\n  if x then\n    puts 1\n  else\n    puts 2\n");
         gives("xs = [1]\nf = fn(v) = xs [0]\n", "xs = [1]\nf = fn(v) = xs[0]\n");
@@ -2128,10 +2219,10 @@ mod tests {
 
     #[test]
     fn types() {
-        same("type Tree = Leaf | Node(left, value, right)\n");
+        same("type Tree = Leaf | Node(left value right)\n");
         gives("type T = | A | B\n", "type T = A | B\n");
-        gives("type Shape = Circle(r)\n  | Rect(w, h)\n", "type Shape =\n  | Circle(r)\n  | Rect(w, h)\n");
-        gives("type Shape =\nCircle(r) |\nRect(w, h)\n", "type Shape =\n  | Circle(r)\n  | Rect(w, h)\n");
+        gives("type Shape = Circle(r)\n  | Rect(w, h)\n", "type Shape =\n  | Circle(r)\n  | Rect(w h)\n");
+        gives("type Shape =\nCircle(r) |\nRect(w, h)\n", "type Shape =\n  | Circle(r)\n  | Rect(w h)\n");
     }
 
     #[test]
@@ -2139,7 +2230,7 @@ mod tests {
         same("# header\n\n## Doubles.\nfn double(x) = x * 2  # the result\n");
         gives("x = 1 # one\ntotal = x + 2   # three\n", "x = 1          # one\ntotal = x + 2  # three\n");
         same("fn f(x)\n  # before\n  x\n  # after\nend\n");
-        same("xs = [\n  1,  # one\n  # two is next\n  2,\n]\n");
+        same("xs = [\n  1  # one\n  # two is next\n  2\n]\n");
         gives("x = 1 # no new line at the end", "x = 1  # no new line at the end\n");
     }
 
@@ -2150,7 +2241,7 @@ mod tests {
         gives("x = 1\nfn f()\n  1\nend\ny = 2\n", "x = 1\n\nfn f()\n  1\nend\n\ny = 2\n");
         gives("x = 1\n# about f\nfn f()\n  1\nend\n", "x = 1\n\n# about f\nfn f()\n  1\nend\n");
         same("fn fib(0) = 0\nfn fib(1) = 1\nfn fib(n) =\n  fib(n - 1) + fib(n - 2)\n");
-        same("fn fast_fib(n) = step(n, 0, 1)\nfn step(0, a, _) = a\n");
+        same("fn fast_fib(n) = step(n 0 1)\nfn step(0 a _) = a\n");
     }
 
     #[test]

@@ -83,6 +83,7 @@ fn a_block_is_never_a_record_and_needs_a_call() {
     fails("xs = [1].map\ndo |x| x end", "E001");
     // After a value that is not a call, a field or a name: no block.
     let r = fails("print(1 do 2 end)", "E001");
+    // Without commas too: a `do` block is never the next element.
     assert!(r.stdout.is_empty());
     let r = fails("x = 1\nx + 1 do print(1) end", "E001");
     assert!(r.stderr.contains("given to a call"), "{}", r.stderr);
@@ -221,7 +222,7 @@ fn ruby_names_of_the_library() {
 fn the_formatter_keeps_the_ruby_style() {
     let fmt = |code: &str| rythme::format::format(code).unwrap_or_else(|d| panic!("{code}: {}", d[0].render(false)));
     assert_eq!(fmt("xs.map do |x|x*2 end\n"), "xs.map do |x| x * 2 end\n");
-    assert_eq!(fmt("xs.map {|x,y|x}\n"), "xs.map { |x, y| x }\n");
+    assert_eq!(fmt("xs.map {|x,y|x}\n"), "xs.map { |x y| x }\n");
     assert_eq!(fmt("xs.each do |x|\nprint(x)\nend\n"), "xs.each do |x|\n  print(x)\nend\n");
     assert_eq!(fmt("xs.each do |x| print(x)\nend\n"), "xs.each do |x|\n  print(x)\nend\n");
     assert_eq!(fmt("f() {||1}\n"), "f() { || 1 }\n");
@@ -321,14 +322,16 @@ fn calls_without_parentheses_are_checked_and_explained() {
     let r = fails("fn add(a, b) = a + b\nadd 1", "E004");
     assert!(r.stderr.contains("add 1"), "{}", r.stderr);
     fails("upper 5", "E005");
-    let r = fails("x = 1\nprint x x", "E001");
-    assert!(r.stderr.contains("separated by commas: `print a, b`"), "{}", r.stderr);
+    // Its arguments may leave out their commas, as in REBOL.
+    ok("x = 1\nprint x x", "1 1");
     // Only at the start of a statement.
     fails("x = len \"abc\"", "E001");
-    fails("print(len \"abc\")", "E001");
+    // Inside brackets, two elements without a comma: the function, then the text.
+    let r = rythme(&["-e", "print(len \"abc\")"]);
+    assert!(r.stdout.contains("W009") || r.stderr.contains("W009"), "{}{}", r.stdout, r.stderr);
     // The formatter keeps them as they are written.
     let fmt = |code: &str| rythme::format::format(code).unwrap_or_else(|d| panic!("{code}: {}", d[0].render(false)));
-    assert_eq!(fmt("puts  \"a\"\nprint(1)\nprint 1 ,2\n"), "puts \"a\"\nprint(1)\nprint 1, 2\n");
+    assert_eq!(fmt("puts  \"a\"\nprint(1)\nprint 1 ,2\n"), "puts \"a\"\nprint(1)\nprint 1 2\n");
     assert_eq!(fmt("x = 1\nputs x -1\nxs = [x]\nputs xs [0]\n"), "x = 1\nputs x - 1\nxs = [x]\nputs xs[0]\n");
     let r = rythme(&["help", "ruby"]);
     assert!(r.stdout.contains("puts \"hi\"   print x, y") && r.stdout.contains("Calls without parentheses"), "{}", r.stdout);
@@ -375,17 +378,16 @@ fn values_in_results_keep_their_meaning() {
     fails("fn f(x) = 1 + len \"ab\"", "E001");
     fails("x = if true then 1 + len \"ab\" else 0", "E019");
     fails("x = len \"abc\"", "E001");
-    // A forgotten comma is explained in a result too.
-    for code in ["if true then puts 1 2 else 0", "match 1\n  _ -> puts 1 2\nend", "fn f() = puts 1 2", "print(fn(x) = puts x x)"] {
-        let r = fails(code, if code.starts_with("if") { "E019" } else { "E001" });
-        assert!(r.stderr.contains("separated by commas: `print a, b`"), "{code}\n{}", r.stderr);
-    }
+    // In a result too, the commas may be left out.
+    ok("if true then puts 1 2 else 0", "1 2");
+    ok("match 1\n  _ -> puts 1 2\nend", "1 2");
+    ok("fn f() = puts 1 2\nf()", "1 2");
     // The formatter keeps the choice of the author.
     let fmt = |code: &str| rythme::format::format(code).unwrap_or_else(|d| panic!("{code}: {}", d[0].render(false)));
-    let code = "fn check(ok) = if ok then puts \"yes\" else puts(\"no\")\nf = fn(x) = puts x, 1\n";
+    let code = "fn check(ok) = if ok then puts \"yes\" else puts(\"no\")\nf = fn(x) = puts x 1\n";
     assert_eq!(fmt(code), code);
     assert_eq!(fmt("fn f(x) = if  x then puts\"a\"  else x -1\n"), "fn f(x) = if x then puts \"a\" else x - 1\n");
-    assert_eq!(fmt("match x\n  1 ->   puts 1 ,2\n  _ -> 0\nend\n"), "match x\n  1 -> puts 1, 2\n  _ -> 0\nend\n");
+    assert_eq!(fmt("match x\n  1 ->   puts 1 ,2\n  _ -> 0\nend\n"), "match x\n  1 -> puts 1 2\n  _ -> 0\nend\n");
     let r = rythme(&["help", "ruby"]);
     assert!(r.stdout.contains("if ok then puts \"yes\" else puts \"no\""), "{}", r.stdout);
 }

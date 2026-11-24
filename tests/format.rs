@@ -270,8 +270,8 @@ fn the_examples_are_formatted() {
 #[test]
 fn no_trailing_comma_after_a_call_without_parentheses() {
     assert_eq!(check("xs.each(\nfn(v) = puts v\n)\n", "test"), "xs.each(\n  fn(v) = puts v\n)\n");
-    assert_eq!(check("f(\n1, if ok then puts 2 else puts 3\n)\n", "test"), "f(\n  1, if ok then puts 2 else puts 3\n)\n");
-    assert_eq!(check("f(\nfn(v) = print(v)\n)\n", "test"), "f(\n  fn(v) = print(v),\n)\n");
+    assert_eq!(check("f(\n1, if ok then puts 2 else puts 3\n)\n", "test"), "f(\n  1 if ok then puts 2 else puts 3\n)\n");
+    assert_eq!(check("f(\nfn(v) = print(v)\n)\n", "test"), "f(\n  fn(v) = print(v)\n)\n");
 }
 
 // ----- mutations --------------------------------------------------------------
@@ -364,6 +364,10 @@ fn respace(src: &str, rng: &mut Rng) -> String {
     out
 }
 
+fn lexer_layout(src: &str) -> Option<rythme::parser::Layout> {
+    rythme::lexer::lex(src, 0).and_then(rythme::parser::parse_with_layout).ok().map(|(_, l)| l)
+}
+
 fn random_spaces(rng: &mut Rng, min: usize) -> String {
     (0..min + rng.below(4)).map(|_| if rng.chance(15) { '\t' } else { ' ' }).collect()
 }
@@ -372,6 +376,11 @@ fn random_spaces(rng: &mut Rng, min: usize) -> String {
 fn spaces_do_not_change_the_result() {
     let mut rng = Rng(0x9e37_79b9_7f4a_7c15);
     for (origin, src) in corpus() {
+        // Without commas, a space before `[`, `(`, `-x` or `..x` starts a new
+        // element (`[a [0]]`): only the spaces of code with commas never count.
+        if lexer_layout(&src).is_some_and(|l| !l.implied.is_empty()) {
+            continue;
+        }
         let expected = check(&src, &origin);
         for _ in 0..3 {
             let mutated = respace(&src, &mut rng);
