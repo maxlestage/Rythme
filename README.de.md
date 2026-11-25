@@ -17,7 +17,7 @@ gibt es auch auf Deutsch: <https://maxlestage.github.io/Rythme/de/>.
 # Werte ändern sich nie. Alles ist eine Funktion. Es gibt keine Schleifen.
 fn quadrat(x) = x * x
 
-[1, 2, 3, 4]
+[1 2 3 4]
   |> filter(is_even)      # die geraden Zahlen behalten
   |> map(quadrat)         # jede quadrieren
   |> sum                  # sie addieren
@@ -37,6 +37,7 @@ fn quadrat(x) = x * x
   schreibt sie zurück (`write`), und die REBOL-Namen der Bibliothek
   funktionieren, wie sie sind (`probe`, `ask`, `rejoin`, `length?`, `foreach`,
   `exists?`...). `rythme help rebol` zeigt, was gleich ist und was anders.
+  Und ohne Kommas: `[1 2 3]`, `f(a b)`, `{name: "Ada" alter: 36}`, `print x y`.
 - **Sicher wie Rust.** Ein Wert, der fehlen kann, ist eine `Option`
   (`Some(x)` oder `None`); eine Operation, die scheitern kann, liefert ein
   `Result` (`Ok(x)` oder `Err(e)`), und `?` gibt Fehler nach oben weiter. Das

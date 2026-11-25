@@ -11,7 +11,7 @@
 # 値は決して変わらない。すべてが関数。ループはない。
 fn square(x) = x * x
 
-[1, 2, 3, 4]
+[1 2 3 4]
   |> filter(is_even)      # 偶数だけ残す
   |> map(square)          # それぞれを 2 乗する
   |> sum                  # 合計する
@@ -22,7 +22,7 @@ fn square(x) = x * x
 
 - **Python や Ruby よりシンプル。** キーワードは 15 個。それぞれのことをする方法は 1 つだけ。クラスも `null` も例外もループもミューテーションもありません：覚える概念も、探すバグも少なくなります。
 - **Ruby のように楽しい。** ブロック（`xs.map do |x| x * 2 end`）、メソッドチェーン、括弧なしの呼び出し（`puts "hello"`）、`even?` のような名前、`unless`、シンボル（`:ok`）、そして標準ライブラリにある Ruby の名前。
-- **REBOL のように少ない単語で。** 1 つの単語でファイルや Web ページを読み（`read("notes.txt")`、`read("https://example.com")`）、1 つの単語で書き戻し（`write`）、ライブラリにある REBOL の名前もそのまま使えます（`probe`、`ask`、`rejoin`、`length?`、`foreach`、`exists?` など）。`rythme help rebol` で同じところと違うところがわかります。
+- **REBOL のように少ない単語で。** 1 つの単語でファイルや Web ページを読み（`read("notes.txt")`、`read("https://example.com")`）、1 つの単語で書き戻し（`write`）、ライブラリにある REBOL の名前もそのまま使えます（`probe`、`ask`、`rejoin`、`length?`、`foreach`、`exists?` など）。`rythme help rebol` で同じところと違うところがわかります。カンマも不要です：`[1 2 3]`、`f(a b)`、`{name: "Ada" age: 36}`、`print x y`。
 - **Rust のように安全。** ないかもしれない値は `Option`（`Some(x)` か `None`）、失敗するかもしれない操作は `Result`（`Ok(x)` か `Err(e)`）を返し、`?` がエラーを呼び出し元に渡します。プログラムは実行**前**にチェックされます。
 - **どこにでもヘルプ。** どのエラーも、*どこで*、*なぜ*起きたか、*どう*直すかを伝えます。`rythme explain E003` はどのエラーコードも説明し、`rythme help` と `rythme learn`（ガイドツアー）が言語を教え、言語サーバー（`rythme lsp`）が同じヘルプをエディターに届けます。
 

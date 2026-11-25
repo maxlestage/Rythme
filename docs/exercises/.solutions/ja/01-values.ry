@@ -9,10 +9,10 @@ summary = "1 週間は {seconds_per_week} 秒です。"
 
 # --- テスト（変更しないでください）---
 
-test "1 時間の秒数" = assert_eq(seconds_per_hour, 3600)
+test "1 時間の秒数" = assert_eq(seconds_per_hour 3600)
 
-test "1 日の秒数" = assert_eq(seconds_per_day, 86400)
+test "1 日の秒数" = assert_eq(seconds_per_day 86400)
 
-test "1 週間の秒数" = assert_eq(seconds_per_week, 604800)
+test "1 週間の秒数" = assert_eq(seconds_per_week 604800)
 
-test "まとめ" = assert_eq(summary, "1 週間は 604800 秒です。")
+test "まとめ" = assert_eq(summary "1 週間は 604800 秒です。")

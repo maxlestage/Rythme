@@ -5,7 +5,7 @@ fn namen_der_bestandenen(schueler) = schueler |> filter(fn(s) = s.punkte >= 50) 
 
 fn durchschnittspunkte(schueler) = schueler |> map(fn(s) = s.punkte) |> sum |> fn(summe) = summe / len(schueler)
 
-fn bester(schueler) = max_by(schueler, fn(s) = s.punkte).name
+fn bester(schueler) = max_by(schueler fn(s) = s.punkte).name
 
 fn rangliste(schueler) = schueler |> sort_by(fn(s) = -s.punkte) |> map(fn(s) = s.name)
 
@@ -14,19 +14,19 @@ fn gruppengroessen(schueler) = schueler |> group_by(fn(s) = s.gruppe) |> map_val
 # --- Tests (nicht verändern) ---
 
 klasse = [
-  {name: "Ada", punkte: 92, gruppe: "A"},
-  {name: "Alan", punkte: 45, gruppe: "B"},
-  {name: "Grace", punkte: 78, gruppe: "A"},
-  {name: "Edsger", punkte: 50, gruppe: "B"},
-  {name: "Barbara", punkte: 85, gruppe: "A"},
+  {name: "Ada" punkte: 92 gruppe: "A"}
+  {name: "Alan" punkte: 45 gruppe: "B"}
+  {name: "Grace" punkte: 78 gruppe: "A"}
+  {name: "Edsger" punkte: 50 gruppe: "B"}
+  {name: "Barbara" punkte: 85 gruppe: "A"}
 ]
 
-test "bestanden" = assert_eq(namen_der_bestandenen(klasse), ["Ada", "Grace", "Edsger", "Barbara"])
+test "bestanden" = assert_eq(namen_der_bestandenen(klasse) ["Ada" "Grace" "Edsger" "Barbara"])
 
-test "Durchschnitt" = assert_eq(durchschnittspunkte(klasse), 70)
+test "Durchschnitt" = assert_eq(durchschnittspunkte(klasse) 70)
 
-test "der Beste" = assert_eq(bester(klasse), "Ada")
+test "der Beste" = assert_eq(bester(klasse) "Ada")
 
-test "Rangliste" = assert_eq(rangliste(klasse), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+test "Rangliste" = assert_eq(rangliste(klasse) ["Ada" "Barbara" "Grace" "Edsger" "Alan"])
 
-test "Gruppengrößen" = assert_eq(gruppengroessen(klasse), {A: 3, B: 2})
+test "Gruppengrößen" = assert_eq(gruppengroessen(klasse) {A: 3 B: 2})

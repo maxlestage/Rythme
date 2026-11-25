@@ -25,7 +25,7 @@
 # Check your work:  rythme exercise check 06-cases.ry
 #              or:  rythme test 06-cases.ry
 
-fn plural(n, word) = fail("to do")
+fn plural(n word) = fail("to do")
 
 fn fizzbuzz(n) = fail("to do")
 
@@ -34,23 +34,23 @@ fn day_kind(day) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "plural"
-  assert_eq(plural(1, "cat"), "1 cat")
-  assert_eq(plural(2, "cat"), "2 cats")
-  assert_eq(plural(0, "dog"), "0 dogs")
+  assert_eq(plural(1 "cat") "1 cat")
+  assert_eq(plural(2 "cat") "2 cats")
+  assert_eq(plural(0 "dog") "0 dogs")
 end
 
 test "fizzbuzz"
-  assert_eq(fizzbuzz(1), "1")
-  assert_eq(fizzbuzz(3), "Fizz")
-  assert_eq(fizzbuzz(10), "Buzz")
-  assert_eq(fizzbuzz(30), "FizzBuzz")
-  assert_eq(fizzbuzz(31), "31")
+  assert_eq(fizzbuzz(1) "1")
+  assert_eq(fizzbuzz(3) "Fizz")
+  assert_eq(fizzbuzz(10) "Buzz")
+  assert_eq(fizzbuzz(30) "FizzBuzz")
+  assert_eq(fizzbuzz(31) "31")
 end
 
-test "the first fifteen" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+test "the first fifteen" = assert_eq(1..15 |> map(fizzbuzz) |> join(" ") "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
 
 test "day kind"
-  assert_eq(day_kind("Saturday"), "weekend")
-  assert_eq(day_kind("Sunday"), "weekend")
-  assert_eq(day_kind("Monday"), "weekday")
+  assert_eq(day_kind("Saturday") "weekend")
+  assert_eq(day_kind("Sunday") "weekend")
+  assert_eq(day_kind("Monday") "weekday")
 end

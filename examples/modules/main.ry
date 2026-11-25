@@ -4,16 +4,16 @@
 use geometry
 use shapes/circle
 
-print(geometry.rectangle_area(3, 4))
-print(geometry.distance(geometry.origin, {x: 3, y: 4}))
+print(geometry.rectangle_area(3 4))
+print(geometry.distance(geometry.origin {x: 3 y: 4}))
 print(geometry.area(geometry.Square(5)))
 
 # Both files define `area`: their names say which one is meant.
-print(round(circle.area(1), 2))
+print(round(circle.area(1) 2))
 
 fn describe(shape) = match shape
-  geometry.Rectangle(w, h) -> "a rectangle of {w} by {h}"
+  geometry.Rectangle(w h) -> "a rectangle of {w} by {h}"
   geometry.Square(s) -> "a square of side {s}"
 end
 
-print(describe(geometry.Rectangle(2, 3)))
+print(describe(geometry.Rectangle(2 3)))

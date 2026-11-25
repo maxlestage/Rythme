@@ -26,25 +26,25 @@ fn greet(name) = fail("to do")
 fn shout(text) = fail("to do")
 
 ## The initials of a person, each followed by a dot.
-fn initials(first, last) = fail("to do")
+fn initials(first last) = fail("to do")
 
 ## A sentence that introduces a person.
-fn introduce(name, age) = fail("to do")
+fn introduce(name age) = fail("to do")
 
 # --- Tests (do not change them) ---
 
-test "greet" = assert_eq(greet("Ada"), "Hello, Ada!")
+test "greet" = assert_eq(greet("Ada") "Hello, Ada!")
 
-test "greet someone else" = assert_eq(greet("Alan"), "Hello, Alan!")
+test "greet someone else" = assert_eq(greet("Alan") "Hello, Alan!")
 
 test "shout"
-  assert_eq(shout("hello"), "HELLO!")
-  assert_eq(shout("Stop"), "STOP!")
+  assert_eq(shout("hello") "HELLO!")
+  assert_eq(shout("Stop") "STOP!")
 end
 
 test "initials"
-  assert_eq(initials("Ada", "Lovelace"), "A.L.")
-  assert_eq(initials("grace", "hopper"), "g.h.")
+  assert_eq(initials("Ada" "Lovelace") "A.L.")
+  assert_eq(initials("grace" "hopper") "g.h.")
 end
 
-test "introduce" = assert_eq(introduce("Ada", 36), "Ada is 36 years old.")
+test "introduce" = assert_eq(introduce("Ada" 36) "Ada is 36 years old.")

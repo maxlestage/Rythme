@@ -17,7 +17,7 @@ em português: <https://maxlestage.github.io/Rythme/pt/>.
 # Os valores nunca mudam. Tudo é uma função. Não há laços.
 fn quadrado(x) = x * x
 
-[1, 2, 3, 4]
+[1 2 3 4]
   |> filter(is_even)      # ficar com os números pares
   |> map(quadrado)        # elevar cada um ao quadrado
   |> sum                  # somá-los
@@ -36,7 +36,8 @@ fn quadrado(x) = x * x
   página web (`read("notas.txt")`, `read("https://example.com")`), outra o
   escreve (`write`), e os nomes do REBOL da biblioteca funcionam como são
   (`probe`, `ask`, `rejoin`, `length?`, `foreach`, `exists?`...).
-  `rythme help rebol` mostra o que é igual e o que muda.
+  `rythme help rebol` mostra o que é igual e o que muda. E sem
+  vírgulas: `[1 2 3]`, `f(a b)`, `{nome: "Ada" idade: 36}`, `print x y`.
 - **Seguro como Rust.** Um valor que pode faltar é uma `Option` (`Some(x)` ou
   `None`); uma operação que pode falhar devolve um `Result` (`Ok(x)` ou
   `Err(e)`), e `?` repassa os erros para cima. O programa é verificado

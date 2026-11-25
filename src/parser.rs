@@ -1450,8 +1450,10 @@ impl Parser {
                 self.advance();
                 pat.ty = Some(Rc::new(self.type_expr()?));
             }
-            // `|n :Int|`: the `:` touches the type, which makes a symbol.
-            Tok::Symbol(s) => {
+            // `|n :Int|`: the `:` touches the type, which makes a symbol (a
+            // symbol in lowercase, `fn best(scores :x)`, is the next pattern,
+            // written without a comma).
+            Tok::Symbol(s) if s.name().starts_with(char::is_uppercase) => {
                 let s = *s;
                 let mut d = self.unexpected(t!("`,`", "`,`"));
                 d.helps.clear();
@@ -1997,7 +1999,7 @@ impl Parser {
                                 let trailing = matches!(p.peek(), Tok::Bar);
                                 seps.push(Sep {
                                     comma: Some(comma.span.start),
-                                    joins: matches!(p.peek(), Tok::LParen),
+                                    joins: matches!(p.peek(), Tok::LParen | Tok::Symbol(_)),
                                     absorbs: false,
                                     trailing,
                                 });
@@ -2207,19 +2209,21 @@ impl Parser {
                     e = Expr::new(ExprKind::Call(Box::new(e), args), span);
                 }
                 Tok::LBracket => {
+                    let spaced = self.toks[self.pos].span.start > self.last.end;
                     self.advance();
                     let idx = self.nested(false, |p| {
                         let i = p.expr()?;
                         if !p.eat(&Tok::RBracket) {
-                            // `[xs ["a" "b"]]`: a list without commas after a
-                            // space, read as an index while commas are expected.
-                            if starts_element(p.peek()) || matches!(p.peek(), Tok::Comma) {
-                                p.split_wanted = true;
-                            }
                             return Err(p.unexpected(t!("`]`", "`]`")));
                         }
                         Ok(i)
-                    })?;
+                    });
+                    // `[xs ["a" "b"]]`, `f(xs [] g)`: a list without commas
+                    // after a space, read as an index while commas are expected.
+                    if idx.is_err() && spaced {
+                        self.split_wanted = true;
+                    }
+                    let idx = idx?;
                     let span = e.span.to(self.last);
                     e = Expr::new(ExprKind::Index(Box::new(e), Box::new(idx)), span);
                 }
@@ -2314,9 +2318,13 @@ impl Parser {
             items.push(one.map_err(|d| (d, false))?);
             let absorbs = self.command_ends.contains(&self.last.end);
             if matches!(self.peek(), Tok::Comma) {
+                let before = self.toks[self.pos - 1].tok.clone();
                 let comma = self.advance();
                 let trailing = matches!(self.peek(), t if t == close);
-                let joins = joins(self.peek());
+                // `fn best(scores, :x)`: without the comma, `scores :x` gives
+                // `scores` the type `x`.
+                let typed = !values && matches!(before, Tok::Ident(_)) && matches!(self.peek(), Tok::Symbol(_));
+                let joins = joins(self.peek()) || typed;
                 seps.push(Sep { comma: Some(comma.span.start), joins, absorbs, trailing });
                 continue;
             }
@@ -2802,7 +2810,10 @@ impl Parser {
         // number can start one).
         let rest = matches!(self.raw(), Tok::DotDot)
             && range_bound(&first).is_err()
-            && self.toks.get(self.pos + 1).is_some_and(|n| matches!(n.tok, Tok::Ident(_)) && n.span.start == self.toks[self.pos].span.end);
+            && self.toks.get(self.pos + 1).is_some_and(|n| {
+                matches!(n.tok, Tok::RBracket | Tok::Comma)
+                    || (matches!(n.tok, Tok::Ident(_)) && n.span.start == self.toks[self.pos].span.end)
+            });
         if rest {
             return Ok(first);
         }
@@ -3153,8 +3164,8 @@ fn range_bound(p: &Pattern) -> Fallible<Num> {
 
 fn commas_help() -> String {
     t!(
-        "the arguments of a call without parentheses are separated by commas: `print a, b`",
-        "les arguments d'un appel sans parenthèses sont séparés par des virgules : `print a, b`"
+        "the arguments of a call without parentheses follow its name, on its line: `print a b` (or `print a, b`)",
+        "les arguments d'un appel sans parenthèses suivent son nom, sur sa ligne : `print a b` (ou `print a, b`)"
     )
 }
 

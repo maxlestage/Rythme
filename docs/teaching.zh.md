@@ -40,10 +40,10 @@ Rythme 是为课堂设计的：一门小语言，配上会教人的消息，让�
 
 ```rythme
 ## 返回非空列表中最大的元素。
-fn largest(list) = fold(list, 0, max)
+fn largest(list) = fold(list 0 max)
 
-test "一个元素" = assert_eq(largest([7]), 7)
-test "多个元素" = assert_eq(largest([3, 9, 2]), 9)
+test "一个元素" = assert_eq(largest([7]) 7)
+test "多个元素" = assert_eq(largest([3 9 2]) 9)
 test "负数" = assert_eq(largest([-3, -1, -2]), -1)
 ```
 
@@ -97,7 +97,7 @@ Rythme 自己就能读 JSON。下面的程序把结果变成分数：
 fn grade(f) = if f.broken then "{f.file}：无法运行" else "{f.file}：{f.tests - f.failed}/{f.tests}"
 
 results = read_file(args()[0]) |> unwrap |> parse_json |> unwrap
-each(results.files, fn(f) = print(grade(f)))
+each(results.files fn(f) = print(grade(f)))
 ```
 
 `rythme grades.ry results.json` 输出：

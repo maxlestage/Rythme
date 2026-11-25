@@ -22,31 +22,31 @@
 # Vérifiez votre travail :  rythme exercise check 14-fonctions-anonymes.ry
 #                     ou :  rythme test 14-fonctions-anonymes.ry
 
-fn avec_taxe(prix, pourcentage) = fail("à faire")
+fn avec_taxe(prix pourcentage) = fail("à faire")
 
-fn mots_longs(mots, n) = fail("à faire")
+fn mots_longs(mots n) = fail("à faire")
 
 fn longueurs(mots) = fail("à faire")
 
 fn tous_positifs(liste) = fail("à faire")
 
-fn combien_au_dessus(liste, limite) = fail("à faire")
+fn combien_au_dessus(liste limite) = fail("à faire")
 
 # --- Tests (ne les modifiez pas) ---
 
 test "avec taxe"
-  assert_eq(avec_taxe([100, 50], 20), [120, 60])
-  assert_eq(avec_taxe([10], 0), [10])
+  assert_eq(avec_taxe([100 50] 20) [120 60])
+  assert_eq(avec_taxe([10] 0) [10])
 end
 
-test "mots longs" = assert_eq(mots_longs(["un", "arbre", "est", "vert"], 3), ["arbre", "vert"])
+test "mots longs" = assert_eq(mots_longs(["un" "arbre" "est" "vert"] 3) ["arbre" "vert"])
 
-test "longueurs" = assert_eq(longueurs(["un", "arbre", "a"]), [2, 5, 1])
+test "longueurs" = assert_eq(longueurs(["un" "arbre" "a"]) [2 5 1])
 
 test "tous positifs"
-  assert_eq(tous_positifs([1, 5, 3]), true)
-  assert_eq(tous_positifs([1, -5, 3]), false)
-  assert_eq(tous_positifs([]), true)
+  assert_eq(tous_positifs([1 5 3]) true)
+  assert_eq(tous_positifs([1 -5 3]) false)
+  assert_eq(tous_positifs([]) true)
 end
 
-test "combien au-dessus" = assert_eq(combien_au_dessus([3, 10, 7, 12], 5), 3)
+test "combien au-dessus" = assert_eq(combien_au_dessus([3 10 7 12] 5) 3)

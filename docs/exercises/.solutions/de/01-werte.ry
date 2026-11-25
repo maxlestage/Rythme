@@ -9,10 +9,10 @@ zusammenfassung = "Eine Woche hat {sekunden_pro_woche} Sekunden."
 
 # --- Tests (nicht verändern) ---
 
-test "Sekunden in einer Stunde" = assert_eq(sekunden_pro_stunde, 3600)
+test "Sekunden in einer Stunde" = assert_eq(sekunden_pro_stunde 3600)
 
-test "Sekunden an einem Tag" = assert_eq(sekunden_pro_tag, 86400)
+test "Sekunden an einem Tag" = assert_eq(sekunden_pro_tag 86400)
 
-test "Sekunden in einer Woche" = assert_eq(sekunden_pro_woche, 604800)
+test "Sekunden in einer Woche" = assert_eq(sekunden_pro_woche 604800)
 
-test "die Zusammenfassung" = assert_eq(zusammenfassung, "Eine Woche hat 604800 Sekunden.")
+test "die Zusammenfassung" = assert_eq(zusammenfassung "Eine Woche hat 604800 Sekunden.")

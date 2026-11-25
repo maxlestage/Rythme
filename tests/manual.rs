@@ -130,6 +130,9 @@ fn check_samples(path: &str, lang: &str, at_least: usize) {
     let blocks = blocks(&manual);
     let mut checked = 0;
     let mut failures = Vec::new();
+    // RYTHME_MANUAL_UPDATE=1: the output shown is written again from what is
+    // printed (then read the difference before keeping it).
+    let mut updates: Vec<(usize, usize, String)> = Vec::new();
     for pair in blocks.windows(2) {
         let (sample, shown) = (&pair[0], &pair[1]);
         if sample.kind != "rythme" || shown.kind != "text" {
@@ -169,8 +172,17 @@ fn check_samples(path: &str, lang: &str, at_least: usize) {
         };
         checked += 1;
         if normalize(&got) != normalize(&shown.text) {
+            updates.push((shown.line, shown.text.lines().count(), got.trim_end_matches('\n').to_string()));
             failures.push(format!("{path}:{}: ({name})\n--- shown\n{}\n--- printed\n{got}", sample.line, shown.text));
         }
+    }
+    if std::env::var_os("RYTHME_MANUAL_UPDATE").is_some() && !updates.is_empty() {
+        let mut lines: Vec<String> = manual.lines().map(str::to_string).collect();
+        for (start, len, text) in updates.into_iter().rev() {
+            lines.splice(start..start + len, text.lines().map(str::to_string));
+        }
+        std::fs::write(path, lines.join("\n") + "\n").unwrap();
+        return;
     }
     assert!(checked >= at_least, "{path}: only {checked} samples found");
     assert!(failures.is_empty(), "{} sample(s) of {path} print something else:\n\n{}", failures.len(), failures.join("\n\n"));

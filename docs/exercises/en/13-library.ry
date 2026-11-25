@@ -36,23 +36,23 @@ fn smallest_three(list) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "squares"
-  assert_eq(squares(5), [1, 4, 9, 16, 25])
+  assert_eq(squares(5) [1 4 9 16 25])
   assert_eq(squares(0), [])
 end
 
-test "evens" = assert_eq(evens([5, 2, 8, 1, 4]), [2, 8, 4])
+test "evens" = assert_eq(evens([5 2 8 1 4]) [2 8 4])
 
 test "sum of multiples"
-  assert_eq(sum_of_multiples(10), 23)
-  assert_eq(sum_of_multiples(1000), 233168)
+  assert_eq(sum_of_multiples(10) 23)
+  assert_eq(sum_of_multiples(1000) 233168)
 end
 
 test "mean"
-  assert_eq(mean([1, 2, 3, 4]), 2.5)
-  assert_eq(mean([7]), 7)
+  assert_eq(mean([1 2 3 4]) 2.5)
+  assert_eq(mean([7]) 7)
 end
 
 test "smallest three"
-  assert_eq(smallest_three([5, 1, 4, 2, 3]), [1, 2, 3])
-  assert_eq(smallest_three([9, 8]), [8, 9])
+  assert_eq(smallest_three([5 1 4 2 3]) [1 2 3])
+  assert_eq(smallest_three([9 8]) [8 9])
 end

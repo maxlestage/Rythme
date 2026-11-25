@@ -65,6 +65,11 @@ function commaSep(rule, loose = rule) {
  * @param {GrammarSymbols<string>} $
  * @param {RuleOrLiteral} rule
  */
+/** A `(` after a name: touching it or not (`token.immediate` is the `(` of a call). */
+function paren() {
+  return choice('(', token.immediate('('));
+}
+
 function lines($, rule) {
   return seq(repeat($._newline), optional(seq(rule, repeat(seq(repeat1($._newline), rule)), repeat($._newline))));
 }
@@ -149,11 +154,11 @@ module.exports = grammar({
 
     /** `(a, b)` in `type Pair(a, b) = ...`: the type variables of the type. */
     type_parameters: $ =>
-      seq('(', alias($.identifier, $.type_variable), repeat(seq(',', alias($.identifier, $.type_variable))), optional(','), ')'),
+      seq(paren(), alias($.identifier, $.type_variable), repeat(seq(optional(','), alias($.identifier, $.type_variable))), optional(','), ')'),
 
     variant: $ => seq(field('name', $.constructor), optional($.variant_fields)),
 
-    variant_fields: $ => seq('(', commaSep(choice($.identifier, $.typed_field)), ')'),
+    variant_fields: $ => seq(paren(), commaSep(choice($.identifier, $.typed_field)), ')'),
 
     /** `radius: Float`: a field and its written type. */
     typed_field: $ => seq(field('name', $.identifier), field('type', $.type_annotation)),
@@ -175,7 +180,7 @@ module.exports = grammar({
         $._body,
       ),
 
-    parameters: $ => seq('(', commaSep(choice($._pattern, $.typed_parameter), choice($._loose_pattern, $.typed_parameter)), ')'),
+    parameters: $ => seq(paren(), commaSep(choice($._pattern, $.typed_parameter), choice($._loose_pattern, $.typed_parameter)), ')'),
 
     /** `w: Int`: a parameter and its written type. */
     typed_parameter: $ => seq(field('pattern', $._pattern), field('type', $.type_annotation)),
@@ -218,7 +223,7 @@ module.exports = grammar({
       ),
 
     /** `List(Int)`, `Dict(Text, Int)`. */
-    generic_type: $ => seq(field('name', alias($.constructor, $.type_name)), '(', commaSep($._type), ')'),
+    generic_type: $ => seq(field('name', alias($.constructor, $.type_name)), paren(), commaSep($._type), ')'),
 
     /** `geo.Shape`: a type of the file used as `geo`. */
     qualified_type: $ =>
@@ -233,7 +238,7 @@ module.exports = grammar({
     field_type: $ => seq(field('key', $._field_key), ':', field('type', $._type)),
 
     /** `fn(Int, Int) -> Bool`. */
-    function_type: $ => seq('fn', '(', commaSep($._type), ')', '->', field('result', $._type)),
+    function_type: $ => seq('fn', paren(), commaSep($._type), ')', '->', field('result', $._type)),
 
     // ----- expressions ----------------------------------------------------
 
@@ -269,7 +274,7 @@ module.exports = grammar({
         $.lambda,
       ),
 
-    /** An element written without a comma before it: not `-x` or `(x)`, which continue the one before. */
+    /** An element written without a comma before it: not `-x`, which continues the one before. */
     _loose_expression: $ =>
       choice(
         $.identifier,
@@ -282,6 +287,8 @@ module.exports = grammar({
         $.boolean,
         $.list,
         $.record,
+        $.unit,
+        $.parenthesized_expression,
         $.call,
         $.index_expression,
         $.field_expression,
@@ -339,7 +346,20 @@ module.exports = grammar({
 
     do_block: $ => seq('do', optional(field('parameters', $.block_parameters)), field('body', $.block)),
 
-    brace_block: $ => seq('{', field('parameters', $.block_parameters), lines($, $._statement), '}'),
+    /**
+     * `{ |x| ... }`: its `{` and the first `|` are read as one token, so that
+     * a record that follows an element without a comma (`f(a) {name: "Ada"}`)
+     * is never taken for a block.
+     */
+    brace_block: $ =>
+      seq(
+        alias(token(seq('{', /[ \t]*/, '|')), '{'),
+        field('parameters', alias($._brace_parameters, $.block_parameters)),
+        lines($, $._statement),
+        '}',
+      ),
+
+    _brace_parameters: $ => choice('|', seq(commaSep(choice($._block_parameter, $.typed_block_parameter)), '|')),
 
     block_parameters: $ => choice('||', seq('|', commaSep(choice($._block_parameter, $.typed_block_parameter)), '|')),
 
@@ -349,10 +369,11 @@ module.exports = grammar({
     /** `|n: Int|`. */
     typed_block_parameter: $ => seq(field('pattern', $._block_parameter), field('type', $.type_annotation)),
 
-    arguments: $ => seq('(', commaSep($._expression, $._loose_expression), ')'),
+    /** `f(x)`: the `(` touches the function (`f (x)` is two elements, without commas). */
+    arguments: $ => seq(token.immediate('('), commaSep($._expression, $._loose_expression), ')'),
 
     index_expression: $ =>
-      prec(PREC.postfix, seq(field('value', $._expression), '[', field('index', $._expression), ']')),
+      prec(PREC.postfix, seq(field('value', $._expression), token.immediate('['), field('index', $._expression), ']')),
 
     field_expression: $ => prec(PREC.postfix, seq(field('value', $._expression), '.', field('field', $._field_name))),
 
@@ -473,6 +494,8 @@ module.exports = grammar({
         $.float,
         $.string,
         $.boolean,
+        $.unit_pattern,
+        $.parenthesized_pattern,
         $.list_pattern,
         $.record_pattern,
         $.or_pattern,
@@ -481,7 +504,7 @@ module.exports = grammar({
       ),
 
     constructor_pattern: $ =>
-      seq(field('constructor', choice($.constructor, $.qualified_constructor)), '(', commaSep($._pattern), ')'),
+      seq(field('constructor', choice($.constructor, $.qualified_constructor)), paren(), commaSep($._pattern, $._loose_pattern), ')'),
 
     /** `geo.Circle`: a constructor of the file used as `geo`. */
     qualified_constructor: $ =>

@@ -1063,14 +1063,14 @@ Argomenti: start, syntax, functions, lists, text, records, types, match, errors,
             r#"a recursive function that never stops? Check that it always reaches a base case.
 Otherwise, make the recursive call the very last thing the function does
 (tail call), for example with an accumulator:
-  fn sum([], acc) = acc
-  fn sum([x, ..rest], acc) = sum(rest, acc + x)
+  fn sum([] acc) = acc
+  fn sum([x ..rest] acc) = sum(rest acc + x)
 or use `fold`, `map`, `filter`, which have no limit."#,
             r#"una funzione ricorsiva che non si ferma mai? Controlla che arrivi sempre a un caso base.
 Altrimenti, fai della chiamata ricorsiva l'ultimissima cosa che la funzione fa
 (chiamata in coda), per esempio con un accumulatore:
-  fn sum([], acc) = acc
-  fn sum([x, ..rest], acc) = sum(rest, acc + x)
+  fn sum([] acc) = acc
+  fn sum([x ..rest] acc) = sum(rest acc + x)
 oppure usa `fold`, `map`, `filter`, che non hanno limiti."#,
         ),
         ("the program was stopped: it made more calls than allowed for this run", "il programma è stato fermato: ha fatto più chiamate di quelle permesse per questa esecuzione"),
@@ -1516,7 +1516,7 @@ per combinare molti valori, mettili in una lista: `sum([a, b, c])`, `join([x, y,
         ("compare with a guard instead: `n if n >= low and n <= high -> ...`; a range still matches large numbers between its ends, and a decimal end like `1.0e30` works too", "confronta invece con una guardia: `n if n >= low and n <= high -> ...`; un intervallo corrisponde comunque ai numeri grandi tra i suoi estremi, e funziona anche un estremo decimale come `1.0e30`"),
         ("a range in a pattern goes from a number to a number", "un intervallo in un pattern va da un numero a un numero"),
         ("not a number", "non è un numero"),
-        ("the arguments of a call without parentheses are separated by commas: `print a, b`", "gli argomenti di una chiamata senza parentesi sono separati da virgole: `print a, b`"),
+        ("the arguments of a call without parentheses follow its name, on its line: `print a b` (or `print a, b`)", "gli argomenti di una chiamata senza parentesi seguono il suo nome, sulla sua riga: `print a b` (o `print a, b`)"),
         ("write the numbers themselves, like `1..9` or `0.0..0.5`; to compare with names, use a guard: `n if n >= low and n <= high -> ...`", "scrivi i numeri stessi, come `1..9` o `0.0..0.5`; per confrontare con dei nomi, usa una guardia: `n if n >= low and n <= high -> ...`"),
         ("a text that starts with a text is written `\"Mr \" + name`: `name` is the rest of the text", "un testo che inizia con un testo si scrive `\"Sig. \" + name`: `name` è il resto del testo"),
         ("missing `end` to close this `{what}`", "manca `end` per chiudere questo `{what}`"),
@@ -1631,12 +1631,12 @@ fn {func}(name) = "Ciao, {{name}}!"
             r#"# The tests: `rythme test` in the folder of the project.
 use {name}/{module}
 
-test "{func}" = assert_eq({module}.{func}("Ada"), "Hello, Ada!")
+test "{func}" = assert_eq({module}.{func}("Ada") "Hello, Ada!")
 "#,
             r#"# I test: `rythme test` nella cartella del progetto.
 use {name}/{module}
 
-test "{func}" = assert_eq({module}.{func}("Ada"), "Ciao, Ada!")
+test "{func}" = assert_eq({module}.{func}("Ada") "Ciao, Ada!")
 "#,
         ),
         (
@@ -1744,11 +1744,11 @@ esempio: rythme steps fibonacci.ry "fib(4)""#,
         (
             r#"Rythme has no loops. Work on the whole list instead:
   1..5 |> each(fn(i) = print(i))
-  [1, 2, 3] |> map(fn(x) = x * 2)
+  [1 2 3] |> map(fn(x) = x * 2)
 or write a recursive function. See `rythme help functional`."#,
             r#"Rythme non ha cicli. Lavora invece sull'intera lista:
   1..5 |> each(fn(i) = print(i))
-  [1, 2, 3] |> map(fn(x) = x * 2)
+  [1 2 3] |> map(fn(x) = x * 2)
 o scrivi una funzione ricorsiva. Vedi `rythme help functional`."#,
         ),
         ("Rythme has no loops to interrupt: use `find`, `take`, `filter`, or a recursive function", "Rythme non ha cicli da interrompere: usa `find`, `take`, `filter`, o una funzione ricorsiva"),
@@ -1804,9 +1804,9 @@ poi gestiscili con `match` o passali avanti con `?`. `fail(message)` ferma il pr
         ("a test passes when it ends without error, and its value is not `false`, `Err(...)` or `None`", "un test passa quando finisce senza errori, e il suo valore non è `false`, `Err(...)` o `None`"),
         (
             r#"No tests found. Write one like this:
-  test "addition" = assert_eq(1 + 1, 2)"#,
+  test "addition" = assert_eq(1 + 1 2)"#,
             r#"Nessun test trovato. Scrivine uno così:
-  test "addizione" = assert_eq(1 + 1, 2)"#,
+  test "addizione" = assert_eq(1 + 1 2)"#,
         ),
         ("Running {n} test(s)", "Esecuzione di {n} test"),
         ("Running {n} of {total} test(s)", "Esecuzione di {n} test su {total}"),
@@ -1821,9 +1821,9 @@ poi gestiscili con `match` o passali avanti con `?`. `fail(message)` ferma il pr
         ("{red}✗{reset} {}: the file has errors, so its tests could not run", "{red}✗{reset} {}: il file ha errori, quindi i suoi test non sono potuti partire"),
         (
             r#"No file with tests in {}. Write a test in a `.ry` file like this:
-  test "addition" = assert_eq(1 + 1, 2)"#,
+  test "addition" = assert_eq(1 + 1 2)"#,
             r#"Nessun file con test in {}. Scrivi un test in un file `.ry` così:
-  test "addizione" = assert_eq(1 + 1, 2)"#,
+  test "addizione" = assert_eq(1 + 1 2)"#,
         ),
         ("Failed tests:", "Test falliti:"),
         ("`{name}` needs {what}", "`{name}` richiede {what}"),
@@ -1918,16 +1918,16 @@ Values
   "hello"   "total: {x}"         texts (Text); {...} (or #{...}) inserts a value
   true   false                   booleans (Bool)
   :ok   :error                   symbols (Symbol): a name used as a value
-  [1, 2, 3]                      lists
-  {name: "Ada", age: 36}         records
+  [1 2 3]                        lists; commas are optional, as in REBOL
+  {name: "Ada" age: 36}          records
   Some(3)   None                 a value that may be missing (Option)
   Ok(3)   Err("oops")            a result that may fail (Result)
   1..5                           the list [1, 2, 3, 4, 5]
 
 Names
   x = 5                          a name for a value; it never changes
-  [a, b] = [1, 2]                take a value apart
-  {name, age} = person
+  [a b] = [1 2]                  take a value apart
+  {name age} = person
 
 Operators
   + - * /   // (whole division)   % (remainder)   ** (power)
@@ -1973,15 +1973,15 @@ Several steps inside an expression
   end
 
 Your own types
-  type Shape = Circle(radius) | Rect(width, height)
+  type Shape = Circle(radius) | Rect(width height)
 
 Types written in the code (optional, checked by rythme check)
-  fn area(w: Int, h: Int) -> Int = w * h
+  fn area(w: Int h: Int) -> Int = w * h
   total: Float = 0.0
   type Box(a) = Box(value: a)    a type that takes a type: Box(Int), Box(Text)
 
 Tests and other files
-  test "double works" = assert_eq(double(2), 4)
+  test "double works" = assert_eq(double(2) 4)
   use geometry                   then geometry.area(2)
 
 Comments
@@ -1995,16 +1995,16 @@ Valori
   "hello"   "total: {x}"         testi (Text); {...} (o #{...}) inserisce un valore
   true   false                   booleani (Bool)
   :ok   :error                   simboli (Symbol): un nome usato come valore
-  [1, 2, 3]                      liste
-  {name: "Ada", age: 36}         record
+  [1 2 3]                        liste; le virgole sono facoltative, come in REBOL
+  {name: "Ada" age: 36}          record
   Some(3)   None                 un valore che può mancare (Option)
   Ok(3)   Err("oops")            un risultato che può fallire (Result)
   1..5                           la lista [1, 2, 3, 4, 5]
 
 Nomi
   x = 5                          un nome per un valore; non cambia mai
-  [a, b] = [1, 2]                scomporre un valore
-  {name, age} = person
+  [a b] = [1 2]                  scomporre un valore
+  {name age} = person
 
 Operatori
   + - * /   // (divisione intera)   % (resto)   ** (potenza)
@@ -2050,15 +2050,15 @@ Più passi dentro un'espressione
   end
 
 I tuoi tipi
-  type Shape = Circle(radius) | Rect(width, height)
+  type Shape = Circle(radius) | Rect(width height)
 
 Tipi scritti nel codice (facoltativi, controllati da rythme check)
-  fn area(w: Int, h: Int) -> Int = w * h
+  fn area(w: Int h: Int) -> Int = w * h
   total: Float = 0.0
   type Box(a) = Box(value: a)    un tipo che prende un tipo: Box(Int), Box(Text)
 
 Test e altri file
-  test "double works" = assert_eq(double(2), 4)
+  test "double works" = assert_eq(double(2) 4)
   use geometry                   poi geometry.area(2)
 
 Commenti
@@ -2069,8 +2069,8 @@ Commenti
             r#"FUNCTIONS
 
 Define and call
-  fn add(a, b) = a + b
-  add(2, 3)                      # 5
+  fn add(a b) = a + b
+  add(2 3)                      # 5
 
 On several lines: the last expression is the result
   fn describe(n)
@@ -2090,8 +2090,8 @@ With a condition (a guard)
 
 Functions are values
   double = fn(x) = x * 2
-  [1, 2, 3] |> map(double)       # [2, 4, 6]
-  [1, 2, 3] |> map(fn(x) = x + 1)
+  [1 2 3] |> map(double)       # [2, 4, 6]
+  [1 2 3] |> map(fn(x) = x + 1)
 
 Pipes read from left to right
   "  Hello  " |> trim |> upper   # "HELLO"
@@ -2102,7 +2102,7 @@ Method style
 
 Documentation
   ## Adds two numbers.
-  fn add(a, b) = a + b
+  fn add(a b) = a + b
   help(add)                      # shows "Adds two numbers."
 
 Recursion without limit
@@ -2116,8 +2116,8 @@ Recursion without limit
             r#"FUNZIONI
 
 Definire e chiamare
-  fn add(a, b) = a + b
-  add(2, 3)                      # 5
+  fn add(a b) = a + b
+  add(2 3)                      # 5
 
 Su più righe: l'ultima espressione è il risultato
   fn describe(n)
@@ -2137,8 +2137,8 @@ Con una condizione (una guardia)
 
 Le funzioni sono valori
   double = fn(x) = x * 2
-  [1, 2, 3] |> map(double)       # [2, 4, 6]
-  [1, 2, 3] |> map(fn(x) = x + 1)
+  [1 2 3] |> map(double)       # [2, 4, 6]
+  [1 2 3] |> map(fn(x) = x + 1)
 
 Le pipe si leggono da sinistra a destra
   "  Hello  " |> trim |> upper   # "HELLO"
@@ -2149,7 +2149,7 @@ Stile a metodi
 
 Documentazione
   ## Somma due numeri.
-  fn add(a, b) = a + b
+  fn add(a b) = a + b
   help(add)                      # mostra "Somma due numeri."
 
 Ricorsione senza limiti
@@ -2164,7 +2164,7 @@ Ricorsione senza limiti
         (
             r#"LISTS
 
-  numbers = [3, 1, 2]
+  numbers = [3 1 2]
   numbers[0]                     # 3 (the first; -1 is the last)
   len(numbers)                   # 3
   1..5                           # [1, 2, 3, 4, 5]
@@ -2172,25 +2172,25 @@ Ricorsione senza limiti
   numbers + [9]                  # [3, 1, 2, 9]
 
 Work on the whole list (no loops needed)
-  map(numbers, fn(x) = x * 10)            # [30, 10, 20]
-  filter(numbers, fn(x) = x > 1)          # [3, 2]
-  fold(numbers, 0, fn(acc, x) = acc + x)  # 6
+  map(numbers fn(x) = x * 10)            # [30, 10, 20]
+  filter(numbers fn(x) = x > 1)          # [3, 2]
+  fold(numbers 0 fn(acc x) = acc + x)  # 6
   sort(numbers)                           # [1, 2, 3]
   numbers |> each(fn(x) = print(x))       # prints each element
 
 Safe access (never an error)
   first([])                      # None
-  get(numbers, 10)               # None
+  get(numbers 10)               # None
 
 "Change" a list: you get a new list, the old one stays the same
-  set_at(numbers, 0, 9)          # [9, 1, 2]
-  insert_at(numbers, 1, 7)       # [3, 7, 1, 2]
+  set_at(numbers 0 9)          # [9, 1, 2]
+  insert_at(numbers 1 7)       # [3, 7, 1, 2]
   remove_at(numbers, -1)         # [3, 1]
 
 Pieces of a list
-  take_while(numbers, fn(x) = x > 2)      # [3]
-  chunks([1, 2, 3, 4, 5], 2)              # [[1, 2], [3, 4], [5]]
-  windows([1, 2, 3], 2)                   # [[1, 2], [2, 3]]
+  take_while(numbers fn(x) = x > 2)      # [3]
+  chunks([1 2 3 4 5] 2)              # [[1, 2], [3, 4], [5]]
+  windows([1 2 3] 2)                   # [[1, 2], [2, 3]]
   0..10 |> step_by(5)                     # [0, 5, 10]
 
 Take a list apart with patterns
@@ -2202,7 +2202,7 @@ Take a list apart with patterns
 All the functions: rythme help builtins"#,
             r#"LISTE
 
-  numbers = [3, 1, 2]
+  numbers = [3 1 2]
   numbers[0]                     # 3 (il primo; -1 è l'ultimo)
   len(numbers)                   # 3
   1..5                           # [1, 2, 3, 4, 5]
@@ -2210,25 +2210,25 @@ All the functions: rythme help builtins"#,
   numbers + [9]                  # [3, 1, 2, 9]
 
 Lavorare sull'intera lista (non servono cicli)
-  map(numbers, fn(x) = x * 10)            # [30, 10, 20]
-  filter(numbers, fn(x) = x > 1)          # [3, 2]
-  fold(numbers, 0, fn(acc, x) = acc + x)  # 6
+  map(numbers fn(x) = x * 10)            # [30, 10, 20]
+  filter(numbers fn(x) = x > 1)          # [3, 2]
+  fold(numbers 0 fn(acc x) = acc + x)  # 6
   sort(numbers)                           # [1, 2, 3]
   numbers |> each(fn(x) = print(x))       # stampa ogni elemento
 
 Accesso sicuro (mai un errore)
   first([])                      # None
-  get(numbers, 10)               # None
+  get(numbers 10)               # None
 
 "Cambiare" una lista: ottieni una nuova lista, quella vecchia resta uguale
-  set_at(numbers, 0, 9)          # [9, 1, 2]
-  insert_at(numbers, 1, 7)       # [3, 7, 1, 2]
+  set_at(numbers 0 9)          # [9, 1, 2]
+  insert_at(numbers 1 7)       # [3, 7, 1, 2]
   remove_at(numbers, -1)         # [3, 1]
 
 Pezzi di una lista
-  take_while(numbers, fn(x) = x > 2)      # [3]
-  chunks([1, 2, 3, 4, 5], 2)              # [[1, 2], [3, 4], [5]]
-  windows([1, 2, 3], 2)                   # [[1, 2], [2, 3]]
+  take_while(numbers fn(x) = x > 2)      # [3]
+  chunks([1 2 3 4 5] 2)              # [[1, 2], [3, 4], [5]]
+  windows([1 2 3] 2)                   # [[1, 2], [2, 3]]
   0..10 |> step_by(5)                     # [0, 5, 10]
 
 Scomporre una lista con i pattern
@@ -2248,21 +2248,21 @@ Tutte le funzioni: rythme help builtins"#,
   "a" + "b"                      # "ab"
   len("été")                     # 3 (characters, accents included)
   upper("abc")   lower("ABC")   trim("  x  ")
-  split("a,b,c", ",")            # ["a", "b", "c"]
-  join(["a", "b"], "-")          # "a-b"
-  replace("2024", "4", "5")      # "2025"
-  contains("hello", "ell")       # true
+  split("a,b,c" ",")            # ["a", "b", "c"]
+  join(["a" "b"] "-")          # "a-b"
+  replace("2024" "4" "5")      # "2025"
+  contains("hello" "ell")       # true
   text(42)                       # "42"
-  text(3.14159, 2)               # "3.14" (a number with 2 decimals)
-  pad_left("7", 3, "0")          # "007"  (and pad_right: to line up columns)
+  text(3.14159 2)               # "3.14" (a number with 2 decimals)
+  pad_left("7" 3 "0")          # "007"  (and pad_right: to line up columns)
   char_code("A")   char(66)      # 65 and "B"
   int("42")                      # 42
   parse_int("x42")               # Err(...): a conversion that cannot crash
   trim_start("  x")   trim_end("x  ")
   words("Hi, you!")              # ["Hi", "you"]
-  equals_ignore_case("Ada", "ADA")          # true
-  format_number(1234.5, 2)       # "1,234.50"   (with "fr": "1 234,50")
-  find_all("3 cats, 12 dogs", "[0-9]+")     # ["3", "12"]  (regexes: rythme help regex)
+  equals_ignore_case("Ada" "ADA")          # true
+  format_number(1234.5 2)       # "1,234.50"   (with "fr": "1 234,50")
+  find_all("3 cats, 12 dogs" "[0-9]+")     # ["3", "12"]  (regexes: rythme help regex)
 
 Special characters: \n (new line), \t (tab), \r (carriage return),
 \0 (null character), \" (quote), \\ (backslash), \{ and \} (braces, because
@@ -2275,21 +2275,21 @@ Special characters: \n (new line), \t (tab), \r (carriage return),
   "a" + "b"                      # "ab"
   len("été")                     # 3 (caratteri, accenti compresi)
   upper("abc")   lower("ABC")   trim("  x  ")
-  split("a,b,c", ",")            # ["a", "b", "c"]
-  join(["a", "b"], "-")          # "a-b"
-  replace("2024", "4", "5")      # "2025"
-  contains("hello", "ell")       # true
+  split("a,b,c" ",")            # ["a", "b", "c"]
+  join(["a" "b"] "-")          # "a-b"
+  replace("2024" "4" "5")      # "2025"
+  contains("hello" "ell")       # true
   text(42)                       # "42"
-  text(3.14159, 2)               # "3.14" (un numero con 2 decimali)
-  pad_left("7", 3, "0")          # "007"  (e pad_right: per allineare le colonne)
+  text(3.14159 2)               # "3.14" (un numero con 2 decimali)
+  pad_left("7" 3 "0")          # "007"  (e pad_right: per allineare le colonne)
   char_code("A")   char(66)      # 65 e "B"
   int("42")                      # 42
   parse_int("x42")               # Err(...): una conversione che non può andare in crash
   trim_start("  x")   trim_end("x  ")
   words("Hi, you!")              # ["Hi", "you"]
-  equals_ignore_case("Ada", "ADA")          # true
-  format_number(1234.5, 2)       # "1,234.50"   (con "fr": "1 234,50")
-  find_all("3 cats, 12 dogs", "[0-9]+")     # ["3", "12"]  (regex: rythme help regex)
+  equals_ignore_case("Ada" "ADA")          # true
+  format_number(1234.5 2)       # "1,234.50"   (con "fr": "1 234,50")
+  find_all("3 cats, 12 dogs" "[0-9]+")     # ["3", "12"]  (regex: rythme help regex)
 
 Caratteri speciali: \n (a capo), \t (tabulazione), \r (ritorno carrello),
 \0 (carattere nullo), \" (virgolette), \\ (barra rovesciata), \{ e \} (graffe,
@@ -2300,27 +2300,27 @@ Unicode: é)."#,
             r#"RECORDS
 
 A record groups named values:
-  ada = {name: "Ada", born: 1815}
+  ada = {name: "Ada" born: 1815}
   ada.name                       # "Ada"
   ada["name"]                    # "Ada"
 
 Records never change: build a new one from an old one
-  older = {..ada, born: 1816}    # same fields, `born` replaced
+  older = {..ada born: 1816}    # same fields, `born` replaced
 
 Take apart
-  {name, born} = ada
+  {name born} = ada
   fn greet({name}) = "Hello {name}"
 
 Useful functions
   keys(ada)   values(ada)   has(ada, "name")   get(ada, "x")   put(ada, "x", 1)
   entries(ada)                   # [["name", "Ada"], ["born", 1815]]
-  from_entries([["x", 1]])       # {x: 1}
+  from_entries([["x" 1]])       # {x: 1}
 
 Records as dictionaries
   counts = {apple: 2}
-  put(counts, "pear", 5)         # {apple: 2, pear: 5}
-  map_values(counts, fn(n) = n * 10)      # {apple: 20}
-  group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+  put(counts "pear" 5)         # {apple: 2, pear: 5}
+  map_values(counts fn(n) = n * 10)      # {apple: 20}
+  group_by(["a" "b" "a"] fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
   For keys that are not names (numbers, lists...), use a dict: rythme help dicts
 
 JSON, the format of data on the web
@@ -2329,27 +2329,27 @@ JSON, the format of data on the web
             r#"RECORD
 
 Un record raggruppa valori con un nome:
-  ada = {name: "Ada", born: 1815}
+  ada = {name: "Ada" born: 1815}
   ada.name                       # "Ada"
   ada["name"]                    # "Ada"
 
 I record non cambiano mai: costruiscine uno nuovo da uno vecchio
-  older = {..ada, born: 1816}    # stessi campi, `born` sostituito
+  older = {..ada born: 1816}    # stessi campi, `born` sostituito
 
 Scomporre
-  {name, born} = ada
+  {name born} = ada
   fn greet({name}) = "Hello {name}"
 
 Funzioni utili
   keys(ada)   values(ada)   has(ada, "name")   get(ada, "x")   put(ada, "x", 1)
   entries(ada)                   # [["name", "Ada"], ["born", 1815]]
-  from_entries([["x", 1]])       # {x: 1}
+  from_entries([["x" 1]])       # {x: 1}
 
 Record come dizionari
   counts = {apple: 2}
-  put(counts, "pear", 5)         # {apple: 2, pear: 5}
-  map_values(counts, fn(n) = n * 10)      # {apple: 20}
-  group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+  put(counts "pear" 5)         # {apple: 2, pear: 5}
+  map_values(counts fn(n) = n * 10)      # {apple: 20}
+  group_by(["a" "b" "a"] fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
   Per chiavi che non sono nomi (numeri, liste...), usa un dizionario: rythme help dicts
 
 JSON, il formato dei dati sul web
@@ -2361,24 +2361,24 @@ JSON, il formato dei dati sul web
 
 A dict (dictionary) gives a value for each key. Keys can be any value but
 functions: numbers, texts, lists, records... They are kept in order.
-  ages = dict([["Ada", 36], ["Alan", 41]])
+  ages = dict([["Ada" 36] ["Alan" 41]])
   ages                           # dict("Ada" => 36, "Alan" => 41)
   ages["Ada"]                    # 36 (an error if the key is missing)
-  get(ages, "Bob")               # None: an Option, never an error
-  grid = dict([[[0, 0], "start"]])   # a list as a key
+  get(ages "Bob")               # None: an Option, never an error
+  grid = dict([[[0 0] "start"]])   # a list as a key
   dict({x: 1})                   # from a record: dict("x" => 1)
 
 Dicts never change: functions give a new one, quickly (in O(log n))
-  put(ages, "Bob", 20)           # added (or replaced)
-  remove(ages, "Ada")            # without this key
+  put(ages "Bob" 20)           # added (or replaced)
+  remove(ages "Ada")            # without this key
   has(ages, "Ada")   len(ages)   keys(ages)   values(ages)   entries(ages)
-  map_values(ages, fn(n) = n + 1)
-  filter(ages, fn(name, age) = age > 40)   # f receives the key and the value
-  ages.each do |name, age| print(name, age) end   # reject and select too
-  union(a, b)                    # both; for a key in both, b's value wins
+  map_values(ages fn(n) = n + 1)
+  filter(ages fn(name age) = age > 40)   # f receives the key and the value
+  ages.each do |name age| print(name age) end   # reject and select too
+  union(a b)                    # both; for a key in both, b's value wins
 
 A set holds values without repetition, in order.
-  s = set([3, 1, 3])             # set(1, 3)
+  s = set([3 1 3])             # set(1, 3)
   has(s, 3)   push(s, 5)   remove(s, 1)   len(s)   values(s)   # values: a list
   union(a, b)   intersection(a, b)   difference(a, b)   is_subset(a, b)
   filter(s, is_odd)   map(s, fn(x) = x * 10)
@@ -2391,24 +2391,24 @@ object, a set as an array; `dict(parse_json(text)?)` reads an object back."#,
 Un dizionario (dict) dà un valore per ogni chiave. Le chiavi possono essere
 qualsiasi valore tranne le funzioni: numeri, testi, liste, record... Sono
 tenute in ordine.
-  ages = dict([["Ada", 36], ["Alan", 41]])
+  ages = dict([["Ada" 36] ["Alan" 41]])
   ages                           # dict("Ada" => 36, "Alan" => 41)
   ages["Ada"]                    # 36 (un errore se la chiave manca)
-  get(ages, "Bob")               # None: un Option, mai un errore
-  grid = dict([[[0, 0], "start"]])   # una lista come chiave
+  get(ages "Bob")               # None: un Option, mai un errore
+  grid = dict([[[0 0] "start"]])   # una lista come chiave
   dict({x: 1})                   # da un record: dict("x" => 1)
 
 I dizionari non cambiano mai: le funzioni ne danno uno nuovo, velocemente (in O(log n))
-  put(ages, "Bob", 20)           # aggiunto (o sostituito)
-  remove(ages, "Ada")            # senza questa chiave
+  put(ages "Bob" 20)           # aggiunto (o sostituito)
+  remove(ages "Ada")            # senza questa chiave
   has(ages, "Ada")   len(ages)   keys(ages)   values(ages)   entries(ages)
-  map_values(ages, fn(n) = n + 1)
-  filter(ages, fn(name, age) = age > 40)   # f riceve la chiave e il valore
-  ages.each do |name, age| print(name, age) end   # anche reject e select
-  union(a, b)                    # entrambi; per una chiave in tutti e due, vince il valore di b
+  map_values(ages fn(n) = n + 1)
+  filter(ages fn(name age) = age > 40)   # f riceve la chiave e il valore
+  ages.each do |name age| print(name age) end   # anche reject e select
+  union(a b)                    # entrambi; per una chiave in tutti e due, vince il valore di b
 
 Un insieme contiene valori senza ripetizioni, in ordine.
-  s = set([3, 1, 3])             # set(1, 3)
+  s = set([3 1 3])             # set(1, 3)
   has(s, 3)   push(s, 5)   remove(s, 1)   len(s)   values(s)   # values: una lista
   union(a, b)   intersection(a, b)   difference(a, b)   is_subset(a, b)
   filter(s, is_odd)   map(s, fn(x) = x * 10)
@@ -2422,7 +2422,7 @@ sono tutte testi (o tutte simboli) come oggetto, un insieme come array;
             r#"YOUR OWN TYPES
 
 A type lists the possible shapes of a value:
-  type Shape = Circle(radius) | Rect(width, height) | Empty
+  type Shape = Circle(radius) | Rect(width height) | Empty
 
   c = Circle(2.0)
   c.radius                       # 2.0
@@ -2436,17 +2436,17 @@ Handle each shape with match
 
 Or with one definition per shape
   fn perimeter(Circle(r)) = 2 * pi * r
-  fn perimeter(Rect(w, h)) = 2 * (w + h)
+  fn perimeter(Rect(w h)) = 2 * (w + h)
   fn perimeter(Empty) = 0
 
 If you forget a shape, `rythme check` tells you which one.
 
 A type can contain itself (trees...):
-  type Tree = Leaf | Node(left, value, right)"#,
+  type Tree = Leaf | Node(left value right)"#,
             r#"I TUOI TIPI
 
 Un tipo elenca le forme possibili di un valore:
-  type Shape = Circle(radius) | Rect(width, height) | Empty
+  type Shape = Circle(radius) | Rect(width height) | Empty
 
   c = Circle(2.0)
   c.radius                       # 2.0
@@ -2460,13 +2460,13 @@ Gestisci ogni forma con match
 
 Oppure con una definizione per forma
   fn perimeter(Circle(r)) = 2 * pi * r
-  fn perimeter(Rect(w, h)) = 2 * (w + h)
+  fn perimeter(Rect(w h)) = 2 * (w + h)
   fn perimeter(Empty) = 0
 
 Se dimentichi una forma, `rythme check` ti dice quale.
 
 Un tipo può contenere se stesso (alberi...):
-  type Tree = Leaf | Node(left, value, right)"#,
+  type Tree = Leaf | Node(left value right)"#,
         ),
         (
             r#"MATCH AND PATTERNS
@@ -2494,9 +2494,9 @@ Patterns
   a | b                          one pattern or the other
 
 Patterns work everywhere a name is given:
-  [x, y] = [1, 2]
+  [x y] = [1 2]
   fn head_or_zero([]) = 0
-  fn head_or_zero([x, ..]) = x"#,
+  fn head_or_zero([x ..]) = x"#,
             r#"MATCH E PATTERN
 
 `match` confronta un valore con dei pattern, in ordine, e dà il risultato del
@@ -2522,9 +2522,9 @@ Pattern
   a | b                          un pattern o l'altro
 
 I pattern funzionano ovunque si dia un nome:
-  [x, y] = [1, 2]
+  [x y] = [1 2]
   fn head_or_zero([]) = 0
-  fn head_or_zero([x, ..]) = x"#,
+  fn head_or_zero([x ..]) = x"#,
         ),
         (
             r#"ERRORS ARE VALUES (Option, Result, ?)
@@ -2533,7 +2533,7 @@ Rythme has no null and no exceptions. A value that may be missing is an
 Option: Some(value) or None. An operation that may fail gives a Result:
 Ok(value) or Err(message). You cannot forget to handle them.
 
-  fn divide(a, b) = if b == 0 then Err("division by zero") else Ok(a / b)
+  fn divide(a b) = if b == 0 then Err("division by zero") else Ok(a / b)
 
   match divide(10, 2)
     Ok(x) -> print("result: {x}")
@@ -2548,13 +2548,13 @@ The ? operator: take the value, or stop and pass the error on
   end
 
 Quick tools
-  unwrap_or(get(list, 5), 0)     # the value, or a default
+  unwrap_or(get(list 5) 0)     # the value, or a default
   unwrap(Some(3))                # 3 (stops the program on None or Err)
   is_some(x)   is_none(x)   is_ok(x)   is_err(x)
-  map(Some(2), fn(x) = x * 10)   # Some(20)
-  ok_or(get(person, "age"), "no age")   # Err("no age") if missing: ready for ?
-  and_then(x, f)                 # one more step that may fail
-  map_err(r, fn(e) = "config: {e}")     # explain an error better
+  map(Some(2) fn(x) = x * 10)   # Some(20)
+  ok_or(get(person "age") "no age")   # Err("no age") if missing: ready for ?
+  and_then(x f)                 # one more step that may fail
+  map_err(r fn(e) = "config: {e}")     # explain an error better
 
 To stop the whole program: fail("message")."#,
             r#"GLI ERRORI SONO VALORI (Option, Result, ?)
@@ -2563,7 +2563,7 @@ Rythme non ha null né eccezioni. Un valore che può mancare è un
 Option: Some(valore) o None. Un'operazione che può fallire dà un Result:
 Ok(valore) o Err(messaggio). Non puoi dimenticarti di gestirli.
 
-  fn divide(a, b) = if b == 0 then Err("divisione per zero") else Ok(a / b)
+  fn divide(a b) = if b == 0 then Err("divisione per zero") else Ok(a / b)
 
   match divide(10, 2)
     Ok(x) -> print("risultato: {x}")
@@ -2578,13 +2578,13 @@ L'operatore ?: prende il valore, oppure si ferma e passa avanti l'errore
   end
 
 Strumenti rapidi
-  unwrap_or(get(list, 5), 0)     # il valore, o uno predefinito
+  unwrap_or(get(list 5) 0)     # il valore, o uno predefinito
   unwrap(Some(3))                # 3 (ferma il programma su None o Err)
   is_some(x)   is_none(x)   is_ok(x)   is_err(x)
-  map(Some(2), fn(x) = x * 10)   # Some(20)
-  ok_or(get(person, "age"), "no age")   # Err("no age") se manca: pronto per ?
-  and_then(x, f)                 # un passo in più che può fallire
-  map_err(r, fn(e) = "config: {e}")     # spiega meglio un errore
+  map(Some(2) fn(x) = x * 10)   # Some(20)
+  ok_or(get(person "age") "no age")   # Err("no age") se manca: pronto per ?
+  and_then(x f)                 # un passo in più che può fallire
+  map_err(r fn(e) = "config: {e}")     # spiega meglio un errore
 
 Per fermare tutto il programma: fail("messaggio")."#,
         ),
@@ -2609,15 +2609,15 @@ Instead of "while":                  a recursive function
   total = numbers |> map(fn(x) = x * x) |> sum
 
   # A "while" loop as a recursive function:
-  fn collatz(1, steps) = steps
+  fn collatz(1 steps) = steps
   fn collatz(n, steps) =
-    if n % 2 == 0 then collatz(n // 2, steps + 1) else collatz(3 * n + 1, steps + 1)
-  collatz(27, 0)                 # 111
+    if n % 2 == 0 then collatz(n // 2 steps + 1) else collatz(3 * n + 1 steps + 1)
+  collatz(27 0)                 # 111
 
 Instead of changing a value, make a new one:
   x2 = x + 1
-  person2 = {..person, age: 37}
-  list2 = push(list, 4)"#,
+  person2 = {..person age: 37}
+  list2 = push(list 4)"#,
             r#"PENSARE IN MODO FUNZIONALE
 
 In Rythme i valori non cambiano mai e non ci sono cicli. Può sembrare strano,
@@ -2638,15 +2638,15 @@ Invece di "while":                    una funzione ricorsiva
   total = numbers |> map(fn(x) = x * x) |> sum
 
   # Un ciclo "while" come funzione ricorsiva:
-  fn collatz(1, steps) = steps
+  fn collatz(1 steps) = steps
   fn collatz(n, steps) =
-    if n % 2 == 0 then collatz(n // 2, steps + 1) else collatz(3 * n + 1, steps + 1)
-  collatz(27, 0)                 # 111
+    if n % 2 == 0 then collatz(n // 2 steps + 1) else collatz(3 * n + 1 steps + 1)
+  collatz(27 0)                 # 111
 
 Invece di cambiare un valore, creane uno nuovo:
   x2 = x + 1
-  person2 = {..person, age: 37}
-  list2 = push(list, 4)"#,
+  person2 = {..person age: 37}
+  list2 = push(list 4)"#,
         ),
         (
             r#"TESTS
@@ -2654,11 +2654,11 @@ Invece di cambiare un valore, creane uno nuovo:
 Write tests next to your code:
   fn double(x) = x * 2
 
-  test "double of 2 is 4" = assert_eq(double(2), 4)
+  test "double of 2 is 4" = assert_eq(double(2) 4)
 
   test "several checks"
-    assert_eq(double(0), 0)
-    assert(double(-1) < 0, "should stay negative")
+    assert_eq(double(0) 0)
+    assert(double(-1) < 0 "should stay negative")
   end
 
 Run them:
@@ -2676,7 +2676,7 @@ counts and the time; the exit code is 0 when every test passes.
 
 Property tests: check that something holds for many values
   test "reversing twice gives the list back" =
-    check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+    check_all(fn(l) = reverse(reverse(l)) == l lists_of(ints()))
 
 Generators: ints(min, max), floats(min, max), texts(max_length), bools(),
 lists_of(generator, max_length), one_of(list), records_of({x: ints(), y: texts()}).
@@ -2689,11 +2689,11 @@ same values come back on every run, and `--seed N` tries others
 Scrivi i test accanto al tuo codice:
   fn double(x) = x * 2
 
-  test "il doppio di 2 è 4" = assert_eq(double(2), 4)
+  test "il doppio di 2 è 4" = assert_eq(double(2) 4)
 
   test "più controlli"
-    assert_eq(double(0), 0)
-    assert(double(-1) < 0, "dovrebbe restare negativo")
+    assert_eq(double(0) 0)
+    assert(double(-1) < 0 "dovrebbe restare negativo")
   end
 
 Eseguili:
@@ -2712,7 +2712,7 @@ test passa.
 
 Test di proprietà: controllare che qualcosa valga per molti valori
   test "invertire due volte ridà la lista" =
-    check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+    check_all(fn(l) = reverse(reverse(l)) == l lists_of(ints()))
 
 Generatori: ints(min, max), floats(min, max), texts(max_length), bools(),
 lists_of(generator, max_length), one_of(list), records_of({x: ints(), y: texts()}).
@@ -2762,12 +2762,12 @@ docs/exercises del repository di Rythme li contiene in inglese e in francese."#,
 
   # geometry.ry
   ## Area of a rectangle.
-  fn area(w, h) = w * h
+  fn area(w h) = w * h
   fn _check(x) = x >= 0          # private: starts with `_`
 
   # main.ry
   use geometry                    # the file geometry.ry, next to main.ry
-  print(geometry.area(2, 3))      # 6
+  print(geometry.area(2 3))      # 6
 
 `use geometry` gives the definitions of geometry.ry through its name:
 `geometry.area`, `geometry.Circle(1)`, and in a `match`, `geometry.Circle(r)`.
@@ -2785,12 +2785,12 @@ as `area(2, 3)`; prefer `use geometry`."#,
 
   # geometry.ry
   ## Area di un rettangolo.
-  fn area(w, h) = w * h
+  fn area(w h) = w * h
   fn _check(x) = x >= 0          # privata: inizia con `_`
 
   # main.ry
   use geometry                    # il file geometry.ry, accanto a main.ry
-  print(geometry.area(2, 3))      # 6
+  print(geometry.area(2 3))      # 6
 
 `use geometry` dà le definizioni di geometry.ry tramite il suo nome:
 `geometry.area`, `geometry.Circle(1)`, e in un `match`, `geometry.Circle(r)`.
@@ -2814,8 +2814,8 @@ Err(message) with a message that says what went wrong.
 
 Files and folders (relative paths start in the current folder)
   read_file("notes.txt")         # Ok("...") or Err("file not found: notes.txt")
-  write_file("out.txt", "hi")    # Ok(()), replaces the content
-  append_file("log.txt", "done\n")
+  write_file("out.txt" "hi")    # Ok(()), replaces the content
+  append_file("log.txt" "done\n")
   file_exists("notes.txt")       # true or false
   file_info("notes.txt")         # Ok({is_folder: false, size: 11}), in bytes
   list_folder(".")               # Ok(["notes.txt", "photos"]), in order
@@ -2823,7 +2823,7 @@ Files and folders (relative paths start in the current folder)
   delete_file("old.txt")         # Ok(()); never a folder
 
 Paths that work on Linux, macOS and Windows
-  join_path(["data", "notes.txt"])       # "data/notes.txt"
+  join_path(["data" "notes.txt"])       # "data/notes.txt"
   split_path("/home/ada/notes.txt")      # ["/", "home", "ada", "notes.txt"]
   split_path("C:\Users\ada")             # ["C:\", "Users", "ada"]
 
@@ -2831,7 +2831,7 @@ The command line: rythme tool.ry --verbose --name=Ada notes.txt
   args()                         # ["--verbose", "--name=Ada", "notes.txt"]
   options()                      # Ok({args: ["notes.txt"], verbose: true, name: "Ada"})
   opts = unwrap(options())
-  name = unwrap_or(get(opts, "name"), "World")   # an option that may be missing
+  name = unwrap_or(get(opts "name") "World")   # an option that may be missing
   env("HOME")                    # Some("/home/ada") or None
 
 The standard input: rythme count.ry < names.txt
@@ -2854,8 +2854,8 @@ Err(messaggio) con un messaggio che dice cosa è andato storto.
 
 File e cartelle (i percorsi relativi partono dalla cartella corrente)
   read_file("notes.txt")         # Ok("...") o Err("file non trovato: notes.txt")
-  write_file("out.txt", "hi")    # Ok(()), sostituisce il contenuto
-  append_file("log.txt", "done\n")
+  write_file("out.txt" "hi")    # Ok(()), sostituisce il contenuto
+  append_file("log.txt" "done\n")
   file_exists("notes.txt")       # true o false
   file_info("notes.txt")         # Ok({is_folder: false, size: 11}), in byte
   list_folder(".")               # Ok(["notes.txt", "photos"]), in ordine
@@ -2863,7 +2863,7 @@ File e cartelle (i percorsi relativi partono dalla cartella corrente)
   delete_file("old.txt")         # Ok(()); mai una cartella
 
 Percorsi che funzionano su Linux, macOS e Windows
-  join_path(["data", "notes.txt"])       # "data/notes.txt"
+  join_path(["data" "notes.txt"])       # "data/notes.txt"
   split_path("/home/ada/notes.txt")      # ["/", "home", "ada", "notes.txt"]
   split_path("C:\Users\ada")             # ["C:\", "Users", "ada"]
 
@@ -2871,7 +2871,7 @@ La riga di comando: rythme tool.ry --verbose --name=Ada notes.txt
   args()                         # ["--verbose", "--name=Ada", "notes.txt"]
   options()                      # Ok({args: ["notes.txt"], verbose: true, name: "Ada"})
   opts = unwrap(options())
-  name = unwrap_or(get(opts, "name"), "World")   # un'opzione che può mancare
+  name = unwrap_or(get(opts "name") "World")   # un'opzione che può mancare
   env("HOME")                    # Some("/home/ada") o None
 
 L'input standard: rythme count.ry < names.txt
@@ -2961,24 +2961,24 @@ A date is a record: {year, month, day}, with hour, minute and second for a
 moment of the day, and offset (minutes ahead of UTC) when it is known.
   today()                        # {year: 2026, month: 10, day: 18}
   now()                          # {year: 2026, ..., hour: 14, minute: 5, second: 9, offset: 120}
-  birthday = {year: 1815, month: 12, day: 10}
+  birthday = {year: 1815 month: 12 day: 10}
   birthday.year                  # 1815
 
 Text and back, in the ISO 8601 form
   parse_date("2024-02-29")       # Ok({year: 2024, month: 2, day: 29})
   parse_date("2024-02-30")       # Err("... February 2024 ...")
   parse_date("2024-02-29T13:05:00+01:00")    # with a time and an offset
-  format_date({year: 2024, month: 2, day: 29, hour: 9})   # "2024-02-29T09:00:00"
+  format_date({year: 2024 month: 2 day: 29 hour: 9})   # "2024-02-29T09:00:00"
 
 Calendar arithmetic (leap years and month lengths included)
-  add_days({year: 2024, month: 2, day: 28}, 1)     # {year: 2024, month: 2, day: 29}
-  add_seconds(now(), 3600)       # in one hour
-  days_between(today(), {year: 2027, month: 1, day: 1})   # days left
-  seconds_between(a, b)          # negative when b is before a
+  add_days({year: 2024 month: 2 day: 28} 1)     # {year: 2024, month: 2, day: 29}
+  add_seconds(now() 3600)       # in one hour
+  days_between(today() {year: 2027 month: 1 day: 1})   # days left
+  seconds_between(a b)          # negative when b is before a
   day_of_week(today())           # 1 = Monday ... 7 = Sunday
-  days_in_month(2023, 2)         # 28
+  days_in_month(2023 2)         # 28
   is_leap_year(2000)             # true
-  is_date({year: 2023, month: 2, day: 29})   # false
+  is_date({year: 2023 month: 2 day: 29})   # false
 
 A date that does not exist stops the functions with E023, which says why.
 The local offset comes from the system (UTC when it does not tell); time()
@@ -2989,24 +2989,24 @@ Una data è un record: {year, month, day}, con hour, minute e second per un
 momento della giornata, e offset (minuti in avanti rispetto a UTC) quando è noto.
   today()                        # {year: 2026, month: 10, day: 18}
   now()                          # {year: 2026, ..., hour: 14, minute: 5, second: 9, offset: 120}
-  birthday = {year: 1815, month: 12, day: 10}
+  birthday = {year: 1815 month: 12 day: 10}
   birthday.year                  # 1815
 
 Testo e ritorno, nel formato ISO 8601
   parse_date("2024-02-29")       # Ok({year: 2024, month: 2, day: 29})
   parse_date("2024-02-30")       # Err("... febbraio 2024 ...")
   parse_date("2024-02-29T13:05:00+01:00")    # con un orario e uno scarto
-  format_date({year: 2024, month: 2, day: 29, hour: 9})   # "2024-02-29T09:00:00"
+  format_date({year: 2024 month: 2 day: 29 hour: 9})   # "2024-02-29T09:00:00"
 
 Aritmetica del calendario (anni bisestili e lunghezze dei mesi compresi)
-  add_days({year: 2024, month: 2, day: 28}, 1)     # {year: 2024, month: 2, day: 29}
-  add_seconds(now(), 3600)       # tra un'ora
-  days_between(today(), {year: 2027, month: 1, day: 1})   # giorni che mancano
-  seconds_between(a, b)          # negativo quando b è prima di a
+  add_days({year: 2024 month: 2 day: 28} 1)     # {year: 2024, month: 2, day: 29}
+  add_seconds(now() 3600)       # tra un'ora
+  days_between(today() {year: 2027 month: 1 day: 1})   # giorni che mancano
+  seconds_between(a b)          # negativo quando b è prima di a
   day_of_week(today())           # 1 = lunedì ... 7 = domenica
-  days_in_month(2023, 2)         # 28
+  days_in_month(2023 2)         # 28
   is_leap_year(2000)             # true
-  is_date({year: 2023, month: 2, day: 29})   # false
+  is_date({year: 2023 month: 2 day: 29})   # false
 
 Una data che non esiste ferma le funzioni con E023, che dice perché.
 Lo scarto locale viene dal sistema (UTC quando non lo dice); time() dà i
@@ -3019,14 +3019,14 @@ A regex (regular expression) describes pieces of text: "[0-9]+" means "one
 digit or more". Rythme reads the usual regexes, and a search never takes
 more than (length of the text) × (size of the regex).
 
-  matches("2024", "[0-9]+")                  # true: the WHOLE text matches
-  find_first("tel: 06 12", "[0-9]+")         # Some("06"): the first piece
-  find_all("3 cats, 12 dogs", "[0-9]+")      # ["3", "12"]
-  split_by("a, b;c", "[,;] *")               # ["a", "b", "c"]
-  replace_all("a cat", "\\b\\w", upper)      # "A Cat" (a function for each piece)
-  replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1")   # "2024-02-29"
-  captures("2024-02", "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
-  named_captures("2024-02", "(?<year>[0-9]+)-(?<month>[0-9]+)")
+  matches("2024" "[0-9]+")                  # true: the WHOLE text matches
+  find_first("tel: 06 12" "[0-9]+")         # Some("06"): the first piece
+  find_all("3 cats, 12 dogs" "[0-9]+")      # ["3", "12"]
+  split_by("a, b;c" "[,;] *")               # ["a", "b", "c"]
+  replace_all("a cat" "\\b\\w" upper)      # "A Cat" (a function for each piece)
+  replace_all("29/02/2024" "(\\d+)/(\\d+)/(\\d+)" "$3-$2-$1")   # "2024-02-29"
+  captures("2024-02" "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
+  named_captures("2024-02" "(?<year>[0-9]+)-(?<month>[0-9]+)")
                                              # Some({year: "2024", month: "02"})
 
 What a regex can say
@@ -3058,14 +3058,14 @@ Una regex (espressione regolare) descrive pezzi di testo: "[0-9]+" significa
 "una cifra o più". Rythme legge le regex abituali, e una ricerca non richiede
 mai più di (lunghezza del testo) × (dimensione della regex).
 
-  matches("2024", "[0-9]+")                  # true: TUTTO il testo corrisponde
-  find_first("tel: 06 12", "[0-9]+")         # Some("06"): il primo pezzo
-  find_all("3 cats, 12 dogs", "[0-9]+")      # ["3", "12"]
-  split_by("a, b;c", "[,;] *")               # ["a", "b", "c"]
-  replace_all("a cat", "\\b\\w", upper)      # "A Cat" (una funzione per ogni pezzo)
-  replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1")   # "2024-02-29"
-  captures("2024-02", "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
-  named_captures("2024-02", "(?<year>[0-9]+)-(?<month>[0-9]+)")
+  matches("2024" "[0-9]+")                  # true: TUTTO il testo corrisponde
+  find_first("tel: 06 12" "[0-9]+")         # Some("06"): il primo pezzo
+  find_all("3 cats, 12 dogs" "[0-9]+")      # ["3", "12"]
+  split_by("a, b;c" "[,;] *")               # ["a", "b", "c"]
+  replace_all("a cat" "\\b\\w" upper)      # "A Cat" (una funzione per ogni pezzo)
+  replace_all("29/02/2024" "(\\d+)/(\\d+)/(\\d+)" "$3-$2-$1")   # "2024-02-29"
+  captures("2024-02" "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
+  named_captures("2024-02" "(?<year>[0-9]+)-(?<month>[0-9]+)")
                                              # Some({year: "2024", month: "02"})
 
 Cosa può dire una regex
@@ -3140,7 +3140,7 @@ the same, and nobody has to argue about spaces.
 The style
   - 2 spaces per level of indentation
   - spaces around operators: x = a + b * 2   xs |> map(f)   n -> n * 2
-  - none inside brackets or around ..: f(x)   [1, 2]   {name: "Ada"}   1..10
+  - none inside brackets or around ..: f(x)   [1 2]   {name: "Ada"}   1..10
   - a pipeline written on several lines: one step per line
       total = prices
         |> filter(fn(p) = p > 10)
@@ -3148,8 +3148,9 @@ The style
   - a type written on several lines: one variant per line
       type Shape =
         | Circle(radius)
-        | Rect(width, height)
-  - a list written on several lines ends with a comma
+        | Rect(width height)
+  - no commas between elements, as in REBOL: [1 2]   f(a b)   print x y;
+    one stays where the next element would continue the one before: [x, -1]
   - a block written on one line stays on one line:
       xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
     on several lines, its statements go one level deeper than `do`
@@ -3176,7 +3177,7 @@ lo stesso aspetto, e nessuno deve discutere sugli spazi.
 Lo stile
   - 2 spazi per livello di indentazione
   - spazi intorno agli operatori: x = a + b * 2   xs |> map(f)   n -> n * 2
-  - nessuno dentro le parentesi o intorno a ..: f(x)   [1, 2]   {name: "Ada"}   1..10
+  - nessuno dentro le parentesi o intorno a ..: f(x)   [1 2]   {name: "Ada"}   1..10
   - una pipeline scritta su più righe: un passo per riga
       total = prices
         |> filter(fn(p) = p > 10)
@@ -3184,8 +3185,9 @@ Lo stile
   - un tipo scritto su più righe: una variante per riga
       type Shape =
         | Circle(radius)
-        | Rect(width, height)
-  - una lista scritta su più righe finisce con una virgola
+        | Rect(width height)
+  - nessuna virgola tra gli elementi, come in REBOL: [1 2]   f(a b)   print x y;
+    ne resta una dove l'elemento seguente continuerebbe il precedente: [x, -1]
   - un blocco scritto su una riga resta su una riga:
       xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
     su più righe, le sue istruzioni vanno un livello più in profondità di `do`
@@ -3216,11 +3218,11 @@ Write a `##` comment just above what it documents:
   ## Shapes and their areas.      <- at the top, followed by a blank line:
                                      it describes the whole file
   ## A shape to draw.
-  type Shape = Circle(radius) | Rect(width, height)
+  type Shape = Circle(radius) | Rect(width height)
 
   ## The area of a shape. See `len` and `area`.
   fn area(Circle(r)) = pi * r * r
-  fn area(Rect(w, h)) = w * h
+  fn area(Rect(w h)) = w * h
 
 What is written
   - for each file: its description, the files it uses (documented too),
@@ -3250,11 +3252,11 @@ Scrivi un commento `##` subito sopra quello che documenta:
   ## Forme e le loro aree.        <- in cima, seguito da una riga vuota:
                                      descrive tutto il file
   ## Una forma da disegnare.
-  type Shape = Circle(radius) | Rect(width, height)
+  type Shape = Circle(radius) | Rect(width height)
 
   ## L'area di una forma. Vedi `len` e `area`.
   fn area(Circle(r)) = pi * r * r
-  fn area(Rect(w, h)) = w * h
+  fn area(Rect(w h)) = w * h
 
 Cosa viene scritto
   - per ogni file: la sua descrizione, i file che usa (documentati anche loro),
@@ -3403,7 +3405,7 @@ RYTHME_LANG non la scelga: rythme --lang fr lsp"#,
 Rythme reads like Ruby, but its values never change: no mutation, no nil,
 no exceptions. What you know from Ruby mostly works:
 
-  names = ["Ada", "Grace", "Alan"]
+  names = ["Ada" "Grace" "Alan"]
   names.each do |name|
     puts "Hello, #{name}!"
   end
@@ -3483,7 +3485,7 @@ When ? is part of a name
 Rythme si legge come Ruby, ma i suoi valori non cambiano mai: niente mutazioni,
 niente nil, niente eccezioni. Quello che sai di Ruby per lo più funziona:
 
-  names = ["Ada", "Grace", "Alan"]
+  names = ["Ada" "Grace" "Alan"]
   names.each do |name|
     puts "Hello, #{name}!"
   end
@@ -3568,7 +3570,7 @@ const that never changes (arrays and objects too), there is no null, no
 undefined and no exceptions, and == never converts. What you write every
 day has a short equivalent:
 
-  names = ["Ada", "Grace", "Alan"]
+  names = ["Ada" "Grace" "Alan"]
   names.each(fn(n) = print("Hi {n}!"))
 
   [3, 1, 2]
@@ -3576,8 +3578,8 @@ day has a short equivalent:
     .map(fn(x) = x * 10)
     .sort()                      # [20, 30]
 
-  person = {name: "Ada", langs: ["fr"]}
-  older = {..person, age: 36}    # {...person, age: 36}
+  person = {name: "Ada" langs: ["fr"]}
+  older = {..person age: 36}    # {...person, age: 36}
 
 The language
   const x = 1                    x = 1 (a name never changes)
@@ -3643,7 +3645,7 @@ una costante che non cambia mai (anche array e oggetti), non ci sono null,
 né undefined, né eccezioni, e == non converte mai. Quello che scrivi ogni
 giorno ha un equivalente breve:
 
-  names = ["Ada", "Grace", "Alan"]
+  names = ["Ada" "Grace" "Alan"]
   names.each(fn(n) = print("Hi {n}!"))
 
   [3, 1, 2]
@@ -3651,8 +3653,8 @@ giorno ha un equivalente breve:
     .map(fn(x) = x * 10)
     .sort()                      # [20, 30]
 
-  person = {name: "Ada", langs: ["fr"]}
-  older = {..person, age: 36}    # {...person, age: 36}
+  person = {name: "Ada" langs: ["fr"]}
+  older = {..person age: 36}    # {...person, age: 36}
 
 Il linguaggio
   const x = 1                    x = 1 (un nome non cambia mai)
@@ -3902,12 +3904,12 @@ Sicuro:  get([10, 20], 2)         # None, mai un errore"#,
 
 Dividing by zero has no meaning. Check the divisor before, or return a Result.
 
-  fn divide(a, b) = if b == 0 then Err("division by zero") else Ok(a / b)"#,
+  fn divide(a b) = if b == 0 then Err("division by zero") else Ok(a / b)"#,
             r#"E008 — Divisione per zero
 
 Dividere per zero non ha senso. Controlla prima il divisore, o restituisci un Result.
 
-  fn divide(a, b) = if b == 0 then Err("divisione per zero") else Ok(a / b)"#,
+  fn divide(a b) = if b == 0 then Err("divisione per zero") else Ok(a / b)"#,
         ),
         (
             r#"E009 — Not a function
@@ -3938,7 +3940,7 @@ has no such key (`dict[key]`).
 Wrong:   {name: "Ada"}.nmae
 Right:   {name: "Ada"}.name
 Safe:    get(record, "name")     # an Option, never an error
-         get(dict, key)          # the same for a dict
+         get(dict key)          # the same for a dict
 
 When the fields of the record are certain, `rythme check` finds this mistake
 before the program runs, and suggests the closest field."#,
@@ -3950,7 +3952,7 @@ dizionario non ha questa chiave (`dict[key]`).
 Errato:  {name: "Ada"}.nmae
 Giusto:  {name: "Ada"}.name
 Sicuro:  get(record, "name")     # un Option, mai un errore
-         get(dict, key)          # lo stesso per un dizionario
+         get(dict key)          # lo stesso per un dizionario
 
 Quando i campi del record sono certi, `rythme check` trova questo errore
 prima che il programma parta, e suggerisce il campo più vicino."#,
@@ -4050,9 +4052,9 @@ recursive call is the very last thing it does (a tail call): those calls
 have no limit.
 
 Limited:     fn sum([]) = 0
-             fn sum([x, ..rest]) = x + sum(rest)       # + happens after
+             fn sum([x ..rest]) = x + sum(rest)       # + happens after
 No limit:    fn sum([], acc) = acc
-             fn sum([x, ..rest], acc) = sum(rest, acc + x)
+             fn sum([x ..rest] acc) = sum(rest acc + x)
 Simplest:    sum(list)  or  fold(list, 0, fn(a, x) = a + x)"#,
             r#"E014 — Troppe chiamate annidate
 
@@ -4062,9 +4064,9 @@ ricorsiva sia l'ultimissima cosa che fa (una chiamata in coda): quelle
 chiamate non hanno limiti.
 
 Limitata:    fn sum([]) = 0
-             fn sum([x, ..rest]) = x + sum(rest)       # il + avviene dopo
+             fn sum([x ..rest]) = x + sum(rest)       # il + avviene dopo
 Illimitata:  fn sum([], acc) = acc
-             fn sum([x, ..rest], acc) = sum(rest, acc + x)
+             fn sum([x ..rest] acc) = sum(rest acc + x)
 Semplice:    sum(list)  o  fold(list, 0, fn(a, x) = a + x)"#,
         ),
         (
@@ -4580,7 +4582,7 @@ parameter of another function.
 
 Wrong:   fn show(xs) = print(xs)
          fn twice(show) = show * 2
-         show [1, 2]                  # W011: an index of the function
+         show [1 2]                  # W011: an index of the function
 Right:   show([1, 2])
 Or give the parameter another name: fn twice(n) = n * 2"#,
             r#"W011 — Indice o sottrazione invece di una chiamata
@@ -4594,7 +4596,7 @@ un parametro di un'altra funzione.
 
 Errato:  fn show(xs) = print(xs)
          fn twice(show) = show * 2
-         show [1, 2]                  # W011: un indice della funzione
+         show [1 2]                  # W011: un indice della funzione
 Giusto:  show([1, 2])
 Oppure dai al parametro un altro nome: fn twice(n) = n * 2"#,
         ),
@@ -4834,13 +4836,13 @@ summary = ""
 
 # --- Tests (do not change them) ---
 
-test "seconds in an hour" = assert_eq(seconds_per_hour, 3600)
+test "seconds in an hour" = assert_eq(seconds_per_hour 3600)
 
-test "seconds in a day" = assert_eq(seconds_per_day, 86400)
+test "seconds in a day" = assert_eq(seconds_per_day 86400)
 
-test "seconds in a week" = assert_eq(seconds_per_week, 604800)
+test "seconds in a week" = assert_eq(seconds_per_week 604800)
 
-test "the summary" = assert_eq(summary, "A week has 604800 seconds.")
+test "the summary" = assert_eq(summary "A week has 604800 seconds.")
 "#,
             r#"# Esercizio 01 · Primi valori  ★☆☆
 #
@@ -4873,13 +4875,13 @@ summary = ""
 
 # --- Test (non cambiarli) ---
 
-test "secondi in un'ora" = assert_eq(seconds_per_hour, 3600)
+test "secondi in un'ora" = assert_eq(seconds_per_hour 3600)
 
-test "secondi in un giorno" = assert_eq(seconds_per_day, 86400)
+test "secondi in un giorno" = assert_eq(seconds_per_day 86400)
 
-test "secondi in una settimana" = assert_eq(seconds_per_week, 604800)
+test "secondi in una settimana" = assert_eq(seconds_per_week 604800)
 
-test "il riepilogo" = assert_eq(summary, "Una settimana ha 604800 secondi.")
+test "il riepilogo" = assert_eq(summary "Una settimana ha 604800 secondi.")
 "#,
         ),
         ("02-texts", "02-texts"),
@@ -4912,28 +4914,28 @@ fn greet(name) = fail("to do")
 fn shout(text) = fail("to do")
 
 ## The initials of a person, each followed by a dot.
-fn initials(first, last) = fail("to do")
+fn initials(first last) = fail("to do")
 
 ## A sentence that introduces a person.
-fn introduce(name, age) = fail("to do")
+fn introduce(name age) = fail("to do")
 
 # --- Tests (do not change them) ---
 
-test "greet" = assert_eq(greet("Ada"), "Hello, Ada!")
+test "greet" = assert_eq(greet("Ada") "Hello, Ada!")
 
-test "greet someone else" = assert_eq(greet("Alan"), "Hello, Alan!")
+test "greet someone else" = assert_eq(greet("Alan") "Hello, Alan!")
 
 test "shout"
-  assert_eq(shout("hello"), "HELLO!")
-  assert_eq(shout("Stop"), "STOP!")
+  assert_eq(shout("hello") "HELLO!")
+  assert_eq(shout("Stop") "STOP!")
 end
 
 test "initials"
-  assert_eq(initials("Ada", "Lovelace"), "A.L.")
-  assert_eq(initials("grace", "hopper"), "g.h.")
+  assert_eq(initials("Ada" "Lovelace") "A.L.")
+  assert_eq(initials("grace" "hopper") "g.h.")
 end
 
-test "introduce" = assert_eq(introduce("Ada", 36), "Ada is 36 years old.")
+test "introduce" = assert_eq(introduce("Ada" 36) "Ada is 36 years old.")
 "#,
             r#"# Esercizio 02 · Testi  ★☆☆
 #
@@ -4963,28 +4965,28 @@ fn greet(name) = fail("da fare")
 fn shout(text) = fail("da fare")
 
 ## Le iniziali di una persona, ognuna seguita da un punto.
-fn initials(first, last) = fail("da fare")
+fn initials(first last) = fail("da fare")
 
 ## Una frase che presenta una persona.
-fn introduce(name, age) = fail("da fare")
+fn introduce(name age) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
-test "saluta" = assert_eq(greet("Ada"), "Ciao, Ada!")
+test "saluta" = assert_eq(greet("Ada") "Ciao, Ada!")
 
-test "saluta un'altra persona" = assert_eq(greet("Alan"), "Ciao, Alan!")
+test "saluta un'altra persona" = assert_eq(greet("Alan") "Ciao, Alan!")
 
 test "grida"
-  assert_eq(shout("ciao"), "CIAO!")
-  assert_eq(shout("Stop"), "STOP!")
+  assert_eq(shout("ciao") "CIAO!")
+  assert_eq(shout("Stop") "STOP!")
 end
 
 test "iniziali"
-  assert_eq(initials("Ada", "Lovelace"), "A.L.")
-  assert_eq(initials("grace", "hopper"), "g.h.")
+  assert_eq(initials("Ada" "Lovelace") "A.L.")
+  assert_eq(initials("grace" "hopper") "g.h.")
 end
 
-test "presenta" = assert_eq(introduce("Ada", 36), "Ada ha 36 anni.")
+test "presenta" = assert_eq(introduce("Ada" 36) "Ada ha 36 anni.")
 "#,
         ),
         ("03-arithmetic", "03-arithmetic"),
@@ -5015,42 +5017,42 @@ test "presenta" = assert_eq(introduce("Ada", 36), "Ada ha 36 anni.")
 
 fn square(x) = fail("to do")
 
-fn average(a, b) = fail("to do")
+fn average(a b) = fail("to do")
 
 fn fahrenheit(celsius) = fail("to do")
 
-fn hypotenuse(a, b) = fail("to do")
+fn hypotenuse(a b) = fail("to do")
 
 fn minutes_and_seconds(total) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "square"
-  assert_eq(square(3), 9)
-  assert_eq(square(-4), 16)
-  assert_eq(square(1.5), 2.25)
+  assert_eq(square(3) 9)
+  assert_eq(square(-4) 16)
+  assert_eq(square(1.5) 2.25)
 end
 
 test "average"
-  assert_eq(average(2, 4), 3)
-  assert_eq(average(1, 2), 1.5)
+  assert_eq(average(2 4) 3)
+  assert_eq(average(1 2) 1.5)
 end
 
 test "fahrenheit"
-  assert_eq(fahrenheit(0), 32)
-  assert_eq(fahrenheit(100), 212)
+  assert_eq(fahrenheit(0) 32)
+  assert_eq(fahrenheit(100) 212)
   assert_eq(fahrenheit(-40), -40)
 end
 
 test "hypotenuse"
-  assert_eq(hypotenuse(3, 4), 5)
-  assert_eq(hypotenuse(5, 12), 13)
+  assert_eq(hypotenuse(3 4) 5)
+  assert_eq(hypotenuse(5 12) 13)
 end
 
 test "minutes and seconds"
-  assert_eq(minutes_and_seconds(125), "2 min 5 s")
-  assert_eq(minutes_and_seconds(59), "0 min 59 s")
-  assert_eq(minutes_and_seconds(600), "10 min 0 s")
+  assert_eq(minutes_and_seconds(125) "2 min 5 s")
+  assert_eq(minutes_and_seconds(59) "0 min 59 s")
+  assert_eq(minutes_and_seconds(600) "10 min 0 s")
 end
 "#,
             r#"# Esercizio 03 · Aritmetica  ★☆☆
@@ -5079,42 +5081,42 @@ end
 
 fn square(x) = fail("da fare")
 
-fn average(a, b) = fail("da fare")
+fn average(a b) = fail("da fare")
 
 fn fahrenheit(celsius) = fail("da fare")
 
-fn hypotenuse(a, b) = fail("da fare")
+fn hypotenuse(a b) = fail("da fare")
 
 fn minutes_and_seconds(total) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 test "quadrato"
-  assert_eq(square(3), 9)
-  assert_eq(square(-4), 16)
-  assert_eq(square(1.5), 2.25)
+  assert_eq(square(3) 9)
+  assert_eq(square(-4) 16)
+  assert_eq(square(1.5) 2.25)
 end
 
 test "media"
-  assert_eq(average(2, 4), 3)
-  assert_eq(average(1, 2), 1.5)
+  assert_eq(average(2 4) 3)
+  assert_eq(average(1 2) 1.5)
 end
 
 test "fahrenheit"
-  assert_eq(fahrenheit(0), 32)
-  assert_eq(fahrenheit(100), 212)
+  assert_eq(fahrenheit(0) 32)
+  assert_eq(fahrenheit(100) 212)
   assert_eq(fahrenheit(-40), -40)
 end
 
 test "ipotenusa"
-  assert_eq(hypotenuse(3, 4), 5)
-  assert_eq(hypotenuse(5, 12), 13)
+  assert_eq(hypotenuse(3 4) 5)
+  assert_eq(hypotenuse(5 12) 13)
 end
 
 test "minuti e secondi"
-  assert_eq(minutes_and_seconds(125), "2 min 5 s")
-  assert_eq(minutes_and_seconds(59), "0 min 59 s")
-  assert_eq(minutes_and_seconds(600), "10 min 0 s")
+  assert_eq(minutes_and_seconds(125) "2 min 5 s")
+  assert_eq(minutes_and_seconds(59) "0 min 59 s")
+  assert_eq(minutes_and_seconds(600) "10 min 0 s")
 end
 "#,
         ),
@@ -5145,7 +5147,7 @@ end
 
 fn absolute(n) = fail("to do")
 
-fn larger(a, b) = fail("to do")
+fn larger(a b) = fail("to do")
 
 fn grade(score) = fail("to do")
 
@@ -5154,32 +5156,32 @@ fn ticket_price(age) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "absolute"
-  assert_eq(absolute(-5), 5)
-  assert_eq(absolute(7), 7)
-  assert_eq(absolute(0), 0)
+  assert_eq(absolute(-5) 5)
+  assert_eq(absolute(7) 7)
+  assert_eq(absolute(0) 0)
 end
 
 test "larger"
-  assert_eq(larger(3, 8), 8)
-  assert_eq(larger(8, 3), 8)
+  assert_eq(larger(3 8) 8)
+  assert_eq(larger(8 3) 8)
   assert_eq(larger(-1, -2), -1)
 end
 
 test "grade"
-  assert_eq(grade(95), "A")
-  assert_eq(grade(90), "A")
-  assert_eq(grade(85), "B")
-  assert_eq(grade(70), "C")
-  assert_eq(grade(61), "D")
-  assert_eq(grade(12), "F")
+  assert_eq(grade(95) "A")
+  assert_eq(grade(90) "A")
+  assert_eq(grade(85) "B")
+  assert_eq(grade(70) "C")
+  assert_eq(grade(61) "D")
+  assert_eq(grade(12) "F")
 end
 
 test "ticket price"
-  assert_eq(ticket_price(2), 0)
-  assert_eq(ticket_price(4), 5)
-  assert_eq(ticket_price(11), 5)
-  assert_eq(ticket_price(30), 10)
-  assert_eq(ticket_price(65), 12)
+  assert_eq(ticket_price(2) 0)
+  assert_eq(ticket_price(4) 5)
+  assert_eq(ticket_price(11) 5)
+  assert_eq(ticket_price(30) 10)
+  assert_eq(ticket_price(65) 12)
 end
 "#,
             r#"# Esercizio 04 · Scegliere con `if`  ★☆☆
@@ -5207,7 +5209,7 @@ end
 
 fn absolute(n) = fail("da fare")
 
-fn larger(a, b) = fail("da fare")
+fn larger(a b) = fail("da fare")
 
 fn grade(score) = fail("da fare")
 
@@ -5216,32 +5218,32 @@ fn ticket_price(age) = fail("da fare")
 # --- Test (non cambiarli) ---
 
 test "valore assoluto"
-  assert_eq(absolute(-5), 5)
-  assert_eq(absolute(7), 7)
-  assert_eq(absolute(0), 0)
+  assert_eq(absolute(-5) 5)
+  assert_eq(absolute(7) 7)
+  assert_eq(absolute(0) 0)
 end
 
 test "il più grande"
-  assert_eq(larger(3, 8), 8)
-  assert_eq(larger(8, 3), 8)
+  assert_eq(larger(3 8) 8)
+  assert_eq(larger(8 3) 8)
   assert_eq(larger(-1, -2), -1)
 end
 
 test "voto"
-  assert_eq(grade(95), "A")
-  assert_eq(grade(90), "A")
-  assert_eq(grade(85), "B")
-  assert_eq(grade(70), "C")
-  assert_eq(grade(61), "D")
-  assert_eq(grade(12), "F")
+  assert_eq(grade(95) "A")
+  assert_eq(grade(90) "A")
+  assert_eq(grade(85) "B")
+  assert_eq(grade(70) "C")
+  assert_eq(grade(61) "D")
+  assert_eq(grade(12) "F")
 end
 
 test "prezzo del biglietto"
-  assert_eq(ticket_price(2), 0)
-  assert_eq(ticket_price(4), 5)
-  assert_eq(ticket_price(11), 5)
-  assert_eq(ticket_price(30), 10)
-  assert_eq(ticket_price(65), 12)
+  assert_eq(ticket_price(2) 0)
+  assert_eq(ticket_price(4) 5)
+  assert_eq(ticket_price(11) 5)
+  assert_eq(ticket_price(30) 10)
+  assert_eq(ticket_price(65) 12)
 end
 "#,
         ),
@@ -5272,42 +5274,42 @@ end
 # Check your work:  rythme exercise check 05-logic.ry
 #              or:  rythme test 05-logic.ry
 
-fn is_multiple(n, d) = fail("to do")
+fn is_multiple(n d) = fail("to do")
 
-fn is_between(x, low, high) = fail("to do")
+fn is_between(x low high) = fail("to do")
 
 fn is_leap(year) = fail("to do")
 
-fn exclusive_or(a, b) = fail("to do")
+fn exclusive_or(a b) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "multiples"
-  assert(is_multiple(12, 3), "12 is a multiple of 3")
-  assert(not is_multiple(12, 5), "12 is not a multiple of 5")
-  assert(is_multiple(0, 7), "0 is a multiple of every number")
+  assert(is_multiple(12 3) "12 is a multiple of 3")
+  assert(not is_multiple(12 5) "12 is not a multiple of 5")
+  assert(is_multiple(0 7) "0 is a multiple of every number")
 end
 
 test "between"
-  assert(is_between(5, 1, 10), "5 is between 1 and 10")
-  assert(is_between(1, 1, 10), "the bounds are included")
-  assert(is_between(10, 1, 10), "the bounds are included")
-  assert(not is_between(11, 1, 10), "11 is too big")
-  assert(not is_between(0, 1, 10), "0 is too small")
+  assert(is_between(5 1 10) "5 is between 1 and 10")
+  assert(is_between(1 1 10) "the bounds are included")
+  assert(is_between(10 1 10) "the bounds are included")
+  assert(not is_between(11 1 10) "11 is too big")
+  assert(not is_between(0 1 10) "0 is too small")
 end
 
 test "leap years"
-  assert_eq(is_leap(2024), true)
-  assert_eq(is_leap(2023), false)
-  assert_eq(is_leap(1900), false)
-  assert_eq(is_leap(2000), true)
+  assert_eq(is_leap(2024) true)
+  assert_eq(is_leap(2023) false)
+  assert_eq(is_leap(1900) false)
+  assert_eq(is_leap(2000) true)
 end
 
 test "exclusive or"
-  assert_eq(exclusive_or(true, false), true)
-  assert_eq(exclusive_or(false, true), true)
-  assert_eq(exclusive_or(true, true), false)
-  assert_eq(exclusive_or(false, false), false)
+  assert_eq(exclusive_or(true false) true)
+  assert_eq(exclusive_or(false true) true)
+  assert_eq(exclusive_or(true true) false)
+  assert_eq(exclusive_or(false false) false)
 end
 "#,
             r#"# Esercizio 05 · Vero o falso  ★☆☆
@@ -5335,42 +5337,42 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 05-logic.ry
 #                       o:  rythme test 05-logic.ry
 
-fn is_multiple(n, d) = fail("da fare")
+fn is_multiple(n d) = fail("da fare")
 
-fn is_between(x, low, high) = fail("da fare")
+fn is_between(x low high) = fail("da fare")
 
 fn is_leap(year) = fail("da fare")
 
-fn exclusive_or(a, b) = fail("da fare")
+fn exclusive_or(a b) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 test "multipli"
-  assert(is_multiple(12, 3), "12 è un multiplo di 3")
-  assert(not is_multiple(12, 5), "12 non è un multiplo di 5")
-  assert(is_multiple(0, 7), "0 è un multiplo di ogni numero")
+  assert(is_multiple(12 3) "12 è un multiplo di 3")
+  assert(not is_multiple(12 5) "12 non è un multiplo di 5")
+  assert(is_multiple(0 7) "0 è un multiplo di ogni numero")
 end
 
 test "compreso tra"
-  assert(is_between(5, 1, 10), "5 è tra 1 e 10")
-  assert(is_between(1, 1, 10), "gli estremi sono inclusi")
-  assert(is_between(10, 1, 10), "gli estremi sono inclusi")
-  assert(not is_between(11, 1, 10), "11 è troppo grande")
-  assert(not is_between(0, 1, 10), "0 è troppo piccolo")
+  assert(is_between(5 1 10) "5 è tra 1 e 10")
+  assert(is_between(1 1 10) "gli estremi sono inclusi")
+  assert(is_between(10 1 10) "gli estremi sono inclusi")
+  assert(not is_between(11 1 10) "11 è troppo grande")
+  assert(not is_between(0 1 10) "0 è troppo piccolo")
 end
 
 test "anni bisestili"
-  assert_eq(is_leap(2024), true)
-  assert_eq(is_leap(2023), false)
-  assert_eq(is_leap(1900), false)
-  assert_eq(is_leap(2000), true)
+  assert_eq(is_leap(2024) true)
+  assert_eq(is_leap(2023) false)
+  assert_eq(is_leap(1900) false)
+  assert_eq(is_leap(2000) true)
 end
 
 test "o esclusivo"
-  assert_eq(exclusive_or(true, false), true)
-  assert_eq(exclusive_or(false, true), true)
-  assert_eq(exclusive_or(true, true), false)
-  assert_eq(exclusive_or(false, false), false)
+  assert_eq(exclusive_or(true false) true)
+  assert_eq(exclusive_or(false true) true)
+  assert_eq(exclusive_or(true true) false)
+  assert_eq(exclusive_or(false false) false)
 end
 "#,
         ),
@@ -5403,7 +5405,7 @@ end
 # Check your work:  rythme exercise check 06-cases.ry
 #              or:  rythme test 06-cases.ry
 
-fn plural(n, word) = fail("to do")
+fn plural(n word) = fail("to do")
 
 fn fizzbuzz(n) = fail("to do")
 
@@ -5412,25 +5414,25 @@ fn day_kind(day) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "plural"
-  assert_eq(plural(1, "cat"), "1 cat")
-  assert_eq(plural(2, "cat"), "2 cats")
-  assert_eq(plural(0, "dog"), "0 dogs")
+  assert_eq(plural(1 "cat") "1 cat")
+  assert_eq(plural(2 "cat") "2 cats")
+  assert_eq(plural(0 "dog") "0 dogs")
 end
 
 test "fizzbuzz"
-  assert_eq(fizzbuzz(1), "1")
-  assert_eq(fizzbuzz(3), "Fizz")
-  assert_eq(fizzbuzz(10), "Buzz")
-  assert_eq(fizzbuzz(30), "FizzBuzz")
-  assert_eq(fizzbuzz(31), "31")
+  assert_eq(fizzbuzz(1) "1")
+  assert_eq(fizzbuzz(3) "Fizz")
+  assert_eq(fizzbuzz(10) "Buzz")
+  assert_eq(fizzbuzz(30) "FizzBuzz")
+  assert_eq(fizzbuzz(31) "31")
 end
 
-test "the first fifteen" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+test "the first fifteen" = assert_eq(1..15 |> map(fizzbuzz) |> join(" ") "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
 
 test "day kind"
-  assert_eq(day_kind("Saturday"), "weekend")
-  assert_eq(day_kind("Sunday"), "weekend")
-  assert_eq(day_kind("Monday"), "weekday")
+  assert_eq(day_kind("Saturday") "weekend")
+  assert_eq(day_kind("Sunday") "weekend")
+  assert_eq(day_kind("Monday") "weekday")
 end
 "#,
             r#"# Esercizio 06 · Una definizione per caso  ★☆☆
@@ -5461,7 +5463,7 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 06-cases.ry
 #                       o:  rythme test 06-cases.ry
 
-fn plural(n, word) = fail("da fare")
+fn plural(n word) = fail("da fare")
 
 fn fizzbuzz(n) = fail("da fare")
 
@@ -5470,25 +5472,25 @@ fn day_kind(day) = fail("da fare")
 # --- Test (non cambiarli) ---
 
 test "plurale"
-  assert_eq(plural(1, "cat"), "1 cat")
-  assert_eq(plural(2, "cat"), "2 cats")
-  assert_eq(plural(0, "dog"), "0 dogs")
+  assert_eq(plural(1 "cat") "1 cat")
+  assert_eq(plural(2 "cat") "2 cats")
+  assert_eq(plural(0 "dog") "0 dogs")
 end
 
 test "fizzbuzz"
-  assert_eq(fizzbuzz(1), "1")
-  assert_eq(fizzbuzz(3), "Fizz")
-  assert_eq(fizzbuzz(10), "Buzz")
-  assert_eq(fizzbuzz(30), "FizzBuzz")
-  assert_eq(fizzbuzz(31), "31")
+  assert_eq(fizzbuzz(1) "1")
+  assert_eq(fizzbuzz(3) "Fizz")
+  assert_eq(fizzbuzz(10) "Buzz")
+  assert_eq(fizzbuzz(30) "FizzBuzz")
+  assert_eq(fizzbuzz(31) "31")
 end
 
-test "i primi quindici" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+test "i primi quindici" = assert_eq(1..15 |> map(fizzbuzz) |> join(" ") "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
 
 test "tipo di giorno"
-  assert_eq(day_kind("sabato"), "fine settimana")
-  assert_eq(day_kind("domenica"), "fine settimana")
-  assert_eq(day_kind("lunedì"), "feriale")
+  assert_eq(day_kind("sabato") "fine settimana")
+  assert_eq(day_kind("domenica") "fine settimana")
+  assert_eq(day_kind("lunedì") "feriale")
 end
 "#,
         ),
@@ -5521,29 +5523,29 @@ fn factorial(n) = fail("to do")
 
 fn sum_to(n) = fail("to do")
 
-fn power(x, n) = fail("to do")
+fn power(x n) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "factorial"
-  assert_eq(factorial(0), 1)
-  assert_eq(factorial(1), 1)
-  assert_eq(factorial(5), 120)
-  assert_eq(factorial(10), 3628800)
+  assert_eq(factorial(0) 1)
+  assert_eq(factorial(1) 1)
+  assert_eq(factorial(5) 120)
+  assert_eq(factorial(10) 3628800)
 end
 
 test "sum to"
-  assert_eq(sum_to(0), 0)
-  assert_eq(sum_to(1), 1)
-  assert_eq(sum_to(10), 55)
-  assert_eq(sum_to(100), 5050)
+  assert_eq(sum_to(0) 0)
+  assert_eq(sum_to(1) 1)
+  assert_eq(sum_to(10) 55)
+  assert_eq(sum_to(100) 5050)
 end
 
 test "power"
-  assert_eq(power(2, 0), 1)
-  assert_eq(power(2, 10), 1024)
-  assert_eq(power(3, 4), 81)
-  assert_eq(power(1.5, 2), 2.25)
+  assert_eq(power(2 0) 1)
+  assert_eq(power(2 10) 1024)
+  assert_eq(power(3 4) 81)
+  assert_eq(power(1.5 2) 2.25)
 end
 "#,
             r#"# Esercizio 07 · Ricorsione  ★★☆
@@ -5573,29 +5575,29 @@ fn factorial(n) = fail("da fare")
 
 fn sum_to(n) = fail("da fare")
 
-fn power(x, n) = fail("da fare")
+fn power(x n) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 test "fattoriale"
-  assert_eq(factorial(0), 1)
-  assert_eq(factorial(1), 1)
-  assert_eq(factorial(5), 120)
-  assert_eq(factorial(10), 3628800)
+  assert_eq(factorial(0) 1)
+  assert_eq(factorial(1) 1)
+  assert_eq(factorial(5) 120)
+  assert_eq(factorial(10) 3628800)
 end
 
 test "somma fino a"
-  assert_eq(sum_to(0), 0)
-  assert_eq(sum_to(1), 1)
-  assert_eq(sum_to(10), 55)
-  assert_eq(sum_to(100), 5050)
+  assert_eq(sum_to(0) 0)
+  assert_eq(sum_to(1) 1)
+  assert_eq(sum_to(10) 55)
+  assert_eq(sum_to(100) 5050)
 end
 
 test "potenza"
-  assert_eq(power(2, 0), 1)
-  assert_eq(power(2, 10), 1024)
-  assert_eq(power(3, 4), 81)
-  assert_eq(power(1.5, 2), 2.25)
+  assert_eq(power(2 0) 1)
+  assert_eq(power(2 10) 1024)
+  assert_eq(power(3 4) 81)
+  assert_eq(power(1.5 2) 2.25)
 end
 "#,
         ),
@@ -5633,22 +5635,22 @@ fn reverse_number(n) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "digit count"
-  assert_eq(digit_count(0), 1)
-  assert_eq(digit_count(7), 1)
-  assert_eq(digit_count(472), 3)
-  assert_eq(digit_count(1000000), 7)
+  assert_eq(digit_count(0) 1)
+  assert_eq(digit_count(7) 1)
+  assert_eq(digit_count(472) 3)
+  assert_eq(digit_count(1000000) 7)
 end
 
 test "digit sum"
-  assert_eq(digit_sum(0), 0)
-  assert_eq(digit_sum(472), 13)
-  assert_eq(digit_sum(99999), 45)
+  assert_eq(digit_sum(0) 0)
+  assert_eq(digit_sum(472) 13)
+  assert_eq(digit_sum(99999) 45)
 end
 
 test "reverse number"
-  assert_eq(reverse_number(472), 274)
-  assert_eq(reverse_number(1230), 321)
-  assert_eq(reverse_number(5), 5)
+  assert_eq(reverse_number(472) 274)
+  assert_eq(reverse_number(1230) 321)
+  assert_eq(reverse_number(5) 5)
 end
 "#,
             r#"# Esercizio 08 · Le cifre di un numero  ★★☆
@@ -5683,22 +5685,22 @@ fn reverse_number(n) = fail("da fare")
 # --- Test (non cambiarli) ---
 
 test "numero di cifre"
-  assert_eq(digit_count(0), 1)
-  assert_eq(digit_count(7), 1)
-  assert_eq(digit_count(472), 3)
-  assert_eq(digit_count(1000000), 7)
+  assert_eq(digit_count(0) 1)
+  assert_eq(digit_count(7) 1)
+  assert_eq(digit_count(472) 3)
+  assert_eq(digit_count(1000000) 7)
 end
 
 test "somma delle cifre"
-  assert_eq(digit_sum(0), 0)
-  assert_eq(digit_sum(472), 13)
-  assert_eq(digit_sum(99999), 45)
+  assert_eq(digit_sum(0) 0)
+  assert_eq(digit_sum(472) 13)
+  assert_eq(digit_sum(99999) 45)
 end
 
 test "numero rovesciato"
-  assert_eq(reverse_number(472), 274)
-  assert_eq(reverse_number(1230), 321)
-  assert_eq(reverse_number(5), 5)
+  assert_eq(reverse_number(472) 274)
+  assert_eq(reverse_number(1230) 321)
+  assert_eq(reverse_number(5) 5)
 end
 "#,
         ),
@@ -5742,19 +5744,19 @@ fn fib(n) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "big sum"
-  assert_eq(big_sum(10), 55)
-  assert_eq(big_sum(1000000), 500000500000)
+  assert_eq(big_sum(10) 55)
+  assert_eq(big_sum(1000000) 500000500000)
 end
 
 test "collatz steps"
-  assert_eq(collatz_steps(1), 0)
-  assert_eq(collatz_steps(6), 8)
-  assert_eq(collatz_steps(27), 111)
+  assert_eq(collatz_steps(1) 0)
+  assert_eq(collatz_steps(6) 8)
+  assert_eq(collatz_steps(27) 111)
 end
 
 test "fibonacci"
-  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
-  assert_eq(fib(90), 2880067194370816120)
+  assert_eq(0..10 |> map(fib) [0 1 1 2 3 5 8 13 21 34 55])
+  assert_eq(fib(90) 2880067194370816120)
 end
 "#,
             r#"# Esercizio 09 · Accumulatori e chiamate in coda  ★★☆
@@ -5797,19 +5799,19 @@ fn fib(n) = fail("da fare")
 # --- Test (non cambiarli) ---
 
 test "grande somma"
-  assert_eq(big_sum(10), 55)
-  assert_eq(big_sum(1000000), 500000500000)
+  assert_eq(big_sum(10) 55)
+  assert_eq(big_sum(1000000) 500000500000)
 end
 
 test "passi di Collatz"
-  assert_eq(collatz_steps(1), 0)
-  assert_eq(collatz_steps(6), 8)
-  assert_eq(collatz_steps(27), 111)
+  assert_eq(collatz_steps(1) 0)
+  assert_eq(collatz_steps(6) 8)
+  assert_eq(collatz_steps(27) 111)
 end
 
 test "fibonacci"
-  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
-  assert_eq(fib(90), 2880067194370816120)
+  assert_eq(0..10 |> map(fib) [0 1 1 2 3 5 8 13 21 34 55])
+  assert_eq(fib(90) 2880067194370816120)
 end
 "#,
         ),
@@ -5838,7 +5840,7 @@ end
 # Check your work:  rythme exercise check 10-divisors.ry
 #              or:  rythme test 10-divisors.ry
 
-fn my_gcd(a, b) = fail("to do")
+fn my_gcd(a b) = fail("to do")
 
 fn is_prime(n) = fail("to do")
 
@@ -5847,23 +5849,23 @@ fn next_prime(n) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "gcd"
-  assert_eq(my_gcd(12, 18), 6)
-  assert_eq(my_gcd(17, 5), 1)
-  assert_eq(my_gcd(7, 0), 7)
-  assert_eq(my_gcd(0, 9), 9)
+  assert_eq(my_gcd(12 18) 6)
+  assert_eq(my_gcd(17 5) 1)
+  assert_eq(my_gcd(7 0) 7)
+  assert_eq(my_gcd(0 9) 9)
 end
 
 test "prime numbers"
-  assert_eq(1..30 |> filter(is_prime), [2, 3, 5, 7, 11, 13, 17, 19, 23, 29])
-  assert_eq(is_prime(0), false)
-  assert_eq(is_prime(7919), true)
-  assert_eq(is_prime(7917), false)
+  assert_eq(1..30 |> filter(is_prime) [2 3 5 7 11 13 17 19 23 29])
+  assert_eq(is_prime(0) false)
+  assert_eq(is_prime(7919) true)
+  assert_eq(is_prime(7917) false)
 end
 
 test "next prime"
-  assert_eq(next_prime(1), 2)
-  assert_eq(next_prime(13), 17)
-  assert_eq(next_prime(100), 101)
+  assert_eq(next_prime(1) 2)
+  assert_eq(next_prime(13) 17)
+  assert_eq(next_prime(100) 101)
 end
 "#,
             r#"# Esercizio 10 · Divisori e numeri primi  ★★☆
@@ -5889,7 +5891,7 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 10-divisors.ry
 #                       o:  rythme test 10-divisors.ry
 
-fn my_gcd(a, b) = fail("da fare")
+fn my_gcd(a b) = fail("da fare")
 
 fn is_prime(n) = fail("da fare")
 
@@ -5898,23 +5900,23 @@ fn next_prime(n) = fail("da fare")
 # --- Test (non cambiarli) ---
 
 test "MCD"
-  assert_eq(my_gcd(12, 18), 6)
-  assert_eq(my_gcd(17, 5), 1)
-  assert_eq(my_gcd(7, 0), 7)
-  assert_eq(my_gcd(0, 9), 9)
+  assert_eq(my_gcd(12 18) 6)
+  assert_eq(my_gcd(17 5) 1)
+  assert_eq(my_gcd(7 0) 7)
+  assert_eq(my_gcd(0 9) 9)
 end
 
 test "numeri primi"
-  assert_eq(1..30 |> filter(is_prime), [2, 3, 5, 7, 11, 13, 17, 19, 23, 29])
-  assert_eq(is_prime(0), false)
-  assert_eq(is_prime(7919), true)
-  assert_eq(is_prime(7917), false)
+  assert_eq(1..30 |> filter(is_prime) [2 3 5 7 11 13 17 19 23 29])
+  assert_eq(is_prime(0) false)
+  assert_eq(is_prime(7919) true)
+  assert_eq(is_prime(7917) false)
 end
 
 test "primo successivo"
-  assert_eq(next_prime(1), 2)
-  assert_eq(next_prime(13), 17)
-  assert_eq(next_prime(100), 101)
+  assert_eq(next_prime(1) 2)
+  assert_eq(next_prime(13) 17)
+  assert_eq(next_prime(100) 101)
 end
 "#,
         ),
@@ -5955,34 +5957,34 @@ fn total(list) = fail("to do")
 
 fn largest(list) = fail("to do")
 
-fn has_value(list, x) = fail("to do")
+fn has_value(list x) = fail("to do")
 
 fn last_one(list) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "total"
-  assert_eq(total([]), 0)
-  assert_eq(total([4]), 4)
-  assert_eq(total([1, 2, 3, 4]), 10)
+  assert_eq(total([]) 0)
+  assert_eq(total([4]) 4)
+  assert_eq(total([1 2 3 4]) 10)
 end
 
 test "largest"
-  assert_eq(largest([7]), 7)
-  assert_eq(largest([3, 9, 2]), 9)
+  assert_eq(largest([7]) 7)
+  assert_eq(largest([3 9 2]) 9)
   assert_eq(largest([-3, -1, -2]), -1)
 end
 
 test "has value"
-  assert_eq(has_value([1, 2, 3], 2), true)
-  assert_eq(has_value([1, 2, 3], 5), false)
-  assert_eq(has_value([], 1), false)
-  assert_eq(has_value(["a", "b"], "b"), true)
+  assert_eq(has_value([1 2 3] 2) true)
+  assert_eq(has_value([1 2 3] 5) false)
+  assert_eq(has_value([] 1) false)
+  assert_eq(has_value(["a" "b"] "b") true)
 end
 
 test "last one"
-  assert_eq(last_one([1, 2, 3]), 3)
-  assert_eq(last_one(["only"]), "only")
+  assert_eq(last_one([1 2 3]) 3)
+  assert_eq(last_one(["only"]) "only")
 end
 "#,
             r#"# Esercizio 11 · Scomporre le liste  ★★☆
@@ -6020,34 +6022,34 @@ fn total(list) = fail("da fare")
 
 fn largest(list) = fail("da fare")
 
-fn has_value(list, x) = fail("da fare")
+fn has_value(list x) = fail("da fare")
 
 fn last_one(list) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 test "totale"
-  assert_eq(total([]), 0)
-  assert_eq(total([4]), 4)
-  assert_eq(total([1, 2, 3, 4]), 10)
+  assert_eq(total([]) 0)
+  assert_eq(total([4]) 4)
+  assert_eq(total([1 2 3 4]) 10)
 end
 
 test "il più grande"
-  assert_eq(largest([7]), 7)
-  assert_eq(largest([3, 9, 2]), 9)
+  assert_eq(largest([7]) 7)
+  assert_eq(largest([3 9 2]) 9)
   assert_eq(largest([-3, -1, -2]), -1)
 end
 
 test "contiene il valore"
-  assert_eq(has_value([1, 2, 3], 2), true)
-  assert_eq(has_value([1, 2, 3], 5), false)
-  assert_eq(has_value([], 1), false)
-  assert_eq(has_value(["a", "b"], "b"), true)
+  assert_eq(has_value([1 2 3] 2) true)
+  assert_eq(has_value([1 2 3] 5) false)
+  assert_eq(has_value([] 1) false)
+  assert_eq(has_value(["a" "b"] "b") true)
 end
 
 test "l'ultimo"
-  assert_eq(last_one([1, 2, 3]), 3)
-  assert_eq(last_one(["unico"]), "unico")
+  assert_eq(last_one([1 2 3]) 3)
+  assert_eq(last_one(["unico"]) "unico")
 end
 "#,
         ),
@@ -6080,7 +6082,7 @@ end
 
 fn countdown(n) = fail("to do")
 
-fn repeat_value(x, n) = fail("to do")
+fn repeat_value(x n) = fail("to do")
 
 fn double_all(list) = fail("to do")
 
@@ -6090,29 +6092,29 @@ fn reversed(list) = fail("to do")
 
 test "countdown"
   assert_eq(countdown(0), [0])
-  assert_eq(countdown(3), [3, 2, 1, 0])
+  assert_eq(countdown(3) [3 2 1 0])
 end
 
 test "repeat value"
-  assert_eq(repeat_value("a", 3), ["a", "a", "a"])
-  assert_eq(repeat_value(1, 0), [])
+  assert_eq(repeat_value("a" 3) ["a" "a" "a"])
+  assert_eq(repeat_value(1 0) [])
 end
 
 test "double all"
-  assert_eq(double_all([1, 2, 3]), [2, 4, 6])
+  assert_eq(double_all([1 2 3]) [2 4 6])
   assert_eq(double_all([]), [])
 end
 
 test "reversed"
-  assert_eq(reversed([1, 2, 3]), [3, 2, 1])
+  assert_eq(reversed([1 2 3]) [3 2 1])
   assert_eq(reversed([]), [])
   assert_eq(reversed(["x"]), ["x"])
 end
 
 test "the original list does not change"
-  numbers = [1, 2, 3]
+  numbers = [1 2 3]
   reversed(numbers)
-  assert_eq(numbers, [1, 2, 3])
+  assert_eq(numbers [1 2 3])
 end
 "#,
             r#"# Esercizio 12 · Costruire liste  ★★☆
@@ -6142,7 +6144,7 @@ end
 
 fn countdown(n) = fail("da fare")
 
-fn repeat_value(x, n) = fail("da fare")
+fn repeat_value(x n) = fail("da fare")
 
 fn double_all(list) = fail("da fare")
 
@@ -6152,29 +6154,29 @@ fn reversed(list) = fail("da fare")
 
 test "conto alla rovescia"
   assert_eq(countdown(0), [0])
-  assert_eq(countdown(3), [3, 2, 1, 0])
+  assert_eq(countdown(3) [3 2 1 0])
 end
 
 test "ripeti il valore"
-  assert_eq(repeat_value("a", 3), ["a", "a", "a"])
-  assert_eq(repeat_value(1, 0), [])
+  assert_eq(repeat_value("a" 3) ["a" "a" "a"])
+  assert_eq(repeat_value(1 0) [])
 end
 
 test "raddoppia tutto"
-  assert_eq(double_all([1, 2, 3]), [2, 4, 6])
+  assert_eq(double_all([1 2 3]) [2 4 6])
   assert_eq(double_all([]), [])
 end
 
 test "rovesciata"
-  assert_eq(reversed([1, 2, 3]), [3, 2, 1])
+  assert_eq(reversed([1 2 3]) [3 2 1])
   assert_eq(reversed([]), [])
   assert_eq(reversed(["x"]), ["x"])
 end
 
 test "la lista originale non cambia"
-  numbers = [1, 2, 3]
+  numbers = [1 2 3]
   reversed(numbers)
-  assert_eq(numbers, [1, 2, 3])
+  assert_eq(numbers [1 2 3])
 end
 "#,
         ),
@@ -6218,25 +6220,25 @@ fn smallest_three(list) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "squares"
-  assert_eq(squares(5), [1, 4, 9, 16, 25])
+  assert_eq(squares(5) [1 4 9 16 25])
   assert_eq(squares(0), [])
 end
 
-test "evens" = assert_eq(evens([5, 2, 8, 1, 4]), [2, 8, 4])
+test "evens" = assert_eq(evens([5 2 8 1 4]) [2 8 4])
 
 test "sum of multiples"
-  assert_eq(sum_of_multiples(10), 23)
-  assert_eq(sum_of_multiples(1000), 233168)
+  assert_eq(sum_of_multiples(10) 23)
+  assert_eq(sum_of_multiples(1000) 233168)
 end
 
 test "mean"
-  assert_eq(mean([1, 2, 3, 4]), 2.5)
-  assert_eq(mean([7]), 7)
+  assert_eq(mean([1 2 3 4]) 2.5)
+  assert_eq(mean([7]) 7)
 end
 
 test "smallest three"
-  assert_eq(smallest_three([5, 1, 4, 2, 3]), [1, 2, 3])
-  assert_eq(smallest_three([9, 8]), [8, 9])
+  assert_eq(smallest_three([5 1 4 2 3]) [1 2 3])
+  assert_eq(smallest_three([9 8]) [8 9])
 end
 "#,
             r#"# Esercizio 13 · Le funzioni delle liste  ★★☆
@@ -6277,25 +6279,25 @@ fn smallest_three(list) = fail("da fare")
 # --- Test (non cambiarli) ---
 
 test "quadrati"
-  assert_eq(squares(5), [1, 4, 9, 16, 25])
+  assert_eq(squares(5) [1 4 9 16 25])
   assert_eq(squares(0), [])
 end
 
-test "pari" = assert_eq(evens([5, 2, 8, 1, 4]), [2, 8, 4])
+test "pari" = assert_eq(evens([5 2 8 1 4]) [2 8 4])
 
 test "somma dei multipli"
-  assert_eq(sum_of_multiples(10), 23)
-  assert_eq(sum_of_multiples(1000), 233168)
+  assert_eq(sum_of_multiples(10) 23)
+  assert_eq(sum_of_multiples(1000) 233168)
 end
 
 test "media"
-  assert_eq(mean([1, 2, 3, 4]), 2.5)
-  assert_eq(mean([7]), 7)
+  assert_eq(mean([1 2 3 4]) 2.5)
+  assert_eq(mean([7]) 7)
 end
 
 test "i tre più piccoli"
-  assert_eq(smallest_three([5, 1, 4, 2, 3]), [1, 2, 3])
-  assert_eq(smallest_three([9, 8]), [8, 9])
+  assert_eq(smallest_three([5 1 4 2 3]) [1 2 3])
+  assert_eq(smallest_three([9 8]) [8 9])
 end
 "#,
         ),
@@ -6323,34 +6325,34 @@ end
 # Check your work:  rythme exercise check 14-anonymous-functions.ry
 #              or:  rythme test 14-anonymous-functions.ry
 
-fn with_tax(prices, percent) = fail("to do")
+fn with_tax(prices percent) = fail("to do")
 
-fn long_words(words, n) = fail("to do")
+fn long_words(words n) = fail("to do")
 
 fn lengths(words) = fail("to do")
 
 fn all_positive(list) = fail("to do")
 
-fn count_above(list, limit) = fail("to do")
+fn count_above(list limit) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "with tax"
-  assert_eq(with_tax([100, 50], 20), [120, 60])
-  assert_eq(with_tax([10], 0), [10])
+  assert_eq(with_tax([100 50] 20) [120 60])
+  assert_eq(with_tax([10] 0) [10])
 end
 
-test "long words" = assert_eq(long_words(["a", "tree", "is", "green"], 3), ["tree", "green"])
+test "long words" = assert_eq(long_words(["a" "tree" "is" "green"] 3) ["tree" "green"])
 
-test "lengths" = assert_eq(lengths(["a", "tree", "is"]), [1, 4, 2])
+test "lengths" = assert_eq(lengths(["a" "tree" "is"]) [1 4 2])
 
 test "all positive"
-  assert_eq(all_positive([1, 5, 3]), true)
-  assert_eq(all_positive([1, -5, 3]), false)
-  assert_eq(all_positive([]), true)
+  assert_eq(all_positive([1 5 3]) true)
+  assert_eq(all_positive([1 -5 3]) false)
+  assert_eq(all_positive([]) true)
 end
 
-test "count above" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
+test "count above" = assert_eq(count_above([3 10 7 12] 5) 3)
 "#,
             r#"# Esercizio 14 · Funzioni anonime  ★★☆
 #
@@ -6374,34 +6376,34 @@ test "count above" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
 # Controlla il tuo lavoro:  rythme exercise check 14-anonymous-functions.ry
 #                       o:  rythme test 14-anonymous-functions.ry
 
-fn with_tax(prices, percent) = fail("da fare")
+fn with_tax(prices percent) = fail("da fare")
 
-fn long_words(words, n) = fail("da fare")
+fn long_words(words n) = fail("da fare")
 
 fn lengths(words) = fail("da fare")
 
 fn all_positive(list) = fail("da fare")
 
-fn count_above(list, limit) = fail("da fare")
+fn count_above(list limit) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 test "con la tassa"
-  assert_eq(with_tax([100, 50], 20), [120, 60])
-  assert_eq(with_tax([10], 0), [10])
+  assert_eq(with_tax([100 50] 20) [120 60])
+  assert_eq(with_tax([10] 0) [10])
 end
 
-test "parole lunghe" = assert_eq(long_words(["a", "tree", "is", "green"], 3), ["tree", "green"])
+test "parole lunghe" = assert_eq(long_words(["a" "tree" "is" "green"] 3) ["tree" "green"])
 
-test "lunghezze" = assert_eq(lengths(["a", "tree", "is"]), [1, 4, 2])
+test "lunghezze" = assert_eq(lengths(["a" "tree" "is"]) [1 4 2])
 
 test "tutti positivi"
-  assert_eq(all_positive([1, 5, 3]), true)
-  assert_eq(all_positive([1, -5, 3]), false)
-  assert_eq(all_positive([]), true)
+  assert_eq(all_positive([1 5 3]) true)
+  assert_eq(all_positive([1 -5 3]) false)
+  assert_eq(all_positive([]) true)
 end
 
-test "quanti sopra" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
+test "quanti sopra" = assert_eq(count_above([3 10 7 12] 5) 3)
 "#,
         ),
         ("15-functions-as-values", "15-functions-as-values"),
@@ -6429,43 +6431,43 @@ test "quanti sopra" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
 # Check your work:  rythme exercise check 15-functions-as-values.ry
 #              or:  rythme test 15-functions-as-values.ry
 
-fn apply_twice(f, x) = fail("to do")
+fn apply_twice(f x) = fail("to do")
 
-fn compose(f, g) = fail("to do")
+fn compose(f g) = fail("to do")
 
 fn adder(n) = fail("to do")
 
-fn my_map(list, f) = fail("to do")
+fn my_map(list f) = fail("to do")
 
-fn my_filter(list, f) = fail("to do")
+fn my_filter(list f) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "apply twice"
-  assert_eq(apply_twice(fn(x) = x * 3, 2), 18)
-  assert_eq(apply_twice(upper, "hi"), "HI")
+  assert_eq(apply_twice(fn(x) = x * 3 2) 18)
+  assert_eq(apply_twice(upper "hi") "HI")
 end
 
 test "compose"
-  plus_one_then_double = compose(fn(x) = x * 2, fn(x) = x + 1)
-  assert_eq(plus_one_then_double(4), 10)
-  assert_eq(compose(len, trim)("  abc  "), 3)
+  plus_one_then_double = compose(fn(x) = x * 2 fn(x) = x + 1)
+  assert_eq(plus_one_then_double(4) 10)
+  assert_eq(compose(len trim)("  abc  ") 3)
 end
 
 test "adder"
   add10 = adder(10)
-  assert_eq(add10(5), 15)
-  assert_eq(map([1, 2, 3], adder(100)), [101, 102, 103])
+  assert_eq(add10(5) 15)
+  assert_eq(map([1 2 3] adder(100)) [101 102 103])
 end
 
 test "my map"
-  assert_eq(my_map([1, 2, 3], fn(x) = x * x), [1, 4, 9])
-  assert_eq(my_map([], fn(x) = x), [])
+  assert_eq(my_map([1 2 3] fn(x) = x * x) [1 4 9])
+  assert_eq(my_map([] fn(x) = x) [])
 end
 
 test "my filter"
-  assert_eq(my_filter([1, 2, 3, 4, 5, 6], is_even), [2, 4, 6])
-  assert_eq(my_filter(["a", "bb", "ccc"], fn(w) = len(w) > 1), ["bb", "ccc"])
+  assert_eq(my_filter([1 2 3 4 5 6] is_even) [2 4 6])
+  assert_eq(my_filter(["a" "bb" "ccc"] fn(w) = len(w) > 1) ["bb" "ccc"])
 end
 "#,
             r#"# Esercizio 15 · Le funzioni sono valori  ★★☆
@@ -6491,43 +6493,43 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 15-functions-as-values.ry
 #                       o:  rythme test 15-functions-as-values.ry
 
-fn apply_twice(f, x) = fail("da fare")
+fn apply_twice(f x) = fail("da fare")
 
-fn compose(f, g) = fail("da fare")
+fn compose(f g) = fail("da fare")
 
 fn adder(n) = fail("da fare")
 
-fn my_map(list, f) = fail("da fare")
+fn my_map(list f) = fail("da fare")
 
-fn my_filter(list, f) = fail("da fare")
+fn my_filter(list f) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 test "applica due volte"
-  assert_eq(apply_twice(fn(x) = x * 3, 2), 18)
-  assert_eq(apply_twice(upper, "hi"), "HI")
+  assert_eq(apply_twice(fn(x) = x * 3 2) 18)
+  assert_eq(apply_twice(upper "hi") "HI")
 end
 
 test "componi"
-  plus_one_then_double = compose(fn(x) = x * 2, fn(x) = x + 1)
-  assert_eq(plus_one_then_double(4), 10)
-  assert_eq(compose(len, trim)("  abc  "), 3)
+  plus_one_then_double = compose(fn(x) = x * 2 fn(x) = x + 1)
+  assert_eq(plus_one_then_double(4) 10)
+  assert_eq(compose(len trim)("  abc  ") 3)
 end
 
 test "sommatore"
   add10 = adder(10)
-  assert_eq(add10(5), 15)
-  assert_eq(map([1, 2, 3], adder(100)), [101, 102, 103])
+  assert_eq(add10(5) 15)
+  assert_eq(map([1 2 3] adder(100)) [101 102 103])
 end
 
 test "la mia map"
-  assert_eq(my_map([1, 2, 3], fn(x) = x * x), [1, 4, 9])
-  assert_eq(my_map([], fn(x) = x), [])
+  assert_eq(my_map([1 2 3] fn(x) = x * x) [1 4 9])
+  assert_eq(my_map([] fn(x) = x) [])
 end
 
 test "il mio filter"
-  assert_eq(my_filter([1, 2, 3, 4, 5, 6], is_even), [2, 4, 6])
-  assert_eq(my_filter(["a", "bb", "ccc"], fn(w) = len(w) > 1), ["bb", "ccc"])
+  assert_eq(my_filter([1 2 3 4 5 6] is_even) [2 4 6])
+  assert_eq(my_filter(["a" "bb" "ccc"] fn(w) = len(w) > 1) ["bb" "ccc"])
 end
 "#,
         ),
@@ -6565,30 +6567,30 @@ fn longest_word(words) = fail("to do")
 
 fn to_number(digits) = fail("to do")
 
-fn count_where(list, f) = fail("to do")
+fn count_where(list f) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "product"
-  assert_eq(product_of([2, 3, 4]), 24)
-  assert_eq(product_of([]), 1)
+  assert_eq(product_of([2 3 4]) 24)
+  assert_eq(product_of([]) 1)
 end
 
 test "longest word"
-  assert_eq(longest_word(["a", "tree", "is", "green"]), "green")
-  assert_eq(longest_word(["one", "two"]), "one")
-  assert_eq(longest_word([]), "")
+  assert_eq(longest_word(["a" "tree" "is" "green"]) "green")
+  assert_eq(longest_word(["one" "two"]) "one")
+  assert_eq(longest_word([]) "")
 end
 
 test "to number"
-  assert_eq(to_number([1, 2, 3]), 123)
-  assert_eq(to_number([0, 7]), 7)
-  assert_eq(to_number([]), 0)
+  assert_eq(to_number([1 2 3]) 123)
+  assert_eq(to_number([0 7]) 7)
+  assert_eq(to_number([]) 0)
 end
 
 test "count where"
-  assert_eq(count_where([1, 2, 3, 4, 5], is_odd), 3)
-  assert_eq(count_where(["a", "bb"], fn(w) = len(w) > 5), 0)
+  assert_eq(count_where([1 2 3 4 5] is_odd) 3)
+  assert_eq(count_where(["a" "bb"] fn(w) = len(w) > 5) 0)
 end
 "#,
             r#"# Esercizio 16 · Ridurre una lista a un solo valore  ★★☆
@@ -6623,30 +6625,30 @@ fn longest_word(words) = fail("da fare")
 
 fn to_number(digits) = fail("da fare")
 
-fn count_where(list, f) = fail("da fare")
+fn count_where(list f) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 test "prodotto"
-  assert_eq(product_of([2, 3, 4]), 24)
-  assert_eq(product_of([]), 1)
+  assert_eq(product_of([2 3 4]) 24)
+  assert_eq(product_of([]) 1)
 end
 
 test "parola più lunga"
-  assert_eq(longest_word(["a", "tree", "is", "green"]), "green")
-  assert_eq(longest_word(["one", "two"]), "one")
-  assert_eq(longest_word([]), "")
+  assert_eq(longest_word(["a" "tree" "is" "green"]) "green")
+  assert_eq(longest_word(["one" "two"]) "one")
+  assert_eq(longest_word([]) "")
 end
 
 test "in numero"
-  assert_eq(to_number([1, 2, 3]), 123)
-  assert_eq(to_number([0, 7]), 7)
-  assert_eq(to_number([]), 0)
+  assert_eq(to_number([1 2 3]) 123)
+  assert_eq(to_number([0 7]) 7)
+  assert_eq(to_number([]) 0)
 end
 
 test "conta dove"
-  assert_eq(count_where([1, 2, 3, 4, 5], is_odd), 3)
-  assert_eq(count_where(["a", "bb"], fn(w) = len(w) > 5), 0)
+  assert_eq(count_where([1 2 3 4 5] is_odd) 3)
+  assert_eq(count_where(["a" "bb"] fn(w) = len(w) > 5) 0)
 end
 "#,
         ),
@@ -6690,20 +6692,20 @@ fn initials_of(sentence) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "sum of odd squares"
-  assert_eq(sum_of_odd_squares(5), 35)
-  assert_eq(sum_of_odd_squares(1), 1)
+  assert_eq(sum_of_odd_squares(5) 35)
+  assert_eq(sum_of_odd_squares(1) 1)
 end
 
 test "top three"
-  assert_eq(top_three([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(top_three([12 18 9 15 20]) [20 18 15])
   assert_eq(top_three([4]), [4])
 end
 
-test "shout words" = assert_eq(shout_words("hello  world"), "HELLO WORLD")
+test "shout words" = assert_eq(shout_words("hello  world") "HELLO WORLD")
 
 test "initials of"
-  assert_eq(initials_of("portable network graphics"), "PNG")
-  assert_eq(initials_of("Rythme"), "R")
+  assert_eq(initials_of("portable network graphics") "PNG")
+  assert_eq(initials_of("Rythme") "R")
 end
 "#,
             r#"# Esercizio 17 · Pipeline  ★★☆
@@ -6745,20 +6747,20 @@ fn initials_of(sentence) = fail("da fare")
 # --- Test (non cambiarli) ---
 
 test "somma dei quadrati dispari"
-  assert_eq(sum_of_odd_squares(5), 35)
-  assert_eq(sum_of_odd_squares(1), 1)
+  assert_eq(sum_of_odd_squares(5) 35)
+  assert_eq(sum_of_odd_squares(1) 1)
 end
 
 test "i tre migliori"
-  assert_eq(top_three([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(top_three([12 18 9 15 20]) [20 18 15])
   assert_eq(top_three([4]), [4])
 end
 
-test "parole gridate" = assert_eq(shout_words("hello  world"), "HELLO WORLD")
+test "parole gridate" = assert_eq(shout_words("hello  world") "HELLO WORLD")
 
 test "iniziali"
-  assert_eq(initials_of("portable network graphics"), "PNG")
-  assert_eq(initials_of("Rythme"), "R")
+  assert_eq(initials_of("portable network graphics") "PNG")
+  assert_eq(initials_of("Rythme") "R")
 end
 "#,
         ),
@@ -6797,18 +6799,18 @@ fn title_case(text) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "palindromes"
-  assert_eq(is_palindrome("kayak"), true)
-  assert_eq(is_palindrome("Never odd or even"), true)
-  assert_eq(is_palindrome("rythme"), false)
+  assert_eq(is_palindrome("kayak") true)
+  assert_eq(is_palindrome("Never odd or even") true)
+  assert_eq(is_palindrome("rythme") false)
 end
 
 test "vowels"
-  assert_eq(count_vowels("Rythme"), 2)
-  assert_eq(count_vowels("AEIOU"), 5)
-  assert_eq(count_vowels("xkcd"), 0)
+  assert_eq(count_vowels("Rythme") 2)
+  assert_eq(count_vowels("AEIOU") 5)
+  assert_eq(count_vowels("xkcd") 0)
 end
 
-test "title case" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")
+test "title case" = assert_eq(title_case("the LORD of the rings") "The Lord Of The Rings")
 "#,
             r#"# Esercizio 18 · Lavorare con i testi  ★★☆
 #
@@ -6843,18 +6845,18 @@ fn title_case(text) = fail("da fare")
 # --- Test (non cambiarli) ---
 
 test "palindromi"
-  assert_eq(is_palindrome("kayak"), true)
-  assert_eq(is_palindrome("Never odd or even"), true)
-  assert_eq(is_palindrome("rythme"), false)
+  assert_eq(is_palindrome("kayak") true)
+  assert_eq(is_palindrome("Never odd or even") true)
+  assert_eq(is_palindrome("rythme") false)
 end
 
 test "vocali"
-  assert_eq(count_vowels("Rythme"), 2)
-  assert_eq(count_vowels("AEIOU"), 5)
-  assert_eq(count_vowels("xkcd"), 0)
+  assert_eq(count_vowels("Rythme") 2)
+  assert_eq(count_vowels("AEIOU") 5)
+  assert_eq(count_vowels("xkcd") 0)
 end
 
-test "maiuscole iniziali" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")
+test "maiuscole iniziali" = assert_eq(title_case("the LORD of the rings") "The Lord Of The Rings")
 "#,
         ),
         ("19-sorting", "19-sorting"),
@@ -6886,37 +6888,37 @@ test "maiuscole iniziali" = assert_eq(title_case("the LORD of the rings"), "The 
 # Check your work:  rythme exercise check 19-sorting.ry
 #              or:  rythme test 19-sorting.ry
 
-fn insert(sorted, x) = fail("to do")
+fn insert(sorted x) = fail("to do")
 
 fn insertion_sort(list) = fail("to do")
 
-fn merge(a, b) = fail("to do")
+fn merge(a b) = fail("to do")
 
 fn merge_sort(list) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "insert"
-  assert_eq(insert([1, 3, 5], 4), [1, 3, 4, 5])
-  assert_eq(insert([], 2), [2])
-  assert_eq(insert([1, 2], 9), [1, 2, 9])
+  assert_eq(insert([1 3 5] 4) [1 3 4 5])
+  assert_eq(insert([] 2) [2])
+  assert_eq(insert([1 2] 9) [1 2 9])
 end
 
 test "insertion sort"
-  assert_eq(insertion_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(insertion_sort([5 2 9 1 5 6]) [1 2 5 5 6 9])
   assert_eq(insertion_sort([]), [])
 end
 
 test "merge"
-  assert_eq(merge([1, 4, 6], [2, 3, 7]), [1, 2, 3, 4, 6, 7])
+  assert_eq(merge([1 4 6] [2 3 7]) [1 2 3 4 6 7])
   assert_eq(merge([], [1]), [1])
   assert_eq(merge([1], []), [1])
 end
 
 test "merge sort"
-  assert_eq(merge_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
-  assert_eq(merge_sort(["pear", "apple", "fig"]), ["apple", "fig", "pear"])
-  assert_eq(merge_sort(reverse(1..100)), 1..100)
+  assert_eq(merge_sort([5 2 9 1 5 6]) [1 2 5 5 6 9])
+  assert_eq(merge_sort(["pear" "apple" "fig"]) ["apple" "fig" "pear"])
+  assert_eq(merge_sort(reverse(1..100)) 1..100)
 end
 "#,
             r#"# Esercizio 19 · Ordinare  ★★★
@@ -6945,37 +6947,37 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 19-sorting.ry
 #                       o:  rythme test 19-sorting.ry
 
-fn insert(sorted, x) = fail("da fare")
+fn insert(sorted x) = fail("da fare")
 
 fn insertion_sort(list) = fail("da fare")
 
-fn merge(a, b) = fail("da fare")
+fn merge(a b) = fail("da fare")
 
 fn merge_sort(list) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 test "inserisci"
-  assert_eq(insert([1, 3, 5], 4), [1, 3, 4, 5])
-  assert_eq(insert([], 2), [2])
-  assert_eq(insert([1, 2], 9), [1, 2, 9])
+  assert_eq(insert([1 3 5] 4) [1 3 4 5])
+  assert_eq(insert([] 2) [2])
+  assert_eq(insert([1 2] 9) [1 2 9])
 end
 
 test "ordinamento per inserimento"
-  assert_eq(insertion_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(insertion_sort([5 2 9 1 5 6]) [1 2 5 5 6 9])
   assert_eq(insertion_sort([]), [])
 end
 
 test "fusione"
-  assert_eq(merge([1, 4, 6], [2, 3, 7]), [1, 2, 3, 4, 6, 7])
+  assert_eq(merge([1 4 6] [2 3 7]) [1 2 3 4 6 7])
   assert_eq(merge([], [1]), [1])
   assert_eq(merge([1], []), [1])
 end
 
 test "ordinamento per fusione"
-  assert_eq(merge_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
-  assert_eq(merge_sort(["pera", "mela", "fico"]), ["fico", "mela", "pera"])
-  assert_eq(merge_sort(reverse(1..100)), 1..100)
+  assert_eq(merge_sort([5 2 9 1 5 6]) [1 2 5 5 6 9])
+  assert_eq(merge_sort(["pera" "mela" "fico"]) ["fico" "mela" "pera"])
+  assert_eq(merge_sort(reverse(1..100)) 1..100)
 end
 "#,
         ),
@@ -7005,37 +7007,37 @@ end
 # Check your work:  rythme exercise check 20-records.ry
 #              or:  rythme test 20-records.ry
 
-fn age_in(person, year) = fail("to do")
+fn age_in(person year) = fail("to do")
 
 fn label(person) = fail("to do")
 
-fn renamed(person, name) = fail("to do")
+fn renamed(person name) = fail("to do")
 
-fn moved(point, dx, dy) = fail("to do")
+fn moved(point dx dy) = fail("to do")
 
-fn distance(a, b) = fail("to do")
+fn distance(a b) = fail("to do")
 
 # --- Tests (do not change them) ---
 
-ada = {name: "Ada", born: 1815}
+ada = {name: "Ada" born: 1815}
 
-test "age" = assert_eq(age_in(ada, 1852), 37)
+test "age" = assert_eq(age_in(ada 1852) 37)
 
-test "label" = assert_eq(label(ada), "Ada (1815)")
+test "label" = assert_eq(label(ada) "Ada (1815)")
 
 test "renamed"
-  assert_eq(renamed(ada, "Augusta"), {name: "Augusta", born: 1815})
-  assert_eq(ada.name, "Ada")
+  assert_eq(renamed(ada "Augusta") {name: "Augusta" born: 1815})
+  assert_eq(ada.name "Ada")
 end
 
 test "moved"
-  assert_eq(moved({x: 1, y: 2}, 3, -1), {x: 4, y: 1})
-  assert_eq(moved({x: 0, y: 0}, 0, 0), {x: 0, y: 0})
+  assert_eq(moved({x: 1 y: 2} 3 -1) {x: 4 y: 1})
+  assert_eq(moved({x: 0 y: 0} 0 0) {x: 0 y: 0})
 end
 
 test "distance"
-  assert_eq(distance({x: 0, y: 0}, {x: 3, y: 4}), 5)
-  assert_eq(distance({x: 1, y: 1}, {x: 1, y: 1}), 0)
+  assert_eq(distance({x: 0 y: 0} {x: 3 y: 4}) 5)
+  assert_eq(distance({x: 1 y: 1} {x: 1 y: 1}) 0)
 end
 "#,
             r#"# Esercizio 20 · Record  ★★☆
@@ -7062,37 +7064,37 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 20-records.ry
 #                       o:  rythme test 20-records.ry
 
-fn age_in(person, year) = fail("da fare")
+fn age_in(person year) = fail("da fare")
 
 fn label(person) = fail("da fare")
 
-fn renamed(person, name) = fail("da fare")
+fn renamed(person name) = fail("da fare")
 
-fn moved(point, dx, dy) = fail("da fare")
+fn moved(point dx dy) = fail("da fare")
 
-fn distance(a, b) = fail("da fare")
+fn distance(a b) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
-ada = {name: "Ada", born: 1815}
+ada = {name: "Ada" born: 1815}
 
-test "età" = assert_eq(age_in(ada, 1852), 37)
+test "età" = assert_eq(age_in(ada 1852) 37)
 
-test "etichetta" = assert_eq(label(ada), "Ada (1815)")
+test "etichetta" = assert_eq(label(ada) "Ada (1815)")
 
 test "rinominata"
-  assert_eq(renamed(ada, "Augusta"), {name: "Augusta", born: 1815})
-  assert_eq(ada.name, "Ada")
+  assert_eq(renamed(ada "Augusta") {name: "Augusta" born: 1815})
+  assert_eq(ada.name "Ada")
 end
 
 test "spostato"
-  assert_eq(moved({x: 1, y: 2}, 3, -1), {x: 4, y: 1})
-  assert_eq(moved({x: 0, y: 0}, 0, 0), {x: 0, y: 0})
+  assert_eq(moved({x: 1 y: 2} 3 -1) {x: 4 y: 1})
+  assert_eq(moved({x: 0 y: 0} 0 0) {x: 0 y: 0})
 end
 
 test "distanza"
-  assert_eq(distance({x: 0, y: 0}, {x: 3, y: 4}), 5)
-  assert_eq(distance({x: 1, y: 1}, {x: 1, y: 1}), 0)
+  assert_eq(distance({x: 0 y: 0} {x: 3 y: 4}) 5)
+  assert_eq(distance({x: 1 y: 1} {x: 1 y: 1}) 0)
 end
 "#,
         ),
@@ -7137,22 +7139,22 @@ fn group_sizes(students) = fail("to do")
 # --- Tests (do not change them) ---
 
 classroom = [
-  {name: "Ada", score: 92, group: "A"},
-  {name: "Alan", score: 45, group: "B"},
-  {name: "Grace", score: 78, group: "A"},
-  {name: "Edsger", score: 50, group: "B"},
-  {name: "Barbara", score: 85, group: "A"},
+  {name: "Ada" score: 92 group: "A"}
+  {name: "Alan" score: 45 group: "B"}
+  {name: "Grace" score: 78 group: "A"}
+  {name: "Edsger" score: 50 group: "B"}
+  {name: "Barbara" score: 85 group: "A"}
 ]
 
-test "passed" = assert_eq(names_of_passed(classroom), ["Ada", "Grace", "Edsger", "Barbara"])
+test "passed" = assert_eq(names_of_passed(classroom) ["Ada" "Grace" "Edsger" "Barbara"])
 
-test "average" = assert_eq(average_score(classroom), 70)
+test "average" = assert_eq(average_score(classroom) 70)
 
-test "best" = assert_eq(best(classroom), "Ada")
+test "best" = assert_eq(best(classroom) "Ada")
 
-test "ranking" = assert_eq(ranking(classroom), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+test "ranking" = assert_eq(ranking(classroom) ["Ada" "Barbara" "Grace" "Edsger" "Alan"])
 
-test "group sizes" = assert_eq(group_sizes(classroom), {A: 3, B: 2})
+test "group sizes" = assert_eq(group_sizes(classroom) {A: 3 B: 2})
 "#,
             r#"# Esercizio 21 · Liste di record  ★★☆
 #
@@ -7193,22 +7195,22 @@ fn group_sizes(students) = fail("da fare")
 # --- Test (non cambiarli) ---
 
 classroom = [
-  {name: "Ada", score: 92, group: "A"},
-  {name: "Alan", score: 45, group: "B"},
-  {name: "Grace", score: 78, group: "A"},
-  {name: "Edsger", score: 50, group: "B"},
-  {name: "Barbara", score: 85, group: "A"},
+  {name: "Ada" score: 92 group: "A"}
+  {name: "Alan" score: 45 group: "B"}
+  {name: "Grace" score: 78 group: "A"}
+  {name: "Edsger" score: 50 group: "B"}
+  {name: "Barbara" score: 85 group: "A"}
 ]
 
-test "promossi" = assert_eq(names_of_passed(classroom), ["Ada", "Grace", "Edsger", "Barbara"])
+test "promossi" = assert_eq(names_of_passed(classroom) ["Ada" "Grace" "Edsger" "Barbara"])
 
-test "media" = assert_eq(average_score(classroom), 70)
+test "media" = assert_eq(average_score(classroom) 70)
 
-test "migliore" = assert_eq(best(classroom), "Ada")
+test "migliore" = assert_eq(best(classroom) "Ada")
 
-test "classifica" = assert_eq(ranking(classroom), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+test "classifica" = assert_eq(ranking(classroom) ["Ada" "Barbara" "Grace" "Edsger" "Alan"])
 
-test "dimensioni dei gruppi" = assert_eq(group_sizes(classroom), {A: 3, B: 2})
+test "dimensioni dei gruppi" = assert_eq(group_sizes(classroom) {A: 3 B: 2})
 "#,
         ),
         ("22-own-types", "22-own-types"),
@@ -7238,7 +7240,7 @@ test "dimensioni dei gruppi" = assert_eq(group_sizes(classroom), {A: 3, B: 2})
 # Check your work:  rythme exercise check 22-own-types.ry
 #              or:  rythme test 22-own-types.ry
 
-type Shape = Circle(radius) | Rect(width, height) | Square(side)
+type Shape = Circle(radius) | Rect(width height) | Square(side)
 
 fn area(shape) = fail("to do")
 
@@ -7251,20 +7253,20 @@ fn total_area(shapes) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "area"
-  assert_eq(area(Rect(2, 3)), 6)
-  assert_eq(area(Square(4)), 16)
-  assert_eq(round(area(Circle(1)), 2), 3.14)
+  assert_eq(area(Rect(2 3)) 6)
+  assert_eq(area(Square(4)) 16)
+  assert_eq(round(area(Circle(1)) 2) 3.14)
 end
 
 test "perimeter"
-  assert_eq(perimeter(Rect(2, 3)), 10)
-  assert_eq(perimeter(Square(4)), 16)
-  assert_eq(round(perimeter(Circle(1)), 2), 6.28)
+  assert_eq(perimeter(Rect(2 3)) 10)
+  assert_eq(perimeter(Square(4)) 16)
+  assert_eq(round(perimeter(Circle(1)) 2) 6.28)
 end
 
-test "name" = assert_eq([Circle(1), Rect(1, 2), Square(3)] |> map(name_of), ["circle", "rectangle", "square"])
+test "name" = assert_eq([Circle(1) Rect(1 2) Square(3)] |> map(name_of) ["circle" "rectangle" "square"])
 
-test "total area" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 11)
+test "total area" = assert_eq(total_area([Rect(2 3) Square(2) Rect(1 1)]) 11)
 "#,
             r#"# Esercizio 22 · I tuoi tipi  ★★☆
 #
@@ -7291,7 +7293,7 @@ test "total area" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 1
 # Controlla il tuo lavoro:  rythme exercise check 22-own-types.ry
 #                       o:  rythme test 22-own-types.ry
 
-type Shape = Circle(radius) | Rect(width, height) | Square(side)
+type Shape = Circle(radius) | Rect(width height) | Square(side)
 
 fn area(shape) = fail("da fare")
 
@@ -7304,20 +7306,20 @@ fn total_area(shapes) = fail("da fare")
 # --- Test (non cambiarli) ---
 
 test "area"
-  assert_eq(area(Rect(2, 3)), 6)
-  assert_eq(area(Square(4)), 16)
-  assert_eq(round(area(Circle(1)), 2), 3.14)
+  assert_eq(area(Rect(2 3)) 6)
+  assert_eq(area(Square(4)) 16)
+  assert_eq(round(area(Circle(1)) 2) 3.14)
 end
 
 test "perimetro"
-  assert_eq(perimeter(Rect(2, 3)), 10)
-  assert_eq(perimeter(Square(4)), 16)
-  assert_eq(round(perimeter(Circle(1)), 2), 6.28)
+  assert_eq(perimeter(Rect(2 3)) 10)
+  assert_eq(perimeter(Square(4)) 16)
+  assert_eq(round(perimeter(Circle(1)) 2) 6.28)
 end
 
-test "nome" = assert_eq([Circle(1), Rect(1, 2), Square(3)] |> map(name_of), ["cerchio", "rettangolo", "quadrato"])
+test "nome" = assert_eq([Circle(1) Rect(1 2) Square(3)] |> map(name_of) ["cerchio" "rettangolo" "quadrato"])
 
-test "area totale" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 11)
+test "area totale" = assert_eq(total_area([Rect(2 3) Square(2) Rect(1 1)]) 11)
 "#,
         ),
         ("23-match", "23-match"),
@@ -7365,27 +7367,27 @@ fn greeting(person) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "next light"
-  assert_eq(next_light(Green), Orange)
-  assert_eq(next_light(Orange), Red)
-  assert_eq(next_light(Red), Green)
+  assert_eq(next_light(Green) Orange)
+  assert_eq(next_light(Orange) Red)
+  assert_eq(next_light(Red) Green)
 end
 
 test "can go"
-  assert_eq(can_go(Green), true)
-  assert_eq(can_go(Orange), false)
-  assert_eq(can_go(Red), false)
+  assert_eq(can_go(Green) true)
+  assert_eq(can_go(Orange) false)
+  assert_eq(can_go(Red) false)
 end
 
 test "describe"
-  assert_eq(describe([]), "empty")
-  assert_eq(describe([7]), "one: 7")
-  assert_eq(describe([1, 2]), "two: 1 and 2")
-  assert_eq(describe([5, 6, 7]), "many, starting with 5")
+  assert_eq(describe([]) "empty")
+  assert_eq(describe([7]) "one: 7")
+  assert_eq(describe([1 2]) "two: 1 and 2")
+  assert_eq(describe([5 6 7]) "many, starting with 5")
 end
 
 test "greeting"
-  assert_eq(greeting({title: "Dr", last: "Hopper", name: "Grace"}), "Hello, Dr Hopper")
-  assert_eq(greeting({name: "Grace"}), "Hello, Grace")
+  assert_eq(greeting({title: "Dr" last: "Hopper" name: "Grace"}) "Hello, Dr Hopper")
+  assert_eq(greeting({name: "Grace"}) "Hello, Grace")
 end
 "#,
             r#"# Esercizio 23 · Scegliere con `match`  ★★☆
@@ -7432,27 +7434,27 @@ fn greeting(person) = fail("da fare")
 # --- Test (non cambiarli) ---
 
 test "luce successiva"
-  assert_eq(next_light(Green), Orange)
-  assert_eq(next_light(Orange), Red)
-  assert_eq(next_light(Red), Green)
+  assert_eq(next_light(Green) Orange)
+  assert_eq(next_light(Orange) Red)
+  assert_eq(next_light(Red) Green)
 end
 
 test "si può passare"
-  assert_eq(can_go(Green), true)
-  assert_eq(can_go(Orange), false)
-  assert_eq(can_go(Red), false)
+  assert_eq(can_go(Green) true)
+  assert_eq(can_go(Orange) false)
+  assert_eq(can_go(Red) false)
 end
 
 test "descrivi"
-  assert_eq(describe([]), "vuota")
-  assert_eq(describe([7]), "uno: 7")
-  assert_eq(describe([1, 2]), "due: 1 e 2")
-  assert_eq(describe([5, 6, 7]), "molti, a partire da 5")
+  assert_eq(describe([]) "vuota")
+  assert_eq(describe([7]) "uno: 7")
+  assert_eq(describe([1 2]) "due: 1 e 2")
+  assert_eq(describe([5 6 7]) "molti, a partire da 5")
 end
 
 test "saluto"
-  assert_eq(greeting({title: "Dr", last: "Hopper", name: "Grace"}), "Ciao, Dr Hopper")
-  assert_eq(greeting({name: "Grace"}), "Ciao, Grace")
+  assert_eq(greeting({title: "Dr" last: "Hopper" name: "Grace"}) "Ciao, Dr Hopper")
+  assert_eq(greeting({name: "Grace"}) "Ciao, Grace")
 end
 "#,
         ),
@@ -7486,7 +7488,7 @@ end
 # Check your work:  rythme exercise check 24-trees.ry
 #              or:  rythme test 24-trees.ry
 
-type Tree = Leaf | Node(left, value, right)
+type Tree = Leaf | Node(left value right)
 
 fn size(tree) = fail("to do")
 
@@ -7494,7 +7496,7 @@ fn total(tree) = fail("to do")
 
 fn depth(tree) = fail("to do")
 
-fn insert(tree, x) = fail("to do")
+fn insert(tree x) = fail("to do")
 
 fn to_list(tree) = fail("to do")
 
@@ -7505,28 +7507,28 @@ fn to_list(tree) = fail("to do")
 #     3   8
 #    /
 #   1
-small = Node(Node(Node(Leaf, 1, Leaf), 3, Leaf), 5, Node(Leaf, 8, Leaf))
+small = Node(Node(Node(Leaf 1 Leaf) 3 Leaf) 5 Node(Leaf 8 Leaf))
 
 test "size"
-  assert_eq(size(Leaf), 0)
-  assert_eq(size(small), 4)
+  assert_eq(size(Leaf) 0)
+  assert_eq(size(small) 4)
 end
 
-test "total" = assert_eq(total(small), 17)
+test "total" = assert_eq(total(small) 17)
 
 test "depth"
-  assert_eq(depth(Leaf), 0)
-  assert_eq(depth(small), 3)
+  assert_eq(depth(Leaf) 0)
+  assert_eq(depth(small) 3)
 end
 
 test "insert"
-  assert_eq(insert(Leaf, 4), Node(Leaf, 4, Leaf))
-  assert_eq(insert(Node(Leaf, 4, Leaf), 2), Node(Node(Leaf, 2, Leaf), 4, Leaf))
+  assert_eq(insert(Leaf 4) Node(Leaf 4 Leaf))
+  assert_eq(insert(Node(Leaf 4 Leaf) 2) Node(Node(Leaf 2 Leaf) 4 Leaf))
 end
 
-test "to list" = assert_eq(to_list(small), [1, 3, 5, 8])
+test "to list" = assert_eq(to_list(small) [1 3 5 8])
 
-test "sorting with a tree" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> to_list, [1, 2, 4, 7, 9])
+test "sorting with a tree" = assert_eq([7 2 9 4 1] |> fold(Leaf insert) |> to_list [1 2 4 7 9])
 "#,
             r#"# Esercizio 24 · Alberi  ★★★
 #
@@ -7556,7 +7558,7 @@ test "sorting with a tree" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> 
 # Controlla il tuo lavoro:  rythme exercise check 24-trees.ry
 #                       o:  rythme test 24-trees.ry
 
-type Tree = Leaf | Node(left, value, right)
+type Tree = Leaf | Node(left value right)
 
 fn size(tree) = fail("da fare")
 
@@ -7564,7 +7566,7 @@ fn total(tree) = fail("da fare")
 
 fn depth(tree) = fail("da fare")
 
-fn insert(tree, x) = fail("da fare")
+fn insert(tree x) = fail("da fare")
 
 fn to_list(tree) = fail("da fare")
 
@@ -7575,28 +7577,28 @@ fn to_list(tree) = fail("da fare")
 #     3   8
 #    /
 #   1
-small = Node(Node(Node(Leaf, 1, Leaf), 3, Leaf), 5, Node(Leaf, 8, Leaf))
+small = Node(Node(Node(Leaf 1 Leaf) 3 Leaf) 5 Node(Leaf 8 Leaf))
 
 test "dimensione"
-  assert_eq(size(Leaf), 0)
-  assert_eq(size(small), 4)
+  assert_eq(size(Leaf) 0)
+  assert_eq(size(small) 4)
 end
 
-test "totale" = assert_eq(total(small), 17)
+test "totale" = assert_eq(total(small) 17)
 
 test "profondità"
-  assert_eq(depth(Leaf), 0)
-  assert_eq(depth(small), 3)
+  assert_eq(depth(Leaf) 0)
+  assert_eq(depth(small) 3)
 end
 
 test "inserisci"
-  assert_eq(insert(Leaf, 4), Node(Leaf, 4, Leaf))
-  assert_eq(insert(Node(Leaf, 4, Leaf), 2), Node(Node(Leaf, 2, Leaf), 4, Leaf))
+  assert_eq(insert(Leaf 4) Node(Leaf 4 Leaf))
+  assert_eq(insert(Node(Leaf 4 Leaf) 2) Node(Node(Leaf 2 Leaf) 4 Leaf))
 end
 
-test "in lista" = assert_eq(to_list(small), [1, 3, 5, 8])
+test "in lista" = assert_eq(to_list(small) [1 3 5 8])
 
-test "ordinare con un albero" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> to_list, [1, 2, 4, 7, 9])
+test "ordinare con un albero" = assert_eq([7 2 9 4 1] |> fold(Leaf insert) |> to_list [1 2 4 7 9])
 "#,
         ),
         ("25-expressions", "25-expressions"),
@@ -7627,7 +7629,7 @@ test "ordinare con un albero" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) 
 # Check your work:  rythme exercise check 25-expressions.ry
 #              or:  rythme test 25-expressions.ry
 
-type Expr = Num(value) | Add(left, right) | Mul(left, right) | Neg(inner)
+type Expr = Num(value) | Add(left right) | Mul(left right) | Neg(inner)
 
 fn evaluate(expr) = fail("to do")
 
@@ -7639,27 +7641,27 @@ fn simplify(expr) = fail("to do")
 
 # --- Tests (do not change them) ---
 
-calculation = Mul(Add(Num(1), Num(2)), Num(3))
+calculation = Mul(Add(Num(1) Num(2)) Num(3))
 
 test "evaluate"
-  assert_eq(evaluate(Num(4)), 4)
-  assert_eq(evaluate(calculation), 9)
+  assert_eq(evaluate(Num(4)) 4)
+  assert_eq(evaluate(calculation) 9)
   assert_eq(evaluate(Neg(calculation)), -9)
 end
 
 test "show"
-  assert_eq(show(calculation), "((1 + 2) * 3)")
-  assert_eq(show(Neg(Num(4))), "-4")
-  assert_eq(show(Neg(Add(Num(1), Num(2)))), "-(1 + 2)")
+  assert_eq(show(calculation) "((1 + 2) * 3)")
+  assert_eq(show(Neg(Num(4))) "-4")
+  assert_eq(show(Neg(Add(Num(1) Num(2)))) "-(1 + 2)")
 end
 
-test "count numbers" = assert_eq(count_numbers(Add(calculation, Neg(Num(5)))), 4)
+test "count numbers" = assert_eq(count_numbers(Add(calculation Neg(Num(5)))) 4)
 
 test "simplify"
-  assert_eq(simplify(Add(Num(7), Num(0))), Num(7))
-  assert_eq(simplify(Mul(Num(1), Add(Num(0), Num(2)))), Num(2))
-  assert_eq(simplify(calculation), calculation)
-  assert_eq(simplify(Neg(Mul(Num(3), Num(1)))), Neg(Num(3)))
+  assert_eq(simplify(Add(Num(7) Num(0))) Num(7))
+  assert_eq(simplify(Mul(Num(1) Add(Num(0) Num(2)))) Num(2))
+  assert_eq(simplify(calculation) calculation)
+  assert_eq(simplify(Neg(Mul(Num(3) Num(1)))) Neg(Num(3)))
 end
 "#,
             r#"# Esercizio 25 · Una piccola calcolatrice  ★★★
@@ -7688,7 +7690,7 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 25-expressions.ry
 #                       o:  rythme test 25-expressions.ry
 
-type Expr = Num(value) | Add(left, right) | Mul(left, right) | Neg(inner)
+type Expr = Num(value) | Add(left right) | Mul(left right) | Neg(inner)
 
 fn evaluate(expr) = fail("da fare")
 
@@ -7700,27 +7702,27 @@ fn simplify(expr) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
-calculation = Mul(Add(Num(1), Num(2)), Num(3))
+calculation = Mul(Add(Num(1) Num(2)) Num(3))
 
 test "valuta"
-  assert_eq(evaluate(Num(4)), 4)
-  assert_eq(evaluate(calculation), 9)
+  assert_eq(evaluate(Num(4)) 4)
+  assert_eq(evaluate(calculation) 9)
   assert_eq(evaluate(Neg(calculation)), -9)
 end
 
 test "mostra"
-  assert_eq(show(calculation), "((1 + 2) * 3)")
-  assert_eq(show(Neg(Num(4))), "-4")
-  assert_eq(show(Neg(Add(Num(1), Num(2)))), "-(1 + 2)")
+  assert_eq(show(calculation) "((1 + 2) * 3)")
+  assert_eq(show(Neg(Num(4))) "-4")
+  assert_eq(show(Neg(Add(Num(1) Num(2)))) "-(1 + 2)")
 end
 
-test "conta i numeri" = assert_eq(count_numbers(Add(calculation, Neg(Num(5)))), 4)
+test "conta i numeri" = assert_eq(count_numbers(Add(calculation Neg(Num(5)))) 4)
 
 test "semplifica"
-  assert_eq(simplify(Add(Num(7), Num(0))), Num(7))
-  assert_eq(simplify(Mul(Num(1), Add(Num(0), Num(2)))), Num(2))
-  assert_eq(simplify(calculation), calculation)
-  assert_eq(simplify(Neg(Mul(Num(3), Num(1)))), Neg(Num(3)))
+  assert_eq(simplify(Add(Num(7) Num(0))) Num(7))
+  assert_eq(simplify(Mul(Num(1) Add(Num(0) Num(2)))) Num(2))
+  assert_eq(simplify(calculation) calculation)
+  assert_eq(simplify(Neg(Mul(Num(3) Num(1)))) Neg(Num(3)))
 end
 "#,
         ),
@@ -7754,44 +7756,44 @@ end
 # Check your work:  rythme exercise check 26-option.ry
 #              or:  rythme test 26-option.ry
 
-fn safe_divide(a, b) = fail("to do")
+fn safe_divide(a b) = fail("to do")
 
-fn find_age(people, name) = fail("to do")
+fn find_age(people name) = fail("to do")
 
-fn age_or_unknown(people, name) = fail("to do")
+fn age_or_unknown(people name) = fail("to do")
 
 fn first_long_word(words) = fail("to do")
 
-fn add_options(a, b) = fail("to do")
+fn add_options(a b) = fail("to do")
 
 # --- Tests (do not change them) ---
 
-people = [{name: "Ada", age: 36}, {name: "Alan", age: 41}]
+people = [{name: "Ada" age: 36} {name: "Alan" age: 41}]
 
 test "safe divide"
-  assert_eq(safe_divide(10, 4), Some(2.5))
-  assert_eq(safe_divide(1, 0), None)
+  assert_eq(safe_divide(10 4) Some(2.5))
+  assert_eq(safe_divide(1 0) None)
 end
 
 test "find age"
-  assert_eq(find_age(people, "Alan"), Some(41))
-  assert_eq(find_age(people, "Grace"), None)
+  assert_eq(find_age(people "Alan") Some(41))
+  assert_eq(find_age(people "Grace") None)
 end
 
 test "age or unknown"
-  assert_eq(age_or_unknown(people, "Ada"), "36")
-  assert_eq(age_or_unknown(people, "Grace"), "unknown")
+  assert_eq(age_or_unknown(people "Ada") "36")
+  assert_eq(age_or_unknown(people "Grace") "unknown")
 end
 
 test "first long word"
-  assert_eq(first_long_word(["a", "functional", "language"]), Some("functional"))
-  assert_eq(first_long_word(["short", "words"]), None)
+  assert_eq(first_long_word(["a" "functional" "language"]) Some("functional"))
+  assert_eq(first_long_word(["short" "words"]) None)
 end
 
 test "add options"
-  assert_eq(add_options(Some(2), Some(3)), Some(5))
-  assert_eq(add_options(Some(2), None), None)
-  assert_eq(add_options(None, None), None)
+  assert_eq(add_options(Some(2) Some(3)) Some(5))
+  assert_eq(add_options(Some(2) None) None)
+  assert_eq(add_options(None None) None)
 end
 "#,
             r#"# Esercizio 26 · Un valore che può mancare: Option  ★★☆
@@ -7823,44 +7825,44 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 26-option.ry
 #                       o:  rythme test 26-option.ry
 
-fn safe_divide(a, b) = fail("da fare")
+fn safe_divide(a b) = fail("da fare")
 
-fn find_age(people, name) = fail("da fare")
+fn find_age(people name) = fail("da fare")
 
-fn age_or_unknown(people, name) = fail("da fare")
+fn age_or_unknown(people name) = fail("da fare")
 
 fn first_long_word(words) = fail("da fare")
 
-fn add_options(a, b) = fail("da fare")
+fn add_options(a b) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
-people = [{name: "Ada", age: 36}, {name: "Alan", age: 41}]
+people = [{name: "Ada" age: 36} {name: "Alan" age: 41}]
 
 test "divisione sicura"
-  assert_eq(safe_divide(10, 4), Some(2.5))
-  assert_eq(safe_divide(1, 0), None)
+  assert_eq(safe_divide(10 4) Some(2.5))
+  assert_eq(safe_divide(1 0) None)
 end
 
 test "trova l'età"
-  assert_eq(find_age(people, "Alan"), Some(41))
-  assert_eq(find_age(people, "Grace"), None)
+  assert_eq(find_age(people "Alan") Some(41))
+  assert_eq(find_age(people "Grace") None)
 end
 
 test "età o sconosciuta"
-  assert_eq(age_or_unknown(people, "Ada"), "36")
-  assert_eq(age_or_unknown(people, "Grace"), "sconosciuta")
+  assert_eq(age_or_unknown(people "Ada") "36")
+  assert_eq(age_or_unknown(people "Grace") "sconosciuta")
 end
 
 test "prima parola lunga"
-  assert_eq(first_long_word(["a", "functional", "language"]), Some("functional"))
-  assert_eq(first_long_word(["short", "words"]), None)
+  assert_eq(first_long_word(["a" "functional" "language"]) Some("functional"))
+  assert_eq(first_long_word(["short" "words"]) None)
 end
 
 test "somma di Option"
-  assert_eq(add_options(Some(2), Some(3)), Some(5))
-  assert_eq(add_options(Some(2), None), None)
-  assert_eq(add_options(None, None), None)
+  assert_eq(add_options(Some(2) Some(3)) Some(5))
+  assert_eq(add_options(Some(2) None) None)
+  assert_eq(add_options(None None) None)
 end
 "#,
         ),
@@ -7894,7 +7896,7 @@ end
 # Check your work:  rythme exercise check 27-result.ry
 #              or:  rythme test 27-result.ry
 
-fn checked_divide(a, b) = fail("to do")
+fn checked_divide(a b) = fail("to do")
 
 fn parse_age(text) = fail("to do")
 
@@ -7905,28 +7907,28 @@ fn check_code(code) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "checked divide"
-  assert_eq(checked_divide(9, 3), Ok(3))
-  assert_eq(checked_divide(1, 0), Err("division by zero"))
+  assert_eq(checked_divide(9 3) Ok(3))
+  assert_eq(checked_divide(1 0) Err("division by zero"))
 end
 
 test "parse age"
-  assert_eq(parse_age("36"), Ok(36))
-  assert_eq(parse_age(" 7 "), Ok(7))
-  assert_eq(parse_age("seven"), Err("not a number"))
-  assert_eq(parse_age("-1"), Err("an age cannot be negative"))
-  assert_eq(parse_age("200"), Err("too old"))
+  assert_eq(parse_age("36") Ok(36))
+  assert_eq(parse_age(" 7 ") Ok(7))
+  assert_eq(parse_age("seven") Err("not a number"))
+  assert_eq(parse_age("-1") Err("an age cannot be negative"))
+  assert_eq(parse_age("200") Err("too old"))
 end
 
 test "describe"
-  assert_eq(describe(Ok(42)), "ok: 42")
-  assert_eq(describe(Err("too old")), "error: too old")
-  assert_eq(describe(parse_age("-5")), "error: an age cannot be negative")
+  assert_eq(describe(Ok(42)) "ok: 42")
+  assert_eq(describe(Err("too old")) "error: too old")
+  assert_eq(describe(parse_age("-5")) "error: an age cannot be negative")
 end
 
 test "check code"
-  assert_eq(check_code("rythme2024"), Ok("rythme2024"))
-  assert_eq(check_code("abc1"), Err("too short"))
-  assert_eq(check_code("functional"), Err("no digit"))
+  assert_eq(check_code("rythme2024") Ok("rythme2024"))
+  assert_eq(check_code("abc1") Err("too short"))
+  assert_eq(check_code("functional") Err("no digit"))
 end
 "#,
             r#"# Esercizio 27 · Un'operazione che può fallire: Result  ★★☆
@@ -7957,7 +7959,7 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 27-result.ry
 #                       o:  rythme test 27-result.ry
 
-fn checked_divide(a, b) = fail("da fare")
+fn checked_divide(a b) = fail("da fare")
 
 fn parse_age(text) = fail("da fare")
 
@@ -7968,28 +7970,28 @@ fn check_code(code) = fail("da fare")
 # --- Test (non cambiarli) ---
 
 test "divisione controllata"
-  assert_eq(checked_divide(9, 3), Ok(3))
-  assert_eq(checked_divide(1, 0), Err("divisione per zero"))
+  assert_eq(checked_divide(9 3) Ok(3))
+  assert_eq(checked_divide(1 0) Err("divisione per zero"))
 end
 
 test "leggi l'età"
-  assert_eq(parse_age("36"), Ok(36))
-  assert_eq(parse_age(" 7 "), Ok(7))
-  assert_eq(parse_age("sette"), Err("non è un numero"))
-  assert_eq(parse_age("-1"), Err("un'età non può essere negativa"))
-  assert_eq(parse_age("200"), Err("troppo vecchio"))
+  assert_eq(parse_age("36") Ok(36))
+  assert_eq(parse_age(" 7 ") Ok(7))
+  assert_eq(parse_age("sette") Err("non è un numero"))
+  assert_eq(parse_age("-1") Err("un'età non può essere negativa"))
+  assert_eq(parse_age("200") Err("troppo vecchio"))
 end
 
 test "descrivi"
-  assert_eq(describe(Ok(42)), "ok: 42")
-  assert_eq(describe(Err("troppo vecchio")), "errore: troppo vecchio")
-  assert_eq(describe(parse_age("-5")), "errore: un'età non può essere negativa")
+  assert_eq(describe(Ok(42)) "ok: 42")
+  assert_eq(describe(Err("troppo vecchio")) "errore: troppo vecchio")
+  assert_eq(describe(parse_age("-5")) "errore: un'età non può essere negativa")
 end
 
 test "controlla il codice"
-  assert_eq(check_code("rythme2024"), Ok("rythme2024"))
-  assert_eq(check_code("abc1"), Err("troppo corto"))
-  assert_eq(check_code("funzionale"), Err("nessuna cifra"))
+  assert_eq(check_code("rythme2024") Ok("rythme2024"))
+  assert_eq(check_code("abc1") Err("troppo corto"))
+  assert_eq(check_code("funzionale") Err("nessuna cifra"))
 end
 "#,
         ),
@@ -8029,38 +8031,38 @@ end
 # Check your work:  rythme exercise check 28-question-mark.ry
 #              or:  rythme test 28-question-mark.ry
 
-fn add_texts(a, b) = fail("to do")
+fn add_texts(a b) = fail("to do")
 
 fn parse_point(text) = fail("to do")
 
 fn sum_of_texts(texts) = fail("to do")
 
-fn ratio_of_texts(a, b) = fail("to do")
+fn ratio_of_texts(a b) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "add texts"
-  assert_eq(add_texts("2", "40"), Ok(42))
-  assert(is_err(add_texts("2", "forty")), "forty is not a number")
+  assert_eq(add_texts("2" "40") Ok(42))
+  assert(is_err(add_texts("2" "forty")) "forty is not a number")
 end
 
 test "parse point"
-  assert_eq(parse_point("3,4"), Ok({x: 3, y: 4}))
-  assert_eq(parse_point("3"), Err("expected x,y"))
-  assert_eq(parse_point("1,2,3"), Err("expected x,y"))
-  assert(is_err(parse_point("3,four")), "four is not a number")
+  assert_eq(parse_point("3,4") Ok({x: 3 y: 4}))
+  assert_eq(parse_point("3") Err("expected x,y"))
+  assert_eq(parse_point("1,2,3") Err("expected x,y"))
+  assert(is_err(parse_point("3,four")) "four is not a number")
 end
 
 test "sum of texts"
-  assert_eq(sum_of_texts(["1", "2", "3"]), Ok(6))
-  assert_eq(sum_of_texts([]), Ok(0))
-  assert_eq(sum_of_texts(["1", "x", "y"]), parse_int("x"))
+  assert_eq(sum_of_texts(["1" "2" "3"]) Ok(6))
+  assert_eq(sum_of_texts([]) Ok(0))
+  assert_eq(sum_of_texts(["1" "x" "y"]) parse_int("x"))
 end
 
 test "ratio of texts"
-  assert_eq(ratio_of_texts("9", "2"), Ok(4.5))
-  assert_eq(ratio_of_texts("9", "0"), Err("division by zero"))
-  assert(is_err(ratio_of_texts("nine", "0")), "nine is not a number")
+  assert_eq(ratio_of_texts("9" "2") Ok(4.5))
+  assert_eq(ratio_of_texts("9" "0") Err("division by zero"))
+  assert(is_err(ratio_of_texts("nine" "0")) "nine is not a number")
 end
 "#,
             r#"# Esercizio 28 · Passare gli errori con `?`  ★★★
@@ -8097,38 +8099,38 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 28-question-mark.ry
 #                       o:  rythme test 28-question-mark.ry
 
-fn add_texts(a, b) = fail("da fare")
+fn add_texts(a b) = fail("da fare")
 
 fn parse_point(text) = fail("da fare")
 
 fn sum_of_texts(texts) = fail("da fare")
 
-fn ratio_of_texts(a, b) = fail("da fare")
+fn ratio_of_texts(a b) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 test "somma di testi"
-  assert_eq(add_texts("2", "40"), Ok(42))
-  assert(is_err(add_texts("2", "quaranta")), "quaranta non è un numero")
+  assert_eq(add_texts("2" "40") Ok(42))
+  assert(is_err(add_texts("2" "quaranta")) "quaranta non è un numero")
 end
 
 test "leggi un punto"
-  assert_eq(parse_point("3,4"), Ok({x: 3, y: 4}))
-  assert_eq(parse_point("3"), Err("atteso x,y"))
-  assert_eq(parse_point("1,2,3"), Err("atteso x,y"))
-  assert(is_err(parse_point("3,quattro")), "quattro non è un numero")
+  assert_eq(parse_point("3,4") Ok({x: 3 y: 4}))
+  assert_eq(parse_point("3") Err("atteso x,y"))
+  assert_eq(parse_point("1,2,3") Err("atteso x,y"))
+  assert(is_err(parse_point("3,quattro")) "quattro non è un numero")
 end
 
 test "somma dei testi"
-  assert_eq(sum_of_texts(["1", "2", "3"]), Ok(6))
-  assert_eq(sum_of_texts([]), Ok(0))
-  assert_eq(sum_of_texts(["1", "x", "y"]), parse_int("x"))
+  assert_eq(sum_of_texts(["1" "2" "3"]) Ok(6))
+  assert_eq(sum_of_texts([]) Ok(0))
+  assert_eq(sum_of_texts(["1" "x" "y"]) parse_int("x"))
 end
 
 test "rapporto di testi"
-  assert_eq(ratio_of_texts("9", "2"), Ok(4.5))
-  assert_eq(ratio_of_texts("9", "0"), Err("divisione per zero"))
-  assert(is_err(ratio_of_texts("nove", "0")), "nove non è un numero")
+  assert_eq(ratio_of_texts("9" "2") Ok(4.5))
+  assert_eq(ratio_of_texts("9" "0") Err("divisione per zero"))
+  assert(is_err(ratio_of_texts("nove" "0")) "nove non è un numero")
 end
 "#,
         ),
@@ -8170,25 +8172,25 @@ fn frequencies(text) = fail("to do")
 
 fn most_frequent(text) = fail("to do")
 
-fn report(text, n) = fail("to do")
+fn report(text n) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 poem = "The cat sat. The dog sat! Did the cat see the dog?"
 
-test "words" = assert_eq(words_of("Hello, World! Hello?"), ["hello", "world", "hello"])
+test "words" = assert_eq(words_of("Hello, World! Hello?") ["hello" "world" "hello"])
 
 test "frequencies"
-  assert_eq(frequencies("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
-  assert_eq(frequencies(poem) |> take(3), [["the", 4], ["cat", 2], ["dog", 2]])
+  assert_eq(frequencies("b a b c a b") [["b" 3] ["a" 2] ["c" 1]])
+  assert_eq(frequencies(poem) |> take(3) [["the" 4] ["cat" 2] ["dog" 2]])
 end
 
 test "most frequent"
-  assert_eq(most_frequent(poem), Some("the"))
-  assert_eq(most_frequent(" ... "), None)
+  assert_eq(most_frequent(poem) Some("the"))
+  assert_eq(most_frequent(" ... ") None)
 end
 
-test "report" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")
+test "report" = assert_eq(report(poem 3) "the: 4\ncat: 2\ndog: 2")
 "#,
             r#"# Esercizio 29 · Un piccolo progetto: contare le parole  ★★★
 #
@@ -8226,25 +8228,25 @@ fn frequencies(text) = fail("da fare")
 
 fn most_frequent(text) = fail("da fare")
 
-fn report(text, n) = fail("da fare")
+fn report(text n) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 poem = "The cat sat. The dog sat! Did the cat see the dog?"
 
-test "parole" = assert_eq(words_of("Hello, World! Hello?"), ["hello", "world", "hello"])
+test "parole" = assert_eq(words_of("Hello, World! Hello?") ["hello" "world" "hello"])
 
 test "frequenze"
-  assert_eq(frequencies("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
-  assert_eq(frequencies(poem) |> take(3), [["the", 4], ["cat", 2], ["dog", 2]])
+  assert_eq(frequencies("b a b c a b") [["b" 3] ["a" 2] ["c" 1]])
+  assert_eq(frequencies(poem) |> take(3) [["the" 4] ["cat" 2] ["dog" 2]])
 end
 
 test "la più frequente"
-  assert_eq(most_frequent(poem), Some("the"))
-  assert_eq(most_frequent(" ... "), None)
+  assert_eq(most_frequent(poem) Some("the"))
+  assert_eq(most_frequent(" ... ") None)
 end
 
-test "resoconto" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")
+test "resoconto" = assert_eq(report(poem 3) "the: 4\ncat: 2\ndog: 2")
 "#,
         ),
         ("30-testing", "30-testing"),
@@ -8277,33 +8279,33 @@ test "resoconto" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")
 # Check your work:  rythme exercise check 30-testing.ry
 #              or:  rythme test 30-testing.ry
 
-fn clamp(x, low, high) = max(high, min(x, low))
+fn clamp(x low high) = max(high min(x low))
 
 fn median(list)
   middle = len(list) // 2
   if is_even(len(list)) then (list[middle - 1] + list[middle]) / 2 else list[middle]
 end
 
-fn count_words(text) = len(split(text, " "))
+fn count_words(text) = len(split(text " "))
 
 # --- Tests (do not change them) ---
 
 test "clamp"
-  assert_eq(clamp(15, 0, 10), 10)
-  assert_eq(clamp(-5, 0, 10), 0)
-  assert_eq(clamp(5, 0, 10), 5)
+  assert_eq(clamp(15 0 10) 10)
+  assert_eq(clamp(-5 0 10) 0)
+  assert_eq(clamp(5 0 10) 5)
 end
 
 test "median of an odd number of values"
-  assert_eq(median([1, 2, 3]), 2)
-  assert_eq(median([3, 1, 2]), 2)
+  assert_eq(median([1 2 3]) 2)
+  assert_eq(median([3 1 2]) 2)
 end
 
-test "median of an even number of values" = assert_eq(median([4, 1, 3, 2]), 2.5)
+test "median of an even number of values" = assert_eq(median([4 1 3 2]) 2.5)
 
 test "count words"
-  assert_eq(count_words("one two three"), 3)
-  assert_eq(count_words("  one   two "), 2)
+  assert_eq(count_words("one two three") 3)
+  assert_eq(count_words("  one   two ") 2)
 end
 
 # Your test:
@@ -8336,33 +8338,33 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 30-testing.ry
 #                       o:  rythme test 30-testing.ry
 
-fn clamp(x, low, high) = max(high, min(x, low))
+fn clamp(x low high) = max(high min(x low))
 
 fn median(list)
   middle = len(list) // 2
   if is_even(len(list)) then (list[middle - 1] + list[middle]) / 2 else list[middle]
 end
 
-fn count_words(text) = len(split(text, " "))
+fn count_words(text) = len(split(text " "))
 
 # --- Test (non cambiarli) ---
 
 test "clamp"
-  assert_eq(clamp(15, 0, 10), 10)
-  assert_eq(clamp(-5, 0, 10), 0)
-  assert_eq(clamp(5, 0, 10), 5)
+  assert_eq(clamp(15 0 10) 10)
+  assert_eq(clamp(-5 0 10) 0)
+  assert_eq(clamp(5 0 10) 5)
 end
 
 test "mediana di un numero dispari di valori"
-  assert_eq(median([1, 2, 3]), 2)
-  assert_eq(median([3, 1, 2]), 2)
+  assert_eq(median([1 2 3]) 2)
+  assert_eq(median([3 1 2]) 2)
 end
 
-test "mediana di un numero pari di valori" = assert_eq(median([4, 1, 3, 2]), 2.5)
+test "mediana di un numero pari di valori" = assert_eq(median([4 1 3 2]) 2.5)
 
 test "conta le parole"
-  assert_eq(count_words("one two three"), 3)
-  assert_eq(count_words("  one   two "), 2)
+  assert_eq(count_words("one two three") 3)
+  assert_eq(count_words("  one   two ") 2)
 end
 
 # Il tuo test:
@@ -8405,15 +8407,15 @@ Every spreadsheet (LibreOffice, Excel, Google Sheets...) opens and saves it.
 
   csv_parse("name,age\nAda,36")              # Ok([["name", "age"], ["Ada", "36"]])
   csv_records("name,age\nAda,36")            # Ok([{name: "Ada", age: "36"}])
-  csv_format([["name", "age"], ["Ada", 36]]) # "name,age\nAda,36\n"
-  csv_format([{name: "Ada", age: 36}])       # the same text: records give a header
+  csv_format([["name" "age"] ["Ada" 36]]) # "name,age\nAda,36\n"
+  csv_format([{name: "Ada" age: 36}])       # the same text: records give a header
 
 With files
   match read_file("grades.csv").and_then(csv_records)
     Ok(rows) -> print(len(rows), "students")
     Err(e) -> print("Error: {e}")
   end
-  write_file("copy.csv", csv_format(rows))
+  write_file("copy.csv" csv_format(rows))
 
 The rules (RFC 4180)
   A field between quotes may hold commas, line breaks and quotes, written
@@ -8429,8 +8431,8 @@ The rules (RFC 4180)
 Another separator: the last argument
   ";" (spreadsheets in French, where the comma is the decimal point), "\t"
   (tabs), "|"...
-  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
-  csv_format(rows, ";")
+  csv_parse("a;b" ";")                      # Ok([["a", "b"]])
+  csv_format(rows ";")
 
 A text that is not valid CSV gives Err, which says where (line and column):
   csv_parse("a,b\"c")   # Err("line 1, column 4: a quote in the middle of a field: ...")"#,
@@ -8442,15 +8444,15 @@ apre e lo salva.
 
   csv_parse("name,age\nAda,36")              # Ok([["name", "age"], ["Ada", "36"]])
   csv_records("name,age\nAda,36")            # Ok([{name: "Ada", age: "36"}])
-  csv_format([["name", "age"], ["Ada", 36]]) # "name,age\nAda,36\n"
-  csv_format([{name: "Ada", age: 36}])       # lo stesso testo: i record danno un'intestazione
+  csv_format([["name" "age"] ["Ada" 36]]) # "name,age\nAda,36\n"
+  csv_format([{name: "Ada" age: 36}])       # lo stesso testo: i record danno un'intestazione
 
 Con i file
   match read_file("grades.csv").and_then(csv_records)
     Ok(rows) -> print(len(rows), "studenti")
     Err(e) -> print("Errore: {e}")
   end
-  write_file("copy.csv", csv_format(rows))
+  write_file("copy.csv" csv_format(rows))
 
 Le regole (RFC 4180)
   Un campo tra virgolette può contenere virgole, a capo e virgolette, scritte
@@ -8466,8 +8468,8 @@ Le regole (RFC 4180)
 Un altro separatore: l'ultimo argomento
   ";" (fogli di calcolo in francese, dove la virgola è il separatore
   decimale), "\t" (tabulazioni), "|"...
-  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
-  csv_format(rows, ";")
+  csv_parse("a;b" ";")                      # Ok([["a", "b"]])
+  csv_format(rows ";")
 
 Un testo che non è CSV valido dà Err, che dice dove (riga e colonna):
   csv_parse("a,b\"c")   # Err("riga 1, colonna 4: virgolette in mezzo a un campo: ...")"#,
@@ -8476,9 +8478,9 @@ Un testo che non è CSV valido dà Err, che dice dove (riga e colonna):
             r#"RANDOM: CHANCE, AND THE SAME CHANCE AGAIN
 
   random()                   # a decimal number from 0 (included) to 1 (excluded)
-  random(1, 6)               # a whole number from 1 to 6, both included
-  random(["a", "b", "c"])    # one element of the list
-  shuffle([1, 2, 3])         # the list in a random order
+  random(1 6)               # a whole number from 1 to 6, both included
+  random(["a" "b" "c"])    # one element of the list
+  shuffle([1 2 3])         # the list in a random order
 
 Every run draws other values. To get the same draws again (a test, a class
 where everyone sees the same game, a mistake to find again), give a seed:
@@ -8494,7 +8496,7 @@ In a test, call random_seed at its start: its draws then do not depend on
 the tests before it.
   test "a dice roll stays between 1 and 6"
     random_seed(7)
-    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+    assert(all(map(1..100 fn(_) = random(1 6)) fn(d) = d >= 1 and d <= 6))
   end
 
 The property tests (check_all, sample) have their own seed:
@@ -8502,9 +8504,9 @@ rythme test --seed N (see rythme help tests)."#,
             r#"RANDOM: IL CASO, E DI NUOVO LO STESSO CASO
 
   random()                   # un numero decimale da 0 (incluso) a 1 (escluso)
-  random(1, 6)               # un numero intero da 1 a 6, entrambi inclusi
-  random(["a", "b", "c"])    # un elemento della lista
-  shuffle([1, 2, 3])         # la lista in un ordine casuale
+  random(1 6)               # un numero intero da 1 a 6, entrambi inclusi
+  random(["a" "b" "c"])    # un elemento della lista
+  shuffle([1 2 3])         # la lista in un ordine casuale
 
 Ogni esecuzione estrae altri valori. Per avere di nuovo le stesse estrazioni
 (un test, una lezione in cui tutti vedono la stessa partita, un errore da
@@ -8521,7 +8523,7 @@ In un test, chiama random_seed all'inizio: le sue estrazioni allora non
 dipendono dai test precedenti.
   test "un lancio di dado resta tra 1 e 6"
     random_seed(7)
-    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+    assert(all(map(1..100 fn(_) = random(1 6)) fn(d) = d >= 1 and d <= 6))
   end
 
 I test di proprietà (check_all, sample) hanno il loro seme:
@@ -8754,7 +8756,7 @@ is reported where it is given. The type must also exist.
 Wrong:   total: Float = 0              # 0 is an Int
 Right:   total: Float = 0.0
 Wrong:   fn area(w: Int, h: Int) -> Int = w * h
-         area(2, "3")                  # "3" is a Text
+         area(2 "3")                  # "3" is a Text
 Right:   area(2, 3)
 Wrong:   fn label(n: Int) -> Text = n  # gives an Int
 Right:   fn label(n: Int) -> Text = text(n)
@@ -8774,7 +8776,7 @@ viene segnalato dove viene dato. Il tipo deve anche esistere.
 Errato:  total: Float = 0              # 0 è un Int
 Giusto:  total: Float = 0.0
 Errato:  fn area(w: Int, h: Int) -> Int = w * h
-         area(2, "3")                  # "3" è un Text
+         area(2 "3")                  # "3" è un Text
 Giusto:  area(2, 3)
 Errato:  fn label(n: Int) -> Text = n  # dà un Int
 Giusto:  fn label(n: Int) -> Text = text(n)
@@ -8791,10 +8793,10 @@ programma fa. Altro: `rythme help types`."#,
 
 Rythme finds the types by itself. You may also write them where they help
 to read the code; `rythme check` then verifies them (E027):
-  fn area(width: Int, height: Int) -> Int = width * height
+  fn area(width: Int height: Int) -> Int = width * height
   total: Float = 0.0
   type Shape = Circle(radius: Float) | Rect(width: Float, height: Float)
-  [1, 2].map do |n: Int| n * 2 end
+  [1 2].map do |n: Int| n * 2 end
 
 The types
   Int  Float  Text  Bool  Unit  Symbol
@@ -8811,11 +8813,11 @@ The types
   (Tree alone too)
 
   fn first_of(xs: List(a)) -> a = xs[0]
-  first_of([1, 2]) + 1         # the checker knows it is an Int
+  first_of([1 2]) + 1         # the checker knows it is an Int
 
 Types with parameters: a type can take types, like List(Int)
-  type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
-  type Pair(a, b) = Pair(first: a, second: b)
+  type Tree(a) = Leaf | Node(left: Tree(a) value: a right: Tree(a))
+  type Pair(a b) = Pair(first: a second: b)
 
   fn depth(t: Tree(a)) -> Int = ...      a Tree of anything
   fn total(t: Tree(Int)) -> Int = ...    a Tree of whole numbers
@@ -8831,10 +8833,10 @@ the editors and `rythme doc` show them."#,
 
 Rythme trova i tipi da solo. Puoi anche scriverli dove aiutano a leggere il
 codice; `rythme check` allora li verifica (E027):
-  fn area(width: Int, height: Int) -> Int = width * height
+  fn area(width: Int height: Int) -> Int = width * height
   total: Float = 0.0
   type Shape = Circle(radius: Float) | Rect(width: Float, height: Float)
-  [1, 2].map do |n: Int| n * 2 end
+  [1 2].map do |n: Int| n * 2 end
 
 I tipi
   Int  Float  Text  Bool  Unit  Symbol
@@ -8851,11 +8853,11 @@ I tipi
   (anche Tree da solo)
 
   fn first_of(xs: List(a)) -> a = xs[0]
-  first_of([1, 2]) + 1         # il controllo sa che è un Int
+  first_of([1 2]) + 1         # il controllo sa che è un Int
 
 Tipi con parametri: un tipo può prendere dei tipi, come List(Int)
-  type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
-  type Pair(a, b) = Pair(first: a, second: b)
+  type Tree(a) = Leaf | Node(left: Tree(a) value: a right: Tree(a))
+  type Pair(a b) = Pair(first: a second: b)
 
   fn depth(t: Tree(a)) -> Int = ...      un Tree di qualsiasi cosa
   fn total(t: Tree(Int)) -> Int = ...    un Tree di numeri interi
@@ -9037,27 +9039,27 @@ Cursor e gli altri: vedi il manuale, sezione 7.10."#,
 # Check your work:  rythme exercise check 31-vectors.ry
 #              or:  rythme test 31-vectors.ry
 
-fn distance(a, b) = fail("to do")
+fn distance(a b) = fail("to do")
 
-fn midpoint(a, b) = fail("to do")
+fn midpoint(a b) = fail("to do")
 
-fn closest(points, p) = fail("to do")
+fn closest(points p) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "distance"
-  assert_eq(distance([0, 0], [3, 4]), 5.0)
-  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+  assert_eq(distance([0 0] [3 4]) 5.0)
+  assert_eq(distance([1 1 1] [1 1 1]) 0.0)
 end
 
 test "midpoint"
-  assert_eq(midpoint([0, 0], [4, 2]), [2.0, 1.0])
-  assert_eq(midpoint([-1, 3], [1, 3]), [0.0, 3.0])
+  assert_eq(midpoint([0 0] [4 2]) [2.0 1.0])
+  assert_eq(midpoint([-1 3] [1 3]) [0.0 3.0])
 end
 
 test "closest"
-  assert_eq(closest([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
-  assert_eq(closest([[2, 2]], [100, -100]), [2, 2])
+  assert_eq(closest([[0 0] [5 5] [9 1]] [6 4]) [5 5])
+  assert_eq(closest([[2 2]] [100, -100]) [2 2])
 end
 "#,
             r#"# Esercizio 31 · Punti come vettori  ★☆☆
@@ -9082,27 +9084,27 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 31-vectors.ry
 #                       o:  rythme test 31-vectors.ry
 
-fn distance(a, b) = fail("da fare")
+fn distance(a b) = fail("da fare")
 
-fn midpoint(a, b) = fail("da fare")
+fn midpoint(a b) = fail("da fare")
 
-fn closest(points, p) = fail("da fare")
+fn closest(points p) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 test "distanza"
-  assert_eq(distance([0, 0], [3, 4]), 5.0)
-  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+  assert_eq(distance([0 0] [3 4]) 5.0)
+  assert_eq(distance([1 1 1] [1 1 1]) 0.0)
 end
 
 test "punto medio"
-  assert_eq(midpoint([0, 0], [4, 2]), [2.0, 1.0])
-  assert_eq(midpoint([-1, 3], [1, 3]), [0.0, 3.0])
+  assert_eq(midpoint([0 0] [4 2]) [2.0 1.0])
+  assert_eq(midpoint([-1 3] [1 3]) [0.0 3.0])
 end
 
 test "il più vicino"
-  assert_eq(closest([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
-  assert_eq(closest([[2, 2]], [100, -100]), [2, 2])
+  assert_eq(closest([[0 0] [5 5] [9 1]] [6 4]) [5 5])
+  assert_eq(closest([[2 2]] [100, -100]) [2 2])
 end
 "#,
         ),
@@ -9135,22 +9137,22 @@ fn standardize(xs) = fail("to do")
 
 fn outliers(xs) = fail("to do")
 
-fn accuracy(predictions, answers) = fail("to do")
+fn accuracy(predictions answers) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "standardize"
-  assert_eq(standardize([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+  assert_eq(standardize([2 4 4 4 5 5 7 9]) [-1.5 -0.5 -0.5 -0.5 0.0 0.0 1.0 2.0])
 end
 
 test "outliers"
-  assert_eq(outliers([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
-  assert_eq(outliers([1, 2, 3]), [])
+  assert_eq(outliers([10 11 9 10 10 12 10 9 11 10 50]) [50])
+  assert_eq(outliers([1 2 3]) [])
 end
 
 test "accuracy"
-  assert_eq(accuracy(["cat", "dog", "cat", "cat"], ["cat", "dog", "dog", "cat"]), 0.75)
-  assert_eq(accuracy([1, 0], [0, 1]), 0.0)
+  assert_eq(accuracy(["cat" "dog" "cat" "cat"] ["cat" "dog" "dog" "cat"]) 0.75)
+  assert_eq(accuracy([1 0] [0 1]) 0.0)
 end
 "#,
             r#"# Esercizio 32 · Statistiche sui dati  ★★☆
@@ -9181,22 +9183,22 @@ fn standardize(xs) = fail("da fare")
 
 fn outliers(xs) = fail("da fare")
 
-fn accuracy(predictions, answers) = fail("da fare")
+fn accuracy(predictions answers) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 test "standardizza"
-  assert_eq(standardize([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+  assert_eq(standardize([2 4 4 4 5 5 7 9]) [-1.5 -0.5 -0.5 -0.5 0.0 0.0 1.0 2.0])
 end
 
 test "valori anomali"
-  assert_eq(outliers([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
-  assert_eq(outliers([1, 2, 3]), [])
+  assert_eq(outliers([10 11 9 10 10 12 10 9 11 10 50]) [50])
+  assert_eq(outliers([1 2 3]) [])
 end
 
 test "accuratezza"
-  assert_eq(accuracy(["cat", "dog", "cat", "cat"], ["cat", "dog", "dog", "cat"]), 0.75)
-  assert_eq(accuracy([1, 0], [0, 1]), 0.0)
+  assert_eq(accuracy(["cat" "dog" "cat" "cat"] ["cat" "dog" "dog" "cat"]) 0.75)
+  assert_eq(accuracy([1 0] [0 1]) 0.0)
 end
 "#,
         ),
@@ -9224,28 +9226,28 @@ end
 # Check your work:  rythme exercise check 33-neurons.ry
 #              or:  rythme test 33-neurons.ry
 
-fn neuron(weights, bias, inputs) = fail("to do")
+fn neuron(weights bias inputs) = fail("to do")
 
-fn fires(weights, bias, inputs) = fail("to do")
+fn fires(weights bias inputs) = fail("to do")
 
-fn layer(matrix, biases, inputs) = fail("to do")
+fn layer(matrix biases inputs) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "neuron"
-  assert_eq(neuron([1, -1], 0, [2, 2]), 0.5)
-  assert_eq(round(neuron([2, 1], -1, [1, 1]), 3), 0.881)
+  assert_eq(neuron([1, -1] 0 [2 2]) 0.5)
+  assert_eq(round(neuron([2 1] -1 [1 1]) 3) 0.881)
 end
 
 test "a neuron that computes AND"
-  assert(fires([10, 10], -15, [1, 1]))
-  assert(not fires([10, 10], -15, [1, 0]))
-  assert(not fires([10, 10], -15, [0, 0]))
+  assert(fires([10 10] -15 [1 1]))
+  assert(not fires([10 10] -15 [1 0]))
+  assert(not fires([10 10] -15 [0 0]))
 end
 
 test "layer"
-  outputs = layer([[1, -1], [1, 1]], [0, 1], [2, 2])
-  assert_eq(map(outputs, fn(x) = round(x, 3)), [0.5, 0.993])
+  outputs = layer([[1, -1] [1 1]] [0 1] [2 2])
+  assert_eq(map(outputs fn(x) = round(x 3)) [0.5 0.993])
 end
 "#,
             r#"# Esercizio 33 · Un neurone artificiale  ★★☆
@@ -9270,28 +9272,28 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 33-neurons.ry
 #                       o:  rythme test 33-neurons.ry
 
-fn neuron(weights, bias, inputs) = fail("da fare")
+fn neuron(weights bias inputs) = fail("da fare")
 
-fn fires(weights, bias, inputs) = fail("da fare")
+fn fires(weights bias inputs) = fail("da fare")
 
-fn layer(matrix, biases, inputs) = fail("da fare")
+fn layer(matrix biases inputs) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 test "neurone"
-  assert_eq(neuron([1, -1], 0, [2, 2]), 0.5)
-  assert_eq(round(neuron([2, 1], -1, [1, 1]), 3), 0.881)
+  assert_eq(neuron([1, -1] 0 [2 2]) 0.5)
+  assert_eq(round(neuron([2 1] -1 [1 1]) 3) 0.881)
 end
 
 test "un neurone che calcola AND"
-  assert(fires([10, 10], -15, [1, 1]))
-  assert(not fires([10, 10], -15, [1, 0]))
-  assert(not fires([10, 10], -15, [0, 0]))
+  assert(fires([10 10] -15 [1 1]))
+  assert(not fires([10 10] -15 [1 0]))
+  assert(not fires([10 10] -15 [0 0]))
 end
 
 test "strato"
-  outputs = layer([[1, -1], [1, 1]], [0, 1], [2, 2])
-  assert_eq(map(outputs, fn(x) = round(x, 3)), [0.5, 0.993])
+  outputs = layer([[1, -1] [1 1]] [0 1] [2 2])
+  assert_eq(map(outputs fn(x) = round(x 3)) [0.5 0.993])
 end
 "#,
         ),
@@ -9319,29 +9321,29 @@ end
 # Check your work:  rythme exercise check 34-gradient-descent.ry
 #              or:  rythme test 34-gradient-descent.ry
 
-fn step(f, x, rate) = fail("to do")
+fn step(f x rate) = fail("to do")
 
-fn descend(f, x, rate, steps) = fail("to do")
+fn descend(f x rate steps) = fail("to do")
 
-fn descend_all(f, xs, rate, steps) = fail("to do")
+fn descend_all(f xs rate steps) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 fn parabola(x) = (x - 3) ** 2
 
 test "one step"
-  assert_eq(step(parabola, 0, 0.5), 3.0)
-  assert_eq(step(parabola, 1, 0.25), 2.0)
+  assert_eq(step(parabola 0 0.5) 3.0)
+  assert_eq(step(parabola 1 0.25) 2.0)
 end
 
 test "down to the bottom"
-  assert_eq(round(descend(parabola, 0, 0.1, 100), 4), 3.0)
-  assert_eq(descend(parabola, 10, 0.1, 0), 10)
+  assert_eq(round(descend(parabola 0 0.1 100) 4) 3.0)
+  assert_eq(descend(parabola 10 0.1 0) 10)
 end
 
 test "several numbers"
-  bowl = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
-  assert_eq(map(descend_all(bowl, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+  bowl = fn([x y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descend_all(bowl [0 0] 0.1 100) fn(v) = round(v 4)) [1.0, -2.0])
 end
 "#,
             r#"# Esercizio 34 · Scendere lungo la pendenza  ★★☆
@@ -9366,29 +9368,29 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 34-gradient-descent.ry
 #                       o:  rythme test 34-gradient-descent.ry
 
-fn step(f, x, rate) = fail("da fare")
+fn step(f x rate) = fail("da fare")
 
-fn descend(f, x, rate, steps) = fail("da fare")
+fn descend(f x rate steps) = fail("da fare")
 
-fn descend_all(f, xs, rate, steps) = fail("da fare")
+fn descend_all(f xs rate steps) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 fn parabola(x) = (x - 3) ** 2
 
 test "un passo"
-  assert_eq(step(parabola, 0, 0.5), 3.0)
-  assert_eq(step(parabola, 1, 0.25), 2.0)
+  assert_eq(step(parabola 0 0.5) 3.0)
+  assert_eq(step(parabola 1 0.25) 2.0)
 end
 
 test "fino in fondo"
-  assert_eq(round(descend(parabola, 0, 0.1, 100), 4), 3.0)
-  assert_eq(descend(parabola, 10, 0.1, 0), 10)
+  assert_eq(round(descend(parabola 0 0.1 100) 4) 3.0)
+  assert_eq(descend(parabola 10 0.1 0) 10)
 end
 
 test "più numeri"
-  bowl = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
-  assert_eq(map(descend_all(bowl, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+  bowl = fn([x y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descend_all(bowl [0 0] 0.1 100) fn(v) = round(v 4)) [1.0, -2.0])
 end
 "#,
         ),
@@ -9416,37 +9418,37 @@ end
 # Check your work:  rythme exercise check 35-nearest-neighbours.ry
 #              or:  rythme test 35-nearest-neighbours.ry
 
-fn neighbours(examples, point, k) = fail("to do")
+fn neighbours(examples point k) = fail("to do")
 
 fn majority(labels) = fail("to do")
 
-fn classify(examples, point, k) = fail("to do")
+fn classify(examples point k) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 garden = [
-  {point: [1, 1], label: "red"},
-  {point: [1, 2], label: "red"},
-  {point: [2, 1], label: "red"},
-  {point: [8, 8], label: "blue"},
-  {point: [9, 8], label: "blue"},
-  {point: [5, 5], label: "blue"},
+  {point: [1 1] label: "red"}
+  {point: [1 2] label: "red"}
+  {point: [2 1] label: "red"}
+  {point: [8 8] label: "blue"}
+  {point: [9 8] label: "blue"}
+  {point: [5 5] label: "blue"}
 ]
 
 test "neighbours"
-  assert_eq(neighbours(garden, [0, 0], 2) |> map(fn(e) = e.point), [[1, 1], [1, 2]])
-  assert_eq(len(neighbours(garden, [0, 0], 10)), 6)
+  assert_eq(neighbours(garden [0 0] 2) |> map(fn(e) = e.point) [[1 1] [1 2]])
+  assert_eq(len(neighbours(garden [0 0] 10)) 6)
 end
 
 test "majority"
-  assert_eq(majority(["a", "b", "b", "c"]), "b")
-  assert_eq(majority(["x", "y"]), "x")
+  assert_eq(majority(["a" "b" "b" "c"]) "b")
+  assert_eq(majority(["x" "y"]) "x")
 end
 
 test "classify"
-  assert_eq(classify(garden, [2, 2], 3), "red")
-  assert_eq(classify(garden, [7, 7], 3), "blue")
-  assert_eq(classify(garden, [4, 4], 1), "blue")
+  assert_eq(classify(garden [2 2] 3) "red")
+  assert_eq(classify(garden [7 7] 3) "blue")
+  assert_eq(classify(garden [4 4] 1) "blue")
 end
 "#,
             r#"# Esercizio 35 · I vicini più prossimi  ★★★
@@ -9472,37 +9474,37 @@ end
 # Controlla il tuo lavoro:  rythme exercise check 35-nearest-neighbours.ry
 #                       o:  rythme test 35-nearest-neighbours.ry
 
-fn neighbours(examples, point, k) = fail("da fare")
+fn neighbours(examples point k) = fail("da fare")
 
 fn majority(labels) = fail("da fare")
 
-fn classify(examples, point, k) = fail("da fare")
+fn classify(examples point k) = fail("da fare")
 
 # --- Test (non cambiarli) ---
 
 garden = [
-  {point: [1, 1], label: "red"},
-  {point: [1, 2], label: "red"},
-  {point: [2, 1], label: "red"},
-  {point: [8, 8], label: "blue"},
-  {point: [9, 8], label: "blue"},
-  {point: [5, 5], label: "blue"},
+  {point: [1 1] label: "red"}
+  {point: [1 2] label: "red"}
+  {point: [2 1] label: "red"}
+  {point: [8 8] label: "blue"}
+  {point: [9 8] label: "blue"}
+  {point: [5 5] label: "blue"}
 ]
 
 test "vicini"
-  assert_eq(neighbours(garden, [0, 0], 2) |> map(fn(e) = e.point), [[1, 1], [1, 2]])
-  assert_eq(len(neighbours(garden, [0, 0], 10)), 6)
+  assert_eq(neighbours(garden [0 0] 2) |> map(fn(e) = e.point) [[1 1] [1 2]])
+  assert_eq(len(neighbours(garden [0 0] 10)) 6)
 end
 
 test "maggioranza"
-  assert_eq(majority(["a", "b", "b", "c"]), "b")
-  assert_eq(majority(["x", "y"]), "x")
+  assert_eq(majority(["a" "b" "b" "c"]) "b")
+  assert_eq(majority(["x" "y"]) "x")
 end
 
 test "classifica"
-  assert_eq(classify(garden, [2, 2], 3), "red")
-  assert_eq(classify(garden, [7, 7], 3), "blue")
-  assert_eq(classify(garden, [4, 4], 1), "blue")
+  assert_eq(classify(garden [2 2] 3) "red")
+  assert_eq(classify(garden [7 7] 3) "blue")
+  assert_eq(classify(garden [4 4] 1) "blue")
 end
 "#,
         ),
@@ -9541,19 +9543,19 @@ fn best_move(n) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "moves"
-  assert_eq(moves(10), [1, 2, 3])
-  assert_eq(moves(2), [1, 2])
+  assert_eq(moves(10) [1 2 3])
+  assert_eq(moves(2) [1 2])
   assert_eq(moves(0), [])
 end
 
 test "who wins"
-  assert_eq(map(0..8, wins), [false, true, true, true, false, true, true, true, false])
+  assert_eq(map(0..8 wins) [false true true true false true true true false])
 end
 
 test "best move"
-  assert_eq(best_move(5), Some(1))
-  assert_eq(best_move(7), Some(3))
-  assert_eq(best_move(8), None)
+  assert_eq(best_move(5) Some(1))
+  assert_eq(best_move(7) Some(3))
+  assert_eq(best_move(8) None)
 end
 "#,
             r#"# Esercizio 36 · Giocare alla perfezione: minimax  ★★★
@@ -9589,19 +9591,19 @@ fn best_move(n) = fail("da fare")
 # --- Test (non cambiarli) ---
 
 test "mosse"
-  assert_eq(moves(10), [1, 2, 3])
-  assert_eq(moves(2), [1, 2])
+  assert_eq(moves(10) [1 2 3])
+  assert_eq(moves(2) [1 2])
   assert_eq(moves(0), [])
 end
 
 test "chi vince"
-  assert_eq(map(0..8, wins), [false, true, true, true, false, true, true, true, false])
+  assert_eq(map(0..8 wins) [false true true true false true true true false])
 end
 
 test "mossa migliore"
-  assert_eq(best_move(5), Some(1))
-  assert_eq(best_move(7), Some(3))
-  assert_eq(best_move(8), None)
+  assert_eq(best_move(5) Some(1))
+  assert_eq(best_move(7) Some(3))
+  assert_eq(best_move(8) None)
 end
 "#,
         ),
@@ -9613,13 +9615,13 @@ A vector is a list of numbers, a matrix a list of rows of the same length.
 These functions never change them: they give new lists, always of Floats.
 
 Vectors and matrices
-  dot([1, 2], [3, 4])            # 11.0
-  norm([3, 4])                   # 5.0, the length
+  dot([1 2] [3 4])            # 11.0
+  norm([3 4])                   # 5.0, the length
   vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # number by number
-  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  vector_scale([1 2] 3)        # [3.0, 6.0]
   matmul(m, n)  matmul(m, v)     # product of matrices, or matrix by vector
   transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
-  zip_with(xs, ys, f)            # f on the pairs, for anything else
+  zip_with(xs ys f)            # f on the pairs, for anything else
 
 Neurons
   sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # scores into probabilities
@@ -9631,11 +9633,11 @@ Statistics
 
 Chance, the same on every run after random_seed(n)
   random_normal(0, 1)  random_choice_weighted(xs, weights)
-  train_test_split(examples, 0.8)    # {train, test}
+  train_test_split(examples 0.8)    # {train, test}
 
 Slopes, for gradient descent (central differences, about 9 digits)
-  derivative(fn(x) = x * x, 3)               # 6.0
-  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+  derivative(fn(x) = x * x 3)               # 6.0
+  gradient(fn([x y]) = x * x + y [2 5])   # [4.0, 1.0]
 
 Charts as text
   print(plot(losses))  print(plot(xs, ys))  print(histogram(heights))
@@ -9654,13 +9656,13 @@ Un vettore è una lista di numeri, una matrice una lista di righe della stessa
 lunghezza. Queste funzioni non li cambiano mai: danno nuove liste, sempre di Float.
 
 Vettori e matrici
-  dot([1, 2], [3, 4])            # 11.0
-  norm([3, 4])                   # 5.0, la lunghezza
+  dot([1 2] [3 4])            # 11.0
+  norm([3 4])                   # 5.0, la lunghezza
   vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # numero per numero
-  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  vector_scale([1 2] 3)        # [3.0, 6.0]
   matmul(m, n)  matmul(m, v)     # prodotto di matrici, o matrice per vettore
   transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
-  zip_with(xs, ys, f)            # f sulle coppie, per tutto il resto
+  zip_with(xs ys f)            # f sulle coppie, per tutto il resto
 
 Neuroni
   sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # punteggi in probabilità
@@ -9672,11 +9674,11 @@ Statistica
 
 Caso, uguale a ogni esecuzione dopo random_seed(n)
   random_normal(0, 1)  random_choice_weighted(xs, weights)
-  train_test_split(examples, 0.8)    # {train, test}
+  train_test_split(examples 0.8)    # {train, test}
 
 Pendenze, per la discesa del gradiente (differenze centrali, circa 9 cifre)
-  derivative(fn(x) = x * x, 3)               # 6.0
-  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+  derivative(fn(x) = x * x 3)               # 6.0
+  gradient(fn([x y]) = x * x + y [2 5])   # [4.0, 1.0]
 
 Grafici in testo
   print(plot(losses))  print(plot(xs, ys))  print(histogram(heights))
@@ -10113,93 +10115,93 @@ aggiungere all'indice con una pull request. Rythme non invia mai niente da solo.
         ("Writes a record or a dict as the query of a web address: `name=value` joined by `&`, encoded like `url_encode`. A value that is not a text is shown as `print` shows it; a list gives the name once for each element.", "Scrive un record o un dizionario come query di un indirizzo web: dei `nome=valore` uniti da `&`, codificati come con `url_encode`. Un valore che non è un testo viene mostrato come lo mostra `print`; una lista dà il nome una volta per ogni elemento."),
         (
             r#"More functions on lists
-  find_index([3, 8, 5], is_even)          # Some(1)
-  sort_desc([3, 1, 2])                    # [3, 2, 1]  (sort_by_desc with a key)
-  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
-  most_common(words, 3)                   # the 3 most frequent, with their counts
-  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
-  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
-  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
-  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  find_index([3 8 5] is_even)          # Some(1)
+  sort_desc([3 1 2])                    # [3, 2, 1]  (sort_by_desc with a key)
+  tally(["a" "b" "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(words 3)                   # the 3 most frequent, with their counts
+  split_at([1 2 3] 1)                  # [[1], [2, 3]]
+  rotate_by([1 2 3] 1)                 # [2, 3, 1]
+  combinations([1 2 3] 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1 5 fn(x) = x * 2)            # [1, 2, 4, 8, 16]
   permutations(xs)   cartesian_product(xs, ys)   unzip(pairs)   zip(xs, ys, zs)
   filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#,
             r#"Altre funzioni sulle liste
-  find_index([3, 8, 5], is_even)          # Some(1)
-  sort_desc([3, 1, 2])                    # [3, 2, 1]  (sort_by_desc with a key)
-  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
-  most_common(words, 3)                   # i 3 più frequenti, con i loro conteggi
-  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
-  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
-  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
-  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  find_index([3 8 5] is_even)          # Some(1)
+  sort_desc([3 1 2])                    # [3, 2, 1]  (sort_by_desc with a key)
+  tally(["a" "b" "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(words 3)                   # i 3 più frequenti, con i loro conteggi
+  split_at([1 2 3] 1)                  # [[1], [2, 3]]
+  rotate_by([1 2 3] 1)                 # [2, 3, 1]
+  combinations([1 2 3] 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1 5 fn(x) = x * 2)            # [1, 2, 4, 8, 16]
   permutations(xs)   cartesian_product(xs, ys)   unzip(pairs)   zip(xs, ys, zs)
   filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#,
         ),
         (
             r##"More functions on texts
-  format(3.14159, ".2f")         # "3.14"  (the format specs of Python: ">8", ",d", ".1%", "#x"...)
-  center("hi", 6, "*")           # "**hi**"
-  replace_first("a-b-c", "-", "+")          # "a+b-c"
-  occurrences("banana", "an")    # 2
-  remove_prefix("Mr Smith", "Mr ")          # "Smith"  (and remove_suffix)
-  split_once("key=value", "=")   # Some(["key", "value"])
+  format(3.14159 ".2f")         # "3.14"  (the format specs of Python: ">8", ",d", ".1%", "#x"...)
+  center("hi" 6 "*")           # "**hi**"
+  replace_first("a-b-c" "-" "+")          # "a+b-c"
+  occurrences("banana" "an")    # 2
+  remove_prefix("Mr Smith" "Mr ")          # "Smith"  (and remove_suffix)
+  split_once("key=value" "=")   # Some(["key", "value"])
   snake_case("helloWorld")       # "hello_world"  (and camel_case, kebab_case)
   capitalize_words("ada lovelace")          # "Ada Lovelace"
-  word_wrap(text, 40)            # lines of at most 40 characters
+  word_wrap(text 40)            # lines of at most 40 characters
   to_base(255, 16)   from_base("ff", 16)    # "ff" and Ok(255)
-  edit_distance("kitten", "sitting")        # 3"##,
+  edit_distance("kitten" "sitting")        # 3"##,
             r##"Altre funzioni sui testi
-  format(3.14159, ".2f")         # "3.14"  (le specifiche di formato di Python: ">8", ",d", ".1%", "#x"...)
-  center("hi", 6, "*")           # "**hi**"
-  replace_first("a-b-c", "-", "+")          # "a+b-c"
-  occurrences("banana", "an")    # 2
-  remove_prefix("Mr Smith", "Mr ")          # "Smith"  (e remove_suffix)
-  split_once("key=value", "=")   # Some(["key", "value"])
+  format(3.14159 ".2f")         # "3.14"  (le specifiche di formato di Python: ">8", ",d", ".1%", "#x"...)
+  center("hi" 6 "*")           # "**hi**"
+  replace_first("a-b-c" "-" "+")          # "a+b-c"
+  occurrences("banana" "an")    # 2
+  remove_prefix("Mr Smith" "Mr ")          # "Smith"  (e remove_suffix)
+  split_once("key=value" "=")   # Some(["key", "value"])
   snake_case("helloWorld")       # "hello_world"  (e camel_case, kebab_case)
   capitalize_words("ada lovelace")          # "Ada Lovelace"
-  word_wrap(text, 40)            # righe di al massimo 40 caratteri
+  word_wrap(text 40)            # righe di al massimo 40 caratteri
   to_base(255, 16)   from_base("ff", 16)    # "ff" e Ok(255)
-  edit_distance("kitten", "sitting")        # 3"##,
+  edit_distance("kitten" "sitting")        # 3"##,
         ),
         (
             r#"More functions on records and dicts
-  dig(data, ["user", "langs", 0])           # Some(...), or None: deep inside
-  select_keys(person, ["name", "age"])      # only these keys (reject_keys: without them)
-  merge_with(a, b, fn(x, y) = x + y)        # f decides for a key in both
-  update(counts, "apples", 1, fn(n) = n + 1)  # +1, or 1 when missing
-  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  dig(data ["user" "langs" 0])           # Some(...), or None: deep inside
+  select_keys(person ["name" "age"])      # only these keys (reject_keys: without them)
+  merge_with(a b fn(x y) = x + y)        # f decides for a key in both
+  update(counts "apples" 1 fn(n) = n + 1)  # +1, or 1 when missing
+  invert({a: 1 b: 2})                      # dict(1 => "a", 2 => "b")
   map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#,
             r#"Altre funzioni su record e dizionari
-  dig(data, ["user", "langs", 0])           # Some(...), o None: in profondità
-  select_keys(person, ["name", "age"])      # solo queste chiavi (reject_keys: senza di esse)
-  merge_with(a, b, fn(x, y) = x + y)        # f decide per una chiave presente in entrambi
-  update(counts, "apples", 1, fn(n) = n + 1)  # +1, o 1 quando manca
-  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  dig(data ["user" "langs" 0])           # Some(...), o None: in profondità
+  select_keys(person ["name" "age"])      # solo queste chiavi (reject_keys: senza di esse)
+  merge_with(a b fn(x y) = x + y)        # f decide per una chiave presente in entrambi
+  update(counts "apples" 1 fn(n) = n + 1)  # +1, o 1 quando manca
+  invert({a: 1 b: 2})                      # dict(1 => "a", 2 => "b")
   map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#,
         ),
         (
             r#"More helpers
   unwrap_or_else(x, fn(e) = ...)   # the default, computed only when it is needed
-  expect(x, "a config file")       # like unwrap, with your message if it fails
-  all_ok(map(texts, parse_int))    # Ok([...]), or the first Err
-  filter_map(xs, f)                # the values of the Some(...) that f gives"#,
+  expect(x "a config file")       # like unwrap, with your message if it fails
+  all_ok(map(texts parse_int))    # Ok([...]), or the first Err
+  filter_map(xs f)                # the values of the Some(...) that f gives"#,
             r#"Altri aiuti
   unwrap_or_else(x, fn(e) = ...)   # il valore predefinito, calcolato solo quando serve
-  expect(x, "a config file")       # come unwrap, con il tuo messaggio se fallisce
-  all_ok(map(texts, parse_int))    # Ok([...]), o il primo Err
-  filter_map(xs, f)                # i valori dei Some(...) che f dà"#,
+  expect(x "a config file")       # come unwrap, con il tuo messaggio se fallisce
+  all_ok(map(texts parse_int))    # Ok([...]), o il primo Err
+  filter_map(xs f)                # i valori dei Some(...) che f dà"#,
         ),
         (
             r#"More on dates
-  add_months(date, 1)                       # 31 January + 1 month: the end of February
+  add_months(date 1)                       # 31 January + 1 month: the end of February
   day_of_year(date)                         # from 1 to 366
-  format_date(date, "%d/%m/%Y %H:%M")       # with a pattern: %Y %m %d %H %M %S %B %A...
-  parse_date("29/02/2024", "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#,
+  format_date(date "%d/%m/%Y %H:%M")       # with a pattern: %Y %m %d %H %M %S %B %A...
+  parse_date("29/02/2024" "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#,
             r#"Altro sulle date
-  add_months(date, 1)                       # 31 gennaio + 1 mese: la fine di febbraio
+  add_months(date 1)                       # 31 gennaio + 1 mese: la fine di febbraio
   day_of_year(date)                         # da 1 a 366
-  format_date(date, "%d/%m/%Y %H:%M")       # con un modello: %Y %m %d %H %M %S %B %A...
-  parse_date("29/02/2024", "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#,
+  format_date(date "%d/%m/%Y %H:%M")       # con un modello: %Y %m %d %H %M %S %B %A...
+  parse_date("29/02/2024" "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#,
         ),
         // src/cli.rs
         ("run a program; the words after the file are its arguments", "esegue un programma; le parole dopo il file sono i suoi argomenti"),
@@ -10496,18 +10498,19 @@ can be printed and read again. Rythme keeps that spirit, with values that
 never change and errors that are values:
 
   page = read("https://example.com")       # read http://example.com
-  write("copy.html", unwrap_or(page, ""))  # write %copy.html page
+  write("copy.html" unwrap_or(page ""))  # write %copy.html page
   name = ask("Your name? ")                # name: ask "Your name? "
-  print(rejoin(["Hello, ", name, "!"]))    # print rejoin ["Hello, " name "!"]
-  [1, 2, 3] |> probe |> sum |> print       # probe shows [1, 2, 3], then 6
+  print(rejoin(["Hello, " name "!"]))    # print rejoin ["Hello, " name "!"]
+  [1 2 3] |> probe |> sum |> print       # probe shows [1, 2, 3], then 6
 
 The same as in REBOL
   words that say what they do   print probe ask read write now random
   names with ?                  length? empty? exists? found? none? zero?
                                 even? odd? (a question gives true or false)
   symbols                       :ok, like 'ok in REBOL (a word as a value)
-  blocks are lists              [1, 2, 3], with first, last, reverse, sort,
-                                unique; first and last give an Option
+  blocks without commas         [1 2 3], f(a b), print a b, {name: "Ada" age: 36};
+                                first, last, reverse, sort, unique (first and
+                                last give an Option)
   help                          help(map), rythme help map; rythme help
                                 builtins lists every function, as what does
 
@@ -10528,8 +10531,7 @@ What is written differently
   loop 3 [...], repeat i 3 [...]
                                 (1..3).each do |i| ... end
   foreach x xs [...]            foreach xs do |x| ... end, or xs.each(f)
-  [1 2 3]                       [1, 2, 3]: elements are separated by commas
-  f a b                         f(a, b), or f a, b at the start of a line
+  f a b                         f(a b), or f a b at the start of a line
   ; a comment                   # a comment
   obj/field, make object! [...] obj.field, and records {name: "Ada", age: 36}
   append xs 4                   push(xs, 4): a new list, xs stays as it was
@@ -10549,18 +10551,19 @@ conserva lo spirito, con valori che non cambiano mai ed errori che sono
 valori:
 
   page = read("https://example.com")       # read http://example.com
-  write("copy.html", unwrap_or(page, ""))  # write %copy.html page
+  write("copy.html" unwrap_or(page ""))  # write %copy.html page
   name = ask("Il tuo nome? ")              # name: ask "Il tuo nome? "
-  print(rejoin(["Ciao, ", name, "!"]))     # print rejoin ["Ciao, " name "!"]
-  [1, 2, 3] |> probe |> sum |> print       # probe mostra [1, 2, 3], poi 6
+  print(rejoin(["Ciao, " name "!"]))     # print rejoin ["Ciao, " name "!"]
+  [1 2 3] |> probe |> sum |> print       # probe mostra [1, 2, 3], poi 6
 
 Come in REBOL
   parole chiare                 print probe ask read write now random
   nomi con ?                    length? empty? exists? found? none? zero?
                                 even? odd? (una domanda dà true o false)
   simboli                       :ok, come 'ok in REBOL (una parola come valore)
-  i blocchi sono liste          [1, 2, 3], con first, last, reverse, sort,
-                                unique; first e last danno un Option
+  blocchi senza virgole         [1 2 3], f(a b), print a b, {nome: "Ada" eta: 36};
+                                first, last, reverse, sort, unique (first e
+                                last danno un Option)
   l'aiuto                       help(map), rythme help map; rythme help
                                 builtins elenca tutte le funzioni, come what
 
@@ -10581,9 +10584,7 @@ Ciò che si scrive in un altro modo
   loop 3 [...], repeat i 3 [...]
                                 (1..3).each do |i| ... end
   foreach x xs [...]            foreach xs do |x| ... end, o xs.each(f)
-  [1 2 3]                       [1, 2, 3]: gli elementi sono separati da
-                                virgole
-  f a b                         f(a, b), o f a, b all'inizio di una riga
+  f a b                         f(a b), o f a b all'inizio di una riga
   ; un commento                 # un commento
   obj/campo, make object! [...] obj.campo, e i record {nome: "Ada", eta: 36}
   append xs 4                   push(xs, 4): una lista nuova, xs resta com'è

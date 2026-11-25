@@ -79,10 +79,10 @@ fonction à écrire sous la forme `fail("à faire")`. En voici un qu'un
 
 ```rythme
 ## Renvoie le plus grand élément d'une liste non vide.
-fn plus_grand(liste) = fold(liste, 0, max)
+fn plus_grand(liste) = fold(liste 0 max)
 
-test "un élément" = assert_eq(plus_grand([7]), 7)
-test "plusieurs" = assert_eq(plus_grand([3, 9, 2]), 9)
+test "un élément" = assert_eq(plus_grand([7]) 7)
+test "plusieurs" = assert_eq(plus_grand([3 9 2]) 9)
 test "négatifs" = assert_eq(plus_grand([-3, -1, -2]), -1)
 ```
 
@@ -163,7 +163,7 @@ notes :
 fn note(f) = if f.broken then "{f.file} : ne fonctionne pas" else "{f.file} : {f.tests - f.failed}/{f.tests}"
 
 resultats = read_file(args()[0]) |> unwrap |> parse_json |> unwrap
-each(resultats.files, fn(f) = print(note(f)))
+each(resultats.files fn(f) = print(note(f)))
 ```
 
 `rythme notes.ry resultats.json` affiche :

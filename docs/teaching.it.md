@@ -78,10 +78,10 @@ un errore classico:
 
 ```rythme
 ## Restituisce l'elemento più grande di una lista non vuota.
-fn largest(list) = fold(list, 0, max)
+fn largest(list) = fold(list 0 max)
 
-test "un elemento" = assert_eq(largest([7]), 7)
-test "più elementi" = assert_eq(largest([3, 9, 2]), 9)
+test "un elemento" = assert_eq(largest([7]) 7)
+test "più elementi" = assert_eq(largest([3 9 2]) 9)
 test "negativi" = assert_eq(largest([-3, -1, -2]), -1)
 ```
 
@@ -158,7 +158,7 @@ Rythme legge il JSON da sé. Questo programma trasforma i risultati in voti:
 fn grade(f) = if f.broken then "{f.file}: non funziona" else "{f.file}: {f.tests - f.failed}/{f.tests}"
 
 results = read_file(args()[0]) |> unwrap |> parse_json |> unwrap
-each(results.files, fn(f) = print(grade(f)))
+each(results.files fn(f) = print(grade(f)))
 ```
 
 `rythme grades.ry results.json` stampa:

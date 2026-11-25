@@ -7,23 +7,23 @@ sheet = "name;maths;physics;comment\r\n"
   + "Alan;16;19;\r\n"
   + "Grace;19;15,5;\"says \"\"it's a bug\"\"\"\r\n"
 
-fn grade(field) = unwrap_or(parse_float(replace(field, ",", ".")), 0.0)
+fn grade(field) = unwrap_or(parse_float(replace(field "," ".")) 0.0)
 
-fn average(student) = round((grade(student.maths) + grade(student.physics)) / 2, 2)
+fn average(student) = round((grade(student.maths) + grade(student.physics)) / 2 2)
 
 fn report(students)
-  results = map(students, fn(s) = {name: s.name, average: average(s)})
-  each(results, fn(r) = print(pad_right(r.name, 6), pad_left(text(r.average, 2), 6)))
-  best = max_by(results, fn(r) = r.average)
+  results = map(students fn(s) = {name: s.name average: average(s)})
+  each(results fn(r) = print(pad_right(r.name 6) pad_left(text(r.average 2) 6)))
+  best = max_by(results fn(r) = r.average)
   print("Best: {best.name}; comments: {students |> map(fn(s) = s.comment) |> reject(is_empty)}")
   print(trim_end(csv_format(results)))
   random_seed(2026)
   print("Oral exams, in this order: {join(shuffle(map(students, fn(s) = s.name)), ", ")}")
 end
 
-match csv_records(sheet, ";")
+match csv_records(sheet ";")
   Ok(students) -> report(students)
   Err(e) -> print("The sheet is not valid CSV: {e}")
 end
 
-print(csv_records("name;maths\nAda;18;20", ";"))
+print(csv_records("name;maths\nAda;18;20" ";"))

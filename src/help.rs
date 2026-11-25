@@ -705,7 +705,7 @@ const KEYWORD_DOCS: &[(&str, &str, &str, &str, &str)] = &[
         "async",
         "Before `fn`, at the top level of a file: `async fn name(x) = ...` defines a function whose call starts it at once and gives a Task; `await task` gives its result. Tasks run at the same time, on other cores: start several, then await them. `async` is a keyword only before `fn`; elsewhere it is a name like any other.",
         "Devant `fn`, au premier niveau d'un fichier : `async fn nom(x) = ...` définit une fonction dont l'appel la lance aussitôt et donne une Task ; `await tâche` donne son résultat. Les tâches tournent en même temps, sur d'autres cœurs : lancez-en plusieurs, puis attendez-les. `async` n'est un mot-clé que devant `fn` ; ailleurs, c'est un nom comme un autre.",
-        "async fn square(x) = x * x\ntasks = [1, 2, 3] |> map(square)\nprint(await_all(tasks))    # [1, 4, 9]",
+        "async fn square(x) = x * x\ntasks = [1 2 3] |> map(square)\nprint(await_all(tasks))    # [1, 4, 9]",
         "functions",
     ),
     (
@@ -747,7 +747,7 @@ const KEYWORD_DOCS: &[(&str, &str, &str, &str, &str)] = &[
         "match",
         "Chooses according to the shape of a value: one case per line, `pattern -> result`, finished by `end`. Cases are tried in order, and `rythme check` warns about forgotten cases.",
         "Choisit selon la forme d'une valeur : un cas par ligne, `motif -> résultat`, terminé par `end`. Les cas sont essayés dans l'ordre, et `rythme check` signale les cas oubliés.",
-        "match list\n  [] -> \"empty\"\n  [x, ..rest] -> \"starts with {x}\"\nend",
+        "match list\n  [] -> \"empty\"\n  [x ..rest] -> \"starts with {x}\"\nend",
         "match",
     ),
     (
@@ -768,14 +768,14 @@ const KEYWORD_DOCS: &[(&str, &str, &str, &str, &str)] = &[
         "type",
         "Defines your own type and its variants. Each variant is a constructor, with or without fields.",
         "Définit votre propre type et ses variantes. Chaque variante est un constructeur, avec ou sans champs.",
-        "type Shape = Circle(radius) | Rect(width, height)",
+        "type Shape = Circle(radius) | Rect(width height)",
         "types",
     ),
     (
         "test",
         "Defines a test, next to the code. `rythme test file.ry` runs the tests of the file.",
         "Définit un test, à côté du code. `rythme test fichier.ry` lance les tests du fichier.",
-        "test \"double works\" = assert_eq(double(21), 42)",
+        "test \"double works\" = assert_eq(double(21) 42)",
         "tests",
     ),
     (
@@ -1039,7 +1039,7 @@ const that never changes (arrays and objects too), there is no null, no
 undefined and no exceptions, and == never converts. What you write every
 day has a short equivalent:
 
-  names = ["Ada", "Grace", "Alan"]
+  names = ["Ada" "Grace" "Alan"]
   names.each(fn(n) = print("Hi {n}!"))
 
   [3, 1, 2]
@@ -1047,8 +1047,8 @@ day has a short equivalent:
     .map(fn(x) = x * 10)
     .sort()                      # [20, 30]
 
-  person = {name: "Ada", langs: ["fr"]}
-  older = {..person, age: 36}    # {...person, age: 36}
+  person = {name: "Ada" langs: ["fr"]}
+  older = {..person age: 36}    # {...person, age: 36}
 
 The language
   const x = 1                    x = 1 (a name never changes)
@@ -1115,7 +1115,7 @@ une constante qui ne change jamais (tableaux et objets aussi), il n'y a ni
 null, ni undefined, ni exceptions, et == ne convertit jamais. Ce que vous
 écrivez tous les jours a un équivalent court :
 
-  names = ["Ada", "Grace", "Alan"]
+  names = ["Ada" "Grace" "Alan"]
   names.each(fn(n) = print("Salut {n} !"))
 
   [3, 1, 2]
@@ -1123,8 +1123,8 @@ null, ni undefined, ni exceptions, et == ne convertit jamais. Ce que vous
     .map(fn(x) = x * 10)
     .sort()                      # [20, 30]
 
-  personne = {name: "Ada", langs: ["fr"]}
-  plus_age = {..personne, age: 36}   # {...personne, age: 36}
+  personne = {name: "Ada" langs: ["fr"]}
+  plus_age = {..personne age: 36}   # {...personne, age: 36}
 
 Le langage
   const x = 1                    x = 1 (un nom ne change jamais)
@@ -1189,7 +1189,7 @@ const RUBY_EN: &str = r#"COMING FROM RUBY
 Rythme reads like Ruby, but its values never change: no mutation, no nil,
 no exceptions. What you know from Ruby mostly works:
 
-  names = ["Ada", "Grace", "Alan"]
+  names = ["Ada" "Grace" "Alan"]
   names.each do |name|
     puts "Hello, #{name}!"
   end
@@ -1271,7 +1271,7 @@ Rythme se lit comme Ruby, mais ses valeurs ne changent jamais : pas de
 mutation, pas de nil, pas d'exceptions. Ce que vous savez de Ruby marche
 presque toujours :
 
-  noms = ["Ada", "Grace", "Alan"]
+  noms = ["Ada" "Grace" "Alan"]
   noms.each do |nom|
     puts "Bonjour, #{nom} !"
   end
@@ -1360,18 +1360,19 @@ can be printed and read again. Rythme keeps that spirit, with values that
 never change and errors that are values:
 
   page = read("https://example.com")       # read http://example.com
-  write("copy.html", unwrap_or(page, ""))  # write %copy.html page
+  write("copy.html" unwrap_or(page ""))  # write %copy.html page
   name = ask("Your name? ")                # name: ask "Your name? "
-  print(rejoin(["Hello, ", name, "!"]))    # print rejoin ["Hello, " name "!"]
-  [1, 2, 3] |> probe |> sum |> print       # probe shows [1, 2, 3], then 6
+  print(rejoin(["Hello, " name "!"]))    # print rejoin ["Hello, " name "!"]
+  [1 2 3] |> probe |> sum |> print       # probe shows [1, 2, 3], then 6
 
 The same as in REBOL
   words that say what they do   print probe ask read write now random
   names with ?                  length? empty? exists? found? none? zero?
                                 even? odd? (a question gives true or false)
   symbols                       :ok, like 'ok in REBOL (a word as a value)
-  blocks are lists              [1, 2, 3], with first, last, reverse, sort,
-                                unique; first and last give an Option
+  blocks without commas         [1 2 3], f(a b), print a b, {name: "Ada" age: 36};
+                                first, last, reverse, sort, unique (first and
+                                last give an Option)
   help                          help(map), rythme help map; rythme help
                                 builtins lists every function, as what does
 
@@ -1392,8 +1393,7 @@ What is written differently
   loop 3 [...], repeat i 3 [...]
                                 (1..3).each do |i| ... end
   foreach x xs [...]            foreach xs do |x| ... end, or xs.each(f)
-  [1 2 3]                       [1, 2, 3]: elements are separated by commas
-  f a b                         f(a, b), or f a, b at the start of a line
+  f a b                         f(a b), or f a b at the start of a line
   ; a comment                   # a comment
   obj/field, make object! [...] obj.field, and records {name: "Ada", age: 36}
   append xs 4                   push(xs, 4): a new list, xs stays as it was
@@ -1414,18 +1414,19 @@ web, des valeurs qu'on peut afficher puis relire. Rythme garde cet esprit,
 avec des valeurs qui ne changent jamais et des erreurs qui sont des valeurs :
 
   page = read("https://example.com")       # read http://example.com
-  write("copie.html", unwrap_or(page, "")) # write %copie.html page
+  write("copie.html" unwrap_or(page "")) # write %copie.html page
   nom = ask("Votre nom ? ")                # nom: ask "Votre nom ? "
-  print(rejoin(["Bonjour, ", nom, " !"]))  # print rejoin ["Bonjour, " nom " !"]
-  [1, 2, 3] |> probe |> sum |> print       # probe montre [1, 2, 3], puis 6
+  print(rejoin(["Bonjour, " nom " !"]))  # print rejoin ["Bonjour, " nom " !"]
+  [1 2 3] |> probe |> sum |> print       # probe montre [1, 2, 3], puis 6
 
 Comme en REBOL
   des mots clairs               print probe ask read write now random
   des noms avec ?               length? empty? exists? found? none? zero?
                                 even? odd? (une question donne true ou false)
   les symboles                  :ok, comme 'ok en REBOL (un mot comme valeur)
-  les blocs sont des listes     [1, 2, 3], avec first, last, reverse, sort,
-                                unique ; first et last donnent une Option
+  des blocs sans virgules       [1 2 3], f(a b), print a b, {nom: "Ada" age: 36} ;
+                                first, last, reverse, sort, unique (first et
+                                last donnent une Option)
   l'aide                        help(map), rythme help map ; rythme help
                                 builtins liste toutes les fonctions, comme what
 
@@ -1446,9 +1447,7 @@ Ce qui s'écrit autrement
   loop 3 [...], repeat i 3 [...]
                                 (1..3).each do |i| ... end
   foreach x xs [...]            foreach xs do |x| ... end, ou xs.each(f)
-  [1 2 3]                       [1, 2, 3] : les éléments sont séparés par des
-                                virgules
-  f a b                         f(a, b), ou f a, b en début de ligne
+  f a b                         f(a b), ou f a b en début de ligne
   ; un commentaire              # un commentaire
   obj/champ, make object! [...] obj.champ, et les enregistrements
                                 {nom: "Ada", age: 36}
@@ -1564,16 +1563,16 @@ Values
   "hello"   "total: {x}"         texts (Text); {...} (or #{...}) inserts a value
   true   false                   booleans (Bool)
   :ok   :error                   symbols (Symbol): a name used as a value
-  [1, 2, 3]                      lists
-  {name: "Ada", age: 36}         records
+  [1 2 3]                        lists; commas are optional, as in REBOL
+  {name: "Ada" age: 36}          records
   Some(3)   None                 a value that may be missing (Option)
   Ok(3)   Err("oops")            a result that may fail (Result)
   1..5                           the list [1, 2, 3, 4, 5]
 
 Names
   x = 5                          a name for a value; it never changes
-  [a, b] = [1, 2]                take a value apart
-  {name, age} = person
+  [a b] = [1 2]                  take a value apart
+  {name age} = person
 
 Operators
   + - * /   // (whole division)   % (remainder)   ** (power)
@@ -1619,15 +1618,15 @@ Several steps inside an expression
   end
 
 Your own types
-  type Shape = Circle(radius) | Rect(width, height)
+  type Shape = Circle(radius) | Rect(width height)
 
 Types written in the code (optional, checked by rythme check)
-  fn area(w: Int, h: Int) -> Int = w * h
+  fn area(w: Int h: Int) -> Int = w * h
   total: Float = 0.0
   type Box(a) = Box(value: a)    a type that takes a type: Box(Int), Box(Text)
 
 Tests and other files
-  test "double works" = assert_eq(double(2), 4)
+  test "double works" = assert_eq(double(2) 4)
   use geometry                   then geometry.area(2)
 
 Comments
@@ -1642,16 +1641,16 @@ Valeurs
   "bonjour"   "total : {x}"      textes (Text) ; {...} (ou #{...}) insère une valeur
   true   false                   booléens (Bool)
   :ok   :erreur                  symboles (Symbol) : un nom utilisé comme valeur
-  [1, 2, 3]                      listes
-  {nom: "Ada", age: 36}          enregistrements
+  [1 2 3]                        listes ; les virgules sont facultatives, comme en REBOL
+  {nom: "Ada" age: 36}           enregistrements
   Some(3)   None                 une valeur qui peut manquer (Option)
   Ok(3)   Err("oups")            un résultat qui peut échouer (Result)
   1..5                           la liste [1, 2, 3, 4, 5]
 
 Noms
   x = 5                          un nom pour une valeur ; il ne change jamais
-  [a, b] = [1, 2]                décomposer une valeur
-  {nom, age} = personne
+  [a b] = [1 2]                  décomposer une valeur
+  {nom age} = personne
 
 Opérateurs
   + - * /   // (division entière)   % (reste)   ** (puissance)
@@ -1697,15 +1696,15 @@ Plusieurs étapes dans une expression
   end
 
 Vos propres types
-  type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+  type Forme = Cercle(rayon) | Rect(largeur hauteur)
 
 Types écrits dans le code (facultatifs, vérifiés par rythme check)
-  fn aire(l: Int, h: Int) -> Int = l * h
+  fn aire(l: Int h: Int) -> Int = l * h
   total: Float = 0.0
   type Boite(a) = Boite(valeur: a)   un type qui prend un type : Boite(Int), Boite(Text)
 
 Tests et autres fichiers
-  test "double marche" = assert_eq(double(2), 4)
+  test "double marche" = assert_eq(double(2) 4)
   use geometrie                  puis geometrie.aire(2)
 
 Commentaires
@@ -1715,8 +1714,8 @@ Commentaires
 const FUNCTIONS_EN: &str = r#"FUNCTIONS
 
 Define and call
-  fn add(a, b) = a + b
-  add(2, 3)                      # 5
+  fn add(a b) = a + b
+  add(2 3)                      # 5
 
 On several lines: the last expression is the result
   fn describe(n)
@@ -1736,8 +1735,8 @@ With a condition (a guard)
 
 Functions are values
   double = fn(x) = x * 2
-  [1, 2, 3] |> map(double)       # [2, 4, 6]
-  [1, 2, 3] |> map(fn(x) = x + 1)
+  [1 2 3] |> map(double)       # [2, 4, 6]
+  [1 2 3] |> map(fn(x) = x + 1)
 
 Pipes read from left to right
   "  Hello  " |> trim |> upper   # "HELLO"
@@ -1748,7 +1747,7 @@ Method style
 
 Documentation
   ## Adds two numbers.
-  fn add(a, b) = a + b
+  fn add(a b) = a + b
   help(add)                      # shows "Adds two numbers."
 
 Recursion without limit
@@ -1763,8 +1762,8 @@ Recursion without limit
 const FUNCTIONS_FR: &str = r#"FONCTIONS
 
 Définir et appeler
-  fn ajouter(a, b) = a + b
-  ajouter(2, 3)                  # 5
+  fn ajouter(a b) = a + b
+  ajouter(2 3)                  # 5
 
 Sur plusieurs lignes : la dernière expression est le résultat
   fn decrire(n)
@@ -1784,8 +1783,8 @@ Avec une condition (une garde)
 
 Les fonctions sont des valeurs
   double = fn(x) = x * 2
-  [1, 2, 3] |> map(double)       # [2, 4, 6]
-  [1, 2, 3] |> map(fn(x) = x + 1)
+  [1 2 3] |> map(double)       # [2, 4, 6]
+  [1 2 3] |> map(fn(x) = x + 1)
 
 Les enchaînements se lisent de gauche à droite
   "  Salut  " |> trim |> upper   # "SALUT"
@@ -1796,7 +1795,7 @@ Style méthode
 
 Documentation
   ## Additionne deux nombres.
-  fn ajouter(a, b) = a + b
+  fn ajouter(a b) = a + b
   help(ajouter)                  # affiche "Additionne deux nombres."
 
 Récursion sans limite
@@ -1810,7 +1809,7 @@ Récursion sans limite
 
 const LISTS_EN: &str = r#"LISTS
 
-  numbers = [3, 1, 2]
+  numbers = [3 1 2]
   numbers[0]                     # 3 (the first; -1 is the last)
   len(numbers)                   # 3
   1..5                           # [1, 2, 3, 4, 5]
@@ -1818,25 +1817,25 @@ const LISTS_EN: &str = r#"LISTS
   numbers + [9]                  # [3, 1, 2, 9]
 
 Work on the whole list (no loops needed)
-  map(numbers, fn(x) = x * 10)            # [30, 10, 20]
-  filter(numbers, fn(x) = x > 1)          # [3, 2]
-  fold(numbers, 0, fn(acc, x) = acc + x)  # 6
+  map(numbers fn(x) = x * 10)            # [30, 10, 20]
+  filter(numbers fn(x) = x > 1)          # [3, 2]
+  fold(numbers 0 fn(acc x) = acc + x)  # 6
   sort(numbers)                           # [1, 2, 3]
   numbers |> each(fn(x) = print(x))       # prints each element
 
 Safe access (never an error)
   first([])                      # None
-  get(numbers, 10)               # None
+  get(numbers 10)               # None
 
 "Change" a list: you get a new list, the old one stays the same
-  set_at(numbers, 0, 9)          # [9, 1, 2]
-  insert_at(numbers, 1, 7)       # [3, 7, 1, 2]
+  set_at(numbers 0 9)          # [9, 1, 2]
+  insert_at(numbers 1 7)       # [3, 7, 1, 2]
   remove_at(numbers, -1)         # [3, 1]
 
 Pieces of a list
-  take_while(numbers, fn(x) = x > 2)      # [3]
-  chunks([1, 2, 3, 4, 5], 2)              # [[1, 2], [3, 4], [5]]
-  windows([1, 2, 3], 2)                   # [[1, 2], [2, 3]]
+  take_while(numbers fn(x) = x > 2)      # [3]
+  chunks([1 2 3 4 5] 2)              # [[1, 2], [3, 4], [5]]
+  windows([1 2 3] 2)                   # [[1, 2], [2, 3]]
   0..10 |> step_by(5)                     # [0, 5, 10]
 
 Take a list apart with patterns
@@ -1849,7 +1848,7 @@ All the functions: rythme help builtins"#;
 
 const LISTS_FR: &str = r#"LISTES
 
-  nombres = [3, 1, 2]
+  nombres = [3 1 2]
   nombres[0]                     # 3 (le premier ; -1 est le dernier)
   len(nombres)                   # 3
   1..5                           # [1, 2, 3, 4, 5]
@@ -1857,25 +1856,25 @@ const LISTS_FR: &str = r#"LISTES
   nombres + [9]                  # [3, 1, 2, 9]
 
 Travailler sur toute la liste (pas besoin de boucles)
-  map(nombres, fn(x) = x * 10)            # [30, 10, 20]
-  filter(nombres, fn(x) = x > 1)          # [3, 2]
-  fold(nombres, 0, fn(acc, x) = acc + x)  # 6
+  map(nombres fn(x) = x * 10)            # [30, 10, 20]
+  filter(nombres fn(x) = x > 1)          # [3, 2]
+  fold(nombres 0 fn(acc x) = acc + x)  # 6
   sort(nombres)                           # [1, 2, 3]
   nombres |> each(fn(x) = print(x))       # affiche chaque élément
 
 Accès sûr (jamais d'erreur)
   first([])                      # None
-  get(nombres, 10)               # None
+  get(nombres 10)               # None
 
 « Modifier » une liste : on obtient une nouvelle liste, l'ancienne ne change pas
-  set_at(nombres, 0, 9)          # [9, 1, 2]
-  insert_at(nombres, 1, 7)       # [3, 7, 1, 2]
+  set_at(nombres 0 9)          # [9, 1, 2]
+  insert_at(nombres 1 7)       # [3, 7, 1, 2]
   remove_at(nombres, -1)         # [3, 1]
 
 Des morceaux d'une liste
-  take_while(nombres, fn(x) = x > 2)      # [3]
-  chunks([1, 2, 3, 4, 5], 2)              # [[1, 2], [3, 4], [5]]
-  windows([1, 2, 3], 2)                   # [[1, 2], [2, 3]]
+  take_while(nombres fn(x) = x > 2)      # [3]
+  chunks([1 2 3 4 5] 2)              # [[1, 2], [3, 4], [5]]
+  windows([1 2 3] 2)                   # [[1, 2], [2, 3]]
   0..10 |> step_by(5)                     # [0, 5, 10]
 
 Décomposer une liste avec des motifs
@@ -1894,21 +1893,21 @@ const TEXT_EN: &str = r#"TEXT
   "a" + "b"                      # "ab"
   len("été")                     # 3 (characters, accents included)
   upper("abc")   lower("ABC")   trim("  x  ")
-  split("a,b,c", ",")            # ["a", "b", "c"]
-  join(["a", "b"], "-")          # "a-b"
-  replace("2024", "4", "5")      # "2025"
-  contains("hello", "ell")       # true
+  split("a,b,c" ",")            # ["a", "b", "c"]
+  join(["a" "b"] "-")          # "a-b"
+  replace("2024" "4" "5")      # "2025"
+  contains("hello" "ell")       # true
   text(42)                       # "42"
-  text(3.14159, 2)               # "3.14" (a number with 2 decimals)
-  pad_left("7", 3, "0")          # "007"  (and pad_right: to line up columns)
+  text(3.14159 2)               # "3.14" (a number with 2 decimals)
+  pad_left("7" 3 "0")          # "007"  (and pad_right: to line up columns)
   char_code("A")   char(66)      # 65 and "B"
   int("42")                      # 42
   parse_int("x42")               # Err(...): a conversion that cannot crash
   trim_start("  x")   trim_end("x  ")
   words("Hi, you!")              # ["Hi", "you"]
-  equals_ignore_case("Ada", "ADA")          # true
-  format_number(1234.5, 2)       # "1,234.50"   (with "fr": "1 234,50")
-  find_all("3 cats, 12 dogs", "[0-9]+")     # ["3", "12"]  (regexes: rythme help regex)
+  equals_ignore_case("Ada" "ADA")          # true
+  format_number(1234.5 2)       # "1,234.50"   (with "fr": "1 234,50")
+  find_all("3 cats, 12 dogs" "[0-9]+")     # ["3", "12"]  (regexes: rythme help regex)
 
 Special characters: \n (new line), \t (tab), \r (carriage return),
 \0 (null character), \" (quote), \\ (backslash), \{ and \} (braces, because
@@ -1922,21 +1921,21 @@ const TEXT_FR: &str = r#"TEXTE
   "a" + "b"                      # "ab"
   len("été")                     # 3 (caractères, accents compris)
   upper("abc")   lower("ABC")   trim("  x  ")
-  split("a,b,c", ",")            # ["a", "b", "c"]
-  join(["a", "b"], "-")          # "a-b"
-  replace("2024", "4", "5")      # "2025"
-  contains("bonjour", "jour")    # true
+  split("a,b,c" ",")            # ["a", "b", "c"]
+  join(["a" "b"] "-")          # "a-b"
+  replace("2024" "4" "5")      # "2025"
+  contains("bonjour" "jour")    # true
   text(42)                       # "42"
-  text(3.14159, 2)               # "3.14" (un nombre avec 2 décimales)
-  pad_left("7", 3, "0")          # "007"  (et pad_right : pour aligner des colonnes)
+  text(3.14159 2)               # "3.14" (un nombre avec 2 décimales)
+  pad_left("7" 3 "0")          # "007"  (et pad_right : pour aligner des colonnes)
   char_code("A")   char(66)      # 65 et "B"
   int("42")                      # 42
   parse_int("x42")               # Err(...) : une conversion qui ne plante jamais
   trim_start("  x")   trim_end("x  ")
   words("Salut, toi !")          # ["Salut", "toi"]
-  equals_ignore_case("Ada", "ADA")          # true
-  format_number(1234.5, 2, "fr")            # "1 234,50"
-  find_all("3 chats, 12 chiens", "[0-9]+")  # ["3", "12"]  (les regex : rythme help regex)
+  equals_ignore_case("Ada" "ADA")          # true
+  format_number(1234.5 2 "fr")            # "1 234,50"
+  find_all("3 chats, 12 chiens" "[0-9]+")  # ["3", "12"]  (les regex : rythme help regex)
 
 Caractères spéciaux : \n (nouvelle ligne), \t (tabulation), \r (retour
 chariot), \0 (caractère nul), \" (guillemet), \\ (barre oblique inverse),
@@ -1946,27 +1945,27 @@ par son numéro Unicode : é)."#;
 const RECORDS_EN: &str = r#"RECORDS
 
 A record groups named values:
-  ada = {name: "Ada", born: 1815}
+  ada = {name: "Ada" born: 1815}
   ada.name                       # "Ada"
   ada["name"]                    # "Ada"
 
 Records never change: build a new one from an old one
-  older = {..ada, born: 1816}    # same fields, `born` replaced
+  older = {..ada born: 1816}    # same fields, `born` replaced
 
 Take apart
-  {name, born} = ada
+  {name born} = ada
   fn greet({name}) = "Hello {name}"
 
 Useful functions
   keys(ada)   values(ada)   has(ada, "name")   get(ada, "x")   put(ada, "x", 1)
   entries(ada)                   # [["name", "Ada"], ["born", 1815]]
-  from_entries([["x", 1]])       # {x: 1}
+  from_entries([["x" 1]])       # {x: 1}
 
 Records as dictionaries
   counts = {apple: 2}
-  put(counts, "pear", 5)         # {apple: 2, pear: 5}
-  map_values(counts, fn(n) = n * 10)      # {apple: 20}
-  group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+  put(counts "pear" 5)         # {apple: 2, pear: 5}
+  map_values(counts fn(n) = n * 10)      # {apple: 20}
+  group_by(["a" "b" "a"] fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
   For keys that are not names (numbers, lists...), use a dict: rythme help dicts
 
 JSON, the format of data on the web
@@ -1976,27 +1975,27 @@ JSON, the format of data on the web
 const RECORDS_FR: &str = r#"ENREGISTREMENTS
 
 Un enregistrement regroupe des valeurs nommées :
-  ada = {nom: "Ada", naissance: 1815}
+  ada = {nom: "Ada" naissance: 1815}
   ada.nom                        # "Ada"
   ada["nom"]                     # "Ada"
 
 Les enregistrements ne changent jamais : on en construit un nouveau
-  autre = {..ada, naissance: 1816}   # mêmes champs, `naissance` remplacé
+  autre = {..ada naissance: 1816}   # mêmes champs, `naissance` remplacé
 
 Décomposer
-  {nom, naissance} = ada
+  {nom naissance} = ada
   fn saluer({nom}) = "Bonjour {nom}"
 
 Fonctions utiles
   keys(ada)   values(ada)   has(ada, "nom")   get(ada, "x")   put(ada, "x", 1)
   entries(ada)                   # [["nom", "Ada"], ["naissance", 1815]]
-  from_entries([["x", 1]])       # {x: 1}
+  from_entries([["x" 1]])       # {x: 1}
 
 Les enregistrements comme dictionnaires
   compte = {pomme: 2}
-  put(compte, "poire", 5)        # {pomme: 2, poire: 5}
-  map_values(compte, fn(n) = n * 10)      # {pomme: 20}
-  group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+  put(compte "poire" 5)        # {pomme: 2, poire: 5}
+  map_values(compte fn(n) = n * 10)      # {pomme: 20}
+  group_by(["a" "b" "a"] fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
   Pour des clés qui ne sont pas des noms (nombres, listes...), utilisez un
   dictionnaire : rythme help dicts
 
@@ -2011,8 +2010,8 @@ Err(message) with a message that says what went wrong.
 
 Files and folders (relative paths start in the current folder)
   read_file("notes.txt")         # Ok("...") or Err("file not found: notes.txt")
-  write_file("out.txt", "hi")    # Ok(()), replaces the content
-  append_file("log.txt", "done\n")
+  write_file("out.txt" "hi")    # Ok(()), replaces the content
+  append_file("log.txt" "done\n")
   file_exists("notes.txt")       # true or false
   file_info("notes.txt")         # Ok({is_folder: false, size: 11}), in bytes
   list_folder(".")               # Ok(["notes.txt", "photos"]), in order
@@ -2020,7 +2019,7 @@ Files and folders (relative paths start in the current folder)
   delete_file("old.txt")         # Ok(()); never a folder
 
 Paths that work on Linux, macOS and Windows
-  join_path(["data", "notes.txt"])       # "data/notes.txt"
+  join_path(["data" "notes.txt"])       # "data/notes.txt"
   split_path("/home/ada/notes.txt")      # ["/", "home", "ada", "notes.txt"]
   split_path("C:\Users\ada")             # ["C:\", "Users", "ada"]
 
@@ -2028,7 +2027,7 @@ The command line: rythme tool.ry --verbose --name=Ada notes.txt
   args()                         # ["--verbose", "--name=Ada", "notes.txt"]
   options()                      # Ok({args: ["notes.txt"], verbose: true, name: "Ada"})
   opts = unwrap(options())
-  name = unwrap_or(get(opts, "name"), "World")   # an option that may be missing
+  name = unwrap_or(get(opts "name") "World")   # an option that may be missing
   env("HOME")                    # Some("/home/ada") or None
 
 The standard input: rythme count.ry < names.txt
@@ -2052,8 +2051,8 @@ Err(message) avec un message qui dit ce qui ne va pas.
 
 Fichiers et dossiers (les chemins relatifs partent du dossier courant)
   read_file("notes.txt")         # Ok("...") ou Err("fichier introuvable : notes.txt")
-  write_file("out.txt", "salut") # Ok(()), remplace le contenu
-  append_file("journal.txt", "fini\n")
+  write_file("out.txt" "salut") # Ok(()), remplace le contenu
+  append_file("journal.txt" "fini\n")
   file_exists("notes.txt")       # true ou false
   file_info("notes.txt")         # Ok({is_folder: false, size: 11}), en octets
   list_folder(".")               # Ok(["notes.txt", "photos"]), dans l'ordre
@@ -2061,7 +2060,7 @@ Fichiers et dossiers (les chemins relatifs partent du dossier courant)
   delete_file("ancien.txt")      # Ok(()) ; jamais un dossier
 
 Des chemins qui marchent sous Linux, macOS et Windows
-  join_path(["données", "notes.txt"])    # "données/notes.txt"
+  join_path(["données" "notes.txt"])    # "données/notes.txt"
   split_path("/home/ada/notes.txt")      # ["/", "home", "ada", "notes.txt"]
   split_path("C:\Users\ada")             # ["C:\", "Users", "ada"]
 
@@ -2069,7 +2068,7 @@ La ligne de commande : rythme outil.ry --verbose --name=Ada notes.txt
   args()                         # ["--verbose", "--name=Ada", "notes.txt"]
   options()                      # Ok({args: ["notes.txt"], verbose: true, name: "Ada"})
   opts = unwrap(options())
-  nom = unwrap_or(get(opts, "name"), "le monde")   # une option qui peut manquer
+  nom = unwrap_or(get(opts "name") "le monde")   # une option qui peut manquer
   env("HOME")                    # Some("/home/ada") ou None
 
 L'entrée standard : rythme compter.ry < noms.txt
@@ -2089,24 +2088,24 @@ const DICTS_EN: &str = r#"DICTIONARIES AND SETS
 
 A dict (dictionary) gives a value for each key. Keys can be any value but
 functions: numbers, texts, lists, records... They are kept in order.
-  ages = dict([["Ada", 36], ["Alan", 41]])
+  ages = dict([["Ada" 36] ["Alan" 41]])
   ages                           # dict("Ada" => 36, "Alan" => 41)
   ages["Ada"]                    # 36 (an error if the key is missing)
-  get(ages, "Bob")               # None: an Option, never an error
-  grid = dict([[[0, 0], "start"]])   # a list as a key
+  get(ages "Bob")               # None: an Option, never an error
+  grid = dict([[[0 0] "start"]])   # a list as a key
   dict({x: 1})                   # from a record: dict("x" => 1)
 
 Dicts never change: functions give a new one, quickly (in O(log n))
-  put(ages, "Bob", 20)           # added (or replaced)
-  remove(ages, "Ada")            # without this key
+  put(ages "Bob" 20)           # added (or replaced)
+  remove(ages "Ada")            # without this key
   has(ages, "Ada")   len(ages)   keys(ages)   values(ages)   entries(ages)
-  map_values(ages, fn(n) = n + 1)
-  filter(ages, fn(name, age) = age > 40)   # f receives the key and the value
-  ages.each do |name, age| print(name, age) end   # reject and select too
-  union(a, b)                    # both; for a key in both, b's value wins
+  map_values(ages fn(n) = n + 1)
+  filter(ages fn(name age) = age > 40)   # f receives the key and the value
+  ages.each do |name age| print(name age) end   # reject and select too
+  union(a b)                    # both; for a key in both, b's value wins
 
 A set holds values without repetition, in order.
-  s = set([3, 1, 3])             # set(1, 3)
+  s = set([3 1 3])             # set(1, 3)
   has(s, 3)   push(s, 5)   remove(s, 1)   len(s)   values(s)   # values: a list
   union(a, b)   intersection(a, b)   difference(a, b)   is_subset(a, b)
   filter(s, is_odd)   map(s, fn(x) = x * 10)
@@ -2120,25 +2119,25 @@ const DICTS_FR: &str = r#"DICTIONNAIRES ET ENSEMBLES
 Un dict (dictionnaire) donne une valeur pour chaque clé. Les clés peuvent
 être n'importe quelle valeur sauf les fonctions : nombres, textes, listes,
 enregistrements... Elles sont gardées dans l'ordre.
-  ages = dict([["Ada", 36], ["Alan", 41]])
+  ages = dict([["Ada" 36] ["Alan" 41]])
   ages                           # dict("Ada" => 36, "Alan" => 41)
   ages["Ada"]                    # 36 (une erreur si la clé manque)
-  get(ages, "Bob")               # None : une Option, jamais d'erreur
-  grille = dict([[[0, 0], "départ"]])   # une liste comme clé
+  get(ages "Bob")               # None : une Option, jamais d'erreur
+  grille = dict([[[0 0] "départ"]])   # une liste comme clé
   dict({x: 1})                   # depuis un enregistrement : dict("x" => 1)
 
 Les dictionnaires ne changent jamais : les fonctions en donnent un nouveau,
 rapidement (en O(log n))
-  put(ages, "Bob", 20)           # ajoutée (ou remplacée)
-  remove(ages, "Ada")            # sans cette clé
+  put(ages "Bob" 20)           # ajoutée (ou remplacée)
+  remove(ages "Ada")            # sans cette clé
   has(ages, "Ada")   len(ages)   keys(ages)   values(ages)   entries(ages)
-  map_values(ages, fn(n) = n + 1)
-  filter(ages, fn(nom, age) = age > 40)   # f reçoit la clé et la valeur
-  ages.each do |nom, age| print(nom, age) end   # reject et select aussi
-  union(a, b)                    # les deux ; pour une clé des deux, la valeur de b l'emporte
+  map_values(ages fn(n) = n + 1)
+  filter(ages fn(nom age) = age > 40)   # f reçoit la clé et la valeur
+  ages.each do |nom age| print(nom age) end   # reject et select aussi
+  union(a b)                    # les deux ; pour une clé des deux, la valeur de b l'emporte
 
 Un ensemble (set) contient des valeurs sans répétition, dans l'ordre.
-  e = set([3, 1, 3])             # set(1, 3)
+  e = set([3 1 3])             # set(1, 3)
   has(e, 3)   push(e, 5)   remove(e, 1)   len(e)   values(e)   # values : une liste
   union(a, b)   intersection(a, b)   difference(a, b)   is_subset(a, b)
   filter(e, is_odd)   map(e, fn(x) = x * 10)
@@ -2154,24 +2153,24 @@ A date is a record: {year, month, day}, with hour, minute and second for a
 moment of the day, and offset (minutes ahead of UTC) when it is known.
   today()                        # {year: 2026, month: 10, day: 18}
   now()                          # {year: 2026, ..., hour: 14, minute: 5, second: 9, offset: 120}
-  birthday = {year: 1815, month: 12, day: 10}
+  birthday = {year: 1815 month: 12 day: 10}
   birthday.year                  # 1815
 
 Text and back, in the ISO 8601 form
   parse_date("2024-02-29")       # Ok({year: 2024, month: 2, day: 29})
   parse_date("2024-02-30")       # Err("... February 2024 ...")
   parse_date("2024-02-29T13:05:00+01:00")    # with a time and an offset
-  format_date({year: 2024, month: 2, day: 29, hour: 9})   # "2024-02-29T09:00:00"
+  format_date({year: 2024 month: 2 day: 29 hour: 9})   # "2024-02-29T09:00:00"
 
 Calendar arithmetic (leap years and month lengths included)
-  add_days({year: 2024, month: 2, day: 28}, 1)     # {year: 2024, month: 2, day: 29}
-  add_seconds(now(), 3600)       # in one hour
-  days_between(today(), {year: 2027, month: 1, day: 1})   # days left
-  seconds_between(a, b)          # negative when b is before a
+  add_days({year: 2024 month: 2 day: 28} 1)     # {year: 2024, month: 2, day: 29}
+  add_seconds(now() 3600)       # in one hour
+  days_between(today() {year: 2027 month: 1 day: 1})   # days left
+  seconds_between(a b)          # negative when b is before a
   day_of_week(today())           # 1 = Monday ... 7 = Sunday
-  days_in_month(2023, 2)         # 28
+  days_in_month(2023 2)         # 28
   is_leap_year(2000)             # true
-  is_date({year: 2023, month: 2, day: 29})   # false
+  is_date({year: 2023 month: 2 day: 29})   # false
 
 A date that does not exist stops the functions with E023, which says why.
 The local offset comes from the system (UTC when it does not tell); time()
@@ -2184,24 +2183,24 @@ second pour un moment de la journée, et offset (minutes d'avance sur UTC)
 quand il est connu.
   today()                        # {year: 2026, month: 10, day: 18}
   now()                          # {year: 2026, ..., hour: 14, minute: 5, second: 9, offset: 120}
-  anniversaire = {year: 1815, month: 12, day: 10}
+  anniversaire = {year: 1815 month: 12 day: 10}
   anniversaire.year              # 1815
 
 Du texte et retour, sous la forme ISO 8601
   parse_date("2024-02-29")       # Ok({year: 2024, month: 2, day: 29})
   parse_date("2024-02-30")       # Err("... février 2024 ...")
   parse_date("2024-02-29T13:05:00+01:00")    # avec une heure et un décalage
-  format_date({year: 2024, month: 2, day: 29, hour: 9})   # "2024-02-29T09:00:00"
+  format_date({year: 2024 month: 2 day: 29 hour: 9})   # "2024-02-29T09:00:00"
 
 Calculs de calendrier (années bissextiles et longueurs des mois comprises)
-  add_days({year: 2024, month: 2, day: 28}, 1)     # {year: 2024, month: 2, day: 29}
-  add_seconds(now(), 3600)       # dans une heure
-  days_between(today(), {year: 2027, month: 1, day: 1})   # jours restants
-  seconds_between(a, b)          # négatif quand b est avant a
+  add_days({year: 2024 month: 2 day: 28} 1)     # {year: 2024, month: 2, day: 29}
+  add_seconds(now() 3600)       # dans une heure
+  days_between(today() {year: 2027 month: 1 day: 1})   # jours restants
+  seconds_between(a b)          # négatif quand b est avant a
   day_of_week(today())           # 1 = lundi ... 7 = dimanche
-  days_in_month(2023, 2)         # 28
+  days_in_month(2023 2)         # 28
   is_leap_year(2000)             # true
-  is_date({year: 2023, month: 2, day: 29})   # false
+  is_date({year: 2023 month: 2 day: 29})   # false
 
 Une date qui n'existe pas arrête les fonctions avec E023, qui dit pourquoi.
 Le décalage local vient du système (UTC quand il ne le dit pas) ; time()
@@ -2213,14 +2212,14 @@ A regex (regular expression) describes pieces of text: "[0-9]+" means "one
 digit or more". Rythme reads the usual regexes, and a search never takes
 more than (length of the text) × (size of the regex).
 
-  matches("2024", "[0-9]+")                  # true: the WHOLE text matches
-  find_first("tel: 06 12", "[0-9]+")         # Some("06"): the first piece
-  find_all("3 cats, 12 dogs", "[0-9]+")      # ["3", "12"]
-  split_by("a, b;c", "[,;] *")               # ["a", "b", "c"]
-  replace_all("a cat", "\\b\\w", upper)      # "A Cat" (a function for each piece)
-  replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1")   # "2024-02-29"
-  captures("2024-02", "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
-  named_captures("2024-02", "(?<year>[0-9]+)-(?<month>[0-9]+)")
+  matches("2024" "[0-9]+")                  # true: the WHOLE text matches
+  find_first("tel: 06 12" "[0-9]+")         # Some("06"): the first piece
+  find_all("3 cats, 12 dogs" "[0-9]+")      # ["3", "12"]
+  split_by("a, b;c" "[,;] *")               # ["a", "b", "c"]
+  replace_all("a cat" "\\b\\w" upper)      # "A Cat" (a function for each piece)
+  replace_all("29/02/2024" "(\\d+)/(\\d+)/(\\d+)" "$3-$2-$1")   # "2024-02-29"
+  captures("2024-02" "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
+  named_captures("2024-02" "(?<year>[0-9]+)-(?<month>[0-9]+)")
                                              # Some({year: "2024", month: "02"})
 
 What a regex can say
@@ -2253,14 +2252,14 @@ Une regex (expression régulière) décrit des morceaux de texte : "[0-9]+" veut
 dire « un chiffre ou plus ». Rythme lit les regex habituelles, et une
 recherche ne prend jamais plus que (longueur du texte) × (taille de la regex).
 
-  matches("2024", "[0-9]+")                  # true : le texte ENTIER correspond
-  find_first("tél : 06 12", "[0-9]+")        # Some("06") : le premier morceau
-  find_all("3 chats, 12 chiens", "[0-9]+")   # ["3", "12"]
-  split_by("a, b;c", "[,;] *")               # ["a", "b", "c"]
-  replace_all("un chat", "\\b\\w", upper)    # "Un Chat" (une fonction pour chaque morceau)
-  replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1")   # "2024-02-29"
-  captures("2024-02", "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
-  named_captures("2024-02", "(?<annee>[0-9]+)-(?<mois>[0-9]+)")
+  matches("2024" "[0-9]+")                  # true : le texte ENTIER correspond
+  find_first("tél : 06 12" "[0-9]+")        # Some("06") : le premier morceau
+  find_all("3 chats, 12 chiens" "[0-9]+")   # ["3", "12"]
+  split_by("a, b;c" "[,;] *")               # ["a", "b", "c"]
+  replace_all("un chat" "\\b\\w" upper)    # "Un Chat" (une fonction pour chaque morceau)
+  replace_all("29/02/2024" "(\\d+)/(\\d+)/(\\d+)" "$3-$2-$1")   # "2024-02-29"
+  captures("2024-02" "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
+  named_captures("2024-02" "(?<annee>[0-9]+)-(?<mois>[0-9]+)")
                                              # Some({annee: "2024", mois: "02"})
 
 Ce qu'une regex peut dire
@@ -2295,15 +2294,15 @@ Every spreadsheet (LibreOffice, Excel, Google Sheets...) opens and saves it.
 
   csv_parse("name,age\nAda,36")              # Ok([["name", "age"], ["Ada", "36"]])
   csv_records("name,age\nAda,36")            # Ok([{name: "Ada", age: "36"}])
-  csv_format([["name", "age"], ["Ada", 36]]) # "name,age\nAda,36\n"
-  csv_format([{name: "Ada", age: 36}])       # the same text: records give a header
+  csv_format([["name" "age"] ["Ada" 36]]) # "name,age\nAda,36\n"
+  csv_format([{name: "Ada" age: 36}])       # the same text: records give a header
 
 With files
   match read_file("grades.csv").and_then(csv_records)
     Ok(rows) -> print(len(rows), "students")
     Err(e) -> print("Error: {e}")
   end
-  write_file("copy.csv", csv_format(rows))
+  write_file("copy.csv" csv_format(rows))
 
 The rules (RFC 4180)
   A field between quotes may hold commas, line breaks and quotes, written
@@ -2319,8 +2318,8 @@ The rules (RFC 4180)
 Another separator: the last argument
   ";" (spreadsheets in French, where the comma is the decimal point), "\t"
   (tabs), "|"...
-  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
-  csv_format(rows, ";")
+  csv_parse("a;b" ";")                      # Ok([["a", "b"]])
+  csv_format(rows ";")
 
 A text that is not valid CSV gives Err, which says where (line and column):
   csv_parse("a,b\"c")   # Err("line 1, column 4: a quote in the middle of a field: ...")"#;
@@ -2333,15 +2332,15 @@ Google Sheets...) l'ouvrent et l'enregistrent.
 
   csv_parse("nom,age\nAda,36")               # Ok([["nom", "age"], ["Ada", "36"]])
   csv_records("nom,age\nAda,36")             # Ok([{nom: "Ada", age: "36"}])
-  csv_format([["nom", "age"], ["Ada", 36]])  # "nom,age\nAda,36\n"
-  csv_format([{nom: "Ada", age: 36}])        # le même texte : les enregistrements donnent un en-tête
+  csv_format([["nom" "age"] ["Ada" 36]])  # "nom,age\nAda,36\n"
+  csv_format([{nom: "Ada" age: 36}])        # le même texte : les enregistrements donnent un en-tête
 
 Avec des fichiers
   match read_file("notes.csv").and_then(csv_records)
     Ok(lignes) -> print(len(lignes), "élèves")
     Err(e) -> print("Erreur : {e}")
   end
-  write_file("copie.csv", csv_format(lignes))
+  write_file("copie.csv" csv_format(lignes))
 
 Les règles (RFC 4180)
   Un champ entre guillemets peut contenir des virgules, des retours à la
@@ -2359,8 +2358,8 @@ Les règles (RFC 4180)
 Un autre séparateur : le dernier argument
   ";" (les tableurs en français, où la virgule est celle des décimales),
   "\t" (les tabulations), "|"...
-  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
-  csv_format(lignes, ";")
+  csv_parse("a;b" ";")                      # Ok([["a", "b"]])
+  csv_format(lignes ";")
 
 Un texte qui n'est pas du CSV valide donne Err, qui dit où (ligne et colonne) :
   csv_parse("a,b\"c")   # Err("ligne 1, colonne 4 : un guillemet au milieu d'un champ : ...")"#;
@@ -2371,13 +2370,13 @@ A vector is a list of numbers, a matrix a list of rows of the same length.
 These functions never change them: they give new lists, always of Floats.
 
 Vectors and matrices
-  dot([1, 2], [3, 4])            # 11.0
-  norm([3, 4])                   # 5.0, the length
+  dot([1 2] [3 4])            # 11.0
+  norm([3 4])                   # 5.0, the length
   vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # number by number
-  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  vector_scale([1 2] 3)        # [3.0, 6.0]
   matmul(m, n)  matmul(m, v)     # product of matrices, or matrix by vector
   transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
-  zip_with(xs, ys, f)            # f on the pairs, for anything else
+  zip_with(xs ys f)            # f on the pairs, for anything else
 
 Neurons
   sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # scores into probabilities
@@ -2389,11 +2388,11 @@ Statistics
 
 Chance, the same on every run after random_seed(n)
   random_normal(0, 1)  random_choice_weighted(xs, weights)
-  train_test_split(examples, 0.8)    # {train, test}
+  train_test_split(examples 0.8)    # {train, test}
 
 Slopes, for gradient descent (central differences, about 9 digits)
-  derivative(fn(x) = x * x, 3)               # 6.0
-  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+  derivative(fn(x) = x * x 3)               # 6.0
+  gradient(fn([x y]) = x * x + y [2 5])   # [4.0, 1.0]
 
 Charts as text
   print(plot(losses))  print(plot(xs, ys))  print(histogram(heights))
@@ -2414,13 +2413,13 @@ longueur. Ces fonctions ne les changent jamais : elles donnent de nouvelles
 listes, toujours de Floats.
 
 Vecteurs et matrices
-  dot([1, 2], [3, 4])            # 11.0
-  norm([3, 4])                   # 5.0, la longueur
+  dot([1 2] [3 4])            # 11.0
+  norm([3 4])                   # 5.0, la longueur
   vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # nombre par nombre
-  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  vector_scale([1 2] 3)        # [3.0, 6.0]
   matmul(m, n)  matmul(m, v)     # produit de matrices, ou matrice par vecteur
   transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
-  zip_with(xs, ys, f)            # f sur les paires, pour tout le reste
+  zip_with(xs ys f)            # f sur les paires, pour tout le reste
 
 Neurones
   sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # des scores aux probabilités
@@ -2432,11 +2431,11 @@ Statistiques
 
 Le hasard, le même à chaque lancement après random_seed(n)
   random_normal(0, 1)  random_choice_weighted(xs, poids)
-  train_test_split(exemples, 0.8)    # {train, test}
+  train_test_split(exemples 0.8)    # {train, test}
 
 Des pentes, pour la descente de gradient (différences centrées, environ 9 chiffres)
-  derivative(fn(x) = x * x, 3)               # 6.0
-  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+  derivative(fn(x) = x * x 3)               # 6.0
+  gradient(fn([x y]) = x * x + y [2 5])   # [4.0, 1.0]
 
 Des graphiques en texte
   print(plot(pertes))  print(plot(xs, ys))  print(histogram(tailles))
@@ -2454,9 +2453,9 @@ list)."#;
 const RANDOM_EN: &str = r#"RANDOM: CHANCE, AND THE SAME CHANCE AGAIN
 
   random()                   # a decimal number from 0 (included) to 1 (excluded)
-  random(1, 6)               # a whole number from 1 to 6, both included
-  random(["a", "b", "c"])    # one element of the list
-  shuffle([1, 2, 3])         # the list in a random order
+  random(1 6)               # a whole number from 1 to 6, both included
+  random(["a" "b" "c"])    # one element of the list
+  shuffle([1 2 3])         # the list in a random order
 
 Every run draws other values. To get the same draws again (a test, a class
 where everyone sees the same game, a mistake to find again), give a seed:
@@ -2472,7 +2471,7 @@ In a test, call random_seed at its start: its draws then do not depend on
 the tests before it.
   test "a dice roll stays between 1 and 6"
     random_seed(7)
-    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+    assert(all(map(1..100 fn(_) = random(1 6)) fn(d) = d >= 1 and d <= 6))
   end
 
 The property tests (check_all, sample) have their own seed:
@@ -2481,9 +2480,9 @@ rythme test --seed N (see rythme help tests)."#;
 const RANDOM_FR: &str = r#"RANDOM : LE HASARD, ET LE MÊME HASARD À NOUVEAU
 
   random()                   # un nombre décimal de 0 (compris) à 1 (non compris)
-  random(1, 6)               # un nombre entier de 1 à 6, tous deux compris
-  random(["a", "b", "c"])    # un élément de la liste
-  shuffle([1, 2, 3])         # la liste dans un ordre au hasard
+  random(1 6)               # un nombre entier de 1 à 6, tous deux compris
+  random(["a" "b" "c"])    # un élément de la liste
+  shuffle([1 2 3])         # la liste dans un ordre au hasard
 
 Chaque lancement tire d'autres valeurs. Pour retrouver les mêmes tirages (un
 test, un cours où tout le monde voit la même partie, une erreur à retrouver),
@@ -2500,7 +2499,7 @@ Dans un test, appelez random_seed au début : ses tirages ne dépendent alors
 pas des tests d'avant.
   test "un lancer de dé reste entre 1 et 6"
     random_seed(7)
-    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+    assert(all(map(1..100 fn(_) = random(1 6)) fn(d) = d >= 1 and d <= 6))
   end
 
 Les tests de propriétés (check_all, sample) ont leur propre graine :
@@ -2509,7 +2508,7 @@ rythme test --seed N (voir rythme help tests)."#;
 const TYPES_EN: &str = r#"YOUR OWN TYPES
 
 A type lists the possible shapes of a value:
-  type Shape = Circle(radius) | Rect(width, height) | Empty
+  type Shape = Circle(radius) | Rect(width height) | Empty
 
   c = Circle(2.0)
   c.radius                       # 2.0
@@ -2523,23 +2522,23 @@ Handle each shape with match
 
 Or with one definition per shape
   fn perimeter(Circle(r)) = 2 * pi * r
-  fn perimeter(Rect(w, h)) = 2 * (w + h)
+  fn perimeter(Rect(w h)) = 2 * (w + h)
   fn perimeter(Empty) = 0
 
 If you forget a shape, `rythme check` tells you which one.
 
 A type can contain itself (trees...):
-  type Tree = Leaf | Node(left, value, right)"#;
+  type Tree = Leaf | Node(left value right)"#;
 
 /// After the topic `types`: the types written in the code.
 const WRITTEN_EN: &str = r#"TYPES WRITTEN IN THE CODE (optional)
 
 Rythme finds the types by itself. You may also write them where they help
 to read the code; `rythme check` then verifies them (E027):
-  fn area(width: Int, height: Int) -> Int = width * height
+  fn area(width: Int height: Int) -> Int = width * height
   total: Float = 0.0
   type Shape = Circle(radius: Float) | Rect(width: Float, height: Float)
-  [1, 2].map do |n: Int| n * 2 end
+  [1 2].map do |n: Int| n * 2 end
 
 The types
   Int  Float  Text  Bool  Unit  Symbol
@@ -2556,11 +2555,11 @@ The types
   (Tree alone too)
 
   fn first_of(xs: List(a)) -> a = xs[0]
-  first_of([1, 2]) + 1         # the checker knows it is an Int
+  first_of([1 2]) + 1         # the checker knows it is an Int
 
 Types with parameters: a type can take types, like List(Int)
-  type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
-  type Pair(a, b) = Pair(first: a, second: b)
+  type Tree(a) = Leaf | Node(left: Tree(a) value: a right: Tree(a))
+  type Pair(a b) = Pair(first: a second: b)
 
   fn depth(t: Tree(a)) -> Int = ...      a Tree of anything
   fn total(t: Tree(Int)) -> Int = ...    a Tree of whole numbers
@@ -2577,10 +2576,10 @@ const WRITTEN_FR: &str = r#"TYPES ÉCRITS DANS LE CODE (facultatifs)
 
 Rythme trouve les types tout seul. Vous pouvez aussi les écrire là où ils
 aident à lire le code ; `rythme check` les vérifie alors (E027) :
-  fn aire(largeur: Int, hauteur: Int) -> Int = largeur * hauteur
+  fn aire(largeur: Int hauteur: Int) -> Int = largeur * hauteur
   total: Float = 0.0
   type Forme = Cercle(rayon: Float) | Rect(largeur: Float, hauteur: Float)
-  [1, 2].map do |n: Int| n * 2 end
+  [1 2].map do |n: Int| n * 2 end
 
 Les types
   Int  Float  Text  Bool  Unit  Symbol
@@ -2597,11 +2596,11 @@ Les types
   (Arbre seul aussi)
 
   fn premier(xs: List(a)) -> a = xs[0]
-  premier([1, 2]) + 1          # le vérificateur sait que c'est un Int
+  premier([1 2]) + 1          # le vérificateur sait que c'est un Int
 
 Types avec paramètres : un type peut prendre des types, comme List(Int)
-  type Arbre(a) = Feuille | Noeud(gauche: Arbre(a), valeur: a, droite: Arbre(a))
-  type Paire(a, b) = Paire(premier: a, second: b)
+  type Arbre(a) = Feuille | Noeud(gauche: Arbre(a) valeur: a droite: Arbre(a))
+  type Paire(a b) = Paire(premier: a second: b)
 
   fn profondeur(t: Arbre(a)) -> Int = ...   un Arbre de n'importe quoi
   fn total(t: Arbre(Int)) -> Int = ...      un Arbre de nombres entiers
@@ -2617,7 +2616,7 @@ programme tourne ; les éditeurs et `rythme doc` les montrent."#;
 const TYPES_FR: &str = r#"VOS PROPRES TYPES
 
 Un type liste les formes possibles d'une valeur :
-  type Forme = Cercle(rayon) | Rect(largeur, hauteur) | Vide
+  type Forme = Cercle(rayon) | Rect(largeur hauteur) | Vide
 
   c = Cercle(2.0)
   c.rayon                        # 2.0
@@ -2631,13 +2630,13 @@ Traiter chaque forme avec match
 
 Ou avec une définition par forme
   fn perimetre(Cercle(r)) = 2 * pi * r
-  fn perimetre(Rect(l, h)) = 2 * (l + h)
+  fn perimetre(Rect(l h)) = 2 * (l + h)
   fn perimetre(Vide) = 0
 
 Si vous oubliez une forme, `rythme check` vous dit laquelle.
 
 Un type peut se contenir lui-même (arbres...) :
-  type Arbre = Feuille | Noeud(gauche, valeur, droite)"#;
+  type Arbre = Feuille | Noeud(gauche valeur droite)"#;
 
 const MATCH_EN: &str = r#"MATCH AND PATTERNS
 
@@ -2664,9 +2663,9 @@ Patterns
   a | b                          one pattern or the other
 
 Patterns work everywhere a name is given:
-  [x, y] = [1, 2]
+  [x y] = [1 2]
   fn head_or_zero([]) = 0
-  fn head_or_zero([x, ..]) = x"#;
+  fn head_or_zero([x ..]) = x"#;
 
 const MATCH_FR: &str = r#"MATCH ET MOTIFS
 
@@ -2693,9 +2692,9 @@ Motifs
   a | b                          un motif ou l'autre
 
 Les motifs marchent partout où l'on donne un nom :
-  [x, y] = [1, 2]
+  [x y] = [1 2]
   fn tete_ou_zero([]) = 0
-  fn tete_ou_zero([x, ..]) = x"#;
+  fn tete_ou_zero([x ..]) = x"#;
 
 const ERRORS_EN: &str = r#"ERRORS ARE VALUES (Option, Result, ?)
 
@@ -2703,7 +2702,7 @@ Rythme has no null and no exceptions. A value that may be missing is an
 Option: Some(value) or None. An operation that may fail gives a Result:
 Ok(value) or Err(message). You cannot forget to handle them.
 
-  fn divide(a, b) = if b == 0 then Err("division by zero") else Ok(a / b)
+  fn divide(a b) = if b == 0 then Err("division by zero") else Ok(a / b)
 
   match divide(10, 2)
     Ok(x) -> print("result: {x}")
@@ -2718,13 +2717,13 @@ The ? operator: take the value, or stop and pass the error on
   end
 
 Quick tools
-  unwrap_or(get(list, 5), 0)     # the value, or a default
+  unwrap_or(get(list 5) 0)     # the value, or a default
   unwrap(Some(3))                # 3 (stops the program on None or Err)
   is_some(x)   is_none(x)   is_ok(x)   is_err(x)
-  map(Some(2), fn(x) = x * 10)   # Some(20)
-  ok_or(get(person, "age"), "no age")   # Err("no age") if missing: ready for ?
-  and_then(x, f)                 # one more step that may fail
-  map_err(r, fn(e) = "config: {e}")     # explain an error better
+  map(Some(2) fn(x) = x * 10)   # Some(20)
+  ok_or(get(person "age") "no age")   # Err("no age") if missing: ready for ?
+  and_then(x f)                 # one more step that may fail
+  map_err(r fn(e) = "config: {e}")     # explain an error better
 
 To stop the whole program: fail("message")."#;
 
@@ -2734,7 +2733,7 @@ Rythme n'a ni null ni exceptions. Une valeur qui peut manquer est une
 Option : Some(valeur) ou None. Une opération qui peut échouer donne un
 Result : Ok(valeur) ou Err(message). Impossible d'oublier de les traiter.
 
-  fn diviser(a, b) = if b == 0 then Err("division par zéro") else Ok(a / b)
+  fn diviser(a b) = if b == 0 then Err("division par zéro") else Ok(a / b)
 
   match diviser(10, 2)
     Ok(x) -> print("résultat : {x}")
@@ -2749,13 +2748,13 @@ L'opérateur ? : prendre la valeur, ou s'arrêter et transmettre l'erreur
   end
 
 Outils rapides
-  unwrap_or(get(liste, 5), 0)    # la valeur, ou une valeur par défaut
+  unwrap_or(get(liste 5) 0)    # la valeur, ou une valeur par défaut
   unwrap(Some(3))                # 3 (arrête le programme sur None ou Err)
   is_some(x)   is_none(x)   is_ok(x)   is_err(x)
-  map(Some(2), fn(x) = x * 10)   # Some(20)
-  ok_or(get(personne, "age"), "pas d'âge")   # Err("pas d'âge") s'il manque : prêt pour ?
-  and_then(x, f)                 # une étape de plus qui peut échouer
-  map_err(r, fn(e) = "config : {e}")    # mieux expliquer une erreur
+  map(Some(2) fn(x) = x * 10)   # Some(20)
+  ok_or(get(personne "age") "pas d'âge")   # Err("pas d'âge") s'il manque : prêt pour ?
+  and_then(x f)                 # une étape de plus qui peut échouer
+  map_err(r fn(e) = "config : {e}")    # mieux expliquer une erreur
 
 Pour arrêter tout le programme : fail("message")."#;
 
@@ -2779,15 +2778,15 @@ Instead of "while":                  a recursive function
   total = numbers |> map(fn(x) = x * x) |> sum
 
   # A "while" loop as a recursive function:
-  fn collatz(1, steps) = steps
+  fn collatz(1 steps) = steps
   fn collatz(n, steps) =
-    if n % 2 == 0 then collatz(n // 2, steps + 1) else collatz(3 * n + 1, steps + 1)
-  collatz(27, 0)                 # 111
+    if n % 2 == 0 then collatz(n // 2 steps + 1) else collatz(3 * n + 1 steps + 1)
+  collatz(27 0)                 # 111
 
 Instead of changing a value, make a new one:
   x2 = x + 1
-  person2 = {..person, age: 37}
-  list2 = push(list, 4)"#;
+  person2 = {..person age: 37}
+  list2 = push(list 4)"#;
 
 const FUNCTIONAL_FR: &str = r#"PENSER FONCTIONNEL
 
@@ -2810,26 +2809,26 @@ Au lieu de « tant que » :               une fonction récursive
   total = nombres |> map(fn(x) = x * x) |> sum
 
   # Une boucle « tant que » en fonction récursive :
-  fn collatz(1, etapes) = etapes
+  fn collatz(1 etapes) = etapes
   fn collatz(n, etapes) =
-    if n % 2 == 0 then collatz(n // 2, etapes + 1) else collatz(3 * n + 1, etapes + 1)
-  collatz(27, 0)                 # 111
+    if n % 2 == 0 then collatz(n // 2 etapes + 1) else collatz(3 * n + 1 etapes + 1)
+  collatz(27 0)                 # 111
 
 Au lieu de modifier une valeur, faites-en une nouvelle :
   x2 = x + 1
-  personne2 = {..personne, age: 37}
-  liste2 = push(liste, 4)"#;
+  personne2 = {..personne age: 37}
+  liste2 = push(liste 4)"#;
 
 const TESTS_EN: &str = r#"TESTS
 
 Write tests next to your code:
   fn double(x) = x * 2
 
-  test "double of 2 is 4" = assert_eq(double(2), 4)
+  test "double of 2 is 4" = assert_eq(double(2) 4)
 
   test "several checks"
-    assert_eq(double(0), 0)
-    assert(double(-1) < 0, "should stay negative")
+    assert_eq(double(0) 0)
+    assert(double(-1) < 0 "should stay negative")
   end
 
 Run them:
@@ -2847,7 +2846,7 @@ counts and the time; the exit code is 0 when every test passes.
 
 Property tests: check that something holds for many values
   test "reversing twice gives the list back" =
-    check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+    check_all(fn(l) = reverse(reverse(l)) == l lists_of(ints()))
 
 Generators: ints(min, max), floats(min, max), texts(max_length), bools(),
 lists_of(generator, max_length), one_of(list), records_of({x: ints(), y: texts()}).
@@ -2861,11 +2860,11 @@ const TESTS_FR: &str = r#"TESTS
 Écrivez les tests à côté de votre code :
   fn double(x) = x * 2
 
-  test "le double de 2 est 4" = assert_eq(double(2), 4)
+  test "le double de 2 est 4" = assert_eq(double(2) 4)
 
   test "plusieurs vérifications"
-    assert_eq(double(0), 0)
-    assert(double(-1) < 0, "doit rester négatif")
+    assert_eq(double(0) 0)
+    assert(double(-1) < 0 "doit rester négatif")
   end
 
 Lancez-les :
@@ -2884,7 +2883,7 @@ est 0 quand tous les tests réussissent.
 
 Tests de propriétés : vérifier qu'une chose est vraie pour beaucoup de valeurs
   test "inverser deux fois redonne la liste" =
-    check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+    check_all(fn(l) = reverse(reverse(l)) == l lists_of(ints()))
 
 Générateurs : ints(min, max), floats(min, max), texts(max_length), bools(),
 lists_of(générateur, max_length), one_of(liste), records_of({x: ints(), y: texts()}).
@@ -2935,12 +2934,12 @@ const MODULES_EN: &str = r#"SEVERAL FILES
 
   # geometry.ry
   ## Area of a rectangle.
-  fn area(w, h) = w * h
+  fn area(w h) = w * h
   fn _check(x) = x >= 0          # private: starts with `_`
 
   # main.ry
   use geometry                    # the file geometry.ry, next to main.ry
-  print(geometry.area(2, 3))      # 6
+  print(geometry.area(2 3))      # 6
 
 `use geometry` gives the definitions of geometry.ry through its name:
 `geometry.area`, `geometry.Circle(1)`, and in a `match`, `geometry.Circle(r)`.
@@ -2959,12 +2958,12 @@ const MODULES_FR: &str = r#"PLUSIEURS FICHIERS
 
   # geometrie.ry
   ## Aire d'un rectangle.
-  fn aire(l, h) = l * h
+  fn aire(l h) = l * h
   fn _verifier(x) = x >= 0       # privée : commence par `_`
 
   # principal.ry
   use geometrie                   # le fichier geometrie.ry, à côté de principal.ry
-  print(geometrie.aire(2, 3))     # 6
+  print(geometrie.aire(2 3))     # 6
 
 `use geometrie` donne les définitions de geometrie.ry par son nom :
 `geometrie.aire`, `geometrie.Cercle(1)`, et dans un `match`,
@@ -3382,7 +3381,7 @@ the same, and nobody has to argue about spaces.
 The style
   - 2 spaces per level of indentation
   - spaces around operators: x = a + b * 2   xs |> map(f)   n -> n * 2
-  - none inside brackets or around ..: f(x)   [1, 2]   {name: "Ada"}   1..10
+  - none inside brackets or around ..: f(x)   [1 2]   {name: "Ada"}   1..10
   - a pipeline written on several lines: one step per line
       total = prices
         |> filter(fn(p) = p > 10)
@@ -3390,8 +3389,9 @@ The style
   - a type written on several lines: one variant per line
       type Shape =
         | Circle(radius)
-        | Rect(width, height)
-  - a list written on several lines ends with a comma
+        | Rect(width height)
+  - no commas between elements, as in REBOL: [1 2]   f(a b)   print x y;
+    one stays where the next element would continue the one before: [x, -1]
   - a block written on one line stays on one line:
       xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
     on several lines, its statements go one level deeper than `do`
@@ -3421,7 +3421,7 @@ programmes se ressemblent, et personne n'a à discuter des espaces.
 Le style
   - 2 espaces par niveau d'indentation
   - des espaces autour des opérateurs : x = a + b * 2   xs |> map(f)   n -> n * 2
-  - aucun dans les crochets ni autour de .. : f(x)   [1, 2]   {nom: "Ada"}   1..10
+  - aucun dans les crochets ni autour de .. : f(x)   [1 2]   {nom: "Ada"}   1..10
   - un enchaînement écrit sur plusieurs lignes : une étape par ligne
       total = prix
         |> filter(fn(p) = p > 10)
@@ -3429,8 +3429,9 @@ Le style
   - un type écrit sur plusieurs lignes : une variante par ligne
       type Forme =
         | Cercle(rayon)
-        | Rect(largeur, hauteur)
-  - une liste écrite sur plusieurs lignes finit par une virgule
+        | Rect(largeur hauteur)
+  - pas de virgules entre les éléments, comme en REBOL : [1 2]   f(a b)   print x y ;
+    il en reste une où l'élément suivant continuerait le précédent : [x, -1]
   - un bloc écrit sur une ligne reste sur une ligne :
       xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
     sur plusieurs lignes, ses instructions vont un niveau plus loin que `do`
@@ -3460,11 +3461,11 @@ Write a `##` comment just above what it documents:
   ## Shapes and their areas.      <- at the top, followed by a blank line:
                                      it describes the whole file
   ## A shape to draw.
-  type Shape = Circle(radius) | Rect(width, height)
+  type Shape = Circle(radius) | Rect(width height)
 
   ## The area of a shape. See `len` and `area`.
   fn area(Circle(r)) = pi * r * r
-  fn area(Rect(w, h)) = w * h
+  fn area(Rect(w h)) = w * h
 
 What is written
   - for each file: its description, the files it uses (documented too),
@@ -3496,11 +3497,11 @@ commentaires `##`, de ses types et des définitions de ses fonctions.
   ## Des formes et leurs aires.   <- en haut, suivi d'une ligne vide :
                                      il décrit tout le fichier
   ## Une forme à dessiner.
-  type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+  type Forme = Cercle(rayon) | Rect(largeur hauteur)
 
   ## L'aire d'une forme. Voir `len` et `aire`.
   fn aire(Cercle(r)) = pi * r * r
-  fn aire(Rect(l, h)) = l * h
+  fn aire(Rect(l h)) = l * h
 
 Ce qui est écrit
   - pour chaque fichier : sa description, les fichiers qu'il utilise
@@ -3735,13 +3736,13 @@ Sûr :    get([10, 20], 2)         # None, jamais d'erreur"#,
 
 Dividing by zero has no meaning. Check the divisor before, or return a Result.
 
-  fn divide(a, b) = if b == 0 then Err("division by zero") else Ok(a / b)"#,
+  fn divide(a b) = if b == 0 then Err("division by zero") else Ok(a / b)"#,
             r#"E008 — Division par zéro
 
 Diviser par zéro n'a pas de sens. Vérifiez le diviseur avant, ou renvoyez un
 Result.
 
-  fn diviser(a, b) = if b == 0 then Err("division par zéro") else Ok(a / b)"#,
+  fn diviser(a b) = if b == 0 then Err("division par zéro") else Ok(a / b)"#,
         ),
         "E009" => (
             r#"E009 — Not a function
@@ -3773,7 +3774,7 @@ has no such key (`dict[key]`).
 Wrong:   {name: "Ada"}.nmae
 Right:   {name: "Ada"}.name
 Safe:    get(record, "name")     # an Option, never an error
-         get(dict, key)          # the same for a dict
+         get(dict key)          # the same for a dict
 
 When the fields of the record are certain, `rythme check` finds this mistake
 before the program runs, and suggests the closest field."#,
@@ -3785,7 +3786,7 @@ dictionnaire n'a pas cette clé (`dico[clé]`).
 Faux :   {nom: "Ada"}.nmo
 Juste :  {nom: "Ada"}.nom
 Sûr :    get(enregistrement, "nom")   # une Option, jamais d'erreur
-         get(dico, clé)               # de même pour un dictionnaire
+         get(dico clé)               # de même pour un dictionnaire
 
 Quand les champs de l'enregistrement sont certains, `rythme check` trouve
 cette erreur avant l'exécution, et propose le champ le plus proche."#,
@@ -3887,9 +3888,9 @@ recursive call is the very last thing it does (a tail call): those calls
 have no limit.
 
 Limited:     fn sum([]) = 0
-             fn sum([x, ..rest]) = x + sum(rest)       # + happens after
+             fn sum([x ..rest]) = x + sum(rest)       # + happens after
 No limit:    fn sum([], acc) = acc
-             fn sum([x, ..rest], acc) = sum(rest, acc + x)
+             fn sum([x ..rest] acc) = sum(rest acc + x)
 Simplest:    sum(list)  or  fold(list, 0, fn(a, x) = a + x)"#,
             r#"E014 — Trop d'appels imbriqués
 
@@ -3899,9 +3900,9 @@ récursif soit la toute dernière chose qu'elle fait (un appel terminal) : ces
 appels n'ont pas de limite.
 
 Limité :      fn somme([]) = 0
-              fn somme([x, ..reste]) = x + somme(reste)       # le + vient après
+              fn somme([x ..reste]) = x + somme(reste)       # le + vient après
 Sans limite : fn somme([], acc) = acc
-              fn somme([x, ..reste], acc) = somme(reste, acc + x)
+              fn somme([x ..reste] acc) = somme(reste acc + x)
 Plus simple : sum(liste)  ou  fold(liste, 0, fn(a, x) = a + x)"#,
         ),
         "E015" => (
@@ -4169,7 +4170,7 @@ is reported where it is given. The type must also exist.
 Wrong:   total: Float = 0              # 0 is an Int
 Right:   total: Float = 0.0
 Wrong:   fn area(w: Int, h: Int) -> Int = w * h
-         area(2, "3")                  # "3" is a Text
+         area(2 "3")                  # "3" is a Text
 Right:   area(2, 3)
 Wrong:   fn label(n: Int) -> Text = n  # gives an Int
 Right:   fn label(n: Int) -> Text = text(n)
@@ -4189,7 +4190,7 @@ autre type est signalée là où elle est donnée. Le type doit aussi exister.
 Faux :   total: Float = 0              # 0 est un Int
 Juste :  total: Float = 0.0
 Faux :   fn aire(l: Int, h: Int) -> Int = l * h
-         aire(2, "3")                  # "3" est un Text
+         aire(2 "3")                  # "3" est un Text
 Juste :  aire(2, 3)
 Faux :   fn etiquette(n: Int) -> Text = n   # donne un Int
 Juste :  fn etiquette(n: Int) -> Text = text(n)
@@ -4464,7 +4465,7 @@ parameter of another function.
 
 Wrong:   fn show(xs) = print(xs)
          fn twice(show) = show * 2
-         show [1, 2]                  # W011: an index of the function
+         show [1 2]                  # W011: an index of the function
 Right:   show([1, 2])
 Or give the parameter another name: fn twice(n) = n * 2"#,
             r#"W011 — Indice ou soustraction au lieu d'un appel
@@ -4479,7 +4480,7 @@ fonction.
 
 Faux :   fn montre(xs) = print(xs)
          fn double(montre) = montre * 2
-         montre [1, 2]                # W011 : un indice de la fonction
+         montre [1 2]                # W011 : un indice de la fonction
 Juste :  montre([1, 2])
 Ou donnez un autre nom au paramètre : fn double(n) = n * 2"#,
         ),

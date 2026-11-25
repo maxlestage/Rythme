@@ -9,10 +9,10 @@ summary = "一周有 {seconds_per_week} 秒。"
 
 # --- 测试（请不要修改）---
 
-test "一小时的秒数" = assert_eq(seconds_per_hour, 3600)
+test "一小时的秒数" = assert_eq(seconds_per_hour 3600)
 
-test "一天的秒数" = assert_eq(seconds_per_day, 86400)
+test "一天的秒数" = assert_eq(seconds_per_day 86400)
 
-test "一周的秒数" = assert_eq(seconds_per_week, 604800)
+test "一周的秒数" = assert_eq(seconds_per_week 604800)
 
-test "总结" = assert_eq(summary, "一周有 604800 秒。")
+test "总结" = assert_eq(summary "一周有 604800 秒。")

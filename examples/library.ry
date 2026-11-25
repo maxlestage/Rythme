@@ -2,11 +2,11 @@
 # ending with `?`, `unless` and symbols. Values still never change.
 
 books = [
-  {title: "Dune", author: "Herbert", year: 1965, pages: 412, status: :available},
-  {title: "Neuromancer", author: "Gibson", year: 1984, pages: 271, status: :borrowed},
-  {title: "Foundation", author: "Asimov", year: 1951, pages: 255, status: :available},
-  {title: "Hyperion", author: "Simmons", year: 1989, pages: 482, status: :lost},
-  {title: "I, Robot", author: "Asimov", year: 1950, pages: 253, status: :borrowed},
+  {title: "Dune" author: "Herbert" year: 1965 pages: 412 status: :available}
+  {title: "Neuromancer" author: "Gibson" year: 1984 pages: 271 status: :borrowed}
+  {title: "Foundation" author: "Asimov" year: 1951 pages: 255 status: :available}
+  {title: "Hyperion" author: "Simmons" year: 1989 pages: 482 status: :lost}
+  {title: "I, Robot" author: "Asimov" year: 1950 pages: 253 status: :borrowed}
 ]
 
 ## Is the book on the shelf?
@@ -23,7 +23,7 @@ end
 
 puts("#{books.size} books, #{books.sum do |b| b.pages end} pages")
 
-books.each_with_index do |book, i|
+books.each_with_index do |book i|
   mark = unless book.available? then "-" else "+"
   puts("#{i + 1}. #{mark} #{book.title.upcase} (#{book.year}): #{label(book.status)}")
 end
@@ -43,12 +43,12 @@ puts("The two oldest: #{oldest}")
 books
   .group_by { |b| b.author }
   .entries
-  .select { |[_, written]| written.size > 1 }
-  .each do |[author, written]|
+  .select { |[_ written]| written.size > 1 }
+  .each do |[author written]|
     puts("#{author} wrote #{written.size} of them")
   end
 
-total = books.reduce(0) do |sum, b|
+total = books.reduce(0) do |sum b|
   sum + b.pages
 end
 

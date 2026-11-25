@@ -22,6 +22,7 @@ Work in a loop: write the code, run `rythme check --format json file.ry`, apply 
 14. Tests are part of the language: `test "name" = assert_eq(actual, expected)`, run by `rythme test`.
 15. Several files: `use geometry` (the file `geometry.ry`), then `geometry.area(2)`. Names starting with `_` stay private to their file. No `import`.
 16. Comments start with `#`; `##` above a function or a type documents it.
+17. Commas between elements are optional, as in REBOL, and `rythme fmt` leaves them out: `[1 2 3]`, `f(a b)`, `{name: "Ada" age: 36}`, `fn add(a b)`, `print x y`. Keep one where the next element starts with `-`, `[`, `(` or `..` and would otherwise continue the one before: `[x, -1]`, `[xs, [0]]`, `[0, ..rest]`. Values are still shown with commas: `print([1 2])` shows `[1, 2]`.
 
 ## The language by example
 
@@ -34,8 +35,8 @@ name = "Ada"
 age = 36
 print("Hello, {name}! Next year: {age + 1}")
 big = 2 ** 100
-print(big, 7 / 2, 7 // 2, 7 % 2)
-print(type_of(3.5), type_of("x"), type_of([1]), type_of(:ok))
+print(big 7 / 2 7 // 2 7 % 2)
+print(type_of(3.5) type_of("x") type_of([1]) type_of(:ok))
 ```
 
 ```text
@@ -54,14 +55,14 @@ fn describe(n)
   kind = if n % 2 == 0 then "even" else "odd"
   "{n} is {kind}"
 end
-print(square(4), describe(7))
+print(square(4) describe(7))
 fn fib(0) = 0
 fn fib(1) = 1
 fn fib(n) = fib(n - 1) + fib(n - 2)
 fn sign(n) if n < 0 = "negative"
 fn sign(0) = "zero"
 fn sign(_) = "positive"
-print(fib(10), sign(-3), sign(0))
+print(fib(10) sign(-3) sign(0))
 double = fn(x) = x * 2
 print(double(21))
 fn adult?(person) = person.age >= 18
@@ -80,11 +81,11 @@ Several definitions of a function are tried in order (patterns as parameters, `i
 ### Lists, pipes and blocks
 
 ```rythme
-xs = [3, 1, 2]
-print(xs[0], xs[-1], len(xs), xs + [9], [0, ..xs])
+xs = [3 1 2]
+print(xs[0] xs[-1] len(xs) xs + [9] [0, ..xs])
 print(xs |> map(fn(x) = x * 10) |> sort)
 print(xs.filter(fn(x) = x > 1).sum)
-print(fold(xs, 0, fn(acc, x) = acc + x))
+print(fold(xs 0 fn(acc x) = acc + x))
 print(1..5, (1..10).step_by(3))
 squares = xs.map do |x| x * x end
 print(squares)
@@ -113,7 +114,7 @@ item 2
 
 ```rythme
 fn size(n) = if n < 10 then "small" else if n < 100 then "medium" else "large"
-print(size(5), size(50), size(500))
+print(size(5) size(50) size(500))
 fn describe(x) = match x
   0 -> "zero"
   1 | 2 | 3 -> "small"
@@ -121,13 +122,13 @@ fn describe(x) = match x
   n if n < 0 -> "negative"
   _ -> "many"
 end
-print(describe(2), describe(7), describe(-1), describe(40))
+print(describe(2) describe(7) describe(-1) describe(40))
 fn first_two(list) = match list
   [] -> "empty"
   [x] -> "only {x}"
-  [x, y, ..rest] -> "{x} and {y}, then {len(rest)} more"
+  [x y ..rest] -> "{x} and {y}, then {len(rest)} more"
 end
-print(first_two([]), first_two([1]), first_two([1, 2, 3, 4]))
+print(first_two([]) first_two([1]) first_two([1 2 3 4]))
 fn greet(name)
   if name == "" then
     "nobody"
@@ -147,17 +148,17 @@ hi Bo
 ### Records and your own types
 
 ```rythme
-ada = {name: "Ada", born: 1815}
-older = {..ada, born: 1816}
-print(ada.name, older, keys(ada))
-{name, born} = ada
+ada = {name: "Ada" born: 1815}
+older = {..ada born: 1816}
+print(ada.name older keys(ada))
+{name born} = ada
 print("{name} was born in {born}")
-type Shape = Circle(radius) | Rect(width, height)
+type Shape = Circle(radius) | Rect(width height)
 fn area(shape) = match shape
   Circle(r) -> 3 * r * r
-  Rect(w, h) -> w * h
+  Rect(w h) -> w * h
 end
-print([Circle(1), Rect(2, 3)] |> map(area))
+print([Circle(1) Rect(2 3)] |> map(area))
 print(Circle(2).radius)
 ```
 
@@ -173,18 +174,18 @@ Ada was born in 1815
 ### Errors are values: Option, Result and `?`
 
 ```rythme
-fn divide(a, b) = if b == 0 then Err("division by zero") else Ok(a / b)
-match divide(10, 4)
+fn divide(a b) = if b == 0 then Err("division by zero") else Ok(a / b)
+match divide(10 4)
   Ok(x) -> print("result: {x}")
   Err(e) -> print("error: {e}")
 end
-fn average(a, b)
+fn average(a b)
   x = parse_float(a)?
   y = parse_float(b)?
   Ok((x + y) / 2)
 end
-print(average("1", "2"), average("1", "x"))
-print(unwrap_or(first([]), 0), get([1, 2], 5), parse_int("42"))
+print(average("1" "2") average("1" "x"))
+print(unwrap_or(first([]) 0) get([1 2] 5) parse_int("42"))
 ```
 
 ```text
@@ -207,8 +208,8 @@ print(total)
 fn count_down(0) = "liftoff"
 fn count_down(n) = count_down(n - 1)
 print(count_down(100000))
-fn sum_to(n, acc) = if n == 0 then acc else sum_to(n - 1, acc + n)
-print(sum_to(1000, 0))
+fn sum_to(n acc) = if n == 0 then acc else sum_to(n - 1 acc + n)
+print(sum_to(1000 0))
 ```
 
 ```text
@@ -222,13 +223,13 @@ A recursive call as the very last step can repeat without limit.
 ### Tests
 
 ```rythme
-fn add(a, b) = a + b
-test "adds" = assert_eq(add(1, 2), 3)
+fn add(a b) = a + b
+test "adds" = assert_eq(add(1 2) 3)
 test "several checks"
-  assert_eq(add(0, 0), 0)
-  assert(add(1, 1) > 1, "positive")
+  assert_eq(add(0 0) 0)
+  assert(add(1 1) > 1 "positive")
 end
-print(add(2, 2))
+print(add(2 2))
 ```
 
 ```text

@@ -87,5 +87,5 @@ fn the_formatter_keeps_async_and_await() {
     let out = std::fs::read_to_string(&file).unwrap();
     let _ = std::fs::remove_dir_all(&dir);
     assert_eq!(r.code, 0, "{}", r.stderr);
-    assert_eq!(out, "async fn double(x) = x * 2\nprint(await double(21), await(double(1)))\n");
+    assert_eq!(out, "async fn double(x) = x * 2\nprint(await double(21) await(double(1)))\n");
 }

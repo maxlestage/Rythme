@@ -35,22 +35,22 @@ fn frequences(texte) = fail("à faire")
 
 fn le_plus_frequent(texte) = fail("à faire")
 
-fn rapport(texte, n) = fail("à faire")
+fn rapport(texte n) = fail("à faire")
 
 # --- Tests (ne les modifiez pas) ---
 
 poeme = "Le chat dort. Le chien dort ! Le chat voit-il le chien ?"
 
-test "mots" = assert_eq(mots_de("Bonjour, le Monde ! Bonjour ?"), ["bonjour", "le", "monde", "bonjour"])
+test "mots" = assert_eq(mots_de("Bonjour, le Monde ! Bonjour ?") ["bonjour" "le" "monde" "bonjour"])
 
 test "fréquences"
-  assert_eq(frequences("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
-  assert_eq(frequences(poeme) |> take(3), [["le", 4], ["chat", 2], ["chien", 2]])
+  assert_eq(frequences("b a b c a b") [["b" 3] ["a" 2] ["c" 1]])
+  assert_eq(frequences(poeme) |> take(3) [["le" 4] ["chat" 2] ["chien" 2]])
 end
 
 test "le plus fréquent"
-  assert_eq(le_plus_frequent(poeme), Some("le"))
-  assert_eq(le_plus_frequent(" ... "), None)
+  assert_eq(le_plus_frequent(poeme) Some("le"))
+  assert_eq(le_plus_frequent(" ... ") None)
 end
 
-test "rapport" = assert_eq(rapport(poeme, 3), "le : 4\nchat : 2\nchien : 2")
+test "rapport" = assert_eq(rapport(poeme 3) "le : 4\nchat : 2\nchien : 2")

@@ -9,10 +9,10 @@ resumo = "Uma semana tem {segundos_por_semana} segundos."
 
 # --- Testes (não os altere) ---
 
-test "segundos em uma hora" = assert_eq(segundos_por_hora, 3600)
+test "segundos em uma hora" = assert_eq(segundos_por_hora 3600)
 
-test "segundos em um dia" = assert_eq(segundos_por_dia, 86400)
+test "segundos em um dia" = assert_eq(segundos_por_dia 86400)
 
-test "segundos em uma semana" = assert_eq(segundos_por_semana, 604800)
+test "segundos em uma semana" = assert_eq(segundos_por_semana 604800)
 
-test "o resumo" = assert_eq(resumo, "Uma semana tem 604800 segundos.")
+test "o resumo" = assert_eq(resumo "Uma semana tem 604800 segundos.")

@@ -8,25 +8,25 @@ fn saluer(nom) = "Bonjour, {nom} !"
 fn crier(texte) = upper(texte) + " !"
 
 ## Les initiales d'une personne, chacune suivie d'un point.
-fn initiales(prenom, nom) = "{prenom[0]}.{nom[0]}."
+fn initiales(prenom nom) = "{prenom[0]}.{nom[0]}."
 
 ## Une phrase qui présente une personne.
-fn presenter(nom, age) = "{nom} a {age} ans."
+fn presenter(nom age) = "{nom} a {age} ans."
 
 # --- Tests (ne les modifiez pas) ---
 
-test "saluer" = assert_eq(saluer("Ada"), "Bonjour, Ada !")
+test "saluer" = assert_eq(saluer("Ada") "Bonjour, Ada !")
 
-test "saluer quelqu'un d'autre" = assert_eq(saluer("Alan"), "Bonjour, Alan !")
+test "saluer quelqu'un d'autre" = assert_eq(saluer("Alan") "Bonjour, Alan !")
 
 test "crier"
-  assert_eq(crier("bonjour"), "BONJOUR !")
-  assert_eq(crier("Stop"), "STOP !")
+  assert_eq(crier("bonjour") "BONJOUR !")
+  assert_eq(crier("Stop") "STOP !")
 end
 
 test "initiales"
-  assert_eq(initiales("Ada", "Lovelace"), "A.L.")
-  assert_eq(initiales("grace", "hopper"), "g.h.")
+  assert_eq(initiales("Ada" "Lovelace") "A.L.")
+  assert_eq(initiales("grace" "hopper") "g.h.")
 end
 
-test "présenter" = assert_eq(presenter("Ada", 36), "Ada a 36 ans.")
+test "présenter" = assert_eq(presenter("Ada" 36) "Ada a 36 ans.")

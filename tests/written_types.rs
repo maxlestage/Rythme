@@ -167,7 +167,7 @@ fn written_types_change_nothing_when_the_program_runs() {
 #[test]
 fn the_formatter_keeps_written_types_and_spaces_them() {
     let src = "fn area( w:Int,h : Int )->Int = w*h\ntotal:  Float=0.0\nr : {name :Text, age:Int} = {name: \"Ada\", age: 36}\nf: fn( Int )->[ Int ] = fn(x) = [x]\ntype Shape = Circle( radius:Float )|Dot\nys = [1].map do |n:Int| n end\n";
-    let want = "fn area(w: Int, h: Int) -> Int = w * h\ntotal: Float = 0.0\nr: {name: Text, age: Int} = {name: \"Ada\", age: 36}\nf: fn(Int) -> [Int] = fn(x) = [x]\ntype Shape = Circle(radius: Float) | Dot\nys = [1].map do |n: Int| n end\n";
+    let want = "fn area(w: Int h: Int) -> Int = w * h\ntotal: Float = 0.0\nr: {name: Text age: Int} = {name: \"Ada\" age: 36}\nf: fn(Int) -> [Int] = fn(x) = [x]\ntype Shape = Circle(radius: Float) | Dot\nys = [1].map do |n: Int| n end\n";
     assert_eq!(format(src).unwrap(), want);
     assert_eq!(format(want).unwrap(), want);
     let multi = "fn pick(xs: List(a)) -> a\n  xs[0]\nend\n";

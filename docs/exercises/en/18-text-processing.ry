@@ -31,15 +31,15 @@ fn title_case(text) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "palindromes"
-  assert_eq(is_palindrome("kayak"), true)
-  assert_eq(is_palindrome("Never odd or even"), true)
-  assert_eq(is_palindrome("rythme"), false)
+  assert_eq(is_palindrome("kayak") true)
+  assert_eq(is_palindrome("Never odd or even") true)
+  assert_eq(is_palindrome("rythme") false)
 end
 
 test "vowels"
-  assert_eq(count_vowels("Rythme"), 2)
-  assert_eq(count_vowels("AEIOU"), 5)
-  assert_eq(count_vowels("xkcd"), 0)
+  assert_eq(count_vowels("Rythme") 2)
+  assert_eq(count_vowels("AEIOU") 5)
+  assert_eq(count_vowels("xkcd") 0)
 end
 
-test "title case" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")
+test "title case" = assert_eq(title_case("the LORD of the rings") "The Lord Of The Rings")

@@ -3,7 +3,7 @@
 
 fn absolute(n) = if n < 0 then -n else n
 
-fn larger(a, b) = if a > b then a else b
+fn larger(a b) = if a > b then a else b
 
 fn grade(score) =
   if score >= 90 then "A"
@@ -21,30 +21,30 @@ fn ticket_price(age) =
 # --- Test (non cambiarli) ---
 
 test "valore assoluto"
-  assert_eq(absolute(-5), 5)
-  assert_eq(absolute(7), 7)
-  assert_eq(absolute(0), 0)
+  assert_eq(absolute(-5) 5)
+  assert_eq(absolute(7) 7)
+  assert_eq(absolute(0) 0)
 end
 
 test "il più grande"
-  assert_eq(larger(3, 8), 8)
-  assert_eq(larger(8, 3), 8)
+  assert_eq(larger(3 8) 8)
+  assert_eq(larger(8 3) 8)
   assert_eq(larger(-1, -2), -1)
 end
 
 test "voto"
-  assert_eq(grade(95), "A")
-  assert_eq(grade(90), "A")
-  assert_eq(grade(85), "B")
-  assert_eq(grade(70), "C")
-  assert_eq(grade(61), "D")
-  assert_eq(grade(12), "F")
+  assert_eq(grade(95) "A")
+  assert_eq(grade(90) "A")
+  assert_eq(grade(85) "B")
+  assert_eq(grade(70) "C")
+  assert_eq(grade(61) "D")
+  assert_eq(grade(12) "F")
 end
 
 test "prezzo del biglietto"
-  assert_eq(ticket_price(2), 0)
-  assert_eq(ticket_price(4), 5)
-  assert_eq(ticket_price(11), 5)
-  assert_eq(ticket_price(30), 10)
-  assert_eq(ticket_price(65), 12)
+  assert_eq(ticket_price(2) 0)
+  assert_eq(ticket_price(4) 5)
+  assert_eq(ticket_price(11) 5)
+  assert_eq(ticket_price(30) 10)
+  assert_eq(ticket_price(65) 12)
 end

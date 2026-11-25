@@ -81,7 +81,7 @@ reponse = 6 * 7  # un commentaire peut suivre du code
 
 ## Aire d'un rectangle.
 ## Un commentaire de documentation peut tenir sur plusieurs lignes.
-fn aire(largeur, hauteur) = largeur * hauteur
+fn aire(largeur hauteur) = largeur * hauteur
 
 help(aire)
 ```
@@ -126,8 +126,8 @@ _brouillon = 0           # un nom peut commencer par `_`
 élément2 = 2             # des chiffres après le premier caractère
 日本 = "Japon"           # n'importe quel caractère alphabétique
 type Reponse = Oui | Non # une majuscule au début : un type ou un constructeur
-e = {type: "un mot-clé comme nom de champ", "nom complet": "un texte comme nom de champ"}
-print(prénom, élément2, 日本, Oui, e.type, e["nom complet"])
+e = {type: "un mot-clé comme nom de champ" "nom complet": "un texte comme nom de champ"}
+print(prénom élément2 日本 Oui e.type e["nom complet"])
 ```
 
 ```text
@@ -158,14 +158,14 @@ et `is_even` et les autres noms marchent toujours.
 
 ```rythme
 fn majeur?(personne) = personne.age >= 18
-ada = {nom: "Ada", age: 36}
-print(majeur?(ada), ada.majeur?, even?(4), [1, 2].include?(2), [].empty?)
-print([1, 2, 3, 4].select(even?))
+ada = {nom: "Ada" age: 36}
+print(majeur?(ada) ada.majeur? even?(4) [1 2].include?(2) [].empty?)
+print([1 2 3 4].select(even?))
 fn premier_double(xs)
   x = first(xs)?             # `first` n'est pas suivi de `(` : l'opérateur
   Some(x * 2)
 end
-print(premier_double([5]), premier_double([]))
+print(premier_double([5]) premier_double([]))
 ```
 
 ```text
@@ -228,9 +228,9 @@ représenté devient `inf`.
 Il n'y a pas de littéraux négatifs : `-7` est l'opérateur `-` appliqué à `7`.
 
 ```rythme
-print(42, -7, 1_000_000, 0xFF, 0b1010)
-print(3.14, 2.0, 1e3, 1.5e-3, 6.02E23)
-print(9223372036854775807, -9223372036854775808, 123456789012345678901234567890)
+print(42 -7 1_000_000 0xFF 0b1010)
+print(3.14 2.0 1e3 1.5e-3 6.02E23)
+print(9223372036854775807 -9223372036854775808 123456789012345678901234567890)
 ```
 
 ```text
@@ -361,18 +361,18 @@ opérande sur la même ligne.
 ```rythme
 total = 1 +
   2                       # la ligne finit par un opérateur : elle continue
-resultat = [1, 2, 3, 4]
+resultat = [1 2 3 4]
   |> filter(is_even)      # la ligne suivante commence par |> : elle continue
   |> map(fn(x) = x * 10)
 point = {
-  x: 1,                   # dans ( ), [ ] et { }, les retours à la ligne ne comptent pas
-  y: 2,
+  x: 1                   # dans ( ), [ ] et { }, les retours à la ligne ne comptent pas
+  y: 2
 }
 taille = if total > 2
   then "grand"            # `then` et `else` peuvent commencer une ligne
   else "petit"
 a = 1; b = 2              # `;` équivaut à un retour à la ligne
-print(total, resultat, point, taille, a + b)
+print(total resultat point taille a + b)
 ```
 
 ```text
@@ -434,8 +434,8 @@ en silence.
 ```rythme
 type Forme = Cercle(rayon) | Carre(cote)
 fn double(x) = x * 2
-exemples = [42, 3.5, "salut", true, (), [1, 2], 1..3, {a: 1}, Some(1), None, Ok(1), Cercle(2), double, print, Cercle]
-print(map(exemples, type_of))
+exemples = [42 3.5 "salut" true () [1 2] 1..3 {a: 1} Some(1) None Ok(1) Cercle(2) double print Cercle]
+print(map(exemples type_of))
 ```
 
 ```text
@@ -457,11 +457,11 @@ dit qu'il est hors limites (E007).
 
 ```rythme
 grand = 9223372036854775807
-print(grand + 1, grand * grand)
+print(grand + 1 grand * grand)
 fn factorielle(n) = if n == 0 then 1 else n * factorielle(n - 1)
-print(factorielle(25), 2 ** 100)
+print(factorielle(25) 2 ** 100)
 print(-(2 ** 64) // 3, -(2 ** 64) % 3, (2 ** 64) / 3)
-print(type_of(2 ** 64), 2 ** 64 - 2 ** 64 + 1)
+print(type_of(2 ** 64) 2 ** 64 - 2 ** 64 + 1)
 ```
 
 ```text
@@ -512,10 +512,10 @@ un exposant ; les autres s'écrivent en entier, avec le moins de chiffres
 possible pour retrouver le même nombre.
 
 ```rythme
-print(7 / 2, 6 / 3, 0.1 + 0.2, 1 / 3)
-print(1e15, 1e16, 0.00001, 0.000001)
+print(7 / 2 6 / 3 0.1 + 0.2 1 / 3)
+print(1e15 1e16 0.00001 0.000001)
 enorme = 10.0 ** 400
-print(enorme, -enorme, enorme - enorme, 2.0 ** 100)
+print(enorme -enorme enorme - enorme 2.0 ** 100)
 print(1.0 / 0)
 ```
 
@@ -654,8 +654,8 @@ valeur d'un tel type s'affiche comme son constructeur suivi de ses champs :
 
 ```rythme
 type Couleur = Rouge | Vert
-print(1 == 1.0, [1, 2] == [1, 2], {a: 1, b: 2} == {b: 2, a: 1})
-print(Some(1) == Some(1), Rouge != Vert, "1" == 1, [] == {})
+print(1 == 1.0 [1 2] == [1 2] {a: 1 b: 2} == {b: 2 a: 1})
+print(Some(1) == Some(1) Rouge != Vert "1" == 1 [] == {})
 ```
 
 ```text
@@ -689,11 +689,11 @@ utilisent le même ordre et échouent de la même façon.
 
 ```rythme
 type Taille = Petit | Moyen | Grand
-print(1 < 2.5, "Zèbre" < "abeille", "abeille" < "banane", false < true)
-print([1, 2] < [1, 3], [1, 2] < [1, 2, 0], Some(1) < Some(2))
-print(sort(["poire", "Figue", "abricot", "été"]))
-print(None < Some(1), Ok(5) < Err(1), Petit < Grand)
-print(sort([Some(2), None, Some(1)]))
+print(1 < 2.5 "Zèbre" < "abeille" "abeille" < "banane" false < true)
+print([1 2] < [1 3] [1 2] < [1 2 0] Some(1) < Some(2))
+print(sort(["poire" "Figue" "abricot" "été"]))
+print(None < Some(1) Ok(5) < Err(1) Petit < Grand)
+print(sort([Some(2) None Some(1)]))
 ```
 
 ```text
@@ -795,8 +795,8 @@ fn etiquette(e) = match e
   :en_attente -> "en attente"
   _ -> "inconnu"
 end
-print(etat, etiquette(etat), type_of(:ok), :a < :b, :ok == :ok)
-print({etat: :ok, nombre: 2}, to_json([:ok, 1]), text(:ok))
+print(etat etiquette(etat) type_of(:ok) :a < :b :ok == :ok)
+print({etat: :ok nombre: 2} to_json([:ok 1]) text(:ok))
 ```
 
 ```text
@@ -844,14 +844,14 @@ fonctions de la [bibliothèque standard](#6-bibliothèque-standard).
   `dict([[clé, valeur], ...])` et `set([a, b, ...])`.
 
 ```rythme
-ages = dict([["Bob", 25], ["Ada", 36]])
-print(ages, ages["Ada"], get(ages, "Eve"), len(ages))
-plus_vieux = put(ages, "Bob", 26)
-print(plus_vieux, ages)
-print(set([3, 1, 3, 2]), set([1, 1.0]), dict({x: 1, y: 2}))
-grille = dict([[[0, 0], "départ"], [[2, 1], "arrivée"]])
-print(grille[[2, 1]], keys(grille))
-print(type_of(ages), type_of(set()), dict() == dict([]))
+ages = dict([["Bob" 25] ["Ada" 36]])
+print(ages ages["Ada"] get(ages "Eve") len(ages))
+plus_vieux = put(ages "Bob" 26)
+print(plus_vieux ages)
+print(set([3 1 3 2]) set([1 1.0]) dict({x: 1 y: 2}))
+grille = dict([[[0 0] "départ"] [[2 1] "arrivée"]])
+print(grille[[2 1]] keys(grille))
+print(type_of(ages) type_of(set()) dict() == dict([]))
 ```
 
 ```text
@@ -864,9 +864,9 @@ Dict Set true
 
 ```rythme
 type Couleur = Rouge | Vert
-print(dict([[1, "a"]]) == dict([[1.0, "a"]]), set([[1, 2], [1]]) == set([[1], [1, 2]]))
-print(set([1, 2]) < set([1, 3]), sort([set([2]), set([1, 3]), set()]))
-print(set([Vert, Rouge, 2, "x", [1], ()]))
+print(dict([[1 "a"]]) == dict([[1.0 "a"]]) set([[1 2] [1]]) == set([[1] [1 2]]))
+print(set([1 2]) < set([1 3]) sort([set([2]) set([1 3]) set()]))
+print(set([Vert Rouge 2 "x" [1] ()]))
 ```
 
 ```text
@@ -882,13 +882,13 @@ dictionnaire, `key?` et `include?` sont `has` et `contains`, et `size` et
 clés comme les autres :
 
 ```rythme
-ages = dict([[:ada, 36], [:alan, 41]])
-ages.each do |nom, age|
-  print(nom, age)
+ages = dict([[:ada 36] [:alan 41]])
+ages.each do |nom age|
+  print(nom age)
 end
-print(ages.key?(:ada), ages.size, ages.select { |_, age| age > 40 })
-vus = set([10 ** 20, 1, 10 ** 20])
-print(vus, vus.include?(1), vus.length, to_json(ages))
+print(ages.key?(:ada) ages.size ages.select { |_ age| age > 40 })
+vus = set([10 ** 20 1 10 ** 20])
+print(vus vus.include?(1) vus.length to_json(ages))
 ```
 
 ```text
@@ -902,15 +902,15 @@ Une fonction ne peut pas être une clé (les fonctions ne se comparent pas) :
 
 ```rythme
 fn double(x) = x * 2
-print(set([1, double]))
+print(set([1 double]))
 ```
 
 ```text
 erreur[E023]: `set` : <fn double> ne peut pas être une clé de dictionnaire, ni un élément d'ensemble
  --> 16-ensemble.ry:2:7
   |
-2 | print(set([1, double]))
-  |       ^^^^^^^^^^^^^^^^
+2 | print(set([1 double]))
+  |       ^^^^^^^^^^^^^^^
   |
   = aide: les clés et les éléments doivent être des valeurs comparables : tout sauf les fonctions et `nan`
   = en savoir plus : `rythme explain E023`
@@ -951,12 +951,12 @@ directement une étape `|>` (`x |> f + 1` ; écrivez `(x |> f) + 1`).
 ```rythme
 fn plus1(x) = x + 1
 print(2 + 3 * 4, (2 + 3) * 4)          # 14 20
-print(2 ** 3 ** 2, -2 ** 2, 2 ** -1)   # ** se groupe à droite, et avant le - unaire
-print(10 - 3 - 2, 7 // 2 * 2)           # de gauche à droite
+print(2 ** 3 ** 2 -2 ** 2 2 ** -1)   # ** se groupe à droite, et avant le - unaire
+print(10 - 3 - 2 7 // 2 * 2)           # de gauche à droite
 print(1 + 2 |> plus1)                   # |> passe après les calculs : plus1(3)
 print(1..3 |> map(plus1))               # .. passe avant |>
 print(5 |> plus1 == 6)                  # |> passe avant les comparaisons
-print(not 1 == 2, not true and false)   # not passe après les comparaisons, avant and
+print(not 1 == 2 not true and false)   # not passe après les comparaisons, avant and
 print(true or false and false)          # and passe avant or
 ```
 
@@ -1021,10 +1021,10 @@ Float. Rythme ne convertit jamais entre textes et nombres : `"1" + 1` est
 E005 (écrivez `"{x}"`, `text(x)`, `int(t)` ou `float(t)`).
 
 ```rythme
-print(7 / 2, 7 // 2, 7 % 3, 2 ** 10, 2 ** -1)
-print(-7 // 2, -7 % 3, 7 % -3)
-print(7.5 // 2, 7.5 % 2, 1 + 2.0, 9 ** 0.5)
-print("ab" + "cd", [1, 2] + [3])
+print(7 / 2 7 // 2 7 % 3 2 ** 10 2 ** -1)
+print(-7 // 2 -7 % 3 7 % -3)
+print(7.5 // 2 7.5 % 2 1 + 2.0 9 ** 0.5)
+print("ab" + "cd" [1 2] + [3])
 ```
 
 ```text
@@ -1089,20 +1089,20 @@ comparaisons (voir [3.1](#31-opérateurs--priorité-et-associativité)). Une
 ligne qui commence par `|>` continue la ligne précédente.
 
 ```rythme
-fn ajouter(a, b) = a + b
+fn ajouter(a b) = a + b
 outils = {double: fn(x) = x * 2}
 print(3 |> ajouter(10))                 # ajouter(3, 10)
 print(3 |> outils.double)               # outils.double(3)
 print(3 |> Some)                        # Some(3)
 print(" Salut " |> trim |> upper)       # upper(trim(" Salut "))
-print([1, 2, 3] |> map(fn(x) = x * 2) |> sum)
-print([4, 5] |> reverse[0])             # [0] s'applique à reverse([4, 5])
+print([1 2 3] |> map(fn(x) = x * 2) |> sum)
+print([4 5] |> reverse[0])             # [0] s'applique à reverse([4, 5])
 print(3 |> fn(x) = x * 100)             # une fonction anonyme comme étape
-fn total(a, b)
+fn total(a b)
   x = a |> parse_int?                   # ? s'applique à parse_int(a)
   Ok(x + b)
 end
-print(total("2", 3), total("deux", 3))
+print(total("2" 3) total("deux" 3))
 ```
 
 ```text
@@ -1160,13 +1160,13 @@ vides et des commentaires peuvent venir entre les étapes).
 
 ```rythme
 type Forme = Cercle(rayon)
-xs = [10, 20, 30]
-ada = {nom: "Ada", "nom complet": "Ada Lovelace"}
-print(xs[0], xs[-1], "été"[1], ada.nom, ada["nom complet"], Cercle(2).rayon)
-print("salut".upper(), [3, 1, 2].sort(), 10.max(20))
+xs = [10 20 30]
+ada = {nom: "Ada" "nom complet": "Ada Lovelace"}
+print(xs[0] xs[-1] "été"[1] ada.nom ada["nom complet"] Cercle(2).rayon)
+print("salut".upper() [3 1 2].sort() 10.max(20))
 calcul = {deux_fois: fn(x) = x * 2}
 print(calcul.deux_fois(21))             # la fonction rangée dans le champ
-print(get(xs, 5))
+print(get(xs 5))
 print(xs[5])
 ```
 
@@ -1189,15 +1189,15 @@ erreur[E007]: l'indice 5 est hors limites : la liste a 3 élément(s)
 Sans parenthèses, et sur plusieurs lignes :
 
 ```rythme
-xs = [3, 1, 4, 1, 5, 9, 2, 6]
-print(xs.sum, xs.size, xs.sort.first, "rythme".upcase, xs.uniq.size)
+xs = [3 1 4 1 5 9 2 6]
+print(xs.sum xs.size xs.sort.first "rythme".upcase xs.uniq.size)
 top = xs
   .sort
   .reverse
   # les trois plus grands
   .first(3)
 print(top)
-point = {x: 1, sum: "un champ"}
+point = {x: 1 sum: "un champ"}
 print(point.sum)                        # le champ gagne sur la fonction
 ```
 
@@ -1221,7 +1221,7 @@ peuvent commencer une nouvelle ligne.
 
 ```rythme
 fn signe(n) = if n < 0 then "négatif" else if n == 0 then "zéro" else "positif"
-print(signe(-2), signe(0), signe(3))
+print(signe(-2) signe(0) signe(3))
 fn decrire(n) =
   if n > 100 then do
     print("un grand nombre")
@@ -1269,7 +1269,7 @@ commence.
 
 ```rythme
 fn decrire(stock) = unless stock > 0 then "épuisé" else "{stock} restant(s)"
-print(decrire(0), decrire(3))
+print(decrire(0) decrire(3))
 ```
 
 ```text
@@ -1327,7 +1327,7 @@ constructeur utilisé dans un motif doit exister (E003) et avoir le bon nombre
 de champs (E004).
 
 ```rythme
-type Forme = Cercle(rayon) | Rect(largeur, hauteur) | Point
+type Forme = Cercle(rayon) | Rect(largeur hauteur) | Point
 
 fn decrire(valeur) = match valeur
   0 -> "le nombre zéro"
@@ -1338,19 +1338,19 @@ fn decrire(valeur) = match valeur
   () -> "la valeur unité"
   [] -> "une liste vide"
   [x] -> "une liste à un élément, {x}"
-  [premier, ..reste] if len(reste) > 3 -> "une longue liste qui commence par {premier}"
-  [premier, second, ..] -> "une liste qui commence par {premier}, {second}"
-  {nom, age: 36} -> "{nom}, 36 ans"
+  [premier ..reste] if len(reste) > 3 -> "une longue liste qui commence par {premier}"
+  [premier second ..] -> "une liste qui commence par {premier}, {second}"
+  {nom age: 36} -> "{nom}, 36 ans"
   {nom} -> "un enregistrement avec un nom : {nom}"
   Cercle(r) -> "un cercle de rayon {r}"
-  Rect(l, h) if l == h -> "un carré"
-  Rect(_, _) | Point -> "un rectangle ou un point"
+  Rect(l h) if l == h -> "un carré"
+  Rect(_ _) | Point -> "un rectangle ou un point"
   Some(Some(v)) -> "une Option dans une Option : {v}"
   _ -> "autre chose"
 end
 
-exemples = [0, -2, 2.5, "salut", true, (), [], [7], 1..10, [1, 2, 3],
-  {nom: "Ada", age: 36}, {nom: "Alan", age: 41}, Cercle(1), Rect(2, 2), Point, Some(Some(4)), 0.0, 99]
+exemples = [0 -2 2.5 "salut" true () [] [7] 1..10 [1 2 3]
+  {nom: "Ada" age: 36} {nom: "Alan" age: 41} Cercle(1) Rect(2 2) Point Some(Some(4)) 0.0 99]
 exemples |> each(fn(v) = print(decrire(v)))
 ```
 
@@ -1426,9 +1426,9 @@ fn poli("M. " + nom) = "Cher Monsieur {nom}"
 fn poli("Mme " + nom) = "Chère Madame {nom}"
 fn poli(nom) = "Bonjour {nom}"
 
-print([95, 70, 100.0, 89.5, -3] |> map(note))
-print(piece(0.25), piece(0.75), piece(-2))
-print(poli("M. Martin"), "/", poli("Mme Leroy"), "/", poli("Ada"))
+print([95 70 100.0 89.5 -3] |> map(note))
+print(piece(0.25) piece(0.75) piece(-2))
+print(poli("M. Martin") "/" poli("Mme Leroy") "/" poli("Ada"))
 ```
 
 ```text
@@ -1564,8 +1564,8 @@ montrer = fn(x)
   y = x * 2
   "valeur : {y}"
 end
-print(double(4), plus10(5), montrer(3))
-print([[1, 2], [3, 4]] |> map(fn([a, b]) = a * b))
+print(double(4) plus10(5) montrer(3))
+print([[1 2] [3 4]] |> map(fn([a b]) = a * b))
 fn compte_a_rebours(n)
   etape = fn(k) = if k == 0 then "décollage" else "{k} " + etape(k - 1)
   etape(n)
@@ -1597,12 +1597,12 @@ de champ est E011. **C'est ainsi qu'on « met à jour » un enregistrement** :
 La virgule finale est permise dans les deux cas.
 
 ```rythme
-ada = {nom: "Ada", naissance: 1815}
-print({..ada, naissance: 1816}, {..ada, ville: "Londres"}, {naissance: 0, ..ada})
+ada = {nom: "Ada" naissance: 1815}
+print({..ada naissance: 1816} {..ada ville: "Londres"} {naissance: 0, ..ada})
 nom = "Grace"
-print({nom, naissance: 1906})
-xs = [1, 2]
-print([0, ..xs, 3], xs + [9], 1..5, 5..1)
+print({nom naissance: 1906})
+xs = [1 2]
+print([0 ..xs 3] xs + [9] 1..5 5..1)
 ```
 
 ```text
@@ -1636,16 +1636,16 @@ fonction anonyme : `xs.map do |x| x * 2 end` vaut `map(xs, fn(x) = x * 2)`.
   `xs.map do |x| x end.sum`.
 
 ```rythme
-noms = ["Ada", "Grace", "Alan"]
+noms = ["Ada" "Grace" "Alan"]
 noms.each do |nom|
   print("Bonjour, #{nom} !")
 end
 print(noms.map { |n| n.size })
-total = [1, 2, 3].reduce(0) do |somme, x|
+total = [1 2 3].reduce(0) do |somme x|
   somme + x
 end
-print(total, [[1, 2], [3, 4]].map do |[a, b]| a * b end)
-noms.each_with_index do |nom, i| print(i, nom) end
+print(total [[1 2] [3 4]].map do |[a b]| a * b end)
+noms.each_with_index do |nom i| print(i nom) end
 ```
 
 ```text
@@ -1740,15 +1740,15 @@ fn saluer(nom) = puts "Bonjour, #{nom} !"
 fn verifier(ok) = if ok then puts "oui" else puts "non"
 fn titre(nom) =
   match nom
-    "Dr " + reste -> puts "docteur", reste
+    "Dr " + reste -> puts "docteur" reste
     _ -> puts nom
   end
 saluer "Ada"
 verifier 1 > 2
 titre "Dr Grace"
 titre "Alan"
-[1, 2].each { |n| puts n * 10 }
-montrer = fn(v) = puts "v :", v
+[1 2].each { |n| puts n * 10 }
+montrer = fn(v) = puts "v :" v
 montrer(3)
 x = 10
 puts(if x > 5 then x -1 else 0)
@@ -1785,6 +1785,50 @@ erreur[E005]: impossible d'utiliser `-` avec Function et Int
   = en savoir plus : `rythme explain E005`
 ```
 
+### 3.16 Sans virgules
+
+Comme en REBOL, les virgules entre les éléments d'un crochet peuvent être
+omises : `[1 2 3]` est `[1, 2, 3]`, `f(a b)` est `f(a, b)`, `{nom: "Ada" age:
+36}` est `{nom: "Ada", age: 36}`, et un appel sans parenthèses accepte
+`print x y`. Cela marche partout où des éléments se suivent : les listes, les
+arguments d'un appel, les enregistrements, les paramètres d'une fonction ou
+d'un bloc (`fn aire(l h)`, `do |acc x|`), les motifs (`[premier ..reste]`,
+`Rect(l h)`), les types (`Result(Int Text)`, `{nom: Text age: Int}`) et les
+champs d'une variante. `rythme fmt` écrit le code ainsi. Les valeurs
+s'affichent toujours avec des virgules : `print([1 2])` affiche `[1, 2]`.
+
+```rythme
+xs = [3 1 2]
+p = {nom: "Ada" age: 36}
+fn area(w h) = w * h
+print(len(xs) area(2 3) p.nom)
+print [[1 2] [3 4]] {..p age: 37}
+fn total([]) = 0
+fn total([x ..rest]) = x + total(rest)
+print total(xs) xs.map(fn(x) = x * 10)
+n = 10
+print "n:" n [n - 1] [n, -1] [0, ..xs]
+```
+
+```text
+3 6 Ada
+[[1, 2], [3, 4]] {nom: "Ada", age: 37}
+6 [30, 10, 20]
+n: 10 [9] [10, -1] [0, 3, 1, 2]
+```
+
+Tout programme écrit avec des virgules garde son sens : un crochet est lu
+d'abord avec ses virgules, et relu sans elles seulement quand cela échoue
+entre deux éléments (`[1 2]`), ou quand un crochet qu'il contient est écrit
+sans virgules (`[[1 2] [3 4]]` est deux listes, pas un indice). Sans
+virgules, un `[`, une `(`, un `-` collé à ce qui suit ou un `..` collé à ce
+qui suit, après une espace, commence l'élément suivant : `[a [0]]` fait deux
+éléments, comme `[a -1]` et `[a ..reste]`, dans un tel crochet. Dans un
+crochet qui se lit avec des virgules, `[n -1]` reste la soustraction `n - 1` :
+écrivez `[n, -1]` pour deux éléments, comme le fait `rythme fmt`. Une virgule
+reste aussi après un appel sans parenthèses, qui prendrait l'élément suivant
+comme un argument de plus (`[fn(v) = puts v, 2]`).
+
 ---
 
 ## 4. Définitions
@@ -1809,14 +1853,14 @@ d'accolades, où elles ne peuvent pas donner de noms : `Some(1 | 2) = x` ne fait
 valeur.
 
 ```rythme
-[a, b] = [1, 2]
-{nom, naissance: annee} = {nom: "Ada", naissance: 1815, ville: "Londres"}
-[tete, ..queue] = 1..4
-[premier, ..] = ["x", "y", "z"]
-{ville, ..} = {nom: "Ada", ville: "Londres"}
+[a b] = [1 2]
+{nom naissance: annee} = {nom: "Ada" naissance: 1815 ville: "Londres"}
+[tete ..queue] = 1..4
+[premier ..] = ["x" "y" "z"]
+{ville, ..} = {nom: "Ada" ville: "Londres"}
 Some(v) = Some(5)
-print(a, b, nom, annee, tete, queue, premier, ville, v)
-[x, y] = [1, 2, 3]
+print(a b nom annee tete queue premier ville v)
+[x y] = [1 2 3]
 ```
 
 ```text
@@ -1824,8 +1868,8 @@ print(a, b, nom, annee, tete, queue, premier, ville, v)
 erreur[E006]: la valeur List [1, 2, 3] ne correspond pas à ce motif
  --> 40-noms.ry:8:1
   |
-8 | [x, y] = [1, 2, 3]
-  | ^^^^^^
+8 | [x y] = [1 2 3]
+  | ^^^^^
   |
   = aide: utilisez `match` pour traiter les différentes formes possibles d'une valeur
   = en savoir plus : `rythme explain E006`
@@ -1905,9 +1949,9 @@ fn g(n)
     y = 100                  # un bloc imbriqué peut reprendre un nom
     y + 1
   end
-  [y, z]
+  [y z]
 end
-print(x, fois_dix(2), g(1))
+print(x fois_dix(2) g(1))
 ```
 
 ```text
@@ -1929,7 +1973,7 @@ directement au premier niveau, le vérificateur le signale avant l'exécution
 l'exécution (E003, « pas encore défini »).
 
 ```rythme
-print(double(21), Cercle(1))     # fonctions et types sont connus dans tout le fichier
+print(double(21) Cercle(1))     # fonctions et types sont connus dans tout le fichier
 fn double(x) = x * 2
 type Forme = Cercle(rayon)
 ```
@@ -2041,7 +2085,7 @@ fn signe(_) = "positif"
 fn saluer({nom}) = "Bonjour, {nom} !"
 fn bonjour() = "bonjour"
 
-print(fib(10), signe(-5), signe(0), signe(9), saluer({nom: "Ada", age: 36}), bonjour())
+print(fib(10) signe(-5) signe(0) signe(9) saluer({nom: "Ada" age: 36}) bonjour())
 ```
 
 ```text
@@ -2056,7 +2100,7 @@ fn parite(n)
   fn impair(k) = pair(k - 1)
   if pair(n) then "pair" else "impair"
 end
-print(parite(10), parite(7))
+print(parite(10) parite(7))
 ```
 
 ```text
@@ -2125,35 +2169,35 @@ fonction (un peu moins quand les appels passent par des fonctions comme
 playground. Les fonctions de listes (`map`, `fold`...) ne s'imbriquent pas.
 
 ```rythme
-fn decompte(0, acc) = acc
-fn decompte(n, acc) = decompte(n - 1, acc + 1)       # un appel terminal
+fn decompte(0 acc) = acc
+fn decompte(n acc) = decompte(n - 1 acc + 1)       # un appel terminal
 fn est_pair(0) = true
 fn est_pair(n) = est_impair(n - 1)                    # appels terminaux entre deux fonctions
 fn est_impair(0) = false
 fn est_impair(n) = est_pair(n - 1)
-print(decompte(1000000, 0), est_pair(1000001))
+print(decompte(1000000 0) est_pair(1000001))
 fn somme([]) = 0
-fn somme([x, ..reste]) = x + somme(reste)             # pas un appel terminal : + vient après
+fn somme([x ..reste]) = x + somme(reste)             # pas un appel terminal : + vient après
 print(somme(1..5000000))
 ```
 
 ```text
 1000000 false
-erreur[E014]: trop d'appels imbriqués (917504 appels en cours)
- --> 44-terminal.ry:9:30
+erreur[E014]: trop d'appels imbriqués (40110 appels en cours)
+ --> 44-terminal.ry:9:29
   |
-9 | fn somme([x, ..reste]) = x + somme(reste)             # pas un appel terminal : + vient après
-  |                              ^^^^^^^^^^^^ cet appel va trop loin
+9 | fn somme([x ..reste]) = x + somme(reste)             # pas un appel terminal : + vient après
+  |                             ^^^^^^^^^^^^ cet appel va trop loin
   |
   = aide: une fonction récursive qui ne s'arrête jamais ? Vérifiez qu'elle atteint toujours un cas de base.
       Sinon, faites de l'appel récursif la toute dernière chose que fait la fonction
       (appel terminal), par exemple avec un accumulateur :
-        fn somme([], acc) = acc
-        fn somme([x, ..reste], acc) = somme(reste, acc + x)
+        fn somme([] acc) = acc
+        fn somme([x ..reste] acc) = somme(reste acc + x)
       ou utilisez `fold`, `map`, `filter`, qui n'ont pas de limite.
   = appels en cours (le plus récent d'abord) :
-      dans `somme` (×40) appelée en 44-terminal.ry:9:30
-      … et 917464 autres appels
+      dans `somme` (×40) appelée en 44-terminal.ry:9:29
+      … et 40070 autres appels
   = en savoir plus : `rythme explain E014`
 ```
 
@@ -2194,25 +2238,25 @@ type Nom = Variante | Variante(champ, champ) | ...
 ## Une forme à dessiner.
 type Forme =
   | Cercle(rayon)
-  | Rect(largeur, hauteur)
+  | Rect(largeur hauteur)
   | Vide
 
 fn aire(Cercle(r)) = pi * r * r
-fn aire(Rect(l, h)) = l * h
+fn aire(Rect(l h)) = l * h
 fn aire(Vide) = 0
 
-formes = [Cercle(1.0), Rect(2, 3), Vide]
+formes = [Cercle(1.0) Rect(2 3) Vide]
 print(formes |> map(aire))
-print(Rect(2, 3).largeur, type_of(Vide), Cercle, map([1, 2], Cercle))
+print(Rect(2 3).largeur type_of(Vide) Cercle map([1 2] Cercle))
 help(Cercle)
 ```
 
 ```text
 avertissement[W009]: ceci affiche une fonction, pas une valeur
-  --> sample.ry:13:42
+  --> sample.ry:13:39
    |
-13 | print(Rect(2, 3).largeur, type_of(Vide), Cercle, map([1, 2], Cercle))
-   |                                          ^^^^^^ un constructeur, affiché comme `<constructeur ...>`
+13 | print(Rect(2 3).largeur type_of(Vide) Cercle map([1 2] Cercle))
+   |                                       ^^^^^^ un constructeur, affiché comme `<constructeur ...>`
    |
    = aide: pour afficher ce qu'elle donne, appelez-la : `Cercle(...)`
 
@@ -2256,19 +2300,19 @@ le fait échouer. Le code de sortie vaut 0 quand tous les tests réussissent
 ```rythme
 fn double(x) = x * 2
 
-test "le double de 2 est 4" = assert_eq(double(2), 4)
+test "le double de 2 est 4" = assert_eq(double(2) 4)
 
 test "plusieurs vérifications"
-  assert_eq(double(0), 0)
-  assert(double(-1) < 0, "doit rester négatif")
+  assert_eq(double(0) 0)
+  assert(double(-1) < 0 "doit rester négatif")
 end
 
 test "un nombre lu"
   n = parse_int("21")?            # `?` est permis dans un test
-  assert_eq(double(n), 42)
+  assert_eq(double(n) 42)
 end
 
-test "une attente fausse" = assert_eq(double(3), 7)
+test "une attente fausse" = assert_eq(double(3) 7)
 
 print("pas affiché par rythme test")
 ```
@@ -2284,14 +2328,14 @@ Exécution de 4 test(s)
 erreur[E015]: assertion échouée : les valeurs sont différentes
   --> 46-tests.ry:15:29
    |
-15 | test "une attente fausse" = assert_eq(double(3), 7)
-   |                             ^^^^^^^^^^^^^^^^^^^^^^^
+15 | test "une attente fausse" = assert_eq(double(3) 7)
+   |                             ^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: obtenu :  6
        attendu : 7
    = en savoir plus : `rythme explain E015`
 
-4 test(s) : 3 réussi(s), 1 échoué(s) (1 ms)
+4 test(s) : 3 réussi(s), 1 échoué(s) (2 ms)
 ```
 
 Code de sortie : 1. Le temps à la fin du résumé est celui de tout le
@@ -2351,13 +2395,13 @@ trop ; sur deux textes courts, une marque montre le premier caractère qui
 diffère.
 
 ```rythme
-fn mon_max(liste) = fold(liste, 0, fn(meilleur, x) = if x > meilleur then x else meilleur)
+fn mon_max(liste) = fold(liste 0 fn(meilleur x) = if x > meilleur then x else meilleur)
 
-test "inverser deux fois redonne la liste" = check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+test "inverser deux fois redonne la liste" = check_all(fn(l) = reverse(reverse(l)) == l lists_of(ints()))
 
-test "le plus grand est dans la liste" = check_all(fn(l) = is_empty(l) or contains(l, mon_max(l)), lists_of(ints()))
+test "le plus grand est dans la liste" = check_all(fn(l) = is_empty(l) or contains(l mon_max(l)) lists_of(ints()))
 
-test "un enregistrement" = assert_eq({nom: "Ada", langues: ["en", "fr"]}, {nom: "Ada", langues: ["en", "de"]})
+test "un enregistrement" = assert_eq({nom: "Ada" langues: ["en" "fr"]} {nom: "Ada" langues: ["en" "de"]})
 ```
 
 `rythme test 47-proprietes.ry` :
@@ -2369,10 +2413,10 @@ Exécution de 3 test(s)
 erreur[E015]: la propriété est fausse pour [-1]
  --> 47-proprietes.ry:5:42
   |
-5 | test "le plus grand est dans la liste" = check_all(fn(l) = is_empty(l) or contains(l, mon_max(l)), lists_of(ints()))
-  |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ fausse pour [-1]
+5 | test "le plus grand est dans la liste" = check_all(fn(l) = is_empty(l) or contains(l mon_max(l)) lists_of(ints()))
+  |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ fausse pour [-1]
   |
-  = note: trouvé à l'essai 1 sur 100, puis simplifié depuis [-3, -1] en 3 étape(s)
+  = note: trouvé à l'essai 16 sur 100, puis simplifié depuis [-29, -8] en 6 étape(s)
   = note: graine 42 : chaque lancement essaie les mêmes valeurs ; `rythme test --seed N` en essaie d'autres
   = aide: la fonction doit être vraie pour chaque valeur du générateur : corrigez la fonction, ou donnez au générateur un intervalle plus petit, comme `ints(1, 100)`
   = en savoir plus : `rythme explain E015`
@@ -2381,8 +2425,8 @@ erreur[E015]: la propriété est fausse pour [-1]
 erreur[E015]: assertion échouée : les valeurs sont différentes
  --> 47-proprietes.ry:7:28
   |
-7 | test "un enregistrement" = assert_eq({nom: "Ada", langues: ["en", "fr"]}, {nom: "Ada", langues: ["en", "de"]})
-  |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7 | test "un enregistrement" = assert_eq({nom: "Ada" langues: ["en" "fr"]} {nom: "Ada" langues: ["en" "de"]})
+  |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: obtenu :  {nom: "Ada", langues: ["en", "fr"]}
       attendu : {nom: "Ada", langues: ["en", "de"]}
@@ -2392,7 +2436,7 @@ erreur[E015]: assertion échouée : les valeurs sont différentes
 Tests échoués :
   ✗ le plus grand est dans la liste (47-proprietes.ry:5:1)
   ✗ un enregistrement (47-proprietes.ry:7:1)
-3 test(s) : 1 réussi(s), 2 échoué(s) (7 ms)
+3 test(s) : 1 réussi(s), 2 échoué(s) (4 ms)
 ```
 
 ### 4.9 Modules : `use`
@@ -2452,11 +2496,11 @@ use "geometrie.ry"         # ancienne forme : ses noms s'utilisent directement
 ```rythme
 # geometrie.ry
 print("geometrie.ry ne s'exécute qu'une fois")
-fn aire_rectangle(l, h) = l * h
-fn aire_carre(cote) = aire_rectangle(cote, _verifie(cote))
+fn aire_rectangle(l h) = l * h
+fn aire_carre(cote) = aire_rectangle(cote _verifie(cote))
 fn _verifie(x) = if x >= 0 then x else fail("côté négatif")
-origine = {x: 0, y: 0}
-type Forme = Rectangle(l, h) | Carre(cote)
+origine = {x: 0 y: 0}
+type Forme = Rectangle(l h) | Carre(cote)
 ```
 
 ```rythme
@@ -2468,10 +2512,10 @@ fn aire(r) = pi * r ** 2
 # principal.ry
 use geometrie
 use formes/cercle
-print(geometrie.aire_rectangle(2, 3), geometrie.aire_carre(4), geometrie.origine)
-print(round(cercle.aire(1), 2))
+print(geometrie.aire_rectangle(2 3) geometrie.aire_carre(4) geometrie.origine)
+print(round(cercle.aire(1) 2))
 fn aire(forme) = match forme
-  geometrie.Rectangle(l, h) -> l * h
+  geometrie.Rectangle(l h) -> l * h
   geometrie.Carre(c) -> c * c
 end
 print(aire(geometrie.Carre(5)))
@@ -2588,19 +2632,19 @@ change rien.
 
 ```rythme
 ## Une forme, avec les types de ses champs.
-type Forme = Cercle(rayon: Float) | Rect(largeur: Float, hauteur: Float)
+type Forme = Cercle(rayon: Float) | Rect(largeur: Float hauteur: Float)
 
 fn aire(forme: Forme) -> Float = match forme
   Cercle(r) -> pi * r * r
-  Rect(l, h) -> l * h
+  Rect(l h) -> l * h
 end
 
 fn premier(xs: List(a)) -> a = xs[0]
 
-formes: List(Forme) = [Cercle(1.0), Rect(2.0, 3.0)]
+formes: List(Forme) = [Cercle(1.0) Rect(2.0 3.0)]
 total: Float = formes |> map(aire) |> sum
-print(round(total, 2), premier(["a", "b"]))
-print([1, 2, 3].map do |n: Int| n * 10 end)
+print(round(total 2) premier(["a" "b"]))
+print([1 2 3].map do |n: Int| n * 10 end)
 ```
 
 ```text
@@ -2611,10 +2655,10 @@ print([1, 2, 3].map do |n: Int| n * 10 end)
 Trois erreurs, trouvées avant l'exécution :
 
 ```rythme
-fn aire_rect(l: Int, h: Int) -> Int = l * h
+fn aire_rect(l: Int h: Int) -> Int = l * h
 fn etiquette(n: Int) -> Text = n
 ratio: Float = 2
-print(aire_rect(2, "3"), etiquette(1), ratio)
+print(aire_rect(2 "3") etiquette(1) ratio)
 ```
 
 `rythme check` :
@@ -2645,13 +2689,13 @@ erreur[E027]: `ratio` est écrit `Float`, mais sa valeur est Int 2
   = en savoir plus : `rythme explain E027`
 
 erreur[E027]: `aire_rect` attend `Int` pour `h`, mais reçoit Text "3"
- --> sample.ry:4:20
+ --> sample.ry:4:19
   |
-4 | print(aire_rect(2, "3"), etiquette(1), ratio)
-  |                    ^^^ pas `Int`
+4 | print(aire_rect(2 "3") etiquette(1) ratio)
+  |                   ^^^ pas `Int`
   |
-1 | fn aire_rect(l: Int, h: Int) -> Int = l * h
-  |                         --- le type écrit pour `h`
+1 | fn aire_rect(l: Int h: Int) -> Int = l * h
+  |                        --- le type écrit pour `h`
   |
   = aide: changez la valeur, ou le type écrit pour elle ; les types écrits dans le code sont vérifiés avant l'exécution, et ne sont jamais obligatoires (voir `rythme help types`)
   = en savoir plus : `rythme explain E027`
@@ -2663,10 +2707,10 @@ Une variable de type désigne un seul type dans un appel, et les types
 commencent par une majuscule :
 
 ```rythme
-fn paire(a: t, b: t) -> List(t) = [a, b]
+fn paire(a: t b: t) -> List(t) = [a b]
 fn premier(xs: List(a)) -> a = xs[0]
 fn moitie(n: int) = n / 2
-print(paire(1, "un"), premier([1, 2]) + "!", moitie(4))
+print(paire(1 "un") premier([1 2]) + "!" moitie(4))
 ```
 
 `rythme check` :
@@ -2683,22 +2727,22 @@ erreur[E027]: type inconnu `int`
   = en savoir plus : `rythme explain E027`
 
 erreur[E027]: `t` ne peut pas être à la fois Int et Text dans cet appel à `paire`
- --> sample.ry:4:16
+ --> sample.ry:4:15
   |
-4 | print(paire(1, "un"), premier([1, 2]) + "!", moitie(4))
-  |                ^^^^ `t` est Text ici
+4 | print(paire(1 "un") premier([1 2]) + "!" moitie(4))
+  |               ^^^^ `t` est Text ici
   |
-4 | print(paire(1, "un"), premier([1, 2]) + "!", moitie(4))
+4 | print(paire(1 "un") premier([1 2]) + "!" moitie(4))
   |             - `t` est Int ici
   |
   = note: une variable de type comme `t` désigne le même type partout dans les types écrits pour `paire`
   = en savoir plus : `rythme explain E027`
 
 erreur[E005]: impossible d'utiliser `+` avec Int et Text
- --> sample.ry:4:39
+ --> sample.ry:4:36
   |
-4 | print(paire(1, "un"), premier([1, 2]) + "!", moitie(4))
-  |                                       ^ Int + Text "!"
+4 | print(paire(1 "un") premier([1 2]) + "!" moitie(4))
+  |                                    ^ Int + Text "!"
   |
   = aide: pour construire un texte contenant une valeur, utilisez des accolades : "total : {x}"
       ou convertissez d'abord la valeur : text(x)
@@ -2746,21 +2790,21 @@ valeurs sont des Int, `Paire(Text, Int)` une paire d'un Text et d'un Int.
 
 ```rythme
 ## Un arbre binaire : ses valeurs ont le type `a`.
-type Arbre(a) = Feuille | Noeud(gauche: Arbre(a), valeur: a, droite: Arbre(a))
+type Arbre(a) = Feuille | Noeud(gauche: Arbre(a) valeur: a droite: Arbre(a))
 
-fn inserer(t: Arbre(Int), x: Int) -> Arbre(Int) = match t
-  Feuille -> Noeud(Feuille, x, Feuille)
-  Noeud(g, v, d) if x < v -> Noeud(inserer(g, x), v, d)
-  Noeud(g, v, d) -> Noeud(g, v, inserer(d, x))
+fn inserer(t: Arbre(Int) x: Int) -> Arbre(Int) = match t
+  Feuille -> Noeud(Feuille x Feuille)
+  Noeud(g v d) if x < v -> Noeud(inserer(g x) v d)
+  Noeud(g v d) -> Noeud(g v inserer(d x))
 end
 
 fn en_liste(t: Arbre(a)) -> List(a) = match t
   Feuille -> []
-  Noeud(g, v, d) -> en_liste(g) + [v] + en_liste(d)
+  Noeud(g v d) -> en_liste(g) + [v] + en_liste(d)
 end
 
-arbre = [5, 2, 8, 1].reduce(Feuille) do |t, x| inserer(t, x) end
-print(en_liste(arbre), arbre.valeur)
+arbre = [5 2 8 1].reduce(Feuille) do |t x| inserer(t x) end
+print(en_liste(arbre) arbre.valeur)
 help(Noeud)
 ```
 
@@ -2774,19 +2818,19 @@ Noeud(gauche: Arbre(a), valeur: a, droite: Arbre(a))
 Les erreurs, trouvées avant l'exécution :
 
 ```rythme
-type Arbre(a) = Feuille | Noeud(gauche: Arbre(a), valeur: a, droite: Arbre(a))
-type Paire(a, b) = Paire(premier: a, second: b)
+type Arbre(a) = Feuille | Noeud(gauche: Arbre(a) valeur: a droite: Arbre(a))
+type Paire(a b) = Paire(premier: a second: b)
 
 fn total(t: Arbre(Int)) -> Int = match t
   Feuille -> 0
-  Noeud(g, v, d) -> total(g) + v + total(d)
+  Noeud(g v d) -> total(g) + v + total(d)
 end
 
-fn premier_de(p: Paire(a, b)) -> a = p.premier
-fn taille(t: Arbre(Int, Text)) -> Int = 0
+fn premier_de(p: Paire(a b)) -> a = p.premier
+fn taille(t: Arbre(Int Text)) -> Int = 0
 
-print(total(Noeud(Feuille, "deux", Feuille)))
-print(premier_de(Paire(1, "un")) + "!")
+print(total(Noeud(Feuille "deux" Feuille)))
+print(premier_de(Paire(1 "un")) + "!")
 ```
 
 `rythme check` :
@@ -2795,16 +2839,16 @@ print(premier_de(Paire(1, "un")) + "!")
 erreur[E027]: `Arbre` prend un seul type : `Arbre(Int)`
   --> sample.ry:10:14
    |
-10 | fn taille(t: Arbre(Int, Text)) -> Int = 0
-   |              ^^^^^^^^^^^^^^^^
+10 | fn taille(t: Arbre(Int Text)) -> Int = 0
+   |              ^^^^^^^^^^^^^^^
    |
    = en savoir plus : `rythme explain E027`
 
 erreur[E027]: `total` attend `Arbre(Int)` pour `t`, mais reçoit une valeur de type Arbre(Text)
   --> sample.ry:12:13
    |
-12 | print(total(Noeud(Feuille, "deux", Feuille)))
-   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ pas `Arbre(Int)`
+12 | print(total(Noeud(Feuille "deux" Feuille)))
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ pas `Arbre(Int)`
    |
  4 | fn total(t: Arbre(Int)) -> Int = match t
    |             ---------- le type écrit pour `t`
@@ -2813,10 +2857,10 @@ erreur[E027]: `total` attend `Arbre(Int)` pour `t`, mais reçoit une valeur de t
    = en savoir plus : `rythme explain E027`
 
 erreur[E005]: impossible d'utiliser `+` avec Int et Text
-  --> sample.ry:13:34
+  --> sample.ry:13:33
    |
-13 | print(premier_de(Paire(1, "un")) + "!")
-   |                                  ^ Int + Text "!"
+13 | print(premier_de(Paire(1 "un")) + "!")
+   |                                 ^ Int + Text "!"
    |
    = aide: pour construire un texte contenant une valeur, utilisez des accolades : "total : {x}"
        ou convertissez d'abord la valeur : text(x)
@@ -2839,7 +2883,7 @@ fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
 
 async fn fib_lent(n) = fib(n)
 
-taches = [20, 21, 22] |> map(fib_lent)
+taches = [20 21 22] |> map(fib_lent)
 print(await_all(taches))
 print(await fib_lent(10) + 1)
 ```
@@ -2905,18 +2949,18 @@ ajoute 1 au nombre. On ne peut l'utiliser que dans une fonction ou un test
 l'appel tout entier.
 
 ```rythme
-fn additionner_textes(a, b)
+fn additionner_textes(a b)
   x = parse_int(a)?          # sur Err(...), la fonction le renvoie aussitôt
   y = parse_int(b)?
   Ok(x + y)
 end
-print(additionner_textes("1", "2"), additionner_textes("1", "deux"))
+print(additionner_textes("1" "2") additionner_textes("1" "deux"))
 
 fn premier_pair_double(liste)
-  x = find(liste, is_even)?  # sur None, la fonction renvoie None
+  x = find(liste is_even)?  # sur None, la fonction renvoie None
   Some(x * 2)
 end
-print(premier_pair_double([1, 4, 5]), premier_pair_double([1, 3]))
+print(premier_pair_double([1 4 5]) premier_pair_double([1 3]))
 ```
 
 ```text
@@ -2954,9 +2998,9 @@ comporte :
 
 ```rythme
 fn moyenne(liste) = sum(liste) / len(liste)
-fn rapport(listes) = map(listes, moyenne)
+fn rapport(listes) = map(listes moyenne)
 print("début")
-print(rapport([[1, 2], []]))
+print(rapport([[1 2] []]))
 print("jamais affiché")
 ```
 
@@ -3034,7 +3078,7 @@ nature varie, indices hors limites, division par zéro...) est trouvé pendant
 l'exécution.
 
 ```rythme
-fn aire(largeur, hauteur) = largeur * hauteru
+fn aire(largeur hauteur) = largeur * hauteru
 fn principal()
   total = aire(2)
   print(totl)
@@ -3047,10 +3091,10 @@ x = 2
 
 ```text
 erreur[E003]: nom inconnu `hauteru`
- --> 52-verifier.ry:1:39
+ --> 52-verifier.ry:1:38
   |
-1 | fn aire(largeur, hauteur) = largeur * hauteru
-  |                                       ^^^^^^^ non défini
+1 | fn aire(largeur hauteur) = largeur * hauteru
+  |                                      ^^^^^^^ non défini
   |
   = aide: vouliez-vous dire `hauteur` ?
   = en savoir plus : `rythme explain E003`
@@ -3061,7 +3105,7 @@ erreur[E004]: `aire` attend 2 arguments, mais en a reçu 1
 3 |   total = aire(2)
   |           ^^^^^^^ 1 argument(s) ici
   |
-1 | fn aire(largeur, hauteur) = largeur * hauteru
+1 | fn aire(largeur hauteur) = largeur * hauteru
   |    ---- définie ici
   |
   = aide: utilisation : `aire(largeur, hauteur)`
@@ -3114,7 +3158,7 @@ fn deux_fois(x)
   x + x
 end
 len = 3
-print([1, 2].taille())
+print([1 2].taille())
 ```
 
 `rythme check 53-avertissements.ry` :
@@ -3157,10 +3201,10 @@ avertissement[W003]: `len` masque la fonction intégrée `len`
    = aide: dans ce fichier, `len` désignera désormais votre définition ; choisissez un autre nom pour garder celle intégrée
 
 avertissement[W005]: il n'existe pas de fonction nommée `taille`
-  --> 53-avertissements.ry:13:14
+  --> 53-avertissements.ry:13:13
    |
-13 | print([1, 2].taille())
-   |              ^^^^^^ inconnue
+13 | print([1 2].taille())
+   |             ^^^^^^ inconnue
    |
    = note: `valeur.taille(...)` appelle `taille(valeur, ...)`, ou le champ `taille` d'un enregistrement
    = aide: en Rythme, cela s'appelle `len`
@@ -3193,7 +3237,7 @@ d'un autre fichier n'est pas déduit.
 fn aire(cote) = cote * cote
 fn crier(t) = upper(t) + "!"
 fn deux_fois(x) = x + x
-print(aire(3), crier("salut"), deux_fois("ab"))
+print(aire(3) crier("salut") deux_fois("ab"))
 print(aire("grand"))
 print(crier(5))
 ```
@@ -3468,16 +3512,16 @@ lit un objet comme un dictionnaire. Les autres fonctions des listes ne les
 prennent pas : `values(x)` ou `entries(x)` donnent d'abord une liste.
 
 ```rythme
-a = set([1, 2, 3])
-b = set([2, 3, 4])
-print(union(a, b), intersection(a, b), difference(a, b), is_subset(set([2]), a))
-print(push(a, 0), remove(a, 2), has(a, 2), values(a), map(a, fn(x) = x % 2))
-prix = dict([["pomme", 3], ["poire", 5], ["figue", 9]])
-print(filter(prix, fn(nom, p) = p < 6), map_values(prix, fn(p) = p * 2))
-print(union(prix, dict([["figue", 1], ["kiwi", 4]])))
-compte = fold(split("a b a c b a"), dict(), fn(d, m) = put(d, m, unwrap_or(get(d, m), 0) + 1))
-print(compte, entries(compte))
-print(to_json(compte), to_json(set([1, 2])), dict(unwrap(parse_json("\{\"x\": 1}"))))
+a = set([1 2 3])
+b = set([2 3 4])
+print(union(a b) intersection(a b) difference(a b) is_subset(set([2]) a))
+print(push(a 0) remove(a 2) has(a 2) values(a) map(a fn(x) = x % 2))
+prix = dict([["pomme" 3] ["poire" 5] ["figue" 9]])
+print(filter(prix fn(nom p) = p < 6) map_values(prix fn(p) = p * 2))
+print(union(prix dict([["figue" 1] ["kiwi" 4]])))
+compte = fold(split("a b a c b a") dict() fn(d m) = put(d m unwrap_or(get(d m) 0) + 1))
+print(compte entries(compte))
+print(to_json(compte) to_json(set([1 2])) dict(unwrap(parse_json("\{\"x\": 1}"))))
 ```
 
 ```text
@@ -3603,15 +3647,15 @@ dictionnaire d'un enregistrement quand il en faut un.
 
 ```rythme
 notes = "nom;note;remarque\nAda;18,5;\"très bien; continue\"\nAlan;17;\"dit \"\"bonjour\"\"\"\n"
-lignes = unwrap(csv_records(notes, ";"))
+lignes = unwrap(csv_records(notes ";"))
 print(lignes[0])
-print(lignes |> map(fn(l) = unwrap(parse_float(replace(l.note, ",", ".")))))
+print(lignes |> map(fn(l) = unwrap(parse_float(replace(l.note "," ".")))))
 print(csv_parse("a,\"b\nc\",d\r\ne,f,g"))
-tableau = [["article", "prix"], ["pain", 1.5], ["confiture, maison", 4]]
-print(write_file("prix.csv", csv_format(tableau)))
+tableau = [["article" "prix"] ["pain" 1.5] ["confiture, maison" 4]]
+print(write_file("prix.csv" csv_format(tableau)))
 print(read_file("prix.csv") |> and_then(csv_parse))
 print(read_file("prix.csv"))
-print(trim_end(csv_format([{x: 1, y: "a;b"}, {x: 2, y: "c"}], ";")))
+print(trim_end(csv_format([{x: 1 y: "a;b"} {x: 2 y: "c"}] ";")))
 print(csv_parse("a,b\nc,d\"e"))
 print(csv_records("a,b\n1"))
 ```
@@ -3650,10 +3694,10 @@ tests d'avant. Les générateurs des tests de propriétés (`check_all`,
 
 ```rythme
 random_seed(2024)
-des = map(1..10, fn(_) = random(1, 6))
+des = map(1..10 fn(_) = random(1 6))
 print(des)
 random_seed(2024)
-print(map(1..10, fn(_) = random(1, 6)) == des, shuffle(["Ada", "Alan", "Grace"]), random(["pile", "face"]))
+print(map(1..10 fn(_) = random(1 6)) == des shuffle(["Ada" "Alan" "Grace"]) random(["pile" "face"]))
 ```
 
 ```text
@@ -3704,11 +3748,11 @@ symboliques : f est appelée quatre fois par nombre, et une erreur de f
 (`sqrt` sous 0) est la sienne.
 
 ```rythme
-w = [[1, 2], [3, 4]]
-print(matmul(w, [1, 1]), transpose(w), shape(w))
-print(stats([2, 4, 4, 4, 5, 5, 7, 9]))
-print(softmax([1, 2, 3]) |> map(fn(p) = round(p, 2)), argmax([0.1, 0.7, 0.2]))
-print(derivative(fn(x) = x ** 3, 2), gradient(fn([x, y]) = x * y, [3, 4]))
+w = [[1 2] [3 4]]
+print(matmul(w [1 1]) transpose(w) shape(w))
+print(stats([2 4 4 4 5 5 7 9]))
+print(softmax([1 2 3]) |> map(fn(p) = round(p 2)) argmax([0.1 0.7 0.2]))
+print(derivative(fn(x) = x ** 3 2) gradient(fn([x y]) = x * y [3 4]))
 ```
 
 ```text
@@ -3726,15 +3770,15 @@ choisi par `argmax` ni `argmin`, et les listes imbriquées sur plus de 64
 niveaux sont refusées.
 
 ```rythme
-vector_add([1, 2, 3], [[1, 2], [3, 4]])
+vector_add([1 2 3] [[1 2] [3 4]])
 ```
 
 ```text
 erreur[E023]: `vector_add` a besoin de deux valeurs de même forme, mais a reçu un vecteur de 3 nombre(s) et une matrice 2×2
  --> sample.ry:1:1
   |
-1 | vector_add([1, 2, 3], [[1, 2], [3, 4]])
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | vector_add([1 2 3] [[1 2] [3 4]])
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = aide: `shape(x)` donne la forme d'un vecteur ou d'une matrice : [3] ou [2, 3]
   = en savoir plus : `rythme explain E023`
@@ -3753,9 +3797,9 @@ sont pas finis sont laissés de côté ; une liste sans aucun nombre fini est
 E023.
 
 ```rythme
-heights = [1.52, 1.60, 1.63, 1.68, 1.70, 1.71, 1.75, 1.80, 1.66, 1.72]
-print(histogram(heights, 4))
-print(plot(map(0..20, fn(i) = 10 / (i + 1))))
+heights = [1.52 1.60 1.63 1.68 1.70 1.71 1.75 1.80 1.66 1.72]
+print(histogram(heights 4))
+print(plot(map(0..20 fn(i) = 10 / (i + 1))))
 ```
 
 ```text
@@ -3852,10 +3896,10 @@ les a choisies est [`stdlib-audit.md`](stdlib-audit.md), en anglais) :
   `linspace(début, fin, n)`, `correlation` et `covariance`.
 
 ```rythme
-print(format(3.14159, ".2f"), format(1234567, ","), format(42, ">6"), format(255, "#x"), format(0.256, ".1%"))
-print(center("menu", 10, "*"), replace_first("a-b-c", "-", "+"), occurrences("banana", "an"), split_once("key=value", "="))
-print(snake_case("HTTPServer"), camel_case("user name"), kebab_case("Hello World"), capitalize_words("ada lovelace"))
-print(to_base(255, 2), from_base("ff", 16), digits(2024), divmod(17, 5), binomial(52, 5), constrain(15, 0, 10))
+print(format(3.14159 ".2f") format(1234567 ",") format(42 ">6") format(255 "#x") format(0.256 ".1%"))
+print(center("menu" 10 "*") replace_first("a-b-c" "-" "+") occurrences("banana" "an") split_once("key=value" "="))
+print(snake_case("HTTPServer") camel_case("user name") kebab_case("Hello World") capitalize_words("ada lovelace"))
+print(to_base(255 2) from_base("ff" 16) digits(2024) divmod(17 5) binomial(52 5) constrain(15 0 10))
 ```
 
 ```text
@@ -3867,12 +3911,12 @@ http_server userName hello-world Ada Lovelace
 
 ```rythme
 tokens = split("the cat and the dog and the bird")
-print(tally(tokens), most_common(tokens, 2))
-print(sort_desc([3, 1, 2]), sort_by_desc(tokens, len) |> take(2), find_index(tokens, fn(w) = len(w) > 3))
-print(combinations([1, 2, 3], 2), cartesian_product([1, 2], ["a", "b"]))
-print(chunk_by([1, 1, 2, 3, 3], fn(x) = x), split_at([1, 2, 3, 4], 1), rotate_by([1, 2, 3], 1), unzip([[1, "a"], [2, "b"]]))
-print(iterate(1, 6, fn(x) = x * 2), unfold(10, fn(n) = if n == 0 then None else Some([n, n // 2])))
-print(["1", "x", "3"] |> filter_map(fn(t) = if is_digit(t) then Some(int(t)) else None))
+print(tally(tokens) most_common(tokens 2))
+print(sort_desc([3 1 2]) sort_by_desc(tokens len) |> take(2) find_index(tokens fn(w) = len(w) > 3))
+print(combinations([1 2 3] 2) cartesian_product([1 2] ["a" "b"]))
+print(chunk_by([1 1 2 3 3] fn(x) = x) split_at([1 2 3 4] 1) rotate_by([1 2 3] 1) unzip([[1 "a"] [2 "b"]]))
+print(iterate(1 6 fn(x) = x * 2) unfold(10 fn(n) = if n == 0 then None else Some([n n // 2])))
+print(["1" "x" "3"] |> filter_map(fn(t) = if is_digit(t) then Some(int(t)) else None))
 ```
 
 ```text
@@ -3885,15 +3929,15 @@ dict("and" => 2, "bird" => 1, "cat" => 1, "dog" => 1, "the" => 3) [["the", 3], [
 ```
 
 ```rythme
-data = {user: {name: "Ada", langs: ["fr", "en"]}}
-print(dig(data, ["user", "langs", 1]), dig(data, ["user", "age"]))
-counts = fold(["a", "b", "a"], {}, fn(c, w) = update(c, w, 1, fn(n) = n + 1))
-print(counts, merge_with(counts, {a: 10, c: 1}, fn(x, y) = x + y), invert(counts))
-print(select_keys(data.user, ["name"]), map_keys({a: 1}, upper))
-print(all_ok(map(["1", "2"], parse_int)), all_ok(map(["1", "x"], parse_int)), unwrap_or_else(None, fn() = 0))
-d = {year: 2024, month: 1, day: 31}
-print(add_months(d, 1), day_of_year(d), format_date(d, "%A %d %B %Y"), parse_date("29/02/2024", "%d/%m/%Y"))
-print(base64_encode("Hi!"), url_encode("a b&c"), url_decode("caf%C3%A9"))
+data = {user: {name: "Ada" langs: ["fr" "en"]}}
+print(dig(data ["user" "langs" 1]) dig(data ["user" "age"]))
+counts = fold(["a" "b" "a"] {} fn(c w) = update(c w 1 fn(n) = n + 1))
+print(counts merge_with(counts {a: 10 c: 1} fn(x y) = x + y) invert(counts))
+print(select_keys(data.user, ["name"]) map_keys({a: 1} upper))
+print(all_ok(map(["1" "2"] parse_int)) all_ok(map(["1" "x"] parse_int)) unwrap_or_else(None fn() = 0))
+d = {year: 2024 month: 1 day: 31}
+print(add_months(d 1) day_of_year(d) format_date(d "%A %d %B %Y") parse_date("29/02/2024" "%d/%m/%Y"))
+print(base64_encode("Hi!") url_encode("a b&c") url_decode("caf%C3%A9"))
 ```
 
 ```text
@@ -3927,12 +3971,12 @@ bibliothèque standard, et `rythme help javascript` la résume) :
   reproductible : il n'est pas fait pour les secrets.
 
 ```rythme
-print(cbrt(-27), hypot(3, 4), round(atanh(0.5), 6), find_last([1, 4, 6, 7], is_even), find_last_index([1, 4, 6, 7], is_even))
+print(cbrt(-27) hypot(3 4) round(atanh(0.5) 6) find_last([1 4 6 7] is_even) find_last_index([1 4 6 7] is_even))
 match parse_url("https://example.com/search?q=caf%C3%A9&page=2#results")
-  Ok(u) -> print(u.host, u.port, u.path, parse_query(u.query), u.fragment)
+  Ok(u) -> print(u.host u.port u.path parse_query(u.query) u.fragment)
   Err(e) -> print(e)
 end
-print(format_query({q: "café", page: 3}), slice(sha256(""), 0, 8), len(uuid()))
+print(format_query({q: "café" page: 3}) slice(sha256("") 0 8) len(uuid()))
 ```
 
 ```text
@@ -3979,11 +4023,11 @@ les spécifications de Python, pas le `%` de Ruby. Avec les appels de méthode e
 du code Ruby marche souvent tel quel :
 
 ```rythme
-mots = ["poire", "figue", "banane", "figue"]
-print(mots.uniq.size, mots.select { |m| m.size > 5 }, mots.reject { |m| m.include?("a") })
-print(mots.first(2), mots.last(1), mots.count, mots.sum { |m| m.length })
-print(mots.each_slice(3), "  Rythme ".strip.downcase, 42.to_s + " !", "7".to_i + 1)
-print([1, 2, 3].reduce(0) do |acc, x| acc + x end, [3, 1, 2].sort_by { |x| -x })
+mots = ["poire" "figue" "banane" "figue"]
+print(mots.uniq.size mots.select { |m| m.size > 5 } mots.reject { |m| m.include?("a") })
+print(mots.first(2) mots.last(1) mots.count mots.sum { |m| m.length })
+print(mots.each_slice(3) "  Rythme ".strip.downcase 42.to_s + " !" "7".to_i + 1)
+print([1 2 3].reduce(0) do |acc x| acc + x end [3 1 2].sort_by { |x| -x })
 ```
 
 ```text
@@ -4021,11 +4065,11 @@ haut).
 
 ```rythme
 nom = "Ada"
-print(rejoin(["Bonjour, ", nom, " !"]), length?([1, 2, 3]), uppercase("rebol"))
-print(found?(Some(1)), none?(None), form(3.5), mold("salut"))
-foreach [1, 2] do |x| print(x * 10) end
-print(map_each([1, 2, 3], fn(x) = x * x), remove_each([1, 2, 3, 4], is_even))
-print(enbase("Hi!"), debase("SGkh"), dehex("caf%C3%A9"))
+print(rejoin(["Bonjour, " nom " !"]) length?([1 2 3]) uppercase("rebol"))
+print(found?(Some(1)) none?(None) form(3.5) mold("salut"))
+foreach [1 2] do |x| print(x * 10) end
+print(map_each([1 2 3] fn(x) = x * x) remove_each([1 2 3 4] is_even))
+print(enbase("Hi!") debase("SGkh") dehex("caf%C3%A9"))
 ```
 
 ```text
@@ -4038,19 +4082,19 @@ SGkh Ok("Hi!") Ok("café")
 ```
 
 ```rythme
-nombres = [3, 1, 4, 1, 5, 9, 2, 6]
-print(map(nombres, fn(x) = x * 2))
-print(filter(nombres, is_even), fold(nombres, 0, fn(acc, x) = acc + x), sum(nombres))
-print(sort(nombres), unique(nombres), sort_by(["poire", "figue", "banane"], len))
-print(first(nombres), last([]), get(nombres, -1), take(nombres, 3), drop(nombres, 6))
-print(find(nombres, fn(x) = x > 4), any(nombres, fn(x) = x > 8), count(nombres, is_odd))
-print(zip([1, 2], ["a", "b"]), enumerate(["x", "y"]), group_by(["ane", "bec", "abeille"], fn(m) = m[0]))
-print(split("a,b,c", ","), join(["a", "b"], "-"), upper("été"), replace("2024", "4", "5"))
-print(len("été"), chars("hé"), trim("  salut  "), contains("bonjour", "jour"), starts_with("rythme", "ry"))
-print(parse_int("42"), parse_int("4x"), int("42"), float("2.5"), text(3.0))
-print(abs(-3), min(3, 1, 2), max([4, 8]), round(3.14159, 2), floor(2.7), sqrt(16), 2 |> pow(10))
-print(keys({a: 1, b: 2}), put({a: 1}, "b", 2), remove({a: 1, b: 2}, "a"), has({a: 1}, "a"))
-print(unwrap_or(get([], 0), "défaut"), map(Some(2), fn(x) = x + 1), is_ok(Err("non")))
+nombres = [3 1 4 1 5 9 2 6]
+print(map(nombres fn(x) = x * 2))
+print(filter(nombres is_even) fold(nombres 0 fn(acc x) = acc + x) sum(nombres))
+print(sort(nombres) unique(nombres) sort_by(["poire" "figue" "banane"] len))
+print(first(nombres) last([]) get(nombres, -1) take(nombres 3) drop(nombres 6))
+print(find(nombres fn(x) = x > 4) any(nombres fn(x) = x > 8) count(nombres is_odd))
+print(zip([1 2] ["a" "b"]) enumerate(["x" "y"]) group_by(["ane" "bec" "abeille"] fn(m) = m[0]))
+print(split("a,b,c" ",") join(["a" "b"] "-") upper("été") replace("2024" "4" "5"))
+print(len("été") chars("hé") trim("  salut  ") contains("bonjour" "jour") starts_with("rythme" "ry"))
+print(parse_int("42") parse_int("4x") int("42") float("2.5") text(3.0))
+print(abs(-3) min(3 1 2) max([4 8]) round(3.14159 2) floor(2.7) sqrt(16) 2 |> pow(10))
+print(keys({a: 1 b: 2}) put({a: 1} "b" 2) remove({a: 1 b: 2} "a") has({a: 1} "a"))
+print(unwrap_or(get([] 0) "défaut") map(Some(2) fn(x) = x + 1) is_ok(Err("non")))
 ```
 
 ```text
@@ -4069,17 +4113,17 @@ défaut Some(3) false
 ```
 
 ```rythme
-print(gcd(12, 18), lcm(4, 6), atan(1, -1), text(3.14159, 2), text(5, 2))
-print(capitalize("élise"), pad_left("7", 3, "0"), pad_right("ab", 4, "."), char_code("A"), char(66))
-print(is_digit("42"), is_letter("été"), is_space(" \n"), take_while("42 cm", is_digit))
-print(scan([1, 2, 3], 0, fn(total, x) = total + x), set_at([1, 2, 3], 0, 9), insert_at([1, 2], 1, 7), remove_at([1, 2, 3], -1))
-print(drop_while([1, 3, 4, 5], is_odd), 0..10 |> step_by(5), chunks([1, 2, 3, 4, 5], 2), windows([1, 2, 3], 2))
-personnes = [{nom: "Ada", age: 36}, {nom: "Alan", age: 41}]
-print(min_by(["ccc", "a", "bb"], len), max_by(personnes, fn(p) = p.age).nom)
-print(from_entries([["a", 1], ["b", 2]]), map_values({a: 1, b: 2}, fn(x) = x * 10))
+print(gcd(12 18) lcm(4 6) atan(1, -1) text(3.14159 2) text(5 2))
+print(capitalize("élise") pad_left("7" 3 "0") pad_right("ab" 4 ".") char_code("A") char(66))
+print(is_digit("42") is_letter("été") is_space(" \n") take_while("42 cm" is_digit))
+print(scan([1 2 3] 0 fn(total x) = total + x) set_at([1 2 3] 0 9) insert_at([1 2] 1 7) remove_at([1 2 3] -1))
+print(drop_while([1 3 4 5] is_odd) 0..10 |> step_by(5) chunks([1 2 3 4 5] 2) windows([1 2 3] 2))
+personnes = [{nom: "Ada" age: 36} {nom: "Alan" age: 41}]
+print(min_by(["ccc" "a" "bb"] len) max_by(personnes fn(p) = p.age).nom)
+print(from_entries([["a" 1] ["b" 2]]) map_values({a: 1 b: 2} fn(x) = x * 10))
 print(parse_int("42") |> and_then(fn(n) = if n > 0 then Ok(n) else Err("pas positif")))
-print(ok_or(None, "absent"), map_err(Err("introuvable"), fn(e) = "config : {e}"))
-print(parse_json("[1, 2.5, null, \{\"ok\": true\}]"), to_json({nom: "Ada", etiquettes: ["x"], age: None}))
+print(ok_or(None "absent") map_err(Err("introuvable") fn(e) = "config : {e}"))
+print(parse_json("[1, 2.5, null, \{\"ok\": true\}]") to_json({nom: "Ada" etiquettes: ["x"] age: None}))
 ```
 
 ```text
@@ -4101,7 +4145,7 @@ une indication, ici avant que le programme ne s'exécute :
 ```rythme
 mot = "bonjour"
 print(charCodeAt(mot[0]))
-print(map(mot, upper))
+print(map(mot upper))
 ```
 
 ```text
@@ -4117,7 +4161,7 @@ erreur[E003]: nom inconnu `charCodeAt`
 erreur[E005]: `map` attend une liste, un ensemble, une Option ou un Result comme argument 1, mais a reçu une valeur de type Text
  --> 62-indices.ry:3:11
   |
-3 | print(map(mot, upper))
+3 | print(map(mot upper))
   |           ^^^ mauvaise sorte de valeur
   |
   = aide: utilisation : `map(list, f)`
@@ -4127,13 +4171,13 @@ erreur[E005]: `map` attend une liste, un ensemble, une Option ou un Result comme
 
 ```rythme
 fn ecrire_puis_lire(chemin)
-  write_file(chemin, "ligne 1\nligne 2")?
+  write_file(chemin "ligne 1\nligne 2")?
   contenu = read_file(chemin)?
   Ok(lines(contenu))
 end
 print(ecrire_puis_lire("notes.txt"))
 print(read_file("absent.txt"))
-print(file_exists("notes.txt"), args())
+print(file_exists("notes.txt") args())
 ```
 
 `rythme 61-fichiers.ry Ada 36` :
@@ -4146,15 +4190,15 @@ true ["Ada", "36"]
 
 ```rythme
 fn sauvegarder(nom)
-  create_folder(join_path(["sauvegarde", "2024"]))?
-  write_file(join_path(["sauvegarde", "2024", nom]), "gardé")?
+  create_folder(join_path(["sauvegarde" "2024"]))?
+  write_file(join_path(["sauvegarde" "2024" nom]) "gardé")?
   list_folder("sauvegarde/2024")
 end
 print(sauvegarder("notes.txt"))
-print(file_info("sauvegarde/2024/notes.txt"), file_info("sauvegarde"))
-print(delete_file("sauvegarde/2024/notes.txt"), delete_file("sauvegarde"))
-print(split_path("C:\\Users\\ada\\notes.txt"), split_path("/home/ada/") |> join_path)
-print(options(["--dry-run", "--nom=Ada", "notes.txt"]))
+print(file_info("sauvegarde/2024/notes.txt") file_info("sauvegarde"))
+print(delete_file("sauvegarde/2024/notes.txt") delete_file("sauvegarde"))
+print(split_path("C:\\Users\\ada\\notes.txt") split_path("/home/ada/") |> join_path)
+print(options(["--dry-run" "--nom=Ada" "notes.txt"]))
 print(options(["-abc"]))
 print(input_lines())
 ```
@@ -4172,9 +4216,9 @@ Ok([])
 ```rythme
 depart = unwrap(parse_date("2024-02-28T22:30:00+01:00"))
 print(depart)
-print(add_days(depart, 1) |> format_date, add_seconds(depart, 5400) |> format_date)
-print(days_between({year: 2024, month: 1, day: 1}, {year: 2025, month: 1, day: 1}), days_in_month(2023, 2), is_leap_year(1900))
-print(day_of_week({year: 2024, month: 2, day: 29}), seconds_between(depart, {year: 2024, month: 2, day: 28, hour: 21, minute: 30, offset: 0}))
+print(add_days(depart 1) |> format_date add_seconds(depart 5400) |> format_date)
+print(days_between({year: 2024 month: 1 day: 1} {year: 2025 month: 1 day: 1}) days_in_month(2023 2) is_leap_year(1900))
+print(day_of_week({year: 2024 month: 2 day: 29}) seconds_between(depart {year: 2024 month: 2 day: 28 hour: 21 minute: 30 offset: 0}))
 print(parse_date("2023-02-29"))
 ```
 
@@ -4189,16 +4233,16 @@ Err("\"2023-02-29\" n'est pas une date valide : le jour doit aller de 1 à 28 en
 Une date qui n'existe pas est expliquée :
 
 ```rythme
-echeance = {year: 2023, month: 2, day: 29}
-print(add_days(echeance, 7))
+echeance = {year: 2023 month: 2 day: 29}
+print(add_days(echeance 7))
 ```
 
 ```text
 erreur[E023]: `add_days` a besoin d'une date valide : le jour doit aller de 1 à 28 en février 2023, pas 29 (2023 n'est pas une année bissextile)
  --> 65-dates.ry:2:7
   |
-2 | print(add_days(echeance, 7))
-  |       ^^^^^^^^^^^^^^^^^^^^^ pas une date valide
+2 | print(add_days(echeance 7))
+  |       ^^^^^^^^^^^^^^^^^^^^ pas une date valide
   |
   = aide: une date est un enregistrement comme `{year: 2024, month: 2, day: 29}`, avec `hour`, `minute`, `second` et `offset` (minutes d'avance sur UTC) si besoin
   = en savoir plus : `rythme explain E023`
@@ -4208,14 +4252,14 @@ Chercher et découper avec des regex, et des nombres écrits pour les humains :
 
 ```rythme
 journal = "2024-02-29 ERROR disk full\n2024-03-01 INFO ok\n2024-03-02 ERROR fan"
-errors = lines(journal) |> filter(fn(line) = matches(line, ".* ERROR .*"))
-print(errors |> map(fn(line) = unwrap(find_first(line, "[0-9-]+"))))
-print(find_all("3 cats, 12 dogs and 1 fish", "\\d+"), split_by("a, b;c", "[,;] *"))
-print(captures("v2.14", "v(\\d+)\\.(\\d+)"), named_captures("2024-02", "(?<year>\\d+)-(?<month>\\d+)"))
-print(replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1"), replace_all("hello world", "\\b\\w", upper))
-print(matches("AB-12", "[A-Z]\{2\}-[0-9]+"), matches("ab-12", "(?i)[A-Z]\{2\}-[0-9]+"), find_all("x<b>y</b>", "<.+?>"))
-print(format_number(1234567.891, 2), format_number(1234567.891, 2, "fr"), format_number(-42000), pad_left(format_number(3.5, 2), 8))
-print(words("Hello, world! It's well-known."), trim_start("  hi  "), trim_end("  hi  "), equals_ignore_case("Été", "ÉTÉ"))
+errors = lines(journal) |> filter(fn(line) = matches(line ".* ERROR .*"))
+print(errors |> map(fn(line) = unwrap(find_first(line "[0-9-]+"))))
+print(find_all("3 cats, 12 dogs and 1 fish" "\\d+") split_by("a, b;c" "[,;] *"))
+print(captures("v2.14" "v(\\d+)\\.(\\d+)") named_captures("2024-02" "(?<year>\\d+)-(?<month>\\d+)"))
+print(replace_all("29/02/2024" "(\\d+)/(\\d+)/(\\d+)" "$3-$2-$1") replace_all("hello world" "\\b\\w" upper))
+print(matches("AB-12" "[A-Z]\{2\}-[0-9]+") matches("ab-12" "(?i)[A-Z]\{2\}-[0-9]+") find_all("x<b>y</b>" "<.+?>"))
+print(format_number(1234567.891 2) format_number(1234567.891 2 "fr") format_number(-42000) pad_left(format_number(3.5 2) 8))
+print(words("Hello, world! It's well-known.") trim_start("  hi  ") trim_end("  hi  ") equals_ignore_case("Été" "ÉTÉ"))
 ```
 
 ```text
@@ -4233,15 +4277,15 @@ programme :
 
 ```rythme
 code = "AB-12"
-print(matches(code, "[A-Z]+-([0-9]+"))
+print(matches(code "[A-Z]+-([0-9]+"))
 ```
 
 ```text
 erreur[E026]: regex invalide : cette `(` n'est jamais fermée
- --> 67-regex.ry:2:29
+ --> 67-regex.ry:2:28
   |
-2 | print(matches(code, "[A-Z]+-([0-9]+"))
-  |                             ^ ouverte ici
+2 | print(matches(code "[A-Z]+-([0-9]+"))
+  |                            ^ ouverte ici
   |
   = aide: ajoutez une `)` là où le groupe finit ; pour le signe `(` lui-même, écrivez `[(]`
   = en savoir plus : `rythme explain E026`
@@ -4629,21 +4673,21 @@ print( total ) ; print(aire(Rect(2,3)))
 `rythme fmt - < brouillon.ry` écrit :
 
 ```text
-type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+type Forme = Cercle(rayon) | Rect(largeur hauteur)
 
 fn aire(f) = match f
   Cercle(r) -> pi * r * r
-  Rect(l, h) -> l * h
+  Rect(l h) -> l * h
 end
 
-prix = [12, 5, 30]
+prix = [12 5 30]
 
 total = prix
   |> filter(fn(p) = p > 10)
   |> sum
 
 print(total)
-print(aire(Rect(2, 3)))
+print(aire(Rect(2 3)))
 ```
 
 Dans un dossier qui contient `brouillon.ry` et un `propre.ry` déjà en forme :
@@ -4745,19 +4789,19 @@ Avec `geometrie.ry` :
 ## Des formes et leurs aires.
 
 ## Une forme à dessiner.
-type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+type Forme = Cercle(rayon) | Rect(largeur hauteur)
 
 ## L'aire d'une forme : pour un `Cercle`, `pi` fois le carré
 ## de son rayon. Pour compter des formes, utilisez `len`.
 fn aire(Cercle(r)) = pi * _carre(r)
-fn aire(Rect(l, h)) = l * h
+fn aire(Rect(l h)) = l * h
 
 ## Le nombre de côtés d'un carré.
 cotes = 4
 
 fn _carre(x) = x * x
 
-test "aire d'un carré" = aire(Rect(2, 2)) == 4
+test "aire d'un carré" = aire(Rect(2 2)) == 4
 ```
 
 `rythme doc geometrie.ry` écrit :
@@ -4783,7 +4827,7 @@ Une forme à dessiner.
 
 ~~~rythme
 fn aire(Cercle(r))
-fn aire(Rect(l, h))
+fn aire(Rect(l h))
 ~~~
 
 L'aire d'une forme : pour un [`Cercle`](#forme), `pi` fois le carré
@@ -4817,7 +4861,7 @@ Exemple :
 
 ~~~rythme
 len("été")                 # 3
-len([1, 2])                # 2
+len([1 2])                # 2
 ~~~
 ```
 
@@ -4944,7 +4988,7 @@ du paquet `NOM`, et s'utilise par la dernière partie du chemin, comme tout
 use mathlib/vecteurs      # le fichier src/vecteurs.ry de mathlib
 use mathlib               # le programme de mathlib : l'`entry` de son rythme.toml
 use bonjour/salutation    # un fichier du projet lui-même (`bonjour`), utile dans tests/
-print(vecteurs.ajouter({x: 1, y: 2}, {x: 3, y: 4}))
+print(vecteurs.ajouter({x: 1 y: 2} {x: 3 y: 4}))
 ```
 
 - Les paquets sont trouvés par le `rythme.toml` le plus proche au-dessus du
@@ -5027,15 +5071,15 @@ programme :
 ```rythme
 fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
 fn total([]) = 0
-fn total([x, ..rest]) = x + total(rest)
+fn total([x ..rest]) = x + total(rest)
 fn describe(n)
   kind = if n % 2 == 0 then "pair" else "impair"
   "{n} est {kind}"
 end
 print(fib(3))
-t = total([10, 20, 30])
+t = total([10 20 30])
 describe(t // 4)
-[1, 2, 3] |> map(fn(x) = x * t)
+[1 2 3] |> map(fn(x) = x * t)
 ```
 
 `rythme etapes` montre :
@@ -5052,8 +5096,8 @@ print(fib(3))
 2
   → ()
 
-t = total([10, 20, 30])
-  → 10 + total([20, 30])
+t = total([10 20 30])
+  → 10 + total([20 30])
   → 10 + (20 + total([30]))
   → 10 + (20 + (30 + total([])))
   → 10 + (20 + (30 + 0))
@@ -5066,8 +5110,8 @@ describe(t // 4)
   → describe(15)
   → "15 est impair"
 
-map([1, 2, 3], fn(x) = x * t)
-  → [60, 120, 180]
+map([1 2 3] fn(x) = x * t)
+  → [60 120 180]
 ```
 
 ### 7.9 Le débogueur : `rythme debug`
@@ -5140,11 +5184,11 @@ Avec ce programme, `fact.ry` :
 fn fact(0) = 1
 fn fact(n) = n * fact(n - 1)
 
-fn total([], acc) = acc
-fn total([x, ..rest], acc) = total(rest, acc + x)
+fn total([] acc) = acc
+fn total([x ..rest] acc) = total(rest acc + x)
 
 print(fact(3))
-print(total([10, 20], 0))
+print(total([10 20] 0))
 ```
 
 une session :
@@ -5180,13 +5224,13 @@ point d'arrêt 2 au début de `total`
 (debug) continue
 6
 ● point d'arrêt 2 : `total` commence
-→ fact.ry:5  total([x, ..rest] = [10, 20], acc = 0) · profondeur 1
-  5 | fn total([x, ..rest], acc) = total(rest, acc + x)
+→ fact.ry:5  total([x ..rest] = [10, 20], acc = 0) · profondeur 1
+  5 | fn total([x ..rest] acc) = total(rest acc + x)
 (debug) next
 ● point d'arrêt 2 : `total` commence
-→ fact.ry:5  total([x, ..rest] = [20], acc = 10) · profondeur 1
+→ fact.ry:5  total([x ..rest] = [20], acc = 10) · profondeur 1
   (un appel terminal : il a pris la place du cadre de `total`)
-  5 | fn total([x, ..rest], acc) = total(rest, acc + x)
+  5 | fn total([x ..rest] acc) = total(rest acc + x)
 (debug) locals
   x = 20
   rest = []

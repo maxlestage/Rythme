@@ -40,10 +40,10 @@ Rythme は教室のために設計されました。小さな言語と教えて�
 
 ```rythme
 ## 空でないリストのいちばん大きい要素を返す。
-fn largest(list) = fold(list, 0, max)
+fn largest(list) = fold(list 0 max)
 
-test "要素が 1 つ" = assert_eq(largest([7]), 7)
-test "複数の要素" = assert_eq(largest([3, 9, 2]), 9)
+test "要素が 1 つ" = assert_eq(largest([7]) 7)
+test "複数の要素" = assert_eq(largest([3 9 2]) 9)
 test "負の数" = assert_eq(largest([-3, -1, -2]), -1)
 ```
 
@@ -97,7 +97,7 @@ Rythme は自分で JSON を読めます。次のプログラムは結果を点�
 fn grade(f) = if f.broken then "{f.file}：動かない" else "{f.file}：{f.tests - f.failed}/{f.tests}"
 
 results = read_file(args()[0]) |> unwrap |> parse_json |> unwrap
-each(results.files, fn(f) = print(grade(f)))
+each(results.files fn(f) = print(grade(f)))
 ```
 
 `rythme grades.ry results.json` の表示：

@@ -408,8 +408,8 @@ pub fn alias_hint(name: &str) -> Option<String> {
 pub fn foreign_keyword_hint(word: &str) -> Option<String> {
     Some(match word {
         "for" | "while" | "loop" => t!(
-            "Rythme has no loops. Work on the whole list instead:\n  1..5 |> each(fn(i) = print(i))\n  [1, 2, 3] |> map(fn(x) = x * 2)\nor write a recursive function. See `rythme help functional`.",
-            "Rythme n'a pas de boucles. Travaillez sur toute la liste à la place :\n  1..5 |> each(fn(i) = print(i))\n  [1, 2, 3] |> map(fn(x) = x * 2)\nou écrivez une fonction récursive. Voir `rythme help functional`."
+            "Rythme has no loops. Work on the whole list instead:\n  1..5 |> each(fn(i) = print(i))\n  [1 2 3] |> map(fn(x) = x * 2)\nor write a recursive function. See `rythme help functional`.",
+            "Rythme n'a pas de boucles. Travaillez sur toute la liste à la place :\n  1..5 |> each(fn(i) = print(i))\n  [1 2 3] |> map(fn(x) = x * 2)\nou écrivez une fonction récursive. Voir `rythme help functional`."
         ),
         "break" | "continue" => t!(
             "Rythme has no loops to interrupt: use `find`, `take`, `filter`, or a recursive function",

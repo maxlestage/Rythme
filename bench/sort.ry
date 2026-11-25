@@ -3,8 +3,8 @@
 numbers = 0..199_999 |> map(fn(i) = (i * 7919 + 12345) % 1_000_003)
 
 sorted = sort(numbers)
-by_key = sort_by(numbers, fn(x) = -x)
+by_key = sort_by(numbers fn(x) = -x)
 
-fn checksum(list) = fold(list, 0, fn(acc, x) = (acc * 31 + x) % 1_000_000_007)
+fn checksum(list) = fold(list 0 fn(acc x) = (acc * 31 + x) % 1_000_000_007)
 
-print(sorted[0], sorted[100_000], sorted[-1], checksum(sorted), checksum(by_key))
+print(sorted[0] sorted[100_000] sorted[-1] checksum(sorted) checksum(by_key))

@@ -34,22 +34,22 @@ fn frequencies(text) = fail("to do")
 
 fn most_frequent(text) = fail("to do")
 
-fn report(text, n) = fail("to do")
+fn report(text n) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 poem = "The cat sat. The dog sat! Did the cat see the dog?"
 
-test "words" = assert_eq(words_of("Hello, World! Hello?"), ["hello", "world", "hello"])
+test "words" = assert_eq(words_of("Hello, World! Hello?") ["hello" "world" "hello"])
 
 test "frequencies"
-  assert_eq(frequencies("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
-  assert_eq(frequencies(poem) |> take(3), [["the", 4], ["cat", 2], ["dog", 2]])
+  assert_eq(frequencies("b a b c a b") [["b" 3] ["a" 2] ["c" 1]])
+  assert_eq(frequencies(poem) |> take(3) [["the" 4] ["cat" 2] ["dog" 2]])
 end
 
 test "most frequent"
-  assert_eq(most_frequent(poem), Some("the"))
-  assert_eq(most_frequent(" ... "), None)
+  assert_eq(most_frequent(poem) Some("the"))
+  assert_eq(most_frequent(" ... ") None)
 end
 
-test "report" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")
+test "report" = assert_eq(report(poem 3) "the: 4\ncat: 2\ndog: 2")
