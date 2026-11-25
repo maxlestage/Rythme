@@ -1095,6 +1095,11 @@ impl Parser {
         let far = self.value_elsewhere();
         let mut e = self.expr().map_err(|d| far_help(d, far))?;
         mark_value_elsewhere(&mut e, far);
+        // `else name`: a value written after it without a comma would make
+        // it a call without parentheses (`else name x`).
+        if matches!(e.kind, ExprKind::Var(_)) {
+            self.command_ends.insert(e.span.end);
+        }
         Ok(e)
     }
 
@@ -2332,7 +2337,7 @@ impl Parser {
                 self.push_bracket(start, values, false, seps);
                 return Ok(items);
             }
-            if commaless && starts_element(self.peek()) {
+            if commaless && self.element_follows() {
                 self.layout.implied.push(self.last.end);
                 seps.push(Sep { comma: None, joins: joins(self.peek()), absorbs, trailing: false });
                 continue;
@@ -2343,13 +2348,23 @@ impl Parser {
             let block = matches!(self.peek(), Tok::LBrace)
                 && matches!(self.toks.get(self.pos + 1).map(|t| &t.tok), Some(Tok::Ident(_)))
                 && matches!(self.toks.get(self.pos + 2).map(|t| &t.tok), Some(Tok::Arrow | Tok::FatArrow | Tok::Comma));
-            let between = starts_element(self.peek()) && !block;
+            let between = self.element_follows() && !block;
             let mut d = self.unexpected(t!("`,` or `{closing}`", "`,` ou `{closing}`"));
             if d.incomplete {
                 d.secondary.push((open_span, t!("opened here", "ouvert ici")));
             }
             return Err((d, between));
         }
+    }
+
+    /// Does an element start here, after one written without a comma? Also a
+    /// field whose name is a keyword: `{on_click: :zero class: "small"}`.
+    fn element_follows(&mut self) -> bool {
+        if starts_element(self.peek()) {
+            return true;
+        }
+        let i = self.next_pos();
+        field_key(&self.toks[i].tok).is_some() && matches!(self.toks.get(i + 1).map(|t| &t.tok), Some(Tok::Colon))
     }
 
     /// The offset of the next token, new lines skipped.
