@@ -1288,8 +1288,10 @@ impl<'a> Stepper<'a> {
     fn render(&self, t: &Term) -> Vec<String> {
         let mut p = Printer { out: String::new(), indent: 0, budget: self.opts.width * (MAX_LINES + 1) + 64, known: &self.known };
         p.term(t, 0);
-        let mut lines: Vec<String> = p.out.lines().map(str::to_string).collect();
-        if p.out.len() > p.budget || lines.len() > MAX_LINES {
+        // Written as `rythme fmt` would: without its needless commas.
+        let out = crate::format::without_commas(&p.out).unwrap_or(p.out);
+        let mut lines: Vec<String> = out.lines().map(str::to_string).collect();
+        if out.len() > p.budget || lines.len() > MAX_LINES {
             lines.truncate(MAX_LINES);
             if let Some(l) = lines.last_mut() {
                 l.push_str(" …");

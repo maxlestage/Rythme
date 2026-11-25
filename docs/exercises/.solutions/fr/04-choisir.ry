@@ -3,7 +3,7 @@
 
 fn valeur_absolue(n) = if n < 0 then -n else n
 
-fn plus_grand(a, b) = if a > b then a else b
+fn plus_grand(a b) = if a > b then a else b
 
 fn mention(note) =
   if note >= 16 then "très bien"
@@ -21,30 +21,30 @@ fn prix_du_billet(age) =
 # --- Tests (ne les modifiez pas) ---
 
 test "valeur absolue"
-  assert_eq(valeur_absolue(-5), 5)
-  assert_eq(valeur_absolue(7), 7)
-  assert_eq(valeur_absolue(0), 0)
+  assert_eq(valeur_absolue(-5) 5)
+  assert_eq(valeur_absolue(7) 7)
+  assert_eq(valeur_absolue(0) 0)
 end
 
 test "plus grand"
-  assert_eq(plus_grand(3, 8), 8)
-  assert_eq(plus_grand(8, 3), 8)
+  assert_eq(plus_grand(3 8) 8)
+  assert_eq(plus_grand(8 3) 8)
   assert_eq(plus_grand(-1, -2), -1)
 end
 
 test "mention"
-  assert_eq(mention(18), "très bien")
-  assert_eq(mention(16), "très bien")
-  assert_eq(mention(15.5), "bien")
-  assert_eq(mention(12), "assez bien")
-  assert_eq(mention(10), "passable")
-  assert_eq(mention(4), "insuffisant")
+  assert_eq(mention(18) "très bien")
+  assert_eq(mention(16) "très bien")
+  assert_eq(mention(15.5) "bien")
+  assert_eq(mention(12) "assez bien")
+  assert_eq(mention(10) "passable")
+  assert_eq(mention(4) "insuffisant")
 end
 
 test "prix du billet"
-  assert_eq(prix_du_billet(2), 0)
-  assert_eq(prix_du_billet(4), 5)
-  assert_eq(prix_du_billet(11), 5)
-  assert_eq(prix_du_billet(30), 10)
-  assert_eq(prix_du_billet(65), 12)
+  assert_eq(prix_du_billet(2) 0)
+  assert_eq(prix_du_billet(4) 5)
+  assert_eq(prix_du_billet(11) 5)
+  assert_eq(prix_du_billet(30) 10)
+  assert_eq(prix_du_billet(65) 12)
 end

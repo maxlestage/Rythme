@@ -32,28 +32,28 @@ fn mot_le_plus_long(mots) = fail("à faire")
 
 fn en_nombre(chiffres) = fail("à faire")
 
-fn compter_si(liste, f) = fail("à faire")
+fn compter_si(liste f) = fail("à faire")
 
 # --- Tests (ne les modifiez pas) ---
 
 test "produit"
-  assert_eq(produit_de([2, 3, 4]), 24)
-  assert_eq(produit_de([]), 1)
+  assert_eq(produit_de([2 3 4]) 24)
+  assert_eq(produit_de([]) 1)
 end
 
 test "mot le plus long"
-  assert_eq(mot_le_plus_long(["un", "arbre", "est", "vert"]), "arbre")
-  assert_eq(mot_le_plus_long(["une", "pie"]), "une")
-  assert_eq(mot_le_plus_long([]), "")
+  assert_eq(mot_le_plus_long(["un" "arbre" "est" "vert"]) "arbre")
+  assert_eq(mot_le_plus_long(["une" "pie"]) "une")
+  assert_eq(mot_le_plus_long([]) "")
 end
 
 test "en nombre"
-  assert_eq(en_nombre([1, 2, 3]), 123)
-  assert_eq(en_nombre([0, 7]), 7)
-  assert_eq(en_nombre([]), 0)
+  assert_eq(en_nombre([1 2 3]) 123)
+  assert_eq(en_nombre([0 7]) 7)
+  assert_eq(en_nombre([]) 0)
 end
 
 test "compter si"
-  assert_eq(compter_si([1, 2, 3, 4, 5], is_odd), 3)
-  assert_eq(compter_si(["a", "bb"], fn(m) = len(m) > 5), 0)
+  assert_eq(compter_si([1 2 3 4 5] is_odd) 3)
+  assert_eq(compter_si(["a" "bb"] fn(m) = len(m) > 5) 0)
 end

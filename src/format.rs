@@ -79,9 +79,16 @@ pub fn format_named(name: &str, source: &str) -> Result<String, Vec<Diagnostic>>
     let tree = tree_text(&items);
     let source_comments = comments(source);
     let same = |out: &String| out == source || syntax_tree(out).as_ref() == Some(&tree) && comments(out) == source_comments;
-    let out = layout(&short_uses(&with_commas))
-        .filter(|out| *out == with_commas || same(out))
-        .map(|out| drop_commas(&out).filter(&same).unwrap_or(out));
+    let short = short_uses(&with_commas);
+    let out = match layout(&short, false) {
+        Some(out) if same(&out) => Some(out),
+        without => {
+            if std::env::var_os("RYTHME_FMT_DEBUG").is_some() {
+                eprintln!("--- commas kept, the code without them would be:\n{}", without.unwrap_or_default());
+            }
+            layout(&short, true).filter(|out| *out == with_commas || same(out))
+        }
+    };
     match out {
         Some(out) if uses_crlf(source) => Ok(out.replace('\n', "\r\n")),
         Some(out) => Ok(out),
@@ -109,15 +116,52 @@ fn insert_commas(src: &str, at: &[u32]) -> String {
     out
 }
 
-/// The code laid out with commas, without the commas that can be left out,
+/// The code with its needless commas taken out (see [`needless_commas`]) and
+/// nothing else changed: its lines, spaces and comments stay as written.
+/// `None` if the code does not parse, or if the result would not mean the same.
+pub fn without_commas(code: &str) -> Option<String> {
+    let before = syntax_tree(code)?;
+    let drop = needless_commas(code)?;
+    let mut out = String::with_capacity(code.len());
+    let mut from = 0;
+    for at in drop {
+        let i = at as usize;
+        if code.as_bytes().get(i) != Some(&b',') || i < from {
+            return None;
+        }
+        let line_start = code[..i].rfind('\n').map_or(0, |n| n + 1);
+        let line_end = code[i..].find('\n').map_or(code.len(), |n| i + n);
+        let alone_before = code[line_start..i].trim().is_empty();
+        let rest = code[i + 1..line_end].trim_end_matches('\r');
+        let (cut, resume) = if alone_before && rest.trim().is_empty() && line_end < code.len() && line_start >= from {
+            // A comma alone on its line: the line goes.
+            (line_start, line_end + 1)
+        } else if alone_before {
+            (i, i + 1 + rest.len() - rest.trim_start_matches(' ').len())
+        } else if rest.is_empty() || rest.trim_start().starts_with('#') {
+            // `a,` at the end of a line, or `a,  # note`: the comma goes.
+            (i, i + 1)
+        } else {
+            // `a, b`: one space stays between them.
+            (i, i + 1 + usize::from(rest.starts_with(' ') && code[..i].ends_with(' ')))
+        };
+        out.push_str(&code[from..cut]);
+        from = resume;
+    }
+    out.push_str(&code[from..]);
+    (syntax_tree(&out)? == before && comments(&out) == comments(code)).then_some(out)
+}
+
+/// The commas of the code (their offsets, in order) that can be left out,
 /// as in REBOL: `[1, 2]` is written `[1 2]`, `f(a, b)` `f(a b)`, `print x,
 /// y` `print x y`. A comma stays where the next element would otherwise
 /// continue the one before (`[x, -1]`, `[a, [0]]`, `[1, ..xs]`), unless the
 /// bracket is read without commas anyway, because an element there or in a
 /// bracket inside it follows without one: `[[1 2] [3 4]]`. It also stays
 /// after a call without parentheses, which would take the next element as
-/// an argument (`[fn(v) = puts v, 2]`).
-fn drop_commas(code: &str) -> Option<String> {
+/// an argument (`[fn(v) = puts v, 2]`). A comma after the last element always
+/// goes.
+fn needless_commas(code: &str) -> Option<Vec<u32>> {
     let (_, layout) = lexer::lex(code, UNSHOWN).and_then(parser::parse_with_layout).ok()?;
     let brackets = &layout.brackets;
     // A bracket is read without commas when one of its separators, or one of
@@ -135,42 +179,15 @@ fn drop_commas(code: &str) -> Option<String> {
         };
         for sep in &b.seps {
             let Some(at) = sep.comma else { continue };
-            // A comma after the last element separates nothing: it always goes.
             let keep = !sep.trailing && (!forced || sep.absorbs || (sep.joins && (b.free || !b.values)));
             if !keep {
-                drop.push(at as usize);
+                drop.push(at);
             }
         }
     }
-    if drop.is_empty() {
-        return Some(code.to_string());
-    }
     drop.sort_unstable();
     drop.dedup();
-    let mut out = String::with_capacity(code.len());
-    let mut from = 0;
-    for i in drop {
-        if code.as_bytes().get(i) != Some(&b',') || i < from {
-            return None;
-        }
-        let line_start = code[..i].rfind('\n').map_or(0, |n| n + 1);
-        let line_end = code[i..].find('\n').map_or(code.len(), |n| i + n);
-        let before = code[line_start..i].chars().all(|c| c == ' ');
-        let after = code[i + 1..line_end].trim_end_matches('\r').chars().all(|c| c == ' ');
-        let (cut, resume) = if before && after && line_end < code.len() && line_start >= from {
-            // A comma alone on its line: the line goes.
-            (line_start, line_end + 1)
-        } else if before && code[i + 1..].starts_with(' ') {
-            // A comma that starts a line (`f(a\n  , b)`): its space goes too.
-            (i, i + 2)
-        } else {
-            (i, i + 1)
-        };
-        out.push_str(&code[from..cut]);
-        from = resume;
-    }
-    out.push_str(&code[from..]);
-    Some(out)
+    Some(drop)
 }
 
 /// `use "geometry.ry" as geo` written in the recommended form, `use
@@ -1605,15 +1622,47 @@ struct Edits {
     skip: Vec<bool>,
     comma_after: Vec<bool>,
     bar_before: Vec<bool>,
+    /// A comma left out (see [`needless_commas`]); what comes before it, a
+    /// comment or a new line, stays.
+    drop: Vec<bool>,
 }
 
-/// The formatted code, or `None` if the shape of the program was not understood.
-fn layout(src: &str) -> Option<String> {
+/// The formatted code, or `None` if the shape of the program was not
+/// understood. Without `commas`, the commas that can be left out are.
+fn layout(src: &str, commas: bool) -> Option<String> {
     let (tokens, mut pieces, piece_of) = read(src)?;
     let mut shaper = Shaper::new(&tokens, &piece_of, pieces.len());
     shaper.program()?;
     let shape = shaper.s;
-    let edits = normalize(&mut pieces, &shape);
+    let mut dropped = Vec::new();
+    if !commas {
+        let needless = needless_commas(src)?;
+        for (t, tok) in tokens.iter().enumerate() {
+            if tok.tok == Tok::Comma && needless.binary_search(&tok.span.start).is_ok() && piece_of[t] != usize::MAX {
+                let p = piece_of[t];
+                dropped.push(p);
+                // A comma that starts a line (`a\n, b`): the line now starts
+                // with what follows it, as if the comma ended the line before.
+                if pieces[p].gap.broken && p + 1 < pieces.len() {
+                    let gap = std::mem::take(&mut pieces[p].gap);
+                    let next = &mut pieces[p + 1].gap;
+                    let mut lines = gap.lines;
+                    lines.extend(next.trailing.take().map(Trivia::Comment));
+                    lines.append(&mut next.lines);
+                    next.lines = lines;
+                    next.trailing = gap.trailing;
+                    next.broken = true;
+                }
+            }
+        }
+    }
+    let mut edits = normalize(&mut pieces, &shape);
+    for p in dropped {
+        edits.drop[p] = true;
+    }
+    if !commas {
+        edits.comma_after.iter_mut().for_each(|c| *c = false);
+    }
     let mut printer = Printer {
         pieces: &pieces,
         shape: &shape,
@@ -1657,7 +1706,7 @@ fn fn_name(pieces: &[Piece], first: usize) -> Option<Sym> {
 /// Decides the line breaks and blank lines of the canonical style.
 fn normalize(pieces: &mut [Piece], shape: &Shape) -> Edits {
     let n = pieces.len();
-    let mut e = Edits { skip: vec![false; n], comma_after: vec![false; n], bar_before: vec![false; n] };
+    let mut e = Edits { skip: vec![false; n], comma_after: vec![false; n], bar_before: vec![false; n], drop: vec![false; n] };
     // A block written on one line stays on one line.
     let mut force = shape.force.clone();
     for &(first, last) in &shape.inline {
@@ -1799,6 +1848,10 @@ impl Printer<'_> {
                 if i + 1 == n {
                     break;
                 }
+                if self.edits.drop[i] {
+                    self.line_of[i] = self.level;
+                    continue;
+                }
                 self.starts_line[i] = self.code.is_empty();
                 if self.edits.bar_before[i] {
                     self.put("|", Role::Word);
@@ -1823,10 +1876,15 @@ impl Printer<'_> {
     }
 
     fn flush(&mut self) {
-        if !self.code.is_empty() || self.comment.is_some() {
-            let code = std::mem::take(&mut self.code);
-            self.out.push(Out::Code { level: self.level, code, comment: self.comment.take() });
+        if self.code.is_empty() {
+            // The comment of a line whose comma was left out: a comment line.
+            if let Some(c) = self.comment.take() {
+                self.out.push(Out::Comment(self.level, c));
+            }
+            return;
         }
+        let code = std::mem::take(&mut self.code);
+        self.out.push(Out::Code { level: self.level, code, comment: self.comment.take() });
     }
 
     /// What comes before piece `i`: comments, and a new line if it starts one.

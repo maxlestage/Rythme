@@ -30,42 +30,42 @@
 # Vérifiez votre travail :  rythme exercise check 26-option.ry
 #                     ou :  rythme test 26-option.ry
 
-fn division_sure(a, b) = fail("à faire")
+fn division_sure(a b) = fail("à faire")
 
-fn trouver_age(personnes, nom) = fail("à faire")
+fn trouver_age(personnes nom) = fail("à faire")
 
-fn age_ou_inconnu(personnes, nom) = fail("à faire")
+fn age_ou_inconnu(personnes nom) = fail("à faire")
 
 fn premier_mot_long(mots) = fail("à faire")
 
-fn additionner_options(a, b) = fail("à faire")
+fn additionner_options(a b) = fail("à faire")
 
 # --- Tests (ne les modifiez pas) ---
 
-personnes = [{nom: "Ada", age: 36}, {nom: "Alan", age: 41}]
+personnes = [{nom: "Ada" age: 36} {nom: "Alan" age: 41}]
 
 test "division sûre"
-  assert_eq(division_sure(10, 4), Some(2.5))
-  assert_eq(division_sure(1, 0), None)
+  assert_eq(division_sure(10 4) Some(2.5))
+  assert_eq(division_sure(1 0) None)
 end
 
 test "trouver l'âge"
-  assert_eq(trouver_age(personnes, "Alan"), Some(41))
-  assert_eq(trouver_age(personnes, "Grace"), None)
+  assert_eq(trouver_age(personnes "Alan") Some(41))
+  assert_eq(trouver_age(personnes "Grace") None)
 end
 
 test "âge ou inconnu"
-  assert_eq(age_ou_inconnu(personnes, "Ada"), "36")
-  assert_eq(age_ou_inconnu(personnes, "Grace"), "inconnu")
+  assert_eq(age_ou_inconnu(personnes "Ada") "36")
+  assert_eq(age_ou_inconnu(personnes "Grace") "inconnu")
 end
 
 test "premier mot long"
-  assert_eq(premier_mot_long(["un", "langage", "fonctionnel"]), Some("langage"))
-  assert_eq(premier_mot_long(["mots", "brefs"]), None)
+  assert_eq(premier_mot_long(["un" "langage" "fonctionnel"]) Some("langage"))
+  assert_eq(premier_mot_long(["mots" "brefs"]) None)
 end
 
 test "additionner des options"
-  assert_eq(additionner_options(Some(2), Some(3)), Some(5))
-  assert_eq(additionner_options(Some(2), None), None)
-  assert_eq(additionner_options(None, None), None)
+  assert_eq(additionner_options(Some(2) Some(3)) Some(5))
+  assert_eq(additionner_options(Some(2) None) None)
+  assert_eq(additionner_options(None None) None)
 end

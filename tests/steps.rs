@@ -216,7 +216,7 @@ fn large_whole_numbers_symbols_and_blocks() {
     let r = rythme(&["steps", path.to_str().unwrap(), "xs.map { |x| x * 2 }.sum"]);
     assert_eq!(
         r.stdout,
-        "xs.map(fn(x) = x * 2).sum\n  → [10000000000000000000, 2].map(fn(x) = x * 2).sum\n  → [20000000000000000000, 4].sum\n  → sum([20000000000000000000, 4])\n  → 20000000000000000004\n",
+        "xs.map(fn(x) = x * 2).sum\n  → [10000000000000000000 2].map(fn(x) = x * 2).sum\n  → [20000000000000000000 4].sum\n  → sum([20000000000000000000 4])\n  → 20000000000000000004\n",
         "{}",
         r.stderr
     );
@@ -230,7 +230,7 @@ fn recursion_on_lists_and_definitions() {
     assert_eq!(r.code, 0, "{}", r.stderr);
     assert_eq!(
         r.stdout,
-        "sum3 = total([1, 2, 3])\n  → 1 + total([2, 3])\n  → 1 + (2 + total([3]))\n  → 1 + (2 + (3 + total([])))\n  → 1 + (2 + (3 + 0))\n  → 1 + (2 + 3)\n  → 1 + 5\n  → 6\n\nprint(sum3 * 2)\n  → print(6 * 2)\n  → print(12)\n12\n  → ()\n"
+        "sum3 = total([1 2 3])\n  → 1 + total([2 3])\n  → 1 + (2 + total([3]))\n  → 1 + (2 + (3 + total([])))\n  → 1 + (2 + (3 + 0))\n  → 1 + (2 + 3)\n  → 1 + 5\n  → 6\n\nprint(sum3 * 2)\n  → print(6 * 2)\n  → print(12)\n12\n  → ()\n"
     );
 }
 
@@ -250,7 +250,7 @@ quarter(6)
     let path = program("closures", code);
     let r = rythme(&["steps", path.to_str().unwrap()]);
     assert_eq!(r.code, 0, "{}", r.stderr);
-    let expected = "count(3, 0)\n  → count(2, 3)\n  → count(1, 5)\n  → count(0, 6)\n  → 6\n\n\
+    let expected = "count(3 0)\n  → count(2 3)\n  → count(1 5)\n  → count(0 6)\n  → 6\n\n\
 adder(10)(5)\n  → (fn(x) = x + 10)(5)\n  → 15\n\n\
 quarter(6)\n  → do\n      h = half(6)?\n      half(h)\n    end\n  → do\n      h = Ok(3)?\n      half(h)\n    end\n  → do\n      h = 3\n      half(h)\n    end\n  → half(3)\n  → Err(\"odd\")\n";
     assert_eq!(r.stdout, expected);
@@ -269,7 +269,7 @@ fn steps_are_bounded() {
     let r = rythme(&["steps", path.to_str().unwrap(), "--width", "30"]);
     assert_eq!(r.code, 0, "{}", r.stderr);
     assert!(r.stdout.lines().all(|l| l.chars().count() <= 30), "{}", r.stdout);
-    assert!(r.stdout.contains("\n  → [1, 2, 3, 4, 5, 6, 7, 8, …\n"), "{}", r.stdout);
+    assert!(r.stdout.contains("\n  → [1 2 3 4 5 6 7 8 9 10 11 …\n"), "{}", r.stdout);
     // In columns of the terminal: Chinese characters take two.
     let path = program("wide-chars", "fn twice(t) = t + t\ntwice(\"日本語のテキスト\")\n");
     let r = rythme(&["steps", path.to_str().unwrap(), "--width", "20"]);

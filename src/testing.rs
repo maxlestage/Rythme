@@ -164,8 +164,8 @@ pub fn run_loaded(driver: &mut Driver, options: &Options, title: Option<&str>) -
     if tests.is_empty() {
         if title.is_none() && total == 0 {
             out_line(&t!(
-                "No tests found. Write one like this:\n  test \"addition\" = assert_eq(1 + 1, 2)",
-                "Aucun test trouvé. Écrivez-en un comme ceci :\n  test \"addition\" = assert_eq(1 + 1, 2)"
+                "No tests found. Write one like this:\n  test \"addition\" = assert_eq(1 + 1 2)",
+                "Aucun test trouvé. Écrivez-en un comme ceci :\n  test \"addition\" = assert_eq(1 + 1 2)"
             ));
         }
         return (Vec::new(), left_out);
@@ -355,8 +355,8 @@ pub fn run_paths(paths: &[PathBuf], options: &Options) -> Result<Summary, Box<Di
     if files.is_empty() {
         let shown: Vec<String> = paths.iter().map(|p| p.display().to_string()).collect();
         out_line(&t!(
-            "No file with tests in {}. Write a test in a `.ry` file like this:\n  test \"addition\" = assert_eq(1 + 1, 2)",
-            "Aucun fichier avec des tests dans {}. Écrivez un test dans un fichier `.ry` comme ceci :\n  test \"addition\" = assert_eq(1 + 1, 2)",
+            "No file with tests in {}. Write a test in a `.ry` file like this:\n  test \"addition\" = assert_eq(1 + 1 2)",
+            "Aucun fichier avec des tests dans {}. Écrivez un test dans un fichier `.ry` comme ceci :\n  test \"addition\" = assert_eq(1 + 1 2)",
             shown.join(", ")
         ));
         return Ok(summary);

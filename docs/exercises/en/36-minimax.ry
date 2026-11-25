@@ -31,17 +31,17 @@ fn best_move(n) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "moves"
-  assert_eq(moves(10), [1, 2, 3])
-  assert_eq(moves(2), [1, 2])
+  assert_eq(moves(10) [1 2 3])
+  assert_eq(moves(2) [1 2])
   assert_eq(moves(0), [])
 end
 
 test "who wins"
-  assert_eq(map(0..8, wins), [false, true, true, true, false, true, true, true, false])
+  assert_eq(map(0..8 wins) [false true true true false true true true false])
 end
 
 test "best move"
-  assert_eq(best_move(5), Some(1))
-  assert_eq(best_move(7), Some(3))
-  assert_eq(best_move(8), None)
+  assert_eq(best_move(5) Some(1))
+  assert_eq(best_move(7) Some(3))
+  assert_eq(best_move(8) None)
 end

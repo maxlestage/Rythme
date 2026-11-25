@@ -26,33 +26,33 @@
 # Check your work:  rythme exercise check 30-testing.ry
 #              or:  rythme test 30-testing.ry
 
-fn clamp(x, low, high) = max(high, min(x, low))
+fn clamp(x low high) = max(high min(x low))
 
 fn median(list)
   middle = len(list) // 2
   if is_even(len(list)) then (list[middle - 1] + list[middle]) / 2 else list[middle]
 end
 
-fn count_words(text) = len(split(text, " "))
+fn count_words(text) = len(split(text " "))
 
 # --- Tests (do not change them) ---
 
 test "clamp"
-  assert_eq(clamp(15, 0, 10), 10)
-  assert_eq(clamp(-5, 0, 10), 0)
-  assert_eq(clamp(5, 0, 10), 5)
+  assert_eq(clamp(15 0 10) 10)
+  assert_eq(clamp(-5 0 10) 0)
+  assert_eq(clamp(5 0 10) 5)
 end
 
 test "median of an odd number of values"
-  assert_eq(median([1, 2, 3]), 2)
-  assert_eq(median([3, 1, 2]), 2)
+  assert_eq(median([1 2 3]) 2)
+  assert_eq(median([3 1 2]) 2)
 end
 
-test "median of an even number of values" = assert_eq(median([4, 1, 3, 2]), 2.5)
+test "median of an even number of values" = assert_eq(median([4 1 3 2]) 2.5)
 
 test "count words"
-  assert_eq(count_words("one two three"), 3)
-  assert_eq(count_words("  one   two "), 2)
+  assert_eq(count_words("one two three") 3)
+  assert_eq(count_words("  one   two ") 2)
 end
 
 # Your test:

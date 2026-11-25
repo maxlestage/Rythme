@@ -30,28 +30,28 @@ fn longest_word(words) = fail("to do")
 
 fn to_number(digits) = fail("to do")
 
-fn count_where(list, f) = fail("to do")
+fn count_where(list f) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "product"
-  assert_eq(product_of([2, 3, 4]), 24)
-  assert_eq(product_of([]), 1)
+  assert_eq(product_of([2 3 4]) 24)
+  assert_eq(product_of([]) 1)
 end
 
 test "longest word"
-  assert_eq(longest_word(["a", "tree", "is", "green"]), "green")
-  assert_eq(longest_word(["one", "two"]), "one")
-  assert_eq(longest_word([]), "")
+  assert_eq(longest_word(["a" "tree" "is" "green"]) "green")
+  assert_eq(longest_word(["one" "two"]) "one")
+  assert_eq(longest_word([]) "")
 end
 
 test "to number"
-  assert_eq(to_number([1, 2, 3]), 123)
-  assert_eq(to_number([0, 7]), 7)
-  assert_eq(to_number([]), 0)
+  assert_eq(to_number([1 2 3]) 123)
+  assert_eq(to_number([0 7]) 7)
+  assert_eq(to_number([]) 0)
 end
 
 test "count where"
-  assert_eq(count_where([1, 2, 3, 4, 5], is_odd), 3)
-  assert_eq(count_where(["a", "bb"], fn(w) = len(w) > 5), 0)
+  assert_eq(count_where([1 2 3 4 5] is_odd) 3)
+  assert_eq(count_where(["a" "bb"] fn(w) = len(w) > 5) 0)
 end

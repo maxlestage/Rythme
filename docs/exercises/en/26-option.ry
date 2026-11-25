@@ -26,42 +26,42 @@
 # Check your work:  rythme exercise check 26-option.ry
 #              or:  rythme test 26-option.ry
 
-fn safe_divide(a, b) = fail("to do")
+fn safe_divide(a b) = fail("to do")
 
-fn find_age(people, name) = fail("to do")
+fn find_age(people name) = fail("to do")
 
-fn age_or_unknown(people, name) = fail("to do")
+fn age_or_unknown(people name) = fail("to do")
 
 fn first_long_word(words) = fail("to do")
 
-fn add_options(a, b) = fail("to do")
+fn add_options(a b) = fail("to do")
 
 # --- Tests (do not change them) ---
 
-people = [{name: "Ada", age: 36}, {name: "Alan", age: 41}]
+people = [{name: "Ada" age: 36} {name: "Alan" age: 41}]
 
 test "safe divide"
-  assert_eq(safe_divide(10, 4), Some(2.5))
-  assert_eq(safe_divide(1, 0), None)
+  assert_eq(safe_divide(10 4) Some(2.5))
+  assert_eq(safe_divide(1 0) None)
 end
 
 test "find age"
-  assert_eq(find_age(people, "Alan"), Some(41))
-  assert_eq(find_age(people, "Grace"), None)
+  assert_eq(find_age(people "Alan") Some(41))
+  assert_eq(find_age(people "Grace") None)
 end
 
 test "age or unknown"
-  assert_eq(age_or_unknown(people, "Ada"), "36")
-  assert_eq(age_or_unknown(people, "Grace"), "unknown")
+  assert_eq(age_or_unknown(people "Ada") "36")
+  assert_eq(age_or_unknown(people "Grace") "unknown")
 end
 
 test "first long word"
-  assert_eq(first_long_word(["a", "functional", "language"]), Some("functional"))
-  assert_eq(first_long_word(["short", "words"]), None)
+  assert_eq(first_long_word(["a" "functional" "language"]) Some("functional"))
+  assert_eq(first_long_word(["short" "words"]) None)
 end
 
 test "add options"
-  assert_eq(add_options(Some(2), Some(3)), Some(5))
-  assert_eq(add_options(Some(2), None), None)
-  assert_eq(add_options(None, None), None)
+  assert_eq(add_options(Some(2) Some(3)) Some(5))
+  assert_eq(add_options(Some(2) None) None)
+  assert_eq(add_options(None None) None)
 end

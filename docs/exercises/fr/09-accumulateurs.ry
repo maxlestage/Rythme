@@ -41,17 +41,17 @@ fn fib(n) = fail("à faire")
 # --- Tests (ne les modifiez pas) ---
 
 test "grande somme"
-  assert_eq(grande_somme(10), 55)
-  assert_eq(grande_somme(1000000), 500000500000)
+  assert_eq(grande_somme(10) 55)
+  assert_eq(grande_somme(1000000) 500000500000)
 end
 
 test "étapes de Syracuse"
-  assert_eq(etapes_de_syracuse(1), 0)
-  assert_eq(etapes_de_syracuse(6), 8)
-  assert_eq(etapes_de_syracuse(27), 111)
+  assert_eq(etapes_de_syracuse(1) 0)
+  assert_eq(etapes_de_syracuse(6) 8)
+  assert_eq(etapes_de_syracuse(27) 111)
 end
 
 test "fibonacci"
-  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
-  assert_eq(fib(90), 2880067194370816120)
+  assert_eq(0..10 |> map(fib) [0 1 1 2 3 5 8 13 21 34 55])
+  assert_eq(fib(90) 2880067194370816120)
 end

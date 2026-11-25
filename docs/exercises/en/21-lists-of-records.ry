@@ -37,19 +37,19 @@ fn group_sizes(students) = fail("to do")
 # --- Tests (do not change them) ---
 
 classroom = [
-  {name: "Ada", score: 92, group: "A"},
-  {name: "Alan", score: 45, group: "B"},
-  {name: "Grace", score: 78, group: "A"},
-  {name: "Edsger", score: 50, group: "B"},
-  {name: "Barbara", score: 85, group: "A"},
+  {name: "Ada" score: 92 group: "A"}
+  {name: "Alan" score: 45 group: "B"}
+  {name: "Grace" score: 78 group: "A"}
+  {name: "Edsger" score: 50 group: "B"}
+  {name: "Barbara" score: 85 group: "A"}
 ]
 
-test "passed" = assert_eq(names_of_passed(classroom), ["Ada", "Grace", "Edsger", "Barbara"])
+test "passed" = assert_eq(names_of_passed(classroom) ["Ada" "Grace" "Edsger" "Barbara"])
 
-test "average" = assert_eq(average_score(classroom), 70)
+test "average" = assert_eq(average_score(classroom) 70)
 
-test "best" = assert_eq(best(classroom), "Ada")
+test "best" = assert_eq(best(classroom) "Ada")
 
-test "ranking" = assert_eq(ranking(classroom), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+test "ranking" = assert_eq(ranking(classroom) ["Ada" "Barbara" "Grace" "Edsger" "Alan"])
 
-test "group sizes" = assert_eq(group_sizes(classroom), {A: 3, B: 2})
+test "group sizes" = assert_eq(group_sizes(classroom) {A: 3 B: 2})

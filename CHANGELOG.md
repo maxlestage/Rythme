@@ -12,6 +12,35 @@ dit ce qu'une version 1.x peut changer ou non.*
 
 ## [Unreleased]
 
+### Without commas, as in REBOL
+
+The commas between the elements of a bracket may be left out, everywhere
+elements follow each other: lists (`[1 2 3]`), the arguments of a call
+(`f(a b)`), records (`{name: "Ada" age: 36}`), calls without parentheses
+(`print x y`), the parameters of a function or a block (`fn add(a b)`,
+`do |acc x|`), patterns (`[first ..rest]`, `Rect(w h)`), types
+(`Result(Int Text)`) and the fields of a variant. `;` was never needed
+either: a new line ends a statement.
+
+- Every program written with commas keeps its meaning: a bracket is read
+  with commas first, exactly as before, and read again without them only
+  when that fails between two elements, or when a bracket inside it is
+  written without commas (`[[1 2] [3 4]]` is two lists, not an index).
+  Without commas, a `[`, a `(`, a `-x` or a `..x` after a space starts the
+  next element; elsewhere `[n -1]` stays `n - 1`.
+- `rythme fmt` writes code without commas. It keeps one only where the next
+  element would continue the one before (`[x, -1]`, `[a, [0]]`,
+  `[0, ..xs]`) or after a call without parentheses, never one after the last
+  element, and it checks the syntax tree as always. Values are still shown
+  with commas: `print([1 2])` shows `[1, 2]`.
+- Every example, exercise (and its solutions, in the eight languages),
+  sample of the manual and of the guides for teachers, the help, the guided
+  tour, the examples of the built-in functions and `docs/llms-full.txt` are
+  written without commas; the manual has a section for it (3.16), `rythme
+  help syntax` and `rythme help rebol` say it.
+- The language server counts an argument written after a space for its
+  signature help, and the Tree-sitter grammar reads code without commas.
+
 ### As few words as REBOL
 
 REBOL showed how far a small language goes with a few words that say what
@@ -44,9 +73,7 @@ and its errors that are values:
   section 6), the READMEs and the grammars of VS Code (`length?`, `found?`,
   `none?`, `exists?`, `info?`) know it.
 
-Nothing else changes: every program that ran before runs the same, and no
-syntax is added (REBOL's lists without commas, `[1 2 3]`, keep their message
-asking for commas).
+Nothing else changes: every program that ran before runs the same.
 
 ### What JavaScript has too
 

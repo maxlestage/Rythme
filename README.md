@@ -14,7 +14,7 @@ language, precisely), the [guide for teachers](docs/teaching.md), and
 # Values never change. Everything is a function. There are no loops.
 fn square(x) = x * x
 
-[1, 2, 3, 4]
+[1 2 3 4]
   |> filter(is_even)      # keep the even numbers
   |> map(square)          # square each one
   |> sum                  # add them up
@@ -25,12 +25,12 @@ The same, the Ruby way (blocks, method chains, names ending with `?`, calls
 without parentheses):
 
 ```rythme
-names = ["Ada", "Grace", "Alan"]
+names = ["Ada" "Grace" "Alan"]
 names.each do |name|
   puts "Hello, #{name}!"
 end
 
-total = [1, 2, 3, 4]
+total = [1 2 3 4]
   .select(even?)
   .map { |x| x * x }
   .sum
@@ -53,7 +53,8 @@ puts total                 # 20
   (`read("notes.txt")`, `read("https://example.com")`), one writes it back
   (`write`), and the REBOL names of the library work as they are (`probe`,
   `ask`, `rejoin`, `length?`, `foreach`, `exists?`...). `rythme help rebol`
-  shows what is the same and what is different.
+  shows what is the same and what is different. And no commas needed:
+  `[1 2 3]`, `f(a b)`, `{name: "Ada" age: 36}`, `print x y`.
 - **Purely functional.** Values are immutable, functions are values, every
   `if` and `match` is an expression. Recursion in tail position never runs
   out of stack.
@@ -252,30 +253,30 @@ fn sign(n) = if n < 0 then "negative" else if n == 0 then "zero" else "positive"
 
 # Lists, ranges, records, dicts and sets
 numbers = 1..10                           # [1, 2, ..., 10]
-ada = {name: "Ada", born: 1815}
-older = {..ada, born: 1816}               # a new record; ada is unchanged
-ages = dict([["Ada", 36], ["Alan", 41]])  # a dictionary: keys of any kind
-seen = set([1, 2, 2])                     # a set: set(1, 2)
+ada = {name: "Ada" born: 1815}
+older = {..ada born: 1816}               # a new record; ada is unchanged
+ages = dict([["Ada" 36] ["Alan" 41]])  # a dictionary: keys of any kind
+seen = set([1 2 2])                     # a set: set(1, 2)
 
 # Your own types, and match
-type Shape = Circle(radius) | Rect(width, height)
+type Shape = Circle(radius) | Rect(width height)
 
 fn area(shape) = match shape
   Circle(r) -> pi * r * r
-  Rect(w, h) -> w * h
+  Rect(w h) -> w * h
 end
 
 # Errors are values
-fn divide(a, b) = if b == 0 then Err("division by zero") else Ok(a / b)
+fn divide(a b) = if b == 0 then Err("division by zero") else Ok(a / b)
 
-fn average(a, b)
+fn average(a b)
   x = parse_float(a)?                     # stops here and returns the Err
   y = parse_float(b)?
   Ok((x + y) / 2)
 end
 
 # Tests live next to the code: rythme test file.ry
-test "double works" = assert_eq(double(21), 42)
+test "double works" = assert_eq(double(21) 42)
 
 # Other files, used through their names
 use geometry                              # geometry.ry, next to this file

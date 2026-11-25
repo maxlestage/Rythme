@@ -12,18 +12,18 @@ fn initialen_von(satz) = satz |> split |> map(fn(w) = upper(w[0])) |> join("")
 # --- Tests (nicht verändern) ---
 
 test "Summe ungerader Quadrate"
-  assert_eq(summe_ungerader_quadrate(5), 35)
-  assert_eq(summe_ungerader_quadrate(1), 1)
+  assert_eq(summe_ungerader_quadrate(5) 35)
+  assert_eq(summe_ungerader_quadrate(1) 1)
 end
 
 test "die besten drei"
-  assert_eq(die_besten_drei([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(die_besten_drei([12 18 9 15 20]) [20 18 15])
   assert_eq(die_besten_drei([4]), [4])
 end
 
-test "Wörter rufen" = assert_eq(woerter_rufen("hallo  welt"), "HALLO WELT")
+test "Wörter rufen" = assert_eq(woerter_rufen("hallo  welt") "HALLO WELT")
 
 test "Initialen von"
-  assert_eq(initialen_von("portable network graphics"), "PNG")
-  assert_eq(initialen_von("Rythme"), "R")
+  assert_eq(initialen_von("portable network graphics") "PNG")
+  assert_eq(initialen_von("Rythme") "R")
 end

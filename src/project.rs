@@ -1040,8 +1040,8 @@ entry = "src/main.ry"
         "## Une salutation pour `nom`.\nfn {func}(nom) = \"Bonjour, {{nom}} !\"\n"
     );
     let test = t!(
-        "# The tests: `rythme test` in the folder of the project.\nuse {name}/{module}\n\ntest \"{func}\" = assert_eq({module}.{func}(\"Ada\"), \"Hello, Ada!\")\n",
-        "# Les tests : `rythme test` dans le dossier du projet.\nuse {name}/{module}\n\ntest \"{func}\" = assert_eq({module}.{func}(\"Ada\"), \"Bonjour, Ada !\")\n"
+        "# The tests: `rythme test` in the folder of the project.\nuse {name}/{module}\n\ntest \"{func}\" = assert_eq({module}.{func}(\"Ada\") \"Hello, Ada!\")\n",
+        "# Les tests : `rythme test` dans le dossier du projet.\nuse {name}/{module}\n\ntest \"{func}\" = assert_eq({module}.{func}(\"Ada\") \"Bonjour, Ada !\")\n"
     );
     let readme = t!(
         "# {name}\n\nA [Rythme](https://github.com/maxlestage/Rythme) project.\n\n```sh\nrythme run        # run the program (src/main.ry)\nrythme test       # run the tests (tests/)\nrythme check      # find problems without running\nrythme fmt        # give the code its official layout\nrythme install    # download the dependencies of rythme.toml\n```\n",

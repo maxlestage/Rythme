@@ -959,8 +959,8 @@ pub(crate) fn too_deep(depth: usize, span: Span) -> Box<Diagnostic> {
         .at(span)
         .label(t!("this call goes too deep", "cet appel va trop loin"))
         .help(t!(
-            "a recursive function that never stops? Check that it always reaches a base case.\nOtherwise, make the recursive call the very last thing the function does\n(tail call), for example with an accumulator:\n  fn sum([], acc) = acc\n  fn sum([x, ..rest], acc) = sum(rest, acc + x)\nor use `fold`, `map`, `filter`, which have no limit.",
-            "une fonction récursive qui ne s'arrête jamais ? Vérifiez qu'elle atteint toujours un cas de base.\nSinon, faites de l'appel récursif la toute dernière chose que fait la fonction\n(appel terminal), par exemple avec un accumulateur :\n  fn somme([], acc) = acc\n  fn somme([x, ..reste], acc) = somme(reste, acc + x)\nou utilisez `fold`, `map`, `filter`, qui n'ont pas de limite."
+            "a recursive function that never stops? Check that it always reaches a base case.\nOtherwise, make the recursive call the very last thing the function does\n(tail call), for example with an accumulator:\n  fn sum([] acc) = acc\n  fn sum([x ..rest] acc) = sum(rest acc + x)\nor use `fold`, `map`, `filter`, which have no limit.",
+            "une fonction récursive qui ne s'arrête jamais ? Vérifiez qu'elle atteint toujours un cas de base.\nSinon, faites de l'appel récursif la toute dernière chose que fait la fonction\n(appel terminal), par exemple avec un accumulateur :\n  fn somme([] acc) = acc\n  fn somme([x ..reste] acc) = somme(reste acc + x)\nou utilisez `fold`, `map`, `filter`, qui n'ont pas de limite."
         ))
         .boxed()
 }

@@ -6,7 +6,7 @@ fn count_words(text) =
   split(text)
     |> group_by(fn(w) = w)
     |> entries
-    |> map(fn([word, list]) = {word, count: len(list)})
+    |> map(fn([word list]) = {word count: len(list)})
     |> sort_by(fn(e) = -e.count)
 
 count_words(poem)

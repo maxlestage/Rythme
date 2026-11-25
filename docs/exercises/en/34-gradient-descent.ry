@@ -20,27 +20,27 @@
 # Check your work:  rythme exercise check 34-gradient-descent.ry
 #              or:  rythme test 34-gradient-descent.ry
 
-fn step(f, x, rate) = fail("to do")
+fn step(f x rate) = fail("to do")
 
-fn descend(f, x, rate, steps) = fail("to do")
+fn descend(f x rate steps) = fail("to do")
 
-fn descend_all(f, xs, rate, steps) = fail("to do")
+fn descend_all(f xs rate steps) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 fn parabola(x) = (x - 3) ** 2
 
 test "one step"
-  assert_eq(step(parabola, 0, 0.5), 3.0)
-  assert_eq(step(parabola, 1, 0.25), 2.0)
+  assert_eq(step(parabola 0 0.5) 3.0)
+  assert_eq(step(parabola 1 0.25) 2.0)
 end
 
 test "down to the bottom"
-  assert_eq(round(descend(parabola, 0, 0.1, 100), 4), 3.0)
-  assert_eq(descend(parabola, 10, 0.1, 0), 10)
+  assert_eq(round(descend(parabola 0 0.1 100) 4) 3.0)
+  assert_eq(descend(parabola 10 0.1 0) 10)
 end
 
 test "several numbers"
-  bowl = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
-  assert_eq(map(descend_all(bowl, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+  bowl = fn([x y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descend_all(bowl [0 0] 0.1 100) fn(v) = round(v 4)) [1.0, -2.0])
 end

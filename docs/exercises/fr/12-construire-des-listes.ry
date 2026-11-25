@@ -25,7 +25,7 @@
 
 fn a_rebours(n) = fail("à faire")
 
-fn repeter(x, n) = fail("à faire")
+fn repeter(x n) = fail("à faire")
 
 fn doubler_tout(liste) = fail("à faire")
 
@@ -35,27 +35,27 @@ fn inverser(liste) = fail("à faire")
 
 test "à rebours"
   assert_eq(a_rebours(0), [0])
-  assert_eq(a_rebours(3), [3, 2, 1, 0])
+  assert_eq(a_rebours(3) [3 2 1 0])
 end
 
 test "répéter"
-  assert_eq(repeter("a", 3), ["a", "a", "a"])
-  assert_eq(repeter(1, 0), [])
+  assert_eq(repeter("a" 3) ["a" "a" "a"])
+  assert_eq(repeter(1 0) [])
 end
 
 test "doubler tout"
-  assert_eq(doubler_tout([1, 2, 3]), [2, 4, 6])
+  assert_eq(doubler_tout([1 2 3]) [2 4 6])
   assert_eq(doubler_tout([]), [])
 end
 
 test "inverser"
-  assert_eq(inverser([1, 2, 3]), [3, 2, 1])
+  assert_eq(inverser([1 2 3]) [3 2 1])
   assert_eq(inverser([]), [])
   assert_eq(inverser(["x"]), ["x"])
 end
 
 test "la liste de départ ne change pas"
-  nombres = [1, 2, 3]
+  nombres = [1 2 3]
   inverser(nombres)
-  assert_eq(nombres, [1, 2, 3])
+  assert_eq(nombres [1 2 3])
 end

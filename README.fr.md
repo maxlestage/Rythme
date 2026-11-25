@@ -14,7 +14,7 @@ et [tous les documents](docs/README.md#en-français).
 # Les valeurs ne changent jamais. Tout est fonction. Il n'y a pas de boucles.
 fn carre(x) = x * x
 
-[1, 2, 3, 4]
+[1 2 3 4]
   |> filter(is_even)      # garder les nombres pairs
   |> map(carre)           # mettre chacun au carré
   |> sum                  # les additionner
@@ -25,12 +25,12 @@ La même chose, à la manière de Ruby (blocs, enchaînements de méthodes,
 noms en `?`, appels sans parenthèses) :
 
 ```rythme
-noms = ["Ada", "Grace", "Alan"]
+noms = ["Ada" "Grace" "Alan"]
 noms.each do |nom|
   puts "Bonjour, #{nom} !"
 end
 
-total = [1, 2, 3, 4]
+total = [1 2 3 4]
   .select(even?)
   .map { |x| x * x }
   .sum
@@ -55,7 +55,8 @@ puts total                 # 20
   (`read("notes.txt")`, `read("https://example.com")`), un autre l'écrit
   (`write`), et les noms REBOL de la bibliothèque marchent tels quels
   (`probe`, `ask`, `rejoin`, `length?`, `foreach`, `exists?`...).
-  `rythme help rebol` montre ce qui est pareil et ce qui change.
+  `rythme help rebol` montre ce qui est pareil et ce qui change. Et plus
+  besoin de virgules : `[1 2 3]`, `f(a b)`, `{nom: "Ada" age: 36}`, `print x y`.
 - **Purement fonctionnel.** Les valeurs sont immuables, les fonctions sont des
   valeurs, chaque `if` et chaque `match` est une expression. La récursion en
   position terminale n'épuise jamais la pile.
@@ -249,30 +250,30 @@ fn signe(n) = if n < 0 then "négatif" else if n == 0 then "zéro" else "positif
 
 # Listes, intervalles, enregistrements, dictionnaires et ensembles
 nombres = 1..10                           # [1, 2, ..., 10]
-ada = {nom: "Ada", naissance: 1815}
-autre = {..ada, naissance: 1816}          # un nouvel enregistrement ; ada ne change pas
-ages = dict([["Ada", 36], ["Alan", 41]])  # un dictionnaire : des clés de toute sorte
-vus = set([1, 2, 2])                      # un ensemble : set(1, 2)
+ada = {nom: "Ada" naissance: 1815}
+autre = {..ada naissance: 1816}          # un nouvel enregistrement ; ada ne change pas
+ages = dict([["Ada" 36] ["Alan" 41]])  # un dictionnaire : des clés de toute sorte
+vus = set([1 2 2])                      # un ensemble : set(1, 2)
 
 # Vos propres types, et match
-type Forme = Cercle(rayon) | Rect(largeur, hauteur)
+type Forme = Cercle(rayon) | Rect(largeur hauteur)
 
 fn aire(forme) = match forme
   Cercle(r) -> pi * r * r
-  Rect(l, h) -> l * h
+  Rect(l h) -> l * h
 end
 
 # Les erreurs sont des valeurs
-fn diviser(a, b) = if b == 0 then Err("division par zéro") else Ok(a / b)
+fn diviser(a b) = if b == 0 then Err("division par zéro") else Ok(a / b)
 
-fn moyenne(a, b)
+fn moyenne(a b)
   x = parse_float(a)?                     # s'arrête ici et renvoie le Err
   y = parse_float(b)?
   Ok((x + y) / 2)
 end
 
 # Les tests vivent à côté du code : rythme test fichier.ry
-test "double marche" = assert_eq(double(21), 42)
+test "double marche" = assert_eq(double(21) 42)
 
 # Autres fichiers, utilisés par leur nom
 use geometrie                             # geometrie.ry, à côté de ce fichier

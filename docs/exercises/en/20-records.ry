@@ -22,35 +22,35 @@
 # Check your work:  rythme exercise check 20-records.ry
 #              or:  rythme test 20-records.ry
 
-fn age_in(person, year) = fail("to do")
+fn age_in(person year) = fail("to do")
 
 fn label(person) = fail("to do")
 
-fn renamed(person, name) = fail("to do")
+fn renamed(person name) = fail("to do")
 
-fn moved(point, dx, dy) = fail("to do")
+fn moved(point dx dy) = fail("to do")
 
-fn distance(a, b) = fail("to do")
+fn distance(a b) = fail("to do")
 
 # --- Tests (do not change them) ---
 
-ada = {name: "Ada", born: 1815}
+ada = {name: "Ada" born: 1815}
 
-test "age" = assert_eq(age_in(ada, 1852), 37)
+test "age" = assert_eq(age_in(ada 1852) 37)
 
-test "label" = assert_eq(label(ada), "Ada (1815)")
+test "label" = assert_eq(label(ada) "Ada (1815)")
 
 test "renamed"
-  assert_eq(renamed(ada, "Augusta"), {name: "Augusta", born: 1815})
-  assert_eq(ada.name, "Ada")
+  assert_eq(renamed(ada "Augusta") {name: "Augusta" born: 1815})
+  assert_eq(ada.name "Ada")
 end
 
 test "moved"
-  assert_eq(moved({x: 1, y: 2}, 3, -1), {x: 4, y: 1})
-  assert_eq(moved({x: 0, y: 0}, 0, 0), {x: 0, y: 0})
+  assert_eq(moved({x: 1 y: 2} 3 -1) {x: 4 y: 1})
+  assert_eq(moved({x: 0 y: 0} 0 0) {x: 0 y: 0})
 end
 
 test "distance"
-  assert_eq(distance({x: 0, y: 0}, {x: 3, y: 4}), 5)
-  assert_eq(distance({x: 1, y: 1}, {x: 1, y: 1}), 0)
+  assert_eq(distance({x: 0 y: 0} {x: 3 y: 4}) 5)
+  assert_eq(distance({x: 1 y: 1} {x: 1 y: 1}) 0)
 end

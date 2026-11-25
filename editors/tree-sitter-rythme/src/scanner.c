@@ -81,7 +81,7 @@ static bool command_follows(TSLexer *lexer) {
     advance(lexer);
   }
   int32_t c = lexer->lookahead;
-  if (c == '"' || c == '[' || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z')) {
+  if (c == '"' || c == '[' || c == '(' || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z')) {
     return true;
   }
   if (c == ':' || c == '-') {

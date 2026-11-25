@@ -2,21 +2,21 @@
 
 type Shape =
   | Circle(radius)
-  | Rect(width, height)
-  | Triangle(base, height)
+  | Rect(width height)
+  | Triangle(base height)
 
 fn area(Circle(r)) = pi * r * r
-fn area(Rect(w, h)) = w * h
-fn area(Triangle(b, h)) = b * h / 2
+fn area(Rect(w h)) = w * h
+fn area(Triangle(b h)) = b * h / 2
 
 fn name(shape) = match shape
   Circle(_) -> "circle"
-  Rect(w, h) if w == h -> "square"
-  Rect(_, _) -> "rectangle"
-  Triangle(_, _) -> "triangle"
+  Rect(w h) if w == h -> "square"
+  Rect(_ _) -> "rectangle"
+  Triangle(_ _) -> "triangle"
 end
 
-shapes = [Circle(1.0), Rect(2, 3), Rect(4, 4), Triangle(3, 4)]
+shapes = [Circle(1.0) Rect(2 3) Rect(4 4) Triangle(3 4)]
 
 shapes |> each(fn(s) = print("{name(s)}: {round(area(s), 2)}"))
 

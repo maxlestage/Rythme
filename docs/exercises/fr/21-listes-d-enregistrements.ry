@@ -39,19 +39,19 @@ fn effectifs(eleves) = fail("à faire")
 # --- Tests (ne les modifiez pas) ---
 
 promotion = [
-  {nom: "Ada", note: 18, groupe: "A"},
-  {nom: "Alan", note: 8, groupe: "B"},
-  {nom: "Grace", note: 14, groupe: "A"},
-  {nom: "Edsger", note: 10, groupe: "B"},
-  {nom: "Barbara", note: 15, groupe: "A"},
+  {nom: "Ada" note: 18 groupe: "A"}
+  {nom: "Alan" note: 8 groupe: "B"}
+  {nom: "Grace" note: 14 groupe: "A"}
+  {nom: "Edsger" note: 10 groupe: "B"}
+  {nom: "Barbara" note: 15 groupe: "A"}
 ]
 
-test "admis" = assert_eq(noms_des_admis(promotion), ["Ada", "Grace", "Edsger", "Barbara"])
+test "admis" = assert_eq(noms_des_admis(promotion) ["Ada" "Grace" "Edsger" "Barbara"])
 
-test "moyenne" = assert_eq(note_moyenne(promotion), 13)
+test "moyenne" = assert_eq(note_moyenne(promotion) 13)
 
-test "meilleur" = assert_eq(meilleur(promotion), "Ada")
+test "meilleur" = assert_eq(meilleur(promotion) "Ada")
 
-test "classement" = assert_eq(classement(promotion), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+test "classement" = assert_eq(classement(promotion) ["Ada" "Barbara" "Grace" "Edsger" "Alan"])
 
-test "effectifs" = assert_eq(effectifs(promotion), {A: 3, B: 2})
+test "effectifs" = assert_eq(effectifs(promotion) {A: 3 B: 2})

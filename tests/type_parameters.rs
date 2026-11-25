@@ -95,10 +95,10 @@ fn mistakes_in_the_parameters_are_explained() {
 #[test]
 fn the_formatter_writes_the_parameters_like_the_types_a_type_takes() {
     let src = "type Tree( a ) =   Leaf |   Node(left :Tree( a ),value:a, right: Tree(a))\ntype Pair(a,b)=Pair(first:a,second:b)\nfn f( t:Tree( Int ) )->Pair( Int,Text ) = Pair(1,\"x\")\n";
-    let want = "type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))\ntype Pair(a, b) = Pair(first: a, second: b)\nfn f(t: Tree(Int)) -> Pair(Int, Text) = Pair(1, \"x\")\n";
+    let want = "type Tree(a) = Leaf | Node(left: Tree(a) value: a right: Tree(a))\ntype Pair(a b) = Pair(first: a second: b)\nfn f(t: Tree(Int)) -> Pair(Int Text) = Pair(1 \"x\")\n";
     assert_eq!(format(src).unwrap(), want);
     assert_eq!(format(want).unwrap(), want);
-    let multi = "type Many(a, b) =\n  | One(x: a)\n  | Two(x: a, y: b)\n";
+    let multi = "type Many(a b) =\n  | One(x: a)\n  | Two(x: a y: b)\n";
     assert_eq!(format(multi).unwrap(), multi);
 }
 

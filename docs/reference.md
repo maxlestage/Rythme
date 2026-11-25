@@ -76,7 +76,7 @@ answer = 6 * 7  # a comment can follow code
 
 ## Area of a rectangle.
 ## A documentation comment can span several lines.
-fn area(width, height) = width * height
+fn area(width height) = width * height
 
 help(area)
 ```
@@ -117,8 +117,8 @@ _draft = 0               # a name may start with `_`
 item2 = 2                # digits are allowed after the first character
 日本 = "Japan"           # any alphabetic character
 type Answer = Yes | No   # an uppercase first letter: a type or a constructor
-r = {type: "a keyword as a field name", "full name": "a text as a field name"}
-print(prénom, item2, 日本, Yes, r.type, r["full name"])
+r = {type: "a keyword as a field name" "full name": "a text as a field name"}
+print(prénom item2 日本 Yes r.type r["full name"])
 ```
 
 ```text
@@ -145,14 +145,14 @@ other names keep working.
 
 ```rythme
 fn adult?(person) = person.age >= 18
-ada = {name: "Ada", age: 36}
-print(adult?(ada), ada.adult?, even?(4), [1, 2].include?(2), [].empty?)
-print([1, 2, 3, 4].select(even?))
+ada = {name: "Ada" age: 36}
+print(adult?(ada) ada.adult? even?(4) [1 2].include?(2) [].empty?)
+print([1 2 3 4].select(even?))
 fn first_double(xs)
   x = first(xs)?             # `first` is not followed by `(`: the operator
   Some(x * 2)
 end
-print(first_double([5]), first_double([]))
+print(first_double([5]) first_double([]))
 ```
 
 ```text
@@ -211,9 +211,9 @@ literal too large to represent becomes `inf`.
 There are no negative literals: `-7` is the operator `-` applied to `7`.
 
 ```rythme
-print(42, -7, 1_000_000, 0xFF, 0b1010)
-print(3.14, 2.0, 1e3, 1.5e-3, 6.02E23)
-print(9223372036854775807, -9223372036854775808, 123456789012345678901234567890)
+print(42 -7 1_000_000 0xFF 0b1010)
+print(3.14 2.0 1e3 1.5e-3 6.02E23)
+print(9223372036854775807 -9223372036854775808 123456789012345678901234567890)
 ```
 
 ```text
@@ -338,18 +338,18 @@ the unary `-` must have their operand on the same line.
 ```rythme
 total = 1 +
   2                       # the line ends with an operator: it continues
-result = [1, 2, 3, 4]
+result = [1 2 3 4]
   |> filter(is_even)      # the next line starts with |>: it continues
   |> map(fn(x) = x * 10)
 point = {
-  x: 1,                   # inside ( ), [ ] and { }, new lines do not count
-  y: 2,
+  x: 1                   # inside ( ), [ ] and { }, new lines do not count
+  y: 2
 }
 kind = if total > 2
   then "big"              # `then` and `else` may start a line
   else "small"
 a = 1; b = 2              # `;` is the same as a new line
-print(total, result, point, kind, a + b)
+print(total result point kind a + b)
 ```
 
 ```text
@@ -409,8 +409,8 @@ ever converting a value silently.
 ```rythme
 type Shape = Circle(radius) | Square(side)
 fn double(x) = x * 2
-samples = [42, 3.5, "hi", true, (), [1, 2], 1..3, {a: 1}, Some(1), None, Ok(1), Circle(2), double, print, Circle]
-print(map(samples, type_of))
+samples = [42 3.5 "hi" true () [1 2] 1..3 {a: 1} Some(1) None Ok(1) Circle(2) double print Circle]
+print(map(samples type_of))
 ```
 
 ```text
@@ -431,11 +431,11 @@ out of range (E007).
 
 ```rythme
 big = 9223372036854775807
-print(big + 1, big * big)
+print(big + 1 big * big)
 fn factorial(n) = if n == 0 then 1 else n * factorial(n - 1)
-print(factorial(25), 2 ** 100)
+print(factorial(25) 2 ** 100)
 print(-(2 ** 64) // 3, -(2 ** 64) % 3, (2 ** 64) / 3)
-print(type_of(2 ** 64), 2 ** 64 - 2 ** 64 + 1)
+print(type_of(2 ** 64) 2 ** 64 - 2 ** 64 + 1)
 ```
 
 ```text
@@ -485,10 +485,10 @@ the others are written in full with the fewest digits that read back as the
 same number.
 
 ```rythme
-print(7 / 2, 6 / 3, 0.1 + 0.2, 1 / 3)
-print(1e15, 1e16, 0.00001, 0.000001)
+print(7 / 2 6 / 3 0.1 + 0.2 1 / 3)
+print(1e15 1e16 0.00001 0.000001)
 huge = 10.0 ** 400
-print(huge, -huge, huge - huge, 2.0 ** 100)
+print(huge -huge huge - huge 2.0 ** 100)
 print(1.0 / 0)
 ```
 
@@ -621,8 +621,8 @@ such a type prints as its constructor followed by its fields:
 
 ```rythme
 type Color = Red | Green
-print(1 == 1.0, [1, 2] == [1, 2], {a: 1, b: 2} == {b: 2, a: 1})
-print(Some(1) == Some(1), Red != Green, "1" == 1, [] == {})
+print(1 == 1.0 [1 2] == [1 2] {a: 1 b: 2} == {b: 2 a: 1})
+print(Some(1) == Some(1) Red != Green "1" == 1 [] == {})
 ```
 
 ```text
@@ -654,11 +654,11 @@ order and fail the same way.
 
 ```rythme
 type Size = Small | Medium | Large
-print(1 < 2.5, "Zebra" < "apple", "apple" < "banana", false < true)
-print([1, 2] < [1, 3], [1, 2] < [1, 2, 0], Some(1) < Some(2))
-print(sort(["pear", "Fig", "apple", "été"]))
-print(None < Some(1), Ok(5) < Err(1), Small < Large)
-print(sort([Some(2), None, Some(1)]))
+print(1 < 2.5 "Zebra" < "apple" "apple" < "banana" false < true)
+print([1 2] < [1 3] [1 2] < [1 2 0] Some(1) < Some(2))
+print(sort(["pear" "Fig" "apple" "été"]))
+print(None < Some(1) Ok(5) < Err(1) Small < Large)
+print(sort([Some(2) None Some(1)]))
 ```
 
 ```text
@@ -755,8 +755,8 @@ fn label(s) = match s
   :pending -> "waiting"
   _ -> "unknown"
 end
-print(status, label(status), type_of(:ok), :a < :b, :ok == :ok)
-print({status: :ok, count: 2}, to_json([:ok, 1]), text(:ok))
+print(status label(status) type_of(:ok) :a < :b :ok == :ok)
+print({status: :ok count: 2} to_json([:ok 1]) text(:ok))
 ```
 
 ```text
@@ -799,14 +799,14 @@ used with the functions of the [standard library](#6-standard-library).
   `set([a, b, ...])`.
 
 ```rythme
-ages = dict([["Bob", 25], ["Ada", 36]])
-print(ages, ages["Ada"], get(ages, "Eve"), len(ages))
-older = put(ages, "Bob", 26)
-print(older, ages)
-print(set([3, 1, 3, 2]), set([1, 1.0]), dict({x: 1, y: 2}))
-grid = dict([[[0, 0], "start"], [[2, 1], "goal"]])
-print(grid[[2, 1]], keys(grid))
-print(type_of(ages), type_of(set()), dict() == dict([]))
+ages = dict([["Bob" 25] ["Ada" 36]])
+print(ages ages["Ada"] get(ages "Eve") len(ages))
+older = put(ages "Bob" 26)
+print(older ages)
+print(set([3 1 3 2]) set([1 1.0]) dict({x: 1 y: 2}))
+grid = dict([[[0 0] "start"] [[2 1] "goal"]])
+print(grid[[2 1]] keys(grid))
+print(type_of(ages) type_of(set()) dict() == dict([]))
 ```
 
 ```text
@@ -819,9 +819,9 @@ Dict Set true
 
 ```rythme
 type Color = Red | Green
-print(dict([[1, "a"]]) == dict([[1.0, "a"]]), set([[1, 2], [1]]) == set([[1], [1, 2]]))
-print(set([1, 2]) < set([1, 3]), sort([set([2]), set([1, 3]), set()]))
-print(set([Green, Red, 2, "x", [1], ()]))
+print(dict([[1 "a"]]) == dict([[1.0 "a"]]) set([[1 2] [1]]) == set([[1] [1 2]]))
+print(set([1 2]) < set([1 3]) sort([set([2]) set([1 3]) set()]))
+print(set([Green Red 2 "x" [1] ()]))
 ```
 
 ```text
@@ -836,13 +836,13 @@ and `reject` give a block the key and the value of each pair of a dict,
 `len`. Symbols and whole numbers of any size are keys like the others:
 
 ```rythme
-ages = dict([[:ada, 36], [:alan, 41]])
-ages.each do |name, age|
-  print(name, age)
+ages = dict([[:ada 36] [:alan 41]])
+ages.each do |name age|
+  print(name age)
 end
-print(ages.key?(:ada), ages.size, ages.select { |_, age| age > 40 })
-seen = set([10 ** 20, 1, 10 ** 20])
-print(seen, seen.include?(1), seen.length, to_json(ages))
+print(ages.key?(:ada) ages.size ages.select { |_ age| age > 40 })
+seen = set([10 ** 20 1 10 ** 20])
+print(seen seen.include?(1) seen.length to_json(ages))
 ```
 
 ```text
@@ -856,15 +856,15 @@ A function cannot be a key (functions cannot be compared):
 
 ```rythme
 fn double(x) = x * 2
-print(set([1, double]))
+print(set([1 double]))
 ```
 
 ```text
 error[E023]: `set`: <fn double> cannot be a key of a dict, nor an element of a set
  --> 16-set.ry:2:7
   |
-2 | print(set([1, double]))
-  |       ^^^^^^^^^^^^^^^^
+2 | print(set([1 double]))
+  |       ^^^^^^^^^^^^^^^
   |
   = help: keys and elements must be values that can be compared: anything but functions and `nan`
   = more about this error: `rythme explain E023`
@@ -904,12 +904,12 @@ arithmetic operator or `..` cannot directly follow a `|>` step
 ```rythme
 fn inc(x) = x + 1
 print(2 + 3 * 4, (2 + 3) * 4)         # 14 20
-print(2 ** 3 ** 2, -2 ** 2, 2 ** -1)  # ** groups to the right and before unary -
-print(10 - 3 - 2, 7 // 2 * 2)          # left to right
+print(2 ** 3 ** 2 -2 ** 2 2 ** -1)  # ** groups to the right and before unary -
+print(10 - 3 - 2 7 // 2 * 2)          # left to right
 print(1 + 2 |> inc)                    # |> comes after arithmetic: inc(3)
 print(1..3 |> map(inc))                # .. comes before |>
 print(5 |> inc == 6)                   # |> comes before comparisons
-print(not 1 == 2, not true and false)  # not comes after comparisons, before and
+print(not 1 == 2 not true and false)  # not comes after comparisons, before and
 print(true or false and false)         # and comes before or
 ```
 
@@ -974,10 +974,10 @@ converts between texts and numbers: `"1" + 1` is E005 (write `"{x}"`,
 `text(x)`, `int(t)` or `float(t)`).
 
 ```rythme
-print(7 / 2, 7 // 2, 7 % 3, 2 ** 10, 2 ** -1)
-print(-7 // 2, -7 % 3, 7 % -3)
-print(7.5 // 2, 7.5 % 2, 1 + 2.0, 9 ** 0.5)
-print("ab" + "cd", [1, 2] + [3])
+print(7 / 2 7 // 2 7 % 3 2 ** 10 2 ** -1)
+print(-7 // 2 -7 % 3 7 % -3)
+print(7.5 // 2 7.5 % 2 1 + 2.0 9 ** 0.5)
+print("ab" + "cd" [1 2] + [3])
 ```
 
 ```text
@@ -1039,20 +1039,20 @@ and `..`, and a higher one than comparisons (see [3.1](#31-operators-precedence-
 A line that starts with `|>` continues the previous line.
 
 ```rythme
-fn add(a, b) = a + b
+fn add(a b) = a + b
 tools = {double: fn(x) = x * 2}
 print(3 |> add(10))                     # add(3, 10)
 print(3 |> tools.double)                # tools.double(3)
 print(3 |> Some)                        # Some(3)
 print(" Hi " |> trim |> upper)          # upper(trim(" Hi "))
-print([1, 2, 3] |> map(fn(x) = x * 2) |> sum)
-print([4, 5] |> reverse[0])             # [0] applies to reverse([4, 5])
+print([1 2 3] |> map(fn(x) = x * 2) |> sum)
+print([4 5] |> reverse[0])             # [0] applies to reverse([4, 5])
 print(3 |> fn(x) = x * 100)             # an anonymous function as a step
-fn total(a, b)
+fn total(a b)
   x = a |> parse_int?                   # ? applies to parse_int(a)
   Ok(x + b)
 end
-print(total("2", 3), total("two", 3))
+print(total("2" 3) total("two" 3))
 ```
 
 ```text
@@ -1106,13 +1106,13 @@ programs are written (blank lines and comments may come between the steps).
 
 ```rythme
 type Shape = Circle(radius)
-xs = [10, 20, 30]
-ada = {name: "Ada", "full name": "Ada Lovelace"}
-print(xs[0], xs[-1], "été"[1], ada.name, ada["full name"], Circle(2).radius)
-print("hello".upper(), [3, 1, 2].sort(), 10.max(20))
+xs = [10 20 30]
+ada = {name: "Ada" "full name": "Ada Lovelace"}
+print(xs[0] xs[-1] "été"[1] ada.name ada["full name"] Circle(2).radius)
+print("hello".upper() [3 1 2].sort() 10.max(20))
 calc = {twice: fn(x) = x * 2}
 print(calc.twice(21))                   # the function stored in the field
-print(get(xs, 5))
+print(get(xs 5))
 print(xs[5])
 ```
 
@@ -1135,15 +1135,15 @@ error[E007]: index 5 is out of range: the list has 3 element(s)
 Without parentheses, and over several lines:
 
 ```rythme
-xs = [3, 1, 4, 1, 5, 9, 2, 6]
-print(xs.sum, xs.size, xs.sort.first, "rythme".upcase, xs.uniq.size)
+xs = [3 1 4 1 5 9 2 6]
+print(xs.sum xs.size xs.sort.first "rythme".upcase xs.uniq.size)
 top = xs
   .sort
   .reverse
   # the three largest
   .first(3)
 print(top)
-point = {x: 1, sum: "a field"}
+point = {x: 1 sum: "a field"}
 print(point.sum)                        # the field wins over the function
 ```
 
@@ -1166,7 +1166,7 @@ branch is a single expression; for several statements use `do ... end`.
 
 ```rythme
 fn sign(n) = if n < 0 then "negative" else if n == 0 then "zero" else "positive"
-print(sign(-2), sign(0), sign(3))
+print(sign(-2) sign(0) sign(3))
 fn describe(n) =
   if n > 100 then do
     print("a big number")
@@ -1213,7 +1213,7 @@ when the word `unless` starts it.
 
 ```rythme
 fn describe(stock) = unless stock > 0 then "sold out" else "{stock} left"
-print(describe(0), describe(3))
+print(describe(0) describe(3))
 ```
 
 ```text
@@ -1268,7 +1268,7 @@ two names and a guard, `[a, b] if a == b -> ...`. A constructor used in a
 pattern must exist (E003) and have the right number of fields (E004).
 
 ```rythme
-type Shape = Circle(radius) | Rect(width, height) | Dot
+type Shape = Circle(radius) | Rect(width height) | Dot
 
 fn describe(value) = match value
   0 -> "the number zero"
@@ -1279,19 +1279,19 @@ fn describe(value) = match value
   () -> "the unit value"
   [] -> "an empty list"
   [x] -> "a list with one element, {x}"
-  [first, ..rest] if len(rest) > 3 -> "a long list starting with {first}"
-  [first, second, ..] -> "a list starting with {first}, {second}"
-  {name, age: 36} -> "{name}, 36 years old"
+  [first ..rest] if len(rest) > 3 -> "a long list starting with {first}"
+  [first second ..] -> "a list starting with {first}, {second}"
+  {name age: 36} -> "{name}, 36 years old"
   {name} -> "a record with a name: {name}"
   Circle(r) -> "a circle of radius {r}"
-  Rect(w, h) if w == h -> "a square"
-  Rect(_, _) | Dot -> "a rectangle or a dot"
+  Rect(w h) if w == h -> "a square"
+  Rect(_ _) | Dot -> "a rectangle or a dot"
   Some(Some(v)) -> "an Option inside an Option: {v}"
   _ -> "something else"
 end
 
-samples = [0, -2, 2.5, "hi", true, (), [], [7], 1..10, [1, 2, 3],
-  {name: "Ada", age: 36}, {name: "Alan", age: 41}, Circle(1), Rect(2, 2), Dot, Some(Some(4)), 0.0, 99]
+samples = [0 -2 2.5 "hi" true () [] [7] 1..10 [1 2 3]
+  {name: "Ada" age: 36} {name: "Alan" age: 41} Circle(1) Rect(2 2) Dot Some(Some(4)) 0.0 99]
 samples |> each(fn(v) = print(describe(v)))
 ```
 
@@ -1367,9 +1367,9 @@ fn polite("Mr " + name) = "Dear Mister {name}"
 fn polite("Ms " + name) = "Dear Madam {name}"
 fn polite(name) = "Dear {name}"
 
-print([95, 70, 100.0, 89.5, -3] |> map(grade))
-print(coin(0.25), coin(0.75), coin(-2))
-print(polite("Mr Smith"), "/", polite("Ms Lee"), "/", polite("Ada"))
+print([95 70 100.0 89.5 -3] |> map(grade))
+print(coin(0.25) coin(0.75) coin(-2))
+print(polite("Mr Smith") "/" polite("Ms Lee") "/" polite("Ada"))
 ```
 
 ```text
@@ -1500,8 +1500,8 @@ show = fn(x)
   y = x * 2
   "value: {y}"
 end
-print(double(4), add10(5), show(3))
-print([[1, 2], [3, 4]] |> map(fn([a, b]) = a * b))
+print(double(4) add10(5) show(3))
+print([[1 2] [3 4]] |> map(fn([a b]) = a * b))
 fn countdown(n)
   step = fn(k) = if k == 0 then "liftoff" else "{k} " + step(k - 1)
   step(n)
@@ -1532,12 +1532,12 @@ same field name twice explicitly is E011. **This is how a record is
 Trailing commas are allowed in both.
 
 ```rythme
-ada = {name: "Ada", born: 1815}
-print({..ada, born: 1816}, {..ada, city: "London"}, {born: 0, ..ada})
+ada = {name: "Ada" born: 1815}
+print({..ada born: 1816} {..ada city: "London"} {born: 0, ..ada})
 name = "Grace"
-print({name, born: 1906})
-xs = [1, 2]
-print([0, ..xs, 3], xs + [9], 1..5, 5..1)
+print({name born: 1906})
+xs = [1 2]
+print([0 ..xs 3] xs + [9] 1..5 5..1)
 ```
 
 ```text
@@ -1568,16 +1568,16 @@ the **last argument** of the call, and it is exactly an anonymous function:
   chain applies to the result of the call: `xs.map do |x| x end.sum`.
 
 ```rythme
-names = ["Ada", "Grace", "Alan"]
+names = ["Ada" "Grace" "Alan"]
 names.each do |name|
   print("Hello, #{name}!")
 end
 print(names.map { |n| n.size })
-total = [1, 2, 3].reduce(0) do |sum, x|
+total = [1 2 3].reduce(0) do |sum x|
   sum + x
 end
-print(total, [[1, 2], [3, 4]].map do |[a, b]| a * b end)
-names.each_with_index do |name, i| print(i, name) end
+print(total [[1 2] [3 4]].map do |[a b]| a * b end)
+names.each_with_index do |name i| print(i name) end
 ```
 
 ```text
@@ -1668,15 +1668,15 @@ fn greet(name) = puts "Hello, #{name}!"
 fn check(ok) = if ok then puts "yes" else puts "no"
 fn title(name) =
   match name
-    "Dr " + rest -> puts "doctor", rest
+    "Dr " + rest -> puts "doctor" rest
     _ -> puts name
   end
 greet "Ada"
 check 1 > 2
 title "Dr Grace"
 title "Alan"
-[1, 2].each { |n| puts n * 10 }
-show = fn(v) = puts "v:", v
+[1 2].each { |n| puts n * 10 }
+show = fn(v) = puts "v:" v
 show(3)
 x = 10
 puts(if x > 5 then x -1 else 0)
@@ -1712,6 +1712,50 @@ error[E005]: cannot use `-` with Function and Int
   = more about this error: `rythme explain E005`
 ```
 
+### 3.16 Without commas
+
+As in REBOL, the commas between the elements of a bracket may be left out:
+`[1 2 3]` is `[1, 2, 3]`, `f(a b)` is `f(a, b)`, `{name: "Ada" age: 36}` is
+`{name: "Ada", age: 36}`, and a call without parentheses takes `print x y`.
+It works everywhere elements follow each other: lists, the arguments of a
+call, records, the parameters of a function or a block (`fn area(w h)`,
+`do |acc x|`), patterns (`[first ..rest]`, `Rect(w h)`), types
+(`Result(Int Text)`, `{name: Text age: Int}`) and the fields of a variant.
+`rythme fmt` writes code this way. Values are still shown with commas:
+`print([1 2])` shows `[1, 2]`.
+
+```rythme
+xs = [3 1 2]
+p = {name: "Ada" age: 36}
+fn area(w h) = w * h
+print(len(xs) area(2 3) p.name)
+print [[1 2] [3 4]] {..p age: 37}
+fn total([]) = 0
+fn total([x ..rest]) = x + total(rest)
+print total(xs) xs.map(fn(x) = x * 10)
+n = 10
+print "n:" n [n - 1] [n, -1] [0, ..xs]
+```
+
+```text
+3 6 Ada
+[[1, 2], [3, 4]] {name: "Ada", age: 37}
+6 [30, 10, 20]
+n: 10 [9] [10, -1] [0, 3, 1, 2]
+```
+
+Every program written with commas keeps its meaning: a bracket is read
+with its commas first, and read without them only when that fails between
+two elements (`[1 2]`), or when a bracket inside it is written without
+commas (`[[1 2] [3 4]]` is two lists, not an index). Without commas, a `[`, a
+`(`, a `-` touching what follows or a `..` touching what follows, after a
+space, starts the next element: `[a [0]]` is two elements, as are `[a -1]`
+and `[a ..rest]`, in such a bracket. In a bracket that can be read with
+commas, `[n -1]` stays the subtraction `n - 1`: write `[n, -1]` for two
+elements, as `rythme fmt` does. A comma also stays after a call without
+parentheses, which would take the next element as one more argument
+(`[fn(v) = puts v, 2]`).
+
 ---
 
 ## 4. Definitions
@@ -1733,14 +1777,14 @@ allowed (use `match`), and alternatives (`|`) only inside brackets, where
 they cannot give names: `Some(1 | 2) = x` only checks the value.
 
 ```rythme
-[a, b] = [1, 2]
-{name, born: year} = {name: "Ada", born: 1815, city: "London"}
-[head, ..tail] = 1..4
-[top, ..] = ["x", "y", "z"]
-{city, ..} = {name: "Ada", city: "London"}
+[a b] = [1 2]
+{name born: year} = {name: "Ada" born: 1815 city: "London"}
+[head ..tail] = 1..4
+[top ..] = ["x" "y" "z"]
+{city, ..} = {name: "Ada" city: "London"}
 Some(v) = Some(5)
-print(a, b, name, year, head, tail, top, city, v)
-[x, y] = [1, 2, 3]
+print(a b name year head tail top city v)
+[x y] = [1 2 3]
 ```
 
 ```text
@@ -1748,8 +1792,8 @@ print(a, b, name, year, head, tail, top, city, v)
 error[E006]: the value List [1, 2, 3] does not match this pattern
  --> 40-bindings.ry:8:1
   |
-8 | [x, y] = [1, 2, 3]
-  | ^^^^^^
+8 | [x y] = [1 2 3]
+  | ^^^^^
   |
   = help: use `match` to handle the different possible shapes of a value
   = more about this error: `rythme explain E006`
@@ -1825,9 +1869,9 @@ fn g(n)
     y = 100                  # a nested block may reuse a name
     y + 1
   end
-  [y, z]
+  [y z]
 end
-print(x, times_ten(2), g(1))
+print(x times_ten(2) g(1))
 ```
 
 ```text
@@ -1847,7 +1891,7 @@ level, the checker reports it before running (E003); through a function
 called too early, the error happens while running (E003, "not defined yet").
 
 ```rythme
-print(double(21), Circle(1))     # functions and types are known in the whole file
+print(double(21) Circle(1))     # functions and types are known in the whole file
 fn double(x) = x * 2
 type Shape = Circle(radius)
 ```
@@ -1953,7 +1997,7 @@ fn sign(_) = "positive"
 fn greet({name}) = "Hello, {name}!"
 fn hello() = "hello"
 
-print(fib(10), sign(-5), sign(0), sign(9), greet({name: "Ada", age: 36}), hello())
+print(fib(10) sign(-5) sign(0) sign(9) greet({name: "Ada" age: 36}) hello())
 ```
 
 ```text
@@ -1968,7 +2012,7 @@ fn parity(n)
   fn odd(k) = even(k - 1)
   if even(n) then "even" else "odd"
 end
-print(parity(10), parity(7))
+print(parity(10) parity(7))
 ```
 
 ```text
@@ -2035,35 +2079,35 @@ through functions such as `map` that call the function given to them), and
 600 in the web playground. The list functions (`map`, `fold`...) do not nest.
 
 ```rythme
-fn count_down(0, acc) = acc
-fn count_down(n, acc) = count_down(n - 1, acc + 1)   # a tail call
+fn count_down(0 acc) = acc
+fn count_down(n acc) = count_down(n - 1 acc + 1)   # a tail call
 fn is_even_n(0) = true
 fn is_even_n(n) = is_odd_n(n - 1)                     # tail calls between two functions
 fn is_odd_n(0) = false
 fn is_odd_n(n) = is_even_n(n - 1)
-print(count_down(1000000, 0), is_even_n(1000001))
+print(count_down(1000000 0) is_even_n(1000001))
 fn total([]) = 0
-fn total([x, ..rest]) = x + total(rest)               # not a tail call: + comes after
+fn total([x ..rest]) = x + total(rest)               # not a tail call: + comes after
 print(total(1..5000000))
 ```
 
 ```text
 1000000 false
-error[E014]: too many nested calls (917504 calls in progress)
- --> 44-tail.ry:9:29
+error[E014]: too many nested calls (40110 calls in progress)
+ --> 44-tail.ry:9:28
   |
-9 | fn total([x, ..rest]) = x + total(rest)               # not a tail call: + comes after
-  |                             ^^^^^^^^^^^ this call goes too deep
+9 | fn total([x ..rest]) = x + total(rest)               # not a tail call: + comes after
+  |                            ^^^^^^^^^^^ this call goes too deep
   |
   = help: a recursive function that never stops? Check that it always reaches a base case.
       Otherwise, make the recursive call the very last thing the function does
       (tail call), for example with an accumulator:
-        fn sum([], acc) = acc
-        fn sum([x, ..rest], acc) = sum(rest, acc + x)
+        fn sum([] acc) = acc
+        fn sum([x ..rest] acc) = sum(rest acc + x)
       or use `fold`, `map`, `filter`, which have no limit.
   = call trace (most recent first):
-      in `total` (×40) called at 44-tail.ry:9:29
-      … and 917464 more calls
+      in `total` (×40) called at 44-tail.ry:9:28
+      … and 40070 more calls
   = more about this error: `rythme explain E014`
 ```
 
@@ -2101,25 +2145,25 @@ type Name = Variant | Variant(field, field) | ...
 ## A shape to draw.
 type Shape =
   | Circle(radius)
-  | Rect(width, height)
+  | Rect(width height)
   | Empty
 
 fn area(Circle(r)) = pi * r * r
-fn area(Rect(w, h)) = w * h
+fn area(Rect(w h)) = w * h
 fn area(Empty) = 0
 
-shapes = [Circle(1.0), Rect(2, 3), Empty]
+shapes = [Circle(1.0) Rect(2 3) Empty]
 print(shapes |> map(area))
-print(Rect(2, 3).width, type_of(Empty), Circle, map([1, 2], Circle))
+print(Rect(2 3).width type_of(Empty) Circle map([1 2] Circle))
 help(Circle)
 ```
 
 ```text
 warning[W009]: this shows a function, not a value
-  --> sample.ry:13:41
+  --> sample.ry:13:38
    |
-13 | print(Rect(2, 3).width, type_of(Empty), Circle, map([1, 2], Circle))
-   |                                         ^^^^^^ a constructor, shown as `<constructor ...>`
+13 | print(Rect(2 3).width type_of(Empty) Circle map([1 2] Circle))
+   |                                      ^^^^^^ a constructor, shown as `<constructor ...>`
    |
    = help: to show what it gives, call it: `Circle(...)`
 
@@ -2160,19 +2204,19 @@ code is 0 when all tests pass (or when there are none) and 1 otherwise.
 ```rythme
 fn double(x) = x * 2
 
-test "double of 2 is 4" = assert_eq(double(2), 4)
+test "double of 2 is 4" = assert_eq(double(2) 4)
 
 test "several checks"
-  assert_eq(double(0), 0)
-  assert(double(-1) < 0, "should stay negative")
+  assert_eq(double(0) 0)
+  assert(double(-1) < 0 "should stay negative")
 end
 
 test "a parsed number"
   n = parse_int("21")?            # `?` is allowed in a test
-  assert_eq(double(n), 42)
+  assert_eq(double(n) 42)
 end
 
-test "a wrong expectation" = assert_eq(double(3), 7)
+test "a wrong expectation" = assert_eq(double(3) 7)
 
 print("not shown by rythme test")
 ```
@@ -2188,14 +2232,14 @@ Running 4 test(s)
 error[E015]: assertion failed: the values are different
   --> 46-tests.ry:15:30
    |
-15 | test "a wrong expectation" = assert_eq(double(3), 7)
-   |                              ^^^^^^^^^^^^^^^^^^^^^^^
+15 | test "a wrong expectation" = assert_eq(double(3) 7)
+   |                              ^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: got:      6
        expected: 7
    = more about this error: `rythme explain E015`
 
-4 test(s): 3 passed, 1 failed (1 ms)
+4 test(s): 3 passed, 1 failed (2 ms)
 ```
 
 Exit code: 1. The time at the end of the summary is the time of the whole
@@ -2250,13 +2294,13 @@ values first differ (`[2].name`), what is missing or in excess; on two short
 texts, a mark shows the first character that differs.
 
 ```rythme
-fn my_max(list) = fold(list, 0, fn(best, x) = if x > best then x else best)
+fn my_max(list) = fold(list 0 fn(best x) = if x > best then x else best)
 
-test "reversing twice gives the list back" = check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+test "reversing twice gives the list back" = check_all(fn(l) = reverse(reverse(l)) == l lists_of(ints()))
 
-test "the largest is in the list" = check_all(fn(l) = is_empty(l) or contains(l, my_max(l)), lists_of(ints()))
+test "the largest is in the list" = check_all(fn(l) = is_empty(l) or contains(l my_max(l)) lists_of(ints()))
 
-test "a record" = assert_eq({name: "Ada", langs: ["en", "fr"]}, {name: "Ada", langs: ["en", "de"]})
+test "a record" = assert_eq({name: "Ada" langs: ["en" "fr"]} {name: "Ada" langs: ["en" "de"]})
 ```
 
 `rythme test 47-properties.ry`:
@@ -2268,10 +2312,10 @@ Running 3 test(s)
 error[E015]: the property is false for [-1]
  --> 47-properties.ry:5:37
   |
-5 | test "the largest is in the list" = check_all(fn(l) = is_empty(l) or contains(l, my_max(l)), lists_of(ints()))
-  |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ false for [-1]
+5 | test "the largest is in the list" = check_all(fn(l) = is_empty(l) or contains(l my_max(l)) lists_of(ints()))
+  |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ false for [-1]
   |
-  = note: found on try 1 of 100, then simplified from [-3, -1] in 3 step(s)
+  = note: found on try 2 of 100, then simplified from [-6] in 3 step(s)
   = note: seed 42: every run tries the same values; `rythme test --seed N` tries others
   = help: the function must hold for every value of the generator: fix the function, or give the generator a smaller range, like `ints(1, 100)`
   = more about this error: `rythme explain E015`
@@ -2280,8 +2324,8 @@ error[E015]: the property is false for [-1]
 error[E015]: assertion failed: the values are different
  --> 47-properties.ry:7:19
   |
-7 | test "a record" = assert_eq({name: "Ada", langs: ["en", "fr"]}, {name: "Ada", langs: ["en", "de"]})
-  |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7 | test "a record" = assert_eq({name: "Ada" langs: ["en" "fr"]} {name: "Ada" langs: ["en" "de"]})
+  |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: got:      {name: "Ada", langs: ["en", "fr"]}
       expected: {name: "Ada", langs: ["en", "de"]}
@@ -2291,7 +2335,7 @@ error[E015]: assertion failed: the values are different
 Failed tests:
   ✗ the largest is in the list (47-properties.ry:5:1)
   ✗ a record (47-properties.ry:7:1)
-3 test(s): 1 passed, 2 failed (2 ms)
+3 test(s): 1 passed, 2 failed (3 ms)
 ```
 
 ### 4.9 Modules: `use`
@@ -2346,11 +2390,11 @@ use "geometry.ry"          # older form: its names are used directly
 ```rythme
 # geometry.ry
 print("geometry.ry runs once")
-fn rectangle_area(w, h) = w * h
-fn square_area(side) = rectangle_area(side, _checked(side))
+fn rectangle_area(w h) = w * h
+fn square_area(side) = rectangle_area(side _checked(side))
 fn _checked(x) = if x >= 0 then x else fail("negative side")
-origin = {x: 0, y: 0}
-type Shape = Rectangle(w, h) | Square(side)
+origin = {x: 0 y: 0}
+type Shape = Rectangle(w h) | Square(side)
 ```
 
 ```rythme
@@ -2362,10 +2406,10 @@ fn area(r) = pi * r ** 2
 # main.ry
 use geometry
 use shapes/circle
-print(geometry.rectangle_area(2, 3), geometry.square_area(4), geometry.origin)
-print(round(circle.area(1), 2))
+print(geometry.rectangle_area(2 3) geometry.square_area(4) geometry.origin)
+print(round(circle.area(1) 2))
 fn area(shape) = match shape
-  geometry.Rectangle(w, h) -> w * h
+  geometry.Rectangle(w h) -> w * h
   geometry.Square(s) -> s * s
 end
 print(area(geometry.Square(5)))
@@ -2476,19 +2520,19 @@ changes nothing.
 
 ```rythme
 ## A shape, with the types of its fields.
-type Shape = Circle(radius: Float) | Rect(width: Float, height: Float)
+type Shape = Circle(radius: Float) | Rect(width: Float height: Float)
 
 fn area(shape: Shape) -> Float = match shape
   Circle(r) -> pi * r * r
-  Rect(w, h) -> w * h
+  Rect(w h) -> w * h
 end
 
 fn first_of(xs: List(a)) -> a = xs[0]
 
-shapes: List(Shape) = [Circle(1.0), Rect(2.0, 3.0)]
+shapes: List(Shape) = [Circle(1.0) Rect(2.0 3.0)]
 total: Float = shapes |> map(area) |> sum
-print(round(total, 2), first_of(["a", "b"]))
-print([1, 2, 3].map do |n: Int| n * 10 end)
+print(round(total 2) first_of(["a" "b"]))
+print([1 2 3].map do |n: Int| n * 10 end)
 ```
 
 ```text
@@ -2499,10 +2543,10 @@ print([1, 2, 3].map do |n: Int| n * 10 end)
 Three mistakes, found before running:
 
 ```rythme
-fn rect_area(w: Int, h: Int) -> Int = w * h
+fn rect_area(w: Int h: Int) -> Int = w * h
 fn label(n: Int) -> Text = n
 ratio: Float = 2
-print(rect_area(2, "3"), label(1), ratio)
+print(rect_area(2 "3") label(1) ratio)
 ```
 
 `rythme check`:
@@ -2533,13 +2577,13 @@ error[E027]: `ratio` is written `Float`, but its value is Int 2
   = more about this error: `rythme explain E027`
 
 error[E027]: `rect_area` expects `Int` for `h`, but receives Text "3"
- --> sample.ry:4:20
+ --> sample.ry:4:19
   |
-4 | print(rect_area(2, "3"), label(1), ratio)
-  |                    ^^^ not `Int`
+4 | print(rect_area(2 "3") label(1) ratio)
+  |                   ^^^ not `Int`
   |
-1 | fn rect_area(w: Int, h: Int) -> Int = w * h
-  |                         --- the type written for `h`
+1 | fn rect_area(w: Int h: Int) -> Int = w * h
+  |                        --- the type written for `h`
   |
   = help: change the value, or the type written for it; types written in the code are checked before running, and are never needed (see `rythme help types`)
   = more about this error: `rythme explain E027`
@@ -2551,10 +2595,10 @@ A type variable stands for one type in a call, and types start with an
 uppercase letter:
 
 ```rythme
-fn pair(a: t, b: t) -> List(t) = [a, b]
+fn pair(a: t b: t) -> List(t) = [a b]
 fn first_of(xs: List(a)) -> a = xs[0]
 fn half(n: int) = n / 2
-print(pair(1, "one"), first_of([1, 2]) + "!", half(4))
+print(pair(1 "one") first_of([1 2]) + "!" half(4))
 ```
 
 `rythme check`:
@@ -2571,22 +2615,22 @@ error[E027]: unknown type `int`
   = more about this error: `rythme explain E027`
 
 error[E027]: `t` cannot be both Int and Text in this call to `pair`
- --> sample.ry:4:15
+ --> sample.ry:4:14
   |
-4 | print(pair(1, "one"), first_of([1, 2]) + "!", half(4))
-  |               ^^^^^ `t` is Text here
+4 | print(pair(1 "one") first_of([1 2]) + "!" half(4))
+  |              ^^^^^ `t` is Text here
   |
-4 | print(pair(1, "one"), first_of([1, 2]) + "!", half(4))
+4 | print(pair(1 "one") first_of([1 2]) + "!" half(4))
   |            - `t` is Int here
   |
   = note: a type variable like `t` stands for the same type everywhere in the types written for `pair`
   = more about this error: `rythme explain E027`
 
 error[E005]: cannot use `+` with Int and Text
- --> sample.ry:4:40
+ --> sample.ry:4:37
   |
-4 | print(pair(1, "one"), first_of([1, 2]) + "!", half(4))
-  |                                        ^ Int + Text "!"
+4 | print(pair(1 "one") first_of([1 2]) + "!" half(4))
+  |                                     ^ Int + Text "!"
   |
   = help: to build a text with a value inside, use braces: "total: {x}"
       or convert the value first: text(x)
@@ -2630,21 +2674,21 @@ Int)` a pair of a Text and an Int.
 
 ```rythme
 ## A binary tree: its values have the type `a`.
-type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
+type Tree(a) = Leaf | Node(left: Tree(a) value: a right: Tree(a))
 
-fn insert(t: Tree(Int), x: Int) -> Tree(Int) = match t
-  Leaf -> Node(Leaf, x, Leaf)
-  Node(l, v, r) if x < v -> Node(insert(l, x), v, r)
-  Node(l, v, r) -> Node(l, v, insert(r, x))
+fn insert(t: Tree(Int) x: Int) -> Tree(Int) = match t
+  Leaf -> Node(Leaf x Leaf)
+  Node(l v r) if x < v -> Node(insert(l x) v r)
+  Node(l v r) -> Node(l v insert(r x))
 end
 
 fn to_list(t: Tree(a)) -> List(a) = match t
   Leaf -> []
-  Node(l, v, r) -> to_list(l) + [v] + to_list(r)
+  Node(l v r) -> to_list(l) + [v] + to_list(r)
 end
 
-tree = [5, 2, 8, 1].reduce(Leaf) do |t, x| insert(t, x) end
-print(to_list(tree), tree.value)
+tree = [5 2 8 1].reduce(Leaf) do |t x| insert(t x) end
+print(to_list(tree) tree.value)
 help(Node)
 ```
 
@@ -2658,19 +2702,19 @@ Node(left: Tree(a), value: a, right: Tree(a))
 The mistakes, found before running:
 
 ```rythme
-type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
-type Pair(a, b) = Pair(first: a, second: b)
+type Tree(a) = Leaf | Node(left: Tree(a) value: a right: Tree(a))
+type Pair(a b) = Pair(first: a second: b)
 
 fn total(t: Tree(Int)) -> Int = match t
   Leaf -> 0
-  Node(l, v, r) -> total(l) + v + total(r)
+  Node(l v r) -> total(l) + v + total(r)
 end
 
-fn first_of(p: Pair(a, b)) -> a = p.first
-fn size(t: Tree(Int, Text)) -> Int = 0
+fn first_of(p: Pair(a b)) -> a = p.first
+fn size(t: Tree(Int Text)) -> Int = 0
 
-print(total(Node(Leaf, "two", Leaf)))
-print(first_of(Pair(1, "one")) + "!")
+print(total(Node(Leaf "two" Leaf)))
+print(first_of(Pair(1 "one")) + "!")
 ```
 
 `rythme check`:
@@ -2679,16 +2723,16 @@ print(first_of(Pair(1, "one")) + "!")
 error[E027]: `Tree` takes one type: `Tree(Int)`
   --> sample.ry:10:12
    |
-10 | fn size(t: Tree(Int, Text)) -> Int = 0
-   |            ^^^^^^^^^^^^^^^
+10 | fn size(t: Tree(Int Text)) -> Int = 0
+   |            ^^^^^^^^^^^^^^
    |
    = more about this error: `rythme explain E027`
 
 error[E027]: `total` expects `Tree(Int)` for `t`, but receives a value of type Tree(Text)
   --> sample.ry:12:13
    |
-12 | print(total(Node(Leaf, "two", Leaf)))
-   |             ^^^^^^^^^^^^^^^^^^^^^^^ not `Tree(Int)`
+12 | print(total(Node(Leaf "two" Leaf)))
+   |             ^^^^^^^^^^^^^^^^^^^^^ not `Tree(Int)`
    |
  4 | fn total(t: Tree(Int)) -> Int = match t
    |             --------- the type written for `t`
@@ -2697,10 +2741,10 @@ error[E027]: `total` expects `Tree(Int)` for `t`, but receives a value of type T
    = more about this error: `rythme explain E027`
 
 error[E005]: cannot use `+` with Int and Text
-  --> sample.ry:13:32
+  --> sample.ry:13:31
    |
-13 | print(first_of(Pair(1, "one")) + "!")
-   |                                ^ Int + Text "!"
+13 | print(first_of(Pair(1 "one")) + "!")
+   |                               ^ Int + Text "!"
    |
    = help: to build a text with a value inside, use braces: "total: {x}"
        or convert the value first: text(x)
@@ -2723,7 +2767,7 @@ fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
 
 async fn slow_fib(n) = fib(n)
 
-tasks = [20, 21, 22] |> map(slow_fib)
+tasks = [20 21 22] |> map(slow_fib)
 print(await_all(tasks))
 print(await slow_fib(10) + 1)
 ```
@@ -2785,18 +2829,18 @@ adds 1 to the number. It can only be used inside a function or a test (E016,
 found before running). In a guard, it makes the whole call return.
 
 ```rythme
-fn add_texts(a, b)
+fn add_texts(a b)
   x = parse_int(a)?          # on Err(...), add_texts returns it at once
   y = parse_int(b)?
   Ok(x + y)
 end
-print(add_texts("1", "2"), add_texts("1", "two"))
+print(add_texts("1" "2") add_texts("1" "two"))
 
 fn first_even_doubled(list)
-  x = find(list, is_even)?   # on None, the function returns None
+  x = find(list is_even)?   # on None, the function returns None
   Some(x * 2)
 end
-print(first_even_doubled([1, 4, 5]), first_even_doubled([1, 3]))
+print(first_even_doubled([1 4 5]) first_even_doubled([1 3]))
 ```
 
 ```text
@@ -2831,9 +2875,9 @@ program printed before stays printed. A message has:
 
 ```rythme
 fn average(list) = sum(list) / len(list)
-fn report(lists) = map(lists, average)
+fn report(lists) = map(lists average)
 print("start")
-print(report([[1, 2], []]))
+print(report([[1 2] []]))
 print("never shown")
 ```
 
@@ -2905,7 +2949,7 @@ the rest (values whose kind varies, indexes out of range, division by
 zero...) is found while running.
 
 ```rythme
-fn area(width, height) = width * heigth
+fn area(width height) = width * heigth
 fn main()
   total = area(2)
   print(totl)
@@ -2918,10 +2962,10 @@ x = 2
 
 ```text
 error[E003]: unknown name `heigth`
- --> 52-check.ry:1:34
+ --> 52-check.ry:1:33
   |
-1 | fn area(width, height) = width * heigth
-  |                                  ^^^^^^ not defined
+1 | fn area(width height) = width * heigth
+  |                                 ^^^^^^ not defined
   |
   = help: did you mean `height`?
   = more about this error: `rythme explain E003`
@@ -2932,7 +2976,7 @@ error[E004]: `area` takes 2 arguments, but 1 was given
 3 |   total = area(2)
   |           ^^^^^^^ 1 argument(s) here
   |
-1 | fn area(width, height) = width * heigth
+1 | fn area(width height) = width * heigth
   |    ---- defined here
   |
   = help: usage: `area(width, height)`
@@ -2985,7 +3029,7 @@ fn twice(x)
   x + x
 end
 len = 3
-print([1, 2].strlen())
+print([1 2].strlen())
 ```
 
 `rythme check 53-warnings.ry`:
@@ -3028,10 +3072,10 @@ warning[W003]: `len` hides the built-in function `len`
    = help: in this file, `len` will now mean your definition; choose another name to keep the built-in one
 
 warning[W005]: there is no function named `strlen`
-  --> 53-warnings.ry:13:14
+  --> 53-warnings.ry:13:13
    |
-13 | print([1, 2].strlen())
-   |              ^^^^^^ unknown
+13 | print([1 2].strlen())
+   |             ^^^^^^ unknown
    |
    = note: `value.strlen(...)` calls `strlen(value, ...)`, or the field `strlen` of a record
    = help: in Rythme, this is called `len`
@@ -3062,7 +3106,7 @@ file need is not inferred.
 fn area(side) = side * side
 fn shout(t) = upper(t) + "!"
 fn twice(x) = x + x
-print(area(3), shout("hi"), twice("ab"))
+print(area(3) shout("hi") twice("ab"))
 print(area("big"))
 print(shout(5))
 ```
@@ -3315,16 +3359,16 @@ reads an object as a dict. The other list functions do not take them:
 `values(x)` or `entries(x)` give a list first.
 
 ```rythme
-a = set([1, 2, 3])
-b = set([2, 3, 4])
-print(union(a, b), intersection(a, b), difference(a, b), is_subset(set([2]), a))
-print(push(a, 0), remove(a, 2), has(a, 2), values(a), map(a, fn(x) = x % 2))
-prices = dict([["apple", 3], ["pear", 5], ["fig", 9]])
-print(filter(prices, fn(name, price) = price < 6), map_values(prices, fn(p) = p * 2))
-print(union(prices, dict([["fig", 1], ["kiwi", 4]])))
-counts = fold(split("a b a c b a"), dict(), fn(d, w) = put(d, w, unwrap_or(get(d, w), 0) + 1))
-print(counts, entries(counts))
-print(to_json(counts), to_json(set([1, 2])), dict(unwrap(parse_json("\{\"x\": 1}"))))
+a = set([1 2 3])
+b = set([2 3 4])
+print(union(a b) intersection(a b) difference(a b) is_subset(set([2]) a))
+print(push(a 0) remove(a 2) has(a 2) values(a) map(a fn(x) = x % 2))
+prices = dict([["apple" 3] ["pear" 5] ["fig" 9]])
+print(filter(prices fn(name price) = price < 6) map_values(prices fn(p) = p * 2))
+print(union(prices dict([["fig" 1] ["kiwi" 4]])))
+counts = fold(split("a b a c b a") dict() fn(d w) = put(d w unwrap_or(get(d w) 0) + 1))
+print(counts entries(counts))
+print(to_json(counts) to_json(set([1 2])) dict(unwrap(parse_json("\{\"x\": 1}"))))
 ```
 
 ```text
@@ -3440,15 +3484,15 @@ Rythme name is read with `get(r, "first name")` (an Option);
 
 ```rythme
 grades = "name;grade;comment\nAda;18,5;\"very good; keep going\"\nAlan;17;\"says \"\"hi\"\"\"\n"
-rows = unwrap(csv_records(grades, ";"))
+rows = unwrap(csv_records(grades ";"))
 print(rows[0])
-print(rows |> map(fn(r) = unwrap(parse_float(replace(r.grade, ",", ".")))))
+print(rows |> map(fn(r) = unwrap(parse_float(replace(r.grade "," ".")))))
 print(csv_parse("a,\"b\nc\",d\r\ne,f,g"))
-table = [["item", "price"], ["bread", 1.5], ["jam, homemade", 4]]
-print(write_file("prices.csv", csv_format(table)))
+table = [["item" "price"] ["bread" 1.5] ["jam, homemade" 4]]
+print(write_file("prices.csv" csv_format(table)))
 print(read_file("prices.csv") |> and_then(csv_parse))
 print(read_file("prices.csv"))
-print(trim_end(csv_format([{x: 1, y: "a;b"}, {x: 2, y: "c"}], ";")))
+print(trim_end(csv_format([{x: 1 y: "a;b"} {x: 2 y: "c"}] ";")))
 print(csv_parse("a,b\nc,d\"e"))
 print(csv_records("a,b\n1"))
 ```
@@ -3486,10 +3530,10 @@ change it.
 
 ```rythme
 random_seed(2024)
-dice = map(1..10, fn(_) = random(1, 6))
+dice = map(1..10 fn(_) = random(1 6))
 print(dice)
 random_seed(2024)
-print(map(1..10, fn(_) = random(1, 6)) == dice, shuffle(["Ada", "Alan", "Grace"]), random(["heads", "tails"]))
+print(map(1..10 fn(_) = random(1 6)) == dice shuffle(["Ada" "Alan" "Grace"]) random(["heads" "tails"]))
 ```
 
 ```text
@@ -3535,11 +3579,11 @@ about 9 significant digits for a smooth function, so that
 times per number, and an error of f (`sqrt` below 0) is its own.
 
 ```rythme
-w = [[1, 2], [3, 4]]
-print(matmul(w, [1, 1]), transpose(w), shape(w))
-print(stats([2, 4, 4, 4, 5, 5, 7, 9]))
-print(softmax([1, 2, 3]) |> map(fn(p) = round(p, 2)), argmax([0.1, 0.7, 0.2]))
-print(derivative(fn(x) = x ** 3, 2), gradient(fn([x, y]) = x * y, [3, 4]))
+w = [[1 2] [3 4]]
+print(matmul(w [1 1]) transpose(w) shape(w))
+print(stats([2 4 4 4 5 5 7 9]))
+print(softmax([1 2 3]) |> map(fn(p) = round(p 2)) argmax([0.1 0.7 0.2]))
+print(derivative(fn(x) = x ** 3 2) gradient(fn([x y]) = x * y [3 4]))
 ```
 
 ```text
@@ -3556,15 +3600,15 @@ errors with a message, `nan` is never chosen by `argmax` or `argmin`, and
 lists nested more than 64 levels deep are refused.
 
 ```rythme
-vector_add([1, 2, 3], [[1, 2], [3, 4]])
+vector_add([1 2 3] [[1 2] [3 4]])
 ```
 
 ```text
 error[E023]: `vector_add` needs two values of the same shape, but got a vector of 3 number(s) and a 2×2 matrix
  --> sample.ry:1:1
   |
-1 | vector_add([1, 2, 3], [[1, 2], [3, 4]])
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | vector_add([1 2 3] [[1 2] [3 4]])
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = help: `shape(x)` gives the shape of a vector or a matrix: [3] or [2, 3]
   = more about this error: `rythme explain E023`
@@ -3581,9 +3625,9 @@ always giving the same drawing. Numbers that are not finite are left out; a
 list without any finite number is E023.
 
 ```rythme
-heights = [1.52, 1.60, 1.63, 1.68, 1.70, 1.71, 1.75, 1.80, 1.66, 1.72]
-print(histogram(heights, 4))
-print(plot(map(0..20, fn(i) = 10 / (i + 1))))
+heights = [1.52 1.60 1.63 1.68 1.70 1.71 1.75 1.80 1.66 1.72]
+print(histogram(heights 4))
+print(plot(map(0..20 fn(i) = 10 / (i + 1))))
 ```
 
 ```text
@@ -3673,10 +3717,10 @@ from Ruby, Python and Elixir, added after 1.0 (the audit that chose them is
   `correlation` and `covariance`.
 
 ```rythme
-print(format(3.14159, ".2f"), format(1234567, ","), format(42, ">6"), format(255, "#x"), format(0.256, ".1%"))
-print(center("menu", 10, "*"), replace_first("a-b-c", "-", "+"), occurrences("banana", "an"), split_once("key=value", "="))
-print(snake_case("HTTPServer"), camel_case("user name"), kebab_case("Hello World"), capitalize_words("ada lovelace"))
-print(to_base(255, 2), from_base("ff", 16), digits(2024), divmod(17, 5), binomial(52, 5), constrain(15, 0, 10))
+print(format(3.14159 ".2f") format(1234567 ",") format(42 ">6") format(255 "#x") format(0.256 ".1%"))
+print(center("menu" 10 "*") replace_first("a-b-c" "-" "+") occurrences("banana" "an") split_once("key=value" "="))
+print(snake_case("HTTPServer") camel_case("user name") kebab_case("Hello World") capitalize_words("ada lovelace"))
+print(to_base(255 2) from_base("ff" 16) digits(2024) divmod(17 5) binomial(52 5) constrain(15 0 10))
 ```
 
 ```text
@@ -3688,12 +3732,12 @@ http_server userName hello-world Ada Lovelace
 
 ```rythme
 tokens = split("the cat and the dog and the bird")
-print(tally(tokens), most_common(tokens, 2))
-print(sort_desc([3, 1, 2]), sort_by_desc(tokens, len) |> take(2), find_index(tokens, fn(w) = len(w) > 3))
-print(combinations([1, 2, 3], 2), cartesian_product([1, 2], ["a", "b"]))
-print(chunk_by([1, 1, 2, 3, 3], fn(x) = x), split_at([1, 2, 3, 4], 1), rotate_by([1, 2, 3], 1), unzip([[1, "a"], [2, "b"]]))
-print(iterate(1, 6, fn(x) = x * 2), unfold(10, fn(n) = if n == 0 then None else Some([n, n // 2])))
-print(["1", "x", "3"] |> filter_map(fn(t) = if is_digit(t) then Some(int(t)) else None))
+print(tally(tokens) most_common(tokens 2))
+print(sort_desc([3 1 2]) sort_by_desc(tokens len) |> take(2) find_index(tokens fn(w) = len(w) > 3))
+print(combinations([1 2 3] 2) cartesian_product([1 2] ["a" "b"]))
+print(chunk_by([1 1 2 3 3] fn(x) = x) split_at([1 2 3 4] 1) rotate_by([1 2 3] 1) unzip([[1 "a"] [2 "b"]]))
+print(iterate(1 6 fn(x) = x * 2) unfold(10 fn(n) = if n == 0 then None else Some([n n // 2])))
+print(["1" "x" "3"] |> filter_map(fn(t) = if is_digit(t) then Some(int(t)) else None))
 ```
 
 ```text
@@ -3706,15 +3750,15 @@ dict("and" => 2, "bird" => 1, "cat" => 1, "dog" => 1, "the" => 3) [["the", 3], [
 ```
 
 ```rythme
-data = {user: {name: "Ada", langs: ["fr", "en"]}}
-print(dig(data, ["user", "langs", 1]), dig(data, ["user", "age"]))
-counts = fold(["a", "b", "a"], {}, fn(c, w) = update(c, w, 1, fn(n) = n + 1))
-print(counts, merge_with(counts, {a: 10, c: 1}, fn(x, y) = x + y), invert(counts))
-print(select_keys(data.user, ["name"]), map_keys({a: 1}, upper))
-print(all_ok(map(["1", "2"], parse_int)), all_ok(map(["1", "x"], parse_int)), unwrap_or_else(None, fn() = 0))
-d = {year: 2024, month: 1, day: 31}
-print(add_months(d, 1), day_of_year(d), format_date(d, "%A %d %B %Y"), parse_date("29/02/2024", "%d/%m/%Y"))
-print(base64_encode("Hi!"), url_encode("a b&c"), url_decode("caf%C3%A9"))
+data = {user: {name: "Ada" langs: ["fr" "en"]}}
+print(dig(data ["user" "langs" 1]) dig(data ["user" "age"]))
+counts = fold(["a" "b" "a"] {} fn(c w) = update(c w 1 fn(n) = n + 1))
+print(counts merge_with(counts {a: 10 c: 1} fn(x y) = x + y) invert(counts))
+print(select_keys(data.user, ["name"]) map_keys({a: 1} upper))
+print(all_ok(map(["1" "2"] parse_int)) all_ok(map(["1" "x"] parse_int)) unwrap_or_else(None fn() = 0))
+d = {year: 2024 month: 1 day: 31}
+print(add_months(d 1) day_of_year(d) format_date(d "%A %d %B %Y") parse_date("29/02/2024" "%d/%m/%Y"))
+print(base64_encode("Hi!") url_encode("a b&c") url_decode("caf%C3%A9"))
 ```
 
 ```text
@@ -3747,12 +3791,12 @@ and `rythme help javascript` sums it up):
   `random_seed` makes it repeatable: it is not for secrets.
 
 ```rythme
-print(cbrt(-27), hypot(3, 4), round(atanh(0.5), 6), find_last([1, 4, 6, 7], is_even), find_last_index([1, 4, 6, 7], is_even))
+print(cbrt(-27) hypot(3 4) round(atanh(0.5) 6) find_last([1 4 6 7] is_even) find_last_index([1 4 6 7] is_even))
 match parse_url("https://example.com/search?q=caf%C3%A9&page=2#results")
-  Ok(u) -> print(u.host, u.port, u.path, parse_query(u.query), u.fragment)
+  Ok(u) -> print(u.host u.port u.path parse_query(u.query) u.fragment)
   Err(e) -> print(e)
 end
-print(format_query({q: "café", page: 3}), slice(sha256(""), 0, 8), len(uuid()))
+print(format_query({q: "café" page: 3}) slice(sha256("") 0 8) len(uuid()))
 ```
 
 ```text
@@ -3799,11 +3843,11 @@ the specs of Python, not the `%` of Ruby. With method calls and blocks
 Ruby code often works as it is:
 
 ```rythme
-fruits = ["pear", "fig", "banana", "fig"]
-print(fruits.uniq.size, fruits.select { |w| w.size > 3 }, fruits.reject { |w| w.include?("a") })
-print(fruits.first(2), fruits.last(1), fruits.count, fruits.sum { |w| w.length })
-print(fruits.each_slice(3), "  Rythme ".strip.downcase, 42.to_s + "!", "7".to_i + 1)
-print([1, 2, 3].reduce(0) do |acc, x| acc + x end, [3, 1, 2].sort_by { |x| -x })
+fruits = ["pear" "fig" "banana" "fig"]
+print(fruits.uniq.size fruits.select { |w| w.size > 3 } fruits.reject { |w| w.include?("a") })
+print(fruits.first(2) fruits.last(1) fruits.count fruits.sum { |w| w.length })
+print(fruits.each_slice(3) "  Rythme ".strip.downcase 42.to_s + "!" "7".to_i + 1)
+print([1 2 3].reduce(0) do |acc x| acc + x end [3 1 2].sort_by { |x| -x })
 ```
 
 ```text
@@ -3839,11 +3883,11 @@ REBOL's `read` does (see Files above).
 
 ```rythme
 name = "Ada"
-print(rejoin(["Hello, ", name, "!"]), length?([1, 2, 3]), uppercase("rebol"))
-print(found?(Some(1)), none?(None), form(3.5), mold("hi"))
-foreach [1, 2] do |x| print(x * 10) end
-print(map_each([1, 2, 3], fn(x) = x * x), remove_each([1, 2, 3, 4], is_even))
-print(enbase("Hi!"), debase("SGkh"), dehex("caf%C3%A9"))
+print(rejoin(["Hello, " name "!"]) length?([1 2 3]) uppercase("rebol"))
+print(found?(Some(1)) none?(None) form(3.5) mold("hi"))
+foreach [1 2] do |x| print(x * 10) end
+print(map_each([1 2 3] fn(x) = x * x) remove_each([1 2 3 4] is_even))
+print(enbase("Hi!") debase("SGkh") dehex("caf%C3%A9"))
 ```
 
 ```text
@@ -3856,19 +3900,19 @@ SGkh Ok("Hi!") Ok("café")
 ```
 
 ```rythme
-numbers = [3, 1, 4, 1, 5, 9, 2, 6]
-print(map(numbers, fn(x) = x * 2))
-print(filter(numbers, is_even), fold(numbers, 0, fn(acc, x) = acc + x), sum(numbers))
-print(sort(numbers), unique(numbers), sort_by(["pear", "fig", "banana"], len))
-print(first(numbers), last([]), get(numbers, -1), take(numbers, 3), drop(numbers, 6))
-print(find(numbers, fn(x) = x > 4), any(numbers, fn(x) = x > 8), count(numbers, is_odd))
-print(zip([1, 2], ["a", "b"]), enumerate(["x", "y"]), group_by(["ant", "bee", "ape"], fn(w) = w[0]))
-print(split("a,b,c", ","), join(["a", "b"], "-"), upper("été"), replace("2024", "4", "5"))
-print(len("été"), chars("hé"), trim("  hi  "), contains("hello", "ell"), starts_with("rythme", "ry"))
-print(parse_int("42"), parse_int("4x"), int("42"), float("2.5"), text(3.0))
-print(abs(-3), min(3, 1, 2), max([4, 8]), round(3.14159, 2), floor(2.7), sqrt(16), 2 |> pow(10))
-print(keys({a: 1, b: 2}), put({a: 1}, "b", 2), remove({a: 1, b: 2}, "a"), has({a: 1}, "a"))
-print(unwrap_or(get([], 0), "default"), map(Some(2), fn(x) = x + 1), is_ok(Err("no")))
+numbers = [3 1 4 1 5 9 2 6]
+print(map(numbers fn(x) = x * 2))
+print(filter(numbers is_even) fold(numbers 0 fn(acc x) = acc + x) sum(numbers))
+print(sort(numbers) unique(numbers) sort_by(["pear" "fig" "banana"] len))
+print(first(numbers) last([]) get(numbers, -1) take(numbers 3) drop(numbers 6))
+print(find(numbers fn(x) = x > 4) any(numbers fn(x) = x > 8) count(numbers is_odd))
+print(zip([1 2] ["a" "b"]) enumerate(["x" "y"]) group_by(["ant" "bee" "ape"] fn(w) = w[0]))
+print(split("a,b,c" ",") join(["a" "b"] "-") upper("été") replace("2024" "4" "5"))
+print(len("été") chars("hé") trim("  hi  ") contains("hello" "ell") starts_with("rythme" "ry"))
+print(parse_int("42") parse_int("4x") int("42") float("2.5") text(3.0))
+print(abs(-3) min(3 1 2) max([4 8]) round(3.14159 2) floor(2.7) sqrt(16) 2 |> pow(10))
+print(keys({a: 1 b: 2}) put({a: 1} "b" 2) remove({a: 1 b: 2} "a") has({a: 1} "a"))
+print(unwrap_or(get([] 0) "default") map(Some(2) fn(x) = x + 1) is_ok(Err("no")))
 ```
 
 ```text
@@ -3887,17 +3931,17 @@ default Some(3) false
 ```
 
 ```rythme
-print(gcd(12, 18), lcm(4, 6), atan(1, -1), text(3.14159, 2), text(5, 2))
-print(capitalize("élise"), pad_left("7", 3, "0"), pad_right("ab", 4, "."), char_code("A"), char(66))
-print(is_digit("42"), is_letter("été"), is_space(" \n"), take_while("42 cm", is_digit))
-print(scan([1, 2, 3], 0, fn(total, x) = total + x), set_at([1, 2, 3], 0, 9), insert_at([1, 2], 1, 7), remove_at([1, 2, 3], -1))
-print(drop_while([1, 3, 4, 5], is_odd), 0..10 |> step_by(5), chunks([1, 2, 3, 4, 5], 2), windows([1, 2, 3], 2))
-people = [{name: "Ada", age: 36}, {name: "Alan", age: 41}]
-print(min_by(["ccc", "a", "bb"], len), max_by(people, fn(p) = p.age).name)
-print(from_entries([["a", 1], ["b", 2]]), map_values({a: 1, b: 2}, fn(x) = x * 10))
+print(gcd(12 18) lcm(4 6) atan(1, -1) text(3.14159 2) text(5 2))
+print(capitalize("élise") pad_left("7" 3 "0") pad_right("ab" 4 ".") char_code("A") char(66))
+print(is_digit("42") is_letter("été") is_space(" \n") take_while("42 cm" is_digit))
+print(scan([1 2 3] 0 fn(total x) = total + x) set_at([1 2 3] 0 9) insert_at([1 2] 1 7) remove_at([1 2 3] -1))
+print(drop_while([1 3 4 5] is_odd) 0..10 |> step_by(5) chunks([1 2 3 4 5] 2) windows([1 2 3] 2))
+people = [{name: "Ada" age: 36} {name: "Alan" age: 41}]
+print(min_by(["ccc" "a" "bb"] len) max_by(people fn(p) = p.age).name)
+print(from_entries([["a" 1] ["b" 2]]) map_values({a: 1 b: 2} fn(x) = x * 10))
 print(parse_int("42") |> and_then(fn(n) = if n > 0 then Ok(n) else Err("not positive")))
-print(ok_or(None, "missing"), map_err(Err("not found"), fn(e) = "config: {e}"))
-print(parse_json("[1, 2.5, null, \{\"ok\": true\}]"), to_json({name: "Ada", tags: ["x"], age: None}))
+print(ok_or(None "missing") map_err(Err("not found") fn(e) = "config: {e}"))
+print(parse_json("[1, 2.5, null, \{\"ok\": true\}]") to_json({name: "Ada" tags: ["x"] age: None}))
 ```
 
 ```text
@@ -3919,7 +3963,7 @@ before the program runs:
 ```rythme
 word = "hello"
 print(charCodeAt(word[0]))
-print(map(word, upper))
+print(map(word upper))
 ```
 
 ```text
@@ -3935,7 +3979,7 @@ error[E003]: unknown name `charCodeAt`
 error[E005]: `map` expects a list, a set, an Option or a Result as argument 1, but got a value of type Text
  --> 62-hints.ry:3:11
   |
-3 | print(map(word, upper))
+3 | print(map(word upper))
   |           ^^^^ wrong kind of value
   |
   = help: usage: `map(list, f)`
@@ -3945,13 +3989,13 @@ error[E005]: `map` expects a list, a set, an Option or a Result as argument 1, b
 
 ```rythme
 fn save_and_read(path)
-  write_file(path, "line 1\nline 2")?
+  write_file(path "line 1\nline 2")?
   content = read_file(path)?
   Ok(lines(content))
 end
 print(save_and_read("notes.txt"))
 print(read_file("missing.txt"))
-print(file_exists("notes.txt"), args())
+print(file_exists("notes.txt") args())
 ```
 
 `rythme 61-files.ry Ada 36`:
@@ -3964,15 +4008,15 @@ true ["Ada", "36"]
 
 ```rythme
 fn backup(name)
-  create_folder(join_path(["backup", "2024"]))?
-  write_file(join_path(["backup", "2024", name]), "saved")?
+  create_folder(join_path(["backup" "2024"]))?
+  write_file(join_path(["backup" "2024" name]) "saved")?
   list_folder("backup/2024")
 end
 print(backup("notes.txt"))
-print(file_info("backup/2024/notes.txt"), file_info("backup"))
-print(delete_file("backup/2024/notes.txt"), delete_file("backup"))
-print(split_path("C:\\Users\\ada\\notes.txt"), split_path("/home/ada/") |> join_path)
-print(options(["--dry-run", "--name=Ada", "notes.txt"]))
+print(file_info("backup/2024/notes.txt") file_info("backup"))
+print(delete_file("backup/2024/notes.txt") delete_file("backup"))
+print(split_path("C:\\Users\\ada\\notes.txt") split_path("/home/ada/") |> join_path)
+print(options(["--dry-run" "--name=Ada" "notes.txt"]))
 print(options(["-abc"]))
 print(input_lines())
 ```
@@ -3990,9 +4034,9 @@ Ok([])
 ```rythme
 launch = unwrap(parse_date("2024-02-28T22:30:00+01:00"))
 print(launch)
-print(add_days(launch, 1) |> format_date, add_seconds(launch, 5400) |> format_date)
-print(days_between({year: 2024, month: 1, day: 1}, {year: 2025, month: 1, day: 1}), days_in_month(2023, 2), is_leap_year(1900))
-print(day_of_week({year: 2024, month: 2, day: 29}), seconds_between(launch, {year: 2024, month: 2, day: 28, hour: 21, minute: 30, offset: 0}))
+print(add_days(launch 1) |> format_date add_seconds(launch 5400) |> format_date)
+print(days_between({year: 2024 month: 1 day: 1} {year: 2025 month: 1 day: 1}) days_in_month(2023 2) is_leap_year(1900))
+print(day_of_week({year: 2024 month: 2 day: 29}) seconds_between(launch {year: 2024 month: 2 day: 28 hour: 21 minute: 30 offset: 0}))
 print(parse_date("2023-02-29"))
 ```
 
@@ -4007,16 +4051,16 @@ Err("\"2023-02-29\" is not a valid date: the day must go from 1 to 28 in Februar
 A date that does not exist is explained:
 
 ```rythme
-deadline = {year: 2023, month: 2, day: 29}
-print(add_days(deadline, 7))
+deadline = {year: 2023 month: 2 day: 29}
+print(add_days(deadline 7))
 ```
 
 ```text
 error[E023]: `add_days` needs a valid date: the day must go from 1 to 28 in February 2023, not 29 (2023 is not a leap year)
  --> 65-dates.ry:2:7
   |
-2 | print(add_days(deadline, 7))
-  |       ^^^^^^^^^^^^^^^^^^^^^ not a valid date
+2 | print(add_days(deadline 7))
+  |       ^^^^^^^^^^^^^^^^^^^^ not a valid date
   |
   = help: a date is a record like `{year: 2024, month: 2, day: 29}`, with `hour`, `minute`, `second` and `offset` (minutes ahead of UTC) if needed
   = more about this error: `rythme explain E023`
@@ -4026,14 +4070,14 @@ Searching and cutting with regexes, and numbers written for people:
 
 ```rythme
 journal = "2024-02-29 ERROR disk full\n2024-03-01 INFO ok\n2024-03-02 ERROR fan"
-errors = lines(journal) |> filter(fn(line) = matches(line, ".* ERROR .*"))
-print(errors |> map(fn(line) = unwrap(find_first(line, "[0-9-]+"))))
-print(find_all("3 cats, 12 dogs and 1 fish", "\\d+"), split_by("a, b;c", "[,;] *"))
-print(captures("v2.14", "v(\\d+)\\.(\\d+)"), named_captures("2024-02", "(?<year>\\d+)-(?<month>\\d+)"))
-print(replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1"), replace_all("hello world", "\\b\\w", upper))
-print(matches("AB-12", "[A-Z]\{2\}-[0-9]+"), matches("ab-12", "(?i)[A-Z]\{2\}-[0-9]+"), find_all("x<b>y</b>", "<.+?>"))
-print(format_number(1234567.891, 2), format_number(1234567.891, 2, "fr"), format_number(-42000), pad_left(format_number(3.5, 2), 8))
-print(words("Hello, world! It's well-known."), trim_start("  hi  "), trim_end("  hi  "), equals_ignore_case("Été", "ÉTÉ"))
+errors = lines(journal) |> filter(fn(line) = matches(line ".* ERROR .*"))
+print(errors |> map(fn(line) = unwrap(find_first(line "[0-9-]+"))))
+print(find_all("3 cats, 12 dogs and 1 fish" "\\d+") split_by("a, b;c" "[,;] *"))
+print(captures("v2.14" "v(\\d+)\\.(\\d+)") named_captures("2024-02" "(?<year>\\d+)-(?<month>\\d+)"))
+print(replace_all("29/02/2024" "(\\d+)/(\\d+)/(\\d+)" "$3-$2-$1") replace_all("hello world" "\\b\\w" upper))
+print(matches("AB-12" "[A-Z]\{2\}-[0-9]+") matches("ab-12" "(?i)[A-Z]\{2\}-[0-9]+") find_all("x<b>y</b>" "<.+?>"))
+print(format_number(1234567.891 2) format_number(1234567.891 2 "fr") format_number(-42000) pad_left(format_number(3.5 2) 8))
+print(words("Hello, world! It's well-known.") trim_start("  hi  ") trim_end("  hi  ") equals_ignore_case("Été" "ÉTÉ"))
 ```
 
 ```text
@@ -4050,15 +4094,15 @@ A mistake in a regex written in the code is shown before running:
 
 ```rythme
 code = "AB-12"
-print(matches(code, "[A-Z]+-([0-9]+"))
+print(matches(code "[A-Z]+-([0-9]+"))
 ```
 
 ```text
 error[E026]: invalid regex: this `(` is never closed
- --> 67-regex.ry:2:29
+ --> 67-regex.ry:2:28
   |
-2 | print(matches(code, "[A-Z]+-([0-9]+"))
-  |                             ^ opened here
+2 | print(matches(code "[A-Z]+-([0-9]+"))
+  |                            ^ opened here
   |
   = help: add a `)` where the group ends; for the sign `(` itself, write `[(]`
   = more about this error: `rythme explain E026`
@@ -4434,21 +4478,21 @@ print( total ) ; print(area(Rect(2,3)))
 `rythme fmt - < messy.ry` writes:
 
 ```text
-type Shape = Circle(radius) | Rect(width, height)
+type Shape = Circle(radius) | Rect(width height)
 
 fn area(s) = match s
   Circle(r) -> pi * r * r
-  Rect(w, h) -> w * h
+  Rect(w h) -> w * h
 end
 
-prices = [12, 5, 30]
+prices = [12 5 30]
 
 total = prices
   |> filter(fn(p) = p > 10)
   |> sum
 
 print(total)
-print(area(Rect(2, 3)))
+print(area(Rect(2 3)))
 ```
 
 In a folder that holds `messy.ry` and an already formatted `clean.ry`:
@@ -4545,19 +4589,19 @@ With `geometry.ry`:
 ## Shapes and their areas.
 
 ## A shape to draw.
-type Shape = Circle(radius) | Rect(width, height)
+type Shape = Circle(radius) | Rect(width height)
 
 ## The area of a shape: for a `Circle`, `pi` times the square
 ## of its radius. To count shapes, use `len`.
 fn area(Circle(r)) = pi * _square(r)
-fn area(Rect(w, h)) = w * h
+fn area(Rect(w h)) = w * h
 
 ## How many sides a square has.
 sides = 4
 
 fn _square(x) = x * x
 
-test "area of a square" = area(Rect(2, 2)) == 4
+test "area of a square" = area(Rect(2 2)) == 4
 ```
 
 `rythme doc geometry.ry` writes:
@@ -4583,7 +4627,7 @@ A shape to draw.
 
 ~~~rythme
 fn area(Circle(r))
-fn area(Rect(w, h))
+fn area(Rect(w h))
 ~~~
 
 The area of a shape: for a [`Circle`](#shape), `pi` times the square
@@ -4617,7 +4661,7 @@ Example:
 
 ~~~rythme
 len("été")                 # 3
-len([1, 2])                # 2
+len([1 2])                # 2
 ~~~
 ```
 
@@ -4739,7 +4783,7 @@ package `NAME`, and is used through the last part of the path, as any
 use mathlib/vectors       # the file src/vectors.ry of mathlib
 use mathlib               # the program of mathlib: the `entry` of its rythme.toml
 use hello/greeting        # a file of the project itself (`hello`), useful in tests/
-print(vectors.add({x: 1, y: 2}, {x: 3, y: 4}))
+print(vectors.add({x: 1 y: 2} {x: 3 y: 4}))
 ```
 
 - The packages are found through the nearest `rythme.toml` above the file
@@ -4815,15 +4859,15 @@ this program:
 ```rythme
 fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
 fn total([]) = 0
-fn total([x, ..rest]) = x + total(rest)
+fn total([x ..rest]) = x + total(rest)
 fn describe(n)
   kind = if n % 2 == 0 then "even" else "odd"
   "{n} is {kind}"
 end
 print(fib(3))
-t = total([10, 20, 30])
+t = total([10 20 30])
 describe(t // 4)
-[1, 2, 3] |> map(fn(x) = x * t)
+[1 2 3] |> map(fn(x) = x * t)
 ```
 
 `rythme steps` shows:
@@ -4840,8 +4884,8 @@ print(fib(3))
 2
   → ()
 
-t = total([10, 20, 30])
-  → 10 + total([20, 30])
+t = total([10 20 30])
+  → 10 + total([20 30])
   → 10 + (20 + total([30]))
   → 10 + (20 + (30 + total([])))
   → 10 + (20 + (30 + 0))
@@ -4854,8 +4898,8 @@ describe(t // 4)
   → describe(15)
   → "15 is odd"
 
-map([1, 2, 3], fn(x) = x * t)
-  → [60, 120, 180]
+map([1 2 3] fn(x) = x * t)
+  → [60 120 180]
 ```
 
 ### 7.9 The debugger: `rythme debug`
@@ -4924,11 +4968,11 @@ With this program, `fact.ry`:
 fn fact(0) = 1
 fn fact(n) = n * fact(n - 1)
 
-fn total([], acc) = acc
-fn total([x, ..rest], acc) = total(rest, acc + x)
+fn total([] acc) = acc
+fn total([x ..rest] acc) = total(rest acc + x)
 
 print(fact(3))
-print(total([10, 20], 0))
+print(total([10 20] 0))
 ```
 
 a session:
@@ -4964,13 +5008,13 @@ breakpoint 2 at the start of `total`
 (debug) continue
 6
 ● breakpoint 2: `total` starts
-→ fact.ry:5  total([x, ..rest] = [10, 20], acc = 0) · depth 1
-  5 | fn total([x, ..rest], acc) = total(rest, acc + x)
+→ fact.ry:5  total([x ..rest] = [10, 20], acc = 0) · depth 1
+  5 | fn total([x ..rest] acc) = total(rest acc + x)
 (debug) next
 ● breakpoint 2: `total` starts
-→ fact.ry:5  total([x, ..rest] = [20], acc = 10) · depth 1
+→ fact.ry:5  total([x ..rest] = [20], acc = 10) · depth 1
   (a call in tail position: it took the place of the frame of `total`)
-  5 | fn total([x, ..rest], acc) = total(rest, acc + x)
+  5 | fn total([x ..rest] acc) = total(rest acc + x)
 (debug) locals
   x = 20
   rest = []

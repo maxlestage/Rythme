@@ -16,7 +16,7 @@ francese. Il sito e il playground esistono anche in italiano:
 # I valori non cambiano mai. Tutto è una funzione. Niente cicli.
 fn square(x) = x * x
 
-[1, 2, 3, 4]
+[1 2 3 4]
   |> filter(is_even)      # tieni i numeri pari
   |> map(square)          # eleva ognuno al quadrato
   |> sum                  # sommali
@@ -35,7 +35,8 @@ fn square(x) = x * x
   (`read("note.txt")`, `read("https://example.com")`), un'altra lo riscrive
   (`write`), e i nomi di REBOL della libreria funzionano così come sono
   (`probe`, `ask`, `rejoin`, `length?`, `foreach`, `exists?`...).
-  `rythme help rebol` mostra cosa è uguale e cosa cambia.
+  `rythme help rebol` mostra cosa è uguale e cosa cambia. E senza
+  virgole: `[1 2 3]`, `f(a b)`, `{nome: "Ada" eta: 36}`, `print x y`.
 - **Sicuro come Rust.** Un valore che può mancare è un `Option` (`Some(x)`
   o `None`); un'operazione che può fallire restituisce un `Result` (`Ok(x)`
   o `Err(e)`), e `?` passa avanti l'errore. Il programma viene controllato

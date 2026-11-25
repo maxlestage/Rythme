@@ -14,7 +14,7 @@
 # 值永远不会改变。一切都是函数。没有循环。
 fn square(x) = x * x
 
-[1, 2, 3, 4]
+[1 2 3 4]
   |> filter(is_even)      # 保留偶数
   |> map(square)          # 把每个数平方
   |> sum                  # 把它们加起来
@@ -31,7 +31,8 @@ fn square(x) = x * x
 - **和 REBOL 一样用词少。** 一个单词就能读文件或网页（`read("notes.txt")`、
   `read("https://example.com")`），一个单词写回去（`write`），标准库里的
   REBOL 名字也能直接用（`probe`、`ask`、`rejoin`、`length?`、`foreach`、
-  `exists?`……）。`rythme help rebol` 说明哪些相同、哪些不同。
+  `exists?`……）。`rythme help rebol` 说明哪些相同、哪些不同。也不需要逗号：
+  `[1 2 3]`、`f(a b)`、`{name: "Ada" age: 36}`、`print x y`。
 - **像 Rust 一样安全。** 可能缺失的值是 `Option`（`Some(x)` 或 `None`）；可能
   失败的操作返回 `Result`（`Ok(x)` 或 `Err(e)`），`?` 会把错误向上传递。程序在
   运行**之前**就会被检查。

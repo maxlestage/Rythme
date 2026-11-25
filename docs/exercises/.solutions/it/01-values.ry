@@ -9,10 +9,10 @@ summary = "Una settimana ha {seconds_per_week} secondi."
 
 # --- Test (non cambiarli) ---
 
-test "secondi in un'ora" = assert_eq(seconds_per_hour, 3600)
+test "secondi in un'ora" = assert_eq(seconds_per_hour 3600)
 
-test "secondi in un giorno" = assert_eq(seconds_per_day, 86400)
+test "secondi in un giorno" = assert_eq(seconds_per_day 86400)
 
-test "secondi in una settimana" = assert_eq(seconds_per_week, 604800)
+test "secondi in una settimana" = assert_eq(seconds_per_week 604800)
 
-test "il riepilogo" = assert_eq(summary, "Una settimana ha 604800 secondi.")
+test "il riepilogo" = assert_eq(summary "Una settimana ha 604800 secondi.")

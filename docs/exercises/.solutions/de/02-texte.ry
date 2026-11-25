@@ -8,25 +8,25 @@ fn gruessen(name) = "Hallo, {name}!"
 fn rufen(text) = upper(text) + "!"
 
 ## Die Initialen einer Person, jeweils gefolgt von einem Punkt.
-fn initialen(vorname, nachname) = "{vorname[0]}.{nachname[0]}."
+fn initialen(vorname nachname) = "{vorname[0]}.{nachname[0]}."
 
 ## Ein Satz, der eine Person vorstellt.
-fn vorstellen(name, alter) = "{name} ist {alter} Jahre alt."
+fn vorstellen(name alter) = "{name} ist {alter} Jahre alt."
 
 # --- Tests (nicht verändern) ---
 
-test "grüßen" = assert_eq(gruessen("Ada"), "Hallo, Ada!")
+test "grüßen" = assert_eq(gruessen("Ada") "Hallo, Ada!")
 
-test "jemand anderen grüßen" = assert_eq(gruessen("Alan"), "Hallo, Alan!")
+test "jemand anderen grüßen" = assert_eq(gruessen("Alan") "Hallo, Alan!")
 
 test "rufen"
-  assert_eq(rufen("hallo"), "HALLO!")
-  assert_eq(rufen("Stopp"), "STOPP!")
+  assert_eq(rufen("hallo") "HALLO!")
+  assert_eq(rufen("Stopp") "STOPP!")
 end
 
 test "Initialen"
-  assert_eq(initialen("Ada", "Lovelace"), "A.L.")
-  assert_eq(initialen("grace", "hopper"), "g.h.")
+  assert_eq(initialen("Ada" "Lovelace") "A.L.")
+  assert_eq(initialen("grace" "hopper") "g.h.")
 end
 
-test "vorstellen" = assert_eq(vorstellen("Ada", 36), "Ada ist 36 Jahre alt.")
+test "vorstellen" = assert_eq(vorstellen("Ada" 36) "Ada ist 36 Jahre alt.")

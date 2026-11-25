@@ -779,7 +779,14 @@ fn param_before(toks: &[Token]) -> bool {
         return false;
     }
     match open.tok {
-        Tok::LParen => true,
+        // The parameters of `fn name(` or `fn(`; in the arguments of a call,
+        // `play(start :x)` is two arguments written without a comma.
+        Tok::LParen => match before.next().map(|t| &t.tok) {
+            // `fn(`, and the fields of a variant: `Circle(radius :Float)`.
+            Some(Tok::Fn | Tok::Ctor(_)) => true,
+            Some(Tok::Ident(_)) => matches!(before.next().map(|t| &t.tok), Some(Tok::Fn)),
+            _ => false,
+        },
         Tok::Bar => matches!(before.next().map(|t| &t.tok), Some(Tok::Do | Tok::LBrace)),
         _ => false,
     }

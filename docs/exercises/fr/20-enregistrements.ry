@@ -24,35 +24,35 @@
 # Vérifiez votre travail :  rythme exercise check 20-enregistrements.ry
 #                     ou :  rythme test 20-enregistrements.ry
 
-fn age_en(personne, annee) = fail("à faire")
+fn age_en(personne annee) = fail("à faire")
 
 fn etiquette(personne) = fail("à faire")
 
-fn renommee(personne, nom) = fail("à faire")
+fn renommee(personne nom) = fail("à faire")
 
-fn deplace(point, dx, dy) = fail("à faire")
+fn deplace(point dx dy) = fail("à faire")
 
-fn distance(a, b) = fail("à faire")
+fn distance(a b) = fail("à faire")
 
 # --- Tests (ne les modifiez pas) ---
 
-ada = {nom: "Ada", naissance: 1815}
+ada = {nom: "Ada" naissance: 1815}
 
-test "âge" = assert_eq(age_en(ada, 1852), 37)
+test "âge" = assert_eq(age_en(ada 1852) 37)
 
-test "étiquette" = assert_eq(etiquette(ada), "Ada (1815)")
+test "étiquette" = assert_eq(etiquette(ada) "Ada (1815)")
 
 test "renommée"
-  assert_eq(renommee(ada, "Augusta"), {nom: "Augusta", naissance: 1815})
-  assert_eq(ada.nom, "Ada")
+  assert_eq(renommee(ada "Augusta") {nom: "Augusta" naissance: 1815})
+  assert_eq(ada.nom "Ada")
 end
 
 test "déplacé"
-  assert_eq(deplace({x: 1, y: 2}, 3, -1), {x: 4, y: 1})
-  assert_eq(deplace({x: 0, y: 0}, 0, 0), {x: 0, y: 0})
+  assert_eq(deplace({x: 1 y: 2} 3 -1) {x: 4 y: 1})
+  assert_eq(deplace({x: 0 y: 0} 0 0) {x: 0 y: 0})
 end
 
 test "distance"
-  assert_eq(distance({x: 0, y: 0}, {x: 3, y: 4}), 5)
-  assert_eq(distance({x: 1, y: 1}, {x: 1, y: 1}), 0)
+  assert_eq(distance({x: 0 y: 0} {x: 3 y: 4}) 5)
+  assert_eq(distance({x: 1 y: 1} {x: 1 y: 1}) 0)
 end

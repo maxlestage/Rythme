@@ -102,10 +102,11 @@ x |> record.f(1)
     (arguments
       (identifier)
       (identifier)))
-  (call
+  (command_call
     (identifier)
-    (arguments
-      (identifier)))
+    (command_arguments
+      (parenthesized_expression
+        (identifier))))
   (field_expression
     (identifier)
     (field_name))

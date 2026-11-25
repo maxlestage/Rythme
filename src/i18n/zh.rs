@@ -1063,14 +1063,14 @@ Topics: start, syntax, functions, lists, text, records, types, match, errors, fu
             r#"a recursive function that never stops? Check that it always reaches a base case.
 Otherwise, make the recursive call the very last thing the function does
 (tail call), for example with an accumulator:
-  fn sum([], acc) = acc
-  fn sum([x, ..rest], acc) = sum(rest, acc + x)
+  fn sum([] acc) = acc
+  fn sum([x ..rest] acc) = sum(rest acc + x)
 or use `fold`, `map`, `filter`, which have no limit."#,
             r#"是不是一个永不停止的递归函数？请检查它是否总能到达基本情况。
 否则，让递归调用成为函数做的最后一件事
 （尾调用），例如使用累加器：
-  fn sum([], acc) = acc
-  fn sum([x, ..rest], acc) = sum(rest, acc + x)
+  fn sum([] acc) = acc
+  fn sum([x ..rest] acc) = sum(rest acc + x)
 或者使用没有限制的 `fold`、`map`、`filter`。"#,
         ),
         ("the program was stopped: it made more calls than allowed for this run", "程序被停止了：它的调用次数超过了这次运行允许的上限"),
@@ -1503,7 +1503,7 @@ to combine many values, put them in a list: `sum([a, b, c])`, `join([x, y, z])`"
         ("compare with a guard instead: `n if n >= low and n <= high -> ...`; a range still matches large numbers between its ends, and a decimal end like `1.0e30` works too", "请改用守卫条件比较：`n if n >= low and n <= high -> ...`；范围仍然能匹配两端之间的大数，像 `1.0e30` 这样的小数端点也可以"),
         ("a range in a pattern goes from a number to a number", "模式中的范围是从一个数到另一个数"),
         ("not a number", "不是数字"),
-        ("the arguments of a call without parentheses are separated by commas: `print a, b`", "不带括号的调用，参数之间用逗号分隔：`print a, b`"),
+        ("the arguments of a call without parentheses follow its name, on its line: `print a b` (or `print a, b`)", "不带括号的调用，参数在同一行跟在名字后面：`print a b`（或 `print a, b`）"),
         ("write the numbers themselves, like `1..9` or `0.0..0.5`; to compare with names, use a guard: `n if n >= low and n <= high -> ...`", "请直接写数字，例如 `1..9` 或 `0.0..0.5`；如果要和名字比较，请使用守卫条件：`n if n >= low and n <= high -> ...`"),
         ("a text that starts with a text is written `\"Mr \" + name`: `name` is the rest of the text", "以某个文本开头的文本写作 `\"Mr \" + name`：`name` 是文本的剩余部分"),
         ("missing `end` to close this `{what}`", "缺少用来闭合这个 `{what}` 的 `end`"),
@@ -1618,12 +1618,12 @@ fn {func}(name) = "你好，{{name}}！"
             r#"# The tests: `rythme test` in the folder of the project.
 use {name}/{module}
 
-test "{func}" = assert_eq({module}.{func}("Ada"), "Hello, Ada!")
+test "{func}" = assert_eq({module}.{func}("Ada") "Hello, Ada!")
 "#,
             r#"# 测试：在项目文件夹中运行 `rythme test`。
 use {name}/{module}
 
-test "{func}" = assert_eq({module}.{func}("Ada"), "你好，Ada！")
+test "{func}" = assert_eq({module}.{func}("Ada") "你好，Ada！")
 "#,
         ),
         (
@@ -1726,11 +1726,11 @@ example: rythme steps fibonacci.ry "fib(4)""#,
         (
             r#"Rythme has no loops. Work on the whole list instead:
   1..5 |> each(fn(i) = print(i))
-  [1, 2, 3] |> map(fn(x) = x * 2)
+  [1 2 3] |> map(fn(x) = x * 2)
 or write a recursive function. See `rythme help functional`."#,
             r#"Rythme 没有循环。请改为处理整个列表：
   1..5 |> each(fn(i) = print(i))
-  [1, 2, 3] |> map(fn(x) = x * 2)
+  [1 2 3] |> map(fn(x) = x * 2)
 或者编写一个递归函数。参见 `rythme help functional`。"#,
         ),
         ("Rythme has no loops to interrupt: use `find`, `take`, `filter`, or a recursive function", "Rythme 没有可以中断的循环：请使用 `find`、`take`、`filter` 或递归函数"),
@@ -1786,9 +1786,9 @@ then handle them with `match` or pass them on with `?`. `fail(message)` stops th
         ("a test passes when it ends without error, and its value is not `false`, `Err(...)` or `None`", "测试在没有错误地结束、并且它的值不是 `false`、`Err(...)` 或 `None` 时通过"),
         (
             r#"No tests found. Write one like this:
-  test "addition" = assert_eq(1 + 1, 2)"#,
+  test "addition" = assert_eq(1 + 1 2)"#,
             r#"没有找到测试。可以这样写一个：
-  test "addition" = assert_eq(1 + 1, 2)"#,
+  test "addition" = assert_eq(1 + 1 2)"#,
         ),
         ("Running {n} test(s)", "正在运行 {n} 个测试"),
         ("Running {n} of {total} test(s)", "正在运行 {n} 个测试（共 {total} 个）"),
@@ -1803,9 +1803,9 @@ then handle them with `match` or pass them on with `?`. `fail(message)` stops th
         ("{red}✗{reset} {}: the file has errors, so its tests could not run", "{red}✗{reset} {}：文件有错误，所以它的测试无法运行"),
         (
             r#"No file with tests in {}. Write a test in a `.ry` file like this:
-  test "addition" = assert_eq(1 + 1, 2)"#,
+  test "addition" = assert_eq(1 + 1 2)"#,
             r#"{} 中没有包含测试的文件。可以在一个 `.ry` 文件中这样写一个测试：
-  test "addition" = assert_eq(1 + 1, 2)"#,
+  test "addition" = assert_eq(1 + 1 2)"#,
         ),
         ("Failed tests:", "失败的测试："),
         ("`{name}` needs {what}", "`{name}` 需要{what}"),
@@ -1900,16 +1900,16 @@ Values
   "hello"   "total: {x}"         texts (Text); {...} (or #{...}) inserts a value
   true   false                   booleans (Bool)
   :ok   :error                   symbols (Symbol): a name used as a value
-  [1, 2, 3]                      lists
-  {name: "Ada", age: 36}         records
+  [1 2 3]                        lists; commas are optional, as in REBOL
+  {name: "Ada" age: 36}          records
   Some(3)   None                 a value that may be missing (Option)
   Ok(3)   Err("oops")            a result that may fail (Result)
   1..5                           the list [1, 2, 3, 4, 5]
 
 Names
   x = 5                          a name for a value; it never changes
-  [a, b] = [1, 2]                take a value apart
-  {name, age} = person
+  [a b] = [1 2]                  take a value apart
+  {name age} = person
 
 Operators
   + - * /   // (whole division)   % (remainder)   ** (power)
@@ -1955,15 +1955,15 @@ Several steps inside an expression
   end
 
 Your own types
-  type Shape = Circle(radius) | Rect(width, height)
+  type Shape = Circle(radius) | Rect(width height)
 
 Types written in the code (optional, checked by rythme check)
-  fn area(w: Int, h: Int) -> Int = w * h
+  fn area(w: Int h: Int) -> Int = w * h
   total: Float = 0.0
   type Box(a) = Box(value: a)    a type that takes a type: Box(Int), Box(Text)
 
 Tests and other files
-  test "double works" = assert_eq(double(2), 4)
+  test "double works" = assert_eq(double(2) 4)
   use geometry                   then geometry.area(2)
 
 Comments
@@ -1977,16 +1977,16 @@ Comments
   "hello"   "total: {x}"         文本（Text）；{...}（或 #{...}）插入一个值
   true   false                   布尔值（Bool）
   :ok   :error                   符号（Symbol）：当作值使用的名字
-  [1, 2, 3]                      列表
-  {name: "Ada", age: 36}         记录
+  [1 2 3]                        列表；逗号可以省略，就像 REBOL
+  {name: "Ada" age: 36}          记录
   Some(3)   None                 可能缺失的值（Option）
   Ok(3)   Err("oops")            可能失败的结果（Result）
   1..5                           列表 [1, 2, 3, 4, 5]
 
 名字
   x = 5                          给一个值起名字；它永远不会改变
-  [a, b] = [1, 2]                拆开一个值
-  {name, age} = person
+  [a b] = [1 2]                  拆开一个值
+  {name age} = person
 
 运算符
   + - * /   //（整数除法）   %（余数）   **（幂）
@@ -2032,15 +2032,15 @@ Comments
   end
 
 你自己的类型
-  type Shape = Circle(radius) | Rect(width, height)
+  type Shape = Circle(radius) | Rect(width height)
 
 写在代码中的类型（可选，由 rythme check 检查）
-  fn area(w: Int, h: Int) -> Int = w * h
+  fn area(w: Int h: Int) -> Int = w * h
   total: Float = 0.0
   type Box(a) = Box(value: a)    接受一个类型的类型：Box(Int)、Box(Text)
 
 测试和其他文件
-  test "double works" = assert_eq(double(2), 4)
+  test "double works" = assert_eq(double(2) 4)
   use geometry                   然后 geometry.area(2)
 
 注释
@@ -2051,8 +2051,8 @@ Comments
             r#"FUNCTIONS
 
 Define and call
-  fn add(a, b) = a + b
-  add(2, 3)                      # 5
+  fn add(a b) = a + b
+  add(2 3)                      # 5
 
 On several lines: the last expression is the result
   fn describe(n)
@@ -2072,8 +2072,8 @@ With a condition (a guard)
 
 Functions are values
   double = fn(x) = x * 2
-  [1, 2, 3] |> map(double)       # [2, 4, 6]
-  [1, 2, 3] |> map(fn(x) = x + 1)
+  [1 2 3] |> map(double)       # [2, 4, 6]
+  [1 2 3] |> map(fn(x) = x + 1)
 
 Pipes read from left to right
   "  Hello  " |> trim |> upper   # "HELLO"
@@ -2084,7 +2084,7 @@ Method style
 
 Documentation
   ## Adds two numbers.
-  fn add(a, b) = a + b
+  fn add(a b) = a + b
   help(add)                      # shows "Adds two numbers."
 
 Recursion without limit
@@ -2098,8 +2098,8 @@ Recursion without limit
             r#"函数
 
 定义和调用
-  fn add(a, b) = a + b
-  add(2, 3)                      # 5
+  fn add(a b) = a + b
+  add(2 3)                      # 5
 
 写在多行：最后一个表达式就是结果
   fn describe(n)
@@ -2119,8 +2119,8 @@ Recursion without limit
 
 函数也是值
   double = fn(x) = x * 2
-  [1, 2, 3] |> map(double)       # [2, 4, 6]
-  [1, 2, 3] |> map(fn(x) = x + 1)
+  [1 2 3] |> map(double)       # [2, 4, 6]
+  [1 2 3] |> map(fn(x) = x + 1)
 
 管道从左往右读
   "  Hello  " |> trim |> upper   # "HELLO"
@@ -2131,7 +2131,7 @@ Recursion without limit
 
 文档
   ## 把两个数相加。
-  fn add(a, b) = a + b
+  fn add(a b) = a + b
   help(add)                      # 显示“把两个数相加。”
 
 没有上限的递归
@@ -2145,7 +2145,7 @@ Recursion without limit
         (
             r#"LISTS
 
-  numbers = [3, 1, 2]
+  numbers = [3 1 2]
   numbers[0]                     # 3 (the first; -1 is the last)
   len(numbers)                   # 3
   1..5                           # [1, 2, 3, 4, 5]
@@ -2153,25 +2153,25 @@ Recursion without limit
   numbers + [9]                  # [3, 1, 2, 9]
 
 Work on the whole list (no loops needed)
-  map(numbers, fn(x) = x * 10)            # [30, 10, 20]
-  filter(numbers, fn(x) = x > 1)          # [3, 2]
-  fold(numbers, 0, fn(acc, x) = acc + x)  # 6
+  map(numbers fn(x) = x * 10)            # [30, 10, 20]
+  filter(numbers fn(x) = x > 1)          # [3, 2]
+  fold(numbers 0 fn(acc x) = acc + x)  # 6
   sort(numbers)                           # [1, 2, 3]
   numbers |> each(fn(x) = print(x))       # prints each element
 
 Safe access (never an error)
   first([])                      # None
-  get(numbers, 10)               # None
+  get(numbers 10)               # None
 
 "Change" a list: you get a new list, the old one stays the same
-  set_at(numbers, 0, 9)          # [9, 1, 2]
-  insert_at(numbers, 1, 7)       # [3, 7, 1, 2]
+  set_at(numbers 0 9)          # [9, 1, 2]
+  insert_at(numbers 1 7)       # [3, 7, 1, 2]
   remove_at(numbers, -1)         # [3, 1]
 
 Pieces of a list
-  take_while(numbers, fn(x) = x > 2)      # [3]
-  chunks([1, 2, 3, 4, 5], 2)              # [[1, 2], [3, 4], [5]]
-  windows([1, 2, 3], 2)                   # [[1, 2], [2, 3]]
+  take_while(numbers fn(x) = x > 2)      # [3]
+  chunks([1 2 3 4 5] 2)              # [[1, 2], [3, 4], [5]]
+  windows([1 2 3] 2)                   # [[1, 2], [2, 3]]
   0..10 |> step_by(5)                     # [0, 5, 10]
 
 Take a list apart with patterns
@@ -2183,7 +2183,7 @@ Take a list apart with patterns
 All the functions: rythme help builtins"#,
             r#"列表
 
-  numbers = [3, 1, 2]
+  numbers = [3 1 2]
   numbers[0]                     # 3（第一个；-1 是最后一个）
   len(numbers)                   # 3
   1..5                           # [1, 2, 3, 4, 5]
@@ -2191,25 +2191,25 @@ All the functions: rythme help builtins"#,
   numbers + [9]                  # [3, 1, 2, 9]
 
 处理整个列表（不需要循环）
-  map(numbers, fn(x) = x * 10)            # [30, 10, 20]
-  filter(numbers, fn(x) = x > 1)          # [3, 2]
-  fold(numbers, 0, fn(acc, x) = acc + x)  # 6
+  map(numbers fn(x) = x * 10)            # [30, 10, 20]
+  filter(numbers fn(x) = x > 1)          # [3, 2]
+  fold(numbers 0 fn(acc x) = acc + x)  # 6
   sort(numbers)                           # [1, 2, 3]
   numbers |> each(fn(x) = print(x))       # 打印每个元素
 
 安全访问（永远不会出错）
   first([])                      # None
-  get(numbers, 10)               # None
+  get(numbers 10)               # None
 
 “修改”列表：你会得到一个新列表，旧列表保持不变
-  set_at(numbers, 0, 9)          # [9, 1, 2]
-  insert_at(numbers, 1, 7)       # [3, 7, 1, 2]
+  set_at(numbers 0 9)          # [9, 1, 2]
+  insert_at(numbers 1 7)       # [3, 7, 1, 2]
   remove_at(numbers, -1)         # [3, 1]
 
 列表的片段
-  take_while(numbers, fn(x) = x > 2)      # [3]
-  chunks([1, 2, 3, 4, 5], 2)              # [[1, 2], [3, 4], [5]]
-  windows([1, 2, 3], 2)                   # [[1, 2], [2, 3]]
+  take_while(numbers fn(x) = x > 2)      # [3]
+  chunks([1 2 3 4 5] 2)              # [[1, 2], [3, 4], [5]]
+  windows([1 2 3] 2)                   # [[1, 2], [2, 3]]
   0..10 |> step_by(5)                     # [0, 5, 10]
 
 用模式拆开列表
@@ -2229,21 +2229,21 @@ All the functions: rythme help builtins"#,
   "a" + "b"                      # "ab"
   len("été")                     # 3 (characters, accents included)
   upper("abc")   lower("ABC")   trim("  x  ")
-  split("a,b,c", ",")            # ["a", "b", "c"]
-  join(["a", "b"], "-")          # "a-b"
-  replace("2024", "4", "5")      # "2025"
-  contains("hello", "ell")       # true
+  split("a,b,c" ",")            # ["a", "b", "c"]
+  join(["a" "b"] "-")          # "a-b"
+  replace("2024" "4" "5")      # "2025"
+  contains("hello" "ell")       # true
   text(42)                       # "42"
-  text(3.14159, 2)               # "3.14" (a number with 2 decimals)
-  pad_left("7", 3, "0")          # "007"  (and pad_right: to line up columns)
+  text(3.14159 2)               # "3.14" (a number with 2 decimals)
+  pad_left("7" 3 "0")          # "007"  (and pad_right: to line up columns)
   char_code("A")   char(66)      # 65 and "B"
   int("42")                      # 42
   parse_int("x42")               # Err(...): a conversion that cannot crash
   trim_start("  x")   trim_end("x  ")
   words("Hi, you!")              # ["Hi", "you"]
-  equals_ignore_case("Ada", "ADA")          # true
-  format_number(1234.5, 2)       # "1,234.50"   (with "fr": "1 234,50")
-  find_all("3 cats, 12 dogs", "[0-9]+")     # ["3", "12"]  (regexes: rythme help regex)
+  equals_ignore_case("Ada" "ADA")          # true
+  format_number(1234.5 2)       # "1,234.50"   (with "fr": "1 234,50")
+  find_all("3 cats, 12 dogs" "[0-9]+")     # ["3", "12"]  (regexes: rythme help regex)
 
 Special characters: \n (new line), \t (tab), \r (carriage return),
 \0 (null character), \" (quote), \\ (backslash), \{ and \} (braces, because
@@ -2256,21 +2256,21 @@ Special characters: \n (new line), \t (tab), \r (carriage return),
   "a" + "b"                      # "ab"
   len("été")                     # 3（字符数，带重音的字母也算一个）
   upper("abc")   lower("ABC")   trim("  x  ")
-  split("a,b,c", ",")            # ["a", "b", "c"]
-  join(["a", "b"], "-")          # "a-b"
-  replace("2024", "4", "5")      # "2025"
-  contains("hello", "ell")       # true
+  split("a,b,c" ",")            # ["a", "b", "c"]
+  join(["a" "b"] "-")          # "a-b"
+  replace("2024" "4" "5")      # "2025"
+  contains("hello" "ell")       # true
   text(42)                       # "42"
-  text(3.14159, 2)               # "3.14"（保留 2 位小数的数字）
-  pad_left("7", 3, "0")          # "007"  （还有 pad_right：用来对齐列）
+  text(3.14159 2)               # "3.14"（保留 2 位小数的数字）
+  pad_left("7" 3 "0")          # "007"  （还有 pad_right：用来对齐列）
   char_code("A")   char(66)      # 65 和 "B"
   int("42")                      # 42
   parse_int("x42")               # Err(...)：不会崩溃的转换
   trim_start("  x")   trim_end("x  ")
   words("Hi, you!")              # ["Hi", "you"]
-  equals_ignore_case("Ada", "ADA")          # true
-  format_number(1234.5, 2)       # "1,234.50"   （用 "fr"："1 234,50"）
-  find_all("3 cats, 12 dogs", "[0-9]+")     # ["3", "12"]  （正则表达式：rythme help regex）
+  equals_ignore_case("Ada" "ADA")          # true
+  format_number(1234.5 2)       # "1,234.50"   （用 "fr"："1 234,50"）
+  find_all("3 cats, 12 dogs" "[0-9]+")     # ["3", "12"]  （正则表达式：rythme help regex）
 
 特殊字符：\n（换行）、\t（制表符）、\r（回车）、\0（空字符）、\"（引号）、
 \\（反斜杠）、\{ 和 \}（花括号，因为 { 会开始一个插入）、
@@ -2280,27 +2280,27 @@ Special characters: \n (new line), \t (tab), \r (carriage return),
             r#"RECORDS
 
 A record groups named values:
-  ada = {name: "Ada", born: 1815}
+  ada = {name: "Ada" born: 1815}
   ada.name                       # "Ada"
   ada["name"]                    # "Ada"
 
 Records never change: build a new one from an old one
-  older = {..ada, born: 1816}    # same fields, `born` replaced
+  older = {..ada born: 1816}    # same fields, `born` replaced
 
 Take apart
-  {name, born} = ada
+  {name born} = ada
   fn greet({name}) = "Hello {name}"
 
 Useful functions
   keys(ada)   values(ada)   has(ada, "name")   get(ada, "x")   put(ada, "x", 1)
   entries(ada)                   # [["name", "Ada"], ["born", 1815]]
-  from_entries([["x", 1]])       # {x: 1}
+  from_entries([["x" 1]])       # {x: 1}
 
 Records as dictionaries
   counts = {apple: 2}
-  put(counts, "pear", 5)         # {apple: 2, pear: 5}
-  map_values(counts, fn(n) = n * 10)      # {apple: 20}
-  group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+  put(counts "pear" 5)         # {apple: 2, pear: 5}
+  map_values(counts fn(n) = n * 10)      # {apple: 20}
+  group_by(["a" "b" "a"] fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
   For keys that are not names (numbers, lists...), use a dict: rythme help dicts
 
 JSON, the format of data on the web
@@ -2309,27 +2309,27 @@ JSON, the format of data on the web
             r#"记录
 
 记录把有名字的值组合在一起：
-  ada = {name: "Ada", born: 1815}
+  ada = {name: "Ada" born: 1815}
   ada.name                       # "Ada"
   ada["name"]                    # "Ada"
 
 记录永远不会改变：从旧记录构造一个新记录
-  older = {..ada, born: 1816}    # 相同的字段，替换了 `born`
+  older = {..ada born: 1816}    # 相同的字段，替换了 `born`
 
 拆开
-  {name, born} = ada
+  {name born} = ada
   fn greet({name}) = "Hello {name}"
 
 有用的函数
   keys(ada)   values(ada)   has(ada, "name")   get(ada, "x")   put(ada, "x", 1)
   entries(ada)                   # [["name", "Ada"], ["born", 1815]]
-  from_entries([["x", 1]])       # {x: 1}
+  from_entries([["x" 1]])       # {x: 1}
 
 把记录当作字典
   counts = {apple: 2}
-  put(counts, "pear", 5)         # {apple: 2, pear: 5}
-  map_values(counts, fn(n) = n * 10)      # {apple: 20}
-  group_by(["a", "b", "a"], fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+  put(counts "pear" 5)         # {apple: 2, pear: 5}
+  map_values(counts fn(n) = n * 10)      # {apple: 20}
+  group_by(["a" "b" "a"] fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
   如果键不是名字（数字、列表……），请使用字典：rythme help dicts
 
 JSON，网络上的数据格式
@@ -2341,24 +2341,24 @@ JSON，网络上的数据格式
 
 A dict (dictionary) gives a value for each key. Keys can be any value but
 functions: numbers, texts, lists, records... They are kept in order.
-  ages = dict([["Ada", 36], ["Alan", 41]])
+  ages = dict([["Ada" 36] ["Alan" 41]])
   ages                           # dict("Ada" => 36, "Alan" => 41)
   ages["Ada"]                    # 36 (an error if the key is missing)
-  get(ages, "Bob")               # None: an Option, never an error
-  grid = dict([[[0, 0], "start"]])   # a list as a key
+  get(ages "Bob")               # None: an Option, never an error
+  grid = dict([[[0 0] "start"]])   # a list as a key
   dict({x: 1})                   # from a record: dict("x" => 1)
 
 Dicts never change: functions give a new one, quickly (in O(log n))
-  put(ages, "Bob", 20)           # added (or replaced)
-  remove(ages, "Ada")            # without this key
+  put(ages "Bob" 20)           # added (or replaced)
+  remove(ages "Ada")            # without this key
   has(ages, "Ada")   len(ages)   keys(ages)   values(ages)   entries(ages)
-  map_values(ages, fn(n) = n + 1)
-  filter(ages, fn(name, age) = age > 40)   # f receives the key and the value
-  ages.each do |name, age| print(name, age) end   # reject and select too
-  union(a, b)                    # both; for a key in both, b's value wins
+  map_values(ages fn(n) = n + 1)
+  filter(ages fn(name age) = age > 40)   # f receives the key and the value
+  ages.each do |name age| print(name age) end   # reject and select too
+  union(a b)                    # both; for a key in both, b's value wins
 
 A set holds values without repetition, in order.
-  s = set([3, 1, 3])             # set(1, 3)
+  s = set([3 1 3])             # set(1, 3)
   has(s, 3)   push(s, 5)   remove(s, 1)   len(s)   values(s)   # values: a list
   union(a, b)   intersection(a, b)   difference(a, b)   is_subset(a, b)
   filter(s, is_odd)   map(s, fn(x) = x * 10)
@@ -2370,24 +2370,24 @@ object, a set as an array; `dict(parse_json(text)?)` reads an object back."#,
 
 字典（dict）为每个键给出一个值。键可以是除函数以外的任何值：数字、文本、
 列表、记录……它们会保持顺序。
-  ages = dict([["Ada", 36], ["Alan", 41]])
+  ages = dict([["Ada" 36] ["Alan" 41]])
   ages                           # dict("Ada" => 36, "Alan" => 41)
   ages["Ada"]                    # 36（如果键不存在则出错）
-  get(ages, "Bob")               # None：一个 Option，永远不会出错
-  grid = dict([[[0, 0], "start"]])   # 用列表作为键
+  get(ages "Bob")               # None：一个 Option，永远不会出错
+  grid = dict([[[0 0] "start"]])   # 用列表作为键
   dict({x: 1})                   # 从记录创建：dict("x" => 1)
 
 字典永远不会改变：函数会很快地给出一个新字典（O(log n)）
-  put(ages, "Bob", 20)           # 添加（或替换）
-  remove(ages, "Ada")            # 去掉这个键
+  put(ages "Bob" 20)           # 添加（或替换）
+  remove(ages "Ada")            # 去掉这个键
   has(ages, "Ada")   len(ages)   keys(ages)   values(ages)   entries(ages)
-  map_values(ages, fn(n) = n + 1)
-  filter(ages, fn(name, age) = age > 40)   # f 接收键和值
-  ages.each do |name, age| print(name, age) end   # reject 和 select 也一样
-  union(a, b)                    # 两者合并；两边都有的键取 b 的值
+  map_values(ages fn(n) = n + 1)
+  filter(ages fn(name age) = age > 40)   # f 接收键和值
+  ages.each do |name age| print(name age) end   # reject 和 select 也一样
+  union(a b)                    # 两者合并；两边都有的键取 b 的值
 
 集合保存不重复的值，并保持顺序。
-  s = set([3, 1, 3])             # set(1, 3)
+  s = set([3 1 3])             # set(1, 3)
   has(s, 3)   push(s, 5)   remove(s, 1)   len(s)   values(s)   # values：一个列表
   union(a, b)   intersection(a, b)   difference(a, b)   is_subset(a, b)
   filter(s, is_odd)   map(s, fn(x) = x * 10)
@@ -2400,7 +2400,7 @@ object, a set as an array; `dict(parse_json(text)?)` reads an object back."#,
             r#"YOUR OWN TYPES
 
 A type lists the possible shapes of a value:
-  type Shape = Circle(radius) | Rect(width, height) | Empty
+  type Shape = Circle(radius) | Rect(width height) | Empty
 
   c = Circle(2.0)
   c.radius                       # 2.0
@@ -2414,17 +2414,17 @@ Handle each shape with match
 
 Or with one definition per shape
   fn perimeter(Circle(r)) = 2 * pi * r
-  fn perimeter(Rect(w, h)) = 2 * (w + h)
+  fn perimeter(Rect(w h)) = 2 * (w + h)
   fn perimeter(Empty) = 0
 
 If you forget a shape, `rythme check` tells you which one.
 
 A type can contain itself (trees...):
-  type Tree = Leaf | Node(left, value, right)"#,
+  type Tree = Leaf | Node(left value right)"#,
             r#"你自己的类型
 
 类型列出一个值可能的形状：
-  type Shape = Circle(radius) | Rect(width, height) | Empty
+  type Shape = Circle(radius) | Rect(width height) | Empty
 
   c = Circle(2.0)
   c.radius                       # 2.0
@@ -2438,13 +2438,13 @@ A type can contain itself (trees...):
 
 或者每种形状一个定义
   fn perimeter(Circle(r)) = 2 * pi * r
-  fn perimeter(Rect(w, h)) = 2 * (w + h)
+  fn perimeter(Rect(w h)) = 2 * (w + h)
   fn perimeter(Empty) = 0
 
 如果你漏掉了某种形状，`rythme check` 会告诉你是哪一种。
 
 类型可以包含它自己（树……）：
-  type Tree = Leaf | Node(left, value, right)"#,
+  type Tree = Leaf | Node(left value right)"#,
         ),
         (
             r#"MATCH AND PATTERNS
@@ -2472,9 +2472,9 @@ Patterns
   a | b                          one pattern or the other
 
 Patterns work everywhere a name is given:
-  [x, y] = [1, 2]
+  [x y] = [1 2]
   fn head_or_zero([]) = 0
-  fn head_or_zero([x, ..]) = x"#,
+  fn head_or_zero([x ..]) = x"#,
             r#"MATCH 和模式
 
 `match` 把一个值按顺序与各个模式比较，给出第一个匹配的模式的结果：
@@ -2499,9 +2499,9 @@ Patterns work everywhere a name is given:
   a | b                          这个模式或那个模式
 
 凡是给出名字的地方都可以使用模式：
-  [x, y] = [1, 2]
+  [x y] = [1 2]
   fn head_or_zero([]) = 0
-  fn head_or_zero([x, ..]) = x"#,
+  fn head_or_zero([x ..]) = x"#,
         ),
         (
             r#"ERRORS ARE VALUES (Option, Result, ?)
@@ -2510,7 +2510,7 @@ Rythme has no null and no exceptions. A value that may be missing is an
 Option: Some(value) or None. An operation that may fail gives a Result:
 Ok(value) or Err(message). You cannot forget to handle them.
 
-  fn divide(a, b) = if b == 0 then Err("division by zero") else Ok(a / b)
+  fn divide(a b) = if b == 0 then Err("division by zero") else Ok(a / b)
 
   match divide(10, 2)
     Ok(x) -> print("result: {x}")
@@ -2525,13 +2525,13 @@ The ? operator: take the value, or stop and pass the error on
   end
 
 Quick tools
-  unwrap_or(get(list, 5), 0)     # the value, or a default
+  unwrap_or(get(list 5) 0)     # the value, or a default
   unwrap(Some(3))                # 3 (stops the program on None or Err)
   is_some(x)   is_none(x)   is_ok(x)   is_err(x)
-  map(Some(2), fn(x) = x * 10)   # Some(20)
-  ok_or(get(person, "age"), "no age")   # Err("no age") if missing: ready for ?
-  and_then(x, f)                 # one more step that may fail
-  map_err(r, fn(e) = "config: {e}")     # explain an error better
+  map(Some(2) fn(x) = x * 10)   # Some(20)
+  ok_or(get(person "age") "no age")   # Err("no age") if missing: ready for ?
+  and_then(x f)                 # one more step that may fail
+  map_err(r fn(e) = "config: {e}")     # explain an error better
 
 To stop the whole program: fail("message")."#,
             r#"错误也是值（Option、Result、?）
@@ -2539,7 +2539,7 @@ To stop the whole program: fail("message")."#,
 Rythme 没有 null，也没有异常。可能缺失的值是 Option：Some(value) 或 None。
 可能失败的操作给出 Result：Ok(value) 或 Err(message)。你不会忘记处理它们。
 
-  fn divide(a, b) = if b == 0 then Err("division by zero") else Ok(a / b)
+  fn divide(a b) = if b == 0 then Err("division by zero") else Ok(a / b)
 
   match divide(10, 2)
     Ok(x) -> print("result: {x}")
@@ -2554,13 +2554,13 @@ Rythme 没有 null，也没有异常。可能缺失的值是 Option：Some(value
   end
 
 便捷工具
-  unwrap_or(get(list, 5), 0)     # 这个值，或者一个默认值
+  unwrap_or(get(list 5) 0)     # 这个值，或者一个默认值
   unwrap(Some(3))                # 3（遇到 None 或 Err 时停止程序）
   is_some(x)   is_none(x)   is_ok(x)   is_err(x)
-  map(Some(2), fn(x) = x * 10)   # Some(20)
-  ok_or(get(person, "age"), "no age")   # 缺失时为 Err("no age")：可以直接用 ?
-  and_then(x, f)                 # 再加一个可能失败的步骤
-  map_err(r, fn(e) = "config: {e}")     # 把错误解释得更清楚
+  map(Some(2) fn(x) = x * 10)   # Some(20)
+  ok_or(get(person "age") "no age")   # 缺失时为 Err("no age")：可以直接用 ?
+  and_then(x f)                 # 再加一个可能失败的步骤
+  map_err(r fn(e) = "config: {e}")     # 把错误解释得更清楚
 
 要停止整个程序：fail("message")。"#,
         ),
@@ -2585,15 +2585,15 @@ Instead of "while":                  a recursive function
   total = numbers |> map(fn(x) = x * x) |> sum
 
   # A "while" loop as a recursive function:
-  fn collatz(1, steps) = steps
+  fn collatz(1 steps) = steps
   fn collatz(n, steps) =
-    if n % 2 == 0 then collatz(n // 2, steps + 1) else collatz(3 * n + 1, steps + 1)
-  collatz(27, 0)                 # 111
+    if n % 2 == 0 then collatz(n // 2 steps + 1) else collatz(3 * n + 1 steps + 1)
+  collatz(27 0)                 # 111
 
 Instead of changing a value, make a new one:
   x2 = x + 1
-  person2 = {..person, age: 37}
-  list2 = push(list, 4)"#,
+  person2 = {..person age: 37}
+  list2 = push(list 4)"#,
             r#"函数式思维
 
 在 Rythme 中，值永远不会改变，也没有循环。这可能看起来很奇怪，但程序会变得
@@ -2613,15 +2613,15 @@ Instead of changing a value, make a new one:
   total = numbers |> map(fn(x) = x * x) |> sum
 
   # 用递归函数实现 "while" 循环：
-  fn collatz(1, steps) = steps
+  fn collatz(1 steps) = steps
   fn collatz(n, steps) =
-    if n % 2 == 0 then collatz(n // 2, steps + 1) else collatz(3 * n + 1, steps + 1)
-  collatz(27, 0)                 # 111
+    if n % 2 == 0 then collatz(n // 2 steps + 1) else collatz(3 * n + 1 steps + 1)
+  collatz(27 0)                 # 111
 
 不要修改值，而是创建一个新值：
   x2 = x + 1
-  person2 = {..person, age: 37}
-  list2 = push(list, 4)"#,
+  person2 = {..person age: 37}
+  list2 = push(list 4)"#,
         ),
         (
             r#"TESTS
@@ -2629,11 +2629,11 @@ Instead of changing a value, make a new one:
 Write tests next to your code:
   fn double(x) = x * 2
 
-  test "double of 2 is 4" = assert_eq(double(2), 4)
+  test "double of 2 is 4" = assert_eq(double(2) 4)
 
   test "several checks"
-    assert_eq(double(0), 0)
-    assert(double(-1) < 0, "should stay negative")
+    assert_eq(double(0) 0)
+    assert(double(-1) < 0 "should stay negative")
   end
 
 Run them:
@@ -2651,7 +2651,7 @@ counts and the time; the exit code is 0 when every test passes.
 
 Property tests: check that something holds for many values
   test "reversing twice gives the list back" =
-    check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+    check_all(fn(l) = reverse(reverse(l)) == l lists_of(ints()))
 
 Generators: ints(min, max), floats(min, max), texts(max_length), bools(),
 lists_of(generator, max_length), one_of(list), records_of({x: ints(), y: texts()}).
@@ -2664,11 +2664,11 @@ same values come back on every run, and `--seed N` tries others
 把测试写在代码旁边：
   fn double(x) = x * 2
 
-  test "double of 2 is 4" = assert_eq(double(2), 4)
+  test "double of 2 is 4" = assert_eq(double(2) 4)
 
   test "several checks"
-    assert_eq(double(0), 0)
-    assert(double(-1) < 0, "should stay negative")
+    assert_eq(double(0) 0)
+    assert(double(-1) < 0 "should stay negative")
   end
 
 运行测试：
@@ -2685,7 +2685,7 @@ same values come back on every run, and `--seed N` tries others
 
 属性测试：检查某个性质对许多值都成立
   test "reversing twice gives the list back" =
-    check_all(fn(l) = reverse(reverse(l)) == l, lists_of(ints()))
+    check_all(fn(l) = reverse(reverse(l)) == l lists_of(ints()))
 
 生成器：ints(min, max)、floats(min, max)、texts(max_length)、bools()、
 lists_of(generator, max_length)、one_of(list)、records_of({x: ints(), y: texts()})。
@@ -2733,12 +2733,12 @@ Rythme 自带 36 个分级练习，适合入门课程，内容从最初的值到
 
   # geometry.ry
   ## Area of a rectangle.
-  fn area(w, h) = w * h
+  fn area(w h) = w * h
   fn _check(x) = x >= 0          # private: starts with `_`
 
   # main.ry
   use geometry                    # the file geometry.ry, next to main.ry
-  print(geometry.area(2, 3))      # 6
+  print(geometry.area(2 3))      # 6
 
 `use geometry` gives the definitions of geometry.ry through its name:
 `geometry.area`, `geometry.Circle(1)`, and in a `match`, `geometry.Circle(r)`.
@@ -2756,12 +2756,12 @@ as `area(2, 3)`; prefer `use geometry`."#,
 
   # geometry.ry
   ## Area of a rectangle.
-  fn area(w, h) = w * h
+  fn area(w h) = w * h
   fn _check(x) = x >= 0          # 私有：以 `_` 开头
 
   # main.ry
   use geometry                    # 文件 geometry.ry，和 main.ry 在同一位置
-  print(geometry.area(2, 3))      # 6
+  print(geometry.area(2 3))      # 6
 
 `use geometry` 通过名字提供 geometry.ry 的定义：`geometry.area`、
 `geometry.Circle(1)`，在 `match` 中则是 `geometry.Circle(r)`。这样你总能
@@ -2783,8 +2783,8 @@ Err(message) with a message that says what went wrong.
 
 Files and folders (relative paths start in the current folder)
   read_file("notes.txt")         # Ok("...") or Err("file not found: notes.txt")
-  write_file("out.txt", "hi")    # Ok(()), replaces the content
-  append_file("log.txt", "done\n")
+  write_file("out.txt" "hi")    # Ok(()), replaces the content
+  append_file("log.txt" "done\n")
   file_exists("notes.txt")       # true or false
   file_info("notes.txt")         # Ok({is_folder: false, size: 11}), in bytes
   list_folder(".")               # Ok(["notes.txt", "photos"]), in order
@@ -2792,7 +2792,7 @@ Files and folders (relative paths start in the current folder)
   delete_file("old.txt")         # Ok(()); never a folder
 
 Paths that work on Linux, macOS and Windows
-  join_path(["data", "notes.txt"])       # "data/notes.txt"
+  join_path(["data" "notes.txt"])       # "data/notes.txt"
   split_path("/home/ada/notes.txt")      # ["/", "home", "ada", "notes.txt"]
   split_path("C:\Users\ada")             # ["C:\", "Users", "ada"]
 
@@ -2800,7 +2800,7 @@ The command line: rythme tool.ry --verbose --name=Ada notes.txt
   args()                         # ["--verbose", "--name=Ada", "notes.txt"]
   options()                      # Ok({args: ["notes.txt"], verbose: true, name: "Ada"})
   opts = unwrap(options())
-  name = unwrap_or(get(opts, "name"), "World")   # an option that may be missing
+  name = unwrap_or(get(opts "name") "World")   # an option that may be missing
   env("HOME")                    # Some("/home/ada") or None
 
 The standard input: rythme count.ry < names.txt
@@ -2823,8 +2823,8 @@ functions give Err("... is not available in the browser ...")."#,
 
 文件和文件夹（相对路径从当前文件夹开始）
   read_file("notes.txt")         # Ok("...") 或 Err("file not found: notes.txt")
-  write_file("out.txt", "hi")    # Ok(())，替换原有内容
-  append_file("log.txt", "done\n")
+  write_file("out.txt" "hi")    # Ok(())，替换原有内容
+  append_file("log.txt" "done\n")
   file_exists("notes.txt")       # true 或 false
   file_info("notes.txt")         # Ok({is_folder: false, size: 11})，单位是字节
   list_folder(".")               # Ok(["notes.txt", "photos"])，按顺序排列
@@ -2832,7 +2832,7 @@ functions give Err("... is not available in the browser ...")."#,
   delete_file("old.txt")         # Ok(())；从不删除文件夹
 
 在 Linux、macOS 和 Windows 上都能用的路径
-  join_path(["data", "notes.txt"])       # "data/notes.txt"
+  join_path(["data" "notes.txt"])       # "data/notes.txt"
   split_path("/home/ada/notes.txt")      # ["/", "home", "ada", "notes.txt"]
   split_path("C:\Users\ada")             # ["C:\", "Users", "ada"]
 
@@ -2840,7 +2840,7 @@ functions give Err("... is not available in the browser ...")."#,
   args()                         # ["--verbose", "--name=Ada", "notes.txt"]
   options()                      # Ok({args: ["notes.txt"], verbose: true, name: "Ada"})
   opts = unwrap(options())
-  name = unwrap_or(get(opts, "name"), "World")   # 一个可能缺失的选项
+  name = unwrap_or(get(opts "name") "World")   # 一个可能缺失的选项
   env("HOME")                    # Some("/home/ada") 或 None
 
 标准输入：rythme count.ry < names.txt
@@ -2929,24 +2929,24 @@ A date is a record: {year, month, day}, with hour, minute and second for a
 moment of the day, and offset (minutes ahead of UTC) when it is known.
   today()                        # {year: 2026, month: 10, day: 18}
   now()                          # {year: 2026, ..., hour: 14, minute: 5, second: 9, offset: 120}
-  birthday = {year: 1815, month: 12, day: 10}
+  birthday = {year: 1815 month: 12 day: 10}
   birthday.year                  # 1815
 
 Text and back, in the ISO 8601 form
   parse_date("2024-02-29")       # Ok({year: 2024, month: 2, day: 29})
   parse_date("2024-02-30")       # Err("... February 2024 ...")
   parse_date("2024-02-29T13:05:00+01:00")    # with a time and an offset
-  format_date({year: 2024, month: 2, day: 29, hour: 9})   # "2024-02-29T09:00:00"
+  format_date({year: 2024 month: 2 day: 29 hour: 9})   # "2024-02-29T09:00:00"
 
 Calendar arithmetic (leap years and month lengths included)
-  add_days({year: 2024, month: 2, day: 28}, 1)     # {year: 2024, month: 2, day: 29}
-  add_seconds(now(), 3600)       # in one hour
-  days_between(today(), {year: 2027, month: 1, day: 1})   # days left
-  seconds_between(a, b)          # negative when b is before a
+  add_days({year: 2024 month: 2 day: 28} 1)     # {year: 2024, month: 2, day: 29}
+  add_seconds(now() 3600)       # in one hour
+  days_between(today() {year: 2027 month: 1 day: 1})   # days left
+  seconds_between(a b)          # negative when b is before a
   day_of_week(today())           # 1 = Monday ... 7 = Sunday
-  days_in_month(2023, 2)         # 28
+  days_in_month(2023 2)         # 28
   is_leap_year(2000)             # true
-  is_date({year: 2023, month: 2, day: 29})   # false
+  is_date({year: 2023 month: 2 day: 29})   # false
 
 A date that does not exist stops the functions with E023, which says why.
 The local offset comes from the system (UTC when it does not tell); time()
@@ -2957,24 +2957,24 @@ gives seconds since 1970 as a Float, to measure durations."#,
 和 second，已知时差时还有 offset（比 UTC 快的分钟数）。
   today()                        # {year: 2026, month: 10, day: 18}
   now()                          # {year: 2026, ..., hour: 14, minute: 5, second: 9, offset: 120}
-  birthday = {year: 1815, month: 12, day: 10}
+  birthday = {year: 1815 month: 12 day: 10}
   birthday.year                  # 1815
 
 与 ISO 8601 格式的文本互相转换
   parse_date("2024-02-29")       # Ok({year: 2024, month: 2, day: 29})
   parse_date("2024-02-30")       # Err("... 2024年2月 ...")
   parse_date("2024-02-29T13:05:00+01:00")    # 带时间和时差
-  format_date({year: 2024, month: 2, day: 29, hour: 9})   # "2024-02-29T09:00:00"
+  format_date({year: 2024 month: 2 day: 29 hour: 9})   # "2024-02-29T09:00:00"
 
 日历计算（考虑闰年和每月天数）
-  add_days({year: 2024, month: 2, day: 28}, 1)     # {year: 2024, month: 2, day: 29}
-  add_seconds(now(), 3600)       # 一小时后
-  days_between(today(), {year: 2027, month: 1, day: 1})   # 剩余天数
-  seconds_between(a, b)          # b 在 a 之前时为负数
+  add_days({year: 2024 month: 2 day: 28} 1)     # {year: 2024, month: 2, day: 29}
+  add_seconds(now() 3600)       # 一小时后
+  days_between(today() {year: 2027 month: 1 day: 1})   # 剩余天数
+  seconds_between(a b)          # b 在 a 之前时为负数
   day_of_week(today())           # 1 = 星期一 ... 7 = 星期日
-  days_in_month(2023, 2)         # 28
+  days_in_month(2023 2)         # 28
   is_leap_year(2000)             # true
-  is_date({year: 2023, month: 2, day: 29})   # false
+  is_date({year: 2023 month: 2 day: 29})   # false
 
 不存在的日期会让函数以 E023 停止，并说明原因。
 本地时差来自系统（系统没有提供时为 UTC）；time() 以 Float 给出从 1970 年
@@ -2987,14 +2987,14 @@ A regex (regular expression) describes pieces of text: "[0-9]+" means "one
 digit or more". Rythme reads the usual regexes, and a search never takes
 more than (length of the text) × (size of the regex).
 
-  matches("2024", "[0-9]+")                  # true: the WHOLE text matches
-  find_first("tel: 06 12", "[0-9]+")         # Some("06"): the first piece
-  find_all("3 cats, 12 dogs", "[0-9]+")      # ["3", "12"]
-  split_by("a, b;c", "[,;] *")               # ["a", "b", "c"]
-  replace_all("a cat", "\\b\\w", upper)      # "A Cat" (a function for each piece)
-  replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1")   # "2024-02-29"
-  captures("2024-02", "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
-  named_captures("2024-02", "(?<year>[0-9]+)-(?<month>[0-9]+)")
+  matches("2024" "[0-9]+")                  # true: the WHOLE text matches
+  find_first("tel: 06 12" "[0-9]+")         # Some("06"): the first piece
+  find_all("3 cats, 12 dogs" "[0-9]+")      # ["3", "12"]
+  split_by("a, b;c" "[,;] *")               # ["a", "b", "c"]
+  replace_all("a cat" "\\b\\w" upper)      # "A Cat" (a function for each piece)
+  replace_all("29/02/2024" "(\\d+)/(\\d+)/(\\d+)" "$3-$2-$1")   # "2024-02-29"
+  captures("2024-02" "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
+  named_captures("2024-02" "(?<year>[0-9]+)-(?<month>[0-9]+)")
                                              # Some({year: "2024", month: "02"})
 
 What a regex can say
@@ -3026,14 +3026,14 @@ when the regex is written in the code, `rythme check` finds it before."#,
 Rythme 能读懂常见的正则表达式，而且一次搜索的耗时不会超过
 （文本长度）×（正则表达式的大小）。
 
-  matches("2024", "[0-9]+")                  # true：整个文本都匹配
-  find_first("tel: 06 12", "[0-9]+")         # Some("06")：第一个片段
-  find_all("3 cats, 12 dogs", "[0-9]+")      # ["3", "12"]
-  split_by("a, b;c", "[,;] *")               # ["a", "b", "c"]
-  replace_all("a cat", "\\b\\w", upper)      # "A Cat"（对每个片段调用一个函数）
-  replace_all("29/02/2024", "(\\d+)/(\\d+)/(\\d+)", "$3-$2-$1")   # "2024-02-29"
-  captures("2024-02", "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
-  named_captures("2024-02", "(?<year>[0-9]+)-(?<month>[0-9]+)")
+  matches("2024" "[0-9]+")                  # true：整个文本都匹配
+  find_first("tel: 06 12" "[0-9]+")         # Some("06")：第一个片段
+  find_all("3 cats, 12 dogs" "[0-9]+")      # ["3", "12"]
+  split_by("a, b;c" "[,;] *")               # ["a", "b", "c"]
+  replace_all("a cat" "\\b\\w" upper)      # "A Cat"（对每个片段调用一个函数）
+  replace_all("29/02/2024" "(\\d+)/(\\d+)/(\\d+)" "$3-$2-$1")   # "2024-02-29"
+  captures("2024-02" "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
+  named_captures("2024-02" "(?<year>[0-9]+)-(?<month>[0-9]+)")
                                              # Some({year: "2024", month: "02"})
 
 正则表达式能表达什么
@@ -3107,7 +3107,7 @@ the same, and nobody has to argue about spaces.
 The style
   - 2 spaces per level of indentation
   - spaces around operators: x = a + b * 2   xs |> map(f)   n -> n * 2
-  - none inside brackets or around ..: f(x)   [1, 2]   {name: "Ada"}   1..10
+  - none inside brackets or around ..: f(x)   [1 2]   {name: "Ada"}   1..10
   - a pipeline written on several lines: one step per line
       total = prices
         |> filter(fn(p) = p > 10)
@@ -3115,8 +3115,9 @@ The style
   - a type written on several lines: one variant per line
       type Shape =
         | Circle(radius)
-        | Rect(width, height)
-  - a list written on several lines ends with a comma
+        | Rect(width height)
+  - no commas between elements, as in REBOL: [1 2]   f(a b)   print x y;
+    one stays where the next element would continue the one before: [x, -1]
   - a block written on one line stays on one line:
       xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
     on several lines, its statements go one level deeper than `do`
@@ -3143,7 +3144,7 @@ a syntax error is left as it is, and the error is shown."#,
 风格
   - 每级缩进 2 个空格
   - 运算符两边有空格：x = a + b * 2   xs |> map(f)   n -> n * 2
-  - 括号内侧和 .. 两边没有空格：f(x)   [1, 2]   {name: "Ada"}   1..10
+  - 括号内侧和 .. 两边没有空格：f(x)   [1 2]   {name: "Ada"}   1..10
   - 写成多行的管道：每行一个步骤
       total = prices
         |> filter(fn(p) = p > 10)
@@ -3151,8 +3152,9 @@ a syntax error is left as it is, and the error is shown."#,
   - 写成多行的类型：每行一个变体
       type Shape =
         | Circle(radius)
-        | Rect(width, height)
-  - 写成多行的列表以逗号结尾
+        | Rect(width height)
+  - 像 REBOL 一样，元素之间不写逗号：[1 2]   f(a b)   print x y；
+    只有下一个元素会接到前一个元素上时才保留一个：[x, -1]
   - 写在一行的代码块保持在一行：
       xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
     写成多行时，其中的语句比 `do` 深一级
@@ -3179,11 +3181,11 @@ Write a `##` comment just above what it documents:
   ## Shapes and their areas.      <- at the top, followed by a blank line:
                                      it describes the whole file
   ## A shape to draw.
-  type Shape = Circle(radius) | Rect(width, height)
+  type Shape = Circle(radius) | Rect(width height)
 
   ## The area of a shape. See `len` and `area`.
   fn area(Circle(r)) = pi * r * r
-  fn area(Rect(w, h)) = w * h
+  fn area(Rect(w h)) = w * h
 
 What is written
   - for each file: its description, the files it uses (documented too),
@@ -3212,11 +3214,11 @@ with `- ` make a list."#,
   ## Shapes and their areas.      <- 在文件顶部，后面跟一个空行：
                                      它描述整个文件
   ## A shape to draw.
-  type Shape = Circle(radius) | Rect(width, height)
+  type Shape = Circle(radius) | Rect(width height)
 
   ## The area of a shape. See `len` and `area`.
   fn area(Circle(r)) = pi * r * r
-  fn area(Rect(w, h)) = w * h
+  fn area(Rect(w h)) = w * h
 
 生成的内容
   - 每个文件：它的说明、它使用的文件（同样生成文档）、它的类型、它的函数
@@ -3356,7 +3358,7 @@ RYTHME_LANG 指定：rythme --lang zh lsp"#,
 Rythme reads like Ruby, but its values never change: no mutation, no nil,
 no exceptions. What you know from Ruby mostly works:
 
-  names = ["Ada", "Grace", "Alan"]
+  names = ["Ada" "Grace" "Alan"]
   names.each do |name|
     puts "Hello, #{name}!"
   end
@@ -3436,7 +3438,7 @@ When ? is part of a name
 Rythme 读起来像 Ruby，但它的值永远不会改变：没有修改，没有 nil，没有异常。
 你在 Ruby 中学到的大部分东西都能用：
 
-  names = ["Ada", "Grace", "Alan"]
+  names = ["Ada" "Grace" "Alan"]
   names.each do |name|
     puts "Hello, #{name}!"
   end
@@ -3517,7 +3519,7 @@ const that never changes (arrays and objects too), there is no null, no
 undefined and no exceptions, and == never converts. What you write every
 day has a short equivalent:
 
-  names = ["Ada", "Grace", "Alan"]
+  names = ["Ada" "Grace" "Alan"]
   names.each(fn(n) = print("Hi {n}!"))
 
   [3, 1, 2]
@@ -3525,8 +3527,8 @@ day has a short equivalent:
     .map(fn(x) = x * 10)
     .sort()                      # [20, 30]
 
-  person = {name: "Ada", langs: ["fr"]}
-  older = {..person, age: 36}    # {...person, age: 36}
+  person = {name: "Ada" langs: ["fr"]}
+  older = {..person age: 36}    # {...person, age: 36}
 
 The language
   const x = 1                    x = 1 (a name never changes)
@@ -3591,7 +3593,7 @@ Rythme 看起来像没有陷阱的现代 JavaScript：每个值都是永远不�
 （数组和对象也是），没有 null，没有 undefined，也没有异常，而且 == 从不
 做类型转换。你每天写的东西都有简短的对应写法：
 
-  names = ["Ada", "Grace", "Alan"]
+  names = ["Ada" "Grace" "Alan"]
   names.each(fn(n) = print("Hi {n}!"))
 
   [3, 1, 2]
@@ -3599,8 +3601,8 @@ Rythme 看起来像没有陷阱的现代 JavaScript：每个值都是永远不�
     .map(fn(x) = x * 10)
     .sort()                      # [20, 30]
 
-  person = {name: "Ada", langs: ["fr"]}
-  older = {..person, age: 36}    # {...person, age: 36}
+  person = {name: "Ada" langs: ["fr"]}
+  older = {..person age: 36}    # {...person, age: 36}
 
 语言本身
   const x = 1                    x = 1（名字永远不会改变）
@@ -3846,12 +3848,12 @@ Safe:    get([10, 20], 2)         # None, never an error"#,
 
 Dividing by zero has no meaning. Check the divisor before, or return a Result.
 
-  fn divide(a, b) = if b == 0 then Err("division by zero") else Ok(a / b)"#,
+  fn divide(a b) = if b == 0 then Err("division by zero") else Ok(a / b)"#,
             r#"E008 — 除以零
 
 除以零没有意义。请先检查除数，或者返回一个 Result。
 
-  fn divide(a, b) = if b == 0 then Err("division by zero") else Ok(a / b)"#,
+  fn divide(a b) = if b == 0 then Err("division by zero") else Ok(a / b)"#,
         ),
         (
             r#"E009 — Not a function
@@ -3882,7 +3884,7 @@ has no such key (`dict[key]`).
 Wrong:   {name: "Ada"}.nmae
 Right:   {name: "Ada"}.name
 Safe:    get(record, "name")     # an Option, never an error
-         get(dict, key)          # the same for a dict
+         get(dict key)          # the same for a dict
 
 When the fields of the record are certain, `rythme check` finds this mistake
 before the program runs, and suggests the closest field."#,
@@ -3893,7 +3895,7 @@ before the program runs, and suggests the closest field."#,
 错误：   {name: "Ada"}.nmae
 正确：   {name: "Ada"}.name
 安全：   get(record, "name")     # 一个 Option，永远不会出错
-         get(dict, key)          # 字典也一样
+         get(dict key)          # 字典也一样
 
 当记录的字段确定时，`rythme check` 会在程序运行之前发现这个错误，并建议
 最接近的字段。"#,
@@ -3991,9 +3993,9 @@ recursive call is the very last thing it does (a tail call): those calls
 have no limit.
 
 Limited:     fn sum([]) = 0
-             fn sum([x, ..rest]) = x + sum(rest)       # + happens after
+             fn sum([x ..rest]) = x + sum(rest)       # + happens after
 No limit:    fn sum([], acc) = acc
-             fn sum([x, ..rest], acc) = sum(rest, acc + x)
+             fn sum([x ..rest] acc) = sum(rest acc + x)
 Simplest:    sum(list)  or  fold(list, 0, fn(a, x) = a + x)"#,
             r#"E014 — 嵌套调用太多
 
@@ -4002,9 +4004,9 @@ Simplest:    sum(list)  or  fold(list, 0, fn(a, x) = a + x)"#,
 调用没有上限。
 
 有限制：     fn sum([]) = 0
-             fn sum([x, ..rest]) = x + sum(rest)       # + 在调用之后进行
+             fn sum([x ..rest]) = x + sum(rest)       # + 在调用之后进行
 无限制：     fn sum([], acc) = acc
-             fn sum([x, ..rest], acc) = sum(rest, acc + x)
+             fn sum([x ..rest] acc) = sum(rest acc + x)
 最简单：     sum(list)  或  fold(list, 0, fn(a, x) = a + x)"#,
         ),
         (
@@ -4499,7 +4501,7 @@ parameter of another function.
 
 Wrong:   fn show(xs) = print(xs)
          fn twice(show) = show * 2
-         show [1, 2]                  # W011: an index of the function
+         show [1 2]                  # W011: an index of the function
 Right:   show([1, 2])
 Or give the parameter another name: fn twice(n) = n * 2"#,
             r#"W011 — 索引或减法，而不是调用
@@ -4511,7 +4513,7 @@ Or give the parameter another name: fn twice(n) = n * 2"#,
 
 错误：   fn show(xs) = print(xs)
          fn twice(show) = show * 2
-         show [1, 2]                  # W011：对函数取索引
+         show [1 2]                  # W011：对函数取索引
 正确：   show([1, 2])
 或者给参数换个名字：fn twice(n) = n * 2"#,
         ),
@@ -4751,13 +4753,13 @@ summary = ""
 
 # --- Tests (do not change them) ---
 
-test "seconds in an hour" = assert_eq(seconds_per_hour, 3600)
+test "seconds in an hour" = assert_eq(seconds_per_hour 3600)
 
-test "seconds in a day" = assert_eq(seconds_per_day, 86400)
+test "seconds in a day" = assert_eq(seconds_per_day 86400)
 
-test "seconds in a week" = assert_eq(seconds_per_week, 604800)
+test "seconds in a week" = assert_eq(seconds_per_week 604800)
 
-test "the summary" = assert_eq(summary, "A week has 604800 seconds.")
+test "the summary" = assert_eq(summary "A week has 604800 seconds.")
 "#,
             r#"# 练习 01 · 最初的值  ★☆☆
 #
@@ -4788,13 +4790,13 @@ summary = ""
 
 # --- 测试（请不要修改）---
 
-test "一小时的秒数" = assert_eq(seconds_per_hour, 3600)
+test "一小时的秒数" = assert_eq(seconds_per_hour 3600)
 
-test "一天的秒数" = assert_eq(seconds_per_day, 86400)
+test "一天的秒数" = assert_eq(seconds_per_day 86400)
 
-test "一周的秒数" = assert_eq(seconds_per_week, 604800)
+test "一周的秒数" = assert_eq(seconds_per_week 604800)
 
-test "总结" = assert_eq(summary, "一周有 604800 秒。")
+test "总结" = assert_eq(summary "一周有 604800 秒。")
 "#,
         ),
         ("02-texts", "02-texts"),
@@ -4827,28 +4829,28 @@ fn greet(name) = fail("to do")
 fn shout(text) = fail("to do")
 
 ## The initials of a person, each followed by a dot.
-fn initials(first, last) = fail("to do")
+fn initials(first last) = fail("to do")
 
 ## A sentence that introduces a person.
-fn introduce(name, age) = fail("to do")
+fn introduce(name age) = fail("to do")
 
 # --- Tests (do not change them) ---
 
-test "greet" = assert_eq(greet("Ada"), "Hello, Ada!")
+test "greet" = assert_eq(greet("Ada") "Hello, Ada!")
 
-test "greet someone else" = assert_eq(greet("Alan"), "Hello, Alan!")
+test "greet someone else" = assert_eq(greet("Alan") "Hello, Alan!")
 
 test "shout"
-  assert_eq(shout("hello"), "HELLO!")
-  assert_eq(shout("Stop"), "STOP!")
+  assert_eq(shout("hello") "HELLO!")
+  assert_eq(shout("Stop") "STOP!")
 end
 
 test "initials"
-  assert_eq(initials("Ada", "Lovelace"), "A.L.")
-  assert_eq(initials("grace", "hopper"), "g.h.")
+  assert_eq(initials("Ada" "Lovelace") "A.L.")
+  assert_eq(initials("grace" "hopper") "g.h.")
 end
 
-test "introduce" = assert_eq(introduce("Ada", 36), "Ada is 36 years old.")
+test "introduce" = assert_eq(introduce("Ada" 36) "Ada is 36 years old.")
 "#,
             r#"# 练习 02 · 文本  ★☆☆
 #
@@ -4878,28 +4880,28 @@ fn greet(name) = fail("待完成")
 fn shout(text) = fail("待完成")
 
 ## 一个人的姓名首字母，每个后面跟一个点。
-fn initials(first, last) = fail("待完成")
+fn initials(first last) = fail("待完成")
 
 ## 介绍一个人的句子。
-fn introduce(name, age) = fail("待完成")
+fn introduce(name age) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
-test "问候" = assert_eq(greet("Ada"), "你好，Ada！")
+test "问候" = assert_eq(greet("Ada") "你好，Ada！")
 
-test "问候另一个人" = assert_eq(greet("Alan"), "你好，Alan！")
+test "问候另一个人" = assert_eq(greet("Alan") "你好，Alan！")
 
 test "大喊"
-  assert_eq(shout("hello"), "HELLO!")
-  assert_eq(shout("Stop"), "STOP!")
+  assert_eq(shout("hello") "HELLO!")
+  assert_eq(shout("Stop") "STOP!")
 end
 
 test "首字母"
-  assert_eq(initials("Ada", "Lovelace"), "A.L.")
-  assert_eq(initials("grace", "hopper"), "g.h.")
+  assert_eq(initials("Ada" "Lovelace") "A.L.")
+  assert_eq(initials("grace" "hopper") "g.h.")
 end
 
-test "介绍" = assert_eq(introduce("Ada", 36), "Ada 今年 36 岁。")
+test "介绍" = assert_eq(introduce("Ada" 36) "Ada 今年 36 岁。")
 "#,
         ),
         ("03-arithmetic", "03-arithmetic"),
@@ -4930,42 +4932,42 @@ test "介绍" = assert_eq(introduce("Ada", 36), "Ada 今年 36 岁。")
 
 fn square(x) = fail("to do")
 
-fn average(a, b) = fail("to do")
+fn average(a b) = fail("to do")
 
 fn fahrenheit(celsius) = fail("to do")
 
-fn hypotenuse(a, b) = fail("to do")
+fn hypotenuse(a b) = fail("to do")
 
 fn minutes_and_seconds(total) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "square"
-  assert_eq(square(3), 9)
-  assert_eq(square(-4), 16)
-  assert_eq(square(1.5), 2.25)
+  assert_eq(square(3) 9)
+  assert_eq(square(-4) 16)
+  assert_eq(square(1.5) 2.25)
 end
 
 test "average"
-  assert_eq(average(2, 4), 3)
-  assert_eq(average(1, 2), 1.5)
+  assert_eq(average(2 4) 3)
+  assert_eq(average(1 2) 1.5)
 end
 
 test "fahrenheit"
-  assert_eq(fahrenheit(0), 32)
-  assert_eq(fahrenheit(100), 212)
+  assert_eq(fahrenheit(0) 32)
+  assert_eq(fahrenheit(100) 212)
   assert_eq(fahrenheit(-40), -40)
 end
 
 test "hypotenuse"
-  assert_eq(hypotenuse(3, 4), 5)
-  assert_eq(hypotenuse(5, 12), 13)
+  assert_eq(hypotenuse(3 4) 5)
+  assert_eq(hypotenuse(5 12) 13)
 end
 
 test "minutes and seconds"
-  assert_eq(minutes_and_seconds(125), "2 min 5 s")
-  assert_eq(minutes_and_seconds(59), "0 min 59 s")
-  assert_eq(minutes_and_seconds(600), "10 min 0 s")
+  assert_eq(minutes_and_seconds(125) "2 min 5 s")
+  assert_eq(minutes_and_seconds(59) "0 min 59 s")
+  assert_eq(minutes_and_seconds(600) "10 min 0 s")
 end
 "#,
             r#"# 练习 03 · 算术  ★☆☆
@@ -4993,42 +4995,42 @@ end
 
 fn square(x) = fail("待完成")
 
-fn average(a, b) = fail("待完成")
+fn average(a b) = fail("待完成")
 
 fn fahrenheit(celsius) = fail("待完成")
 
-fn hypotenuse(a, b) = fail("待完成")
+fn hypotenuse(a b) = fail("待完成")
 
 fn minutes_and_seconds(total) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 test "平方"
-  assert_eq(square(3), 9)
-  assert_eq(square(-4), 16)
-  assert_eq(square(1.5), 2.25)
+  assert_eq(square(3) 9)
+  assert_eq(square(-4) 16)
+  assert_eq(square(1.5) 2.25)
 end
 
 test "平均值"
-  assert_eq(average(2, 4), 3)
-  assert_eq(average(1, 2), 1.5)
+  assert_eq(average(2 4) 3)
+  assert_eq(average(1 2) 1.5)
 end
 
 test "华氏温度"
-  assert_eq(fahrenheit(0), 32)
-  assert_eq(fahrenheit(100), 212)
+  assert_eq(fahrenheit(0) 32)
+  assert_eq(fahrenheit(100) 212)
   assert_eq(fahrenheit(-40), -40)
 end
 
 test "斜边"
-  assert_eq(hypotenuse(3, 4), 5)
-  assert_eq(hypotenuse(5, 12), 13)
+  assert_eq(hypotenuse(3 4) 5)
+  assert_eq(hypotenuse(5 12) 13)
 end
 
 test "分和秒"
-  assert_eq(minutes_and_seconds(125), "2 分 5 秒")
-  assert_eq(minutes_and_seconds(59), "0 分 59 秒")
-  assert_eq(minutes_and_seconds(600), "10 分 0 秒")
+  assert_eq(minutes_and_seconds(125) "2 分 5 秒")
+  assert_eq(minutes_and_seconds(59) "0 分 59 秒")
+  assert_eq(minutes_and_seconds(600) "10 分 0 秒")
 end
 "#,
         ),
@@ -5059,7 +5061,7 @@ end
 
 fn absolute(n) = fail("to do")
 
-fn larger(a, b) = fail("to do")
+fn larger(a b) = fail("to do")
 
 fn grade(score) = fail("to do")
 
@@ -5068,32 +5070,32 @@ fn ticket_price(age) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "absolute"
-  assert_eq(absolute(-5), 5)
-  assert_eq(absolute(7), 7)
-  assert_eq(absolute(0), 0)
+  assert_eq(absolute(-5) 5)
+  assert_eq(absolute(7) 7)
+  assert_eq(absolute(0) 0)
 end
 
 test "larger"
-  assert_eq(larger(3, 8), 8)
-  assert_eq(larger(8, 3), 8)
+  assert_eq(larger(3 8) 8)
+  assert_eq(larger(8 3) 8)
   assert_eq(larger(-1, -2), -1)
 end
 
 test "grade"
-  assert_eq(grade(95), "A")
-  assert_eq(grade(90), "A")
-  assert_eq(grade(85), "B")
-  assert_eq(grade(70), "C")
-  assert_eq(grade(61), "D")
-  assert_eq(grade(12), "F")
+  assert_eq(grade(95) "A")
+  assert_eq(grade(90) "A")
+  assert_eq(grade(85) "B")
+  assert_eq(grade(70) "C")
+  assert_eq(grade(61) "D")
+  assert_eq(grade(12) "F")
 end
 
 test "ticket price"
-  assert_eq(ticket_price(2), 0)
-  assert_eq(ticket_price(4), 5)
-  assert_eq(ticket_price(11), 5)
-  assert_eq(ticket_price(30), 10)
-  assert_eq(ticket_price(65), 12)
+  assert_eq(ticket_price(2) 0)
+  assert_eq(ticket_price(4) 5)
+  assert_eq(ticket_price(11) 5)
+  assert_eq(ticket_price(30) 10)
+  assert_eq(ticket_price(65) 12)
 end
 "#,
             r#"# 练习 04 · 用 `if` 做选择  ★☆☆
@@ -5120,7 +5122,7 @@ end
 
 fn absolute(n) = fail("待完成")
 
-fn larger(a, b) = fail("待完成")
+fn larger(a b) = fail("待完成")
 
 fn grade(score) = fail("待完成")
 
@@ -5129,32 +5131,32 @@ fn ticket_price(age) = fail("待完成")
 # --- 测试（请不要修改）---
 
 test "绝对值"
-  assert_eq(absolute(-5), 5)
-  assert_eq(absolute(7), 7)
-  assert_eq(absolute(0), 0)
+  assert_eq(absolute(-5) 5)
+  assert_eq(absolute(7) 7)
+  assert_eq(absolute(0) 0)
 end
 
 test "较大的数"
-  assert_eq(larger(3, 8), 8)
-  assert_eq(larger(8, 3), 8)
+  assert_eq(larger(3 8) 8)
+  assert_eq(larger(8 3) 8)
   assert_eq(larger(-1, -2), -1)
 end
 
 test "等级"
-  assert_eq(grade(95), "A")
-  assert_eq(grade(90), "A")
-  assert_eq(grade(85), "B")
-  assert_eq(grade(70), "C")
-  assert_eq(grade(61), "D")
-  assert_eq(grade(12), "F")
+  assert_eq(grade(95) "A")
+  assert_eq(grade(90) "A")
+  assert_eq(grade(85) "B")
+  assert_eq(grade(70) "C")
+  assert_eq(grade(61) "D")
+  assert_eq(grade(12) "F")
 end
 
 test "票价"
-  assert_eq(ticket_price(2), 0)
-  assert_eq(ticket_price(4), 5)
-  assert_eq(ticket_price(11), 5)
-  assert_eq(ticket_price(30), 10)
-  assert_eq(ticket_price(65), 12)
+  assert_eq(ticket_price(2) 0)
+  assert_eq(ticket_price(4) 5)
+  assert_eq(ticket_price(11) 5)
+  assert_eq(ticket_price(30) 10)
+  assert_eq(ticket_price(65) 12)
 end
 "#,
         ),
@@ -5185,42 +5187,42 @@ end
 # Check your work:  rythme exercise check 05-logic.ry
 #              or:  rythme test 05-logic.ry
 
-fn is_multiple(n, d) = fail("to do")
+fn is_multiple(n d) = fail("to do")
 
-fn is_between(x, low, high) = fail("to do")
+fn is_between(x low high) = fail("to do")
 
 fn is_leap(year) = fail("to do")
 
-fn exclusive_or(a, b) = fail("to do")
+fn exclusive_or(a b) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "multiples"
-  assert(is_multiple(12, 3), "12 is a multiple of 3")
-  assert(not is_multiple(12, 5), "12 is not a multiple of 5")
-  assert(is_multiple(0, 7), "0 is a multiple of every number")
+  assert(is_multiple(12 3) "12 is a multiple of 3")
+  assert(not is_multiple(12 5) "12 is not a multiple of 5")
+  assert(is_multiple(0 7) "0 is a multiple of every number")
 end
 
 test "between"
-  assert(is_between(5, 1, 10), "5 is between 1 and 10")
-  assert(is_between(1, 1, 10), "the bounds are included")
-  assert(is_between(10, 1, 10), "the bounds are included")
-  assert(not is_between(11, 1, 10), "11 is too big")
-  assert(not is_between(0, 1, 10), "0 is too small")
+  assert(is_between(5 1 10) "5 is between 1 and 10")
+  assert(is_between(1 1 10) "the bounds are included")
+  assert(is_between(10 1 10) "the bounds are included")
+  assert(not is_between(11 1 10) "11 is too big")
+  assert(not is_between(0 1 10) "0 is too small")
 end
 
 test "leap years"
-  assert_eq(is_leap(2024), true)
-  assert_eq(is_leap(2023), false)
-  assert_eq(is_leap(1900), false)
-  assert_eq(is_leap(2000), true)
+  assert_eq(is_leap(2024) true)
+  assert_eq(is_leap(2023) false)
+  assert_eq(is_leap(1900) false)
+  assert_eq(is_leap(2000) true)
 end
 
 test "exclusive or"
-  assert_eq(exclusive_or(true, false), true)
-  assert_eq(exclusive_or(false, true), true)
-  assert_eq(exclusive_or(true, true), false)
-  assert_eq(exclusive_or(false, false), false)
+  assert_eq(exclusive_or(true false) true)
+  assert_eq(exclusive_or(false true) true)
+  assert_eq(exclusive_or(true true) false)
+  assert_eq(exclusive_or(false false) false)
 end
 "#,
             r#"# 练习 05 · 真还是假  ★☆☆
@@ -5246,42 +5248,42 @@ end
 # 检查你的作业：  rythme exercise check 05-logic.ry
 #           或：  rythme test 05-logic.ry
 
-fn is_multiple(n, d) = fail("待完成")
+fn is_multiple(n d) = fail("待完成")
 
-fn is_between(x, low, high) = fail("待完成")
+fn is_between(x low high) = fail("待完成")
 
 fn is_leap(year) = fail("待完成")
 
-fn exclusive_or(a, b) = fail("待完成")
+fn exclusive_or(a b) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 test "倍数"
-  assert(is_multiple(12, 3), "12 是 3 的倍数")
-  assert(not is_multiple(12, 5), "12 不是 5 的倍数")
-  assert(is_multiple(0, 7), "0 是任何数的倍数")
+  assert(is_multiple(12 3) "12 是 3 的倍数")
+  assert(not is_multiple(12 5) "12 不是 5 的倍数")
+  assert(is_multiple(0 7) "0 是任何数的倍数")
 end
 
 test "之间"
-  assert(is_between(5, 1, 10), "5 在 1 和 10 之间")
-  assert(is_between(1, 1, 10), "包括边界")
-  assert(is_between(10, 1, 10), "包括边界")
-  assert(not is_between(11, 1, 10), "11 太大了")
-  assert(not is_between(0, 1, 10), "0 太小了")
+  assert(is_between(5 1 10) "5 在 1 和 10 之间")
+  assert(is_between(1 1 10) "包括边界")
+  assert(is_between(10 1 10) "包括边界")
+  assert(not is_between(11 1 10) "11 太大了")
+  assert(not is_between(0 1 10) "0 太小了")
 end
 
 test "闰年"
-  assert_eq(is_leap(2024), true)
-  assert_eq(is_leap(2023), false)
-  assert_eq(is_leap(1900), false)
-  assert_eq(is_leap(2000), true)
+  assert_eq(is_leap(2024) true)
+  assert_eq(is_leap(2023) false)
+  assert_eq(is_leap(1900) false)
+  assert_eq(is_leap(2000) true)
 end
 
 test "异或"
-  assert_eq(exclusive_or(true, false), true)
-  assert_eq(exclusive_or(false, true), true)
-  assert_eq(exclusive_or(true, true), false)
-  assert_eq(exclusive_or(false, false), false)
+  assert_eq(exclusive_or(true false) true)
+  assert_eq(exclusive_or(false true) true)
+  assert_eq(exclusive_or(true true) false)
+  assert_eq(exclusive_or(false false) false)
 end
 "#,
         ),
@@ -5314,7 +5316,7 @@ end
 # Check your work:  rythme exercise check 06-cases.ry
 #              or:  rythme test 06-cases.ry
 
-fn plural(n, word) = fail("to do")
+fn plural(n word) = fail("to do")
 
 fn fizzbuzz(n) = fail("to do")
 
@@ -5323,25 +5325,25 @@ fn day_kind(day) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "plural"
-  assert_eq(plural(1, "cat"), "1 cat")
-  assert_eq(plural(2, "cat"), "2 cats")
-  assert_eq(plural(0, "dog"), "0 dogs")
+  assert_eq(plural(1 "cat") "1 cat")
+  assert_eq(plural(2 "cat") "2 cats")
+  assert_eq(plural(0 "dog") "0 dogs")
 end
 
 test "fizzbuzz"
-  assert_eq(fizzbuzz(1), "1")
-  assert_eq(fizzbuzz(3), "Fizz")
-  assert_eq(fizzbuzz(10), "Buzz")
-  assert_eq(fizzbuzz(30), "FizzBuzz")
-  assert_eq(fizzbuzz(31), "31")
+  assert_eq(fizzbuzz(1) "1")
+  assert_eq(fizzbuzz(3) "Fizz")
+  assert_eq(fizzbuzz(10) "Buzz")
+  assert_eq(fizzbuzz(30) "FizzBuzz")
+  assert_eq(fizzbuzz(31) "31")
 end
 
-test "the first fifteen" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+test "the first fifteen" = assert_eq(1..15 |> map(fizzbuzz) |> join(" ") "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
 
 test "day kind"
-  assert_eq(day_kind("Saturday"), "weekend")
-  assert_eq(day_kind("Sunday"), "weekend")
-  assert_eq(day_kind("Monday"), "weekday")
+  assert_eq(day_kind("Saturday") "weekend")
+  assert_eq(day_kind("Sunday") "weekend")
+  assert_eq(day_kind("Monday") "weekday")
 end
 "#,
             r#"# 练习 06 · 每种情况一个定义  ★☆☆
@@ -5369,7 +5371,7 @@ end
 # 检查你的作业：  rythme exercise check 06-cases.ry
 #           或：  rythme test 06-cases.ry
 
-fn plural(n, word) = fail("待完成")
+fn plural(n word) = fail("待完成")
 
 fn fizzbuzz(n) = fail("待完成")
 
@@ -5378,25 +5380,25 @@ fn day_kind(day) = fail("待完成")
 # --- 测试（请不要修改）---
 
 test "复数"
-  assert_eq(plural(1, "cat"), "1 cat")
-  assert_eq(plural(2, "cat"), "2 cats")
-  assert_eq(plural(0, "dog"), "0 dogs")
+  assert_eq(plural(1 "cat") "1 cat")
+  assert_eq(plural(2 "cat") "2 cats")
+  assert_eq(plural(0 "dog") "0 dogs")
 end
 
 test "fizzbuzz"
-  assert_eq(fizzbuzz(1), "1")
-  assert_eq(fizzbuzz(3), "Fizz")
-  assert_eq(fizzbuzz(10), "Buzz")
-  assert_eq(fizzbuzz(30), "FizzBuzz")
-  assert_eq(fizzbuzz(31), "31")
+  assert_eq(fizzbuzz(1) "1")
+  assert_eq(fizzbuzz(3) "Fizz")
+  assert_eq(fizzbuzz(10) "Buzz")
+  assert_eq(fizzbuzz(30) "FizzBuzz")
+  assert_eq(fizzbuzz(31) "31")
 end
 
-test "前十五个" = assert_eq(1..15 |> map(fizzbuzz) |> join(" "), "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+test "前十五个" = assert_eq(1..15 |> map(fizzbuzz) |> join(" ") "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
 
 test "日子的种类"
-  assert_eq(day_kind("星期六"), "周末")
-  assert_eq(day_kind("星期日"), "周末")
-  assert_eq(day_kind("星期一"), "工作日")
+  assert_eq(day_kind("星期六") "周末")
+  assert_eq(day_kind("星期日") "周末")
+  assert_eq(day_kind("星期一") "工作日")
 end
 "#,
         ),
@@ -5429,29 +5431,29 @@ fn factorial(n) = fail("to do")
 
 fn sum_to(n) = fail("to do")
 
-fn power(x, n) = fail("to do")
+fn power(x n) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "factorial"
-  assert_eq(factorial(0), 1)
-  assert_eq(factorial(1), 1)
-  assert_eq(factorial(5), 120)
-  assert_eq(factorial(10), 3628800)
+  assert_eq(factorial(0) 1)
+  assert_eq(factorial(1) 1)
+  assert_eq(factorial(5) 120)
+  assert_eq(factorial(10) 3628800)
 end
 
 test "sum to"
-  assert_eq(sum_to(0), 0)
-  assert_eq(sum_to(1), 1)
-  assert_eq(sum_to(10), 55)
-  assert_eq(sum_to(100), 5050)
+  assert_eq(sum_to(0) 0)
+  assert_eq(sum_to(1) 1)
+  assert_eq(sum_to(10) 55)
+  assert_eq(sum_to(100) 5050)
 end
 
 test "power"
-  assert_eq(power(2, 0), 1)
-  assert_eq(power(2, 10), 1024)
-  assert_eq(power(3, 4), 81)
-  assert_eq(power(1.5, 2), 2.25)
+  assert_eq(power(2 0) 1)
+  assert_eq(power(2 10) 1024)
+  assert_eq(power(3 4) 81)
+  assert_eq(power(1.5 2) 2.25)
 end
 "#,
             r#"# 练习 07 · 递归  ★★☆
@@ -5479,29 +5481,29 @@ fn factorial(n) = fail("待完成")
 
 fn sum_to(n) = fail("待完成")
 
-fn power(x, n) = fail("待完成")
+fn power(x n) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 test "阶乘"
-  assert_eq(factorial(0), 1)
-  assert_eq(factorial(1), 1)
-  assert_eq(factorial(5), 120)
-  assert_eq(factorial(10), 3628800)
+  assert_eq(factorial(0) 1)
+  assert_eq(factorial(1) 1)
+  assert_eq(factorial(5) 120)
+  assert_eq(factorial(10) 3628800)
 end
 
 test "累加到 n"
-  assert_eq(sum_to(0), 0)
-  assert_eq(sum_to(1), 1)
-  assert_eq(sum_to(10), 55)
-  assert_eq(sum_to(100), 5050)
+  assert_eq(sum_to(0) 0)
+  assert_eq(sum_to(1) 1)
+  assert_eq(sum_to(10) 55)
+  assert_eq(sum_to(100) 5050)
 end
 
 test "幂"
-  assert_eq(power(2, 0), 1)
-  assert_eq(power(2, 10), 1024)
-  assert_eq(power(3, 4), 81)
-  assert_eq(power(1.5, 2), 2.25)
+  assert_eq(power(2 0) 1)
+  assert_eq(power(2 10) 1024)
+  assert_eq(power(3 4) 81)
+  assert_eq(power(1.5 2) 2.25)
 end
 "#,
         ),
@@ -5539,22 +5541,22 @@ fn reverse_number(n) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "digit count"
-  assert_eq(digit_count(0), 1)
-  assert_eq(digit_count(7), 1)
-  assert_eq(digit_count(472), 3)
-  assert_eq(digit_count(1000000), 7)
+  assert_eq(digit_count(0) 1)
+  assert_eq(digit_count(7) 1)
+  assert_eq(digit_count(472) 3)
+  assert_eq(digit_count(1000000) 7)
 end
 
 test "digit sum"
-  assert_eq(digit_sum(0), 0)
-  assert_eq(digit_sum(472), 13)
-  assert_eq(digit_sum(99999), 45)
+  assert_eq(digit_sum(0) 0)
+  assert_eq(digit_sum(472) 13)
+  assert_eq(digit_sum(99999) 45)
 end
 
 test "reverse number"
-  assert_eq(reverse_number(472), 274)
-  assert_eq(reverse_number(1230), 321)
-  assert_eq(reverse_number(5), 5)
+  assert_eq(reverse_number(472) 274)
+  assert_eq(reverse_number(1230) 321)
+  assert_eq(reverse_number(5) 5)
 end
 "#,
             r#"# 练习 08 · 一个数的各位数字  ★★☆
@@ -5588,22 +5590,22 @@ fn reverse_number(n) = fail("待完成")
 # --- 测试（请不要修改）---
 
 test "位数"
-  assert_eq(digit_count(0), 1)
-  assert_eq(digit_count(7), 1)
-  assert_eq(digit_count(472), 3)
-  assert_eq(digit_count(1000000), 7)
+  assert_eq(digit_count(0) 1)
+  assert_eq(digit_count(7) 1)
+  assert_eq(digit_count(472) 3)
+  assert_eq(digit_count(1000000) 7)
 end
 
 test "各位数字之和"
-  assert_eq(digit_sum(0), 0)
-  assert_eq(digit_sum(472), 13)
-  assert_eq(digit_sum(99999), 45)
+  assert_eq(digit_sum(0) 0)
+  assert_eq(digit_sum(472) 13)
+  assert_eq(digit_sum(99999) 45)
 end
 
 test "倒转数字"
-  assert_eq(reverse_number(472), 274)
-  assert_eq(reverse_number(1230), 321)
-  assert_eq(reverse_number(5), 5)
+  assert_eq(reverse_number(472) 274)
+  assert_eq(reverse_number(1230) 321)
+  assert_eq(reverse_number(5) 5)
 end
 "#,
         ),
@@ -5647,19 +5649,19 @@ fn fib(n) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "big sum"
-  assert_eq(big_sum(10), 55)
-  assert_eq(big_sum(1000000), 500000500000)
+  assert_eq(big_sum(10) 55)
+  assert_eq(big_sum(1000000) 500000500000)
 end
 
 test "collatz steps"
-  assert_eq(collatz_steps(1), 0)
-  assert_eq(collatz_steps(6), 8)
-  assert_eq(collatz_steps(27), 111)
+  assert_eq(collatz_steps(1) 0)
+  assert_eq(collatz_steps(6) 8)
+  assert_eq(collatz_steps(27) 111)
 end
 
 test "fibonacci"
-  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
-  assert_eq(fib(90), 2880067194370816120)
+  assert_eq(0..10 |> map(fib) [0 1 1 2 3 5 8 13 21 34 55])
+  assert_eq(fib(90) 2880067194370816120)
 end
 "#,
             r#"# 练习 09 · 累加器和尾调用  ★★☆
@@ -5698,19 +5700,19 @@ fn fib(n) = fail("待完成")
 # --- 测试（请不要修改）---
 
 test "大的和"
-  assert_eq(big_sum(10), 55)
-  assert_eq(big_sum(1000000), 500000500000)
+  assert_eq(big_sum(10) 55)
+  assert_eq(big_sum(1000000) 500000500000)
 end
 
 test "考拉兹步数"
-  assert_eq(collatz_steps(1), 0)
-  assert_eq(collatz_steps(6), 8)
-  assert_eq(collatz_steps(27), 111)
+  assert_eq(collatz_steps(1) 0)
+  assert_eq(collatz_steps(6) 8)
+  assert_eq(collatz_steps(27) 111)
 end
 
 test "斐波那契"
-  assert_eq(0..10 |> map(fib), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55])
-  assert_eq(fib(90), 2880067194370816120)
+  assert_eq(0..10 |> map(fib) [0 1 1 2 3 5 8 13 21 34 55])
+  assert_eq(fib(90) 2880067194370816120)
 end
 "#,
         ),
@@ -5739,7 +5741,7 @@ end
 # Check your work:  rythme exercise check 10-divisors.ry
 #              or:  rythme test 10-divisors.ry
 
-fn my_gcd(a, b) = fail("to do")
+fn my_gcd(a b) = fail("to do")
 
 fn is_prime(n) = fail("to do")
 
@@ -5748,23 +5750,23 @@ fn next_prime(n) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "gcd"
-  assert_eq(my_gcd(12, 18), 6)
-  assert_eq(my_gcd(17, 5), 1)
-  assert_eq(my_gcd(7, 0), 7)
-  assert_eq(my_gcd(0, 9), 9)
+  assert_eq(my_gcd(12 18) 6)
+  assert_eq(my_gcd(17 5) 1)
+  assert_eq(my_gcd(7 0) 7)
+  assert_eq(my_gcd(0 9) 9)
 end
 
 test "prime numbers"
-  assert_eq(1..30 |> filter(is_prime), [2, 3, 5, 7, 11, 13, 17, 19, 23, 29])
-  assert_eq(is_prime(0), false)
-  assert_eq(is_prime(7919), true)
-  assert_eq(is_prime(7917), false)
+  assert_eq(1..30 |> filter(is_prime) [2 3 5 7 11 13 17 19 23 29])
+  assert_eq(is_prime(0) false)
+  assert_eq(is_prime(7919) true)
+  assert_eq(is_prime(7917) false)
 end
 
 test "next prime"
-  assert_eq(next_prime(1), 2)
-  assert_eq(next_prime(13), 17)
-  assert_eq(next_prime(100), 101)
+  assert_eq(next_prime(1) 2)
+  assert_eq(next_prime(13) 17)
+  assert_eq(next_prime(100) 101)
 end
 "#,
             r#"# 练习 10 · 因数和质数  ★★☆
@@ -5788,7 +5790,7 @@ end
 # 检查你的作业：  rythme exercise check 10-divisors.ry
 #           或：  rythme test 10-divisors.ry
 
-fn my_gcd(a, b) = fail("待完成")
+fn my_gcd(a b) = fail("待完成")
 
 fn is_prime(n) = fail("待完成")
 
@@ -5797,23 +5799,23 @@ fn next_prime(n) = fail("待完成")
 # --- 测试（请不要修改）---
 
 test "最大公因数"
-  assert_eq(my_gcd(12, 18), 6)
-  assert_eq(my_gcd(17, 5), 1)
-  assert_eq(my_gcd(7, 0), 7)
-  assert_eq(my_gcd(0, 9), 9)
+  assert_eq(my_gcd(12 18) 6)
+  assert_eq(my_gcd(17 5) 1)
+  assert_eq(my_gcd(7 0) 7)
+  assert_eq(my_gcd(0 9) 9)
 end
 
 test "质数"
-  assert_eq(1..30 |> filter(is_prime), [2, 3, 5, 7, 11, 13, 17, 19, 23, 29])
-  assert_eq(is_prime(0), false)
-  assert_eq(is_prime(7919), true)
-  assert_eq(is_prime(7917), false)
+  assert_eq(1..30 |> filter(is_prime) [2 3 5 7 11 13 17 19 23 29])
+  assert_eq(is_prime(0) false)
+  assert_eq(is_prime(7919) true)
+  assert_eq(is_prime(7917) false)
 end
 
 test "下一个质数"
-  assert_eq(next_prime(1), 2)
-  assert_eq(next_prime(13), 17)
-  assert_eq(next_prime(100), 101)
+  assert_eq(next_prime(1) 2)
+  assert_eq(next_prime(13) 17)
+  assert_eq(next_prime(100) 101)
 end
 "#,
         ),
@@ -5854,34 +5856,34 @@ fn total(list) = fail("to do")
 
 fn largest(list) = fail("to do")
 
-fn has_value(list, x) = fail("to do")
+fn has_value(list x) = fail("to do")
 
 fn last_one(list) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "total"
-  assert_eq(total([]), 0)
-  assert_eq(total([4]), 4)
-  assert_eq(total([1, 2, 3, 4]), 10)
+  assert_eq(total([]) 0)
+  assert_eq(total([4]) 4)
+  assert_eq(total([1 2 3 4]) 10)
 end
 
 test "largest"
-  assert_eq(largest([7]), 7)
-  assert_eq(largest([3, 9, 2]), 9)
+  assert_eq(largest([7]) 7)
+  assert_eq(largest([3 9 2]) 9)
   assert_eq(largest([-3, -1, -2]), -1)
 end
 
 test "has value"
-  assert_eq(has_value([1, 2, 3], 2), true)
-  assert_eq(has_value([1, 2, 3], 5), false)
-  assert_eq(has_value([], 1), false)
-  assert_eq(has_value(["a", "b"], "b"), true)
+  assert_eq(has_value([1 2 3] 2) true)
+  assert_eq(has_value([1 2 3] 5) false)
+  assert_eq(has_value([] 1) false)
+  assert_eq(has_value(["a" "b"] "b") true)
 end
 
 test "last one"
-  assert_eq(last_one([1, 2, 3]), 3)
-  assert_eq(last_one(["only"]), "only")
+  assert_eq(last_one([1 2 3]) 3)
+  assert_eq(last_one(["only"]) "only")
 end
 "#,
             r#"# 练习 11 · 拆开列表  ★★☆
@@ -5914,34 +5916,34 @@ fn total(list) = fail("待完成")
 
 fn largest(list) = fail("待完成")
 
-fn has_value(list, x) = fail("待完成")
+fn has_value(list x) = fail("待完成")
 
 fn last_one(list) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 test "总和"
-  assert_eq(total([]), 0)
-  assert_eq(total([4]), 4)
-  assert_eq(total([1, 2, 3, 4]), 10)
+  assert_eq(total([]) 0)
+  assert_eq(total([4]) 4)
+  assert_eq(total([1 2 3 4]) 10)
 end
 
 test "最大的元素"
-  assert_eq(largest([7]), 7)
-  assert_eq(largest([3, 9, 2]), 9)
+  assert_eq(largest([7]) 7)
+  assert_eq(largest([3 9 2]) 9)
   assert_eq(largest([-3, -1, -2]), -1)
 end
 
 test "包含某个值"
-  assert_eq(has_value([1, 2, 3], 2), true)
-  assert_eq(has_value([1, 2, 3], 5), false)
-  assert_eq(has_value([], 1), false)
-  assert_eq(has_value(["a", "b"], "b"), true)
+  assert_eq(has_value([1 2 3] 2) true)
+  assert_eq(has_value([1 2 3] 5) false)
+  assert_eq(has_value([] 1) false)
+  assert_eq(has_value(["a" "b"] "b") true)
 end
 
 test "最后一个"
-  assert_eq(last_one([1, 2, 3]), 3)
-  assert_eq(last_one(["唯一"]), "唯一")
+  assert_eq(last_one([1 2 3]) 3)
+  assert_eq(last_one(["唯一"]) "唯一")
 end
 "#,
         ),
@@ -5974,7 +5976,7 @@ end
 
 fn countdown(n) = fail("to do")
 
-fn repeat_value(x, n) = fail("to do")
+fn repeat_value(x n) = fail("to do")
 
 fn double_all(list) = fail("to do")
 
@@ -5984,29 +5986,29 @@ fn reversed(list) = fail("to do")
 
 test "countdown"
   assert_eq(countdown(0), [0])
-  assert_eq(countdown(3), [3, 2, 1, 0])
+  assert_eq(countdown(3) [3 2 1 0])
 end
 
 test "repeat value"
-  assert_eq(repeat_value("a", 3), ["a", "a", "a"])
-  assert_eq(repeat_value(1, 0), [])
+  assert_eq(repeat_value("a" 3) ["a" "a" "a"])
+  assert_eq(repeat_value(1 0) [])
 end
 
 test "double all"
-  assert_eq(double_all([1, 2, 3]), [2, 4, 6])
+  assert_eq(double_all([1 2 3]) [2 4 6])
   assert_eq(double_all([]), [])
 end
 
 test "reversed"
-  assert_eq(reversed([1, 2, 3]), [3, 2, 1])
+  assert_eq(reversed([1 2 3]) [3 2 1])
   assert_eq(reversed([]), [])
   assert_eq(reversed(["x"]), ["x"])
 end
 
 test "the original list does not change"
-  numbers = [1, 2, 3]
+  numbers = [1 2 3]
   reversed(numbers)
-  assert_eq(numbers, [1, 2, 3])
+  assert_eq(numbers [1 2 3])
 end
 "#,
             r#"# 练习 12 · 构造列表  ★★☆
@@ -6036,7 +6038,7 @@ end
 
 fn countdown(n) = fail("待完成")
 
-fn repeat_value(x, n) = fail("待完成")
+fn repeat_value(x n) = fail("待完成")
 
 fn double_all(list) = fail("待完成")
 
@@ -6046,29 +6048,29 @@ fn reversed(list) = fail("待完成")
 
 test "倒数"
   assert_eq(countdown(0), [0])
-  assert_eq(countdown(3), [3, 2, 1, 0])
+  assert_eq(countdown(3) [3 2 1 0])
 end
 
 test "重复一个值"
-  assert_eq(repeat_value("a", 3), ["a", "a", "a"])
-  assert_eq(repeat_value(1, 0), [])
+  assert_eq(repeat_value("a" 3) ["a" "a" "a"])
+  assert_eq(repeat_value(1 0) [])
 end
 
 test "全部加倍"
-  assert_eq(double_all([1, 2, 3]), [2, 4, 6])
+  assert_eq(double_all([1 2 3]) [2 4 6])
   assert_eq(double_all([]), [])
 end
 
 test "倒序"
-  assert_eq(reversed([1, 2, 3]), [3, 2, 1])
+  assert_eq(reversed([1 2 3]) [3 2 1])
   assert_eq(reversed([]), [])
   assert_eq(reversed(["x"]), ["x"])
 end
 
 test "原来的列表不会改变"
-  numbers = [1, 2, 3]
+  numbers = [1 2 3]
   reversed(numbers)
-  assert_eq(numbers, [1, 2, 3])
+  assert_eq(numbers [1 2 3])
 end
 "#,
         ),
@@ -6112,25 +6114,25 @@ fn smallest_three(list) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "squares"
-  assert_eq(squares(5), [1, 4, 9, 16, 25])
+  assert_eq(squares(5) [1 4 9 16 25])
   assert_eq(squares(0), [])
 end
 
-test "evens" = assert_eq(evens([5, 2, 8, 1, 4]), [2, 8, 4])
+test "evens" = assert_eq(evens([5 2 8 1 4]) [2 8 4])
 
 test "sum of multiples"
-  assert_eq(sum_of_multiples(10), 23)
-  assert_eq(sum_of_multiples(1000), 233168)
+  assert_eq(sum_of_multiples(10) 23)
+  assert_eq(sum_of_multiples(1000) 233168)
 end
 
 test "mean"
-  assert_eq(mean([1, 2, 3, 4]), 2.5)
-  assert_eq(mean([7]), 7)
+  assert_eq(mean([1 2 3 4]) 2.5)
+  assert_eq(mean([7]) 7)
 end
 
 test "smallest three"
-  assert_eq(smallest_three([5, 1, 4, 2, 3]), [1, 2, 3])
-  assert_eq(smallest_three([9, 8]), [8, 9])
+  assert_eq(smallest_three([5 1 4 2 3]) [1 2 3])
+  assert_eq(smallest_three([9 8]) [8 9])
 end
 "#,
             r#"# 练习 13 · 列表函数  ★★☆
@@ -6170,25 +6172,25 @@ fn smallest_three(list) = fail("待完成")
 # --- 测试（请不要修改）---
 
 test "平方数"
-  assert_eq(squares(5), [1, 4, 9, 16, 25])
+  assert_eq(squares(5) [1 4 9 16 25])
   assert_eq(squares(0), [])
 end
 
-test "偶数" = assert_eq(evens([5, 2, 8, 1, 4]), [2, 8, 4])
+test "偶数" = assert_eq(evens([5 2 8 1 4]) [2 8 4])
 
 test "倍数之和"
-  assert_eq(sum_of_multiples(10), 23)
-  assert_eq(sum_of_multiples(1000), 233168)
+  assert_eq(sum_of_multiples(10) 23)
+  assert_eq(sum_of_multiples(1000) 233168)
 end
 
 test "平均值"
-  assert_eq(mean([1, 2, 3, 4]), 2.5)
-  assert_eq(mean([7]), 7)
+  assert_eq(mean([1 2 3 4]) 2.5)
+  assert_eq(mean([7]) 7)
 end
 
 test "最小的三个"
-  assert_eq(smallest_three([5, 1, 4, 2, 3]), [1, 2, 3])
-  assert_eq(smallest_three([9, 8]), [8, 9])
+  assert_eq(smallest_three([5 1 4 2 3]) [1 2 3])
+  assert_eq(smallest_three([9 8]) [8 9])
 end
 "#,
         ),
@@ -6216,34 +6218,34 @@ end
 # Check your work:  rythme exercise check 14-anonymous-functions.ry
 #              or:  rythme test 14-anonymous-functions.ry
 
-fn with_tax(prices, percent) = fail("to do")
+fn with_tax(prices percent) = fail("to do")
 
-fn long_words(words, n) = fail("to do")
+fn long_words(words n) = fail("to do")
 
 fn lengths(words) = fail("to do")
 
 fn all_positive(list) = fail("to do")
 
-fn count_above(list, limit) = fail("to do")
+fn count_above(list limit) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "with tax"
-  assert_eq(with_tax([100, 50], 20), [120, 60])
-  assert_eq(with_tax([10], 0), [10])
+  assert_eq(with_tax([100 50] 20) [120 60])
+  assert_eq(with_tax([10] 0) [10])
 end
 
-test "long words" = assert_eq(long_words(["a", "tree", "is", "green"], 3), ["tree", "green"])
+test "long words" = assert_eq(long_words(["a" "tree" "is" "green"] 3) ["tree" "green"])
 
-test "lengths" = assert_eq(lengths(["a", "tree", "is"]), [1, 4, 2])
+test "lengths" = assert_eq(lengths(["a" "tree" "is"]) [1 4 2])
 
 test "all positive"
-  assert_eq(all_positive([1, 5, 3]), true)
-  assert_eq(all_positive([1, -5, 3]), false)
-  assert_eq(all_positive([]), true)
+  assert_eq(all_positive([1 5 3]) true)
+  assert_eq(all_positive([1 -5 3]) false)
+  assert_eq(all_positive([]) true)
 end
 
-test "count above" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
+test "count above" = assert_eq(count_above([3 10 7 12] 5) 3)
 "#,
             r#"# 练习 14 · 匿名函数  ★★☆
 #
@@ -6267,34 +6269,34 @@ test "count above" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
 # 检查你的作业：  rythme exercise check 14-anonymous-functions.ry
 #           或：  rythme test 14-anonymous-functions.ry
 
-fn with_tax(prices, percent) = fail("待完成")
+fn with_tax(prices percent) = fail("待完成")
 
-fn long_words(words, n) = fail("待完成")
+fn long_words(words n) = fail("待完成")
 
 fn lengths(words) = fail("待完成")
 
 fn all_positive(list) = fail("待完成")
 
-fn count_above(list, limit) = fail("待完成")
+fn count_above(list limit) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 test "含税"
-  assert_eq(with_tax([100, 50], 20), [120, 60])
-  assert_eq(with_tax([10], 0), [10])
+  assert_eq(with_tax([100 50] 20) [120 60])
+  assert_eq(with_tax([10] 0) [10])
 end
 
-test "长的词" = assert_eq(long_words(["我", "喜欢", "函数式", "编程"], 1), ["喜欢", "函数式", "编程"])
+test "长的词" = assert_eq(long_words(["我" "喜欢" "函数式" "编程"] 1) ["喜欢" "函数式" "编程"])
 
-test "长度" = assert_eq(lengths(["我", "喜欢", "函数式"]), [1, 2, 3])
+test "长度" = assert_eq(lengths(["我" "喜欢" "函数式"]) [1 2 3])
 
 test "全是正数"
-  assert_eq(all_positive([1, 5, 3]), true)
-  assert_eq(all_positive([1, -5, 3]), false)
-  assert_eq(all_positive([]), true)
+  assert_eq(all_positive([1 5 3]) true)
+  assert_eq(all_positive([1 -5 3]) false)
+  assert_eq(all_positive([]) true)
 end
 
-test "大于界限的个数" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
+test "大于界限的个数" = assert_eq(count_above([3 10 7 12] 5) 3)
 "#,
         ),
         ("15-functions-as-values", "15-functions-as-values"),
@@ -6322,43 +6324,43 @@ test "大于界限的个数" = assert_eq(count_above([3, 10, 7, 12], 5), 3)
 # Check your work:  rythme exercise check 15-functions-as-values.ry
 #              or:  rythme test 15-functions-as-values.ry
 
-fn apply_twice(f, x) = fail("to do")
+fn apply_twice(f x) = fail("to do")
 
-fn compose(f, g) = fail("to do")
+fn compose(f g) = fail("to do")
 
 fn adder(n) = fail("to do")
 
-fn my_map(list, f) = fail("to do")
+fn my_map(list f) = fail("to do")
 
-fn my_filter(list, f) = fail("to do")
+fn my_filter(list f) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "apply twice"
-  assert_eq(apply_twice(fn(x) = x * 3, 2), 18)
-  assert_eq(apply_twice(upper, "hi"), "HI")
+  assert_eq(apply_twice(fn(x) = x * 3 2) 18)
+  assert_eq(apply_twice(upper "hi") "HI")
 end
 
 test "compose"
-  plus_one_then_double = compose(fn(x) = x * 2, fn(x) = x + 1)
-  assert_eq(plus_one_then_double(4), 10)
-  assert_eq(compose(len, trim)("  abc  "), 3)
+  plus_one_then_double = compose(fn(x) = x * 2 fn(x) = x + 1)
+  assert_eq(plus_one_then_double(4) 10)
+  assert_eq(compose(len trim)("  abc  ") 3)
 end
 
 test "adder"
   add10 = adder(10)
-  assert_eq(add10(5), 15)
-  assert_eq(map([1, 2, 3], adder(100)), [101, 102, 103])
+  assert_eq(add10(5) 15)
+  assert_eq(map([1 2 3] adder(100)) [101 102 103])
 end
 
 test "my map"
-  assert_eq(my_map([1, 2, 3], fn(x) = x * x), [1, 4, 9])
-  assert_eq(my_map([], fn(x) = x), [])
+  assert_eq(my_map([1 2 3] fn(x) = x * x) [1 4 9])
+  assert_eq(my_map([] fn(x) = x) [])
 end
 
 test "my filter"
-  assert_eq(my_filter([1, 2, 3, 4, 5, 6], is_even), [2, 4, 6])
-  assert_eq(my_filter(["a", "bb", "ccc"], fn(w) = len(w) > 1), ["bb", "ccc"])
+  assert_eq(my_filter([1 2 3 4 5 6] is_even) [2 4 6])
+  assert_eq(my_filter(["a" "bb" "ccc"] fn(w) = len(w) > 1) ["bb" "ccc"])
 end
 "#,
             r#"# 练习 15 · 函数也是值  ★★☆
@@ -6383,43 +6385,43 @@ end
 # 检查你的作业：  rythme exercise check 15-functions-as-values.ry
 #           或：  rythme test 15-functions-as-values.ry
 
-fn apply_twice(f, x) = fail("待完成")
+fn apply_twice(f x) = fail("待完成")
 
-fn compose(f, g) = fail("待完成")
+fn compose(f g) = fail("待完成")
 
 fn adder(n) = fail("待完成")
 
-fn my_map(list, f) = fail("待完成")
+fn my_map(list f) = fail("待完成")
 
-fn my_filter(list, f) = fail("待完成")
+fn my_filter(list f) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 test "应用两次"
-  assert_eq(apply_twice(fn(x) = x * 3, 2), 18)
-  assert_eq(apply_twice(upper, "hi"), "HI")
+  assert_eq(apply_twice(fn(x) = x * 3 2) 18)
+  assert_eq(apply_twice(upper "hi") "HI")
 end
 
 test "组合"
-  plus_one_then_double = compose(fn(x) = x * 2, fn(x) = x + 1)
-  assert_eq(plus_one_then_double(4), 10)
-  assert_eq(compose(len, trim)("  abc  "), 3)
+  plus_one_then_double = compose(fn(x) = x * 2 fn(x) = x + 1)
+  assert_eq(plus_one_then_double(4) 10)
+  assert_eq(compose(len trim)("  abc  ") 3)
 end
 
 test "加法器"
   add10 = adder(10)
-  assert_eq(add10(5), 15)
-  assert_eq(map([1, 2, 3], adder(100)), [101, 102, 103])
+  assert_eq(add10(5) 15)
+  assert_eq(map([1 2 3] adder(100)) [101 102 103])
 end
 
 test "我的 map"
-  assert_eq(my_map([1, 2, 3], fn(x) = x * x), [1, 4, 9])
-  assert_eq(my_map([], fn(x) = x), [])
+  assert_eq(my_map([1 2 3] fn(x) = x * x) [1 4 9])
+  assert_eq(my_map([] fn(x) = x) [])
 end
 
 test "我的 filter"
-  assert_eq(my_filter([1, 2, 3, 4, 5, 6], is_even), [2, 4, 6])
-  assert_eq(my_filter(["a", "bb", "ccc"], fn(w) = len(w) > 1), ["bb", "ccc"])
+  assert_eq(my_filter([1 2 3 4 5 6] is_even) [2 4 6])
+  assert_eq(my_filter(["a" "bb" "ccc"] fn(w) = len(w) > 1) ["bb" "ccc"])
 end
 "#,
         ),
@@ -6457,30 +6459,30 @@ fn longest_word(words) = fail("to do")
 
 fn to_number(digits) = fail("to do")
 
-fn count_where(list, f) = fail("to do")
+fn count_where(list f) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "product"
-  assert_eq(product_of([2, 3, 4]), 24)
-  assert_eq(product_of([]), 1)
+  assert_eq(product_of([2 3 4]) 24)
+  assert_eq(product_of([]) 1)
 end
 
 test "longest word"
-  assert_eq(longest_word(["a", "tree", "is", "green"]), "green")
-  assert_eq(longest_word(["one", "two"]), "one")
-  assert_eq(longest_word([]), "")
+  assert_eq(longest_word(["a" "tree" "is" "green"]) "green")
+  assert_eq(longest_word(["one" "two"]) "one")
+  assert_eq(longest_word([]) "")
 end
 
 test "to number"
-  assert_eq(to_number([1, 2, 3]), 123)
-  assert_eq(to_number([0, 7]), 7)
-  assert_eq(to_number([]), 0)
+  assert_eq(to_number([1 2 3]) 123)
+  assert_eq(to_number([0 7]) 7)
+  assert_eq(to_number([]) 0)
 end
 
 test "count where"
-  assert_eq(count_where([1, 2, 3, 4, 5], is_odd), 3)
-  assert_eq(count_where(["a", "bb"], fn(w) = len(w) > 5), 0)
+  assert_eq(count_where([1 2 3 4 5] is_odd) 3)
+  assert_eq(count_where(["a" "bb"] fn(w) = len(w) > 5) 0)
 end
 "#,
             r#"# 练习 16 · 把列表折叠成一个值  ★★☆
@@ -6513,30 +6515,30 @@ fn longest_word(words) = fail("待完成")
 
 fn to_number(digits) = fail("待完成")
 
-fn count_where(list, f) = fail("待完成")
+fn count_where(list f) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 test "乘积"
-  assert_eq(product_of([2, 3, 4]), 24)
-  assert_eq(product_of([]), 1)
+  assert_eq(product_of([2 3 4]) 24)
+  assert_eq(product_of([]) 1)
 end
 
 test "最长的词"
-  assert_eq(longest_word(["我", "喜欢", "函数式", "编程"]), "函数式")
-  assert_eq(longest_word(["你好", "世界"]), "你好")
-  assert_eq(longest_word([]), "")
+  assert_eq(longest_word(["我" "喜欢" "函数式" "编程"]) "函数式")
+  assert_eq(longest_word(["你好" "世界"]) "你好")
+  assert_eq(longest_word([]) "")
 end
 
 test "变成数"
-  assert_eq(to_number([1, 2, 3]), 123)
-  assert_eq(to_number([0, 7]), 7)
-  assert_eq(to_number([]), 0)
+  assert_eq(to_number([1 2 3]) 123)
+  assert_eq(to_number([0 7]) 7)
+  assert_eq(to_number([]) 0)
 end
 
 test "按条件计数"
-  assert_eq(count_where([1, 2, 3, 4, 5], is_odd), 3)
-  assert_eq(count_where(["a", "bb"], fn(w) = len(w) > 5), 0)
+  assert_eq(count_where([1 2 3 4 5] is_odd) 3)
+  assert_eq(count_where(["a" "bb"] fn(w) = len(w) > 5) 0)
 end
 "#,
         ),
@@ -6580,20 +6582,20 @@ fn initials_of(sentence) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "sum of odd squares"
-  assert_eq(sum_of_odd_squares(5), 35)
-  assert_eq(sum_of_odd_squares(1), 1)
+  assert_eq(sum_of_odd_squares(5) 35)
+  assert_eq(sum_of_odd_squares(1) 1)
 end
 
 test "top three"
-  assert_eq(top_three([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(top_three([12 18 9 15 20]) [20 18 15])
   assert_eq(top_three([4]), [4])
 end
 
-test "shout words" = assert_eq(shout_words("hello  world"), "HELLO WORLD")
+test "shout words" = assert_eq(shout_words("hello  world") "HELLO WORLD")
 
 test "initials of"
-  assert_eq(initials_of("portable network graphics"), "PNG")
-  assert_eq(initials_of("Rythme"), "R")
+  assert_eq(initials_of("portable network graphics") "PNG")
+  assert_eq(initials_of("Rythme") "R")
 end
 "#,
             r#"# 练习 17 · 管道  ★★☆
@@ -6633,20 +6635,20 @@ fn initials_of(sentence) = fail("待完成")
 # --- 测试（请不要修改）---
 
 test "奇数的平方和"
-  assert_eq(sum_of_odd_squares(5), 35)
-  assert_eq(sum_of_odd_squares(1), 1)
+  assert_eq(sum_of_odd_squares(5) 35)
+  assert_eq(sum_of_odd_squares(1) 1)
 end
 
 test "前三名"
-  assert_eq(top_three([12, 18, 9, 15, 20]), [20, 18, 15])
+  assert_eq(top_three([12 18 9 15 20]) [20 18 15])
   assert_eq(top_three([4]), [4])
 end
 
-test "大写每个单词" = assert_eq(shout_words("hello  world"), "HELLO WORLD")
+test "大写每个单词" = assert_eq(shout_words("hello  world") "HELLO WORLD")
 
 test "首字母缩写"
-  assert_eq(initials_of("portable network graphics"), "PNG")
-  assert_eq(initials_of("Rythme"), "R")
+  assert_eq(initials_of("portable network graphics") "PNG")
+  assert_eq(initials_of("Rythme") "R")
 end
 "#,
         ),
@@ -6685,18 +6687,18 @@ fn title_case(text) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "palindromes"
-  assert_eq(is_palindrome("kayak"), true)
-  assert_eq(is_palindrome("Never odd or even"), true)
-  assert_eq(is_palindrome("rythme"), false)
+  assert_eq(is_palindrome("kayak") true)
+  assert_eq(is_palindrome("Never odd or even") true)
+  assert_eq(is_palindrome("rythme") false)
 end
 
 test "vowels"
-  assert_eq(count_vowels("Rythme"), 2)
-  assert_eq(count_vowels("AEIOU"), 5)
-  assert_eq(count_vowels("xkcd"), 0)
+  assert_eq(count_vowels("Rythme") 2)
+  assert_eq(count_vowels("AEIOU") 5)
+  assert_eq(count_vowels("xkcd") 0)
 end
 
-test "title case" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")
+test "title case" = assert_eq(title_case("the LORD of the rings") "The Lord Of The Rings")
 "#,
             r#"# 练习 18 · 处理文本  ★★☆
 #
@@ -6729,18 +6731,18 @@ fn title_case(text) = fail("待完成")
 # --- 测试（请不要修改）---
 
 test "回文"
-  assert_eq(is_palindrome("上海自来水来自海上"), true)
-  assert_eq(is_palindrome("Never odd or even"), true)
-  assert_eq(is_palindrome("rythme"), false)
+  assert_eq(is_palindrome("上海自来水来自海上") true)
+  assert_eq(is_palindrome("Never odd or even") true)
+  assert_eq(is_palindrome("rythme") false)
 end
 
 test "元音"
-  assert_eq(count_vowels("Rythme"), 2)
-  assert_eq(count_vowels("AEIOU"), 5)
-  assert_eq(count_vowels("xkcd"), 0)
+  assert_eq(count_vowels("Rythme") 2)
+  assert_eq(count_vowels("AEIOU") 5)
+  assert_eq(count_vowels("xkcd") 0)
 end
 
-test "标题格式" = assert_eq(title_case("the LORD of the rings"), "The Lord Of The Rings")
+test "标题格式" = assert_eq(title_case("the LORD of the rings") "The Lord Of The Rings")
 "#,
         ),
         ("19-sorting", "19-sorting"),
@@ -6772,37 +6774,37 @@ test "标题格式" = assert_eq(title_case("the LORD of the rings"), "The Lord O
 # Check your work:  rythme exercise check 19-sorting.ry
 #              or:  rythme test 19-sorting.ry
 
-fn insert(sorted, x) = fail("to do")
+fn insert(sorted x) = fail("to do")
 
 fn insertion_sort(list) = fail("to do")
 
-fn merge(a, b) = fail("to do")
+fn merge(a b) = fail("to do")
 
 fn merge_sort(list) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "insert"
-  assert_eq(insert([1, 3, 5], 4), [1, 3, 4, 5])
-  assert_eq(insert([], 2), [2])
-  assert_eq(insert([1, 2], 9), [1, 2, 9])
+  assert_eq(insert([1 3 5] 4) [1 3 4 5])
+  assert_eq(insert([] 2) [2])
+  assert_eq(insert([1 2] 9) [1 2 9])
 end
 
 test "insertion sort"
-  assert_eq(insertion_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(insertion_sort([5 2 9 1 5 6]) [1 2 5 5 6 9])
   assert_eq(insertion_sort([]), [])
 end
 
 test "merge"
-  assert_eq(merge([1, 4, 6], [2, 3, 7]), [1, 2, 3, 4, 6, 7])
+  assert_eq(merge([1 4 6] [2 3 7]) [1 2 3 4 6 7])
   assert_eq(merge([], [1]), [1])
   assert_eq(merge([1], []), [1])
 end
 
 test "merge sort"
-  assert_eq(merge_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
-  assert_eq(merge_sort(["pear", "apple", "fig"]), ["apple", "fig", "pear"])
-  assert_eq(merge_sort(reverse(1..100)), 1..100)
+  assert_eq(merge_sort([5 2 9 1 5 6]) [1 2 5 5 6 9])
+  assert_eq(merge_sort(["pear" "apple" "fig"]) ["apple" "fig" "pear"])
+  assert_eq(merge_sort(reverse(1..100)) 1..100)
 end
 "#,
             r#"# 练习 19 · 排序  ★★★
@@ -6829,37 +6831,37 @@ end
 # 检查你的作业：  rythme exercise check 19-sorting.ry
 #           或：  rythme test 19-sorting.ry
 
-fn insert(sorted, x) = fail("待完成")
+fn insert(sorted x) = fail("待完成")
 
 fn insertion_sort(list) = fail("待完成")
 
-fn merge(a, b) = fail("待完成")
+fn merge(a b) = fail("待完成")
 
 fn merge_sort(list) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 test "插入"
-  assert_eq(insert([1, 3, 5], 4), [1, 3, 4, 5])
-  assert_eq(insert([], 2), [2])
-  assert_eq(insert([1, 2], 9), [1, 2, 9])
+  assert_eq(insert([1 3 5] 4) [1 3 4 5])
+  assert_eq(insert([] 2) [2])
+  assert_eq(insert([1 2] 9) [1 2 9])
 end
 
 test "插入排序"
-  assert_eq(insertion_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
+  assert_eq(insertion_sort([5 2 9 1 5 6]) [1 2 5 5 6 9])
   assert_eq(insertion_sort([]), [])
 end
 
 test "合并"
-  assert_eq(merge([1, 4, 6], [2, 3, 7]), [1, 2, 3, 4, 6, 7])
+  assert_eq(merge([1 4 6] [2 3 7]) [1 2 3 4 6 7])
   assert_eq(merge([], [1]), [1])
   assert_eq(merge([1], []), [1])
 end
 
 test "归并排序"
-  assert_eq(merge_sort([5, 2, 9, 1, 5, 6]), [1, 2, 5, 5, 6, 9])
-  assert_eq(merge_sort(["pear", "apple", "fig"]), ["apple", "fig", "pear"])
-  assert_eq(merge_sort(reverse(1..100)), 1..100)
+  assert_eq(merge_sort([5 2 9 1 5 6]) [1 2 5 5 6 9])
+  assert_eq(merge_sort(["pear" "apple" "fig"]) ["apple" "fig" "pear"])
+  assert_eq(merge_sort(reverse(1..100)) 1..100)
 end
 "#,
         ),
@@ -6889,37 +6891,37 @@ end
 # Check your work:  rythme exercise check 20-records.ry
 #              or:  rythme test 20-records.ry
 
-fn age_in(person, year) = fail("to do")
+fn age_in(person year) = fail("to do")
 
 fn label(person) = fail("to do")
 
-fn renamed(person, name) = fail("to do")
+fn renamed(person name) = fail("to do")
 
-fn moved(point, dx, dy) = fail("to do")
+fn moved(point dx dy) = fail("to do")
 
-fn distance(a, b) = fail("to do")
+fn distance(a b) = fail("to do")
 
 # --- Tests (do not change them) ---
 
-ada = {name: "Ada", born: 1815}
+ada = {name: "Ada" born: 1815}
 
-test "age" = assert_eq(age_in(ada, 1852), 37)
+test "age" = assert_eq(age_in(ada 1852) 37)
 
-test "label" = assert_eq(label(ada), "Ada (1815)")
+test "label" = assert_eq(label(ada) "Ada (1815)")
 
 test "renamed"
-  assert_eq(renamed(ada, "Augusta"), {name: "Augusta", born: 1815})
-  assert_eq(ada.name, "Ada")
+  assert_eq(renamed(ada "Augusta") {name: "Augusta" born: 1815})
+  assert_eq(ada.name "Ada")
 end
 
 test "moved"
-  assert_eq(moved({x: 1, y: 2}, 3, -1), {x: 4, y: 1})
-  assert_eq(moved({x: 0, y: 0}, 0, 0), {x: 0, y: 0})
+  assert_eq(moved({x: 1 y: 2} 3 -1) {x: 4 y: 1})
+  assert_eq(moved({x: 0 y: 0} 0 0) {x: 0 y: 0})
 end
 
 test "distance"
-  assert_eq(distance({x: 0, y: 0}, {x: 3, y: 4}), 5)
-  assert_eq(distance({x: 1, y: 1}, {x: 1, y: 1}), 0)
+  assert_eq(distance({x: 0 y: 0} {x: 3 y: 4}) 5)
+  assert_eq(distance({x: 1 y: 1} {x: 1 y: 1}) 0)
 end
 "#,
             r#"# 练习 20 · 记录  ★★☆
@@ -6945,37 +6947,37 @@ end
 # 检查你的作业：  rythme exercise check 20-records.ry
 #           或：  rythme test 20-records.ry
 
-fn age_in(person, year) = fail("待完成")
+fn age_in(person year) = fail("待完成")
 
 fn label(person) = fail("待完成")
 
-fn renamed(person, name) = fail("待完成")
+fn renamed(person name) = fail("待完成")
 
-fn moved(point, dx, dy) = fail("待完成")
+fn moved(point dx dy) = fail("待完成")
 
-fn distance(a, b) = fail("待完成")
+fn distance(a b) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
-ada = {name: "Ada", born: 1815}
+ada = {name: "Ada" born: 1815}
 
-test "年龄" = assert_eq(age_in(ada, 1852), 37)
+test "年龄" = assert_eq(age_in(ada 1852) 37)
 
-test "标签" = assert_eq(label(ada), "Ada (1815)")
+test "标签" = assert_eq(label(ada) "Ada (1815)")
 
 test "改名"
-  assert_eq(renamed(ada, "Augusta"), {name: "Augusta", born: 1815})
-  assert_eq(ada.name, "Ada")
+  assert_eq(renamed(ada "Augusta") {name: "Augusta" born: 1815})
+  assert_eq(ada.name "Ada")
 end
 
 test "移动"
-  assert_eq(moved({x: 1, y: 2}, 3, -1), {x: 4, y: 1})
-  assert_eq(moved({x: 0, y: 0}, 0, 0), {x: 0, y: 0})
+  assert_eq(moved({x: 1 y: 2} 3 -1) {x: 4 y: 1})
+  assert_eq(moved({x: 0 y: 0} 0 0) {x: 0 y: 0})
 end
 
 test "距离"
-  assert_eq(distance({x: 0, y: 0}, {x: 3, y: 4}), 5)
-  assert_eq(distance({x: 1, y: 1}, {x: 1, y: 1}), 0)
+  assert_eq(distance({x: 0 y: 0} {x: 3 y: 4}) 5)
+  assert_eq(distance({x: 1 y: 1} {x: 1 y: 1}) 0)
 end
 "#,
         ),
@@ -7020,22 +7022,22 @@ fn group_sizes(students) = fail("to do")
 # --- Tests (do not change them) ---
 
 classroom = [
-  {name: "Ada", score: 92, group: "A"},
-  {name: "Alan", score: 45, group: "B"},
-  {name: "Grace", score: 78, group: "A"},
-  {name: "Edsger", score: 50, group: "B"},
-  {name: "Barbara", score: 85, group: "A"},
+  {name: "Ada" score: 92 group: "A"}
+  {name: "Alan" score: 45 group: "B"}
+  {name: "Grace" score: 78 group: "A"}
+  {name: "Edsger" score: 50 group: "B"}
+  {name: "Barbara" score: 85 group: "A"}
 ]
 
-test "passed" = assert_eq(names_of_passed(classroom), ["Ada", "Grace", "Edsger", "Barbara"])
+test "passed" = assert_eq(names_of_passed(classroom) ["Ada" "Grace" "Edsger" "Barbara"])
 
-test "average" = assert_eq(average_score(classroom), 70)
+test "average" = assert_eq(average_score(classroom) 70)
 
-test "best" = assert_eq(best(classroom), "Ada")
+test "best" = assert_eq(best(classroom) "Ada")
 
-test "ranking" = assert_eq(ranking(classroom), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+test "ranking" = assert_eq(ranking(classroom) ["Ada" "Barbara" "Grace" "Edsger" "Alan"])
 
-test "group sizes" = assert_eq(group_sizes(classroom), {A: 3, B: 2})
+test "group sizes" = assert_eq(group_sizes(classroom) {A: 3 B: 2})
 "#,
             r#"# 练习 21 · 记录的列表  ★★☆
 #
@@ -7076,22 +7078,22 @@ fn group_sizes(students) = fail("待完成")
 # --- 测试（请不要修改）---
 
 classroom = [
-  {name: "Ada", score: 92, group: "A"},
-  {name: "Alan", score: 45, group: "B"},
-  {name: "Grace", score: 78, group: "A"},
-  {name: "Edsger", score: 50, group: "B"},
-  {name: "Barbara", score: 85, group: "A"},
+  {name: "Ada" score: 92 group: "A"}
+  {name: "Alan" score: 45 group: "B"}
+  {name: "Grace" score: 78 group: "A"}
+  {name: "Edsger" score: 50 group: "B"}
+  {name: "Barbara" score: 85 group: "A"}
 ]
 
-test "及格" = assert_eq(names_of_passed(classroom), ["Ada", "Grace", "Edsger", "Barbara"])
+test "及格" = assert_eq(names_of_passed(classroom) ["Ada" "Grace" "Edsger" "Barbara"])
 
-test "平均分" = assert_eq(average_score(classroom), 70)
+test "平均分" = assert_eq(average_score(classroom) 70)
 
-test "最好的" = assert_eq(best(classroom), "Ada")
+test "最好的" = assert_eq(best(classroom) "Ada")
 
-test "排名" = assert_eq(ranking(classroom), ["Ada", "Barbara", "Grace", "Edsger", "Alan"])
+test "排名" = assert_eq(ranking(classroom) ["Ada" "Barbara" "Grace" "Edsger" "Alan"])
 
-test "各组人数" = assert_eq(group_sizes(classroom), {A: 3, B: 2})
+test "各组人数" = assert_eq(group_sizes(classroom) {A: 3 B: 2})
 "#,
         ),
         ("22-own-types", "22-own-types"),
@@ -7121,7 +7123,7 @@ test "各组人数" = assert_eq(group_sizes(classroom), {A: 3, B: 2})
 # Check your work:  rythme exercise check 22-own-types.ry
 #              or:  rythme test 22-own-types.ry
 
-type Shape = Circle(radius) | Rect(width, height) | Square(side)
+type Shape = Circle(radius) | Rect(width height) | Square(side)
 
 fn area(shape) = fail("to do")
 
@@ -7134,20 +7136,20 @@ fn total_area(shapes) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "area"
-  assert_eq(area(Rect(2, 3)), 6)
-  assert_eq(area(Square(4)), 16)
-  assert_eq(round(area(Circle(1)), 2), 3.14)
+  assert_eq(area(Rect(2 3)) 6)
+  assert_eq(area(Square(4)) 16)
+  assert_eq(round(area(Circle(1)) 2) 3.14)
 end
 
 test "perimeter"
-  assert_eq(perimeter(Rect(2, 3)), 10)
-  assert_eq(perimeter(Square(4)), 16)
-  assert_eq(round(perimeter(Circle(1)), 2), 6.28)
+  assert_eq(perimeter(Rect(2 3)) 10)
+  assert_eq(perimeter(Square(4)) 16)
+  assert_eq(round(perimeter(Circle(1)) 2) 6.28)
 end
 
-test "name" = assert_eq([Circle(1), Rect(1, 2), Square(3)] |> map(name_of), ["circle", "rectangle", "square"])
+test "name" = assert_eq([Circle(1) Rect(1 2) Square(3)] |> map(name_of) ["circle" "rectangle" "square"])
 
-test "total area" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 11)
+test "total area" = assert_eq(total_area([Rect(2 3) Square(2) Rect(1 1)]) 11)
 "#,
             r#"# 练习 22 · 你自己的类型  ★★☆
 #
@@ -7171,7 +7173,7 @@ test "total area" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 1
 # 检查你的作业：  rythme exercise check 22-own-types.ry
 #           或：  rythme test 22-own-types.ry
 
-type Shape = Circle(radius) | Rect(width, height) | Square(side)
+type Shape = Circle(radius) | Rect(width height) | Square(side)
 
 fn area(shape) = fail("待完成")
 
@@ -7184,20 +7186,20 @@ fn total_area(shapes) = fail("待完成")
 # --- 测试（请不要修改）---
 
 test "面积"
-  assert_eq(area(Rect(2, 3)), 6)
-  assert_eq(area(Square(4)), 16)
-  assert_eq(round(area(Circle(1)), 2), 3.14)
+  assert_eq(area(Rect(2 3)) 6)
+  assert_eq(area(Square(4)) 16)
+  assert_eq(round(area(Circle(1)) 2) 3.14)
 end
 
 test "周长"
-  assert_eq(perimeter(Rect(2, 3)), 10)
-  assert_eq(perimeter(Square(4)), 16)
-  assert_eq(round(perimeter(Circle(1)), 2), 6.28)
+  assert_eq(perimeter(Rect(2 3)) 10)
+  assert_eq(perimeter(Square(4)) 16)
+  assert_eq(round(perimeter(Circle(1)) 2) 6.28)
 end
 
-test "名字" = assert_eq([Circle(1), Rect(1, 2), Square(3)] |> map(name_of), ["圆形", "长方形", "正方形"])
+test "名字" = assert_eq([Circle(1) Rect(1 2) Square(3)] |> map(name_of) ["圆形" "长方形" "正方形"])
 
-test "总面积" = assert_eq(total_area([Rect(2, 3), Square(2), Rect(1, 1)]), 11)
+test "总面积" = assert_eq(total_area([Rect(2 3) Square(2) Rect(1 1)]) 11)
 "#,
         ),
         ("23-match", "23-match"),
@@ -7245,27 +7247,27 @@ fn greeting(person) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "next light"
-  assert_eq(next_light(Green), Orange)
-  assert_eq(next_light(Orange), Red)
-  assert_eq(next_light(Red), Green)
+  assert_eq(next_light(Green) Orange)
+  assert_eq(next_light(Orange) Red)
+  assert_eq(next_light(Red) Green)
 end
 
 test "can go"
-  assert_eq(can_go(Green), true)
-  assert_eq(can_go(Orange), false)
-  assert_eq(can_go(Red), false)
+  assert_eq(can_go(Green) true)
+  assert_eq(can_go(Orange) false)
+  assert_eq(can_go(Red) false)
 end
 
 test "describe"
-  assert_eq(describe([]), "empty")
-  assert_eq(describe([7]), "one: 7")
-  assert_eq(describe([1, 2]), "two: 1 and 2")
-  assert_eq(describe([5, 6, 7]), "many, starting with 5")
+  assert_eq(describe([]) "empty")
+  assert_eq(describe([7]) "one: 7")
+  assert_eq(describe([1 2]) "two: 1 and 2")
+  assert_eq(describe([5 6 7]) "many, starting with 5")
 end
 
 test "greeting"
-  assert_eq(greeting({title: "Dr", last: "Hopper", name: "Grace"}), "Hello, Dr Hopper")
-  assert_eq(greeting({name: "Grace"}), "Hello, Grace")
+  assert_eq(greeting({title: "Dr" last: "Hopper" name: "Grace"}) "Hello, Dr Hopper")
+  assert_eq(greeting({name: "Grace"}) "Hello, Grace")
 end
 "#,
             r#"# 练习 23 · 用 `match` 做选择  ★★☆
@@ -7310,27 +7312,27 @@ fn greeting(person) = fail("待完成")
 # --- 测试（请不要修改）---
 
 test "下一个灯"
-  assert_eq(next_light(Green), Orange)
-  assert_eq(next_light(Orange), Red)
-  assert_eq(next_light(Red), Green)
+  assert_eq(next_light(Green) Orange)
+  assert_eq(next_light(Orange) Red)
+  assert_eq(next_light(Red) Green)
 end
 
 test "可以通行"
-  assert_eq(can_go(Green), true)
-  assert_eq(can_go(Orange), false)
-  assert_eq(can_go(Red), false)
+  assert_eq(can_go(Green) true)
+  assert_eq(can_go(Orange) false)
+  assert_eq(can_go(Red) false)
 end
 
 test "描述"
-  assert_eq(describe([]), "空")
-  assert_eq(describe([7]), "一个：7")
-  assert_eq(describe([1, 2]), "两个：1 和 2")
-  assert_eq(describe([5, 6, 7]), "多个，从 5 开始")
+  assert_eq(describe([]) "空")
+  assert_eq(describe([7]) "一个：7")
+  assert_eq(describe([1 2]) "两个：1 和 2")
+  assert_eq(describe([5 6 7]) "多个，从 5 开始")
 end
 
 test "问候"
-  assert_eq(greeting({title: "博士", last: "Hopper", name: "Grace"}), "你好，Hopper 博士")
-  assert_eq(greeting({name: "Grace"}), "你好，Grace")
+  assert_eq(greeting({title: "博士" last: "Hopper" name: "Grace"}) "你好，Hopper 博士")
+  assert_eq(greeting({name: "Grace"}) "你好，Grace")
 end
 "#,
         ),
@@ -7364,7 +7366,7 @@ end
 # Check your work:  rythme exercise check 24-trees.ry
 #              or:  rythme test 24-trees.ry
 
-type Tree = Leaf | Node(left, value, right)
+type Tree = Leaf | Node(left value right)
 
 fn size(tree) = fail("to do")
 
@@ -7372,7 +7374,7 @@ fn total(tree) = fail("to do")
 
 fn depth(tree) = fail("to do")
 
-fn insert(tree, x) = fail("to do")
+fn insert(tree x) = fail("to do")
 
 fn to_list(tree) = fail("to do")
 
@@ -7383,28 +7385,28 @@ fn to_list(tree) = fail("to do")
 #     3   8
 #    /
 #   1
-small = Node(Node(Node(Leaf, 1, Leaf), 3, Leaf), 5, Node(Leaf, 8, Leaf))
+small = Node(Node(Node(Leaf 1 Leaf) 3 Leaf) 5 Node(Leaf 8 Leaf))
 
 test "size"
-  assert_eq(size(Leaf), 0)
-  assert_eq(size(small), 4)
+  assert_eq(size(Leaf) 0)
+  assert_eq(size(small) 4)
 end
 
-test "total" = assert_eq(total(small), 17)
+test "total" = assert_eq(total(small) 17)
 
 test "depth"
-  assert_eq(depth(Leaf), 0)
-  assert_eq(depth(small), 3)
+  assert_eq(depth(Leaf) 0)
+  assert_eq(depth(small) 3)
 end
 
 test "insert"
-  assert_eq(insert(Leaf, 4), Node(Leaf, 4, Leaf))
-  assert_eq(insert(Node(Leaf, 4, Leaf), 2), Node(Node(Leaf, 2, Leaf), 4, Leaf))
+  assert_eq(insert(Leaf 4) Node(Leaf 4 Leaf))
+  assert_eq(insert(Node(Leaf 4 Leaf) 2) Node(Node(Leaf 2 Leaf) 4 Leaf))
 end
 
-test "to list" = assert_eq(to_list(small), [1, 3, 5, 8])
+test "to list" = assert_eq(to_list(small) [1 3 5 8])
 
-test "sorting with a tree" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> to_list, [1, 2, 4, 7, 9])
+test "sorting with a tree" = assert_eq([7 2 9 4 1] |> fold(Leaf insert) |> to_list [1 2 4 7 9])
 "#,
             r#"# 练习 24 · 树  ★★★
 #
@@ -7431,7 +7433,7 @@ test "sorting with a tree" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> 
 # 检查你的作业：  rythme exercise check 24-trees.ry
 #           或：  rythme test 24-trees.ry
 
-type Tree = Leaf | Node(left, value, right)
+type Tree = Leaf | Node(left value right)
 
 fn size(tree) = fail("待完成")
 
@@ -7439,7 +7441,7 @@ fn total(tree) = fail("待完成")
 
 fn depth(tree) = fail("待完成")
 
-fn insert(tree, x) = fail("待完成")
+fn insert(tree x) = fail("待完成")
 
 fn to_list(tree) = fail("待完成")
 
@@ -7450,28 +7452,28 @@ fn to_list(tree) = fail("待完成")
 #     3   8
 #    /
 #   1
-small = Node(Node(Node(Leaf, 1, Leaf), 3, Leaf), 5, Node(Leaf, 8, Leaf))
+small = Node(Node(Node(Leaf 1 Leaf) 3 Leaf) 5 Node(Leaf 8 Leaf))
 
 test "大小"
-  assert_eq(size(Leaf), 0)
-  assert_eq(size(small), 4)
+  assert_eq(size(Leaf) 0)
+  assert_eq(size(small) 4)
 end
 
-test "总和" = assert_eq(total(small), 17)
+test "总和" = assert_eq(total(small) 17)
 
 test "深度"
-  assert_eq(depth(Leaf), 0)
-  assert_eq(depth(small), 3)
+  assert_eq(depth(Leaf) 0)
+  assert_eq(depth(small) 3)
 end
 
 test "插入"
-  assert_eq(insert(Leaf, 4), Node(Leaf, 4, Leaf))
-  assert_eq(insert(Node(Leaf, 4, Leaf), 2), Node(Node(Leaf, 2, Leaf), 4, Leaf))
+  assert_eq(insert(Leaf 4) Node(Leaf 4 Leaf))
+  assert_eq(insert(Node(Leaf 4 Leaf) 2) Node(Node(Leaf 2 Leaf) 4 Leaf))
 end
 
-test "变成列表" = assert_eq(to_list(small), [1, 3, 5, 8])
+test "变成列表" = assert_eq(to_list(small) [1 3 5 8])
 
-test "用树排序" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> to_list, [1, 2, 4, 7, 9])
+test "用树排序" = assert_eq([7 2 9 4 1] |> fold(Leaf insert) |> to_list [1 2 4 7 9])
 "#,
         ),
         ("25-expressions", "25-expressions"),
@@ -7502,7 +7504,7 @@ test "用树排序" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> to_list
 # Check your work:  rythme exercise check 25-expressions.ry
 #              or:  rythme test 25-expressions.ry
 
-type Expr = Num(value) | Add(left, right) | Mul(left, right) | Neg(inner)
+type Expr = Num(value) | Add(left right) | Mul(left right) | Neg(inner)
 
 fn evaluate(expr) = fail("to do")
 
@@ -7514,27 +7516,27 @@ fn simplify(expr) = fail("to do")
 
 # --- Tests (do not change them) ---
 
-calculation = Mul(Add(Num(1), Num(2)), Num(3))
+calculation = Mul(Add(Num(1) Num(2)) Num(3))
 
 test "evaluate"
-  assert_eq(evaluate(Num(4)), 4)
-  assert_eq(evaluate(calculation), 9)
+  assert_eq(evaluate(Num(4)) 4)
+  assert_eq(evaluate(calculation) 9)
   assert_eq(evaluate(Neg(calculation)), -9)
 end
 
 test "show"
-  assert_eq(show(calculation), "((1 + 2) * 3)")
-  assert_eq(show(Neg(Num(4))), "-4")
-  assert_eq(show(Neg(Add(Num(1), Num(2)))), "-(1 + 2)")
+  assert_eq(show(calculation) "((1 + 2) * 3)")
+  assert_eq(show(Neg(Num(4))) "-4")
+  assert_eq(show(Neg(Add(Num(1) Num(2)))) "-(1 + 2)")
 end
 
-test "count numbers" = assert_eq(count_numbers(Add(calculation, Neg(Num(5)))), 4)
+test "count numbers" = assert_eq(count_numbers(Add(calculation Neg(Num(5)))) 4)
 
 test "simplify"
-  assert_eq(simplify(Add(Num(7), Num(0))), Num(7))
-  assert_eq(simplify(Mul(Num(1), Add(Num(0), Num(2)))), Num(2))
-  assert_eq(simplify(calculation), calculation)
-  assert_eq(simplify(Neg(Mul(Num(3), Num(1)))), Neg(Num(3)))
+  assert_eq(simplify(Add(Num(7) Num(0))) Num(7))
+  assert_eq(simplify(Mul(Num(1) Add(Num(0) Num(2)))) Num(2))
+  assert_eq(simplify(calculation) calculation)
+  assert_eq(simplify(Neg(Mul(Num(3) Num(1)))) Neg(Num(3)))
 end
 "#,
             r#"# 练习 25 · 一个小计算器  ★★★
@@ -7559,7 +7561,7 @@ end
 # 检查你的作业：  rythme exercise check 25-expressions.ry
 #           或：  rythme test 25-expressions.ry
 
-type Expr = Num(value) | Add(left, right) | Mul(left, right) | Neg(inner)
+type Expr = Num(value) | Add(left right) | Mul(left right) | Neg(inner)
 
 fn evaluate(expr) = fail("待完成")
 
@@ -7571,27 +7573,27 @@ fn simplify(expr) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
-calculation = Mul(Add(Num(1), Num(2)), Num(3))
+calculation = Mul(Add(Num(1) Num(2)) Num(3))
 
 test "求值"
-  assert_eq(evaluate(Num(4)), 4)
-  assert_eq(evaluate(calculation), 9)
+  assert_eq(evaluate(Num(4)) 4)
+  assert_eq(evaluate(calculation) 9)
   assert_eq(evaluate(Neg(calculation)), -9)
 end
 
 test "显示"
-  assert_eq(show(calculation), "((1 + 2) * 3)")
-  assert_eq(show(Neg(Num(4))), "-4")
-  assert_eq(show(Neg(Add(Num(1), Num(2)))), "-(1 + 2)")
+  assert_eq(show(calculation) "((1 + 2) * 3)")
+  assert_eq(show(Neg(Num(4))) "-4")
+  assert_eq(show(Neg(Add(Num(1) Num(2)))) "-(1 + 2)")
 end
 
-test "数的个数" = assert_eq(count_numbers(Add(calculation, Neg(Num(5)))), 4)
+test "数的个数" = assert_eq(count_numbers(Add(calculation Neg(Num(5)))) 4)
 
 test "化简"
-  assert_eq(simplify(Add(Num(7), Num(0))), Num(7))
-  assert_eq(simplify(Mul(Num(1), Add(Num(0), Num(2)))), Num(2))
-  assert_eq(simplify(calculation), calculation)
-  assert_eq(simplify(Neg(Mul(Num(3), Num(1)))), Neg(Num(3)))
+  assert_eq(simplify(Add(Num(7) Num(0))) Num(7))
+  assert_eq(simplify(Mul(Num(1) Add(Num(0) Num(2)))) Num(2))
+  assert_eq(simplify(calculation) calculation)
+  assert_eq(simplify(Neg(Mul(Num(3) Num(1)))) Neg(Num(3)))
 end
 "#,
         ),
@@ -7625,44 +7627,44 @@ end
 # Check your work:  rythme exercise check 26-option.ry
 #              or:  rythme test 26-option.ry
 
-fn safe_divide(a, b) = fail("to do")
+fn safe_divide(a b) = fail("to do")
 
-fn find_age(people, name) = fail("to do")
+fn find_age(people name) = fail("to do")
 
-fn age_or_unknown(people, name) = fail("to do")
+fn age_or_unknown(people name) = fail("to do")
 
 fn first_long_word(words) = fail("to do")
 
-fn add_options(a, b) = fail("to do")
+fn add_options(a b) = fail("to do")
 
 # --- Tests (do not change them) ---
 
-people = [{name: "Ada", age: 36}, {name: "Alan", age: 41}]
+people = [{name: "Ada" age: 36} {name: "Alan" age: 41}]
 
 test "safe divide"
-  assert_eq(safe_divide(10, 4), Some(2.5))
-  assert_eq(safe_divide(1, 0), None)
+  assert_eq(safe_divide(10 4) Some(2.5))
+  assert_eq(safe_divide(1 0) None)
 end
 
 test "find age"
-  assert_eq(find_age(people, "Alan"), Some(41))
-  assert_eq(find_age(people, "Grace"), None)
+  assert_eq(find_age(people "Alan") Some(41))
+  assert_eq(find_age(people "Grace") None)
 end
 
 test "age or unknown"
-  assert_eq(age_or_unknown(people, "Ada"), "36")
-  assert_eq(age_or_unknown(people, "Grace"), "unknown")
+  assert_eq(age_or_unknown(people "Ada") "36")
+  assert_eq(age_or_unknown(people "Grace") "unknown")
 end
 
 test "first long word"
-  assert_eq(first_long_word(["a", "functional", "language"]), Some("functional"))
-  assert_eq(first_long_word(["short", "words"]), None)
+  assert_eq(first_long_word(["a" "functional" "language"]) Some("functional"))
+  assert_eq(first_long_word(["short" "words"]) None)
 end
 
 test "add options"
-  assert_eq(add_options(Some(2), Some(3)), Some(5))
-  assert_eq(add_options(Some(2), None), None)
-  assert_eq(add_options(None, None), None)
+  assert_eq(add_options(Some(2) Some(3)) Some(5))
+  assert_eq(add_options(Some(2) None) None)
+  assert_eq(add_options(None None) None)
 end
 "#,
             r#"# 练习 26 · 可能缺失的值：Option  ★★☆
@@ -7692,44 +7694,44 @@ end
 # 检查你的作业：  rythme exercise check 26-option.ry
 #           或：  rythme test 26-option.ry
 
-fn safe_divide(a, b) = fail("待完成")
+fn safe_divide(a b) = fail("待完成")
 
-fn find_age(people, name) = fail("待完成")
+fn find_age(people name) = fail("待完成")
 
-fn age_or_unknown(people, name) = fail("待完成")
+fn age_or_unknown(people name) = fail("待完成")
 
 fn first_long_word(words) = fail("待完成")
 
-fn add_options(a, b) = fail("待完成")
+fn add_options(a b) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
-people = [{name: "Ada", age: 36}, {name: "Alan", age: 41}]
+people = [{name: "Ada" age: 36} {name: "Alan" age: 41}]
 
 test "安全除法"
-  assert_eq(safe_divide(10, 4), Some(2.5))
-  assert_eq(safe_divide(1, 0), None)
+  assert_eq(safe_divide(10 4) Some(2.5))
+  assert_eq(safe_divide(1 0) None)
 end
 
 test "查找年龄"
-  assert_eq(find_age(people, "Alan"), Some(41))
-  assert_eq(find_age(people, "Grace"), None)
+  assert_eq(find_age(people "Alan") Some(41))
+  assert_eq(find_age(people "Grace") None)
 end
 
 test "年龄或未知"
-  assert_eq(age_or_unknown(people, "Ada"), "36")
-  assert_eq(age_or_unknown(people, "Grace"), "未知")
+  assert_eq(age_or_unknown(people "Ada") "36")
+  assert_eq(age_or_unknown(people "Grace") "未知")
 end
 
 test "第一个长词"
-  assert_eq(first_long_word(["a", "functional", "language"]), Some("functional"))
-  assert_eq(first_long_word(["short", "words"]), None)
+  assert_eq(first_long_word(["a" "functional" "language"]) Some("functional"))
+  assert_eq(first_long_word(["short" "words"]) None)
 end
 
 test "两个 Option 相加"
-  assert_eq(add_options(Some(2), Some(3)), Some(5))
-  assert_eq(add_options(Some(2), None), None)
-  assert_eq(add_options(None, None), None)
+  assert_eq(add_options(Some(2) Some(3)) Some(5))
+  assert_eq(add_options(Some(2) None) None)
+  assert_eq(add_options(None None) None)
 end
 "#,
         ),
@@ -7763,7 +7765,7 @@ end
 # Check your work:  rythme exercise check 27-result.ry
 #              or:  rythme test 27-result.ry
 
-fn checked_divide(a, b) = fail("to do")
+fn checked_divide(a b) = fail("to do")
 
 fn parse_age(text) = fail("to do")
 
@@ -7774,28 +7776,28 @@ fn check_code(code) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "checked divide"
-  assert_eq(checked_divide(9, 3), Ok(3))
-  assert_eq(checked_divide(1, 0), Err("division by zero"))
+  assert_eq(checked_divide(9 3) Ok(3))
+  assert_eq(checked_divide(1 0) Err("division by zero"))
 end
 
 test "parse age"
-  assert_eq(parse_age("36"), Ok(36))
-  assert_eq(parse_age(" 7 "), Ok(7))
-  assert_eq(parse_age("seven"), Err("not a number"))
-  assert_eq(parse_age("-1"), Err("an age cannot be negative"))
-  assert_eq(parse_age("200"), Err("too old"))
+  assert_eq(parse_age("36") Ok(36))
+  assert_eq(parse_age(" 7 ") Ok(7))
+  assert_eq(parse_age("seven") Err("not a number"))
+  assert_eq(parse_age("-1") Err("an age cannot be negative"))
+  assert_eq(parse_age("200") Err("too old"))
 end
 
 test "describe"
-  assert_eq(describe(Ok(42)), "ok: 42")
-  assert_eq(describe(Err("too old")), "error: too old")
-  assert_eq(describe(parse_age("-5")), "error: an age cannot be negative")
+  assert_eq(describe(Ok(42)) "ok: 42")
+  assert_eq(describe(Err("too old")) "error: too old")
+  assert_eq(describe(parse_age("-5")) "error: an age cannot be negative")
 end
 
 test "check code"
-  assert_eq(check_code("rythme2024"), Ok("rythme2024"))
-  assert_eq(check_code("abc1"), Err("too short"))
-  assert_eq(check_code("functional"), Err("no digit"))
+  assert_eq(check_code("rythme2024") Ok("rythme2024"))
+  assert_eq(check_code("abc1") Err("too short"))
+  assert_eq(check_code("functional") Err("no digit"))
 end
 "#,
             r#"# 练习 27 · 可能失败的操作：Result  ★★☆
@@ -7825,7 +7827,7 @@ end
 # 检查你的作业：  rythme exercise check 27-result.ry
 #           或：  rythme test 27-result.ry
 
-fn checked_divide(a, b) = fail("待完成")
+fn checked_divide(a b) = fail("待完成")
 
 fn parse_age(text) = fail("待完成")
 
@@ -7836,28 +7838,28 @@ fn check_code(code) = fail("待完成")
 # --- 测试（请不要修改）---
 
 test "检查过的除法"
-  assert_eq(checked_divide(9, 3), Ok(3))
-  assert_eq(checked_divide(1, 0), Err("除以零"))
+  assert_eq(checked_divide(9 3) Ok(3))
+  assert_eq(checked_divide(1 0) Err("除以零"))
 end
 
 test "读取年龄"
-  assert_eq(parse_age("36"), Ok(36))
-  assert_eq(parse_age(" 7 "), Ok(7))
-  assert_eq(parse_age("七"), Err("不是数字"))
-  assert_eq(parse_age("-1"), Err("年龄不能是负数"))
-  assert_eq(parse_age("200"), Err("年龄太大"))
+  assert_eq(parse_age("36") Ok(36))
+  assert_eq(parse_age(" 7 ") Ok(7))
+  assert_eq(parse_age("七") Err("不是数字"))
+  assert_eq(parse_age("-1") Err("年龄不能是负数"))
+  assert_eq(parse_age("200") Err("年龄太大"))
 end
 
 test "描述"
-  assert_eq(describe(Ok(42)), "成功：42")
-  assert_eq(describe(Err("年龄太大")), "错误：年龄太大")
-  assert_eq(describe(parse_age("-5")), "错误：年龄不能是负数")
+  assert_eq(describe(Ok(42)) "成功：42")
+  assert_eq(describe(Err("年龄太大")) "错误：年龄太大")
+  assert_eq(describe(parse_age("-5")) "错误：年龄不能是负数")
 end
 
 test "检查代码"
-  assert_eq(check_code("rythme2024"), Ok("rythme2024"))
-  assert_eq(check_code("abc1"), Err("太短"))
-  assert_eq(check_code("functional"), Err("没有数字"))
+  assert_eq(check_code("rythme2024") Ok("rythme2024"))
+  assert_eq(check_code("abc1") Err("太短"))
+  assert_eq(check_code("functional") Err("没有数字"))
 end
 "#,
         ),
@@ -7897,38 +7899,38 @@ end
 # Check your work:  rythme exercise check 28-question-mark.ry
 #              or:  rythme test 28-question-mark.ry
 
-fn add_texts(a, b) = fail("to do")
+fn add_texts(a b) = fail("to do")
 
 fn parse_point(text) = fail("to do")
 
 fn sum_of_texts(texts) = fail("to do")
 
-fn ratio_of_texts(a, b) = fail("to do")
+fn ratio_of_texts(a b) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "add texts"
-  assert_eq(add_texts("2", "40"), Ok(42))
-  assert(is_err(add_texts("2", "forty")), "forty is not a number")
+  assert_eq(add_texts("2" "40") Ok(42))
+  assert(is_err(add_texts("2" "forty")) "forty is not a number")
 end
 
 test "parse point"
-  assert_eq(parse_point("3,4"), Ok({x: 3, y: 4}))
-  assert_eq(parse_point("3"), Err("expected x,y"))
-  assert_eq(parse_point("1,2,3"), Err("expected x,y"))
-  assert(is_err(parse_point("3,four")), "four is not a number")
+  assert_eq(parse_point("3,4") Ok({x: 3 y: 4}))
+  assert_eq(parse_point("3") Err("expected x,y"))
+  assert_eq(parse_point("1,2,3") Err("expected x,y"))
+  assert(is_err(parse_point("3,four")) "four is not a number")
 end
 
 test "sum of texts"
-  assert_eq(sum_of_texts(["1", "2", "3"]), Ok(6))
-  assert_eq(sum_of_texts([]), Ok(0))
-  assert_eq(sum_of_texts(["1", "x", "y"]), parse_int("x"))
+  assert_eq(sum_of_texts(["1" "2" "3"]) Ok(6))
+  assert_eq(sum_of_texts([]) Ok(0))
+  assert_eq(sum_of_texts(["1" "x" "y"]) parse_int("x"))
 end
 
 test "ratio of texts"
-  assert_eq(ratio_of_texts("9", "2"), Ok(4.5))
-  assert_eq(ratio_of_texts("9", "0"), Err("division by zero"))
-  assert(is_err(ratio_of_texts("nine", "0")), "nine is not a number")
+  assert_eq(ratio_of_texts("9" "2") Ok(4.5))
+  assert_eq(ratio_of_texts("9" "0") Err("division by zero"))
+  assert(is_err(ratio_of_texts("nine" "0")) "nine is not a number")
 end
 "#,
             r#"# 练习 28 · 用 `?` 传递错误  ★★★
@@ -7961,38 +7963,38 @@ end
 # 检查你的作业：  rythme exercise check 28-question-mark.ry
 #           或：  rythme test 28-question-mark.ry
 
-fn add_texts(a, b) = fail("待完成")
+fn add_texts(a b) = fail("待完成")
 
 fn parse_point(text) = fail("待完成")
 
 fn sum_of_texts(texts) = fail("待完成")
 
-fn ratio_of_texts(a, b) = fail("待完成")
+fn ratio_of_texts(a b) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 test "文本相加"
-  assert_eq(add_texts("2", "40"), Ok(42))
-  assert(is_err(add_texts("2", "四十")), "四十不是数字")
+  assert_eq(add_texts("2" "40") Ok(42))
+  assert(is_err(add_texts("2" "四十")) "四十不是数字")
 end
 
 test "读取点"
-  assert_eq(parse_point("3,4"), Ok({x: 3, y: 4}))
-  assert_eq(parse_point("3"), Err("应为 x,y"))
-  assert_eq(parse_point("1,2,3"), Err("应为 x,y"))
-  assert(is_err(parse_point("3,四")), "四不是数字")
+  assert_eq(parse_point("3,4") Ok({x: 3 y: 4}))
+  assert_eq(parse_point("3") Err("应为 x,y"))
+  assert_eq(parse_point("1,2,3") Err("应为 x,y"))
+  assert(is_err(parse_point("3,四")) "四不是数字")
 end
 
 test "文本之和"
-  assert_eq(sum_of_texts(["1", "2", "3"]), Ok(6))
-  assert_eq(sum_of_texts([]), Ok(0))
-  assert_eq(sum_of_texts(["1", "x", "y"]), parse_int("x"))
+  assert_eq(sum_of_texts(["1" "2" "3"]) Ok(6))
+  assert_eq(sum_of_texts([]) Ok(0))
+  assert_eq(sum_of_texts(["1" "x" "y"]) parse_int("x"))
 end
 
 test "文本之比"
-  assert_eq(ratio_of_texts("9", "2"), Ok(4.5))
-  assert_eq(ratio_of_texts("9", "0"), Err("除以零"))
-  assert(is_err(ratio_of_texts("九", "0")), "九不是数字")
+  assert_eq(ratio_of_texts("9" "2") Ok(4.5))
+  assert_eq(ratio_of_texts("9" "0") Err("除以零"))
+  assert(is_err(ratio_of_texts("九" "0")) "九不是数字")
 end
 "#,
         ),
@@ -8034,25 +8036,25 @@ fn frequencies(text) = fail("to do")
 
 fn most_frequent(text) = fail("to do")
 
-fn report(text, n) = fail("to do")
+fn report(text n) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 poem = "The cat sat. The dog sat! Did the cat see the dog?"
 
-test "words" = assert_eq(words_of("Hello, World! Hello?"), ["hello", "world", "hello"])
+test "words" = assert_eq(words_of("Hello, World! Hello?") ["hello" "world" "hello"])
 
 test "frequencies"
-  assert_eq(frequencies("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
-  assert_eq(frequencies(poem) |> take(3), [["the", 4], ["cat", 2], ["dog", 2]])
+  assert_eq(frequencies("b a b c a b") [["b" 3] ["a" 2] ["c" 1]])
+  assert_eq(frequencies(poem) |> take(3) [["the" 4] ["cat" 2] ["dog" 2]])
 end
 
 test "most frequent"
-  assert_eq(most_frequent(poem), Some("the"))
-  assert_eq(most_frequent(" ... "), None)
+  assert_eq(most_frequent(poem) Some("the"))
+  assert_eq(most_frequent(" ... ") None)
 end
 
-test "report" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")
+test "report" = assert_eq(report(poem 3) "the: 4\ncat: 2\ndog: 2")
 "#,
             r#"# 练习 29 · 一个小项目：统计单词  ★★★
 #
@@ -8087,25 +8089,25 @@ fn frequencies(text) = fail("待完成")
 
 fn most_frequent(text) = fail("待完成")
 
-fn report(text, n) = fail("待完成")
+fn report(text n) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 poem = "The cat sat. The dog sat! Did the cat see the dog?"
 
-test "单词" = assert_eq(words_of("Hello, World! Hello?"), ["hello", "world", "hello"])
+test "单词" = assert_eq(words_of("Hello, World! Hello?") ["hello" "world" "hello"])
 
 test "频率"
-  assert_eq(frequencies("b a b c a b"), [["b", 3], ["a", 2], ["c", 1]])
-  assert_eq(frequencies(poem) |> take(3), [["the", 4], ["cat", 2], ["dog", 2]])
+  assert_eq(frequencies("b a b c a b") [["b" 3] ["a" 2] ["c" 1]])
+  assert_eq(frequencies(poem) |> take(3) [["the" 4] ["cat" 2] ["dog" 2]])
 end
 
 test "最常见的单词"
-  assert_eq(most_frequent(poem), Some("the"))
-  assert_eq(most_frequent(" ... "), None)
+  assert_eq(most_frequent(poem) Some("the"))
+  assert_eq(most_frequent(" ... ") None)
 end
 
-test "报告" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")
+test "报告" = assert_eq(report(poem 3) "the: 4\ncat: 2\ndog: 2")
 "#,
         ),
         ("30-testing", "30-testing"),
@@ -8138,33 +8140,33 @@ test "报告" = assert_eq(report(poem, 3), "the: 4\ncat: 2\ndog: 2")
 # Check your work:  rythme exercise check 30-testing.ry
 #              or:  rythme test 30-testing.ry
 
-fn clamp(x, low, high) = max(high, min(x, low))
+fn clamp(x low high) = max(high min(x low))
 
 fn median(list)
   middle = len(list) // 2
   if is_even(len(list)) then (list[middle - 1] + list[middle]) / 2 else list[middle]
 end
 
-fn count_words(text) = len(split(text, " "))
+fn count_words(text) = len(split(text " "))
 
 # --- Tests (do not change them) ---
 
 test "clamp"
-  assert_eq(clamp(15, 0, 10), 10)
-  assert_eq(clamp(-5, 0, 10), 0)
-  assert_eq(clamp(5, 0, 10), 5)
+  assert_eq(clamp(15 0 10) 10)
+  assert_eq(clamp(-5 0 10) 0)
+  assert_eq(clamp(5 0 10) 5)
 end
 
 test "median of an odd number of values"
-  assert_eq(median([1, 2, 3]), 2)
-  assert_eq(median([3, 1, 2]), 2)
+  assert_eq(median([1 2 3]) 2)
+  assert_eq(median([3 1 2]) 2)
 end
 
-test "median of an even number of values" = assert_eq(median([4, 1, 3, 2]), 2.5)
+test "median of an even number of values" = assert_eq(median([4 1 3 2]) 2.5)
 
 test "count words"
-  assert_eq(count_words("one two three"), 3)
-  assert_eq(count_words("  one   two "), 2)
+  assert_eq(count_words("one two three") 3)
+  assert_eq(count_words("  one   two ") 2)
 end
 
 # Your test:
@@ -8195,33 +8197,33 @@ end
 # 检查你的作业：  rythme exercise check 30-testing.ry
 #           或：  rythme test 30-testing.ry
 
-fn clamp(x, low, high) = max(high, min(x, low))
+fn clamp(x low high) = max(high min(x low))
 
 fn median(list)
   middle = len(list) // 2
   if is_even(len(list)) then (list[middle - 1] + list[middle]) / 2 else list[middle]
 end
 
-fn count_words(text) = len(split(text, " "))
+fn count_words(text) = len(split(text " "))
 
 # --- 测试（请不要修改）---
 
 test "限制范围"
-  assert_eq(clamp(15, 0, 10), 10)
-  assert_eq(clamp(-5, 0, 10), 0)
-  assert_eq(clamp(5, 0, 10), 5)
+  assert_eq(clamp(15 0 10) 10)
+  assert_eq(clamp(-5 0 10) 0)
+  assert_eq(clamp(5 0 10) 5)
 end
 
 test "奇数个值的中位数"
-  assert_eq(median([1, 2, 3]), 2)
-  assert_eq(median([3, 1, 2]), 2)
+  assert_eq(median([1 2 3]) 2)
+  assert_eq(median([3 1 2]) 2)
 end
 
-test "偶数个值的中位数" = assert_eq(median([4, 1, 3, 2]), 2.5)
+test "偶数个值的中位数" = assert_eq(median([4 1 3 2]) 2.5)
 
 test "统计单词"
-  assert_eq(count_words("one two three"), 3)
-  assert_eq(count_words("  one   two "), 2)
+  assert_eq(count_words("one two three") 3)
+  assert_eq(count_words("  one   two ") 2)
 end
 
 # 你的测试：
@@ -8263,15 +8265,15 @@ Every spreadsheet (LibreOffice, Excel, Google Sheets...) opens and saves it.
 
   csv_parse("name,age\nAda,36")              # Ok([["name", "age"], ["Ada", "36"]])
   csv_records("name,age\nAda,36")            # Ok([{name: "Ada", age: "36"}])
-  csv_format([["name", "age"], ["Ada", 36]]) # "name,age\nAda,36\n"
-  csv_format([{name: "Ada", age: 36}])       # the same text: records give a header
+  csv_format([["name" "age"] ["Ada" 36]]) # "name,age\nAda,36\n"
+  csv_format([{name: "Ada" age: 36}])       # the same text: records give a header
 
 With files
   match read_file("grades.csv").and_then(csv_records)
     Ok(rows) -> print(len(rows), "students")
     Err(e) -> print("Error: {e}")
   end
-  write_file("copy.csv", csv_format(rows))
+  write_file("copy.csv" csv_format(rows))
 
 The rules (RFC 4180)
   A field between quotes may hold commas, line breaks and quotes, written
@@ -8287,8 +8289,8 @@ The rules (RFC 4180)
 Another separator: the last argument
   ";" (spreadsheets in French, where the comma is the decimal point), "\t"
   (tabs), "|"...
-  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
-  csv_format(rows, ";")
+  csv_parse("a;b" ";")                      # Ok([["a", "b"]])
+  csv_format(rows ";")
 
 A text that is not valid CSV gives Err, which says where (line and column):
   csv_parse("a,b\"c")   # Err("line 1, column 4: a quote in the middle of a field: ...")"#, r#"CSV：电子表格的表格
@@ -8298,15 +8300,15 @@ CSV 文本就是一个表格：每行文本是表格的一行，字段用逗号�
 
   csv_parse("name,age\nAda,36")              # Ok([["name", "age"], ["Ada", "36"]])
   csv_records("name,age\nAda,36")            # Ok([{name: "Ada", age: "36"}])
-  csv_format([["name", "age"], ["Ada", 36]]) # "name,age\nAda,36\n"
-  csv_format([{name: "Ada", age: 36}])       # 同样的文本：记录会生成表头
+  csv_format([["name" "age"] ["Ada" 36]]) # "name,age\nAda,36\n"
+  csv_format([{name: "Ada" age: 36}])       # 同样的文本：记录会生成表头
 
 使用文件
   match read_file("grades.csv").and_then(csv_records)
     Ok(rows) -> print(len(rows), "students")
     Err(e) -> print("Error: {e}")
   end
-  write_file("copy.csv", csv_format(rows))
+  write_file("copy.csv" csv_format(rows))
 
 规则（RFC 4180）
   引号中的字段可以包含逗号、换行和引号（引号写两次）："say ""hi""" 就是字段
@@ -8319,17 +8321,17 @@ CSV 文本就是一个表格：每行文本是表格的一行，字段用逗号�
 
 另一个分隔符：最后一个参数
   ";"（法语等语言的电子表格，那里逗号用作小数点）、"\t"（制表符）、"|"……
-  csv_parse("a;b", ";")                      # Ok([["a", "b"]])
-  csv_format(rows, ";")
+  csv_parse("a;b" ";")                      # Ok([["a", "b"]])
+  csv_format(rows ";")
 
 不是有效 CSV 的文本给出 Err，并说明位置（行和列）：
   csv_parse("a,b\"c")   # Err("第 1 行，第 4 列：字段中间有一个引号：……")"#),
         (r#"RANDOM: CHANCE, AND THE SAME CHANCE AGAIN
 
   random()                   # a decimal number from 0 (included) to 1 (excluded)
-  random(1, 6)               # a whole number from 1 to 6, both included
-  random(["a", "b", "c"])    # one element of the list
-  shuffle([1, 2, 3])         # the list in a random order
+  random(1 6)               # a whole number from 1 to 6, both included
+  random(["a" "b" "c"])    # one element of the list
+  shuffle([1 2 3])         # the list in a random order
 
 Every run draws other values. To get the same draws again (a test, a class
 where everyone sees the same game, a mistake to find again), give a seed:
@@ -8345,16 +8347,16 @@ In a test, call random_seed at its start: its draws then do not depend on
 the tests before it.
   test "a dice roll stays between 1 and 6"
     random_seed(7)
-    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+    assert(all(map(1..100 fn(_) = random(1 6)) fn(d) = d >= 1 and d <= 6))
   end
 
 The property tests (check_all, sample) have their own seed:
 rythme test --seed N (see rythme help tests)."#, r#"RANDOM：随机，以及再次得到同样的随机
 
   random()                   # 0（含）到 1（不含）之间的小数
-  random(1, 6)               # 1 到 6 之间的整数，两端都包含
-  random(["a", "b", "c"])    # 列表中的一个元素
-  shuffle([1, 2, 3])         # 顺序随机打乱的列表
+  random(1 6)               # 1 到 6 之间的整数，两端都包含
+  random(["a" "b" "c"])    # 列表中的一个元素
+  shuffle([1 2 3])         # 顺序随机打乱的列表
 
 每次运行都会抽到不同的值。要再次得到相同的抽取结果（一个测试、一堂大家都看
 同一局游戏的课、一个要重现的错误），请给出种子：
@@ -8368,7 +8370,7 @@ rythme test --seed N (see rythme help tests)."#, r#"RANDOM：随机，以及再�
 在测试中，在开头调用 random_seed：这样它的抽取结果就不依赖于之前的测试。
   test "a dice roll stays between 1 and 6"
     random_seed(7)
-    assert(all(map(1..100, fn(_) = random(1, 6)), fn(d) = d >= 1 and d <= 6))
+    assert(all(map(1..100 fn(_) = random(1 6)) fn(d) = d >= 1 and d <= 6))
   end
 
 属性测试（check_all、sample）有自己的种子：rythme test --seed N
@@ -8591,7 +8593,7 @@ is reported where it is given. The type must also exist.
 Wrong:   total: Float = 0              # 0 is an Int
 Right:   total: Float = 0.0
 Wrong:   fn area(w: Int, h: Int) -> Int = w * h
-         area(2, "3")                  # "3" is a Text
+         area(2 "3")                  # "3" is a Text
 Right:   area(2, 3)
 Wrong:   fn label(n: Int) -> Text = n  # gives an Int
 Right:   fn label(n: Int) -> Text = text(n)
@@ -8610,7 +8612,7 @@ More: `rythme help types`."#,
 错误：   total: Float = 0              # 0 是 Int
 正确：   total: Float = 0.0
 错误：   fn area(w: Int, h: Int) -> Int = w * h
-         area(2, "3")                  # "3" 是 Text
+         area(2 "3")                  # "3" 是 Text
 正确：   area(2, 3)
 错误：   fn label(n: Int) -> Text = n  # 返回的是 Int
 正确：   fn label(n: Int) -> Text = text(n)
@@ -8627,10 +8629,10 @@ More: `rythme help types`."#,
 
 Rythme finds the types by itself. You may also write them where they help
 to read the code; `rythme check` then verifies them (E027):
-  fn area(width: Int, height: Int) -> Int = width * height
+  fn area(width: Int height: Int) -> Int = width * height
   total: Float = 0.0
   type Shape = Circle(radius: Float) | Rect(width: Float, height: Float)
-  [1, 2].map do |n: Int| n * 2 end
+  [1 2].map do |n: Int| n * 2 end
 
 The types
   Int  Float  Text  Bool  Unit  Symbol
@@ -8647,11 +8649,11 @@ The types
   (Tree alone too)
 
   fn first_of(xs: List(a)) -> a = xs[0]
-  first_of([1, 2]) + 1         # the checker knows it is an Int
+  first_of([1 2]) + 1         # the checker knows it is an Int
 
 Types with parameters: a type can take types, like List(Int)
-  type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
-  type Pair(a, b) = Pair(first: a, second: b)
+  type Tree(a) = Leaf | Node(left: Tree(a) value: a right: Tree(a))
+  type Pair(a b) = Pair(first: a second: b)
 
   fn depth(t: Tree(a)) -> Int = ...      a Tree of anything
   fn total(t: Tree(Int)) -> Int = ...    a Tree of whole numbers
@@ -8667,10 +8669,10 @@ the editors and `rythme doc` show them."#,
 
 Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把类型写出来；
 `rythme check` 会检查它们（E027）：
-  fn area(width: Int, height: Int) -> Int = width * height
+  fn area(width: Int height: Int) -> Int = width * height
   total: Float = 0.0
   type Shape = Circle(radius: Float) | Rect(width: Float, height: Float)
-  [1, 2].map do |n: Int| n * 2 end
+  [1 2].map do |n: Int| n * 2 end
 
 类型
   Int  Float  Text  Bool  Unit  Symbol
@@ -8687,11 +8689,11 @@ Rythme 会自己推断类型。你也可以在有助于阅读代码的地方把�
   （单独的 Tree 也可以）
 
   fn first_of(xs: List(a)) -> a = xs[0]
-  first_of([1, 2]) + 1         # 检查器知道这是一个 Int
+  first_of([1 2]) + 1         # 检查器知道这是一个 Int
 
 带参数的类型：一个类型可以接受类型，就像 List(Int)
-  type Tree(a) = Leaf | Node(left: Tree(a), value: a, right: Tree(a))
-  type Pair(a, b) = Pair(first: a, second: b)
+  type Tree(a) = Leaf | Node(left: Tree(a) value: a right: Tree(a))
+  type Pair(a b) = Pair(first: a second: b)
 
   fn depth(t: Tree(a)) -> Int = ...      任意内容的 Tree
   fn total(t: Tree(Int)) -> Int = ...    整数的 Tree
@@ -9019,27 +9021,27 @@ Cursor 等：见手册第 7.10 节。"#,
 # Check your work:  rythme exercise check 31-vectors.ry
 #              or:  rythme test 31-vectors.ry
 
-fn distance(a, b) = fail("to do")
+fn distance(a b) = fail("to do")
 
-fn midpoint(a, b) = fail("to do")
+fn midpoint(a b) = fail("to do")
 
-fn closest(points, p) = fail("to do")
+fn closest(points p) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "distance"
-  assert_eq(distance([0, 0], [3, 4]), 5.0)
-  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+  assert_eq(distance([0 0] [3 4]) 5.0)
+  assert_eq(distance([1 1 1] [1 1 1]) 0.0)
 end
 
 test "midpoint"
-  assert_eq(midpoint([0, 0], [4, 2]), [2.0, 1.0])
-  assert_eq(midpoint([-1, 3], [1, 3]), [0.0, 3.0])
+  assert_eq(midpoint([0 0] [4 2]) [2.0 1.0])
+  assert_eq(midpoint([-1 3] [1 3]) [0.0 3.0])
 end
 
 test "closest"
-  assert_eq(closest([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
-  assert_eq(closest([[2, 2]], [100, -100]), [2, 2])
+  assert_eq(closest([[0 0] [5 5] [9 1]] [6 4]) [5 5])
+  assert_eq(closest([[2 2]] [100, -100]) [2 2])
 end
 "#,
             r#"# 练习 31 · 把点当作向量  ★☆☆
@@ -9064,27 +9066,27 @@ end
 # 检查你的作业：  rythme exercise check 31-vectors.ry
 #           或：  rythme test 31-vectors.ry
 
-fn distance(a, b) = fail("待完成")
+fn distance(a b) = fail("待完成")
 
-fn midpoint(a, b) = fail("待完成")
+fn midpoint(a b) = fail("待完成")
 
-fn closest(points, p) = fail("待完成")
+fn closest(points p) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 test "距离"
-  assert_eq(distance([0, 0], [3, 4]), 5.0)
-  assert_eq(distance([1, 1, 1], [1, 1, 1]), 0.0)
+  assert_eq(distance([0 0] [3 4]) 5.0)
+  assert_eq(distance([1 1 1] [1 1 1]) 0.0)
 end
 
 test "中点"
-  assert_eq(midpoint([0, 0], [4, 2]), [2.0, 1.0])
-  assert_eq(midpoint([-1, 3], [1, 3]), [0.0, 3.0])
+  assert_eq(midpoint([0 0] [4 2]) [2.0 1.0])
+  assert_eq(midpoint([-1 3] [1 3]) [0.0 3.0])
 end
 
 test "最近的点"
-  assert_eq(closest([[0, 0], [5, 5], [9, 1]], [6, 4]), [5, 5])
-  assert_eq(closest([[2, 2]], [100, -100]), [2, 2])
+  assert_eq(closest([[0 0] [5 5] [9 1]] [6 4]) [5 5])
+  assert_eq(closest([[2 2]] [100, -100]) [2 2])
 end
 "#,
         ),
@@ -9117,22 +9119,22 @@ fn standardize(xs) = fail("to do")
 
 fn outliers(xs) = fail("to do")
 
-fn accuracy(predictions, answers) = fail("to do")
+fn accuracy(predictions answers) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "standardize"
-  assert_eq(standardize([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+  assert_eq(standardize([2 4 4 4 5 5 7 9]) [-1.5 -0.5 -0.5 -0.5 0.0 0.0 1.0 2.0])
 end
 
 test "outliers"
-  assert_eq(outliers([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
-  assert_eq(outliers([1, 2, 3]), [])
+  assert_eq(outliers([10 11 9 10 10 12 10 9 11 10 50]) [50])
+  assert_eq(outliers([1 2 3]) [])
 end
 
 test "accuracy"
-  assert_eq(accuracy(["cat", "dog", "cat", "cat"], ["cat", "dog", "dog", "cat"]), 0.75)
-  assert_eq(accuracy([1, 0], [0, 1]), 0.0)
+  assert_eq(accuracy(["cat" "dog" "cat" "cat"] ["cat" "dog" "dog" "cat"]) 0.75)
+  assert_eq(accuracy([1 0] [0 1]) 0.0)
 end
 "#,
             r#"# 练习 32 · 数据的统计  ★★☆
@@ -9161,22 +9163,22 @@ fn standardize(xs) = fail("待完成")
 
 fn outliers(xs) = fail("待完成")
 
-fn accuracy(predictions, answers) = fail("待完成")
+fn accuracy(predictions answers) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 test "标准化"
-  assert_eq(standardize([2, 4, 4, 4, 5, 5, 7, 9]), [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0])
+  assert_eq(standardize([2 4 4 4 5 5 7 9]) [-1.5 -0.5 -0.5 -0.5 0.0 0.0 1.0 2.0])
 end
 
 test "离群值"
-  assert_eq(outliers([10, 11, 9, 10, 10, 12, 10, 9, 11, 10, 50]), [50])
-  assert_eq(outliers([1, 2, 3]), [])
+  assert_eq(outliers([10 11 9 10 10 12 10 9 11 10 50]) [50])
+  assert_eq(outliers([1 2 3]) [])
 end
 
 test "准确率"
-  assert_eq(accuracy(["猫", "狗", "猫", "猫"], ["猫", "狗", "狗", "猫"]), 0.75)
-  assert_eq(accuracy([1, 0], [0, 1]), 0.0)
+  assert_eq(accuracy(["猫" "狗" "猫" "猫"] ["猫" "狗" "狗" "猫"]) 0.75)
+  assert_eq(accuracy([1 0] [0 1]) 0.0)
 end
 "#,
         ),
@@ -9204,28 +9206,28 @@ end
 # Check your work:  rythme exercise check 33-neurons.ry
 #              or:  rythme test 33-neurons.ry
 
-fn neuron(weights, bias, inputs) = fail("to do")
+fn neuron(weights bias inputs) = fail("to do")
 
-fn fires(weights, bias, inputs) = fail("to do")
+fn fires(weights bias inputs) = fail("to do")
 
-fn layer(matrix, biases, inputs) = fail("to do")
+fn layer(matrix biases inputs) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "neuron"
-  assert_eq(neuron([1, -1], 0, [2, 2]), 0.5)
-  assert_eq(round(neuron([2, 1], -1, [1, 1]), 3), 0.881)
+  assert_eq(neuron([1, -1] 0 [2 2]) 0.5)
+  assert_eq(round(neuron([2 1] -1 [1 1]) 3) 0.881)
 end
 
 test "a neuron that computes AND"
-  assert(fires([10, 10], -15, [1, 1]))
-  assert(not fires([10, 10], -15, [1, 0]))
-  assert(not fires([10, 10], -15, [0, 0]))
+  assert(fires([10 10] -15 [1 1]))
+  assert(not fires([10 10] -15 [1 0]))
+  assert(not fires([10 10] -15 [0 0]))
 end
 
 test "layer"
-  outputs = layer([[1, -1], [1, 1]], [0, 1], [2, 2])
-  assert_eq(map(outputs, fn(x) = round(x, 3)), [0.5, 0.993])
+  outputs = layer([[1, -1] [1 1]] [0 1] [2 2])
+  assert_eq(map(outputs fn(x) = round(x 3)) [0.5 0.993])
 end
 "#,
             r#"# 练习 33 · 人工神经元  ★★☆
@@ -9249,28 +9251,28 @@ end
 # 检查你的作业：  rythme exercise check 33-neurons.ry
 #           或：  rythme test 33-neurons.ry
 
-fn neuron(weights, bias, inputs) = fail("待完成")
+fn neuron(weights bias inputs) = fail("待完成")
 
-fn fires(weights, bias, inputs) = fail("待完成")
+fn fires(weights bias inputs) = fail("待完成")
 
-fn layer(matrix, biases, inputs) = fail("待完成")
+fn layer(matrix biases inputs) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 test "神经元"
-  assert_eq(neuron([1, -1], 0, [2, 2]), 0.5)
-  assert_eq(round(neuron([2, 1], -1, [1, 1]), 3), 0.881)
+  assert_eq(neuron([1, -1] 0 [2 2]) 0.5)
+  assert_eq(round(neuron([2 1] -1 [1 1]) 3) 0.881)
 end
 
 test "计算“与”的神经元"
-  assert(fires([10, 10], -15, [1, 1]))
-  assert(not fires([10, 10], -15, [1, 0]))
-  assert(not fires([10, 10], -15, [0, 0]))
+  assert(fires([10 10] -15 [1 1]))
+  assert(not fires([10 10] -15 [1 0]))
+  assert(not fires([10 10] -15 [0 0]))
 end
 
 test "层"
-  outputs = layer([[1, -1], [1, 1]], [0, 1], [2, 2])
-  assert_eq(map(outputs, fn(x) = round(x, 3)), [0.5, 0.993])
+  outputs = layer([[1, -1] [1 1]] [0 1] [2 2])
+  assert_eq(map(outputs fn(x) = round(x 3)) [0.5 0.993])
 end
 "#,
         ),
@@ -9298,29 +9300,29 @@ end
 # Check your work:  rythme exercise check 34-gradient-descent.ry
 #              or:  rythme test 34-gradient-descent.ry
 
-fn step(f, x, rate) = fail("to do")
+fn step(f x rate) = fail("to do")
 
-fn descend(f, x, rate, steps) = fail("to do")
+fn descend(f x rate steps) = fail("to do")
 
-fn descend_all(f, xs, rate, steps) = fail("to do")
+fn descend_all(f xs rate steps) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 fn parabola(x) = (x - 3) ** 2
 
 test "one step"
-  assert_eq(step(parabola, 0, 0.5), 3.0)
-  assert_eq(step(parabola, 1, 0.25), 2.0)
+  assert_eq(step(parabola 0 0.5) 3.0)
+  assert_eq(step(parabola 1 0.25) 2.0)
 end
 
 test "down to the bottom"
-  assert_eq(round(descend(parabola, 0, 0.1, 100), 4), 3.0)
-  assert_eq(descend(parabola, 10, 0.1, 0), 10)
+  assert_eq(round(descend(parabola 0 0.1 100) 4) 3.0)
+  assert_eq(descend(parabola 10 0.1 0) 10)
 end
 
 test "several numbers"
-  bowl = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
-  assert_eq(map(descend_all(bowl, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+  bowl = fn([x y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descend_all(bowl [0 0] 0.1 100) fn(v) = round(v 4)) [1.0, -2.0])
 end
 "#,
             r#"# 练习 34 · 沿着斜坡往下走  ★★☆
@@ -9345,29 +9347,29 @@ end
 # 检查你的作业：  rythme exercise check 34-gradient-descent.ry
 #           或：  rythme test 34-gradient-descent.ry
 
-fn step(f, x, rate) = fail("待完成")
+fn step(f x rate) = fail("待完成")
 
-fn descend(f, x, rate, steps) = fail("待完成")
+fn descend(f x rate steps) = fail("待完成")
 
-fn descend_all(f, xs, rate, steps) = fail("待完成")
+fn descend_all(f xs rate steps) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 fn parabola(x) = (x - 3) ** 2
 
 test "一步"
-  assert_eq(step(parabola, 0, 0.5), 3.0)
-  assert_eq(step(parabola, 1, 0.25), 2.0)
+  assert_eq(step(parabola 0 0.5) 3.0)
+  assert_eq(step(parabola 1 0.25) 2.0)
 end
 
 test "走到最低处"
-  assert_eq(round(descend(parabola, 0, 0.1, 100), 4), 3.0)
-  assert_eq(descend(parabola, 10, 0.1, 0), 10)
+  assert_eq(round(descend(parabola 0 0.1 100) 4) 3.0)
+  assert_eq(descend(parabola 10 0.1 0) 10)
 end
 
 test "多个数"
-  bowl = fn([x, y]) = (x - 1) ** 2 + (y + 2) ** 2
-  assert_eq(map(descend_all(bowl, [0, 0], 0.1, 100), fn(v) = round(v, 4)), [1.0, -2.0])
+  bowl = fn([x y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descend_all(bowl [0 0] 0.1 100) fn(v) = round(v 4)) [1.0, -2.0])
 end
 "#,
         ),
@@ -9395,37 +9397,37 @@ end
 # Check your work:  rythme exercise check 35-nearest-neighbours.ry
 #              or:  rythme test 35-nearest-neighbours.ry
 
-fn neighbours(examples, point, k) = fail("to do")
+fn neighbours(examples point k) = fail("to do")
 
 fn majority(labels) = fail("to do")
 
-fn classify(examples, point, k) = fail("to do")
+fn classify(examples point k) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 garden = [
-  {point: [1, 1], label: "red"},
-  {point: [1, 2], label: "red"},
-  {point: [2, 1], label: "red"},
-  {point: [8, 8], label: "blue"},
-  {point: [9, 8], label: "blue"},
-  {point: [5, 5], label: "blue"},
+  {point: [1 1] label: "red"}
+  {point: [1 2] label: "red"}
+  {point: [2 1] label: "red"}
+  {point: [8 8] label: "blue"}
+  {point: [9 8] label: "blue"}
+  {point: [5 5] label: "blue"}
 ]
 
 test "neighbours"
-  assert_eq(neighbours(garden, [0, 0], 2) |> map(fn(e) = e.point), [[1, 1], [1, 2]])
-  assert_eq(len(neighbours(garden, [0, 0], 10)), 6)
+  assert_eq(neighbours(garden [0 0] 2) |> map(fn(e) = e.point) [[1 1] [1 2]])
+  assert_eq(len(neighbours(garden [0 0] 10)) 6)
 end
 
 test "majority"
-  assert_eq(majority(["a", "b", "b", "c"]), "b")
-  assert_eq(majority(["x", "y"]), "x")
+  assert_eq(majority(["a" "b" "b" "c"]) "b")
+  assert_eq(majority(["x" "y"]) "x")
 end
 
 test "classify"
-  assert_eq(classify(garden, [2, 2], 3), "red")
-  assert_eq(classify(garden, [7, 7], 3), "blue")
-  assert_eq(classify(garden, [4, 4], 1), "blue")
+  assert_eq(classify(garden [2 2] 3) "red")
+  assert_eq(classify(garden [7 7] 3) "blue")
+  assert_eq(classify(garden [4 4] 1) "blue")
 end
 "#,
             r#"# 练习 35 · 最近邻  ★★★
@@ -9449,37 +9451,37 @@ end
 # 检查你的作业：  rythme exercise check 35-nearest-neighbours.ry
 #           或：  rythme test 35-nearest-neighbours.ry
 
-fn neighbours(examples, point, k) = fail("待完成")
+fn neighbours(examples point k) = fail("待完成")
 
 fn majority(labels) = fail("待完成")
 
-fn classify(examples, point, k) = fail("待完成")
+fn classify(examples point k) = fail("待完成")
 
 # --- 测试（请不要修改）---
 
 garden = [
-  {point: [1, 1], label: "红"},
-  {point: [1, 2], label: "红"},
-  {point: [2, 1], label: "红"},
-  {point: [8, 8], label: "蓝"},
-  {point: [9, 8], label: "蓝"},
-  {point: [5, 5], label: "蓝"},
+  {point: [1 1] label: "红"}
+  {point: [1 2] label: "红"}
+  {point: [2 1] label: "红"}
+  {point: [8 8] label: "蓝"}
+  {point: [9 8] label: "蓝"}
+  {point: [5 5] label: "蓝"}
 ]
 
 test "邻居"
-  assert_eq(neighbours(garden, [0, 0], 2) |> map(fn(e) = e.point), [[1, 1], [1, 2]])
-  assert_eq(len(neighbours(garden, [0, 0], 10)), 6)
+  assert_eq(neighbours(garden [0 0] 2) |> map(fn(e) = e.point) [[1 1] [1 2]])
+  assert_eq(len(neighbours(garden [0 0] 10)) 6)
 end
 
 test "多数"
-  assert_eq(majority(["a", "b", "b", "c"]), "b")
-  assert_eq(majority(["x", "y"]), "x")
+  assert_eq(majority(["a" "b" "b" "c"]) "b")
+  assert_eq(majority(["x" "y"]) "x")
 end
 
 test "分类"
-  assert_eq(classify(garden, [2, 2], 3), "红")
-  assert_eq(classify(garden, [7, 7], 3), "蓝")
-  assert_eq(classify(garden, [4, 4], 1), "蓝")
+  assert_eq(classify(garden [2 2] 3) "红")
+  assert_eq(classify(garden [7 7] 3) "蓝")
+  assert_eq(classify(garden [4 4] 1) "蓝")
 end
 "#,
         ),
@@ -9518,19 +9520,19 @@ fn best_move(n) = fail("to do")
 # --- Tests (do not change them) ---
 
 test "moves"
-  assert_eq(moves(10), [1, 2, 3])
-  assert_eq(moves(2), [1, 2])
+  assert_eq(moves(10) [1 2 3])
+  assert_eq(moves(2) [1 2])
   assert_eq(moves(0), [])
 end
 
 test "who wins"
-  assert_eq(map(0..8, wins), [false, true, true, true, false, true, true, true, false])
+  assert_eq(map(0..8 wins) [false true true true false true true true false])
 end
 
 test "best move"
-  assert_eq(best_move(5), Some(1))
-  assert_eq(best_move(7), Some(3))
-  assert_eq(best_move(8), None)
+  assert_eq(best_move(5) Some(1))
+  assert_eq(best_move(7) Some(3))
+  assert_eq(best_move(8) None)
 end
 "#,
             r#"# 练习 36 · 完美地下棋：极小化极大  ★★★
@@ -9563,19 +9565,19 @@ fn best_move(n) = fail("待完成")
 # --- 测试（请不要修改）---
 
 test "走法"
-  assert_eq(moves(10), [1, 2, 3])
-  assert_eq(moves(2), [1, 2])
+  assert_eq(moves(10) [1 2 3])
+  assert_eq(moves(2) [1 2])
   assert_eq(moves(0), [])
 end
 
 test "谁赢"
-  assert_eq(map(0..8, wins), [false, true, true, true, false, true, true, true, false])
+  assert_eq(map(0..8 wins) [false true true true false true true true false])
 end
 
 test "最佳走法"
-  assert_eq(best_move(5), Some(1))
-  assert_eq(best_move(7), Some(3))
-  assert_eq(best_move(8), None)
+  assert_eq(best_move(5) Some(1))
+  assert_eq(best_move(7) Some(3))
+  assert_eq(best_move(8) None)
 end
 "#,
         ),
@@ -9587,13 +9589,13 @@ A vector is a list of numbers, a matrix a list of rows of the same length.
 These functions never change them: they give new lists, always of Floats.
 
 Vectors and matrices
-  dot([1, 2], [3, 4])            # 11.0
-  norm([3, 4])                   # 5.0, the length
+  dot([1 2] [3 4])            # 11.0
+  norm([3 4])                   # 5.0, the length
   vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # number by number
-  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  vector_scale([1 2] 3)        # [3.0, 6.0]
   matmul(m, n)  matmul(m, v)     # product of matrices, or matrix by vector
   transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
-  zip_with(xs, ys, f)            # f on the pairs, for anything else
+  zip_with(xs ys f)            # f on the pairs, for anything else
 
 Neurons
   sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # scores into probabilities
@@ -9605,11 +9607,11 @@ Statistics
 
 Chance, the same on every run after random_seed(n)
   random_normal(0, 1)  random_choice_weighted(xs, weights)
-  train_test_split(examples, 0.8)    # {train, test}
+  train_test_split(examples 0.8)    # {train, test}
 
 Slopes, for gradient descent (central differences, about 9 digits)
-  derivative(fn(x) = x * x, 3)               # 6.0
-  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+  derivative(fn(x) = x * x 3)               # 6.0
+  gradient(fn([x y]) = x * x + y [2 5])   # [4.0, 1.0]
 
 Charts as text
   print(plot(losses))  print(plot(xs, ys))  print(histogram(heights))
@@ -9628,13 +9630,13 @@ genetic; exercises 31 to 36 (rythme exercise list)."#,
 新的列表，元素都是 Float。
 
 向量和矩阵
-  dot([1, 2], [3, 4])            # 11.0
-  norm([3, 4])                   # 5.0，长度
+  dot([1 2] [3 4])            # 11.0
+  norm([3 4])                   # 5.0，长度
   vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # 逐个数字计算
-  vector_scale([1, 2], 3)        # [3.0, 6.0]
+  vector_scale([1 2] 3)        # [3.0, 6.0]
   matmul(m, n)  matmul(m, v)     # 矩阵乘积，或矩阵乘向量
   transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
-  zip_with(xs, ys, f)            # 对每一对调用 f，用于其他一切运算
+  zip_with(xs ys f)            # 对每一对调用 f，用于其他一切运算
 
 神经元
   sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # 把分数变成概率
@@ -9646,11 +9648,11 @@ genetic; exercises 31 to 36 (rythme exercise list)."#,
 
 随机，在 random_seed(n) 之后每次运行都相同
   random_normal(0, 1)  random_choice_weighted(xs, weights)
-  train_test_split(examples, 0.8)    # {train, test}
+  train_test_split(examples 0.8)    # {train, test}
 
 斜率，用于梯度下降（中心差分，约 9 位有效数字）
-  derivative(fn(x) = x * x, 3)               # 6.0
-  gradient(fn([x, y]) = x * x + y, [2, 5])   # [4.0, 1.0]
+  derivative(fn(x) = x * x 3)               # 6.0
+  gradient(fn([x y]) = x * x + y [2 5])   # [4.0, 1.0]
 
 文本图表
   print(plot(losses))  print(plot(xs, ys))  print(histogram(heights))
@@ -10083,80 +10085,80 @@ file://，git 运行时不执行 hooks，每个版本的文件必须符合索引
         ("Reads the query of a web address (what follows the `?`, like `q=caf%C3%A9&page=2`) into a dict of texts, decoded (`+` is a space). A name given several times keeps its last value. Never fails: what cannot be decoded stays as it is.", "把网址的查询部分（`?` 后面的内容，比如 `q=caf%C3%A9&page=2`）读成一个由文本组成的字典，并且已经解码（`+` 是空格）。同一个名字出现多次时保留最后一个值。从不失败：无法解码的部分保持原样。"),
         ("Writes a record or a dict as the query of a web address: `name=value` joined by `&`, encoded like `url_encode`. A value that is not a text is shown as `print` shows it; a list gives the name once for each element.", "把记录或字典写成网址的查询部分：用 `&` 连接的 `name=value`，编码方式和 `url_encode` 一样。不是文本的值按 `print` 显示它的方式写出；列表会为每个元素各写一次名字。"),
         (r#"More functions on lists
-  find_index([3, 8, 5], is_even)          # Some(1)
-  sort_desc([3, 1, 2])                    # [3, 2, 1]  (sort_by_desc with a key)
-  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
-  most_common(words, 3)                   # the 3 most frequent, with their counts
-  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
-  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
-  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
-  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  find_index([3 8 5] is_even)          # Some(1)
+  sort_desc([3 1 2])                    # [3, 2, 1]  (sort_by_desc with a key)
+  tally(["a" "b" "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(words 3)                   # the 3 most frequent, with their counts
+  split_at([1 2 3] 1)                  # [[1], [2, 3]]
+  rotate_by([1 2 3] 1)                 # [2, 3, 1]
+  combinations([1 2 3] 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1 5 fn(x) = x * 2)            # [1, 2, 4, 8, 16]
   permutations(xs)   cartesian_product(xs, ys)   unzip(pairs)   zip(xs, ys, zs)
   filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#, r#"列表的更多函数
-  find_index([3, 8, 5], is_even)          # Some(1)
-  sort_desc([3, 1, 2])                    # [3, 2, 1]（带键时用 sort_by_desc）
-  tally(["a", "b", "a"])                  # dict("a" => 2, "b" => 1)
-  most_common(words, 3)                   # 最频繁的 3 个，以及它们的次数
-  split_at([1, 2, 3], 1)                  # [[1], [2, 3]]
-  rotate_by([1, 2, 3], 1)                 # [2, 3, 1]
-  combinations([1, 2, 3], 2)              # [[1, 2], [1, 3], [2, 3]]
-  iterate(1, 5, fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  find_index([3 8 5] is_even)          # Some(1)
+  sort_desc([3 1 2])                    # [3, 2, 1]（带键时用 sort_by_desc）
+  tally(["a" "b" "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(words 3)                   # 最频繁的 3 个，以及它们的次数
+  split_at([1 2 3] 1)                  # [[1], [2, 3]]
+  rotate_by([1 2 3] 1)                 # [2, 3, 1]
+  combinations([1 2 3] 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1 5 fn(x) = x * 2)            # [1, 2, 4, 8, 16]
   permutations(xs)   cartesian_product(xs, ys)   unzip(pairs)   zip(xs, ys, zs)
   filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#),
         (r##"More functions on texts
-  format(3.14159, ".2f")         # "3.14"  (the format specs of Python: ">8", ",d", ".1%", "#x"...)
-  center("hi", 6, "*")           # "**hi**"
-  replace_first("a-b-c", "-", "+")          # "a+b-c"
-  occurrences("banana", "an")    # 2
-  remove_prefix("Mr Smith", "Mr ")          # "Smith"  (and remove_suffix)
-  split_once("key=value", "=")   # Some(["key", "value"])
+  format(3.14159 ".2f")         # "3.14"  (the format specs of Python: ">8", ",d", ".1%", "#x"...)
+  center("hi" 6 "*")           # "**hi**"
+  replace_first("a-b-c" "-" "+")          # "a+b-c"
+  occurrences("banana" "an")    # 2
+  remove_prefix("Mr Smith" "Mr ")          # "Smith"  (and remove_suffix)
+  split_once("key=value" "=")   # Some(["key", "value"])
   snake_case("helloWorld")       # "hello_world"  (and camel_case, kebab_case)
   capitalize_words("ada lovelace")          # "Ada Lovelace"
-  word_wrap(text, 40)            # lines of at most 40 characters
+  word_wrap(text 40)            # lines of at most 40 characters
   to_base(255, 16)   from_base("ff", 16)    # "ff" and Ok(255)
-  edit_distance("kitten", "sitting")        # 3"##, r##"文本的更多函数
-  format(3.14159, ".2f")         # "3.14"（Python 的格式说明：">8"、",d"、".1%"、"#x"……）
-  center("hi", 6, "*")           # "**hi**"
-  replace_first("a-b-c", "-", "+")          # "a+b-c"
-  occurrences("banana", "an")    # 2
-  remove_prefix("Mr Smith", "Mr ")          # "Smith"（还有 remove_suffix）
-  split_once("key=value", "=")   # Some(["key", "value"])
+  edit_distance("kitten" "sitting")        # 3"##, r##"文本的更多函数
+  format(3.14159 ".2f")         # "3.14"（Python 的格式说明：">8"、",d"、".1%"、"#x"……）
+  center("hi" 6 "*")           # "**hi**"
+  replace_first("a-b-c" "-" "+")          # "a+b-c"
+  occurrences("banana" "an")    # 2
+  remove_prefix("Mr Smith" "Mr ")          # "Smith"（还有 remove_suffix）
+  split_once("key=value" "=")   # Some(["key", "value"])
   snake_case("helloWorld")       # "hello_world"（还有 camel_case、kebab_case）
   capitalize_words("ada lovelace")          # "Ada Lovelace"
-  word_wrap(text, 40)            # 每行最多 40 个字符
+  word_wrap(text 40)            # 每行最多 40 个字符
   to_base(255, 16)   from_base("ff", 16)    # "ff" 和 Ok(255)
-  edit_distance("kitten", "sitting")        # 3"##),
+  edit_distance("kitten" "sitting")        # 3"##),
         (r#"More functions on records and dicts
-  dig(data, ["user", "langs", 0])           # Some(...), or None: deep inside
-  select_keys(person, ["name", "age"])      # only these keys (reject_keys: without them)
-  merge_with(a, b, fn(x, y) = x + y)        # f decides for a key in both
-  update(counts, "apples", 1, fn(n) = n + 1)  # +1, or 1 when missing
-  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  dig(data ["user" "langs" 0])           # Some(...), or None: deep inside
+  select_keys(person ["name" "age"])      # only these keys (reject_keys: without them)
+  merge_with(a b fn(x y) = x + y)        # f decides for a key in both
+  update(counts "apples" 1 fn(n) = n + 1)  # +1, or 1 when missing
+  invert({a: 1 b: 2})                      # dict(1 => "a", 2 => "b")
   map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#, r#"记录和字典的更多函数
-  dig(data, ["user", "langs", 0])           # Some(...) 或 None：深入内部
-  select_keys(person, ["name", "age"])      # 只保留这些键（reject_keys：去掉它们）
-  merge_with(a, b, fn(x, y) = x + y)        # 两边都有的键由 f 决定
-  update(counts, "apples", 1, fn(n) = n + 1)  # 加 1，缺少时为 1
-  invert({a: 1, b: 2})                      # dict(1 => "a", 2 => "b")
+  dig(data ["user" "langs" 0])           # Some(...) 或 None：深入内部
+  select_keys(person ["name" "age"])      # 只保留这些键（reject_keys：去掉它们）
+  merge_with(a b fn(x y) = x + y)        # 两边都有的键由 f 决定
+  update(counts "apples" 1 fn(n) = n + 1)  # 加 1，缺少时为 1
+  invert({a: 1 b: 2})                      # dict(1 => "a", 2 => "b")
   map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#),
         (r#"More helpers
   unwrap_or_else(x, fn(e) = ...)   # the default, computed only when it is needed
-  expect(x, "a config file")       # like unwrap, with your message if it fails
-  all_ok(map(texts, parse_int))    # Ok([...]), or the first Err
-  filter_map(xs, f)                # the values of the Some(...) that f gives"#, r#"更多工具
+  expect(x "a config file")       # like unwrap, with your message if it fails
+  all_ok(map(texts parse_int))    # Ok([...]), or the first Err
+  filter_map(xs f)                # the values of the Some(...) that f gives"#, r#"更多工具
   unwrap_or_else(x, fn(e) = ...)   # 默认值，只在需要时才计算
-  expect(x, "a config file")       # 和 unwrap 一样，失败时显示你的消息
-  all_ok(map(texts, parse_int))    # Ok([...])，或者第一个 Err
-  filter_map(xs, f)                # f 返回的 Some(...) 里的值"#),
+  expect(x "a config file")       # 和 unwrap 一样，失败时显示你的消息
+  all_ok(map(texts parse_int))    # Ok([...])，或者第一个 Err
+  filter_map(xs f)                # f 返回的 Some(...) 里的值"#),
         (r#"More on dates
-  add_months(date, 1)                       # 31 January + 1 month: the end of February
+  add_months(date 1)                       # 31 January + 1 month: the end of February
   day_of_year(date)                         # from 1 to 366
-  format_date(date, "%d/%m/%Y %H:%M")       # with a pattern: %Y %m %d %H %M %S %B %A...
-  parse_date("29/02/2024", "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#, r#"日期的更多用法
-  add_months(date, 1)                       # 1 月 31 日 + 1 个月：2 月底
+  format_date(date "%d/%m/%Y %H:%M")       # with a pattern: %Y %m %d %H %M %S %B %A...
+  parse_date("29/02/2024" "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#, r#"日期的更多用法
+  add_months(date 1)                       # 1 月 31 日 + 1 个月：2 月底
   day_of_year(date)                         # 从 1 到 366
-  format_date(date, "%Y年%m月%d日 %H:%M")    # 用模式：%Y %m %d %H %M %S %B %A……
-  parse_date("2024-02-29", "%Y-%m-%d")      # Ok({year: 2024, month: 2, day: 29})"#),
+  format_date(date "%Y年%m月%d日 %H:%M")    # 用模式：%Y %m %d %H %M %S %B %A……
+  parse_date("2024-02-29" "%Y-%m-%d")      # Ok({year: 2024, month: 2, day: 29})"#),
         // src/cli.rs
         ("run a program; the words after the file are its arguments", "运行程序；文件后面的词是它的参数"),
         ("find problems without running the program", "不运行程序就找出问题"),
@@ -10389,18 +10391,19 @@ can be printed and read again. Rythme keeps that spirit, with values that
 never change and errors that are values:
 
   page = read("https://example.com")       # read http://example.com
-  write("copy.html", unwrap_or(page, ""))  # write %copy.html page
+  write("copy.html" unwrap_or(page ""))  # write %copy.html page
   name = ask("Your name? ")                # name: ask "Your name? "
-  print(rejoin(["Hello, ", name, "!"]))    # print rejoin ["Hello, " name "!"]
-  [1, 2, 3] |> probe |> sum |> print       # probe shows [1, 2, 3], then 6
+  print(rejoin(["Hello, " name "!"]))    # print rejoin ["Hello, " name "!"]
+  [1 2 3] |> probe |> sum |> print       # probe shows [1, 2, 3], then 6
 
 The same as in REBOL
   words that say what they do   print probe ask read write now random
   names with ?                  length? empty? exists? found? none? zero?
                                 even? odd? (a question gives true or false)
   symbols                       :ok, like 'ok in REBOL (a word as a value)
-  blocks are lists              [1, 2, 3], with first, last, reverse, sort,
-                                unique; first and last give an Option
+  blocks without commas         [1 2 3], f(a b), print a b, {name: "Ada" age: 36};
+                                first, last, reverse, sort, unique (first and
+                                last give an Option)
   help                          help(map), rythme help map; rythme help
                                 builtins lists every function, as what does
 
@@ -10421,8 +10424,7 @@ What is written differently
   loop 3 [...], repeat i 3 [...]
                                 (1..3).each do |i| ... end
   foreach x xs [...]            foreach xs do |x| ... end, or xs.each(f)
-  [1 2 3]                       [1, 2, 3]: elements are separated by commas
-  f a b                         f(a, b), or f a, b at the start of a line
+  f a b                         f(a b), or f a b at the start of a line
   ; a comment                   # a comment
   obj/field, make object! [...] obj.field, and records {name: "Ada", age: 36}
   append xs 4                   push(xs, 4): a new list, xs stays as it was
@@ -10440,18 +10442,19 @@ REBOL 证明了一门语言可以很小却能做很多事：几个说清自己�
 远不变，错误也是值：
 
   page = read("https://example.com")       # read http://example.com
-  write("copy.html", unwrap_or(page, ""))  # write %copy.html page
+  write("copy.html" unwrap_or(page ""))  # write %copy.html page
   name = ask("你的名字？")                 # name: ask "你的名字？"
-  print(rejoin(["你好，", name, "！"]))    # print rejoin ["你好，" name "！"]
-  [1, 2, 3] |> probe |> sum |> print       # probe 显示 [1, 2, 3]，然后 6
+  print(rejoin(["你好，" name "！"]))    # print rejoin ["你好，" name "！"]
+  [1 2 3] |> probe |> sum |> print       # probe 显示 [1, 2, 3]，然后 6
 
 和 REBOL 一样
   清楚的单词                    print probe ask read write now random
   带 ? 的名字                   length? empty? exists? found? none? zero?
                                 even? odd?（问题给出 true 或 false）
   符号                          :ok，就像 REBOL 的 'ok（作为值的单词）
-  块就是列表                    [1, 2, 3]，有 first、last、reverse、sort、
-                                unique；first 和 last 给出 Option
+  不用逗号的块                  [1 2 3]、f(a b)、print a b、{name: "Ada" age: 36}；
+                                first、last、reverse、sort、unique（first 和
+                                last 给出 Option）
   帮助                          help(map)、rythme help map；rythme help
                                 builtins 列出所有函数，就像 what
 
@@ -10472,8 +10475,7 @@ REBOL 名字，完全相同的函数（见 rythme help builtins）
   loop 3 [...], repeat i 3 [...]
                                 (1..3).each do |i| ... end
   foreach x xs [...]            foreach xs do |x| ... end，或 xs.each(f)
-  [1 2 3]                       [1, 2, 3]：元素用逗号分隔
-  f a b                         f(a, b)，或在行首写 f a, b
+  f a b                         f(a b)，或在行首写 f a b
   ; 注释                        # 注释
   obj/field, make object! [...] obj.field，以及记录 {name: "Ada", age: 36}
   append xs 4                   push(xs, 4)：一个新列表，xs 保持不变

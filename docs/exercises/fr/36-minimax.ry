@@ -33,17 +33,17 @@ fn meilleur_coup(n) = fail("à faire")
 # --- Tests (ne les modifiez pas) ---
 
 test "coups"
-  assert_eq(coups(10), [1, 2, 3])
-  assert_eq(coups(2), [1, 2])
+  assert_eq(coups(10) [1 2 3])
+  assert_eq(coups(2) [1 2])
   assert_eq(coups(0), [])
 end
 
 test "qui gagne"
-  assert_eq(map(0..8, gagne), [false, true, true, true, false, true, true, true, false])
+  assert_eq(map(0..8 gagne) [false true true true false true true true false])
 end
 
 test "meilleur coup"
-  assert_eq(meilleur_coup(5), Some(1))
-  assert_eq(meilleur_coup(7), Some(3))
-  assert_eq(meilleur_coup(8), None)
+  assert_eq(meilleur_coup(5) Some(1))
+  assert_eq(meilleur_coup(7) Some(3))
+  assert_eq(meilleur_coup(8) None)
 end

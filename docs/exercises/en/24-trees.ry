@@ -26,7 +26,7 @@
 # Check your work:  rythme exercise check 24-trees.ry
 #              or:  rythme test 24-trees.ry
 
-type Tree = Leaf | Node(left, value, right)
+type Tree = Leaf | Node(left value right)
 
 fn size(tree) = fail("to do")
 
@@ -34,7 +34,7 @@ fn total(tree) = fail("to do")
 
 fn depth(tree) = fail("to do")
 
-fn insert(tree, x) = fail("to do")
+fn insert(tree x) = fail("to do")
 
 fn to_list(tree) = fail("to do")
 
@@ -45,25 +45,25 @@ fn to_list(tree) = fail("to do")
 #     3   8
 #    /
 #   1
-small = Node(Node(Node(Leaf, 1, Leaf), 3, Leaf), 5, Node(Leaf, 8, Leaf))
+small = Node(Node(Node(Leaf 1 Leaf) 3 Leaf) 5 Node(Leaf 8 Leaf))
 
 test "size"
-  assert_eq(size(Leaf), 0)
-  assert_eq(size(small), 4)
+  assert_eq(size(Leaf) 0)
+  assert_eq(size(small) 4)
 end
 
-test "total" = assert_eq(total(small), 17)
+test "total" = assert_eq(total(small) 17)
 
 test "depth"
-  assert_eq(depth(Leaf), 0)
-  assert_eq(depth(small), 3)
+  assert_eq(depth(Leaf) 0)
+  assert_eq(depth(small) 3)
 end
 
 test "insert"
-  assert_eq(insert(Leaf, 4), Node(Leaf, 4, Leaf))
-  assert_eq(insert(Node(Leaf, 4, Leaf), 2), Node(Node(Leaf, 2, Leaf), 4, Leaf))
+  assert_eq(insert(Leaf 4) Node(Leaf 4 Leaf))
+  assert_eq(insert(Node(Leaf 4 Leaf) 2) Node(Node(Leaf 2 Leaf) 4 Leaf))
 end
 
-test "to list" = assert_eq(to_list(small), [1, 3, 5, 8])
+test "to list" = assert_eq(to_list(small) [1 3 5 8])
 
-test "sorting with a tree" = assert_eq([7, 2, 9, 4, 1] |> fold(Leaf, insert) |> to_list, [1, 2, 4, 7, 9])
+test "sorting with a tree" = assert_eq([7 2 9 4 1] |> fold(Leaf insert) |> to_list [1 2 4 7 9])

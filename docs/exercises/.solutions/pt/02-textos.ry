@@ -8,25 +8,25 @@ fn cumprimentar(nome) = "Olá, {nome}!"
 fn gritar(texto) = upper(texto) + "!"
 
 ## As iniciais de uma pessoa, cada uma seguida de um ponto.
-fn iniciais(nome, sobrenome) = "{nome[0]}.{sobrenome[0]}."
+fn iniciais(nome sobrenome) = "{nome[0]}.{sobrenome[0]}."
 
 ## Uma frase que apresenta uma pessoa.
-fn apresentar(nome, idade) = "{nome} tem {idade} anos."
+fn apresentar(nome idade) = "{nome} tem {idade} anos."
 
 # --- Testes (não os altere) ---
 
-test "cumprimentar" = assert_eq(cumprimentar("Ada"), "Olá, Ada!")
+test "cumprimentar" = assert_eq(cumprimentar("Ada") "Olá, Ada!")
 
-test "cumprimentar outra pessoa" = assert_eq(cumprimentar("Alan"), "Olá, Alan!")
+test "cumprimentar outra pessoa" = assert_eq(cumprimentar("Alan") "Olá, Alan!")
 
 test "gritar"
-  assert_eq(gritar("olá"), "OLÁ!")
-  assert_eq(gritar("Pare"), "PARE!")
+  assert_eq(gritar("olá") "OLÁ!")
+  assert_eq(gritar("Pare") "PARE!")
 end
 
 test "iniciais"
-  assert_eq(iniciais("Ada", "Lovelace"), "A.L.")
-  assert_eq(iniciais("grace", "hopper"), "g.h.")
+  assert_eq(iniciais("Ada" "Lovelace") "A.L.")
+  assert_eq(iniciais("grace" "hopper") "g.h.")
 end
 
-test "apresentar" = assert_eq(apresentar("Ada", 36), "Ada tem 36 anos.")
+test "apresentar" = assert_eq(apresentar("Ada" 36) "Ada tem 36 anos.")

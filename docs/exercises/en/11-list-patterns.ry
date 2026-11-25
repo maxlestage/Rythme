@@ -33,32 +33,32 @@ fn total(list) = fail("to do")
 
 fn largest(list) = fail("to do")
 
-fn has_value(list, x) = fail("to do")
+fn has_value(list x) = fail("to do")
 
 fn last_one(list) = fail("to do")
 
 # --- Tests (do not change them) ---
 
 test "total"
-  assert_eq(total([]), 0)
-  assert_eq(total([4]), 4)
-  assert_eq(total([1, 2, 3, 4]), 10)
+  assert_eq(total([]) 0)
+  assert_eq(total([4]) 4)
+  assert_eq(total([1 2 3 4]) 10)
 end
 
 test "largest"
-  assert_eq(largest([7]), 7)
-  assert_eq(largest([3, 9, 2]), 9)
+  assert_eq(largest([7]) 7)
+  assert_eq(largest([3 9 2]) 9)
   assert_eq(largest([-3, -1, -2]), -1)
 end
 
 test "has value"
-  assert_eq(has_value([1, 2, 3], 2), true)
-  assert_eq(has_value([1, 2, 3], 5), false)
-  assert_eq(has_value([], 1), false)
-  assert_eq(has_value(["a", "b"], "b"), true)
+  assert_eq(has_value([1 2 3] 2) true)
+  assert_eq(has_value([1 2 3] 5) false)
+  assert_eq(has_value([] 1) false)
+  assert_eq(has_value(["a" "b"] "b") true)
 end
 
 test "last one"
-  assert_eq(last_one([1, 2, 3]), 3)
-  assert_eq(last_one(["only"]), "only")
+  assert_eq(last_one([1 2 3]) 3)
+  assert_eq(last_one(["only"]) "only")
 end
