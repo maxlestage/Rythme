@@ -1,0 +1,10771 @@
+// German: each English text of Rythme with its translation. How to add or
+// update a language: CONTRIBUTING.md, "Messages in every language".
+Language {
+    code: "de",
+    name: "Deutsch",
+    texts: &[
+        // src/main.rs
+        ("unknown language `{v}`", "unbekannte Sprache `{v}`"),
+        (
+            r#"Rythme ran into an internal problem. This is a bug in Rythme, not in your program.
+Please report it, with your program, at https://github.com/maxlestage/Rythme/issues"#,
+            r#"Rythme ist auf ein internes Problem gestoßen. Das ist ein Fehler in Rythme, nicht in deinem Programm.
+Bitte melde ihn, zusammen mit deinem Programm, unter https://github.com/maxlestage/Rythme/issues"#,
+        ),
+        ("`--lang` needs a language", "`--lang` braucht eine Sprache"),
+        ("{what}: write `--lang` and one of {codes}, like `rythme --lang fr hello.ry`", "{what}: schreib `--lang` und einen der Codes {codes}, wie `rythme --lang de hallo.ry`"),
+        ("usage: rythme explain CODE   (codes: {})", "Verwendung: rythme explain CODE   (Codes: {})"),
+        ("unknown code `{code}`. Known codes: {}", "unbekannter Code `{code}`. Bekannte Codes: {}"),
+        ("which file? Example: rythme run hello.ry", "welche Datei? Beispiel: rythme run hallo.ry"),
+        ("which file? Example: rythme check hello.ry", "welche Datei? Beispiel: rythme check hallo.ry"),
+        ("which code? Example: rythme -e 'print(1 + 2)'", "welcher Code? Beispiel: rythme -e 'print(1 + 2)'"),
+        ("unknown command or file `{cmd}`", "unbekannter Befehl oder unbekannte Datei `{cmd}`"),
+        (
+            r#"
+did you mean `rythme {best}`?"#,
+            r#"
+meintest du `rythme {best}`?"#,
+        ),
+        (
+            r#"
+see `rythme help`"#,
+            r#"
+siehe `rythme help`"#,
+        ),
+        ("current folder: {}", "aktueller Ordner: {}"),
+        ("Rythme files usually end with `.ry` ({})", "Rythme-Dateien enden normalerweise auf `.ry` ({})"),
+        ("✓ {shown}: no problems found", "✓ {shown}: keine Probleme gefunden"),
+        ("✓ {shown}: no errors, {n} warning(s)", "✓ {shown}: keine Fehler, {n} Warnung(en)"),
+        ("✗ {shown}: {n} error(s)", "✗ {shown}: {n} Fehler"),
+        // src/bigint.rs
+        ("this whole number would be too large (more than {MAX_DIGITS} digits)", "diese ganze Zahl wäre zu groß (mehr als {MAX_DIGITS} Ziffern)"),
+        ("does it grow without end, in a function that calls itself? For an approximate value, use a decimal number (Float), like `2.0 ** 1000`", "wächst sie ohne Ende, in einer Funktion, die sich selbst aufruft? Für einen ungefähren Wert verwende eine Dezimalzahl (Float), wie `2.0 ** 1000`"),
+        // src/builtins/date.rs
+        ("the year must go from 1 to 9999, not {year}", "das Jahr muss zwischen 1 und 9999 liegen, nicht {year}"),
+        ("the month must go from 1 to 12, not {month}", "der Monat muss zwischen 1 und 12 liegen, nicht {month}"),
+        ("the day must go from 1 to {len} in {name} {year}, not {day}", "der Tag muss im {name} {year} zwischen 1 und {len} liegen, nicht {day}"),
+        (" ({year} is not a leap year)", " ({year} ist kein Schaltjahr)"),
+        ("the hour must go from 0 to 23, not {hour}", "die Stunde muss zwischen 0 und 23 liegen, nicht {hour}"),
+        ("the minute must go from 0 to 59, not {minute}", "die Minute muss zwischen 0 und 59 liegen, nicht {minute}"),
+        ("the second must go from 0 to 59, not {second}", "die Sekunde muss zwischen 0 und 59 liegen, nicht {second}"),
+        ("the offset must go from -1080 to 1080 minutes (-18:00 to +18:00), not {offset}", "der Versatz muss zwischen -1080 und 1080 Minuten liegen (-18:00 bis +18:00), nicht {offset}"),
+        ("a date has no field `{k}`", "ein Datum hat kein Feld `{k}`"),
+        (" (did you mean `{best}`?)", " (meintest du `{best}`?)"),
+        ("the field `{k}` is too large for a date", "das Feld `{k}` ist zu groß für ein Datum"),
+        ("the field `{k}` must be a whole number, not {}", "das Feld `{k}` muss eine ganze Zahl sein, nicht {}"),
+        ("the field `{k}` is missing", "das Feld `{k}` fehlt"),
+        ("\"{text}\" is not a date written as ISO 8601: write it like \"2024-02-29\" or \"2024-02-29T13:05:00\"", "\"{text}\" ist kein Datum im Format ISO 8601: schreib es wie \"2024-02-29\" oder \"2024-02-29T13:05:00\""),
+        ("\"{text}\" is not a valid date: {why}", "\"{text}\" ist kein gültiges Datum: {why}"),
+        ("`{f}` needs a valid date: {why}", "`{f}` braucht ein gültiges Datum: {why}"),
+        ("not a valid date", "kein gültiges Datum"),
+        ("a date is a record like `{{year: 2024, month: 2, day: 29}}`, with `hour`, `minute`, `second` and `offset` (minutes ahead of UTC) if needed", "ein Datum ist ein Record wie `{{year: 2024, month: 2, day: 29}}`, bei Bedarf mit `hour`, `minute`, `second` und `offset` (Minuten vor UTC)"),
+        ("`{f}` gives a date outside of the years 1 to 9999", "`{f}` ergibt ein Datum außerhalb der Jahre 1 bis 9999"),
+        ("the month must go from 1 to 12, not {m}", "der Monat muss zwischen 1 und 12 liegen, nicht {m}"),
+        ("the clock of the system gives a date outside of the years 1 to 9999", "die Systemuhr liefert ein Datum außerhalb der Jahre 1 bis 9999"),
+        // src/builtins/dicts.rs
+        ("`{f}`: {} cannot be a key of a dict, nor an element of a set", "`{f}`: {} kann weder Schlüssel eines Dicts noch Element einer Menge sein"),
+        ("it holds {}", "es enthält {}"),
+        ("keys and elements must be values that can be compared: anything but functions and `nan`", "Schlüssel und Elemente müssen vergleichbare Werte sein: alles außer Funktionen und `nan`"),
+        ("`{f}` needs a list of [key, value] pairs, but it contains {}", "`{f}` braucht eine Liste von [Schlüssel, Wert]-Paaren, aber sie enthält {}"),
+        ("each pair is a list of two elements, like `dict([[\"Ada\", 36], [\"Alan\", 41]])`", "jedes Paar ist eine Liste mit zwei Elementen, wie `dict([[\"Ada\", 36], [\"Alan\", 41]])`"),
+        // src/builtins/numbers.rs
+        ("`acosh` needs a number of 1 or more, not {x}", "`acosh` braucht eine Zahl größer oder gleich 1, nicht {x}"),
+        ("`atanh` needs a number between -1 and 1 (both excluded), not {x}", "`atanh` braucht eine Zahl zwischen -1 und 1 (beide ausgeschlossen), nicht {x}"),
+        // src/builtins/property.rs
+        ("this is not a generator: {}", "das ist kein Generator: {}"),
+        ("not a generator", "kein Generator"),
+        ("make one with `ints()`, `floats()`, `texts()`, `bools()`, `lists_of(g)`, `one_of(list)` or `records_of({{x: g}})`", "erzeuge einen mit `ints()`, `floats()`, `texts()`, `bools()`, `lists_of(g)`, `one_of(list)` oder `records_of({{x: g}})`"),
+        ("generators can be put inside each other {MAX_DEPTH} times at most", "Generatoren können höchstens {MAX_DEPTH}-mal ineinander verschachtelt werden"),
+        ("its field `{what}` is missing or wrong", "sein Feld `{what}` fehlt oder ist falsch"),
+        ("`{f}` takes no argument, or two: the smallest and the largest value, like `{f}(0, 10)`", "`{f}` nimmt kein Argument oder zwei: den kleinsten und den größten Wert, wie `{f}(0, 10)`"),
+        ("{f}({}, {}): the minimum is larger than the maximum", "{f}({}, {}): das Minimum ist größer als das Maximum"),
+        ("`floats` needs finite numbers, not {} and {}", "`floats` braucht endliche Zahlen, nicht {} und {}"),
+        ("`{f}` needs a length from 0 to {MAX_LENGTH}, not {n}", "`{f}` braucht eine Länge von 0 bis {MAX_LENGTH}, nicht {n}"),
+        ("`one_of` needs at least one value to choose from", "`one_of` braucht mindestens einen Wert zur Auswahl"),
+        ("the field `{k}` given to `records_of` must be a generator, like `ints()`, not {}", "das an `records_of` übergebene Feld `{k}` muss ein Generator sein, wie `ints()`, nicht {}"),
+        ("`check_all` tries from 1 to {MAX_CASES} values, not {cases}", "`check_all` probiert 1 bis {MAX_CASES} Werte aus, nicht {cases}"),
+        ("the property is false for {v}", "die Eigenschaft ist falsch für {v}"),
+        ("false for {v}", "falsch für {v}"),
+        ("the property gives {r} for {v}", "die Eigenschaft ergibt {r} für {v}"),
+        ("{r} for {v}", "{r} für {v}"),
+        ("the property fails for {v}: {}", "die Eigenschaft scheitert für {v}: {}"),
+        ("checked here", "hier geprüft"),
+        ("found on try {case} of {cases}", "gefunden bei Versuch {case} von {cases}"),
+        ("found on try {case} of {cases}, then simplified from {} in {steps} step(s)", "gefunden bei Versuch {case} von {cases}, dann von {} in {steps} Schritt(en) vereinfacht"),
+        ("seed {seed}: every run tries the same values; `rythme test --seed N` tries others", "Seed {seed}: jeder Lauf probiert dieselben Werte; `rythme test --seed N` probiert andere"),
+        ("the function must hold for every value of the generator: fix the function, or give the generator a smaller range, like `ints(1, 100)`", "die Funktion muss für jeden Wert des Generators gelten: korrigiere die Funktion oder gib dem Generator einen kleineren Bereich, wie `ints(1, 100)`"),
+        // src/builtins/regex.rs
+        ("for the sign `{c}` itself, write `[{c}]` (in a Rythme text: \"[\\{c}]\")", "für das Zeichen `{c}` selbst schreib `[{c}]` (in einem Rythme-Text: \"[\\{c}]\")"),
+        ("for the sign `{c}` itself, write `[{c}]`", "für das Zeichen `{c}` selbst schreib `[{c}]`"),
+        ("`{q}` has nothing to repeat", "`{q}` hat nichts zu wiederholen"),
+        ("nothing before it to repeat", "nichts davor, das wiederholt werden kann"),
+        ("put it after a character or a group, like `a{q}` or `(ab){q}`; {}", "setze es hinter ein Zeichen oder eine Gruppe, wie `a{q}` oder `(ab){q}`; {}"),
+        ("`{{` must start a count, like {{3}} or {{2,5}}", "`{{` muss eine Anzahl beginnen, wie {{3}} oder {{2,5}}"),
+        ("not a count", "keine Anzahl"),
+        ("{}; in a Rythme text, braces are written `\\{{` and `\\}}`, like \"[0-9]\\{{4\\}}\"", "{}; in einem Rythme-Text schreibt man geschweifte Klammern als `\\{{` und `\\}}`, wie \"[0-9]\\{{4\\}}\""),
+        ("a count can be at most {MAX_COUNT}", "eine Anzahl darf höchstens {MAX_COUNT} sein"),
+        ("too large", "zu groß"),
+        ("for more, use `*` or `+`, or {{n,}} without a maximum", "für mehr verwende `*` oder `+`, oder {{n,}} ohne Maximum"),
+        ("the count goes backwards: {min} is more than {max}", "die Anzahl läuft rückwärts: {min} ist größer als {max}"),
+        ("smallest first", "kleinste zuerst"),
+        ("write the smallest number first: {{{max},{min}}}", "schreib die kleinere Zahl zuerst: {{{max},{min}}}"),
+        ("a repetition cannot be repeated again", "eine Wiederholung kann nicht noch einmal wiederholt werden"),
+        ("repeats a repetition", "wiederholt eine Wiederholung"),
+        ("put the repeated part in parentheses, like `(a+)*`, or keep one sign, like `a*`; {}", "setze den wiederholten Teil in Klammern, wie `(a+)*`, oder behalte ein Zeichen, wie `a*`; {}"),
+        ("the groups are nested too deeply (more than {MAX_DEPTH})", "die Gruppen sind zu tief verschachtelt (mehr als {MAX_DEPTH})"),
+        ("too deep", "zu tief"),
+        ("`(?<` must be followed by a name and `>`", "auf `(?<` müssen ein Name und `>` folgen"),
+        ("not a group name", "kein Gruppenname"),
+        ("a named group looks like `(?<year>[0-9]+)`: the name has letters, digits and `_`", "eine benannte Gruppe sieht so aus: `(?<year>[0-9]+)`; der Name besteht aus Buchstaben, Ziffern und `_`"),
+        ("two groups are named `{name}`", "zwei Gruppen heißen `{name}`"),
+        ("already used", "schon verwendet"),
+        ("give each group its own name", "gib jeder Gruppe ihren eigenen Namen"),
+        ("`(?i)` must be at the very start of the regex", "`(?i)` muss ganz am Anfang des regulären Ausdrucks stehen"),
+        ("not at the start", "nicht am Anfang"),
+        ("`(?i)` ignores the case in the whole regex: write it first", "`(?i)` ignoriert Groß- und Kleinschreibung im ganzen regulären Ausdruck: schreib es zuerst"),
+        ("unknown kind of group", "unbekannte Art von Gruppe"),
+        ("unknown", "unbekannt"),
+        ("the groups are `(...)`, `(?:...)` (a group that captures nothing) and `(?<name>...)` (a named group); `(?i)` at the start ignores the case", "die Gruppen sind `(...)`, `(?:...)` (eine Gruppe, die nichts erfasst) und `(?<name>...)` (eine benannte Gruppe); `(?i)` am Anfang ignoriert Groß- und Kleinschreibung"),
+        ("this `(` is never closed", "diese `(` wird nie geschlossen"),
+        ("opened here", "hier geöffnet"),
+        ("add a `)` where the group ends; {}", "füge eine `)` dort ein, wo die Gruppe endet; {}"),
+        ("the regex ends with a lone `\\`", "der reguläre Ausdruck endet mit einem einzelnen `\\`"),
+        ("followed by nothing", "gefolgt von nichts"),
+        ("a `\\` comes before a letter like d, w, s or b, or before a sign for the sign itself, like `\\.`", "ein `\\` steht vor einem Buchstaben wie d, w, s oder b, oder vor einem Zeichen für das Zeichen selbst, wie `\\.`"),
+        ("`\\{c}` means nothing inside `[...]`", "`\\{c}` bedeutet nichts innerhalb von `[...]`"),
+        ("not a character", "kein Zeichen"),
+        ("`\\b` is the edge of a word: write it outside of the brackets", "`\\b` ist der Rand eines Wortes: schreib es außerhalb der eckigen Klammern"),
+        ("`\\{c}` means nothing in a regex", "`\\{c}` bedeutet nichts in einem regulären Ausdruck"),
+        (
+            r#"the known ones: \d (a digit), \w (a letter, a digit or _), \s (a space), \b (the edge of a word),
+their opposites \D, \W, \S, \B, \n, \t, and `\` before a sign for the sign itself, like \. or \("#,
+            r#"die bekannten: \d (eine Ziffer), \w (ein Buchstabe, eine Ziffer oder _), \s (ein Leerzeichen), \b (der Rand eines Wortes),
+ihre Gegenteile \D, \W, \S, \B, \n, \t, und `\` vor einem Zeichen für das Zeichen selbst, wie \. oder \("#,
+        ),
+        ("this `[` is never closed", "diese `[` wird nie geschlossen"),
+        ("add a `]` after the characters; for the sign `]` itself, put it first: `[]]`", "füge nach den Zeichen eine `]` ein; für das Zeichen `]` selbst setze es an den Anfang: `[]]`"),
+        ("a range must end with one character", "ein Bereich muss mit einem einzelnen Zeichen enden"),
+        ("not a range", "kein Bereich"),
+        ("for the sign `-` itself, put it last: `[a-]`", "für das Zeichen `-` selbst setze es ans Ende: `[a-]`"),
+        ("the range `{lo}-{hi}` goes backwards", "der Bereich `{lo}-{hi}` läuft rückwärts"),
+        ("backwards", "rückwärts"),
+        ("write the first character first: `{hi}-{lo}`", "schreib das erste Zeichen zuerst: `{hi}-{lo}`"),
+        ("this `)` closes nothing", "diese `)` schließt nichts"),
+        ("no `(` before it", "keine `(` davor"),
+        ("the regex is too large once its repetitions are written out", "der reguläre Ausdruck ist zu groß, wenn man seine Wiederholungen ausschreibt"),
+        ("use smaller counts in {{n,m}}, or `*` and `+`, which cost nothing", "verwende kleinere Anzahlen in {{n,m}}, oder `*` und `+`, die nichts kosten"),
+        ("`$1` is the text of group 1, `$<name>` of a named group, `$0` the whole match; for the sign `$` itself, write `$$`", "`$1` ist der Text von Gruppe 1, `$<name>` der einer benannten Gruppe, `$0` der ganze Treffer; für das Zeichen `$` selbst schreib `$$`"),
+        ("the regex has no group", "der reguläre Ausdruck hat keine Gruppe"),
+        ("the regex has 1 group", "der reguläre Ausdruck hat 1 Gruppe"),
+        ("the regex has {g} groups", "der reguläre Ausdruck hat {g} Gruppen"),
+        ("there is no group {n}: {has}", "es gibt keine Gruppe {n}: {has}"),
+        ("no such group", "keine solche Gruppe"),
+        ("`$<` must be followed by a group name and `>`", "auf `$<` müssen ein Gruppenname und `>` folgen"),
+        ("never closed", "nie geschlossen"),
+        ("the regex has no named group", "der reguläre Ausdruck hat keine benannte Gruppe"),
+        ("its named groups are {}", "seine benannten Gruppen sind {}"),
+        ("the regex has no group named `{name}`: {has}", "der reguläre Ausdruck hat keine Gruppe namens `{name}`: {has}"),
+        ("unknown group", "unbekannte Gruppe"),
+        ("`$` must be followed by a group number, `<name>` or `$`", "auf `$` muss eine Gruppennummer, `<name>` oder `$` folgen"),
+        ("a lone `$`", "ein einzelnes `$`"),
+        ("invalid replacement: {}", "ungültige Ersetzung: {}"),
+        ("invalid regex: {}", "ungültiger regulärer Ausdruck: {}"),
+        ("with this replacement", "mit dieser Ersetzung"),
+        ("with this regex", "mit diesem regulären Ausdruck"),
+        ("here in the replacement:", "hier in der Ersetzung:"),
+        ("here in the regex:", "hier im regulären Ausdruck:"),
+        ("`named_captures` needs a regex with named groups", "`named_captures` braucht einen regulären Ausdruck mit benannten Gruppen"),
+        ("name a group like this: `(?<year>[0-9]+)`; for groups without names, use `captures`", "benenne eine Gruppe so: `(?<year>[0-9]+)`; für Gruppen ohne Namen verwende `captures`"),
+        // src/builtins/system.rs
+        ("`{f}` is not available in the browser: a program here has no input to read. Run it on your computer: rythme file.ry < lines.txt", "`{f}` gibt es im Browser nicht: ein Programm hat hier keine Eingabe zum Lesen. Führe es auf deinem Computer aus: rythme datei.ry < zeilen.txt"),
+        ("`{f}` is not available in the browser: a program here has no files or folders. Run it on your computer: rythme file.ry", "`{f}` gibt es im Browser nicht: ein Programm hat hier keine Dateien oder Ordner. Führe es auf deinem Computer aus: rythme datei.ry"),
+        ("the path is empty: write \".\" for the current folder", "der Pfad ist leer: schreib \".\" für den aktuellen Ordner"),
+        ("folder not found: {path}", "Ordner nicht gefunden: {path}"),
+        ("file not found: {path}", "Datei nicht gefunden: {path}"),
+        ("permission denied: {path}", "Zugriff verweigert: {path}"),
+        ("cannot access {path}: {e}", "kein Zugriff auf {path}: {e}"),
+        ("{path} is a file, not a folder: `read_file` reads a file", "{path} ist eine Datei, kein Ordner: `read_file` liest eine Datei"),
+        ("{path} already exists, and it is a file, not a folder", "{path} existiert schon, und es ist eine Datei, kein Ordner"),
+        ("{path} is a folder: `delete_file` deletes only files, never folders", "{path} ist ein Ordner: `delete_file` löscht nur Dateien, niemals Ordner"),
+        ("cannot read the standard input: {e}", "die Standardeingabe kann nicht gelesen werden: {e}"),
+        ("`join_path` needs a list of texts, but it contains {}", "`join_path` braucht eine Liste von Texten, aber sie enthält {}"),
+        ("`text(value)` turns a value into a text", "`text(value)` macht aus einem Wert einen Text"),
+        ("`join_path` cannot add \"{part}\" after \"{out}\": only the first part of a path can start at a root (`/`, `\\` or a drive like `C:`)", "`join_path` kann \"{part}\" nicht nach \"{out}\" anfügen: nur der erste Teil eines Pfads darf an einer Wurzel beginnen (`/`, `\\` oder ein Laufwerk wie `C:`)"),
+        ("remove the separator at the start of \"{part}\", or put it first in the list", "entferne das Trennzeichen am Anfang von \"{part}\", oder setze den Teil an den Anfang der Liste"),
+        ("`{w}` is not a valid option: its name starts with a letter, followed by letters, digits, `-` or `_` (write `--` before words that start with `-`)", "`{w}` ist keine gültige Option: ihr Name beginnt mit einem Buchstaben, gefolgt von Buchstaben, Ziffern, `-` oder `_` (schreib `--` vor Wörter, die mit `-` beginnen)"),
+        ("`{w}` is not an option that Rythme understands: write `--{name}` for a long name, or `-a -b` for several one-letter options", "`{w}` ist keine Option, die Rythme versteht: schreib `--{name}` für einen langen Namen, oder `-a -b` für mehrere Optionen aus einem Buchstaben"),
+        ("`{w}` cannot be an option: the field `args` holds the words that are not options", "`{w}` kann keine Option sein: das Feld `args` enthält die Wörter, die keine Optionen sind"),
+        ("the option `{name}` is given twice", "die Option `{name}` wird zweimal angegeben"),
+        ("`options` needs a list of texts, like the one of `args()`, but it contains {}", "`options` braucht eine Liste von Texten, wie die von `args()`, aber sie enthält {}"),
+        ("`sleep` needs a number of seconds of 0 or more, not {secs}", "`sleep` braucht eine Anzahl Sekunden größer oder gleich 0, nicht {secs}"),
+        ("`sleep({secs})` would wait too long", "`sleep({secs})` würde zu lange warten"),
+        // src/builtins/text_tools.rs
+        ("`{f}` writes at most 100 decimals, not {d}", "`{f}` schreibt höchstens 100 Nachkommastellen, nicht {d}"),
+        ("`{f}` does not know the language \"{l}\"", "`{f}` kennt die Sprache \"{l}\" nicht"),
+        ("the languages: \"en\" (1,234.5), \"fr\" (1 234,5), \"de\", \"es\", \"it\", \"nl\" and \"pt\" (1.234,5)", "die Sprachen: \"en\" (1,234.5), \"fr\" (1 234,5), \"de\", \"es\", \"it\", \"nl\" und \"pt\" (1.234,5)"),
+        // src/builtins/web.rs
+        ("a web address cannot contain spaces, tabs or line breaks: write a space `%20`", "eine Webadresse darf keine Leerzeichen, Tabulatoren oder Zeilenumbrüche enthalten: schreib ein Leerzeichen als `%20`"),
+        ("this web address does not start with its scheme: write it like `https://example.com/page`", "diese Webadresse beginnt nicht mit ihrem Schema: schreib sie wie `https://example.com/page`"),
+        ("the host `{host_port}` opens a `[` that no `]` closes", "der Host `{host_port}` öffnet ein `[`, das kein `]` schließt"),
+        ("the host `{host}` cannot contain `{c}`", "der Host `{host}` darf kein `{c}` enthalten"),
+        ("an address `{scheme}:` names a host: write it like `{scheme}://example.com/page`", "eine Adresse `{scheme}:` nennt einen Host: schreib sie wie `{scheme}://example.com/page`"),
+        ("the port `{port}` is not a number from 0 to 65535", "der Port `{port}` ist keine Zahl von 0 bis 65535"),
+        // src/builtins.rs
+        ("Basics", "Grundlagen"),
+        ("Numbers", "Zahlen"),
+        ("Text", "Text"),
+        ("Lists", "Listen"),
+        ("Records", "Records"),
+        ("Dictionaries and sets", "Dicts und Mengen"),
+        ("Option and Result", "Option und Result"),
+        ("Files", "Dateien"),
+        ("Dates and times", "Datum und Uhrzeit"),
+        ("Property tests", "Eigenschaftstests"),
+        ("usage: `{}`", "Verwendung: `{}`"),
+        ("a list", "eine Liste"),
+        ("a text", "einen Text"),
+        ("a whole number (Int)", "eine ganze Zahl (Int)"),
+        ("a number", "eine Zahl"),
+        ("a function", "eine Funktion"),
+        ("a record", "einen Record"),
+        ("true or false", "true oder false"),
+        ("a list or a text", "eine Liste oder einen Text"),
+        ("a text or a list", "einen Text oder eine Liste"),
+        ("a text, a list, a record, a dict or a set", "einen Text, eine Liste, einen Record, ein Dict oder eine Menge"),
+        ("a list, a text, a record or a dict", "eine Liste, einen Text, einen Record oder ein Dict"),
+        ("a record or a dict", "einen Record oder ein Dict"),
+        ("a record, a dict or a set", "einen Record, ein Dict oder eine Menge"),
+        ("a list, a dict or a set", "eine Liste, ein Dict oder eine Menge"),
+        ("a list or a set", "eine Liste oder eine Menge"),
+        ("a dict or a set", "ein Dict oder eine Menge"),
+        ("a dict", "ein Dict"),
+        ("a set", "eine Menge"),
+        ("a list of [key, value] pairs (or a record)", "eine Liste von [Schlüssel, Wert]-Paaren (oder einen Record)"),
+        ("a list (or several values)", "eine Liste (oder mehrere Werte)"),
+        ("a number or a text", "eine Zahl oder einen Text"),
+        ("a list, a set, an Option or a Result", "eine Liste, eine Menge, eine Option oder ein Result"),
+        ("an Option or a Result", "eine Option oder ein Result"),
+        ("an Option", "eine Option"),
+        ("a Result", "ein Result"),
+        ("a date (a record {{year, month, day}})", "ein Datum (einen Record {{year, month, day}})"),
+        ("a generator (like `ints()`)", "einen Generator (wie `ints()`)"),
+        ("a text or a function", "einen Text oder eine Funktion"),
+        ("`{f}` expects {expected} as argument {pos}, but got {got}", "`{f}` erwartet {expected} als Argument {pos}, erhalten: {got}"),
+        ("wrong kind of value", "falsche Art von Wert"),
+        ("a text is not a list: `chars(text)` gives the list of its characters", "ein Text ist keine Liste: `chars(text)` gibt die Liste seiner Zeichen"),
+        ("a record is not a list: `entries(record)`, `keys(record)` or `values(record)` give one", "ein Record ist keine Liste: `entries(record)`, `keys(record)` oder `values(record)` geben eine"),
+        ("a dict is not a list: `entries(dict)`, `keys(dict)` or `values(dict)` give one", "ein Dict ist keine Liste: `entries(dict)`, `keys(dict)` oder `values(dict)` geben eine"),
+        ("a set is not a list: `values(set)` gives the list of its elements, in order", "eine Menge ist keine Liste: `values(set)` gibt die Liste ihrer Elemente, der Reihe nach"),
+        ("to change the values of a dict, use `map_values(dict, f)`", "um die Werte eines Dicts zu ändern, verwende `map_values(dict, f)`"),
+        ("for a list, use `{cousin}`", "für eine Liste verwende `{cousin}`"),
+        ("to read a date from a text like \"2024-02-29\", use `parse_date(text)`", "um ein Datum aus einem Text wie \"2024-02-29\" zu lesen, verwende `parse_date(text)`"),
+        ("for a list, use `find(list, f)`", "für eine Liste verwende `find(list, f)`"),
+        ("for an Option or a Result, use `and_then(x, f)`", "für eine Option oder ein Result verwende `and_then(x, f)`"),
+        ("the function given to `{f}` must return a list, but it returned {got}", "die an `{f}` übergebene Funktion muss eine Liste zurückgeben, hat aber {got} zurückgegeben"),
+        ("the function given to `{f}` must return a text, but it returned {got}", "die an `{f}` übergebene Funktion muss einen Text zurückgeben, hat aber {got} zurückgegeben"),
+        ("to make a text of any value, use `text(x)`", "um aus einem beliebigen Wert einen Text zu machen, verwende `text(x)`"),
+        ("an Option (Some or None)", "eine Option (Some oder None)"),
+        ("a Result (Ok or Err)", "ein Result (Ok oder Err)"),
+        ("the function given to `{f}` must return {expected}, but it returned {got}", "die an `{f}` übergebene Funktion muss {expected} zurückgeben, hat aber {got} zurückgegeben"),
+        ("to change the value inside without another check, use `map(x, f)`", "um den Wert darin ohne weitere Prüfung zu ändern, verwende `map(x, f)`"),
+        ("the function given to `{f}` must return true or false, but it returned {got}", "die an `{f}` übergebene Funktion muss true oder false zurückgeben, hat aber {got} zurückgegeben"),
+        ("the number {n} is too large for `{f}`", "die Zahl {n} ist zu groß für `{f}`"),
+        ("{digits} digits", "{digits} Ziffern"),
+        ("`{f}` needs a number of 0 or more, not {n}", "`{f}` braucht eine Zahl ab 0, nicht {n}"),
+        ("`{f}` needs a number of 1 or more, not 0", "`{f}` braucht eine Zahl ab 1, nicht 0"),
+        ("the list is empty", "die Liste ist leer"),
+        ("the list has {len} element(s)", "die Liste hat {len} Element(e)"),
+        ("position {n} is out of range: {what}", "Position {n} liegt außerhalb des Bereichs: {what}"),
+        ("no element here", "hier ist kein Element"),
+        ("valid positions go from 0 to {last} (or from -1 backwards, counting from the end)", "gültige Positionen gehen von 0 bis {last} (oder von -1 rückwärts, vom Ende her gezählt)"),
+        ("at least {min}", "mindestens {min}"),
+        ("{min} to {max}", "{min} bis {max}"),
+        ("`{f}` gives {given} argument(s) to this function, but it takes {expected}", "`{f}` gibt dieser Funktion {given} Argument(e), aber sie nimmt {expected}"),
+        ("takes {expected} argument(s)", "nimmt {expected} Argument(e)"),
+        ("`nan` (not a number) cannot be converted to a whole number", "`nan` (keine Zahl) kann nicht in eine ganze Zahl umgewandelt werden"),
+        ("`nan` is the result of a calculation that has none, like `0.0 * inf`: check where this value comes from", "`nan` ist das Ergebnis einer Rechnung, die keins hat, wie `0.0 * inf`: prüfe, woher dieser Wert kommt"),
+        ("`{}` (infinity) cannot be converted to a whole number", "`{}` (unendlich) kann nicht in eine ganze Zahl umgewandelt werden"),
+        ("an infinity comes from a calculation too large for decimal numbers, like `1e308 * 10.0`, or from a division by `0.0`", "eine Unendlichkeit kommt von einer Rechnung, die zu groß für Dezimalzahlen ist, wie `1e308 * 10.0`, oder von einer Division durch `0.0`"),
+        ("`text` writes at most 100 decimals, not {digits}", "`text` schreibt höchstens 100 Nachkommastellen, nicht {digits}"),
+        ("`input` found the end of the input", "`input` hat das Ende der Eingabe erreicht"),
+        ("no more lines to read", "keine Zeilen mehr zu lesen"),
+        ("the keyboard input was closed (Ctrl-D), or the text sent to the program has ended", "die Tastatureingabe wurde geschlossen (Strg-D), oder der an das Programm geschickte Text ist zu Ende"),
+        ("assertion failed: {}", "Zusicherung fehlgeschlagen: {}"),
+        ("assertion failed", "Zusicherung fehlgeschlagen"),
+        ("this condition is false", "diese Bedingung ist falsch"),
+        (
+            r#"got:      {got}
+expected: {expected}"#,
+            r#"erhalten: {got}
+erwartet: {expected}"#,
+        ),
+        ("first difference: character {at}", "erster Unterschied: Zeichen {at}"),
+        ("assertion failed: the values are different", "Zusicherung fehlgeschlagen: die Werte sind verschieden"),
+        (" at {path}", " bei {path}"),
+        ("the list{at} has {} element(s), {} expected", "die Liste{at} hat {} Element(e), erwartet: {}"),
+        ("in excess", "zu viel"),
+        ("missing", "fehlend"),
+        ("{word} from [{from}]: {}{dots}", "{word} ab [{from}]: {}{dots}"),
+        ("missing field(s){at}: {}", "fehlende(s) Feld(er){at}: {}"),
+        ("field(s) not expected{at}: {}", "nicht erwartete(s) Feld(er){at}: {}"),
+        (", which are of different types: {} and {}", ", die verschiedene Typen haben: {} und {}"),
+        ("first difference at {path}: got {}, expected {}{kinds}", "erster Unterschied bei {path}: erhalten {}, erwartet {}{kinds}"),
+        ("the values are of different types: {} and {}", "die Werte haben verschiedene Typen: {} und {}"),
+        ("(no line)", "(keine Zeile)"),
+        (
+            r#"first different line: line {}
+  got:      {}
+  expected: {}"#,
+            r#"erste unterschiedliche Zeile: Zeile {}
+  erhalten: {}
+  erwartet: {}"#,
+        ),
+        ("the program stopped with `fail`", "das Programm wurde mit `fail` beendet"),
+        ("the program stopped here", "das Programm wurde hier beendet"),
+        ("an exit code goes from 0 to 255, not {code}", "ein Exit-Code liegt zwischen 0 und 255, nicht {code}"),
+        ("the program stopped with exit({code})", "das Programm wurde mit exit({code}) beendet"),
+        ("cannot pick a random element in an empty list", "aus einer leeren Liste kann kein zufälliges Element gewählt werden"),
+        ("random({lo}, {hi}): the minimum is larger than the maximum", "random({lo}, {hi}): das Minimum ist größer als das Maximum"),
+        ("`{name}` of an empty list", "`{name}` einer leeren Liste"),
+        ("`{name}` cannot compare {} and {}", "`{name}` kann {} und {} nicht vergleichen"),
+        ("cannot take the square root of a negative number ({x})", "die Quadratwurzel einer negativen Zahl ({x}) gibt es nicht"),
+        ("use `sqrt(abs(x))` if you want the root of its absolute value", "verwende `sqrt(abs(x))`, wenn du die Wurzel ihres Betrags willst"),
+        ("cannot convert \"{s}\" to a whole number", "\"{s}\" kann nicht in eine ganze Zahl umgewandelt werden"),
+        ("if the text may not be a number, use `parse_int(t)`: it gives `Ok(n)` or `Err(...)` that you can check", "wenn der Text vielleicht keine Zahl ist, verwende `parse_int(t)`: es gibt `Ok(n)` oder `Err(...)`, was du prüfen kannst"),
+        ("cannot convert \"{s}\" to a decimal number", "\"{s}\" kann nicht in eine Dezimalzahl umgewandelt werden"),
+        ("if the text may not be a number, use `parse_float(t)`, which gives `Ok(x)` or `Err(...)`", "wenn der Text vielleicht keine Zahl ist, verwende `parse_float(t)`, das `Ok(x)` oder `Err(...)` gibt"),
+        ("`{name}` needs a number from -1 to 1, not {x}", "`{name}` braucht eine Zahl von -1 bis 1, nicht {x}"),
+        ("the logarithm only exists for positive numbers, not {x}", "den Logarithmus gibt es nur für positive Zahlen, nicht für {x}"),
+        ("invalid logarithm base: {base}", "ungültige Basis für den Logarithmus: {base}"),
+        ("`{f}` needs a single character, but \"{s}\" has {}", "`{f}` braucht ein einzelnes Zeichen, aber \"{s}\" hat {}"),
+        ("`replace` cannot replace an empty text", "`replace` kann keinen leeren Text ersetzen"),
+        ("{n} is not the number of a character", "{n} ist keine Zeichennummer"),
+        ("character numbers go from 0 to 1114111, except 55296 to 57343", "Zeichennummern gehen von 0 bis 1114111, außer 55296 bis 57343"),
+        ("the repeated text would be too large", "der wiederholte Text wäre zu groß"),
+        ("the repeated list would be too large", "die wiederholte Liste wäre zu groß"),
+        ("this number has more than {} digits", "diese Zahl hat mehr als {} Ziffern"),
+        ("\"{s}\" is not a whole number", "\"{s}\" ist keine ganze Zahl"),
+        ("\"{s}\" is not a number", "\"{s}\" ist keine Zahl"),
+        ("JSON, line {line}, column {column}: {msg}", "JSON, Zeile {line}, Spalte {column}: {msg}"),
+        ("expected {what}, but found `{c}`", "erwartet: {what}, gefunden: `{c}`"),
+        ("expected {what}, but the text ends", "erwartet: {what}, aber der Text endet"),
+        ("a value", "ein Wert"),
+        ("the end of the text", "das Ende des Textes"),
+        ("`,` or `]`", "`,` oder `]`"),
+        ("`,` or `}}`", "`,` oder `}}`"),
+        ("a name in quotes", "ein Name in Anführungszeichen"),
+        ("invalid number: JSON writes numbers like 0, -12, 3.5 or 1e-3", "ungültige Zahl: JSON schreibt Zahlen wie 0, -12, 3.5 oder 1e-3"),
+        ("invalid escape: after `\\` comes one of \" \\ / b f n r t u", "ungültiges Escape: nach `\\` kommt eines von \" \\ / b f n r t u"),
+        ("a line break or a tab inside a text is written with `\\`: `\\n`, `\\t`", "ein Zeilenumbruch oder ein Tabulator in einem Text wird mit `\\` geschrieben: `\\n`, `\\t`"),
+        ("a text is never closed: `\"` is missing", "ein Text wird nie geschlossen: `\"` fehlt"),
+        ("`\\u` must be followed by 4 hexadecimal digits", "auf `\\u` müssen 4 Hexadezimalziffern folgen"),
+        ("invalid `\\u` escape: half of a character (a surrogate) without its other half", "ungültiges `\\u`-Escape: die Hälfte eines Zeichens (ein Surrogat) ohne seine andere Hälfte"),
+        ("`to_json` indents by 16 spaces at most, not {n}", "`to_json` rückt um höchstens 16 Leerzeichen ein, nicht {n}"),
+        ("the JSON text would be too large", "der JSON-Text wäre zu groß"),
+        ("the values are nested too deeply to be indented: write them on one line, with `to_json(value)`", "die Werte sind zu tief verschachtelt, um eingerückt zu werden: schreib sie in eine Zeile, mit `to_json(value)`"),
+        ("`to_json` cannot write {} in JSON", "`to_json` kann {} nicht in JSON schreiben"),
+        ("JSON has no infinite numbers and no NaN", "JSON hat keine unendlichen Zahlen und kein NaN"),
+        (
+            r#"a dict is written as a JSON object only when its keys are all texts, or all symbols:
+turn the keys into texts first, or write `entries(dict)`"#,
+            r#"ein Dict wird nur dann als JSON-Objekt geschrieben, wenn seine Schlüssel alle Texte oder alle Symbole sind:
+mach die Schlüssel zuerst zu Texten, oder schreib `entries(dict)`"#,
+        ),
+        (
+            r#"JSON only holds numbers, texts, true and false, lists, records and null (`None`):
+turn your value into a record first, like {{kind: "Circle", radius: r}}"#,
+            r#"JSON enthält nur Zahlen, Texte, true und false, Listen, Records und null (`None`):
+mach deinen Wert zuerst zu einem Record, wie {{kind: "Circle", radius: r}}"#,
+        ),
+        ("`sum` needs a list of numbers, but it contains {}", "`sum` braucht eine Liste von Zahlen, aber sie enthält {}"),
+        ("`product` needs a list of numbers, but it contains {}", "`product` braucht eine Liste von Zahlen, aber sie enthält {}"),
+        ("all the elements must be of the same kind: all numbers, or all texts...", "alle Elemente müssen von derselben Art sein: alles Zahlen, oder alles Texte..."),
+        ("the result of `windows` would be too large", "das Ergebnis von `windows` wäre zu groß"),
+        ("the function `key` must give values of the same kind for every element: all numbers, or all texts...", "die Funktion `key` muss für jedes Element Werte derselben Art liefern: alles Zahlen, oder alles Texte..."),
+        ("`flatten` needs a list of lists, but it contains {}", "`flatten` braucht eine Liste von Listen, aber sie enthält {}"),
+        ("`from_entries` needs a list of [name, value] pairs, but it contains {}", "`from_entries` braucht eine Liste von [Name, Wert]-Paaren, aber sie enthält {}"),
+        ("each pair is a list of two elements whose name is a text, like [\"age\", 36]", "jedes Paar ist eine Liste mit zwei Elementen, deren Name ein Text ist, wie [\"age\", 36]"),
+        ("`unwrap` found `None`: there is no value", "`unwrap` hat `None` gefunden: es gibt keinen Wert"),
+        ("handle the missing value with `match`, or give a default: `unwrap_or(x, default)`", "behandle den fehlenden Wert mit `match`, oder gib einen Standardwert an: `unwrap_or(x, default)`"),
+        ("`unwrap` found an error: {}", "`unwrap` hat einen Fehler gefunden: {}"),
+        ("handle the error with `match`, pass it on with `?`, or give a default: `unwrap_or(x, default)`", "behandle den Fehler mit `match`, gib ihn mit `?` weiter, oder gib einen Standardwert an: `unwrap_or(x, default)`"),
+        // src/check/needs.rs
+        ("`{name}` stops with this error, every time", "`{name}` endet jedes Mal mit diesem Fehler"),
+        ("here", "hier"),
+        ("in `{name}`: {label}", "in `{name}`: {label}"),
+        ("`{name}` always fails with {}", "`{name}` scheitert immer mit {}"),
+        ("fails every time", "scheitert jedes Mal"),
+        ("defined here", "hier definiert"),
+        ("from how `{name}` uses `{p}`, it needs: `{sig}`", "so wie `{name}` den Parameter `{p}` verwendet, braucht es: `{sig}`"),
+        // src/check.rs
+        ("`{s} [...]` is read as an index, not as a call", "`{s} [...]` wird als Index gelesen, nicht als Aufruf"),
+        ("to call `{s}`, put its argument in parentheses: `{s}([...])`; for an index, write `{s}[...]` without a space", "um `{s}` aufzurufen, setz sein Argument in Klammern: `{s}([...])`; für einen Index schreib `{s}[...]` ohne Leerzeichen"),
+        ("`{s} -...` is read as a subtraction, not as a call", "`{s} -...` wird als Subtraktion gelesen, nicht als Aufruf"),
+        ("to call `{s}`, put its argument in parentheses: `{s}(-x)`; for a subtraction, write `{s} - x`", "um `{s}` aufzurufen, setz sein Argument in Klammern: `{s}(-x)`; für eine Subtraktion schreib `{s} - x`"),
+        ("`{s}` is not a value here", "`{s}` ist hier kein Wert"),
+        ("`{s}` is a function here", "`{s}` ist hier eine Funktion"),
+        ("because `{s}` is given a value here", "weil `{s}` hier einen Wert bekommt"),
+        ("a call without parentheses, like `{s} [1, 2]` or `{s} -1`, is read so only when the file never gives `{s}` a value", "ein Aufruf ohne Klammern, wie `{s} [1, 2]` oder `{s} -1`, wird nur so gelesen, wenn die Datei `{s}` nirgends einen Wert gibt"),
+        ("the type `{name}` is part of Rythme", "der Typ `{name}` gehört zu Rythme"),
+        ("give your type another name", "gib deinem Typ einen anderen Namen"),
+        ("the type `{}` is already defined", "der Typ `{}` ist schon definiert"),
+        ("first defined here", "zuerst hier definiert"),
+        ("give it another name", "gib ihm einen anderen Namen"),
+        ("the field `{f}` appears twice in `{}`", "das Feld `{f}` kommt in `{}` zweimal vor"),
+        ("`{s}` is already the name of the file `{file}`", "`{s}` ist schon der Name der Datei `{file}`"),
+        ("choose another name here, or give the file another one: `use ... as other_name`", "wähle hier einen anderen Namen, oder gib der Datei einen anderen: `use ... as other_name`"),
+        ("`{s}` is already defined", "`{s}` ist schon definiert"),
+        ("defined again here", "hier noch einmal definiert"),
+        ("a constructor belongs to a single type: rename one of them", "ein Konstruktor gehört zu einem einzigen Typ: benenne einen von ihnen um"),
+        ("to give several definitions to a function (one per case), write them one right after the other", "um einer Funktion mehrere Definitionen zu geben (eine pro Fall), schreib sie direkt hintereinander"),
+        ("`{s}` hides the built-in function `{s}`", "`{s}` verdeckt die eingebaute Funktion `{s}`"),
+        ("`{s}` hides the built-in value `{s}`", "`{s}` verdeckt den eingebauten Wert `{s}`"),
+        ("in this file, `{s}` will now mean your definition; choose another name to keep the built-in one", "in dieser Datei bedeutet `{s}` jetzt deine Definition; wähle einen anderen Namen, um die eingebaute zu behalten"),
+        ("`{s}` is part of Rythme", "`{s}` gehört zu Rythme"),
+        ("choose another name", "wähle einen anderen Namen"),
+        ("the result of `{name}` is lost", "das Ergebnis von `{name}` geht verloren"),
+        ("this value is lost", "dieser Wert geht verloren"),
+        (
+            r#"values never change: `{sig}` gives a new value, and changes nothing.
+To keep it, give it a name: `new = {sig}`"#,
+            r#"Werte ändern sich nie: `{sig}` liefert einen neuen Wert und ändert nichts.
+Um ihn zu behalten, gib ihm einen Namen: `new = {sig}`"#,
+        ),
+        ("this test can never fail", "dieser Test kann nie fehlschlagen"),
+        ("its result, {}, is never compared with what is expected", "sein Ergebnis, {}, wird nie mit dem Erwarteten verglichen"),
+        (
+            r#"a test fails only when it stops with an error, or ends with `false`, `None` or `Err(...)`;
+nothing in this one can"#,
+            r#"ein Test schlägt nur fehl, wenn er mit einem Fehler endet oder `false`, `None` oder `Err(...)` ergibt;
+nichts in diesem Test kann das"#,
+        ),
+        ("compare the result with what you expect: `assert_eq(actual, expected)`", "vergleiche das Ergebnis mit dem, was du erwartest: `assert_eq(actual, expected)`"),
+        ("remove `{name}` from the pattern, or write `{name}: _{name}` if this is on purpose", "entferne `{name}` aus dem Muster, oder schreib `{name}: _{name}`, wenn das Absicht ist"),
+        ("remove it, or name it `_{name}` if this is on purpose", "entferne es, oder nenne es `_{name}`, wenn das Absicht ist"),
+        ("`{name}` is never used", "`{name}` wird nie verwendet"),
+        ("`{s}` appears twice in this pattern", "`{s}` kommt in diesem Muster zweimal vor"),
+        ("first here", "zuerst hier"),
+        ("use two different names, then compare them with `==` in a condition: `[a, b] if a == b -> ...`", "verwende zwei verschiedene Namen und vergleiche sie dann mit `==` in einer Bedingung: `[a, b] if a == b -> ...`"),
+        ("`{s}` is used before being defined", "`{s}` wird verwendet, bevor es definiert ist"),
+        ("used here", "hier verwendet"),
+        ("defined later, here", "später definiert, hier"),
+        ("move the definition above this line", "verschiebe die Definition über diese Zeile"),
+        ("`{s}` is the name of the file `{file}`, not a value", "`{s}` ist der Name der Datei `{file}`, kein Wert"),
+        ("write `{s}.` and the name of one of its definitions, like `{s}.{example}`", "schreib `{s}.` und den Namen einer ihrer Definitionen, wie `{s}.{example}`"),
+        ("`{x}` is private to the file `{file}`", "`{x}` ist privat in der Datei `{file}`"),
+        ("private", "privat"),
+        ("a name starting with `_` can only be used in its own file", "ein Name, der mit `_` beginnt, kann nur in seiner eigenen Datei verwendet werden"),
+        ("to use it from other files, rename it without `_` in `{file}`", "um ihn aus anderen Dateien zu verwenden, benenne ihn in `{file}` ohne `_` um"),
+        ("the file `{file}` has no `{x}`", "die Datei `{file}` hat kein `{x}`"),
+        ("`{m}.{x}?` is a function of `{file}`, but without `(` right after it, `?` is the operator: call it, `{m}.{x}?(...)`, or give it as `fn(v) = {m}.{x}?(v)`", "`{m}.{x}?` ist eine Funktion von `{file}`, aber ohne `(` direkt dahinter ist `?` der Operator: ruf sie auf, `{m}.{x}?(...)`, oder gib sie als `fn(v) = {m}.{x}?(v)` weiter"),
+        ("not in `{file}`", "nicht in `{file}`"),
+        ("did you mean `{m}.{best}`?", "meintest du `{m}.{best}`?"),
+        ("`{file}` defines nothing that other files can use", "`{file}` definiert nichts, was andere Dateien verwenden können"),
+        ("`{file}` gives: {}{more}", "`{file}` bietet: {}{more}"),
+        ("`{name}` is private to the file `{file}`", "`{name}` ist privat in der Datei `{file}`"),
+        ("unknown name `{name}`", "unbekannter Name `{name}`"),
+        ("not defined here", "hier nicht definiert"),
+        ("`{name}` is defined in `{file}`: write `{m}.{name}`", "`{name}` ist in `{file}` definiert: schreib `{m}.{name}`"),
+        ("`{name}` is defined in `{file}`: add `use {stem}` at the top of the file, then write `{stem}.{name}`", "`{name}` ist in `{file}` definiert: füge `use {stem}` oben in die Datei ein, und schreib dann `{stem}.{name}`"),
+        ("not defined", "nicht definiert"),
+        ("defined here, further down", "hier definiert, weiter unten"),
+        ("in a block, a function can be used only after it, unless they are written one after the other with nothing between them: move `{name}` up, next to the function that uses it", "in einem Block kann eine Funktion erst nach ihrer Definition verwendet werden, außer sie stehen direkt hintereinander ohne etwas dazwischen: verschiebe `{name}` nach oben, neben die Funktion, die sie verwendet"),
+        ("in a block, a name can be used only after the line that defines it: move `{name} = ...` up", "in einem Block kann ein Name erst nach der Zeile verwendet werden, die ihn definiert: verschiebe `{name} = ...` nach oben"),
+        ("did you mean `{best}`?", "meintest du `{best}`?"),
+        ("to create your own kind of value, define a type: `type Name = {name}(field) | Other`", "um deine eigene Art von Wert zu erzeugen, definiere einen Typ: `type Name = {name}(field) | Other`"),
+        ("define it before using it: `{name} = ...` or `fn {name}(...) = ...`", "definiere es, bevor du es verwendest: `{name} = ...` oder `fn {name}(...) = ...`"),
+        ("this definition of `{name}` can never be used", "diese Definition von `{name}` kann nie verwendet werden"),
+        ("this definition already accepts every argument", "diese Definition akzeptiert schon jedes Argument"),
+        ("definitions are tried in order: put the most general one last", "Definitionen werden der Reihe nach ausprobiert: setze die allgemeinste ans Ende"),
+        ("this definition already accepts these arguments", "diese Definition akzeptiert diese Argumente schon"),
+        ("definitions are tried in order: remove this one, or change its patterns", "Definitionen werden der Reihe nach ausprobiert: entferne diese, oder ändere ihre Muster"),
+        ("this function receives {}, which never matches this pattern", "das Argument dieser Funktion, {}, passt nie zu diesem Muster"),
+        ("never matches", "passt nie"),
+        ("`{name}` does not handle every possible argument", "`{name}` behandelt nicht jedes mögliche Argument"),
+        ("not handled: {}", "nicht behandelt: {}"),
+        ("add a definition for it, like `fn {name}({}) = ...`", "füge eine Definition dafür hinzu, wie `fn {name}({}) = ...`"),
+        ("the value {} does not match this pattern", "der Wert {} passt nicht zu diesem Muster"),
+        ("a value of type {} never matches this pattern", "ein Wert vom Typ {} passt nie zu diesem Muster"),
+        ("`_` can only be used in patterns", "`_` kann nur in Mustern verwendet werden"),
+        ("`_` means \"anything, ignored\"; give the value a real name to use it", "`_` bedeutet „irgendetwas, ignoriert“; gib dem Wert einen echten Namen, um ihn zu verwenden"),
+        ("`?` can only be used inside a function", "`?` kann nur innerhalb einer Funktion verwendet werden"),
+        ("outside of a function, handle the value with `match` or `unwrap_or`", "außerhalb einer Funktion behandle den Wert mit `match` oder `unwrap_or`"),
+        ("`?` needs an Option or a Result, but got {}", "`?` braucht eine Option oder ein Result, erhalten: {}"),
+        ("`?` takes the value out of `Some(x)` / `Ok(x)`, and returns `None` / `Err(e)` from the current function", "`?` holt den Wert aus `Some(x)` / `Ok(x)` heraus und gibt `None` / `Err(e)` aus der aktuellen Funktion zurück"),
+        ("the field `{k}` appears twice", "das Feld `{k}` kommt zweimal vor"),
+        ("`..` expects {expected} here, but got {}", "`..` erwartet hier {expected}, erhalten: {}"),
+        ("this value is not a function", "dieser Wert ist keine Funktion"),
+        ("cannot be called", "kann nicht aufgerufen werden"),
+        ("to multiply, write `*` explicitly: `2 * (x + 1)`", "zum Multiplizieren schreib `*` ausdrücklich: `2 * (x + 1)`"),
+        ("to take one element, use brackets: `x[0]`; between two values, a `,` may be missing", "um ein Element zu nehmen, verwende eckige Klammern: `x[0]`; zwischen zwei Werten fehlt vielleicht ein `,`"),
+        ("to read a field, use a dot: `person.name`", "um ein Feld zu lesen, verwende einen Punkt: `person.name`"),
+        ("`{s}` is not a function", "`{s}` ist keine Funktion"),
+        ("`{s}` is {}", "`{s}` ist {}"),
+        ("returns {returned}", "gibt {returned} zurück"),
+        ("this assertion always fails: {a} and {b} are never equal", "diese Zusicherung schlägt immer fehl: {a} und {b} sind nie gleich"),
+        (
+            r#"one value is inside an Option or a Result: compare it with `Some(...)` or `Ok(...)`,
+like `assert_eq(parse_int("3"), Ok(3))`"#,
+            r#"ein Wert steckt in einer Option oder einem Result: vergleiche ihn mit `Some(...)` oder `Ok(...)`,
+wie `assert_eq(parse_int("3"), Ok(3))`"#,
+        ),
+        ("values of different kinds are never equal: Rythme never converts values silently", "Werte verschiedener Arten sind nie gleich: Rythme wandelt Werte nie stillschweigend um"),
+        ("these are two different types named `{name}`, defined in two files: their values are never equal", "das sind zwei verschiedene Typen namens `{name}`, definiert in zwei Dateien: ihre Werte sind nie gleich"),
+        ("a constructor, shown as `<constructor ...>`", "ein Konstruktor, angezeigt als `<constructor ...>`"),
+        ("a function, shown as `<fn ...>`", "eine Funktion, angezeigt als `<fn ...>`"),
+        ("this shows a function, not a value", "das zeigt eine Funktion, keinen Wert"),
+        ("to show what it gives, call it: `{call}`", "um zu zeigen, was sie liefert, rufe sie auf: `{call}`"),
+        ("no definition of `{name}` accepts these arguments: {name}({})", "keine Definition von `{name}` akzeptiert diese Argumente: {name}({})"),
+        ("called here", "hier aufgerufen"),
+        ("does not match", "passt nicht"),
+        ("add a definition that handles this case, for example one that ends with a plain name or `_`", "füge eine Definition hinzu, die diesen Fall behandelt, zum Beispiel eine, die mit einem einfachen Namen oder `_` endet"),
+        ("the field `{name}` is not a function", "das Feld `{name}` ist keine Funktion"),
+        ("`{name}` is {}", "`{name}` ist {}"),
+        ("to read the field, write it without parentheses: `.{name}`", "um das Feld zu lesen, schreib es ohne Klammern: `.{name}`"),
+        ("there is no function named `{shown}`", "es gibt keine Funktion namens `{shown}`"),
+        ("`value.{shown}(...)` calls `{shown}(value, ...)`, or the field `{shown}` of a record", "`value.{shown}(...)` ruft `{shown}(value, ...)` auf, oder das Feld `{shown}` eines Records"),
+        ("`{name}` is a value, not a function", "`{name}` ist ein Wert, keine Funktion"),
+        ("write `{name}` without parentheses", "schreib `{name}` ohne Klammern"),
+        ("this record has no field `{name}`", "dieser Record hat kein Feld `{name}`"),
+        ("unknown field", "unbekanntes Feld"),
+        ("the record is empty: {{}}", "der Record ist leer: {{}}"),
+        ("its fields are: {}", "seine Felder sind: {}"),
+        ("to get an Option instead of an error, use `get(record, \"{name}\")`", "um statt eines Fehlers eine Option zu bekommen, verwende `get(record, \"{name}\")`"),
+        ("{} has no fields", "{} hat keine Felder"),
+        ("no field `{name}` here", "hier gibt es kein Feld `{name}`"),
+        ("did you mean `.{best}`? (`value.{best}` calls `{best}(value)`)", "meintest du `.{best}`? (`value.{best}` ruft `{best}(value)` auf)"),
+        ("did you mean `.{best}`? (a field of this record)", "meintest du `.{best}`? (ein Feld dieses Records)"),
+        ("`{c}` has no field `{name}`", "`{c}` hat kein Feld `{name}`"),
+        ("no variant of `{tn}` has a field `{name}`", "keine Variante von `{tn}` hat ein Feld `{name}`"),
+        ("`{c}` has no fields", "`{c}` hat keine Felder"),
+        ("the fields of `{c}` are: {}", "die Felder von `{c}` sind: {}"),
+        ("the variants of `{tn}` have no fields", "die Varianten von `{tn}` haben keine Felder"),
+        ("their fields are: {}", "ihre Felder sind: {}"),
+        ("a value of type `{tn}` may be another variant: use `match` to handle each case", "ein Wert vom Typ `{tn}` kann eine andere Variante sein: verwende `match`, um jeden Fall zu behandeln"),
+        ("cannot use `[...]` on {}", "`[...]` kann nicht auf {} angewendet werden"),
+        ("`[...]` works on lists, texts, records and dicts", "`[...]` funktioniert bei Listen, Texten, Records und Dicts"),
+        ("an index must be a whole number (Int), but got {}", "ein Index muss eine ganze Zahl (Int) sein, ist aber {}"),
+        ("the name of a field must be a text, but got {}", "der Name eines Feldes muss ein Text sein, ist aber {}"),
+        ("read a field with `record[\"name\"]` or `record.name`", "lies ein Feld mit `record[\"name\"]` oder `record.name`"),
+        ("this record has no field `{k}`", "dieser Record hat kein Feld `{k}`"),
+        ("use `get(record, key)` to receive an Option instead", "verwende `get(record, key)`, um stattdessen eine Option zu bekommen"),
+        ("{} and {}", "{} und {}"),
+        ("a range needs whole numbers, but got {got}", "ein Bereich braucht ganze Zahlen, erhalten: {got}"),
+        ("example: `1..10` is the list of the numbers from 1 to 10", "Beispiel: `1..10` ist die Liste der Zahlen von 1 bis 10"),
+        ("cannot use `-` on {}", "`-` kann nicht auf {} angewendet werden"),
+        ("a condition must be `true` or `false`, but this is {}", "eine Bedingung muss `true` oder `false` sein, aber das hier ist {}"),
+        ("not a Bool", "kein Bool"),
+        ("compare it explicitly, for example `x != 0` or `x > 0`", "vergleiche ausdrücklich, zum Beispiel `x != 0` oder `x > 0`"),
+        ("to test if it is empty, use `is_empty(x)` or `not is_empty(x)`", "um zu prüfen, ob es leer ist, verwende `is_empty(x)` oder `not is_empty(x)`"),
+        ("use `is_some(x)`, `is_ok(x)`, or `match` to look inside", "verwende `is_some(x)`, `is_ok(x)` oder `match`, um hineinzuschauen"),
+        ("cannot use `{sym}` with {ln} and {rn}", "`{sym}` kann nicht mit {ln} und {rn} verwendet werden"),
+        ("cannot use `{sym}` with {ln}", "`{sym}` kann nicht mit {ln} verwendet werden"),
+        ("cannot use `{sym}` with {rn}", "`{sym}` kann nicht mit {rn} verwendet werden"),
+        ("`{name} -x` subtracts here; to call `{name}`, write `{name}(-x)` (a call without parentheses starts a statement or a result, such as a branch of `if` or the body after the `=` of a function, and its name is not given a value with `=` or as a parameter)", "`{name} -x` subtrahiert hier; um `{name}` aufzurufen, schreib `{name}(-x)` (ein Aufruf ohne Klammern beginnt eine Anweisung oder ein Ergebnis, etwa einen Zweig von `if` oder den Rumpf nach dem `=` einer Funktion, und sein Name bekommt keinen Wert mit `=` oder als Parameter)"),
+        ("to join two sets or two dicts, use `union(a, b)`; to take one away from the other, `difference(a, b)`", "um zwei Mengen oder zwei Dicts zu vereinen, verwende `union(a, b)`; um das eine vom anderen abzuziehen, `difference(a, b)`"),
+        (
+            r#"to build a text with a value inside, use braces: "total: {{x}}"
+or convert the value first: text(x)"#,
+            r#"um einen Text mit einem Wert darin zu bauen, verwende geschweifte Klammern: "total: {{x}}"
+oder wandle den Wert zuerst um: text(x)"#,
+        ),
+        ("to add one element to a list, use `push(list, x)` or `[..list, x]`", "um einer Liste ein Element hinzuzufügen, verwende `push(list, x)` oder `[..list, x]`"),
+        ("to repeat a text or a list, use `repeat(x, n)`", "um einen Text oder eine Liste zu wiederholen, verwende `repeat(x, n)`"),
+        ("convert the text to a number first, with `int(t)` or `float(t)`", "wandle den Text zuerst in eine Zahl um, mit `int(t)` oder `float(t)`"),
+        ("only values of the same kind can be compared", "nur Werte derselben Art können verglichen werden"),
+        ("this comparison is always false: {ln} and {rn} are never equal", "dieser Vergleich ist immer falsch: {ln} und {rn} sind nie gleich"),
+        ("this comparison is always true: {ln} and {rn} are never equal", "dieser Vergleich ist immer wahr: {ln} und {rn} sind nie gleich"),
+        ("to look inside an Option, use `match`, `unwrap_or(x, default)` or `is_some(x)`", "um in eine Option hineinzuschauen, verwende `match`, `unwrap_or(x, default)` oder `is_some(x)`"),
+        ("Rythme never converts values silently: convert one side first, with `text(x)` or `int(t)`", "Rythme wandelt Werte nie stillschweigend um: wandle zuerst eine Seite um, mit `text(x)` oder `int(t)`"),
+        ("this case can never be reached", "dieser Fall kann nie erreicht werden"),
+        ("this case already handles everything", "dieser Fall behandelt schon alles"),
+        ("cases are tried in order: put `_` last", "Fälle werden der Reihe nach ausprobiert: setze `_` ans Ende"),
+        ("this case already handles these values", "dieser Fall behandelt diese Werte schon"),
+        ("a value goes to the first case that fits: remove this case, or change it", "ein Wert geht in den ersten Fall, der passt: entferne diesen Fall, oder ändere ihn"),
+        ("no case of this `match` handles {}", "kein Fall dieses `match` behandelt {}"),
+        ("this value", "dieser Wert"),
+        ("add a case for this value, or a last case `_ -> ...` that handles everything else", "füge einen Fall für diesen Wert hinzu, oder einen letzten Fall `_ -> ...`, der alles andere behandelt"),
+        ("this `match` does not handle every case", "dieses `match` behandelt nicht jeden Fall"),
+        ("add a last case `_ -> ...` for all the other values", "füge einen letzten Fall `_ -> ...` für alle anderen Werte hinzu"),
+        ("add the missing cases, like `{} -> ...`, or a last case `_ -> ...`", "füge die fehlenden Fälle hinzu, wie `{} -> ...`, oder einen letzten Fall `_ -> ...`"),
+        ("unknown constructor `{n}`", "unbekannter Konstruktor `{n}`"),
+        ("constructors are defined with `type`: `type Name = {n}(field) | Other`", "Konstruktoren werden mit `type` definiert: `type Name = {n}(field) | Other`"),
+        ("`{name}` has {} field(s), but this pattern gives {}", "`{name}` hat {} Feld(er), aber dieses Muster gibt {} an"),
+        ("write it like `{example}`", "schreib es wie `{example}`"),
+        ("this range never matches", "dieser Bereich passt nie"),
+        ("no number goes from {lo} up to {hi}", "keine Zahl geht von {lo} hinauf bis {hi}"),
+        ("a range goes from the smaller number to the larger one: `{hi}..{lo}`", "ein Bereich geht von der kleineren Zahl zur größeren: `{hi}..{lo}`"),
+        ("patterns joined with `|` cannot give names (here `{s}`)", "mit `|` verbundene Muster können keine Namen vergeben (hier `{s}`)"),
+        ("write separate cases instead", "schreib stattdessen getrennte Fälle"),
+        ("handles some of these numbers", "behandelt einige dieser Zahlen"),
+        ("together, the cases before it already handle all its numbers: remove it, or change it", "zusammen behandeln die Fälle davor schon alle seine Zahlen: entferne ihn, oder ändere ihn"),
+        ("these ranges overlap", "diese Bereiche überschneiden sich"),
+        ("{both} is also here", "{both} ist auch hier"),
+        ("{both} goes here, the first that fits", "{both} geht hierher, in den ersten, der passt"),
+        ("both ends of a range are included: make the ranges follow each other without overlapping, like `0..9` then `10..19`", "beide Enden eines Bereichs gehören dazu: lass die Bereiche ohne Überschneidung aufeinander folgen, wie `0..9` und dann `10..19`"),
+        ("use `match` to handle the different possible shapes of a value", "verwende `match`, um die verschiedenen möglichen Formen eines Werts zu behandeln"),
+        ("a value of type {}", "ein Wert vom Typ {}"),
+        ("this line computes a value but does nothing with it", "diese Zeile berechnet einen Wert, macht aber nichts damit"),
+        (
+            r#"a line that starts with `-` is a new statement. To continue the line above,
+end that line with `-` instead:
+  total = price -
+    discount"#,
+            r#"eine Zeile, die mit `-` beginnt, ist eine neue Anweisung. Um die Zeile darüber fortzusetzen,
+beende stattdessen jene Zeile mit `-`:
+  total = price -
+    discount"#,
+        ),
+        (
+            r#"to keep the value, give it a name: `result = ...`; to show it: `print(...)`.
+Values never change: `x + 1` does not change `x`."#,
+            r#"um den Wert zu behalten, gib ihm einen Namen: `result = ...`; um ihn anzuzeigen: `print(...)`.
+Werte ändern sich nie: `x + 1` ändert `x` nicht."#,
+        ),
+        ("this is a task, the call of an `async fn`: write `await` before it to use its result, like `await total(x) + 1`", "das ist ein Task, der Aufruf einer `async fn`: schreibe `await` davor, um sein Ergebnis zu verwenden, wie `await total(x) + 1`"),
+        // src/diagnostic.rs
+        ("error", "Fehler"),
+        ("warning", "Warnung"),
+        ("help", "Hilfe"),
+        ("call trace (most recent first):", "Aufrufe (der neueste zuerst):"),
+        ("an anonymous function", "eine anonyme Funktion"),
+        ("in", "in"),
+        ("called at", "aufgerufen bei"),
+        ("and {} more calls", "und {} weitere Aufrufe"),
+        ("more about this error: `rythme explain {}`", "mehr über diesen Fehler: `rythme explain {}`"),
+        // src/doc.rs
+        ("`{a}` needs a file name, like `rythme doc geometry.ry --out geometry.html`", "`{a}` braucht einen Dateinamen, wie `rythme doc geometrie.ry --out geometrie.html`"),
+        ("unknown option `{o}` for `rythme doc`", "unbekannte Option `{o}` für `rythme doc`"),
+        (
+            r#"
+did you mean `{best}`?"#,
+            r#"
+meintest du `{best}`?"#,
+        ),
+        (
+            r#"
+see `rythme help doc`"#,
+            r#"
+siehe `rythme help doc`"#,
+        ),
+        (
+            r#"which files? Example: rythme doc geometry.ry
+  a folder documents all its .ry files: rythme doc .
+  --html writes one HTML page instead of Markdown
+  --out FILE writes to a file (a name ending with .html gives HTML)
+see `rythme help doc`"#,
+            r#"welche Dateien? Beispiel: rythme doc geometrie.ry
+  ein Ordner dokumentiert alle seine .ry-Dateien: rythme doc .
+  --html schreibt eine HTML-Seite statt Markdown
+  --out DATEI schreibt in eine Datei (ein Name, der auf .html endet, ergibt HTML)
+siehe `rythme help doc`"#,
+        ),
+        ("no .ry file in `{target}`", "keine .ry-Datei in `{target}`"),
+        ("Documentation of {one}", "Dokumentation von {one}"),
+        ("Documentation", "Dokumentation"),
+        ("written: {file}", "geschrieben: {file}"),
+        ("cannot write the file `{file}`: {e}", "die Datei `{file}` kann nicht geschrieben werden: {e}"),
+        ("Types", "Typen"),
+        ("Functions", "Funktionen"),
+        ("Values", "Werte"),
+        ("Tests", "Tests"),
+        ("Uses", "Verwendet"),
+        ("Contents", "Inhalt"),
+        ("Built-in functions mentioned", "Erwähnte eingebaute Funktionen"),
+        ("Example", "Beispiel"),
+        ("Nothing public to document.", "Nichts Öffentliches zu dokumentieren."),
+        ("Documentation written by `rythme doc`", "Dokumentation, geschrieben von `rythme doc`"),
+        (" Same as: {} (its Ruby names).", " Dasselbe wie: {} (die Ruby-Namen)."),
+        ("Example:", "Beispiel:"),
+        (" as {open}{n}{close}", " als {open}{n}{close}"),
+        (": ", ": "),
+        // src/driver.rs
+        ("`{shown}` is a folder, not a file", "`{shown}` ist ein Ordner, keine Datei"),
+        ("give a file inside it, like {}", "gib eine Datei darin an, wie {}"),
+        ("file `{shown}` not found", "Datei `{shown}` nicht gefunden"),
+        ("no permission to read the file `{shown}`", "keine Berechtigung, die Datei `{shown}` zu lesen"),
+        ("cannot read the file `{shown}`: {e}", "die Datei `{shown}` kann nicht gelesen werden: {e}"),
+        ("the file `{shown}` is not text in the UTF-8 encoding (unexpected byte on line {line})", "die Datei `{shown}` ist kein Text in der Kodierung UTF-8 (unerwartetes Byte in Zeile {line})"),
+        ("it looks like it was saved in UTF-16", "sie scheint in UTF-16 gespeichert zu sein"),
+        ("save it again with the UTF-8 encoding (most editors have it in \"Save as\" or in the status bar)", "speichere sie noch einmal in der Kodierung UTF-8 (die meisten Editoren haben das unter „Speichern unter“ oder in der Statusleiste)"),
+        ("(`{name}` now has {n} definitions, tried in order; :reset to start again)", "(`{name}` hat jetzt {n} Definitionen, die der Reihe nach ausprobiert werden; :reset, um neu anzufangen)"),
+        ("file `{p}` not found", "Datei `{p}` nicht gefunden"),
+        ("looked for: {}", "gesucht: {}"),
+        ("the Rythme files there are: {}{more}", "die Rythme-Dateien dort sind: {}{more}"),
+        ("the path is relative to the folder of the file that contains `use`", "der Pfad ist relativ zum Ordner der Datei, die `use` enthält"),
+        ("`{p}` uses itself", "`{p}` verwendet sich selbst"),
+        ("`{last}` and `{first}` use each other", "`{last}` und `{first}` verwenden sich gegenseitig"),
+        ("the circle: {}", "der Kreis: {}"),
+        ("files cannot use each other: move what both need into a third file, used by both", "Dateien können sich nicht gegenseitig verwenden: verschiebe, was beide brauchen, in eine dritte Datei, die beide verwenden"),
+        ("the name `{n}` is given to two files: `{first}` and `{second}`", "der Name `{n}` wird zwei Dateien gegeben: `{first}` und `{second}`"),
+        ("give this one another name: `use ... as other_name`", "gib dieser einen anderen Namen: `use ... as other_name`"),
+        ("`{s}` is defined by two used files: `{first}` and `{second}`", "`{s}` wird von zwei verwendeten Dateien definiert: `{first}` und `{second}`"),
+        ("use the files with their names, without quotes, and write which one you mean: `use geometry`, then `geometry.{s}`", "verwende die Dateien mit ihren Namen, ohne Anführungszeichen, und schreib, welche du meinst: `use geometry`, dann `geometry.{s}`"),
+        // src/exercise.rs
+        ("which exercise? Example: rythme exercise start 1   (`rythme exercise list` shows them all)", "welche Übung? Beispiel: rythme exercise start 1   (`rythme exercise list` zeigt alle)"),
+        ("which file? Example: rythme exercise check 01-values.ry", "welche Datei? Beispiel: rythme exercise check 01-werte.ry"),
+        ("unknown action `{other}` for `rythme exercise`", "unbekannte Aktion `{other}` für `rythme exercise`"),
+        (
+            r#"
+did you mean `rythme exercise {best}`?"#,
+            r#"
+meintest du `rythme exercise {best}`?"#,
+        ),
+        (
+            r#"
+the actions are: list, start NAME, check FILE (see `rythme help exercises`)"#,
+            r#"
+die Aktionen sind: list, start NAME, check DATEI (siehe `rythme help exercises`)"#,
+        ),
+        ("{} exercises for a first course, from the first values to tests, from ★☆☆ (easy) to ★★★.", "{} Übungen für einen ersten Kurs, von den ersten Werten bis zu Tests, von ★☆☆ (leicht) bis ★★★."),
+        (
+            r#"Start one:       rythme exercise start 1
+Check your work: rythme exercise check {}.ry"#,
+            r#"Eine beginnen:   rythme exercise start 1
+Arbeit prüfen:   rythme exercise check {}.ry"#,
+        ),
+        ("there is no exercise `{name}`", "es gibt keine Übung `{name}`"),
+        (
+            r#"
+the exercises are numbered from 1 to {}: `rythme exercise list` shows them"#,
+            r#"
+die Übungen sind von 1 bis {} nummeriert: `rythme exercise list` zeigt sie"#,
+        ),
+        ("`{file}` already exists here: open it to continue, or rename it to start again", "`{file}` gibt es hier schon: öffne die Datei, um weiterzumachen, oder benenne sie um, um neu anzufangen"),
+        ("cannot write `{file}`: {error}", "`{file}` kann nicht geschrieben werden: {error}"),
+        (
+            r#"Created {file}: exercise {} · {title}  {level}
+
+Open it, read the statement and the hints at the top, and replace each
+`fail("to do")` with your code. Then check your work:
+
+  rythme exercise check {file}"#,
+            r#"{file} erstellt: Übung {} · {title}  {level}
+
+Öffne sie, lies die Aufgabe und die Hinweise oben, und ersetze jedes
+`fail("zu tun")` durch deinen Code. Prüfe dann deine Arbeit:
+
+  rythme exercise check {file}"#,
+        ),
+        ("file `{name}` not found", "Datei `{name}` nicht gefunden"),
+        (
+            r#"
+to start this exercise: rythme exercise start {}"#,
+            r#"
+um diese Übung zu beginnen: rythme exercise start {}"#,
+        ),
+        (
+            r#"✗ The file has errors, so its tests could not run.
+  Fix the first error above, then check again."#,
+            r#"✗ Die Datei hat Fehler, deshalb konnten ihre Tests nicht laufen.
+  Behebe den ersten Fehler oben und prüfe dann noch einmal."#,
+        ),
+        ("✗ This file has no tests. An exercise comes with its tests: is it the right file?", "✗ Diese Datei hat keine Tests. Eine Übung kommt mit ihren Tests: ist es die richtige Datei?"),
+        ("✓ Well done: all {total} tests pass!", "✓ Gut gemacht: alle {total} Tests bestehen!"),
+        (
+            r#"  Next exercise: {title}  {level}
+    rythme exercise start {}"#,
+            r#"  Nächste Übung: {title}  {level}
+    rythme exercise start {}"#,
+        ),
+        ("  That was the last exercise: you have finished them all. Congratulations!", "  Das war die letzte Übung: du hast alle geschafft. Herzlichen Glückwunsch!"),
+        ("✗ All {total} tests pass, but...", "✗ Alle {total} Tests bestehen, aber..."),
+        ("✗ {passed} of {total} tests pass. Keep going!", "✗ {passed} von {total} Tests bestehen. Weiter so!"),
+        (
+            r#"  - The tests of the exercise were changed: the exercise is solved when its own tests
+    pass. `rythme exercise start {number}` gives a fresh copy (rename your file first)."#,
+            r#"  - Die Tests der Übung wurden geändert: die Übung ist gelöst, wenn ihre eigenen Tests
+    bestehen. `rythme exercise start {number}` gibt eine frische Kopie (benenne deine Datei vorher um)."#,
+        ),
+        ("  - Some functions are still to do: replace each `fail(\"to do\")` with your code.", "  - Einige Funktionen sind noch zu schreiben: ersetze jedes `fail(\"zu tun\")` durch deinen Code."),
+        (
+            r#"  - Start with the first failure above: compare what you got with what was expected.
+  - Stuck? Read the hints at the top of the file, or `rythme help NAME` for a function."#,
+            r#"  - Fang mit dem ersten Fehlschlag oben an: vergleiche, was du bekommen hast, mit dem Erwarteten.
+  - Du steckst fest? Lies die Tipps oben in der Datei, oder `rythme help NAME` für eine Funktion."#,
+        ),
+        // src/format.rs
+        ("`{name}` could not be formatted safely, so it was left as it is", "`{name}` konnte nicht sicher formatiert werden und wurde so gelassen, wie es ist"),
+        ("this is a bug in Rythme, not in your program: please report it, with the file, at https://github.com/maxlestage/Rythme/issues", "das ist ein Fehler in Rythme, nicht in deinem Programm: bitte melde ihn, mit der Datei, unter https://github.com/maxlestage/Rythme/issues"),
+        ("unknown option `{o}` for `rythme fmt`", "unbekannte Option `{o}` für `rythme fmt`"),
+        (
+            r#"
+see `rythme help fmt`"#,
+            r#"
+siehe `rythme help fmt`"#,
+        ),
+        (
+            r#"which files? Example: rythme fmt hello.ry
+  a folder formats all its .ry files: rythme fmt .
+  - reads the code from the standard input
+  --check only checks, for continuous integration
+see `rythme help fmt`"#,
+            r#"welche Dateien? Beispiel: rythme fmt hallo.ry
+  ein Ordner formatiert alle seine .ry-Dateien: rythme fmt .
+  - liest den Code von der Standardeingabe
+  --check prüft nur, für die kontinuierliche Integration
+siehe `rythme help fmt`"#,
+        ),
+        ("needs formatting: {shown}", "muss formatiert werden: {shown}"),
+        ("cannot write the file `{shown}`: {e}", "die Datei `{shown}` kann nicht geschrieben werden: {e}"),
+        ("formatted: {shown}", "formatiert: {shown}"),
+        ("needs formatting: <stdin>", "muss formatiert werden: <stdin>"),
+        ("{changed} file(s) formatted, {unchanged} already formatted", "{changed} Datei(en) formatiert, {unchanged} schon formatiert"),
+        ("✓ {unchanged} file(s) already formatted", "✓ {unchanged} Datei(en) schon formatiert"),
+        ("✗ {changed} file(s) to format, {unchanged} already formatted; `rythme fmt` (without --check) formats them", "✗ {changed} Datei(en) zu formatieren, {unchanged} schon formatiert; `rythme fmt` (ohne --check) formatiert sie"),
+        ("✗ {errors} file(s) left as they are because of errors", "✗ {errors} Datei(en) wegen Fehlern unverändert gelassen"),
+        ("file or folder `{shown}` not found", "Datei oder Ordner `{shown}` nicht gefunden"),
+        ("did you mean `{}`?", "meintest du `{}`?"),
+        // src/help.rs
+        (
+            r#"Rythme {v} — help
+
+Commands
+  rythme                    interactive mode (try code line by line)
+  rythme file.ry            run a program
+  rythme run --seed 42 f.ry run it with the same draws of random every time
+  rythme check file.ry      find problems without running the program
+  rythme fix file.ry        apply the safe fixes of those problems (--dry-run: only show them)
+  rythme test file.ry       run the tests of a file (or of a folder)
+  rythme fmt file.ry        give the code its official layout (--check: only check)
+  rythme doc file.ry        write its documentation, in Markdown (--html: a web page)
+  rythme steps file.ry      show the calculation step by step (fib(3) → fib(2) + fib(1) → ...)
+  rythme debug file.ry      pause the program where you want and look at its values
+  rythme exercise           exercises checked automatically (list, start, check)
+  rythme new NAME           create a project (rythme.toml, src/, tests/)
+  rythme install            download the dependencies of the project
+  rythme add NAME           add a package of the index to the project (rythme search WORDS finds them)
+  rythme learn              guided tour of the language, step by step
+  rythme help TOPIC         help on a topic or a function
+  rythme explain E003       explain an error code
+  rythme help llms          the whole language in one text, for AI assistants
+  rythme -e "code"          run a piece of code
+  rythme lsp                language server, for editors (VS Code, Neovim...)
+  rythme mcp                server for AI assistants (Model Context Protocol)
+  option --lang CODE        language of the messages: en, fr, es, de, pt, zh, it, ja (or RYTHME_LANG)
+
+Topics (rythme help TOPIC)
+  start       the language in one minute
+  syntax      the whole syntax on one page
+  functions   functions, |>, recursion
+  lists       lists and their functions
+  text        texts
+  records     records {{name: value}}
+  dicts       dictionaries and sets: dict(...), set(...)
+  types       your own types, and types written in the code
+  match       choosing according to the shape of a value
+  errors      Option, Result and ?
+  functional  no loops: what to do instead
+  tests       writing and running tests
+  exercises   exercises to learn, with their tests
+  modules     using several files
+  system      files, folders, paths, options, input, exit codes
+  projects    projects and packages: rythme new, rythme.toml, rythme install
+  packages    the package index: rythme search, add, update, publish
+  dates       dates and times: now(), today(), calendar, ISO 8601
+  regex       searching, cutting and replacing with regular expressions
+  csv         the tables of spreadsheets: csv_parse, csv_records, csv_format
+  random      chance, and the same draws again with a seed
+  ml          machine learning and AI: vectors, statistics, slopes, charts, HTTP
+  repl        the interactive mode
+  fmt         the official layout of the code (rythme fmt)
+  doc         documentation from the ## comments (rythme doc)
+  steps       the calculation shown step by step (rythme steps)
+  debug       the debugger: breakpoints, line by line, values (rythme debug)
+  editors     Rythme in your editor (VS Code, Neovim, Helix...)
+  ruby        coming from Ruby: blocks, symbols, method chains
+  javascript  coming from JavaScript: its standard library in Rythme
+  rebol       coming from REBOL: a few words, read and write, probe
+  builtins    every built-in function
+
+A specific function: rythme help map
+"#,
+            r#"Rythme {v} — Hilfe
+
+Befehle
+  rythme                    interaktiver Modus (Code Zeile für Zeile ausprobieren)
+  rythme datei.ry           ein Programm ausführen
+  rythme run --seed 42 f.ry es jedes Mal mit denselben Zufallswerten von random ausführen
+  rythme check datei.ry     Probleme finden, ohne das Programm auszuführen
+  rythme fix datei.ry       die sicheren Korrekturen dieser Probleme anwenden (--dry-run: nur zeigen)
+  rythme test datei.ry      die Tests einer Datei (oder eines Ordners) ausführen
+  rythme fmt datei.ry       dem Code sein offizielles Layout geben (--check: nur prüfen)
+  rythme doc datei.ry       seine Dokumentation schreiben, in Markdown (--html: eine Webseite)
+  rythme steps datei.ry     die Rechnung Schritt für Schritt zeigen (fib(3) → fib(2) + fib(1) → ...)
+  rythme debug datei.ry     das Programm anhalten, wo du willst, und seine Werte ansehen
+  rythme exercise           automatisch geprüfte Übungen (list, start, check)
+  rythme new NAME           ein Projekt anlegen (rythme.toml, src/, tests/)
+  rythme install            die Abhängigkeiten des Projekts herunterladen
+  rythme add NAME           ein Paket aus dem Index zum Projekt hinzufügen (rythme search WÖRTER findet sie)
+  rythme learn              geführte Tour durch die Sprache, Schritt für Schritt
+  rythme help THEMA         Hilfe zu einem Thema oder einer Funktion
+  rythme explain E003       einen Fehlercode erklären
+  rythme help llms          die ganze Sprache in einem Text, für KI-Assistenten
+  rythme -e "code"          ein Stück Code ausführen
+  rythme lsp                Sprachserver, für Editoren (VS Code, Neovim...)
+  rythme mcp                Server für KI-Assistenten (Model Context Protocol)
+  Option --lang CODE        Sprache der Meldungen: en, fr, es, de, pt, zh, it, ja (oder RYTHME_LANG)
+
+Themen (rythme help THEMA)
+  start       die Sprache in einer Minute
+  syntax      die ganze Syntax auf einer Seite
+  functions   Funktionen, |>, Rekursion
+  lists       Listen und ihre Funktionen
+  text        Texte
+  records     Records {{name: value}}
+  dicts       Dicts und Mengen: dict(...), set(...)
+  types       eigene Typen, und im Code geschriebene Typen
+  match       je nach Form eines Werts entscheiden
+  errors      Option, Result und ?
+  functional  keine Schleifen: was man stattdessen tut
+  tests       Tests schreiben und ausführen
+  exercises   Übungen zum Lernen, mit ihren Tests
+  modules     mehrere Dateien verwenden
+  system      Dateien, Ordner, Pfade, Optionen, Eingabe, Exit-Codes
+  projects    Projekte und Pakete: rythme new, rythme.toml, rythme install
+  packages    der Paketindex: rythme search, add, update, publish
+  dates       Datum und Uhrzeit: now(), today(), Kalender, ISO 8601
+  regex       mit regulären Ausdrücken suchen, zerlegen und ersetzen
+  csv         die Tabellen der Tabellenkalkulation: csv_parse, csv_records, csv_format
+  random      der Zufall, und dieselben Ziehungen erneut mit einem Startwert (seed)
+  ml          maschinelles Lernen und KI: Vektoren, Statistik, Steigungen, Diagramme, HTTP
+  repl        der interaktive Modus
+  fmt         das offizielle Layout des Codes (rythme fmt)
+  doc         Dokumentation aus den ##-Kommentaren (rythme doc)
+  steps       die Rechnung Schritt für Schritt (rythme steps)
+  debug       der Debugger: Haltepunkte, Zeile für Zeile, Werte (rythme debug)
+  editors     Rythme in deinem Editor (VS Code, Neovim, Helix...)
+  ruby        von Ruby kommend: Blöcke, Symbole, Methodenketten
+  javascript  von JavaScript kommend: seine Standardbibliothek in Rythme
+  rebol       von REBOL kommend: wenige Wörter, read und write, probe
+  builtins    alle eingebauten Funktionen
+
+Eine bestimmte Funktion: rythme help map
+"#,
+        ),
+        ("{alias}  (the Ruby name of `{of}`: the same function)", "{alias}  (der Ruby-Name von `{of}`: dieselbe Funktion)"),
+        (
+            r#"pi
+  The number π = 3.141592653589793."#,
+            r#"pi
+  Die Zahl π = 3.141592653589793."#,
+        ),
+        ("The function:", "Die Funktion:"),
+        ("No help found for `{name}`.", "Keine Hilfe zu `{name}` gefunden."),
+        (
+            r#"
+Did you mean `{best}`?"#,
+            r#"
+Meintest du `{best}`?"#,
+        ),
+        (
+            r#"
+See the list of topics with `rythme help`."#,
+            r#"
+Die Liste der Themen zeigt `rythme help`."#,
+        ),
+        ("keyword", "Schlüsselwort"),
+        (
+            r#"  More: rythme help {topic}
+"#,
+            r#"  Mehr: rythme help {topic}
+"#,
+        ),
+        (
+            r#"  Same as: {} (its Ruby names)
+"#,
+            r#"  Dasselbe wie: {} (die Ruby-Namen)
+"#,
+        ),
+        (
+            r#"BUILT-IN FUNCTIONS
+"#,
+            r#"EINGEBAUTE FUNKTIONEN
+"#,
+        ),
+        ("the number π", "die Zahl π"),
+        ("{} (same as {})", "{} (dasselbe wie {})"),
+        ("  Ruby names:", "  Ruby-Namen:"),
+        ("build an Option or a Result", "eine Option oder ein Result bauen"),
+        (
+            r#"
+Details and example for one function: rythme help NAME (or help(NAME) in code)
+"#,
+            r#"
+Details und Beispiel zu einer Funktion: rythme help NAME (oder help(NAME) im Code)
+"#,
+        ),
+        (
+            r#"help(x) explains x: a function (help(map)), a topic (help("lists")), or a value (help([1, 2])).
+Topics: start, syntax, functions, lists, text, records, types, match, errors, functional, tests, modules, builtins."#,
+            r#"help(x) erklärt x: eine Funktion (help(map)), ein Thema (help("lists")) oder einen Wert (help([1, 2])).
+Themen: start, syntax, functions, lists, text, records, types, match, errors, functional, tests, modules, builtins."#,
+        ),
+        (
+            r#"  (no documentation: write `## description` on the line above `fn`)
+"#,
+            r#"  (keine Dokumentation: schreib `## Beschreibung` in die Zeile über `fn`)
+"#,
+        ),
+        ("defined at", "definiert in"),
+        (
+            r#"{}({})
+  A constructor of the type `{}`.
+"#,
+            r#"{}({})
+  Ein Konstruktor des Typs `{}`.
+"#,
+        ),
+        (
+            r#"This is a value of type {ty}: {}
+"#,
+            r#"Das ist ein Wert vom Typ {ty}: {}
+"#,
+        ),
+        (
+            r#"Useful functions: {}
+"#,
+            r#"Nützliche Funktionen: {}
+"#,
+        ),
+        (
+            r#"Also: {also}
+"#,
+            r#"Außerdem: {also}
+"#,
+        ),
+        (
+            r#"Use `match` to handle each variant of `{}`.
+"#,
+            r#"Verwende `match`, um jede Variante von `{}` zu behandeln.
+"#,
+        ),
+        ("[Enter] next   [q] quit > ", "[Enter] weiter   [q] beenden > "),
+        ("To practice, run `rythme` and type code, or do the exercises: `rythme exercise list`. `rythme help builtins` lists every function.", "Zum Üben starte `rythme` und tippe Code ein, oder mach die Übungen: `rythme exercise list`. `rythme help builtins` listet alle Funktionen auf."),
+        // src/interp.rs
+        ("record", "record"),
+        ("`:{field}` is a symbol, not a text: write `{r}.{field}` or `{r}[\"{field}\"]`, or `get({r}, \"{field}\")` to receive an Option", "`:{field}` ist ein Symbol, kein Text: schreib `{r}.{field}` oder `{r}[\"{field}\"]`, oder `get({r}, \"{field}\")`, um eine Option zu bekommen"),
+        ("the dict has the key {shown}, which is not the same key as {key}: write `[{shown}]`", "das Dict hat den Schlüssel {shown}, der nicht derselbe Schlüssel wie {key} ist: schreib `[{shown}]`"),
+        ("this list would be too large (more than {MAX_LIST} elements)", "diese Liste wäre zu groß (mehr als {MAX_LIST} Elemente)"),
+        ("this text would be too large (more than {mb} MB)", "dieser Text wäre zu groß (mehr als {mb} MB)"),
+        ("does it grow in a function that calls itself? Check that the function always reaches a case where it stops", "wächst er in einer Funktion, die sich selbst aufruft? Prüfe, ob die Funktion immer einen Fall erreicht, in dem sie aufhört"),
+        ("no function named `{}`", "keine Funktion namens `{}`"),
+        ("`value.{0}(...)` calls `{0}(value, ...)`", "`value.{0}(...)` ruft `{0}(value, ...)` auf"),
+        ("`{name}` is not defined yet", "`{name}` ist noch nicht definiert"),
+        ("the file runs from top to bottom: move this definition above the line that uses it (directly or through a function)", "die Datei läuft von oben nach unten: verschiebe diese Definition über die Zeile, die sie verwendet (direkt oder über eine Funktion)"),
+        ("`{ctor}` has no field `{name}`", "`{ctor}` hat kein Feld `{name}`"),
+        ("`{ctor}` has no fields", "`{ctor}` hat keine Felder"),
+        ("the fields of `{ctor}` are: {}", "die Felder von `{ctor}` sind: {}"),
+        ("a value of type `{}` may be another variant: use `match` to handle each case", "ein Wert vom Typ `{}` kann eine andere Variante sein: verwende `match`, um jeden Fall zu behandeln"),
+        ("too many nested calls ({depth} calls in progress)", "zu viele verschachtelte Aufrufe ({depth} Aufrufe laufen)"),
+        ("this call goes too deep", "dieser Aufruf geht zu tief"),
+        (
+            r#"a recursive function that never stops? Check that it always reaches a base case.
+Otherwise, make the recursive call the very last thing the function does
+(tail call), for example with an accumulator:
+  fn sum([] acc) = acc
+  fn sum([x ..rest] acc) = sum(rest acc + x)
+or use `fold`, `map`, `filter`, which have no limit."#,
+            r#"eine rekursive Funktion, die nie aufhört? Prüfe, ob sie immer einen Basisfall erreicht.
+Sonst mach den rekursiven Aufruf zum allerletzten Schritt der Funktion
+(Endaufruf), zum Beispiel mit einem Akkumulator:
+  fn sum([] acc) = acc
+  fn sum([x ..rest] acc) = sum(rest acc + x)
+oder verwende `fold`, `map`, `filter`, die keine Grenze haben."#,
+        ),
+        ("the program was stopped: it made more calls than allowed for this run", "das Programm wurde angehalten: es hat mehr Aufrufe gemacht, als für diesen Lauf erlaubt sind"),
+        ("does it call itself forever? Check that it always reaches a base case", "ruft es sich endlos selbst auf? Prüfe, ob es immer einen Basisfall erreicht"),
+        ("{} is not a function", "{} ist keine Funktion"),
+        ("`{0}` is a value, not a function: write `{0}` without parentheses", "`{0}` ist ein Wert, keine Funktion: schreib `{0}` ohne Klammern"),
+        ("`..` expects {what} here, but got {}", "`..` erwartet hier {what}, erhalten: {}"),
+        ("division by zero", "Division durch null"),
+        (
+            r#"check the divisor first: `if b == 0 then ... else a / b`,
+or return a Result: `if b == 0 then Err("division by zero") else Ok(a / b)`"#,
+            r#"prüfe zuerst den Teiler: `if b == 0 then ... else a / b`,
+oder gib ein Result zurück: `if b == 0 then Err("Division durch null") else Ok(a / b)`"#,
+        ),
+        ("`0 ** -n` is `1 / 0 ** n`", "`0 ** -n` ist `1 / 0 ** n`"),
+        ("{min} argument{s}", "{min} Argument(e)"),
+        ("at least {min} argument{s}", "mindestens {min} Argument(e)"),
+        ("{min} to {max} arguments", "{min} bis {max} Argumente"),
+        ("{got} {verb}", "{got}"),
+        ("`{name}` takes {expected}, but {given}", "`{name}` nimmt {expected}, hat aber {given} bekommen"),
+        ("{got} argument(s) here", "hier {got} Argument(e)"),
+        ("usage: `{sig}`", "Verwendung: `{sig}`"),
+        ("cannot use `{sym}` with {lt} and {rt}", "`{sym}` kann nicht mit {lt} und {rt} verwendet werden"),
+        ("`nan` (not a number) cannot be compared", "`nan` (keine Zahl) kann nicht verglichen werden"),
+        ("a negative number ({}) to a fractional power ({}) has no value among real numbers", "eine negative Zahl ({}) hoch einen gebrochenen Exponenten ({}) hat keinen Wert unter den reellen Zahlen"),
+        ("use `abs(x) ** p` for the power of its absolute value", "verwende `abs(x) ** p` für die Potenz ihres Betrags"),
+        ("this range is too large ({} elements)", "dieser Bereich ist zu groß ({} Elemente)"),
+        ("ranges are lists: keep them under {MAX_RANGE} elements", "Bereiche sind Listen: halte sie unter {MAX_RANGE} Elementen"),
+        ("a range needs whole numbers, but got {} and {}", "ein Bereich braucht ganze Zahlen, erhalten: {} und {}"),
+        ("index {n} is out of range: {what}", "Index {n} liegt außerhalb des Bereichs: {what}"),
+        ("valid indices go from 0 to {} (or -1 for the last element)", "gültige Indizes gehen von 0 bis {} (oder -1 für das letzte Element)"),
+        ("to get an Option instead of an error, use `get(x, {n})`", "um statt eines Fehlers eine Option zu bekommen, verwende `get(x, {n})`"),
+        ("the text is empty", "der Text ist leer"),
+        ("the text has {len} character(s)", "der Text hat {len} Zeichen"),
+        ("the list has {} element(s)", "die Liste hat {} Element(e)"),
+        ("this dict has no key {}", "dieses Dict hat keinen Schlüssel {}"),
+        ("use `get(dict, key)` to receive an Option instead, or `has(dict, key)` to check first", "verwende `get(dict, key)`, um stattdessen eine Option zu bekommen, oder `has(dict, key)`, um es vorher zu prüfen"),
+        // src/lexer.rs
+        ("`...` is not an operator in Rythme", "`...` ist kein Operator in Rythme"),
+        ("write `1..10` for a range (10 included), or `[first, ..rest]` in a list", "schreib `1..10` für einen Bereich (10 inklusive), oder `[first, ..rest]` in einer Liste"),
+        ("`++` is not an operator in Rythme", "`++` ist kein Operator in Rythme"),
+        (
+            r#"to add one, write `x + 1` and give the result a new name (values never change);
+to join two lists or two texts, use `+`: `[1] + [2]`"#,
+            r#"um eins zu addieren, schreib `x + 1` und gib dem Ergebnis einen neuen Namen (Werte ändern sich nie);
+um zwei Listen oder zwei Texte zu verbinden, verwende `+`: `[1] + [2]`"#,
+        ),
+        ("unexpected character `&`", "unerwartetes Zeichen `&`"),
+        ("use `and` to combine two conditions", "verwende `and`, um zwei Bedingungen zu verbinden"),
+        ("this `{{` in a text is never closed", "diese `{{` in einem Text wird nie geschlossen"),
+        ("starts a value inserted in the text", "beginnt einen in den Text eingefügten Wert"),
+        ("close it with `}}`, or write `\\{{` to get a literal brace: \"\\{{\"", "schließe sie mit `}}`, oder schreib `\\{{` für eine echte geschweifte Klammer: \"\\{{\""),
+        ("unexpected invisible character {code}", "unerwartetes unsichtbares Zeichen {code}"),
+        ("this is a special space (often copied from a document or a web page): replace it with a normal space", "das ist ein besonderes Leerzeichen (oft aus einem Dokument oder einer Webseite kopiert): ersetze es durch ein normales Leerzeichen"),
+        ("this character cannot be seen (it is often copied from a document or a web page): delete it", "dieses Zeichen ist unsichtbar (es wird oft aus einem Dokument oder einer Webseite kopiert): lösche es"),
+        ("unexpected character `{c}`", "unerwartetes Zeichen `{c}`"),
+        ("write `{s}` instead", "schreib stattdessen `{s}`"),
+        ("texts use double quotes: \"hello\"", "Texte stehen in doppelten Anführungszeichen: \"hallo\""),
+        ("use `**` for powers: `2 ** 10`", "verwende `**` für Potenzen: `2 ** 10`"),
+        ("use straight double quotes `\"` for texts", "verwende gerade doppelte Anführungszeichen `\"` für Texte"),
+        ("to insert a value in a text, use braces: \"total: {{x}}\"", "um einen Wert in einen Text einzufügen, verwende geschweifte Klammern: \"total: {{x}}\""),
+        ("invalid number `{text}`", "ungültige Zahl `{text}`"),
+        ("hexadecimal numbers use the digits 0 to 9 and a to f, like `0xff`; binary numbers use 0 and 1, like `0b101`", "Hexadezimalzahlen verwenden die Ziffern 0 bis 9 und a bis f, wie `0xff`; Binärzahlen verwenden 0 und 1, wie `0b101`"),
+        ("a name cannot start with a digit: `{}`", "ein Name kann nicht mit einer Ziffer beginnen: `{}`"),
+        ("to multiply, write it explicitly: `{num} * {word}`", "zum Multiplizieren schreib es ausdrücklich: `{num} * {word}`"),
+        ("texts are nested too deeply inside `{{...}}`", "Texte sind zu tief in `{{...}}` verschachtelt"),
+        ("this text is never closed", "dieser Text wird nie geschlossen"),
+        ("the text starts here", "der Text beginnt hier"),
+        ("add a `\"` at the end of the text", "füge am Ende des Textes ein `\"` hinzu"),
+        ("invalid unicode escape", "ungültiges Unicode-Escape"),
+        ("write it like `\\u{{e9}}` for é", "schreib es wie `\\u{{e9}}` für é"),
+        ("unknown escape sequence in text", "unbekannte Escape-Sequenz im Text"),
+        ("in a regex, write the backslash twice: \"\\\\{c}\" is the text \\{c}", "in einem regulären Ausdruck schreib den Backslash doppelt: \"\\\\{c}\" ist der Text \\{c}"),
+        (
+            r#"valid escapes: \n (new line), \t (tab), \r (carriage return), \0 (null character), \\ (backslash),
+\" (quote), \{{ and \}} (braces), \# (a `#` before a brace), \u{{e9}} (a character by its Unicode number: é)"#,
+            r#"gültige Escapes: \n (neue Zeile), \t (Tabulator), \r (Wagenrücklauf), \0 (Nullzeichen), \\ (Backslash),
+\" (Anführungszeichen), \{{ und \}} (geschweifte Klammern), \# (ein `#` vor einer geschweiften Klammer), \u{{e9}} (ein Zeichen über seine Unicode-Nummer: é)"#,
+        ),
+        ("inside it, this text is never closed", "darin wird dieser Text nie geschlossen"),
+        ("empty `{{}}` in a text", "leeres `{{}}` in einem Text"),
+        ("put a value inside, like \"{{name}}\", or write `\\{{` for a literal brace", "setze einen Wert hinein, wie \"{{name}}\", oder schreib `\\{{` für eine echte geschweifte Klammer"),
+        ("inside a text, `{{` starts an inserted value: to write braces, use `\\{{` and `\\}}`, like \"\\{{\\\"a\\\": 1\\}}\"", "in einem Text beginnt `{{` einen eingefügten Wert: um geschweifte Klammern zu schreiben, verwende `\\{{` und `\\}}`, wie \"\\{{\\\"a\\\": 1\\}}\""),
+        ("the number `{n}`", "die Zahl `{n}`"),
+        ("the number `{f}`", "die Zahl `{f}`"),
+        ("the name `{s}`", "der Name `{s}`"),
+        ("the symbol `:{s}`", "das Symbol `:{s}`"),
+        ("the end of the line", "das Ende der Zeile"),
+        ("the end of the code", "das Ende des Codes"),
+        ("the keyword `{k}`", "das Schlüsselwort `{k}`"),
+        // src/lsp/analysis.rs
+        ("cannot read the file `{shown}`", "die Datei `{shown}` kann nicht gelesen werden"),
+        ("the file `{p}` has {n} error(s)", "die Datei `{p}` hat {n} Fehler"),
+        ("first: {}{place}", "erster: {}{place}"),
+        ("open `{p}` to see and fix them", "öffne `{p}`, um sie zu sehen und zu beheben"),
+        // src/lsp/extras.rs
+        ("▶ Run", "▶ Ausführen"),
+        ("▶ Run the {n} tests", "▶ Die {n} Tests ausführen"),
+        ("▶ Run test", "▶ Test ausführen"),
+        // src/lsp/features.rs
+        (
+            r#"
+more: `rythme explain {}`"#,
+            r#"
+mehr: `rythme explain {}`"#,
+        ),
+        (
+            r#"
+
+Same as: {} (its Ruby names)"#,
+            r#"
+
+Dasselbe wie: {} (die Ruby-Namen)"#,
+        ),
+        ("**{alias}** — the Ruby name of `{of}`: the same function", "**{alias}** — der Ruby-Name von `{of}`: dieselbe Funktion"),
+        ("A value that is there, in an `Option`. The other case is `None`.", "Ein Wert, der da ist, in einer `Option`. Der andere Fall ist `None`."),
+        ("No value, in an `Option`: what `find`, `first` or `get` give when there is nothing. Handle it with `match` or `unwrap_or`.", "Kein Wert, in einer `Option`: was `find`, `first` oder `get` liefern, wenn nichts da ist. Behandle es mit `match` oder `unwrap_or`."),
+        ("The result of an operation that succeeded, in a `Result`. The other case is `Err(error)`.", "Das Ergebnis einer Operation, die gelungen ist, in einem `Result`. Der andere Fall ist `Err(error)`."),
+        ("The result of an operation that failed, in a `Result`. Inside a function, `?` stops and passes it on.", "Das Ergebnis einer Operation, die gescheitert ist, in einem `Result`. In einer Funktion hält `?` an und gibt es weiter."),
+        ("**{word}** is not used in Rythme.", "**{word}** wird in Rythme nicht verwendet."),
+        ("{} more definitions", "{} weitere Definitionen"),
+        ("Inferred from its code:", "Aus seinem Code abgeleitet:"),
+        ("local function", "lokale Funktion"),
+        ("parameter of `{f}`", "Parameter von `{f}`"),
+        ("parameter of an anonymous function", "Parameter einer anonymen Funktion"),
+        ("local value", "lokaler Wert"),
+        ("given by the case `{pattern}` of a `match`", "gegeben durch den Fall `{pattern}` eines `match`"),
+        ("constructor of the type `{t}`", "Konstruktor des Typs `{t}`"),
+        ("*defined in `{name}`*", "*definiert in `{name}`*"),
+        ("The number π.", "Die Zahl π."),
+        (
+            r#"
+
+`value.{n}(...)` calls `{n}(value, ...)`, or the field `{n}` of a record; `value.{n}` reads the field `{n}`, or calls `{n}(value)`"#,
+            r#"
+
+`value.{n}(...)` ruft `{n}(value, ...)` auf, oder das Feld `{n}` eines Records; `value.{n}` liest das Feld `{n}`, oder ruft `{n}(value)` auf"#,
+        ),
+        ("the file `{p}` is not found", "die Datei `{p}` wurde nicht gefunden"),
+        (
+            r#"
+
+Its definitions are used through the name `{n}`: `{n}.name`"#,
+            r#"
+
+Ihre Definitionen werden über den Namen `{n}` verwendet: `{n}.name`"#,
+        ),
+        ("Defines:", "Definiert:"),
+        ("name", "name"),
+        ("value", "wert"),
+        ("other", "anderes"),
+        ("pattern", "muster"),
+        ("result", "ergebnis"),
+        ("what it checks", "was er prüft"),
+        ("actual", "erhalten"),
+        ("expected", "erwartet"),
+        ("condition", "bedingung"),
+        ("file", "datei"),
+        ("a function on several lines", "eine Funktion über mehrere Zeilen"),
+        ("a function on one line", "eine Funktion in einer Zeile"),
+        ("choose according to the shape of a value", "je nach Form eines Werts entscheiden"),
+        ("a test, run by `rythme test`", "ein Test, ausgeführt von `rythme test`"),
+        ("a test on several lines", "ein Test über mehrere Zeilen"),
+        ("choose between two values", "zwischen zwei Werten wählen"),
+        ("type ${{1:Name}} = ${{2:First}}(${{3:field}}) | ${{0:Second}}", "type ${{1:Name}} = ${{2:Erste}}(${{3:feld}}) | ${{0:Zweite}}"),
+        ("your own type", "dein eigener Typ"),
+        ("several steps inside an expression", "mehrere Schritte innerhalb eines Ausdrucks"),
+        ("a block: a function given as the last argument of a call", "ein Block: eine Funktion, die als letztes Argument eines Aufrufs übergeben wird"),
+        ("the opposite of `if`", "das Gegenteil von `if`"),
+        ("use another file: `use geometry`, then `geometry.area(2)`", "eine andere Datei verwenden: `use geometry`, dann `geometry.area(2)`"),
+        ("same as {}", "dasselbe wie {}"),
+        ("field", "Feld"),
+        ("package", "Paket"),
+        ("folder", "Ordner"),
+        ("Add `use {file}` and write `{stem}.{written}`", "`use {file}` hinzufügen und `{stem}.{written}` schreiben"),
+        ("Replace with `{new}`", "Durch `{new}` ersetzen"),
+        // src/lsp/mod.rs
+        ("rythme lsp: unknown option `{other}` (ignored)", "rythme lsp: unbekannte Option `{other}` (ignoriert)"),
+        ("rythme lsp is the language server: your editor starts it and talks to it. See `rythme help editors`. (Ctrl-C to quit)", "rythme lsp ist der Sprachserver: dein Editor startet ihn und spricht mit ihm. Siehe `rythme help editors`. (Strg-C zum Beenden)"),
+        ("the server is not initialized yet", "der Server ist noch nicht initialisiert"),
+        ("the server is shutting down", "der Server wird heruntergefahren"),
+        ("internal error in Rythme (please report it): {}", "interner Fehler in Rythme (bitte melde ihn): {}"),
+        ("not formatted: the code has an error ({first})", "nicht formatiert: der Code hat einen Fehler ({first})"),
+        // src/lsp/refs.rs
+        ("there is no name here", "hier ist kein Name"),
+        ("the name of a test is a text: edit it directly", "der Name eines Tests ist ein Text: bearbeite ihn direkt"),
+        ("`{name}` cannot be found", "`{name}` wurde nicht gefunden"),
+        ("`{name}` is a built-in function: it cannot be renamed", "`{name}` ist eine eingebaute Funktion: sie kann nicht umbenannt werden"),
+        ("`{name}` is part of Rythme: it cannot be renamed", "`{name}` gehört zu Rythme: es kann nicht umbenannt werden"),
+        ("`{name}` is not defined: there is nothing to rename", "`{name}` ist nicht definiert: es gibt nichts umzubenennen"),
+        ("`{new}` is not a valid name", "`{new}` ist kein gültiger Name"),
+        ("`{new}` is a keyword", "`{new}` ist ein Schlüsselwort"),
+        ("the names of types and constructors start with an uppercase letter", "die Namen von Typen und Konstruktoren beginnen mit einem Großbuchstaben"),
+        ("names start with a lowercase letter (uppercase is for types and constructors)", "Namen beginnen mit einem Kleinbuchstaben (Großbuchstaben sind für Typen und Konstruktoren)"),
+        ("`{new}` is a built-in function: choose another name", "`{new}` ist eine eingebaute Funktion: wähle einen anderen Namen"),
+        ("`{shown}` has a syntax error: fix it before renaming", "`{shown}` hat einen Syntaxfehler: behebe ihn vor dem Umbenennen"),
+        ("`{old_name}` is also the name of a record field, and `value.{old_name}(...)` may call that field: rename it by hand", "`{old_name}` ist auch der Name eines Record-Feldes, und `value.{old_name}(...)` könnte dieses Feld aufrufen: benenne es von Hand um"),
+        ("cannot rename `{old_name}` to `{new_name}`: {why}", "`{old_name}` kann nicht in `{new_name}` umbenannt werden: {why}"),
+        ("some names would then refer to something else", "einige Namen würden dann auf etwas anderes verweisen"),
+        ("the code would not be valid", "der Code wäre nicht gültig"),
+        // src/manifest.rs
+        ("the section `[{name}]` is written twice", "der Abschnitt `[{name}]` wird zweimal geschrieben"),
+        ("put all the lines of `[{name}]` under one `[{name}]`", "schreib alle Zeilen von `[{name}]` unter ein einziges `[{name}]`"),
+        ("`{name}` is written both as `[{name}]` and as `[[{name}]]`", "`{name}` wird sowohl als `[{name}]` als auch als `[[{name}]]` geschrieben"),
+        ("expected a name here", "hier wird ein Name erwartet"),
+        ("each line is `name = \"value\"`, like `version = \"0.1.0\"`", "jede Zeile ist `name = \"value\"`, wie `version = \"0.1.0\"`"),
+        ("this text is not closed", "dieser Text wird nicht geschlossen"),
+        ("add `{quote}` at the end of the text", "füge am Ende des Textes `{quote}` hinzu"),
+        ("unknown escape in a text", "unbekanntes Escape in einem Text"),
+        ("write `\\\\` for a backslash, or use `/` in paths: they work on every system", "schreib `\\\\` für einen Backslash, oder verwende `/` in Pfaden: das funktioniert auf jedem System"),
+        ("expected `=` after `{key}`", "nach `{key}` wird `=` erwartet"),
+        ("`{key}` is written twice", "`{key}` wird zweimal geschrieben"),
+        ("expected `,` or `}}` here", "hier wird `,` oder `}}` erwartet"),
+        ("a table is written on one line: `{{ git = \"...\", tag = \"...\" }}`", "eine Tabelle wird in einer Zeile geschrieben: `{{ git = \"...\", tag = \"...\" }}`"),
+        ("a value is a text, written in quotes", "ein Wert ist ein Text in Anführungszeichen"),
+        ("write `\"{example}\"`", "schreib `\"{example}\"`"),
+        ("expected `{close}` here", "hier wird `{close}` erwartet"),
+        ("write `{key} = \"...\"`", "schreib `{key} = \"...\"`"),
+        ("first written here", "zuerst hier geschrieben"),
+        ("unexpected text after the value", "unerwarteter Text nach dem Wert"),
+        ("write one value per line; a comment starts with `#`", "schreib einen Wert pro Zeile; ein Kommentar beginnt mit `#`"),
+        ("`{name}` cannot be the name of a package: it is used in `use {name}/file`, so it must be a Rythme name in lower case (letters, digits, `_`)", "`{name}` kann nicht der Name eines Pakets sein: er wird in `use {name}/file` verwendet, also muss er ein Rythme-Name in Kleinbuchstaben sein (Buchstaben, Ziffern, `_`)"),
+        ("`{key}` is {what}, written in quotes", "`{key}` erwartet {what}, in Anführungszeichen geschrieben"),
+        ("unknown key `{key}`", "unbekannter Schlüssel `{key}`"),
+        ("the keys here are {}", "die Schlüssel hier sind {}"),
+        ("write `name = \"{b}\"`", "schreib `name = \"{b}\"`"),
+        ("`{v}` is not a version", "`{v}` ist keine Version"),
+        ("a version is three numbers: `version = \"1.0.0\"` (major.minor.patch)", "eine Version besteht aus drei Zahlen: `version = \"1.0.0\"` (Major.Minor.Patch)"),
+        ("`entry` is the path of a `.ry` file in the project", "`entry` ist der Pfad einer `.ry`-Datei im Projekt"),
+        ("like `entry = \"src/main.ry\"`", "wie `entry = \"src/main.ry\"`"),
+        ("unknown section `{n}`", "unbekannter Abschnitt `{n}`"),
+        ("write `name`, `version` and `entry` at the top of the file, without a section", "schreib `name`, `version` und `entry` oben in die Datei, ohne Abschnitt"),
+        ("the only section is `[dependencies]`", "der einzige Abschnitt ist `[dependencies]`"),
+        ("`{shown}` has no `name`", "`{shown}` hat keinen `name`"),
+        ("add a line like `name = \"hello\"` at the top", "füge oben eine Zeile wie `name = \"hallo\"` hinzu"),
+        ("`{shown}` has no `version`", "`{shown}` hat keine `version`"),
+        ("add a line like `version = \"0.1.0\"` at the top", "füge oben eine Zeile wie `version = \"0.1.0\"` hinzu"),
+        ("write `{name} = {{ version = \"^1.0.0\" }}` (from the package index), `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (or `commit = \"...\"`), or `{name} = {{ path = \"../folder\" }}`", "schreib `{name} = {{ version = \"^1.0.0\" }}` (aus dem Paketindex), `{name} = {{ git = \"https://...\", tag = \"v1.0.0\" }}` (oder `commit = \"...\"`), oder `{name} = {{ path = \"../ordner\" }}`"),
+        ("call it `{b}`", "nenne es `{b}`"),
+        ("the project `{own}` cannot depend on itself", "das Projekt `{own}` kann nicht von sich selbst abhängen"),
+        ("`use {own}/file` already reaches its own files", "`use {own}/file` erreicht schon seine eigenen Dateien"),
+        ("the dependency `{name}` is written as a table", "die Abhängigkeit `{name}` wird als Tabelle geschrieben"),
+        ("the dependency `{name}` has both `git` and `path`", "die Abhängigkeit `{name}` hat sowohl `git` als auch `path`"),
+        ("the dependency `{name}` needs `version`, `git` or `path`", "die Abhängigkeit `{name}` braucht `version`, `git` oder `path`"),
+        ("`tag` and `commit` are for a dependency from git, not from a folder", "`tag` und `commit` sind für eine Abhängigkeit aus git, nicht aus einem Ordner"),
+        ("`{c}` is not a commit", "`{c}` ist kein Commit"),
+        ("give a `tag` or a `commit`, not both", "gib ein `tag` oder einen `commit` an, nicht beides"),
+        ("the dependency `{name}` needs a fixed version: a `tag` or a `commit`", "die Abhängigkeit `{name}` braucht eine feste Version: ein `tag` oder einen `commit`"),
+        ("the `git` address of `{name}` is empty", "die `git`-Adresse von `{name}` ist leer"),
+        ("this file is written by `rythme install`: delete it and run `rythme install` again", "diese Datei wird von `rythme install` geschrieben: lösche sie und führe `rythme install` noch einmal aus"),
+        ("unexpected line in `rythme.lock`", "unerwartete Zeile in `rythme.lock`"),
+        ("this entry of `rythme.lock` is not complete", "dieser Eintrag von `rythme.lock` ist nicht vollständig"),
+        (
+            r#"# The exact commit of each dependency from git, written by `rythme install`.
+# Keep this file with the project, so that everyone gets the same code.
+"#,
+            r#"# Der genaue Commit jeder Abhängigkeit aus git, geschrieben von `rythme install`.
+# Behalte diese Datei im Projekt, damit alle denselben Code bekommen.
+"#,
+        ),
+        // src/parser.rs
+        ("a case of `match` gives one expression; for a result on several lines, write `do` after `->`, then the lines, then `end`:\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\nor move the lines into a function: `Ok(x) -> handle(x)`", "ein Fall von `match` liefert einen einzigen Ausdruck; für ein Ergebnis über mehrere Zeilen schreib `do` nach `->`, dann die Zeilen, dann `end`:\n  Ok(x) -> do\n    y = x + 1\n    y * 2\n  end\noder verschieb die Zeilen in eine Funktion: `Ok(x) -> behandle(x)`"),
+        ("`{name}` is read as a value here, not called, because the code gives it a value (line {line}): to call it, put its argument in parentheses, like `{name}([1, 2])`", "`{name}` wird hier als Wert gelesen, nicht aufgerufen, weil der Code ihm einen Wert gibt (Zeile {line}): um es aufzurufen, setz sein Argument in Klammern, wie `{name}([1, 2])`"),
+        ("Rythme has no `condition ? a : b`", "Rythme hat kein `Bedingung ? a : b`"),
+        ("`?` does not choose between two values", "`?` wählt nicht zwischen zwei Werten"),
+        ("write `if condition then a else b`, like `if x > 2 then \"big\" else \"small\"`", "schreib `if Bedingung then a else b`, wie `if x > 2 then \"groß\" else \"klein\"`"),
+        ("after a value, `?` takes it out of `Some(x)` or `Ok(x)` and stops on `None` or `Err(e)`; at the end of a name, it is part of the name (`even?`)", "nach einem Wert holt `?` ihn aus `Some(x)` oder `Ok(x)` und hält bei `None` oder `Err(e)` an; am Ende eines Namens gehört es zum Namen (`even?`)"),
+        ("all the definitions of `{name}` must have the same number of parameters", "alle Definitionen von `{name}` müssen gleich viele Parameter haben"),
+        ("{} parameter(s) here", "hier {} Parameter"),
+        ("expected {expected}, found {found}", "erwartet: {expected}, gefunden: {found}"),
+        ("expected {expected} here", "hier wird {expected} erwartet"),
+        ("to compare two values, use `==`", "um zwei Werte zu vergleichen, verwende `==`"),
+        ("use `->` in `match` cases; a dict is built with `dict([[key, value], ...])`", "verwende `->` in den Fällen von `match`; ein Dict wird mit `dict([[key, value], ...])` gebaut"),
+        ("use `and` to combine conditions", "verwende `and`, um Bedingungen zu verbinden"),
+        ("use `or` to combine conditions", "verwende `or`, um Bedingungen zu verbinden"),
+        ("use `not` to negate a condition: `not done`", "verwende `not`, um eine Bedingung zu verneinen: `not done`"),
+        ("Rythme does not use braces for blocks: write `do` ... `end`, or put a function body on the following lines and finish with `end`", "Rythme verwendet keine geschweiften Klammern für Blöcke: schreib `do` ... `end`, oder setze den Rumpf einer Funktion in die folgenden Zeilen und schließe mit `end`"),
+        ("Rythme does not use `:` to start a block; see `rythme help syntax`", "Rythme beginnt einen Block nicht mit `:`; siehe `rythme help syntax`"),
+        ("`{word}` is not used in Rythme", "`{word}` wird in Rythme nicht verwendet"),
+        ("comes from another language", "kommt aus einer anderen Sprache"),
+        ("unexpected here: {found}", "hier unerwartet: {found}"),
+        ("the statement should end before this", "die Anweisung sollte vorher enden"),
+        ("to call a function, use parentheses: `{name}(...)`", "um eine Funktion aufzurufen, verwende Klammern: `{name}(...)`"),
+        ("a block `do |x| ... end` is given to a call, on its line: `names.each do |name| print(name) end`", "ein Block `do |x| ... end` wird einem Aufruf in seiner Zeile übergeben: `names.each do |name| print(name) end`"),
+        ("`else` must follow `if condition then value` (an `if` branch holds one expression; use `do ... end` for several lines)", "`else` muss auf `if Bedingung then Wert` folgen (ein Zweig von `if` enthält einen Ausdruck; verwende `do ... end` für mehrere Zeilen)"),
+        ("put each statement on its own line", "setze jede Anweisung in eine eigene Zeile"),
+        ("`{word}` can only be used at the top level of a file", "`{word}` kann nur auf der obersten Ebene einer Datei verwendet werden"),
+        ("move it outside of the function or block", "verschiebe es aus der Funktion oder dem Block heraus"),
+        ("an `async fn` can only be defined at the top level of a file", "eine `async fn` kann nur auf der obersten Ebene einer Datei definiert werden"),
+        ("move it outside of the function or block: its task runs on its own, apart from the values around it", "verschiebe sie aus der Funktion oder dem Block heraus: ihr Task läuft für sich, getrennt von den Werten um sie herum"),
+        ("before `=` comes a name or a pattern, like `[first, ..rest]`, `{{name, ..}}` or `Some(x)`", "vor `=` steht ein Name oder ein Muster, wie `[first, ..rest]`, `{{name, ..}}` oder `Some(x)`"),
+        ("`=`", "`=`"),
+        ("values cannot be changed in Rythme", "Werte können in Rythme nicht geändert werden"),
+        ("a record pattern cannot give a name to the other fields", "ein Record-Muster kann den anderen Feldern keinen Namen geben"),
+        ("write `{{name, ..}}` to ignore the other fields; for a record without some fields, use `remove(record, \"name\")`", "schreib `{{name, ..}}`, um die anderen Felder zu ignorieren; für einen Record ohne bestimmte Felder verwende `remove(record, \"name\")`"),
+        ("only a function can have a name that ends with `?`", "nur eine Funktion kann einen Namen haben, der auf `?` endet"),
+        ("define it with `fn`: `fn {s}(x) = ...`; for a value, use a name without `?`", "definiere sie mit `fn`: `fn {s}(x) = ...`; für einen Wert verwende einen Namen ohne `?`"),
+        ("invalid `..` in this pattern", "ungültiges `..` in diesem Muster"),
+        ("`..name` must be last: `[first, ..rest]`", "`..name` muss am Ende stehen: `[first, ..rest]`"),
+        ("cannot give a value to this", "dem kann kein Wert gegeben werden"),
+        ("this is not a name", "das ist kein Name"),
+        ("`=` gives a name to a value", "`=` gibt einem Wert einen Namen"),
+        ("to define a function, write `fn name(x) = ...`", "um eine Funktion zu definieren, schreib `fn name(x) = ...`"),
+        ("records cannot be changed; build a new one: `new = {{..old, {name}: value}}`", "Records können nicht geändert werden; bau einen neuen: `new = {{..old, {name}: value}}`"),
+        ("values cannot be changed; build a new one: `set_at(list, i, x)` for a list, `put(record, name, x)` for a record", "Werte können nicht geändert werden; bau einen neuen: `set_at(list, i, x)` für eine Liste, `put(record, name, x)` für einen Record"),
+        ("a function name", "ein Funktionsname"),
+        ("`(` and the parameters", "`(` und die Parameter"),
+        ("even without parameters, write the parentheses: `fn greet() = print(\"hi\")`", "auch ohne Parameter schreib die Klammern: `fn greet() = print(\"hi\")`"),
+        ("functions use `=`, not `{arrow}`", "Funktionen verwenden `=`, nicht `{arrow}`"),
+        ("write `fn(x) = x * 2`", "schreib `fn(x) = x * 2`"),
+        ("`=` or a new line", "`=` oder eine neue Zeile"),
+        (
+            r#"a function is written `fn name(x) = expression`,
+or with its body on the following lines, finished by `end`"#,
+            r#"eine Funktion wird `fn name(x) = Ausdruck` geschrieben,
+oder mit ihrem Rumpf in den folgenden Zeilen, abgeschlossen mit `end`"#,
+        ),
+        ("type names start with an uppercase letter", "Typnamen beginnen mit einem Großbuchstaben"),
+        ("write `type {cap} = ...`", "schreib `type {cap} = ...`"),
+        ("a type name", "ein Typname"),
+        ("example: `type Shape = Circle(radius) | Square(side)`", "Beispiel: `type Shape = Circle(radius) | Square(side)`"),
+        ("variant names start with an uppercase letter", "Variantennamen beginnen mit einem Großbuchstaben"),
+        ("write `{cap}`", "schreib `{cap}`"),
+        ("a variant name, like `Circle`", "ein Variantenname, wie `Circle`"),
+        ("a field name", "ein Feldname"),
+        ("fields are named in lowercase: `Circle(radius)`", "Felder werden kleingeschrieben: `Circle(radius)`"),
+        ("the name of the test, as a text", "der Name des Tests, als Text"),
+        ("example: `test \"addition works\" = assert_eq(1 + 1, 2)`", "Beispiel: `test \"Addition funktioniert\" = assert_eq(1 + 1, 2)`"),
+        ("write the name of the file without `.ry`", "schreib den Namen der Datei ohne `.ry`"),
+        ("example: `use {path}`", "Beispiel: `use {path}`"),
+        ("a name for the file, in lowercase", "ein Name für die Datei, in Kleinbuchstaben"),
+        ("example: `use geometry as geo`, then `geo.area(2)`", "Beispiel: `use geometry as geo`, dann `geo.area(2)`"),
+        ("the name of a file", "der Name einer Datei"),
+        ("example: `use geometry` for the file `geometry.ry`, then `geometry.area(2)`", "Beispiel: `use geometry` für die Datei `geometry.ry`, dann `geometry.area(2)`"),
+        ("for a file whose name starts with an uppercase letter, write its path as a text: `use \"Shapes.ry\" as shapes`", "für eine Datei, deren Name mit einem Großbuchstaben beginnt, schreib ihren Pfad als Text: `use \"Shapes.ry\" as shapes`"),
+        ("the end of the expression", "das Ende des Ausdrucks"),
+        ("comparisons cannot be chained", "Vergleiche können nicht verkettet werden"),
+        ("combine them with `and`: `a < b and b < c`", "verbinde sie mit `and`: `a < b and b < c`"),
+        ("`{sym}` cannot follow a `|>` step directly", "`{sym}` kann nicht direkt auf einen `|>`-Schritt folgen"),
+        (
+            r#"`|>` comes after the calculations: put the pipeline in parentheses,
+like `(x |> f) {sym} 1`, or continue it with a function: `x |> f |> fn(v) = v {sym} 1`"#,
+            r#"`|>` kommt nach den Rechnungen: setze die Pipeline in Klammern,
+wie `(x |> f) {sym} 1`, oder setze sie mit einer Funktion fort: `x |> f |> fn(v) = v {sym} 1`"#,
+        ),
+        ("a block must follow a call", "ein Block muss auf einen Aufruf folgen"),
+        ("not given to a function", "keiner Funktion übergeben"),
+        (
+            r#"write the block on the line of the call it is given to: `xs.map do |x| x * 2 end`;
+for a function as a value, write `fn(x) = x * 2`"#,
+            r#"schreib den Block in die Zeile des Aufrufs, dem er übergeben wird: `xs.map do |x| x * 2 end`;
+für eine Funktion als Wert schreib `fn(x) = x * 2`"#,
+        ),
+        ("`,` or `|`", "`,` oder `|`"),
+        ("the parameters of a block go between bars: `do |name, age| ... end`", "die Parameter eines Blocks stehen zwischen senkrechten Strichen: `do |name, age| ... end`"),
+        ("`}}`", "`}}`"),
+        ("the block starts here", "der Block beginnt hier"),
+        ("a field or function name after `.`", "ein Feld- oder Funktionsname nach `.`"),
+        ("an expression", "ein Ausdruck"),
+        ("`]`", "`]`"),
+        ("`,` or `{closing}`", "`,` oder `{closing}`"),
+        ("this code is nested too deeply (more than {MAX_NESTING} levels)", "dieser Code ist zu tief verschachtelt (mehr als {MAX_NESTING} Ebenen)"),
+        ("split it into several named values or functions", "teile ihn in mehrere benannte Werte oder Funktionen auf"),
+        ("this expression is too long or nested too deeply (more than {MAX_DEPTH} levels)", "dieser Ausdruck ist zu lang oder zu tief verschachtelt (mehr als {MAX_DEPTH} Ebenen)"),
+        (
+            r#"split it into several named values or functions;
+to combine many values, put them in a list: `sum([a, b, c])`, `join([x, y, z])`"#,
+            r#"teile ihn in mehrere benannte Werte oder Funktionen auf;
+um viele Werte zu verbinden, setze sie in eine Liste: `sum([a, b, c])`, `join([x, y, z])`"#,
+        ),
+        ("Rythme has no tuples", "Rythme hat keine Tupel"),
+        ("group values in a list `[a, b]` or a record `{{x: a, y: b}}`", "fasse Werte in einer Liste `[a, b]` oder einem Record `{{x: a, y: b}}` zusammen"),
+        ("`)`", "`)`"),
+        ("a named function cannot be used inside an expression", "eine benannte Funktion kann nicht innerhalb eines Ausdrucks verwendet werden"),
+        ("define it on its own line, or use an anonymous function: `fn(x) = x * 2`", "definiere sie in einer eigenen Zeile, oder verwende eine anonyme Funktion: `fn(x) = x * 2`"),
+        ("comments start with `#`", "Kommentare beginnen mit `#`"),
+        ("`else` must follow `if condition then value`; a branch holds a single expression (use `do ... end` for several lines)", "`else` muss auf `if Bedingung then Wert` folgen; ein Zweig enthält einen einzigen Ausdruck (verwende `do ... end` für mehrere Zeilen)"),
+        ("a record is written `{{name: \"Ada\", age: 36}}`; for a block of code, use `do ... end`", "ein Record wird `{{name: \"Ada\", age: 36}}` geschrieben; für einen Codeblock verwende `do ... end`"),
+        ("`:` and a value", "`:` und ein Wert"),
+        ("`then`", "`then`"),
+        ("an `{word}` is written: `{word} condition then value else other_value`", "ein `{word}` wird so geschrieben: `{word} Bedingung then Wert else anderer_Wert`"),
+        ("this `{word}` has no `else`", "dieses `{word}` hat kein `else`"),
+        ("every `{word}` must have an `else`", "jedes `{word}` braucht ein `else`"),
+        ("expected `else` here", "hier wird `else` erwartet"),
+        ("write `else if`", "schreib `else if`"),
+        (
+            r#"in Rythme, `unless` always gives a value, so it needs both cases:
+  unless age >= 18 then "minor" else "adult""#,
+            r#"in Rythme liefert `unless` immer einen Wert, also braucht es beide Fälle:
+  unless age >= 18 then "minderjährig" else "volljährig""#,
+        ),
+        (
+            r#"in Rythme, `if` always gives a value, so it needs both cases:
+  if age >= 18 then "adult" else "minor""#,
+            r#"in Rythme liefert `if` immer einen Wert, also braucht es beide Fälle:
+  if age >= 18 then "volljährig" else "minderjährig""#,
+        ),
+        ("a branch holds a single expression; for several lines, use `do ... end`", "ein Zweig enthält einen einzigen Ausdruck; für mehrere Zeilen verwende `do ... end`"),
+        ("a new line", "eine neue Zeile"),
+        (
+            r#"write each case on its own line, then `end`:
+  match x
+    0 -> "zero"
+    _ -> "other"
+  end"#,
+            r#"schreib jeden Fall in eine eigene Zeile, dann `end`:
+  match x
+    0 -> "null"
+    _ -> "anderes"
+  end"#,
+        ),
+        ("no `|` is needed before a case", "vor einem Fall ist kein `|` nötig"),
+        ("write each case as `pattern -> result`", "schreib jeden Fall als `Muster -> Ergebnis`"),
+        ("`->`", "`->`"),
+        ("each case is written `pattern -> result`", "jeder Fall wird `Muster -> Ergebnis` geschrieben"),
+        ("put each case on its own line", "setze jeden Fall in eine eigene Zeile"),
+        ("a `match` needs at least one case", "ein `match` braucht mindestens einen Fall"),
+        ("a number after `..`", "eine Zahl nach `..`"),
+        ("only a text can come before `+` in a pattern", "in einem Muster kann nur ein Text vor `+` stehen"),
+        ("to look at the end of a text, use a guard: `s if ends_with(s, \"!\") -> ...`", "um das Ende eines Textes zu prüfen, verwende eine Bedingung: `s if ends_with(s, \"!\") -> ...`"),
+        ("after `+`, a pattern takes a name or `_`", "nach `+` nimmt ein Muster einen Namen oder `_`"),
+        ("a pattern cannot contain `{{...}}`", "ein Muster kann kein `{{...}}` enthalten"),
+        ("use a guard instead: `s if s == \"...\" -> ...`", "verwende stattdessen eine Bedingung: `s if s == \"...\" -> ...`"),
+        ("`..rest` must be the last element: `[first, ..rest]`", "`..rest` muss das letzte Element sein: `[first, ..rest]`"),
+        ("`:` and a pattern", "`:` und ein Muster"),
+        ("a pattern", "ein Muster"),
+        ("patterns look like: `x`, `_`, `0`, `\"text\"`, `:ok`, `Some(x)`, `[first, ..rest]`, `{{name}}`", "Muster sehen so aus: `x`, `_`, `0`, `\"text\"`, `:ok`, `Some(x)`, `[first, ..rest]`, `{{name}}`"),
+        ("the ends of a range in a pattern are whole numbers of 64 bits at most", "die Enden eines Bereichs in einem Muster sind ganze Zahlen mit höchstens 64 Bit"),
+        ("too large for a range", "zu groß für einen Bereich"),
+        ("compare with a guard instead: `n if n >= low and n <= high -> ...`; a range still matches large numbers between its ends, and a decimal end like `1.0e30` works too", "vergleiche stattdessen mit einer Bedingung: `n if n >= low and n <= high -> ...`; ein Bereich passt trotzdem auf große Zahlen zwischen seinen Enden, und ein Dezimalende wie `1.0e30` funktioniert auch"),
+        ("a range in a pattern goes from a number to a number", "ein Bereich in einem Muster geht von einer Zahl zu einer Zahl"),
+        ("not a number", "keine Zahl"),
+        ("the arguments of a call without parentheses follow its name, on its line: `print a b` (or `print a, b`)", "die Argumente eines Aufrufs ohne Klammern folgen seinem Namen, auf seiner Zeile: `print a b` (oder `print a, b`)"),
+        ("write the numbers themselves, like `1..9` or `0.0..0.5`; to compare with names, use a guard: `n if n >= low and n <= high -> ...`", "schreib die Zahlen selbst, wie `1..9` oder `0.0..0.5`; um mit Namen zu vergleichen, verwende eine Bedingung: `n if n >= low and n <= high -> ...`"),
+        ("a text that starts with a text is written `\"Mr \" + name`: `name` is the rest of the text", "ein Text, der mit einem Text beginnt, wird `\"Herr \" + name` geschrieben: `name` ist der Rest des Textes"),
+        ("missing `end` to close this `{what}`", "es fehlt `end`, um dieses `{what}` zu schließen"),
+        ("this `{what}` is never closed", "dieses `{what}` wird nie geschlossen"),
+        ("the code ends here", "der Code endet hier"),
+        ("add `end` on its own line after the last line of the block", "füge `end` in einer eigenen Zeile nach der letzten Zeile des Blocks hinzu"),
+        ("values never change in Rythme: give the new value a new name, like `total2 = total + 1`", "Werte ändern sich in Rythme nie: gib dem neuen Wert einen neuen Namen, wie `total2 = total + 1`"),
+        // src/project.rs
+        ("no folder to keep the packages in", "kein Ordner, um die Pakete aufzubewahren"),
+        ("set the variable RYTHME_HOME to a folder, like `RYTHME_HOME=~/.rythme`", "setze die Variable RYTHME_HOME auf einen Ordner, wie `RYTHME_HOME=~/.rythme`"),
+        ("the folder `{p}`", "der Ordner `{p}`"),
+        ("run `rythme install` here, in the folder of the project", "führe `rythme install` hier aus, im Ordner des Projekts"),
+        ("run `rythme install` in `{root}`, the folder of the project", "führe `rythme install` in `{root}` aus, dem Ordner des Projekts"),
+        ("the folder `{p}` of the package `{name}` does not exist", "der Ordner `{p}` des Pakets `{name}` existiert nicht"),
+        ("fix its `path` in `rythme.toml`", "korrigiere seinen `path` in `rythme.toml`"),
+        ("the package `{name}` is not installed", "das Paket `{name}` ist nicht installiert"),
+        ("`rythme.toml` asks for it from {}", "`rythme.toml` verlangt es von {}"),
+        ("`{shown_dir}` is not a Rythme package: it has no `rythme.toml`", "`{shown_dir}` ist kein Rythme-Paket: es hat keine `rythme.toml`"),
+        ("use one of its files: `use {package}/file`", "verwende eine seiner Dateien: `use {package}/file`"),
+        ("the package `{package}` has no file `{entry}`", "das Paket `{package}` hat keine Datei `{entry}`"),
+        ("the package `{package}` has no file `{wanted}`", "das Paket `{package}` hat keine Datei `{wanted}`"),
+        ("did you mean `use {prefix}{best}`?", "meintest du `use {prefix}{best}`?"),
+        ("its files there are: {}", "seine Dateien dort sind: {}"),
+        ("did you mean `use {best}/{rest}`?", "meintest du `use {best}/{rest}`?"),
+        ("in this project, `use` also reaches the files of the packages {}", "in diesem Projekt erreicht `use` auch die Dateien der Pakete {}"),
+        ("the program `git` was not found", "das Programm `git` wurde nicht gefunden"),
+        ("Rythme uses git to download the dependencies that come from git", "Rythme verwendet git, um die Abhängigkeiten herunterzuladen, die aus git kommen"),
+        ("install Git (https://git-scm.com), then run `rythme install` again; dependencies with `path` do not need it", "installiere Git (https://git-scm.com) und führe dann `rythme install` noch einmal aus; Abhängigkeiten mit `path` brauchen es nicht"),
+        ("git says: {said}", "git sagt: {said}"),
+        ("the tag `{t}` of `{name}` does not exist in `{url}`", "das Tag `{t}` von `{name}` existiert nicht in `{url}`"),
+        ("the commit `{c}` of `{name}` does not exist in `{url}`", "der Commit `{c}` von `{name}` existiert nicht in `{url}`"),
+        ("did you mean `tag = \"{best}\"`?", "meintest du `tag = \"{best}\"`?"),
+        ("its tags are: {}", "seine Tags sind: {}"),
+        ("it has no tags: give a `commit` instead", "es hat keine Tags: gib stattdessen einen `commit` an"),
+        ("cannot write in `{}`: {e}", "in `{}` kann nicht geschrieben werden: {e}"),
+        ("cannot download `{name}` from `{url}`", "`{name}` kann nicht von `{url}` heruntergeladen werden"),
+        ("cannot take the commit `{commit}` of `{name}`", "der Commit `{commit}` von `{name}` kann nicht genommen werden"),
+        ("no `rythme.toml` in this folder or above it", "keine `rythme.toml` in diesem Ordner oder darüber"),
+        ("go to the folder of a project, or create one with `rythme new NAME`", "geh in den Ordner eines Projekts, oder lege eines an mit `rythme new NAME`"),
+        (
+            r#"`rythme install` takes no argument (`{a}`): it installs the dependencies of `rythme.toml`
+see `rythme help projects`"#,
+            r#"`rythme install` nimmt kein Argument (`{a}`): es installiert die Abhängigkeiten aus `rythme.toml`
+siehe `rythme help projects`"#,
+        ),
+        ("`{name}` has no dependencies: add them under `[dependencies]` in `rythme.toml`", "`{name}` hat keine Abhängigkeiten: füge sie unter `[dependencies]` in `rythme.toml` hinzu"),
+        ("Installing the dependencies of `{name}`", "Installiere die Abhängigkeiten von `{name}`"),
+        ("the folder `{p}` of the package `{dep_name}` does not exist", "der Ordner `{p}` des Pakets `{dep_name}` existiert nicht"),
+        ("folder {p}", "Ordner {p}"),
+        ("downloaded", "heruntergeladen"),
+        ("already there", "schon vorhanden"),
+        ("`{dep_name}` is not a Rythme package: `{shown_dir}` has no `rythme.toml`", "`{dep_name}` ist kein Rythme-Paket: `{shown_dir}` hat keine `rythme.toml`"),
+        ("a package is a project made by `rythme new`: its `rythme.toml`, and its files in `src/`", "ein Paket ist ein Projekt, das mit `rythme new` angelegt wurde: seine `rythme.toml` und seine Dateien in `src/`"),
+        ("  ✓ {dep_name} {version}: {line}", "  ✓ {dep_name} {version}: {line}"),
+        ("cannot write `{}`: {e}", "`{}` kann nicht geschrieben werden: {e}"),
+        ("{count} package(s) ready", "{count} Paket(e) bereit"),
+        ("{count} package(s) ready ({more} needed by the other ones)", "{count} Paket(e) bereit ({more} davon von den anderen gebraucht)"),
+        ("which name? Example: rythme new hello", "welcher Name? Beispiel: rythme new hallo"),
+        ("`rythme new` takes one name, like `rythme new hello`", "`rythme new` nimmt einen Namen, wie `rythme new hallo`"),
+        ("try `rythme new {b}`", "versuch es mit `rythme new {b}`"),
+        ("`{shown_dir}` already exists", "`{shown_dir}` existiert schon"),
+        ("choose another name, or another folder", "wähle einen anderen Namen oder einen anderen Ordner"),
+        ("Created the project `{name}`:", "Projekt `{name}` angelegt:"),
+        ("Next: `cd {shown_dir}`, then `rythme run` to run it and `rythme test` to test it (see `rythme help projects`)", "Als Nächstes: `cd {shown_dir}`, dann `rythme run`, um es auszuführen, und `rythme test`, um es zu testen (siehe `rythme help projects`)"),
+        ("greeting", "gruss"),
+        ("hello", "hallo"),
+        (
+            r#"# The project: `rythme run`, `rythme test` and `rythme check` in this folder.
+name = "{name}"
+version = "0.1.0"
+entry = "src/main.ry"
+
+[dependencies]
+# From git, at a tag or a commit, then `rythme install`:
+# mathlib = {{ git = "https://github.com/someone/mathlib", tag = "v1.0.0" }}
+# From a folder:
+# tools = {{ path = "../tools" }}
+"#,
+            r#"# Das Projekt: `rythme run`, `rythme test` und `rythme check` in diesem Ordner.
+name = "{name}"
+version = "0.1.0"
+entry = "src/main.ry"
+
+[dependencies]
+# Aus git, bei einem Tag oder einem Commit, dann `rythme install`:
+# mathlib = {{ git = "https://github.com/jemand/mathlib", tag = "v1.0.0" }}
+# Aus einem Ordner:
+# werkzeuge = {{ path = "../werkzeuge" }}
+"#,
+        ),
+        (
+            r#"# The program: `rythme run` in the folder of the project.
+use {module}
+
+print({module}.{func}("World"))
+"#,
+            r#"# Das Programm: `rythme run` im Ordner des Projekts.
+use {module}
+
+print({module}.{func}("Welt"))
+"#,
+        ),
+        (
+            r#"## A greeting for `name`.
+fn {func}(name) = "Hello, {{name}}!"
+"#,
+            r#"## Ein Gruß für `name`.
+fn {func}(name) = "Hallo, {{name}}!"
+"#,
+        ),
+        (
+            r#"# The tests: `rythme test` in the folder of the project.
+use {name}/{module}
+
+test "{func}" = assert_eq({module}.{func}("Ada") "Hello, Ada!")
+"#,
+            r#"# Die Tests: `rythme test` im Ordner des Projekts.
+use {name}/{module}
+
+test "{func}" = assert_eq({module}.{func}("Ada") "Hallo, Ada!")
+"#,
+        ),
+        (
+            r#"# {name}
+
+A [Rythme](https://github.com/maxlestage/Rythme) project.
+
+```sh
+rythme run        # run the program (src/main.ry)
+rythme test       # run the tests (tests/)
+rythme check      # find problems without running
+rythme fmt        # give the code its official layout
+rythme install    # download the dependencies of rythme.toml
+```
+"#,
+            r#"# {name}
+
+Ein [Rythme](https://github.com/maxlestage/Rythme)-Projekt.
+
+```sh
+rythme run        # das Programm ausführen (src/main.ry)
+rythme test       # die Tests ausführen (tests/)
+rythme check      # Probleme finden, ohne auszuführen
+rythme fmt        # dem Code sein offizielles Layout geben
+rythme install    # die Abhängigkeiten aus rythme.toml herunterladen
+```
+"#,
+        ),
+        (
+            r#"# Files that git does not keep (keep rythme.lock).
+.DS_Store
+Thumbs.db
+*.swp
+*~
+"#,
+            r#"# Dateien, die git nicht aufbewahrt (behalte rythme.lock).
+.DS_Store
+Thumbs.db
+*.swp
+*~
+"#,
+        ),
+        ("src/greeting.ry", "src/gruss.ry"),
+        ("tests/greeting_test.ry", "tests/gruss_test.ry"),
+        // src/repl.rs
+        ("usage: :explain CODE, like :explain E003   (codes: {})", "Verwendung: :explain CODE, wie :explain E003   (Codes: {})"),
+        (":help for help, :quit to leave", ":help für Hilfe, :quit zum Beenden"),
+        ("(type :quit to leave)", "(tippe :quit zum Beenden)"),
+        ("(cancelled)", "(abgebrochen)"),
+        ("cannot read what is typed: {e}", "die Eingabe kann nicht gelesen werden: {e}"),
+        ("usage: :doc NAME (a function, a topic...)", "Verwendung: :doc NAME (eine Funktion, ein Thema...)"),
+        ("usage: :load file.ry", "Verwendung: :load datei.ry"),
+        ("{} loaded", "{} geladen"),
+        ("Everything was forgotten.", "Alles wurde vergessen."),
+        ("Messages are now in English.", "Die Meldungen sind jetzt auf Deutsch."),
+        ("usage: :lang fr  (or another of {codes})", "Verwendung: :lang de  (oder ein anderer von {codes})"),
+        ("usage: :steps EXPRESSION, like :steps fib(4)", "Verwendung: :steps AUSDRUCK, wie :steps fib(4)"),
+        ("Nothing defined yet.", "Noch nichts definiert."),
+        ("unknown command `{other}`", "unbekannter Befehl `{other}`"),
+        (" — did you mean `{best}`?", " — meintest du `{best}`?"),
+        (":help lists the commands", ":help listet die Befehle auf"),
+        // src/steps.rs
+        ("unknown option `{flag}` for `rythme steps`", "unbekannte Option `{flag}` für `rythme steps`"),
+        ("\nthe options are: --max N, --width N (see `rythme help steps`)", "\ndie Optionen sind: --max N, --width N (siehe `rythme help steps`)"),
+        ("  ... (more steps, not shown: {n} are shown at most, change it with --max)", "  ... (weitere Schritte, nicht gezeigt: höchstens {n} werden gezeigt, ändere das mit --max)"),
+        ("this calculation became too deep to be shown step by step (more than {MAX_DEPTH} operations inside each other)", "diese Rechnung wurde zu tief, um Schritt für Schritt gezeigt zu werden (mehr als {MAX_DEPTH} ineinander verschachtelte Operationen)"),
+        ("try it with smaller values, or run the program normally: `rythme file.ry`", "versuch es mit kleineren Werten, oder führe das Programm normal aus: `rythme datei.ry`"),
+        ("the evaluation was stopped after {limit} steps: does it ever end?", "die Auswertung wurde nach {limit} Schritten angehalten: endet sie überhaupt?"),
+        ("a function that calls itself must always reach a case where it stops", "eine Funktion, die sich selbst aufruft, muss immer einen Fall erreichen, in dem sie aufhört"),
+        ("Nothing to show: this file only has definitions. Give an expression to compute, like: rythme steps file.ry \"fib(5)\"", "Nichts zu zeigen: diese Datei hat nur Definitionen. Gib einen Ausdruck zum Berechnen an, wie: rythme steps datei.ry \"fib(5)\""),
+        ("`{flag}` needs a number, like `--max 50` or `--width 80` (20 at least)", "`{flag}` braucht eine Zahl, wie `--max 50` oder `--width 80` (mindestens 20)"),
+        (
+            r#"usage: rythme steps file.ry [expression] [--max N] [--width N]
+example: rythme steps fibonacci.ry "fib(4)""#,
+            r#"Verwendung: rythme steps datei.ry [Ausdruck] [--max N] [--width N]
+Beispiel: rythme steps fibonacci.ry "fib(4)""#,
+        ),
+        // src/suggest.rs
+        ("to join two lists or two texts, use `+`: `[1, 2] + [3]`; for a list of lists, use `flatten`", "um zwei Listen oder zwei Texte zu verbinden, verwende `+`: `[1, 2] + [3]`; für eine Liste von Listen verwende `flatten`"),
+        ("in Rythme, this is called `{rythme}`", "in Rythme heißt das `{rythme}`"),
+        ("booleans are written in lowercase: `true`", "Wahrheitswerte werden kleingeschrieben: `true`"),
+        ("booleans are written in lowercase: `false`", "Wahrheitswerte werden kleingeschrieben: `false`"),
+        ("Rythme has no null: use `None` for \"no value\" and `Some(x)` for a value", "Rythme hat kein null: verwende `None` für „kein Wert“ und `Some(x)` für einen Wert"),
+        ("in Rythme, this is called `Some`", "in Rythme heißt das `Some`"),
+        ("in Rythme, an error value is written `Err(...)`", "in Rythme wird ein Fehlerwert `Err(...)` geschrieben"),
+        ("in Rythme, a success value is written `Ok(...)`", "in Rythme wird ein Erfolgswert `Ok(...)` geschrieben"),
+        ("Rythme has no objects: functions receive their data as arguments, like `area(shape)` or `shape.area()`", "Rythme hat keine Objekte: Funktionen bekommen ihre Daten als Argumente, wie `area(shape)` oder `shape.area()`"),
+        ("write a range with `..`: `1..10` is the list from 1 to 10 (included), and `0..10 |> step_by(2)` counts by 2", "schreib einen Bereich mit `..`: `1..10` ist die Liste von 1 bis 10 (inklusive), und `0..10 |> step_by(2)` zählt in Zweierschritten"),
+        ("use the operator `//` for a whole division: `7 // 2` is 3", "verwende den Operator `//` für eine ganzzahlige Division: `7 // 2` ist 3"),
+        ("use the operator `%` for the remainder: `7 % 3` is 1", "verwende den Operator `%` für den Rest: `7 % 3` ist 1"),
+        ("to put values in a text, use braces: \"total: {{x}}\"; to write a number with 2 decimals: `text(x, 2)`", "um Werte in einen Text zu setzen, verwende geschweifte Klammern: \"total: {{x}}\"; um eine Zahl mit 2 Nachkommastellen zu schreiben: `text(x, 2)`"),
+        ("read the whole file with `read_file(path)`, then cut it with `lines(text)`; the lines of the standard input are `input_lines()`", "lies die ganze Datei mit `read_file(path)` und zerlege sie dann mit `lines(text)`; die Zeilen der Standardeingabe sind `input_lines()`"),
+        ("to merge two records, write `{{..a, ..b}}`: the fields of `b` replace those of `a`; for two dicts or two sets, `union(a, b)`", "um zwei Records zusammenzuführen, schreib `{{..a, ..b}}`: die Felder von `b` ersetzen die von `a`; für zwei Dicts oder zwei Mengen `union(a, b)`"),
+        ("write `unwrap_or(get(x, key), default)`: the value, or the default if it is missing", "schreib `unwrap_or(get(x, key), default)`: der Wert, oder der Standardwert, wenn er fehlt"),
+        ("compute the average with `sum(list) / len(list)`", "berechne den Durchschnitt mit `sum(list) / len(list)`"),
+        ("`n.times do |i| ... end` is written `(0..n - 1).each do |i| ... end`", "`n.times do |i| ... end` wird `(0..n - 1).each do |i| ... end` geschrieben"),
+        ("to use another file, write `use other_file`, then `other_file.name`", "um eine andere Datei zu verwenden, schreib `use other_file`, dann `other_file.name`"),
+        ("there is no `new`: build values directly, like `{{name: \"Ada\"}}` or `Circle(2.0)`", "es gibt kein `new`: baue Werte direkt, wie `{{name: \"Ada\"}}` oder `Circle(2.0)`"),
+        ("values never change in Rythme: build a new value instead", "Werte ändern sich in Rythme nie: baue stattdessen einen neuen Wert"),
+        (
+            r#"Rythme has no loops. Work on the whole list instead:
+  1..5 |> each(fn(i) = print(i))
+  [1 2 3] |> map(fn(x) = x * 2)
+or write a recursive function. See `rythme help functional`."#,
+            r#"Rythme hat keine Schleifen. Arbeite stattdessen mit der ganzen Liste:
+  1..5 |> each(fn(i) = print(i))
+  [1 2 3] |> map(fn(x) = x * 2)
+oder schreib eine rekursive Funktion. Siehe `rythme help functional`."#,
+        ),
+        ("Rythme has no loops to interrupt: use `find`, `take`, `filter`, or a recursive function", "Rythme hat keine Schleifen, die man unterbrechen könnte: verwende `find`, `take`, `filter` oder eine rekursive Funktion"),
+        (
+            r#"no `return` needed: the last expression of a function is its result.
+To stop early with an error, return `Err(...)` and use `?`."#,
+            r#"kein `return` nötig: der letzte Ausdruck einer Funktion ist ihr Ergebnis.
+Um früh mit einem Fehler aufzuhören, gib `Err(...)` zurück und verwende `?`."#,
+        ),
+        ("just write `name = value` (values never change, so no keyword is needed)", "schreib einfach `name = value` (Werte ändern sich nie, also ist kein Schlüsselwort nötig)"),
+        ("functions are written `fn name(x) = x * 2`, and anonymous ones `fn(x) = x * 2`", "Funktionen werden `fn name(x) = x * 2` geschrieben, anonyme `fn(x) = x * 2`"),
+        (
+            r#"Rythme has no classes. Describe your data with `type`:
+  type Shape = Circle(radius) | Square(side)
+or use a record: {{name: "Ada", age: 36}}"#,
+            r#"Rythme hat keine Klassen. Beschreibe deine Daten mit `type`:
+  type Shape = Circle(radius) | Square(side)
+oder verwende einen Record: {{name: "Ada", age: 36}}"#,
+        ),
+        (
+            r#"use `match`:
+  match value
+    0 -> "zero"
+    _ -> "other"
+  end"#,
+            r#"verwende `match`:
+  match value
+    0 -> "null"
+    _ -> "anderes"
+  end"#,
+        ),
+        (
+            r#"errors are values in Rythme: return `Ok(value)` or `Err(message)`,
+then handle them with `match` or pass them on with `?`. `fail(message)` stops the program."#,
+            r#"Fehler sind in Rythme Werte: gib `Ok(value)` oder `Err(message)` zurück,
+und behandle sie dann mit `match` oder gib sie mit `?` weiter. `fail(message)` hält das Programm an."#,
+        ),
+        // src/tasks.rs
+        ("`{f}` expects a Task, the result of a call to an `async fn`, not {shown}", "`{f}` erwartet einen Task, das Ergebnis eines Aufrufs einer `async fn`, nicht {shown}"),
+        ("define the function with `async fn`, then `await` what its call gives", "definiere die Funktion mit `async fn` und wende dann `await` auf das an, was ihr Aufruf liefert"),
+        ("the task stopped without a result", "der Task wurde ohne Ergebnis beendet"),
+        ("this task was already awaited", "auf diesen Task wurde schon gewartet"),
+        ("keep the result of `await` in a name and use that name again", "speichere das Ergebnis von `await` unter einem Namen und verwende diesen Namen wieder"),
+        ("in the task awaited here", "im hier abgewarteten Task"),
+        ("`await_all` expects a list of tasks, not {shown}", "`await_all` erwartet eine Liste von Tasks, nicht {shown}"),
+        ("the program could not be loaded to run the task", "das Programm konnte nicht geladen werden, um den Task auszuführen"),
+        ("an `async fn` cannot give a function as its result", "eine `async fn` kann keine Funktion als Ergebnis liefern"),
+        // src/testing.rs
+        (".", ","),
+        ("the test returned `false`", "der Test hat `false` zurückgegeben"),
+        ("use `assert_eq(actual, expected)` to see the values", "verwende `assert_eq(actual, expected)`, um die Werte zu sehen"),
+        ("the test ended with {}", "der Test endete mit {}"),
+        ("a test passes when it ends without error, and its value is not `false`, `Err(...)` or `None`", "ein Test besteht, wenn er ohne Fehler endet und sein Wert nicht `false`, `Err(...)` oder `None` ist"),
+        (
+            r#"No tests found. Write one like this:
+  test "addition" = assert_eq(1 + 1 2)"#,
+            r#"Keine Tests gefunden. Schreib einen so:
+  test "Addition" = assert_eq(1 + 1 2)"#,
+        ),
+        ("Running {n} test(s)", "{n} Test(s) werden ausgeführt"),
+        ("Running {n} of {total} test(s)", "{n} von {total} Test(s) werden ausgeführt"),
+        ("Running {n} test(s) of {file}", "{n} Test(s) von {file} werden ausgeführt"),
+        ("Running {n} of {total} test(s) of {file}", "{n} von {total} Test(s) von {file} werden ausgeführt"),
+        ("{f} file(s), ", "{f} Datei(en), "),
+        ("{total} test(s): {passed} passed, {failed} failed", "{total} Test(s): {passed} bestanden, {failed} fehlgeschlagen"),
+        (", {left_out} left out by the filter", ", {left_out} vom Filter ausgelassen"),
+        (", {broken} file(s) with errors", ", {broken} Datei(en) mit Fehlern"),
+        ("No test name contains {}.", "Kein Testname enthält {}."),
+        (" or ", " oder "),
+        ("{red}✗{reset} {}: the file has errors, so its tests could not run", "{red}✗{reset} {}: die Datei hat Fehler, deshalb konnten ihre Tests nicht laufen"),
+        (
+            r#"No file with tests in {}. Write a test in a `.ry` file like this:
+  test "addition" = assert_eq(1 + 1 2)"#,
+            r#"Keine Datei mit Tests in {}. Schreib einen Test in eine `.ry`-Datei, so:
+  test "Addition" = assert_eq(1 + 1 2)"#,
+        ),
+        ("Failed tests:", "Fehlgeschlagene Tests:"),
+        ("`{name}` needs {what}", "`{name}` braucht {what}"),
+        ("a part of the name of a test", "einen Teil des Namens eines Tests"),
+        ("a number, or `random`", "eine Zahl, oder `random`"),
+        ("the seed must be a whole number of 0 or more, or `random`, not `{v}`", "der Seed muss eine ganze Zahl ab 0 sein, oder `random`, nicht `{v}`"),
+        ("unknown option `{name}` for `rythme test`", "unbekannte Option `{name}` für `rythme test`"),
+        (
+            r#"
+the options are: --filter NAME, --seed N, --watch, --sandbox, --format json (see `rythme help tests`)"#,
+            r#"
+die Optionen sind: --filter NAME, --seed N, --watch, --sandbox, --format json (siehe `rythme help tests`)"#,
+        ),
+        ("which file or folder? Example: rythme test my_tests.ry, or rythme test . for the files of this folder", "welche Datei oder welcher Ordner? Beispiel: rythme test meine_tests.ry, oder rythme test . für die Dateien dieses Ordners"),
+        ("Seed: {}", "Seed: {}"),
+        (
+            r#"
+Watching {} file(s): the tests run again when one changes (Ctrl+C to stop)."#,
+            r#"
+Beobachte {} Datei(en): die Tests laufen erneut, wenn sich eine ändert (Strg+C zum Beenden)."#,
+        ),
+        (
+            r#"
+{} changed: running the tests again
+"#,
+            r#"
+{} hat sich geändert: die Tests laufen erneut
+"#,
+        ),
+        // src/value.rs
+        ("constructor", "Konstruktor"),
+        // playground/src/lib.rs
+        ("✓ no problems found", "✓ keine Probleme gefunden"),
+        ("✓ no errors, {n} warning(s)", "✓ keine Fehler, {n} Warnung(en)"),
+        // help pages, explanations, keywords, functions, months
+        (
+            r#"RYTHME IN ONE MINUTE
+
+Rythme is a simple language where values never change and everything is a
+function. Programs are files ending with .ry.
+
+  # A comment
+  name = "World"                 # a name for a value (it never changes)
+  print("Hello, {name}!")        # {...} inserts a value in a text
+
+  fn square(x) = x * x           # a function
+  print(square(4))               # 16
+
+  [1, 2, 3, 4]
+    |> filter(is_even)           # keep the even numbers
+    |> map(square)               # square each one
+    |> sum                       # add them up
+    |> print                     # 20
+
+Run it:     rythme hello.ry
+Check it:   rythme check hello.ry
+Try code:   rythme          (interactive mode)
+
+Rythme helps you all the time: every error says where it is, why, and how
+to fix it. `rythme explain E003` explains an error code in detail."#,
+            r#"RYTHME IN EINER MINUTE
+
+Rythme ist eine einfache Sprache, in der sich Werte nie ändern und alles eine
+Funktion ist. Programme sind Dateien, die auf .ry enden.
+
+  # Ein Kommentar
+  name = "Welt"                  # ein Name für einen Wert (er ändert sich nie)
+  print("Hallo, {name}!")        # {...} fügt einen Wert in einen Text ein
+
+  fn quadrat(x) = x * x          # eine Funktion
+  print(quadrat(4))              # 16
+
+  [1, 2, 3, 4]
+    |> filter(is_even)           # die geraden Zahlen behalten
+    |> map(quadrat)              # jede quadrieren
+    |> sum                       # sie addieren
+    |> print                     # 20
+
+Ausführen:      rythme hallo.ry
+Prüfen:         rythme check hallo.ry
+Ausprobieren:   rythme          (interaktiver Modus)
+
+Rythme hilft dir die ganze Zeit: jeder Fehler sagt, wo er ist, warum, und wie
+man ihn behebt. `rythme explain E003` erklärt einen Fehlercode im Detail."#,
+        ),
+        (
+            r#"SYNTAX
+
+Values
+  42   -7   1_000_000            whole numbers (Int), of any size
+  3.14   2.0                     decimal numbers (Float)
+  "hello"   "total: {x}"         texts (Text); {...} (or #{...}) inserts a value
+  true   false                   booleans (Bool)
+  :ok   :error                   symbols (Symbol): a name used as a value
+  [1 2 3]                        lists; commas are optional, as in REBOL
+  {name: "Ada" age: 36}          records
+  Some(3)   None                 a value that may be missing (Option)
+  Ok(3)   Err("oops")            a result that may fail (Result)
+  1..5                           the list [1, 2, 3, 4, 5]
+
+Names
+  x = 5                          a name for a value; it never changes
+  [a b] = [1 2]                  take a value apart
+  {name age} = person
+
+Operators
+  + - * /   // (whole division)   % (remainder)   ** (power)
+  == != < <= > >=   and   or   not
+  x |> f(y)                      same as f(x, y): steps from left to right
+  x.f(y)                         also the same as f(x, y)
+  x.f                            the field f of x; if x has none, f(x): xs.sum
+  xs                             a chain may go on, each line starting with .
+    .select(even?)
+    .sum
+
+Functions
+  fn double(x) = x * 2           on one line, with =
+  fn greet(name)                 on several lines, finished by `end`
+    message = "Hello {name}"
+    print(message)               the last line gives the result
+  end
+  fn(x) = x + 1                  an anonymous function
+  fn adult?(p) = p.age >= 18     a name may end with ? (see rythme help ruby)
+
+Blocks: a function given as the last argument of a call
+  xs.map do |x| x * 2 end        same as map(xs, fn(x) = x * 2)
+  xs.each do |x|                 on several lines, finished by `end`
+    print(x)
+  end
+  xs.select { |x| x > 2 }        with braces
+
+Conditions (every if has an else)
+  if x > 0 then "positive" else if x == 0 then "zero" else "negative"
+  unless x > 0 then "small" else "big"     the opposite of if
+
+Choosing by shape
+  match list
+    [] -> "empty"
+    [x] -> "one element: {x}"
+    [x, ..rest] -> "{x}, then {len(rest)} more"
+  end
+
+Several steps inside an expression
+  do
+    a = 1
+    a + 1
+  end
+
+Your own types
+  type Shape = Circle(radius) | Rect(width height)
+
+Types written in the code (optional, checked by rythme check)
+  fn area(w: Int h: Int) -> Int = w * h
+  total: Float = 0.0
+  type Box(a) = Box(value: a)    a type that takes a type: Box(Int), Box(Text)
+
+Tests and other files
+  test "double works" = assert_eq(double(2) 4)
+  use geometry                   then geometry.area(2)
+
+Comments
+  # an ordinary comment
+  ## a documentation comment, above a function or a type, shown by help(...)"#,
+            r#"SYNTAX
+
+Werte
+  42   -7   1_000_000            ganze Zahlen (Int), beliebig groß
+  3.14   2.0                     Dezimalzahlen (Float)
+  "hallo"   "total: {x}"         Texte (Text); {...} (oder #{...}) fügt einen Wert ein
+  true   false                   Wahrheitswerte (Bool)
+  :ok   :error                   Symbole (Symbol): ein Name, der als Wert dient
+  [1 2 3]                        Listen; Kommas sind freiwillig, wie in REBOL
+  {name: "Ada" age: 36}          Records
+  Some(3)   None                 ein Wert, der fehlen kann (Option)
+  Ok(3)   Err("hoppla")          ein Ergebnis, das scheitern kann (Result)
+  1..5                           die Liste [1, 2, 3, 4, 5]
+
+Namen
+  x = 5                          ein Name für einen Wert; er ändert sich nie
+  [a b] = [1 2]                  einen Wert zerlegen
+  {name age} = person
+
+Operatoren
+  + - * /   // (ganzzahlige Division)   % (Rest)   ** (Potenz)
+  == != < <= > >=   and   or   not
+  x |> f(y)                      dasselbe wie f(x, y): Schritte von links nach rechts
+  x.f(y)                         auch dasselbe wie f(x, y)
+  x.f                            das Feld f von x; wenn x keins hat, f(x): xs.sum
+  xs                             eine Kette kann weitergehen, jede Zeile beginnt mit .
+    .select(even?)
+    .sum
+
+Funktionen
+  fn doppelt(x) = x * 2          in einer Zeile, mit =
+  fn gruesse(name)               über mehrere Zeilen, abgeschlossen mit `end`
+    nachricht = "Hallo {name}"
+    print(nachricht)             die letzte Zeile liefert das Ergebnis
+  end
+  fn(x) = x + 1                  eine anonyme Funktion
+  fn adult?(p) = p.age >= 18     ein Name darf auf ? enden (siehe rythme help ruby)
+
+Blöcke: eine Funktion als letztes Argument eines Aufrufs
+  xs.map do |x| x * 2 end        dasselbe wie map(xs, fn(x) = x * 2)
+  xs.each do |x|                 über mehrere Zeilen, abgeschlossen mit `end`
+    print(x)
+  end
+  xs.select { |x| x > 2 }        mit geschweiften Klammern
+
+Bedingungen (jedes if hat ein else)
+  if x > 0 then "positiv" else if x == 0 then "null" else "negativ"
+  unless x > 0 then "klein" else "groß"     das Gegenteil von if
+
+Nach Form entscheiden
+  match list
+    [] -> "leer"
+    [x] -> "ein Element: {x}"
+    [x, ..rest] -> "{x}, dann {len(rest)} weitere"
+  end
+
+Mehrere Schritte innerhalb eines Ausdrucks
+  do
+    a = 1
+    a + 1
+  end
+
+Eigene Typen
+  type Shape = Circle(radius) | Rect(width height)
+
+Im Code geschriebene Typen (freiwillig, von rythme check geprüft)
+  fn area(w: Int h: Int) -> Int = w * h
+  total: Float = 0.0
+  type Box(a) = Box(value: a)    ein Typ, der einen Typ nimmt: Box(Int), Box(Text)
+
+Tests und andere Dateien
+  test "doppelt funktioniert" = assert_eq(doppelt(2) 4)
+  use geometry                   dann geometry.area(2)
+
+Kommentare
+  # ein gewöhnlicher Kommentar
+  ## ein Dokumentationskommentar, über einer Funktion oder einem Typ, angezeigt von help(...)"#,
+        ),
+        (
+            r#"FUNCTIONS
+
+Define and call
+  fn add(a b) = a + b
+  add(2 3)                      # 5
+
+On several lines: the last expression is the result
+  fn describe(n)
+    kind = if n % 2 == 0 then "even" else "odd"
+    "{n} is {kind}"
+  end
+
+One definition per case (tried in order)
+  fn fib(0) = 0
+  fn fib(1) = 1
+  fn fib(n) = fib(n - 1) + fib(n - 2)
+
+With a condition (a guard)
+  fn sign(n) if n < 0 = "negative"
+  fn sign(0) = "zero"
+  fn sign(_) = "positive"
+
+Functions are values
+  double = fn(x) = x * 2
+  [1 2 3] |> map(double)       # [2, 4, 6]
+  [1 2 3] |> map(fn(x) = x + 1)
+
+Pipes read from left to right
+  "  Hello  " |> trim |> upper   # "HELLO"
+  x |> f(a, b)    means    f(x, a, b)
+
+Method style
+  "hello".upper()                # same as upper("hello")
+
+Documentation
+  ## Adds two numbers.
+  fn add(a b) = a + b
+  help(add)                      # shows "Adds two numbers."
+
+Recursion without limit
+  When the recursive call is the very last thing a function does, it can
+  repeat millions of times:
+  fn count_down(0) = print("Liftoff!")
+  fn count_down(n)
+    print(n)
+    count_down(n - 1)
+  end"#,
+            r#"FUNKTIONEN
+
+Definieren und aufrufen
+  fn addiere(a b) = a + b
+  addiere(2 3)                  # 5
+
+Über mehrere Zeilen: der letzte Ausdruck ist das Ergebnis
+  fn beschreibe(n)
+    art = if n % 2 == 0 then "gerade" else "ungerade"
+    "{n} ist {art}"
+  end
+
+Eine Definition pro Fall (der Reihe nach ausprobiert)
+  fn fib(0) = 0
+  fn fib(1) = 1
+  fn fib(n) = fib(n - 1) + fib(n - 2)
+
+Mit einer Bedingung (einem Guard)
+  fn vorzeichen(n) if n < 0 = "negativ"
+  fn vorzeichen(0) = "null"
+  fn vorzeichen(_) = "positiv"
+
+Funktionen sind Werte
+  doppelt = fn(x) = x * 2
+  [1 2 3] |> map(doppelt)      # [2, 4, 6]
+  [1 2 3] |> map(fn(x) = x + 1)
+
+Pipes liest man von links nach rechts
+  "  Hallo  " |> trim |> upper   # "HALLO"
+  x |> f(a, b)    bedeutet    f(x, a, b)
+
+Methodenstil
+  "hallo".upper()                # dasselbe wie upper("hallo")
+
+Dokumentation
+  ## Addiert zwei Zahlen.
+  fn addiere(a b) = a + b
+  help(addiere)                  # zeigt "Addiert zwei Zahlen."
+
+Rekursion ohne Grenze
+  Wenn der rekursive Aufruf das Allerletzte ist, was eine Funktion tut, kann
+  sie sich millionenfach wiederholen:
+  fn countdown(0) = print("Abheben!")
+  fn countdown(n)
+    print(n)
+    countdown(n - 1)
+  end"#,
+        ),
+        (
+            r#"LISTS
+
+  numbers = [3 1 2]
+  numbers[0]                     # 3 (the first; -1 is the last)
+  len(numbers)                   # 3
+  1..5                           # [1, 2, 3, 4, 5]
+  [0, ..numbers]                 # [0, 3, 1, 2]   (.. inserts a whole list)
+  numbers + [9]                  # [3, 1, 2, 9]
+
+Work on the whole list (no loops needed)
+  map(numbers fn(x) = x * 10)            # [30, 10, 20]
+  filter(numbers fn(x) = x > 1)          # [3, 2]
+  fold(numbers 0 fn(acc x) = acc + x)  # 6
+  sort(numbers)                           # [1, 2, 3]
+  numbers |> each(fn(x) = print(x))       # prints each element
+
+Safe access (never an error)
+  first([])                      # None
+  get(numbers 10)               # None
+
+"Change" a list: you get a new list, the old one stays the same
+  set_at(numbers 0 9)          # [9, 1, 2]
+  insert_at(numbers 1 7)       # [3, 7, 1, 2]
+  remove_at(numbers, -1)         # [3, 1]
+
+Pieces of a list
+  take_while(numbers fn(x) = x > 2)      # [3]
+  chunks([1 2 3 4 5] 2)              # [[1, 2], [3, 4], [5]]
+  windows([1 2 3] 2)                   # [[1, 2], [2, 3]]
+  0..10 |> step_by(5)                     # [0, 5, 10]
+
+Take a list apart with patterns
+  match numbers
+    [] -> "empty"
+    [first, ..rest] -> "{first}, then {len(rest)} more"
+  end
+
+All the functions: rythme help builtins"#,
+            r#"LISTEN
+
+  numbers = [3 1 2]
+  numbers[0]                     # 3 (das erste; -1 ist das letzte)
+  len(numbers)                   # 3
+  1..5                           # [1, 2, 3, 4, 5]
+  [0, ..numbers]                 # [0, 3, 1, 2]   (.. fügt eine ganze Liste ein)
+  numbers + [9]                  # [3, 1, 2, 9]
+
+Mit der ganzen Liste arbeiten (keine Schleifen nötig)
+  map(numbers fn(x) = x * 10)            # [30, 10, 20]
+  filter(numbers fn(x) = x > 1)          # [3, 2]
+  fold(numbers 0 fn(acc x) = acc + x)  # 6
+  sort(numbers)                           # [1, 2, 3]
+  numbers |> each(fn(x) = print(x))       # gibt jedes Element aus
+
+Sicherer Zugriff (nie ein Fehler)
+  first([])                      # None
+  get(numbers 10)               # None
+
+Eine Liste „ändern“: du bekommst eine neue Liste, die alte bleibt gleich
+  set_at(numbers 0 9)          # [9, 1, 2]
+  insert_at(numbers 1 7)       # [3, 7, 1, 2]
+  remove_at(numbers, -1)         # [3, 1]
+
+Teile einer Liste
+  take_while(numbers fn(x) = x > 2)      # [3]
+  chunks([1 2 3 4 5] 2)              # [[1, 2], [3, 4], [5]]
+  windows([1 2 3] 2)                   # [[1, 2], [2, 3]]
+  0..10 |> step_by(5)                     # [0, 5, 10]
+
+Eine Liste mit Mustern zerlegen
+  match numbers
+    [] -> "empty"
+    [first, ..rest] -> "{first}, then {len(rest)} more"
+  end
+
+Alle Funktionen: rythme help builtins"#,
+        ),
+        (
+            r#"TEXT
+
+  name = "Ada"
+  "Hello, {name}!"               # "Hello, Ada!"  ({...} inserts any expression)
+  "2 + 2 = {2 + 2}"              # "2 + 2 = 4"
+  "a" + "b"                      # "ab"
+  len("été")                     # 3 (characters, accents included)
+  upper("abc")   lower("ABC")   trim("  x  ")
+  split("a,b,c" ",")            # ["a", "b", "c"]
+  join(["a" "b"] "-")          # "a-b"
+  replace("2024" "4" "5")      # "2025"
+  contains("hello" "ell")       # true
+  text(42)                       # "42"
+  text(3.14159 2)               # "3.14" (a number with 2 decimals)
+  pad_left("7" 3 "0")          # "007"  (and pad_right: to line up columns)
+  char_code("A")   char(66)      # 65 and "B"
+  int("42")                      # 42
+  parse_int("x42")               # Err(...): a conversion that cannot crash
+  trim_start("  x")   trim_end("x  ")
+  words("Hi, you!")              # ["Hi", "you"]
+  equals_ignore_case("Ada" "ADA")          # true
+  format_number(1234.5 2)       # "1,234.50"   (with "fr": "1 234,50")
+  find_all("3 cats, 12 dogs" "[0-9]+")     # ["3", "12"]  (regexes: rythme help regex)
+
+Special characters: \n (new line), \t (tab), \r (carriage return),
+\0 (null character), \" (quote), \\ (backslash), \{ and \} (braces, because
+{ starts an insertion), \u{e9} (any character by its Unicode number: é)."#,
+            r#"TEXT
+
+  name = "Ada"
+  "Hello, {name}!"               # "Hello, Ada!"  ({...} fügt einen beliebigen Ausdruck ein)
+  "2 + 2 = {2 + 2}"              # "2 + 2 = 4"
+  "a" + "b"                      # "ab"
+  len("été")                     # 3 (Zeichen, Akzente mitgezählt)
+  upper("abc")   lower("ABC")   trim("  x  ")
+  split("a,b,c" ",")            # ["a", "b", "c"]
+  join(["a" "b"] "-")          # "a-b"
+  replace("2024" "4" "5")      # "2025"
+  contains("hello" "ell")       # true
+  text(42)                       # "42"
+  text(3.14159 2)               # "3.14" (eine Zahl mit 2 Nachkommastellen)
+  pad_left("7" 3 "0")          # "007"  (und pad_right: um Spalten auszurichten)
+  char_code("A")   char(66)      # 65 und "B"
+  int("42")                      # 42
+  parse_int("x42")               # Err(...): eine Umwandlung, die nicht abstürzen kann
+  trim_start("  x")   trim_end("x  ")
+  words("Hi, you!")              # ["Hi", "you"]
+  equals_ignore_case("Ada" "ADA")          # true
+  format_number(1234.5 2)       # "1,234.50"   (mit "de": "1.234,50")
+  find_all("3 cats, 12 dogs" "[0-9]+")     # ["3", "12"]  (reguläre Ausdrücke: rythme help regex)
+
+Sonderzeichen: \n (neue Zeile), \t (Tabulator), \r (Wagenrücklauf),
+\0 (Nullzeichen), \" (Anführungszeichen), \\ (Backslash), \{ und \} (geschweifte
+Klammern, weil { eine Einfügung beginnt), \u{e9} (ein beliebiges Zeichen über
+seine Unicode-Nummer: é)."#,
+        ),
+        (
+            r#"RECORDS
+
+A record groups named values:
+  ada = {name: "Ada" born: 1815}
+  ada.name                       # "Ada"
+  ada["name"]                    # "Ada"
+
+Records never change: build a new one from an old one
+  older = {..ada born: 1816}    # same fields, `born` replaced
+
+Take apart
+  {name born} = ada
+  fn greet({name}) = "Hello {name}"
+
+Useful functions
+  keys(ada)   values(ada)   has(ada, "name")   get(ada, "x")   put(ada, "x", 1)
+  entries(ada)                   # [["name", "Ada"], ["born", 1815]]
+  from_entries([["x" 1]])       # {x: 1}
+
+Records as dictionaries
+  counts = {apple: 2}
+  put(counts "pear" 5)         # {apple: 2, pear: 5}
+  map_values(counts fn(n) = n * 10)      # {apple: 20}
+  group_by(["a" "b" "a"] fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+  For keys that are not names (numbers, lists...), use a dict: rythme help dicts
+
+JSON, the format of data on the web
+  parse_json(text)               # Ok(...): objects become records, arrays lists
+  to_json(value)                 # the text, ready to save with write_file"#,
+            r#"RECORDS
+
+Ein Record fasst benannte Werte zusammen:
+  ada = {name: "Ada" born: 1815}
+  ada.name                       # "Ada"
+  ada["name"]                    # "Ada"
+
+Records ändern sich nie: bau einen neuen aus einem alten
+  older = {..ada born: 1816}    # dieselben Felder, `born` ersetzt
+
+Zerlegen
+  {name born} = ada
+  fn greet({name}) = "Hello {name}"
+
+Nützliche Funktionen
+  keys(ada)   values(ada)   has(ada, "name")   get(ada, "x")   put(ada, "x", 1)
+  entries(ada)                   # [["name", "Ada"], ["born", 1815]]
+  from_entries([["x" 1]])       # {x: 1}
+
+Records als Wörterbücher
+  counts = {apple: 2}
+  put(counts "pear" 5)         # {apple: 2, pear: 5}
+  map_values(counts fn(n) = n * 10)      # {apple: 20}
+  group_by(["a" "b" "a"] fn(x) = x) |> map_values(len)   # {a: 2, b: 1}
+  Für Schlüssel, die keine Namen sind (Zahlen, Listen...), verwende ein Dict: rythme help dicts
+
+JSON, das Datenformat des Webs
+  parse_json(text)               # Ok(...): Objekte werden Records, Arrays Listen
+  to_json(value)                 # der Text, bereit zum Speichern mit write_file"#,
+        ),
+        (
+            r#"DICTIONARIES AND SETS
+
+A dict (dictionary) gives a value for each key. Keys can be any value but
+functions: numbers, texts, lists, records... They are kept in order.
+  ages = dict([["Ada" 36] ["Alan" 41]])
+  ages                           # dict("Ada" => 36, "Alan" => 41)
+  ages["Ada"]                    # 36 (an error if the key is missing)
+  get(ages "Bob")               # None: an Option, never an error
+  grid = dict([[[0 0] "start"]])   # a list as a key
+  dict({x: 1})                   # from a record: dict("x" => 1)
+
+Dicts never change: functions give a new one, quickly (in O(log n))
+  put(ages "Bob" 20)           # added (or replaced)
+  remove(ages "Ada")            # without this key
+  has(ages, "Ada")   len(ages)   keys(ages)   values(ages)   entries(ages)
+  map_values(ages fn(n) = n + 1)
+  filter(ages fn(name age) = age > 40)   # f receives the key and the value
+  ages.each do |name age| print(name age) end   # reject and select too
+  union(a b)                    # both; for a key in both, b's value wins
+
+A set holds values without repetition, in order.
+  s = set([3 1 3])             # set(1, 3)
+  has(s, 3)   push(s, 5)   remove(s, 1)   len(s)   values(s)   # values: a list
+  union(a, b)   intersection(a, b)   difference(a, b)   is_subset(a, b)
+  filter(s, is_odd)   map(s, fn(x) = x * 10)
+
+Dicts and sets compare with == and <, and print as dict(k => v, ...) and
+set(a, b, ...). `to_json` writes a dict whose keys are all texts (or all symbols) as an
+object, a set as an array; `dict(parse_json(text)?)` reads an object back."#,
+            r#"DICTS UND MENGEN
+
+Ein Dict (Wörterbuch) gibt für jeden Schlüssel einen Wert. Schlüssel können
+alle Werte außer Funktionen sein: Zahlen, Texte, Listen, Records... Sie
+bleiben in ihrer Reihenfolge.
+  ages = dict([["Ada" 36] ["Alan" 41]])
+  ages                           # dict("Ada" => 36, "Alan" => 41)
+  ages["Ada"]                    # 36 (ein Fehler, wenn der Schlüssel fehlt)
+  get(ages "Bob")               # None: eine Option, nie ein Fehler
+  grid = dict([[[0 0] "start"]])   # eine Liste als Schlüssel
+  dict({x: 1})                   # aus einem Record: dict("x" => 1)
+
+Dicts ändern sich nie: Funktionen liefern schnell ein neues (in O(log n))
+  put(ages "Bob" 20)           # hinzugefügt (oder ersetzt)
+  remove(ages "Ada")            # ohne diesen Schlüssel
+  has(ages, "Ada")   len(ages)   keys(ages)   values(ages)   entries(ages)
+  map_values(ages fn(n) = n + 1)
+  filter(ages fn(name age) = age > 40)   # f bekommt den Schlüssel und den Wert
+  ages.each do |name age| print(name age) end   # reject und select auch
+  union(a b)                    # beide; für einen Schlüssel in beiden gewinnt der Wert von b
+
+Eine Menge enthält Werte ohne Wiederholung, der Reihe nach.
+  s = set([3 1 3])             # set(1, 3)
+  has(s, 3)   push(s, 5)   remove(s, 1)   len(s)   values(s)   # values: eine Liste
+  union(a, b)   intersection(a, b)   difference(a, b)   is_subset(a, b)
+  filter(s, is_odd)   map(s, fn(x) = x * 10)
+
+Dicts und Mengen lassen sich mit == und < vergleichen und werden als
+dict(k => v, ...) und set(a, b, ...) ausgegeben. `to_json` schreibt ein Dict,
+dessen Schlüssel alle Texte (oder alle Symbole) sind, als Objekt, eine Menge als
+Array; `dict(parse_json(text)?)` liest ein Objekt wieder ein."#,
+        ),
+        (
+            r#"YOUR OWN TYPES
+
+A type lists the possible shapes of a value:
+  type Shape = Circle(radius) | Rect(width height) | Empty
+
+  c = Circle(2.0)
+  c.radius                       # 2.0
+
+Handle each shape with match
+  fn area(shape) = match shape
+    Circle(r) -> pi * r * r
+    Rect(w, h) -> w * h
+    Empty -> 0
+  end
+
+Or with one definition per shape
+  fn perimeter(Circle(r)) = 2 * pi * r
+  fn perimeter(Rect(w h)) = 2 * (w + h)
+  fn perimeter(Empty) = 0
+
+If you forget a shape, `rythme check` tells you which one.
+
+A type can contain itself (trees...):
+  type Tree = Leaf | Node(left value right)"#,
+            r#"EIGENE TYPEN
+
+Ein Typ zählt die möglichen Formen eines Werts auf:
+  type Shape = Circle(radius) | Rect(width height) | Empty
+
+  c = Circle(2.0)
+  c.radius                       # 2.0
+
+Jede Form mit match behandeln
+  fn area(shape) = match shape
+    Circle(r) -> pi * r * r
+    Rect(w, h) -> w * h
+    Empty -> 0
+  end
+
+Oder mit einer Definition pro Form
+  fn perimeter(Circle(r)) = 2 * pi * r
+  fn perimeter(Rect(w h)) = 2 * (w + h)
+  fn perimeter(Empty) = 0
+
+Wenn du eine Form vergisst, sagt dir `rythme check`, welche.
+
+Ein Typ kann sich selbst enthalten (Bäume...):
+  type Tree = Leaf | Node(left value right)"#,
+        ),
+        (
+            r#"MATCH AND PATTERNS
+
+`match` compares a value with patterns, in order, and gives the result of the
+first one that fits:
+
+  fn describe(x) = match x
+    0 -> "zero"
+    1 | 2 | 3 -> "small"
+    n if n < 0 -> "negative"
+    _ -> "big"
+  end
+
+Patterns
+  42   "text"   true             exactly this value
+  1..9   -5..-1   0.0..0.5       a number from the first to the second, both included
+  "Mr " + name                   a text that starts with "Mr "; name is the rest
+  x                              anything, named x
+  _                              anything, ignored
+  Some(x)   Circle(r)            a constructor and what it contains
+  []   [a, b]   [first, ..rest]  lists, by shape
+  {name, age}                    a record with these fields
+  p if condition                 a pattern and a condition (guard)
+  a | b                          one pattern or the other
+
+Patterns work everywhere a name is given:
+  [x y] = [1 2]
+  fn head_or_zero([]) = 0
+  fn head_or_zero([x ..]) = x"#,
+            r#"MATCH UND MUSTER
+
+`match` vergleicht einen Wert der Reihe nach mit Mustern und liefert das
+Ergebnis des ersten, das passt:
+
+  fn describe(x) = match x
+    0 -> "zero"
+    1 | 2 | 3 -> "small"
+    n if n < 0 -> "negative"
+    _ -> "big"
+  end
+
+Muster
+  42   "text"   true             genau dieser Wert
+  1..9   -5..-1   0.0..0.5       eine Zahl von der ersten bis zur zweiten, beide inklusive
+  "Mr " + name                   ein Text, der mit "Mr " beginnt; name ist der Rest
+  x                              irgendetwas, x genannt
+  _                              irgendetwas, ignoriert
+  Some(x)   Circle(r)            ein Konstruktor und was er enthält
+  []   [a, b]   [first, ..rest]  Listen, nach ihrer Form
+  {name, age}                    ein Record mit diesen Feldern
+  p if condition                 ein Muster und eine Bedingung (Guard)
+  a | b                          das eine Muster oder das andere
+
+Muster funktionieren überall, wo ein Name vergeben wird:
+  [x y] = [1 2]
+  fn head_or_zero([]) = 0
+  fn head_or_zero([x ..]) = x"#,
+        ),
+        (
+            r#"ERRORS ARE VALUES (Option, Result, ?)
+
+Rythme has no null and no exceptions. A value that may be missing is an
+Option: Some(value) or None. An operation that may fail gives a Result:
+Ok(value) or Err(message). You cannot forget to handle them.
+
+  fn divide(a b) = if b == 0 then Err("division by zero") else Ok(a / b)
+
+  match divide(10, 2)
+    Ok(x) -> print("result: {x}")
+    Err(e) -> print("error: {e}")
+  end
+
+The ? operator: take the value, or stop and pass the error on
+  fn average(a, b)
+    x = parse_float(a)?          # if this is Err(...), average returns it
+    y = parse_float(b)?
+    Ok((x + y) / 2)
+  end
+
+Quick tools
+  unwrap_or(get(list 5) 0)     # the value, or a default
+  unwrap(Some(3))                # 3 (stops the program on None or Err)
+  is_some(x)   is_none(x)   is_ok(x)   is_err(x)
+  map(Some(2) fn(x) = x * 10)   # Some(20)
+  ok_or(get(person "age") "no age")   # Err("no age") if missing: ready for ?
+  and_then(x f)                 # one more step that may fail
+  map_err(r fn(e) = "config: {e}")     # explain an error better
+
+To stop the whole program: fail("message")."#,
+            r#"FEHLER SIND WERTE (Option, Result, ?)
+
+Rythme hat kein null und keine Exceptions. Ein Wert, der fehlen kann, ist eine
+Option: Some(value) oder None. Eine Operation, die scheitern kann, liefert ein
+Result: Ok(value) oder Err(message). Du kannst nicht vergessen, sie zu behandeln.
+
+  fn divide(a b) = if b == 0 then Err("division by zero") else Ok(a / b)
+
+  match divide(10, 2)
+    Ok(x) -> print("result: {x}")
+    Err(e) -> print("error: {e}")
+  end
+
+Der Operator ?: den Wert nehmen, oder anhalten und den Fehler weitergeben
+  fn average(a, b)
+    x = parse_float(a)?          # wenn das Err(...) ist, gibt average es zurück
+    y = parse_float(b)?
+    Ok((x + y) / 2)
+  end
+
+Schnelle Werkzeuge
+  unwrap_or(get(list 5) 0)     # der Wert, oder ein Standardwert
+  unwrap(Some(3))                # 3 (hält das Programm bei None oder Err an)
+  is_some(x)   is_none(x)   is_ok(x)   is_err(x)
+  map(Some(2) fn(x) = x * 10)   # Some(20)
+  ok_or(get(person "age") "no age")   # Err("no age"), wenn es fehlt: bereit für ?
+  and_then(x f)                 # ein weiterer Schritt, der scheitern kann
+  map_err(r fn(e) = "config: {e}")     # einen Fehler besser erklären
+
+Um das ganze Programm anzuhalten: fail("message")."#,
+        ),
+        (
+            r#"THINKING FUNCTIONALLY
+
+In Rythme, values never change and there are no loops. It may seem strange,
+but programs become easier to read, test and trust: a function always gives
+the same result for the same arguments.
+
+Instead of a loop that prints:       1..5 |> each(fn(i) = print(i))
+Instead of a loop that transforms:   map(list, f)
+Instead of a loop that selects:      filter(list, f)
+Instead of a loop that accumulates:  fold(list, start, f)   or sum, product
+Instead of running totals:           scan(list, start, f)
+Instead of a loop that searches:     find, any, all, index_of, min_by, max_by
+Instead of "break":                  take_while(list, f)
+Instead of "while":                  a recursive function
+
+  # Python:  total = 0
+  #          for x in numbers: total += x * x
+  total = numbers |> map(fn(x) = x * x) |> sum
+
+  # A "while" loop as a recursive function:
+  fn collatz(1 steps) = steps
+  fn collatz(n, steps) =
+    if n % 2 == 0 then collatz(n // 2 steps + 1) else collatz(3 * n + 1 steps + 1)
+  collatz(27 0)                 # 111
+
+Instead of changing a value, make a new one:
+  x2 = x + 1
+  person2 = {..person age: 37}
+  list2 = push(list 4)"#,
+            r#"FUNKTIONAL DENKEN
+
+In Rythme ändern sich Werte nie, und es gibt keine Schleifen. Das mag seltsam
+wirken, aber Programme werden leichter zu lesen, zu testen und zu verstehen:
+eine Funktion liefert für dieselben Argumente immer dasselbe Ergebnis.
+
+Statt einer Schleife, die ausgibt:      1..5 |> each(fn(i) = print(i))
+Statt einer Schleife, die umwandelt:    map(list, f)
+Statt einer Schleife, die auswählt:     filter(list, f)
+Statt einer Schleife, die aufsummiert:  fold(list, start, f)   oder sum, product
+Statt laufender Summen:                 scan(list, start, f)
+Statt einer Schleife, die sucht:        find, any, all, index_of, min_by, max_by
+Statt "break":                          take_while(list, f)
+Statt "while":                          eine rekursive Funktion
+
+  # Python:  total = 0
+  #          for x in numbers: total += x * x
+  total = numbers |> map(fn(x) = x * x) |> sum
+
+  # Eine "while"-Schleife als rekursive Funktion:
+  fn collatz(1 steps) = steps
+  fn collatz(n, steps) =
+    if n % 2 == 0 then collatz(n // 2 steps + 1) else collatz(3 * n + 1 steps + 1)
+  collatz(27 0)                 # 111
+
+Statt einen Wert zu ändern, erzeuge einen neuen:
+  x2 = x + 1
+  person2 = {..person age: 37}
+  list2 = push(list 4)"#,
+        ),
+        (
+            r#"TESTS
+
+Write tests next to your code:
+  fn double(x) = x * 2
+
+  test "double of 2 is 4" = assert_eq(double(2) 4)
+
+  test "several checks"
+    assert_eq(double(0) 0)
+    assert(double(-1) < 0 "should stay negative")
+  end
+
+Run them:
+  rythme test my_file.ry            the tests of one file
+  rythme test .                     of every .ry file of a folder (and below)
+  rythme test . --filter double     only the tests whose name contains "double"
+  rythme test . --watch             again each time a file changes (Ctrl+C stops)
+  rythme test my_file.ry -- a b     with `args()` giving ["a", "b"]
+  rythme test                       in a project: its files with tests
+
+While testing, top-level expressions such as print(...) are not run: the
+definitions are loaded, then each test runs. A test passes if it ends without
+error, and its value is not false, Err(...) or None. The summary gives the
+counts and the time; the exit code is 0 when every test passes.
+
+Property tests: check that something holds for many values
+  test "reversing twice gives the list back" =
+    check_all(fn(l) = reverse(reverse(l)) == l lists_of(ints()))
+
+Generators: ints(min, max), floats(min, max), texts(max_length), bools(),
+lists_of(generator, max_length), one_of(list), records_of({x: ints(), y: texts()}).
+`sample(generator)` shows what one gives. When a value makes the property
+false, it is simplified (shrinking) and shown with the seed that made it: the
+same values come back on every run, and `--seed N` tries others
+(`--seed random` picks one)."#,
+            r#"TESTS
+
+Schreib Tests direkt neben deinen Code:
+  fn double(x) = x * 2
+
+  test "double of 2 is 4" = assert_eq(double(2) 4)
+
+  test "several checks"
+    assert_eq(double(0) 0)
+    assert(double(-1) < 0 "should stay negative")
+  end
+
+Ausführen:
+  rythme test my_file.ry            die Tests einer Datei
+  rythme test .                     aller .ry-Dateien eines Ordners (und darunter)
+  rythme test . --filter double     nur die Tests, deren Name "double" enthält
+  rythme test . --watch             erneut, sobald sich eine Datei ändert (Strg+C beendet)
+  rythme test my_file.ry -- a b     mit `args()`, das ["a", "b"] liefert
+  rythme test                       in einem Projekt: seine Dateien mit Tests
+
+Beim Testen werden Ausdrücke auf oberster Ebene wie print(...) nicht ausgeführt:
+die Definitionen werden geladen, dann läuft jeder Test. Ein Test besteht, wenn
+er ohne Fehler endet und sein Wert nicht false, Err(...) oder None ist. Die
+Zusammenfassung zeigt die Anzahlen und die Zeit; der Exit-Code ist 0, wenn
+alle Tests bestehen.
+
+Eigenschaftstests: prüfen, dass etwas für viele Werte gilt
+  test "reversing twice gives the list back" =
+    check_all(fn(l) = reverse(reverse(l)) == l lists_of(ints()))
+
+Generatoren: ints(min, max), floats(min, max), texts(max_length), bools(),
+lists_of(generator, max_length), one_of(list), records_of({x: ints(), y: texts()}).
+`sample(generator)` zeigt, was einer liefert. Wenn ein Wert die Eigenschaft
+falsch macht, wird er vereinfacht (Shrinking) und mit dem Seed gezeigt, der ihn
+erzeugt hat: dieselben Werte kommen bei jedem Lauf wieder, und `--seed N`
+probiert andere (`--seed random` wählt einen)."#,
+        ),
+        (
+            r#"EXERCISES
+
+Rythme comes with 36 graded exercises for a first course, from the first
+values to recursion, lists, records, types, Option, Result and tests, then six
+about artificial intelligence (31 to 36: vectors, statistics, a neuron,
+gradient descent, nearest neighbours, minimax). Each one is a file with a
+statement, hints, the functions to write and their tests.
+
+  rythme exercise list              the exercises, from ★☆☆ (easy) to ★★★
+  rythme exercise start 7           copies exercise 7 into the current folder
+  rythme exercise check 07-recursion.ry
+                                    runs its tests, and says what to do next
+
+In the file, replace each fail("to do") with your code; do not change the
+tests. `rythme test file.ry` runs the tests too. The exercises follow the
+language of the messages (`rythme --lang es exercise start 7`); the folder
+docs/exercises of the repository of Rythme has them in English and French."#,
+            r#"ÜBUNGEN
+
+Rythme bringt 36 abgestufte Übungen für einen ersten Kurs mit, von den ersten
+Werten bis zu Rekursion, Listen, Records, Typen, Option, Result und Tests, dann
+sechs über künstliche Intelligenz (31 bis 36: Vektoren, Statistik, ein Neuron,
+Gradientenabstieg, nächste Nachbarn, Minimax). Jede ist eine Datei mit einer
+Aufgabe, Hinweisen, den zu schreibenden Funktionen und ihren Tests.
+
+  rythme exercise list              die Übungen, von ★☆☆ (leicht) bis ★★★
+  rythme exercise start 7           kopiert Übung 7 in den aktuellen Ordner
+  rythme exercise check 07-rekursion.ry
+                                    führt ihre Tests aus und sagt, was als Nächstes zu tun ist
+
+Ersetze in der Datei jedes fail("zu tun") durch deinen Code; ändere die Tests
+nicht. `rythme test datei.ry` führt die Tests ebenfalls aus. Die Übungen folgen
+der Sprache der Meldungen (`rythme --lang de exercise start 7`); der Ordner
+docs/exercises des Rythme-Repositorys enthält sie auf Englisch und Französisch."#,
+        ),
+        (
+            r#"SEVERAL FILES
+
+  # geometry.ry
+  ## Area of a rectangle.
+  fn area(w h) = w * h
+  fn _check(x) = x >= 0          # private: starts with `_`
+
+  # main.ry
+  use geometry                    # the file geometry.ry, next to main.ry
+  print(geometry.area(2 3))      # 6
+
+`use geometry` gives the definitions of geometry.ry through its name:
+`geometry.area`, `geometry.Circle(1)`, and in a `match`, `geometry.Circle(r)`.
+So you always see where a name comes from. A file in a folder:
+`use shapes/circle`, then `circle.perimeter(1)`. Another name: `use
+geometry as geo`, then `geo.area(2, 3)`. Names starting with `_` stay
+private to their file.
+
+The path is relative to the folder of the file that contains `use`. Each file
+runs only once. Rythme says which file defines a name you forgot to use.
+
+Older form: `use "geometry.ry"` (with quotes) gives its definitions directly,
+as `area(2, 3)`; prefer `use geometry`."#,
+            r#"MEHRERE DATEIEN
+
+  # geometry.ry
+  ## Area of a rectangle.
+  fn area(w h) = w * h
+  fn _check(x) = x >= 0          # privat: beginnt mit `_`
+
+  # main.ry
+  use geometry                    # die Datei geometry.ry, neben main.ry
+  print(geometry.area(2 3))      # 6
+
+`use geometry` gibt die Definitionen von geometry.ry über ihren Namen:
+`geometry.area`, `geometry.Circle(1)`, und in einem `match` `geometry.Circle(r)`.
+So siehst du immer, woher ein Name kommt. Eine Datei in einem Ordner:
+`use shapes/circle`, dann `circle.perimeter(1)`. Ein anderer Name: `use
+geometry as geo`, dann `geo.area(2, 3)`. Namen, die mit `_` beginnen, bleiben
+privat in ihrer Datei.
+
+Der Pfad ist relativ zum Ordner der Datei, die `use` enthält. Jede Datei läuft
+nur einmal. Rythme sagt dir, welche Datei einen Namen definiert, den du zu
+verwenden vergessen hast.
+
+Ältere Form: `use "geometry.ry"` (mit Anführungszeichen) gibt ihre Definitionen
+direkt, wie `area(2, 3)`; besser ist `use geometry`."#,
+        ),
+        (
+            r#"FILES AND THE SYSTEM
+
+Every function that touches the system returns a Result: Ok(...), or
+Err(message) with a message that says what went wrong.
+
+Files and folders (relative paths start in the current folder)
+  read_file("notes.txt")         # Ok("...") or Err("file not found: notes.txt")
+  write_file("out.txt" "hi")    # Ok(()), replaces the content
+  append_file("log.txt" "done\n")
+  file_exists("notes.txt")       # true or false
+  file_info("notes.txt")         # Ok({is_folder: false, size: 11}), in bytes
+  list_folder(".")               # Ok(["notes.txt", "photos"]), in order
+  create_folder("backup/2024")   # Ok(()), with the missing folders around it
+  delete_file("old.txt")         # Ok(()); never a folder
+
+Paths that work on Linux, macOS and Windows
+  join_path(["data" "notes.txt"])       # "data/notes.txt"
+  split_path("/home/ada/notes.txt")      # ["/", "home", "ada", "notes.txt"]
+  split_path("C:\Users\ada")             # ["C:\", "Users", "ada"]
+
+The command line: rythme tool.ry --verbose --name=Ada notes.txt
+  args()                         # ["--verbose", "--name=Ada", "notes.txt"]
+  options()                      # Ok({args: ["notes.txt"], verbose: true, name: "Ada"})
+  opts = unwrap(options())
+  name = unwrap_or(get(opts "name") "World")   # an option that may be missing
+  env("HOME")                    # Some("/home/ada") or None
+
+The standard input: rythme count.ry < names.txt
+  input("Name? ")                # one line
+  input_lines()                  # Ok(["Ada", "Alan"]): every line until the end
+
+Exit codes, for the scripts that run your program
+  0    everything went well (also at the end of the program)
+  1    an error in the program: syntax, check, while running, failed test
+  2    a wrong use of the command (unknown command or option)
+  101  an internal error of Rythme (a bug, to report)
+  exit(code)                     # stops now with this code, from 0 to 255
+
+In the playground, in the browser, there are no files and no input: these
+functions give Err("... is not available in the browser ...")."#,
+            r#"DATEIEN UND DAS SYSTEM
+
+Jede Funktion, die das System berührt, gibt ein Result zurück: Ok(...), oder
+Err(message) mit einer Meldung, die sagt, was schiefgegangen ist.
+
+Dateien und Ordner (relative Pfade beginnen im aktuellen Ordner)
+  read_file("notes.txt")         # Ok("...") oder Err("file not found: notes.txt")
+  write_file("out.txt" "hi")    # Ok(()), ersetzt den Inhalt
+  append_file("log.txt" "done\n")
+  file_exists("notes.txt")       # true oder false
+  file_info("notes.txt")         # Ok({is_folder: false, size: 11}), in Bytes
+  list_folder(".")               # Ok(["notes.txt", "photos"]), sortiert
+  create_folder("backup/2024")   # Ok(()), mit den fehlenden Ordnern drumherum
+  delete_file("old.txt")         # Ok(()); niemals ein Ordner
+
+Pfade, die unter Linux, macOS und Windows funktionieren
+  join_path(["data" "notes.txt"])       # "data/notes.txt"
+  split_path("/home/ada/notes.txt")      # ["/", "home", "ada", "notes.txt"]
+  split_path("C:\Users\ada")             # ["C:\", "Users", "ada"]
+
+Die Kommandozeile: rythme tool.ry --verbose --name=Ada notes.txt
+  args()                         # ["--verbose", "--name=Ada", "notes.txt"]
+  options()                      # Ok({args: ["notes.txt"], verbose: true, name: "Ada"})
+  opts = unwrap(options())
+  name = unwrap_or(get(opts "name") "World")   # eine Option, die fehlen kann
+  env("HOME")                    # Some("/home/ada") oder None
+
+Die Standardeingabe: rythme count.ry < names.txt
+  input("Name? ")                # eine Zeile
+  input_lines()                  # Ok(["Ada", "Alan"]): alle Zeilen bis zum Ende
+
+Exit-Codes, für die Skripte, die dein Programm ausführen
+  0    alles ist gut gegangen (auch am Ende des Programms)
+  1    ein Fehler im Programm: Syntax, Prüfung, beim Ausführen, fehlgeschlagener Test
+  2    eine falsche Verwendung des Befehls (unbekannter Befehl oder unbekannte Option)
+  101  ein interner Fehler von Rythme (ein Bug, bitte melden)
+  exit(code)                     # hält sofort mit diesem Code an, von 0 bis 255
+
+Im Playground, im Browser, gibt es keine Dateien und keine Eingabe: diese
+Funktionen liefern Err("... is not available in the browser ...")."#,
+        ),
+        (
+            r#"PROJECTS AND PACKAGES
+
+  rythme new hello        # a folder hello/ with a new project:
+                          #   rythme.toml, src/main.ry, src/greeting.ry,
+                          #   tests/greeting_test.ry, README.md, .gitignore
+  cd hello
+  rythme run              # runs the program: `entry` of rythme.toml
+  rythme test             # runs the files with tests of src/ and tests/
+  rythme check            # checks every file; also `rythme fmt`, `rythme doc`
+
+rythme.toml describes the project:
+
+  name = "hello"
+  version = "0.1.0"
+  entry = "src/main.ry"
+
+  [dependencies]
+  mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
+  tools = { path = "../tools" }
+
+A dependency comes from git, at a `tag` or a `commit`, or from a folder.
+`rythme install` downloads them (with git) and writes rythme.lock, the exact
+commit of each one: keep it with the project, so that everyone gets the
+same code. Then:
+
+  use mathlib/vectors       # the file src/vectors.ry of mathlib
+  use mathlib               # its program, the `entry` of its rythme.toml
+  use hello/greeting        # a file of the project itself, from tests/
+
+A file next to the one that contains `use` comes first. Packages from git
+are kept in ~/.rythme/packages (or RYTHME_HOME/packages). Finding packages
+by name and sharing yours: `rythme help packages`."#,
+            r#"PROJEKTE UND PAKETE
+
+  rythme new hello        # ein Ordner hello/ mit einem neuen Projekt:
+                          #   rythme.toml, src/main.ry, src/gruss.ry,
+                          #   tests/gruss_test.ry, README.md, .gitignore
+  cd hello
+  rythme run              # führt das Programm aus: `entry` aus rythme.toml
+  rythme test             # führt die Dateien mit Tests aus src/ und tests/ aus
+  rythme check            # prüft jede Datei; auch `rythme fmt`, `rythme doc`
+
+rythme.toml beschreibt das Projekt:
+
+  name = "hello"
+  version = "0.1.0"
+  entry = "src/main.ry"
+
+  [dependencies]
+  mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
+  tools = { path = "../tools" }
+
+Eine Abhängigkeit kommt aus git, bei einem `tag` oder einem `commit`, oder aus
+einem Ordner. `rythme install` lädt sie herunter (mit git) und schreibt
+rythme.lock, den genauen Commit jeder einzelnen: behalte die Datei im Projekt,
+damit alle denselben Code bekommen. Dann:
+
+  use mathlib/vectors       # die Datei src/vectors.ry von mathlib
+  use mathlib               # sein Programm, der `entry` seiner rythme.toml
+  use hello/gruss           # eine Datei des Projekts selbst, aus tests/
+
+Eine Datei neben der Datei, die `use` enthält, hat Vorrang. Pakete aus git
+werden in ~/.rythme/packages aufbewahrt (oder RYTHME_HOME/packages). Pakete nach
+Namen finden und deine teilen: `rythme help packages`."#,
+        ),
+        (
+            r#"DATES AND TIMES
+
+A date is a record: {year, month, day}, with hour, minute and second for a
+moment of the day, and offset (minutes ahead of UTC) when it is known.
+  today()                        # {year: 2026, month: 10, day: 18}
+  now()                          # {year: 2026, ..., hour: 14, minute: 5, second: 9, offset: 120}
+  birthday = {year: 1815 month: 12 day: 10}
+  birthday.year                  # 1815
+
+Text and back, in the ISO 8601 form
+  parse_date("2024-02-29")       # Ok({year: 2024, month: 2, day: 29})
+  parse_date("2024-02-30")       # Err("... February 2024 ...")
+  parse_date("2024-02-29T13:05:00+01:00")    # with a time and an offset
+  format_date({year: 2024 month: 2 day: 29 hour: 9})   # "2024-02-29T09:00:00"
+
+Calendar arithmetic (leap years and month lengths included)
+  add_days({year: 2024 month: 2 day: 28} 1)     # {year: 2024, month: 2, day: 29}
+  add_seconds(now() 3600)       # in one hour
+  days_between(today() {year: 2027 month: 1 day: 1})   # days left
+  seconds_between(a b)          # negative when b is before a
+  day_of_week(today())           # 1 = Monday ... 7 = Sunday
+  days_in_month(2023 2)         # 28
+  is_leap_year(2000)             # true
+  is_date({year: 2023 month: 2 day: 29})   # false
+
+A date that does not exist stops the functions with E023, which says why.
+The local offset comes from the system (UTC when it does not tell); time()
+gives seconds since 1970 as a Float, to measure durations."#,
+            r#"DATUM UND UHRZEIT
+
+Ein Datum ist ein Record: {year, month, day}, mit hour, minute und second für
+einen Zeitpunkt des Tages, und offset (Minuten vor UTC), wenn er bekannt ist.
+  today()                        # {year: 2026, month: 10, day: 18}
+  now()                          # {year: 2026, ..., hour: 14, minute: 5, second: 9, offset: 120}
+  birthday = {year: 1815 month: 12 day: 10}
+  birthday.year                  # 1815
+
+Als Text und zurück, im Format ISO 8601
+  parse_date("2024-02-29")       # Ok({year: 2024, month: 2, day: 29})
+  parse_date("2024-02-30")       # Err("... Februar 2024 ...")
+  parse_date("2024-02-29T13:05:00+01:00")    # mit Uhrzeit und Versatz
+  format_date({year: 2024 month: 2 day: 29 hour: 9})   # "2024-02-29T09:00:00"
+
+Kalenderrechnung (Schaltjahre und Monatslängen inklusive)
+  add_days({year: 2024 month: 2 day: 28} 1)     # {year: 2024, month: 2, day: 29}
+  add_seconds(now() 3600)       # in einer Stunde
+  days_between(today() {year: 2027 month: 1 day: 1})   # verbleibende Tage
+  seconds_between(a b)          # negativ, wenn b vor a liegt
+  day_of_week(today())           # 1 = Montag ... 7 = Sonntag
+  days_in_month(2023 2)         # 28
+  is_leap_year(2000)             # true
+  is_date({year: 2023 month: 2 day: 29})   # false
+
+Ein Datum, das es nicht gibt, hält die Funktionen mit E023 an, der sagt, warum.
+Der lokale Versatz kommt vom System (UTC, wenn es nichts sagt); time() liefert
+die Sekunden seit 1970 als Float, um Dauern zu messen."#,
+        ),
+        (
+            r#"REGEX: SEARCHING WITH A PATTERN
+
+A regex (regular expression) describes pieces of text: "[0-9]+" means "one
+digit or more". Rythme reads the usual regexes, and a search never takes
+more than (length of the text) × (size of the regex).
+
+  matches("2024" "[0-9]+")                  # true: the WHOLE text matches
+  find_first("tel: 06 12" "[0-9]+")         # Some("06"): the first piece
+  find_all("3 cats, 12 dogs" "[0-9]+")      # ["3", "12"]
+  split_by("a, b;c" "[,;] *")               # ["a", "b", "c"]
+  replace_all("a cat" "\\b\\w" upper)      # "A Cat" (a function for each piece)
+  replace_all("29/02/2024" "(\\d+)/(\\d+)/(\\d+)" "$3-$2-$1")   # "2024-02-29"
+  captures("2024-02" "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
+  named_captures("2024-02" "(?<year>[0-9]+)-(?<month>[0-9]+)")
+                                             # Some({year: "2024", month: "02"})
+
+What a regex can say
+  abc          these characters, in this order
+  .            any character but a line break
+  [abc]        one of these characters; [a-z] one from a to z; [^0-9] any other
+  \d \w \s     a digit (0-9); a letter (accents included), a digit or _; a space
+  \D \W \S     anything else
+  \b           the edge of a word
+  ^  $         the start and the end of the text
+  x|y          x or y
+  (...)        a group: to repeat it, or to capture its text ($1, `captures`)
+  (?:...)      a group that captures nothing; (?<name>...) a group with a name
+  x*  x+  x?   x zero times or more, once or more, zero or one time (the longest)
+  x{3}  x{2,5}  x{2,}    3 times, 2 to 5 times, 2 times or more
+  x*?  x+?     the shortest instead of the longest
+  (?i)         at the start: uppercase and lowercase letters count as equal
+
+Writing a regex in a Rythme text
+  A backslash is written twice: "\\d+" is the regex \d+. Braces are written
+  \{ and \}: "[0-9]\{4\}" is the regex [0-9]{4}. For a sign itself, put it in
+  brackets: "[.]" is a dot, "[(]" a parenthesis, "[$]" a dollar.
+
+A mistake in a regex stops the program with E026, which shows where it is;
+when the regex is written in the code, `rythme check` finds it before."#,
+            r#"REGEX: MIT EINEM MUSTER SUCHEN
+
+Ein regulärer Ausdruck (Regex) beschreibt Textstücke: "[0-9]+" bedeutet „eine
+Ziffer oder mehr“. Rythme liest die üblichen regulären Ausdrücke, und eine Suche
+dauert nie länger als (Länge des Textes) × (Größe des Ausdrucks).
+
+  matches("2024" "[0-9]+")                  # true: der GANZE Text passt
+  find_first("tel: 06 12" "[0-9]+")         # Some("06"): das erste Stück
+  find_all("3 cats, 12 dogs" "[0-9]+")      # ["3", "12"]
+  split_by("a, b;c" "[,;] *")               # ["a", "b", "c"]
+  replace_all("a cat" "\\b\\w" upper)      # "A Cat" (eine Funktion für jedes Stück)
+  replace_all("29/02/2024" "(\\d+)/(\\d+)/(\\d+)" "$3-$2-$1")   # "2024-02-29"
+  captures("2024-02" "([0-9]+)-([0-9]+)")   # Some(["2024-02", "2024", "02"])
+  named_captures("2024-02" "(?<year>[0-9]+)-(?<month>[0-9]+)")
+                                             # Some({year: "2024", month: "02"})
+
+Was ein regulärer Ausdruck sagen kann
+  abc          diese Zeichen, in dieser Reihenfolge
+  .            jedes Zeichen außer einem Zeilenumbruch
+  [abc]        eines dieser Zeichen; [a-z] eines von a bis z; [^0-9] jedes andere
+  \d \w \s     eine Ziffer (0-9); ein Buchstabe (mit Akzenten), eine Ziffer oder _; ein Leerzeichen
+  \D \W \S     alles andere
+  \b           der Rand eines Wortes
+  ^  $         der Anfang und das Ende des Textes
+  x|y          x oder y
+  (...)        eine Gruppe: um sie zu wiederholen oder ihren Text zu erfassen ($1, `captures`)
+  (?:...)      eine Gruppe, die nichts erfasst; (?<name>...) eine Gruppe mit Namen
+  x*  x+  x?   x null Mal oder öfter, einmal oder öfter, null oder einmal (das Längste)
+  x{3}  x{2,5}  x{2,}    3 Mal, 2 bis 5 Mal, 2 Mal oder öfter
+  x*?  x+?     das Kürzeste statt des Längsten
+  (?i)         am Anfang: Groß- und Kleinbuchstaben gelten als gleich
+
+Einen regulären Ausdruck in einem Rythme-Text schreiben
+  Ein Backslash wird doppelt geschrieben: "\\d+" ist der Ausdruck \d+. Geschweifte
+  Klammern werden \{ und \} geschrieben: "[0-9]\{4\}" ist der Ausdruck [0-9]{4}.
+  Für ein Zeichen selbst setze es in eckige Klammern: "[.]" ist ein Punkt, "[(]"
+  eine Klammer, "[$]" ein Dollar.
+
+Ein Fehler in einem regulären Ausdruck hält das Programm mit E026 an, der zeigt,
+wo er ist; wenn der Ausdruck im Code steht, findet `rythme check` ihn vorher."#,
+        ),
+        (
+            r#"THE INTERACTIVE MODE
+
+Run `rythme` without a file. Type an expression and see its value:
+  ry> 1 + 2
+  3
+Definitions are kept from one line to the next. If a line is not finished
+(open bracket, block without `end`...), it continues on the next line.
+
+Commands
+  :help           this help              :quit          leave (or Ctrl-D)
+  :doc map        help on a name         :load f.ry     load a file
+  :reset          forget everything      :lang fr       change the language (en, fr, es, de, pt, zh, it, ja)
+  :learn          guided tour            :explain E003  explain an error
+  :steps fib(4)   show the calculation step by step
+The Tab key completes names."#,
+            r#"DER INTERAKTIVE MODUS
+
+Starte `rythme` ohne Datei. Tippe einen Ausdruck und sieh seinen Wert:
+  ry> 1 + 2
+  3
+Definitionen bleiben von einer Zeile zur nächsten erhalten. Wenn eine Zeile
+nicht fertig ist (offene Klammer, Block ohne `end`...), geht sie in der
+nächsten Zeile weiter.
+
+Befehle
+  :help           diese Hilfe            :quit          beenden (oder Strg-D)
+  :doc map        Hilfe zu einem Namen   :load f.ry     eine Datei laden
+  :reset          alles vergessen        :lang de       die Sprache ändern (en, fr, es, de, pt, zh, it, ja)
+  :learn          geführte Tour          :explain E003  einen Fehler erklären
+  :steps fib(4)   die Rechnung Schritt für Schritt zeigen
+Die Tab-Taste vervollständigt Namen."#,
+        ),
+        (
+            r#"FORMATTING: rythme fmt
+
+`rythme fmt` gives code the official layout of Rythme: every program looks
+the same, and nobody has to argue about spaces.
+
+  rythme fmt hello.ry            format a file (it is rewritten)
+  rythme fmt .                   every .ry file of a folder and its subfolders
+  rythme fmt --check .           only check: lists the files to format and
+                                 fails (exit code 1) if there are any, for CI
+  rythme fmt - < hello.ry        reads the code, writes the result
+
+The style
+  - 2 spaces per level of indentation
+  - spaces around operators: x = a + b * 2   xs |> map(f)   n -> n * 2
+  - none inside brackets or around ..: f(x)   [1 2]   {name: "Ada"}   1..10
+  - a pipeline written on several lines: one step per line
+      total = prices
+        |> filter(fn(p) = p > 10)
+        |> sum
+  - a type written on several lines: one variant per line
+      type Shape =
+        | Circle(radius)
+        | Rect(width height)
+  - no commas between elements, as in REBOL: [1 2]   f(a b)   print x y;
+    one stays where the next element would continue the one before: [x, -1]
+  - a block written on one line stays on one line:
+      xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+    on several lines, its statements go one level deeper than `do`
+  - one statement per line (no `;`), and `end` on its own line
+  - a blank line around a definition written on several lines; never two
+    blank lines in a row
+  - every comment is kept; the comments at the end of consecutive lines
+    are aligned
+
+Line breaks are kept where the language allows a choice, and long lines are
+kept as written. The formatter never changes what a program does: a file with
+a syntax error is left as it is, and the error is shown."#,
+            r#"FORMATIEREN: rythme fmt
+
+`rythme fmt` gibt dem Code das offizielle Layout von Rythme: jedes Programm
+sieht gleich aus, und niemand muss über Leerzeichen streiten.
+
+  rythme fmt hello.ry            eine Datei formatieren (sie wird neu geschrieben)
+  rythme fmt .                   alle .ry-Dateien eines Ordners und seiner Unterordner
+  rythme fmt --check .           nur prüfen: listet die zu formatierenden Dateien und
+                                 schlägt fehl (Exit-Code 1), wenn es welche gibt, für CI
+  rythme fmt - < hello.ry        liest den Code, schreibt das Ergebnis
+
+Der Stil
+  - 2 Leerzeichen pro Einrückungsebene
+  - Leerzeichen um Operatoren: x = a + b * 2   xs |> map(f)   n -> n * 2
+  - keine in Klammern oder um ..: f(x)   [1 2]   {name: "Ada"}   1..10
+  - eine Pipeline über mehrere Zeilen: ein Schritt pro Zeile
+      total = prices
+        |> filter(fn(p) = p > 10)
+        |> sum
+  - ein Typ über mehrere Zeilen: eine Variante pro Zeile
+      type Shape =
+        | Circle(radius)
+        | Rect(width height)
+  - keine Kommas zwischen den Elementen, wie in REBOL: [1 2]   f(a b)   print x y;
+    eines bleibt, wo das nächste Element das vorige fortsetzen würde: [x, -1]
+  - ein Block in einer Zeile bleibt in einer Zeile:
+      xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+    über mehrere Zeilen stehen seine Anweisungen eine Ebene tiefer als `do`
+  - eine Anweisung pro Zeile (kein `;`), und `end` in einer eigenen Zeile
+  - eine Leerzeile um eine Definition über mehrere Zeilen; nie zwei
+    Leerzeilen hintereinander
+  - jeder Kommentar bleibt erhalten; die Kommentare am Ende aufeinanderfolgender
+    Zeilen werden ausgerichtet
+
+Zeilenumbrüche bleiben dort, wo die Sprache eine Wahl lässt, und lange Zeilen
+bleiben, wie sie geschrieben sind. Der Formatierer ändert nie, was ein Programm
+tut: eine Datei mit einem Syntaxfehler bleibt, wie sie ist, und der Fehler wird
+angezeigt."#,
+        ),
+        (
+            r#"DOCUMENTATION: rythme doc
+
+`rythme doc` writes the documentation of your code from its `##` comments,
+its types and the definitions of its functions.
+
+  rythme doc geometry.ry         Markdown on the screen
+  rythme doc .                   every .ry file of a folder and its subfolders
+  rythme doc --html geometry.ry  one web page, which needs nothing else
+  rythme doc . --out doc.html    written to a file (.html gives the web page)
+
+Write a `##` comment just above what it documents:
+
+  ## Shapes and their areas.      <- at the top, followed by a blank line:
+                                     it describes the whole file
+  ## A shape to draw.
+  type Shape = Circle(radius) | Rect(width height)
+
+  ## The area of a shape. See `len` and `area`.
+  fn area(Circle(r)) = pi * r * r
+  fn area(Rect(w h)) = w * h
+
+What is written
+  - for each file: its description, the files it uses (documented too),
+    its types, its functions (the first line of every definition), its
+    values and the names of its tests
+  - names starting with `_` are left out: they stay inside their file
+  - a name between backticks in a comment, like `area` or `len(list)`,
+    becomes a link to its documentation; after `use geometry`,
+    `geometry.area` leads to `area` in geometry.ry; the built-in functions
+    named this way are explained at the end
+  - the titles are in the language of the messages (`--lang fr`)
+
+In a comment, a blank `##` line starts a new paragraph, and lines starting
+with `- ` make a list."#,
+            r#"DOKUMENTATION: rythme doc
+
+`rythme doc` schreibt die Dokumentation deines Codes aus seinen `##`-Kommentaren,
+seinen Typen und den Definitionen seiner Funktionen.
+
+  rythme doc geometry.ry         Markdown auf dem Bildschirm
+  rythme doc .                   alle .ry-Dateien eines Ordners und seiner Unterordner
+  rythme doc --html geometry.ry  eine Webseite, die nichts anderes braucht
+  rythme doc . --out doc.html    in eine Datei geschrieben (.html ergibt die Webseite)
+
+Schreib einen `##`-Kommentar direkt über das, was er dokumentiert:
+
+  ## Shapes and their areas.      <- ganz oben, gefolgt von einer Leerzeile:
+                                     er beschreibt die ganze Datei
+  ## A shape to draw.
+  type Shape = Circle(radius) | Rect(width height)
+
+  ## The area of a shape. See `len` and `area`.
+  fn area(Circle(r)) = pi * r * r
+  fn area(Rect(w h)) = w * h
+
+Was geschrieben wird
+  - für jede Datei: ihre Beschreibung, die Dateien, die sie verwendet (ebenfalls
+    dokumentiert), ihre Typen, ihre Funktionen (die erste Zeile jeder
+    Definition), ihre Werte und die Namen ihrer Tests
+  - Namen, die mit `_` beginnen, werden ausgelassen: sie bleiben in ihrer Datei
+  - ein Name in Backticks in einem Kommentar, wie `area` oder `len(list)`,
+    wird ein Link zu seiner Dokumentation; nach `use geometry` führt
+    `geometry.area` zu `area` in geometry.ry; die so genannten eingebauten
+    Funktionen werden am Ende erklärt
+  - die Überschriften sind in der Sprache der Meldungen (`--lang de`)
+
+In einem Kommentar beginnt eine leere `##`-Zeile einen neuen Absatz, und Zeilen,
+die mit `- ` beginnen, bilden eine Liste."#,
+        ),
+        (
+            r#"STEP BY STEP: rythme steps
+
+`rythme steps` shows how a program computes its values, one step at a time:
+each call is replaced by the body of its function, with the values of the
+arguments in place, until only the result remains.
+
+  rythme steps fib.ry              each definition and expression of the file
+  rythme steps fib.ry "fib(4)"     an expression, after the definitions of the file
+  rythme steps fib.ry --max 50     show at most 50 steps of each expression
+  rythme steps fib.ry --width 80   cut the lines longer than 80 characters
+
+With  fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
+
+  fib(3)
+    → fib(2) + fib(1)
+    → fib(1) + fib(0) + fib(1)
+    → 1 + fib(0) + fib(1)
+    → 1 + 0 + fib(1)
+    → 1 + fib(1)
+    → 1 + 1
+    → 2
+
+A step is one call or one operation. The body of a called function is shown
+already simplified as far as it can be without calling another function.
+Built-in functions (and the functions of other files) give their result in
+one step. What the program prints appears between the steps. After the
+steps shown (200 by default), the rest is computed without being shown.
+
+In the interactive mode: :steps fib(4). In the playground: the Steps button.
+In French: rythme etapes."#,
+            r#"SCHRITT FÜR SCHRITT: rythme steps
+
+`rythme steps` zeigt, wie ein Programm seine Werte berechnet, einen Schritt nach
+dem anderen: jeder Aufruf wird durch den Rumpf seiner Funktion ersetzt, mit den
+Werten der Argumente an ihrer Stelle, bis nur noch das Ergebnis übrig ist.
+
+  rythme steps fib.ry              jede Definition und jeder Ausdruck der Datei
+  rythme steps fib.ry "fib(4)"     ein Ausdruck, nach den Definitionen der Datei
+  rythme steps fib.ry --max 50     höchstens 50 Schritte jedes Ausdrucks zeigen
+  rythme steps fib.ry --width 80   Zeilen kürzen, die länger als 80 Zeichen sind
+
+Mit  fn fib(n) = if n < 2 then n else fib(n - 1) + fib(n - 2)
+
+  fib(3)
+    → fib(2) + fib(1)
+    → fib(1) + fib(0) + fib(1)
+    → 1 + fib(0) + fib(1)
+    → 1 + 0 + fib(1)
+    → 1 + fib(1)
+    → 1 + 1
+    → 2
+
+Ein Schritt ist ein Aufruf oder eine Operation. Der Rumpf einer aufgerufenen
+Funktion wird schon so weit vereinfacht gezeigt, wie es geht, ohne eine andere
+Funktion aufzurufen. Eingebaute Funktionen (und die Funktionen anderer Dateien)
+liefern ihr Ergebnis in einem Schritt. Was das Programm ausgibt, erscheint
+zwischen den Schritten. Nach den gezeigten Schritten (standardmäßig 200) wird
+der Rest berechnet, ohne gezeigt zu werden.
+
+Im interaktiven Modus: :steps fib(4). Im Playground: der Knopf Steps.
+Auf Französisch: rythme etapes."#,
+        ),
+        (
+            r#"RYTHME IN YOUR EDITOR
+
+Rythme helps inside the editor too: problems as you type, the documentation
+of a function under the mouse (with the signature inferred from its code,
+like `fn area(side: Int|Float) -> Int|Float`), completion, the parameters of
+a call, go to definition, references, rename, quick fixes for typos,
+formatting like `rythme fmt`, the types of the names when they are certain
+(and the signatures of the functions), colors that follow what each name is,
+"Run" and "Run test" above the code, the names of the whole workspace,
+folding. This is the language server, that the editor
+starts by itself:
+  rythme lsp
+
+VS Code
+  the extension in editors/vscode: colors, snippets and the language server.
+  Settings: rythme.path (the program), rythme.language (en, fr, es, de, pt, zh, it, ja or auto).
+
+Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
+  every editor that speaks the Language Server Protocol: tell it to start
+  `rythme lsp` for .ry files. Ready-made configurations: editors/README.md
+  ("Run" and "Run test" name the commands rythme.runFile, rythme.testFile and
+  rythme.runTest, that the editor carries out: see editors/README.md)
+
+Zed
+  the extension in editors/zed: colors and the language server.
+
+Colors in Neovim, Helix and Zed
+  the Tree-sitter grammar in editors/tree-sitter-rythme (see editors/README.md).
+
+The language of the messages follows the editor, unless `--lang` (en, fr, es, de, pt, zh, it, ja) or
+RYTHME_LANG chooses it: rythme --lang fr lsp"#,
+            r#"RYTHME IN DEINEM EDITOR
+
+Rythme hilft auch im Editor: Probleme beim Tippen, die Dokumentation einer
+Funktion unter der Maus (mit der aus ihrem Code abgeleiteten Signatur, wie
+`fn area(side: Int|Float) -> Int|Float`), Vervollständigung, die Parameter
+eines Aufrufs, Gehe zu Definition, Verweise, Umbenennen, schnelle Korrekturen
+für Tippfehler, Formatieren wie `rythme fmt`, die Typen der Namen, wenn sie
+sicher sind (und die Signaturen der Funktionen), Farben, die zeigen, was jeder
+Name ist, "Run" und "Run test" über dem Code, die Namen des ganzen
+Arbeitsbereichs, Einklappen. Das ist der Sprachserver, den der Editor selbst
+startet:
+  rythme lsp
+
+VS Code
+  die Erweiterung in editors/vscode: Farben, Snippets und der Sprachserver.
+  Einstellungen: rythme.path (das Programm), rythme.language (en, fr, es, de, pt, zh, it, ja oder auto).
+
+Neovim, Helix, Zed, Emacs, Sublime Text, Kate...
+  jeder Editor, der das Language Server Protocol spricht: sag ihm, dass er
+  `rythme lsp` für .ry-Dateien starten soll. Fertige Konfigurationen: editors/README.md
+  ("Run" und "Run test" nennen die Befehle rythme.runFile, rythme.testFile und
+  rythme.runTest, die der Editor ausführt: siehe editors/README.md)
+
+Zed
+  die Erweiterung in editors/zed: Farben und der Sprachserver.
+
+Farben in Neovim, Helix und Zed
+  die Tree-sitter-Grammatik in editors/tree-sitter-rythme (siehe editors/README.md).
+
+Die Sprache der Meldungen folgt dem Editor, außer wenn `--lang` (en, fr, es, de, pt, zh, it, ja)
+oder RYTHME_LANG sie festlegt: rythme --lang de lsp"#,
+        ),
+        (
+            r#"COMING FROM RUBY
+
+Rythme reads like Ruby, but its values never change: no mutation, no nil,
+no exceptions. What you know from Ruby mostly works:
+
+  names = ["Ada" "Grace" "Alan"]
+  names.each do |name|
+    puts "Hello, #{name}!"
+  end
+
+  [1, 2, 3, 4, 5, 6]
+    .select(even?)
+    .map { |x| x * x }
+    .sum                         # 56
+
+  fn adult?(person) = person.age >= 18
+  kind = unless adult?(ada) then :minor else :adult
+
+The same as in Ruby
+  calls           puts "hi"   print x, y   assert_eq total, 42
+                  (at the start of a statement or a result; see below)
+  blocks          xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+                  a block is a function: the same as fn(x) = x * 2
+  method calls    xs.sum   name.upcase   xs.first(2)   xs.include?(3)
+  names with ?    even?   empty?   include?(x)   fn adult?(p) = ...
+  symbols         :ok   :error (compared with ==, used in match)
+  texts           "Hello #{name}" (or "Hello {name}"); "\#{" writes #{
+  unless          unless cond then a else b
+  Ruby names      puts to_s to_i to_f length size upcase downcase strip
+                  select reject reduce inject uniq each_slice each_cons
+                  each_with_index include? empty? even? odd? any? all?
+                  start_with? end_with? key? lstrip rstrip casecmp?
+                  (see rythme help builtins)
+
+What is different
+  parentheses     a call inside an expression needs them: x = len(xs),
+                  not x = len xs
+  no mutation     no x += 1: give the new value a new name, total2 = total + 1
+  no nil          a missing value is None, a present one Some(x)
+  no exceptions   errors are values, Ok(x) or Err(message), passed on with ?
+  if and unless   always have an else: they give a value; no `return`, the
+                  last line of a function is its result
+  no classes      records {name: "Ada"} and types: type Shape = Circle(r) | Square(s)
+  no loops        each, map, select, reduce, or a function that calls itself
+  case/when       match value ... end, one case per line: pattern -> result
+  hashes          dict([[:ada, 36]]) (keys of any kind, symbols too), or
+                  records {name: "Ada", age: 36}
+
+Calls without parentheses
+  A statement that starts with a name, followed on its line by the start of
+  a value (a number, a text, a symbol, a name, a constructor, not, if,
+  match, fn), is a call: print x, y is print(x, y). A do block after the
+  arguments is given to the call: each xs do |x| ... end. Like Ruby, a [ or
+  a - after a space, without a space after the -, starts the arguments too
+  (puts [1, 2], puts -1), except when the code gives the name a value (with
+  =, as a parameter or in a pattern): then x -1 is x - 1 and xs [0] is
+  xs[0], as before. `rythme fmt` writes those as x - 1 and xs[0].
+
+  A result may start the same way: a branch of if or unless, a case of
+  match, the body after the = of a function or a test. Its arguments end
+  at else, end, }, ) or the end of the line:
+
+  fn greet(name) = puts "Hello, #{name}!"
+  fn check(ok) = if ok then puts "yes" else puts "no"
+  match name
+    "Dr " + rest -> puts "doctor", rest
+    _ -> puts name
+  end
+  xs.each { |x| puts x }
+
+How x.name works
+  x.name reads the field `name` of a record; when x has no such field, it
+  calls the function `name` with x: xs.sum is sum(xs), xs.first(2) is
+  first(xs, 2). A chain may go on over several lines, each starting with `.`.
+
+When ? is part of a name
+  even?(4), xs.include?(3), fn adult?(p): right after a name, before `(`.
+  even? without `(`: when such a function exists (built-in, or defined with
+  fn in the file). Otherwise value? is the ? that stops on None or Err, and
+  (value)? always is."#,
+            r#"VON RUBY KOMMEND
+
+Rythme liest sich wie Ruby, aber seine Werte ändern sich nie: keine Mutation,
+kein nil, keine Exceptions. Was du aus Ruby kennst, funktioniert meistens:
+
+  names = ["Ada" "Grace" "Alan"]
+  names.each do |name|
+    puts "Hello, #{name}!"
+  end
+
+  [1, 2, 3, 4, 5, 6]
+    .select(even?)
+    .map { |x| x * x }
+    .sum                         # 56
+
+  fn adult?(person) = person.age >= 18
+  kind = unless adult?(ada) then :minor else :adult
+
+Dasselbe wie in Ruby
+  Aufrufe         puts "hi"   print x, y   assert_eq total, 42
+                  (am Anfang einer Anweisung oder eines Ergebnisses; siehe unten)
+  Blöcke          xs.map do |x| x * 2 end      xs.map { |x| x * 2 }
+                  ein Block ist eine Funktion: dasselbe wie fn(x) = x * 2
+  Methoden        xs.sum   name.upcase   xs.first(2)   xs.include?(3)
+  Namen mit ?     even?   empty?   include?(x)   fn adult?(p) = ...
+  Symbole         :ok   :error (mit == verglichen, in match verwendet)
+  Texte           "Hello #{name}" (oder "Hello {name}"); "\#{" schreibt #{
+  unless          unless cond then a else b
+  Ruby-Namen      puts to_s to_i to_f length size upcase downcase strip
+                  select reject reduce inject uniq each_slice each_cons
+                  each_with_index include? empty? even? odd? any? all?
+                  start_with? end_with? key? lstrip rstrip casecmp?
+                  (siehe rythme help builtins)
+
+Was anders ist
+  Klammern        ein Aufruf innerhalb eines Ausdrucks braucht sie: x = len(xs),
+                  nicht x = len xs
+  ohne Mutation   kein x += 1: gib dem neuen Wert einen neuen Namen, total2 = total + 1
+  ohne nil        ein fehlender Wert ist None, ein vorhandener Some(x)
+  ohne Ausnahmen  Fehler sind Werte, Ok(x) oder Err(message), weitergegeben mit ?
+  if und unless   haben immer ein else: sie liefern einen Wert; kein `return`, die
+                  letzte Zeile einer Funktion ist ihr Ergebnis
+  ohne Klassen    Records {name: "Ada"} und Typen: type Shape = Circle(r) | Square(s)
+  ohne Schleifen  each, map, select, reduce, oder eine Funktion, die sich selbst aufruft
+  case/when       match value ... end, ein Fall pro Zeile: Muster -> Ergebnis
+  Hashes          dict([[:ada, 36]]) (Schlüssel jeder Art, auch Symbole), oder
+                  Records {name: "Ada", age: 36}
+
+Aufrufe ohne Klammern
+  Eine Anweisung, die mit einem Namen beginnt, gefolgt in ihrer Zeile vom Anfang
+  eines Werts (eine Zahl, ein Text, ein Symbol, ein Name, ein Konstruktor, not,
+  if, match, fn), ist ein Aufruf: print x, y ist print(x, y). Ein do-Block nach
+  den Argumenten wird dem Aufruf übergeben: each xs do |x| ... end. Wie in Ruby
+  beginnen auch ein [ oder ein - nach einem Leerzeichen, ohne Leerzeichen nach
+  dem -, die Argumente (puts [1, 2], puts -1), außer wenn der Code dem Namen einen
+  Wert gibt (mit =, als Parameter oder in einem Muster): dann ist x -1 gleich
+  x - 1 und xs [0] gleich xs[0], wie bisher. `rythme fmt` schreibt diese als
+  x - 1 und xs[0].
+
+  Ein Ergebnis kann genauso beginnen: ein Zweig von if oder unless, ein Fall von
+  match, der Rumpf nach dem = einer Funktion oder eines Tests. Seine Argumente
+  enden bei else, end, }, ) oder am Zeilenende:
+
+  fn greet(name) = puts "Hello, #{name}!"
+  fn check(ok) = if ok then puts "yes" else puts "no"
+  match name
+    "Dr " + rest -> puts "doctor", rest
+    _ -> puts name
+  end
+  xs.each { |x| puts x }
+
+Wie x.name funktioniert
+  x.name liest das Feld `name` eines Records; wenn x kein solches Feld hat, ruft
+  es die Funktion `name` mit x auf: xs.sum ist sum(xs), xs.first(2) ist
+  first(xs, 2). Eine Kette kann über mehrere Zeilen gehen, jede beginnt mit `.`.
+
+Wann ? Teil eines Namens ist
+  even?(4), xs.include?(3), fn adult?(p): direkt nach einem Namen, vor `(`.
+  even? ohne `(`: wenn es eine solche Funktion gibt (eingebaut, oder mit fn in
+  der Datei definiert). Sonst ist value? das ?, das bei None oder Err anhält,
+  und (value)? ist es immer."#,
+        ),
+        (
+            r#"COMING FROM JAVASCRIPT
+
+Rythme looks like modern JavaScript without its traps: every value is a
+const that never changes (arrays and objects too), there is no null, no
+undefined and no exceptions, and == never converts. What you write every
+day has a short equivalent:
+
+  names = ["Ada" "Grace" "Alan"]
+  names.each(fn(n) = print("Hi {n}!"))
+
+  [3, 1, 2]
+    .filter(fn(x) = x > 1)
+    .map(fn(x) = x * 10)
+    .sort()                      # [20, 30]
+
+  person = {name: "Ada" langs: ["fr"]}
+  older = {..person age: 36}    # {...person, age: 36}
+
+The language
+  const x = 1                    x = 1 (a name never changes)
+  x => x * 2                     fn(x) = x * 2
+  `Hi ${name}!`                  "Hi {name}!"
+  a === b                        a == b (never converts: 1 == "1" is false)
+  c ? a : b, if/else             if c then a else b (always with else)
+  switch                         match value ... end, one case per line
+  null, undefined                None, or Some(x)
+  try/catch, throw               Ok(x) or Err(message), and ? to pass it on
+  async function, await          async fn, await (tasks run on other cores)
+  Promise.all(ps)                await_all(tasks)
+  [...xs, 3], {...a, b: 2}       [..xs, 3], {..a, b: 2}
+  a?.b?.c                        dig(a, ["b", "c"])
+  import { f } from "./geo.js"   use geo, then geo.f(x)
+  class, new, this               records {name: "Ada"} and types:
+                                 type Shape = Circle(r) | Square(s)
+  for, while                     each, map, filter, fold, or recursion
+  x += 1, push, pop, sort()      new values: total2 = total + 1, push(xs, x)
+
+Methods are functions
+  xs.map(f) is map(xs, f), and both are written in Rythme: x.name(...)
+  calls the function `name` with x first. Its names are in snake_case, and a
+  JavaScript name gives the Rythme one: findLast says "did you mean
+  `find_last`?". The most used:
+
+  Math.floor, ceil, round, trunc floor, ceil, round, int
+  Math.max(...xs), Math.min      max(xs), min(xs)
+  Math.random()                  random(), random(1, 6), random_seed(n)
+  Math.atan2(y, x), Math.log2(x) atan(y, x), log(x, 2)
+  parseInt, parseFloat           parse_int, parse_float (a Result, never NaN)
+  n.toFixed(2)                   text(n, 2)
+  s.length, a.length             len(s), len(a)
+  s.toUpperCase(), s.trim()      upper(s), trim(s)
+  s.includes(x), startsWith      contains, starts_with
+  s.padStart(3, "0")             pad_left(s, 3, "0")
+  s.replace, s.replaceAll        replace_first, replace
+  s.split(","), a.join(", ")     split(s, ","), join(a, ", ")
+  a.find, findIndex, findLast    find, find_index, find_last (an Option)
+  a.some(f), a.every(f)          any, all
+  a.reduce(f, init)              fold(a, init, f)
+  a.flat(), a.flatMap(f)         flatten, flat_map
+  a.toSorted(), a.toReversed()   sort, reverse
+  a.at(-1)                       get(a, -1) (an Option), last(a)
+  Object.keys, values, entries   keys, values, entries
+  new Map(), get, set            dict(), get(d, k), put(d, k, v)
+  new Set(a), s.has(x)           set(a), has(s, x)
+  JSON.parse, JSON.stringify     parse_json (a Result), to_json
+  new URL(s)                     parse_url(s) (a Result)
+  new URLSearchParams(s)         parse_query(s), format_query(record)
+  crypto.randomUUID()            uuid()
+  setTimeout                     sleep(seconds)
+  fetch(url)                     http_get(url), http_post(url, body)
+  console.log, console.error     print, print_error
+
+The whole standard library of JavaScript, with what is absent on purpose
+and why: docs/javascript.md in the sources of Rythme; on its site, the page
+of each function says what JavaScript writes for it."#,
+            r#"VON JAVASCRIPT KOMMEND
+
+Rythme sieht aus wie modernes JavaScript ohne seine Fallen: jeder Wert ist
+eine Konstante, die sich nie ändert (Arrays und Objekte auch), es gibt kein
+null, kein undefined und keine Exceptions, und == wandelt nie um. Was du
+jeden Tag schreibst, hat eine kurze Entsprechung:
+
+  names = ["Ada" "Grace" "Alan"]
+  names.each(fn(n) = print("Hi {n}!"))
+
+  [3, 1, 2]
+    .filter(fn(x) = x > 1)
+    .map(fn(x) = x * 10)
+    .sort()                      # [20, 30]
+
+  person = {name: "Ada" langs: ["fr"]}
+  older = {..person age: 36}    # {...person, age: 36}
+
+Die Sprache
+  const x = 1                    x = 1 (ein Name ändert sich nie)
+  x => x * 2                     fn(x) = x * 2
+  `Hi ${name}!`                  "Hi {name}!"
+  a === b                        a == b (wandelt nie um: 1 == "1" ist false)
+  c ? a : b, if/else             if c then a else b (immer mit else)
+  switch                         match value ... end, ein Fall pro Zeile
+  null, undefined                None, oder Some(x)
+  try/catch, throw               Ok(x) oder Err(message), und ? gibt es weiter
+  async function, await          async fn, await (Tasks auf anderen Kernen)
+  Promise.all(ps)                await_all(tasks)
+  [...xs, 3], {...a, b: 2}       [..xs, 3], {..a, b: 2}
+  a?.b?.c                        dig(a, ["b", "c"])
+  import { f } from "./geo.js"   use geo, dann geo.f(x)
+  class, new, this               Records {name: "Ada"} und Typen:
+                                 type Shape = Circle(r) | Square(s)
+  for, while                     each, map, filter, fold, oder Rekursion
+  x += 1, push, pop, sort()      neue Werte: total2 = total + 1, push(xs, x)
+
+Methoden sind Funktionen
+  xs.map(f) ist map(xs, f), und beide Schreibweisen gibt es in Rythme:
+  x.name(...) ruft die Funktion `name` mit x als erstem Argument auf. Die
+  Namen sind in snake_case, und ein JavaScript-Name führt zum Rythme-Namen:
+  auf findLast kommt „meintest du `find_last`?“. Die meistgenutzten:
+
+  Math.floor, ceil, round, trunc floor, ceil, round, int
+  Math.max(...xs), Math.min      max(xs), min(xs)
+  Math.random()                  random(), random(1, 6), random_seed(n)
+  Math.atan2(y, x), Math.log2(x) atan(y, x), log(x, 2)
+  parseInt, parseFloat           parse_int, parse_float (ein Result, nie NaN)
+  n.toFixed(2)                   text(n, 2)
+  s.length, a.length             len(s), len(a)
+  s.toUpperCase(), s.trim()      upper(s), trim(s)
+  s.includes(x), startsWith      contains, starts_with
+  s.padStart(3, "0")             pad_left(s, 3, "0")
+  s.replace, s.replaceAll        replace_first, replace
+  s.split(","), a.join(", ")     split(s, ","), join(a, ", ")
+  a.find, findIndex, findLast    find, find_index, find_last (eine Option)
+  a.some(f), a.every(f)          any, all
+  a.reduce(f, init)              fold(a, init, f)
+  a.flat(), a.flatMap(f)         flatten, flat_map
+  a.toSorted(), a.toReversed()   sort, reverse
+  a.at(-1)                       get(a, -1) (eine Option), last(a)
+  Object.keys, values, entries   keys, values, entries
+  new Map(), get, set            dict(), get(d, k), put(d, k, v)
+  new Set(a), s.has(x)           set(a), has(s, x)
+  JSON.parse, JSON.stringify     parse_json (ein Result), to_json
+  new URL(s)                     parse_url(s) (ein Result)
+  new URLSearchParams(s)         parse_query(s), format_query(record)
+  crypto.randomUUID()            uuid()
+  setTimeout                     sleep(seconds)
+  fetch(url)                     http_get(url), http_post(url, body)
+  console.log, console.error     print, print_error
+
+Die ganze Standardbibliothek von JavaScript, mit dem, was absichtlich fehlt,
+und warum: docs/javascript.md in den Quellen von Rythme; auf seiner Website
+sagt die Seite jeder Funktion, was JavaScript dafür schreibt."#,
+        ),
+        (
+            r#"E001 — Syntax error
+
+The code does not follow the grammar of Rythme at this place. The message
+says what was expected. Frequent causes:
+  - a missing `)`, `]` or `,`
+  - `then` or `else` missing in an `if`
+  - braces { } used for a block (Rythme uses a new line and `end`)
+  - a keyword from another language (for, while, return, let, def...)
+
+Wrong:   if x > 0 { print(x) }
+Right:   if x > 0 then print(x) else print("not positive")"#,
+            r#"E001 — Syntaxfehler
+
+Der Code folgt an dieser Stelle nicht der Grammatik von Rythme. Die Meldung
+sagt, was erwartet wurde. Häufige Ursachen:
+  - eine fehlende `)`, `]` oder `,`
+  - `then` oder `else` fehlt in einem `if`
+  - geschweifte Klammern { } für einen Block (Rythme verwendet eine neue Zeile und `end`)
+  - ein Schlüsselwort aus einer anderen Sprache (for, while, return, let, def...)
+
+Falsch:  if x > 0 { print(x) }
+Richtig: if x > 0 then print(x) else print("not positive")"#,
+        ),
+        (
+            r#"E002 — Text never closed
+
+A text starts with " and must end with " on the same text. A `{` inside a
+text starts an insertion and must be closed by `}`.
+
+Wrong:   print("hello)
+Right:   print("hello")
+To write a brace in a text: "\{not inserted\}""#,
+            r#"E002 — Text nie geschlossen
+
+Ein Text beginnt mit " und muss im selben Text mit " enden. Eine `{` in einem
+Text beginnt eine Einfügung und muss mit `}` geschlossen werden.
+
+Falsch:  print("hello)
+Richtig: print("hello")
+Eine geschweifte Klammer in einem Text schreiben: "\{nicht eingefügt\}""#,
+        ),
+        (
+            r#"E003 — Unknown name
+
+This name is not defined at this place. Check the spelling (uppercase and
+lowercase letters are different), and that the name is defined before it is
+used. Inside a function, the parameters and the names defined above are
+visible, and local functions written one right after the other see each
+other; at the top level, all functions are visible everywhere.
+
+Wrong:   print(lenght([1, 2]))
+Right:   print(len([1, 2]))
+
+Rythme suggests the closest existing name when there is one, and the file
+that defines it when it is another file of the folder:
+
+  use geometry                   # then
+  print(geometry.area(2))        # not area(2)
+
+A name starting with `_` is private to its file: other files cannot use it."#,
+            r#"E003 — Unbekannter Name
+
+Dieser Name ist an dieser Stelle nicht definiert. Prüfe die Schreibweise
+(Groß- und Kleinbuchstaben sind verschieden) und ob der Name definiert ist,
+bevor er verwendet wird. In einer Funktion sind die Parameter und die weiter
+oben definierten Namen sichtbar, und lokale Funktionen, die direkt
+hintereinander stehen, sehen sich gegenseitig; auf oberster Ebene sind alle
+Funktionen überall sichtbar.
+
+Falsch:  print(lenght([1, 2]))
+Richtig: print(len([1, 2]))
+
+Rythme schlägt den ähnlichsten vorhandenen Namen vor, wenn es einen gibt, und
+die Datei, die ihn definiert, wenn es eine andere Datei des Ordners ist:
+
+  use geometry                   # dann
+  print(geometry.area(2))        # nicht area(2)
+
+Ein Name, der mit `_` beginnt, ist privat in seiner Datei: andere Dateien
+können ihn nicht verwenden."#,
+        ),
+        (
+            r#"E004 — Wrong number of arguments
+
+The function is called with more or fewer values than it takes. Remember that
+with `|>`, the value on the left is the first argument.
+
+Wrong:   fn add(a, b) = a + b
+         add(1)
+Right:   add(1, 2)
+Also right:  1 |> add(2)
+
+`rythme help NAME` shows how to call a built-in function."#,
+            r#"E004 — Falsche Anzahl von Argumenten
+
+Die Funktion wird mit mehr oder weniger Werten aufgerufen, als sie nimmt. Denk
+daran, dass bei `|>` der Wert links das erste Argument ist.
+
+Falsch:  fn add(a, b) = a + b
+         add(1)
+Richtig: add(1, 2)
+Auch richtig:  1 |> add(2)
+
+`rythme help NAME` zeigt, wie man eine eingebaute Funktion aufruft."#,
+        ),
+        (
+            r#"E005 — Wrong kind of value
+
+The operation does not work with this kind of value. Rythme never converts
+values silently: "1" + 1 is an error, not "11" or 2.
+
+Wrong:   "age: " + 36
+Right:   "age: {36}"              (insert the value in the text)
+Right:   "age: " + text(36)       (convert it first)
+
+Conditions must be true or false:
+Wrong:   if len(list) then ... else ...
+Right:   if len(list) > 0 then ... else ...
+
+When the kinds of the values are certain, `rythme check` finds this mistake
+before the program runs, even in code that does not run every time, and in
+the calls that give a function what it cannot use: `area("big")` when
+`area(side)` computes `side * side`."#,
+            r#"E005 — Falsche Art von Wert
+
+Die Operation funktioniert nicht mit dieser Art von Wert. Rythme wandelt Werte
+nie stillschweigend um: "1" + 1 ist ein Fehler, nicht "11" oder 2.
+
+Falsch:  "age: " + 36
+Richtig: "age: {36}"              (den Wert in den Text einfügen)
+Richtig: "age: " + text(36)       (ihn zuerst umwandeln)
+
+Bedingungen müssen true oder false sein:
+Falsch:  if len(list) then ... else ...
+Richtig: if len(list) > 0 then ... else ...
+
+Wenn die Arten der Werte sicher sind, findet `rythme check` diesen Fehler, bevor
+das Programm läuft, auch in Code, der nicht jedes Mal läuft, und in den
+Aufrufen, die einer Funktion etwas geben, das sie nicht verwenden kann:
+`area("big")`, wenn `area(side)` `side * side` berechnet."#,
+        ),
+        (
+            r#"E006 — No case matches
+
+None of the cases of a `match` (or of the definitions of a function, or the
+pattern of a definition like `[a, b] = list`) accepts this value.
+
+Wrong:   fn name(1) = "one"
+         name(2)
+Right:   fn name(1) = "one"
+         fn name(_) = "another number"
+
+`rythme check` warns about forgotten cases before running (W002). When the
+kind of the value is certain, it also reports, before running, a case that
+can never fit it: `[first, ..rest]` for a Text, `Circle(r)` for a number."#,
+            r#"E006 — Kein Fall passt
+
+Keiner der Fälle eines `match` (oder der Definitionen einer Funktion, oder das
+Muster einer Definition wie `[a, b] = list`) akzeptiert diesen Wert.
+
+Falsch:  fn name(1) = "one"
+         name(2)
+Richtig: fn name(1) = "one"
+         fn name(_) = "another number"
+
+`rythme check` warnt vor dem Ausführen vor vergessenen Fällen (W002). Wenn die
+Art des Werts sicher ist, meldet es vor dem Ausführen auch einen Fall, der nie
+passen kann: `[first, ..rest]` für einen Text, `Circle(r)` für eine Zahl."#,
+        ),
+        (
+            r#"E007 — Index out of range
+
+Positions in a list or a text go from 0 to length - 1 (and -1 is the last).
+
+Wrong:   [10, 20][2]
+Right:   [10, 20][1]              # 20
+Safe:    get([10, 20], 2)         # None, never an error"#,
+            r#"E007 — Index außerhalb des Bereichs
+
+Positionen in einer Liste oder einem Text gehen von 0 bis Länge - 1 (und -1 ist
+die letzte).
+
+Falsch:  [10, 20][2]
+Richtig: [10, 20][1]              # 20
+Sicher:  get([10, 20], 2)         # None, nie ein Fehler"#,
+        ),
+        (
+            r#"E008 — Division by zero
+
+Dividing by zero has no meaning. Check the divisor before, or return a Result.
+
+  fn divide(a b) = if b == 0 then Err("division by zero") else Ok(a / b)"#,
+            r#"E008 — Division durch null
+
+Eine Division durch null hat keine Bedeutung. Prüfe den Teiler vorher, oder gib
+ein Result zurück.
+
+  fn divide(a b) = if b == 0 then Err("division by zero") else Ok(a / b)"#,
+        ),
+        (
+            r#"E009 — Not a function
+
+Parentheses after a value call it, but only functions can be called.
+
+Wrong:   x = 5
+         x(3)
+Wrong:   None()                   (None is a value)
+Right:   None
+To multiply, write it:  2 * (x + 1)"#,
+            r#"E009 — Keine Funktion
+
+Klammern nach einem Wert rufen ihn auf, aber nur Funktionen können aufgerufen
+werden.
+
+Falsch:  x = 5
+         x(3)
+Falsch:  None()                   (None ist ein Wert)
+Richtig: None
+Zum Multiplizieren schreib es:  2 * (x + 1)"#,
+        ),
+        (
+            r#"E010 — Unknown field
+
+The record (or the constructor) has no field with this name; or the dict
+has no such key (`dict[key]`).
+
+Wrong:   {name: "Ada"}.nmae
+Right:   {name: "Ada"}.name
+Safe:    get(record, "name")     # an Option, never an error
+         get(dict key)          # the same for a dict
+
+When the fields of the record are certain, `rythme check` finds this mistake
+before the program runs, and suggests the closest field."#,
+            r#"E010 — Unbekanntes Feld
+
+Der Record (oder der Konstruktor) hat kein Feld mit diesem Namen; oder das Dict
+hat keinen solchen Schlüssel (`dict[key]`).
+
+Falsch:  {name: "Ada"}.nmae
+Richtig: {name: "Ada"}.name
+Sicher:  get(record, "name")     # eine Option, nie ein Fehler
+         get(dict key)          # dasselbe für ein Dict
+
+Wenn die Felder des Records sicher sind, findet `rythme check` diesen Fehler,
+bevor das Programm läuft, und schlägt das ähnlichste Feld vor."#,
+        ),
+        (
+            r#"E011 — Already defined
+
+In Rythme a name always means the same value: it cannot be changed or defined
+twice in the same place. This is what makes programs easy to follow.
+
+Wrong:   x = 1
+         x = x + 1
+Right:   x = 1
+         y = x + 1
+
+For a function with several cases, write the definitions one right after the
+other:
+  fn fib(0) = 0
+  fn fib(1) = 1
+  fn fib(n) = fib(n - 1) + fib(n - 2)
+
+The name given to a used file (`use geometry`, `use ... as geo`) cannot name
+anything else in the file; and two files used with quotes (`use "a.ry"`)
+cannot define the same name: use them by their names instead
+(`use a`, then `a.area`)."#,
+            r#"E011 — Schon definiert
+
+In Rythme bedeutet ein Name immer denselben Wert: er kann nicht geändert oder
+zweimal an derselben Stelle definiert werden. Das macht Programme leicht
+nachvollziehbar.
+
+Falsch:  x = 1
+         x = x + 1
+Richtig: x = 1
+         y = x + 1
+
+Für eine Funktion mit mehreren Fällen schreib die Definitionen direkt
+hintereinander:
+  fn fib(0) = 0
+  fn fib(1) = 1
+  fn fib(n) = fib(n - 1) + fib(n - 2)
+
+Der Name, der einer verwendeten Datei gegeben wird (`use geometry`, `use ... as
+geo`), kann in der Datei nichts anderes bezeichnen; und zwei Dateien, die mit
+Anführungszeichen verwendet werden (`use "a.ry"`), können nicht denselben Namen
+definieren: verwende sie stattdessen über ihre Namen (`use a`, dann `a.area`)."#,
+        ),
+        (
+            r#"E012 — Number too large (no longer given)
+
+Whole numbers (Int) have no limit any more: they grow as needed, and stay
+exact. Earlier versions of Rythme stopped with this error beyond 64 bits.
+
+  2 ** 100        # 1267650600228229401496703205376
+  2.0 ** 100      # 1.2676506002282294e30 (a Float is approximate)
+
+Only a whole number of more than 100000 digits stops the program, with
+E023: it is usually a calculation that grows without end."#,
+            r#"E012 — Zahl zu groß (gibt es nicht mehr)
+
+Ganze Zahlen (Int) haben keine Grenze mehr: sie wachsen nach Bedarf und bleiben
+genau. Frühere Versionen von Rythme hielten jenseits von 64 Bit mit diesem
+Fehler an.
+
+  2 ** 100        # 1267650600228229401496703205376
+  2.0 ** 100      # 1.2676506002282294e30 (ein Float ist ungefähr)
+
+Nur eine ganze Zahl mit mehr als 100000 Ziffern hält das Programm an, mit E023:
+meistens ist es eine Rechnung, die ohne Ende wächst."#,
+        ),
+        (
+            r#"E013 — unwrap found no value
+
+`unwrap(x)` takes the value out of Some(...) or Ok(...), and stops the
+program on None or Err(...). Handle the missing case instead:
+
+  match get(list, 5)
+    Some(x) -> x
+    None -> 0
+  end
+or simply:  unwrap_or(get(list, 5), 0)"#,
+            r#"E013 — unwrap hat keinen Wert gefunden
+
+`unwrap(x)` holt den Wert aus Some(...) oder Ok(...) heraus und hält das
+Programm bei None oder Err(...) an. Behandle stattdessen den fehlenden Fall:
+
+  match get(list, 5)
+    Some(x) -> x
+    None -> 0
+  end
+oder einfach:  unwrap_or(get(list, 5), 0)"#,
+        ),
+        (
+            r#"E014 — Too many nested calls
+
+A function calls itself (or others) too many times without finishing.
+Either it never reaches its base case, or it needs to be written so that the
+recursive call is the very last thing it does (a tail call): those calls
+have no limit.
+
+Limited:     fn sum([]) = 0
+             fn sum([x ..rest]) = x + sum(rest)       # + happens after
+No limit:    fn sum([], acc) = acc
+             fn sum([x ..rest] acc) = sum(rest acc + x)
+Simplest:    sum(list)  or  fold(list, 0, fn(a, x) = a + x)"#,
+            r#"E014 — Zu viele verschachtelte Aufrufe
+
+Eine Funktion ruft sich selbst (oder andere) zu oft auf, ohne fertig zu werden.
+Entweder erreicht sie nie ihren Basisfall, oder sie muss so geschrieben werden,
+dass der rekursive Aufruf das Allerletzte ist, was sie tut (ein Endaufruf):
+solche Aufrufe haben keine Grenze.
+
+Begrenzt:    fn sum([]) = 0
+             fn sum([x ..rest]) = x + sum(rest)       # + kommt danach
+Unbegrenzt:  fn sum([], acc) = acc
+             fn sum([x ..rest] acc) = sum(rest acc + x)
+Einfacher:   sum(list)  oder  fold(list, 0, fn(a, x) = a + x)"#,
+        ),
+        (
+            r#"E015 — Assertion failed
+
+`assert(condition)` or `assert_eq(actual, expected)` found that something is
+not as expected. In a test, this means the test fails: the message shows the
+values to compare.
+
+`rythme check` finds before running an `assert_eq` that can never pass,
+because its two values are of kinds that are never equal:
+Wrong:   assert_eq(parse_int("3"), 3)      # a Result is never an Int
+Right:   assert_eq(parse_int("3"), Ok(3))
+
+`check_all(property, generator)` reports E015 too when a value makes the
+property false: it shows the simplest value found, and the seed that gave it
+(the same values come back on every run; `rythme test --seed N` tries others)."#,
+            r#"E015 — Zusicherung fehlgeschlagen
+
+`assert(condition)` oder `assert_eq(actual, expected)` hat festgestellt, dass
+etwas nicht wie erwartet ist. In einem Test heißt das, dass der Test
+fehlschlägt: die Meldung zeigt die zu vergleichenden Werte.
+
+`rythme check` findet vor dem Ausführen ein `assert_eq`, das nie bestehen kann,
+weil seine beiden Werte von Arten sind, die nie gleich sind:
+Falsch:  assert_eq(parse_int("3"), 3)      # ein Result ist nie ein Int
+Richtig: assert_eq(parse_int("3"), Ok(3))
+
+`check_all(property, generator)` meldet E015 auch, wenn ein Wert die Eigenschaft
+falsch macht: es zeigt den einfachsten gefundenen Wert und den Seed, der ihn
+geliefert hat (dieselben Werte kommen bei jedem Lauf wieder; `rythme test --seed N`
+probiert andere)."#,
+        ),
+        (
+            r#"E016 — Wrong use of ?
+
+`x?` takes the value out of Some(...) or Ok(...); on None or Err(...), it makes
+the current function return it immediately. So it only works inside a
+function, on an Option or a Result.
+
+  fn total(a, b)
+    x = parse_int(a)?
+    y = parse_int(b)?
+    Ok(x + y)
+  end"#,
+            r#"E016 — Falsche Verwendung von ?
+
+`x?` holt den Wert aus Some(...) oder Ok(...) heraus; bei None oder Err(...)
+lässt es die aktuelle Funktion diesen sofort zurückgeben. Es funktioniert also
+nur innerhalb einer Funktion, bei einer Option oder einem Result.
+
+  fn total(a, b)
+    x = parse_int(a)?
+    y = parse_int(b)?
+    Ok(x + y)
+  end"#,
+        ),
+        (
+            r#"E017 — File problem
+
+A file could not be read, or a file given to `use` was not found, or files
+use each other in a circle. Paths in `use` are relative to the folder of the
+file that contains the `use`. Programs are text files saved in UTF-8 (the
+usual choice of editors).
+
+`input()` also stops with this error when there is nothing more to read:
+the keyboard input was closed (Ctrl-D), or the text sent to the program
+(`rythme prog.ry < answers.txt`) has no more lines."#,
+            r#"E017 — Problem mit einer Datei
+
+Eine Datei konnte nicht gelesen werden, oder eine an `use` gegebene Datei wurde
+nicht gefunden, oder Dateien verwenden sich gegenseitig im Kreis. Pfade in `use`
+sind relativ zum Ordner der Datei, die das `use` enthält. Programme sind
+Textdateien, in UTF-8 gespeichert (die übliche Wahl der Editoren).
+
+`input()` hält ebenfalls mit diesem Fehler an, wenn es nichts mehr zu lesen gibt:
+die Tastatureingabe wurde geschlossen (Strg-D), oder der an das Programm
+geschickte Text (`rythme prog.ry < antworten.txt`) hat keine Zeilen mehr."#,
+        ),
+        (
+            r#"E018 — Unexpected character
+
+This character has no meaning in Rythme here. Texts use straight double
+quotes "...", powers use **, and comments start with #."#,
+            r#"E018 — Unerwartetes Zeichen
+
+Dieses Zeichen hat hier in Rythme keine Bedeutung. Texte verwenden gerade
+doppelte Anführungszeichen "...", Potenzen **, und Kommentare beginnen mit #."#,
+        ),
+        (
+            r#"E019 — if without else
+
+In Rythme, `if` is an expression: it always gives a value, so both cases are
+needed. Each branch holds a single expression; use `do ... end` for several.
+
+Wrong:   if x > 0 then print("positive")
+Right:   if x > 0 then print("positive") else ()
+Right:   if x > 0 then "positive" else if x == 0 then "zero" else "negative""#,
+            r#"E019 — if ohne else
+
+In Rythme ist `if` ein Ausdruck: es liefert immer einen Wert, also werden beide
+Fälle gebraucht. Jeder Zweig enthält einen einzigen Ausdruck; verwende
+`do ... end` für mehrere.
+
+Falsch:  if x > 0 then print("positive")
+Richtig: if x > 0 then print("positive") else ()
+Richtig: if x > 0 then "positive" else if x == 0 then "zero" else "negative""#,
+        ),
+        (
+            r#"E020 — Missing end
+
+A function written on several lines, a `match` or a `do` block must finish
+with `end` on its own line.
+
+  fn greet(name)
+    print("Hello {name}")
+  end"#,
+            r#"E020 — Fehlendes end
+
+Eine Funktion über mehrere Zeilen, ein `match` oder ein `do`-Block muss mit
+`end` in einer eigenen Zeile enden.
+
+  fn greet(name)
+    print("Hello {name}")
+  end"#,
+        ),
+        (
+            r#"E021 — Program stopped by fail
+
+The program called `fail(message)`, which stops everything. For errors that
+the caller could handle, return Err(message) instead."#,
+            r#"E021 — Programm durch fail angehalten
+
+Das Programm hat `fail(message)` aufgerufen, was alles anhält. Für Fehler, die
+der Aufrufer behandeln könnte, gib stattdessen Err(message) zurück."#,
+        ),
+        (
+            r#"E022 — Impossible conversion
+
+The text does not contain a number. When the text comes from a user or a
+file, use the safe versions, which give a Result:
+
+  match parse_int(input("Age? "))
+    Ok(age) -> print("Next year: {age + 1}")
+    Err(e) -> print(e)
+  end"#,
+            r#"E022 — Unmögliche Umwandlung
+
+Der Text enthält keine Zahl. Wenn der Text von einem Benutzer oder aus einer
+Datei kommt, verwende die sicheren Versionen, die ein Result liefern:
+
+  match parse_int(input("Age? "))
+    Ok(age) -> print("Next year: {age + 1}")
+    Err(e) -> print(e)
+  end"#,
+        ),
+        (
+            r#"E023 — Invalid value
+
+The function received a value of the right kind, but outside of what it
+accepts: a negative count, the minimum of an empty list, the square root of
+a negative number, a date that does not exist (30 February), a range, a
+list or a text too large, a whole number of more than 100000 digits... The
+message explains the limit."#,
+            r#"E023 — Ungültiger Wert
+
+Die Funktion hat einen Wert der richtigen Art bekommen, aber außerhalb dessen,
+was sie akzeptiert: eine negative Anzahl, das Minimum einer leeren Liste, die
+Quadratwurzel einer negativen Zahl, ein Datum, das es nicht gibt (30. Februar),
+ein Bereich, eine Liste oder ein Text, die zu groß sind, eine ganze Zahl mit
+mehr als 100000 Ziffern... Die Meldung erklärt die Grenze."#,
+        ),
+        (
+            r#"E024 — A value is lost
+
+A line computes a value, but nothing uses it: only the last line of a block
+gives its value, and values never change, so the result is simply lost.
+
+Wrong:   total = price
+         - discount              # a new line: this is a separate statement
+Right:   total = price -
+           discount              # end the line with the operator to continue
+Wrong:   x + 1                   # does not change x
+Right:   y = x + 1
+To show a value, print it:  print(x + 1)"#,
+            r#"E024 — Ein Wert geht verloren
+
+Eine Zeile berechnet einen Wert, aber nichts verwendet ihn: nur die letzte Zeile
+eines Blocks liefert ihren Wert, und Werte ändern sich nie, also geht das
+Ergebnis einfach verloren.
+
+Falsch:  total = price
+         - discount              # eine neue Zeile: das ist eine eigene Anweisung
+Richtig: total = price -
+           discount              # beende die Zeile mit dem Operator, um fortzufahren
+Falsch:  x + 1                   # ändert x nicht
+Richtig: y = x + 1
+Um einen Wert anzuzeigen, gib ihn aus:  print(x + 1)"#,
+        ),
+        (
+            r#"E025 — Project or package problem
+
+The `rythme.toml` of the project (or the `rythme.lock` written by
+`rythme install`) cannot be read, a dependency is not installed,
+`rythme install` cannot download one, or the package index (`rythme
+search`, `add`, `publish`) cannot be read or does not have what was asked.
+A `rythme.toml` looks like this:
+
+  name = "hello"                 # a Rythme name in lower case
+  version = "0.1.0"              # three numbers
+  entry = "src/main.ry"          # the program (this one by default)
+
+  [dependencies]
+  mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
+  tools = { path = "../tools" }
+  geometry = { version = "^1.2.0" }   # from the package index
+
+Every value is a text, in quotes. A dependency from git needs a fixed
+version, a `tag` or a `commit`, and the program `git`
+(https://git-scm.com). After a change of `[dependencies]`, run
+`rythme install` in the folder of the project. More: `rythme help projects`
+and `rythme help packages`."#,
+            r#"E025 — Problem mit dem Projekt oder einem Paket
+
+Die `rythme.toml` des Projekts (oder die von `rythme install` geschriebene
+`rythme.lock`) kann nicht gelesen werden, eine Abhängigkeit ist nicht
+installiert, `rythme install` kann eine nicht herunterladen, oder der
+Paketindex (`rythme search`, `add`, `publish`) kann nicht gelesen werden
+oder hat nicht, was verlangt wurde. Eine `rythme.toml` sieht so aus:
+
+  name = "hello"                 # ein Rythme-Name in Kleinbuchstaben
+  version = "0.1.0"              # drei Zahlen
+  entry = "src/main.ry"          # das Programm (standardmäßig dieses)
+
+  [dependencies]
+  mathlib = { git = "https://github.com/someone/mathlib", tag = "v1.0.0" }
+  tools = { path = "../tools" }
+  geometry = { version = "^1.2.0" }   # aus dem Paketindex
+
+Jeder Wert ist ein Text in Anführungszeichen. Eine Abhängigkeit aus git braucht
+eine feste Version, ein `tag` oder einen `commit`, und das Programm `git`
+(https://git-scm.com). Nach einer Änderung von `[dependencies]` führe
+`rythme install` im Ordner des Projekts aus. Mehr: `rythme help projects`
+und `rythme help packages`."#,
+        ),
+        (
+            r#"E026 — Invalid regex
+
+A regex (a regular expression, given to `matches`, `find_all`, `split_by`,
+`replace_all`...) breaks one of its rules, or the replacement of
+`replace_all` uses a group that does not exist. The message shows where.
+
+Wrong:   find_all(text, "([0-9]+")       # the `(` is never closed
+Right:   find_all(text, "([0-9]+)")
+Wrong:   split_by(text, "*")             # `*` repeats nothing
+Right:   split_by(text, "[*]")           # the sign * itself, in brackets
+Wrong:   replace_all(date, "(\\d+)-(\\d+)", "$3")    # only 2 groups
+Right:   replace_all(date, "(\\d+)-(\\d+)", "$2/$1")
+
+In a Rythme text, a backslash is written twice ("\\d") and braces are
+written \{ and \} ("[0-9]\{4\}"). `rythme help regex` shows everything a
+regex can say. When the regex is written in the code, `rythme check` finds
+the mistake before running."#,
+            r#"E026 — Ungültiger regulärer Ausdruck
+
+Ein regulärer Ausdruck (Regex, übergeben an `matches`, `find_all`, `split_by`,
+`replace_all`...) verletzt eine seiner Regeln, oder die Ersetzung von
+`replace_all` verwendet eine Gruppe, die es nicht gibt. Die Meldung zeigt, wo.
+
+Falsch:  find_all(text, "([0-9]+")       # die `(` wird nie geschlossen
+Richtig: find_all(text, "([0-9]+)")
+Falsch:  split_by(text, "*")             # `*` wiederholt nichts
+Richtig: split_by(text, "[*]")           # das Zeichen * selbst, in eckigen Klammern
+Falsch:  replace_all(date, "(\\d+)-(\\d+)", "$3")    # nur 2 Gruppen
+Richtig: replace_all(date, "(\\d+)-(\\d+)", "$2/$1")
+
+In einem Rythme-Text wird ein Backslash doppelt geschrieben ("\\d"), und
+geschweifte Klammern werden \{ und \} geschrieben ("[0-9]\{4\}"). `rythme help regex`
+zeigt alles, was ein regulärer Ausdruck sagen kann. Wenn der Ausdruck im Code
+steht, findet `rythme check` den Fehler vor dem Ausführen."#,
+        ),
+        (
+            r#"W001 — Unused name
+
+A name is defined but never used. It is often a typo or a forgotten step.
+If it is on purpose, start the name with `_`: `_unused = ...`."#,
+            r#"W001 — Unbenutzter Name
+
+Ein Name wird definiert, aber nie verwendet. Oft ist es ein Tippfehler oder ein
+vergessener Schritt. Wenn es Absicht ist, beginne den Namen mit `_`: `_unused = ...`."#,
+        ),
+        (
+            r#"W002 — Forgotten case
+
+A `match` (or a function with several definitions) does not handle every
+possible value. The message lists what is missing. If that value comes, the
+program will stop with E006.
+
+  type Light = Red | Orange | Green
+  fn next(Red) = Green
+  fn next(Green) = Orange
+  # W002: `next` does not handle `Orange`. Add the missing definition:
+  fn next(Orange) = Red"#,
+            r#"W002 — Vergessener Fall
+
+Ein `match` (oder eine Funktion mit mehreren Definitionen) behandelt nicht jeden
+möglichen Wert. Die Meldung listet auf, was fehlt. Wenn dieser Wert kommt, hält
+das Programm mit E006 an.
+
+  type Light = Red | Orange | Green
+  fn next(Red) = Green
+  fn next(Green) = Orange
+  # W002: `next` behandelt `Orange` nicht. Füge die fehlende Definition hinzu:
+  fn next(Orange) = Red"#,
+        ),
+        (
+            r#"W003 — Built-in function hidden
+
+You defined a name that already belongs to a built-in function. In your file,
+the name now means your definition. Choose another name to keep both."#,
+            r#"W003 — Eingebaute Funktion verdeckt
+
+Du hast einen Namen definiert, der schon zu einer eingebauten Funktion gehört.
+In deiner Datei bedeutet der Name jetzt deine Definition. Wähle einen anderen
+Namen, um beide zu behalten."#,
+        ),
+        (
+            r#"W004 — Case never reached
+
+Cases are tried in order, and a value goes to the first one that fits. A
+case (or a definition of a function) can never be used when:
+  - a case before it accepts everything (`_`, or a plain name): put that
+    one last;
+  - a case before it already handles the same values: `1 -> ...` twice;
+  - the value can never have this shape: a Text never matches a list
+    pattern like `[first, ..rest]`, a number never matches `Some(x)`;
+  - a range is empty: `9..1` holds no number, write `1..9`.
+
+  match name                     # `name` is a Text
+    [first, ..] -> first         # W004: a Text is not a list
+    _ -> "?"
+  end
+To look at the characters of a text, use `chars(name)`."#,
+            r#"W004 — Fall nie erreicht
+
+Fälle werden der Reihe nach ausprobiert, und ein Wert geht in den ersten, der
+passt. Ein Fall (oder eine Definition einer Funktion) kann nie verwendet werden,
+wenn:
+  - ein Fall davor alles akzeptiert (`_`, oder ein einfacher Name): setze jenen
+    ans Ende;
+  - ein Fall davor schon dieselben Werte behandelt: zweimal `1 -> ...`;
+  - der Wert nie diese Form haben kann: ein Text passt nie zu einem
+    Listenmuster wie `[first, ..rest]`, eine Zahl nie zu `Some(x)`;
+  - ein Bereich leer ist: `9..1` enthält keine Zahl, schreib `1..9`.
+
+  match name                     # `name` ist ein Text
+    [first, ..] -> first         # W004: ein Text ist keine Liste
+    _ -> "?"
+  end
+Um die Zeichen eines Textes anzuschauen, verwende `chars(name)`."#,
+        ),
+        (
+            r#"W005 — Unknown function after a dot
+
+`value.name(args)` calls the function `name(value, args)`, or the field `name`
+of a record. No function has this name, and no record of the file has such a
+field: it is probably a typo.
+
+Wrong:   [1, 2].lenght()
+Right:   [1, 2].len()"#,
+            r#"W005 — Unbekannte Funktion nach einem Punkt
+
+`value.name(args)` ruft die Funktion `name(value, args)` auf, oder das Feld
+`name` eines Records. Keine Funktion hat diesen Namen, und kein Record der Datei
+hat ein solches Feld: wahrscheinlich ist es ein Tippfehler.
+
+Falsch:  [1, 2].lenght()
+Richtig: [1, 2].len()"#,
+        ),
+        (
+            r#"W006 — Comparison always false
+
+Values of different kinds are never equal: Rythme never converts them
+silently. When `x` is a number, `x == "1"` is always false and `x != "1"`
+always true. It is often a forgotten conversion, or a value inside an Option
+compared as if it were outside.
+
+Wrong:   if count == "3" then ...            (a number and a text)
+Right:   if count == 3 then ...
+Wrong:   get(scores, "ada") == 19            (an Option and a number)
+Right:   get(scores, "ada") == Some(19)
+Right:   unwrap_or(get(scores, "ada"), 0) == 19"#,
+            r#"W006 — Vergleich immer falsch
+
+Werte verschiedener Arten sind nie gleich: Rythme wandelt sie nie stillschweigend
+um. Wenn `x` eine Zahl ist, ist `x == "1"` immer falsch und `x != "1"` immer
+wahr. Oft ist es eine vergessene Umwandlung, oder ein Wert in einer Option, der
+verglichen wird, als stünde er außerhalb.
+
+Falsch:  if count == "3" then ...            (eine Zahl und ein Text)
+Richtig: if count == 3 then ...
+Falsch:  get(scores, "ada") == 19            (eine Option und eine Zahl)
+Richtig: get(scores, "ada") == Some(19)
+Richtig: unwrap_or(get(scores, "ada"), 0) == 19"#,
+        ),
+        (
+            r#"W007 — Test that can never fail
+
+A test fails only when it stops with an error, or when it ends with `false`,
+`None` or `Err(...)`. A test that only computes or prints a value with
+functions that never stop, and never compares it with what is expected,
+can never fail: it checks nothing.
+
+Wrong:   test "length" = len([1, 2])
+Wrong:   test "length" = print(len([1, 2]))
+Right:   test "length" = assert_eq(len([1, 2]), 2)
+Right:   test "length" = len([1, 2]) == 2"#,
+            r#"W007 — Test, der nie fehlschlagen kann
+
+Ein Test schlägt nur fehl, wenn er mit einem Fehler endet oder `false`, `None`
+oder `Err(...)` ergibt. Ein Test, der nur mit Funktionen, die nie anhalten,
+einen Wert berechnet oder ausgibt und ihn nie mit dem Erwarteten vergleicht,
+kann nie fehlschlagen: er prüft nichts.
+
+Falsch:  test "length" = len([1, 2])
+Falsch:  test "length" = print(len([1, 2]))
+Richtig: test "length" = assert_eq(len([1, 2]), 2)
+Richtig: test "length" = len([1, 2]) == 2"#,
+        ),
+        (
+            r#"W008 — Result lost
+
+Values never change in Rythme: `push(list, 4)` does not add 4 to `list`, it
+gives a new list. A line that only calls such a function, and does nothing
+with what it gives, does nothing at all.
+
+Wrong:   push(numbers, 4)               # `numbers` is unchanged
+Right:   more = push(numbers, 4)
+Wrong:   name.upper()
+Right:   print(name.upper())"#,
+            r#"W008 — Ergebnis geht verloren
+
+Werte ändern sich in Rythme nie: `push(list, 4)` fügt `list` nicht 4 hinzu, es
+liefert eine neue Liste. Eine Zeile, die nur eine solche Funktion aufruft und
+nichts mit ihrem Ergebnis macht, tut überhaupt nichts.
+
+Falsch:  push(numbers, 4)               # `numbers` bleibt unverändert
+Richtig: more = push(numbers, 4)
+Falsch:  name.upper()
+Richtig: print(name.upper())"#,
+        ),
+        (
+            r#"W009 — A function shown instead of its value
+
+A function shown in a text or printed appears as `<fn name>`. To show what
+it gives, call it, with parentheses, even when it takes no argument.
+
+  fn greeting() = "hello"
+Wrong:   print("{greeting}")          # shows <fn greeting>
+Right:   print("{greeting()}")        # shows hello"#,
+            r#"W009 — Eine Funktion statt ihres Werts angezeigt
+
+Eine Funktion, die in einem Text angezeigt oder ausgegeben wird, erscheint als
+`<fn name>`. Um zu zeigen, was sie liefert, rufe sie auf, mit Klammern, auch
+wenn sie kein Argument nimmt.
+
+  fn greeting() = "hello"
+Falsch:  print("{greeting}")          # zeigt <fn greeting>
+Richtig: print("{greeting()}")        # zeigt hello"#,
+        ),
+        (
+            r#"W010 — Ranges that overlap
+
+A range pattern `a..b` matches the numbers from `a` to `b`, both included.
+When two ranges of a `match` (or of the definitions of a function) share
+numbers, these numbers always go to the first one: the second never sees
+them. It is often an end written twice.
+
+Wrong:   match age
+           0..18 -> "young"
+           18..65 -> "adult"         # W010: 18 goes to "young"
+           _ -> "senior"
+         end
+Right:   0..17 -> "young"
+         18..64 -> "adult"
+For decimal numbers, which fall between 17 and 18, compare instead:
+  a if a < 18 -> "young""#,
+            r#"W010 — Bereiche, die sich überschneiden
+
+Ein Bereichsmuster `a..b` passt auf die Zahlen von `a` bis `b`, beide inklusive.
+Wenn zwei Bereiche eines `match` (oder der Definitionen einer Funktion) Zahlen
+gemeinsam haben, gehen diese Zahlen immer in den ersten: der zweite sieht sie
+nie. Oft ist es ein Ende, das doppelt geschrieben wurde.
+
+Falsch:  match age
+           0..18 -> "young"
+           18..65 -> "adult"         # W010: 18 geht zu "young"
+           _ -> "senior"
+         end
+Richtig: 0..17 -> "young"
+         18..64 -> "adult"
+Für Dezimalzahlen, die zwischen 17 und 18 liegen, vergleiche stattdessen:
+  a if a < 18 -> "young""#,
+        ),
+        (
+            r#"W011 — Index or subtraction instead of a call
+
+At the start of a statement or of a result, `show [1, 2]` and `show -1`
+call `show` without parentheses, unless the file gives `show` a value
+somewhere: with `=`, as a parameter of a function or a block, or in a
+pattern. Then they are an index and a subtraction, everywhere in the file,
+even where `show` is a function. The value may be given far away, to a
+parameter of another function.
+
+Wrong:   fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1 2]                  # W011: an index of the function
+Right:   show([1, 2])
+Or give the parameter another name: fn twice(n) = n * 2"#,
+            r#"W011 — Index oder Subtraktion statt eines Aufrufs
+
+Am Anfang einer Anweisung oder eines Ergebnisses rufen `show [1, 2]` und
+`show -1` die Funktion `show` ohne Klammern auf, außer die Datei gibt `show`
+irgendwo einen Wert: mit `=`, als Parameter einer Funktion oder eines Blocks,
+oder in einem Muster. Dann sind es ein Index und eine Subtraktion, überall in
+der Datei, auch dort, wo `show` eine Funktion ist. Der Wert kann weit weg
+gegeben werden, an einen Parameter einer anderen Funktion.
+
+Falsch:  fn show(xs) = print(xs)
+         fn twice(show) = show * 2
+         show [1 2]                  # W011: ein Index der Funktion
+Richtig: show([1, 2])
+Oder gib dem Parameter einen anderen Namen: fn twice(n) = n * 2"#,
+        ),
+        ("Defines a function: `fn name(x) = expression`, or with its body on the following lines, finished by `end`. Without a name, `fn(x) = x * 2` is an anonymous function.", "Definiert eine Funktion: `fn name(x) = expression`, oder mit ihrem Rumpf in den folgenden Zeilen, abgeschlossen mit `end`. Ohne Namen ist `fn(x) = x * 2` eine anonyme Funktion."),
+        ("Before `fn`, at the top level of a file: `async fn name(x) = ...` defines a function whose call starts it at once and gives a Task; `await task` gives its result. Tasks run at the same time, on other cores: start several, then await them. `async` is a keyword only before `fn`; elsewhere it is a name like any other.", "Vor `fn`, auf der obersten Ebene einer Datei: `async fn name(x) = ...` definiert eine Funktion, deren Aufruf sie sofort startet und einen Task liefert; `await task` liefert sein Ergebnis. Tasks laufen gleichzeitig, auf anderen Kernen: starte mehrere und warte dann auf sie. `async` ist nur vor `fn` ein Schlüsselwort; anderswo ist es ein Name wie jeder andere."),
+        ("Before a value: `await task` waits for a task (the call of an `async fn`) and gives its result, like `await(task)`. An error in the task stops the program at the `await`. `await_all(tasks)` waits for a list of tasks.", "Vor einem Wert: `await task` wartet auf einen Task (den Aufruf einer `async fn`) und liefert sein Ergebnis, wie `await(task)`. Ein Fehler im Task beendet das Programm beim `await`. `await_all(tasks)` wartet auf eine Liste von Tasks."),
+        ("Chooses between two values: `if condition then value else other`. Every `if` has an `else`, because an `if` always gives a value.", "Wählt zwischen zwei Werten: `if condition then value else other`. Jedes `if` hat ein `else`, weil ein `if` immer einen Wert liefert."),
+        ("Separates the condition of an `if` from the value it gives when the condition is true.", "Trennt die Bedingung eines `if` von dem Wert, den es liefert, wenn die Bedingung wahr ist."),
+        ("Gives the value of an `if` when the condition is false. It is always required; `else if` chains several conditions.", "Gibt den Wert eines `if` an, wenn die Bedingung falsch ist. Es ist immer nötig; `else if` verkettet mehrere Bedingungen."),
+        ("The opposite of `if`: `unless condition then a else b` gives `b` when the condition is true, `a` otherwise. Like `if`, it always has an `else`.", "Das Gegenteil von `if`: `unless condition then a else b` liefert `b`, wenn die Bedingung wahr ist, sonst `a`. Wie `if` hat es immer ein `else`."),
+        ("Chooses according to the shape of a value: one case per line, `pattern -> result`, finished by `end`. Cases are tried in order, and `rythme check` warns about forgotten cases.", "Entscheidet nach der Form eines Werts: ein Fall pro Zeile, `pattern -> result`, abgeschlossen mit `end`. Fälle werden der Reihe nach ausprobiert, und `rythme check` warnt vor vergessenen Fällen."),
+        ("Closes a block: a function written on several lines, a `match`, a `do` or a `test`.", "Schließt einen Block: eine Funktion über mehrere Zeilen, ein `match`, ein `do` oder ein `test`."),
+        ("Groups several steps inside an expression, up to `end`. The last line gives the value. After a call, `do |x| ... end` is a block: a function given as the last argument.", "Fasst mehrere Schritte innerhalb eines Ausdrucks zusammen, bis `end`. Die letzte Zeile liefert den Wert. Nach einem Aufruf ist `do |x| ... end` ein Block: eine Funktion, die als letztes Argument übergeben wird."),
+        ("Defines your own type and its variants. Each variant is a constructor, with or without fields.", "Definiert deinen eigenen Typ und seine Varianten. Jede Variante ist ein Konstruktor, mit oder ohne Felder."),
+        ("Defines a test, next to the code. `rythme test file.ry` runs the tests of the file.", "Definiert einen Test, direkt neben dem Code. `rythme test datei.ry` führt die Tests der Datei aus."),
+        ("Uses another file through its name: `use geometry`, then `geometry.area(2)`. The path is relative to the folder of the file that contains `use`.", "Verwendet eine andere Datei über ihren Namen: `use geometry`, dann `geometry.area(2)`. Der Pfad ist relativ zum Ordner der Datei, die `use` enthält."),
+        ("True when both conditions are true. The second one is computed only if the first one is true.", "Wahr, wenn beide Bedingungen wahr sind. Die zweite wird nur berechnet, wenn die erste wahr ist."),
+        ("True when at least one of the conditions is true. The second one is computed only if the first one is false.", "Wahr, wenn mindestens eine der Bedingungen wahr ist. Die zweite wird nur berechnet, wenn die erste falsch ist."),
+        ("Inverts a condition: `not true` is `false`.", "Kehrt eine Bedingung um: `not true` ist `false`."),
+        ("One of the two values of the type Bool.", "Einer der beiden Werte des Typs Bool."),
+        ("Shows values on the screen, separated by spaces, then goes to the next line.", "Zeigt Werte auf dem Bildschirm an, durch Leerzeichen getrennt, und geht dann in die nächste Zeile."),
+        ("Shows a value with its position in the code (on the error output) and returns it unchanged. Handy in the middle of a pipeline.", "Zeigt einen Wert mit seiner Position im Code an (auf der Fehlerausgabe) und gibt ihn unverändert zurück. Praktisch mitten in einer Pipeline."),
+        ("Converts any value to text. With a number of decimals, writes a number with exactly that many digits after the point.", "Wandelt einen beliebigen Wert in Text um. Mit einer Anzahl von Nachkommastellen schreibt es eine Zahl mit genau so vielen Ziffern nach dem Punkt."),
+        ("Shows the prompt, then reads a line typed on the keyboard and returns it as text.", "Zeigt die Eingabeaufforderung, liest dann eine auf der Tastatur getippte Zeile und gibt sie als Text zurück."),
+        ("Reads all the lines of the standard input, until its end: `Ok(list of texts)`, or `Err(message)` if it cannot be read. For `rythme count.ry < names.txt`, or text typed until Ctrl-D (Ctrl-Z then Enter on Windows).", "Liest alle Zeilen der Standardeingabe bis zu ihrem Ende: `Ok(list of texts)`, oder `Err(message)`, wenn sie nicht gelesen werden kann. Für `rythme count.ry < names.txt`, oder Text, der bis Strg-D getippt wird (Strg-Z und dann Enter unter Windows)."),
+        ("Returns the name of the type of a value: \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (for `()`), \"Symbol\" (for `:ok`), \"Option\", \"Result\", or the name of your own type.", "Gibt den Namen des Typs eines Werts zurück: \"Int\", \"Float\", \"Text\", \"Bool\", \"List\", \"Record\", \"Function\", \"Unit\" (für `()`), \"Symbol\" (für `:ok`), \"Option\", \"Result\", oder den Namen deines eigenen Typs."),
+        ("Shows help: about a function (`help(map)`), a topic (`help(\"lists\")`), or what you can do with a value (`help([1, 2])`).", "Zeigt Hilfe an: zu einer Funktion (`help(map)`), einem Thema (`help(\"lists\")`), oder dazu, was man mit einem Wert machen kann (`help([1, 2])`)."),
+        ("Stops with an error if the condition is false. Mostly used in tests.", "Hält mit einem Fehler an, wenn die Bedingung falsch ist. Meistens in Tests verwendet."),
+        ("Stops with an error showing both values if they are different. Mostly used in tests.", "Hält mit einem Fehler an, der beide Werte zeigt, wenn sie verschieden sind. Meistens in Tests verwendet."),
+        ("Stops the program with an error message. Prefer returning `Err(...)` for errors that can be handled.", "Hält das Programm mit einer Fehlermeldung an. Für Fehler, die behandelt werden können, gib besser `Err(...)` zurück."),
+        ("Returns the list of the words given after the file name on the command line.", "Gibt die Liste der Wörter zurück, die auf der Kommandozeile nach dem Dateinamen stehen."),
+        ("Reads the options of the command line (the words of `args()`, or the list given) into a record, in a Result: `--name=value` gives the text `value`, `--name` and `-n` give `true`, a `-` in a name becomes `_`, and the other words are in the field `args` (all of them after `--`). An option given twice, or a word like `-abc`, gives `Err(message)`. Use `get(opts, \"name\")` or `has(opts, \"name\")` for an option that may be missing.", "Liest die Optionen der Kommandozeile (die Wörter von `args()`, oder die übergebene Liste) in einen Record, in einem Result: `--name=value` ergibt den Text `value`, `--name` und `-n` ergeben `true`, ein `-` in einem Namen wird zu `_`, und die anderen Wörter stehen im Feld `args` (alle nach `--`). Eine doppelt angegebene Option, oder ein Wort wie `-abc`, ergibt `Err(message)`. Verwende `get(opts, \"name\")` oder `has(opts, \"name\")` für eine Option, die fehlen kann."),
+        ("The value of an environment variable of the system, as an Option: `Some(text)`, or `None` if it is not set.", "Der Wert einer Umgebungsvariable des Systems, als Option: `Some(text)`, oder `None`, wenn sie nicht gesetzt ist."),
+        ("Stops the program immediately. The code (0 by default) tells the system if everything went well (0) or not; Rythme itself exits with 1 after an error in the program (see `rythme help system`).", "Hält das Programm sofort an. Der Code (standardmäßig 0) sagt dem System, ob alles gut gegangen ist (0) oder nicht; Rythme selbst endet nach einem Fehler im Programm mit 1 (siehe `rythme help system`)."),
+        ("Returns the current time in seconds (a Float), counted from 1 January 1970. Subtract two times to measure a duration.", "Gibt die aktuelle Zeit in Sekunden zurück (ein Float), gezählt ab dem 1. Januar 1970. Ziehe zwei Zeiten voneinander ab, um eine Dauer zu messen."),
+        ("random() gives a decimal number between 0 and 1; random(a, b) a whole number from a to b (included); random(list) a random element.", "random() liefert eine Dezimalzahl zwischen 0 und 1; random(a, b) eine ganze Zahl von a bis b (inklusive); random(list) ein zufälliges Element."),
+        ("Absolute value: the number without its sign.", "Betrag: die Zahl ohne ihr Vorzeichen."),
+        ("The smallest of the values, or of the elements of a list.", "Der kleinste der Werte, oder der Elemente einer Liste."),
+        ("The largest of the values, or of the elements of a list.", "Der größte der Werte, oder der Elemente einer Liste."),
+        ("Square root.", "Quadratwurzel."),
+        ("x to the power n (same as `x ** n`).", "x hoch n (dasselbe wie `x ** n`)."),
+        ("Rounds down to a whole number.", "Rundet auf eine ganze Zahl ab."),
+        ("Rounds up to a whole number.", "Rundet auf eine ganze Zahl auf."),
+        ("Rounds to the nearest whole number, or to the given number of decimal digits.", "Rundet auf die nächste ganze Zahl, oder auf die angegebene Anzahl von Nachkommastellen."),
+        ("Converts to a whole number (Int): decimals are cut, texts are read.", "Wandelt in eine ganze Zahl (Int) um: Nachkommastellen werden abgeschnitten, Texte werden gelesen."),
+        ("Converts to a decimal number (Float).", "Wandelt in eine Dezimalzahl (Float) um."),
+        ("Sine (x in radians).", "Sinus (x im Bogenmaß)."),
+        ("Cosine (x in radians).", "Kosinus (x im Bogenmaß)."),
+        ("Tangent (x in radians).", "Tangens (x im Bogenmaß)."),
+        ("Arc sine: the angle (in radians) whose sine is x, for x from -1 to 1.", "Arkussinus: der Winkel (im Bogenmaß), dessen Sinus x ist, für x von -1 bis 1."),
+        ("Arc cosine: the angle (in radians) whose cosine is x, for x from -1 to 1.", "Arkuskosinus: der Winkel (im Bogenmaß), dessen Kosinus x ist, für x von -1 bis 1."),
+        ("Arc tangent: the angle (in radians) whose tangent is y. With two numbers, the angle of the point (x, y), from -pi to pi.", "Arkustangens: der Winkel (im Bogenmaß), dessen Tangens y ist. Mit zwei Zahlen der Winkel des Punkts (x, y), von -pi bis pi."),
+        ("Logarithm: natural (base e) by default, or in the given base.", "Logarithmus: standardmäßig der natürliche (Basis e), oder zur angegebenen Basis."),
+        ("e to the power x.", "e hoch x."),
+        ("Is the whole number even?", "Ist die ganze Zahl gerade?"),
+        ("Is the whole number odd?", "Ist die ganze Zahl ungerade?"),
+        ("Greatest common divisor of two whole numbers: the largest number that divides both.", "Größter gemeinsamer Teiler zweier ganzer Zahlen: die größte Zahl, die beide teilt."),
+        ("Least common multiple of two whole numbers: the smallest number divisible by both.", "Kleinstes gemeinsames Vielfaches zweier ganzer Zahlen: die kleinste Zahl, die durch beide teilbar ist."),
+        ("Length of a text (in characters), a list, a record, a dict or a set.", "Länge eines Textes (in Zeichen), einer Liste, eines Records, eines Dicts oder einer Menge."),
+        ("The text in uppercase.", "Der Text in Großbuchstaben."),
+        ("The text in lowercase.", "Der Text in Kleinbuchstaben."),
+        ("The text with its first character in uppercase (the rest is unchanged).", "Der Text mit seinem ersten Zeichen in Großschreibung (der Rest bleibt unverändert)."),
+        ("The text without spaces and line breaks at the start and the end.", "Der Text ohne Leerzeichen und Zeilenumbrüche am Anfang und am Ende."),
+        ("Adds `fill` (a space by default) before the text until it is `width` characters long: numbers line up in columns. A value that is not a text is first shown as `print` shows it.", "Fügt `fill` (standardmäßig ein Leerzeichen) vor dem Text hinzu, bis er `width` Zeichen lang ist: Zahlen stehen in Spalten untereinander. Ein Wert, der kein Text ist, wird zuerst so dargestellt, wie `print` ihn zeigt."),
+        ("Adds `fill` (a space by default) after the text until it is `width` characters long.", "Fügt `fill` (standardmäßig ein Leerzeichen) nach dem Text hinzu, bis er `width` Zeichen lang ist."),
+        ("Cuts a text into a list of texts. Without separator, cuts at spaces.", "Zerlegt einen Text in eine Liste von Texten. Ohne Trennzeichen wird an Leerzeichen zerlegt."),
+        ("Glues the elements of a list into one text, with the separator between them.", "Klebt die Elemente einer Liste zu einem Text zusammen, mit dem Trennzeichen dazwischen."),
+        ("Does the text contain this piece of text? Does the list (or the set) contain this element? Does the record have this field, or the dict this key?", "Enthält der Text dieses Textstück? Enthält die Liste (oder die Menge) dieses Element? Hat der Record dieses Feld, oder das Dict diesen Schlüssel?"),
+        ("Does the text start with this piece of text?", "Beginnt der Text mit diesem Textstück?"),
+        ("Does the text end with this piece of text?", "Endet der Text mit diesem Textstück?"),
+        ("Replaces every occurrence of `old` by `new`.", "Ersetzt jedes Vorkommen von `old` durch `new`."),
+        ("The list of the characters of a text.", "Die Liste der Zeichen eines Textes."),
+        ("The list of the lines of a text.", "Die Liste der Zeilen eines Textes."),
+        ("The number of a character (its Unicode code point).", "Die Nummer eines Zeichens (sein Unicode-Codepunkt)."),
+        ("The character with this number (Unicode code point): the opposite of `char_code`.", "Das Zeichen mit dieser Nummer (Unicode-Codepunkt): das Gegenteil von `char_code`."),
+        ("Is the text made only of digits from 0 to 9 (and not empty)?", "Besteht der Text nur aus Ziffern von 0 bis 9 (und ist nicht leer)?"),
+        ("Is the text made only of letters, accented ones included (and not empty)?", "Besteht der Text nur aus Buchstaben, auch solchen mit Akzent (und ist nicht leer)?"),
+        ("Is the text made only of spaces, tabs and line breaks (and not empty)?", "Besteht der Text nur aus Leerzeichen, Tabulatoren und Zeilenumbrüchen (und ist nicht leer)?"),
+        ("A text or a list repeated n times.", "Ein Text oder eine Liste, n-mal wiederholt."),
+        ("Reads a whole number from a text: `Ok(number)`, or `Err(message)` if the text is not a number.", "Liest eine ganze Zahl aus einem Text: `Ok(number)`, oder `Err(message)`, wenn der Text keine Zahl ist."),
+        ("Reads a decimal number from a text: `Ok(number)` or `Err(message)`.", "Liest eine Dezimalzahl aus einem Text: `Ok(number)` oder `Err(message)`."),
+        ("Reads a JSON text: `Ok(value)`, or `Err(message)` if the text is not valid JSON. Objects become records, arrays lists, and null `None`.", "Liest einen JSON-Text: `Ok(value)`, oder `Err(message)`, wenn der Text kein gültiges JSON ist. Objekte werden Records, Arrays Listen, und null wird `None`."),
+        ("Writes a value as JSON text: records become objects, lists arrays, and `None` null. With `indent`, one element per line, shifted by that many spaces.", "Schreibt einen Wert als JSON-Text: Records werden Objekte, Listen Arrays, und `None` wird null. Mit `indent` ein Element pro Zeile, um so viele Leerzeichen eingerückt."),
+        ("The text without spaces and line breaks at the start.", "Der Text ohne Leerzeichen und Zeilenumbrüche am Anfang."),
+        ("The text without spaces and line breaks at the end.", "Der Text ohne Leerzeichen und Zeilenumbrüche am Ende."),
+        ("The list of the words of a text: letters and digits, accents included, with `'` or `-` inside a word. Punctuation and spaces separate them.", "Die Liste der Wörter eines Textes: Buchstaben und Ziffern, Akzente inklusive, mit `'` oder `-` innerhalb eines Wortes. Satzzeichen und Leerzeichen trennen sie."),
+        ("Are the two texts the same when uppercase and lowercase letters count as equal?", "Sind die beiden Texte gleich, wenn Groß- und Kleinbuchstaben als gleich gelten?"),
+        ("Writes a number for people: thousands separated, with exactly `decimals` decimals if given, in the style of a language: \"en\" (1,234.5, by default), \"fr\" (1 234,5), \"de\", \"es\", \"it\", \"nl\" or \"pt\" (1.234,5). To line it up in a column, use `pad_left`.", "Schreibt eine Zahl für Menschen: Tausender getrennt, mit genau `decimals` Nachkommastellen, falls angegeben, im Stil einer Sprache: \"en\" (1,234.5, standardmäßig), \"fr\" (1 234,5), \"de\", \"es\", \"it\", \"nl\" oder \"pt\" (1.234,5). Um sie in einer Spalte auszurichten, verwende `pad_left`."),
+        ("Does the whole text match the regex (a regular expression: see `rythme help regex`)? To look for the regex anywhere in the text, use `find_first`.", "Passt der ganze Text auf den regulären Ausdruck (siehe `rythme help regex`)? Um den Ausdruck irgendwo im Text zu suchen, verwende `find_first`."),
+        ("The first piece of the text that matches the regex, as an Option: `Some(piece)`, or `None` if there is none.", "Das erste Stück des Textes, das auf den regulären Ausdruck passt, als Option: `Some(piece)`, oder `None`, wenn es keines gibt."),
+        ("Every piece of the text that matches the regex, from left to right.", "Jedes Stück des Textes, das auf den regulären Ausdruck passt, von links nach rechts."),
+        ("The first match of the regex, as an Option of a list: the whole piece, then the text of each group `(...)`, in order (\"\" for a group that matched nothing).", "Der erste Treffer des regulären Ausdrucks, als Option einer Liste: das ganze Stück, dann der Text jeder Gruppe `(...)`, der Reihe nach (\"\" für eine Gruppe, die nichts getroffen hat)."),
+        ("Like `captures`, for every match: a list of lists.", "Wie `captures`, für jeden Treffer: eine Liste von Listen."),
+        ("The first match of a regex with named groups `(?<name>...)`, as an Option of a record: one field for each name.", "Der erste Treffer eines regulären Ausdrucks mit benannten Gruppen `(?<name>...)`, als Option eines Records: ein Feld für jeden Namen."),
+        ("Cuts a text at every piece that matches the regex.", "Zerlegt einen Text an jedem Stück, das auf den regulären Ausdruck passt."),
+        ("Replaces every piece that matches the regex. `new` is a text, where `$1` stands for the text of group 1 (`$<name>` for a named group, `$0` for the whole piece, `$$` for a `$`), or a function that receives each piece and gives its replacement.", "Ersetzt jedes Stück, das auf den regulären Ausdruck passt. `new` ist ein Text, in dem `$1` für den Text der Gruppe 1 steht (`$<name>` für eine benannte Gruppe, `$0` für das ganze Stück, `$$` für ein `$`), oder eine Funktion, die jedes Stück bekommt und seine Ersetzung liefert."),
+        ("Applies the function f to each element and returns the list of the results. Also works on Option and Result, and on a set (giving the set of the results).", "Wendet die Funktion f auf jedes Element an und gibt die Liste der Ergebnisse zurück. Funktioniert auch mit Option und Result, und mit einer Menge (ergibt die Menge der Ergebnisse)."),
+        ("Keeps only the elements for which f returns true. Also works on a set, and on a dict, where f receives each key and its value.", "Behält nur die Elemente, für die f true zurückgibt. Funktioniert auch mit einer Menge, und mit einem Dict, wobei f jeden Schlüssel und seinen Wert bekommt."),
+        ("Combines all the elements into one value: starts with `start`, then computes f(result, element) for each element.", "Fasst alle Elemente zu einem Wert zusammen: beginnt mit `start` und berechnet dann f(result, element) für jedes Element."),
+        ("Like fold, but gives the list of every intermediate result: running totals, for example.", "Wie fold, aber liefert die Liste aller Zwischenergebnisse: zum Beispiel laufende Summen."),
+        ("Calls f on each element, for its effect (like printing). Returns (). Also works on a set, and on a dict, where f receives each key and its value.", "Ruft f für jedes Element auf, wegen seiner Wirkung (wie etwas auszugeben). Gibt () zurück. Funktioniert auch mit einer Menge, und mit einem Dict, wobei f jeden Schlüssel und seinen Wert bekommt."),
+        ("The sum of the numbers of a list; with f, the sum of f(x) for each element.", "Die Summe der Zahlen einer Liste; mit f die Summe von f(x) für jedes Element."),
+        ("The product of the numbers of a list.", "Das Produkt der Zahlen einer Liste."),
+        ("The first element of a list (or character of a text), as an Option: `Some(x)`, or `None` if there is none. With n, the first n elements (like `take`).", "Das erste Element einer Liste (oder Zeichen eines Textes), als Option: `Some(x)`, oder `None`, wenn es keines gibt. Mit n die ersten n Elemente (wie `take`)."),
+        ("The last element of a list (or character of a text), as an Option. With n, the last n elements.", "Das letzte Element einer Liste (oder Zeichen eines Textes), als Option. Mit n die letzten n Elemente."),
+        ("The list (or text) without its first element.", "Die Liste (oder der Text) ohne ihr erstes Element."),
+        ("The element at a position of a list or text, the field of a record, or the value of a key of a dict, as an Option (never an error). Negative positions count from the end.", "Das Element an einer Position einer Liste oder eines Textes, das Feld eines Records, oder der Wert eines Schlüssels eines Dicts, als Option (nie ein Fehler). Negative Positionen zählen vom Ende her."),
+        ("A new list with x added at the end; or a new set with x added.", "Eine neue Liste mit x am Ende angefügt; oder eine neue Menge mit x hinzugefügt."),
+        ("A new list where the element at position i is replaced by x. Negative positions count from the end.", "Eine neue Liste, in der das Element an Position i durch x ersetzt ist. Negative Positionen zählen vom Ende her."),
+        ("A new list with x inserted so that it is at position i (-1 adds it at the end).", "Eine neue Liste, in die x so eingefügt ist, dass es an Position i steht (-1 fügt es am Ende an)."),
+        ("A new list without the element at position i. Negative positions count from the end.", "Eine neue Liste ohne das Element an Position i. Negative Positionen zählen vom Ende her."),
+        ("The list or text in reverse order.", "Die Liste oder der Text in umgekehrter Reihenfolge."),
+        ("The list sorted from smallest to largest (numbers, texts in alphabetical order...). For the largest first: `sort(list) |> reverse`.", "Die Liste vom kleinsten zum größten sortiert (Zahlen, Texte alphabetisch...). Für das Größte zuerst: `sort(list) |> reverse`."),
+        ("Sorts the list by the value that the function `key` gives for each element. Elements with the same value keep their order.", "Sortiert die Liste nach dem Wert, den die Funktion `key` für jedes Element liefert. Elemente mit demselben Wert behalten ihre Reihenfolge."),
+        ("The list without duplicates (the first occurrence is kept).", "Die Liste ohne Duplikate (das erste Vorkommen bleibt)."),
+        ("The elements of the list in a random order.", "Die Elemente der Liste in zufälliger Reihenfolge."),
+        ("The part of a list or text from position `start` (included) to `end` (excluded). Negative positions count from the end.", "Der Teil einer Liste oder eines Textes von Position `start` (inklusive) bis `end` (exklusive). Negative Positionen zählen vom Ende her."),
+        ("The first n elements of a list or text.", "Die ersten n Elemente einer Liste oder eines Textes."),
+        ("The list or text without its first n elements.", "Die Liste oder der Text ohne die ersten n Elemente."),
+        ("The first elements of a list (or characters of a text), as long as f is true for them.", "Die ersten Elemente einer Liste (oder Zeichen eines Textes), solange f für sie wahr ist."),
+        ("The list (or text) without its first elements for which f is true.", "Die Liste (oder der Text) ohne ihre ersten Elemente, für die f wahr ist."),
+        ("One element out of n of a list (or text), starting with the first. On a range: the numbers with a step.", "Ein Element von n einer Liste (oder eines Textes), beginnend mit dem ersten. Bei einem Bereich: die Zahlen mit einer Schrittweite."),
+        ("Cuts a list (or text) into pieces of n elements; the last piece may be shorter.", "Zerlegt eine Liste (oder einen Text) in Stücke von n Elementen; das letzte Stück kann kürzer sein."),
+        ("Every group of n neighbouring elements of a list (or text), in order: handy to compare each element with the next one.", "Jede Gruppe von n benachbarten Elementen einer Liste (oder eines Textes), der Reihe nach: praktisch, um jedes Element mit dem nächsten zu vergleichen."),
+        ("Pairs each element with its position: [[0, x0], [1, x1], ...].", "Paart jedes Element mit seiner Position: [[0, x0], [1, x1], ...]."),
+        ("Is f true for at least one element?", "Ist f für mindestens ein Element wahr?"),
+        ("Is f true for every element?", "Ist f für jedes Element wahr?"),
+        ("The first element for which f is true, as an Option.", "Das erste Element, für das f wahr ist, als Option."),
+        ("How many elements make f true; without f, how many elements there are.", "Wie viele Elemente f wahr machen; ohne f, wie viele Elemente es gibt."),
+        ("The elements for which f is false: the opposite of `filter`. Also works on a set and on a dict, like `filter`.", "Die Elemente, für die f falsch ist: das Gegenteil von `filter`. Funktioniert auch mit einer Menge und einem Dict, wie `filter`."),
+        ("Calls f(element, position) for each element, in order (positions start at 0). For effects, like `print`.", "Ruft f(element, position) für jedes Element der Reihe nach auf (Positionen beginnen bei 0). Für Wirkungen, wie `print`."),
+        ("The position of an element in a list (or of a piece of text in a text), as an Option.", "Die Position eines Elements in einer Liste (oder eines Textstücks in einem Text), als Option."),
+        ("The element for which the function `key` gives the smallest value (the first one if there are several).", "Das Element, für das die Funktion `key` den kleinsten Wert liefert (das erste, wenn es mehrere gibt)."),
+        ("The element for which the function `key` gives the largest value (the first one if there are several).", "Das Element, für das die Funktion `key` den größten Wert liefert (das erste, wenn es mehrere gibt)."),
+        ("Joins a list of lists into one list.", "Verbindet eine Liste von Listen zu einer Liste."),
+        ("Like map, when f returns a list: the lists are joined.", "Wie map, wenn f eine Liste zurückgibt: die Listen werden verbunden."),
+        ("Splits a list in two: [elements where f is true, elements where f is false].", "Teilt eine Liste in zwei: [Elemente, für die f wahr ist, Elemente, für die f falsch ist]."),
+        ("Groups the elements in a record: the key is the text of what `key` returns, the value the list of matching elements.", "Gruppiert die Elemente in einem Record: der Schlüssel ist der Text dessen, was `key` zurückgibt, der Wert die Liste der passenden Elemente."),
+        ("Is the list, text, record, dict or set empty?", "Ist die Liste, der Text, der Record, das Dict oder die Menge leer?"),
+        ("The list of the field names of a record, or of the keys of a dict (in order).", "Die Liste der Feldnamen eines Records, oder der Schlüssel eines Dicts (der Reihe nach)."),
+        ("The list of the values of a record or of a dict (in the order of its keys), or of the elements of a set (in order).", "Die Liste der Werte eines Records oder eines Dicts (in der Reihenfolge seiner Schlüssel), oder der Elemente einer Menge (der Reihe nach)."),
+        ("The list of the [name, value] pairs of a record, or of the [key, value] pairs of a dict.", "Die Liste der [Name, Wert]-Paare eines Records, oder der [Schlüssel, Wert]-Paare eines Dicts."),
+        ("Builds a record from a list of [name, value] pairs: the opposite of `entries`.", "Baut einen Record aus einer Liste von [Name, Wert]-Paaren: das Gegenteil von `entries`."),
+        ("Does the record have this field? Does the dict have this key, or the set this element?", "Hat der Record dieses Feld? Hat das Dict diesen Schlüssel, oder die Menge dieses Element?"),
+        ("A new record with the field set to the value (added or replaced); or a new dict with the key set to the value.", "Ein neuer Record, in dem das Feld auf den Wert gesetzt ist (hinzugefügt oder ersetzt); oder ein neues Dict, in dem der Schlüssel auf den Wert gesetzt ist."),
+        ("A new record without this field; or a new dict without this key, or a new set without this element.", "Ein neuer Record ohne dieses Feld; oder ein neues Dict ohne diesen Schlüssel, oder eine neue Menge ohne dieses Element."),
+        ("A new record (or dict) where f is applied to every value; the names (or keys) stay the same.", "Ein neuer Record (oder ein neues Dict), in dem f auf jeden Wert angewendet ist; die Namen (oder Schlüssel) bleiben gleich."),
+        ("A dictionary: keys of any kind (but functions), each with a value, kept in the order of the keys. Made from a list of [key, value] pairs (the last value of a key wins), from a record, or empty with `dict()`. Use it with get, put, has, remove, keys, values, entries, len, map_values, filter, union...", "Ein Wörterbuch: Schlüssel jeder Art (außer Funktionen), jeder mit einem Wert, in der Reihenfolge der Schlüssel gehalten. Aus einer Liste von [Schlüssel, Wert]-Paaren gebaut (der letzte Wert eines Schlüssels gewinnt), aus einem Record, oder leer mit `dict()`. Verwende es mit get, put, has, remove, keys, values, entries, len, map_values, filter, union..."),
+        ("A set: values (but functions) without repetition, kept in order. Made from a list, or empty with `set()`. Use it with has, push, remove, len, values, filter, map, union, intersection, difference, is_subset.", "Eine Menge: Werte (außer Funktionen) ohne Wiederholung, der Reihe nach gehalten. Aus einer Liste gebaut, oder leer mit `set()`. Verwende sie mit has, push, remove, len, values, filter, map, union, intersection, difference, is_subset."),
+        ("The elements of two sets together; or the pairs of two dicts, where the value of b wins for a key in both.", "Die Elemente zweier Mengen zusammen; oder die Paare zweier Dicts, wobei für einen Schlüssel in beiden der Wert von b gewinnt."),
+        ("The elements of the set a that are also in b; or the pairs of the dict a whose key is in b.", "Die Elemente der Menge a, die auch in b sind; oder die Paare des Dicts a, deren Schlüssel in b ist."),
+        ("The elements of the set a that are not in b; or the pairs of the dict a whose key is not in b.", "Die Elemente der Menge a, die nicht in b sind; oder die Paare des Dicts a, deren Schlüssel nicht in b ist."),
+        ("Is every element of the set a also in the set b?", "Ist jedes Element der Menge a auch in der Menge b?"),
+        ("The value inside `Some(x)` or `Ok(x)`. Stops the program with an error for `None` or `Err(e)`.", "Der Wert in `Some(x)` oder `Ok(x)`. Hält das Programm bei `None` oder `Err(e)` mit einem Fehler an."),
+        ("The value inside `Some(x)` or `Ok(x)`, or the default value for `None` or `Err(e)`.", "Der Wert in `Some(x)` oder `Ok(x)`, oder der Standardwert bei `None` oder `Err(e)`."),
+        ("Is it `Some(...)`?", "Ist es `Some(...)`?"),
+        ("Is it `None`?", "Ist es `None`?"),
+        ("Is it `Ok(...)`?", "Ist es `Ok(...)`?"),
+        ("Is it `Err(...)`?", "Ist es `Err(...)`?"),
+        ("Chains steps that may fail: for `Some(x)` or `Ok(x)`, gives f(x), which must be an Option or a Result; `None` and `Err(e)` stay as they are.", "Verkettet Schritte, die scheitern können: für `Some(x)` oder `Ok(x)` liefert es f(x), das eine Option oder ein Result sein muss; `None` und `Err(e)` bleiben, wie sie sind."),
+        ("Turns an Option into a Result: `Some(x)` gives `Ok(x)`, and `None` gives `Err(error)`. Handy before `?`.", "Macht aus einer Option ein Result: `Some(x)` ergibt `Ok(x)`, und `None` ergibt `Err(error)`. Praktisch vor `?`."),
+        ("For `Err(e)`, gives `Err(f(e))`; `Ok(x)` stays as it is. Handy to explain an error better.", "Für `Err(e)` liefert es `Err(f(e))`; `Ok(x)` bleibt, wie es ist. Praktisch, um einen Fehler besser zu erklären."),
+        ("Reads a whole text file: `Ok(text)`, or `Err(message)` if it cannot be read.", "Liest eine ganze Textdatei: `Ok(text)`, oder `Err(message)`, wenn sie nicht gelesen werden kann."),
+        ("Writes a text in a file (replacing its content): `Ok(())` or `Err(message)`.", "Schreibt einen Text in eine Datei (ersetzt ihren Inhalt): `Ok(())` oder `Err(message)`."),
+        ("Adds a text at the end of a file, creating the file if needed: `Ok(())` or `Err(message)`.", "Fügt einen Text am Ende einer Datei an und legt die Datei bei Bedarf an: `Ok(())` oder `Err(message)`."),
+        ("Does this file (or folder) exist? Always `false` in the browser.", "Gibt es diese Datei (oder diesen Ordner)? Im Browser immer `false`."),
+        ("What is known about a file or a folder: `Ok({is_folder, size})`, with its size in bytes (0 for a folder), or `Err(message)` if it does not exist or cannot be read.", "Was über eine Datei oder einen Ordner bekannt ist: `Ok({is_folder, size})`, mit der Größe in Bytes (0 für einen Ordner), oder `Err(message)`, wenn sie nicht existiert oder nicht gelesen werden kann."),
+        ("The names of the files and folders inside a folder, in alphabetical order: `Ok(list of texts)`, or `Err(message)`. `list_folder(\".\")` lists the current folder.", "Die Namen der Dateien und Ordner in einem Ordner, alphabetisch sortiert: `Ok(list of texts)`, oder `Err(message)`. `list_folder(\".\")` listet den aktuellen Ordner auf."),
+        ("Creates a folder, and the folders around it that are missing: `Ok(())`, also when it already exists, or `Err(message)`.", "Legt einen Ordner an, und die fehlenden Ordner drumherum: `Ok(())`, auch wenn er schon existiert, oder `Err(message)`."),
+        ("Deletes one file (never a folder: that is an error): `Ok(())` or `Err(message)`. A deleted file cannot be brought back.", "Löscht eine Datei (nie einen Ordner: das ist ein Fehler): `Ok(())` oder `Err(message)`. Eine gelöschte Datei kann nicht zurückgeholt werden."),
+        ("Joins the parts of a path with `/`, which works on Linux, macOS and Windows (with `\\` if the parts already use only `\\`). Only the first part can start at a root (`/`, `C:`): a part like \"/etc\" after another one is an error.", "Verbindet die Teile eines Pfads mit `/`, was unter Linux, macOS und Windows funktioniert (mit `\\`, wenn die Teile schon nur `\\` verwenden). Nur der erste Teil darf an einer Wurzel beginnen (`/`, `C:`): ein Teil wie \"/etc\" nach einem anderen ist ein Fehler."),
+        ("The parts of a path, split at each `/` or `\\`; the first part of an absolute path is its root (`/`, `C:\\`...). `join_path` puts them back together.", "Die Teile eines Pfads, an jedem `/` oder `\\` getrennt; der erste Teil eines absoluten Pfads ist seine Wurzel (`/`, `C:\\`...). `join_path` setzt sie wieder zusammen."),
+        ("The date and time now, where the program runs: a record {year, month, day, hour, minute, second, offset}, where `offset` is the number of minutes the local time is ahead of UTC (0 when the system does not tell).", "Datum und Uhrzeit jetzt, dort, wo das Programm läuft: ein Record {year, month, day, hour, minute, second, offset}, wobei `offset` die Anzahl der Minuten ist, die die Ortszeit UTC voraus ist (0, wenn das System es nicht sagt)."),
+        ("The date of today, where the program runs: a record {year, month, day}.", "Das heutige Datum, dort, wo das Programm läuft: ein Record {year, month, day}."),
+        ("Is the value a valid date: a record {year, month, day} (with `hour`, `minute`, `second`, `offset` if needed) for a day that exists?", "Ist der Wert ein gültiges Datum: ein Record {year, month, day} (bei Bedarf mit `hour`, `minute`, `second`, `offset`) für einen Tag, den es gibt?"),
+        ("The date n days later (or earlier, when n is negative), at the same time of day.", "Das Datum n Tage später (oder früher, wenn n negativ ist), zur selben Tageszeit."),
+        ("The date and time n seconds later (or earlier, when n is negative). Add `60 * minutes` or `3600 * hours` the same way.", "Datum und Uhrzeit n Sekunden später (oder früher, wenn n negativ ist). Addiere `60 * minutes` oder `3600 * hours` auf dieselbe Weise."),
+        ("The number of whole days from date a to date b: negative when b is before a.", "Die Anzahl ganzer Tage von Datum a bis Datum b: negativ, wenn b vor a liegt."),
+        ("The number of seconds from date a to date b, taking their offsets into account: negative when b is before a.", "Die Anzahl der Sekunden von Datum a bis Datum b, mit ihren Versätzen berücksichtigt: negativ, wenn b vor a liegt."),
+        ("The day of the week of a date, from 1 (Monday) to 7 (Sunday), as in ISO 8601.", "Der Wochentag eines Datums, von 1 (Montag) bis 7 (Sonntag), wie in ISO 8601."),
+        ("The number of days of a month (from 1 to 12) of a year: 28 to 31.", "Die Anzahl der Tage eines Monats (von 1 bis 12) eines Jahres: 28 bis 31."),
+        ("Does the year have a 29 February? Every 4 years, except every 100 years, except every 400 years.", "Hat das Jahr einen 29. Februar? Alle 4 Jahre, außer alle 100 Jahre, außer alle 400 Jahre."),
+        ("Checks that a property holds for many values made by a generator (100, or `cases`): the function is called with each value and must give `true` (or `()`, `Some(...)`, `Ok(...)`). When a value makes it false or stops it with an error, that value is simplified as much as possible (shrinking) and shown, with the seed that made it: the same values come back on every run. The property may also come last, as a block: `check_all(ints()) { |x| x + 0 == x }`.", "Prüft, dass eine Eigenschaft für viele von einem Generator erzeugte Werte gilt (100, oder `cases`): die Funktion wird mit jedem Wert aufgerufen und muss `true` liefern (oder `()`, `Some(...)`, `Ok(...)`). Wenn ein Wert sie falsch macht oder mit einem Fehler anhält, wird dieser Wert so weit wie möglich vereinfacht (Shrinking) und gezeigt, mit dem Seed, der ihn erzeugt hat: dieselben Werte kommen bei jedem Lauf wieder. Die Eigenschaft kann auch als Block am Ende stehen: `check_all(ints()) { |x| x + 0 == x }`."),
+        ("A list of `n` values (10 if not given) made by a generator, to see what `check_all` will try.", "Eine Liste von `n` Werten (10, wenn nicht angegeben), von einem Generator erzeugt, um zu sehen, was `check_all` ausprobieren wird."),
+        ("A generator of whole numbers from `min` to `max` (from -1000 to 1000 if not given), often near 0 and at the edges. A failing number is simplified towards 0.", "Ein Generator ganzer Zahlen von `min` bis `max` (von -1000 bis 1000, wenn nicht angegeben), oft nahe 0 und an den Rändern. Eine fehlschlagende Zahl wird in Richtung 0 vereinfacht."),
+        ("A generator of decimal numbers from `min` to `max` (from -1000.0 to 1000.0 if not given).", "Ein Generator von Dezimalzahlen von `min` bis `max` (von -1000.0 bis 1000.0, wenn nicht angegeben)."),
+        ("A generator of texts of at most `max_length` characters (20 if not given): letters mostly, with digits, spaces, punctuation and accents. A failing text is made shorter and simpler.", "Ein Generator von Texten mit höchstens `max_length` Zeichen (20, wenn nicht angegeben): meistens Buchstaben, mit Ziffern, Leerzeichen, Satzzeichen und Akzenten. Ein fehlschlagender Text wird kürzer und einfacher gemacht."),
+        ("A generator of `true` and `false`.", "Ein Generator von `true` und `false`."),
+        ("A generator of lists of at most `max_length` elements (10 if not given), each made by `generator`. A failing list is made shorter, then its elements simpler.", "Ein Generator von Listen mit höchstens `max_length` Elementen (10, wenn nicht angegeben), jedes von `generator` erzeugt. Eine fehlschlagende Liste wird kürzer gemacht, dann ihre Elemente einfacher."),
+        ("A generator that picks one of the values of a list. A failing value is replaced by one written before it.", "Ein Generator, der einen der Werte einer Liste wählt. Ein fehlschlagender Wert wird durch einen ersetzt, der davor steht."),
+        ("A generator of records, with a generator for each field: `records_of({name: texts(), age: ints(0, 120)})`. Handy to give several values to `check_all`.", "Ein Generator von Records, mit einem Generator für jedes Feld: `records_of({name: texts(), age: ints(0, 120)})`. Praktisch, um `check_all` mehrere Werte zu geben."),
+        ("January", "Januar"),
+        ("February", "Februar"),
+        ("March", "März"),
+        ("April", "April"),
+        ("May", "Mai"),
+        ("June", "Juni"),
+        ("July", "Juli"),
+        ("August", "August"),
+        ("September", "September"),
+        ("October", "Oktober"),
+        ("November", "November"),
+        ("December", "Dezember"),
+        // docs/exercises: the exercises of `rythme exercise` (see src/exercise.rs)
+        ("# --- Tests (do not change them) ---", "# --- Tests (nicht verändern) ---"),
+        ("to do", "zu tun"),
+        ("01-values", "01-werte"),
+        (
+            r#"# Exercise 01 · First values  ★☆☆
+#
+# A name receives a value with `=` and keeps it forever: in Rythme, values
+# never change.
+#
+# Statement
+#   `seconds_per_minute` is given. Replace each `0` (and the empty text)
+#   below with an expression that uses the names defined before it:
+#   - `seconds_per_hour`: the number of seconds in one hour;
+#   - `seconds_per_day`: the number of seconds in one day;
+#   - `seconds_per_week`: the number of seconds in one week;
+#   - `summary`: the text "A week has 604800 seconds.", where the number
+#     comes from `seconds_per_week` (do not type it yourself).
+#
+# Hints
+#   1. An hour has 60 minutes: `60 * seconds_per_minute`.
+#   2. A day has 24 hours, a week has 7 days.
+#   3. Inside a text, `{name}` is replaced by the value of `name`:
+#      "I have {count} apples".
+#
+# Check your work:  rythme exercise check 01-values.ry
+#              or:  rythme test 01-values.ry
+
+seconds_per_minute = 60
+seconds_per_hour = 0
+seconds_per_day = 0
+seconds_per_week = 0
+summary = ""
+
+# --- Tests (do not change them) ---
+
+test "seconds in an hour" = assert_eq(seconds_per_hour 3600)
+
+test "seconds in a day" = assert_eq(seconds_per_day 86400)
+
+test "seconds in a week" = assert_eq(seconds_per_week 604800)
+
+test "the summary" = assert_eq(summary "A week has 604800 seconds.")
+"#,
+            r#"# Übung 01 · Erste Werte  ★☆☆
+#
+# Ein Name bekommt mit `=` einen Wert und behält ihn für immer: In Rythme
+# ändern sich Werte nie.
+#
+# Aufgabe
+#   `sekunden_pro_minute` ist gegeben. Ersetze jede `0` (und den leeren
+#   Text) unten durch einen Ausdruck, der die vorher definierten Namen
+#   verwendet:
+#   - `sekunden_pro_stunde`: die Anzahl der Sekunden in einer Stunde;
+#   - `sekunden_pro_tag`: die Anzahl der Sekunden an einem Tag;
+#   - `sekunden_pro_woche`: die Anzahl der Sekunden in einer Woche;
+#   - `zusammenfassung`: der Text "Eine Woche hat 604800 Sekunden.", wobei
+#     die Zahl aus `sekunden_pro_woche` kommt (tippe sie nicht selbst).
+#
+# Hinweise
+#   1. Eine Stunde hat 60 Minuten: `60 * sekunden_pro_minute`.
+#   2. Ein Tag hat 24 Stunden, eine Woche hat 7 Tage.
+#   3. In einem Text wird `{name}` durch den Wert von `name` ersetzt:
+#      "Ich habe {anzahl} Äpfel".
+#
+# Prüfe deine Arbeit:  rythme exercise check 01-werte.ry
+#               oder:  rythme test 01-werte.ry
+
+sekunden_pro_minute = 60
+sekunden_pro_stunde = 0
+sekunden_pro_tag = 0
+sekunden_pro_woche = 0
+zusammenfassung = ""
+
+# --- Tests (nicht verändern) ---
+
+test "Sekunden in einer Stunde" = assert_eq(sekunden_pro_stunde 3600)
+
+test "Sekunden an einem Tag" = assert_eq(sekunden_pro_tag 86400)
+
+test "Sekunden in einer Woche" = assert_eq(sekunden_pro_woche 604800)
+
+test "die Zusammenfassung" = assert_eq(zusammenfassung "Eine Woche hat 604800 Sekunden.")
+"#,
+        ),
+        ("02-texts", "02-texte"),
+        (
+            r#"# Exercise 02 · Texts  ★☆☆
+#
+# A function takes values and gives back a new value:
+#   fn double(x) = x * 2
+#
+# Statement
+#   Write the four functions below so that their tests pass:
+#   - `greet(name)` gives "Hello, Ada!" for "Ada";
+#   - `shout(text)` gives the text in uppercase followed by "!";
+#   - `initials(first, last)` gives "A.L." for "Ada" and "Lovelace";
+#   - `introduce(name, age)` gives "Ada is 36 years old.".
+#
+# Hints
+#   1. "Hello, {name}!" inserts the value of `name` into the text.
+#   2. `upper("hi")` is "HI", and `+` joins two texts: "HI" + "!".
+#   3. `word[0]` is the first character of `word`; it can go inside braces
+#      too: "{word[0]}.".
+#
+# Check your work:  rythme exercise check 02-texts.ry
+#              or:  rythme test 02-texts.ry
+
+## A greeting for `name`.
+fn greet(name) = fail("to do")
+
+## The text in uppercase, followed by "!".
+fn shout(text) = fail("to do")
+
+## The initials of a person, each followed by a dot.
+fn initials(first last) = fail("to do")
+
+## A sentence that introduces a person.
+fn introduce(name age) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "greet" = assert_eq(greet("Ada") "Hello, Ada!")
+
+test "greet someone else" = assert_eq(greet("Alan") "Hello, Alan!")
+
+test "shout"
+  assert_eq(shout("hello") "HELLO!")
+  assert_eq(shout("Stop") "STOP!")
+end
+
+test "initials"
+  assert_eq(initials("Ada" "Lovelace") "A.L.")
+  assert_eq(initials("grace" "hopper") "g.h.")
+end
+
+test "introduce" = assert_eq(introduce("Ada" 36) "Ada is 36 years old.")
+"#,
+            r#"# Übung 02 · Texte  ★☆☆
+#
+# Eine Funktion nimmt Werte und gibt einen neuen Wert zurück:
+#   fn doppelt(x) = x * 2
+#
+# Aufgabe
+#   Schreibe die vier Funktionen unten so, dass ihre Tests bestehen:
+#   - `gruessen(name)` gibt "Hallo, Ada!" für "Ada";
+#   - `rufen(text)` gibt den Text in Großbuchstaben, gefolgt von "!";
+#   - `initialen(vorname, nachname)` gibt "A.L." für "Ada" und
+#     "Lovelace";
+#   - `vorstellen(name, alter)` gibt "Ada ist 36 Jahre alt.".
+#
+# Hinweise
+#   1. "Hallo, {name}!" fügt den Wert von `name` in den Text ein.
+#   2. `upper("hallo")` ist "HALLO", und `+` verbindet zwei Texte:
+#      "HALLO" + "!".
+#   3. `wort[0]` ist das erste Zeichen von `wort`; es kann auch in
+#      geschweiften Klammern stehen: "{wort[0]}.".
+#
+# Prüfe deine Arbeit:  rythme exercise check 02-texte.ry
+#               oder:  rythme test 02-texte.ry
+
+## Ein Gruß für `name`.
+fn gruessen(name) = fail("zu tun")
+
+## Der Text in Großbuchstaben, gefolgt von "!".
+fn rufen(text) = fail("zu tun")
+
+## Die Initialen einer Person, jeweils gefolgt von einem Punkt.
+fn initialen(vorname nachname) = fail("zu tun")
+
+## Ein Satz, der eine Person vorstellt.
+fn vorstellen(name alter) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "grüßen" = assert_eq(gruessen("Ada") "Hallo, Ada!")
+
+test "jemand anderen grüßen" = assert_eq(gruessen("Alan") "Hallo, Alan!")
+
+test "rufen"
+  assert_eq(rufen("hallo") "HALLO!")
+  assert_eq(rufen("Stopp") "STOPP!")
+end
+
+test "Initialen"
+  assert_eq(initialen("Ada" "Lovelace") "A.L.")
+  assert_eq(initialen("grace" "hopper") "g.h.")
+end
+
+test "vorstellen" = assert_eq(vorstellen("Ada" 36) "Ada ist 36 Jahre alt.")
+"#,
+        ),
+        ("03-arithmetic", "03-rechnen"),
+        (
+            r#"# Exercise 03 · Arithmetic  ★☆☆
+#
+# Numbers are whole (Int: 3) or decimal (Float: 3.5). `/` always gives a
+# Float (`7 / 2` is 3.5); `//` divides and rounds down (`7 // 2` is 3) and
+# `%` gives the remainder (`7 % 2` is 1).
+#
+# Statement
+#   - `square(x)`: x times x;
+#   - `average(a, b)`: the average of two numbers;
+#   - `fahrenheit(celsius)`: the temperature in degrees Fahrenheit
+#     (multiply by 9, divide by 5, add 32);
+#   - `hypotenuse(a, b)`: the long side of a right triangle whose two other
+#     sides are a and b (the square root of a² + b²);
+#   - `minutes_and_seconds(total)`: for a number of seconds, a text like
+#     "2 min 5 s" (for 125).
+#
+# Hints
+#   1. `sqrt(16)` is 4.0.
+#   2. `125 // 60` is 2 and `125 % 60` is 5.
+#   3. `3 == 3.0` is true: an Int and a Float with the same value are equal.
+#
+# Check your work:  rythme exercise check 03-arithmetic.ry
+#              or:  rythme test 03-arithmetic.ry
+
+fn square(x) = fail("to do")
+
+fn average(a b) = fail("to do")
+
+fn fahrenheit(celsius) = fail("to do")
+
+fn hypotenuse(a b) = fail("to do")
+
+fn minutes_and_seconds(total) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "square"
+  assert_eq(square(3) 9)
+  assert_eq(square(-4) 16)
+  assert_eq(square(1.5) 2.25)
+end
+
+test "average"
+  assert_eq(average(2 4) 3)
+  assert_eq(average(1 2) 1.5)
+end
+
+test "fahrenheit"
+  assert_eq(fahrenheit(0) 32)
+  assert_eq(fahrenheit(100) 212)
+  assert_eq(fahrenheit(-40), -40)
+end
+
+test "hypotenuse"
+  assert_eq(hypotenuse(3 4) 5)
+  assert_eq(hypotenuse(5 12) 13)
+end
+
+test "minutes and seconds"
+  assert_eq(minutes_and_seconds(125) "2 min 5 s")
+  assert_eq(minutes_and_seconds(59) "0 min 59 s")
+  assert_eq(minutes_and_seconds(600) "10 min 0 s")
+end
+"#,
+            r#"# Übung 03 · Rechnen  ★☆☆
+#
+# Zahlen sind ganz (Int: 3) oder mit Komma (Float: 3.5). `/` gibt immer
+# einen Float (`7 / 2` ist 3.5); `//` teilt und rundet ab (`7 // 2` ist 3)
+# und `%` gibt den Rest (`7 % 2` ist 1).
+#
+# Aufgabe
+#   - `quadrat(x)`: x mal x;
+#   - `mittelwert(a, b)`: der Mittelwert zweier Zahlen;
+#   - `fahrenheit(celsius)`: die Temperatur in Grad Fahrenheit
+#     (mit 9 multiplizieren, durch 5 teilen, 32 addieren);
+#   - `hypotenuse(a, b)`: die lange Seite eines rechtwinkligen Dreiecks,
+#     dessen andere zwei Seiten a und b sind (die Quadratwurzel von
+#     a² + b²);
+#   - `minuten_und_sekunden(gesamt)`: für eine Anzahl von Sekunden ein Text
+#     wie "2 min 5 s" (für 125).
+#
+# Hinweise
+#   1. `sqrt(16)` ist 4.0.
+#   2. `125 // 60` ist 2 und `125 % 60` ist 5.
+#   3. `3 == 3.0` ist wahr: ein Int und ein Float mit demselben Wert sind
+#      gleich.
+#
+# Prüfe deine Arbeit:  rythme exercise check 03-rechnen.ry
+#               oder:  rythme test 03-rechnen.ry
+
+fn quadrat(x) = fail("zu tun")
+
+fn mittelwert(a b) = fail("zu tun")
+
+fn fahrenheit(celsius) = fail("zu tun")
+
+fn hypotenuse(a b) = fail("zu tun")
+
+fn minuten_und_sekunden(gesamt) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Quadrat"
+  assert_eq(quadrat(3) 9)
+  assert_eq(quadrat(-4) 16)
+  assert_eq(quadrat(1.5) 2.25)
+end
+
+test "Mittelwert"
+  assert_eq(mittelwert(2 4) 3)
+  assert_eq(mittelwert(1 2) 1.5)
+end
+
+test "Fahrenheit"
+  assert_eq(fahrenheit(0) 32)
+  assert_eq(fahrenheit(100) 212)
+  assert_eq(fahrenheit(-40), -40)
+end
+
+test "Hypotenuse"
+  assert_eq(hypotenuse(3 4) 5)
+  assert_eq(hypotenuse(5 12) 13)
+end
+
+test "Minuten und Sekunden"
+  assert_eq(minuten_und_sekunden(125) "2 min 5 s")
+  assert_eq(minuten_und_sekunden(59) "0 min 59 s")
+  assert_eq(minuten_und_sekunden(600) "10 min 0 s")
+end
+"#,
+        ),
+        ("04-choosing", "04-auswaehlen"),
+        (
+            r#"# Exercise 04 · Choosing with `if`  ★☆☆
+#
+# `if condition then value else other_value` is an expression: it gives a
+# value, so `else` is always needed. `else if` chains several conditions.
+#
+# Statement
+#   Without using the built-in functions `abs`, `min` and `max`:
+#   - `absolute(n)`: n without its sign (`absolute(-5)` is 5);
+#   - `larger(a, b)`: the larger of two numbers;
+#   - `grade(score)`: for a score from 0 to 100, "A" from 90, "B" from 80,
+#     "C" from 70, "D" from 60, and "F" below 60;
+#   - `ticket_price(age)`: 0 under 4 years, 5 under 12, 12 from 65, and 10
+#     otherwise.
+#
+# Hints
+#   1. `if n < 0 then -n else n`
+#   2. Test the highest grade first: `if score >= 90 then "A" else if ...`.
+#   3. A long `if` can continue on the next lines, each starting with
+#      `else if`.
+#
+# Check your work:  rythme exercise check 04-choosing.ry
+#              or:  rythme test 04-choosing.ry
+
+fn absolute(n) = fail("to do")
+
+fn larger(a b) = fail("to do")
+
+fn grade(score) = fail("to do")
+
+fn ticket_price(age) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "absolute"
+  assert_eq(absolute(-5) 5)
+  assert_eq(absolute(7) 7)
+  assert_eq(absolute(0) 0)
+end
+
+test "larger"
+  assert_eq(larger(3 8) 8)
+  assert_eq(larger(8 3) 8)
+  assert_eq(larger(-1, -2), -1)
+end
+
+test "grade"
+  assert_eq(grade(95) "A")
+  assert_eq(grade(90) "A")
+  assert_eq(grade(85) "B")
+  assert_eq(grade(70) "C")
+  assert_eq(grade(61) "D")
+  assert_eq(grade(12) "F")
+end
+
+test "ticket price"
+  assert_eq(ticket_price(2) 0)
+  assert_eq(ticket_price(4) 5)
+  assert_eq(ticket_price(11) 5)
+  assert_eq(ticket_price(30) 10)
+  assert_eq(ticket_price(65) 12)
+end
+"#,
+            r#"# Übung 04 · Auswählen mit `if`  ★☆☆
+#
+# `if bedingung then wert else anderer_wert` ist ein Ausdruck: Er gibt einen
+# Wert, also ist `else` immer nötig. `else if` verkettet mehrere
+# Bedingungen.
+#
+# Aufgabe
+#   Ohne die eingebauten Funktionen `abs`, `min` und `max`:
+#   - `betrag(n)`: n ohne sein Vorzeichen (`betrag(-5)` ist 5);
+#   - `groessere(a, b)`: die größere von zwei Zahlen;
+#   - `note(punkte)`: für eine Punktzahl von 0 bis 100 "A" ab 90, "B" ab
+#     80, "C" ab 70, "D" ab 60 und "F" unter 60;
+#   - `eintrittspreis(alter)`: 0 unter 4 Jahren, 5 unter 12, 12 ab 65, und
+#     sonst 10.
+#
+# Hinweise
+#   1. `if n < 0 then -n else n`
+#   2. Prüfe zuerst die beste Note: `if punkte >= 90 then "A" else if ...`.
+#   3. Ein langes `if` kann in den nächsten Zeilen weitergehen, die jeweils
+#      mit `else if` beginnen.
+#
+# Prüfe deine Arbeit:  rythme exercise check 04-auswaehlen.ry
+#               oder:  rythme test 04-auswaehlen.ry
+
+fn betrag(n) = fail("zu tun")
+
+fn groessere(a b) = fail("zu tun")
+
+fn note(punkte) = fail("zu tun")
+
+fn eintrittspreis(alter) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Betrag"
+  assert_eq(betrag(-5) 5)
+  assert_eq(betrag(7) 7)
+  assert_eq(betrag(0) 0)
+end
+
+test "die größere"
+  assert_eq(groessere(3 8) 8)
+  assert_eq(groessere(8 3) 8)
+  assert_eq(groessere(-1, -2), -1)
+end
+
+test "Note"
+  assert_eq(note(95) "A")
+  assert_eq(note(90) "A")
+  assert_eq(note(85) "B")
+  assert_eq(note(70) "C")
+  assert_eq(note(61) "D")
+  assert_eq(note(12) "F")
+end
+
+test "Eintrittspreis"
+  assert_eq(eintrittspreis(2) 0)
+  assert_eq(eintrittspreis(4) 5)
+  assert_eq(eintrittspreis(11) 5)
+  assert_eq(eintrittspreis(30) 10)
+  assert_eq(eintrittspreis(65) 12)
+end
+"#,
+        ),
+        ("05-logic", "05-logik"),
+        (
+            r#"# Exercise 05 · True or false  ★☆☆
+#
+# Comparisons (`==`, `!=`, `<`, `<=`, `>`, `>=`) give a Bool: `true` or
+# `false`. `and`, `or` and `not` combine Bools.
+#
+# Statement
+#   Each function gives a Bool, and none of them needs `if`:
+#   - `is_multiple(n, d)`: is n a multiple of d?
+#   - `is_between(x, low, high)`: is x from low to high (both included)?
+#   - `is_leap(year)`: a year is a leap year when it is a multiple of
+#     4, except the multiples of 100 that are not multiples of 400 (2000 is
+#     a leap year, 1900 is not); the library has it too, as
+#     `is_leap_year`, but here you write the rule yourself;
+#   - `exclusive_or(a, b)`: is exactly one of a and b true?
+#
+# Hints
+#   1. n is a multiple of d when the remainder `n % d` is 0.
+#   2. `x >= low and x <= high`
+#   3. Write the rule for leap years with the first function:
+#      `is_multiple(year, 4) and (...)`.
+#   4. Two Bools can be compared with `!=` too.
+#
+# Check your work:  rythme exercise check 05-logic.ry
+#              or:  rythme test 05-logic.ry
+
+fn is_multiple(n d) = fail("to do")
+
+fn is_between(x low high) = fail("to do")
+
+fn is_leap(year) = fail("to do")
+
+fn exclusive_or(a b) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "multiples"
+  assert(is_multiple(12 3) "12 is a multiple of 3")
+  assert(not is_multiple(12 5) "12 is not a multiple of 5")
+  assert(is_multiple(0 7) "0 is a multiple of every number")
+end
+
+test "between"
+  assert(is_between(5 1 10) "5 is between 1 and 10")
+  assert(is_between(1 1 10) "the bounds are included")
+  assert(is_between(10 1 10) "the bounds are included")
+  assert(not is_between(11 1 10) "11 is too big")
+  assert(not is_between(0 1 10) "0 is too small")
+end
+
+test "leap years"
+  assert_eq(is_leap(2024) true)
+  assert_eq(is_leap(2023) false)
+  assert_eq(is_leap(1900) false)
+  assert_eq(is_leap(2000) true)
+end
+
+test "exclusive or"
+  assert_eq(exclusive_or(true false) true)
+  assert_eq(exclusive_or(false true) true)
+  assert_eq(exclusive_or(true true) false)
+  assert_eq(exclusive_or(false false) false)
+end
+"#,
+            r#"# Übung 05 · Wahr oder falsch  ★☆☆
+#
+# Vergleiche (`==`, `!=`, `<`, `<=`, `>`, `>=`) geben einen Bool: `true`
+# oder `false`. `and`, `or` und `not` verknüpfen Bools.
+#
+# Aufgabe
+#   Jede Funktion gibt einen Bool, und keine braucht `if`:
+#   - `ist_vielfaches(n, d)`: ist n ein Vielfaches von d?
+#   - `liegt_zwischen(x, unten, oben)`: liegt x zwischen unten und oben
+#     (beide eingeschlossen)?
+#   - `ist_schaltjahr(jahr)`: ein Jahr ist ein Schaltjahr, wenn es ein
+#     Vielfaches von 4 ist, außer den Vielfachen von 100, die keine
+#     Vielfachen von 400 sind (2000 ist ein Schaltjahr, 1900 nicht); die
+#     Bibliothek hat das auch, als `is_leap_year`, aber hier schreibst du
+#     die Regel selbst;
+#   - `exklusiv_oder(a, b)`: ist genau einer von a und b wahr?
+#
+# Hinweise
+#   1. n ist ein Vielfaches von d, wenn der Rest `n % d` 0 ist.
+#   2. `x >= unten and x <= oben`
+#   3. Schreibe die Regel für Schaltjahre mit der ersten Funktion:
+#      `ist_vielfaches(jahr, 4) and (...)`.
+#   4. Zwei Bools lassen sich auch mit `!=` vergleichen.
+#
+# Prüfe deine Arbeit:  rythme exercise check 05-logik.ry
+#               oder:  rythme test 05-logik.ry
+
+fn ist_vielfaches(n d) = fail("zu tun")
+
+fn liegt_zwischen(x unten oben) = fail("zu tun")
+
+fn ist_schaltjahr(jahr) = fail("zu tun")
+
+fn exklusiv_oder(a b) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Vielfache"
+  assert(ist_vielfaches(12 3) "12 ist ein Vielfaches von 3")
+  assert(not ist_vielfaches(12 5) "12 ist kein Vielfaches von 5")
+  assert(ist_vielfaches(0 7) "0 ist ein Vielfaches jeder Zahl")
+end
+
+test "zwischen"
+  assert(liegt_zwischen(5 1 10) "5 liegt zwischen 1 und 10")
+  assert(liegt_zwischen(1 1 10) "die Grenzen gehören dazu")
+  assert(liegt_zwischen(10 1 10) "die Grenzen gehören dazu")
+  assert(not liegt_zwischen(11 1 10) "11 ist zu groß")
+  assert(not liegt_zwischen(0 1 10) "0 ist zu klein")
+end
+
+test "Schaltjahre"
+  assert_eq(ist_schaltjahr(2024) true)
+  assert_eq(ist_schaltjahr(2023) false)
+  assert_eq(ist_schaltjahr(1900) false)
+  assert_eq(ist_schaltjahr(2000) true)
+end
+
+test "exklusives Oder"
+  assert_eq(exklusiv_oder(true false) true)
+  assert_eq(exklusiv_oder(false true) true)
+  assert_eq(exklusiv_oder(true true) false)
+  assert_eq(exklusiv_oder(false false) false)
+end
+"#,
+        ),
+        ("06-cases", "06-faelle"),
+        (
+            r#"# Exercise 06 · One definition per case  ★☆☆
+#
+# A function can be written as several definitions, tried in order. A
+# parameter can be a value (`fn f(0) = ...`), and a guard (`if ...` before
+# the `=`) adds a condition:
+#   fn describe(0) = "zero"
+#   fn describe(n) if n < 0 = "negative"
+#   fn describe(_) = "positive"
+#
+# Statement
+#   - `plural(n, word)`: "1 cat" for 1, but "0 cats", "2 cats"...
+#   - `fizzbuzz(n)`: "FizzBuzz" if n is a multiple of 3 and of 5, "Fizz"
+#     for the other multiples of 3, "Buzz" for the other multiples of 5,
+#     and the number as a text otherwise;
+#   - `day_kind(day)`: "weekend" for "Saturday" and "Sunday", "weekday"
+#     for any other text.
+#
+# Hints
+#   1. Start with the special case: `fn plural(1, word) = ...`, then the
+#      general case on the next line.
+#   2. The order matters: test "FizzBuzz" before "Fizz" and "Buzz".
+#   3. `text(15)` is "15".
+#   4. `_` accepts anything, and is usually the last case.
+#
+# Check your work:  rythme exercise check 06-cases.ry
+#              or:  rythme test 06-cases.ry
+
+fn plural(n word) = fail("to do")
+
+fn fizzbuzz(n) = fail("to do")
+
+fn day_kind(day) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "plural"
+  assert_eq(plural(1 "cat") "1 cat")
+  assert_eq(plural(2 "cat") "2 cats")
+  assert_eq(plural(0 "dog") "0 dogs")
+end
+
+test "fizzbuzz"
+  assert_eq(fizzbuzz(1) "1")
+  assert_eq(fizzbuzz(3) "Fizz")
+  assert_eq(fizzbuzz(10) "Buzz")
+  assert_eq(fizzbuzz(30) "FizzBuzz")
+  assert_eq(fizzbuzz(31) "31")
+end
+
+test "the first fifteen" = assert_eq(1..15 |> map(fizzbuzz) |> join(" ") "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+
+test "day kind"
+  assert_eq(day_kind("Saturday") "weekend")
+  assert_eq(day_kind("Sunday") "weekend")
+  assert_eq(day_kind("Monday") "weekday")
+end
+"#,
+            r#"# Übung 06 · Eine Definition pro Fall  ★☆☆
+#
+# Eine Funktion kann aus mehreren Definitionen bestehen, die der Reihe nach
+# versucht werden. Ein Parameter kann ein Wert sein (`fn f(0) = ...`), und
+# ein Guard (`if ...` vor dem `=`) fügt eine Bedingung hinzu:
+#   fn beschreiben(0) = "null"
+#   fn beschreiben(n) if n < 0 = "negativ"
+#   fn beschreiben(_) = "positiv"
+#
+# Aufgabe
+#   - `plural(n, wort)`: "1 Auto" für 1, aber "0 Autos", "2 Autos"... (für
+#     Wörter, deren Plural auf -s endet);
+#   - `fizzbuzz(n)`: "FizzBuzz", wenn n ein Vielfaches von 3 und von 5 ist,
+#     "Fizz" für die anderen Vielfachen von 3, "Buzz" für die anderen
+#     Vielfachen von 5, und sonst die Zahl als Text;
+#   - `art_des_tages(tag)`: "Wochenende" für "Samstag" und "Sonntag",
+#     "Werktag" für jeden anderen Text.
+#
+# Hinweise
+#   1. Beginne mit dem Sonderfall: `fn plural(1, wort) = ...`, dann der
+#      allgemeine Fall in der nächsten Zeile.
+#   2. Die Reihenfolge zählt: Prüfe "FizzBuzz" vor "Fizz" und "Buzz".
+#   3. `text(15)` ist "15".
+#   4. `_` passt auf alles und ist meist der letzte Fall.
+#
+# Prüfe deine Arbeit:  rythme exercise check 06-faelle.ry
+#               oder:  rythme test 06-faelle.ry
+
+fn plural(n wort) = fail("zu tun")
+
+fn fizzbuzz(n) = fail("zu tun")
+
+fn art_des_tages(tag) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Plural"
+  assert_eq(plural(1 "Auto") "1 Auto")
+  assert_eq(plural(2 "Auto") "2 Autos")
+  assert_eq(plural(0 "Foto") "0 Fotos")
+end
+
+test "FizzBuzz"
+  assert_eq(fizzbuzz(1) "1")
+  assert_eq(fizzbuzz(3) "Fizz")
+  assert_eq(fizzbuzz(10) "Buzz")
+  assert_eq(fizzbuzz(30) "FizzBuzz")
+  assert_eq(fizzbuzz(31) "31")
+end
+
+test "die ersten fünfzehn" = assert_eq(1..15 |> map(fizzbuzz) |> join(" ") "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz")
+
+test "Art des Tages"
+  assert_eq(art_des_tages("Samstag") "Wochenende")
+  assert_eq(art_des_tages("Sonntag") "Wochenende")
+  assert_eq(art_des_tages("Montag") "Werktag")
+end
+"#,
+        ),
+        ("07-recursion", "07-rekursion"),
+        (
+            r#"# Exercise 07 · Recursion  ★★☆
+#
+# Rythme has no loops: to repeat, a function calls itself. Every recursive
+# function needs a base case, which stops, and a recursive case, which
+# brings the problem closer to the base case:
+#   fn countdown(0) = "liftoff!"
+#   fn countdown(n) = "{n} " + countdown(n - 1)
+#
+# Statement
+#   - `factorial(n)`: 1 × 2 × ... × n, and `factorial(0)` is 1;
+#   - `sum_to(n)`: 1 + 2 + ... + n, and `sum_to(0)` is 0;
+#   - `power(x, n)`: x to the power n, for n ≥ 0, without `**` or `pow`.
+#
+# Hints
+#   1. `factorial(5)` is `5 * factorial(4)`.
+#   2. What is `power(x, 0)`? And `power(x, n)` compared with
+#      `power(x, n - 1)`?
+#   3. A function that never reaches its base case stops with error E014:
+#      check that n gets smaller at each call.
+#
+# Check your work:  rythme exercise check 07-recursion.ry
+#              or:  rythme test 07-recursion.ry
+
+fn factorial(n) = fail("to do")
+
+fn sum_to(n) = fail("to do")
+
+fn power(x n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "factorial"
+  assert_eq(factorial(0) 1)
+  assert_eq(factorial(1) 1)
+  assert_eq(factorial(5) 120)
+  assert_eq(factorial(10) 3628800)
+end
+
+test "sum to"
+  assert_eq(sum_to(0) 0)
+  assert_eq(sum_to(1) 1)
+  assert_eq(sum_to(10) 55)
+  assert_eq(sum_to(100) 5050)
+end
+
+test "power"
+  assert_eq(power(2 0) 1)
+  assert_eq(power(2 10) 1024)
+  assert_eq(power(3 4) 81)
+  assert_eq(power(1.5 2) 2.25)
+end
+"#,
+            r#"# Übung 07 · Rekursion  ★★☆
+#
+# Rythme hat keine Schleifen: Um etwas zu wiederholen, ruft sich eine
+# Funktion selbst auf. Jede rekursive Funktion braucht einen Basisfall, der
+# anhält, und einen rekursiven Fall, der das Problem dem Basisfall näher
+# bringt:
+#   fn countdown(0) = "Start!"
+#   fn countdown(n) = "{n} " + countdown(n - 1)
+#
+# Aufgabe
+#   - `fakultaet(n)`: 1 × 2 × ... × n, und `fakultaet(0)` ist 1;
+#   - `summe_bis(n)`: 1 + 2 + ... + n, und `summe_bis(0)` ist 0;
+#   - `potenz(x, n)`: x hoch n, für n ≥ 0, ohne `**` oder `pow`.
+#
+# Hinweise
+#   1. `fakultaet(5)` ist `5 * fakultaet(4)`.
+#   2. Was ist `potenz(x, 0)`? Und `potenz(x, n)` im Vergleich zu
+#      `potenz(x, n - 1)`?
+#   3. Eine Funktion, die ihren Basisfall nie erreicht, stoppt mit dem
+#      Fehler E014: Prüfe, dass n bei jedem Aufruf kleiner wird.
+#
+# Prüfe deine Arbeit:  rythme exercise check 07-rekursion.ry
+#               oder:  rythme test 07-rekursion.ry
+
+fn fakultaet(n) = fail("zu tun")
+
+fn summe_bis(n) = fail("zu tun")
+
+fn potenz(x n) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Fakultät"
+  assert_eq(fakultaet(0) 1)
+  assert_eq(fakultaet(1) 1)
+  assert_eq(fakultaet(5) 120)
+  assert_eq(fakultaet(10) 3628800)
+end
+
+test "Summe bis"
+  assert_eq(summe_bis(0) 0)
+  assert_eq(summe_bis(1) 1)
+  assert_eq(summe_bis(10) 55)
+  assert_eq(summe_bis(100) 5050)
+end
+
+test "Potenz"
+  assert_eq(potenz(2 0) 1)
+  assert_eq(potenz(2 10) 1024)
+  assert_eq(potenz(3 4) 81)
+  assert_eq(potenz(1.5 2) 2.25)
+end
+"#,
+        ),
+        ("08-digits", "08-ziffern"),
+        (
+            r#"# Exercise 08 · The digits of a number  ★★☆
+#
+# `n % 10` is the last digit of n, and `n // 10` is n without its last
+# digit: for 472, they are 2 and 47.
+#
+# Statement
+#   For whole numbers n ≥ 0, and with recursion (without turning the number
+#   into a text):
+#   - `digit_count(n)`: how many digits n has (0 has one digit);
+#   - `digit_sum(n)`: the sum of the digits of n;
+#   - `reverse_number(n)`: the digits in the opposite order (1230 gives 321).
+#
+# Hints
+#   1. A number below 10 has a single digit: that is the base case.
+#   2. `digit_sum(472)` is `2 + digit_sum(47)`.
+#   3. For `reverse_number`, write a helper with one more parameter, the
+#      number built so far: `reverse_from(n, built)`, with
+#      `reverse_from(0, built) = built`. Each step moves the last digit of n
+#      to the end of `built`: `built * 10 + n % 10`.
+#
+# Check your work:  rythme exercise check 08-digits.ry
+#              or:  rythme test 08-digits.ry
+
+fn digit_count(n) = fail("to do")
+
+fn digit_sum(n) = fail("to do")
+
+fn reverse_number(n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "digit count"
+  assert_eq(digit_count(0) 1)
+  assert_eq(digit_count(7) 1)
+  assert_eq(digit_count(472) 3)
+  assert_eq(digit_count(1000000) 7)
+end
+
+test "digit sum"
+  assert_eq(digit_sum(0) 0)
+  assert_eq(digit_sum(472) 13)
+  assert_eq(digit_sum(99999) 45)
+end
+
+test "reverse number"
+  assert_eq(reverse_number(472) 274)
+  assert_eq(reverse_number(1230) 321)
+  assert_eq(reverse_number(5) 5)
+end
+"#,
+            r#"# Übung 08 · Die Ziffern einer Zahl  ★★☆
+#
+# `n % 10` ist die letzte Ziffer von n, und `n // 10` ist n ohne seine
+# letzte Ziffer: für 472 sind das 2 und 47.
+#
+# Aufgabe
+#   Für ganze Zahlen n ≥ 0, und mit Rekursion (ohne die Zahl in einen Text
+#   umzuwandeln):
+#   - `anzahl_ziffern(n)`: wie viele Ziffern n hat (0 hat eine Ziffer);
+#   - `quersumme(n)`: die Summe der Ziffern von n;
+#   - `zahl_umdrehen(n)`: die Ziffern in umgekehrter Reihenfolge (1230
+#     gibt 321).
+#
+# Hinweise
+#   1. Eine Zahl unter 10 hat eine einzige Ziffer: Das ist der Basisfall.
+#   2. `quersumme(472)` ist `2 + quersumme(47)`.
+#   3. Für `zahl_umdrehen` schreibst du eine Hilfsfunktion mit einem
+#      Parameter mehr, der bisher gebauten Zahl:
+#      `umdrehen_ab(n, gebaut)`, mit `umdrehen_ab(0, gebaut) = gebaut`.
+#      Jeder Schritt bringt die letzte Ziffer von n ans Ende von `gebaut`:
+#      `gebaut * 10 + n % 10`.
+#
+# Prüfe deine Arbeit:  rythme exercise check 08-ziffern.ry
+#               oder:  rythme test 08-ziffern.ry
+
+fn anzahl_ziffern(n) = fail("zu tun")
+
+fn quersumme(n) = fail("zu tun")
+
+fn zahl_umdrehen(n) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Anzahl der Ziffern"
+  assert_eq(anzahl_ziffern(0) 1)
+  assert_eq(anzahl_ziffern(7) 1)
+  assert_eq(anzahl_ziffern(472) 3)
+  assert_eq(anzahl_ziffern(1000000) 7)
+end
+
+test "Quersumme"
+  assert_eq(quersumme(0) 0)
+  assert_eq(quersumme(472) 13)
+  assert_eq(quersumme(99999) 45)
+end
+
+test "Zahl umdrehen"
+  assert_eq(zahl_umdrehen(472) 274)
+  assert_eq(zahl_umdrehen(1230) 321)
+  assert_eq(zahl_umdrehen(5) 5)
+end
+"#,
+        ),
+        ("09-accumulators", "09-akkumulatoren"),
+        (
+            r#"# Exercise 09 · Accumulators and tail calls  ★★☆
+#
+# In `n + sum_to(n - 1)`, the addition waits for the call to finish: a
+# million nested calls stop with error E014 ("too many nested calls"). When
+# the recursive call is the very last thing the function does (a tail
+# call), nothing waits, and there is no limit. An extra parameter, the
+# accumulator, carries the result built so far:
+#   fn sum_from(0, total) = total
+#   fn sum_from(n, total) = sum_from(n - 1, total + n)
+#
+# Statement
+#   - `big_sum(n)`: 1 + 2 + ... + n, which must work for n = 1000000;
+#   - `collatz_steps(n)`: for n ≥ 1, the number of steps to reach 1, where
+#     a step divides an even number by 2 and turns an odd number into
+#     3 × n + 1 (6 → 3 → 10 → 5 → 16 → 8 → 4 → 2 → 1 takes 8 steps);
+#   - `fib(n)`: the n-th Fibonacci number (0, 1, 1, 2, 3, 5, 8...: each
+#     one is the sum of the two before), fast even for n = 90.
+#
+# Hints
+#   1. `big_sum(n)` can simply call a helper: `sum_from(n, 0)`.
+#   2. `collatz_from(n, steps)`: when n is 1, the answer is `steps`.
+#   3. `fib(n) = fib(n - 1) + fib(n - 2)` is correct but very slow, because
+#      it computes the same numbers again and again. Carry the two last
+#      numbers instead: `fib_from(n, a, b)`, where a and b are two
+#      neighbouring Fibonacci numbers, starting with `fib_from(n, 0, 1)`.
+#
+# Check your work:  rythme exercise check 09-accumulators.ry
+#              or:  rythme test 09-accumulators.ry
+
+fn big_sum(n) = fail("to do")
+
+fn collatz_steps(n) = fail("to do")
+
+fn fib(n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "big sum"
+  assert_eq(big_sum(10) 55)
+  assert_eq(big_sum(1000000) 500000500000)
+end
+
+test "collatz steps"
+  assert_eq(collatz_steps(1) 0)
+  assert_eq(collatz_steps(6) 8)
+  assert_eq(collatz_steps(27) 111)
+end
+
+test "fibonacci"
+  assert_eq(0..10 |> map(fib) [0 1 1 2 3 5 8 13 21 34 55])
+  assert_eq(fib(90) 2880067194370816120)
+end
+"#,
+            r#"# Übung 09 · Akkumulatoren und Endaufrufe  ★★☆
+#
+# In `n + summe_bis(n - 1)` wartet die Addition darauf, dass der Aufruf
+# fertig ist: eine Million verschachtelter Aufrufe stoppt mit dem Fehler
+# E014 ("zu viele verschachtelte Aufrufe"). Wenn der rekursive Aufruf das
+# Allerletzte ist, was die Funktion tut (ein Endaufruf), wartet nichts, und
+# es gibt keine Grenze. Ein zusätzlicher Parameter, der Akkumulator, trägt
+# das bisher gebaute Ergebnis:
+#   fn summe_ab(0, gesamt) = gesamt
+#   fn summe_ab(n, gesamt) = summe_ab(n - 1, gesamt + n)
+#
+# Aufgabe
+#   - `grosse_summe(n)`: 1 + 2 + ... + n, was für n = 1000000 funktionieren
+#     muss;
+#   - `collatz_schritte(n)`: für n ≥ 1 die Anzahl der Schritte bis 1, wobei
+#     ein Schritt eine gerade Zahl durch 2 teilt und eine ungerade Zahl in
+#     3 × n + 1 verwandelt (6 → 3 → 10 → 5 → 16 → 8 → 4 → 2 → 1 braucht 8
+#     Schritte);
+#   - `fib(n)`: die n-te Fibonacci-Zahl (0, 1, 1, 2, 3, 5, 8...: jede ist
+#     die Summe der zwei davor), schnell sogar für n = 90.
+#
+# Hinweise
+#   1. `grosse_summe(n)` kann einfach eine Hilfsfunktion aufrufen:
+#      `summe_ab(n, 0)`.
+#   2. `collatz_ab(n, schritte)`: Wenn n 1 ist, ist die Antwort `schritte`.
+#   3. `fib(n) = fib(n - 1) + fib(n - 2)` ist richtig, aber sehr langsam,
+#      weil es dieselben Zahlen immer wieder berechnet. Trage stattdessen
+#      die zwei letzten Zahlen mit: `fib_ab(n, a, b)`, wobei a und b zwei
+#      benachbarte Fibonacci-Zahlen sind, beginnend mit `fib_ab(n, 0, 1)`.
+#
+# Prüfe deine Arbeit:  rythme exercise check 09-akkumulatoren.ry
+#               oder:  rythme test 09-akkumulatoren.ry
+
+fn grosse_summe(n) = fail("zu tun")
+
+fn collatz_schritte(n) = fail("zu tun")
+
+fn fib(n) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "große Summe"
+  assert_eq(grosse_summe(10) 55)
+  assert_eq(grosse_summe(1000000) 500000500000)
+end
+
+test "Collatz-Schritte"
+  assert_eq(collatz_schritte(1) 0)
+  assert_eq(collatz_schritte(6) 8)
+  assert_eq(collatz_schritte(27) 111)
+end
+
+test "Fibonacci"
+  assert_eq(0..10 |> map(fib) [0 1 1 2 3 5 8 13 21 34 55])
+  assert_eq(fib(90) 2880067194370816120)
+end
+"#,
+        ),
+        ("10-divisors", "10-teiler"),
+        (
+            r#"# Exercise 10 · Divisors and prime numbers  ★★☆
+#
+# Recursion can also try every candidate, one after the other, until an
+# answer is found.
+#
+# Statement
+#   - `my_gcd(a, b)`: the greatest common divisor of two whole numbers
+#     ≥ 0, with Euclid's method: the gcd of a and 0 is a, and the gcd of a
+#     and b is the gcd of b and `a % b` (without the built-in `gcd`);
+#   - `is_prime(n)`: is n a prime number (a number ≥ 2 whose only divisors
+#     are 1 and itself)?
+#   - `next_prime(n)`: the smallest prime number strictly greater than n.
+#
+# Hints
+#   1. Euclid's method is already written as two cases: translate it.
+#   2. For `is_prime`, write a helper `no_divisor_from(n, d)` that tries d,
+#      then d + 1... It can stop as soon as `d * d > n`.
+#   3. `next_prime(n)` tries n + 1: if it is prime, that is the answer;
+#      otherwise, the answer is `next_prime(n + 1)`.
+#
+# Check your work:  rythme exercise check 10-divisors.ry
+#              or:  rythme test 10-divisors.ry
+
+fn my_gcd(a b) = fail("to do")
+
+fn is_prime(n) = fail("to do")
+
+fn next_prime(n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "gcd"
+  assert_eq(my_gcd(12 18) 6)
+  assert_eq(my_gcd(17 5) 1)
+  assert_eq(my_gcd(7 0) 7)
+  assert_eq(my_gcd(0 9) 9)
+end
+
+test "prime numbers"
+  assert_eq(1..30 |> filter(is_prime) [2 3 5 7 11 13 17 19 23 29])
+  assert_eq(is_prime(0) false)
+  assert_eq(is_prime(7919) true)
+  assert_eq(is_prime(7917) false)
+end
+
+test "next prime"
+  assert_eq(next_prime(1) 2)
+  assert_eq(next_prime(13) 17)
+  assert_eq(next_prime(100) 101)
+end
+"#,
+            r#"# Übung 10 · Teiler und Primzahlen  ★★☆
+#
+# Rekursion kann auch jeden Kandidaten ausprobieren, einen nach dem
+# anderen, bis eine Antwort gefunden ist.
+#
+# Aufgabe
+#   - `mein_ggt(a, b)`: der größte gemeinsame Teiler zweier ganzer Zahlen
+#     ≥ 0, mit dem Verfahren von Euklid: Der ggT von a und 0 ist a, und der
+#     ggT von a und b ist der ggT von b und `a % b` (ohne die eingebaute
+#     Funktion `gcd`);
+#   - `ist_primzahl(n)`: ist n eine Primzahl (eine Zahl ≥ 2, deren einzige
+#     Teiler 1 und sie selbst sind)?
+#   - `naechste_primzahl(n)`: die kleinste Primzahl, die echt größer als n
+#     ist.
+#
+# Hinweise
+#   1. Das Verfahren von Euklid ist schon als zwei Fälle geschrieben:
+#      Übersetze es.
+#   2. Für `ist_primzahl` schreibst du eine Hilfsfunktion
+#      `kein_teiler_ab(n, d)`, die d probiert, dann d + 1... Sie kann
+#      aufhören, sobald `d * d > n`.
+#   3. `naechste_primzahl(n)` probiert n + 1: Ist es eine Primzahl, ist das
+#      die Antwort; sonst ist die Antwort `naechste_primzahl(n + 1)`.
+#
+# Prüfe deine Arbeit:  rythme exercise check 10-teiler.ry
+#               oder:  rythme test 10-teiler.ry
+
+fn mein_ggt(a b) = fail("zu tun")
+
+fn ist_primzahl(n) = fail("zu tun")
+
+fn naechste_primzahl(n) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "ggT"
+  assert_eq(mein_ggt(12 18) 6)
+  assert_eq(mein_ggt(17 5) 1)
+  assert_eq(mein_ggt(7 0) 7)
+  assert_eq(mein_ggt(0 9) 9)
+end
+
+test "Primzahlen"
+  assert_eq(1..30 |> filter(ist_primzahl) [2 3 5 7 11 13 17 19 23 29])
+  assert_eq(ist_primzahl(0) false)
+  assert_eq(ist_primzahl(7919) true)
+  assert_eq(ist_primzahl(7917) false)
+end
+
+test "nächste Primzahl"
+  assert_eq(naechste_primzahl(1) 2)
+  assert_eq(naechste_primzahl(13) 17)
+  assert_eq(naechste_primzahl(100) 101)
+end
+"#,
+        ),
+        ("11-list-patterns", "11-listenmuster"),
+        (
+            r#"# Exercise 11 · Taking lists apart  ★★☆
+#
+# A list is either empty, `[]`, or a first element followed by the rest of
+# the list, `[first, ..rest]`. A function on lists usually has one
+# definition for each of these two cases:
+#   fn count_items([]) = 0
+#   fn count_items([_, ..rest]) = 1 + count_items(rest)
+#
+# Statement
+#   With recursion, and without the built-in functions `len`, `sum`, `max`
+#   and `contains`:
+#   - `total(list)`: the sum of the numbers of the list;
+#   - `largest(list)`: the largest element of a list that is not empty;
+#   - `has_value(list, x)`: is x an element of the list?
+#   - `last_one(list)`: the last element of a list that is not empty.
+#
+# Hints
+#   1. The total of an empty list is 0.
+#   2. A list of one element, `[x]`, is a good base case for `largest` and
+#      `last_one`.
+#   3. The largest of `[x, ..rest]` is the larger of x and of the largest of
+#      rest.
+#   4. `has_value`: an empty list contains nothing; otherwise, either the
+#      first element is x, or x is in the rest (`or`).
+#   5. `rythme check` warns (W002) about a forgotten case, here the empty
+#      list. It has no largest element: say so with
+#      `fn largest([]) = fail("the list is empty")`.
+#
+# Check your work:  rythme exercise check 11-list-patterns.ry
+#              or:  rythme test 11-list-patterns.ry
+
+fn total(list) = fail("to do")
+
+fn largest(list) = fail("to do")
+
+fn has_value(list x) = fail("to do")
+
+fn last_one(list) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "total"
+  assert_eq(total([]) 0)
+  assert_eq(total([4]) 4)
+  assert_eq(total([1 2 3 4]) 10)
+end
+
+test "largest"
+  assert_eq(largest([7]) 7)
+  assert_eq(largest([3 9 2]) 9)
+  assert_eq(largest([-3, -1, -2]), -1)
+end
+
+test "has value"
+  assert_eq(has_value([1 2 3] 2) true)
+  assert_eq(has_value([1 2 3] 5) false)
+  assert_eq(has_value([] 1) false)
+  assert_eq(has_value(["a" "b"] "b") true)
+end
+
+test "last one"
+  assert_eq(last_one([1 2 3]) 3)
+  assert_eq(last_one(["only"]) "only")
+end
+"#,
+            r#"# Übung 11 · Listen zerlegen  ★★☆
+#
+# Eine Liste ist entweder leer, `[]`, oder ein erstes Element, gefolgt vom
+# Rest der Liste, `[erstes, ..rest]`. Eine Funktion auf Listen hat meist
+# eine Definition für jeden dieser beiden Fälle:
+#   fn elemente_zaehlen([]) = 0
+#   fn elemente_zaehlen([_, ..rest]) = 1 + elemente_zaehlen(rest)
+#
+# Aufgabe
+#   Mit Rekursion und ohne die eingebauten Funktionen `len`, `sum`, `max`
+#   und `contains`:
+#   - `summe(liste)`: die Summe der Zahlen der Liste;
+#   - `groesstes(liste)`: das größte Element einer nicht leeren Liste;
+#   - `enthaelt_wert(liste, x)`: ist x ein Element der Liste?
+#   - `letztes(liste)`: das letzte Element einer nicht leeren Liste.
+#
+# Hinweise
+#   1. Die Summe einer leeren Liste ist 0.
+#   2. Eine Liste mit einem Element, `[x]`, ist ein guter Basisfall für
+#      `groesstes` und `letztes`.
+#   3. Das größte Element von `[x, ..rest]` ist das größere von x und dem
+#      größten Element von rest.
+#   4. `enthaelt_wert`: Eine leere Liste enthält nichts; sonst ist entweder
+#      das erste Element x, oder x ist im Rest (`or`).
+#   5. `rythme check` warnt (W002) vor einem vergessenen Fall, hier der
+#      leeren Liste. Sie hat kein größtes Element: Sag es mit
+#      `fn groesstes([]) = fail("die Liste ist leer")`.
+#
+# Prüfe deine Arbeit:  rythme exercise check 11-listenmuster.ry
+#               oder:  rythme test 11-listenmuster.ry
+
+fn summe(liste) = fail("zu tun")
+
+fn groesstes(liste) = fail("zu tun")
+
+fn enthaelt_wert(liste x) = fail("zu tun")
+
+fn letztes(liste) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Summe"
+  assert_eq(summe([]) 0)
+  assert_eq(summe([4]) 4)
+  assert_eq(summe([1 2 3 4]) 10)
+end
+
+test "das größte"
+  assert_eq(groesstes([7]) 7)
+  assert_eq(groesstes([3 9 2]) 9)
+  assert_eq(groesstes([-3, -1, -2]), -1)
+end
+
+test "enthält den Wert"
+  assert_eq(enthaelt_wert([1 2 3] 2) true)
+  assert_eq(enthaelt_wert([1 2 3] 5) false)
+  assert_eq(enthaelt_wert([] 1) false)
+  assert_eq(enthaelt_wert(["a" "b"] "b") true)
+end
+
+test "das letzte"
+  assert_eq(letztes([1 2 3]) 3)
+  assert_eq(letztes(["einzig"]) "einzig")
+end
+"#,
+        ),
+        ("12-building-lists", "12-listen-bauen"),
+        (
+            r#"# Exercise 12 · Building lists  ★★☆
+#
+# `[x, ..rest]` also builds a list: x followed by the elements of rest.
+# Lists never change: a function gives back a new list.
+#   fn zeros(0) = []
+#   fn zeros(n) = [0, ..zeros(n - 1)]
+#
+# Statement
+#   With recursion, and without `map`, `reverse` or ranges (`1..n`):
+#   - `countdown(n)`: the list [n, n - 1, ..., 1, 0];
+#   - `repeat_value(x, n)`: a list with n times the value x;
+#   - `double_all(list)`: each number of the list doubled;
+#   - `reversed(list)`: the elements in the opposite order.
+#
+# Hints
+#   1. `countdown(0)` is `[0]`.
+#   2. `double_all([x, ..rest])` starts with `x * 2`.
+#   3. For `reversed`, use an accumulator: `reversed_onto(list, done)` moves
+#      the first element of list to the front of done, until list is empty.
+#      `reversed_onto([1, 2], [])` → `reversed_onto([2], [1])` →
+#      `reversed_onto([], [2, 1])`.
+#
+# Check your work:  rythme exercise check 12-building-lists.ry
+#              or:  rythme test 12-building-lists.ry
+
+fn countdown(n) = fail("to do")
+
+fn repeat_value(x n) = fail("to do")
+
+fn double_all(list) = fail("to do")
+
+fn reversed(list) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "countdown"
+  assert_eq(countdown(0), [0])
+  assert_eq(countdown(3) [3 2 1 0])
+end
+
+test "repeat value"
+  assert_eq(repeat_value("a" 3) ["a" "a" "a"])
+  assert_eq(repeat_value(1 0) [])
+end
+
+test "double all"
+  assert_eq(double_all([1 2 3]) [2 4 6])
+  assert_eq(double_all([]), [])
+end
+
+test "reversed"
+  assert_eq(reversed([1 2 3]) [3 2 1])
+  assert_eq(reversed([]), [])
+  assert_eq(reversed(["x"]), ["x"])
+end
+
+test "the original list does not change"
+  numbers = [1 2 3]
+  reversed(numbers)
+  assert_eq(numbers [1 2 3])
+end
+"#,
+            r#"# Übung 12 · Listen bauen  ★★☆
+#
+# `[x, ..rest]` baut auch eine Liste: x, gefolgt von den Elementen von
+# rest. Listen ändern sich nie: Eine Funktion gibt eine neue Liste zurück.
+#   fn nullen(0) = []
+#   fn nullen(n) = [0, ..nullen(n - 1)]
+#
+# Aufgabe
+#   Mit Rekursion und ohne `map`, `reverse` oder Bereiche (`1..n`):
+#   - `countdown(n)`: die Liste [n, n - 1, ..., 1, 0];
+#   - `wert_wiederholen(x, n)`: eine Liste mit n-mal dem Wert x;
+#   - `alle_verdoppeln(liste)`: jede Zahl der Liste verdoppelt;
+#   - `umgedreht(liste)`: die Elemente in umgekehrter Reihenfolge.
+#
+# Hinweise
+#   1. `countdown(0)` ist `[0]`.
+#   2. `alle_verdoppeln([x, ..rest])` beginnt mit `x * 2`.
+#   3. Für `umgedreht` nimmst du einen Akkumulator:
+#      `umgedreht_auf(liste, fertig)` bringt das erste Element von liste
+#      nach vorn in fertig, bis liste leer ist.
+#      `umgedreht_auf([1, 2], [])` → `umgedreht_auf([2], [1])` →
+#      `umgedreht_auf([], [2, 1])`.
+#
+# Prüfe deine Arbeit:  rythme exercise check 12-listen-bauen.ry
+#               oder:  rythme test 12-listen-bauen.ry
+
+fn countdown(n) = fail("zu tun")
+
+fn wert_wiederholen(x n) = fail("zu tun")
+
+fn alle_verdoppeln(liste) = fail("zu tun")
+
+fn umgedreht(liste) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Countdown"
+  assert_eq(countdown(0), [0])
+  assert_eq(countdown(3) [3 2 1 0])
+end
+
+test "Wert wiederholen"
+  assert_eq(wert_wiederholen("a" 3) ["a" "a" "a"])
+  assert_eq(wert_wiederholen(1 0) [])
+end
+
+test "alle verdoppeln"
+  assert_eq(alle_verdoppeln([1 2 3]) [2 4 6])
+  assert_eq(alle_verdoppeln([]), [])
+end
+
+test "umgedreht"
+  assert_eq(umgedreht([1 2 3]) [3 2 1])
+  assert_eq(umgedreht([]), [])
+  assert_eq(umgedreht(["x"]), ["x"])
+end
+
+test "die ursprüngliche Liste ändert sich nicht"
+  zahlen = [1 2 3]
+  umgedreht(zahlen)
+  assert_eq(zahlen [1 2 3])
+end
+"#,
+        ),
+        ("13-library", "13-bibliothek"),
+        (
+            r#"# Exercise 13 · The list functions  ★★☆
+#
+# Most work on lists needs no recursion: the built-in functions do it.
+# `1..5` is the list [1, 2, 3, 4, 5]; `map(list, f)` applies f to each
+# element; `filter(list, f)` keeps the elements for which f gives true;
+# `sum`, `len`, `sort`, `reverse`, `take`... `rythme help lists` shows them.
+#
+# Statement
+#   - `squares(n)`: the list [1, 4, 9, ..., n × n];
+#   - `evens(list)`: the even numbers of the list, in the same order;
+#   - `sum_of_multiples(limit)`: the sum of the numbers from 1 to limit - 1
+#     that are multiples of 3 or of 5;
+#   - `mean(list)`: the average of the numbers of a list that is not empty;
+#   - `smallest_three(list)`: the three smallest numbers, from the smallest.
+#
+# Hints
+#   1. `map(1..n, square)` with a function `square` written by you, or
+#      `map(1..n, fn(x) = x * x)` (an anonymous function, see exercise 14).
+#   2. `is_even` is a built-in function: `filter(list, is_even)`.
+#   3. `1..0` is the empty list `[]`.
+#   4. `sort` then `take`.
+#
+# Check your work:  rythme exercise check 13-library.ry
+#              or:  rythme test 13-library.ry
+
+fn squares(n) = fail("to do")
+
+fn evens(list) = fail("to do")
+
+fn sum_of_multiples(limit) = fail("to do")
+
+fn mean(list) = fail("to do")
+
+fn smallest_three(list) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "squares"
+  assert_eq(squares(5) [1 4 9 16 25])
+  assert_eq(squares(0), [])
+end
+
+test "evens" = assert_eq(evens([5 2 8 1 4]) [2 8 4])
+
+test "sum of multiples"
+  assert_eq(sum_of_multiples(10) 23)
+  assert_eq(sum_of_multiples(1000) 233168)
+end
+
+test "mean"
+  assert_eq(mean([1 2 3 4]) 2.5)
+  assert_eq(mean([7]) 7)
+end
+
+test "smallest three"
+  assert_eq(smallest_three([5 1 4 2 3]) [1 2 3])
+  assert_eq(smallest_three([9 8]) [8 9])
+end
+"#,
+            r#"# Übung 13 · Die Listenfunktionen  ★★☆
+#
+# Die meiste Arbeit mit Listen braucht keine Rekursion: Die eingebauten
+# Funktionen erledigen sie. `1..5` ist die Liste [1, 2, 3, 4, 5];
+# `map(liste, f)` wendet f auf jedes Element an; `filter(liste, f)` behält
+# die Elemente, für die f true gibt; `sum`, `len`, `sort`, `reverse`,
+# `take`... `rythme help lists` zeigt sie.
+#
+# Aufgabe
+#   - `quadrate(n)`: die Liste [1, 4, 9, ..., n × n];
+#   - `gerade(liste)`: die geraden Zahlen der Liste, in derselben
+#     Reihenfolge;
+#   - `summe_der_vielfachen(grenze)`: die Summe der Zahlen von 1 bis
+#     grenze - 1, die Vielfache von 3 oder von 5 sind;
+#   - `durchschnitt(liste)`: der Mittelwert der Zahlen einer nicht leeren
+#     Liste;
+#   - `kleinste_drei(liste)`: die drei kleinsten Zahlen, von der kleinsten
+#     an.
+#
+# Hinweise
+#   1. `map(1..n, quadrat)` mit einer von dir geschriebenen Funktion
+#      `quadrat`, oder `map(1..n, fn(x) = x * x)` (eine anonyme Funktion,
+#      siehe Übung 14).
+#   2. `is_even` ist eine eingebaute Funktion: `filter(liste, is_even)`.
+#   3. `1..0` ist die leere Liste `[]`.
+#   4. `sort`, dann `take`.
+#
+# Prüfe deine Arbeit:  rythme exercise check 13-bibliothek.ry
+#               oder:  rythme test 13-bibliothek.ry
+
+fn quadrate(n) = fail("zu tun")
+
+fn gerade(liste) = fail("zu tun")
+
+fn summe_der_vielfachen(grenze) = fail("zu tun")
+
+fn durchschnitt(liste) = fail("zu tun")
+
+fn kleinste_drei(liste) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Quadrate"
+  assert_eq(quadrate(5) [1 4 9 16 25])
+  assert_eq(quadrate(0), [])
+end
+
+test "gerade Zahlen" = assert_eq(gerade([5 2 8 1 4]) [2 8 4])
+
+test "Summe der Vielfachen"
+  assert_eq(summe_der_vielfachen(10) 23)
+  assert_eq(summe_der_vielfachen(1000) 233168)
+end
+
+test "Durchschnitt"
+  assert_eq(durchschnitt([1 2 3 4]) 2.5)
+  assert_eq(durchschnitt([7]) 7)
+end
+
+test "die kleinsten drei"
+  assert_eq(kleinste_drei([5 1 4 2 3]) [1 2 3])
+  assert_eq(kleinste_drei([9 8]) [8 9])
+end
+"#,
+        ),
+        ("14-anonymous-functions", "14-anonyme-funktionen"),
+        (
+            r#"# Exercise 14 · Anonymous functions  ★★☆
+#
+# `fn(x) = x * 2` is a function without a name, written right where it is
+# needed. It can use the names around it:
+#   fn add_to_all(list, n) = map(list, fn(x) = x + n)
+#
+# Statement
+#   - `with_tax(prices, percent)`: each price increased by `percent` %;
+#   - `long_words(words, n)`: the words that have more than n characters;
+#   - `lengths(words)`: the length of each word;
+#   - `all_positive(list)`: are all the numbers greater than 0?
+#   - `count_above(list, limit)`: how many numbers are greater than limit.
+#
+# Hints
+#   1. A price p increased by 20 % is `p + p * 20 / 100`.
+#   2. `len("word")` is 4.
+#   3. `all(list, f)` is true when f gives true for every element, and
+#      `count(list, f)` counts the elements for which f gives true.
+#
+# Check your work:  rythme exercise check 14-anonymous-functions.ry
+#              or:  rythme test 14-anonymous-functions.ry
+
+fn with_tax(prices percent) = fail("to do")
+
+fn long_words(words n) = fail("to do")
+
+fn lengths(words) = fail("to do")
+
+fn all_positive(list) = fail("to do")
+
+fn count_above(list limit) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "with tax"
+  assert_eq(with_tax([100 50] 20) [120 60])
+  assert_eq(with_tax([10] 0) [10])
+end
+
+test "long words" = assert_eq(long_words(["a" "tree" "is" "green"] 3) ["tree" "green"])
+
+test "lengths" = assert_eq(lengths(["a" "tree" "is"]) [1 4 2])
+
+test "all positive"
+  assert_eq(all_positive([1 5 3]) true)
+  assert_eq(all_positive([1 -5 3]) false)
+  assert_eq(all_positive([]) true)
+end
+
+test "count above" = assert_eq(count_above([3 10 7 12] 5) 3)
+"#,
+            r#"# Übung 14 · Anonyme Funktionen  ★★☆
+#
+# `fn(x) = x * 2` ist eine Funktion ohne Namen, direkt dort geschrieben, wo
+# sie gebraucht wird. Sie kann die Namen um sie herum verwenden:
+#   fn zu_allen_addieren(liste, n) = map(liste, fn(x) = x + n)
+#
+# Aufgabe
+#   - `mit_steuer(preise, prozent)`: jeder Preis um `prozent` % erhöht;
+#   - `lange_woerter(woerter, n)`: die Wörter, die mehr als n Zeichen
+#     haben;
+#   - `laengen(woerter)`: die Länge jedes Wortes;
+#   - `alle_positiv(liste)`: sind alle Zahlen größer als 0?
+#   - `anzahl_ueber(liste, grenze)`: wie viele Zahlen größer als grenze
+#     sind.
+#
+# Hinweise
+#   1. Ein um 20 % erhöhter Preis p ist `p + p * 20 / 100`.
+#   2. `len("Haus")` ist 4.
+#   3. `all(liste, f)` ist true, wenn f für jedes Element true gibt, und
+#      `count(liste, f)` zählt die Elemente, für die f true gibt.
+#
+# Prüfe deine Arbeit:  rythme exercise check 14-anonyme-funktionen.ry
+#               oder:  rythme test 14-anonyme-funktionen.ry
+
+fn mit_steuer(preise prozent) = fail("zu tun")
+
+fn lange_woerter(woerter n) = fail("zu tun")
+
+fn laengen(woerter) = fail("zu tun")
+
+fn alle_positiv(liste) = fail("zu tun")
+
+fn anzahl_ueber(liste grenze) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "mit Steuer"
+  assert_eq(mit_steuer([100 50] 20) [120 60])
+  assert_eq(mit_steuer([10] 0) [10])
+end
+
+test "lange Wörter" = assert_eq(lange_woerter(["ein" "Baum" "ist" "grün"] 3) ["Baum" "grün"])
+
+test "Längen" = assert_eq(laengen(["a" "Baum" "ist"]) [1 4 3])
+
+test "alle positiv"
+  assert_eq(alle_positiv([1 5 3]) true)
+  assert_eq(alle_positiv([1 -5 3]) false)
+  assert_eq(alle_positiv([]) true)
+end
+
+test "Anzahl darüber" = assert_eq(anzahl_ueber([3 10 7 12] 5) 3)
+"#,
+        ),
+        ("15-functions-as-values", "15-funktionen-als-werte"),
+        (
+            r#"# Exercise 15 · Functions are values  ★★☆
+#
+# A function can be given to another function, and a function can give
+# back a new function:
+#   fn twice(f) = fn(x) = f(f(x))
+#   add_two = twice(fn(x) = x + 1)      # add_two(5) is 7
+#
+# Statement
+#   - `apply_twice(f, x)`: f applied to x, then f applied to the result;
+#   - `compose(f, g)`: a new function that applies g, then f;
+#   - `adder(n)`: a new function that adds n to its argument;
+#   - `my_map(list, f)` and `my_filter(list, f)`: your own versions of
+#     `map` and `filter`, with recursion.
+#
+# Hints
+#   1. `compose(f, g)` gives `fn(x) = ...`.
+#   2. `my_map([x, ..rest], f)` starts with `f(x)`.
+#   3. `my_filter([x, ..rest], f)`: keep x only if `f(x)` is true, then
+#      continue with rest.
+#
+# Check your work:  rythme exercise check 15-functions-as-values.ry
+#              or:  rythme test 15-functions-as-values.ry
+
+fn apply_twice(f x) = fail("to do")
+
+fn compose(f g) = fail("to do")
+
+fn adder(n) = fail("to do")
+
+fn my_map(list f) = fail("to do")
+
+fn my_filter(list f) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "apply twice"
+  assert_eq(apply_twice(fn(x) = x * 3 2) 18)
+  assert_eq(apply_twice(upper "hi") "HI")
+end
+
+test "compose"
+  plus_one_then_double = compose(fn(x) = x * 2 fn(x) = x + 1)
+  assert_eq(plus_one_then_double(4) 10)
+  assert_eq(compose(len trim)("  abc  ") 3)
+end
+
+test "adder"
+  add10 = adder(10)
+  assert_eq(add10(5) 15)
+  assert_eq(map([1 2 3] adder(100)) [101 102 103])
+end
+
+test "my map"
+  assert_eq(my_map([1 2 3] fn(x) = x * x) [1 4 9])
+  assert_eq(my_map([] fn(x) = x) [])
+end
+
+test "my filter"
+  assert_eq(my_filter([1 2 3 4 5 6] is_even) [2 4 6])
+  assert_eq(my_filter(["a" "bb" "ccc"] fn(w) = len(w) > 1) ["bb" "ccc"])
+end
+"#,
+            r#"# Übung 15 · Funktionen sind Werte  ★★☆
+#
+# Eine Funktion kann einer anderen Funktion übergeben werden, und eine
+# Funktion kann eine neue Funktion zurückgeben:
+#   fn zweimal(f) = fn(x) = f(f(x))
+#   plus_zwei = zweimal(fn(x) = x + 1)      # plus_zwei(5) ist 7
+#
+# Aufgabe
+#   - `zweimal_anwenden(f, x)`: f auf x angewendet, dann f auf das
+#     Ergebnis angewendet;
+#   - `verketten(f, g)`: eine neue Funktion, die g anwendet, dann f;
+#   - `addierer(n)`: eine neue Funktion, die n zu ihrem Argument addiert;
+#   - `mein_map(liste, f)` und `mein_filter(liste, f)`: deine eigenen
+#     Versionen von `map` und `filter`, mit Rekursion.
+#
+# Hinweise
+#   1. `verketten(f, g)` gibt `fn(x) = ...`.
+#   2. `mein_map([x, ..rest], f)` beginnt mit `f(x)`.
+#   3. `mein_filter([x, ..rest], f)`: Behalte x nur, wenn `f(x)` true ist,
+#      und mach dann mit rest weiter.
+#
+# Prüfe deine Arbeit:  rythme exercise check 15-funktionen-als-werte.ry
+#               oder:  rythme test 15-funktionen-als-werte.ry
+
+fn zweimal_anwenden(f x) = fail("zu tun")
+
+fn verketten(f g) = fail("zu tun")
+
+fn addierer(n) = fail("zu tun")
+
+fn mein_map(liste f) = fail("zu tun")
+
+fn mein_filter(liste f) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "zweimal anwenden"
+  assert_eq(zweimal_anwenden(fn(x) = x * 3 2) 18)
+  assert_eq(zweimal_anwenden(upper "hi") "HI")
+end
+
+test "verketten"
+  plus_eins_dann_doppelt = verketten(fn(x) = x * 2 fn(x) = x + 1)
+  assert_eq(plus_eins_dann_doppelt(4) 10)
+  assert_eq(verketten(len trim)("  abc  ") 3)
+end
+
+test "Addierer"
+  plus10 = addierer(10)
+  assert_eq(plus10(5) 15)
+  assert_eq(map([1 2 3] addierer(100)) [101 102 103])
+end
+
+test "mein map"
+  assert_eq(mein_map([1 2 3] fn(x) = x * x) [1 4 9])
+  assert_eq(mein_map([] fn(x) = x) [])
+end
+
+test "mein filter"
+  assert_eq(mein_filter([1 2 3 4 5 6] is_even) [2 4 6])
+  assert_eq(mein_filter(["a" "bb" "ccc"] fn(w) = len(w) > 1) ["bb" "ccc"])
+end
+"#,
+        ),
+        ("16-fold", "16-fold"),
+        (
+            r#"# Exercise 16 · Folding a list into one value  ★★☆
+#
+# `fold(list, start, f)` combines all the elements into one value: it
+# starts with `start`, then computes `f(result, element)` for each element.
+#   fold([1, 2, 3], 0, fn(total, x) = total + x)     # 6
+#
+# Statement
+#   With `fold`, and without recursion:
+#   - `product_of(list)`: the product of the numbers (1 for an empty list);
+#   - `longest_word(words)`: the longest word (the first one if several
+#     have the same length; "" for an empty list);
+#   - `to_number(digits)`: the number written with these digits
+#     ([1, 2, 3] gives 123);
+#   - `count_where(list, f)`: how many elements give true with f (without
+#     `count` or `filter`).
+#
+# Hints
+#   1. Choose `start` well: it is the answer for the empty list.
+#   2. For `longest_word`, the result so far is the longest word seen so
+#      far: keep it, or take the new word if it is strictly longer.
+#   3. `to_number`: with 12 so far and the digit 3, the new result is
+#      12 * 10 + 3.
+#
+# Check your work:  rythme exercise check 16-fold.ry
+#              or:  rythme test 16-fold.ry
+
+fn product_of(list) = fail("to do")
+
+fn longest_word(words) = fail("to do")
+
+fn to_number(digits) = fail("to do")
+
+fn count_where(list f) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "product"
+  assert_eq(product_of([2 3 4]) 24)
+  assert_eq(product_of([]) 1)
+end
+
+test "longest word"
+  assert_eq(longest_word(["a" "tree" "is" "green"]) "green")
+  assert_eq(longest_word(["one" "two"]) "one")
+  assert_eq(longest_word([]) "")
+end
+
+test "to number"
+  assert_eq(to_number([1 2 3]) 123)
+  assert_eq(to_number([0 7]) 7)
+  assert_eq(to_number([]) 0)
+end
+
+test "count where"
+  assert_eq(count_where([1 2 3 4 5] is_odd) 3)
+  assert_eq(count_where(["a" "bb"] fn(w) = len(w) > 5) 0)
+end
+"#,
+            r#"# Übung 16 · Eine Liste zu einem Wert falten  ★★☆
+#
+# `fold(liste, start, f)` fasst alle Elemente zu einem Wert zusammen: Es
+# beginnt mit `start` und berechnet dann `f(ergebnis, element)` für jedes
+# Element.
+#   fold([1, 2, 3], 0, fn(summe, x) = summe + x)     # 6
+#
+# Aufgabe
+#   Mit `fold` und ohne Rekursion:
+#   - `produkt_von(liste)`: das Produkt der Zahlen (1 für eine leere
+#     Liste);
+#   - `laengstes_wort(woerter)`: das längste Wort (das erste, wenn mehrere
+#     gleich lang sind; "" für eine leere Liste);
+#   - `zu_zahl(ziffern)`: die Zahl, die mit diesen Ziffern geschrieben
+#     wird ([1, 2, 3] gibt 123);
+#   - `zaehlen_wenn(liste, f)`: wie viele Elemente mit f true geben (ohne
+#     `count` oder `filter`).
+#
+# Hinweise
+#   1. Wähle `start` gut: Es ist die Antwort für die leere Liste.
+#   2. Für `laengstes_wort` ist das bisherige Ergebnis das längste bisher
+#      gesehene Wort: Behalte es, oder nimm das neue Wort, wenn es echt
+#      länger ist.
+#   3. `zu_zahl`: Mit bisher 12 und der Ziffer 3 ist das neue Ergebnis
+#      12 * 10 + 3.
+#
+# Prüfe deine Arbeit:  rythme exercise check 16-fold.ry
+#               oder:  rythme test 16-fold.ry
+
+fn produkt_von(liste) = fail("zu tun")
+
+fn laengstes_wort(woerter) = fail("zu tun")
+
+fn zu_zahl(ziffern) = fail("zu tun")
+
+fn zaehlen_wenn(liste f) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Produkt"
+  assert_eq(produkt_von([2 3 4]) 24)
+  assert_eq(produkt_von([]) 1)
+end
+
+test "längstes Wort"
+  assert_eq(laengstes_wort(["ein" "Baum" "ist" "grün"]) "Baum")
+  assert_eq(laengstes_wort(["eins" "zwei"]) "eins")
+  assert_eq(laengstes_wort([]) "")
+end
+
+test "zu einer Zahl"
+  assert_eq(zu_zahl([1 2 3]) 123)
+  assert_eq(zu_zahl([0 7]) 7)
+  assert_eq(zu_zahl([]) 0)
+end
+
+test "zählen wenn"
+  assert_eq(zaehlen_wenn([1 2 3 4 5] is_odd) 3)
+  assert_eq(zaehlen_wenn(["a" "bb"] fn(w) = len(w) > 5) 0)
+end
+"#,
+        ),
+        ("17-pipelines", "17-pipelines"),
+        (
+            r#"# Exercise 17 · Pipelines  ★★☆
+#
+# `x |> f(a)` means `f(x, a)`: the value on the left becomes the first
+# argument. Steps are read from left to right, in the order they happen:
+#   [3, 1, 2] |> sort |> map(fn(x) = x * 10)        # [10, 20, 30]
+# A line that starts with `|>` continues the line before.
+#
+# Statement
+#   Write each function as one pipeline:
+#   - `sum_of_odd_squares(n)`: the sum of the squares of the odd numbers
+#     from 1 to n;
+#   - `top_three(scores)`: the three best scores, the best first;
+#   - `shout_words(sentence)`: each word in uppercase, separated by one
+#     space ("hello  world" gives "HELLO WORLD");
+#   - `initials_of(sentence)`: the first letter of each word, in uppercase
+#     ("portable network graphics" gives "PNG").
+#
+# Hints
+#   1. `filter`, then `map`, then `sum`.
+#   2. `sort`, `reverse`, `take(3)`.
+#   3. `split(text)` cuts a text at the spaces (several spaces count as
+#      one); `join(words, " ")` glues words back together.
+#   4. `word[0]` is the first character of `word`.
+#
+# Check your work:  rythme exercise check 17-pipelines.ry
+#              or:  rythme test 17-pipelines.ry
+
+fn sum_of_odd_squares(n) = fail("to do")
+
+fn top_three(scores) = fail("to do")
+
+fn shout_words(sentence) = fail("to do")
+
+fn initials_of(sentence) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "sum of odd squares"
+  assert_eq(sum_of_odd_squares(5) 35)
+  assert_eq(sum_of_odd_squares(1) 1)
+end
+
+test "top three"
+  assert_eq(top_three([12 18 9 15 20]) [20 18 15])
+  assert_eq(top_three([4]), [4])
+end
+
+test "shout words" = assert_eq(shout_words("hello  world") "HELLO WORLD")
+
+test "initials of"
+  assert_eq(initials_of("portable network graphics") "PNG")
+  assert_eq(initials_of("Rythme") "R")
+end
+"#,
+            r#"# Übung 17 · Pipelines  ★★☆
+#
+# `x |> f(a)` bedeutet `f(x, a)`: Der Wert links wird zum ersten Argument.
+# Die Schritte liest man von links nach rechts, in der Reihenfolge, in der
+# sie geschehen:
+#   [3, 1, 2] |> sort |> map(fn(x) = x * 10)        # [10, 20, 30]
+# Eine Zeile, die mit `|>` beginnt, setzt die Zeile davor fort.
+#
+# Aufgabe
+#   Schreibe jede Funktion als eine einzige Pipeline:
+#   - `summe_ungerader_quadrate(n)`: die Summe der Quadrate der ungeraden
+#     Zahlen von 1 bis n;
+#   - `die_besten_drei(punkte)`: die drei besten Punktzahlen, die beste
+#     zuerst;
+#   - `woerter_rufen(satz)`: jedes Wort in Großbuchstaben, getrennt durch
+#     ein Leerzeichen ("hallo  welt" gibt "HALLO WELT");
+#   - `initialen_von(satz)`: der erste Buchstabe jedes Wortes, in
+#     Großbuchstaben ("portable network graphics" gibt "PNG").
+#
+# Hinweise
+#   1. `filter`, dann `map`, dann `sum`.
+#   2. `sort`, `reverse`, `take(3)`.
+#   3. `split(text)` schneidet einen Text an den Leerzeichen (mehrere
+#      Leerzeichen zählen als eines); `join(woerter, " ")` klebt Wörter
+#      wieder zusammen.
+#   4. `wort[0]` ist das erste Zeichen von `wort`.
+#
+# Prüfe deine Arbeit:  rythme exercise check 17-pipelines.ry
+#               oder:  rythme test 17-pipelines.ry
+
+fn summe_ungerader_quadrate(n) = fail("zu tun")
+
+fn die_besten_drei(punkte) = fail("zu tun")
+
+fn woerter_rufen(satz) = fail("zu tun")
+
+fn initialen_von(satz) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Summe ungerader Quadrate"
+  assert_eq(summe_ungerader_quadrate(5) 35)
+  assert_eq(summe_ungerader_quadrate(1) 1)
+end
+
+test "die besten drei"
+  assert_eq(die_besten_drei([12 18 9 15 20]) [20 18 15])
+  assert_eq(die_besten_drei([4]), [4])
+end
+
+test "Wörter rufen" = assert_eq(woerter_rufen("hallo  welt") "HALLO WELT")
+
+test "Initialen von"
+  assert_eq(initialen_von("portable network graphics") "PNG")
+  assert_eq(initialen_von("Rythme") "R")
+end
+"#,
+        ),
+        ("18-text-processing", "18-textverarbeitung"),
+        (
+            r#"# Exercise 18 · Working with texts  ★★☆
+#
+# A text can be turned into the list of its characters with `chars`, and
+# the list functions do the rest. `lower`, `upper`, `replace`, `split`,
+# `join`, `contains`... are described by `rythme help text`.
+#
+# Statement
+#   - `is_palindrome(text)`: does the text read the same from both ends,
+#     ignoring uppercase and spaces? ("Never odd or even" does.)
+#   - `count_vowels(text)`: how many characters are vowels (a, e, i, o, u
+#     or y, in lowercase or uppercase)?
+#   - `title_case(text)`: each word starts with an uppercase letter, the
+#     rest in lowercase ("the LORD of the rings" gives
+#     "The Lord Of The Rings").
+#
+# Hints
+#   1. `replace(text, " ", "")` removes the spaces, and `reverse` works on
+#      texts too.
+#   2. `contains("aeiouy", c)` tells whether the character c is a vowel.
+#   3. `capitalize("lord")` is "Lord".
+#
+# Check your work:  rythme exercise check 18-text-processing.ry
+#              or:  rythme test 18-text-processing.ry
+
+fn is_palindrome(text) = fail("to do")
+
+fn count_vowels(text) = fail("to do")
+
+fn title_case(text) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "palindromes"
+  assert_eq(is_palindrome("kayak") true)
+  assert_eq(is_palindrome("Never odd or even") true)
+  assert_eq(is_palindrome("rythme") false)
+end
+
+test "vowels"
+  assert_eq(count_vowels("Rythme") 2)
+  assert_eq(count_vowels("AEIOU") 5)
+  assert_eq(count_vowels("xkcd") 0)
+end
+
+test "title case" = assert_eq(title_case("the LORD of the rings") "The Lord Of The Rings")
+"#,
+            r#"# Übung 18 · Mit Texten arbeiten  ★★☆
+#
+# Ein Text lässt sich mit `chars` in die Liste seiner Zeichen verwandeln,
+# und die Listenfunktionen erledigen den Rest. `lower`, `upper`, `replace`,
+# `split`, `join`, `contains`... beschreibt `rythme help text`.
+#
+# Aufgabe
+#   - `ist_palindrom(text)`: liest sich der Text von beiden Enden gleich,
+#     ohne Groß- und Kleinschreibung und Leerzeichen zu beachten? ("Ein
+#     Esel lese nie" schon.)
+#   - `vokale_zaehlen(text)`: wie viele Zeichen sind Vokale (a, e, i, o
+#     oder u, klein oder groß geschrieben)?
+#   - `titelschreibung(text)`: jedes Wort beginnt mit einem
+#     Großbuchstaben, der Rest klein ("der HERR der ringe" gibt
+#     "Der Herr Der Ringe").
+#
+# Hinweise
+#   1. `replace(text, " ", "")` entfernt die Leerzeichen, und `reverse`
+#      funktioniert auch mit Texten.
+#   2. `contains("aeiou", c)` sagt, ob das Zeichen c ein Vokal ist.
+#   3. `capitalize("herr")` ist "Herr".
+#
+# Prüfe deine Arbeit:  rythme exercise check 18-textverarbeitung.ry
+#               oder:  rythme test 18-textverarbeitung.ry
+
+fn ist_palindrom(text) = fail("zu tun")
+
+fn vokale_zaehlen(text) = fail("zu tun")
+
+fn titelschreibung(text) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Palindrome"
+  assert_eq(ist_palindrom("Kajak") true)
+  assert_eq(ist_palindrom("Ein Esel lese nie") true)
+  assert_eq(ist_palindrom("rythme") false)
+end
+
+test "Vokale"
+  assert_eq(vokale_zaehlen("Rythme") 1)
+  assert_eq(vokale_zaehlen("AEIOU") 5)
+  assert_eq(vokale_zaehlen("xkcd") 0)
+end
+
+test "Titelschreibung" = assert_eq(titelschreibung("der HERR der ringe") "Der Herr Der Ringe")
+"#,
+        ),
+        ("19-sorting", "19-sortieren"),
+        (
+            r#"# Exercise 19 · Sorting  ★★★
+#
+# Two classic ways to sort a list, written with recursion (without the
+# built-in `sort`).
+#
+# Statement
+#   - `insert(sorted, x)`: x placed at its position in a list that is
+#     already sorted;
+#   - `insertion_sort(list)`: sorts the list by inserting each element, one
+#     after the other, into a sorted list that starts empty;
+#   - `merge(a, b)`: one sorted list from two sorted lists;
+#   - `merge_sort(list)`: cuts the list in two halves, sorts each half,
+#     and merges them.
+#
+# Hints
+#   1. `insert([], x)` is `[x]`. For `insert([first, ..rest], x)`: if
+#      x <= first, x goes in front; otherwise first stays first.
+#   2. `insertion_sort([x, ..rest])` is `insert(insertion_sort(rest), x)`
+#      (or use `fold` with `insert`).
+#   3. `merge` compares the first elements of the two lists: the smaller one
+#      comes first, followed by the merge of what remains.
+#   4. `take(list, n)` and `drop(list, n)` give the two halves, with
+#      `n = len(list) // 2`. A list of 0 or 1 element is already sorted.
+#
+# Check your work:  rythme exercise check 19-sorting.ry
+#              or:  rythme test 19-sorting.ry
+
+fn insert(sorted x) = fail("to do")
+
+fn insertion_sort(list) = fail("to do")
+
+fn merge(a b) = fail("to do")
+
+fn merge_sort(list) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "insert"
+  assert_eq(insert([1 3 5] 4) [1 3 4 5])
+  assert_eq(insert([] 2) [2])
+  assert_eq(insert([1 2] 9) [1 2 9])
+end
+
+test "insertion sort"
+  assert_eq(insertion_sort([5 2 9 1 5 6]) [1 2 5 5 6 9])
+  assert_eq(insertion_sort([]), [])
+end
+
+test "merge"
+  assert_eq(merge([1 4 6] [2 3 7]) [1 2 3 4 6 7])
+  assert_eq(merge([], [1]), [1])
+  assert_eq(merge([1], []), [1])
+end
+
+test "merge sort"
+  assert_eq(merge_sort([5 2 9 1 5 6]) [1 2 5 5 6 9])
+  assert_eq(merge_sort(["pear" "apple" "fig"]) ["apple" "fig" "pear"])
+  assert_eq(merge_sort(reverse(1..100)) 1..100)
+end
+"#,
+            r#"# Übung 19 · Sortieren  ★★★
+#
+# Zwei klassische Arten, eine Liste zu sortieren, mit Rekursion geschrieben
+# (ohne die eingebaute Funktion `sort`).
+#
+# Aufgabe
+#   - `einfuegen(sortiert, x)`: x an seine Stelle in einer Liste gesetzt,
+#     die schon sortiert ist;
+#   - `sortieren_durch_einfuegen(liste)`: sortiert die Liste, indem es
+#     jedes Element, eines nach dem anderen, in eine sortierte Liste
+#     einfügt, die leer beginnt;
+#   - `mischen(a, b)`: eine sortierte Liste aus zwei sortierten Listen;
+#   - `sortieren_durch_mischen(liste)`: schneidet die Liste in zwei
+#     Hälften, sortiert jede Hälfte und mischt sie.
+#
+# Hinweise
+#   1. `einfuegen([], x)` ist `[x]`. Für `einfuegen([erstes, ..rest], x)`:
+#      Wenn x <= erstes, kommt x nach vorn; sonst bleibt erstes vorn.
+#   2. `sortieren_durch_einfuegen([x, ..rest])` ist
+#      `einfuegen(sortieren_durch_einfuegen(rest), x)` (oder nimm `fold`
+#      mit `einfuegen`).
+#   3. `mischen` vergleicht die ersten Elemente der zwei Listen: Das
+#      kleinere kommt zuerst, gefolgt vom Mischen dessen, was übrig ist.
+#   4. `take(liste, n)` und `drop(liste, n)` geben die zwei Hälften, mit
+#      `n = len(liste) // 2`. Eine Liste mit 0 oder 1 Element ist schon
+#      sortiert.
+#
+# Prüfe deine Arbeit:  rythme exercise check 19-sortieren.ry
+#               oder:  rythme test 19-sortieren.ry
+
+fn einfuegen(sortiert x) = fail("zu tun")
+
+fn sortieren_durch_einfuegen(liste) = fail("zu tun")
+
+fn mischen(a b) = fail("zu tun")
+
+fn sortieren_durch_mischen(liste) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "einfügen"
+  assert_eq(einfuegen([1 3 5] 4) [1 3 4 5])
+  assert_eq(einfuegen([] 2) [2])
+  assert_eq(einfuegen([1 2] 9) [1 2 9])
+end
+
+test "Sortieren durch Einfügen"
+  assert_eq(sortieren_durch_einfuegen([5 2 9 1 5 6]) [1 2 5 5 6 9])
+  assert_eq(sortieren_durch_einfuegen([]), [])
+end
+
+test "mischen"
+  assert_eq(mischen([1 4 6] [2 3 7]) [1 2 3 4 6 7])
+  assert_eq(mischen([], [1]), [1])
+  assert_eq(mischen([1], []), [1])
+end
+
+test "Sortieren durch Mischen"
+  assert_eq(sortieren_durch_mischen([5 2 9 1 5 6]) [1 2 5 5 6 9])
+  assert_eq(sortieren_durch_mischen(["Birne" "Apfel" "Feige"]) ["Apfel" "Birne" "Feige"])
+  assert_eq(sortieren_durch_mischen(reverse(1..100)) 1..100)
+end
+"#,
+        ),
+        ("20-records", "20-records"),
+        (
+            r#"# Exercise 20 · Records  ★★☆
+#
+# A record groups named values: `{name: "Ada", born: 1815}`. `ada.name`
+# reads a field. A record never changes: `{..ada, born: 1816}` is a new
+# record, a copy of ada with another `born`. A parameter can take a record
+# apart: `fn hello({name}) = "Hello, {name}"`.
+#
+# Statement
+#   A person is a record `{name, born}`; a point is a record `{x, y}`.
+#   - `age_in(person, year)`: the age of the person at the end of the year;
+#   - `label(person)`: a text like "Ada (1815)";
+#   - `renamed(person, name)`: the same person with another name;
+#   - `moved(point, dx, dy)`: the point moved by dx horizontally and dy
+#     vertically;
+#   - `distance(a, b)`: the distance between two points.
+#
+# Hints
+#   1. `person.born`, or a parameter `{born}`.
+#   2. `{..person, name: name}`, which can be written `{..person, name}`.
+#   3. The distance is the square root of (xb - xa)² + (yb - ya)².
+#
+# Check your work:  rythme exercise check 20-records.ry
+#              or:  rythme test 20-records.ry
+
+fn age_in(person year) = fail("to do")
+
+fn label(person) = fail("to do")
+
+fn renamed(person name) = fail("to do")
+
+fn moved(point dx dy) = fail("to do")
+
+fn distance(a b) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+ada = {name: "Ada" born: 1815}
+
+test "age" = assert_eq(age_in(ada 1852) 37)
+
+test "label" = assert_eq(label(ada) "Ada (1815)")
+
+test "renamed"
+  assert_eq(renamed(ada "Augusta") {name: "Augusta" born: 1815})
+  assert_eq(ada.name "Ada")
+end
+
+test "moved"
+  assert_eq(moved({x: 1 y: 2} 3 -1) {x: 4 y: 1})
+  assert_eq(moved({x: 0 y: 0} 0 0) {x: 0 y: 0})
+end
+
+test "distance"
+  assert_eq(distance({x: 0 y: 0} {x: 3 y: 4}) 5)
+  assert_eq(distance({x: 1 y: 1} {x: 1 y: 1}) 0)
+end
+"#,
+            r#"# Übung 20 · Records  ★★☆
+#
+# Ein Record fasst benannte Werte zusammen: `{name: "Ada", geboren: 1815}`.
+# `ada.name` liest ein Feld. Ein Record ändert sich nie:
+# `{..ada, geboren: 1816}` ist ein neuer Record, eine Kopie von ada mit
+# einem anderen `geboren`. Ein Parameter kann einen Record zerlegen:
+# `fn hallo({name}) = "Hallo, {name}"`.
+#
+# Aufgabe
+#   Eine Person ist ein Record `{name, geboren}`; ein Punkt ist ein Record
+#   `{x, y}`.
+#   - `alter_im(person, jahr)`: das Alter der Person am Ende des Jahres;
+#   - `etikett(person)`: ein Text wie "Ada (1815)";
+#   - `umbenannt(person, name)`: dieselbe Person mit einem anderen Namen;
+#   - `verschoben(punkt, dx, dy)`: der Punkt, um dx waagerecht und dy
+#     senkrecht verschoben;
+#   - `abstand(a, b)`: der Abstand zwischen zwei Punkten.
+#
+# Hinweise
+#   1. `person.geboren`, oder ein Parameter `{geboren}`.
+#   2. `{..person, name: name}`, was man `{..person, name}` schreiben kann.
+#   3. Der Abstand ist die Quadratwurzel von (xb - xa)² + (yb - ya)².
+#
+# Prüfe deine Arbeit:  rythme exercise check 20-records.ry
+#               oder:  rythme test 20-records.ry
+
+fn alter_im(person jahr) = fail("zu tun")
+
+fn etikett(person) = fail("zu tun")
+
+fn umbenannt(person name) = fail("zu tun")
+
+fn verschoben(punkt dx dy) = fail("zu tun")
+
+fn abstand(a b) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+ada = {name: "Ada" geboren: 1815}
+
+test "Alter" = assert_eq(alter_im(ada 1852) 37)
+
+test "Etikett" = assert_eq(etikett(ada) "Ada (1815)")
+
+test "umbenannt"
+  assert_eq(umbenannt(ada "Augusta") {name: "Augusta" geboren: 1815})
+  assert_eq(ada.name "Ada")
+end
+
+test "verschoben"
+  assert_eq(verschoben({x: 1 y: 2} 3 -1) {x: 4 y: 1})
+  assert_eq(verschoben({x: 0 y: 0} 0 0) {x: 0 y: 0})
+end
+
+test "Abstand"
+  assert_eq(abstand({x: 0 y: 0} {x: 3 y: 4}) 5)
+  assert_eq(abstand({x: 1 y: 1} {x: 1 y: 1}) 0)
+end
+"#,
+        ),
+        ("21-lists-of-records", "21-listen-von-records"),
+        (
+            r#"# Exercise 21 · Lists of records  ★★☆
+#
+# Real data is often a list of records: a class of students, a list of
+# orders... `map`, `filter`, `sort_by`, `max_by`, `group_by` and `sum` work
+# on them like on any list.
+#
+# Statement
+#   A student is a record `{name, score, group}` (a score from 0 to 100).
+#   - `names_of_passed(students)`: the names of the students whose score is
+#     at least 50, in the same order;
+#   - `average_score(students)`: the average of the scores;
+#   - `best(students)`: the name of the student with the best score;
+#   - `ranking(students)`: the names, from the best score to the lowest;
+#   - `group_sizes(students)`: a record that gives, for each group, how
+#     many students are in it (`{A: 2, B: 1}`).
+#
+# Hints
+#   1. `filter` then `map(fn(s) = s.name)`.
+#   2. `max_by(list, key)` gives the element whose key is the largest.
+#   3. `sort_by(list, fn(s) = -s.score)` sorts from the best score.
+#   4. `group_by(list, key)` gives a record of lists, and
+#      `map_values(record, f)` applies f to each of its values.
+#
+# Check your work:  rythme exercise check 21-lists-of-records.ry
+#              or:  rythme test 21-lists-of-records.ry
+
+fn names_of_passed(students) = fail("to do")
+
+fn average_score(students) = fail("to do")
+
+fn best(students) = fail("to do")
+
+fn ranking(students) = fail("to do")
+
+fn group_sizes(students) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+classroom = [
+  {name: "Ada" score: 92 group: "A"}
+  {name: "Alan" score: 45 group: "B"}
+  {name: "Grace" score: 78 group: "A"}
+  {name: "Edsger" score: 50 group: "B"}
+  {name: "Barbara" score: 85 group: "A"}
+]
+
+test "passed" = assert_eq(names_of_passed(classroom) ["Ada" "Grace" "Edsger" "Barbara"])
+
+test "average" = assert_eq(average_score(classroom) 70)
+
+test "best" = assert_eq(best(classroom) "Ada")
+
+test "ranking" = assert_eq(ranking(classroom) ["Ada" "Barbara" "Grace" "Edsger" "Alan"])
+
+test "group sizes" = assert_eq(group_sizes(classroom) {A: 3 B: 2})
+"#,
+            r#"# Übung 21 · Listen von Records  ★★☆
+#
+# Echte Daten sind oft eine Liste von Records: eine Klasse von Schülern,
+# eine Liste von Bestellungen... `map`, `filter`, `sort_by`, `max_by`,
+# `group_by` und `sum` funktionieren mit ihnen wie mit jeder Liste.
+#
+# Aufgabe
+#   Ein Schüler ist ein Record `{name, punkte, gruppe}` (Punkte von 0 bis
+#   100).
+#   - `namen_der_bestandenen(schueler)`: die Namen der Schüler mit
+#     mindestens 50 Punkten, in derselben Reihenfolge;
+#   - `durchschnittspunkte(schueler)`: der Mittelwert der Punkte;
+#   - `bester(schueler)`: der Name des Schülers mit den meisten Punkten;
+#   - `rangliste(schueler)`: die Namen, von den meisten Punkten bis zu den
+#     wenigsten;
+#   - `gruppengroessen(schueler)`: ein Record, der für jede Gruppe angibt,
+#     wie viele Schüler darin sind (`{A: 2, B: 1}`).
+#
+# Hinweise
+#   1. `filter`, dann `map(fn(s) = s.name)`.
+#   2. `max_by(liste, schluessel)` gibt das Element mit dem größten
+#      Schlüssel.
+#   3. `sort_by(liste, fn(s) = -s.punkte)` sortiert ab den meisten Punkten.
+#   4. `group_by(liste, schluessel)` gibt einen Record von Listen, und
+#      `map_values(record, f)` wendet f auf jeden seiner Werte an.
+#
+# Prüfe deine Arbeit:  rythme exercise check 21-listen-von-records.ry
+#               oder:  rythme test 21-listen-von-records.ry
+
+fn namen_der_bestandenen(schueler) = fail("zu tun")
+
+fn durchschnittspunkte(schueler) = fail("zu tun")
+
+fn bester(schueler) = fail("zu tun")
+
+fn rangliste(schueler) = fail("zu tun")
+
+fn gruppengroessen(schueler) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+klasse = [
+  {name: "Ada" punkte: 92 gruppe: "A"}
+  {name: "Alan" punkte: 45 gruppe: "B"}
+  {name: "Grace" punkte: 78 gruppe: "A"}
+  {name: "Edsger" punkte: 50 gruppe: "B"}
+  {name: "Barbara" punkte: 85 gruppe: "A"}
+]
+
+test "bestanden" = assert_eq(namen_der_bestandenen(klasse) ["Ada" "Grace" "Edsger" "Barbara"])
+
+test "Durchschnitt" = assert_eq(durchschnittspunkte(klasse) 70)
+
+test "der Beste" = assert_eq(bester(klasse) "Ada")
+
+test "Rangliste" = assert_eq(rangliste(klasse) ["Ada" "Barbara" "Grace" "Edsger" "Alan"])
+
+test "Gruppengrößen" = assert_eq(gruppengroessen(klasse) {A: 3 B: 2})
+"#,
+        ),
+        ("22-own-types", "22-eigene-typen"),
+        (
+            r#"# Exercise 22 · Your own types  ★★☆
+#
+# `type` defines a new kind of value, with one constructor for each
+# possible form:
+#   type Pet = Dog(name) | Cat(name, lives) | Fish
+# A function can have one definition per constructor:
+#   fn sound(Dog(_)) = "woof"
+#
+# Statement
+#   The type `Shape` below has three forms.
+#   - `area(shape)`: the area of the shape;
+#   - `perimeter(shape)`: the length of its border;
+#   - `name_of(shape)`: "circle", "rectangle" or "square";
+#   - `total_area(shapes)`: the sum of the areas of a list of shapes.
+#
+# Hints
+#   1. `fn area(Circle(r)) = pi * r * r`, then one definition for each
+#      other constructor.
+#   2. The perimeter of a circle is 2 × π × r.
+#   3. If you forget a constructor, `rythme check` tells you which one
+#      (warning W002).
+#
+# Check your work:  rythme exercise check 22-own-types.ry
+#              or:  rythme test 22-own-types.ry
+
+type Shape = Circle(radius) | Rect(width height) | Square(side)
+
+fn area(shape) = fail("to do")
+
+fn perimeter(shape) = fail("to do")
+
+fn name_of(shape) = fail("to do")
+
+fn total_area(shapes) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "area"
+  assert_eq(area(Rect(2 3)) 6)
+  assert_eq(area(Square(4)) 16)
+  assert_eq(round(area(Circle(1)) 2) 3.14)
+end
+
+test "perimeter"
+  assert_eq(perimeter(Rect(2 3)) 10)
+  assert_eq(perimeter(Square(4)) 16)
+  assert_eq(round(perimeter(Circle(1)) 2) 6.28)
+end
+
+test "name" = assert_eq([Circle(1) Rect(1 2) Square(3)] |> map(name_of) ["circle" "rectangle" "square"])
+
+test "total area" = assert_eq(total_area([Rect(2 3) Square(2) Rect(1 1)]) 11)
+"#,
+            r#"# Übung 22 · Eigene Typen  ★★☆
+#
+# `type` definiert eine neue Art von Wert, mit einem Konstruktor für jede
+# mögliche Form:
+#   type Haustier = Hund(name) | Katze(name, leben) | Fisch
+# Eine Funktion kann eine Definition pro Konstruktor haben:
+#   fn laut(Hund(_)) = "wuff"
+#
+# Aufgabe
+#   Der Typ `Form` unten hat drei Formen.
+#   - `flaeche(form)`: der Flächeninhalt der Form;
+#   - `umfang(form)`: die Länge ihres Randes;
+#   - `name_von(form)`: "Kreis", "Rechteck" oder "Quadrat";
+#   - `gesamtflaeche(formen)`: die Summe der Flächen einer Liste von
+#     Formen.
+#
+# Hinweise
+#   1. `fn flaeche(Kreis(r)) = pi * r * r`, dann eine Definition für jeden
+#      anderen Konstruktor.
+#   2. Der Umfang eines Kreises ist 2 × π × r.
+#   3. Wenn du einen Konstruktor vergisst, sagt dir `rythme check`, welchen
+#      (Warnung W002).
+#
+# Prüfe deine Arbeit:  rythme exercise check 22-eigene-typen.ry
+#               oder:  rythme test 22-eigene-typen.ry
+
+type Form = Kreis(radius) | Rechteck(breite hoehe) | Quadrat(seite)
+
+fn flaeche(form) = fail("zu tun")
+
+fn umfang(form) = fail("zu tun")
+
+fn name_von(form) = fail("zu tun")
+
+fn gesamtflaeche(formen) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Fläche"
+  assert_eq(flaeche(Rechteck(2 3)) 6)
+  assert_eq(flaeche(Quadrat(4)) 16)
+  assert_eq(round(flaeche(Kreis(1)) 2) 3.14)
+end
+
+test "Umfang"
+  assert_eq(umfang(Rechteck(2 3)) 10)
+  assert_eq(umfang(Quadrat(4)) 16)
+  assert_eq(round(umfang(Kreis(1)) 2) 6.28)
+end
+
+test "Name" = assert_eq([Kreis(1) Rechteck(1 2) Quadrat(3)] |> map(name_von) ["Kreis" "Rechteck" "Quadrat"])
+
+test "Gesamtfläche" = assert_eq(gesamtflaeche([Rechteck(2 3) Quadrat(2) Rechteck(1 1)]) 11)
+"#,
+        ),
+        ("23-match", "23-match"),
+        (
+            r#"# Exercise 23 · Choosing with `match`  ★★☆
+#
+# `match` compares a value with patterns, in order, and gives the result of
+# the first one that fits:
+#   fn describe(n) = match n
+#     0 -> "zero"
+#     n if n < 0 -> "negative"
+#     _ -> "positive"
+#   end
+# Patterns can be numbers, texts, constructors, lists (`[]`, `[x]`,
+# `[x, ..rest]`) or records (`{name}`).
+#
+# Statement
+#   - `next_light(light)`: the light that comes after: Green, then Orange,
+#     then Red, then Green again;
+#   - `can_go(light)`: true only for Green;
+#   - `describe(list)`: "empty" for [], "one: 7" for [7], "two: 1 and 2"
+#     for [1, 2], and "many, starting with 5" for longer lists;
+#   - `greeting(person)`: for a record with a `title` field,
+#     "Hello, Dr Hopper"; otherwise, with only `name`, "Hello, Grace".
+#
+# Hints
+#   1. Each of the three lights is one case of the `match`.
+#   2. `[a, b]` matches lists of exactly two elements, `[first, ..]` lists
+#      of at least one element: put the most precise patterns first.
+#   3. `{title, last}` matches records that have at least these fields.
+#
+# Check your work:  rythme exercise check 23-match.ry
+#              or:  rythme test 23-match.ry
+
+type Light = Green | Orange | Red
+
+fn next_light(light) = fail("to do")
+
+fn can_go(light) = fail("to do")
+
+fn describe(list) = fail("to do")
+
+fn greeting(person) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "next light"
+  assert_eq(next_light(Green) Orange)
+  assert_eq(next_light(Orange) Red)
+  assert_eq(next_light(Red) Green)
+end
+
+test "can go"
+  assert_eq(can_go(Green) true)
+  assert_eq(can_go(Orange) false)
+  assert_eq(can_go(Red) false)
+end
+
+test "describe"
+  assert_eq(describe([]) "empty")
+  assert_eq(describe([7]) "one: 7")
+  assert_eq(describe([1 2]) "two: 1 and 2")
+  assert_eq(describe([5 6 7]) "many, starting with 5")
+end
+
+test "greeting"
+  assert_eq(greeting({title: "Dr" last: "Hopper" name: "Grace"}) "Hello, Dr Hopper")
+  assert_eq(greeting({name: "Grace"}) "Hello, Grace")
+end
+"#,
+            r#"# Übung 23 · Auswählen mit `match`  ★★☆
+#
+# `match` vergleicht einen Wert der Reihe nach mit Mustern und gibt das
+# Ergebnis des ersten, das passt:
+#   fn beschreiben(n) = match n
+#     0 -> "null"
+#     n if n < 0 -> "negativ"
+#     _ -> "positiv"
+#   end
+# Muster können Zahlen, Texte, Konstruktoren, Listen (`[]`, `[x]`,
+# `[x, ..rest]`) oder Records (`{name}`) sein.
+#
+# Aufgabe
+#   - `naechstes_licht(licht)`: das Licht, das danach kommt: Gruen, dann
+#     Gelb, dann Rot, dann wieder Gruen;
+#   - `darf_fahren(licht)`: true nur für Gruen;
+#   - `beschreiben(liste)`: "leer" für [], "eins: 7" für [7],
+#     "zwei: 1 und 2" für [1, 2], und "viele, ab 5" für längere Listen;
+#   - `begruessung(person)`: für einen Record mit einem Feld `titel`
+#     "Hallo, Dr. Hopper"; sonst, nur mit `name`, "Hallo, Grace".
+#
+# Hinweise
+#   1. Jedes der drei Lichter ist ein Fall des `match`.
+#   2. `[a, b]` passt auf Listen mit genau zwei Elementen, `[erstes, ..]`
+#      auf Listen mit mindestens einem Element: Setze die genauesten Muster
+#      an den Anfang.
+#   3. `{titel, nachname}` passt auf Records, die mindestens diese Felder
+#      haben.
+#
+# Prüfe deine Arbeit:  rythme exercise check 23-match.ry
+#               oder:  rythme test 23-match.ry
+
+type Licht = Gruen | Gelb | Rot
+
+fn naechstes_licht(licht) = fail("zu tun")
+
+fn darf_fahren(licht) = fail("zu tun")
+
+fn beschreiben(liste) = fail("zu tun")
+
+fn begruessung(person) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "nächstes Licht"
+  assert_eq(naechstes_licht(Gruen) Gelb)
+  assert_eq(naechstes_licht(Gelb) Rot)
+  assert_eq(naechstes_licht(Rot) Gruen)
+end
+
+test "darf fahren"
+  assert_eq(darf_fahren(Gruen) true)
+  assert_eq(darf_fahren(Gelb) false)
+  assert_eq(darf_fahren(Rot) false)
+end
+
+test "beschreiben"
+  assert_eq(beschreiben([]) "leer")
+  assert_eq(beschreiben([7]) "eins: 7")
+  assert_eq(beschreiben([1 2]) "zwei: 1 und 2")
+  assert_eq(beschreiben([5 6 7]) "viele, ab 5")
+end
+
+test "Begrüßung"
+  assert_eq(begruessung({titel: "Dr." nachname: "Hopper" name: "Grace"}) "Hallo, Dr. Hopper")
+  assert_eq(begruessung({name: "Grace"}) "Hallo, Grace")
+end
+"#,
+        ),
+        ("24-trees", "24-baeume"),
+        (
+            r#"# Exercise 24 · Trees  ★★★
+#
+# A type can contain itself. A binary tree is either empty (`Leaf`), or a
+# node with a value and two smaller trees, on its left and on its right.
+# Functions on trees follow the shape of the type: one case for `Leaf`, one
+# for `Node`, which calls itself on both sides.
+#
+# Statement
+#   - `size(tree)`: how many values the tree holds;
+#   - `total(tree)`: the sum of its values;
+#   - `depth(tree)`: the number of levels (0 for a Leaf);
+#   - `insert(tree, x)`: a search tree is a tree where the values on the
+#     left of a node are smaller than its value, and the others on the
+#     right; give the search tree with x added (a new Node in place of a
+#     Leaf);
+#   - `to_list(tree)`: the values, from left to right.
+#
+# Hints
+#   1. `fn size(Leaf) = 0` and `fn size(Node(left, _, right)) = ...`.
+#   2. `max(a, b)` gives the larger of two numbers.
+#   3. `insert` gives a new tree: `Node(insert(left, x), value, right)`
+#      when x goes to the left.
+#   4. `to_list` of a node is: the list of the left, then the value, then
+#      the list of the right (`+` joins lists).
+#
+# Check your work:  rythme exercise check 24-trees.ry
+#              or:  rythme test 24-trees.ry
+
+type Tree = Leaf | Node(left value right)
+
+fn size(tree) = fail("to do")
+
+fn total(tree) = fail("to do")
+
+fn depth(tree) = fail("to do")
+
+fn insert(tree x) = fail("to do")
+
+fn to_list(tree) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+#       5
+#      / \
+#     3   8
+#    /
+#   1
+small = Node(Node(Node(Leaf 1 Leaf) 3 Leaf) 5 Node(Leaf 8 Leaf))
+
+test "size"
+  assert_eq(size(Leaf) 0)
+  assert_eq(size(small) 4)
+end
+
+test "total" = assert_eq(total(small) 17)
+
+test "depth"
+  assert_eq(depth(Leaf) 0)
+  assert_eq(depth(small) 3)
+end
+
+test "insert"
+  assert_eq(insert(Leaf 4) Node(Leaf 4 Leaf))
+  assert_eq(insert(Node(Leaf 4 Leaf) 2) Node(Node(Leaf 2 Leaf) 4 Leaf))
+end
+
+test "to list" = assert_eq(to_list(small) [1 3 5 8])
+
+test "sorting with a tree" = assert_eq([7 2 9 4 1] |> fold(Leaf insert) |> to_list [1 2 4 7 9])
+"#,
+            r#"# Übung 24 · Bäume  ★★★
+#
+# Ein Typ kann sich selbst enthalten. Ein Binärbaum ist entweder leer
+# (`Blatt`) oder ein Knoten mit einem Wert und zwei kleineren Bäumen, links
+# und rechts von ihm. Funktionen auf Bäumen folgen der Form des Typs: ein
+# Fall für `Blatt`, einer für `Knoten`, der sich auf beiden Seiten selbst
+# aufruft.
+#
+# Aufgabe
+#   - `groesse(baum)`: wie viele Werte der Baum enthält;
+#   - `summe(baum)`: die Summe seiner Werte;
+#   - `tiefe(baum)`: die Anzahl der Ebenen (0 für ein Blatt);
+#   - `einfuegen(baum, x)`: Ein Suchbaum ist ein Baum, in dem die Werte
+#     links von einem Knoten kleiner als sein Wert sind und die anderen
+#     rechts; gib den Suchbaum mit hinzugefügtem x (ein neuer Knoten an der
+#     Stelle eines Blatts);
+#   - `als_liste(baum)`: die Werte, von links nach rechts.
+#
+# Hinweise
+#   1. `fn groesse(Blatt) = 0` und `fn groesse(Knoten(links, _, rechts)) = ...`.
+#   2. `max(a, b)` gibt die größere von zwei Zahlen.
+#   3. `einfuegen` gibt einen neuen Baum:
+#      `Knoten(einfuegen(links, x), wert, rechts)`, wenn x nach links geht.
+#   4. `als_liste` eines Knotens ist: die Liste von links, dann der Wert,
+#      dann die Liste von rechts (`+` verbindet Listen).
+#
+# Prüfe deine Arbeit:  rythme exercise check 24-baeume.ry
+#               oder:  rythme test 24-baeume.ry
+
+type Baum = Blatt | Knoten(links wert rechts)
+
+fn groesse(baum) = fail("zu tun")
+
+fn summe(baum) = fail("zu tun")
+
+fn tiefe(baum) = fail("zu tun")
+
+fn einfuegen(baum x) = fail("zu tun")
+
+fn als_liste(baum) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+#       5
+#      / \
+#     3   8
+#    /
+#   1
+klein = Knoten(Knoten(Knoten(Blatt 1 Blatt) 3 Blatt) 5 Knoten(Blatt 8 Blatt))
+
+test "Größe"
+  assert_eq(groesse(Blatt) 0)
+  assert_eq(groesse(klein) 4)
+end
+
+test "Summe" = assert_eq(summe(klein) 17)
+
+test "Tiefe"
+  assert_eq(tiefe(Blatt) 0)
+  assert_eq(tiefe(klein) 3)
+end
+
+test "einfügen"
+  assert_eq(einfuegen(Blatt 4) Knoten(Blatt 4 Blatt))
+  assert_eq(einfuegen(Knoten(Blatt 4 Blatt) 2) Knoten(Knoten(Blatt 2 Blatt) 4 Blatt))
+end
+
+test "als Liste" = assert_eq(als_liste(klein) [1 3 5 8])
+
+test "sortieren mit einem Baum" = assert_eq([7 2 9 4 1] |> fold(Blatt einfuegen) |> als_liste [1 2 4 7 9])
+"#,
+        ),
+        ("25-expressions", "25-ausdruecke"),
+        (
+            r#"# Exercise 25 · A small calculator  ★★★
+#
+# A calculation like (1 + 2) × 3 is a tree: the multiplication has two
+# parts, the addition and 3. With a type, a program can hold calculations,
+# compute them and show them.
+#
+# Statement
+#   - `evaluate(expr)`: the value of the calculation;
+#   - `show(expr)`: the calculation as a text, with parentheses around every
+#     addition and multiplication: "((1 + 2) * 3)", and a negation written
+#     "-x" ("-4", "-(1 + 2)");
+#   - `count_numbers(expr)`: how many numbers the calculation contains;
+#   - `simplify(expr)`: the same calculation, where `Add(e, Num(0))`,
+#     `Mul(e, Num(1))` (and the same with the number on the left) are
+#     replaced by e, at every level.
+#
+# Hints
+#   1. One case per constructor: `fn evaluate(Num(n)) = n`,
+#      `fn evaluate(Add(a, b)) = evaluate(a) + evaluate(b)`...
+#   2. `show(Neg(e))` is "-" followed by `show(e)`.
+#   3. In `simplify`, first simplify both parts, then look at the result
+#      with a `match`.
+#
+# Check your work:  rythme exercise check 25-expressions.ry
+#              or:  rythme test 25-expressions.ry
+
+type Expr = Num(value) | Add(left right) | Mul(left right) | Neg(inner)
+
+fn evaluate(expr) = fail("to do")
+
+fn show(expr) = fail("to do")
+
+fn count_numbers(expr) = fail("to do")
+
+fn simplify(expr) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+calculation = Mul(Add(Num(1) Num(2)) Num(3))
+
+test "evaluate"
+  assert_eq(evaluate(Num(4)) 4)
+  assert_eq(evaluate(calculation) 9)
+  assert_eq(evaluate(Neg(calculation)), -9)
+end
+
+test "show"
+  assert_eq(show(calculation) "((1 + 2) * 3)")
+  assert_eq(show(Neg(Num(4))) "-4")
+  assert_eq(show(Neg(Add(Num(1) Num(2)))) "-(1 + 2)")
+end
+
+test "count numbers" = assert_eq(count_numbers(Add(calculation Neg(Num(5)))) 4)
+
+test "simplify"
+  assert_eq(simplify(Add(Num(7) Num(0))) Num(7))
+  assert_eq(simplify(Mul(Num(1) Add(Num(0) Num(2)))) Num(2))
+  assert_eq(simplify(calculation) calculation)
+  assert_eq(simplify(Neg(Mul(Num(3) Num(1)))) Neg(Num(3)))
+end
+"#,
+            r#"# Übung 25 · Ein kleiner Taschenrechner  ★★★
+#
+# Eine Rechnung wie (1 + 2) × 3 ist ein Baum: Die Multiplikation hat zwei
+# Teile, die Addition und 3. Mit einem Typ kann ein Programm Rechnungen
+# speichern, ausrechnen und anzeigen.
+#
+# Aufgabe
+#   - `auswerten(ausdr)`: der Wert der Rechnung;
+#   - `anzeigen(ausdr)`: die Rechnung als Text, mit Klammern um jede
+#     Addition und Multiplikation: "((1 + 2) * 3)", und eine Negation als
+#     "-x" geschrieben ("-4", "-(1 + 2)");
+#   - `anzahl_zahlen(ausdr)`: wie viele Zahlen die Rechnung enthält;
+#   - `vereinfachen(ausdr)`: dieselbe Rechnung, in der `Plus(e, Zahl(0))`
+#     und `Mal(e, Zahl(1))` (und dasselbe mit der Zahl links) auf jeder
+#     Ebene durch e ersetzt sind.
+#
+# Hinweise
+#   1. Ein Fall pro Konstruktor: `fn auswerten(Zahl(n)) = n`,
+#      `fn auswerten(Plus(a, b)) = auswerten(a) + auswerten(b)`...
+#   2. `anzeigen(Minus(e))` ist "-", gefolgt von `anzeigen(e)`.
+#   3. Vereinfache in `vereinfachen` zuerst beide Teile, und sieh dir dann
+#      das Ergebnis mit einem `match` an.
+#
+# Prüfe deine Arbeit:  rythme exercise check 25-ausdruecke.ry
+#               oder:  rythme test 25-ausdruecke.ry
+
+type Ausdruck = Zahl(wert) | Plus(links rechts) | Mal(links rechts) | Minus(innen)
+
+fn auswerten(ausdr) = fail("zu tun")
+
+fn anzeigen(ausdr) = fail("zu tun")
+
+fn anzahl_zahlen(ausdr) = fail("zu tun")
+
+fn vereinfachen(ausdr) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+rechnung = Mal(Plus(Zahl(1) Zahl(2)) Zahl(3))
+
+test "auswerten"
+  assert_eq(auswerten(Zahl(4)) 4)
+  assert_eq(auswerten(rechnung) 9)
+  assert_eq(auswerten(Minus(rechnung)), -9)
+end
+
+test "anzeigen"
+  assert_eq(anzeigen(rechnung) "((1 + 2) * 3)")
+  assert_eq(anzeigen(Minus(Zahl(4))) "-4")
+  assert_eq(anzeigen(Minus(Plus(Zahl(1) Zahl(2)))) "-(1 + 2)")
+end
+
+test "Anzahl der Zahlen" = assert_eq(anzahl_zahlen(Plus(rechnung Minus(Zahl(5)))) 4)
+
+test "vereinfachen"
+  assert_eq(vereinfachen(Plus(Zahl(7) Zahl(0))) Zahl(7))
+  assert_eq(vereinfachen(Mal(Zahl(1) Plus(Zahl(0) Zahl(2)))) Zahl(2))
+  assert_eq(vereinfachen(rechnung) rechnung)
+  assert_eq(vereinfachen(Minus(Mal(Zahl(3) Zahl(1)))) Minus(Zahl(3)))
+end
+"#,
+        ),
+        ("26-option", "26-option"),
+        (
+            r#"# Exercise 26 · A value that may be missing: Option  ★★☆
+#
+# Rythme has no `null`. A function that may find nothing returns an Option:
+# `Some(value)` when there is a value, `None` otherwise. `match` handles
+# both cases, and `unwrap_or(option, default)` gives the value or a default.
+#   fn first_of([]) = None
+#   fn first_of([x, ..]) = Some(x)
+#
+# Statement
+#   - `safe_divide(a, b)`: `Some(a / b)`, or `None` when b is 0;
+#   - `find_age(people, name)`: the age of the person with this name, as an
+#     Option (people is a list of records `{name, age}`);
+#   - `age_or_unknown(people, name)`: a text, "36" for a known person and
+#     "unknown" otherwise;
+#   - `first_long_word(words)`: the first word with more than 5
+#     characters, as an Option;
+#   - `add_options(a, b)`: `Some(x + y)` when a is `Some(x)` and b is
+#     `Some(y)`, `None` otherwise.
+#
+# Hints
+#   1. `find(list, f)` gives the first element for which f is true, as an
+#      Option; `map(option, f)` applies f to the value inside, if any.
+#   2. `match find_age(people, name)` with the cases `Some(age)` and `None`.
+#   3. `match [a, b]` with a case `[Some(x), Some(y)]` and a case `_`.
+#
+# Check your work:  rythme exercise check 26-option.ry
+#              or:  rythme test 26-option.ry
+
+fn safe_divide(a b) = fail("to do")
+
+fn find_age(people name) = fail("to do")
+
+fn age_or_unknown(people name) = fail("to do")
+
+fn first_long_word(words) = fail("to do")
+
+fn add_options(a b) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+people = [{name: "Ada" age: 36} {name: "Alan" age: 41}]
+
+test "safe divide"
+  assert_eq(safe_divide(10 4) Some(2.5))
+  assert_eq(safe_divide(1 0) None)
+end
+
+test "find age"
+  assert_eq(find_age(people "Alan") Some(41))
+  assert_eq(find_age(people "Grace") None)
+end
+
+test "age or unknown"
+  assert_eq(age_or_unknown(people "Ada") "36")
+  assert_eq(age_or_unknown(people "Grace") "unknown")
+end
+
+test "first long word"
+  assert_eq(first_long_word(["a" "functional" "language"]) Some("functional"))
+  assert_eq(first_long_word(["short" "words"]) None)
+end
+
+test "add options"
+  assert_eq(add_options(Some(2) Some(3)) Some(5))
+  assert_eq(add_options(Some(2) None) None)
+  assert_eq(add_options(None None) None)
+end
+"#,
+            r#"# Übung 26 · Ein Wert, der fehlen kann: Option  ★★☆
+#
+# Rythme hat kein `null`. Eine Funktion, die vielleicht nichts findet, gibt
+# eine Option zurück: `Some(wert)`, wenn es einen Wert gibt, sonst `None`.
+# `match` behandelt beide Fälle, und `unwrap_or(option, standard)` gibt den
+# Wert oder einen Standardwert.
+#   fn erstes_von([]) = None
+#   fn erstes_von([x, ..]) = Some(x)
+#
+# Aufgabe
+#   - `sicher_teilen(a, b)`: `Some(a / b)`, oder `None`, wenn b 0 ist;
+#   - `alter_finden(leute, name)`: das Alter der Person mit diesem Namen,
+#     als Option (leute ist eine Liste von Records `{name, alter}`);
+#   - `alter_oder_unbekannt(leute, name)`: ein Text, "36" für eine bekannte
+#     Person und sonst "unbekannt";
+#   - `erstes_langes_wort(woerter)`: das erste Wort mit mehr als 5 Zeichen,
+#     als Option;
+#   - `optionen_addieren(a, b)`: `Some(x + y)`, wenn a `Some(x)` und b
+#     `Some(y)` ist, sonst `None`.
+#
+# Hinweise
+#   1. `find(liste, f)` gibt das erste Element, für das f true ist, als
+#      Option; `map(option, f)` wendet f auf den Wert darin an, falls es
+#      einen gibt.
+#   2. `match alter_finden(leute, name)` mit den Fällen `Some(alter)` und
+#      `None`.
+#   3. `match [a, b]` mit einem Fall `[Some(x), Some(y)]` und einem Fall
+#      `_`.
+#
+# Prüfe deine Arbeit:  rythme exercise check 26-option.ry
+#               oder:  rythme test 26-option.ry
+
+fn sicher_teilen(a b) = fail("zu tun")
+
+fn alter_finden(leute name) = fail("zu tun")
+
+fn alter_oder_unbekannt(leute name) = fail("zu tun")
+
+fn erstes_langes_wort(woerter) = fail("zu tun")
+
+fn optionen_addieren(a b) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+leute = [{name: "Ada" alter: 36} {name: "Alan" alter: 41}]
+
+test "sicher teilen"
+  assert_eq(sicher_teilen(10 4) Some(2.5))
+  assert_eq(sicher_teilen(1 0) None)
+end
+
+test "Alter finden"
+  assert_eq(alter_finden(leute "Alan") Some(41))
+  assert_eq(alter_finden(leute "Grace") None)
+end
+
+test "Alter oder unbekannt"
+  assert_eq(alter_oder_unbekannt(leute "Ada") "36")
+  assert_eq(alter_oder_unbekannt(leute "Grace") "unbekannt")
+end
+
+test "erstes langes Wort"
+  assert_eq(erstes_langes_wort(["eine" "funktionale" "Sprache"]) Some("funktionale"))
+  assert_eq(erstes_langes_wort(["kurze" "Worte"]) None)
+end
+
+test "Optionen addieren"
+  assert_eq(optionen_addieren(Some(2) Some(3)) Some(5))
+  assert_eq(optionen_addieren(Some(2) None) None)
+  assert_eq(optionen_addieren(None None) None)
+end
+"#,
+        ),
+        ("27-result", "27-result"),
+        (
+            r#"# Exercise 27 · An operation that may fail: Result  ★★☆
+#
+# Rythme has no exceptions. A function that may fail returns a Result:
+# `Ok(value)` when it worked, `Err(message)` otherwise. The caller must
+# look at both cases: no error can be forgotten.
+#   parse_int("42")       # Ok(42)
+#   parse_int("forty")    # Err("\"forty\" is not a whole number")
+#
+# Statement
+#   - `checked_divide(a, b)`: `Ok(a / b)`, or `Err("division by zero")`;
+#   - `parse_age(text)`: the age written in the text, as a Result:
+#     `Err("not a number")` if the text is not a whole number,
+#     `Err("an age cannot be negative")` below 0,
+#     `Err("too old")` above 150, and `Ok(age)` otherwise;
+#   - `describe(result)`: "ok: 42" for `Ok(42)` and "error: too old" for
+#     `Err("too old")`;
+#   - `check_code(code)`: `Ok(code)` if it has at least 8
+#     characters and contains a digit; otherwise an Err with the first
+#     problem found: "too short" or "no digit".
+#
+# Hints
+#   1. `match parse_int(text)` with the cases `Err(_)`, `Ok(n) if n < 0`,
+#      `Ok(n) if n > 150` and `Ok(n)`.
+#   2. `any(chars(code), is_digit)` tells whether there is a digit.
+#
+# Check your work:  rythme exercise check 27-result.ry
+#              or:  rythme test 27-result.ry
+
+fn checked_divide(a b) = fail("to do")
+
+fn parse_age(text) = fail("to do")
+
+fn describe(result) = fail("to do")
+
+fn check_code(code) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "checked divide"
+  assert_eq(checked_divide(9 3) Ok(3))
+  assert_eq(checked_divide(1 0) Err("division by zero"))
+end
+
+test "parse age"
+  assert_eq(parse_age("36") Ok(36))
+  assert_eq(parse_age(" 7 ") Ok(7))
+  assert_eq(parse_age("seven") Err("not a number"))
+  assert_eq(parse_age("-1") Err("an age cannot be negative"))
+  assert_eq(parse_age("200") Err("too old"))
+end
+
+test "describe"
+  assert_eq(describe(Ok(42)) "ok: 42")
+  assert_eq(describe(Err("too old")) "error: too old")
+  assert_eq(describe(parse_age("-5")) "error: an age cannot be negative")
+end
+
+test "check code"
+  assert_eq(check_code("rythme2024") Ok("rythme2024"))
+  assert_eq(check_code("abc1") Err("too short"))
+  assert_eq(check_code("functional") Err("no digit"))
+end
+"#,
+            r#"# Übung 27 · Eine Operation, die scheitern kann: Result  ★★☆
+#
+# Rythme hat keine Ausnahmen. Eine Funktion, die scheitern kann, gibt ein
+# Result zurück: `Ok(wert)`, wenn es geklappt hat, sonst `Err(meldung)`.
+# Wer sie aufruft, muss beide Fälle ansehen: Kein Fehler kann vergessen
+# werden.
+#   parse_int("42")         # Ok(42)
+#   parse_int("vierzig")    # Err("\"vierzig\" is not a whole number")
+#
+# Aufgabe
+#   - `geprueft_teilen(a, b)`: `Ok(a / b)`, oder
+#     `Err("Division durch null")`;
+#   - `alter_lesen(text)`: das im Text geschriebene Alter, als Result:
+#     `Err("keine Zahl")`, wenn der Text keine ganze Zahl ist,
+#     `Err("ein Alter kann nicht negativ sein")` unter 0,
+#     `Err("zu alt")` über 150, und sonst `Ok(alter)`;
+#   - `beschreiben(ergebnis)`: "ok: 42" für `Ok(42)` und "Fehler: zu alt"
+#     für `Err("zu alt")`;
+#   - `code_pruefen(code)`: `Ok(code)`, wenn er mindestens 8 Zeichen hat
+#     und eine Ziffer enthält; sonst ein Err mit dem ersten gefundenen
+#     Problem: "zu kurz" oder "keine Ziffer".
+#
+# Hinweise
+#   1. `match parse_int(text)` mit den Fällen `Err(_)`, `Ok(n) if n < 0`,
+#      `Ok(n) if n > 150` und `Ok(n)`.
+#   2. `any(chars(code), is_digit)` sagt, ob es eine Ziffer gibt.
+#
+# Prüfe deine Arbeit:  rythme exercise check 27-result.ry
+#               oder:  rythme test 27-result.ry
+
+fn geprueft_teilen(a b) = fail("zu tun")
+
+fn alter_lesen(text) = fail("zu tun")
+
+fn beschreiben(ergebnis) = fail("zu tun")
+
+fn code_pruefen(code) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "geprüft teilen"
+  assert_eq(geprueft_teilen(9 3) Ok(3))
+  assert_eq(geprueft_teilen(1 0) Err("Division durch null"))
+end
+
+test "Alter lesen"
+  assert_eq(alter_lesen("36") Ok(36))
+  assert_eq(alter_lesen(" 7 ") Ok(7))
+  assert_eq(alter_lesen("sieben") Err("keine Zahl"))
+  assert_eq(alter_lesen("-1") Err("ein Alter kann nicht negativ sein"))
+  assert_eq(alter_lesen("200") Err("zu alt"))
+end
+
+test "beschreiben"
+  assert_eq(beschreiben(Ok(42)) "ok: 42")
+  assert_eq(beschreiben(Err("zu alt")) "Fehler: zu alt")
+  assert_eq(beschreiben(alter_lesen("-5")) "Fehler: ein Alter kann nicht negativ sein")
+end
+
+test "Code prüfen"
+  assert_eq(code_pruefen("rythme2024") Ok("rythme2024"))
+  assert_eq(code_pruefen("abc1") Err("zu kurz"))
+  assert_eq(code_pruefen("funktional") Err("keine Ziffer"))
+end
+"#,
+        ),
+        ("28-question-mark", "28-fragezeichen"),
+        (
+            r#"# Exercise 28 · Passing errors on with `?`  ★★★
+#
+# Writing a `match` after each step that may fail is long. `?` after a
+# Result (or an Option) takes the value out of `Ok(...)` (or `Some(...)`),
+# or stops the function at once and returns the `Err(...)` (or `None`):
+#   fn double_text(t)
+#     n = parse_int(t)?          # stops here if t is not a number
+#     Ok(n * 2)
+#   end
+#
+# Statement
+#   - `add_texts(a, b)`: the sum of the two numbers written in a and b,
+#     as `Ok(sum)`, or the error of `parse_int`;
+#   - `parse_point(text)`: for "3,4", `Ok({x: 3, y: 4})`; the error
+#     `Err("expected x,y")` if the text does not have exactly two parts
+#     separated by a comma, or the error of `parse_int` for a part that is
+#     not a number;
+#   - `sum_of_texts(texts)`: the sum of the numbers written in a list of
+#     texts, or the first error;
+#   - `ratio_of_texts(a, b)`: a / b for two numbers written in texts, or the
+#     first error, with `Err("division by zero")` when b is 0.
+#
+# Hints
+#   1. `Ok(parse_int(a)? + parse_int(b)?)`
+#   2. `match split(text, ",")` with the cases `[x, y]` and `_`.
+#   3. For a list, use recursion: `sum_of_texts([])` is `Ok(0)`; for
+#      `[t, ..rest]`, take the number of t and the sum of rest, both with
+#      `?`.
+#   4. `?` can be used on any function that gives a Result, your own ones
+#      too.
+#
+# Check your work:  rythme exercise check 28-question-mark.ry
+#              or:  rythme test 28-question-mark.ry
+
+fn add_texts(a b) = fail("to do")
+
+fn parse_point(text) = fail("to do")
+
+fn sum_of_texts(texts) = fail("to do")
+
+fn ratio_of_texts(a b) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "add texts"
+  assert_eq(add_texts("2" "40") Ok(42))
+  assert(is_err(add_texts("2" "forty")) "forty is not a number")
+end
+
+test "parse point"
+  assert_eq(parse_point("3,4") Ok({x: 3 y: 4}))
+  assert_eq(parse_point("3") Err("expected x,y"))
+  assert_eq(parse_point("1,2,3") Err("expected x,y"))
+  assert(is_err(parse_point("3,four")) "four is not a number")
+end
+
+test "sum of texts"
+  assert_eq(sum_of_texts(["1" "2" "3"]) Ok(6))
+  assert_eq(sum_of_texts([]) Ok(0))
+  assert_eq(sum_of_texts(["1" "x" "y"]) parse_int("x"))
+end
+
+test "ratio of texts"
+  assert_eq(ratio_of_texts("9" "2") Ok(4.5))
+  assert_eq(ratio_of_texts("9" "0") Err("division by zero"))
+  assert(is_err(ratio_of_texts("nine" "0")) "nine is not a number")
+end
+"#,
+            r#"# Übung 28 · Fehler mit `?` weitergeben  ★★★
+#
+# Nach jedem Schritt, der scheitern kann, ein `match` zu schreiben, ist
+# lang. `?` nach einem Result (oder einer Option) holt den Wert aus
+# `Ok(...)` (oder `Some(...)`), oder beendet die Funktion sofort und gibt
+# das `Err(...)` (oder `None`) zurück:
+#   fn text_verdoppeln(t)
+#     n = parse_int(t)?          # hält hier an, wenn t keine Zahl ist
+#     Ok(n * 2)
+#   end
+#
+# Aufgabe
+#   - `texte_addieren(a, b)`: die Summe der zwei in a und b geschriebenen
+#     Zahlen, als `Ok(summe)`, oder der Fehler von `parse_int`;
+#   - `punkt_lesen(text)`: für "3,4" `Ok({x: 3, y: 4})`; der Fehler
+#     `Err("x,y erwartet")`, wenn der Text nicht genau zwei durch ein Komma
+#     getrennte Teile hat, oder der Fehler von `parse_int` für einen Teil,
+#     der keine Zahl ist;
+#   - `summe_der_texte(texte)`: die Summe der Zahlen, die in einer Liste
+#     von Texten stehen, oder der erste Fehler;
+#   - `verhaeltnis_der_texte(a, b)`: a / b für zwei in Texten geschriebene
+#     Zahlen, oder der erste Fehler, mit `Err("Division durch null")`, wenn
+#     b 0 ist.
+#
+# Hinweise
+#   1. `Ok(parse_int(a)? + parse_int(b)?)`
+#   2. `match split(text, ",")` mit den Fällen `[x, y]` und `_`.
+#   3. Für eine Liste nimmst du Rekursion: `summe_der_texte([])` ist
+#      `Ok(0)`; für `[t, ..rest]` nimm die Zahl von t und die Summe von
+#      rest, beide mit `?`.
+#   4. `?` funktioniert mit jeder Funktion, die ein Result gibt, auch mit
+#      deinen eigenen.
+#
+# Prüfe deine Arbeit:  rythme exercise check 28-fragezeichen.ry
+#               oder:  rythme test 28-fragezeichen.ry
+
+fn texte_addieren(a b) = fail("zu tun")
+
+fn punkt_lesen(text) = fail("zu tun")
+
+fn summe_der_texte(texte) = fail("zu tun")
+
+fn verhaeltnis_der_texte(a b) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Texte addieren"
+  assert_eq(texte_addieren("2" "40") Ok(42))
+  assert(is_err(texte_addieren("2" "vierzig")) "vierzig ist keine Zahl")
+end
+
+test "Punkt lesen"
+  assert_eq(punkt_lesen("3,4") Ok({x: 3 y: 4}))
+  assert_eq(punkt_lesen("3") Err("x,y erwartet"))
+  assert_eq(punkt_lesen("1,2,3") Err("x,y erwartet"))
+  assert(is_err(punkt_lesen("3,vier")) "vier ist keine Zahl")
+end
+
+test "Summe der Texte"
+  assert_eq(summe_der_texte(["1" "2" "3"]) Ok(6))
+  assert_eq(summe_der_texte([]) Ok(0))
+  assert_eq(summe_der_texte(["1" "x" "y"]) parse_int("x"))
+end
+
+test "Verhältnis der Texte"
+  assert_eq(verhaeltnis_der_texte("9" "2") Ok(4.5))
+  assert_eq(verhaeltnis_der_texte("9" "0") Err("Division durch null"))
+  assert(is_err(verhaeltnis_der_texte("neun" "0")) "neun ist keine Zahl")
+end
+"#,
+        ),
+        ("29-word-counts", "29-woerter-zaehlen"),
+        (
+            r#"# Exercise 29 · A small project: counting words  ★★★
+#
+# Everything together: texts, lists, records, pipelines and Options, for a
+# program that analyses a text.
+#
+# Statement
+#   - `words_of(text)`: the words of the text, in lowercase, without the
+#     punctuation `.`, `,`, `!` and `?`;
+#   - `frequencies(text)`: a list of `[word, count]` pairs, from the most
+#     frequent word to the least frequent, and in alphabetical order for
+#     words that appear the same number of times;
+#   - `most_frequent(text)`: the most frequent word, as an Option (`None`
+#     for a text without words);
+#   - `report(text, n)`: the n most frequent words, one per line, each as
+#     "word: count".
+#
+# Hints
+#   1. `replace` four times (or `fold` over the list [".", ",", "!", "?"]),
+#      then `lower` and `split`.
+#   2. `group_by(words, fn(w) = w)` gives a record `{word: [word, word]}`,
+#      and `entries(record)` the list of its `[name, value]` pairs.
+#   3. `sort_by` is stable: sort by word first, then by count (the largest
+#      first, with `fn([_, n]) = -n`).
+#   4. `first(list)` gives an Option, and `map(option, f)` changes the value
+#      inside.
+#   5. `join(lines, "\n")` puts each element on its own line.
+#
+# Check your work:  rythme exercise check 29-word-counts.ry
+#              or:  rythme test 29-word-counts.ry
+
+fn words_of(text) = fail("to do")
+
+fn frequencies(text) = fail("to do")
+
+fn most_frequent(text) = fail("to do")
+
+fn report(text n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+poem = "The cat sat. The dog sat! Did the cat see the dog?"
+
+test "words" = assert_eq(words_of("Hello, World! Hello?") ["hello" "world" "hello"])
+
+test "frequencies"
+  assert_eq(frequencies("b a b c a b") [["b" 3] ["a" 2] ["c" 1]])
+  assert_eq(frequencies(poem) |> take(3) [["the" 4] ["cat" 2] ["dog" 2]])
+end
+
+test "most frequent"
+  assert_eq(most_frequent(poem) Some("the"))
+  assert_eq(most_frequent(" ... ") None)
+end
+
+test "report" = assert_eq(report(poem 3) "the: 4\ncat: 2\ndog: 2")
+"#,
+            r#"# Übung 29 · Ein kleines Projekt: Wörter zählen  ★★★
+#
+# Alles zusammen: Texte, Listen, Records, Pipelines und Optionen, für ein
+# Programm, das einen Text untersucht.
+#
+# Aufgabe
+#   - `woerter_von(text)`: die Wörter des Textes, kleingeschrieben, ohne
+#     die Satzzeichen `.`, `,`, `!` und `?`;
+#   - `haeufigkeiten(text)`: eine Liste von Paaren `[wort, anzahl]`, vom
+#     häufigsten Wort zum seltensten, und in alphabetischer Reihenfolge für
+#     Wörter, die gleich oft vorkommen;
+#   - `haeufigstes(text)`: das häufigste Wort, als Option (`None` für einen
+#     Text ohne Wörter);
+#   - `bericht(text, n)`: die n häufigsten Wörter, eines pro Zeile, jedes
+#     als "wort: anzahl".
+#
+# Hinweise
+#   1. Viermal `replace` (oder `fold` über die Liste [".", ",", "!", "?"]),
+#      dann `lower` und `split`.
+#   2. `group_by(woerter, fn(w) = w)` gibt einen Record
+#      `{wort: [wort, wort]}`, und `entries(record)` die Liste seiner Paare
+#      `[name, wert]`.
+#   3. `sort_by` ist stabil: Sortiere zuerst nach dem Wort, dann nach der
+#      Anzahl (die größte zuerst, mit `fn([_, n]) = -n`).
+#   4. `first(liste)` gibt eine Option, und `map(option, f)` ändert den
+#      Wert darin.
+#   5. `join(zeilen, "\n")` setzt jedes Element in seine eigene Zeile.
+#
+# Prüfe deine Arbeit:  rythme exercise check 29-woerter-zaehlen.ry
+#               oder:  rythme test 29-woerter-zaehlen.ry
+
+fn woerter_von(text) = fail("zu tun")
+
+fn haeufigkeiten(text) = fail("zu tun")
+
+fn haeufigstes(text) = fail("zu tun")
+
+fn bericht(text n) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+gedicht = "Die Katze sah den Hund. Der Hund sah die Katze! Sah die Katze den Hund?"
+
+test "Wörter" = assert_eq(woerter_von("Hallo, Welt! Hallo?") ["hallo" "welt" "hallo"])
+
+test "Häufigkeiten"
+  assert_eq(haeufigkeiten("b a b c a b") [["b" 3] ["a" 2] ["c" 1]])
+  assert_eq(haeufigkeiten(gedicht) |> take(3) [["die" 3] ["hund" 3] ["katze" 3]])
+end
+
+test "das häufigste"
+  assert_eq(haeufigstes(gedicht) Some("die"))
+  assert_eq(haeufigstes(" ... ") None)
+end
+
+test "Bericht" = assert_eq(bericht(gedicht 3) "die: 3\nhund: 3\nkatze: 3")
+"#,
+        ),
+        ("30-testing", "30-tests"),
+        (
+            r#"# Exercise 30 · Tests find bugs  ★★★
+#
+# A test checks one piece of code: `test "name" = assert_eq(actual,
+# expected)`. When it fails, `rythme test` shows the two values: the bug is
+# somewhere between them.
+#
+# Statement
+#   The functions below are already written, but each one has a bug.
+#   1. Run the tests and read what fails.
+#   2. Fix the functions (not the tests!) until every test passes.
+#   3. Then write a test of your own for `clamp`, at the end of the file:
+#      what should `clamp(5, 5, 5)` give?
+#
+#   - `clamp(x, low, high)`: x brought back between low and high;
+#   - `median(list)`: the middle value of the sorted list, or the average of
+#     the two middle values when the list has an even length;
+#   - `count_words(text)`: how many words the text has.
+#
+# Hints
+#   1. Read the `got:` and `expected:` lines of the first failure, and
+#      compute by hand what the function does with these arguments.
+#   2. `debug(value)` shows a value while the program runs, and gives it
+#      back unchanged: `debug(sorted)`.
+#   3. What does `split` without a separator do with several spaces?
+#
+# Check your work:  rythme exercise check 30-testing.ry
+#              or:  rythme test 30-testing.ry
+
+fn clamp(x low high) = max(high min(x low))
+
+fn median(list)
+  middle = len(list) // 2
+  if is_even(len(list)) then (list[middle - 1] + list[middle]) / 2 else list[middle]
+end
+
+fn count_words(text) = len(split(text " "))
+
+# --- Tests (do not change them) ---
+
+test "clamp"
+  assert_eq(clamp(15 0 10) 10)
+  assert_eq(clamp(-5 0 10) 0)
+  assert_eq(clamp(5 0 10) 5)
+end
+
+test "median of an odd number of values"
+  assert_eq(median([1 2 3]) 2)
+  assert_eq(median([3 1 2]) 2)
+end
+
+test "median of an even number of values" = assert_eq(median([4 1 3 2]) 2.5)
+
+test "count words"
+  assert_eq(count_words("one two three") 3)
+  assert_eq(count_words("  one   two ") 2)
+end
+
+# Your test:
+"#,
+            r#"# Übung 30 · Tests finden Fehler  ★★★
+#
+# Ein Test prüft ein Stück Code: `test "name" = assert_eq(erhalten,
+# erwartet)`. Wenn er scheitert, zeigt `rythme test` die beiden Werte: Der
+# Fehler liegt irgendwo dazwischen.
+#
+# Aufgabe
+#   Die Funktionen unten sind schon geschrieben, aber jede hat einen
+#   Fehler.
+#   1. Führe die Tests aus und lies, was scheitert.
+#   2. Korrigiere die Funktionen (nicht die Tests!), bis jeder Test
+#      besteht.
+#   3. Schreibe dann am Ende der Datei einen eigenen Test für `begrenzen`:
+#      Was sollte `begrenzen(5, 5, 5)` geben?
+#
+#   - `begrenzen(x, unten, oben)`: x zurück zwischen unten und oben
+#     gebracht;
+#   - `median(liste)`: der mittlere Wert der sortierten Liste, oder der
+#     Mittelwert der zwei mittleren Werte, wenn die Liste eine gerade Länge
+#     hat;
+#   - `woerter_zaehlen(text)`: wie viele Wörter der Text hat.
+#
+# Hinweise
+#   1. Lies die Zeilen `erhalten:` und `erwartet:` des ersten Fehlschlags,
+#      und rechne von Hand aus, was die Funktion mit diesen Argumenten tut.
+#   2. `debug(wert)` zeigt einen Wert, während das Programm läuft, und gibt
+#      ihn unverändert zurück: `debug(sortiert)`.
+#   3. Was macht `split` ohne Trennzeichen mit mehreren Leerzeichen?
+#
+# Prüfe deine Arbeit:  rythme exercise check 30-tests.ry
+#               oder:  rythme test 30-tests.ry
+
+fn begrenzen(x unten oben) = max(oben min(x unten))
+
+fn median(liste)
+  mitte = len(liste) // 2
+  if is_even(len(liste)) then (liste[mitte - 1] + liste[mitte]) / 2 else liste[mitte]
+end
+
+fn woerter_zaehlen(text) = len(split(text " "))
+
+# --- Tests (nicht verändern) ---
+
+test "begrenzen"
+  assert_eq(begrenzen(15 0 10) 10)
+  assert_eq(begrenzen(-5 0 10) 0)
+  assert_eq(begrenzen(5 0 10) 5)
+end
+
+test "Median einer ungeraden Anzahl von Werten"
+  assert_eq(median([1 2 3]) 2)
+  assert_eq(median([3 1 2]) 2)
+end
+
+test "Median einer geraden Anzahl von Werten" = assert_eq(median([4 1 3 2]) 2.5)
+
+test "Wörter zählen"
+  assert_eq(woerter_zaehlen("eins zwei drei") 3)
+  assert_eq(woerter_zaehlen("  eins   zwei ") 2)
+end
+
+# Dein Test:
+"#,
+        ),
+        // ----- CSV and seeded random (src/builtins/csv.rs, src/builtins.rs, src/main.rs, src/help.rs)
+        // src/builtins/csv.rs
+        ("line {line}, column {column}: the quote that starts this field is never closed (a quote inside a field is written twice: \"\")", "Zeile {line}, Spalte {column}: das Anführungszeichen, das dieses Feld beginnt, wird nie geschlossen (ein Anführungszeichen in einem Feld wird doppelt geschrieben: \"\")"),
+        ("line {line}, column {column}: a quote in the middle of a field: put the whole field between quotes, and write each quote inside it twice (\"5\"\" screen\")", "Zeile {line}, Spalte {column}: ein Anführungszeichen mitten in einem Feld: setze das ganze Feld in Anführungszeichen und schreibe jedes Anführungszeichen darin doppelt (\"5\"\" Bildschirm\")"),
+        ("line {line}, column {column}: after the quote that closes a field comes {sep} or the end of the line, not {c}", "Zeile {line}, Spalte {column}: nach dem Anführungszeichen, das ein Feld schließt, kommt {sep} oder das Ende der Zeile, nicht {c}"),
+        ("line {line}: the header names the column \"{name}\" twice", "Zeile {line}: die Kopfzeile nennt die Spalte \"{name}\" zweimal"),
+        ("line {line}: {got} field(s), but the header has {wanted} column(s)", "Zeile {line}: {got} Feld(er), aber die Kopfzeile hat {wanted} Spalte(n)"),
+        ("line {line}: this table has too many rows or fields (more than {MAX_LIST})", "Zeile {line}: diese Tabelle hat zu viele Zeilen oder Felder (mehr als {MAX_LIST})"),
+        ("a tab", "ein Tabulator"),
+        ("a space", "ein Leerzeichen"),
+        ("`{f}` cannot use {c} as separator: it has another meaning in CSV", "`{f}` kann {c} nicht als Trennzeichen nehmen: es hat in CSV eine andere Bedeutung"),
+        ("the separator of `{f}` is one character, not \"{s}\"", "das Trennzeichen von `{f}` ist ein einziges Zeichen, nicht \"{s}\""),
+        ("the usual separators: \",\" (by default), \";\" (French spreadsheets), \"\\t\" (a tab)", "die üblichen Trennzeichen: \",\" (Standard), \";\" (deutsche und französische Tabellenkalkulationen), \"\\t\" (ein Tabulator)"),
+        ("`csv_format`: the field {column} of row {row} must be a text, a number or a Bool, but it is {got}", "`csv_format`: das Feld {column} der Zeile {row} muss ein Text, eine Zahl oder ein Bool sein, ist aber {got}"),
+        ("turn it into a text first, with `text(x)` or `unwrap_or(x, \"\")`", "mache zuerst einen Text daraus, mit `text(x)` oder `unwrap_or(x, \"\")`"),
+        ("`csv_format`: record {number} has the fields {{{these}}}, but the first one has {{{wanted}}}: every record must have the same fields", "`csv_format`: der Datensatz {number} hat die Felder {{{these}}}, aber der erste hat {{{wanted}}}: alle Datensätze müssen dieselben Felder haben"),
+        ("a record, like the first row", "ein Datensatz, wie die erste Zeile"),
+        ("a list of fields", "eine Liste von Feldern"),
+        ("`csv_format`: row {number} must be {wanted}, but it is {got}", "`csv_format`: die Zeile {number} muss {wanted} sein, ist aber {got}"),
+        ("`csv_format` takes a list of rows: lists of fields ([[\"name\", \"age\"], [\"Ada\", 36]]) or records ([{{name: \"Ada\", age: 36}}])", "`csv_format` nimmt eine Liste von Zeilen: Listen von Feldern ([[\"name\", \"alter\"], [\"Ada\", 36]]) oder Datensätze ([{{name: \"Ada\", alter: 36}}])"),
+        // src/main.rs
+        ("the seed must be a whole number, like `rythme run --seed 42 game.ry`, not `{v}`", "der Startwert (seed) muss eine ganze Zahl sein, wie `rythme run --seed 42 spiel.ry`, nicht `{v}`"),
+        ("`--seed` needs a whole number, like `rythme run --seed 42 game.ry`", "`--seed` erwartet eine ganze Zahl, wie `rythme run --seed 42 spiel.ry`"),
+        // src/builtins.rs
+        ("Makes the draws of `random` and `shuffle` that follow the same on every run: the same seed (a whole number) gives the same draws, with the same version of Rythme. For tests and classes; `rythme run --seed N file.ry` does the same from the command line.", "Macht die folgenden Ziehungen von `random` und `shuffle` bei jedem Lauf gleich: derselbe Startwert (eine ganze Zahl) ergibt dieselben Ziehungen, mit derselben Version von Rythme. Für Tests und den Unterricht; `rythme run --seed N datei.ry` tut dasselbe von der Kommandozeile aus."),
+        ("Reads a CSV table (a spreadsheet saved as text): `Ok(list of rows)`, each row a list of texts, or `Err(message)` saying at which line and column the text is not valid CSV. A field between quotes may hold separators, line breaks and quotes (written twice). The separator is \",\" unless given: \";\" for French spreadsheets, \"\\t\" for tabs. See `rythme help csv`.", "Liest eine CSV-Tabelle (eine als Text gespeicherte Tabellenkalkulation): `Ok(Liste von Zeilen)`, jede Zeile eine Liste von Texten, oder `Err(Meldung)`, die sagt, in welcher Zeile und Spalte der Text kein gültiges CSV ist. Ein Feld in Anführungszeichen darf Trennzeichen, Zeilenumbrüche und Anführungszeichen (doppelt geschrieben) enthalten. Das Trennzeichen ist \",\", wenn keines angegeben ist: \";\" für deutsche und französische Tabellenkalkulationen, \"\\t\" für Tabulatoren. Siehe `rythme help csv`."),
+        ("Reads a CSV table whose first line names the columns: `Ok(list of records)`, one record for each other line, with one field for each column, in their order, holding a text. `Err(message)` when the text is not valid CSV, when a line does not have as many fields as the header, or when two columns have the same name. To get numbers, use `parse_int` or `parse_float` on the fields.", "Liest eine CSV-Tabelle, deren erste Zeile die Spalten benennt: `Ok(Liste von Datensätzen)`, ein Datensatz für jede andere Zeile, mit einem Feld für jede Spalte, in ihrer Reihenfolge, das einen Text enthält. `Err(Meldung)`, wenn der Text kein gültiges CSV ist, wenn eine Zeile nicht so viele Felder wie die Kopfzeile hat oder wenn zwei Spalten denselben Namen haben. Für Zahlen nimm `parse_int` oder `parse_float` auf den Feldern."),
+        ("Writes rows as a CSV text, each one on its line, ended by a line break. The rows are lists of fields, or records: then a first line names their fields. A field is a text, a number or a Bool, put between quotes only when it needs them (a separator, a quote or a line break inside). The separator is \",\" unless given.", "Schreibt Zeilen als CSV-Text, jede auf ihrer Zeile, mit einem Zeilenumbruch am Ende. Die Zeilen sind Listen von Feldern oder Datensätze: dann benennt eine erste Zeile ihre Felder. Ein Feld ist ein Text, eine Zahl oder ein Bool und kommt nur in Anführungszeichen, wenn es sie braucht (ein Trennzeichen, ein Anführungszeichen oder ein Zeilenumbruch darin). Das Trennzeichen ist \",\", wenn keines angegeben ist."),
+        // src/help.rs
+        (r#"CSV: THE TABLES OF SPREADSHEETS
+
+A CSV text is a table: one row per line, its fields separated by commas.
+Every spreadsheet (LibreOffice, Excel, Google Sheets...) opens and saves it.
+
+  csv_parse("name,age\nAda,36")              # Ok([["name", "age"], ["Ada", "36"]])
+  csv_records("name,age\nAda,36")            # Ok([{name: "Ada", age: "36"}])
+  csv_format([["name" "age"] ["Ada" 36]]) # "name,age\nAda,36\n"
+  csv_format([{name: "Ada" age: 36}])       # the same text: records give a header
+
+With files
+  match read_file("grades.csv").and_then(csv_records)
+    Ok(rows) -> print(len(rows), "students")
+    Err(e) -> print("Error: {e}")
+  end
+  write_file("copy.csv" csv_format(rows))
+
+The rules (RFC 4180)
+  A field between quotes may hold commas, line breaks and quotes, written
+  twice: "say ""hi""" is the field  say "hi"  ; csv_format adds the quotes
+  only where they are needed.
+  Lines end with \n or \r\n (Windows); the last one may have no line break.
+  Empty lines are skipped; spaces are kept as they are in the file.
+  Every field is a text: parse_int(r.age) or parse_float(r.price) give numbers.
+  csv_records: the first line names the columns, which become the fields of
+  the records (r.name; get(r, "first name") for a name with spaces); every
+  line must have as many fields as the header.
+
+Another separator: the last argument
+  ";" (spreadsheets in French, where the comma is the decimal point), "\t"
+  (tabs), "|"...
+  csv_parse("a;b" ";")                      # Ok([["a", "b"]])
+  csv_format(rows ";")
+
+A text that is not valid CSV gives Err, which says where (line and column):
+  csv_parse("a,b\"c")   # Err("line 1, column 4: a quote in the middle of a field: ...")"#, r#"CSV: DIE TABELLEN DER TABELLENKALKULATION
+
+Ein CSV-Text ist eine Tabelle: eine Zeile der Tabelle pro Textzeile, ihre
+Felder durch Kommas getrennt. Jede Tabellenkalkulation (LibreOffice, Excel,
+Google Sheets...) öffnet und speichert ihn.
+
+  csv_parse("name,alter\nAda,36")            # Ok([["name", "alter"], ["Ada", "36"]])
+  csv_records("name,alter\nAda,36")          # Ok([{name: "Ada", alter: "36"}])
+  csv_format([["name" "alter"] ["Ada" 36]])   # "name,alter\nAda,36\n"
+  csv_format([{name: "Ada" alter: 36}])     # derselbe Text: Datensätze ergeben eine Kopfzeile
+
+Mit Dateien
+  match read_file("noten.csv").and_then(csv_records)
+    Ok(zeilen) -> print(len(zeilen), "Schüler")
+    Err(e) -> print("Fehler: {e}")
+  end
+  write_file("kopie.csv" csv_format(zeilen))
+
+Die Regeln (RFC 4180)
+  Ein Feld in Anführungszeichen darf Kommas, Zeilenumbrüche und
+  Anführungszeichen enthalten, doppelt geschrieben: "sagt ""hallo""" ist das
+  Feld  sagt "hallo"  ; csv_format setzt Anführungszeichen nur, wo sie nötig sind.
+  Zeilen enden mit \n oder \r\n (Windows); die letzte darf ohne Zeilenumbruch sein.
+  Leere Zeilen werden übersprungen; Leerzeichen bleiben, wie sie in der Datei sind.
+  Jedes Feld ist ein Text: parse_int(r.alter) oder parse_float(r.preis)
+  ergeben Zahlen.
+  csv_records: die erste Zeile benennt die Spalten, die zu den Feldern der
+  Datensätze werden (r.name; get(r, "zweiter vorname") für einen Namen mit
+  Leerzeichen); jede Zeile muss so viele Felder haben wie die Kopfzeile.
+
+Ein anderes Trennzeichen: das letzte Argument
+  ";" (deutsche und französische Tabellenkalkulationen, wo das Komma das der
+  Dezimalzahlen ist), "\t" (Tabulatoren), "|"...
+  csv_parse("a;b" ";")                      # Ok([["a", "b"]])
+  csv_format(zeilen ";")
+
+Ein Text, der kein gültiges CSV ist, ergibt Err, das sagt, wo (Zeile und Spalte):
+  csv_parse("a,b\"c")   # Err("Zeile 1, Spalte 4: ein Anführungszeichen mitten in einem Feld: ...")"#),
+        (r#"RANDOM: CHANCE, AND THE SAME CHANCE AGAIN
+
+  random()                   # a decimal number from 0 (included) to 1 (excluded)
+  random(1 6)               # a whole number from 1 to 6, both included
+  random(["a" "b" "c"])    # one element of the list
+  shuffle([1 2 3])         # the list in a random order
+
+Every run draws other values. To get the same draws again (a test, a class
+where everyone sees the same game, a mistake to find again), give a seed:
+
+  random_seed(42)                  # in the program: the draws that follow
+  rythme run --seed 42 game.ry     # from the command line: the whole run
+
+The same seed gives the same draws, in the same order, with the same version
+of Rythme (another version may draw other values). Without a seed, nothing
+changes: every run is different.
+
+In a test, call random_seed at its start: its draws then do not depend on
+the tests before it.
+  test "a dice roll stays between 1 and 6"
+    random_seed(7)
+    assert(all(map(1..100 fn(_) = random(1 6)) fn(d) = d >= 1 and d <= 6))
+  end
+
+The property tests (check_all, sample) have their own seed:
+rythme test --seed N (see rythme help tests)."#, r#"RANDOM: DER ZUFALL, UND DERSELBE ZUFALL NOCH EINMAL
+
+  random()                   # eine Dezimalzahl von 0 (eingeschlossen) bis 1 (ausgeschlossen)
+  random(1 6)               # eine ganze Zahl von 1 bis 6, beide eingeschlossen
+  random(["a" "b" "c"])    # ein Element der Liste
+  shuffle([1 2 3])         # die Liste in zufälliger Reihenfolge
+
+Jeder Lauf zieht andere Werte. Um dieselben Ziehungen wieder zu bekommen (ein
+Test, ein Kurs, in dem alle dasselbe Spiel sehen, ein Fehler, den man
+wiederfinden will), gib einen Startwert (seed) an:
+
+  random_seed(42)                  # im Programm: die folgenden Ziehungen
+  rythme run --seed 42 spiel.ry    # von der Kommandozeile: der ganze Lauf
+
+Derselbe Startwert ergibt dieselben Ziehungen, in derselben Reihenfolge, mit
+derselben Version von Rythme (eine andere Version kann andere Werte ziehen).
+Ohne Startwert ändert sich nichts: jeder Lauf ist anders.
+
+Rufe random_seed in einem Test an seinem Anfang auf: seine Ziehungen hängen
+dann nicht von den Tests davor ab.
+  test "ein Würfelwurf bleibt zwischen 1 und 6"
+    random_seed(7)
+    assert(all(map(1..100 fn(_) = random(1 6)) fn(d) = d >= 1 and d <= 6))
+  end
+
+Die Eigenschaftstests (check_all, sample) haben ihren eigenen Startwert:
+rythme test --seed N (siehe rythme help tests)."#),
+
+        // ----- the debugger (src/debug/, src/help.rs)
+        ("this file is not part of the program being debugged", "diese Datei gehört nicht zum Programm, das debuggt wird"),
+        ("top level", "oberste Ebene"),
+        (" [tail call, replaced {by}]", " [Endaufruf, hat {by} ersetzt]"),
+        ("`{name}` gave {}", "`{name}` ergab {}"),
+        ("error: {}", "Fehler: {}"),
+        ("Locals", "Lokal"),
+        ("Globals", "Global"),
+        ("result of {name}", "Ergebnis von {name}"),
+        ("no source to give: the files are on the disk", "keine Quelle zu geben: die Dateien liegen auf der Festplatte"),
+        ("unknown request `{cmd}`", "unbekannte Anfrage `{cmd}`"),
+        ("the program is running: pause it first", "das Programm läuft: halte es zuerst an"),
+        ("which program? Give its path in `program`, like \"${{file}}\"", r#"welches Programm? Gib seinen Pfad in `program` an, wie "${{file}}""#),
+        ("the program has errors: see the debug console", "das Programm hat Fehler: siehe die Debugkonsole"),
+        ("the program is not running: `{cmd}` has nothing to show", "das Programm läuft nicht: `{cmd}` hat nichts zu zeigen"),
+        ("the program has ended: `{cmd}` has nothing to show", "das Programm ist beendet: `{cmd}` hat nichts zu zeigen"),
+        ("`print` shows the value of one expression, like `print n * 2` or `print len(xs)`", "`print` zeigt den Wert eines Ausdrucks, wie `print n * 2` oder `print len(xs)`"),
+        ("`{name}` has an effect: the debugger only computes values, without changing anything", "`{name}` hat eine Wirkung: der Debugger berechnet nur Werte, ohne etwas zu verändern"),
+        ("no code where the program can pause on line {line} of {name} or after it", "kein Code, an dem das Programm anhalten kann, in Zeile {line} von {name} oder danach"),
+        ("no function named `{name}` in the program", "keine Funktion namens `{name}` im Programm"),
+        (": did you mean `{best}`?", ": meintest du `{best}`?"),
+        (r#"Commands (short forms in parentheses):
+  break 12         pause at line 12 of the program (b)
+  break file.ry:3  pause at line 3 of another file of the program
+  break fact       pause each time the function fact starts
+  delete 2         remove breakpoint 2; delete alone removes them all (d)
+  breakpoints      list the breakpoints
+  run              start the program (r)
+  continue         go on until the next breakpoint (c)
+  next             go to the next line, without entering the functions called (n)
+  step             go to the next line, entering the functions called (s)
+  finish           go on until this function gives its result (f)
+  where            the calls in progress, with their arguments (w)
+  frame 2          look at the call number 2 of where (print and locals use it)
+  print n * 2      the value of an expression, computed in the current call (p)
+  locals           the names of the current call and their values (l)
+  list             the lines around the current one
+  help             this list (h)
+  quit             stop the program and the debugger (q)
+An empty line repeats next, step, finish or continue."#, r#"Befehle (Kurzformen in Klammern):
+  break 12         in Zeile 12 des Programms anhalten (b)
+  break file.ry:3  in Zeile 3 einer anderen Datei des Programms anhalten
+  break fact       jedes Mal anhalten, wenn die Funktion fact beginnt
+  delete 2         Haltepunkt 2 entfernen; delete allein entfernt alle (d)
+  breakpoints      die Haltepunkte auflisten
+  run              das Programm starten (r)
+  continue         bis zum nächsten Haltepunkt weiterlaufen (c)
+  next             zur nächsten Zeile, ohne in die aufgerufenen Funktionen zu gehen (n)
+  step             zur nächsten Zeile, auch in die aufgerufenen Funktionen hinein (s)
+  finish           weiterlaufen, bis diese Funktion ihr Ergebnis gibt (f)
+  where            die laufenden Aufrufe, mit ihren Argumenten (w)
+  frame 2          den Aufruf Nummer 2 von where ansehen (print und locals nutzen ihn)
+  print n * 2      der Wert eines Ausdrucks, berechnet im aktuellen Aufruf (p)
+  locals           die Namen des aktuellen Aufrufs und ihre Werte (l)
+  list             die Zeilen um die aktuelle herum
+  help             diese Liste (h)
+  quit             das Programm und den Debugger beenden (q)
+Eine leere Zeile wiederholt next, step, finish oder continue."#),
+        ("unknown command `{word}`", "unbekannter Befehl `{word}`"),
+        (" (`help` lists the commands)", " (`help` listet die Befehle auf)"),
+        ("break where? A line (`break 12`), a file and a line (`break geometry.ry:3`) or a function (`break fact`)", "break wo? Eine Zeile (`break 12`), eine Datei und eine Zeile (`break geometrie.ry:3`) oder eine Funktion (`break fact`)"),
+        ("no file `{name}` in the program (its files: {})", "keine Datei `{name}` im Programm (seine Dateien: {})"),
+        ("breakpoint {n} at {shown_at}", "Haltepunkt {n} bei {shown_at}"),
+        ("breakpoint {n} at {shown_at} (line {line} has no code where the program can pause)", "Haltepunkt {n} bei {shown_at} (Zeile {line} hat keinen Code, an dem das Programm anhalten kann)"),
+        ("breakpoint {n} at the start of `{arg}`", "Haltepunkt {n} am Anfang von `{arg}`"),
+        ("`{arg}` is not a line number", "`{arg}` ist keine Zeilennummer"),
+        ("no breakpoints: add one with `break 12` or `break fact`", "keine Haltepunkte: füge einen mit `break 12` oder `break fact` hinzu"),
+        ("start of `{name}`", "Anfang von `{name}`"),
+        ("all breakpoints removed", "alle Haltepunkte entfernt"),
+        ("breakpoint {n} removed", "Haltepunkt {n} entfernt"),
+        ("there is no breakpoint {n} (see `breakpoints`)", "es gibt keinen Haltepunkt {n} (siehe `breakpoints`)"),
+        ("delete which breakpoint? Give its number, like `delete 1`", "welchen Haltepunkt entfernen? Gib seine Nummer an, wie `delete 1`"),
+        ("● breakpoint {}", "● Haltepunkt {}"),
+        ("● breakpoint {n}: `{name}` starts", "● Haltepunkt {n}: `{name}` beginnt"),
+        ("✗ the program stops on an error: {msg}", "✗ das Programm stoppt wegen eines Fehlers: {msg}"),
+        ("  look at the values with where, locals and print; continue shows the whole message", "  sieh dir die Werte mit where, locals und print an; continue zeigt die ganze Meldung"),
+        (" · depth {depth}", " · Tiefe {depth}"),
+        (" ({rec} calls of `{name}` in progress)", " ({rec} Aufrufe von `{name}` laufen)"),
+        ("  (a call in tail position: it took the place of the frame of `{by}`)", "  (ein Aufruf in Endposition: er hat den Platz des Rahmens von `{by}` eingenommen)"),
+        ("the program is already running: continue goes on, quit stops it", "das Programm läuft schon: continue macht weiter, quit beendet es"),
+        (" (replaced `{by}`: tail call)", " (hat `{by}` ersetzt: Endaufruf)"),
+        ("`{name}` calls itself: {rec} calls in progress", "`{name}` ruft sich selbst auf: {rec} Aufrufe laufen"),
+        ("which call? A number from 0 to {}, as `where` shows them", "welcher Aufruf? Eine Zahl von 0 bis {}, wie `where` sie zeigt"),
+        ("no names here yet", "hier gibt es noch keine Namen"),
+        ("print what? An expression, like `print n` or `print len(xs) * 2`", "print was? Ein Ausdruck, wie `print n` oder `print len(xs) * 2`"),
+        ("debugger stopped", "Debugger beendet"),
+        ("the program is not running: `run` starts it (`step` pauses at its first line)", "das Programm läuft nicht: `run` startet es (`step` hält in seiner ersten Zeile an)"),
+        ("which file? Example: rythme debug factorial.ry (see `rythme help debug`)", "welche Datei? Beispiel: rythme debug fakultaet.ry (siehe `rythme help debug`)"),
+        ("Debugging {shown}. Pause somewhere with `break 12` or `break function`, then `run`; `help` lists the commands.", "{shown} wird debuggt. Halte irgendwo an mit `break 12` oder `break funktion`, dann `run`; `help` listet die Befehle auf."),
+        ("The program finished. `run` starts it again, `quit` leaves.", "Das Programm ist fertig. `run` startet es noch einmal, `quit` beendet."),
+        ("The program stopped on an error. `run` starts it again, `quit` leaves.", "Das Programm wurde durch einen Fehler gestoppt. `run` startet es noch einmal, `quit` beendet."),
+        (r#"THE DEBUGGER: rythme debug
+
+`rythme debug` runs a program and pauses it where you ask, to look at the
+values of its names while it runs:
+
+  rythme debug factorial.ry          then type commands at the prompt (debug)
+
+  break 12         pause at line 12 (or at the next line with code)
+  break geo.ry:3   pause at line 3 of a file the program uses
+  break fact       pause each time the function fact starts
+  run              start the program (step: pause at its first line)
+  next             go to the next line, without entering the functions called
+  step             go to the next line, entering the functions called
+  finish           go on until this function gives its result, and show it
+  continue         go on until the next breakpoint
+  where            the calls in progress, with their arguments
+  frame 1          look at another call of where (print and locals use it)
+  print n * 2      the value of an expression, computed where the program is
+  locals           the names visible here and their values
+  list             the lines around the current one
+  delete 1         remove a breakpoint (breakpoints lists them)
+  quit             stop
+
+An empty line repeats next, step, finish or continue.
+
+Each pause shows the line, the call (fact(n = 2)) and the depth: how many
+calls are in progress, and how many of the same function when it calls
+itself. A call in tail position (the last thing a function does) takes the
+place of the frame of its caller: the debugger says so, and where shows it.
+
+print computes only values: the functions that print, read, write files or
+draw random numbers are refused there, so that looking never changes the
+program. When an error stops the program, the debugger pauses where it
+happened, so that you can look at the values before the message.
+
+In VS Code: the Rythme extension adds the debugger (Run > Start Debugging,
+or F5 on a .ry file): breakpoints in the margin, the values of the names,
+step over, step into, step out. Other editors can start `rythme dap`, which
+speaks the Debug Adapter Protocol.
+The function `debug(value)` is something else: it prints a value and gives it back."#, r#"DER DEBUGGER: rythme debug
+
+`rythme debug` führt ein Programm aus und hält es an, wo du willst, damit du
+die Werte seiner Namen ansehen kannst, während es läuft:
+
+  rythme debug fakultaet.ry          dann Befehle an der Eingabeaufforderung (debug) tippen
+
+  break 12         in Zeile 12 anhalten (oder in der nächsten Zeile mit Code)
+  break geo.ry:3   in Zeile 3 einer Datei anhalten, die das Programm benutzt
+  break fact       jedes Mal anhalten, wenn die Funktion fact beginnt
+  run              das Programm starten (step: in seiner ersten Zeile anhalten)
+  next             zur nächsten Zeile, ohne in die aufgerufenen Funktionen zu gehen
+  step             zur nächsten Zeile, auch in die aufgerufenen Funktionen hinein
+  finish           weiterlaufen, bis diese Funktion ihr Ergebnis gibt, und es zeigen
+  continue         bis zum nächsten Haltepunkt weiterlaufen
+  where            die laufenden Aufrufe, mit ihren Argumenten
+  frame 1          einen anderen Aufruf von where ansehen (print und locals nutzen ihn)
+  print n * 2      der Wert eines Ausdrucks, berechnet dort, wo das Programm ist
+  locals           die hier sichtbaren Namen und ihre Werte
+  list             die Zeilen um die aktuelle herum
+  delete 1         einen Haltepunkt entfernen (breakpoints listet sie auf)
+  quit             beenden
+
+Eine leere Zeile wiederholt next, step, finish oder continue.
+
+Jede Pause zeigt die Zeile, den Aufruf (fact(n = 2)) und die Tiefe: wie viele
+Aufrufe laufen, und wie viele derselben Funktion, wenn sie sich selbst
+aufruft. Ein Aufruf in Endposition (das Letzte, was eine Funktion tut) nimmt
+den Platz des Rahmens seines Aufrufers ein: der Debugger sagt es, und where
+zeigt es.
+
+print berechnet nur Werte: die Funktionen, die ausgeben, lesen, Dateien
+schreiben oder Zufallszahlen ziehen, werden dort abgelehnt, damit das
+Ansehen das Programm nie verändert. Wenn ein Fehler das Programm stoppt, hält
+der Debugger dort an, wo er passiert ist, damit du die Werte vor der
+Meldung ansehen kannst.
+
+In VS Code: die Rythme-Erweiterung bringt den Debugger mit (Ausführen >
+Debugging starten, oder F5 in einer .ry-Datei): Haltepunkte am Rand, die Werte
+der Namen, Prozedurschritt, Einzelschritt, Rücksprung. Andere Editoren können
+`rythme dap` starten, das das Debug Adapter Protocol spricht.
+Die Funktion `debug(wert)` ist etwas anderes: sie gibt einen Wert aus und gibt ihn zurück."#),
+        // src/check/annot.rs, src/parser.rs: types written in the code
+        ("a whole number is an Int, not a Float: write it with a decimal point (`2.0`), or convert it with `float(...)`", "eine ganze Zahl ist ein Int, kein Float: schreib sie mit Dezimalpunkt (`2.0`) oder wandle sie mit `float(...)` um"),
+        ("a decimal number is a Float, not an Int: convert it with `int(...)`, `round(...)` or `floor(...)`", "eine Dezimalzahl ist ein Float, kein Int: wandle sie mit `int(...)`, `round(...)` oder `floor(...)` um"),
+        ("change the value, or the type written for it; types written in the code are checked before running, and are never needed (see `rythme help types`)", "ändere den Wert oder den Typ, der dafür geschrieben ist; im Code geschriebene Typen werden vor dem Ausführen geprüft und sind nie nötig (siehe `rythme help types`)"),
+        ("`{name}` is written `{w}`, but its value is {what}", "`{name}` ist als `{w}` geschrieben, aber sein Wert ist {what}"),
+        ("the type written for `{name}`", "der für `{name}` geschriebene Typ"),
+        ("this value is {what}, but the type written for it is `{w}`", "dieser Wert ist {what}, aber der dafür geschriebene Typ ist `{w}`"),
+        ("the type written here", "der hier geschriebene Typ"),
+        ("not `{w}`", "nicht `{w}`"),
+        ("`{v}` cannot be both {a} and {b} in this call to `{f}`", "`{v}` kann in diesem Aufruf von `{f}` nicht zugleich {a} und {b} sein"),
+        ("`{v}` is {b} here", "`{v}` ist hier {b}"),
+        ("`{v}` is {a} here", "`{v}` ist hier {a}"),
+        ("a type variable like `{v}` stands for the same type everywhere in the types written for `{f}`", "eine Typvariable wie `{v}` steht überall in den für `{f}` geschriebenen Typen für denselben Typ"),
+        ("`{f}` expects `{ws}` for `{param}`, but receives {what}", "`{f}` erwartet `{ws}` für `{param}`, bekommt aber {what}"),
+        ("not `{ws}`", "nicht `{ws}`"),
+        ("the type written for `{param}`", "der für `{param}` geschriebene Typ"),
+        ("this function receives {what}, but `{param}` is written `{w}`", "diese Funktion bekommt {what}, aber `{param}` ist als `{w}` geschrieben"),
+        ("`{f}` is written to give `{w}`, but gives {what}", "`{f}` soll laut geschriebenem Typ `{w}` liefern, liefert aber {what}"),
+        ("the type written for the result of `{f}`", "der für das Ergebnis von `{f}` geschriebene Typ"),
+        ("`{f}` is written to give `{w}`, but its `?` may give back {what}", "`{f}` soll laut geschriebenem Typ `{w}` liefern, aber ihr `?` kann {what} zurückgeben"),
+        ("`?` gives back the `None` or `Err(...)` it stops on: write the result as an Option or a Result, like `-> Option(Int)`", "`?` gibt das `None` oder `Err(...)` zurück, bei dem es anhält: schreib das Ergebnis als Option oder Result, etwa `-> Option(Int)`"),
+        ("unknown type `{name}`", "unbekannter Typ `{name}`"),
+        ("in Rythme, write `{best}`", "in Rythme schreibt man `{best}`"),
+        ("the names of types start with an uppercase letter; a type variable, which stands for any type, is one lowercase letter, like `a`", "Typnamen beginnen mit einem Großbuchstaben; eine Typvariable, die für einen beliebigen Typ steht, ist ein einzelner Kleinbuchstabe, etwa `a`"),
+        ("`{name}` takes no type between parentheses", "`{name}` nimmt keinen Typ in Klammern"),
+        ("write `{name}` alone", "schreib `{name}` allein"),
+        ("a type is one of Rythme's (`Int`, `Float`, `Text`, `Bool`, `List`, `Dict`...) or one defined with `type`", "ein Typ ist einer von Rythme (`Int`, `Float`, `Text`, `Bool`, `List`, `Dict`...) oder ein mit `type` definierter"),
+        ("`{name}` takes one type: `{example}`", "`{name}` nimmt genau einen Typ: `{example}`"),
+        ("`{name}` takes two types: `{example}`", "`{name}` nimmt zwei Typen: `{example}`"),
+        ("to write the type of `{name}`, put a space after `:`: `{name}: {ty} = ...`", "um den Typ von `{name}` zu schreiben, setz ein Leerzeichen nach `:`: `{name}: {ty} = ...`"),
+        ("`=` and a value", "`=` und ein Wert"),
+        ("a name with a written type is given its value right away: `total: Float = 0.0`", "ein Name mit geschriebenem Typ bekommt seinen Wert sofort: `total: Float = 0.0`"),
+        ("`,`", "`,`"),
+        ("to write the type of a parameter, put `:` right after its name, then a space: `x: {s}`", "um den Typ eines Parameters zu schreiben, setz `:` direkt hinter seinen Namen, dann ein Leerzeichen: `x: {s}`"),
+        ("`:` and the type of the field", "`:` und der Typ des Felds"),
+        ("`(`", "`(`"),
+        ("`->` and the type of the result", "`->` und der Typ des Ergebnisses"),
+        ("a type", "ein Typ"),
+        ("to write the type of a field, write its name first: `Circle(radius: Float)`", "um den Typ eines Felds zu schreiben, schreib zuerst seinen Namen: `Kreis(radius: Float)`"),
+        ("a type is written like `Int`, `Text`, `List(Int)`, `[Int]`, `{{name: Text}}`, `fn(Int) -> Int` or `Shape`; see `rythme help types`", "ein Typ wird geschrieben wie `Int`, `Text`, `List(Int)`, `[Int]`, `{{name: Text}}`, `fn(Int) -> Int` oder `Form`; siehe `rythme help types`"),
+        (
+            r#"E027 — A type written in the code does not fit
+
+A type written in the code, after `:` or `->`, is a promise that
+`rythme check` verifies before running: a value that surely has another type
+is reported where it is given. The type must also exist.
+
+Wrong:   total: Float = 0              # 0 is an Int
+Right:   total: Float = 0.0
+Wrong:   fn area(w: Int, h: Int) -> Int = w * h
+         area(2 "3")                  # "3" is a Text
+Right:   area(2, 3)
+Wrong:   fn label(n: Int) -> Text = n  # gives an Int
+Right:   fn label(n: Int) -> Text = text(n)
+Wrong:   fn twice(x: int) = x * 2      # type names start with an uppercase letter
+Right:   fn twice(x: Int) = x * 2
+Wrong:   fn depth(t: Tree(Int, Text))  # type Tree(a) takes one type
+Right:   fn depth(t: Tree(Int))
+
+Written types are optional: removing one never changes what a program does.
+More: `rythme help types`."#,
+            r#"E027 — Ein im Code geschriebener Typ passt nicht
+
+Ein im Code geschriebener Typ, nach `:` oder `->`, ist ein Versprechen, das
+`rythme check` vor dem Ausführen prüft: ein Wert, der sicher einen anderen
+Typ hat, wird dort gemeldet, wo er übergeben wird. Den Typ muss es auch geben.
+
+Falsch:  summe: Float = 0              # 0 ist ein Int
+Richtig: summe: Float = 0.0
+Falsch:  fn flaeche(b: Int, h: Int) -> Int = b * h
+         flaeche(2 "3")               # "3" ist ein Text
+Richtig: flaeche(2, 3)
+Falsch:  fn etikett(n: Int) -> Text = n     # liefert ein Int
+Richtig: fn etikett(n: Int) -> Text = text(n)
+Falsch:  fn doppelt(x: int) = x * 2    # Typnamen beginnen mit einem Großbuchstaben
+Richtig: fn doppelt(x: Int) = x * 2
+Falsch:  fn tiefe(t: Baum(Int, Text))  # type Baum(a) nimmt einen einzigen Typ
+Richtig: fn tiefe(t: Baum(Int))
+
+Geschriebene Typen sind freiwillig: einen zu entfernen ändert nie, was ein
+Programm tut. Mehr: `rythme help types`."#,
+        ),
+        (
+            r#"TYPES WRITTEN IN THE CODE (optional)
+
+Rythme finds the types by itself. You may also write them where they help
+to read the code; `rythme check` then verifies them (E027):
+  fn area(width: Int height: Int) -> Int = width * height
+  total: Float = 0.0
+  type Shape = Circle(radius: Float) | Rect(width: Float, height: Float)
+  [1 2].map do |n: Int| n * 2 end
+
+The types
+  Int  Float  Text  Bool  Unit  Symbol
+  List(Int) or [Int]   Set(Text)   Dict(Text, Int)
+  Option(Int)   Result(Int, Text)
+  {name: Text, age: Int}       a record with at least these fields
+  fn(Int, Int) -> Int          a function
+  Shape                        a type defined with `type` (geometry.Shape
+                               for a type of `use geometry`)
+  Tree(Int)                    a type defined with parameters, with its types
+  a                            any type: one lowercase letter, the same type
+                               everywhere in a definition
+  List, Dict, Set, Option, Result, Record, Function alone: any content
+  (Tree alone too)
+
+  fn first_of(xs: List(a)) -> a = xs[0]
+  first_of([1 2]) + 1         # the checker knows it is an Int
+
+Types with parameters: a type can take types, like List(Int)
+  type Tree(a) = Leaf | Node(left: Tree(a) value: a right: Tree(a))
+  type Pair(a b) = Pair(first: a second: b)
+
+  fn depth(t: Tree(a)) -> Int = ...      a Tree of anything
+  fn total(t: Tree(Int)) -> Int = ...    a Tree of whole numbers
+  total(Node(Leaf, "two", Leaf))         E027: this is a Tree(Text)
+
+A type variable is one letter: a lowercase word, like `int` or `string`, is
+taken for a type named as in another language, and `rythme check` gives its
+Rythme name.
+
+Written types are never needed and change nothing when the program runs;
+the editors and `rythme doc` show them."#,
+            r#"IM CODE GESCHRIEBENE TYPEN (freiwillig)
+
+Rythme findet die Typen selbst. Du kannst sie auch dort schreiben, wo sie
+beim Lesen des Codes helfen; `rythme check` prüft sie dann (E027):
+  fn flaeche(breite: Int hoehe: Int) -> Int = breite * hoehe
+  summe: Float = 0.0
+  type Form = Kreis(radius: Float) | Rechteck(breite: Float, hoehe: Float)
+  [1 2].map do |n: Int| n * 2 end
+
+Die Typen
+  Int  Float  Text  Bool  Unit  Symbol
+  List(Int) oder [Int]   Set(Text)   Dict(Text, Int)
+  Option(Int)   Result(Int, Text)
+  {name: Text, alter: Int}     ein Record mit mindestens diesen Feldern
+  fn(Int, Int) -> Int          eine Funktion
+  Form                         ein mit `type` definierter Typ (geometrie.Form
+                               für einen Typ von `use geometrie`)
+  Baum(Int)                    ein mit Parametern definierter Typ, mit seinen Typen
+  a                            ein beliebiger Typ: ein Kleinbuchstabe, überall
+                               in einer Definition derselbe Typ
+  List, Dict, Set, Option, Result, Record, Function allein: beliebiger Inhalt
+  (Baum allein auch)
+
+  fn erstes(xs: List(a)) -> a = xs[0]
+  erstes([1 2]) + 1           # die Prüfung weiß, dass es ein Int ist
+
+Typen mit Parametern: ein Typ kann Typen nehmen, wie List(Int)
+  type Baum(a) = Blatt | Knoten(links: Baum(a) wert: a rechts: Baum(a))
+  type Paar(a b) = Paar(erstes: a zweites: b)
+
+  fn tiefe(t: Baum(a)) -> Int = ...      ein Baum von irgendetwas
+  fn summe(t: Baum(Int)) -> Int = ...    ein Baum von ganzen Zahlen
+  summe(Knoten(Blatt, "zwei", Blatt))    E027: das ist ein Baum(Text)
+
+Eine Typvariable ist ein Buchstabe: ein kleingeschriebenes Wort wie `int`
+oder `string` gilt als Typ, der wie in einer anderen Sprache benannt ist,
+und `rythme check` nennt seinen Namen in Rythme.
+
+Geschriebene Typen sind nie nötig und ändern nichts, wenn das Programm
+läuft; die Editoren und `rythme doc` zeigen sie."#,
+        ),
+        // src/fix.rs, src/machine.rs: fixes and output for programs
+        ("`{f}` is not available in the sandbox: a program run by a tool (`--sandbox`) cannot touch files or folders. Run it yourself: rythme file.ry", "`{f}` ist in der Sandbox nicht verfügbar: Ein von einem Werkzeug gestartetes Programm (`--sandbox`) darf keine Dateien oder Ordner anfassen. Starte es selbst: rythme datei.ry"),
+        ("Remove `{}`", "`{}` entfernen"),
+        (r#""not equal" is written `!=`: `a != b`"#, "„ungleich“ schreibt man `!=`: `a != b`"),
+        ("an anonymous function is written `fn(x) = x * 2`", "eine anonyme Funktion schreibt man `fn(x) = x * 2`"),
+        (
+            r#"on several lines, `if` is written:
+  if x > 0 then
+    "positive"
+  else if x == 0 then
+    "zero"
+  else
+    "negative"
+(no `end`; for several statements in a branch, use `do ... end`)"#,
+            r#"über mehrere Zeilen schreibt man `if` so:
+  if x > 0 then
+    "positiv"
+  else if x == 0 then
+    "null"
+  else
+    "negativ"
+(ohne `end`; für mehrere Anweisungen in einem Zweig nimm `do ... end`)"#,
+        ),
+        (r#"Rythme texts put values in by themselves: write `"total: {{x}}"`, without `f` in front"#, r#"Texte in Rythme setzen Werte von selbst ein: schreib `"total: {{x}}"`, ohne `f` davor"#),
+        ("`--format` takes `json` or `text`, not `{v}`: `rythme check --format json file.ry`", "`--format` nimmt `json` oder `text`, nicht `{v}`: `rythme check --format json datei.ry`"),
+        ("`--watch` does not go with `--format json`: run `rythme test --format json` again after each change", "`--watch` passt nicht zu `--format json`: starte `rythme test --format json` nach jeder Änderung neu"),
+        ("unknown option `{bad}` for `rythme fix`; the options are: --dry-run, --all, --format json", "unbekannte Option `{bad}` für `rythme fix`; die Optionen sind: --dry-run, --all, --format json"),
+        ("which file? Example: rythme fix hello.ry (or rythme fix --dry-run hello.ry to see the changes first)", "welche Datei? Beispiel: rythme fix hallo.ry (oder rythme fix --dry-run hallo.ry, um die Änderungen erst anzusehen)"),
+        ("cannot write `{shown}`: {e}", "`{shown}` kann nicht geschrieben werden: {e}"),
+        ("{shown}: nothing to fix", "{shown}: nichts zu korrigieren"),
+        ("{shown}: {n} fix(es) to apply", "{shown}: {n} Korrektur(en) anzuwenden"),
+        ("{shown}: {n} fix(es) applied", "{shown}: {n} Korrektur(en) angewendet"),
+        ("; {errors} error(s) and {warnings} warning(s) left: `rythme check {shown}`", "; {errors} Fehler und {warnings} Warnung(en) bleiben: `rythme check {shown}`"),
+        ("here: `new_{name} = {name} {op} {rest}`, then use `new_{name}`; to add up a list, use `sum(list)` or `fold`", "hier: `neu_{name} = {name} {op} {rest}`, dann nimm `neu_{name}`; um eine Liste aufzusummieren, nimm `sum(liste)` oder `fold`"),
+        // src/mcp.rs: the server for AI assistants
+        ("`rythme mcp` takes no argument, not `{bad}`", "`rythme mcp` nimmt kein Argument, also nicht `{bad}`"),
+        (
+            r#"rythme mcp: a Model Context Protocol server for AI assistants, on the standard input and output.
+Its tools run (in a sandbox), check, test, format and fix Rythme code, and explain errors and functions.
+Cursor and others: see the manual, section 7.10."#,
+            r#"rythme mcp: ein Model-Context-Protocol-Server für KI-Assistenten, über die Standardein- und -ausgabe.
+Seine Werkzeuge führen Rythme-Code aus (in einer Sandbox), prüfen, testen, formatieren und korrigieren ihn und erklären Fehler und Funktionen.
+Cursor und andere: siehe Handbuch, Abschnitt 7.10."#,
+        ),
+        ("the program was stopped after {seconds} seconds: it may never end (a recursion without a base case?)", "das Programm wurde nach {seconds} Sekunden gestoppt: vielleicht endet es nie (eine Rekursion ohne Basisfall?)"),
+        ("the program was stopped: it took more than {mb} MB of memory", "das Programm wurde gestoppt: es belegte mehr als {mb} MB Speicher"),
+        // src/fix.rs, src/suggest.rs: habits from other languages
+        ("an anonymous function is written `fn(x) = x * 2`; a block given to a call is written `xs.map do |x| x * 2 end` or `xs.map {{ |x| x * 2 }}`", "eine anonyme Funktion schreibt man `fn(x) = x * 2`; einen Block für einen Aufruf `xs.map do |x| x * 2 end` oder `xs.map {{ |x| x * 2 }}`"),
+        ("the parameters of a block are written between bars: `xs.map {{ |x| x * 2 }}`", "die Parameter eines Blocks stehen zwischen senkrechten Strichen: `xs.map {{ |x| x * 2 }}`"),
+        ("to add up a list, write `sum(xs)`; to combine its elements, `fold(xs, 0, fn(acc, x) = acc + x)`", "um eine Liste aufzusummieren, schreib `sum(xs)`; um ihre Elemente zu kombinieren, `fold(xs, 0, fn(acc, x) = acc + x)`"),
+        ("a part of a list or a text is taken with a function: `slice(xs, 1, 3)`, `drop(xs, 1)` (all but the first), `take(xs, 2)` (the first two)", "einen Teil einer Liste oder eines Textes nimmt man mit einer Funktion: `slice(xs, 1, 3)`, `drop(xs, 1)` (alles außer dem ersten), `take(xs, 2)` (die ersten zwei)"),
+        ("the fields of a record are written with `:`: `{{{field}: value}}`", "die Felder eines Records schreibt man mit `:`: `{{{field}: wert}}`"),
+        ("Rythme has no named arguments (`name=value`): give the values in order, like `round(x, 2)` (`rythme help NAME` shows the order)", "Rythme hat keine benannten Argumente (`name=wert`): gib die Werte der Reihe nach an, wie `round(x, 2)` (`rythme help NAME` zeigt die Reihenfolge)"),
+        ("texts have no format specifiers like `{{x:.2f}}`: write `{{text(x, 2)}}` for 2 decimals, or use `format_number`", "Texte haben keine Formatangaben wie `{{x:.2f}}`: schreib `{{text(x, 2)}}` für 2 Nachkommastellen, oder nimm `format_number`"),
+        ("when there is nothing to do otherwise, give the unit value: `if x > 0 then print(x) else ()`", "wenn es sonst nichts zu tun gibt, gib den Einheitswert an: `if x > 0 then print(x) else ()`"),
+        ("here: `new_{w} = ...`, then use `new_{w}`; to repeat a step, use `fold`, `map` or a recursive function", "hier: `neu_{w} = ...`, dann nimm `neu_{w}`; um einen Schritt zu wiederholen, nimm `fold`, `map` oder eine rekursive Funktion"),
+        ("the functions of numbers are built in: write `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... without `Math.`", "die Funktionen für Zahlen sind eingebaut: schreib `sqrt(x)`, `abs(x)`, `floor(x)`, `pi`... ohne `Math.`"),
+        ("Rythme has no generators: build the whole list (`map`, `filter`, `1..n`), or give a function to call", "Rythme hat keine Generatoren: bau die ganze Liste (`map`, `filter`, `1..n`) oder gib eine Funktion zum Aufrufen mit"),
+        // src/builtins/ml.rs: vectors, matrices, statistics, chance
+        (
+            "`{f}` expects a list of numbers as argument {pos}, but its element {k} is {got}",
+            "`{f}` erwartet eine Liste von Zahlen als Argument {pos}, aber sein Element {k} ist {got}",
+        ),
+        (
+            "a text is not a number: `parse_float(text)` reads one",
+            "ein Text ist keine Zahl: `parse_float(text)` liest eine",
+        ),
+        (
+            "`{f}` expects a matrix (a list of rows, each a list of numbers) as argument {pos}, but its row {r} is {got}",
+            "`{f}` erwartet eine Matrix (eine Liste von Zeilen, jede eine Liste von Zahlen) als Argument {pos}, aber ihre Zeile {r} ist {got}",
+        ),
+        (
+            "a matrix of 2 rows and 3 columns: [[1, 2, 3], [4, 5, 6]]",
+            "eine Matrix mit 2 Zeilen und 3 Spalten: [[1, 2, 3], [4, 5, 6]]",
+        ),
+        (
+            "`{f}`: argument {pos} is not a matrix: its row 0 has {cols} number(s), but its row {r} has {n}",
+            "`{f}`: Argument {pos} ist keine Matrix: seine Zeile 0 hat {cols} Zahl(en), aber seine Zeile {r} hat {n}",
+        ),
+        ("every row of a matrix has the same length", "alle Zeilen einer Matrix haben dieselbe Länge"),
+        (
+            "`{f}` expects a matrix of numbers as argument {pos}, but its row {r} holds {got} at position {k}",
+            "`{f}` erwartet eine Matrix von Zahlen als Argument {pos}, aber ihre Zeile {r} enthält {got} an Position {k}",
+        ),
+        ("a vector of {n} number(s)", "ein Vektor aus {n} Zahl(en)"),
+        ("a {n}×{c} matrix", "eine {n}×{c}-Matrix"),
+        ("a list of {n} element(s)", "eine Liste mit {n} Element(en)"),
+        (
+            "`{f}` needs two values of the same shape, but got {a} and {b}",
+            "`{f}` braucht zwei Werte derselben Form, hat aber {a} und {b} bekommen",
+        ),
+        (
+            "`shape(x)` gives the shape of a vector or a matrix: [3] or [2, 3]",
+            "`shape(x)` gibt die Form eines Vektors oder einer Matrix: [3] oder [2, 3]",
+        ),
+        (
+            "`{f}`: these lists are nested more than {MAX_NESTING} levels deep: they are not a vector nor a matrix",
+            "`{f}`: diese Listen sind mehr als {MAX_NESTING} Ebenen tief verschachtelt: sie sind weder ein Vektor noch eine Matrix",
+        ),
+        (
+            "`{f}` works on vectors and matrices of numbers, but found {got} in them",
+            "`{f}` arbeitet mit Vektoren und Matrizen aus Zahlen, hat darin aber {got} gefunden",
+        ),
+        (
+            "`{f}` needs two vectors of the same length, but got a vector of {n} number(s) and a vector of {m}",
+            "`{f}` braucht zwei Vektoren derselben Länge, hat aber einen Vektor aus {n} Zahl(en) und einen aus {m} bekommen",
+        ),
+        (
+            "`zip_with` needs two lists of the same length, but got {n} and {m} element(s)",
+            "`zip_with` braucht zwei Listen derselben Länge, hat aber {n} und {m} Element(e) bekommen",
+        ),
+        ("a {r}×{c} matrix", "eine {r}×{c}-Matrix"),
+        ("a vector of {nr} number(s)", "einen Vektor aus {nr} Zahl(en)"),
+        ("a {nr}×{nc} matrix", "eine {nr}×{nc}-Matrix"),
+        (
+            "`matmul` cannot multiply {first} by {second}: the first one has {c} column(s), so the second one needs {c} row(s), not {nr}",
+            "`matmul` kann {first} nicht mit {second} multiplizieren: die linke Matrix hat {c} Spalte(n), also braucht die rechte Seite {c} Zeile(n), nicht {nr}",
+        ),
+        (
+            "`shape(x)` gives the shape of each one; `transpose(m)` swaps rows and columns",
+            "`shape(x)` gibt die Form von jedem; `transpose(m)` vertauscht Zeilen und Spalten",
+        ),
+        (
+            "`matmul`: these matrices are too large to multiply here (more than {} multiplications)",
+            "`matmul`: diese Matrizen sind zu groß, um sie hier zu multiplizieren (mehr als {} Multiplikationen)",
+        ),
+        (
+            "`shape`: the elements of this list do not all have the same shape: element 0 is {a}, element {i} is {b}",
+            "`shape`: die Elemente dieser Liste haben nicht alle dieselbe Form: Element 0 ist {a}, Element {i} ist {b}",
+        ),
+        ("`{f}` of an empty list", "`{f}` einer leeren Liste"),
+        (
+            "`percentile` needs a percentage from 0 to 100, not {p}",
+            "`percentile` braucht einen Prozentsatz von 0 bis 100, nicht {p}",
+        ),
+        (
+            "`random_normal` needs a standard deviation of 0 or more, not {sd}",
+            "`random_normal` braucht eine Standardabweichung von 0 oder mehr, nicht {sd}",
+        ),
+        (
+            "`random_choice_weighted` needs one weight per element: {n} element(s), but {m} weight(s)",
+            "`random_choice_weighted` braucht ein Gewicht pro Element: {n} Element(e), aber {m} Gewicht(e)",
+        ),
+        (
+            "`random_choice_weighted`: the weight {i} is {w}; a weight is a number of 0 or more",
+            "`random_choice_weighted`: das Gewicht {i} ist {w}; ein Gewicht ist eine Zahl von 0 oder mehr",
+        ),
+        (
+            "`random_choice_weighted` needs at least one weight above 0",
+            "`random_choice_weighted` braucht mindestens ein Gewicht über 0",
+        ),
+        (
+            "`train_test_split` needs a share from 0 to 1 for the training part (like 0.8), not {ratio}",
+            "`train_test_split` braucht einen Anteil von 0 bis 1 für den Trainingsteil (wie 0.8), nicht {ratio}",
+        ),
+        ("Machine learning: vectors, matrices, statistics", "Maschinelles Lernen: Vektoren, Matrizen, Statistik"),
+        (
+            "Hyperbolic tangent: a smooth step from -1 to 1, used as the activation of neurons.",
+            "Tangens hyperbolicus: eine weiche Stufe von -1 bis 1, als Aktivierung von Neuronen benutzt.",
+        ),
+        (
+            "The logistic function 1 / (1 + e^-x): a smooth step from 0 to 1, read as a probability. Its slope is `sigmoid(x) * (1 - sigmoid(x))`.",
+            "Die logistische Funktion 1 / (1 + e^-x): eine weiche Stufe von 0 bis 1, gelesen als Wahrscheinlichkeit. Ihre Steigung ist `sigmoid(x) * (1 - sigmoid(x))`.",
+        ),
+        (
+            "The rectifier: x when it is positive, 0.0 otherwise. The usual activation of deep networks.",
+            "Der Gleichrichter: x, wenn es positiv ist, sonst 0.0. Die übliche Aktivierung tiefer Netze.",
+        ),
+        (
+            "Dot product of two vectors (lists of numbers) of the same length: the sum of the products of their numbers, one by one.",
+            "Skalarprodukt zweier Vektoren (Listen von Zahlen) derselben Länge: die Summe der Produkte ihrer Zahlen, eine nach der anderen.",
+        ),
+        (
+            "Length of a vector: the square root of the sum of the squares of its numbers.",
+            "Länge eines Vektors: die Quadratwurzel der Summe der Quadrate seiner Zahlen.",
+        ),
+        (
+            "Adds two vectors, or two matrices, of the same shape, number by number.",
+            "Addiert zwei Vektoren oder zwei Matrizen derselben Form, Zahl für Zahl.",
+        ),
+        (
+            "Subtracts two vectors, or two matrices, of the same shape, number by number.",
+            "Subtrahiert zwei Vektoren oder zwei Matrizen derselben Form, Zahl für Zahl.",
+        ),
+        (
+            "Multiplies two vectors, or two matrices, of the same shape, number by number (not the product of matrices: that is `matmul`).",
+            "Multipliziert zwei Vektoren oder zwei Matrizen derselben Form, Zahl für Zahl (nicht das Matrixprodukt: das ist `matmul`).",
+        ),
+        (
+            "Multiplies every number of a vector, or of a matrix, by the number k.",
+            "Multipliziert jede Zahl eines Vektors oder einer Matrix mit der Zahl k.",
+        ),
+        (
+            "Calls f with the elements of two lists of the same length, one pair at a time, and gives the list of the results.",
+            "Ruft f mit den Elementen zweier Listen derselben Länge auf, ein Paar nach dem anderen, und gibt die Liste der Ergebnisse.",
+        ),
+        (
+            "Product of two matrices (lists of rows): a matrix of r rows and n columns times a matrix of n rows and c columns gives r rows and c columns. With a vector as `b`, gives a vector.",
+            "Produkt zweier Matrizen (Listen von Zeilen): eine Matrix mit r Zeilen und n Spalten mal eine Matrix mit n Zeilen und c Spalten ergibt r Zeilen und c Spalten. Mit einem Vektor als `b` ergibt es einen Vektor.",
+        ),
+        ("Swaps the rows and the columns of a matrix.", "Vertauscht die Zeilen und die Spalten einer Matrix."),
+        (
+            "A vector of `rows` zeros, or with `columns`, a matrix full of zeros.",
+            "Ein Vektor aus `rows` Nullen, oder mit `columns` eine Matrix voller Nullen.",
+        ),
+        (
+            "A vector of `rows` ones, or with `columns`, a matrix full of ones.",
+            "Ein Vektor aus `rows` Einsen, oder mit `columns` eine Matrix voller Einsen.",
+        ),
+        (
+            "The identity matrix of n rows and n columns: ones on the diagonal, zeros elsewhere.",
+            "Die Einheitsmatrix mit n Zeilen und n Spalten: Einsen auf der Diagonale, sonst Nullen.",
+        ),
+        (
+            "The shape of a vector or a matrix (of lists nested in lists): its length at each level, `[3]` for a vector of 3 numbers, `[2, 3]` for 2 rows of 3 numbers.",
+            "Die Form eines Vektors oder einer Matrix (von Listen in Listen): ihre Länge auf jeder Ebene, `[3]` für einen Vektor aus 3 Zahlen, `[2, 3]` für 2 Zeilen mit 3 Zahlen.",
+        ),
+        (
+            "A summary of a list of numbers, as a record: `count`, `mean` (the average), `median` (the middle value), `std_dev`, `min` and `max`. `stats(xs).mean` is the mean.",
+            "Eine Zusammenfassung einer Liste von Zahlen als Datensatz: `count`, `mean` (der Mittelwert), `median` (der mittlere Wert), `std_dev`, `min` und `max`. `stats(xs).mean` ist der Mittelwert.",
+        ),
+        (
+            "The variance of a list of numbers: the mean of the squares of their distances to their mean (of the whole population: divided by n).",
+            "Die Varianz einer Liste von Zahlen: der Mittelwert der Quadrate ihrer Abstände zu ihrem Mittelwert (der ganzen Population: geteilt durch n).",
+        ),
+        (
+            "The standard deviation of a list of numbers: the square root of their variance, how far they usually are from their mean.",
+            "Die Standardabweichung einer Liste von Zahlen: die Quadratwurzel ihrer Varianz, wie weit sie üblicherweise von ihrem Mittelwert entfernt sind.",
+        ),
+        (
+            "The number below which p percent of the numbers of the list are (p from 0 to 100), between the two closest ones when needed. `percentile(xs, 50)` is the median, the middle value.",
+            "Die Zahl, unter der p Prozent der Zahlen der Liste liegen (p von 0 bis 100), bei Bedarf zwischen den beiden nächsten. `percentile(xs, 50)` ist der Median, der mittlere Wert.",
+        ),
+        (
+            "The position of the largest number of a list (the first one if several are equal).",
+            "Die Position der größten Zahl einer Liste (die erste, wenn mehrere gleich sind).",
+        ),
+        (
+            "The position of the smallest number of a list (the first one if several are equal).",
+            "Die Position der kleinsten Zahl einer Liste (die erste, wenn mehrere gleich sind).",
+        ),
+        (
+            "Turns a list of scores into probabilities: each one becomes e^x divided by the sum of them all, so that they are between 0 and 1 and add up to 1, the largest score keeping the largest share.",
+            "Macht aus einer Liste von Punktzahlen Wahrscheinlichkeiten: jede wird zu e^x geteilt durch die Summe aller, sodass sie zwischen 0 und 1 liegen und zusammen 1 ergeben; die größte Punktzahl behält den größten Anteil.",
+        ),
+        (
+            "Rescales a list of numbers from 0.0 (the smallest) to 1.0 (the largest), keeping their proportions. When they are all equal, gives zeros.",
+            "Skaliert eine Liste von Zahlen von 0.0 (die kleinste) bis 1.0 (die größte) und behält ihre Verhältnisse. Sind alle gleich, ergibt es Nullen.",
+        ),
+        (
+            "A random decimal number drawn from the normal distribution (the bell curve) of this mean and standard deviation. Follows `random_seed`.",
+            "Eine zufällige Dezimalzahl aus der Normalverteilung (der Glockenkurve) mit diesem Mittelwert und dieser Standardabweichung. Folgt `random_seed`.",
+        ),
+        (
+            "An element of the list chosen at random, each one with a chance in proportion to its weight (numbers of 0 or more, one per element). Follows `random_seed`.",
+            "Ein zufällig gewähltes Element der Liste, jedes mit einer Chance proportional zu seinem Gewicht (Zahlen von 0 oder mehr, eine pro Element). Folgt `random_seed`.",
+        ),
+        (
+            "Shuffles a list, then cuts it in two: a record `{train, test}`, where `train` holds this share of the elements (0.8: 80 percent) and `test` the rest. To learn on some examples and check on others. Follows `random_seed`.",
+            "Mischt eine Liste und schneidet sie dann in zwei Teile: ein Datensatz `{train, test}`, in dem `train` diesen Anteil der Elemente enthält (0.8: 80 Prozent) und `test` den Rest. Um an einigen Beispielen zu lernen und an anderen zu prüfen. Folgt `random_seed`.",
+        ),
+        // src/builtins/grad.rs: slopes
+        (
+            "the function given to `{f}` must return a number, but it returned {got}",
+            "die an `{f}` übergebene Funktion muss eine Zahl zurückgeben, hat aber {got} zurückgegeben",
+        ),
+        (
+            "The slope of the function f at x (its derivative), computed from f(x + h) and f(x - h) for a tiny h: precise to about 9 significant digits for a smooth function. f takes one number and gives one.",
+            "Die Steigung der Funktion f an der Stelle x (ihre Ableitung), berechnet aus f(x + h) und f(x - h) für ein winziges h: auf etwa 9 signifikante Stellen genau für eine glatte Funktion. f nimmt eine Zahl und gibt eine.",
+        ),
+        (
+            "The gradient of f at the point xs: the list of the slopes of f along each number of xs (see `derivative`). f takes a list of numbers and gives one number. Going against it lowers f: the heart of gradient descent.",
+            "Der Gradient von f im Punkt xs: die Liste der Steigungen von f entlang jeder Zahl von xs (siehe `derivative`). f nimmt eine Liste von Zahlen und gibt eine Zahl. Gegen ihn zu gehen senkt f: das Herz des Gradientenabstiegs.",
+        ),
+        // src/builtins/plot.rs: charts as text
+        (
+            "`{f}` has nothing to draw: the list is empty, or holds no finite number",
+            "`{f}` hat nichts zu zeichnen: die Liste ist leer oder enthält keine endliche Zahl",
+        ),
+        (
+            "`histogram` draws at most 100 bars, not {bins}",
+            "`histogram` zeichnet höchstens 100 Balken, nicht {bins}",
+        ),
+        (
+            "Draws the points (x, y) as a chart in text, 50 columns wide and 11 lines high, with the smallest and largest values on the axes; with one list, draws its numbers at the positions 0, 1, 2... Gives a text: `print(plot(losses))`.",
+            "Zeichnet die Punkte (x, y) als Diagramm aus Text, 50 Spalten breit und 11 Zeilen hoch, mit den kleinsten und größten Werten an den Achsen; mit einer einzigen Liste zeichnet es ihre Zahlen an den Positionen 0, 1, 2... Gibt einen Text: `print(plot(verluste))`.",
+        ),
+        (
+            "Counts how many numbers fall in each of `bars` intervals of the same width (10 if not given) and draws them as horizontal bars of text, with the interval and the count of each. Gives a text: `print(histogram(heights))`.",
+            "Zählt, wie viele Zahlen in jedes von `bars` gleich breiten Intervallen fallen (10, wenn nicht angegeben), und zeichnet sie als waagerechte Balken aus Text, mit dem Intervall und der Anzahl jedes Balkens. Gibt einen Text: `print(histogram(groessen))`.",
+        ),
+        // src/builtins/http.rs: HTTP requests
+        (
+            "`{f}`: the names and the values of the headers are texts, not {got}",
+            "`{f}`: die Namen und die Werte der Header sind Texte, nicht {got}",
+        ),
+        (
+            r#"for example: {{"content-type": "application/json", "x-api-key": key}}"#,
+            r#"zum Beispiel: {{"content-type": "application/json", "x-api-key": schluessel}}"#,
+        ),
+        (
+            "`{f}` is not available in the browser: the playground cannot make requests. Run the program on your computer: rythme file.ry",
+            "`{f}` ist im Browser nicht verfügbar: der Playground kann keine Anfragen stellen. Starte das Programm auf deinem Computer: rythme datei.ry",
+        ),
+        (
+            r#"a web address starts with http:// or https://, not "{url}""#,
+            r#"eine Webadresse beginnt mit http:// oder https://, nicht "{url}""#,
+        ),
+        (
+            "an address or a header cannot hold a line break or a control character, and a header name is a word without `:` or space",
+            "eine Adresse oder ein Header darf keinen Zeilenumbruch und kein Steuerzeichen enthalten, und ein Header-Name ist ein Wort ohne `:` und ohne Leerzeichen",
+        ),
+        ("the server answered {code}: {shown}{more}", "der Server hat {code} geantwortet: {shown}{more}"),
+        (
+            "`{f}` needs the program `curl`, which comes with Windows 10, macOS and most Linux systems: install it (on Debian or Ubuntu: sudo apt install curl)",
+            "`{f}` braucht das Programm `curl`, das mit Windows 10, macOS und den meisten Linux-Systemen kommt: installiere es (unter Debian oder Ubuntu: sudo apt install curl)",
+        ),
+        (
+            "server not found: {host} (no connection to the Internet, or a mistake in the address?)",
+            "Server nicht gefunden: {host} (keine Verbindung zum Internet oder ein Fehler in der Adresse?)",
+        ),
+        ("could not connect to {host}: {said}", "keine Verbindung zu {host} möglich: {said}"),
+        ("no answer from {host} in time (30 seconds)", "keine Antwort von {host} in der Zeit (30 Sekunden)"),
+        (
+            "the secure connection (TLS) to {host} failed: {said}",
+            "die sichere Verbindung (TLS) zu {host} ist fehlgeschlagen: {said}",
+        ),
+        ("the request to {host} failed: {said}", "die Anfrage an {host} ist fehlgeschlagen: {said}"),
+        ("The web: HTTP requests", "Das Web: HTTP-Anfragen"),
+        (
+            r#"Fetches a web address (http:// or https://): `Ok(text of the answer)`, or `Err(message)` when there is no network, the address is wrong, the server answers with an error (404...) or does not answer within 30 seconds. `headers` is a record of texts, like `{"accept": "application/json"}`. Uses the program curl; not available in the playground."#,
+            r#"Ruft eine Webadresse ab (http:// oder https://): `Ok(Text der Antwort)` oder `Err(Meldung)`, wenn es kein Netz gibt, die Adresse falsch ist, der Server mit einem Fehler antwortet (404...) oder nicht innerhalb von 30 Sekunden antwortet. `headers` ist ein Datensatz von Texten, wie `{"accept": "application/json"}`. Benutzt das Programm curl; im Playground nicht verfügbar."#,
+        ),
+        (
+            r#"Sends a text (often JSON, made with `to_json`) to a web address and gives `Ok(text of the answer)` or `Err(message)`, like `http_get`. To call a web service or a language model: `http_post(url, to_json(request), {"content-type": "application/json"})`. Keep keys out of your code: read them with `env`."#,
+            r#"Sendet einen Text (oft JSON, gemacht mit `to_json`) an eine Webadresse und gibt `Ok(Text der Antwort)` oder `Err(Meldung)`, wie `http_get`. Um einen Webdienst oder ein Sprachmodell aufzurufen: `http_post(url, to_json(anfrage), {"content-type": "application/json"})`. Halte Schlüssel aus deinem Code heraus: lies sie mit `env`."#,
+        ),
+        ("The result of a task: the call of an `async fn` starts the function and gives a Task at once; `await` waits until it is done and gives what it returned (an error in the task stops the program here). Tasks run at the same time, on other cores: start several, then await them. A task can be awaited again: it gives the same result.", "Das Ergebnis eines Tasks: Der Aufruf einer `async fn` startet die Funktion und liefert sofort einen Task; `await` wartet, bis er fertig ist, und liefert, was die Funktion zurückgegeben hat (ein Fehler im Task beendet das Programm hier). Tasks laufen gleichzeitig, auf anderen Kernen: starte mehrere und warte dann auf sie. Auf einen Task kann erneut gewartet werden: Er liefert dasselbe Ergebnis."),
+        ("The results of a list of tasks (calls of `async fn`), in the order of the list, once all are done: the tasks run at the same time, so the whole takes about as long as the slowest one.", "Die Ergebnisse einer Liste von Tasks (Aufrufe von `async fn`), in der Reihenfolge der Liste, sobald alle fertig sind: Die Tasks laufen gleichzeitig, daher dauert das Ganze etwa so lange wie der langsamste."),
+        // docs/exercises: the exercises about artificial intelligence (31 to 36)
+        ("31-vectors", "31-vektoren"),
+        (
+            r#"# Exercise 31 · Points as vectors  ★☆☆
+#
+# In machine learning, an example is a list of numbers: a vector. The
+# built-in functions `vector_add`, `vector_sub`, `vector_scale`, `dot` and
+# `norm` work on them, and always give Floats.
+#   vector_sub([5, 5], [1, 2])     # [4.0, 3.0]
+#   norm([3, 4])                   # 5.0
+#
+# Statement
+#   - `distance(a, b)`: the distance between the points a and b (the length
+#     of the vector from one to the other);
+#   - `midpoint(a, b)`: the point halfway between a and b;
+#   - `closest(points, p)`: the point of the list nearest to p.
+#
+# Hints
+#   1. `distance` is the `norm` of a difference.
+#   2. Halfway: add the two points, then scale by 0.5.
+#   3. `min_by(list, f)` gives the element for which f is the smallest.
+#
+# Check your work:  rythme exercise check 31-vectors.ry
+#              or:  rythme test 31-vectors.ry
+
+fn distance(a b) = fail("to do")
+
+fn midpoint(a b) = fail("to do")
+
+fn closest(points p) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "distance"
+  assert_eq(distance([0 0] [3 4]) 5.0)
+  assert_eq(distance([1 1 1] [1 1 1]) 0.0)
+end
+
+test "midpoint"
+  assert_eq(midpoint([0 0] [4 2]) [2.0 1.0])
+  assert_eq(midpoint([-1 3] [1 3]) [0.0 3.0])
+end
+
+test "closest"
+  assert_eq(closest([[0 0] [5 5] [9 1]] [6 4]) [5 5])
+  assert_eq(closest([[2 2]] [100, -100]) [2 2])
+end
+"#,
+            r#"# Übung 31 · Punkte als Vektoren  ★☆☆
+#
+# Beim maschinellen Lernen ist ein Beispiel eine Liste von Zahlen: ein
+# Vektor. Die eingebauten Funktionen `vector_add`, `vector_sub`,
+# `vector_scale`, `dot` und `norm` arbeiten damit und geben immer Floats.
+#   vector_sub([5, 5], [1, 2])     # [4.0, 3.0]
+#   norm([3, 4])                   # 5.0
+#
+# Aufgabe
+#   - `abstand(a, b)`: der Abstand zwischen den Punkten a und b (die Länge
+#     des Vektors vom einen zum anderen);
+#   - `mittelpunkt(a, b)`: der Punkt auf halbem Weg zwischen a und b;
+#   - `naechster(punkte, p)`: der Punkt der Liste, der p am nächsten ist.
+#
+# Hinweise
+#   1. `abstand` ist die `norm` einer Differenz.
+#   2. Auf halbem Weg: addiere die beiden Punkte, dann skaliere mit 0.5.
+#   3. `min_by(liste, f)` gibt das Element, für das f am kleinsten ist.
+#
+# Prüfe deine Arbeit:  rythme exercise check 31-vektoren.ry
+#               oder:  rythme test 31-vektoren.ry
+
+fn abstand(a b) = fail("zu tun")
+
+fn mittelpunkt(a b) = fail("zu tun")
+
+fn naechster(punkte p) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Abstand"
+  assert_eq(abstand([0 0] [3 4]) 5.0)
+  assert_eq(abstand([1 1 1] [1 1 1]) 0.0)
+end
+
+test "Mittelpunkt"
+  assert_eq(mittelpunkt([0 0] [4 2]) [2.0 1.0])
+  assert_eq(mittelpunkt([-1 3] [1 3]) [0.0 3.0])
+end
+
+test "der nächste"
+  assert_eq(naechster([[0 0] [5 5] [9 1]] [6 4]) [5 5])
+  assert_eq(naechster([[2 2]] [100, -100]) [2 2])
+end
+"#,
+        ),
+        ("32-statistics", "32-statistik"),
+        (
+            r#"# Exercise 32 · Statistics on data  ★★☆
+#
+# Before learning from data, look at it. `stats(xs)` gives a record with the
+# count, the mean, the median, the standard deviation, the min and the max:
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).mean       # 5.0
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).std_dev    # 2.0
+#
+# Statement
+#   - `standardize(xs)`: each number becomes its distance to the mean,
+#     counted in standard deviations: (x - mean) / std_dev;
+#   - `outliers(xs)`: the numbers more than 2 standard deviations away from
+#     the mean, in their order;
+#   - `accuracy(predictions, answers)`: the share (from 0.0 to 1.0) of the
+#     predictions equal to the answer at the same position.
+#
+# Hints
+#   1. Compute `stats(xs)` once, give it a name, then `map`.
+#   2. `abs` gives the distance whatever the side.
+#   3. `zip(a, b)` pairs the elements; `count` counts those that are right.
+#
+# Check your work:  rythme exercise check 32-statistics.ry
+#              or:  rythme test 32-statistics.ry
+
+fn standardize(xs) = fail("to do")
+
+fn outliers(xs) = fail("to do")
+
+fn accuracy(predictions answers) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "standardize"
+  assert_eq(standardize([2 4 4 4 5 5 7 9]) [-1.5 -0.5 -0.5 -0.5 0.0 0.0 1.0 2.0])
+end
+
+test "outliers"
+  assert_eq(outliers([10 11 9 10 10 12 10 9 11 10 50]) [50])
+  assert_eq(outliers([1 2 3]) [])
+end
+
+test "accuracy"
+  assert_eq(accuracy(["cat" "dog" "cat" "cat"] ["cat" "dog" "dog" "cat"]) 0.75)
+  assert_eq(accuracy([1 0] [0 1]) 0.0)
+end
+"#,
+            r#"# Übung 32 · Statistik über Daten  ★★☆
+#
+# Bevor man aus Daten lernt, schaut man sie an. `stats(xs)` gibt einen
+# Record mit der Anzahl, dem Mittelwert, dem Median, der Standardabweichung,
+# dem Minimum und dem Maximum:
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).mean       # 5.0
+#   stats([2, 4, 4, 4, 5, 5, 7, 9]).std_dev    # 2.0
+#
+# Aufgabe
+#   - `standardisieren(xs)`: jede Zahl wird zu ihrem Abstand vom
+#     Mittelwert, gemessen in Standardabweichungen: (x - Mittelwert) /
+#     Standardabweichung;
+#   - `ausreisser(xs)`: die Zahlen, die mehr als 2 Standardabweichungen vom
+#     Mittelwert entfernt sind, in ihrer Reihenfolge;
+#   - `genauigkeit(vorhersagen, antworten)`: der Anteil (von 0.0 bis 1.0)
+#     der Vorhersagen, die gleich der Antwort an derselben Position sind.
+#
+# Hinweise
+#   1. Berechne `stats(xs)` einmal, gib dem Ergebnis einen Namen, dann `map`.
+#   2. `abs` gibt den Abstand, egal auf welcher Seite.
+#   3. `zip(a, b)` paart die Elemente; `count` zählt die richtigen.
+#
+# Prüfe deine Arbeit:  rythme exercise check 32-statistik.ry
+#               oder:  rythme test 32-statistik.ry
+
+fn standardisieren(xs) = fail("zu tun")
+
+fn ausreisser(xs) = fail("zu tun")
+
+fn genauigkeit(vorhersagen antworten) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "standardisieren"
+  assert_eq(standardisieren([2 4 4 4 5 5 7 9]) [-1.5 -0.5 -0.5 -0.5 0.0 0.0 1.0 2.0])
+end
+
+test "Ausreißer"
+  assert_eq(ausreisser([10 11 9 10 10 12 10 9 11 10 50]) [50])
+  assert_eq(ausreisser([1 2 3]) [])
+end
+
+test "Genauigkeit"
+  assert_eq(genauigkeit(["Katze" "Hund" "Katze" "Katze"] ["Katze" "Hund" "Hund" "Katze"]) 0.75)
+  assert_eq(genauigkeit([1 0] [0 1]) 0.0)
+end
+"#,
+        ),
+        ("33-neurons", "33-neuronen"),
+        (
+            r#"# Exercise 33 · An artificial neuron  ★★☆
+#
+# A neuron multiplies each input by a weight, adds them up with a bias, and
+# passes the sum through an activation function such as `sigmoid`, which
+# gives a number between 0 and 1.
+#   sigmoid(0)                     # 0.5
+#   dot([1, 2], [3, 4])            # 11.0
+#
+# Statement
+#   - `neuron(weights, bias, inputs)`: sigmoid(weights · inputs + bias);
+#   - `fires(weights, bias, inputs)`: true when the neuron gives 0.5 or more;
+#   - `layer(matrix, biases, inputs)`: a layer of neurons, one per row of the
+#     matrix (its weights) and per bias: the list of their outputs.
+#
+# Hints
+#   1. `dot` gives the weighted sum.
+#   2. `matmul(matrix, inputs)` computes every weighted sum of a layer at
+#      once; `vector_add` adds the biases; `map` applies `sigmoid`.
+#
+# Check your work:  rythme exercise check 33-neurons.ry
+#              or:  rythme test 33-neurons.ry
+
+fn neuron(weights bias inputs) = fail("to do")
+
+fn fires(weights bias inputs) = fail("to do")
+
+fn layer(matrix biases inputs) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "neuron"
+  assert_eq(neuron([1, -1] 0 [2 2]) 0.5)
+  assert_eq(round(neuron([2 1] -1 [1 1]) 3) 0.881)
+end
+
+test "a neuron that computes AND"
+  assert(fires([10 10] -15 [1 1]))
+  assert(not fires([10 10] -15 [1 0]))
+  assert(not fires([10 10] -15 [0 0]))
+end
+
+test "layer"
+  outputs = layer([[1, -1] [1 1]] [0 1] [2 2])
+  assert_eq(map(outputs fn(x) = round(x 3)) [0.5 0.993])
+end
+"#,
+            r#"# Übung 33 · Ein künstliches Neuron  ★★☆
+#
+# Ein Neuron multipliziert jede Eingabe mit einem Gewicht, addiert sie mit
+# einem Bias und schickt die Summe durch eine Aktivierungsfunktion wie
+# `sigmoid`, die eine Zahl zwischen 0 und 1 gibt.
+#   sigmoid(0)                     # 0.5
+#   dot([1, 2], [3, 4])            # 11.0
+#
+# Aufgabe
+#   - `neuron(gewichte, bias, eingaben)`: sigmoid(gewichte · eingaben + bias);
+#   - `feuert(gewichte, bias, eingaben)`: true, wenn das Neuron 0.5 oder
+#     mehr gibt;
+#   - `schicht(matrix, biase, eingaben)`: eine Schicht von Neuronen, eines
+#     pro Zeile der Matrix (seine Gewichte) und pro Bias: die Liste ihrer
+#     Ausgaben.
+#
+# Hinweise
+#   1. `dot` gibt die gewichtete Summe.
+#   2. `matmul(matrix, eingaben)` berechnet alle gewichteten Summen einer
+#      Schicht auf einmal; `vector_add` addiert die Biase; `map` wendet
+#      `sigmoid` an.
+#
+# Prüfe deine Arbeit:  rythme exercise check 33-neuronen.ry
+#               oder:  rythme test 33-neuronen.ry
+
+fn neuron(gewichte bias eingaben) = fail("zu tun")
+
+fn feuert(gewichte bias eingaben) = fail("zu tun")
+
+fn schicht(matrix biase eingaben) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Neuron"
+  assert_eq(neuron([1, -1] 0 [2 2]) 0.5)
+  assert_eq(round(neuron([2 1] -1 [1 1]) 3) 0.881)
+end
+
+test "ein Neuron, das UND berechnet"
+  assert(feuert([10 10] -15 [1 1]))
+  assert(not feuert([10 10] -15 [1 0]))
+  assert(not feuert([10 10] -15 [0 0]))
+end
+
+test "Schicht"
+  ausgaben = schicht([[1, -1] [1 1]] [0 1] [2 2])
+  assert_eq(map(ausgaben fn(x) = round(x 3)) [0.5 0.993])
+end
+"#,
+        ),
+        ("34-gradient-descent", "34-gradientenabstieg"),
+        (
+            r#"# Exercise 34 · Going down the slope  ★★☆
+#
+# A model learns by making its error smaller: it follows the slope of the
+# error downwards, one small step at a time. That is gradient descent.
+#   derivative(fn(x) = x * x, 3)                      # 6.0, the slope at 3
+#   gradient(fn([x, y]) = x * x + y * y, [1, 2])      # [2.0, 4.0]
+#
+# Statement
+#   - `step(f, x, rate)`: one step down from x: x - rate × (slope of f at x);
+#   - `descend(f, x, rate, steps)`: that many steps from x, one after the
+#     other; the point reached;
+#   - `descend_all(f, xs, rate, steps)`: the same with several numbers: each
+#     step is xs - rate × (gradient of f at xs).
+#
+# Hints
+#   1. `descend` calls itself with one step less, until 0 (or use `fold`
+#      over `1..steps`).
+#   2. `vector_sub` and `vector_scale` work on the list of numbers.
+#
+# Check your work:  rythme exercise check 34-gradient-descent.ry
+#              or:  rythme test 34-gradient-descent.ry
+
+fn step(f x rate) = fail("to do")
+
+fn descend(f x rate steps) = fail("to do")
+
+fn descend_all(f xs rate steps) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+fn parabola(x) = (x - 3) ** 2
+
+test "one step"
+  assert_eq(step(parabola 0 0.5) 3.0)
+  assert_eq(step(parabola 1 0.25) 2.0)
+end
+
+test "down to the bottom"
+  assert_eq(round(descend(parabola 0 0.1 100) 4) 3.0)
+  assert_eq(descend(parabola 10 0.1 0) 10)
+end
+
+test "several numbers"
+  bowl = fn([x y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(descend_all(bowl [0 0] 0.1 100) fn(v) = round(v 4)) [1.0, -2.0])
+end
+"#,
+            r#"# Übung 34 · Den Hang hinunter  ★★☆
+#
+# Ein Modell lernt, indem es seinen Fehler kleiner macht: Es folgt der
+# Steigung des Fehlers nach unten, einen kleinen Schritt nach dem anderen.
+# Das ist der Gradientenabstieg.
+#   derivative(fn(x) = x * x, 3)                      # 6.0, die Steigung bei 3
+#   gradient(fn([x, y]) = x * x + y * y, [1, 2])      # [2.0, 4.0]
+#
+# Aufgabe
+#   - `schritt(f, x, rate)`: ein Schritt nach unten von x aus:
+#     x - rate × (Steigung von f bei x);
+#   - `absteigen(f, x, rate, schritte)`: so viele Schritte von x aus, einer
+#     nach dem anderen; der erreichte Punkt;
+#   - `alle_absteigen(f, xs, rate, schritte)`: dasselbe mit mehreren Zahlen:
+#     jeder Schritt gibt xs - rate × (Gradient von f bei xs).
+#
+# Hinweise
+#   1. `absteigen` ruft sich mit einem Schritt weniger auf, bis 0 (oder
+#      nimm `fold` über `1..schritte`).
+#   2. `vector_sub` und `vector_scale` arbeiten mit der Liste von Zahlen.
+#
+# Prüfe deine Arbeit:  rythme exercise check 34-gradientenabstieg.ry
+#               oder:  rythme test 34-gradientenabstieg.ry
+
+fn schritt(f x rate) = fail("zu tun")
+
+fn absteigen(f x rate schritte) = fail("zu tun")
+
+fn alle_absteigen(f xs rate schritte) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+fn parabel(x) = (x - 3) ** 2
+
+test "ein Schritt"
+  assert_eq(schritt(parabel 0 0.5) 3.0)
+  assert_eq(schritt(parabel 1 0.25) 2.0)
+end
+
+test "bis ganz unten"
+  assert_eq(round(absteigen(parabel 0 0.1 100) 4) 3.0)
+  assert_eq(absteigen(parabel 10 0.1 0) 10)
+end
+
+test "mehrere Zahlen"
+  schale = fn([x y]) = (x - 1) ** 2 + (y + 2) ** 2
+  assert_eq(map(alle_absteigen(schale [0 0] 0.1 100) fn(v) = round(v 4)) [1.0, -2.0])
+end
+"#,
+        ),
+        ("35-nearest-neighbours", "35-naechste-nachbarn"),
+        (
+            r#"# Exercise 35 · Nearest neighbours  ★★★
+#
+# To guess the label of a new point, look at the k known examples closest to
+# it, and take the label most of them have. Each example is a record:
+#   {point: [1.0, 2.0], label: "red"}
+#
+# Statement
+#   - `neighbours(examples, point, k)`: the k examples nearest to the point,
+#     from the nearest;
+#   - `majority(labels)`: the label that comes most often (the first one to
+#     reach that count, in the order of the list, when several tie);
+#   - `classify(examples, point, k)`: the label most of the k nearest
+#     neighbours have.
+#
+# Hints
+#   1. `sort_by` with the distance (`norm(vector_sub(a, b))`), then `take`.
+#   2. `count(labels, fn(l) = l == label)` counts one label; `max_by` keeps
+#      the first of the largest.
+#
+# Check your work:  rythme exercise check 35-nearest-neighbours.ry
+#              or:  rythme test 35-nearest-neighbours.ry
+
+fn neighbours(examples point k) = fail("to do")
+
+fn majority(labels) = fail("to do")
+
+fn classify(examples point k) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+garden = [
+  {point: [1 1] label: "red"}
+  {point: [1 2] label: "red"}
+  {point: [2 1] label: "red"}
+  {point: [8 8] label: "blue"}
+  {point: [9 8] label: "blue"}
+  {point: [5 5] label: "blue"}
+]
+
+test "neighbours"
+  assert_eq(neighbours(garden [0 0] 2) |> map(fn(e) = e.point) [[1 1] [1 2]])
+  assert_eq(len(neighbours(garden [0 0] 10)) 6)
+end
+
+test "majority"
+  assert_eq(majority(["a" "b" "b" "c"]) "b")
+  assert_eq(majority(["x" "y"]) "x")
+end
+
+test "classify"
+  assert_eq(classify(garden [2 2] 3) "red")
+  assert_eq(classify(garden [7 7] 3) "blue")
+  assert_eq(classify(garden [4 4] 1) "blue")
+end
+"#,
+            r#"# Übung 35 · Die nächsten Nachbarn  ★★★
+#
+# Um das Etikett eines neuen Punktes zu erraten, schaut man sich die k
+# bekannten Beispiele an, die ihm am nächsten sind, und nimmt das Etikett,
+# das die meisten haben. Jedes Beispiel ist ein Record:
+#   {punkt: [1.0, 2.0], etikett: "rot"}
+#
+# Aufgabe
+#   - `nachbarn(beispiele, punkt, k)`: die k Beispiele, die dem Punkt am
+#     nächsten sind, vom nächsten an;
+#   - `mehrheit(etiketten)`: das Etikett, das am häufigsten vorkommt (bei
+#     Gleichstand das erste, das diese Anzahl erreicht, in der Reihenfolge
+#     der Liste);
+#   - `einordnen(beispiele, punkt, k)`: das Etikett, das die meisten der k
+#     nächsten Nachbarn haben.
+#
+# Hinweise
+#   1. `sort_by` mit dem Abstand (`norm(vector_sub(a, b))`), dann `take`.
+#   2. `count(etiketten, fn(l) = l == etikett)` zählt ein Etikett; `max_by`
+#      behält das erste der größten.
+#
+# Prüfe deine Arbeit:  rythme exercise check 35-naechste-nachbarn.ry
+#               oder:  rythme test 35-naechste-nachbarn.ry
+
+fn nachbarn(beispiele punkt k) = fail("zu tun")
+
+fn mehrheit(etiketten) = fail("zu tun")
+
+fn einordnen(beispiele punkt k) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+garten = [
+  {punkt: [1 1] etikett: "rot"}
+  {punkt: [1 2] etikett: "rot"}
+  {punkt: [2 1] etikett: "rot"}
+  {punkt: [8 8] etikett: "blau"}
+  {punkt: [9 8] etikett: "blau"}
+  {punkt: [5 5] etikett: "blau"}
+]
+
+test "Nachbarn"
+  assert_eq(nachbarn(garten [0 0] 2) |> map(fn(e) = e.punkt) [[1 1] [1 2]])
+  assert_eq(len(nachbarn(garten [0 0] 10)) 6)
+end
+
+test "Mehrheit"
+  assert_eq(mehrheit(["a" "b" "b" "c"]) "b")
+  assert_eq(mehrheit(["x" "y"]) "x")
+end
+
+test "einordnen"
+  assert_eq(einordnen(garten [2 2] 3) "rot")
+  assert_eq(einordnen(garten [7 7] 3) "blau")
+  assert_eq(einordnen(garten [4 4] 1) "blau")
+end
+"#,
+        ),
+        ("36-minimax", "36-minimax"),
+        (
+            r#"# Exercise 36 · Playing perfectly: minimax  ★★★
+#
+# A game of Nim: there are n matches on the table; each player in turn takes
+# 1, 2 or 3 of them, and whoever takes the last match wins. Minimax decides
+# who wins with perfect play by imagining every move: the player to move
+# wins if one of their moves leaves the other player in a losing position.
+#
+# Statement
+#   - `moves(n)`: the possible numbers of matches to take (1, 2 or 3, but no
+#     more than n);
+#   - `wins(n)`: true when the player to move can always win from n matches
+#     (with 0 matches left, the player to move has already lost);
+#   - `best_move(n)`: `Some(m)`, where m is the smallest move that wins, or
+#     `None` when every move loses.
+#
+# Hints
+#   1. `filter(1..3, ...)` keeps the moves allowed.
+#   2. `wins(n)`: is there `any` move after which the other player does
+#      not win?
+#   3. `find` gives the first element that fits, as an Option.
+#
+# Check your work:  rythme exercise check 36-minimax.ry
+#              or:  rythme test 36-minimax.ry
+
+fn moves(n) = fail("to do")
+
+fn wins(n) = fail("to do")
+
+fn best_move(n) = fail("to do")
+
+# --- Tests (do not change them) ---
+
+test "moves"
+  assert_eq(moves(10) [1 2 3])
+  assert_eq(moves(2) [1 2])
+  assert_eq(moves(0), [])
+end
+
+test "who wins"
+  assert_eq(map(0..8 wins) [false true true true false true true true false])
+end
+
+test "best move"
+  assert_eq(best_move(5) Some(1))
+  assert_eq(best_move(7) Some(3))
+  assert_eq(best_move(8) None)
+end
+"#,
+            r#"# Übung 36 · Perfekt spielen: Minimax  ★★★
+#
+# Eine Partie Nim: n Streichhölzer liegen auf dem Tisch; jeder Spieler nimmt
+# abwechselnd 1, 2 oder 3 davon, und wer das letzte Streichholz nimmt,
+# gewinnt. Minimax entscheidet, wer bei perfektem Spiel gewinnt, indem es
+# sich jeden Zug vorstellt: Der Spieler am Zug gewinnt, wenn einer seiner
+# Züge den anderen in eine verlorene Stellung bringt.
+#
+# Aufgabe
+#   - `zuege(n)`: die möglichen Anzahlen zu nehmender Streichhölzer (1, 2
+#     oder 3, aber nicht mehr als n);
+#   - `gewinnt(n)`: true, wenn der Spieler am Zug mit n Streichhölzern immer
+#     gewinnen kann (ohne Streichhölzer hat der Spieler am Zug schon
+#     verloren);
+#   - `bester_zug(n)`: `Some(m)`, wobei m der kleinste gewinnende Zug ist,
+#     oder `None`, wenn jeder Zug verliert.
+#
+# Hinweise
+#   1. `filter(1..3, ...)` behält die erlaubten Züge.
+#   2. `gewinnt(n)`: Gibt es einen Zug (`any`), nach dem der andere Spieler
+#      nicht gewinnt?
+#   3. `find` gibt das erste passende Element, als Option.
+#
+# Prüfe deine Arbeit:  rythme exercise check 36-minimax.ry
+#               oder:  rythme test 36-minimax.ry
+
+fn zuege(n) = fail("zu tun")
+
+fn gewinnt(n) = fail("zu tun")
+
+fn bester_zug(n) = fail("zu tun")
+
+# --- Tests (nicht verändern) ---
+
+test "Züge"
+  assert_eq(zuege(10) [1 2 3])
+  assert_eq(zuege(2) [1 2])
+  assert_eq(zuege(0), [])
+end
+
+test "wer gewinnt"
+  assert_eq(map(0..8 gewinnt) [false true true true false true true true false])
+end
+
+test "bester Zug"
+  assert_eq(bester_zug(5) Some(1))
+  assert_eq(bester_zug(7) Some(3))
+  assert_eq(bester_zug(8) None)
+end
+"#,
+        ),
+        // src/help.rs: rythme help ml
+        (
+            r#"MACHINE LEARNING AND AI
+
+A vector is a list of numbers, a matrix a list of rows of the same length.
+These functions never change them: they give new lists, always of Floats.
+
+Vectors and matrices
+  dot([1 2] [3 4])            # 11.0
+  norm([3 4])                   # 5.0, the length
+  vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # number by number
+  vector_scale([1 2] 3)        # [3.0, 6.0]
+  matmul(m, n)  matmul(m, v)     # product of matrices, or matrix by vector
+  transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
+  zip_with(xs ys f)            # f on the pairs, for anything else
+
+Neurons
+  sigmoid(x)  tanh(x)  relu(x)   softmax(scores)   # scores into probabilities
+
+Statistics
+  stats(xs)                      # {count, mean, median, std_dev, min, max}
+  variance(xs)  std_dev(xs)  percentile(xs, 90)  argmax(xs)  argmin(xs)
+  normalize(xs)                  # from 0.0 (smallest) to 1.0 (largest)
+
+Chance, the same on every run after random_seed(n)
+  random_normal(0, 1)  random_choice_weighted(xs, weights)
+  train_test_split(examples 0.8)    # {train, test}
+
+Slopes, for gradient descent (central differences, about 9 digits)
+  derivative(fn(x) = x * x 3)               # 6.0
+  gradient(fn([x y]) = x * x + y [2 5])   # [4.0, 1.0]
+
+Charts as text
+  print(plot(losses))  print(plot(xs, ys))  print(histogram(heights))
+
+The web and language models
+  http_get(url)  http_post(url, body, headers)   # Ok(text) or Err(message)
+  Keep API keys out of the code: env("API_KEY").
+
+A mistake of shape names both shapes ("cannot multiply a 2×3 matrix by a
+2×2 matrix"). Programs to read: the examples linear_regression, perceptron,
+xor_network, kmeans, knn, naive_bayes, markov, tictactoe, pathfinding and
+genetic; exercises 31 to 36 (rythme exercise list)."#,
+            r#"MASCHINELLES LERNEN UND KI
+
+Ein Vektor ist eine Liste von Zahlen, eine Matrix eine Liste von Zeilen
+gleicher Länge. Diese Funktionen ändern sie nie: Sie geben neue Listen,
+immer aus Floats.
+
+Vektoren und Matrizen
+  dot([1 2] [3 4])            # 11.0
+  norm([3 4])                   # 5.0, die Länge
+  vector_add(a, b)  vector_sub(a, b)  vector_mul(a, b)   # Zahl für Zahl
+  vector_scale([1 2] 3)        # [3.0, 6.0]
+  matmul(m, n)  matmul(m, v)     # Matrixprodukt, oder Matrix mal Vektor
+  transpose(m)  shape(m)  zeros(2, 3)  ones(2)  identity_matrix(3)
+  zip_with(xs ys f)            # f auf den Paaren, für alles andere
+
+Neuronen
+  sigmoid(x)  tanh(x)  relu(x)   softmax(punkte)   # Punkte zu Wahrscheinlichkeiten
+
+Statistik
+  stats(xs)                      # {count, mean, median, std_dev, min, max}
+  variance(xs)  std_dev(xs)  percentile(xs, 90)  argmax(xs)  argmin(xs)
+  normalize(xs)                  # von 0.0 (die kleinste) bis 1.0 (die größte)
+
+Zufall, bei jedem Lauf gleich nach random_seed(n)
+  random_normal(0, 1)  random_choice_weighted(xs, gewichte)
+  train_test_split(beispiele 0.8)    # {train, test}
+
+Steigungen, für den Gradientenabstieg (zentrale Differenzen, etwa 9 Stellen)
+  derivative(fn(x) = x * x 3)               # 6.0
+  gradient(fn([x y]) = x * x + y [2 5])   # [4.0, 1.0]
+
+Diagramme aus Text
+  print(plot(verluste))  print(plot(xs, ys))  print(histogram(groessen))
+
+Das Web und Sprachmodelle
+  http_get(url)  http_post(url, inhalt, header)   # Ok(text) oder Err(meldung)
+  Halte API-Schlüssel aus dem Code heraus: env("API_KEY").
+
+Ein Formfehler nennt beide Formen ("kann eine 2×3-Matrix nicht mit einer
+2×2-Matrix multiplizieren"). Programme zum Lesen: die Beispiele
+linear_regression, perceptron, xor_network, kmeans, knn, naive_bayes, markov,
+tictactoe, pathfinding und genetic; die Übungen 31 bis 36 (rythme exercise
+list)."#,
+        ),
+        // Types with parameters: src/check/annot.rs, src/help.rs, src/lsp/features.rs, src/parser.rs
+        ("the type variable `{name}` appears twice in `{ty}`", "die Typvariable `{name}` kommt in `{ty}` zweimal vor"),
+        ("give each one its own letter: `type Pair(a, b)`", "gib jeder ihren eigenen Buchstaben: `type Paar(a, b)`"),
+        ("`{name}` cannot be a type variable: a type variable is one lowercase letter", "`{name}` kann keine Typvariable sein: eine Typvariable ist ein einzelner Kleinbuchstabe"),
+        ("write one letter, like `{letter}`, here and in the fields", "schreibe einen Buchstaben, wie `{letter}`, hier und in den Feldern"),
+        ("`{v}` is not a parameter of `{ty}`", "`{v}` ist kein Parameter von `{ty}`"),
+        ("not among `{header}`", "nicht unter `{header}`"),
+        ("add it to the parameters of the type: `type {with} = ...`", "füge sie den Parametern des Typs hinzu: `type {with} = ...`"),
+        ("`{name}` takes {count} types: `{example}`", "`{name}` nimmt {count} Typen: `{example}`"),
+        (
+            r#"Types may also be written in the code, where they help to read it:
+  fn area(s: Shape) -> Float
+`rythme check` verifies them; they are never needed (rythme help types)."#,
+            r#"Typen können auch im Code geschrieben werden, wo sie beim Lesen helfen:
+  fn area(s: Shape) -> Float
+`rythme check` prüft sie; sie sind nie nötig (rythme help types)."#,
+        ),
+        ("A whole number, as large as needed: `42`, `-7`.", "Eine ganze Zahl, so groß wie nötig: `42`, `-7`."),
+        ("A decimal number: `3.14`, `2.0`.", "Eine Dezimalzahl: `3.14`, `2.0`."),
+        ("A text: `\"hello\"`.", "Ein Text: `\"hallo\"`."),
+        ("`true` or `false`.", "`true` oder `false`."),
+        ("`()`: what a function gives when it gives nothing, like `print`.", "`()`: was eine Funktion gibt, die nichts gibt, wie `print`."),
+        ("A value that is only its name: `:ok`, `:error`.", "Ein Wert, der nur sein Name ist: `:ok`, `:error`."),
+        ("A list whose elements all have the type between parentheses; `List` alone: any list.", "Eine Liste, deren Elemente alle den Typ in den Klammern haben; `List` allein: eine beliebige Liste."),
+        ("A set of values of this type: `set([1, 2])`.", "Eine Menge von Werten dieses Typs: `set([1, 2])`."),
+        ("A dictionary: keys of the first type, values of the second.", "Ein Dictionary: Schlüssel vom ersten Typ, Werte vom zweiten."),
+        ("`Some(value)` or `None`: a value that may be missing.", "`Some(wert)` oder `None`: ein Wert, der fehlen kann."),
+        ("`Ok(value)` or `Err(error)`: the result of what may fail.", "`Ok(wert)` oder `Err(fehler)`: das Ergebnis von etwas, das fehlschlagen kann."),
+        ("Any record; `{{name: Text}}` is a record with at least these fields.", "Ein beliebiger Record; `{{name: Text}}` ist ein Record mit mindestens diesen Feldern."),
+        ("Any function; `fn(Int) -> Int` is a function with these types.", "Eine beliebige Funktion; `fn(Int) -> Int` ist eine Funktion mit diesen Typen."),
+        ("A type of Rythme: `rythme help types`", "Ein Typ von Rythme: `rythme help types`"),
+        ("type variable", "Typvariable"),
+        ("used file", "verwendete Datei"),
+        ("a type variable, like `a`", "eine Typvariable, wie `a`"),
+        ("a type without parameters is written without parentheses: `type {name} = ...`", "ein Typ ohne Parameter wird ohne Klammern geschrieben: `type {name} = ...`"),
+        ("the parameters of a type are type variables, one lowercase letter each: `type Box(a) = Box(value: a)`", "die Parameter eines Typs sind Typvariablen, je ein Kleinbuchstabe: `type Box(a) = Box(value: a)`"),
+        // src/index.rs, src/packages.rs, src/project.rs, src/manifest.rs, src/help.rs: the package index
+        ("the address is empty", "die Adresse ist leer"),
+        ("`{a}` is not an address that Rythme accepts: no spaces, and no `-` at the start", "`{a}` ist keine Adresse, die Rythme annimmt: keine Leerzeichen und kein `-` am Anfang"),
+        ("Rythme downloads packages only with `https://`, `ssh://` or from this computer (`file://`), not with `{other}`", "Rythme lädt Pakete nur mit `https://`, `ssh://` oder von diesem Computer (`file://`) herunter, nicht mit `{other}`"),
+        ("`{a}` is not the address of a repository: write `https://...`, `ssh://...` or `file://...`", "`{a}` ist nicht die Adresse eines Repositorys: schreib `https://...`, `ssh://...` oder `file://...`"),
+        ("set by `index` in `rythme.toml`", "festgelegt durch `index` in `rythme.toml`"),
+        ("set by the variable RYTHME_INDEX", "festgelegt durch die Variable RYTHME_INDEX"),
+        ("`{url}` is not a package index: it has no folder `packages`", "`{url}` ist kein Paketindex: es hat keinen Ordner `packages`"),
+        ("an index holds one file per package, like `packages/mathlib.toml` (see `rythme help packages`)", "ein Index enthält eine Datei pro Paket, wie `packages/mathlib.toml` (siehe `rythme help packages`)"),
+        ("an unknown day", "einem unbekannten Tag"),
+        ("cannot update the package index from `{url}`: using the copy of {date}", "der Paketindex kann nicht von `{url}` aktualisiert werden: die Kopie vom {date} wird benutzt"),
+        ("cannot download the package index from `{url}`", "der Paketindex kann nicht von `{url}` heruntergeladen werden"),
+        ("check the connection to the network, or give another index with the variable RYTHME_INDEX (an address or a folder); dependencies from git or from a folder work without the index", "prüf die Verbindung zum Netzwerk, oder gib mit der Variable RYTHME_INDEX einen anderen Index an (eine Adresse oder einen Ordner); Abhängigkeiten aus git oder aus einem Ordner funktionieren ohne den Index"),
+        ("no package `{name}` in the package index", "kein Paket `{name}` im Paketindex"),
+        ("`rythme search WORDS` finds packages by the words of their name and description", "`rythme search WÖRTER` findet Pakete über die Wörter ihres Namens und ihrer Beschreibung"),
+        ("the index: {place}", "der Index: {place}"),
+        ("{url} (copy of {date})", "{url} (Kopie vom {date})"),
+        ("{} (withdrawn)", "{} (zurückgezogen)"),
+        ("none", "keine"),
+        ("no version of `{name}` in the package index fits `{range}`", "keine Version von `{name}` im Paketindex passt zu `{range}`"),
+        ("its versions: {}", "seine Versionen: {}"),
+        ("for the newest one, write `{name} = {{ version = \"^{v}\" }}`", "für die neueste schreib `{name} = {{ version = \"^{v}\" }}`"),
+        ("every version of `{name}` was withdrawn", "alle Versionen von `{name}` wurden zurückgezogen"),
+        ("`{shown}` is too large for an entry of the package index", "`{shown}` ist zu groß für einen Eintrag des Paketindex"),
+        ("`{key}` is a list of texts", "`{key}` ist eine Liste von Texten"),
+        ("this entry of the package index is for `{found}`, but its file is named for `{name}`", "dieser Eintrag des Paketindex ist für `{found}`, aber seine Datei ist nach `{name}` benannt"),
+        ("the entry of `{name}` has no `repository`", "der Eintrag von `{name}` hat kein `repository`"),
+        ("the entry of `{name}` has no `{key}`", "der Eintrag von `{name}` hat kein `{key}`"),
+        ("each version is written under `[[version]]`", "jede Version wird unter `[[version]]` geschrieben"),
+        ("this version of `{name}` has no `{k}`", "diese Version von `{name}` hat kein `{k}`"),
+        ("`{commit}` is not a full commit: 40 hexadecimal digits in lower case", "`{commit}` ist kein vollständiger Commit: 40 hexadezimale Ziffern in Kleinbuchstaben"),
+        ("`{checksum}` is not a checksum: `sha256:` and 64 hexadecimal digits, as `rythme publish` writes it", "`{checksum}` ist keine Prüfsumme: `sha256:` und 64 hexadezimale Ziffern, wie `rythme publish` sie schreibt"),
+        ("`{t}` is not a tag", "`{t}` ist kein Tag"),
+        ("the version {v} is written twice", "die Version {v} steht zweimal da"),
+        ("the entry of `{name}` has no version", "der Eintrag von `{name}` hat keine Version"),
+        ("expected `,` or `]` here", "hier wurde `,` oder `]` erwartet"),
+        ("a list is written on one line: `[\"math\", \"vectors\"]`", "eine Liste wird in einer Zeile geschrieben: `[\"mathe\", \"vektoren\"]`"),
+        ("like `{key} = {example}`", "wie `{key} = {example}`"),
+        ("write `\"^1.2.0\"` (1.2.0 or a newer compatible version, below 2.0.0), `\"~1.2.0\"` (1.2.x), `\"=1.2.0\"` (exactly this one) or `\">=1.2.0, <1.5.0\"`", "schreib `\"^1.2.0\"` (1.2.0 oder eine neuere kompatible Version, unter 2.0.0), `\"~1.2.0\"` (1.2.x), `\"=1.2.0\"` (genau diese) oder `\">=1.2.0, <1.5.0\"`"),
+        ("for a version from the package index, write `{name} = {{ version = \"{v}\" }}`", "für eine Version aus dem Paketindex schreib `{name} = {{ version = \"{v}\" }}`"),
+        ("a dependency comes from the package index (`version`), from git (`git`) or from a folder (`path`): give only one", "eine Abhängigkeit kommt aus dem Paketindex (`version`), aus git (`git`) oder aus einem Ordner (`path`): gib nur eins an"),
+        ("`{v}` is not a range of versions", "`{v}` ist kein Versionsbereich"),
+        (
+            r#"unknown option `{bad}` for `rythme {command}`
+see `rythme help packages`"#,
+            r#"unbekannte Option `{bad}` für `rythme {command}`
+siehe `rythme help packages`"#,
+        ),
+        ("{bad} file(s) of the package index could not be read", "{bad} Datei(en) des Paketindex konnten nicht gelesen werden"),
+        ("{n} package(s) in {place}", "{n} Paket(e) in {place}"),
+        ("No package found for `{query}` in {place}", "Kein Paket für `{query}` in {place} gefunden"),
+        ("{n} package(s) found for `{query}` in {place}", "{n} Paket(e) für `{query}` in {place} gefunden"),
+        ("More about one: `rythme info {name}`; add it to a project: `rythme add {name}`", "Mehr über eines: `rythme info {name}`; zu einem Projekt hinzufügen: `rythme add {name}`"),
+        ("`rythme search --update{words}` searches the newest copy of the index", "`rythme search --update{words}` sucht in der neuesten Kopie des Index"),
+        ("which package? Example: rythme info mathlib", "welches Paket? Beispiel: rythme info mathlib"),
+        ("repository", "Repository"),
+        ("license", "Lizenz"),
+        ("keywords", "Stichwörter"),
+        ("authors", "Autoren"),
+        ("versions", "Versionen"),
+        ("  {v} was withdrawn: {}", "  {v} wurde zurückgezogen: {}"),
+        ("Add it to a project: `rythme add {name}` (writes `{name} = {{ version = \"^{v}\" }}` in rythme.toml)", "Zu einem Projekt hinzufügen: `rythme add {name}` (schreibt `{name} = {{ version = \"^{v}\" }}` in rythme.toml)"),
+        ("Every version of this package was withdrawn.", "Alle Versionen dieses Pakets wurden zurückgezogen."),
+        ("which package? Example: rythme add mathlib (or rythme add mathlib@1.2)", "welches Paket? Beispiel: rythme add mathlib (oder rythme add mathlib@1.2)"),
+        ("cannot read `{}`: {e}", "`{}` kann nicht gelesen werden: {e}"),
+        ("`{range_text}` is not a range of versions", "`{range_text}` ist kein Versionsbereich"),
+        ("`{name}` came from {from}: it now comes from the package index", "`{name}` kam aus {from}: jetzt kommt es aus dem Paketindex"),
+        ("`rythme.toml` was left as it was", "`rythme.toml` wurde so gelassen, wie es war"),
+        ("Added `{line}` to rythme.toml ({version})", "`{line}` zu rythme.toml hinzugefügt ({version})"),
+        ("  use it with `use {name}/FILE` (see `rythme info {name}`)", "  benutze es mit `use {name}/DATEI` (siehe `rythme info {name}`)"),
+        ("which entries? Example: rythme publish --verify packages/mathlib.toml", "welche Einträge? Beispiel: rythme publish --verify packages/mathlib.toml"),
+        (
+            r#"`rythme publish` takes no argument (`{a}`): it checks the package of the current folder
+see `rythme help packages`"#,
+            r#"`rythme publish` nimmt kein Argument (`{a}`): es prüft das Paket des aktuellen Ordners
+siehe `rythme help packages`"#,
+        ),
+        ("`rythme.toml` has no `{key}`", "`rythme.toml` hat kein `{key}`"),
+        ("the package index shows it, and needs it", "der Paketindex zeigt es an und braucht es"),
+        ("add a line like `{example}` at the top", "füg oben eine Zeile wie `{example}` hinzu"),
+        ("Checking `{name}` {version} before it goes into the package index", "Prüfung von `{name}` {version}, bevor es in den Paketindex kommt"),
+        ("`{version}` is not a version of semantic versioning", "`{version}` ist keine Version im Sinne der semantischen Versionierung"),
+        ("like `version = \"1.2.0\"`, without zeros at the start of a number", "wie `version = \"1.2.0\"`, ohne Nullen am Anfang einer Zahl"),
+        ("description = \"What `{name}` is for, in one sentence\"", "description = \"Wofür `{name}` da ist, in einem Satz\""),
+        ("the `description` is too long: one sentence, at most 200 characters", "die `description` ist zu lang: ein Satz, höchstens 200 Zeichen"),
+        ("YOU", "DEIN-NAME"),
+        ("`{k}` is not a keyword: a word in lower case, at most 24 characters", "`{k}` ist kein Stichwort: ein Wort in Kleinbuchstaben, höchstens 24 Zeichen"),
+        ("at most 5 keywords", "höchstens 5 Stichwörter"),
+        ("a published package cannot use a folder of this computer: `{dep_name}` comes from `{p}`", "ein veröffentlichtes Paket kann keinen Ordner dieses Computers benutzen: `{dep_name}` kommt aus `{p}`"),
+        ("publish `{dep_name}` too, then write `{dep_name} = {{ version = \"^...\" }}`", "veröffentliche auch `{dep_name}` und schreib dann `{dep_name} = {{ version = \"^...\" }}`"),
+        ("`{name}` is not in a git repository", "`{name}` ist in keinem git-Repository"),
+        ("the package index gives the commit of each version: a package is published from its git repository", "der Paketindex gibt den Commit jeder Version an: ein Paket wird aus seinem git-Repository veröffentlicht"),
+        ("`git init`, `git add .`, `git commit`, then push it to its `repository`", "`git init`, `git add .`, `git commit`, dann schieb es in sein `repository`"),
+        ("`rythme.toml` must be at the root of its git repository", "`rythme.toml` muss in der Wurzel seines git-Repositorys liegen"),
+        ("the root of the repository: {top}", "die Wurzel des Repositorys: {top}"),
+        ("give the package a repository of its own", "gib dem Paket ein eigenes Repository"),
+        ("some changes are not committed", "einige Änderungen sind nicht committet"),
+        ("for example: {}", "zum Beispiel: {}"),
+        ("commit them (`git add`, `git commit`), or set them aside, then tag the commit", "committe sie (`git add`, `git commit`) oder leg sie beiseite, dann tagge den Commit"),
+        ("no tag `v{version}` for the version {version}", "kein Tag `v{version}` für die Version {version}"),
+        ("tag the commit and push the tag: `git tag v{version}`, then `git push origin v{version}`", "tagge den Commit und schieb den Tag hoch: `git tag v{version}`, dann `git push origin v{version}`"),
+        ("the tag `{t}` is not the current commit", "der Tag `{t}` ist nicht der aktuelle Commit"),
+        ("what is checked must be what is published", "was geprüft wird, muss das sein, was veröffentlicht wird"),
+        ("publish from the tag (`git checkout {t}`), or move the tag to this commit (`git tag --force {t}`) before pushing it", "veröffentliche vom Tag aus (`git checkout {t}`) oder verschieb den Tag auf diesen Commit (`git tag --force {t}`), bevor du ihn hochschiebst"),
+        ("Running `rythme check`", "`rythme check` läuft"),
+        ("`rythme check` found errors", "`rythme check` hat Fehler gefunden"),
+        ("fix them first: a package must pass `rythme check`", "behebe sie zuerst: ein Paket muss `rythme check` bestehen"),
+        ("Running `rythme test`", "`rythme test` läuft"),
+        ("`rythme test` failed", "`rythme test` ist fehlgeschlagen"),
+        ("fix them first: a package must pass its tests", "behebe sie zuerst: ein Paket muss seine Tests bestehen"),
+        ("the name `{name}` is already taken in the package index", "der Name `{name}` ist im Paketindex schon vergeben"),
+        ("by the repository {repo}", "vom Repository {repo}"),
+        ("choose another `name` for your package", "wähl einen anderen `name` für dein Paket"),
+        ("the version {version} of `{name}` is already in the package index", "die Version {version} von `{name}` ist schon im Paketindex"),
+        ("a published version never changes: raise `version` in `rythme.toml`, commit and tag again", "eine veröffentlichte Version ändert sich nie: erhöhe `version` in `rythme.toml`, committe und tagge erneut"),
+        ("cannot read the package index `{url}`: it will check the name and the version itself", "der Paketindex `{url}` kann nicht gelesen werden: er prüft den Namen und die Version selbst"),
+        ("the tag `{t}` is not in {repo}", "der Tag `{t}` ist nicht in {repo}"),
+        ("push it: `git push origin {t}`", "schieb ihn hoch: `git push origin {t}`"),
+        ("the tag `{t}` of {repo} is not this commit", "der Tag `{t}` von {repo} ist nicht dieser Commit"),
+        ("push the tag again: `git push --force origin {t}`", "schieb den Tag erneut hoch: `git push --force origin {t}`"),
+        ("cannot reach {repo} to check that the tag `{t}` is there", "{repo} ist nicht erreichbar, um zu prüfen, dass der Tag `{t}` dort ist"),
+        ("cannot read the files of the commit `{commit}`", "die Dateien des Commits `{commit}` können nicht gelesen werden"),
+        ("✓ `{name}` {version} is ready for the package index.", "✓ `{name}` {version} ist bereit für den Paketindex."),
+        ("Rythme never publishes anything by itself: a version goes into the index with a pull request on its repository, {}.", "Rythme veröffentlicht nie selbst etwas: eine Version kommt mit einem Pull Request auf sein Repository in den Index, {}."),
+        ("1. Fork the repository of the index and clone your fork. Create the file {file} with:", "1. Forke das Repository des Index und klone deinen Fork. Erstelle die Datei {file} mit:"),
+        ("1. Fork the repository of the index and clone your fork. Add at the end of {file}:", "1. Forke das Repository des Index und klone deinen Fork. Füg am Ende von {file} hinzu:"),
+        ("2. Commit it on a branch of your fork and push it:", "2. Committe es auf einem Branch deines Forks und schieb ihn hoch:"),
+        ("3. Open a pull request on {}: its checks run `rythme publish --verify {file}`, then a maintainer merges it.", "3. Öffne einen Pull Request auf {}: seine Prüfungen führen `rythme publish --verify {file}` aus, dann führt ein Maintainer ihn zusammen."),
+        (
+            r#"
+{problems} problem(s) to fix before publishing: nothing was sent anywhere"#,
+            r#"
+{problems} Problem(e) vor dem Veröffentlichen zu beheben: nichts wurde irgendwohin gesendet"#,
+        ),
+        ("`{f}` is not an entry of the index: `packages/NAME.toml`", "`{f}` ist kein Eintrag des Index: `packages/NAME.toml`"),
+        ("✓ {f}: `{stem}`, {count} version(s) verified", "✓ {f}: `{stem}`, {count} Version(en) geprüft"),
+        ("✗ {f}", "✗ {f}"),
+        ("{v}: the commit `{commit}` is not in `{url}`", "{v}: der Commit `{commit}` ist nicht in `{url}`"),
+        ("{v}: the tag `{tag}` of `{url}` is not the commit `{commit}`", "{v}: der Tag `{tag}` von `{url}` ist nicht der Commit `{commit}`"),
+        ("{v}: the files of the commit do not have the checksum of the entry", "{v}: die Dateien des Commits haben nicht die Prüfsumme des Eintrags"),
+        (
+            r#"expected: {}
+found:    {found}"#,
+            r#"erwartet: {}
+gefunden: {found}"#,
+        ),
+        ("`rythme publish` in the package, at its tag, writes the right one", "`rythme publish` im Paket, an seinem Tag, schreibt die richtige"),
+        ("{v}: the commit has no `rythme.toml` at its root", "{v}: der Commit hat keine `rythme.toml` in seiner Wurzel"),
+        ("{v}: the `rythme.toml` of the commit says `{found_name}` {found_version}", "{v}: die `rythme.toml` des Commits sagt `{found_name}` {found_version}"),
+        ("{v}: the dependency `{dep_name}` is a folder of the computer of the author", "{v}: die Abhängigkeit `{dep_name}` ist ein Ordner auf dem Computer des Autors"),
+        ("the package index, version {range}", "dem Paketindex, Version {range}"),
+        ("the commit `{commit}` of `{name}` {version} does not exist in `{url}`", "der Commit `{commit}` von `{name}` {version} existiert nicht in `{url}`"),
+        ("the package index gives this commit for this version", "der Paketindex gibt diesen Commit für diese Version an"),
+        ("tell the authors of `{name}`: the history of their repository may have been rewritten", "sag den Autoren von `{name}` Bescheid: die Historie ihres Repositorys wurde vielleicht umgeschrieben"),
+        ("cannot read the files of `{name}` {version}", "die Dateien von `{name}` {version} können nicht gelesen werden"),
+        ("the files of `{name}` {version} do not match the checksum of the package index", "die Dateien von `{name}` {version} passen nicht zur Prüfsumme des Paketindex"),
+        ("nothing was installed, and nothing of the package ran", "nichts wurde installiert, und nichts vom Paket wurde ausgeführt"),
+        ("do not use this version; tell the maintainers of the package index", "benutze diese Version nicht; sag den Maintainern des Paketindex Bescheid"),
+        ("Updating the dependencies of `{name}`", "Die Abhängigkeiten von `{name}` werden aktualisiert"),
+        ("{range} from the index, commit {short} ({how})", "{range} aus dem Index, Commit {short} ({how})"),
+        ("the package index gives `{dep_name}` {wanted}, but its `rythme.toml` says `{found}` {version}", "der Paketindex gibt `{dep_name}` {wanted} an, aber seine `rythme.toml` sagt `{found}` {version}"),
+        ("tell the maintainers of the package index", "sag den Maintainern des Paketindex Bescheid"),
+        ("`rythme update` takes the names of dependencies, not `{bad}`: `rythme update` (all of them) or `rythme update mathlib`", "`rythme update` nimmt Namen von Abhängigkeiten, nicht `{bad}`: `rythme update` (alle) oder `rythme update mathlib`"),
+        ("`{a}` is not a dependency of `{}`", "`{a}` ist keine Abhängigkeit von `{}`"),
+        ("did you mean `rythme update {best}`?", "meintest du `rythme update {best}`?"),
+        ("`rythme add {a}` adds it from the package index", "`rythme add {a}` fügt es aus dem Paketindex hinzu"),
+        ("Everything was already up to date", "Alles war schon auf dem neuesten Stand"),
+        ("Updated:", "Aktualisiert:"),
+        ("{} {} (new)", "{} {} (neu)"),
+        (
+            r#"THE PACKAGE INDEX
+
+  rythme search vectors      # the packages whose name, description or keywords say it
+  rythme info mathlib        # its description, repository, license, versions
+  rythme add mathlib         # adds `mathlib = { version = "^1.2.0" }` to rythme.toml,
+                             #   then installs it (rythme.lock keeps the exact commit)
+  rythme add mathlib@1.1     # a range of versions of your choice
+  rythme update              # the newest version in the range of each dependency
+  rythme publish             # checks your package, then says how to add it
+
+A dependency from the index gives a range of versions:
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 or newer, below 2.0.0 (the default)
+  geometry = { version = "~0.3.1" }   # 0.3.x, from 0.3.1
+  tools = { version = "=1.0.0" }      # exactly this one
+
+`rythme install` takes the version of rythme.lock while it is in the range,
+and `rythme update` the newest one; a withdrawn version is never chosen.
+
+The index is a git repository, one file per package (packages/NAME.toml):
+its name, description, repository, license, keywords, and for each version
+its tag, its commit and the checksum of its files. Rythme keeps a copy in
+~/.rythme/index and reads it without a network: `rythme search --update`
+gets the newest one. Another index: `index = "..."` in rythme.toml, or the
+variable RYTHME_INDEX (an address, or a folder of this computer); by
+default https://github.com/maxlestage/rythme-index.
+
+Safety: names are Rythme names (no `/`, no `..`), addresses use https, ssh
+or file://, git runs without hooks, the files of each version must have the
+checksum of the index, and nothing of a package runs when it is installed.
+
+Publishing: tag the version (git tag v1.2.0, git push origin v1.2.0), then
+`rythme publish` checks rythme.toml (description, license, repository),
+`rythme check`, `rythme test` and the tag, and prints the entry to add to
+the index with a pull request. Rythme never sends anything by itself."#,
+            r#"DER PAKETINDEX
+
+  rythme search vektoren     # die Pakete, deren Name, Beschreibung oder Stichwörter es sagen
+  rythme info mathlib        # seine Beschreibung, sein Repository, seine Lizenz, seine Versionen
+  rythme add mathlib         # fügt `mathlib = { version = "^1.2.0" }` zu rythme.toml hinzu,
+                             #   dann installiert es (rythme.lock behält den genauen Commit)
+  rythme add mathlib@1.1     # ein Versionsbereich deiner Wahl
+  rythme update              # die neueste Version im Bereich jeder Abhängigkeit
+  rythme publish             # prüft dein Paket, dann sagt es, wie man es hinzufügt
+
+Eine Abhängigkeit aus dem Index gibt einen Versionsbereich an:
+
+  [dependencies]
+  mathlib = { version = "^1.2.0" }    # 1.2.0 oder neuer, unter 2.0.0 (der Standard)
+  geometrie = { version = "~0.3.1" }  # 0.3.x, ab 0.3.1
+  werkzeuge = { version = "=1.0.0" }  # genau diese
+
+`rythme install` nimmt die Version aus rythme.lock, solange sie im Bereich
+liegt, und `rythme update` die neueste; eine zurückgezogene Version wird nie
+gewählt.
+
+Der Index ist ein git-Repository, eine Datei pro Paket (packages/NAME.toml):
+sein Name, seine Beschreibung, sein Repository, seine Lizenz, seine
+Stichwörter und für jede Version ihr Tag, ihr Commit und die Prüfsumme ihrer
+Dateien. Rythme behält eine Kopie in ~/.rythme/index und liest sie ohne
+Netzwerk: `rythme search --update` holt die neueste. Ein anderer Index:
+`index = "..."` in rythme.toml oder die Variable RYTHME_INDEX (eine Adresse
+oder ein Ordner dieses Computers); standardmäßig
+https://github.com/maxlestage/rythme-index.
+
+Sicherheit: Namen sind Rythme-Namen (kein `/`, kein `..`), Adressen benutzen
+https, ssh oder file://, git läuft ohne Hooks, die Dateien jeder Version
+müssen die Prüfsumme des Index haben, und nichts von einem Paket läuft, wenn
+es installiert wird.
+
+Veröffentlichen: tagge die Version (git tag v1.2.0, git push origin v1.2.0),
+dann prüft `rythme publish` rythme.toml (description, license, repository),
+`rythme check`, `rythme test` und den Tag und zeigt den Eintrag, der mit
+einem Pull Request zum Index hinzugefügt wird. Rythme sendet nie selbst
+etwas."#,
+        ),
+        ("The index is the folder {url}, where Rythme writes nothing.", "Der Index ist der Ordner {url}, in den Rythme nichts schreibt."),
+        ("Create its file {file} with:", "Erstelle seine Datei {file} mit:"),
+        ("Add at the end of its file {file}:", "Füg am Ende seiner Datei {file} hinzu:"),
+        ("the pattern \"{pattern}\" has an unknown directive `%{c}`", "das Muster \"{pattern}\" hat eine unbekannte Direktive `%{c}`"),
+        ("the directives are %Y (year), %m (month), %d (day), %H (hour), %M (minute), %S (second), %y (year in 2 digits), %B and %b (month name), %A and %a (day name), %I and %p (12-hour clock), %j (day of the year), %z (offset) and %% (a %)", "die Direktiven sind %Y (Jahr), %m (Monat), %d (Tag), %H (Stunde), %M (Minute), %S (Sekunde), %y (Jahr mit 2 Ziffern), %B und %b (Monatsname), %A und %a (Name des Tages), %I und %p (12-Stunden-Uhr), %j (Tag des Jahres), %z (Versatz) und %% (ein %)"),
+        (r#""{text}" does not follow the pattern "{pattern}""#, r#""{text}" folgt nicht dem Muster "{pattern}""#),
+        ("the hour must go from 1 to 12 with AM or PM, not {}", "die Stunde muss mit AM oder PM zwischen 1 und 12 liegen, nicht {}"),
+        ("the day of the year must go from 1 to {len}, not {n}", "der Tag des Jahres muss zwischen 1 und {len} liegen, nicht {n}"),
+        ("`{c}` is not a Base64 character", "`{c}` ist kein Base64-Zeichen"),
+        ("this Base64 text is cut short", "dieser Base64-Text ist abgeschnitten"),
+        ("the decoded bytes are not a text (UTF-8)", "die dekodierten Bytes sind kein Text (UTF-8)"),
+        ("a `%` must be followed by two hexadecimal digits, like `%20`", "auf ein `%` müssen zwei hexadezimale Ziffern folgen, wie `%20`"),
+        ("`{f}` would give {count} lists: too many (at most {MAX_COMBINED} elements in all)", "`{f}` würde {count} Listen ergeben: zu viele (höchstens {MAX_COMBINED} Elemente insgesamt)"),
+        ("the number of combinations grows very fast: try with a shorter list, or fewer elements in each one", "die Zahl der Kombinationen wächst sehr schnell: versuch es mit einer kürzeren Liste oder weniger Elementen in jeder"),
+        ("`unzip` needs a list of lists, but its element {k} is {}", "`unzip` braucht eine Liste von Listen, aber ihr Element {k} ist {}"),
+        ("the function given to `unfold` must return `Some([value, next])` or `None`, but it returned Some({})", "die an `unfold` übergebene Funktion muss `Some([wert, nächster])` oder `None` zurückgeben, hat aber Some({}) zurückgegeben"),
+        ("`{f}` needs at least two numbers in each list", "`{f}` braucht mindestens zwei Zahlen in jeder Liste"),
+        ("`correlation` needs numbers that vary: one of the lists has all its numbers equal", "`correlation` braucht Zahlen, die sich ändern: in einer der Listen sind alle Zahlen gleich"),
+        ("`{f}` cannot compare {} and {}", "`{f}` kann {} und {} nicht vergleichen"),
+        ("the value and its bounds must be of the same kind: all numbers, or all texts...", "der Wert und seine Grenzen müssen von derselben Art sein: alles Zahlen oder alles Texte..."),
+        ("`constrain`: the lower bound {} is above the upper bound {}", "`constrain`: die untere Grenze {} liegt über der oberen Grenze {}"),
+        ("`binomial` needs a number of 0 or more, not {n}", "`binomial` braucht eine Zahl größer oder gleich 0, nicht {n}"),
+        ("`expect` found `None`: there is no value", "`expect` hat `None` gefunden: es gibt keinen Wert"),
+        ("`expect` found an error: {}", "`expect` hat einen Fehler gefunden: {}"),
+        ("`all_ok` needs a list of Results (Ok or Err), but its element {k} is {}", "`all_ok` braucht eine Liste von Results (Ok oder Err), aber ihr Element {k} ist {}"),
+        ("to keep the values of a list of Options, use `filter_map(list, fn(x) = x)`", "um die Werte einer Liste von Options zu behalten, verwende `filter_map(liste, fn(x) = x)`"),
+        ("`format` cannot use \"{spec}\": {why}", "`format` kann \"{spec}\" nicht verwenden: {why}"),
+        (r#"a spec is written [[fill]align][sign][#][0][width][,][.precision][type]: ">8" (8 wide, on the right), "^8" (centered), "08.2f" (2 decimals, zeros before), ",d" (thousands), ".1%" (a percentage), "x" (hexadecimal), "b" (binary), "e" (exponent)"#, r#"eine Spezifikation wird [[Füllung]Ausrichtung][Vorzeichen][#][0][Breite][,][.Genauigkeit][Typ] geschrieben: ">8" (Breite 8, rechts), "^8" (zentriert), "08.2f" (2 Nachkommastellen, Nullen davor), ",d" (Tausender), ".1%" (ein Prozentsatz), "x" (hexadezimal), "b" (binär), "e" (Exponent)"#),
+        ("the width is at most {MAX_WIDTH}", "die Breite ist höchstens {MAX_WIDTH}"),
+        ("the precision is at most {MAX_PRECISION}", "die Genauigkeit ist höchstens {MAX_PRECISION}"),
+        ("a number must follow the `.`", "auf den `.` muss eine Zahl folgen"),
+        ("`{c}` is not a type of format", "`{c}` ist kein Formattyp"),
+        ("this is not a format spec", "das ist keine Formatspezifikation"),
+        ("`{kind}` cannot write {what}", "`{kind}` kann {what} nicht schreiben"),
+        ("a whole number", "eine ganze Zahl"),
+        ("a whole number has no decimals: write a type like `f` for them", "eine ganze Zahl hat keine Nachkommastellen: schreib einen Typ wie `f`, um welche zu haben"),
+        ("`,` groups decimal digits only: use `_`", "`,` gruppiert nur Dezimalziffern: verwende `_`"),
+        ("a decimal number", "eine Dezimalzahl"),
+        ("signs, `#`, `0` and `,` are for numbers", "Vorzeichen, `#`, `0` und `,` sind für Zahlen"),
+        ("`{f}`: the base must go from 2 to 36, not {b}", "`{f}`: die Basis muss zwischen 2 und 36 liegen, nicht {b}"),
+        ("\"{s}\" is not a whole number in base {radix}", "\"{s}\" ist keine ganze Zahl zur Basis {radix}"),
+        ("`digits` needs a number of 0 or more, not {}", "`digits` braucht eine Zahl größer oder gleich 0, nicht {}"),
+        ("`{f}`: the text to look for is empty", "`{f}`: der zu suchende Text ist leer"),
+        ("`{f}` cannot replace an empty text", "`{f}` kann keinen leeren Text ersetzen"),
+        ("`edit_distance` compares texts of at most {MAX_DISTANCE_WORK} pairs of characters, not {} by {}", "`edit_distance` vergleicht Texte mit höchstens {MAX_DISTANCE_WORK} Zeichenpaaren, nicht {} mal {}"),
+        ("to count a piece of text in a text, use `occurrences(text, piece)`", "um ein Textstück in einem Text zu zählen, verwende `occurrences(text, stück)`"),
+        ("to count the elements equal to a value, use `occurrences(list, x)`", "um die Elemente zu zählen, die gleich einem Wert sind, verwende `occurrences(liste, x)`"),
+        ("the value comes first, then the spec: `format(42, \"05\")`; to put values in a text, use braces", "zuerst kommt der Wert, dann die Spezifikation: `format(42, \"05\")`; um Werte in einen Text zu setzen, verwende geschweifte Klammern"),
+        ("return `Some(x)` to keep x, or `None` to leave the element out", "gib `Some(x)` zurück, um x zu behalten, oder `None`, um das Element wegzulassen"),
+        ("return `Some([value, next])` to go on, or `None` to stop", "gib `Some([wert, nächster])` zurück, um weiterzumachen, oder `None`, um aufzuhören"),
+        ("Pairs the elements of two lists (or more: one element of each list in every group): [[a1, b1], [a2, b2], ...]. It stops at the end of the shortest list.", "Paart die Elemente zweier Listen (oder mehrerer: ein Element jeder Liste in jeder Gruppe): [[a1, b1], [a2, b2], ...]. Hört am Ende der kürzesten Liste auf."),
+        (r#"Reads a date written as ISO 8601 ("2024-02-29", "2024-02-29T13:05:00", with `Z` or an offset like `+01:00` if needed): `Ok(date)`, or `Err(message)` if it is not a valid date. With a pattern like "%d/%m/%Y" (the directives of `format_date`), reads a date written that way."#, r#"Liest ein Datum im Format ISO 8601 ("2024-02-29", "2024-02-29T13:05:00", bei Bedarf mit `Z` oder einem Versatz wie `+01:00`): `Ok(date)`, oder `Err(message)`, wenn es kein gültiges Datum ist. Mit einem Muster wie "%d/%m/%Y" (den Direktiven von `format_date`) liest es ein so geschriebenes Datum."#),
+        ("Writes a date as ISO 8601: \"2024-02-29\", with the time if the date has one, and `Z` or the offset if it has one. With a pattern, writes it the way `strftime` does: %Y year, %m month, %d day, %H hour, %M minute, %S second, %y year in two digits, %B and %b the month, %A and %a the day of the week (in English), %I and %p the 12-hour clock, %j the day of the year, %z the offset, %% a %.", "Schreibt ein Datum im Format ISO 8601: \"2024-02-29\", mit der Uhrzeit, wenn das Datum eine hat, und `Z` oder dem Versatz, wenn es einen hat. Mit einem Muster schreibt es das Datum wie `strftime`: %Y das Jahr, %m der Monat, %d der Tag, %H die Stunde, %M die Minute, %S die Sekunde, %y das Jahr mit zwei Ziffern, %B und %b der Monat, %A und %a der Wochentag (auf Englisch), %I und %p die 12-Stunden-Uhr, %j der Tag des Jahres, %z der Versatz, %% ein %."),
+        ("The text that shows a value the way the REPL and `debug` show it: a text between quotes, with its special characters written as escapes. `text` gives a text as it is.", "Der Text, der einen Wert so zeigt, wie die REPL und `debug` ihn zeigen: ein Text in Anführungszeichen, mit seinen Sonderzeichen als Escape-Sequenzen. `text` gibt einen Text unverändert zurück."),
+        ("Shows values on the error output (stderr), separated by spaces, then goes to the next line: for messages that must not mix with the results of a program, which go to the standard output.", "Zeigt Werte auf der Fehlerausgabe (stderr) an, durch Leerzeichen getrennt, und geht dann zur nächsten Zeile: für Meldungen, die sich nicht mit den Ergebnissen eines Programms mischen sollen, die auf die Standardausgabe gehen."),
+        ("The value kept between two bounds: `low` if it is below, `high` if it is above, itself otherwise. For numbers, texts... any values that can be compared.", "Der Wert zwischen zwei Grenzen gehalten: `low`, wenn er darunter liegt, `high`, wenn er darüber liegt, sonst er selbst. Für Zahlen, Texte... alle Werte, die man vergleichen kann."),
+        ("The whole quotient and the remainder of a division at once: `[a // b, a % b]`.", "Der ganzzahlige Quotient und der Rest einer Division auf einmal: `[a // b, a % b]`."),
+        ("The binomial coefficient \"n choose k\": the number of ways to choose k elements among n, exact even when it is very large.", "Der Binomialkoeffizient \"n über k\": die Zahl der Möglichkeiten, k Elemente aus n auszuwählen, genau, auch wenn er sehr groß ist."),
+        ("The digits of a whole number (0 or more), the most significant first, in base 10 or in the base given (from 2 to 36).", "Die Ziffern einer ganzen Zahl (größer oder gleich 0), die höchstwertige zuerst, zur Basis 10 oder zur angegebenen Basis (von 2 bis 36)."),
+        ("Writes a whole number in a base from 2 to 36, with the digits 0 to 9 then the letters a to z.", "Schreibt eine ganze Zahl zu einer Basis von 2 bis 36, mit den Ziffern 0 bis 9 und dann den Buchstaben a bis z."),
+        ("Reads a whole number written in a base from 2 to 36: `Ok(number)`, or `Err(message)` if the text is not a number in this base. `0x`, `0o` and `0b` may come before a number in base 16, 8 and 2.", "Liest eine ganze Zahl, die zu einer Basis von 2 bis 36 geschrieben ist: `Ok(number)`, oder `Err(message)`, wenn der Text keine Zahl zu dieser Basis ist. `0x`, `0o` und `0b` dürfen vor einer Zahl zur Basis 16, 8 und 2 stehen."),
+        ("Is the number greater than 0?", "Ist die Zahl größer als 0?"),
+        ("Is the number less than 0?", "Ist die Zahl kleiner als 0?"),
+        ("Is the number 0 (or 0.0)?", "Ist die Zahl 0 (oder 0.0)?"),
+        ("Is the decimal number `nan` (\"not a number\")? It is never equal to anything, not even to itself.", "Ist die Dezimalzahl `nan` (\"keine Zahl\")? Sie ist nie gleich irgendetwas, nicht einmal sich selbst."),
+        ("Is the number finite: neither an infinity nor `nan`? Whole numbers always are.", "Ist die Zahl endlich: weder unendlich noch `nan`? Ganze Zahlen sind es immer."),
+        ("Adds `fill` (a space by default) on both sides of the text until it is `width` characters long: titles and cells of tables stay centered. A character left over goes to the right.", "Fügt `fill` (standardmäßig ein Leerzeichen) auf beiden Seiten des Textes hinzu, bis er `width` Zeichen lang ist: Titel und Tabellenzellen bleiben zentriert. Ein übriges Zeichen kommt nach rechts."),
+        (r##"Writes a value following a format spec, like Python's `format`: ".2f" for 2 decimals, ">8" to fill 8 characters on the right ("<" on the left, "^" centered), "08.2f" with zeros before, "," with the thousands separated, "%" as a percentage, "x", "o" and "b" in hexadecimal, octal and binary ("#" adds 0x, 0o, 0b), "e" with an exponent. To put values in a text, use braces."##, r##"Schreibt einen Wert nach einer Formatspezifikation, wie `format` in Python: ".2f" für 2 Nachkommastellen, ">8", um 8 Zeichen rechtsbündig zu füllen ("<" links, "^" zentriert), "08.2f" mit Nullen davor, "," mit getrennten Tausendern, "%" als Prozentsatz, "x", "o" und "b" hexadezimal, oktal und binär ("#" fügt 0x, 0o, 0b hinzu), "e" mit einem Exponenten. Um Werte in einen Text zu setzen, verwende geschweifte Klammern."##),
+        ("Replaces the first occurrence of `old` by `new`, and only that one.", "Ersetzt das erste Vorkommen von `old` durch `new`, und nur dieses."),
+        ("How many times an element is in a list, or a piece of text in a text (pieces that do not overlap).", "Wie oft ein Element in einer Liste vorkommt, oder ein Textstück in einem Text (Stücke, die sich nicht überlappen)."),
+        ("The position of the last occurrence of an element in a list, or of a piece of text in a text: `Some(position)`, or `None` if it is not there.", "Die Position des letzten Vorkommens eines Elements in einer Liste oder eines Textstücks in einem Text: `Some(position)`, oder `None`, wenn es nicht darin vorkommt."),
+        ("The text without this start, if it starts with it; otherwise the text unchanged.", "Der Text ohne diesen Anfang, wenn er damit beginnt; sonst der Text unverändert."),
+        ("The text without this end, if it ends with it; otherwise the text unchanged.", "Der Text ohne dieses Ende, wenn er damit endet; sonst der Text unverändert."),
+        ("The text with the first character of each word in uppercase (the rest is unchanged). Words are separated by spaces.", "Der Text mit dem ersten Zeichen jedes Wortes in Großbuchstaben (der Rest bleibt unverändert). Wörter sind durch Leerzeichen getrennt."),
+        ("Writes a name in snake_case: its words in lowercase, joined by `_`. Reads names written in any style: camelCase, PascalCase, kebab-case, with spaces...", "Schreibt einen Namen in snake_case: seine Wörter kleingeschrieben, verbunden durch `_`. Liest Namen in jedem Stil: camelCase, PascalCase, kebab-case, mit Leerzeichen..."),
+        ("Writes a name in camelCase: its words glued together, each with an uppercase first letter but the first word.", "Schreibt einen Namen in camelCase: seine Wörter zusammengeschrieben, jedes mit großem Anfangsbuchstaben außer dem ersten Wort."),
+        ("Writes a name in kebab-case: its words in lowercase, joined by `-`, as in web addresses.", "Schreibt einen Namen in kebab-case: seine Wörter kleingeschrieben, verbunden durch `-`, wie in Webadressen."),
+        ("The text with its uppercase letters in lowercase, and its lowercase letters in uppercase.", "Der Text mit seinen Großbuchstaben kleingeschrieben und seinen Kleinbuchstaben großgeschrieben."),
+        ("Has the text letters, all of them in uppercase? (The other characters do not count.)", "Hat der Text Buchstaben, alle großgeschrieben? (Die anderen Zeichen zählen nicht.)"),
+        ("Has the text letters, all of them in lowercase? (The other characters do not count.)", "Hat der Text Buchstaben, alle kleingeschrieben? (Die anderen Zeichen zählen nicht.)"),
+        ("The bytes of a text in UTF-8, as whole numbers from 0 to 255: an accented letter takes two of them, an emoji four.", "Die Bytes eines Textes in UTF-8, als ganze Zahlen von 0 bis 255: ein Buchstabe mit Akzent braucht zwei, ein Emoji vier."),
+        ("Cuts a text in two at the first separator: `Some([before, after])`, or `None` if the separator is not there. For lines like `key=value`.", "Teilt einen Text am ersten Trennzeichen in zwei: `Some([vorher, nachher])`, oder `None`, wenn das Trennzeichen fehlt. Für Zeilen wie `schlüssel=wert`."),
+        ("Cuts the lines of a text between words so that none is longer than `width` characters (a longer word stays whole on its own line).", "Bricht die Zeilen eines Textes zwischen den Wörtern um, damit keine länger als `width` Zeichen ist (ein längeres Wort bleibt ganz in seiner Zeile)."),
+        ("The edit distance (Levenshtein) between two texts: the fewest characters to add, remove or replace to go from one to the other. For spelling checkers, and to find the closest word.", "Der Editierabstand (Levenshtein) zwischen zwei Texten: die wenigsten Zeichen, die man hinzufügen, entfernen oder ersetzen muss, um vom einen zum anderen zu kommen. Für Rechtschreibprüfungen und um das nächstliegende Wort zu finden."),
+        ("The position of the first element for which f is true: `Some(position)`, or `None` if there is none.", "Die Position des ersten Elements, für das f wahr ist: `Some(position)`, oder `None`, wenn es keines gibt."),
+        ("The list with the element at position i replaced by f(element). A negative position counts from the end.", "Die Liste, in der das Element an Position i durch f(element) ersetzt ist. Eine negative Position zählt vom Ende."),
+        ("The list or text turned by n places to the left (1 by default): the first elements go to the end. A negative n turns it to the right.", "Die Liste oder der Text um n Stellen nach links gedreht (standardmäßig 1): die ersten Elemente kommen ans Ende. Ein negatives n dreht nach rechts."),
+        ("The list with `x` between every two elements.", "Die Liste mit `x` zwischen je zwei Elementen."),
+        ("The elements of two lists taken in turn, one from each; what is left of the longer list comes at the end.", "Die Elemente zweier Listen abwechselnd, eines aus jeder; was von der längeren Liste übrig bleibt, kommt ans Ende."),
+        ("Counts how many times each value is in a list: a dict from each value to its count (like Python's `Counter`).", "Zählt, wie oft jeder Wert in einer Liste vorkommt: ein Dict von jedem Wert zu seiner Anzahl (wie `Counter` in Python)."),
+        ("Counts the elements by the key that f gives them: a dict from each key to how many elements have it.", "Zählt die Elemente nach dem Schlüssel, den f ihnen gibt: ein Dict von jedem Schlüssel zur Zahl der Elemente, die ihn haben."),
+        ("The values that come most often, with their counts: a list of `[value, count]` pairs, the most frequent first (on a tie, the one seen first). With n, only the first n.", "Die Werte, die am häufigsten vorkommen, mit ihrer Anzahl: eine Liste von Paaren `[wert, anzahl]`, der häufigste zuerst (bei Gleichstand der zuerst gesehene). Mit n nur die ersten n."),
+        ("The list without the elements whose key (given by f) was already seen: the first element of each key stays.", "Die Liste ohne die Elemente, deren Schlüssel (von f gegeben) schon gesehen wurde: das erste Element jedes Schlüssels bleibt."),
+        ("The list sorted from the largest to the smallest.", "Die Liste vom größten zum kleinsten sortiert."),
+        ("The list sorted by the key that the function gives, from the largest key to the smallest; elements with the same key keep their order.", "Die Liste nach dem Schlüssel sortiert, den die Funktion liefert, vom größten zum kleinsten Schlüssel; Elemente mit demselben Schlüssel behalten ihre Reihenfolge."),
+        ("Cuts a list into runs of neighbour elements that have the same key (given by f).", "Teilt eine Liste in Folgen benachbarter Elemente, die denselben Schlüssel (von f gegeben) haben."),
+        ("Cuts a list or a text in two at position i: `[before, from i on]`. A negative position counts from the end.", "Teilt eine Liste oder einen Text an Position i in zwei: `[vorher, ab i]`. Eine negative Position zählt vom Ende."),
+        ("Every way to choose k elements of the list, each kept in the order of the list.", "Alle Möglichkeiten, k Elemente der Liste auszuwählen, jede in der Reihenfolge der Liste."),
+        ("Every order of the elements of the list, or of k of them.", "Alle Reihenfolgen der Elemente der Liste, oder von k davon."),
+        ("Every way to take one element of each list: the cartesian product.", "Alle Möglichkeiten, aus jeder Liste ein Element zu nehmen: das kartesische Produkt."),
+        ("The opposite of `zip`: a list of pairs (or of lists of the same length) becomes the list of the first elements, the list of the second ones...", "Das Gegenteil von `zip`: eine Liste von Paaren (oder von Listen gleicher Länge) wird zur Liste der ersten Elemente, zur Liste der zweiten..."),
+        ("A list of n values: `start`, then f(start), then f of that... For sequences where each value comes from the one before.", "Eine Liste von n Werten: `start`, dann f(start), dann f davon... Für Folgen, in denen jeder Wert aus dem vorigen entsteht."),
+        ("Builds a list from a starting state: f receives the state and gives `Some([value, next state])` to add a value and go on, or `None` to stop.", "Baut eine Liste aus einem Anfangszustand: f bekommt den Zustand und gibt `Some([wert, nächster zustand])` zurück, um einen Wert hinzuzufügen und weiterzumachen, oder `None`, um aufzuhören."),
+        ("Applies f to each element and keeps the values of the `Some(...)` it gives, leaving out the `None`: filtering and transforming at once.", "Wendet f auf jedes Element an und behält die Werte der `Some(...)`, die es liefert, ohne die `None`: filtern und umwandeln in einem Schritt."),
+        ("The value found by following a path of keys into records, dicts and lists nested in one another (names of fields, keys, positions): `Some(value)`, or `None` as soon as one is missing. For data read with `parse_json`.", "Der Wert, den man findet, wenn man einem Pfad von Schlüsseln durch verschachtelte Records, Dicts und Listen folgt (Feldnamen, Schlüssel, Positionen): `Some(value)`, oder `None`, sobald einer fehlt. Für Daten, die mit `parse_json` gelesen wurden."),
+        ("Merges two records or two dicts; for a key in both, f receives the two values and gives the one kept.", "Führt zwei Records oder zwei Dicts zusammen; für einen Schlüssel in beiden bekommt f die zwei Werte und gibt den zurück, der bleibt."),
+        ("A dict where the values of a record or a dict have become the keys, and the keys the values. When a value comes several times, the last key wins.", "Ein Dict, in dem die Werte eines Records oder eines Dicts zu Schlüsseln geworden sind und die Schlüssel zu Werten. Kommt ein Wert mehrmals vor, gewinnt der letzte Schlüssel."),
+        ("The record or dict with only the keys given (in a list or a set); a key that is missing is ignored.", "Der Record oder das Dict nur mit den angegebenen Schlüsseln (in einer Liste oder einer Menge); ein fehlender Schlüssel wird ignoriert."),
+        ("The record or dict without the keys given (in a list or a set).", "Der Record oder das Dict ohne die angegebenen Schlüssel (in einer Liste oder einer Menge)."),
+        ("The record or dict with each key replaced by f(key); for a record, f must give a text.", "Der Record oder das Dict, in dem jeder Schlüssel durch f(schlüssel) ersetzt ist; bei einem Record muss f einen Text liefern."),
+        ("The record or dict where the value of `key` is replaced by f(value); when the key is missing, it is added with `default`. Handy to count: `update(counts, word, 1, fn(n) = n + 1)`.", "Der Record oder das Dict, in dem der Wert von `key` durch f(wert) ersetzt ist; fehlt der Schlüssel, wird er mit `default` hinzugefügt. Praktisch zum Zählen: `update(zähler, wort, 1, fn(n) = n + 1)`."),
+        ("The elements that are in exactly one of the two sets.", "Die Elemente, die in genau einer der beiden Mengen sind."),
+        ("Have the two sets no element in common?", "Haben die beiden Mengen kein gemeinsames Element?"),
+        ("The value inside `Some(x)` or `Ok(x)`; otherwise what f gives: f receives nothing for `None`, and the error for `Err(e)`. The default is computed only when it is needed.", "Der Wert in `Some(x)` oder `Ok(x)`; sonst das, was f liefert: f bekommt nichts für `None` und den Fehler für `Err(e)`. Der Standardwert wird nur berechnet, wenn er gebraucht wird."),
+        ("The value inside `Some(x)` or `Ok(x)`, like `unwrap`; otherwise stops the program with your message, which says what was expected.", "Der Wert in `Some(x)` oder `Ok(x)`, wie `unwrap`; sonst hält es das Programm mit deiner Meldung an, die sagt, was erwartet wurde."),
+        ("Makes one Result of a list of Results: `Ok(list of the values)` if they are all `Ok`, or else the first `Err`. When reading many values where one mistake must stop everything.", "Macht aus einer Liste von Results ein einziges Result: `Ok(liste der werte)`, wenn alle `Ok` sind, sonst das erste `Err`. Zum Lesen vieler Werte, wenn ein einziger Fehler alles anhalten soll."),
+        ("The date n months later (earlier if n is negative). A day that the new month does not have becomes its last day: 31 January plus one month is the end of February.", "Das Datum n Monate später (früher, wenn n negativ ist). Ein Tag, den der neue Monat nicht hat, wird zu dessen letztem Tag: 31. Januar plus ein Monat ist das Ende des Februars."),
+        ("The number of the day in its year, from 1 (1 January) to 365, or 366 in a leap year.", "Die Nummer des Tages in seinem Jahr, von 1 (1. Januar) bis 365, oder 366 in einem Schaltjahr."),
+        ("n decimal numbers evenly spaced from `start` to `end`, both included: to draw a function with `plot`, or to try values.", "n Dezimalzahlen in gleichen Abständen von `start` bis `end`, beide eingeschlossen: um eine Funktion mit `plot` zu zeichnen oder Werte auszuprobieren."),
+        ("The correlation (Pearson) of two lists of numbers of the same length: from -1 (they vary in opposite ways) to 1 (they vary together); about 0 when they are not linearly related.", "Die Korrelation (nach Pearson) zweier Zahlenlisten gleicher Länge: von -1 (sie ändern sich gegenläufig) bis 1 (sie ändern sich gemeinsam); etwa 0, wenn sie nicht linear zusammenhängen."),
+        ("The covariance of two lists of numbers of the same length, divided by their length like `variance`.", "Die Kovarianz zweier Zahlenlisten gleicher Länge, geteilt durch ihre Länge wie bei `variance`."),
+        ("Encodes a text in Base64 (its UTF-8 bytes), as in emails, web pages and the headers of HTTP requests.", "Kodiert einen Text in Base64 (seine UTF-8-Bytes), wie in E-Mails, Webseiten und den Headern von HTTP-Anfragen."),
+        ("Decodes a Base64 text: `Ok(text)`, or `Err(message)` if it is not valid Base64, or not a text once decoded.", "Dekodiert einen Base64-Text: `Ok(text)`, oder `Err(message)`, wenn es kein gültiges Base64 ist oder nach dem Dekodieren kein Text."),
+        ("Encodes a text to put it in a web address: every character but the letters, the digits and `-_.~` becomes `%` and two hexadecimal digits (a space is `%20`).", "Kodiert einen Text, um ihn in eine Webadresse zu setzen: jedes Zeichen außer Buchstaben, Ziffern und `-_.~` wird zu `%` und zwei hexadezimalen Ziffern (ein Leerzeichen ist `%20`)."),
+        ("Decodes a text of a web address (`%20`...): `Ok(text)`, or `Err(message)` if a `%` is not followed by two hexadecimal digits.", "Dekodiert einen Text einer Webadresse (`%20`...): `Ok(text)`, oder `Err(message)`, wenn auf ein `%` nicht zwei hexadezimale Ziffern folgen."),
+        ("Cube root: the number whose cube is x, for negative numbers too.", "Kubikwurzel: die Zahl, deren dritte Potenz x ist, auch für negative Zahlen."),
+        ("The length of the hypotenuse, or the distance from (0, 0) to the point (x, y): `sqrt(x * x + y * y)`, without overflow for very large numbers.", "Die Länge der Hypotenuse, oder der Abstand von (0, 0) zum Punkt (x, y): `sqrt(x * x + y * y)`, ohne Überlauf bei sehr großen Zahlen."),
+        ("Hyperbolic sine.", "Sinus hyperbolicus."),
+        ("Hyperbolic cosine.", "Kosinus hyperbolicus."),
+        ("Inverse hyperbolic sine: the number whose `sinh` is x.", "Areasinus hyperbolicus: die Zahl, deren `sinh` x ist."),
+        ("Inverse hyperbolic cosine: the number (0 or more) whose `cosh` is x, for x of 1 or more.", "Areakosinus hyperbolicus: die Zahl (größer oder gleich 0), deren `cosh` x ist, für x größer oder gleich 1."),
+        ("Inverse hyperbolic tangent: the number whose `tanh` is x, for x between -1 and 1 (both excluded).", "Areatangens hyperbolicus: die Zahl, deren `tanh` x ist, für x zwischen -1 und 1 (beide ausgeschlossen)."),
+        ("The last element for which f is true: `Some(element)`, or `None` if there is none.", "Das letzte Element, für das f wahr ist: `Some(element)`, oder `None`, wenn es keines gibt."),
+        ("The position of the last element for which f is true: `Some(position)`, or `None` if there is none.", "Die Position des letzten Elements, für das f wahr ist: `Some(position)`, oder `None`, wenn es keines gibt."),
+        ("Waits `seconds` seconds (0.5 for half a second), then the program goes on: between two requests to a web service, or to show something step by step.", "Wartet `seconds` Sekunden (0.5 für eine halbe Sekunde), dann läuft das Programm weiter: zwischen zwei Anfragen an einen Webdienst, oder um etwas Schritt für Schritt zu zeigen."),
+        ("A new random identifier (UUID version 4): a text of 36 characters, to name the records of a database or files. Its numbers come from `random` (`random_seed` makes them repeatable): it is not for secrets.", "Eine neue zufällige Kennung (UUID Version 4): ein Text aus 36 Zeichen, um die Datensätze einer Datenbank oder Dateien zu benennen. Ihre Zahlen kommen von `random` (`random_seed` macht sie wiederholbar): sie ist nicht für Geheimnisse gedacht."),
+        ("The SHA-256 digest of a text (of its UTF-8 bytes), in 64 hexadecimal digits: to check that a text or a file did not change. Not for passwords, which need a slow hash.", "Der SHA-256-Hashwert eines Textes (seiner UTF-8-Bytes), in 64 hexadezimalen Ziffern: um zu prüfen, dass sich ein Text oder eine Datei nicht geändert hat. Nicht für Passwörter, die einen langsamen Hash brauchen."),
+        ("Cuts a web address into its parts: `Ok({scheme, user, password, host, port, path, query, fragment})`, or `Err(message)` if it is not a web address. The parts are texts as written, still encoded (empty when absent: `url_decode` decodes them, `parse_query` reads the query), except `port`, an `Option`; the scheme and the host are in lower case.", "Zerlegt eine Webadresse in ihre Teile: `Ok({scheme, user, password, host, port, path, query, fragment})`, oder `Err(message)`, wenn es keine Webadresse ist. Die Teile sind Texte, wie sie geschrieben sind, noch kodiert (leer, wenn sie fehlen: `url_decode` dekodiert sie, `parse_query` liest die Query), außer `port`, einer `Option`; Schema und Host sind in Kleinbuchstaben."),
+        ("Reads the query of a web address (what follows the `?`, like `q=caf%C3%A9&page=2`) into a dict of texts, decoded (`+` is a space). A name given several times keeps its last value. Never fails: what cannot be decoded stays as it is.", "Liest die Query einer Webadresse (was auf das `?` folgt, wie `q=caf%C3%A9&page=2`) in ein Dict aus Texten, dekodiert (`+` ist ein Leerzeichen). Ein Name, der mehrmals vorkommt, behält seinen letzten Wert. Schlägt nie fehl: was sich nicht dekodieren lässt, bleibt, wie es ist."),
+        ("Writes a record or a dict as the query of a web address: `name=value` joined by `&`, encoded like `url_encode`. A value that is not a text is shown as `print` shows it; a list gives the name once for each element.", "Schreibt einen Record oder ein Dict als Query einer Webadresse: `name=value`, verbunden durch `&`, kodiert wie bei `url_encode`. Ein Wert, der kein Text ist, wird so gezeigt, wie `print` ihn zeigt; eine Liste gibt den Namen einmal für jedes Element."),
+        (r#"More functions on lists
+  find_index([3 8 5] is_even)          # Some(1)
+  sort_desc([3 1 2])                    # [3, 2, 1]  (sort_by_desc with a key)
+  tally(["a" "b" "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(words 3)                   # the 3 most frequent, with their counts
+  split_at([1 2 3] 1)                  # [[1], [2, 3]]
+  rotate_by([1 2 3] 1)                 # [2, 3, 1]
+  combinations([1 2 3] 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1 5 fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  permutations(xs)   cartesian_product(xs, ys)   unzip(pairs)   zip(xs, ys, zs)
+  filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#, r#"Weitere Funktionen für Listen
+  find_index([3 8 5] is_even)          # Some(1)
+  sort_desc([3 1 2])                    # [3, 2, 1]  (sort_by_desc mit einem Schlüssel)
+  tally(["a" "b" "a"])                  # dict("a" => 2, "b" => 1)
+  most_common(woerter 3)                 # die 3 häufigsten, mit ihrer Anzahl
+  split_at([1 2 3] 1)                  # [[1], [2, 3]]
+  rotate_by([1 2 3] 1)                 # [2, 3, 1]
+  combinations([1 2 3] 2)              # [[1, 2], [1, 3], [2, 3]]
+  iterate(1 5 fn(x) = x * 2)            # [1, 2, 4, 8, 16]
+  permutations(xs)   cartesian_product(xs, ys)   unzip(paare)   zip(xs, ys, zs)
+  filter_map(xs, f)   chunk_by(xs, f)   unique_by(xs, f)   count_by(xs, f)"#),
+        (r##"More functions on texts
+  format(3.14159 ".2f")         # "3.14"  (the format specs of Python: ">8", ",d", ".1%", "#x"...)
+  center("hi" 6 "*")           # "**hi**"
+  replace_first("a-b-c" "-" "+")          # "a+b-c"
+  occurrences("banana" "an")    # 2
+  remove_prefix("Mr Smith" "Mr ")          # "Smith"  (and remove_suffix)
+  split_once("key=value" "=")   # Some(["key", "value"])
+  snake_case("helloWorld")       # "hello_world"  (and camel_case, kebab_case)
+  capitalize_words("ada lovelace")          # "Ada Lovelace"
+  word_wrap(text 40)            # lines of at most 40 characters
+  to_base(255, 16)   from_base("ff", 16)    # "ff" and Ok(255)
+  edit_distance("kitten" "sitting")        # 3"##, r##"Weitere Funktionen für Texte
+  format(3.14159 ".2f")         # "3.14"  (die Formatspezifikationen von Python: ">8", ",d", ".1%", "#x"...)
+  center("hi" 6 "*")           # "**hi**"
+  replace_first("a-b-c" "-" "+")          # "a+b-c"
+  occurrences("banana" "an")    # 2
+  remove_prefix("Hr. Weber" "Hr. ")        # "Weber"  (und remove_suffix)
+  split_once("schluessel=wert" "=")        # Some(["schluessel", "wert"])
+  snake_case("helloWorld")       # "hello_world"  (und camel_case, kebab_case)
+  capitalize_words("ada lovelace")          # "Ada Lovelace"
+  word_wrap(text 40)            # Zeilen mit höchstens 40 Zeichen
+  to_base(255, 16)   from_base("ff", 16)    # "ff" und Ok(255)
+  edit_distance("haus" "maus")             # 1"##),
+        (r#"More functions on records and dicts
+  dig(data ["user" "langs" 0])           # Some(...), or None: deep inside
+  select_keys(person ["name" "age"])      # only these keys (reject_keys: without them)
+  merge_with(a b fn(x y) = x + y)        # f decides for a key in both
+  update(counts "apples" 1 fn(n) = n + 1)  # +1, or 1 when missing
+  invert({a: 1 b: 2})                      # dict(1 => "a", 2 => "b")
+  map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#, r#"Weitere Funktionen für Records und Dicts
+  dig(daten ["user" "langs" 0])          # Some(...) oder None: tief im Inneren
+  select_keys(person ["name" "alter"])    # nur diese Schlüssel (reject_keys: ohne sie)
+  merge_with(a b fn(x y) = x + y)        # f entscheidet bei einem Schlüssel in beiden
+  update(zaehler "aepfel" 1 fn(n) = n + 1)  # +1, oder 1, wenn er fehlt
+  invert({a: 1 b: 2})                      # dict(1 => "a", 2 => "b")
+  map_keys(r, upper)   symmetric_difference(s, t)   is_disjoint(s, t)"#),
+        (r#"More helpers
+  unwrap_or_else(x, fn(e) = ...)   # the default, computed only when it is needed
+  expect(x "a config file")       # like unwrap, with your message if it fails
+  all_ok(map(texts parse_int))    # Ok([...]), or the first Err
+  filter_map(xs f)                # the values of the Some(...) that f gives"#, r#"Weitere Helfer
+  unwrap_or_else(x, fn(e) = ...)   # der Standardwert, nur berechnet, wenn er gebraucht wird
+  expect(x "eine Konfigurationsdatei")  # wie unwrap, mit deiner Meldung, wenn es scheitert
+  all_ok(map(texte parse_int))    # Ok([...]) oder das erste Err
+  filter_map(xs f)                # die Werte der Some(...), die f liefert"#),
+        (r#"More on dates
+  add_months(date 1)                       # 31 January + 1 month: the end of February
+  day_of_year(date)                         # from 1 to 366
+  format_date(date "%d/%m/%Y %H:%M")       # with a pattern: %Y %m %d %H %M %S %B %A...
+  parse_date("29/02/2024" "%d/%m/%Y")      # Ok({year: 2024, month: 2, day: 29})"#, r#"Mehr zu Datumsangaben
+  add_months(datum 1)                      # 31. Januar + 1 Monat: das Ende des Februars
+  day_of_year(datum)                        # von 1 bis 366
+  format_date(datum "%d.%m.%Y %H:%M")      # mit einem Muster: %Y %m %d %H %M %S %B %A...
+  parse_date("29.02.2024" "%d.%m.%Y")      # Ok({year: 2024, month: 2, day: 29})"#),
+        // src/cli.rs
+        ("run a program; the words after the file are its arguments", "ein Programm ausführen; die Wörter nach der Datei sind seine Argumente"),
+        ("find problems without running the program", "Probleme finden, ohne das Programm auszuführen"),
+        ("run the tests of a file or of a folder", "die Tests einer Datei oder eines Ordners ausführen"),
+        ("give the code its official layout", "dem Code sein offizielles Layout geben"),
+        ("write the documentation of a file from its ## comments", "die Dokumentation einer Datei aus ihren ##-Kommentaren schreiben"),
+        ("apply the safe fixes of the problems that `rythme check` finds", "die sicheren Korrekturen der Probleme anwenden, die `rythme check` findet"),
+        ("show a calculation step by step", "eine Berechnung Schritt für Schritt zeigen"),
+        ("pause a program where you want and look at its values", "ein Programm anhalten, wo du willst, und seine Werte ansehen"),
+        ("the debugger for editors (Debug Adapter Protocol)", "der Debugger für Editoren (Debug Adapter Protocol)"),
+        ("exercises checked automatically", "automatisch geprüfte Übungen"),
+        ("create a project (rythme.toml, src/, tests/)", "ein Projekt anlegen (rythme.toml, src/, tests/)"),
+        ("download the dependencies of the project", "die Abhängigkeiten des Projekts herunterladen"),
+        ("guided tour of the language, step by step", "geführte Tour durch die Sprache, Schritt für Schritt"),
+        ("help on a topic, a function or an error code", "Hilfe zu einem Thema, einer Funktion oder einem Fehlercode"),
+        ("explain an error or warning code, like E003", "einen Fehler- oder Warncode erklären, wie E003"),
+        ("run a piece of code given on the command line", "ein Stück Code ausführen, das auf der Befehlszeile steht"),
+        ("interactive mode: try code line by line (also `rythme` alone)", "interaktiver Modus: Code Zeile für Zeile ausprobieren (auch `rythme` allein)"),
+        ("language server, for editors (VS Code, Neovim...)", "Sprachserver, für Editoren (VS Code, Neovim...)"),
+        ("server for AI assistants (Model Context Protocol)", "Server für KI-Assistenten (Model Context Protocol)"),
+        ("the version of Rythme", "die Version von Rythme"),
+        ("completion of the commands in a shell", "Vervollständigung der Befehle in einer Shell"),
+        ("the manual page of the command, to install with `man`", "die Handbuchseite des Befehls, zum Installieren für `man`"),
+        ("how to install the latest version of Rythme", "wie man die neueste Version von Rythme installiert"),
+        (r#"  --seed N        the same draws of random and shuffle on every run
+  --sandbox       no files, folders, environment variables nor network
+  --format json   the output and the errors as JSON, for tools
+  FILE may be `-`: the program is read from the standard input.
+  At the root of a project, `rythme run` runs its program."#, r#"  --seed N        dieselben Ziehungen von random und shuffle bei jedem Lauf
+  --sandbox       keine Dateien, Ordner, Umgebungsvariablen und kein Netzwerk
+  --format json   die Ausgabe und die Fehler als JSON, für Werkzeuge
+  DATEI darf `-` sein: das Programm wird von der Standardeingabe gelesen.
+  Im Wurzelordner eines Projekts führt `rythme run` dessen Programm aus."#),
+        (r#"  --format json   the problems as JSON, for tools and AI assistants
+  A folder checks every .ry file inside it; at the root of a project,
+  `rythme check` checks the files of the project.
+  Exit code: 0 without errors (warnings allowed), 1 with errors."#, r#"  --format json   die Probleme als JSON, für Werkzeuge und KI-Assistenten
+  Ein Ordner prüft jede .ry-Datei darin; im Wurzelordner eines Projekts
+  prüft `rythme check` die Dateien des Projekts.
+  Exit-Code: 0 ohne Fehler (Warnungen erlaubt), 1 mit Fehlern."#),
+        (r#"  --filter NAME   only the tests whose name contains NAME
+  --seed N        the same draws of random on every run
+  --watch         run the tests again whenever a file changes
+  --sandbox       no files, folders, environment variables nor network
+  --format json   the results as JSON
+  Exit code: 0 when every test passes, 1 otherwise."#, r#"  --filter NAME   nur die Tests, deren Name NAME enthält
+  --seed N        dieselben Ziehungen von random bei jedem Lauf
+  --watch         die Tests erneut ausführen, sobald sich eine Datei ändert
+  --sandbox       keine Dateien, Ordner, Umgebungsvariablen und kein Netzwerk
+  --format json   die Ergebnisse als JSON
+  Exit-Code: 0, wenn alle Tests bestehen, sonst 1."#),
+        (r#"  --check         only check, for continuous integration: exit code 1 when a
+                  file must be formatted
+  A folder formats all its .ry files; `-` reads the code from the standard
+  input and writes it formatted."#, r#"  --check         nur prüfen, für die kontinuierliche Integration: Exit-Code 1,
+                  wenn eine Datei formatiert werden muss
+  Ein Ordner formatiert alle seine .ry-Dateien; `-` liest den Code von der
+  Standardeingabe und schreibt ihn formatiert."#),
+        (r#"  --dry-run       only show the changes, as a diff
+  --all           also apply the fixes that are only likely
+  --format json   the fixes as JSON
+  Exit code: 0 when no error is left, 1 otherwise (with --dry-run: 1 when
+  something would change)."#, r#"  --dry-run       nur die Änderungen zeigen, als Diff
+  --all           auch die nur wahrscheinlichen Korrekturen anwenden
+  --format json   die Korrekturen als JSON
+  Exit-Code: 0, wenn kein Fehler übrig bleibt, sonst 1 (mit --dry-run: 1,
+  wenn sich etwas ändern würde)."#),
+        (r#"  --max N         show at most N steps
+  --width N       cut the lines at N characters (20 at least)
+  Without an expression, the steps of the last line of the file."#, r#"  --max N         höchstens N Schritte zeigen
+  --width N       die Zeilen nach N Zeichen umbrechen (mindestens 20)
+  Ohne Ausdruck die Schritte der letzten Zeile der Datei."#),
+        (r#"  In the debugger, `help` lists its commands: break, run, next, step,
+  finish, where, print, locals, quit."#, r#"  Im Debugger listet `help` seine Befehle auf: break, run, next, step,
+  finish, where, print, locals, quit."#),
+        ("  Your editor starts it: the VS Code extension does, for the debugger type `rythme`.", "  Dein Editor startet ihn: die VS-Code-Erweiterung tut das für den Debugger-Typ `rythme`."),
+        (r#"  list            the exercises, from the easiest
+  start NAME      write the file of an exercise, to complete
+  check FILE.ry   run its tests and give hints"#, r#"  list            die Übungen, von der leichtesten an
+  start NAME      die Datei einer Übung schreiben, zum Vervollständigen
+  check DATEI.ry  ihre Tests ausführen und Hinweise geben"#),
+        (r#"  `rythme help` lists the topics, `rythme help builtins` every function,
+  `rythme help llms` the whole language in one text (for AI assistants)."#, r#"  `rythme help` listet die Themen auf, `rythme help builtins` jede Funktion,
+  `rythme help llms` die ganze Sprache in einem Text (für KI-Assistenten)."#),
+        ("  Without a code, the list of the codes; --format json gives them all.", "  Ohne Code die Liste der Codes; --format json gibt sie alle aus."),
+        ("  The value of the last expression is shown, unless it is ().", "  Der Wert des letzten Ausdrucks wird angezeigt, außer wenn er () ist."),
+        ("  `:help` lists the commands of the interactive mode.", "  `:help` listet die Befehle des interaktiven Modus auf."),
+        ("  --verbose       also the system, the languages, the functions and the formats", "  --verbose       auch das System, die Sprachen, die Funktionen und die Formate"),
+        ("Then open a new shell.", "Öffne danach eine neue Shell."),
+        (r#"  rythme man > rythme.1 && man ./rythme.1
+  To install it: put rythme.1 in a folder of the manual pages, like
+  ~/.local/share/man/man1."#, r#"  rythme man > rythme.1 && man ./rythme.1
+  Zum Installieren: leg rythme.1 in einen Ordner der Handbuchseiten, wie
+  ~/.local/share/man/man1."#),
+        (r#"
+Options of every command: --lang CODE ({codes}), --no-color
+"#, r#"
+Optionen aller Befehle: --lang CODE ({codes}), --no-color
+"#),
+        (r#"See also `rythme help {topic}`.
+"#, r#"Siehe auch `rythme help {topic}`.
+"#),
+        (r#"
+Tools
+  rythme CMD --help         the options of a command, like rythme test --help
+  rythme run -              run the program read from the standard input
+  rythme check FOLDER       check every .ry file of a folder
+  rythme completions SHELL  completion of the commands: bash, zsh, fish, powershell
+  rythme man                the manual page of the command (rythme man > rythme.1)
+  rythme version --verbose  the version, with the system and what Rythme contains
+  rythme upgrade            how to install the latest version
+"#, r#"
+Werkzeuge
+  rythme CMD --help         die Optionen eines Befehls, wie rythme test --help
+  rythme run -              das Programm von der Standardeingabe ausführen
+  rythme check ORDNER       jede .ry-Datei eines Ordners prüfen
+  rythme completions SHELL  Vervollständigung der Befehle: bash, zsh, fish, powershell
+  rythme man                die Handbuchseite des Befehls (rythme man > rythme.1)
+  rythme version --verbose  die Version, mit dem System und dem Inhalt von Rythme
+  rythme upgrade            wie man die neueste Version installiert
+"#),
+        ("unknown option `{bad}` for `rythme version`: the option is --verbose", "unbekannte Option `{bad}` für `rythme version`: die Option ist --verbose"),
+        (r#"system: {os} {arch}
+languages of the messages: {codes} (now: {now})
+built-in functions: {functions} (and {ruby} Ruby names, {rebol} REBOL names)
+codes: {errors} errors ({e_range}), {warnings} warnings ({w_range})
+JSON output (--format json): version {json}
+program: {exe}
+"#, r#"System: {os} {arch}
+Sprachen der Meldungen: {codes} (jetzt: {now})
+eingebaute Funktionen: {functions} (und {ruby} Ruby-Namen, {rebol} REBOL-Namen)
+Codes: {errors} Fehler ({e_range}), {warnings} Warnungen ({w_range})
+JSON-Ausgabe (--format json): Version {json}
+Programm: {exe}
+"#),
+        ("`rythme upgrade` takes no argument, not `{bad}`", "`rythme upgrade` nimmt kein Argument, nicht `{bad}`"),
+        (r#"This is rythme {v} ({exe}).
+To install the latest version, type:
+  {how}
+The versions and what changed: https://github.com/maxlestage/Rythme/releases
+Within 1.x, a program that runs keeps running, with the same output.
+"#, r#"Das ist rythme {v} ({exe}).
+Um die neueste Version zu installieren, gib ein:
+  {how}
+Die Versionen und was sich geändert hat: https://github.com/maxlestage/Rythme/releases
+In den Versionen 1.x läuft ein Programm, das läuft, weiter, mit derselben Ausgabe.
+"#),
+        ("unknown shell `{s}`.", "unbekannte Shell `{s}`."),
+        ("which shell?", "welche Shell?"),
+        (r#"{what} Write one of bash, zsh, fish, powershell, like `rythme completions bash`
+see `rythme completions --help`"#, r#"{what} Schreib eine von bash, zsh, fish, powershell, wie `rythme completions bash`
+siehe `rythme completions --help`"#),
+        ("`rythme man` takes no argument, not `{bad}`", "`rythme man` nimmt kein Argument, nicht `{bad}`"),
+        ("Name", "Name"),
+        ("rythme - a small, purely functional language with help everywhere", "rythme - eine kleine, rein funktionale Sprache mit Hilfe überall"),
+        ("Synopsis", "Übersicht"),
+        ("Description", "Beschreibung"),
+        ("Rythme runs, checks, tests and formats programs written in Rythme. Without a command, `rythme` starts the interactive mode; `rythme file.ry` runs a program. Every message has a code explained by `rythme explain CODE`, and `rythme help` shows help on the language and its functions.", "Rythme führt in Rythme geschriebene Programme aus, prüft, testet und formatiert sie. Ohne Befehl startet `rythme` den interaktiven Modus; `rythme datei.ry` führt ein Programm aus. Jede Meldung hat einen Code, den `rythme explain CODE` erklärt, und `rythme help` zeigt Hilfe zur Sprache und ihren Funktionen."),
+        ("Commands", "Befehle"),
+        ("Options", "Optionen"),
+        ("the language of the messages: {codes}", "die Sprache der Meldungen: {codes}"),
+        ("messages without colors", "Meldungen ohne Farben"),
+        ("the help; after a command, its options", "die Hilfe; nach einem Befehl seine Optionen"),
+        ("Environment", "Umgebung"),
+        ("the language of the messages, before LC_ALL, LC_MESSAGES and LANG", "die Sprache der Meldungen, vor LC_ALL, LC_MESSAGES und LANG"),
+        ("when set, messages without colors", "wenn gesetzt, Meldungen ohne Farben"),
+        ("Exit status", "Exit-Status"),
+        ("0 when everything went well; 1 after an error in the program, a failed test or a problem found; 2 for a command written wrongly. A program may choose its own code with exit(code).", "0, wenn alles gut gegangen ist; 1 nach einem Fehler im Programm, einem fehlgeschlagenen Test oder einem gefundenen Problem; 2 für einen falsch geschriebenen Befehl. Ein Programm kann seinen eigenen Code mit exit(code) wählen."),
+        ("See also", "Siehe auch"),
+        ("no .ry file in `{a}`", "keine .ry-Datei in `{a}`"),
+        ("the standard input cannot be read: {e}", "die Standardeingabe kann nicht gelesen werden: {e}"),
+        // src/cli.rs: the commands of the package index
+        ("search the package index", "im Paketindex suchen"),
+        ("what the index says of a package: its versions, repository and license", "was der Index über ein Paket sagt: seine Versionen, sein Repository und seine Lizenz"),
+        ("add a package of the index to the project, then install it", "ein Paket aus dem Index zum Projekt hinzufügen und dann installieren"),
+        ("take the newest versions that the ranges of rythme.toml allow", "die neuesten Versionen nehmen, die die Bereiche in rythme.toml erlauben"),
+        ("check a package and print its entry for the index (sends nothing)", "ein Paket prüfen und seinen Eintrag für den Index ausgeben (sendet nichts)"),
+        (r#"  --update        download the newest copy of the index first
+  --format json   the packages found as JSON
+  Without words, every package of the index."#, r#"  --update        zuerst die neueste Kopie des Index herunterladen
+  --format json   die gefundenen Pakete als JSON
+  Ohne Wörter alle Pakete des Index."#),
+        (r#"  --update        download the newest copy of the index first
+  --format json   the entry of the package as JSON"#, r#"  --update        zuerst die neueste Kopie des Index herunterladen
+  --format json   der Eintrag des Pakets als JSON"#),
+        (r#"  NAME@RANGE      a range of versions, like mathlib@1.2; without a range,
+                  the newest version
+  rythme.toml gets the range, rythme.lock the exact commit and its checksum."#, r#"  NAME@BEREICH    ein Bereich von Versionen, wie mathlib@1.2; ohne Bereich
+                  die neueste Version
+  rythme.toml bekommt den Bereich, rythme.lock den genauen Commit und seine Prüfsumme."#),
+        (r#"  Without names, every dependency. rythme.toml does not change;
+  rythme.lock gets the new versions."#, r#"  Ohne Namen alle Abhängigkeiten. rythme.toml ändert sich nicht;
+  rythme.lock bekommt die neuen Versionen."#),
+        (r#"  Checks rythme.toml, the tag of the version (like v1.2.0), rythme check
+  and rythme test, then prints the entry and the steps of a pull request.
+  --verify FILE...  the index's own check of its entries (packages/NAME.toml)"#, r#"  Prüft rythme.toml, das Tag der Version (wie v1.2.0), rythme check
+  und rythme test, und gibt dann den Eintrag und die Schritte eines Pull Requests aus.
+  --verify DATEI...  die eigene Prüfung der Einträge durch den Index (packages/NAME.toml)"#),
+        (r#"the argument `{shown}` is not valid UTF-8: Rythme reads only names and words written in UTF-8; rename the file, or give the program its input another way"#, r#"das Argument `{shown}` ist kein gültiges UTF-8: Rythme liest nur Namen und Wörter in UTF-8; benennen Sie die Datei um, oder geben Sie dem Programm seine Eingabe auf andere Weise"#),
+        // REBOL: its names, read, the help of its habits, rythme help rebol
+        (" Same as: {} (its REBOL names).", " Dasselbe wie: {} (die REBOL-Namen)."),
+        ("{alias}  (the REBOL name of `{of}`: the same function)", "{alias}  (der REBOL-Name von `{of}`: dieselbe Funktion)"),
+        (r#"  Same as: {} (its REBOL names)
+"#, r#"  Dasselbe wie: {} (die REBOL-Namen)
+"#),
+        ("  REBOL names:", "  REBOL-Namen:"),
+        ("a word given as a value is a symbol, written with `:` before it: `:{word}` (REBOL writes `'{word}`); a text is written with double quotes: \"{word}\"", r#"ein Wort als Wert ist ein Symbol, mit `:` davor geschrieben: `:{word}` (REBOL schreibt `'{word}`); ein Text steht in doppelten Anführungszeichen: "{word}""#),
+        (r#"
+
+Same as: {} (its REBOL names)"#, r#"
+
+Dasselbe wie: {} (die REBOL-Namen)"#),
+        ("**{alias}** — the REBOL name of `{of}`: the same function", "**{alias}** — der REBOL-Name von `{of}`: dieselbe Funktion"),
+        ("a file is named by a text: `read(\"notes.txt\")` (REBOL writes `%notes.txt`); `%` gives the remainder of a division: `7 % 3`", r#"eine Datei wird durch einen Text benannt: `read("notizen.txt")` (REBOL schreibt `%notizen.txt`); `%` gibt den Rest einer Division: `7 % 3`"#),
+        ("to give `{name}` a value, write `{name} = ...`: `{name}: value` is how REBOL writes it, but in Rythme a `:` after a name starts its type, as in `total: Int = 10`", r#"um `{name}` einen Wert zu geben, schreib `{name} = ...`: `{name}: wert` ist die Schreibweise von REBOL, aber in Rythme beginnt ein `:` nach einem Namen seinen Typ, wie in `total: Int = 10`"#),
+        ("`either condition [a] [b]` is written `if condition then a else b`", r#"`either bedingung [a] [b]` schreibt man `if bedingung then a else b`"#),
+        ("functions are written `fn name(x) = x * 2`, without parameters `fn hello() = print(\"hi\")`, and anonymous ones `fn(x) = x * 2`", r#"Funktionen schreibt man `fn name(x) = x * 2`, ohne Parameter `fn hallo() = print("hallo")`, und anonyme `fn(x) = x * 2`"#),
+        ("`print` writes a whole line: build the text first, with `\"{{a}}{{b}}\"` or `rejoin([a, b])`", r#"`print` schreibt eine ganze Zeile: bau zuerst den Text, mit `"{{a}}{{b}}"` oder `rejoin([a, b])`"#),
+        ("Rythme has no loops. Work on the whole list (`each`, `map`, `filter`, `fold`, `1..10`), or write a recursive function. See `rythme help functional`.", r#"Rythme hat keine Schleifen. Arbeite mit der ganzen Liste (`each`, `map`, `filter`, `fold`, `1..10`), oder schreib eine rekursive Funktion. Siehe `rythme help functional`."#),
+        ("errors are values in Rythme: an operation that may fail gives `Ok(value)` or `Err(message)`; `unwrap_or(result, default)` keeps a default", r#"Fehler sind in Rythme Werte: eine Operation, die scheitern kann, gibt `Ok(wert)` oder `Err(meldung)`; `unwrap_or(ergebnis, standard)` behält einen Standardwert"#),
+        ("`exit()` stops the program (`quit` too)", r#"`exit()` beendet das Programm (`quit` auch)"#),
+        ("there is no `make`: write a record directly, like `{{name: \"Ada\", age: 36}}`, or a changed copy, `{{..person, age: 37}}`", r#"es gibt kein `make`: schreib direkt einen Record, wie `{{name: "Ada", alter: 36}}`, oder eine geänderte Kopie, `{{..person, alter: 37}}`"#),
+        ("write `get(list, i)`: an Option, with positions counted from 0 (`get(xs, 1)` is the second element); `xs[1]` stops the program if it is missing", r#"schreib `get(liste, i)`: eine Option, mit Positionen ab 0 gezählt (`get(xs, 1)` ist das zweite Element); `xs[1]` beendet das Programm, wenn es fehlt"#),
+        ("`rythme help builtins` lists every built-in function, and `help(f)` explains one", r#"`rythme help builtins` listet alle eingebauten Funktionen auf, und `help(f)` erklärt eine"#),
+        (r#"COMING FROM REBOL
+
+REBOL showed that a language can be small and still do a lot: a few words
+that say what they do, one word to read a file or a web page, values that
+can be printed and read again. Rythme keeps that spirit, with values that
+never change and errors that are values:
+
+  page = read("https://example.com")       # read http://example.com
+  write("copy.html" unwrap_or(page ""))  # write %copy.html page
+  name = ask("Your name? ")                # name: ask "Your name? "
+  print(rejoin(["Hello, " name "!"]))    # print rejoin ["Hello, " name "!"]
+  [1 2 3] |> probe |> sum |> print       # probe shows [1, 2, 3], then 6
+
+The same as in REBOL
+  words that say what they do   print probe ask read write now random
+  names with ?                  length? empty? exists? found? none? zero?
+                                even? odd? (a question gives true or false)
+  symbols                       :ok, like 'ok in REBOL (a word as a value)
+  blocks without commas         [1 2 3], f(a b), print a b, {name: "Ada" age: 36};
+                                first, last, reverse, sort, unique (first and
+                                last give an Option)
+  help                          help(map), rythme help map; rythme help
+                                builtins lists every function, as what does
+
+REBOL names, exactly the same functions (see rythme help builtins)
+  probe ask form mold rejoin length? uppercase lowercase foreach map_each
+  remove_each found? none? write exists? info? delete make_dir enbase
+  debase dehex wait quit. read gives the text of a file, or of a web
+  address. A REBOL name with a - is written with _: remove_each.
+
+What is written differently
+  x: 10                         x = 10 (x: Int = 10 gives its type too)
+  %notes.txt                    "notes.txt": a file is named by a text
+  'ok                           :ok
+  func [x] [x * 2]              fn(x) = x * 2, or fn double(x) = x * 2
+  does [print "hi"]             fn hello() = print("hi")
+  either c [a] [b], if c [a]    if c then a else b: if gives a value, so
+                                it always has an else
+  loop 3 [...], repeat i 3 [...]
+                                (1..3).each do |i| ... end
+  foreach x xs [...]            foreach xs do |x| ... end, or xs.each(f)
+  f a b                         f(a b), or f a b at the start of a line
+  ; a comment                   # a comment
+  obj/field, make object! [...] obj.field, and records {name: "Ada", age: 36}
+  append xs 4                   push(xs, 4): a new list, xs stays as it was
+  pick xs 2                     get(xs, 1): an Option, positions from 0
+  attempt [...], try            Ok(x) or Err(message), and ? to pass it on
+  switch, case                  match value ... end, one case per line
+  parse                         split, find_all, captures: regular
+                                expressions (rythme help regex)
+
+Operators follow the rules of mathematics, not the order of the line:
+1 + 2 * 3 is 7 (REBOL gives 9). Write (1 + 2) * 3 for 9."#, r#"VON REBOL KOMMEND
+
+REBOL hat gezeigt, dass eine Sprache klein sein und trotzdem viel können
+kann: ein paar Wörter, die sagen, was sie tun, ein einziges Wort, um eine
+Datei oder eine Webseite zu lesen, Werte, die man ausgeben und wieder lesen
+kann. Rythme bewahrt diesen Geist, mit Werten, die sich nie ändern, und
+Fehlern, die Werte sind:
+
+  page = read("https://example.com")       # read http://example.com
+  write("copy.html" unwrap_or(page ""))  # write %copy.html page
+  name = ask("Dein Name? ")                # name: ask "Dein Name? "
+  print(rejoin(["Hallo, " name "!"]))    # print rejoin ["Hallo, " name "!"]
+  [1 2 3] |> probe |> sum |> print       # probe zeigt [1, 2, 3], dann 6
+
+Wie in REBOL
+  klare Wörter                  print probe ask read write now random
+  Namen mit ?                   length? empty? exists? found? none? zero?
+                                even? odd? (eine Frage gibt true oder false)
+  Symbole                       :ok, wie 'ok in REBOL (ein Wort als Wert)
+  Blöcke ohne Kommas            [1 2 3], f(a b), print a b, {name: "Ada" alter: 36};
+                                first, last, reverse, sort, unique (first und
+                                last geben eine Option)
+  die Hilfe                     help(map), rythme help map; rythme help
+                                builtins listet alle Funktionen, wie what
+
+REBOL-Namen, genau dieselben Funktionen (siehe rythme help builtins)
+  probe ask form mold rejoin length? uppercase lowercase foreach map_each
+  remove_each found? none? write exists? info? delete make_dir enbase
+  debase dehex wait quit. read gibt den Text einer Datei oder einer
+  Webadresse. Ein REBOL-Name mit - wird mit _ geschrieben: remove_each.
+
+Was anders geschrieben wird
+  x: 10                         x = 10 (x: Int = 10 gibt auch den Typ an)
+  %notes.txt                    "notes.txt": eine Datei wird durch einen
+                                Text benannt
+  'ok                           :ok
+  func [x] [x * 2]              fn(x) = x * 2, oder fn double(x) = x * 2
+  does [print "hallo"]          fn hallo() = print("hallo")
+  either c [a] [b], if c [a]    if c then a else b: if gibt einen Wert,
+                                hat also immer ein else
+  loop 3 [...], repeat i 3 [...]
+                                (1..3).each do |i| ... end
+  foreach x xs [...]            foreach xs do |x| ... end, oder xs.each(f)
+  f a b                         f(a b), oder f a b am Anfang einer Zeile
+  ; ein Kommentar               # ein Kommentar
+  obj/feld, make object! [...]  obj.feld, und Records {name: "Ada", alter: 36}
+  append xs 4                   push(xs, 4): eine neue Liste, xs bleibt
+                                unverändert
+  pick xs 2                     get(xs, 1): eine Option, Positionen ab 0
+  attempt [...], try            Ok(x) oder Err(meldung), und ? zum
+                                Weitergeben
+  switch, case                  match wert ... end, ein Fall pro Zeile
+  parse                         split, find_all, captures: reguläre
+                                Ausdrücke (rythme help regex)
+
+Die Operatoren folgen den Regeln der Mathematik, nicht der Reihenfolge der
+Zeile: 1 + 2 * 3 ist 7 (REBOL gibt 9). Schreib (1 + 2) * 3 für 9."#),
+        ("Reads a whole text from a file or from a web address (http:// or https://), as REBOL does: `Ok(text)`, or `Err(message)`. The same as `read_file` for a file and `http_get` for a web address; `write` writes it back.", r#"Liest einen ganzen Text aus einer Datei oder von einer Webadresse (http:// oder https://), wie REBOL: `Ok(text)` oder `Err(meldung)`. Dasselbe wie `read_file` für eine Datei und `http_get` für eine Webadresse; `write` schreibt ihn zurück."#),
+    ],
+}

@@ -1,0 +1,12 @@
+# Heroku with the emk/rust buildpack
+# (https://elements.heroku.com/buildpacks/emk/heroku-buildpack-rust): the website of
+# Rythme with its playground, built from site/ and playground/. heroku.yml (the
+# "container" stack, with the Dockerfile) remains the other way to deploy it.
+#
+# The buildpack sources this file, installs Rust, then would run a plain `cargo
+# build --release` at the root, which builds the interpreter only. That build is
+# skipped: heroku-build.sh builds the playground (WebAssembly) and the server
+# instead, once Rust is installed.
+VERSION=stable
+RUST_SKIP_BUILD=1
+trap 'status=$?; if [ "$status" -eq 0 ]; then ENV_DIR="$ENV_DIR" bash "$BUILD_DIR/heroku-build.sh" || exit 1; fi' EXIT

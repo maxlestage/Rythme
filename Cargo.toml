@@ -1,0 +1,50 @@
+[package]
+name = "rythme"
+version = "1.0.0"
+edition = "2021"
+description = "Rythme: a simple, purely functional programming language with help everywhere."
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/maxlestage/Rythme"
+homepage = "https://maxlestage.github.io/Rythme/"
+keywords = ["language", "interpreter", "functional", "education", "teaching"]
+categories = ["compilers", "command-line-utilities", "development-tools"]
+# What `cargo publish` sends to crates.io: the interpreter, its manual and its
+# examples. The website (site/), the playground, the editors, the benchmarks,
+# the installers and the tests stay in the repository.
+include = [
+    "/src/**",
+    "/docs/**",
+    "/examples/**",
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/README.md",
+    "/README.fr.md",
+    "/README.es.md",
+    "/CHANGELOG.md",
+    "/LICENSE",
+]
+
+[[bin]]
+name = "rythme"
+path = "src/main.rs"
+
+[dependencies]
+# The `t!` macro: each message in every language of src/i18n/ (no dependency).
+rythme-macros = { path = "macros", version = "1.0.0" }
+
+[features]
+# Only English and French compiled in; the catalogs of the other languages are
+# registered while running (`lang::register`). For the website's playground in
+# WebAssembly, which fetches the catalog of its page: every language compiled in
+# would be most of its download.
+runtime-catalogs = []
+
+# The interactive mode needs a terminal; the web playground (wasm32) has none.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rustyline = "19"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

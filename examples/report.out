@@ -1,0 +1,20 @@
+============= Sales =============
+item     | city   |        amount
+tea      | Lyon   |         12.50
+coffee   | Paris  |         30.00
+tea      | Paris  |          7.25
+cocoa    | Lyon   |         18.00
+coffee   | Lille  |      1,250.50
+total    |        |      1,318.25
+
+Most sold: [["tea", 2], ["coffee", 2]]
+Sales by city: dict("Lille" => 1, "Lyon" => 2, "Paris" => 2)
+Best sale: coffee in Lille
+Share of coffee: 97.1%
+Next report: Thursday 29 February 2024
+
+Every function used here is pure:
+it gives a new value and changes
+nothing, so the report can be
+tested like the rest of the
+program.

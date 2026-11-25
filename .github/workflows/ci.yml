@@ -1,0 +1,205 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Format
+        run: cargo fmt --check
+      - name: Lint
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Test
+        run: cargo test
+      - name: Run the examples with the release build
+        shell: bash
+        run: |
+          cargo build --release
+          for f in examples/*.ry; do ./target/release/rythme "$f" > /dev/null; done
+          ./target/release/rythme test examples/testing.ry
+
+  vscode:
+    name: VS Code extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build rythme
+        run: cargo build
+      - name: Load the extension and talk to `rythme lsp`
+        working-directory: editors/vscode
+        run: |
+          npm ci
+          npm run check
+
+  tree-sitter:
+    name: Tree-sitter grammar and Zed extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+          components: clippy, rustfmt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build rythme
+        run: cargo build
+      - name: The generated parser is up to date
+        working-directory: editors/tree-sitter-rythme
+        run: |
+          npm ci
+          npm run generate
+          git diff --exit-code -- src
+      - name: Corpus and highlight tests, examples and manual samples, queries
+        working-directory: editors/tree-sitter-rythme
+        run: npm test
+      - name: Zed extension
+        working-directory: editors/zed
+        run: |
+          cargo fmt --check
+          cargo clippy --target wasm32-wasip1 -- -D warnings
+          cargo build --release --target wasm32-wasip1
+
+  playground:
+    name: Web playground (WebAssembly)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Build
+        run: playground/build.sh
+
+  website:
+    name: Website (Heroku buildpack)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+      - name: Access to the git dependencies of Paquets
+        # Optional: a REPOS_TOKEN secret if some of them are private (see pages.yml).
+        env:
+          REPOS_TOKEN: ${{ secrets.REPOS_TOKEN }}
+        run: |
+          if [ -n "$REPOS_TOKEN" ]; then
+            echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> "$GITHUB_ENV"
+            git config --global credential.https://github.com.helper \
+              '!f() { test "$1" = get && echo username=x-access-token && echo "password=$REPOS_TOKEN"; }; f'
+          fi
+      - name: Format, lint and test
+        working-directory: site
+        run: |
+          cargo fmt --all --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test
+      - name: The browser side (site/client), natively and as each of its bundles
+        working-directory: site
+        run: |
+          cargo clippy -p rythme-site-client --all-targets --features playground,sw,host-imports,precompress -- -D warnings
+          for bundle in page playground sw; do
+            cargo clippy -p rythme-site-client --target wasm32-unknown-unknown --features "$bundle" -- -D warnings
+          done
+          cargo test -p rythme-site-client --features playground,sw
+      - name: Build as Heroku does (RustConfig)
+        run: ./heroku-build.sh
+      - name: Start as Heroku does (Procfile) and check the pages
+        run: |
+          PORT=5000 bash -c "$(sed -n 's/^web: //p' Procfile)" &
+          for _ in $(seq 1 50); do curl -fs -o /dev/null localhost:5000/en/ && break; sleep 0.2; done
+          for path in /en/ /fr/ /en/learn/ /fr/examples/ /en/playground/ /examples.json /sitemap.xml /site.css; do
+            curl -fsS -o /dev/null -w "%{http_code} $path\n" "localhost:5000$path"
+          done
+          # The browser side: its bundles, the playground's worker, the service worker.
+          for path in /pkg/site_bg.wasm /pkg/playground_bg.wasm /pkg/sw_bg.wasm; do
+            curl -fsS -o /dev/null -w '%{content_type}\n' "localhost:5000$path" | grep application/wasm
+          done
+          for path in /pkg/site.js /pkg/playground.js /pkg/worker.js /sw.js /pkg/sw.js /pkg/sw_wasm.js; do
+            curl -fsS -o /dev/null -w '%{content_type}\n' "localhost:5000$path" | grep javascript
+          done
+          # Compressed: the bundles from the copies made by site/build.sh, the pages on the fly.
+          for path in /pkg/playground_bg.wasm /pkg/site.js /site.css /en/ /llms-full.txt; do
+            curl -fsS -o /dev/null -H 'Accept-Encoding: br' -w "%header{content-encoding} $path\n" "localhost:5000$path" | grep '^br '
+          done
+
+  browser:
+    name: Website in Chromium (layout, phones, themes, offline app)
+    # Playwright installs its browser only on the Ubuntu versions it knows:
+    # ubuntu-latest moved to 26.04, which playwright@1.56.1 refuses.
+    runs-on: ubuntu-24.04
+    env:
+      PLAYWRIGHT: playwright@1.56.1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Access to the git dependencies of Paquets
+        env:
+          REPOS_TOKEN: ${{ secrets.REPOS_TOKEN }}
+        run: |
+          if [ -n "$REPOS_TOKEN" ]; then
+            echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> "$GITHUB_ENV"
+            git config --global credential.https://github.com.helper \
+              '!f() { test "$1" = get && echo username=x-access-token && echo "password=$REPOS_TOKEN"; }; f'
+          fi
+      - name: Build the site and its playground
+        run: ./heroku-build.sh
+      - name: Install Playwright and its Chromium
+        run: |
+          npm install --prefix "$RUNNER_TEMP/playwright" --no-save "$PLAYWRIGHT"
+          "$RUNNER_TEMP/playwright/node_modules/.bin/playwright" install --with-deps chromium
+          echo "NODE_PATH=$RUNNER_TEMP/playwright/node_modules" >> "$GITHUB_ENV"
+      - name: No horizontal scroll, the themes and their contrast (tests/pwa/layout.js)
+        working-directory: site
+        run: node tests/pwa/layout.js target/release/rythme-site
+      - name: The installable app, offline and updated (tests/pwa/check.js)
+        working-directory: site
+        run: node tests/pwa/check.js target/release/rythme-site
+      - name: As real phones show it (tests/pwa/mobile.js)
+        working-directory: site
+        run: node tests/pwa/mobile.js target/release/rythme-site
+
+  docker:
+    name: Website (Docker image)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: docker build -t rythme-site .
+      - name: Start with a port chosen as Heroku does and check the pages
+        run: |
+          docker run -d --name site -e PORT=5000 -p 5000:5000 rythme-site
+          for _ in $(seq 1 50); do curl -fs -o /dev/null localhost:5000/en/ && break; sleep 0.2; done
+          for path in /en/ /fr/ /en/playground/ /examples.json; do
+            curl -fsS -o /dev/null -w "%{http_code} $path\n" "localhost:5000$path"
+          done
+          for path in /pkg/site_bg.wasm /pkg/playground_bg.wasm /pkg/sw_bg.wasm; do
+            curl -fsS -o /dev/null -w '%{content_type}\n' "localhost:5000$path" | grep application/wasm
+          done
+          curl -fsS -o /dev/null -w '%{content_type}\n' localhost:5000/pkg/sw_wasm.js | grep javascript
+          curl -fsS -o /dev/null -H 'Accept-Encoding: br' -w '%header{content-encoding}\n' localhost:5000/pkg/playground_bg.wasm | grep -x br
+          docker logs site

@@ -1,0 +1,23 @@
+# winget manifest of Rythme (template filled in by packaging/render.sh).
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.locale.1.6.0.schema.json
+PackageIdentifier: Rythme.Rythme
+PackageVersion: "@VERSION@"
+PackageLocale: fr-FR
+Publisher: Rythme
+PackageName: Rythme
+License: MIT
+ShortDescription: Un langage de programmation simple, purement fonctionnel, avec de l'aide partout.
+Description: >-
+  Rythme est un langage de programmation pour apprendre et pour travailler :
+  plus simple que Python, purement fonctionnel, sûr (pas de null, pas
+  d'exceptions), avec des messages et de l'aide en français et en anglais. Le
+  programme rythme lance, vérifie, teste et met en forme les programmes, et
+  sert de serveur de langage aux éditeurs.
+Tags:
+  - langage-de-programmation
+  - interpreteur
+  - fonctionnel
+  - enseignement
+ReleaseNotesUrl: https://github.com/maxlestage/Rythme/releases/tag/v@VERSION@
+ManifestType: locale
+ManifestVersion: 1.6.0

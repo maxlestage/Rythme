@@ -1,0 +1,304 @@
+# Roadmap to Rythme 1.0
+
+*En français : la feuille de route vers Rythme 1.0. Chaque point a été fait,
+testé et fusionné l'un après l'autre ; toutes les cases sont cochées : c'est
+Rythme 1.0 (voir [`CHANGELOG.md`](CHANGELOG.md)). Des idées pour la suite,
+sans promesse, sont à la fin.*
+
+**Every item is done: this is Rythme 1.0.** What it contains is in
+[`CHANGELOG.md`](CHANGELOG.md), what 1.x guarantees in the
+[stability promise](README.md#stability-promise), and ideas for what comes
+next, without promises, under [After 1.0](#after-10).
+
+Rythme 0.1 had the language, the checker, the formatter, the language server,
+the playground and the manual. This list was what remained for a **complete**
+language: one that universities everywhere and teams at work can adopt. Items
+were worked on in order, one at a time, each one fully (code, checks, messages
+in every supported language, `rythme help`, the reference manual in English
+and French, tests, CI green) before it was checked.
+
+The rules of the language stay the rules of every item: simpler than Python,
+purely functional, safe like Rust (no `null`, no exceptions), help everywhere.
+No new keyword or syntax unless an item says so and nothing simpler works.
+
+## Language
+
+- [x] **Modules with names.** `use geometry` (or `use shapes/circle`,
+  `use "geometry.ry" as geo`), then `geometry.area(2)`; names starting with
+  `_` stay private to their file; the checker, the formatter, the language
+  server (completion after `use ` and `geo.`, a quick fix adding a missing
+  `use`) and the manual know it. Plain `use "x.ry"` keeps working.
+- [x] **Ruby style.** Blocks given to calls (`xs.map do |x| x * 2 end`,
+  `xs.select { |x| x > 2 }`), method chains without parentheses and over
+  several lines (`xs.select(even?).sum`; a field wins over a function),
+  names ending with `?` (`even?`, `fn adult?(p)`) with a precise rule
+  against the `?` operator, `unless ... then ... else`, symbols (`:ok`),
+  `"#{x}"` in texts, and the Ruby names of the library (`puts`, `upcase`,
+  `select`, `reduce`, `size`...) as real built-in names; known by the
+  checker, the formatter, the language server, the editors' grammars,
+  `rythme help ruby` and the manual. Every existing program keeps working.
+  - [x] **Calls without parentheses.** `puts "Hello"`, `print x, y`,
+    `assert_eq total, 42`, `each xs do |x| ... end` at the start of a
+    statement or of a result (a branch of `if`/`unless`, a case of `match`,
+    the body after the `=` of a function, a lambda or a test:
+    `if ok then puts "yes" else puts "no"`); `puts [1]` and `puts -1` call too, but `x [0]` and `x -1` stay
+    an index and a subtraction when the code gives `x` a value (as in Ruby),
+    and `rythme fmt` writes those `x[0]` and `x - 1`. Interpreter, checker,
+    formatter, language server (signature help), Tree-sitter and VS Code
+    grammars, `rythme steps`, `rythme help ruby` and the manual (3.15).
+- [x] **Patterns on ranges and texts.** `1..9 -> ...` in `match` (Int and
+  Float bounds, exhaustiveness knows nothing new), and a text prefix pattern
+  only if it stays simple; the checker reports overlapping or empty ranges.
+  Done as `1..9`, `-5..-1`, `0.0..0.5` (both ends included, Int or Float
+  values) and `"Mr " + name`, in `match`, function definitions and
+  definitions; W004 for empty ranges and ranges handled by the cases before,
+  W010 for ranges that overlap.
+- [x] **Whole numbers without limit.** Int grows beyond 64 bits instead of
+  E012 (the way Python does), with the small-number fast path kept; `pow`,
+  `gcd`, `text`, `parse_int`, JSON and comparisons with Float are exact.
+- [x] **Types of parameters, inferred.** `rythme check` infers what a
+  function's parameters must be from how it uses them, and reports a call
+  that always fails (`area("big")` when `area` multiplies), with zero false
+  positives; the language server shows the inferred signature on hover.
+
+## Library
+
+- [x] **Dates and times.** `now()`, `today()`, dates as records
+  (`{year, month, day, hour, minute, second}`), ISO 8601 parsing and
+  printing, differences and additions in days/seconds, day of the week;
+  UTC plus the local offset when the system gives it; no dependency if
+  possible.
+- [x] **Dictionaries and sets.** Keys of any comparable value (not only
+  texts): `dict(...)`, `get`, `put`, `has`, `keys`... on them, and sets
+  (`set(list)`, `union`, `intersection`, `difference`), printed and compared
+  like the other values, persistent (no mutation), with the checker's types.
+- [x] **Text tools.** Searching and splitting with simple patterns (wildcards
+  or a small, well-explained regular expression subset), `format` of numbers
+  (thousands separators, padding), `lines`/`words` helpers if missing,
+  `trim_start`/`trim_end`, case-insensitive comparison.
+- [x] **Files and the system.** Listing a folder (`list_folder`), creating
+  folders (`create_folder`), file information (`file_info`), deleting one
+  file and never a folder (`delete_file`), reading lines of stdin until the
+  end (`input_lines`), `exit` codes documented (`rythme help system`),
+  command-line options (`options()`: `args` parsed into a record), paths
+  joined and split portably (`join_path`, `split_path`).
+
+## Help everywhere, for everyone
+
+- [x] **Messages in Spanish.** The translation system takes any number of
+  languages (catalogs instead of two-argument `t!`), with tests that every
+  message exists in every language; then every message, help topic and
+  `rythme learn` in Spanish (`--lang es`). Done: `t!(en, fr)` stays, each
+  other language is a catalog `src/i18n/<code>.rs` checked by
+  `tests/i18n.rs` (see CONTRIBUTING); the 30 exercises too (statement,
+  hints, test names, the file `rythme exercise start` writes, with a
+  reference solution in each language checked by `tests/exercises.rs`).
+- [x] **Messages in German, Portuguese and Chinese.** `src/i18n/de.rs`,
+  `pt.rs` (Brazilian, "você") and `zh.rs` (simplified Chinese) translate all
+  the texts, checked complete by `tests/i18n.rs`; `--lang de|pt|zh`,
+  `LANG=de_*|pt_*|zh_*`, topic names in each language, the files of
+  `rythme new`, the VS Code setting and its texts, README.de.md, README.pt.md
+  and README.zh.md. The `^` under a mistake are placed by display width, so
+  Chinese lines stay aligned.
+- [x] **The website and the playground in every language.** The site has
+  `/es/`, `/de/`, `/pt/` and `/zh/` beside `/fr/` and `/en/`: every text
+  (`site/src/i18n/<code>.rs`, a missing one does not compile), the pieces of
+  code of the home page, the tour and the playground written in each language
+  and run by the tests through the interpreter in that language, a compact
+  language menu, `Accept-Language`, manifests, screenshots, service worker,
+  sitemap and `hreflang`, offline pages and the static export. The playground
+  speaks the language of its page; the guide for teachers is shown in English,
+  with a note, where it has no translation; Chinese falls back on the system's
+  fonts.
+- [x] **Step-by-step evaluation for teaching.** `rythme steps file.ry
+  ["expression"]` (`rythme etapes`), `:steps` in the REPL and the Steps
+  button of the playground show how an expression is reduced step by step
+  (`fib(3)` → `fib(2) + fib(1)` → ...), bounded, in every language.
+- [x] **Exercises.** `docs/exercises/` with graded exercises for a first
+  course (each with tests that `rythme test` runs and hints), and
+  `rythme exercise` (list, start, check) if it stays simple, in every
+  language of the messages.
+
+## Tools
+
+- [x] **`rythme doc`.** Documentation of a file or a folder from its `##`
+  comments, types and signatures, as Markdown and HTML, linked to the
+  built-ins' docs.
+- [x] **Better `rythme test`.** A folder of files, a filter by name,
+  `--watch`, a summary with times, and property tests
+  (`check_all(fn(x) = ..., generator)`) with shrinking of the failing case.
+- [x] **Language server extras.** Inferred types as inlay hints, semantic
+  highlighting, code lenses to run a test or a file, workspace symbols
+  (and folding, selection ranges).
+- [x] **A Tree-sitter grammar** for Neovim, Helix and Zed highlighting, with
+  its tests, and the Zed extension completed.
+- [x] **Projects and packages.** `rythme new name`, a `rythme.toml` manifest,
+  dependencies from git or a path with a lock file, `use "package/file.ry"`,
+  `rythme run`/`test` at the project root.
+
+## Speed and release
+
+- [x] **Faster where it still hurts.** Building texts with `+` and adding to
+  lists in constant amortized time, cheaper calls between local functions;
+  measured with `bench/`, no behavior change.
+- [x] **Installers.** A `curl | sh` / PowerShell install script using the
+  release binaries, a Homebrew formula and a winget manifest in the
+  repository, crates.io metadata, and a workflow publishing the VS Code
+  extension when a `VSCE_PAT` secret exists (skipped otherwise).
+- [x] **Rythme 1.0.** Version 1.0.0 everywhere, a CHANGELOG, a stability
+  promise in the README, the manual and the website up to date. Opened as a
+  pull request; the `v1.0.0` tag is left to the owner. Done: every package
+  (interpreter, macros, playground, site, VS Code, Tree-sitter, Zed) is at
+  1.0.0, [`CHANGELOG.md`](CHANGELOG.md) lists what 1.0 contains, the READMEs
+  give the stability promise of 1.x, and
+  [CONTRIBUTING](CONTRIBUTING.md#releasing) explains how to tag `v1.0.0` and
+  what the release workflows then do.
+
+## After 1.0
+
+Ideas, not promises: each one would be weighed against the rules above, and
+none may break the [stability promise](README.md#stability-promise) of 1.x.
+
+- [x] **Tasks: `async fn` and `await`**, functions that run at the same
+  time on the other cores, without locks since values never change; no new
+  reserved word (`async` only before `fn`, `await` a built-in function also
+  written without parentheses), so every 1.x program keeps its meaning
+  (manual 4.11).
+- [x] **A bytecode virtual machine**, for programs several times faster that
+  print exactly the same thing. Done: functions are compiled to register
+  instructions (`src/vm/`), with instructions of their own for the common
+  cases and a cache of the names of the program; the programs of `bench/`
+  run up to about twice as fast as with 1.0 and print the same.
+  - [x] Hardened: compared with the tree-walking interpreter of 1.0 on every
+    program of the repository and on millions of generated ones (`run` and
+    `rythme test`, the debugger, `rythme steps`, the REPL), every kind of
+    instruction run under Miri, and deep programs measured in the
+    playground's WebAssembly (it needs less stack than 1.0).
+  - [x] Cheaper calls: built-in functions called directly, functions given
+    to `map`, `fold`... called in place, the positions of fields kept by the
+    instructions that read and update them (`bench/`: `count`, `fib`,
+    `match`, `records` about twice as fast as 1.0).
+  - [x] Faster still: values of 16 bytes instead of 24; values of types
+    and records that keep their first fields in place (one block of memory
+    instead of two); lists of Floats made by `matmul`, `vector_scale`...
+    kept as numbers; a value stack that keeps its room, so that functions
+    given to `map` or `fold` no longer write their registers again; values
+    built by their constructors and functions of a group that call each
+    other last without the path of calls (`bench/`: `local` 1.7 times as
+    fast as 1.0, `bst` 1.6, the others 1.05 to 1.25; the playground needs
+    no more stack than 1.0).
+  - [ ] Calls that do not go through a Rust call each (tried as one loop
+    for every frame: in safe Rust it was slower), and short texts kept in
+    the value itself (most of the time left in `bench/text.ry` is one block
+    of memory per text).
+- [x] **Faster where the virtual machine cannot help**: regexes (an engine
+  that tries one way after the other with a table of the places reached,
+  same answers, `bench/regex.ry` about twice as fast), built-in functions
+  that copied texts too much, the start of `rythme` (30 % fewer
+  instructions for a small program), and the checker, the formatter and the
+  language server on long programs (no longer quadratic: a program of
+  25 000 lines is checked in less than half the time).
+  - [ ] The start, further: the catalogs of messages are tables of
+    pointers that the system fixes at every start (about a third of the
+    page faults of `rythme hello.ry`); written as one text with positions,
+    they would cost nothing until a language uses them.
+- [x] **Types written by hand where they help**: optional, checked by
+  `rythme check`, built on the inference that exists; code without them
+  stays as it is. Done: `fn area(w: Int, h: Int) -> Int`, `total: Float =
+  0.0`, `Circle(radius: Float)`, `do |n: Int|`, with type variables (`a`);
+  E027 for a value that surely does not fit or a type that does not exist;
+  every 1.0 program keeps its syntax tree (manual 4.10, `rythme help types`).
+  - [x] **Types with parameters**: `type Tree(a) = Leaf | Node(left:
+    Tree(a), value: a, right: Tree(a))`, then `Tree(Int)` in written types,
+    checked (E027) and used like `List(Int)`; type names completed and
+    explained by the language server, `help(Node)` with the types of the
+    fields, the debugger naming parameters written as patterns. Type
+    variables stay one letter: a lowercase word written as a type is taken
+    for a type named as in another language (manual 4.10).
+- [x] **A package index**: finding and sharing packages by name, beside the
+  dependencies from a repository or a folder of `rythme.toml`. Done, with no
+  server: the index is a public git repository with one file per package
+  (`packages/NAME.toml`, its versions with their tags, commits and
+  checksums), copied into `RYTHME_HOME/index` and read without a network;
+  `rythme search`, `info` (both with `--format json`), `add NAME[@RANGE]`
+  (`{ version = "^1.2.0" }` in `rythme.toml`, the exact commit and checksum
+  in `rythme.lock`), `update` within the ranges of semantic versioning, and
+  `publish`, which checks a package and prints its entry and the steps of a
+  pull request, never sending anything (`--verify` for the index's own
+  checks). Names, addresses (https, ssh, file) and checksums are checked,
+  git runs without hooks, and nothing of a package runs when it is
+  installed (manual 7.11, `rythme help packages`). Left to the owner:
+  creating `https://github.com/maxlestage/rythme-index` from
+  [`packaging/index-template/`](packaging/index-template).
+- [x] **A debugger in the editors** (breakpoints, values of the names), building
+  on `rythme steps` and the language server. Done: `rythme debug file.ry`
+  in a terminal (breakpoints on lines and functions, `next`, `step`,
+  `finish`, `where` with the arguments and the depth of recursion, `print`
+  of any expression with values only, `locals`, a pause on errors, tail
+  calls shown as such; `rythme help debug`), and `rythme dap`, the Debug
+  Adapter Protocol, used by the VS Code extension for the debugger type
+  `rythme`. Without the debugger, programs run at the same speed.
+- **More languages of the messages**, and the guide for teachers translated
+  where it is not yet.
+  - [x] **The guide for teachers in Spanish, German, Portuguese and
+    Chinese** (`docs/teaching.*.md`), up to date with grading, the
+    playground, the debugger and AI assistants, each shown on its page of
+    the website; a language added later shows the English guide with a note
+    until it has its own.
+- **More of the library**: CSV, HTTP requests, `random` with a seed that a
+  program can repeat, with the same care for errors as values.
+  - [x] **CSV**: `csv_parse`, `csv_records`, `csv_format` (RFC 4180, any
+    one-character separator, errors as `Err` values with the line and the
+    column; `rythme help csv`).
+  - [x] **A seed for `random`**: `random_seed(n)` and `rythme run --seed N`
+    (same seed, same version: same draws of `random` and `shuffle`;
+    `rythme help random`), and the *Seed* option of the playground (every
+    Run, Test and Steps with the same draws, kept with the draft, in sharing
+    links as `&seed=N`; see [site/README.md](site/README.md#seed)).
+  - [x] **HTTP requests**: `http_get` and `http_post`, `Ok(text)` or
+    `Err(message)`, through the program curl (no dependency; keys never on a
+    command line); an `Err` in the playground.
+  - [x] **The library, completed**: an audit against Ruby's core, Python's
+    builtins, `itertools`, `statistics` and `string`, and Elixir's `Enum`,
+    `String` and `Map` ([`docs/stdlib-audit.md`](docs/stdlib-audit.md)),
+    then 72 pure functions where Rythme had a gap (`format` with Python's
+    specs, `tally`, `combinations`, `dig`, `update`, `all_ok`,
+    `add_months`, date patterns, Base64...) and 26 Ruby names, each known to
+    the checker, documented and translated; names the exercises define stay
+    free.
+- [x] **A command line that feels finished**: `--help` for every command in
+  the eight languages, `rythme run -` (the standard input), `rythme check
+  FOLDER`, `rythme completions bash|zsh|fish|powershell`, `rythme man`,
+  `rythme version --verbose` and `rythme upgrade`.
+- [x] **Rythme for AI assistants**: models learn the language fast, write
+  it, and fix their own mistakes without a person. Done: `--format json`
+  for `check`, `run`, `test`, `fix`, `explain` and `help` (versioned, with a
+  JSON Schema), fixes as text edits and `rythme fix`, `rythme help llms`
+  (`docs/llms.txt`, `docs/llms-full.txt`, generated and tested), the MCP
+  server `rythme mcp` (sandboxed, time and memory limited), `AGENTS.md` in
+  the repository and in new projects, and targeted messages for the habits
+  of other languages (manual 7.10). The website shows it too: the AI page
+  (`/{lang}/ai/`: what to give an assistant, the MCP configurations, the
+  loop of `--format json` and `rythme fix`), `/llms.txt` and
+  `/llms-full.txt`, every page as Markdown, and *Copy for AI* in the
+  playground (see [site/README.md](site/README.md#for-ai-assistants)).
+- [x] **Artificial intelligence in class**: what a course needs to write
+  machine learning, neural networks, search, games and calls to language
+  models, pure and readable. Done: vectors and matrices over lists (`dot`,
+  `matmul`, `transpose`...), statistics (`stats`, `percentile`, `softmax`...),
+  activations, chance that follows `random_seed` (`random_normal`,
+  `train_test_split`...), numerical slopes (`derivative`, `gradient`), charts
+  as text (`plot`, `histogram`), HTTP (see above); `rythme help ml`, the
+  manual, ten examples, six exercises (31 to
+  36) in every language.
+  - [ ] Exact derivatives (automatic differentiation), if it can stay
+    invisible: dual numbers would have to go through every operation and
+    `print`.
+  - [ ] Faster numbers for large data (a compact list of Floats inside the
+    interpreter, invisible to programs), if courses need more than
+    thousands of examples.
+- [x] **Sharing in the playground**: a link to a program with its steps and its
+  tests, for classrooms. Done: the Share button of the playground, a link that
+  holds the program and its test mode (see [site/README.md](site/README.md#sharing-links)),
+  and the steps of a calculation shown one at a time, with links that open on a
+  step (`&mode=steps&step=3`, see [site/README.md](site/README.md#steps)).

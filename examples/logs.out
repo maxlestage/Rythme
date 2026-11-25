@@ -1,0 +1,6 @@
+2 errors out of 5 requests:
+  08:13 401 /login
+  08:15 404 /missing
+Bytes sent: 74,464,728 (71,0 Mio)
+Pages: ["/index.html"]
+["a***@example.org", "a***@example.org"]

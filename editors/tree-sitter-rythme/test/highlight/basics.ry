@@ -1,0 +1,52 @@
+## Squares a number.
+# <- comment.documentation
+fn square(x) = x * x
+# <- keyword.function
+#  ^ function
+#         ^ variable.parameter
+#                ^ operator
+
+type Shape = Circle(radius) | Square(side)
+# <- keyword.type
+#    ^ type.definition
+#            ^ constructor
+
+fn area(shape) = match shape
+#                ^ keyword.conditional
+  Circle(r) -> 3.14 * r * r
+# ^ constructor
+#           ^ operator
+#              ^ number.float
+  Square(s) -> s ** 2
+#                   ^ number
+end
+# <- keyword
+
+point = {x: 1, type: "point"}
+#        ^ property
+#              ^ property
+#                    ^ string
+print("{point.x} and {len([1, 2])}")
+# <- function.call
+#      ^ punctuation.special
+#             ^ variable.member
+#                     ^ function.call
+xs = [3, 1, 2] |> sort |> map(fn(n) = n + 1)
+#                 ^ function.call
+#                         ^ function.call
+#                                ^ variable.parameter
+ok = xs.contains(2) and not false
+#       ^ function.method.call
+#                   ^ keyword.operator
+#                           ^ boolean
+use "geometry.ry"
+# <- keyword.import
+use shapes/circle as round
+# <- keyword.import
+#   ^ module
+#          ^ module
+#                 ^ keyword.import
+#                    ^ module
+fn size(round.Circle(r)) = r
+#       ^ module
+#             ^ constructor

@@ -1,0 +1,65 @@
+//! Rythme: a simple, purely functional programming language, with help
+//! everywhere. This crate contains the whole interpreter.
+//!
+//! The pipeline: [`lexer`] → [`parser`] → [`check`] → [`compile`] →
+//! [`vm`] (run by [`interp`]), driven by [`driver`]. Every message exists in English,
+//! French and the languages of `src/i18n/` ([`lang`]).
+
+#[macro_use]
+pub mod lang;
+pub mod ast;
+pub mod bigint;
+pub mod buffer;
+pub mod builtins;
+pub mod check;
+// The polish of the command: --help of each command, completions, manual page...
+#[cfg(not(target_arch = "wasm32"))]
+pub mod cli;
+pub mod compile;
+pub mod debug;
+pub mod diagnostic;
+pub mod dict;
+pub mod doc;
+pub mod driver;
+pub mod exercise;
+pub mod fix;
+pub mod format;
+pub mod help;
+// The package index: finding and sharing packages by name (`rythme search`, `add`, `publish`).
+pub mod index;
+pub mod interp;
+pub mod io;
+pub mod javascript;
+pub mod lexer;
+pub mod llms;
+// Output for programs (`--format json`) and `rythme fix`, written with the JSON of the language server.
+#[cfg(not(target_arch = "wasm32"))]
+pub mod machine;
+pub mod manifest;
+// The server of the Model Context Protocol, for AI assistants (on the standard input and output).
+#[cfg(not(target_arch = "wasm32"))]
+pub mod mcp;
+// The language server talks on the standard input and output; the web playground has none.
+#[cfg(not(target_arch = "wasm32"))]
+pub mod lsp;
+pub mod modules;
+// The commands of the package index, with their `--format json`.
+#[cfg(not(target_arch = "wasm32"))]
+pub mod packages;
+pub mod parser;
+pub mod project;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod repl;
+pub mod semver;
+pub mod sha256;
+pub mod source;
+pub mod steps;
+pub mod suggest;
+pub mod symbol;
+pub mod tasks;
+pub mod testing;
+pub mod types;
+pub mod value;
+pub mod vm;
+
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -1,0 +1,6 @@
+ok: 2.5
+error: cannot divide 10.0 by zero
+error: "ten" is not a number
+Some(19)
+0
+true

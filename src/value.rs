@@ -1,0 +1,1425 @@
+//! Runtime values. All of them are immutable: "changing" a value builds a new one.
+
+use std::cell::Cell;
+use std::cmp::Ordering;
+use std::collections::HashMap;
+use std::fmt::Write;
+use std::mem::ManuallyDrop;
+use std::ptr::NonNull;
+use std::rc::Rc;
+
+use crate::ast::FnDef;
+use crate::bigint::BigInt;
+pub use crate::buffer::Text;
+use crate::buffer::{self, Buf};
+use crate::builtins::Builtin;
+use crate::compile::{FnCode, Sibling};
+pub use crate::dict::Map;
+use crate::symbol::Sym;
+
+// The values that hold no memory of their own come first: telling them from
+// the others (to copy or free a value) is then one comparison of the tag.
+pub enum Value {
+    Unit,
+    Bool(bool),
+    Int(i64),
+    Float(f64),
+    /// `:ok`: a value that is only its name.
+    Symbol(Sym),
+    Builtin(&'static Builtin),
+    /// A whole number outside of the 64-bit range (never one that fits in an `Int`).
+    Big(Rc<BigInt>),
+    Text(Text),
+    List(List),
+    Record(Rc<Record>),
+    Variant(Rc<Variant>),
+    /// A dictionary: keys of any value but functions, each with a value.
+    Dict(Map),
+    /// A set: values (but functions) without repetition.
+    Set(Map),
+    Func(Rc<Closure>),
+    Ctor(Rc<CtorInfo>),
+}
+
+impl Clone for Value {
+    /// Whole numbers are copied in place, the other values by a call.
+    #[inline(always)]
+    fn clone(&self) -> Value {
+        match self {
+            Value::Int(n) => Value::Int(*n),
+            v => v.clone_shared(),
+        }
+    }
+}
+
+impl Value {
+    /// A copy of a value other than a whole number: one more count of its memory.
+    #[inline(never)]
+    fn clone_shared(&self) -> Value {
+        match self {
+            Value::Unit => Value::Unit,
+            Value::Bool(b) => Value::Bool(*b),
+            Value::Int(n) => Value::Int(*n),
+            Value::Float(x) => Value::Float(*x),
+            Value::Symbol(s) => Value::Symbol(*s),
+            Value::Builtin(b) => Value::Builtin(b),
+            Value::Big(n) => Value::Big(n.clone()),
+            Value::Text(t) => Value::Text(t.clone()),
+            Value::List(l) => Value::List(l.clone()),
+            Value::Record(r) => Value::Record(r.clone()),
+            Value::Variant(v) => Value::Variant(v.clone()),
+            Value::Dict(m) => Value::Dict(m.clone()),
+            Value::Set(m) => Value::Set(m.clone()),
+            Value::Func(f) => Value::Func(f.clone()),
+            Value::Ctor(c) => Value::Ctor(c.clone()),
+        }
+    }
+}
+
+/// An immutable list. Taking the rest of a list (`[first, ..rest]`) shares the
+/// elements instead of copying them, and adding at the end of a list often
+/// writes in the room its memory has left (see `buffer`).
+///
+/// A list is 15 bytes, aligned on 1: in a `Value`, it takes the 15 bytes
+/// after the tag, and the value is 16 bytes instead of 24. Where it starts
+/// in its memory takes 24 bits (a list that would start further is copied,
+/// which happens at most once every 16 million elements, see `slice`), its
+/// length 32 bits, and its memory is counted by hand, like the memory of
+/// texts.
+#[repr(C, packed)]
+pub struct List {
+    start: [u8; 3],
+    len: u32,
+    shared: NonNull<Shared>,
+}
+
+/// The memory of lists, and how many lists share it.
+struct Shared {
+    refs: Cell<usize>,
+    buf: Buf<Value>,
+    /// The numbers of a list of Floats made by a function on numbers
+    /// (`matmul`, `vector_scale`...), 8 bytes each instead of 16: `buf`
+    /// is then empty (see `Floats`).
+    floats: Option<Box<Floats>>,
+}
+
+/// A list of Floats kept as numbers: functions on numbers read them as they
+/// are (`List::floats`), and they become values the first time something
+/// else reads the list (`List::as_slice`), once. The list is the same
+/// either way: printed, compared and matched as a list of Floats.
+struct Floats {
+    xs: Box<[f64]>,
+    values: std::cell::OnceCell<Buf<Value>>,
+}
+
+impl Floats {
+    #[inline(never)]
+    fn values(&self) -> &Buf<Value> {
+        self.values.get_or_init(|| Buf::from_vec(self.xs.iter().map(|&x| Value::Float(x)).collect()))
+    }
+}
+
+/// Lists start before this position in their memory (24 bits; less in the
+/// tests of the crate, which then copy lists more often).
+const STARTS: usize = if cfg!(test) { 1 << 8 } else { 1 << 24 };
+
+impl List {
+    pub fn new(v: Vec<Value>) -> List {
+        let len = list_len(v.len());
+        List::with(Buf::from_vec(v), 0, len)
+    }
+
+    /// The list of the elements `start..start + len` of `buf`, which no list shares.
+    fn with(buf: Buf<Value>, start: usize, len: u32) -> List {
+        debug_assert!(start < STARTS);
+        let shared = Box::new(Shared { refs: Cell::new(1), buf, floats: None });
+        List { start: start_bytes(start), len, shared: NonNull::from(Box::leak(shared)) }
+    }
+
+    /// A list of Floats, kept as numbers (see `Floats`).
+    pub fn floats(xs: Vec<f64>) -> List {
+        let len = list_len(xs.len());
+        let floats = Some(Box::new(Floats { xs: xs.into_boxed_slice(), values: std::cell::OnceCell::new() }));
+        let shared = Box::new(Shared { refs: Cell::new(1), buf: Buf::from_vec(Vec::new()), floats });
+        List { start: [0; 3], len, shared: NonNull::from(Box::leak(shared)) }
+    }
+
+    /// Its numbers, when it is a list of Floats kept as numbers.
+    #[inline]
+    pub fn as_floats(&self) -> Option<&[f64]> {
+        Some(&self.shared().floats.as_ref()?.xs[self.start()..self.end()])
+    }
+
+    /// The memory of its values.
+    #[inline(always)]
+    fn values(&self) -> &Buf<Value> {
+        let shared = self.shared();
+        match &shared.floats {
+            None => &shared.buf,
+            Some(f) => f.values(),
+        }
+    }
+
+    #[inline(always)]
+    fn shared(&self) -> &Shared {
+        let shared = self.shared;
+        // SAFETY: the memory lives as long as one list shares it.
+        unsafe { &*shared.as_ptr() }
+    }
+
+    #[inline(always)]
+    fn start(&self) -> usize {
+        let s = self.start;
+        u32::from_le_bytes([s[0], s[1], s[2], 0]) as usize
+    }
+
+    #[inline(always)]
+    fn end(&self) -> usize {
+        self.start() + self.len()
+    }
+
+    #[inline(always)]
+    pub fn as_slice(&self) -> &[Value] {
+        self.values().slice(self.start(), self.end())
+    }
+
+    /// This list followed by the elements of `tail`: in the room after it
+    /// when it can, so that adding at the end again and again is fast.
+    pub fn concat(&self, tail: &[Value]) -> List {
+        if self.shared().floats.is_some() {
+            return self.concat_floats(tail);
+        }
+        let len = list_len(self.len() + tail.len());
+        let in_place = self.may_grow_with(tail);
+        match buffer::append(&self.shared().buf, self.start(), self.end(), tail, in_place) {
+            None => {
+                let mut l = self.clone();
+                l.len = len;
+                l
+            }
+            Some(buf) => List::with(buf, 0, len),
+        }
+    }
+
+    /// `concat` for a list of Floats kept as numbers: a copy.
+    #[inline(never)]
+    fn concat_floats(&self, tail: &[Value]) -> List {
+        let mut v = Vec::with_capacity(self.len() + tail.len());
+        v.extend_from_slice(self.as_slice());
+        v.extend_from_slice(tail);
+        List::new(v)
+    }
+
+    /// This list followed by `x`.
+    pub fn push(&self, x: Value) -> List {
+        self.concat(std::slice::from_ref(&x))
+    }
+
+    /// This list becomes itself followed by `x` (the other lists that share
+    /// its memory do not see it).
+    pub fn push_mut(&mut self, x: Value) {
+        self.extend_mut(std::slice::from_ref(&x));
+    }
+
+    /// This list becomes itself followed by the elements of `tail`.
+    pub fn extend_mut(&mut self, tail: &[Value]) {
+        *self = self.concat(tail);
+    }
+
+    /// Whether `tail` may be written in the memory of this list: not when
+    /// it holds this memory, which would then hold itself and never be freed.
+    fn may_grow_with(&self, tail: &[Value]) -> bool {
+        let shared = self.shared();
+        shared.buf.used() == self.end() && shared.buf.room() >= tail.len() && (shared.refs.get() == 1 || !holds(tail, self.shared))
+    }
+
+    #[inline(always)]
+    pub fn len(&self) -> usize {
+        self.len as usize
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<'_, Value> {
+        self.as_slice().iter()
+    }
+
+    /// Elements `from..to` (relative to this list), sharing memory.
+    pub fn slice(&self, from: usize, to: usize) -> List {
+        let to = to.min(self.len());
+        let from = from.min(to);
+        let start = self.start() + from;
+        if start >= STARTS {
+            // Beyond what 24 bits hold: a copy, which starts at 0.
+            return List::new(self.as_slice()[from..to].to_vec());
+        }
+        let mut l = self.clone();
+        l.start = start_bytes(start);
+        l.len = (to - from) as u32;
+        l
+    }
+
+    pub fn get(&self, i: usize) -> Option<&Value> {
+        self.as_slice().get(i)
+    }
+
+    /// The memory of the list, when no other list shares it.
+    fn only_buf(&mut self) -> Option<&mut Buf<Value>> {
+        let shared = self.shared;
+        // SAFETY: the memory lives as long as this list, the only one that
+        // shares it: nothing else reads or writes it meanwhile.
+        (self.shared().refs.get() == 1).then(|| unsafe { &mut (*shared.as_ptr()).buf })
+    }
+}
+
+/// The length of a list, which fits in 32 bits (a list of 4 billion
+/// elements would not fit in memory anyway).
+#[inline(always)]
+fn list_len(len: usize) -> u32 {
+    u32::try_from(len).expect("a list of more than 4 billion elements")
+}
+
+/// Where a list starts, in 24 bits.
+#[inline(always)]
+fn start_bytes(start: usize) -> [u8; 3] {
+    let s = (start as u32).to_le_bytes();
+    [s[0], s[1], s[2]]
+}
+
+impl Clone for List {
+    #[inline]
+    fn clone(&self) -> List {
+        let refs = &self.shared().refs;
+        refs.set(refs.get().checked_add(1).unwrap_or_else(|| std::process::abort()));
+        List { start: self.start, len: self.len, shared: self.shared }
+    }
+}
+
+/// Whether one of `values` may hold `data`, the memory of a list. Values
+/// with many parts are not looked at in full: they are assumed to hold it.
+fn holds(values: &[Value], data: NonNull<Shared>) -> bool {
+    /// The values made of other values.
+    fn parts(v: &Value) -> Option<&[Value]> {
+        match v {
+            Value::Unit
+            | Value::Bool(_)
+            | Value::Int(_)
+            | Value::Big(_)
+            | Value::Float(_)
+            | Value::Text(_)
+            | Value::Symbol(_)
+            | Value::Builtin(_)
+            | Value::Ctor(_) => None,
+            Value::List(l) => Some(l.as_slice()),
+            Value::Record(r) => Some(&r.vals),
+            Value::Variant(var) => Some(&var.fields),
+            Value::Func(c) => Some(&c.captured),
+            // Not looked into: assumed to hold it when not empty.
+            Value::Dict(_) | Value::Set(_) => None,
+        }
+    }
+    /// A dict or a set that may hold the list.
+    fn map(v: &Value) -> bool {
+        matches!(v, Value::Dict(m) | Value::Set(m) if !m.is_empty())
+    }
+    if values.iter().all(|v| parts(v).is_none() && !map(v)) {
+        return false;
+    }
+    let mut budget = 64usize;
+    let mut todo = vec![values];
+    while let Some(vs) = todo.pop() {
+        if vs.len() > budget {
+            return true;
+        }
+        budget -= vs.len();
+        for v in vs {
+            if map(v) || matches!(v, Value::List(l) if { l.shared } == data) {
+                return true;
+            }
+            todo.extend(parts(v));
+        }
+    }
+    false
+}
+
+/// A record: named fields, kept in the order they were written.
+#[derive(Clone, Default)]
+pub struct Record {
+    /// The names of the fields, shared by the records made from one another
+    /// (`{..r, x: 1}`) and by the records made by the same `{...}` in the code.
+    shape: Rc<Shape>,
+    vals: Few<4>,
+}
+
+/// The names of the fields of records, in order.
+#[derive(Clone, Default)]
+pub struct Shape {
+    keys: Vec<Rc<str>>,
+    /// Where each name is, for records with many fields: small ones are
+    /// searched in order, which is faster.
+    index: Option<HashMap<Rc<str>, usize>>,
+}
+
+/// Records with more fields than this find them with an index.
+const INDEXED: usize = 12;
+
+impl Shape {
+    /// The fields of a record, all different.
+    pub fn new(keys: Vec<Rc<str>>) -> Shape {
+        let mut shape = Shape { keys, index: None };
+        shape.add_index();
+        shape
+    }
+
+    pub fn len(&self) -> usize {
+        self.keys.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.keys.is_empty()
+    }
+
+    fn add_index(&mut self) {
+        if self.index.is_none() && self.keys.len() > INDEXED {
+            self.index = Some(self.keys.iter().enumerate().map(|(i, k)| (k.clone(), i)).collect());
+        }
+    }
+
+    fn position(&self, key: &str) -> Option<usize> {
+        match &self.index {
+            Some(index) => index.get(key).copied(),
+            None => self.keys.iter().position(|k| same_key(k, key)),
+        }
+    }
+
+    fn push(&mut self, key: Rc<str>) {
+        if let Some(index) = &mut self.index {
+            index.insert(key.clone(), self.keys.len());
+        }
+        self.keys.push(key);
+        self.add_index();
+    }
+}
+
+/// Names written in the code are shared: comparing their addresses is
+/// often enough, and they are short.
+#[inline]
+fn same_key(a: &str, b: &str) -> bool {
+    a.len() == b.len() && (std::ptr::eq(a.as_ptr(), b.as_ptr()) || a.bytes().zip(b.bytes()).all(|(x, y)| x == y))
+}
+
+impl Record {
+    pub fn new() -> Record {
+        Record::default()
+    }
+
+    /// The names of its fields: the records that share them have each
+    /// field at the same position (`position`, `at`).
+    pub fn shape(&self) -> &Rc<Shape> {
+        &self.shape
+    }
+
+    /// The position of the field `key`.
+    pub fn position(&self, key: &str) -> Option<usize> {
+        self.shape.position(key)
+    }
+
+    /// The value of the field at `i` (see `position`).
+    pub fn at(&self, i: usize) -> &Value {
+        &self.vals[i]
+    }
+
+    /// The field at `i` (see `position`) becomes `val`.
+    pub fn set_at(&mut self, i: usize, val: Value) {
+        self.vals[i] = val;
+    }
+
+    /// A record with the fields of `shape`, in order.
+    pub fn with_shape(shape: Rc<Shape>, vals: Vec<Value>) -> Record {
+        debug_assert_eq!(shape.len(), vals.len());
+        Record { shape, vals: vals.into() }
+    }
+
+    /// A record with the fields of `shape`, the values of `slots` taken from them.
+    pub fn taking(shape: Rc<Shape>, slots: &mut [Value]) -> Record {
+        debug_assert_eq!(shape.len(), slots.len());
+        Record { shape, vals: Few::take_from(slots) }
+    }
+
+    pub fn get(&self, key: &str) -> Option<&Value> {
+        self.shape.position(key).map(|i| &self.vals[i])
+    }
+
+    pub fn set(&mut self, key: Rc<str>, val: Value) {
+        match self.shape.position(&key) {
+            Some(i) => self.vals[i] = val,
+            None => {
+                Rc::make_mut(&mut self.shape).push(key);
+                self.vals.push(val);
+            }
+        }
+    }
+
+    pub fn without(&self, key: &str) -> Record {
+        let mut r = Record::new();
+        for (k, v) in self.iter() {
+            if &**k != key {
+                r.set(k.clone(), v.clone());
+            }
+        }
+        r
+    }
+
+    pub fn len(&self) -> usize {
+        self.vals.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.vals.is_empty()
+    }
+
+    pub fn keys(&self) -> &[Rc<str>] {
+        &self.shape.keys
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&Rc<str>, &Value)> {
+        self.shape.keys.iter().zip(self.vals.iter())
+    }
+}
+
+pub struct Closure {
+    pub def: Rc<FnDef>,
+    pub code: Rc<FnCode>,
+    /// The local names of enclosing functions that the function uses, in the
+    /// order of `code.captures`.
+    pub captured: Vec<Value>,
+    /// Local functions defined one after the other in a block see each other,
+    /// as functions do at the top level of a file: the functions of its group.
+    pub siblings: Option<Rc<[Sibling]>>,
+}
+
+pub struct CtorInfo {
+    pub type_name: Sym,
+    pub name: Sym,
+    /// What tells the constructor and its type apart from those of the same
+    /// names in another file: their names as the interpreter stores them
+    /// (`#3.Circle` and `#3.Shape` for a file used with a name, see
+    /// `Sym::stored`), the names themselves otherwise.
+    pub id: Sym,
+    pub type_id: Sym,
+    pub fields: Vec<Sym>,
+    /// Position of the constructor in its type: `<` orders values by it.
+    pub index: usize,
+    /// The `##` documentation of its type.
+    pub doc: Option<Rc<str>>,
+}
+
+pub struct Variant {
+    pub ctor: Rc<CtorInfo>,
+    pub fields: Fields,
+}
+
+/// The fields of a value of a type (`Node(l, v, r)`, `Some(x)`): up to
+/// three in place (see `Few`).
+pub type Fields = Few<3>;
+
+/// Values kept in place, in the memory of the value they belong to, when
+/// there are at most `N` of them, else in a vector of their own: the fields
+/// of a value of a type (`Fields`) or of a record. Most have few, and
+/// making one then takes one block of memory instead of two.
+///
+/// The places after the values hold `()`. The values are freed by `drop`,
+/// which leaves `()` everywhere: the places themselves need no freeing
+/// (`ManuallyDrop`), which saves looking at the empty ones again.
+#[derive(Clone)]
+pub enum Few<const N: usize> {
+    Here(u8, ManuallyDrop<[Value; N]>),
+    Many(Vec<Value>),
+}
+
+impl<const N: usize> Few<N> {
+    #[inline(always)]
+    fn here(n: usize, here: [Value; N]) -> Few<N> {
+        Few::Here(n as u8, ManuallyDrop::new(here))
+    }
+
+    #[inline(always)]
+    fn units() -> [Value; N] {
+        std::array::from_fn(|_| Value::Unit)
+    }
+
+    /// No values.
+    pub fn none() -> Few<N> {
+        Few::here(0, Few::units())
+    }
+
+    /// One value.
+    pub fn one(v: Value) -> Few<N> {
+        let mut here = Few::units();
+        here[0] = v;
+        Few::here(1, here)
+    }
+
+    /// The values of `slots`, taken from them (leaving `()`).
+    #[inline(always)]
+    pub fn take_from(slots: &mut [Value]) -> Few<N> {
+        if slots.len() > N {
+            return Few::Many(slots.iter_mut().map(|v| std::mem::replace(v, Value::Unit)).collect());
+        }
+        let mut here = Few::units();
+        for (place, v) in here.iter_mut().zip(slots.iter_mut()) {
+            std::mem::forget(std::mem::replace(place, std::mem::replace(v, Value::Unit)));
+        }
+        Few::here(slots.len(), here)
+    }
+
+    /// Adds `v` after the values.
+    pub fn push(&mut self, v: Value) {
+        match self {
+            Few::Here(n, here) if (*n as usize) < N => {
+                here[*n as usize] = v;
+                *n += 1;
+            }
+            Few::Here(..) => {
+                let mut many = Vec::with_capacity(2 * N);
+                many.extend(self.iter_mut().map(|x| std::mem::replace(x, Value::Unit)));
+                many.push(v);
+                *self = Few::Many(many);
+            }
+            Few::Many(many) => many.push(v),
+        }
+    }
+}
+
+impl<const N: usize> Drop for Few<N> {
+    #[inline]
+    fn drop(&mut self) {
+        if let Few::Here(n, here) = self {
+            for v in &mut here[..*n as usize] {
+                if !is_plain(v) {
+                    *v = Value::Unit;
+                }
+            }
+        }
+    }
+}
+
+impl<const N: usize> Default for Few<N> {
+    fn default() -> Few<N> {
+        Few::none()
+    }
+}
+
+impl<const N: usize> From<Vec<Value>> for Few<N> {
+    fn from(mut v: Vec<Value>) -> Few<N> {
+        if v.len() > N {
+            return Few::Many(v);
+        }
+        Few::take_from(&mut v)
+    }
+}
+
+impl<const N: usize> FromIterator<Value> for Few<N> {
+    fn from_iter<I: IntoIterator<Item = Value>>(items: I) -> Few<N> {
+        let mut few = Few::none();
+        for v in items {
+            few.push(v);
+        }
+        few
+    }
+}
+
+impl<const N: usize> std::ops::Deref for Few<N> {
+    type Target = [Value];
+
+    #[inline(always)]
+    fn deref(&self) -> &[Value] {
+        match self {
+            Few::Here(n, here) => &here[..*n as usize],
+            Few::Many(many) => many,
+        }
+    }
+}
+
+impl<const N: usize> std::ops::DerefMut for Few<N> {
+    #[inline(always)]
+    fn deref_mut(&mut self) -> &mut [Value] {
+        match self {
+            Few::Here(n, here) => &mut here[..*n as usize],
+            Few::Many(many) => many,
+        }
+    }
+}
+
+impl<'a, const N: usize> IntoIterator for &'a Few<N> {
+    type Item = &'a Value;
+    type IntoIter = std::slice::Iter<'a, Value>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl Value {
+    pub fn text(s: &str) -> Value {
+        Value::Text(Text::from(s))
+    }
+
+    pub fn list(v: Vec<Value>) -> Value {
+        Value::List(List::new(v))
+    }
+
+    /// A dictionary of these pairs (see [`Map::from_pairs`]).
+    pub fn dict(pairs: Vec<(Value, Value)>) -> Value {
+        Value::Dict(Map::from_pairs(pairs))
+    }
+
+    /// A set of these values.
+    pub fn set(items: Vec<Value>) -> Value {
+        Value::Set(Map::from_pairs(items.into_iter().map(|x| (x, Value::Unit)).collect()))
+    }
+
+    /// When `self` and `other` are values of two different types of the same
+    /// name, defined in two files: a note that says so.
+    pub fn homonym_types(&self, other: &Value) -> Option<String> {
+        match (self, other) {
+            (Value::Variant(a), Value::Variant(b)) if a.ctor.type_name == b.ctor.type_name && a.ctor.type_id != b.ctor.type_id => {
+                let name = a.ctor.type_name;
+                Some(t!(
+                    "these are two different types named `{name}`, defined in two files: their values are never equal",
+                    "ce sont deux types différents nommés `{name}`, définis dans deux fichiers : leurs valeurs ne sont jamais égales"
+                ))
+            }
+            _ => None,
+        }
+    }
+
+    pub fn type_name(&self) -> String {
+        match self {
+            Value::Unit => "Unit".into(),
+            Value::Bool(_) => "Bool".into(),
+            Value::Int(_) | Value::Big(_) => "Int".into(),
+            Value::Float(_) => "Float".into(),
+            Value::Text(_) => "Text".into(),
+            Value::Symbol(_) => "Symbol".into(),
+            Value::List(_) => "List".into(),
+            Value::Record(_) => "Record".into(),
+            Value::Variant(v) => v.ctor.type_name.name().to_string(),
+            Value::Dict(_) => "Dict".into(),
+            Value::Set(_) => "Set".into(),
+            Value::Func(_) | Value::Builtin(_) | Value::Ctor(_) => "Function".into(),
+        }
+    }
+
+    pub fn is_callable(&self) -> bool {
+        matches!(self, Value::Func(_) | Value::Builtin(_) | Value::Ctor(_))
+    }
+
+    /// How the value is printed by `print` and inside texts: texts without quotes.
+    pub fn display(&self) -> String {
+        match self {
+            Value::Text(s) => s.to_string(),
+            _ => self.repr(),
+        }
+    }
+
+    /// Writes what `display` returns at the end of `out`.
+    pub fn write_display(&self, out: &mut String) {
+        match self {
+            Value::Text(s) => out.push_str(s),
+            _ => self.write_repr(out, usize::MAX),
+        }
+    }
+
+    /// How the value is written in code: texts with quotes.
+    pub fn repr(&self) -> String {
+        let mut out = String::new();
+        self.write_repr(&mut out, usize::MAX);
+        out
+    }
+
+    /// Writes the value without recursion (values can be nested millions of
+    /// levels deep), stopping once `limit` bytes are written.
+    fn write_repr(&self, out: &mut String, limit: usize) {
+        enum Item<'a> {
+            Value(&'a Value),
+            Str(&'static str),
+            Key(&'a str),
+        }
+        let mut todo = vec![Item::Value(self)];
+        while let Some(item) = todo.pop() {
+            if out.len() > limit {
+                return;
+            }
+            match item {
+                Item::Str(s) => out.push_str(s),
+                Item::Key(k) => {
+                    if is_plain_key(k) {
+                        out.push_str(k);
+                    } else {
+                        write_text_repr(k, out);
+                    }
+                    out.push_str(": ");
+                }
+                Item::Value(v) => match v {
+                    Value::Unit => out.push_str("()"),
+                    Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
+                    Value::Int(n) => out.push_str(int_digits(*n, &mut [0; 20])),
+                    Value::Big(n) => {
+                        let _ = write!(out, "{n}");
+                    }
+                    Value::Float(f) => out.push_str(&fmt_float(*f)),
+                    Value::Text(s) => write_text_repr(s, out),
+                    Value::Symbol(s) => {
+                        out.push(':');
+                        out.push_str(&s.name());
+                    }
+                    Value::List(l) => {
+                        out.push('[');
+                        todo.push(Item::Str("]"));
+                        for (i, x) in l.iter().enumerate().rev() {
+                            todo.push(Item::Value(x));
+                            if i > 0 {
+                                todo.push(Item::Str(", "));
+                            }
+                        }
+                    }
+                    Value::Record(r) => {
+                        out.push('{');
+                        todo.push(Item::Str("}"));
+                        for i in (0..r.len()).rev() {
+                            todo.push(Item::Value(&r.vals[i]));
+                            todo.push(Item::Key(&r.shape.keys[i]));
+                            if i > 0 {
+                                todo.push(Item::Str(", "));
+                            }
+                        }
+                    }
+                    Value::Variant(var) => {
+                        out.push_str(&var.ctor.name.name());
+                        if !var.fields.is_empty() {
+                            out.push('(');
+                            todo.push(Item::Str(")"));
+                            for (i, x) in var.fields.iter().enumerate().rev() {
+                                todo.push(Item::Value(x));
+                                if i > 0 {
+                                    todo.push(Item::Str(", "));
+                                }
+                            }
+                        }
+                    }
+                    // `dict(1 => "a", 2 => "b")` and `set(1, 2)`: what they hold, in order.
+                    Value::Dict(m) => {
+                        out.push_str("dict(");
+                        todo.push(Item::Str(")"));
+                        let pairs: Vec<(&Value, &Value)> = m.iter().collect();
+                        for (i, (k, x)) in pairs.into_iter().enumerate().rev() {
+                            todo.push(Item::Value(x));
+                            todo.push(Item::Str(" => "));
+                            todo.push(Item::Value(k));
+                            if i > 0 {
+                                todo.push(Item::Str(", "));
+                            }
+                        }
+                    }
+                    Value::Set(m) => {
+                        out.push_str("set(");
+                        todo.push(Item::Str(")"));
+                        let items: Vec<&Value> = m.keys().collect();
+                        for (i, x) in items.into_iter().enumerate().rev() {
+                            todo.push(Item::Value(x));
+                            if i > 0 {
+                                todo.push(Item::Str(", "));
+                            }
+                        }
+                    }
+                    Value::Func(c) => match c.def.name {
+                        Some(n) => out.push_str(&format!("<fn {n}>")),
+                        None => out.push_str("<fn>"),
+                    },
+                    Value::Builtin(b) => out.push_str(&format!("<fn {}>", b.name)),
+                    Value::Ctor(c) => out.push_str(&format!("<{} {}>", t!("constructor", "constructeur"), c.name)),
+                },
+            }
+        }
+    }
+
+    /// A short description for error messages: `Text "abc"`, `List [1, 2]`.
+    pub fn describe(&self) -> String {
+        let mut r = String::new();
+        self.write_repr(&mut r, 160);
+        if r.chars().count() > 40 {
+            r = r.chars().take(37).collect::<String>() + "...";
+        }
+        match self {
+            Value::Unit => "()".into(),
+            Value::Func(_) | Value::Builtin(_) | Value::Ctor(_) => r,
+            _ => format!("{} {r}", self.type_name()),
+        }
+    }
+
+    /// Structural equality, without recursion.
+    pub fn equals(&self, other: &Value) -> bool {
+        let mut todo = vec![(self, other)];
+        while let Some((a, b)) = todo.pop() {
+            let same = match (a, b) {
+                (Value::Unit, Value::Unit) => true,
+                (Value::Bool(x), Value::Bool(y)) => x == y,
+                (Value::Int(x), Value::Int(y)) => x == y,
+                (Value::Int(x), Value::Float(y)) | (Value::Float(y), Value::Int(x)) => cmp_int_float(*x, *y) == Some(Ordering::Equal),
+                (Value::Big(x), Value::Big(y)) => x == y,
+                (Value::Big(x), Value::Float(y)) | (Value::Float(y), Value::Big(x)) => x.cmp_f64(*y) == Some(Ordering::Equal),
+                (Value::Float(x), Value::Float(y)) => x == y,
+                (Value::Text(x), Value::Text(y)) => x == y,
+                (Value::Symbol(x), Value::Symbol(y)) => x == y,
+                (Value::List(x), Value::List(y)) => {
+                    if x.len() != y.len() {
+                        return false;
+                    }
+                    todo.extend(x.iter().zip(y.iter()));
+                    true
+                }
+                (Value::Record(x), Value::Record(y)) => {
+                    if x.len() != y.len() {
+                        return false;
+                    }
+                    for (k, v) in x.iter() {
+                        match y.get(k) {
+                            Some(w) => todo.push((v, w)),
+                            None => return false,
+                        }
+                    }
+                    true
+                }
+                (Value::Variant(x), Value::Variant(y)) => {
+                    if x.ctor.id != y.ctor.id || x.fields.len() != y.fields.len() {
+                        return false;
+                    }
+                    todo.extend(x.fields.iter().zip(y.fields.iter()));
+                    true
+                }
+                (Value::Dict(x), Value::Dict(y)) | (Value::Set(x), Value::Set(y)) => {
+                    if x.len() != y.len() {
+                        return false;
+                    }
+                    for ((k1, v1), (k2, v2)) in x.iter().zip(y.iter()) {
+                        todo.push((k1, k2));
+                        todo.push((v1, v2));
+                    }
+                    true
+                }
+                (Value::Func(x), Value::Func(y)) => Rc::ptr_eq(x, y),
+                (Value::Builtin(x), Value::Builtin(y)) => std::ptr::eq(*x, *y),
+                (Value::Ctor(x), Value::Ctor(y)) => x.name == y.name,
+                _ => false,
+            };
+            if !same {
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Order between two values of the same kind; `None` if they cannot be compared.
+    pub fn compare(&self, other: &Value) -> Option<Ordering> {
+        match (self, other) {
+            (Value::Int(a), Value::Int(b)) => Some(a.cmp(b)),
+            (Value::Int(a), Value::Float(b)) => cmp_int_float(*a, *b),
+            (Value::Float(a), Value::Int(b)) => cmp_int_float(*b, *a).map(Ordering::reverse),
+            (Value::Float(a), Value::Float(b)) => a.partial_cmp(b),
+            (Value::Big(_) | Value::Int(_), Value::Big(_) | Value::Int(_)) => Some(cmp_whole(self, other)),
+            (Value::Big(a), Value::Float(b)) => a.cmp_f64(*b),
+            (Value::Float(a), Value::Big(b)) => b.cmp_f64(*a).map(Ordering::reverse),
+            (Value::Text(a), Value::Text(b)) => Some(a.cmp(b)),
+            (Value::Symbol(a), Value::Symbol(b)) => Some(a.name().cmp(&b.name())),
+            (Value::Bool(a), Value::Bool(b)) => Some(a.cmp(b)),
+            (Value::Unit, Value::Unit) => Some(Ordering::Equal),
+            (Value::List(a), Value::List(b)) => {
+                for (x, y) in a.iter().zip(b.iter()) {
+                    match x.compare(y)? {
+                        Ordering::Equal => continue,
+                        o => return Some(o),
+                    }
+                }
+                Some(a.len().cmp(&b.len()))
+            }
+            // Element by element, in the order of their keys, like lists.
+            (Value::Dict(a), Value::Dict(b)) => {
+                for ((k1, v1), (k2, v2)) in a.iter().zip(b.iter()) {
+                    let o = match k1.compare(k2)? {
+                        Ordering::Equal => v1.compare(v2)?,
+                        o => o,
+                    };
+                    match o {
+                        Ordering::Equal => continue,
+                        o => return Some(o),
+                    }
+                }
+                Some(a.len().cmp(&b.len()))
+            }
+            (Value::Set(a), Value::Set(b)) => {
+                for (x, y) in a.keys().zip(b.keys()) {
+                    match x.compare(y)? {
+                        Ordering::Equal => continue,
+                        o => return Some(o),
+                    }
+                }
+                Some(a.len().cmp(&b.len()))
+            }
+            (Value::Variant(a), Value::Variant(b)) if a.ctor.type_id == b.ctor.type_id => {
+                // Constructors are ordered as the type lists them: `None < Some(x)`.
+                if a.ctor.id != b.ctor.id {
+                    return (a.ctor.index != b.ctor.index).then(|| a.ctor.index.cmp(&b.ctor.index));
+                }
+                for (x, y) in a.fields.iter().zip(b.fields.iter()) {
+                    match x.compare(y)? {
+                        Ordering::Equal => continue,
+                        o => return Some(o),
+                    }
+                }
+                Some(Ordering::Equal)
+            }
+            _ => None,
+        }
+    }
+
+    /// A total order over all values, used to sort without ever failing:
+    /// first by kind, then by value. Agrees with `compare` where it is
+    /// defined: values are ordered by what they are worth (`1` like `1.0`),
+    /// and only then told apart (whole numbers before decimal ones).
+    pub fn total_cmp(&self, other: &Value) -> Ordering {
+        self.order(other, false).then_with(|| self.order(other, true))
+    }
+
+    /// With `exact`, values of the same worth are told apart: `1 < 1.0`, `-0.0 < 0.0`.
+    fn order(&self, other: &Value, exact: bool) -> Ordering {
+        fn rank(v: &Value) -> u8 {
+            match v {
+                Value::Unit => 0,
+                Value::Bool(_) => 1,
+                Value::Int(_) | Value::Big(_) | Value::Float(_) => 2,
+                Value::Text(_) => 3,
+                Value::Symbol(_) => 4,
+                Value::List(_) => 5,
+                Value::Record(_) => 6,
+                Value::Variant(_) => 7,
+                Value::Dict(_) => 8,
+                Value::Set(_) => 9,
+                Value::Func(_) | Value::Builtin(_) | Value::Ctor(_) => 10,
+            }
+        }
+        // `nan` goes at one end, according to its sign (like `f64::total_cmp`).
+        fn nan_side(f: f64) -> Ordering {
+            if f.is_sign_negative() {
+                Ordering::Less
+            } else {
+                Ordering::Greater
+            }
+        }
+        fn floats(a: f64, b: f64, exact: bool) -> Ordering {
+            match (a.is_nan(), b.is_nan()) {
+                _ if exact => a.total_cmp(&b),
+                (false, false) => a.partial_cmp(&b).unwrap_or(Ordering::Equal),
+                (true, true) => nan_side(a).cmp(&nan_side(b)),
+                (true, false) => nan_side(a),
+                (false, true) => nan_side(b).reverse(),
+            }
+        }
+        fn int_float(i: &Value, f: f64, exact: bool) -> Ordering {
+            let o = match i {
+                Value::Int(i) => cmp_int_float(*i, f),
+                Value::Big(b) => b.cmp_f64(f),
+                _ => unreachable!(),
+            };
+            match o {
+                Some(Ordering::Equal) if exact => Ordering::Less,
+                Some(o) => o,
+                None => nan_side(f).reverse(),
+            }
+        }
+        match (self, other) {
+            (Value::Int(a), Value::Int(b)) => a.cmp(b),
+            (Value::Float(a), Value::Float(b)) => floats(*a, *b, exact),
+            (Value::Big(_) | Value::Int(_), Value::Big(_) | Value::Int(_)) => cmp_whole(self, other),
+            (Value::Int(_) | Value::Big(_), Value::Float(b)) => int_float(self, *b, exact),
+            (Value::Float(a), Value::Int(_) | Value::Big(_)) => int_float(other, *a, exact).reverse(),
+            (Value::Text(a), Value::Text(b)) => a.cmp(b),
+            (Value::Symbol(a), Value::Symbol(b)) => a.name().cmp(&b.name()),
+            (Value::Bool(a), Value::Bool(b)) => a.cmp(b),
+            (Value::List(a), Value::List(b)) => {
+                for (x, y) in a.iter().zip(b.iter()) {
+                    match x.order(y, exact) {
+                        Ordering::Equal => continue,
+                        o => return o,
+                    }
+                }
+                a.len().cmp(&b.len())
+            }
+            (Value::Dict(a), Value::Dict(b)) => {
+                for ((k1, v1), (k2, v2)) in a.iter().zip(b.iter()) {
+                    match k1.order(k2, exact).then_with(|| v1.order(v2, exact)) {
+                        Ordering::Equal => continue,
+                        o => return o,
+                    }
+                }
+                a.len().cmp(&b.len())
+            }
+            (Value::Set(a), Value::Set(b)) => {
+                for (x, y) in a.keys().zip(b.keys()) {
+                    match x.order(y, exact) {
+                        Ordering::Equal => continue,
+                        o => return o,
+                    }
+                }
+                a.len().cmp(&b.len())
+            }
+            (Value::Variant(a), Value::Variant(b)) => {
+                let by_ctor =
+                    a.ctor.type_name.name().cmp(&b.ctor.type_name.name()).then_with(|| a.ctor.type_id.name().cmp(&b.ctor.type_id.name()));
+                let by_ctor = by_ctor.then(a.ctor.index.cmp(&b.ctor.index)).then_with(|| a.ctor.name.name().cmp(&b.ctor.name.name()));
+                if by_ctor != Ordering::Equal {
+                    return by_ctor;
+                }
+                for (x, y) in a.fields.iter().zip(b.fields.iter()) {
+                    match x.order(y, exact) {
+                        Ordering::Equal => continue,
+                        o => return o,
+                    }
+                }
+                a.fields.len().cmp(&b.fields.len())
+            }
+            _ => match rank(self).cmp(&rank(other)) {
+                Ordering::Equal => self.repr().cmp(&other.repr()),
+                o => o,
+            },
+        }
+    }
+}
+
+/// The exact order between a whole number and a decimal one, `None` for `nan`.
+/// (Converting the whole number to a decimal could round it: 2^53 + 1 would
+/// equal 2^53.)
+pub fn cmp_int_float(i: i64, f: f64) -> Option<Ordering> {
+    const TWO_63: f64 = 9_223_372_036_854_775_808.0;
+    if f.is_nan() {
+        None
+    } else if f >= TWO_63 {
+        Some(Ordering::Less)
+    } else if f < -TWO_63 {
+        Some(Ordering::Greater)
+    } else {
+        // Both the whole part and the rest are exact.
+        let whole = f.trunc();
+        Some(i.cmp(&(whole as i64)).then_with(|| 0.0.partial_cmp(&(f - whole)).unwrap_or(Ordering::Equal)))
+    }
+}
+
+/// The order of two whole numbers, one of them at least large: a large
+/// number is beyond all the small ones.
+fn cmp_whole(a: &Value, b: &Value) -> Ordering {
+    match (a, b) {
+        (Value::Big(x), Value::Big(y)) => x.cmp(y),
+        (Value::Big(x), _) => {
+            if x.is_negative() {
+                Ordering::Less
+            } else {
+                Ordering::Greater
+            }
+        }
+        (_, Value::Big(y)) => {
+            if y.is_negative() {
+                Ordering::Greater
+            } else {
+                Ordering::Less
+            }
+        }
+        _ => unreachable!(),
+    }
+}
+
+/// Is `v` a number from `lo` to `hi`, both included? For the pattern `lo..hi`.
+/// A large whole number is beyond every `Int` bound and compared exactly
+/// with a `Float` bound.
+pub fn in_range(lo: crate::ast::Num, hi: crate::ast::Num, v: &Value) -> bool {
+    use crate::ast::Num;
+    let le = |a: Option<Ordering>| matches!(a, Some(Ordering::Less | Ordering::Equal));
+    match v {
+        Value::Int(i) => le(lo.compare(Num::Int(*i))) && le(Num::Int(*i).compare(hi)),
+        Value::Float(f) => le(lo.compare(Num::Float(*f))) && le(Num::Float(*f).compare(hi)),
+        Value::Big(b) => {
+            // The order of the large number `b` against a bound.
+            let cmp = |n: Num| match n {
+                Num::Int(_) => Some(if b.is_negative() { Ordering::Less } else { Ordering::Greater }),
+                Num::Float(f) => b.cmp_f64(f),
+            };
+            le(cmp(lo).map(Ordering::reverse)) && le(cmp(hi))
+        }
+        _ => false,
+    }
+}
+
+/// Values that hold no memory of their own.
+#[inline(always)]
+pub(crate) fn is_plain(v: &Value) -> bool {
+    matches!(v, Value::Unit | Value::Bool(_) | Value::Int(_) | Value::Float(_) | Value::Symbol(_) | Value::Builtin(_))
+}
+
+/// Values that may hold other values.
+pub(crate) fn is_container(v: &Value) -> bool {
+    matches!(v, Value::List(_) | Value::Record(_) | Value::Variant(_) | Value::Dict(_) | Value::Set(_))
+}
+
+thread_local! {
+    /// How many values are being freed one inside the other.
+    static FREEING: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Frees the parts of a value. A few levels are freed recursively, which is
+/// faster; deeper ones one by one, so that a structure nested millions of
+/// levels deep does not overflow the stack when it is freed.
+pub(crate) fn free_parts(parts: &mut Vec<Value>) {
+    let depth = FREEING.with(|d| d.get());
+    if depth < RECURSIVE {
+        FREEING.with(|d| d.set(depth + 1));
+        parts.clear();
+        FREEING.with(|d| d.set(depth));
+    } else {
+        drop_iteratively(std::mem::take(parts));
+    }
+}
+
+/// `free_parts` for values kept elsewhere than in a vector: they become `()`.
+fn free_fields(parts: &mut [Value]) {
+    let depth = FREEING.with(|d| d.get());
+    if depth < RECURSIVE {
+        FREEING.with(|d| d.set(depth + 1));
+        for v in parts.iter_mut() {
+            *v = Value::Unit;
+        }
+        FREEING.with(|d| d.set(depth));
+    } else {
+        drop_iteratively(parts.iter_mut().map(|v| std::mem::replace(v, Value::Unit)).collect());
+    }
+}
+
+/// How many levels of nested values are freed recursively (see `free_parts`).
+const RECURSIVE: usize = 32;
+
+/// Frees nested values one by one instead of recursively.
+fn drop_iteratively(mut todo: Vec<Value>) {
+    while let Some(v) = todo.pop() {
+        match v {
+            // A value whose parts hold no other values is freed directly.
+            Value::Variant(mut rc) => {
+                if let Some(var) = Rc::get_mut(&mut rc) {
+                    if var.fields.iter().any(is_container) {
+                        todo.extend(var.fields.iter_mut().map(|v| std::mem::replace(v, Value::Unit)));
+                    }
+                }
+            }
+            Value::List(mut l) => {
+                if let Some(buf) = l.only_buf() {
+                    if buf.slice(0, buf.used()).iter().any(is_container) {
+                        todo.append(&mut buf.take());
+                    }
+                }
+            }
+            Value::Record(mut rc) => {
+                if let Some(r) = Rc::get_mut(&mut rc) {
+                    if r.vals.iter().any(is_container) {
+                        todo.extend(r.vals.iter_mut().map(|v| std::mem::replace(v, Value::Unit)));
+                    }
+                }
+            }
+            Value::Dict(mut m) | Value::Set(mut m) => m.dismantle(&mut todo),
+            _ => {}
+        }
+    }
+}
+
+impl Drop for Variant {
+    fn drop(&mut self) {
+        if self.fields.iter().any(is_container) {
+            free_fields(&mut self.fields);
+        }
+    }
+}
+
+impl Drop for List {
+    fn drop(&mut self) {
+        let refs = &self.shared().refs;
+        if refs.get() > 1 {
+            refs.set(refs.get() - 1);
+            return;
+        }
+        let shared = self.shared;
+        // SAFETY: the last list that shares the memory, made by `Box::leak`.
+        let mut shared = unsafe { Box::from_raw(shared.as_ptr()) };
+        let buf = &mut shared.buf;
+        if buf.slice(0, buf.used()).iter().any(is_container) {
+            free_parts(&mut buf.take());
+        }
+    }
+}
+
+impl Drop for Record {
+    fn drop(&mut self) {
+        if self.vals.iter().any(is_container) {
+            free_fields(&mut self.vals);
+        }
+    }
+}
+
+pub fn is_plain_key(k: &str) -> bool {
+    let mut chars = k.chars();
+    matches!(chars.next(), Some(c) if c.is_alphabetic() || c == '_') && chars.all(|c| c.is_alphanumeric() || c == '_')
+}
+
+pub fn write_text_repr(s: &str, out: &mut String) {
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\t' => out.push_str("\\t"),
+            '\r' => out.push_str("\\r"),
+            '{' => out.push_str("\\{"),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+}
+
+/// The digits of a whole number, written in `buf`: the same text as
+/// `n.to_string()`, without the machinery of `format!`, which is most of the
+/// time spent putting numbers in texts.
+pub fn int_digits(n: i64, buf: &mut [u8; 20]) -> &str {
+    let mut i = buf.len();
+    let mut m = n.unsigned_abs();
+    loop {
+        i -= 1;
+        buf[i] = b'0' + (m % 10) as u8;
+        m /= 10;
+        if m == 0 {
+            break;
+        }
+    }
+    if n < 0 {
+        i -= 1;
+        buf[i] = b'-';
+    }
+    std::str::from_utf8(&buf[i..]).unwrap_or_default()
+}
+
+/// Decimal numbers always show a decimal point: `3.0`, `0.5`, `1e300`.
+pub fn fmt_float(f: f64) -> String {
+    if f.is_nan() {
+        "nan".into()
+    } else if f.is_infinite() {
+        if f > 0.0 {
+            "inf".into()
+        } else {
+            "-inf".into()
+        }
+    } else if f != 0.0 && (f.abs() >= 1e16 || f.abs() < 1e-5) {
+        format!("{f:e}")
+    } else if f == f.trunc() {
+        format!("{f:.1}")
+    } else {
+        format!("{f}")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn values_are_16_bytes() {
+        assert_eq!(std::mem::size_of::<Value>(), 16);
+        assert_eq!(std::mem::size_of::<Option<Value>>(), 16);
+    }
+
+    /// A list of Floats kept as numbers is the same list as one of values.
+    #[test]
+    fn lists_of_floats_are_lists() {
+        let xs = [1.5, -0.0, f64::NAN, 3.0, 1e300];
+        let kept = List::floats(xs.to_vec());
+        let plain = List::new(xs.iter().map(|&x| Value::Float(x)).collect());
+        let bits = |f: &[f64]| f.iter().map(|x| x.to_bits()).collect::<Vec<_>>();
+        assert_eq!(kept.as_floats().map(bits), Some(bits(&xs)));
+        assert_eq!(plain.as_floats(), None);
+        let (k, p) = (Value::List(kept.slice(1, 4)), Value::List(plain.slice(1, 4)));
+        assert_eq!(kept.slice(3, 5).as_floats(), Some(&xs[3..5]));
+        assert_eq!(k.repr(), p.repr());
+        assert_eq!(k.repr(), "[-0.0, nan, 3.0]");
+        assert_eq!(k.total_cmp(&p), Ordering::Equal);
+        let grown = kept.push(Value::Int(7));
+        assert_eq!(Value::List(grown).repr(), "[1.5, -0.0, nan, 3.0, 1e300, 7]");
+        assert_eq!(Value::List(kept.slice(3, 5)).repr(), "[3.0, 1e300]");
+        assert!(Value::List(kept.slice(0, 2)).equals(&Value::List(plain.slice(0, 2))));
+    }
+
+    /// Lists that start beyond 24 bits are copied, the same.
+    #[test]
+    fn lists_start_anywhere() {
+        let n = STARTS + 3;
+        let xs = List::new((0..n as i64).map(Value::Int).collect());
+        let tail = xs.slice(STARTS - 1, n);
+        let rest = tail.slice(2, 4);
+        assert_eq!(Value::List(rest.clone()).repr(), format!("[{}, {}]", STARTS + 1, STARTS + 2));
+        assert_eq!(rest.start(), 0, "a copy");
+        assert_eq!(tail.start(), STARTS - 1);
+    }
+
+    /// A list whose memory has room after it.
+    fn roomy() -> List {
+        List::new(vec![Value::Int(1)]).push(Value::Int(2)).push(Value::Int(3))
+    }
+
+    #[test]
+    fn lists_grow_in_place_but_never_hold_their_own_memory() {
+        let xs = roomy();
+        let ys = xs.push(Value::Int(4));
+        assert_eq!({ xs.shared }, { ys.shared }, "in the room after `xs`");
+        assert_eq!((xs.len(), ys.len()), (3, 4));
+        // `xs` no longer ends where its memory is used: copied.
+        assert_ne!({ xs.shared }, { xs.push(Value::Int(5)).shared });
+        let ctor = Rc::new(CtorInfo {
+            type_name: Sym::new("T"),
+            name: Sym::new("A"),
+            id: Sym::new("A"),
+            type_id: Sym::new("T"),
+            fields: vec![],
+            index: 0,
+            doc: None,
+        });
+        let with_itself = [
+            Value::List(ys.clone()),
+            Value::Variant(Rc::new(Variant { ctor, fields: Fields::one(Value::list(vec![Value::Int(0), Value::List(ys.clone())])) })),
+        ];
+        for v in with_itself {
+            let grown = ys.push(v);
+            assert_ne!({ ys.shared }, { grown.shared }, "a list that would hold itself is copied");
+        }
+        let zs = ys.push(Value::list(vec![Value::Int(7)]));
+        assert_eq!({ ys.shared }, { zs.shared });
+        assert_eq!(Value::List(zs).repr(), "[1, 2, 3, 4, [7]]");
+    }
+
+    #[test]
+    fn whole_numbers_are_written_as_rust_writes_them() {
+        let mut n: i64 = 1;
+        let mut cases = vec![0, i64::MIN, i64::MAX, i64::MIN + 1, -1];
+        for _ in 0..19 {
+            cases.extend([n, n - 1, n + 1, -n, 1 - n]);
+            n = n.saturating_mul(10);
+        }
+        for n in cases {
+            assert_eq!(int_digits(n, &mut [0; 20]), n.to_string());
+        }
+    }
+}

@@ -1,0 +1,135 @@
+//! The fast paths of the interpreter give the same results, and the same
+//! errors, as the general ones.
+
+mod common;
+
+use common::{fails, ok};
+
+#[test]
+fn local_names_are_found_in_the_right_scope() {
+    ok("fn f(x)\n  y = x + 1\n  g = fn(z) = fn(w) = x + y + z + w\n  g(10)(100)\nend\nprint(f(1))", "113");
+    ok("fn f(f) = f + 1\nprint(f(1))", "2");
+    ok("fn outer()\n  fn inner(n) = if n == 0 then 0 else n + inner(n - 1)\n  inner(4)\nend\nprint(outer())", "10");
+    ok("fn outer()\n  fn inner(inner) = inner * 2\n  inner(21)\nend\nprint(outer())", "42");
+    ok("fn f()\n  g = fn(n) = if n == 0 then 0 else n + g(n - 1)\n  g\nend\nprint(f()(4))", "10");
+    ok("fn mk() = 1..3 |> map(fn(i) = fn(x) = x * i)\nprint(mk() |> map(fn(f) = f(10)))", "[10, 20, 30]");
+    ok("x = 5\nfn f() = x + 1\nprint(f())", "6");
+    ok("fn f(n)\n  a = match n\n    0 -> \"zero\"\n    k -> \"k{k}\"\n  end\n  b = match n + 1\n    k -> k\n  end\n  \"{a} {b}\"\nend\nprint(f(0), f(4))", "zero 1 k4 5");
+}
+
+#[test]
+fn methods_and_messages_see_local_names() {
+    // A local name hides the function of the same name.
+    fails("fn f(len) = [1].len()\nprint(f(3))", "E009");
+    ok("fn f(x)\n  foo = fn(a, b) = a * b\n  3.foo(x)\nend\nprint(f(4))", "12");
+    let r = fails("fn f(totalx) = [1].totalz()\nprint(f(1))", "E003");
+    assert!(r.stderr.contains("did you mean `totalx`?"), "{}", r.stderr);
+}
+
+#[test]
+fn operations_on_whole_numbers_grow_beyond_64_bits() {
+    ok("fn g(x) = x\nfn f(n) = g(n + 1)\nprint(f(9223372036854775807))", "9223372036854775808");
+    ok("fn f(n) = n * 2\nprint(map([9223372036854775807], f))", "[18446744073709551614]");
+    ok("print(sum([9223372036854775807, 1]), product([4294967296, 4294967296, -1]))", "9223372036854775808 -18446744073709551616");
+    // Back to small numbers, the fast way.
+    ok("x = 9223372036854775807 + 1\nprint(x - 1, type_of(x - 1), x - 1 == 9223372036854775807)", "9223372036854775807 Int true");
+    // Only numbers of more than 100000 digits stop, where they are made.
+    let r = fails("fn g(x) = x\nfn f(n) = g(n * n)\nprint(f(10 ** 60000))", "E023");
+    assert!(r.stderr.contains("<code>:2:15") && r.stderr.contains("in `f`") && r.stderr.contains("100000 digits"), "{}", r.stderr);
+    ok("fn f(n) = if n < 2 then n else n - 1\nprint(f(1), f(5), f(1.5), 7 // 2, -7 // 2, -7 % 3, 7 % -3)", "1 4 1.5 3 -4 2 -2");
+    ok("fn f(0) = \"zero\"\nfn f(n) = \"other\"\nprint(f(0), f(0.0), f(1))", "zero zero other");
+}
+
+#[test]
+fn records_keep_their_fields_in_order() {
+    ok(
+        "p = {name: \"Ada\", age: 36}\nprint({..p, age: 37}, {age: 1, ..p}, {x: 0, ..p, y: 2}, p)",
+        "{name: \"Ada\", age: 37} {age: 36, name: \"Ada\"} {x: 0, name: \"Ada\", age: 36, y: 2} {name: \"Ada\", age: 36}",
+    );
+    ok(
+        "fn build(0, r) = r\nfn build(n, r) = build(n - 1, put(r, \"k{n}\", n))\nbig = build(20, {})\nprint(len(big), big.k1, big[\"k20\"], has(big, \"k21\"), keys(remove(big, \"k3\")) |> len, {..big, k1: 0}.k1)",
+        "20 1 20 false 19 0",
+    );
+    ok("print({a: 1, b: 2} == {b: 2, a: 1}, {a: 1} == {a: 1, b: 2})", "true false");
+}
+
+#[test]
+fn values_built_last_and_texts() {
+    ok("type T = L | N(l, r)\nfn build(0) = L\nfn build(n) = N(build(n - 1), L)\nfn size(L) = 0\nfn size(N(l, r)) = 1 + size(l) + size(r)\nprint(size(build(1000)))", "1000");
+    fails("type T = N(a, b)\nfn f(g) = g(1)\nprint(f(N))", "E004");
+    ok(
+        "x = 1.5\nprint(\"{1}|{-2}|{x}|{[1, \"a\"]}|{Some(\"s\")}|{()}\", join([1, \"a\", 2.5], \", \"))",
+        "1|-2|1.5|[1, \"a\"]|Some(\"s\")|() 1, a, 2.5",
+    );
+    ok(
+        "print(split(\"a€b€c\", \"€\"), replace(\"été\", \"é\", \"e\"), sort([3, 1, 2]), sort([2, 1.5, 1]))",
+        "[\"a\", \"b\", \"c\"] ete [1, 2, 3] [1, 1.5, 2]",
+    );
+}
+
+#[test]
+fn functions_written_one_after_the_other_share_what_they_capture() {
+    ok(
+        "fn outer(n, k)\n  base = 100\n  fn even(0) = base + k\n  fn even(m) = odd(m - 1)\n  fn odd(0) = 0 - k\n  fn odd(m) = even(m - 1)\n  [even(n), odd(n), map([1, 2], fn(x) = odd(x) + base)]\nend\nprint(outer(10, 7), outer(11, 3))",
+        "[107, -7, [207, 93]] [-3, 103, [203, 97]]",
+    );
+    // A function of the group used from a closure inside another one, and as a value.
+    ok(
+        "fn outer(n)\n  fn a(x) = (fn(y) = b(x + y))(1)\n  fn b(x) = x * n\n  fn c() = [a, b] |> map(fn(f) = f(2))\n  c()\nend\nprint(outer(10))",
+        "[30, 20]",
+    );
+    // The parameters hide the functions of the group; tail calls between them do not grow the stack.
+    ok("fn f(n)\n  fn a(b) = b + 1\n  fn b(a) = a * 10\n  [a(n), b(n)]\nend\nprint(f(4))", "[5, 40]");
+    ok(
+        "fn f(n)\n  fn ping(0, acc) = acc\n  fn ping(k, acc) = pong(k - 1, acc + 1)\n  fn pong(0, acc) = acc\n  fn pong(k, acc) = ping(k - 1, acc + 2)\n  ping(n, 0)\nend\nprint(f(1000000))",
+        "1500000",
+    );
+    fails("fn f(n)\n  fn yes(0) = true\n  fn yes(k) = true and no(k - 1)\n  fn no(0) = 5\n  fn no(k) = false or yes(k - 1)\n  yes(n)\nend\nprint(f(3))", "E005");
+}
+
+#[test]
+fn functions_of_a_group_call_each_other_and_themselves_without_a_closure() {
+    // Calling itself or another one, in tail position or not, with guards, `?` and errors.
+    ok(
+        "fn f(n)\n  fn fact(0) = 1\n  fn fact(k) = k * fact(k - 1)\n  fn sum(k) if k <= 0 = 0\n  fn sum(k) = k + twice(k - 1) // 2\n  fn twice(k) = 2 * sum(k)\n  [fact(n), sum(n)]\nend\nprint(f(10))",
+        "[3628800, 55]",
+    );
+    ok(
+        "fn f(xs)\n  fn first([]) = None\n  fn first([x, ..]) = Some(x)\n  fn both(a, b) = Some([first(a)?, first(b)?])\n  [both(xs, [2]), both([], xs)]\nend\nprint(f([1]))",
+        "[Some([1, 2]), None]",
+    );
+    let r = fails("fn f(n)\n  fn a(k) = b(k, 1)\n  fn b(k) = k\n  a(n)\nend\nprint(f(1))", "E004");
+    assert!(r.stderr.contains("`b` takes 1 argument"), "{}", r.stderr);
+    let r = fails("fn f(n)\n  fn a(k) = 1 + b(k)\n  fn b(0) = 0\n  a(n)\nend\nprint(f(1))", "E006");
+    assert!(r.stderr.contains("no definition of `b`") && r.stderr.contains("in `a`"), "{}", r.stderr);
+    // Deep calls between them that are not tail calls still stop cleanly.
+    fails("fn f(n)\n  fn a(k) = 1 + b(k)\n  fn b(k) = 1 + a(k)\n  a(n)\nend\nprint(f(1))", "E014");
+}
+
+#[test]
+fn adding_at_the_end_never_changes_the_values_shared() {
+    // Lists: each value keeps its elements, whichever grew in place.
+    ok(
+        "a = [1, 2]\nb = a + [3]\nc = a + [4]\nd = push(b, 5)\ne = push(b, 6)\nf = [..d, 7]\ng = [..d, 8, ..a]\nprint(a, b, c, d, e, f, g)",
+        "[1, 2] [1, 2, 3] [1, 2, 4] [1, 2, 3, 5] [1, 2, 3, 6] [1, 2, 3, 5, 7] [1, 2, 3, 5, 8, 1, 2]",
+    );
+    ok(
+        "[_, ..rest] = [1, 2, 3]\nr = rest + [4]\nfirst = [1, 2, 3] |> take(2)\nprint(rest, r, push(rest, 5), first + [9], rest + rest, r + r)",
+        "[2, 3] [2, 3, 4] [2, 3, 5] [1, 2, 9] [2, 3, 2, 3] [2, 3, 4, 2, 3, 4]",
+    );
+    // A list added to itself, directly or inside other values.
+    ok(
+        "xs = push([1], 2)\nys = push(xs, xs)\nzs = [..ys, {l: ys}, Some([ys])]\nprint(xs, ys, zs, push(zs, 0) |> len)",
+        "[1, 2] [1, 2, [1, 2]] [1, 2, [1, 2], {l: [1, 2, [1, 2]]}, Some([[1, 2, [1, 2]]])] 6",
+    );
+    // Texts, with `+` and interpolation.
+    ok(
+        "s = \"ab\" + \"\"\nt = s + \"c\"\nu = s + \"d\"\nv = t + \"e\"\nw = \"{t}f\"\nx = \"{t}g{1}{t}\"\ny = \"{1}{t}\"\nprint(s, t, u, v, w, x, y, t + t, \"{v}\")",
+        "ab abc abd abce abcf abcg1abc 1abc abcabc abce",
+    );
+    // Built in loops: the same results, in constant time per addition.
+    ok(
+        "fn texts(0, acc) = acc\nfn texts(n, acc) = texts(n - 1, \"{acc}{n % 10}\")\nfn lists(0, acc) = acc\nfn lists(n, acc) = lists(n - 1, push(acc, n))\nt = texts(200_000, \"\")\nl = lists(200_000, [])\nf = 1..100_000 |> fold(\"\", fn(acc, x) = acc + \"x\")\ng = 1..100_000 |> fold([], fn(acc, x) = [..acc, x])\nprint(len(t), take(t, 5), len(l), l[0], l[-1], len(f), sum(g))",
+        "200000 09876 200000 200000 1 100000 5000050000",
+    );
+}

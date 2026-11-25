@@ -1,0 +1,740 @@
+//! The standard library: every documented example is true, and every function
+//! behaves well on the edge cases (empty values, negative positions, Unicode).
+
+mod common;
+
+use std::path::Path;
+
+use common::{fails, ok};
+use rythme::builtins::BUILTINS;
+
+/// Functions whose examples have effects (output, files, randomness, time...):
+/// their examples are shown, not checked.
+const EFFECTS: &[&str] = &[
+    "print",
+    "debug",
+    "each",
+    "each_with_index",
+    "input",
+    "input_lines",
+    "help",
+    "fail",
+    "args",
+    "exit",
+    "time",
+    "random",
+    "shuffle",
+    "env",
+    "read_file",
+    "read",
+    "write_file",
+    "append_file",
+    "file_exists",
+    "file_info",
+    "list_folder",
+    "create_folder",
+    "delete_file",
+    "now",
+    "today",
+    "http_get",
+    "http_post",
+    "print_error",
+    "sleep",
+];
+
+/// Runs a program inside this process and returns what it printed, or the error.
+fn run(code: &str) -> Result<String, String> {
+    use rythme::driver::Driver;
+    use rythme::interp::Mode;
+    rythme::lang::set(rythme::lang::Lang::En);
+    rythme::io::capture();
+    let mut driver = Driver::new();
+    driver.color = false;
+    let ok = match driver.load_source("example.ry", code, None, Path::new(".")) {
+        Some(m) => driver.execute(&m, Mode::Run).is_ok(),
+        None => false,
+    };
+    let out = rythme::io::take_captured();
+    if ok && !out.contains(rythme::io::ERR_START) {
+        Ok(out)
+    } else {
+        Err(out.replace([rythme::io::ERR_START, rythme::io::ERR_END], ""))
+    }
+}
+
+/// Does `got` match `expected`, where `...` in `expected` stands for any text?
+fn matches(got: &str, expected: &str) -> bool {
+    let parts: Vec<&str> = expected.split("...").collect();
+    if parts.len() == 1 {
+        return got == expected;
+    }
+    let mut rest = got;
+    for (i, part) in parts.iter().enumerate() {
+        if i == 0 {
+            let Some(r) = rest.strip_prefix(part) else { return false };
+            rest = r;
+        } else if i == parts.len() - 1 {
+            return rest.ends_with(part);
+        } else {
+            let Some(at) = rest.find(part) else { return false };
+            rest = &rest[at + part.len()..];
+        }
+    }
+    true
+}
+
+/// Every line `code   # value` of an example: `code` gives exactly `value`.
+#[test]
+fn every_example_is_true() {
+    let mut failures = Vec::new();
+    for b in BUILTINS.iter().filter(|b| !EFFECTS.contains(&b.name)) {
+        let mut program = String::new();
+        let mut expected = Vec::new();
+        for line in b.example.lines() {
+            match line.split_once("  # ") {
+                Some((code, value)) => {
+                    program.push_str(&format!("print([{}])\n", code.trim()));
+                    expected.push(format!("[{}]", value.trim()));
+                }
+                None => {
+                    program.push_str(line);
+                    program.push('\n');
+                }
+            }
+        }
+        match run(&program) {
+            Ok(out) => {
+                let got: Vec<&str> = out.lines().collect();
+                if got.len() != expected.len() || got.iter().zip(&expected).any(|(g, e)| !matches(g, e)) {
+                    failures.push(format!("{}:\n  expected {expected:?}\n  got      {got:?}", b.name));
+                }
+            }
+            Err(e) => failures.push(format!("{}: the example fails:\n{e}", b.name)),
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+/// The signature names as many arguments as the function accepts. It may show
+/// several forms, like `random(a, b), random(list)`: the longest one counts.
+#[test]
+fn signatures_match_the_number_of_arguments() {
+    for b in BUILTINS {
+        assert!(b.min <= b.max, "{}", b.name);
+        let forms: Vec<Vec<&str>> = b
+            .sig
+            .split("), ")
+            .map(|form| {
+                let inside = form.strip_prefix(b.name).and_then(|s| s.strip_prefix('(')).map(|s| s.strip_suffix(')').unwrap_or(s));
+                inside.unwrap_or_else(|| panic!("{}: {}", b.name, b.sig)).split(", ").filter(|p| !p.is_empty()).collect()
+            })
+            .collect();
+        let params = forms.iter().max_by_key(|f| f.len()).unwrap();
+        if b.max == usize::MAX {
+            assert_eq!(params.last(), Some(&"..."), "{}", b.name);
+        } else {
+            assert_eq!(params.len(), b.max, "{}: {}", b.name, b.sig);
+        }
+    }
+}
+
+/// The names that the editors, the site and the playground color as built-in.
+fn listed(file: &str) -> Vec<String> {
+    let text = std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join(file)).unwrap();
+    let names: Vec<String> = if file.ends_with(".rs") {
+        let start = text.find("pub const BUILTINS").expect("BUILTINS in highlight.rs");
+        let block = &text[start..start + text[start..].find("];").unwrap()];
+        block.lines().filter_map(|l| l.trim().strip_prefix('"')?.strip_suffix("\",").map(str::to_owned)).collect()
+    } else {
+        let start = text.find("const BUILTINS = new Set((\"").expect("BUILTINS in the page") + 27;
+        text[start..start + text[start..].find('"').unwrap()].split(' ').map(str::to_owned).collect()
+    };
+    names.into_iter().filter(|n| n != "pi").collect()
+}
+
+#[test]
+fn every_builtin_is_colored_by_the_site_and_the_playground() {
+    let expected: Vec<String> = BUILTINS.iter().map(|b| b.name.to_owned()).collect();
+    for file in ["site/client/src/highlight.rs", "playground/web/index.html"] {
+        assert_eq!(listed(file), expected, "{file} must list the built-in functions in the order of BUILTINS");
+    }
+}
+
+#[test]
+fn numbers() {
+    ok("print(gcd(12, 18), gcd(-12, 18), gcd(0, 0), gcd(7, 0), lcm(4, 6), lcm(-4, 6), lcm(0, 5))", "6 6 0 7 12 12 0");
+    ok("print(lcm(9223372036854775807, 2), gcd(-9223372036854775807 - 1, 0))", "18446744073709551614 9223372036854775808");
+    fails("gcd(1.5, 2)", "E005");
+    ok("print(asin(1) == pi / 2, acos(1), atan(1) == pi / 4, atan(0, -1) == pi, atan(-1, 0) == -pi / 2)", "true 0.0 true true true");
+    fails("asin(2)", "E023");
+    fails("acos(-1.5)", "E023");
+    ok("print(round(1e300, 15), round(1234.5678, -2), round(-2.5), round(2.5, 0))", "1e300 1200.0 -3 3.0");
+}
+
+#[test]
+fn whole_numbers_without_limit() {
+    // Known values.
+    ok("print(2 ** 100, 3 ** 100)", "1267650600228229401496703205376 515377520732011331036461129765621272702107522001");
+    ok(
+        "print(product(1..100))",
+        "93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000",
+    );
+    ok("fn fib(n, a, b) = if n == 0 then a else fib(n - 1, b, a + b)\nprint(fib(100, 0, 1))", "354224848179261915075");
+    ok(
+        "print(2 ** 127 - 1, pow(2, 64), pow(-2, 65))",
+        "170141183460469231731687303715884105727 18446744073709551616 -36893488147419103232",
+    );
+    ok(
+        "print(10 ** 30 // 7, 10 ** 30 % 7, -(10 ** 30) // 7, -(10 ** 30) % 7)",
+        "142857142857142857142857142857 1 -142857142857142857142857142858 6",
+    );
+    ok("print(10 ** 30 % -7, (2 ** 100) // (2 ** 98), 2 ** 100 / 2 ** 99, 10 ** 400 / 10 ** 399, 1 / 10 ** 400)", "-6 4 2.0 10.0 0.0");
+    ok(
+        "print(gcd(2 ** 100, 10 ** 30), gcd(-(6 ** 40), 4 ** 30), lcm(2 ** 70, 3), lcm(-(10 ** 20), 0))",
+        "1073741824 1099511627776 3541774862152233910272 0",
+    );
+    ok(
+        "print(abs(-(10 ** 20)), -(10 ** 20), is_even(10 ** 20), is_odd(10 ** 20 + 1))",
+        "100000000000000000000 -100000000000000000000 true true",
+    );
+    // Exact comparisons with decimal numbers.
+    ok("print(2 ** 64 == 2.0 ** 64, 2 ** 64 + 1 == 2.0 ** 64, 2 ** 64 + 1 > 2.0 ** 64, 10 ** 400 < 1e308 * 10.0, -(10 ** 400) > -1e308 * 10.0, 10 ** 400 > 1e308)", "true false true true true true");
+    ok(
+        "print(max(2 ** 70, 1e300), min([3, -(2 ** 70), 0.5]), sort([2 ** 65, 1.5, -(2 ** 65)]))",
+        "1e300 -1180591620717411303424 [-36893488147419103232, 1.5, 36893488147419103232]",
+    );
+    ok(
+        "print(2 ** 70 + 0.5, 2 ** 70 * 1.0, float(2 ** 70), 2 ** 1100 * 1.0)",
+        "1.1805916207174113e21 1.1805916207174113e21 1.1805916207174113e21 inf",
+    );
+    // Converted exactly, both ways.
+    ok("print(int(1e30), floor(-1e20), round(2.0 ** 70))", "1000000000000000019884624838656 -100000000000000000000 1180591620717411303424");
+    ok(
+        "print(int(\"123456789012345678901234567890\"), int(\" -1_000_000_000_000_000_000_000 \"))",
+        "123456789012345678901234567890 -1000000000000000000000",
+    );
+    ok(
+        "print(parse_int(\"99999999999999999999\"), text(2 ** 70), text(2 ** 70, 2), \"{2 ** 70}\")",
+        "Ok(99999999999999999999) 1180591620717411303424 1180591620717411303424.00 1180591620717411303424",
+    );
+    ok(
+        "print(to_json({n: 2 ** 70}), parse_json(\"[123456789012345678901234567890, -1e400]\"))",
+        "{\"n\": 1180591620717411303424} Ok([123456789012345678901234567890, -inf])",
+    );
+    ok(
+        "print(unique([2 ** 70, 2.0 ** 70, 2 ** 70 + 1]), type_of(2 ** 70), 2 ** 70 == 1180591620717411303424)",
+        "[1180591620717411303424, 1180591620717411303425] Int true",
+    );
+    ok("print(match 2 ** 70\n  1180591620717411303424 -> \"yes\"\n  _ -> \"no\"\nend, match -(2 ** 70)\n  -1180591620717411303424 -> \"yes\"\n  _ -> \"no\"\nend)", "yes yes");
+    ok(
+        "print(10 ** 20 .. 10 ** 20 + 2, len(text(10 ** 99999)), (-1) ** (10 ** 30), 1 ** (10 ** 30), 0 ** (10 ** 30))",
+        "[100000000000000000000, 100000000000000000001, 100000000000000000002] 100000 1 1 0",
+    );
+    // Only absurdly large numbers stop: more than 100000 digits.
+    fails("10 ** 100000", "E023");
+    fails("2 ** (10 ** 30)", "E023");
+    fails("x = 10 ** 60000\nx * x", "E023");
+    fails("int(\"1\" + repeat(\"0\", 100000))", "E023");
+    ok("print(parse_int(\"1\" + repeat(\"0\", 100000)))", "Err(\"this number has more than 100000 digits\")");
+    fails("int(1e308 * 10.0)", "E022");
+    fails("[1, 2][10 ** 20]", "E007");
+    fails("take([1], 10 ** 20)", "E023");
+    fails("2 ** 70 // 0", "E008");
+    fails("0 ** -(10 ** 20)", "E008");
+}
+
+#[test]
+fn numbers_as_text() {
+    ok("print(text(3.14159, 2), text(5, 2), text(-7, 0), text(2.5, 0), text(0.125, 2), text(-0.001, 2))", "3.14 5.00 -7 3 0.13 0.00");
+    ok(
+        "print(text(9007199254740993, 1), text(1e20, 1), text(float(\"inf\"), 2), text(0.1 + 0.2, 1))",
+        "9007199254740993.0 100000000000000000000.0 inf 0.3",
+    );
+    fails("text(\"a\", 2)", "E005");
+    fails("text(1.5, -1)", "E023");
+    fails("text(1.5, 101)", "E023");
+}
+
+#[test]
+fn text_functions() {
+    ok("print(capitalize(\"élise\"), capitalize(\"\"), capitalize(\"ßa\"), capitalize(\"1abc\"))", "Élise  Ssa 1abc");
+    // The titlecase of Unicode, where it is not the uppercase: digraphs,
+    // ligatures, Greek with iota subscript, Armenian; Georgian stays.
+    ok(
+        "print(capitalize(\"ǆungla\"), capitalize(\"ǉubav\"), capitalize(\"ǌ\"), capitalize(\"ǳ\"), capitalize(\"Ǆ\"), capitalize(\"ǅx\"))",
+        "ǅungla ǈubav ǋ ǲ ǅ ǅx",
+    );
+    ok("print(capitalize(\"ﬁn\"), capitalize(\"ﬄ\"), capitalize(\"ᾳ\"), capitalize(\"ᾀ\"), capitalize(\"ᾈ\"))", "Fin Ffl ᾼ ᾈ ᾈ");
+    assert_eq!(rythme::builtins::titlecase('\u{1fb7}'), "\u{391}\u{342}\u{345}");
+    assert_eq!(rythme::builtins::titlecase('\u{10d0}'), "\u{10d0}");
+    assert_eq!(rythme::builtins::titlecase('\u{1c6}'), "\u{1c5}");
+    assert_eq!(rythme::builtins::titlecase('é'), "É");
+    ok(
+        "print(capitalize(\"և\"), capitalize(\"ﬓ\"), capitalize(\"გამარჯობა\"), capitalize(\"ŉ\"), capitalize(\"ǰ\"), capitalize(\"ı\"))",
+        "Եւ Մն გამარჯობა ʼN J̌ I",
+    );
+    // `upper` stays the uppercase.
+    ok("print(upper(\"ǆ\"), upper(\"ß\"), upper(\"ﬁ\"))", "Ǆ SS FI");
+    ok(
+        "print(pad_left(\"été\", 5, \"*\"), pad_right(3.5, 6, \"_\"), pad_left(\"long\", 2), pad_left(\"\", 0) == \"\")",
+        "**été 3.5___ long true",
+    );
+    ok("print(\"[{pad_left(42, 5)}]\", \"[{pad_right(\"ab\", 4)}]\")", "[   42] [ab  ]");
+    fails("pad_left(\"a\", 3, \"ab\")", "E023");
+    fails("pad_left(\"a\", -1)", "E023");
+    ok(
+        "print(char_code(\"A\"), char_code(\"é\"), char_code(\"😀\"), char(233), char(128512), char(char_code(\"y\") + 1))",
+        "65 233 128512 é 😀 z",
+    );
+    fails("char_code(\"ab\")", "E023");
+    fails("char_code(\"\")", "E023");
+    fails("char(55296)", "E023");
+    fails("char(-1)", "E023");
+    ok("print(is_digit(\"042\"), is_digit(\"\"), is_digit(\"4a\"), is_digit(\"٣\"), is_digit(\"-1\"))", "true false false false false");
+    ok("print(is_letter(\"Ωmega\"), is_letter(\"été\"), is_letter(\"a1\"), is_letter(\"\"))", "true true false false");
+    ok("print(is_space(\" \\t\\n\"), is_space(\"\"), is_space(\" a \"))", "true false false");
+}
+
+#[test]
+fn list_changes_make_new_lists() {
+    ok("xs = [1, 2, 3]\nprint(set_at(xs, 0, 9), set_at(xs, -1, 0), xs)", "[9, 2, 3] [1, 2, 0] [1, 2, 3]");
+    ok(
+        "print(insert_at([1, 2], 0, 0), insert_at([1, 2], 2, 3), insert_at([1, 2], -1, 3), insert_at([1, 2], -3, 0), insert_at([], 0, 1))",
+        "[0, 1, 2] [1, 2, 3] [1, 2, 3] [0, 1, 2] [1]",
+    );
+    ok("print(remove_at([1, 2, 3], 0), remove_at([1, 2, 3], -1), remove_at([1], 0))", "[2, 3] [1, 2] []");
+    let r = fails("set_at([1, 2], 2, 0)", "E007");
+    assert!(r.stderr.contains("from 0 to 1"), "{}", r.stderr);
+    fails("insert_at([1, 2], 3, 0)", "E007");
+    fails("insert_at([1, 2], -4, 0)", "E007");
+    fails("remove_at([], 0)", "E007");
+    fails("set_at(\"abc\", 0, \"x\")", "E005");
+}
+
+#[test]
+fn pieces_of_lists_and_texts() {
+    ok(
+        "print(take_while([1, 3, 4, 5], is_odd), drop_while([1, 3, 4, 5], is_odd), take_while([], is_odd), drop_while([1, 3], is_odd))",
+        "[1, 3] [4, 5] [] []",
+    );
+    ok("print(take_while(\"42 cm\", is_digit), drop_while(\"  été\", is_space), take_while(\"\", is_digit) == \"\")", "42 été true");
+    ok("print(0..10 |> step_by(5), step_by(\"abcdef\", 2), step_by([], 3), step_by(1..3, 9))", "[0, 5, 10] ace [] [1]");
+    ok(
+        "print(chunks([1, 2, 3, 4, 5], 2), chunks(\"héllo\", 2), chunks([], 3), chunks([1], 4))",
+        "[[1, 2], [3, 4], [5]] [\"hé\", \"ll\", \"o\"] [] [[1]]",
+    );
+    ok(
+        "print(windows([1, 2, 3, 4], 2), windows(\"abc\", 2), windows([1, 2], 3), windows([1, 2], 2))",
+        "[[1, 2], [2, 3], [3, 4]] [\"ab\", \"bc\"] [] [[1, 2]]",
+    );
+    fails("step_by([1], 0)", "E023");
+    fails("chunks([1], 0)", "E023");
+    fails("windows(\"abc\", -1)", "E023");
+    fails("take_while(5, is_odd)", "E005");
+    fails("take_while([1, 2], fn(x) = x)", "E005");
+}
+
+#[test]
+fn folding_and_choosing() {
+    ok(
+        "print(scan([1, 2, 3], 0, fn(total, x) = total + x), scan([], 0, fn(a, x) = a + x), scan([2, 3], 1, fn(a, x) = a * x))",
+        "[1, 3, 6] [] [2, 6]",
+    );
+    ok("print(min_by([\"ccc\", \"a\", \"bb\"], len), max_by([\"bb\", \"aa\", \"c\"], len), max_by([3], fn(x) = -x))", "a bb 3");
+    ok(
+        "people = [{n: \"Ada\", age: 36}, {n: \"Alan\", age: 41}]\nprint(max_by(people, fn(p) = p.age).n, min_by(people, fn(p) = p.age).n)",
+        "Alan Ada",
+    );
+    fails("min_by([], len)", "E023");
+    fails("max_by([1, \"a\"], fn(x) = x)", "E005");
+    ok("print(len(shuffle(1..50)), sort(shuffle(1..50)) == 1..50, shuffle([]))", "50 true []");
+}
+
+#[test]
+fn records_as_dictionaries() {
+    ok(
+        "print(from_entries([[\"a\", 1], [\"b c\", 2]]), from_entries([]), from_entries([[\"a\", 1], [\"a\", 2]]))",
+        "{a: 1, \"b c\": 2} {} {a: 2}",
+    );
+    ok(
+        "r = {x: 1, y: 2}\nprint(from_entries(entries(r)) == r, map_values(r, fn(v) = v * 10), map_values({}, upper))",
+        "true {x: 10, y: 20} {}",
+    );
+    ok("print(group_by(split(\"a b a c a\"), fn(w) = w) |> map_values(len))", "{a: 3, b: 1, c: 1}");
+    fails("from_entries([[1, 2]])", "E023");
+    fails("from_entries([[\"a\"]])", "E023");
+    let r = fails("put([1, 2], 0, 5)", "E005");
+    assert!(r.stderr.contains("set_at"), "{}", r.stderr);
+    let r = fails("remove([1, 2], 0)", "E005");
+    assert!(r.stderr.contains("remove_at"), "{}", r.stderr);
+}
+
+#[test]
+fn option_and_result_helpers() {
+    ok(
+        "print(and_then(Some(2), fn(x) = Some(x * 2)), and_then(Some(2), fn(x) = None), and_then(None, fn(x) = Some(x)))",
+        "Some(4) None None",
+    );
+    ok(
+        "print(and_then(Ok(2), fn(x) = Err(\"no\")), and_then(Err(\"e\"), fn(x) = Ok(x)), parse_int(\"7\") |> and_then(fn(n) = Ok(n + 1)))",
+        "Err(\"no\") Err(\"e\") Ok(8)",
+    );
+    let r = fails("and_then(Some(1), fn(x) = x + 1)", "E005");
+    assert!(r.stderr.contains("map(x, f)"), "{}", r.stderr);
+    fails("and_then(Ok(1), fn(x) = Some(x))", "E005");
+    fails("and_then([1], fn(x) = Some(x))", "E005");
+    ok(
+        "print(ok_or(Some(1), \"e\"), ok_or(None, \"missing\"), map_err(Ok(1), upper), map_err(Err(\"e\"), upper))",
+        "Ok(1) Err(\"missing\") Ok(1) Err(\"E\")",
+    );
+    ok("fn age(p)\n  a = ok_or(get(p, \"age\"), \"no age\")?\n  Ok(a + 1)\nend\nprint(age({age: 36}), age({}))", "Ok(37) Err(\"no age\")");
+    fails("ok_or(Ok(1), \"e\")", "E005");
+    fails("map_err(None, upper)", "E005");
+    let r = fails("flat_map(Some(1), fn(x) = Some(x))", "E005");
+    assert!(r.stderr.contains("and_then"), "{}", r.stderr);
+}
+
+#[test]
+fn json_reading() {
+    ok("print(parse_json(\"[1, 2.5, -3e2, true, false, null, \\\"x\\\"]\"))", "Ok([1, 2.5, -300.0, true, false, None, \"x\"])");
+    ok("print(parse_json(\" \\{\\\"a\\\": \\{\\\"b\\\": [\\{\\}, []]\\}, \\\"c d\\\": 1\\} \"))", "Ok({a: {b: [{}, []]}, \"c d\": 1})");
+    ok("print(parse_json(\"\\\"\\\\u00e9\\\\ud83d\\\\ude00\\\\n\\\\\\\"\\\"\") |> unwrap |> len)", "4");
+    ok(
+        "print(parse_json(\"12345678901234567890\"), parse_json(\"-0\"), parse_json(\"\\u{feff}1\"))",
+        "Ok(12345678901234567890) Ok(0) Ok(1)",
+    );
+    for (json, error) in [
+        ("", "line 1, column 1: expected a value"),
+        ("[1, 2", "expected `,` or `]`"),
+        ("[1,]", "expected a value, but found `]`"),
+        ("01", "invalid number"),
+        ("1.", "invalid number"),
+        ("[1] x", "expected the end of the text, but found `x`"),
+        ("tru", "expected a value"),
+        ("\\\"a", "never closed"),
+        ("\\\"\\\\x\\\"", "invalid escape"),
+        ("\\\"\\\\ud800\\\"", "surrogate"),
+        ("[\\n1,\\n2,\\n?]", "line 4, column 1"),
+    ] {
+        let r = common::rythme(&["-e", &format!("print(parse_json(\"{json}\"))")]);
+        assert!(r.stdout.starts_with("Err(\"JSON, ") && r.stdout.contains(error), "{json}: {}{}", r.stdout, r.stderr);
+    }
+    fails("parse_json(42)", "E005");
+}
+
+#[test]
+fn json_writing() {
+    ok(
+        "print(to_json({name: \"Ada\", tags: [\"a\"], ok: true, none: None, some: Some(2), x: 1e20, y: 0.5, z: -3}))",
+        "{\"name\": \"Ada\", \"tags\": [\"a\"], \"ok\": true, \"none\": null, \"some\": 2, \"x\": 1e20, \"y\": 0.5, \"z\": -3}",
+    );
+    ok("print(to_json(\"say \\\"hi\\\"\\n\\t\\\\ \\{é}\"))", "\"say \\\"hi\\\"\\n\\t\\\\ {é}\"");
+    ok("print(to_json([[], {}, [1, [2]]], 2))", "[\n  [],\n  {},\n  [\n    1,\n    [\n      2\n    ]\n  ]\n]");
+    ok("print(to_json({a: [1]}, 0))", "{\n\"a\": [\n1\n]\n}");
+    ok(
+        "v = {a: [1, 2.5, \"x\", None, {b: true}], c: \"é\"}\nprint(parse_json(to_json(v)) == Ok(v), parse_json(to_json(v, 4)) == Ok(v))",
+        "true true",
+    );
+    fails("to_json(print)", "E005");
+    fails("to_json(Ok(1))", "E005");
+    fails("to_json([1e308 * 10])", "E023");
+    fails("to_json(1, 17)", "E023");
+}
+
+#[test]
+fn json_nested_very_deeply_does_not_crash() {
+    let depth = 200_000;
+    let code = format!("j = repeat(\"[\", {depth}) + repeat(\"]\", {depth})\nv = unwrap(parse_json(j))\nprint(to_json(v) == j)");
+    ok(&code, "true");
+    // Indented, this would take tens of gigabytes: an error, not a crash.
+    fails(&format!("j = repeat(\"[\", {depth}) + repeat(\"]\", {depth})\nto_json(unwrap(parse_json(j)), 2)"), "E023");
+}
+
+#[test]
+fn env_and_files() {
+    ok("print(env(\"RYTHME_SURELY_NOT_SET\"), env(\"\"), env(\"A=B\"))", "None None None");
+    let r = common::rythme(&["-e", "print(env(\"PATH\") |> is_some)"]);
+    assert_eq!(r.stdout.trim(), "true");
+    let dir = std::env::temp_dir().join(format!("rythme-stdlib-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("log.txt");
+    let path = path.to_str().unwrap().replace('\\', "/");
+    ok(
+        &format!("p = \"{path}\"\nwrite_file(p, \"a\\n\")\nappend_file(p, \"b\\n\")\nappend_file(p, 3)\nprint(read_file(p))"),
+        "Ok(\"a\\nb\\n3\")",
+    );
+    ok(&format!("print(is_err(append_file(\"{path}/nowhere/x.txt\", \"a\")))"), "true");
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn wrong_values_get_a_hint() {
+    let r = fails("map(\"abc\", upper)", "E005");
+    assert!(r.stderr.contains("chars(text)"), "{}", r.stderr);
+    let r = fails("filter({a: 1}, fn(x) = true)", "E005");
+    assert!(r.stderr.contains("entries(record)"), "{}", r.stderr);
+    let r = fails("xs = [1]\nxs[0] = 2", "E001");
+    assert!(r.stderr.contains("set_at"), "{}", r.stderr);
+    let r = common::rythme_lang("fr", &["-e", "char_code(\"ab\")"]);
+    assert!(r.stderr.contains("a besoin d'un seul caractère"), "{}", r.stderr);
+}
+
+#[test]
+fn names_from_other_languages() {
+    for (name, rythme) in [
+        ("padStart", "pad_left"),
+        ("lpad", "pad_left"),
+        ("rpad", "pad_right"),
+        ("charCodeAt", "char_code"),
+        ("fromCharCode", "char"),
+        ("isdigit", "is_digit"),
+        ("takeWhile", "take_while"),
+        ("in_groups_of", "chunks"),
+        ("pairwise", "windows"),
+        ("accumulate", "scan"),
+        ("maxBy", "max_by"),
+        ("insert", "insert_at"),
+        ("pop", "remove_at"),
+        ("fromEntries", "from_entries"),
+        ("mapValues", "map_values"),
+        ("andThen", "and_then"),
+        ("mapErr", "map_err"),
+        ("stringify", "to_json"),
+        ("json_parse", "parse_json"),
+        ("getenv", "env"),
+        ("startsWith", "starts_with"),
+        ("pgcd", "gcd"),
+        ("trimStart", "trim_start"),
+        ("rtrim", "trim_end"),
+        ("equalsIgnoreCase", "equals_ignore_case"),
+        ("number_format", "format_number"),
+        ("fullmatch", "matches"),
+        ("findall", "find_all"),
+        ("re_split", "split_by"),
+        ("re_sub", "replace_all"),
+    ] {
+        let r = fails(&format!("{name}(1)"), "E003");
+        assert!(r.stderr.contains(&format!("called `{rythme}`")), "{name}: {}", r.stderr);
+    }
+    for (name, hint) in [("mod", "`%`"), ("div", "`//`"), ("toFixed", "text(x, 2)"), ("range", "step_by")] {
+        let r = fails(&format!("{name}(1)"), "E003");
+        assert!(r.stderr.contains(hint), "{name}: {}", r.stderr);
+    }
+}
+
+#[test]
+fn help_on_a_value_lists_each_function_once() {
+    let r = common::rythme(&["-e", "help([1, 2])"]);
+    let names: Vec<&str> = r.stdout.lines().filter_map(|l| l.split_once(": ").map(|p| p.1)).flat_map(|l| l.split(", ")).collect();
+    for name in ["map", "chunks", "len", "join"] {
+        assert_eq!(names.iter().filter(|n| **n == name).count(), 1, "{name}: {}", r.stdout);
+    }
+    let r = common::rythme(&["-e", "help({a: 1})"]);
+    assert!(r.stdout.contains("map_values") && r.stdout.contains("to_json"), "{}", r.stdout);
+}
+
+/// The functions added after 1.0, on their edge cases: empty values,
+/// Unicode, very large numbers, wrong specs and patterns.
+#[test]
+fn format_and_bases() {
+    ok(
+        "print(format(1234.5, \",\"), format(-3.5, \"+.1f\"), format(0.0001234, \"g\"), format(1234.5, \".3g\"), format(12345678, \"_\"), format(255, \"08b\"))",
+        "1,234.5 -3.5 0.0001234 1.23e+03 12_345_678 11111111",
+    );
+    ok(
+        "print([format(\"ab\", \"^6\"), format(\"abcdef\", \".3\"), format(true, \">5\"), format(42, \"*^9\"), format(65, \"c\")])",
+        "[\"  ab  \", \"abc\", \" true\", \"***42****\", \"A\"]",
+    );
+    ok(
+        "print(format(1e20, \"e\"), format(float(\"nan\"), \"f\"), format(float(\"inf\"), \"F\"), format(5, \"%\"), format(1.5, \"08.2f\"), format(-1.5, \"08.2f\"))",
+        "1.000000e+20 nan INF 500.000000% 00001.50 -0001.50",
+    );
+    ok("print(format(2 ** 70, \",\"), format(-(2 ** 70), \"x\"))", "1,180,591,620,717,411,303,424 -400000000000000000");
+    for bad in [
+        "format(1, \"q\")",
+        "format(1, \".\")",
+        "format(1, \".2d\")",
+        "format(1.5, \"x\")",
+        "format(\"a\", \"+\")",
+        "format(1, \",x\")",
+        "format(1, \"99999\")",
+    ] {
+        fails(bad, "E023");
+    }
+    let r = fails("format(\"%05d\", 42)", "E005");
+    assert!(r.stderr.contains("the value comes first"), "{}", r.stderr);
+    ok(
+        "print(to_base(-255, 16), to_base(2 ** 70, 36), from_base(\"-0xFF\", 16), from_base(\"z\", 36), from_base(\"1_000\", 10), is_err(from_base(\"\", 10)))",
+        "-ff 6x5kxtvuwilukg Ok(-255) Ok(35) Ok(1000) true",
+    );
+    ok("print(digits(0), digits(2 ** 64), digits(255, 16))", "[0] [1, 8, 4, 4, 6, 7, 4, 4, 0, 7, 3, 7, 0, 9, 5, 5, 1, 6, 1, 6] [15, 15]");
+    fails("digits(-1)", "E023");
+    fails("to_base(10, 1)", "E023");
+    fails("from_base(\"1\", 37)", "E023");
+}
+
+#[test]
+fn texts_added_after_one_point_zero() {
+    ok(
+        "print(snake_case(\"XMLHttpRequest\"), snake_case(\"version2Update\"), camel_case(\"XML http request\"), kebab_case(\"  many   spaces  \"))",
+        "xml_http_request version2_update xmlHttpRequest many-spaces",
+    );
+    ok("print(swap_case(\"Straße\"), is_upper(\"ÉTÉ\"), is_lower(\"été 2\"), is_upper(\"123\"))", "sTRASSE true true false");
+    ok("print([word_wrap(\"a\\n\\nbb cc dd\\nverylongword x\", 4)])", "[\"a\\n\\nbb\\ncc\\ndd\\nverylongword\\nx\"]");
+    ok("print(edit_distance(\"\", \"abc\"), edit_distance(\"été\", \"ete\"), rotate_by(\"é👍a\", 1), rotate_by([], 3))", "3 2 👍aé []");
+    ok("print(occurrences([], 1), occurrences(\"aaaa\", \"aa\"), last_index_of(\"abc\", \"\"), last_index_of([], 1), replace_first(\"aaa\", \"a\", \"bb\"))", "0 2 Some(3) None bbaa");
+    ok("print([center(42, 5), center(\"x\", 0), capitalize_words(\"  hello\\tworld  \")])", "[\" 42  \", \"x\", \"  Hello\\tWorld  \"]");
+    ok("print(bytes(\"\"), split_once(\"a=\", \"=\"), inspect(Some(\"x\")), inspect(1.0))", "[] Some([\"a\", \"\"]) Some(\"x\") 1.0");
+    for bad in [
+        "occurrences(\"abc\", \"\")",
+        "split_once(\"abc\", \"\")",
+        "replace_first(\"abc\", \"\", \"x\")",
+        "word_wrap(\"a\", 0)",
+        "center(\"a\", 3, \"ab\")",
+    ] {
+        fails(bad, "E023");
+    }
+    let r = fails("count(\"banana\", \"a\")", "E005");
+    assert!(r.stderr.contains("occurrences(text, piece)"), "{}", r.stderr);
+}
+
+#[test]
+fn lists_added_after_one_point_zero() {
+    ok(
+        "print(combinations([], 0), combinations([1], 2), permutations([]), cartesian_product([1], []), cartesian_product([1, 2], [3], [4, 5]))",
+        "[[]] [] [[]] [] [[1, 3, 4], [1, 3, 5], [2, 3, 4], [2, 3, 5]]",
+    );
+    ok("print(unzip([]), unzip([[1, 2, 3], [4, 5]]), zip([1], [2], [3], [4]))", "[] [[1, 4], [2, 5]] [[1, 2, 3, 4]]");
+    ok(
+        "print(tally([1, 1.0, 2]), most_common([]), most_common([3, 1, 3, 1, 2], 1), count_by([], len))",
+        "dict(1 => 2, 2 => 1) [] [[3, 2]] dict()",
+    );
+    ok(
+        "print(unique_by([1.5, 2.5, -1.5], abs), chunk_by([], is_odd), split_at([1, 2], 10), split_at(\"\", -1))",
+        "[1.5, 2.5] [] [[1, 2], []] [\"\", \"\"]",
+    );
+    ok("print(iterate(\"a\", 3, fn(s) = s + \"b\"), iterate(0, 0, fn(x) = x), unfold(0, fn(n) = None))", "[\"a\", \"ab\", \"abb\"] [] []");
+    ok(
+        "print(interleave([], [1]), intersperse([1], 0), update_at([1, 2], -1, fn(x) = x + 1), find_index([], is_even))",
+        "[1] [1] [1, 3] None",
+    );
+    ok(
+        "print(sort_desc([\"b\", \"a\", \"c\"]), sort_desc([2.5, 1, 3]), sort_by_desc([[1, \"a\"], [2, \"b\"], [1, \"c\"]], first))",
+        "[\"c\", \"b\", \"a\"] [3, 2.5, 1] [[2, \"b\"], [1, \"a\"], [1, \"c\"]]",
+    );
+    // Bounded: too many results is an error, not a full memory.
+    fails("permutations(1..12)", "E023");
+    fails("combinations(1..100, 50)", "E023");
+    fails("cartesian_product(1..1000, 1..1000, 1..1000)", "E023");
+    fails("update_at([1], 5, fn(x) = x)", "E007");
+    fails("tally([sqrt])", "E023");
+    fails("unzip([1])", "E005");
+    let r = fails("filter_map([1], fn(x) = x)", "E005");
+    assert!(r.stderr.contains("`None` to leave the element out"), "{}", r.stderr);
+}
+
+#[test]
+fn numbers_keys_and_results_added_after_one_point_zero() {
+    ok("print(constrain(\"m\", \"a\", \"k\"), constrain(5, 0.5, 2), divmod(7.5, 2), divmod(2 ** 70, 3), binomial(100, 50), binomial(5, 7), binomial(0, 0))", "k 2 [3.0, 1.5] [393530540239137101141, 1] 100891344545564193334812497256 0 1");
+    ok(
+        "print(is_positive(2 ** 70), is_negative(-(2 ** 70)), is_zero(-0.0), is_nan(1), is_finite(2 ** 70), 5.clamp(1, 3))",
+        "true true true false true 3",
+    );
+    fails("constrain(1, 3, 2)", "E023");
+    fails("constrain(1, \"a\", 2)", "E005");
+    fails("divmod(1, 0)", "E008");
+    fails("binomial(10 ** 6, 5 * 10 ** 5)", "E023");
+    ok("print(dig([1, [2, 3]], [1, -1]), dig(\"abc\", [1]), dig(dict([[1, {x: 2}]]), [1, \"x\"]), dig({}, []), dig({a: 1}, [\"a\", \"b\"]))", "Some(3) Some(\"b\") Some(2) Some({}) None");
+    ok(
+        "print(merge_with(dict([[1, 1]]), dict([[1, 2], [3, 4]]), fn(a, b) = a * 10 + b), invert(dict([[1, \"a\"], [2, \"a\"]])))",
+        "dict(1 => 12, 3 => 4) dict(\"a\" => 2)",
+    );
+    ok("print(select_keys(dict([[1, 2], [3, 4]]), set([3])), reject_keys({a: 1, b: 2}, [\"b\", 7]), map_keys(dict([[1, \"a\"], [2, \"b\"]]), fn(k) = k % 2))", "dict(3 => 4) {a: 1} dict(0 => \"b\", 1 => \"a\")");
+    ok(
+        "print(update(dict(), [1, 2], 0, fn(n) = n + 1), symmetric_difference(set([]), set([1])), is_disjoint(set([1]), set([1, 2])))",
+        "dict([1, 2] => 0) set(1) false",
+    );
+    fails("merge_with({a: 1}, dict(), fn(x, y) = x)", "E005");
+    fails("map_keys({a: 1}, fn(k) = 1)", "E005");
+    fails("invert({a: sqrt})", "E023");
+    ok(
+        "print(unwrap_or_else(Some(1), fn() = 2), unwrap_or_else(Ok(1), fn(e) = 2), all_ok([]), all_ok([Ok(1), Err(\"a\"), Err(\"b\")]))",
+        "1 1 Ok([]) Err(\"a\")",
+    );
+    let r = fails("expect(None, \"a config file\")", "E013");
+    assert!(r.stderr.contains("a config file") && r.stderr.contains("`expect` found `None`"), "{}", r.stderr);
+    fails("unwrap_or_else(None, fn(e) = e)", "E004");
+    fails("all_ok([1])", "E005");
+}
+
+#[test]
+fn dates_and_encodings_added_after_one_point_zero() {
+    ok(
+        "print(add_months({year: 2024, month: 12, day: 15, hour: 3, minute: 0, second: 0}, 1), add_months({year: 2024, month: 3, day: 31}, -1))",
+        "{year: 2025, month: 1, day: 15, hour: 3, minute: 0, second: 0} {year: 2024, month: 2, day: 29}",
+    );
+    ok("print(day_of_year({year: 2023, month: 12, day: 31}), day_of_year({year: 2024, month: 12, day: 31}))", "365 366");
+    ok(
+        "print(format_date({year: 2024, month: 2, day: 29, hour: 0, minute: 5, second: 9, offset: -90}, \"%I:%M:%S %p %z %j %a %b %y %%\"))",
+        "12:05:09 AM -0130 060 Thu Feb 24 %",
+    );
+    ok(
+        "print(parse_date(\"Thursday 29 Feb 2024, 2:05 PM\", \"%A %d %b %Y, %I:%M %p\"), parse_date(\"2024-366\", \"%Y-%j\"))",
+        "Ok({year: 2024, month: 2, day: 29, hour: 14, minute: 5, second: 0}) Ok({year: 2024, month: 12, day: 31})",
+    );
+    ok(
+        "print(is_err(parse_date(\"31/04/2024\", \"%d/%m/%Y\")), parse_date(\"1/2/24\", \"%d/%m/%y\"), is_err(parse_date(\"x\", \"%d\")))",
+        "true Ok({year: 2024, month: 2, day: 1}) true",
+    );
+    fails("format_date({year: 2024, month: 1, day: 1}, \"%Q\")", "E023");
+    fails("parse_date(\"1\", \"%Q\")", "E023");
+    fails("add_months({year: 9999, month: 12, day: 1}, 1)", "E023");
+    ok(
+        "print(base64_encode(\"\"), base64_encode(\"a\"), base64_encode(\"ab\"), base64_decode(\"YQ\"), base64_decode(\"YQ==\"), is_err(base64_decode(\"Y\")), is_err(base64_decode(\"!!\")), is_err(base64_decode(\"/w==\")))",
+        " YQ== YWI= Ok(\"a\") Ok(\"a\") true true true",
+    );
+    ok("print(url_encode(\"~a-b_c.d/e\"), is_err(url_decode(\"%2\")), is_err(url_decode(\"%zz\")), url_decode(\"a+b%20c\"), is_err(url_decode(\"%FF\")))", "~a-b_c.d%2Fe true true Ok(\"a+b c\") true");
+    ok(
+        "print(linspace(1, 2, 1), linspace(0, 1, 0), linspace(0, -1, 3), correlation([1, 2, 3], [3, 2, 1]), covariance([1, 2], [1, 2]))",
+        "[1.0] [] [0.0, -0.5, -1.0] -1.0 0.25",
+    );
+    fails("correlation([1, 1], [1, 2])", "E023");
+    fails("covariance([1], [1])", "E023");
+}
+
+#[test]
+fn ruby_names_added_after_one_point_zero() {
+    ok(
+        "print([3, 1, 2].sort_desc, \"hello\".center(9, \"-\"), [1, 2, 3].rotate, \"Hello\".swapcase, 65.chr, \"A\".ord, \"x\".rjust(3, \".\"), \"x\".ljust(2, \"!\"))",
+        "[3, 2, 1] --hello-- [2, 3, 1] hELLO A 65 ..x x!",
+    );
+    ok(
+        "print((-3).negative?, 0.zero?, 2.positive?, {a: 1}.to_h, set([1]).subset?(set([1, 2])), set([1]).disjoint?(set([2])), [1, 2].detect(is_even), [1].collect(fn(x) = x + 1))",
+        "true true true dict(\"a\" => 1) true true Some(2) [2]",
+    );
+    // A program may still give these names to its own functions, without a warning.
+    let r = common::rythme(&["check", "examples/cipher.ry"]);
+    assert!(r.stdout.contains("no problems found"), "{}{}", r.stdout, r.stderr);
+}
+
+/// Parts of texts are cut by characters, not bytes, with ASCII and other
+/// characters, at the start, in the middle and past the end (these functions
+/// cut the text in one piece instead of character by character).
+#[test]
+fn parts_of_texts_are_cut_by_characters() {
+    ok(
+        "print(take(\"héllo😀\", 2), drop(\"héllo😀\", 4), slice(\"héllo😀\", 1, 5), rest(\"é😀a\"), last(\"abc😀\"), first(\"😀b\"))",
+        "hé o😀 éllo 😀a Some(\"😀\") Some(\"😀\")",
+    );
+    ok(
+        "print([slice(\"héllo\", 3, 99), slice(\"héllo\", 9, 12), take(\"abc\", 0), rest(\"\"), last(\"abc\", 2), first(\"é😀x\", 2), slice(\"abcdef\", -3)])",
+        "[\"lo\", \"\", \"\", \"\", \"bc\", \"é😀\", \"def\"]",
+    );
+    ok("print(last(\"\"), first(\"\"), chars(\"aé😀\"), split(\"aé😀\", \"\"))", "None None [\"a\", \"é\", \"😀\"] [\"a\", \"é\", \"😀\"]");
+    // Upper and lower case: ASCII on its own, and with other letters.
+    ok("print(upper(\"abc-Z1\"), lower(\"ÀB ç\"), upper(\"straße\"), lower(\"ΣΑΣ\"), len(upper(\"\")))", "ABC-Z1 àb ç STRASSE σας 0");
+    ok(
+        "print(text(0), text(-9223372036854775807 - 1), \"{12 * -3}\", text(9223372036854775807))",
+        "0 -9223372036854775808 -36 9223372036854775807",
+    );
+}

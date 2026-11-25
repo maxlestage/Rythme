@@ -1,0 +1,262 @@
+# Rythme in your editor
+
+*[Version française →](README.fr.md)*
+
+Rythme comes with a language server: `rythme lsp`. Any editor that speaks
+the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/)
+starts it and gets, for `.ry` files:
+
+- the problems as you type: every error and warning of `rythme check`, with
+  the help to fix them, and the problems of the files you `use`;
+- documentation on hover: built-in functions with an example, keywords, your
+  functions with their `##` comments, types, constructors; the explanation of
+  an error code when the mouse is on the problem;
+- completion of the names usable at the cursor, built-ins, keywords,
+  snippets, and file names in `use "..."`;
+- the parameters of a call while you type it, go to definition (into other
+  files too), references, rename (refused when it would change the meaning
+  of the code), the outline of the file, quick fixes for typos;
+- formatting the document in the style of `rythme fmt`;
+- the types the checker is sure of, next to the names (inlay hints:
+  `names: List(Text)`, `fn area(r) → Float`), and what the code of a
+  function needs its parameters to be (`fn half(x: Int|Float)`); nothing is
+  shown when a type is not certain;
+- colors that follow what each name is (semantic tokens): your functions,
+  values, parameters, types and constructors, and those of Rythme itself;
+- *Run* above the first line that does something and *Run test* above each
+  test (code lenses, see [the commands](#the-commands-of-the-code-lenses));
+- the names of every `.ry` file of the workspace (workspace symbols), folding
+  of functions, types, tests, blocks and comments, and growing the selection
+  (from a name to the expression, the line, the function...).
+
+First install Rythme itself (see the [main README](../README.md#install)) and
+check that `rythme version` works in a terminal. If your editor does not find
+the program, give it the full path (for example `~/.cargo/bin/rythme`).
+
+The messages are in the language of `RYTHME_LANG` when it is set, otherwise
+in the language of the editor when it tells it (VS Code does), otherwise in
+the language of the system. To choose it whatever these say:
+`rythme --lang fr lsp`, or the option `{"language": "fr"}` sent at start-up
+(`initializationOptions`).
+
+## VS Code
+
+Use the extension in [`vscode/`](vscode): colors, snippets and the language
+server, with settings for the program and the language.
+
+## Neovim
+
+Neovim 0.11 or later, in `init.lua`:
+
+```lua
+vim.filetype.add({ extension = { ry = "rythme" } })
+vim.lsp.config("rythme", {
+  cmd = { "rythme", "lsp" },          -- or { "rythme", "--lang", "fr", "lsp" }
+  filetypes = { "rythme" },
+  root_markers = { ".git" },
+})
+vim.lsp.enable("rythme")
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "rythme",
+  callback = function() vim.bo.commentstring = "# %s" end,
+})
+```
+
+Neovim 0.8 to 0.10:
+
+```lua
+vim.filetype.add({ extension = { ry = "rythme" } })
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "rythme",
+  callback = function(args)
+    vim.lsp.start({
+      name = "rythme",
+      cmd = { "rythme", "lsp" },
+      root_dir = vim.fs.dirname(vim.fs.find({ ".git" }, { upward = true, path = args.file })[1]),
+    })
+  end,
+})
+```
+
+`K` shows the documentation, `<C-x><C-o>` completes, `gd` (or
+`vim.lsp.buf.definition()`) goes to the definition, `vim.lsp.buf.rename()` renames.
+
+The types of the names and the *Run* lenses (Neovim 0.10 or later):
+
+```lua
+vim.api.nvim_create_autocmd("LspAttach", {
+  callback = function(args)
+    local client = vim.lsp.get_client_by_id(args.data.client_id)
+    if client and client.name == "rythme" then
+      vim.lsp.inlay_hint.enable(true, { bufnr = args.buf })
+      vim.lsp.codelens.refresh({ bufnr = args.buf })
+      vim.api.nvim_create_autocmd({ "BufEnter", "InsertLeave", "BufWritePost" }, {
+        buffer = args.buf,
+        callback = function() vim.lsp.codelens.refresh({ bufnr = args.buf }) end,
+      })
+    end
+  end,
+})
+-- What the lenses run (`:lua vim.lsp.codelens.run()` on their line).
+local function rythme(args)
+  vim.cmd("write")
+  vim.cmd("split | terminal rythme " .. table.concat(vim.tbl_map(vim.fn.shellescape, args), " "))
+end
+vim.lsp.commands["rythme.runFile"] = function(c) rythme({ vim.uri_to_fname(c.arguments[1]) }) end
+vim.lsp.commands["rythme.testFile"] = function(c) rythme({ "test", vim.uri_to_fname(c.arguments[1]) }) end
+vim.lsp.commands["rythme.runTest"] = function(c)
+  rythme({ "test", vim.uri_to_fname(c.arguments[1]), "--filter", c.arguments[2] })
+end
+```
+
+### Colors (Tree-sitter)
+
+The [Tree-sitter grammar](tree-sitter-rythme) gives Neovim (0.9 or later) the
+colors, and the indentation with nvim-treesitter. From the root of a clone of
+this repository (a C compiler is enough), build the parser and copy the
+queries:
+
+```sh
+mkdir -p ~/.local/share/nvim/site/parser ~/.local/share/nvim/site/queries/rythme
+cc -shared -fPIC -O2 -I editors/tree-sitter-rythme/src \
+  editors/tree-sitter-rythme/src/parser.c editors/tree-sitter-rythme/src/scanner.c \
+  -o ~/.local/share/nvim/site/parser/rythme.so
+cp editors/tree-sitter-rythme/queries/*.scm ~/.local/share/nvim/site/queries/rythme/
+```
+
+then, in `init.lua`:
+
+```lua
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "rythme",
+  callback = function()
+    vim.treesitter.start()
+    -- with nvim-treesitter, the indentation too:
+    -- vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+  end,
+})
+```
+
+## Helix
+
+In `~/.config/helix/languages.toml`:
+
+```toml
+[language-server.rythme]
+command = "rythme"
+args = ["lsp"]
+# config = { language = "fr" }      # the language of the messages
+
+[[language]]
+name = "rythme"
+scope = "source.rythme"
+file-types = ["ry"]
+roots = []
+comment-token = "#"
+indent = { tab-width = 2, unit = "  " }
+language-servers = ["rythme"]
+grammar = "rythme"
+
+[[grammar]]
+name = "rythme"
+source = { git = "https://github.com/maxlestage/Rythme", rev = "COMMIT", subpath = "editors/tree-sitter-rythme" }
+```
+
+The grammar gives the colors and the indentation: replace `COMMIT` with a
+commit of the repository (`git ls-remote https://github.com/maxlestage/Rythme master`
+shows the latest one), or use a clone with
+`source = { path = "/path/to/Rythme/editors/tree-sitter-rythme" }`. Then build
+it and copy its queries, from the root of a clone:
+
+```sh
+hx --grammar fetch && hx --grammar build
+mkdir -p ~/.config/helix/runtime/queries
+cp -r editors/helix/queries/rythme ~/.config/helix/runtime/queries/
+```
+
+`hx --health rythme` checks that the program, the grammar and the queries are found.
+
+## Emacs
+
+With Eglot (built into Emacs 29 and later), in `init.el`:
+
+```elisp
+(define-derived-mode rythme-mode prog-mode "Rythme"
+  "Major mode for Rythme files."
+  (setq-local comment-start "# ")
+  (setq-local font-lock-defaults
+              `((,(regexp-opt '("fn" "if" "then" "else" "match" "end" "do" "type"
+                                "test" "use" "and" "or" "not" "true" "false")
+                              'symbols)
+                 . font-lock-keyword-face))))
+(add-to-list 'auto-mode-alist '("\\.ry\\'" . rythme-mode))
+
+(with-eval-after-load 'eglot
+  (add-to-list 'eglot-server-programs '(rythme-mode . ("rythme" "lsp"))))
+(add-hook 'rythme-mode-hook #'eglot-ensure)
+```
+
+With lsp-mode instead of Eglot:
+
+```elisp
+(with-eval-after-load 'lsp-mode
+  (add-to-list 'lsp-language-id-configuration '(rythme-mode . "rythme"))
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-stdio-connection '("rythme" "lsp"))
+                    :activation-fn (lsp-activate-on "rythme")
+                    :server-id 'rythme)))
+(add-hook 'rythme-mode-hook #'lsp-deferred)
+```
+
+## Zed
+
+The extension in [`zed/`](zed) gives the colors, the indentation, the outline
+and the brackets with the Tree-sitter grammar, and starts `rythme lsp`. To
+install it from a clone of this repository: in Zed, run the command
+*zed: install dev extension* and choose the folder `editors/zed` (Zed builds
+it with Rust, installed with rustup).
+
+The settings, in Zed's `settings.json` (all optional):
+
+```json
+{
+  "lsp": {
+    "rythme": {
+      "binary": { "path": "/home/me/.cargo/bin/rythme", "arguments": ["lsp"] },
+      "initialization_options": { "language": "fr" }
+    }
+  }
+}
+```
+
+The extension takes the grammar from this repository at the commit `rev` of
+its `extension.toml`: change it when the grammar changes, and after merging a
+pull request that changed it (a squash merge gives new commits). Zed wants a
+commit SHA, not a branch. To try a grammar from a clone,
+`repository = "file:///path/to/Rythme"`.
+
+## Any other editor
+
+| What the editor asks       | Answer                                                   |
+|----------------------------|----------------------------------------------------------|
+| command                    | `rythme lsp` (`--stdio` is accepted and ignored)         |
+| transport                  | standard input and output                                |
+| language id, file types    | `rythme`, `.ry`                                          |
+| comments                   | `#` (`##` for documentation)                             |
+| initialization options     | `{"language": "en"}`, `"fr"` or `"auto"` (optional)       |
+| settings                   | `{"rythme": {"language": "fr"}}` changes the language    |
+| Tree-sitter grammar        | [`tree-sitter-rythme/`](tree-sitter-rythme), with queries for the colors, the indentation and the scopes |
+| semantic tokens            | types `function`, `variable`, `parameter`, `type`, `enumMember`; modifiers `declaration`, `defaultLibrary` (full, delta and range) |
+| commands of the code lenses | carried out by the editor, see below                     |
+
+### The commands of the code lenses
+
+The server does not run programs: its code lenses name commands that the
+editor carries out (the VS Code extension does it in a terminal). Each one
+receives the address (URI) of the file first.
+
+| Command           | Arguments            | Runs                                       |
+|-------------------|----------------------|--------------------------------------------|
+| `rythme.runFile`  | file                 | `rythme file.ry`                           |
+| `rythme.testFile` | file                 | `rythme test file.ry`                      |
+| `rythme.runTest`  | file, name of a test | `rythme test file.ry --filter "name"`      |

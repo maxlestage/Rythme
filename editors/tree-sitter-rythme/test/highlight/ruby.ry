@@ -1,0 +1,26 @@
+fn adult?(person) = person.age >= 18
+#  ^ function
+#         ^ variable.parameter
+
+names.each do |name|
+#          ^ keyword
+#              ^ variable.parameter
+  print("Hello, #{name}!")
+#                ^ punctuation.special
+end
+
+kind = unless adult?(ada) then :minor else :adult
+#      ^ keyword.conditional
+#             ^ function.call
+#                               ^ string.special.symbol
+
+squares = xs.select { |x| x.even? }
+#                      ^ variable.parameter
+
+puts "Hello, #{name}!"
+# <- function.call
+print x, y
+# <- function.call
+check = if ok then puts "yes" else puts "no"
+#                  ^ function.call
+#                                  ^ function.call

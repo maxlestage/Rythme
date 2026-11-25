@@ -1,0 +1,4 @@
+free money                   → spam (94 %)
+meeting with the team today  → ham (99 %)
+win a prize                  → spam (94 %)
+send me the money            → ham (77 %)

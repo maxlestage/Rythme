@@ -1,0 +1,7 @@
+# Les noms peuvent contenir des accents.
+# Lancer :  rythme bonjour.ry
+
+prénom = "Ada"
+âge = 36
+print("Bonjour {prénom}, tu as {âge} ans.")
+print("Dans dix ans, tu auras {âge + 10} ans.")

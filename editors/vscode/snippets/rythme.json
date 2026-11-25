@@ -1,0 +1,47 @@
+{
+  "Function (one line)": {
+    "prefix": "fn",
+    "body": ["fn ${1:name}(${2:x}) = ${0:x}"],
+    "description": "A function on one line"
+  },
+  "Function (block)": {
+    "prefix": "fnb",
+    "body": ["fn ${1:name}(${2:x})", "\t$0", "end"],
+    "description": "A function on several lines"
+  },
+  "Anonymous function": {
+    "prefix": "lambda",
+    "body": ["fn(${1:x}) = ${0:x}"],
+    "description": "An anonymous function"
+  },
+  "If": {
+    "prefix": "if",
+    "body": ["if ${1:condition} then ${2:value} else ${0:other}"],
+    "description": "if ... then ... else ..."
+  },
+  "Match": {
+    "prefix": "match",
+    "body": ["match ${1:value}", "\t${2:pattern} -> ${3:result}", "\t_ -> ${0:other}", "end"],
+    "description": "Choose according to the shape of a value"
+  },
+  "Type": {
+    "prefix": "type",
+    "body": ["type ${1:Name} = ${2:First}(${3:field}) | ${0:Second}"],
+    "description": "Define your own type"
+  },
+  "Test": {
+    "prefix": "test",
+    "body": ["test \"${1:what it checks}\" = assert_eq(${2:actual}, ${0:expected})"],
+    "description": "A test, run with `rythme test file.ry`"
+  },
+  "Do block": {
+    "prefix": "do",
+    "body": ["do", "\t$0", "end"],
+    "description": "Several steps inside an expression"
+  },
+  "Pipeline": {
+    "prefix": "pipe",
+    "body": ["${1:list}", "\t|> map(fn(${2:x}) = ${3:x})", "\t|> filter(fn(${4:x}) = ${5:true})$0"],
+    "description": "A pipeline of steps"
+  }
+}

@@ -1,0 +1,701 @@
+// The layout and the color themes in a real Chromium, as deployed on Heroku (the server,
+// at the root) and on GitHub Pages (the static export behind /Rythme), see README.md:
+//
+//   node layout.js <rythme-site binary> [server|export]
+//
+// No horizontal scrolling: every page in every language, at every width, in every
+// theme. The themes: contrast, the picker with the keyboard, the choice kept and
+// applied before the first paint. The exit code is the number of failed checks.
+"use strict";
+
+const fs = require("fs");
+const { launch } = require("./browser");
+const { workspace, freePort, startServer, startExport, binary, checker, started } = require("./serve");
+
+const BIN = binary(process.argv[2]);
+const MODES = process.argv[3] ? [process.argv[3]] : ["server", "export"];
+// Every language of the site (src/i18n.rs).
+const LANGS = ["fr", "en", "es", "de", "pt", "zh", "it", "ja"];
+const PAGES = ["", "learn/", "examples/", "playground/", "teach/", "ai/", "install/", "reference/", "reference/parse_url/", "packages/", "work/", "exercises/", "offline/", "nothing-here/"];
+const WIDTHS = [320, 360, 375, 390, 414, 600, 768, 1024, 1280, 1440, 1920];
+// The color themes, as `site.css` defines them; `auto` follows the system.
+const THEMES = ["auto", "light", "dark", "contrast", "sepia", "tempo"];
+// WCAG: 4.5:1 for text (AA), 7:1 (AAA) in the high-contrast theme.
+const MIN_CONTRAST = { contrast: 7 };
+const STORAGE = "rythme-theme";
+
+const checks = checker();
+const check = checks.check;
+
+// What overflows the viewport, measured in the page: the document's own width, every
+// element that sticks out of the viewport, and every element that scrolls sideways;
+// under 700px, every text field whose text is under 16px (iOS zooms into it when it is
+// focused, and the page then scrolls sideways).
+function measure() {
+  const root = document.documentElement;
+  const vw = root.clientWidth;
+  const name = (el) => {
+    let s = el.tagName.toLowerCase();
+    if (el.id) s += `#${el.id}`;
+    if (typeof el.className === "string" && el.className.trim()) s += `.${el.className.trim().split(/\s+/).join(".")}`;
+    const parent = el.parentElement && el.parentElement !== document.body ? el.parentElement : null;
+    return parent ? `${parent.tagName.toLowerCase()}${parent.className && typeof parent.className === "string" ? "." + parent.className.trim().split(/\s+/)[0] : ""} > ${s}` : s;
+  };
+  const wide = [];
+  const scrollers = [];
+  const small = [];
+  for (const el of document.body.querySelectorAll("*")) {
+    if (vw < 700 && el.matches("input:not([type=range]):not([type=radio]):not([type=checkbox]):not([type=file]):not([type=hidden]), textarea, select, [contenteditable]")
+      && parseFloat(getComputedStyle(el).fontSize) < 16) small.push(`${name(el)} ${getComputedStyle(el).fontSize}`);
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) continue;
+    const cs = getComputedStyle(el);
+    // The content of a closed `details` is not drawn (Chromium still lays it out).
+    if (cs.display === "none" || el.closest("details:not([open]) > :not(summary)")) continue;
+    if (r.right > vw + 0.5 || r.left < -0.5) wide.push(`${name(el)} [${Math.round(r.left)}, ${Math.round(r.right)}]`);
+    if (/auto|scroll/.test(cs.overflowX) && el.scrollWidth > el.clientWidth + 1) scrollers.push(`${name(el)} ${el.scrollWidth} > ${el.clientWidth}`);
+  }
+  // The bar keeps one line: the logo, the language switch and the burger (or the links).
+  const bar = document.querySelector(".bar__inner");
+  if (bar && bar.getBoundingClientRect().height > parseFloat(getComputedStyle(bar).minHeight) + 1) wide.push(`the bar wraps (${Math.round(bar.getBoundingClientRect().height)}px high)`);
+  return { scrollWidth: root.scrollWidth, clientWidth: vw, wide: wide.slice(0, 20), scrollers: scrollers.slice(0, 20), small };
+}
+
+// Every piece of text against the background it is drawn on: the ratios under the
+// minimum. Hidden, decorative (`aria-hidden`) and disabled elements are left out, as
+// WCAG does.
+function contrast(min) {
+  const parse = (c) => {
+    const m = c.match(/rgba?\(([^)]+)\)/);
+    if (!m) return null;
+    const p = m[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+    return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+  };
+  const over = (top, under) => ({
+    r: top.r * top.a + under.r * (1 - top.a), g: top.g * top.a + under.g * (1 - top.a), b: top.b * top.a + under.b * (1 - top.a), a: 1,
+  });
+  const lum = (c) => [c.r, c.g, c.b].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; })
+    .reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+  // The color behind an element: its own background and its ancestors', blended.
+  const background = (el) => {
+    const layers = [];
+    for (let e = el; e; e = e.parentElement) {
+      const cs = getComputedStyle(e);
+      if (cs.backgroundImage !== "none") return null;
+      const c = parse(cs.backgroundColor);
+      if (c && c.a > 0) {
+        layers.push(c);
+        if (c.a >= 1) break;
+      }
+    }
+    let color = { r: 255, g: 255, b: 255, a: 1 };
+    for (const layer of layers.reverse()) color = over(layer, color);
+    return color;
+  };
+  const opacity = (el) => {
+    let o = 1;
+    for (let e = el; e; e = e.parentElement) o *= Number(getComputedStyle(e).opacity);
+    return o;
+  };
+  const bad = [];
+  let lowest = Infinity;
+  const seen = new Set();
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const el = node.parentElement;
+    if (!node.textContent.trim() || seen.has(el)) continue;
+    seen.add(el);
+    if (el.closest("[aria-hidden=true], [hidden], noscript, :disabled, .skip")) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) continue;
+    const cs = getComputedStyle(el);
+    if (cs.visibility === "hidden") continue;
+    const bg = background(el);
+    const fg = parse(cs.color);
+    // The editor's field is transparent: its colors are drawn under it.
+    if (!bg || !fg || fg.a === 0) continue;
+    const shown = over({ ...fg, a: fg.a * opacity(el) }, bg);
+    const value = ratio(shown, bg);
+    lowest = Math.min(lowest, value);
+    if (value < min) bad.push(`${el.tagName.toLowerCase()}.${el.className} "${node.textContent.trim().slice(0, 24)}" ${value.toFixed(2)}`);
+  }
+  return { lowest, bad: bad.slice(0, 6) };
+}
+
+// The colors of a theme (its custom properties) and the ratios of their pairs: every
+// text color on the paper, on the cards and on the soft accent; the text of buttons
+// and banners on their background.
+function palette() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = (name) => cs.getPropertyValue(`--${name}`).trim();
+  const hex = (h) => { const n = parseInt(h.slice(1), 16); return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }; };
+  const lum = (c) => [c.r, c.g, c.b].map((x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; })
+    .reduce((s, x, i) => s + x * [0.2126, 0.7152, 0.0722][i], 0);
+  const ratio = (a, b) => { const [x, y] = [lum(hex(v(a))), lum(hex(v(b)))].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+  const pairs = [];
+  for (const fg of ["ink", "ink-soft", "accent", "err", "warn", "ok", "hint", "tok-kw", "tok-str", "tok-num", "tok-ctor", "tok-com", "tok-fn"]) {
+    for (const bg of ["paper", "staff", "accent-soft"]) pairs.push([fg, bg]);
+  }
+  pairs.push(["accent-ink", "accent"], ["notice-ink", "notice-bg"], ["cmd-ink", "cmd-bg"], ["err-ink", "err"]);
+  return pairs.map(([fg, bg]) => ({ pair: `${fg}/${bg}`, ratio: ratio(fg, bg), ok: /^#[0-9a-f]{6}$/i.test(v(fg)) && /^#[0-9a-f]{6}$/i.test(v(bg)) }));
+}
+
+const settle = (page) => page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+
+async function setTheme(page, theme) {
+  await page.evaluate((t) => {
+    if (t === "auto") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", t);
+  }, theme);
+}
+
+// The playground has run its welcome program.
+const ran = (page) => page.waitForFunction(() => /good|bad/.test(document.getElementById("status").className) && !document.body.classList.contains("running"), null, { timeout: 20000 });
+
+async function noHorizontalScroll(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: WIDTHS[0], height: 800 } });
+  const page = await context.newPage();
+  const failed = [];
+  let measured = 0;
+  for (const lang of LANGS) {
+    for (const p of PAGES) {
+      const url = `${base}/${lang}/${p}`;
+      await page.setViewportSize({ width: WIDTHS[0], height: 800 });
+      await page.goto(url);
+      await page.evaluate(() => document.fonts.ready);
+      await started(page);
+      if (p === "playground/") await ran(page);
+      for (const theme of THEMES) {
+        await setTheme(page, theme);
+        for (const width of WIDTHS) {
+          await page.setViewportSize({ width, height: 800 });
+          await settle(page);
+          const m = await page.evaluate(measure);
+          measured += 1;
+          if (m.scrollWidth > m.clientWidth) failed.push(`${url} ${theme} ${width}px: the page is ${m.scrollWidth}px wide`);
+          for (const what of m.wide) failed.push(`${url} ${theme} ${width}px: sticks out: ${what}`);
+          for (const what of m.scrollers) failed.push(`${url} ${theme} ${width}px: scrolls sideways: ${what}`);
+          for (const what of m.small) failed.push(`${url} ${theme} ${width}px: a field under 16px (iOS zooms in): ${what}`);
+        }
+      }
+    }
+  }
+  // One line per element and page: the narrowest width and theme where it fails.
+  const unique = new Map();
+  for (const line of failed) {
+    const key = line.replace(/ \S+ \d+px: /, ": ").replace(/\[-?\d+, -?\d+\]|\d+ > \d+|\d+px wide/g, "");
+    if (!unique.has(key)) unique.set(key, line);
+  }
+  check(failed.length === 0, `${mode}: no horizontal scroll, every field at 16px under 700px, on ${LANGS.length * PAGES.length} pages × ${THEMES.length} themes × ${WIDTHS.length} widths (${measured} layouts)`, `\n    ${[...unique.values()].slice(0, 60).join("\n    ")}`);
+  await context.close();
+}
+
+// The language menu of the bar: open, it stays inside the screen at every width and
+// lists every language; with the keyboard, Enter opens it, Escape closes it and gives
+// the focus back to its button.
+async function languageMenu(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 320, height: 800 } });
+  const page = await context.newPage();
+  for (const lang of LANGS) {
+    await page.goto(`${base}/${lang}/learn/`);
+    await started(page);
+    for (const width of [320, 375, 768, 1280]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.evaluate(() => { document.querySelector(".lang--bar").open = true; });
+      await settle(page);
+      const m = await page.evaluate(measure);
+      const menu = await page.evaluate(() => {
+        const links = [...document.querySelectorAll(".lang--bar .lang__link")];
+        const vw = document.documentElement.clientWidth;
+        return {
+          count: links.length,
+          inside: links.every((a) => { const r = a.getBoundingClientRect(); return r.left >= 0 && r.right <= vw && r.width > 0; }),
+          current: (document.querySelector('.lang--bar .lang__link[aria-current="true"]') || {}).hreflang,
+        };
+      });
+      check(m.scrollWidth <= m.clientWidth && !m.wide.length && !m.scrollers.length && menu.count === LANGS.length && menu.inside && menu.current.split("-")[0] === lang,
+        `${mode}: /${lang}/ the open language menu fits at ${width}px`, { m, menu });
+      await page.evaluate(() => { document.querySelector(".lang--bar").open = false; });
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto(`${base}/de/`);
+  await started(page);
+  await page.focus(".lang--bar summary");
+  await page.keyboard.press("Enter");
+  const opened = await page.evaluate(() => document.querySelector(".lang--bar").open);
+  await page.keyboard.press("Tab");
+  const focused = await page.evaluate(() => document.activeElement.classList.contains("lang__link"));
+  await page.keyboard.press("Escape");
+  const closed = await page.evaluate(() => ({ open: document.querySelector(".lang--bar").open, focus: document.activeElement.tagName }));
+  check(opened && focused && !closed.open && closed.focus === "SUMMARY", `${mode}: the language menu with the keyboard`, { opened, focused, closed });
+  await page.click(".lang--bar summary");
+  // On the left of the page, away from the menu, which hangs on the right.
+  await page.mouse.click(8, 600);
+  check(!(await page.evaluate(() => document.querySelector(".lang--bar").open)), `${mode}: a click elsewhere closes the language menu`);
+  await context.close();
+}
+
+// "More", in the bar of a computer: the five sections open under it, inside the screen,
+// in every language; Escape closes the list and gives the focus back to its button, a
+// click elsewhere closes it. On a phone the sections are in the burger menu, and
+// without the browser side they follow the other links under the logo.
+async function moreMenu(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 860, height: 800 } });
+  const page = await context.newPage();
+  for (const lang of LANGS) {
+    await page.goto(`${base}/${lang}/reference/`);
+    await started(page);
+    for (const width of [860, 1024, 1280, 1920]) {
+      await page.setViewportSize({ width, height: 800 });
+      await settle(page);
+      await page.click("#nav-more-toggle");
+      await settle(page);
+      const m = await page.evaluate(measure);
+      const menu = await page.evaluate(() => {
+        const links = [...document.querySelectorAll("#nav-more a")];
+        const vw = document.documentElement.clientWidth;
+        return {
+          count: links.length,
+          inside: links.every((a) => { const r = a.getBoundingClientRect(); return r.left >= 0 && r.right <= vw && r.width > 0 && r.height >= 44; }),
+          expanded: document.getElementById("nav-more-toggle").getAttribute("aria-expanded"),
+          current: (document.querySelector('#nav-more [aria-current="page"]') || {}).pathname,
+        };
+      });
+      check(m.scrollWidth <= m.clientWidth && !m.wide.length && menu.count === 5 && menu.inside && menu.expanded === "true" && menu.current.endsWith(`/${lang}/reference/`),
+        `${mode}: /${lang}/ "More" opens inside the screen at ${width}px`, { m, menu });
+      await page.keyboard.press("Escape");
+      const closed = await page.evaluate(() => ({
+        shown: getComputedStyle(document.getElementById("nav-more")).display !== "none",
+        focus: document.activeElement.id,
+      }));
+      check(!closed.shown && closed.focus === "nav-more-toggle", `${mode}: /${lang}/ Escape closes "More" at ${width}px`, closed);
+    }
+  }
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`${base}/en/`);
+  await started(page);
+  await page.click("#nav-more-toggle");
+  await page.mouse.click(8, 600);
+  const open = await page.evaluate(() => getComputedStyle(document.getElementById("nav-more")).display !== "none");
+  check(!open, `${mode}: a click elsewhere closes "More"`);
+  // On a phone: in the burger menu, with the other links; the button stays out of sight.
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto(`${base}/en/`);
+  await started(page);
+  await page.click(".burger");
+  await settle(page);
+  const phone = await page.evaluate(() => ({
+    toggle: getComputedStyle(document.getElementById("nav-more-toggle")).display,
+    links: [...document.querySelectorAll("#nav-more a")].filter((a) => a.getBoundingClientRect().height >= 44).length,
+  }));
+  check(phone.toggle === "none" && phone.links === 5, `${mode}: on a phone the five sections are in the burger menu`, phone);
+  await context.close();
+  // Without the browser side, every link is there, under the logo.
+  const plain = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1280, height: 800 } });
+  const still = await plain.newPage();
+  await still.goto(`${base}/en/work/`);
+  const links = await still.evaluate(() => [...document.querySelectorAll("#nav-more a")].filter((a) => a.getBoundingClientRect().width > 0).length);
+  const m = await still.evaluate(measure);
+  check(links === 5 && m.scrollWidth <= m.clientWidth, `${mode}: without the browser side the five sections are links of the bar`, { links, m });
+  await plain.close();
+}
+
+// The filter of the reference: the functions that hold every word typed, the groups
+// that keep one, the count, the message when nothing matches; without the browser side,
+// no field and the whole list.
+async function referenceFilter(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 360, height: 740 } });
+  const page = await context.newPage();
+  await page.goto(`${base}/en/reference/`);
+  await started(page);
+  const state = () => page.evaluate(() => ({
+    shown: [...document.querySelectorAll(".fn")].filter((f) => !f.hidden).map((f) => f.dataset.name),
+    groups: [...document.querySelectorAll(".ref-group")].filter((g) => !g.hidden).map((g) => g.id),
+    count: document.getElementById("ref-count").textContent,
+    none: !document.getElementById("ref-none").hidden,
+    field: !document.getElementById("ref-filter").hidden,
+  }));
+  const all = await state();
+  check(all.field && all.shown.length > 250 && !all.none, `${mode}: the reference shows its filter and every function`, { field: all.field, count: all.count });
+  await page.fill("#ref-search", "csv");
+  const csv = await state();
+  check(csv.shown.includes("csv_records") && csv.shown.includes("csv_parse") && csv.shown.length < 10 && csv.groups.length >= 1 && csv.count.startsWith(`${csv.shown.length} of`),
+    `${mode}: "csv" keeps the functions about CSV, and their groups`, csv);
+  await page.fill("#ref-search", "sort desc");
+  const two = await state();
+  check(two.shown.includes("sort_desc") && !two.shown.includes("sort"), `${mode}: every word typed must be found`, two.shown);
+  await page.fill("#ref-search", "zzzz");
+  const none = await state();
+  check(none.shown.length === 0 && none.groups.length === 0 && none.none, `${mode}: nothing matches: a message says so`, none);
+  await page.fill("#ref-search", "");
+  check((await state()).shown.length === all.shown.length, `${mode}: an empty filter shows every function again`);
+  const m = await page.evaluate(measure);
+  check(m.scrollWidth <= m.clientWidth && !m.wide.length && !m.small.length, `${mode}: the filter fits a phone, its field at 16px`, m);
+  await context.close();
+  const plain = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 360, height: 740 } });
+  const still = await plain.newPage();
+  await still.goto(`${base}/en/reference/`);
+  const without = await still.evaluate(() => ({
+    field: getComputedStyle(document.getElementById("ref-filter")).display,
+    shown: [...document.querySelectorAll(".fn")].filter((f) => f.getBoundingClientRect().height > 0).length,
+    total: document.querySelectorAll(".fn").length,
+  }));
+  check(without.field === "none" && without.shown === without.total, `${mode}: without the browser side, no filter and the whole list`, without);
+  await plain.close();
+}
+
+// The editor wraps long lines; each line number stays level with its line.
+async function editorWraps(browser, base) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 320, height: 800 } });
+  const page = await context.newPage();
+  await page.goto(`${base}/en/playground/`);
+  await ran(page);
+  const long = `# ${"a-very-long-comment ".repeat(8)}\nprint("${"x".repeat(160)}")\n\nfn add(a, b) =\n  a + b\nprint(add(1, 2)) # ${"https://example.com/".repeat(4)}\n`;
+  await page.fill("#source", long);
+  for (const width of [320, 390, 768, 1280]) {
+    await page.setViewportSize({ width, height: 800 });
+    await settle(page);
+    const m = await page.evaluate(measure);
+    check(m.scrollWidth <= m.clientWidth && !m.wide.length && !m.scrollers.length, `the editor wraps long lines at ${width}px`, m);
+    const aligned = await page.evaluate(() => {
+      const nums = [...document.querySelectorAll("#gutter > *")];
+      const lines = [...document.querySelectorAll("#highlight > *")];
+      const source = document.getElementById("source");
+      const same = source.clientWidth === document.getElementById("highlight").clientWidth;
+      return {
+        count: nums.length === lines.length && lines.length === source.value.split("\n").length,
+        tops: nums.every((n, k) => Math.abs(n.getBoundingClientRect().top - lines[k].getBoundingClientRect().top) < 1),
+        wrapped: lines[1].getBoundingClientRect().height > 2 * parseFloat(getComputedStyle(lines[0]).lineHeight),
+        same,
+      };
+    });
+    check(aligned.count && aligned.tops && aligned.wrapped && aligned.same, `the line numbers stay level with the wrapped lines at ${width}px`, aligned);
+  }
+  // The text typed lies exactly on its colors: same lines in the field and under it.
+  const caret = await page.evaluate(() => {
+    const source = document.getElementById("source");
+    const pre = document.getElementById("highlight");
+    return Math.abs(source.scrollHeight - pre.scrollHeight) <= 1;
+  });
+  check(caret, "the field and its colors wrap the same way");
+  await context.close();
+}
+
+// Sharing in the playground, in every language: the notice of a program opened from a
+// link and the box of the link made by Share, open together; no horizontal scroll at
+// any width, in any theme, and their texts at the contrast of each theme.
+async function shareLayout(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 320, height: 800 } });
+  const page = await context.newPage();
+  const failed = [];
+  for (const lang of LANGS) {
+    const code = encodeURIComponent(`print("${"x".repeat(200)}")\n`);
+    await page.goto(`${base}/${lang}/playground/#code=${code}`);
+    await ran(page);
+    await page.click("#share");
+    await page.waitForFunction(() => document.getElementById("share-msg").textContent !== "");
+    const open = await page.evaluate(() => !document.getElementById("shared-note").hidden && !document.getElementById("share-box").hidden && !!document.getElementById("share-link").value);
+    if (!open) failed.push(`/${lang}/: the notice and the box of the link are not both open`);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      for (const width of [320, 360, 390, 768, 1280]) {
+        await page.setViewportSize({ width, height: 800 });
+        await settle(page);
+        const m = await page.evaluate(measure);
+        if (m.scrollWidth > m.clientWidth || m.wide.length || m.scrollers.length) failed.push(`/${lang}/ ${theme} ${width}px: ${JSON.stringify(m)}`);
+        if (theme !== "auto" && (width === 320 || width === 1280)) {
+          await page.waitForTimeout(300);
+          const result = await page.evaluate(contrast, MIN_CONTRAST[theme] || 4.5);
+          if (result.bad.length) failed.push(`/${lang}/ ${theme} ${width}px: contrast ${result.bad.join("; ")}`);
+        }
+      }
+    }
+    await page.setViewportSize({ width: 320, height: 800 });
+  }
+  check(failed.length === 0, `${mode}: sharing (the notice and the link) fits and reads well in every language, theme and width`, `\n    ${failed.slice(0, 20).join("\n    ")}`);
+  await context.close();
+}
+
+// Copy for AI in every language, when the clipboard says no: the box with the
+// Markdown in a field to copy by hand (a long line without spaces); no horizontal
+// scroll at any width, in any theme, and its texts at the contrast of each theme.
+async function copyForAiLayout(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 320, height: 800 } });
+  await context.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: () => Promise.reject(new Error("refused")) } });
+  });
+  const page = await context.newPage();
+  const failed = [];
+  for (const lang of LANGS) {
+    await page.goto(`${base}/${lang}/playground/#code=${encodeURIComponent(`print("${"y".repeat(200)}")\n`)}`);
+    await ran(page);
+    await page.click("#copy-ai");
+    const shown = await page.evaluate(() => ({
+      box: !document.getElementById("share-box").hidden,
+      row: !document.getElementById("ai-row").hidden,
+      text: document.getElementById("ai-text").value,
+      focused: document.activeElement.id,
+    }));
+    if (!shown.box || !shown.row || !shown.text.includes("```rythme") || shown.focused !== "ai-text") failed.push(`/${lang}/: the text to copy by hand is not shown: ${JSON.stringify(shown)}`);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      for (const width of [320, 390, 768, 1280]) {
+        await page.setViewportSize({ width, height: 800 });
+        await settle(page);
+        const m = await page.evaluate(measure);
+        if (m.scrollWidth > m.clientWidth || m.wide.length || m.scrollers.length || m.small.length) failed.push(`/${lang}/ ${theme} ${width}px: ${JSON.stringify(m)}`);
+        if (theme !== "auto" && (width === 320 || width === 1280)) {
+          await page.waitForTimeout(300);
+          const result = await page.evaluate(contrast, MIN_CONTRAST[theme] || 4.5);
+          if (result.bad.length) failed.push(`/${lang}/ ${theme} ${width}px: contrast ${result.bad.join("; ")}`);
+        }
+      }
+    }
+    await page.setViewportSize({ width: 320, height: 800 });
+  }
+  check(failed.length === 0, `${mode}: Copy for AI (the text to copy by hand) fits and reads well in every language, theme and width`, `\n    ${failed.slice(0, 20).join("\n    ")}`);
+  await context.close();
+}
+
+// The steps of a calculation in every language: a link with `&mode=steps` opens on a
+// step whose lines are long (a text without spaces) and nested (a block), with the step
+// before and what it printed; no horizontal scroll at any width, in any theme (long
+// lines wrap), and the texts at the contrast of each theme.
+async function stepsLayout(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 320, height: 800 } });
+  const page = await context.newPage();
+  const failed = [];
+  const code = 'fn twice(t) = t + t\nfn grow(t)\n  doubled = twice(t)\n  print(len(doubled))\n  doubled + "!"\nend\n\ngrow(twice("a_long_word_without_spaces_that_goes_on_and_on_and_on_and_on_"))\n';
+  for (const lang of LANGS) {
+    await page.goto(`${base}/${lang}/playground/#code=${encodeURIComponent(code)}&mode=steps&step=4`);
+    await ran(page);
+    const shown = await page.evaluate(() => ({
+      stepper: !document.getElementById("stepper").hidden,
+      from: document.getElementById("step-from").textContent.includes("doubled"),
+      printed: !document.getElementById("step-printed").hidden,
+      count: document.getElementById("step-count").textContent,
+    }));
+    if (!shown.stepper || !shown.from || !/4/.test(shown.count)) failed.push(`/${lang}/: the steps are not shown on step 4: ${JSON.stringify(shown)}`);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      for (const width of [320, 360, 390, 768, 1280]) {
+        await page.setViewportSize({ width, height: 800 });
+        await settle(page);
+        for (const step of [3, 4, 5]) {
+          await page.$eval("#step-range", (e, n) => { e.value = String(n); e.dispatchEvent(new Event("input", { bubbles: true })); }, step);
+          const m = await page.evaluate(measure);
+          if (m.scrollWidth > m.clientWidth || m.wide.length || m.scrollers.length) failed.push(`/${lang}/ ${theme} ${width}px step ${step}: ${JSON.stringify(m)}`);
+        }
+        if (theme !== "auto" && (width === 320 || width === 1280)) {
+          await page.waitForTimeout(300);
+          const result = await page.evaluate(contrast, MIN_CONTRAST[theme] || 4.5);
+          if (result.bad.length) failed.push(`/${lang}/ ${theme} ${width}px: contrast ${result.bad.join("; ")}`);
+        }
+      }
+    }
+    await page.setViewportSize({ width: 320, height: 800 });
+  }
+  check(failed.length === 0, `${mode}: the steps fit and read well in every language, theme and width`, `\n    ${failed.slice(0, 20).join("\n    ")}`);
+  await context.close();
+}
+
+// The Seed option in every language: open, with the longest seed, after a run that
+// shows it in the head of the output; no horizontal scroll at any width, in any theme,
+// the panel inside the screen, and its texts at the contrast of each theme.
+async function seedLayout(browser, base, mode) {
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 320, height: 800 } });
+  const page = await context.newPage();
+  const failed = [];
+  for (const lang of LANGS) {
+    await page.goto(`${base}/${lang}/playground/#code=${encodeURIComponent("print(shuffle([1, 2, 3]))\n")}&seed=999999999999999`);
+    await ran(page);
+    await page.evaluate(() => { document.getElementById("seed-option").open = true; });
+    const shown = await page.evaluate(() => ({
+      field: document.getElementById("seed").value,
+      used: !document.getElementById("seed-used").hidden && document.getElementById("seed-used").textContent.includes("999999999999999"),
+      panel: getComputedStyle(document.querySelector(".seed__panel")).display !== "none",
+    }));
+    if (shown.field !== "999999999999999" || !shown.used || !shown.panel) failed.push(`/${lang}/: the seed is not shown: ${JSON.stringify(shown)}`);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      for (const width of [320, 360, 390, 768, 1280]) {
+        await page.setViewportSize({ width, height: 800 });
+        await settle(page);
+        const m = await page.evaluate(measure);
+        if (m.scrollWidth > m.clientWidth || m.wide.length || m.scrollers.length) failed.push(`/${lang}/ ${theme} ${width}px: ${JSON.stringify(m)}`);
+        const inside = await page.evaluate(() => {
+          const r = document.querySelector(".seed__panel").getBoundingClientRect();
+          const t = document.querySelector(".seed__toggle").getBoundingClientRect();
+          return r.left >= 0 && r.right <= document.documentElement.clientWidth && t.right <= document.documentElement.clientWidth;
+        });
+        if (!inside) failed.push(`/${lang}/ ${theme} ${width}px: the seed option sticks out`);
+        if (theme !== "auto" && (width === 320 || width === 1280)) {
+          await page.waitForTimeout(300);
+          const result = await page.evaluate(contrast, MIN_CONTRAST[theme] || 4.5);
+          if (result.bad.length) failed.push(`/${lang}/ ${theme} ${width}px: contrast ${result.bad.join("; ")}`);
+        }
+      }
+    }
+    await page.setViewportSize({ width: 320, height: 800 });
+  }
+  check(failed.length === 0, `${mode}: the Seed option fits and reads well in every language, theme and width`, `\n    ${failed.slice(0, 20).join("\n    ")}`);
+  await context.close();
+}
+
+async function themes(browser, base, mode) {
+  // The contrast of every theme: its palette, then the text as drawn on every page.
+  const context = await browser.newContext({ serviceWorkers: "block", viewport: { width: 390, height: 800 } });
+  const page = await context.newPage();
+  await page.goto(`${base}/en/`);
+  const table = [];
+  for (const theme of THEMES.slice(1)) {
+    await setTheme(page, theme);
+    const pairs = await page.evaluate(palette);
+    const min = MIN_CONTRAST[theme] || 4.5;
+    const low = pairs.filter((p) => !p.ok || p.ratio < min);
+    const lowest = Math.min(...pairs.map((p) => p.ratio));
+    const ink = pairs.find((p) => p.pair === "ink/paper").ratio;
+    table.push(`${theme}: text ${ink.toFixed(2)}:1, lowest pair ${lowest.toFixed(2)}:1`);
+    check(low.length === 0, `${mode}: the palette of ${theme} has every pair at ${min}:1 or more (text ${ink.toFixed(2)}:1, lowest ${lowest.toFixed(2)}:1)`, low.map((p) => `${p.pair} ${p.ratio.toFixed(2)}`).join(", "));
+  }
+  if (mode === "server") console.log(`  info ${table.join("; ")}`);
+  let low = 0;
+  for (const width of [390, 1280]) {
+    await page.setViewportSize({ width, height: 800 });
+    for (const lang of LANGS) {
+      for (const p of PAGES) {
+        await page.goto(`${base}/${lang}/${p}`);
+        if (p === "playground/") await ran(page);
+        for (const theme of THEMES.slice(1)) {
+          await setTheme(page, theme);
+          // The colors of buttons and links change with a short transition.
+          await page.waitForTimeout(300);
+          const min = MIN_CONTRAST[theme] || 4.5;
+          const result = await page.evaluate(contrast, min);
+          if (result.bad.length) {
+            low += 1;
+            check(false, `${mode}: contrast of /${lang}/${p} in ${theme} at ${width}px (≥ ${min}:1)`, result.bad.join("; "));
+          }
+        }
+      }
+    }
+  }
+  check(low === 0, `${mode}: every text of every page reaches its contrast in every theme, at 390 and 1280px`);
+  await context.close();
+
+  // The picker, with the keyboard only, in the menu of a phone and in the bar of a
+  // computer; the choice is kept, and applied before the first paint.
+  for (const width of [390, 1280]) {
+    const ctx = await browser.newContext({ serviceWorkers: "block", viewport: { width, height: 800 }, colorScheme: "light" });
+    const tab = await ctx.newPage();
+    await tab.goto(`${base}/fr/`);
+    await started(tab);
+    const wide = width >= 860;
+    if (wide) {
+      await tab.focus("#theme-toggle");
+      await tab.keyboard.press("Enter");
+      check(await tab.getAttribute("#theme-toggle", "aria-expanded") === "true" && await tab.isVisible("#theme-panel"), `${width}px: Enter opens the theme picker`);
+    } else {
+      await tab.focus(".burger");
+      await tab.keyboard.press("Enter");
+      check(await tab.isVisible("#theme-panel"), `${width}px: the theme picker is in the menu`);
+      await tab.focus("#theme-panel input:checked");
+    }
+    const focused = await tab.evaluate(() => document.activeElement && document.activeElement.name === "theme" ? document.activeElement.value : null);
+    check(focused === "auto", `${width}px: the focus is on the chosen theme (Auto)`, focused);
+    await tab.keyboard.press("ArrowDown");
+    await tab.keyboard.press("ArrowDown");
+    const chosen = await tab.evaluate((key) => ({
+      theme: document.documentElement.dataset.theme,
+      stored: localStorage.getItem(key),
+      checked: document.querySelector('#theme-panel input:checked').value,
+      color: document.querySelector('meta[name="theme-color"]').content,
+      bg: getComputedStyle(document.body).backgroundColor,
+    }), STORAGE);
+    check(chosen.theme === "dark" && chosen.stored === "dark" && chosen.checked === "dark", `${width}px: the arrow keys choose a theme (Dark)`, chosen);
+    check(chosen.color === "#0e1118" && chosen.bg === "rgb(14, 17, 24)", `${width}px: the page and the theme-color follow the theme`, chosen);
+    const labels = await tab.evaluate(() => [...document.querySelectorAll("#theme-panel input")].map((i) => i.labels[0] && i.labels[0].textContent.trim()));
+    check(labels.length === THEMES.length && labels.every(Boolean) && labels.includes("Sombre"), `${width}px: every theme has a label, in French`, labels);
+    if (wide) {
+      await tab.keyboard.press("Escape");
+      const closed = await tab.evaluate(() => ({ expanded: document.getElementById("theme-toggle").getAttribute("aria-expanded"), focus: document.activeElement.id }));
+      check(closed.expanded === "false" && closed.focus === "theme-toggle" && !(await tab.isVisible("#theme-panel")), `${width}px: Escape closes the picker and gives the focus back`, closed);
+    }
+    // Kept for the next page, the other language, and a new visit.
+    await tab.goto(`${base}/en/learn/`);
+    await started(tab);
+    const kept = await tab.evaluate(() => ({ theme: document.documentElement.dataset.theme, checked: document.querySelector("#theme-panel input:checked").value }));
+    check(kept.theme === "dark" && kept.checked === "dark", `${width}px: the theme is kept from page to page`, kept);
+    await ctx.close();
+  }
+
+  // Before the first paint: the theme is on <html> as soon as <body> exists, before any
+  // deferred script, and the system's choice is followed in Auto.
+  const ctx = await browser.newContext({ serviceWorkers: "block", viewport: { width: 390, height: 800 }, colorScheme: "dark" });
+  await ctx.addInitScript(() => {
+    window.firstPaint = null;
+    new MutationObserver((records, observer) => {
+      if (document.body && !window.firstPaint) {
+        window.firstPaint = { theme: document.documentElement.getAttribute("data-theme"), js: document.documentElement.classList.contains("js"), color: (document.querySelector('meta[name="theme-color"]') || {}).content };
+        observer.disconnect();
+      }
+    }).observe(document, { childList: true, subtree: true });
+  });
+  const tab = await ctx.newPage();
+  await tab.goto(`${base}/fr/`);
+  const auto = await tab.evaluate(() => ({ first: window.firstPaint, bg: getComputedStyle(document.body).backgroundColor }));
+  check(auto.first && auto.first.theme === null && auto.first.js && auto.bg === "rgb(14, 17, 24)", "Auto follows the system (dark here), without an attribute", auto);
+  for (const theme of THEMES.slice(1)) {
+    await tab.evaluate(([key, t]) => localStorage.setItem(key, t), [STORAGE, theme]);
+    for (const p of ["", "playground/", "offline/", "nothing-here/"]) {
+      await tab.goto(`${base}/en/${p}`);
+      const first = await tab.evaluate(() => window.firstPaint);
+      const expected = await tab.evaluate((t) => document.querySelector(`#theme-panel input[value="${t}"]`).dataset.color, theme);
+      check(first && first.theme === theme && first.color === expected, `${mode}: ${theme} is set before the first paint on /en/${p}`, first);
+    }
+  }
+  // A value that is not a theme, or blocked storage, falls back to Auto.
+  await tab.evaluate((key) => localStorage.setItem(key, "constructor"), STORAGE);
+  await tab.goto(`${base}/en/`);
+  check(await tab.evaluate(() => window.firstPaint.theme) === null, "an unknown stored value falls back to Auto");
+  await ctx.close();
+}
+
+async function verify(mode) {
+  console.log(`\n== ${mode === "server" ? "the server, at the root" : "the static export, behind /Rythme"}`);
+  const dir = workspace();
+  const port = await freePort();
+  const site = await (mode === "server" ? startServer : startExport)(BIN, dir, port);
+  const base = `http://localhost:${port}${mode === "server" ? "" : "/Rythme"}`;
+  const browser = await launch();
+  try {
+    await noHorizontalScroll(browser, base, mode);
+    await languageMenu(browser, base, mode);
+    await moreMenu(browser, base, mode);
+    await referenceFilter(browser, base, mode);
+    await editorWraps(browser, base);
+    await shareLayout(browser, base, mode);
+    await copyForAiLayout(browser, base, mode);
+    await stepsLayout(browser, base, mode);
+    await seedLayout(browser, base, mode);
+    await themes(browser, base, mode);
+  } finally {
+    await browser.close();
+    await site.stop();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+(async () => {
+  for (const mode of MODES) {
+    try {
+      await verify(mode);
+    } catch (err) {
+      check(false, `${mode}: ${err.message.split("\n")[0]}`);
+    }
+  }
+  console.log(checks.failures ? `\n${checks.failures} check(s) failed` : "\nevery check passed");
+  process.exit(checks.failures ? 1 : 0);
+})();

@@ -1,0 +1,1075 @@
+/* The Rythme website. Mobile first: every rule is written for a phone, and the
+   media queries at the end of each part add room for wider screens (`min-width` or
+   `min-height` only, never `max-width`).
+   The look is a score: paper, ink, a blue accent, and four beats.
+   Nothing scrolls sideways: code wraps, tables become cards on phones, long words
+   break. tests/pwa/layout.js checks it at every width, in every theme; and
+   tests/pwa/mobile.js as real phones show it: with the text enlarged (Android's font
+   size, Safari's and Chrome's text zoom) and the page zoomed (200% of a phone is a
+   window of 180px), in landscape, with the keyboard open, with every menu open; every
+   field at 16px at least (iOS zooms into a smaller one, and the page then scrolls
+   sideways), every target of a finger at 44px at least. Sizes follow the text (`em`,
+   `rem`, `ch`), never a fixed width wider than a phone. */
+
+/* ----- color themes --------------------------------------------------------------- */
+
+/* Every color of the site is one of these custom properties. The theme picker of the
+   menu sets `data-theme` on <html>, before the first paint (the inline script of the
+   head reads the choice kept in localStorage); without it, Auto follows the system's
+   light or dark. Text is at 4.5:1 or more on every background of its theme, 7:1 in
+   High contrast (WCAG AAA), checked by tests/pwa/layout.js. The paper of each theme
+   is also its `theme-color` (src/themes.rs). */
+:root, :root[data-theme="light"] {
+  --paper: #eef1f6;
+  --staff: #fafbfd;
+  --ink: #161b26;
+  --ink-soft: #505a6e;
+  --rule: #c9d0dd;
+  --accent: #3245c2;
+  --accent-ink: #ffffff;
+  --accent-soft: #e1e5fa;
+  --err: #b4302a;
+  --err-ink: #ffffff;
+  --warn: #8a5706;
+  --ok: #1d7446;
+  --hint: #1b6a6f;
+  --tok-kw: #8a2e9a;
+  --tok-str: #1d7446;
+  --tok-num: #9a4e09;
+  --tok-ctor: #1d6a8e;
+  --tok-com: #566073;
+  --tok-fn: #3245c2;
+  --notice-bg: #161b26;
+  --notice-ink: #eef1f6;
+  --cmd-bg: #161b26;
+  --cmd-ink: #eef1f6;
+  --bar-bg: rgb(238 241 246 / 0.86);
+  --shadow: 0 1px 2px rgb(22 27 38 / 0.06), 0 8px 24px rgb(22 27 38 / 0.06);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --paper: #0e1118; --staff: #151a24; --ink: #e4e8f0; --ink-soft: #9ba4b6; --rule: #2f3850;
+    --accent: #8d9dff; --accent-ink: #0e1118; --accent-soft: #222a4b;
+    --err: #ff7b72; --err-ink: #0e1118; --warn: #e6b04c; --ok: #6fd49a; --hint: #6cc6ca;
+    --tok-kw: #d68cf0; --tok-str: #8fd6a8; --tok-num: #f0a65e; --tok-ctor: #7cc0e8; --tok-com: #929bae; --tok-fn: #8d9dff;
+    --notice-bg: #e4e8f0; --notice-ink: #0e1118; --cmd-bg: #05070b; --cmd-ink: #e4e8f0;
+    --bar-bg: rgb(14 17 24 / 0.86);
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
+    color-scheme: dark;
+  }
+}
+/* The same as Auto in a dark system. */
+:root[data-theme="dark"] {
+  --paper: #0e1118; --staff: #151a24; --ink: #e4e8f0; --ink-soft: #9ba4b6; --rule: #2f3850;
+  --accent: #8d9dff; --accent-ink: #0e1118; --accent-soft: #222a4b;
+  --err: #ff7b72; --err-ink: #0e1118; --warn: #e6b04c; --ok: #6fd49a; --hint: #6cc6ca;
+  --tok-kw: #d68cf0; --tok-str: #8fd6a8; --tok-num: #f0a65e; --tok-ctor: #7cc0e8; --tok-com: #929bae; --tok-fn: #8d9dff;
+  --notice-bg: #e4e8f0; --notice-ink: #0e1118; --cmd-bg: #05070b; --cmd-ink: #e4e8f0;
+  --bar-bg: rgb(14 17 24 / 0.86);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
+  color-scheme: dark;
+}
+/* High contrast: white on black and a yellow accent, every text at 7:1 or more (WCAG
+   AAA), borders that stand out. */
+:root[data-theme="contrast"] {
+  --paper: #000000; --staff: #0b0b0b; --ink: #ffffff; --ink-soft: #e8e8e8; --rule: #9a9a9a;
+  --accent: #ffe14d; --accent-ink: #000000; --accent-soft: #2e2a00;
+  --err: #ffa3a3; --err-ink: #000000; --warn: #ffd27a; --ok: #7dffaa; --hint: #80f2f7;
+  --tok-kw: #ffb8ff; --tok-str: #9effbe; --tok-num: #ffc98a; --tok-ctor: #a6e6ff; --tok-com: #d9d9d9; --tok-fn: #ffe14d;
+  --notice-bg: #ffffff; --notice-ink: #000000; --cmd-bg: #000000; --cmd-ink: #ffffff;
+  --bar-bg: rgb(0 0 0 / 0.94);
+  --shadow: 0 0 0 1px #9a9a9a;
+  color-scheme: dark;
+}
+/* Sepia: warm paper and brown ink, for long reading. */
+:root[data-theme="sepia"] {
+  --paper: #f3ead6; --staff: #fbf5e7; --ink: #2c2117; --ink-soft: #5a4734; --rule: #d8c8a8;
+  --accent: #8a3a12; --accent-ink: #fff8ec; --accent-soft: #f0dcc4;
+  --err: #a12a1c; --err-ink: #fff8ec; --warn: #744b00; --ok: #2f6420; --hint: #245e5c;
+  --tok-kw: #7f2a6a; --tok-str: #3d6420; --tok-num: #8a4207; --tok-ctor: #245e7a; --tok-com: #615139; --tok-fn: #8a3a12;
+  --notice-bg: #2c2117; --notice-ink: #f3ead6; --cmd-bg: #2c2117; --cmd-ink: #f3ead6;
+  --bar-bg: rgb(243 234 214 / 0.88);
+  --shadow: 0 1px 2px rgb(44 33 23 / 0.08), 0 8px 24px rgb(44 33 23 / 0.08);
+  color-scheme: light;
+}
+/* Tempo: a concert at night, a pink beat on deep violet. */
+:root[data-theme="tempo"] {
+  --paper: #160f2e; --staff: #20173f; --ink: #f5f0ff; --ink-soft: #c3b6e8; --rule: #43376e;
+  --accent: #ff7ac0; --accent-ink: #160f2e; --accent-soft: #3e2350;
+  --err: #ff8a80; --err-ink: #160f2e; --warn: #ffd166; --ok: #5ef0b0; --hint: #5fd8ff;
+  --tok-kw: #ff7ac0; --tok-str: #9cf27a; --tok-num: #ffd166; --tok-ctor: #5fd8ff; --tok-com: #b3a6d9; --tok-fn: #c6a8ff;
+  --notice-bg: #f5f0ff; --notice-ink: #160f2e; --cmd-bg: #0b0718; --cmd-ink: #f5f0ff;
+  --bar-bg: rgb(22 15 46 / 0.88);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(8 4 24 / 0.4);
+  color-scheme: dark;
+}
+:root {
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  /* Chinese: the web fonts have no Chinese characters; each system's own font draws
+     them (macOS and iOS, Windows, Android and Linux), before the generic families. */
+  --cjk: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC", "WenQuanYi Micro Hei", "WenQuanYi Zen Hei";
+  --gutter: 16px;
+  /* The height of the bar: compact on a short screen, 60px from 520px of height. */
+  --bar-h: 48px;
+  --radius: 12px;
+  --code-size: 13.5px;
+  /* The bottom of the bar, measured by the browser side (it may wrap on two lines when the text
+     is enlarged, or scroll away while the keyboard is open): the menu panel starts there. */
+  --bar-bottom: calc(var(--bar-h) + env(safe-area-inset-top));
+}
+/* Chinese pages: the Latin fonts first (code, names, numbers), then a Chinese one;
+   headings without the tight spacing made for Latin letters, text with more air. */
+:root:lang(zh) {
+  --display: "Bricolage Grotesque", var(--cjk), system-ui, sans-serif;
+  --body: "IBM Plex Sans", var(--cjk), system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, var(--cjk), monospace;
+}
+:root:lang(zh) h1, :root:lang(zh) h2, :root:lang(zh) h3 { letter-spacing: 0; line-height: 1.3; }
+:root:lang(zh) body { line-height: 1.75; }
+
+/* ----- base ----------------------------------------------------------------------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: calc(var(--bar-h) + env(safe-area-inset-top) + 12px); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.6 var(--body);
+  /* A word or an address longer than the line breaks rather than pushing the page,
+     everywhere: titles, buttons and labels too, even where the layout measures its
+     narrowest content (grid and flex items). With the text enlarged or the page
+     zoomed, a phone may be 180px wide. */
+  overflow-wrap: anywhere;
+}
+/* Code exactly as typed: `|>` must not turn into a triangle. */
+code, pre, textarea, kbd, .file, .topic, .chip, .lang, .gutter, #search {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+h1, h2, h3 { font-family: var(--display); line-height: 1.08; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+a { color: var(--accent); text-underline-offset: 3px; }
+button, select, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+code { font-family: var(--mono); font-size: 0.92em; overflow-wrap: anywhere; }
+ul, ol { margin: 0; padding: 0; }
+
+/* Out of sight above the page, however big its text, until focused. */
+.skip {
+  position: absolute; left: var(--gutter); top: 0; z-index: 100; transform: translateY(-110%);
+  background: var(--accent); color: var(--accent-ink); padding: 8px 14px; border-radius: 8px; font-weight: 600;
+}
+.skip:focus { transform: translateY(10px); }
+
+.site { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
+.site > main { flex: 1; }
+
+.lead { color: var(--ink-soft); font-size: 1.05rem; max-width: 62ch; text-wrap: pretty; }
+.eyebrow {
+  font: 600 12px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent);
+  margin-bottom: 14px;
+}
+.note { color: var(--ink-soft); font-size: 14px; max-width: 75ch; }
+.note--box { background: var(--staff); border: 1px solid var(--rule); border-left: 3px solid var(--accent); border-radius: 8px; padding: 14px 16px; }
+
+/* ----- the beats of the logo ------------------------------------------------------- */
+
+.beats { display: inline-flex; gap: 4px; }
+.beats i { width: 7px; height: 7px; border-radius: 50%; background: var(--rule); display: block; }
+.beats i:first-child { background: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .brand:hover .beats i, body.running .beats i { animation: beat 0.8s infinite; }
+  .brand:hover .beats i:nth-child(2), body.running .beats i:nth-child(2) { animation-delay: 0.2s; }
+  .brand:hover .beats i:nth-child(3), body.running .beats i:nth-child(3) { animation-delay: 0.4s; }
+  .brand:hover .beats i:nth-child(4), body.running .beats i:nth-child(4) { animation-delay: 0.6s; }
+}
+@keyframes beat { 0%, 30% { background: var(--accent); } 31%, 100% { background: var(--rule); } }
+
+/* ----- buttons --------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 8px 16px;
+  border: 1px solid var(--rule); border-radius: 10px; background: var(--staff); color: var(--ink);
+  font-weight: 600; font-size: 15px; text-decoration: none; cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s, transform 0.15s;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.55; cursor: default; }
+.btn--primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn--primary:hover { filter: brightness(1.08); }
+.btn--ghost { background: transparent; }
+.btn--stop { background: var(--err); border-color: var(--err); color: var(--err-ink); }
+.btn--lg { min-height: 50px; padding: 10px 22px; font-size: 16px; }
+.btn--sm { min-height: 44px; padding: 6px 12px; font-size: 14px; }
+/* A finger needs 44px; a mouse can aim at less. */
+@media (pointer: fine) { .btn--sm { min-height: 38px; } }
+
+/* ----- header and burger menu -------------------------------------------------------- */
+
+/* Under the status bar of the installed app (`viewport-fit=cover`), the bar keeps its
+   content in the safe area. */
+.bar { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--rule); padding-top: env(safe-area-inset-top); }
+/* The bar stays at the top while scrolling, so the burger is always at hand. A short
+   screen (a phone in landscape) gets it compact (`--bar-h`, the logo smaller); the
+   keyboard open (the playground's editor, `.keyboard`), it scrolls away with the page,
+   which keeps the whole height above the keyboard for the editor. */
+.keyboard .bar { position: relative; }
+@media (min-height: 520px) { :root { --bar-h: 60px; } }
+/* The blur sits on a layer of its own: on the bar itself it would become the
+   containing block of the fixed menu panel and shrink it to the bar's height. */
+.bar::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: var(--bar-bg);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  backdrop-filter: saturate(1.4) blur(12px);
+}
+.bar__inner {
+  position: relative; max-width: 1160px; margin: 0 auto; min-height: var(--bar-h);
+  padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left));
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
+}
+.brand {
+  display: inline-flex; align-items: center; gap: 10px; margin-right: auto;
+  color: var(--ink); text-decoration: none; min-height: 44px;
+}
+.brand__word { font: 800 21px/1 var(--display); letter-spacing: -0.02em; }
+@media (min-height: 520px) { .brand__word { font-size: 24px; } }
+
+/* Without JavaScript the links simply wrap under the logo. */
+.nav { order: 3; width: 100%; }
+.nav__list { list-style: none; display: flex; flex-wrap: wrap; gap: 2px 4px; padding-bottom: 8px; }
+.nav__link {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 10px;
+  color: var(--ink-soft); text-decoration: none; font-weight: 500; border-radius: 8px;
+}
+.nav__link:hover { color: var(--ink); background: var(--accent-soft); }
+.nav__link.is-active { color: var(--accent); }
+
+/* The language switch of the bar: a button with the code of the language, which opens
+   the list of languages (a `details`: it works without JavaScript). The list hangs
+   under the bar, on the right edge of its content, never wider nor taller than the
+   screen (even when the bar wraps and the button is on the left). */
+.lang__toggle {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 0 9px;
+  border: 1px solid var(--rule); border-radius: 999px; background: var(--staff); color: var(--ink);
+  font: 600 13px/1 var(--mono); letter-spacing: 0.04em; cursor: pointer; list-style: none; user-select: none;
+}
+.lang__toggle::-webkit-details-marker { display: none; }
+.lang__toggle::marker { content: ""; }
+.lang__toggle::after {
+  content: ""; width: 6px; height: 6px; margin: -3px 0 0 2px;
+  border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg);
+}
+.lang__toggle:hover, .lang--bar[open] .lang__toggle { border-color: var(--accent); }
+.lang--bar[open] .lang__toggle::after { margin-top: 3px; transform: rotate(-135deg); }
+.lang__toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lang__menu {
+  position: absolute; right: max(var(--gutter), env(safe-area-inset-right)); top: calc(100% + 8px); z-index: 70;
+  width: max-content; min-width: min(12em, 100% - 2 * var(--gutter)); max-width: calc(100% - 2 * var(--gutter));
+  max-height: calc(100vh - var(--bar-bottom) - 16px); max-height: calc(100dvh - var(--bar-bottom) - 16px);
+  overflow-y: auto; overscroll-behavior: contain;
+  margin: 0; padding: 6px; list-style: none;
+  background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.lang__menu .lang__link {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; padding: 0 12px;
+  border-radius: 8px; color: var(--ink); text-decoration: none; font: 500 15px/1.2 var(--body);
+}
+.lang__menu .lang__link:hover { background: var(--accent-soft); }
+.lang__menu .lang__link.is-active { background: var(--accent); color: var(--accent-ink); }
+.lang__code { font: 600 12px/1 var(--mono); letter-spacing: 0.06em; color: inherit; }
+/* The footer lists every language. */
+.lang__list { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none; }
+.lang--foot .lang__code { display: none; }
+.foot__meta .lang--foot .lang__link.is-active { color: var(--ink); font-weight: 600; }
+/* The smallest phones (320px) have the logo, the language switch and the burger on one
+   line; larger screens give them more room. */
+.bar__inner { column-gap: 6px; }
+.brand { gap: 6px; }
+@media (min-width: 380px) {
+  .bar__inner { column-gap: 12px; }
+  .brand { gap: 10px; }
+  .lang__toggle { padding: 0 12px; gap: 6px; }
+}
+
+.burger {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; margin-right: -6px; padding: 0;
+  border: 0; border-radius: 10px; background: transparent; cursor: pointer;
+}
+.burger:hover { background: var(--accent-soft); }
+.burger__box { position: relative; width: 22px; height: 14px; display: block; }
+.burger__line {
+  position: absolute; left: 0; width: 100%; height: 2px; border-radius: 2px; background: var(--ink);
+  transition: transform 0.25s ease, opacity 0.2s ease, top 0.25s ease;
+}
+.burger__line:nth-child(1) { top: 0; }
+.burger__line:nth-child(2) { top: 6px; }
+.burger__line:nth-child(3) { top: 12px; }
+.menu-open .burger__line:nth-child(1) { top: 6px; transform: rotate(45deg); }
+.menu-open .burger__line:nth-child(2) { opacity: 0; }
+.menu-open .burger__line:nth-child(3) { top: 6px; transform: rotate(-45deg); }
+
+/* With JavaScript, on a phone: the links fold behind the burger, in a panel that
+   covers the page under the bar. */
+.js .nav {
+  position: fixed; left: 0; right: 0; top: var(--bar-bottom); bottom: 0; width: auto;
+  background: var(--paper);
+  padding: 12px max(var(--gutter), env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
+  overflow-y: auto; overscroll-behavior: contain;
+  visibility: hidden; opacity: 0; transform: translateY(-8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
+}
+.js.menu-open .nav { visibility: visible; opacity: 1; transform: none; transition: opacity 0.2s ease, transform 0.2s ease; }
+.js.menu-open body { overflow: hidden; }
+.js .nav__list { flex-direction: column; gap: 0; padding: 0; }
+.js .nav__list li { border-bottom: 1px solid var(--rule); }
+.js .nav__link {
+  width: 100%; min-height: 60px; padding: 0 4px;
+  font: 700 26px/1 var(--display); letter-spacing: -0.01em; color: var(--ink); border-radius: 0;
+}
+.js .nav__link:hover { background: transparent; color: var(--accent); }
+.js .nav__link.is-active { color: var(--accent); }
+.js .nav__link--github { font: 500 16px/1 var(--body); min-height: 56px; color: var(--ink-soft); }
+/* The install button, shown when the browser can install the site. */
+.nav__install { border: 0; background: none; cursor: pointer; text-align: left; }
+.nav__install, .js .nav__install { font: 600 16px/1 var(--body); min-height: 56px; color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .js .nav, .burger__line { transition: none !important; } }
+
+@media (min-width: 860px) {
+  .nav, .js .nav {
+    position: static; order: 0; width: auto; padding: 0; background: none; overflow: visible;
+    visibility: visible; opacity: 1; transform: none; transition: none;
+  }
+  /* Without the browser side, the ten links wrap; with it, five and "More" keep one line. */
+  .nav__list, .js .nav__list { flex-direction: row; gap: 2px; padding: 0; }
+  .js .nav__list { flex-wrap: nowrap; }
+  .js .nav__list li { border: 0; }
+  .js .nav__link, .js .nav__link--github, .js .nav__install {
+    width: auto; min-height: 40px; padding: 0 var(--nav-pad, 9px); font: 500 15px/1 var(--body); color: var(--ink-soft); border-radius: 8px;
+  }
+  .js .nav__link:hover { color: var(--ink); background: var(--accent-soft); }
+  .js .nav__link.is-active, .js .nav__install { color: var(--accent); }
+  .burger { display: none !important; }
+  .js.menu-open body { overflow: auto; }
+}
+@media (min-width: 860px) {
+  .nav__link--github span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
+@media (min-width: 981px) {
+  .nav__link--github span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+}
+
+/* ----- shared layout ------------------------------------------------------------------ */
+
+.home, .page { width: 100%; max-width: 1160px; margin: 0 auto; padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left)); }
+.page { padding-top: clamp(16px, 4svh, 36px); padding-bottom: 64px; display: grid; gap: 28px; align-content: start; }
+.page--wide { max-width: 1320px; }
+/* One column on phones, which never grows past the screen: without `minmax(0, …)` a
+   grid column is as wide as the widest thing that cannot wrap (a field and its basis, a
+   select and its longest option), and the page widens. Wider screens set their columns
+   below. */
+.page, .section, .hero, .page-head, .section__head, .split__text, .cards, .examples, .tour,
+.tour__step, .workspace, .toolbar, .help, .doc, .steps, .step, .card, .stepper, .foot__inner, .commands {
+  grid-template-columns: minmax(0, 1fr);
+}
+.page-head { display: grid; gap: 12px; }
+/* Titles follow the width, and the height too: a phone in landscape keeps its screen
+   for the content (the playground's editor) rather than for a huge title. */
+.page-head h1 { font-size: clamp(32px, min(9vw, 6svh + 12px), 60px); font-weight: 800; }
+
+.section { padding: 56px 0; display: grid; gap: 28px; border-top: 1px solid var(--rule); }
+.section__head { display: grid; gap: 10px; }
+.section__head h2, .section > h2 { font-size: clamp(28px, 7vw, 44px); font-weight: 800; }
+.subhead { font-size: 22px; margin-top: 8px; }
+
+.cards { list-style: none; display: grid; gap: 14px; }
+.card {
+  background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius);
+  padding: 20px; display: grid; gap: 8px; align-content: start;
+}
+.card h3 { font-size: 21px; }
+.card h3 a { color: inherit; display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; margin-block: -9px; }
+.card h3 code { font-size: 0.85em; color: var(--accent); }
+.card p { color: var(--ink-soft); font-size: 15px; }
+.card__num { font: 600 12px/1 var(--mono); color: var(--accent); letter-spacing: 0.06em; }
+@media (min-width: 640px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1000px) {
+  .cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .cards--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Tables reflow instead of scrolling: cards on phones (each cell with the title of its
+   column, `data-label`), a table with wrapping cells on wider screens. */
+.table-wrap { min-width: 0; }
+
+/* ----- code ------------------------------------------------------------------------- */
+
+/* Code wraps rather than scrolling sideways. Each line of a block (`highlight.rs`) is
+   a block of its own that wraps under its indentation, two columns further: a wrapped
+   line still shows where it belongs. */
+.code-block, .output {
+  margin: 0; padding: 16px; min-width: 0;
+  font: var(--code-size)/1.6 var(--mono); tab-size: 2;
+  /* `break-spaces`: a run of spaces (the columns of a table printed by a program)
+     wraps too, rather than hanging out of the line. */
+  white-space: pre-wrap; white-space: break-spaces; overflow-wrap: anywhere;
+  background: var(--staff); color: var(--ink);
+}
+.code-block code, .output code { font-size: inherit; }
+.code-block code { display: block; }
+.code-block .line {
+  /* At most a third of the screen: a deep line still has room to wrap. */
+  --hang: min(calc((var(--indent, 0) + 2) * 1ch), 33vw);
+  display: block; padding-left: var(--hang); text-indent: calc(-1 * var(--hang));
+}
+.t-kw { color: var(--tok-kw); font-weight: 600; }
+.t-str { color: var(--tok-str); }
+.t-num { color: var(--tok-num); }
+.t-ctor { color: var(--tok-ctor); }
+.t-com { color: var(--tok-com); font-style: italic; }
+.t-fn { color: var(--tok-fn); }
+.t-op { color: var(--ink-soft); }
+.output .err { color: var(--err); font-weight: 600; }
+.output .warn { color: var(--warn); font-weight: 600; }
+.output .mark, .output .mark-err { color: var(--err); }
+.output .mark-warn { color: var(--warn); }
+.output .note { color: var(--ink-soft); font-size: inherit; }
+.output .help { color: var(--hint); }
+.output .src { color: var(--ink); }
+.output .pass { color: var(--ok); }
+.output .fail { color: var(--err); }
+.output .empty { color: var(--ink-soft); font-family: var(--body); font-size: 14px; }
+
+.file { font: 600 13px/1.2 var(--mono); }
+.file::before { content: "◆"; color: var(--accent); margin-right: 8px; font-size: 10px; vertical-align: 1px; }
+
+.command {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  background: var(--cmd-bg); color: var(--cmd-ink); border: 1px solid var(--rule); border-radius: 10px; padding: 6px 6px 6px 14px;
+}
+/* A long command wraps, broken anywhere: it is copied by its button anyway. */
+.command code { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; padding: 8px 0; }
+.command__prompt { opacity: 0.5; margin-right: 10px; user-select: none; }
+.command__copy {
+  flex: none; min-height: 44px; padding: 0 12px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); border-radius: 8px;
+  background: transparent; color: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.command__copy:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
+
+/* A text to copy as it is (the AI page: a message for a chat, the configurations of
+   the MCP server): its name, where it goes and its copy button above, the text below,
+   which wraps like code. */
+.snippets { display: grid; gap: 16px; min-width: 0; }
+.snippet { min-width: 0; background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; }
+.snippet__head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0;
+  padding: 6px 6px 6px 16px; border-bottom: 1px solid var(--rule); color: var(--ink);
+}
+.snippet__name { overflow-wrap: anywhere; min-width: 0; }
+.snippet__where { flex: 1 1 14em; min-width: 0; color: var(--ink-soft); font-size: 14px; overflow-wrap: anywhere; }
+.snippet__copy { margin-left: auto; }
+.snippet .code-block { background: transparent; }
+.ai .terminal .code-block { border-bottom: 0; }
+.ai .card h3 a { overflow-wrap: anywhere; }
+
+/* ----- home: hero -------------------------------------------------------------------- */
+
+.hero { display: grid; gap: 32px; padding: 40px 0 56px; }
+.hero__title { font-size: clamp(36px, min(11vw, 8svh + 16px), 76px); font-weight: 800; letter-spacing: -0.035em; }
+.hero__lead { margin-top: 18px; color: var(--ink-soft); font-size: 1.1rem; max-width: 56ch; text-wrap: pretty; }
+.hero__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.hero__actions .btn { flex: 1 1 220px; }
+
+.score {
+  margin: 0; min-width: 0; background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius);
+  overflow: hidden; box-shadow: var(--shadow);
+}
+.score__head, .panel__head, .example__head, .terminal__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px; border-bottom: 1px solid var(--rule); min-height: 46px;
+}
+.score__run, .tour__try {
+  font: 600 13px/1 var(--body); color: var(--accent); text-decoration: none;
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 10px; border-radius: 8px;
+}
+.score__run:hover, .tour__try:hover { background: var(--accent-soft); }
+.score__out { display: flex; align-items: baseline; gap: 14px; padding: 12px 16px; border-top: 1px dashed var(--rule); }
+.score__out code { font-size: 15px; font-weight: 600; color: var(--ok); }
+.score__label { font: 600 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+
+@media (min-width: 960px) {
+  .hero { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: center; gap: 56px; padding: 80px 0 96px; }
+  .hero__actions .btn { flex: none; }
+}
+
+/* ----- home: errors ------------------------------------------------------------------- */
+
+.section--split { align-items: center; }
+.split__text { display: grid; gap: 24px; }
+.checks { list-style: none; display: grid; gap: 12px; }
+.checks li { position: relative; padding-left: 30px; color: var(--ink-soft); }
+.checks li::before {
+  content: "✓"; position: absolute; left: 0; top: 1px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700;
+  display: grid; place-items: center;
+}
+.terminal { min-width: 0; background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.terminal__head { justify-content: flex-start; gap: 6px; }
+.terminal__head i { width: 10px; height: 10px; border-radius: 50%; background: var(--rule); }
+.terminal__head span { margin-left: 8px; font: 500 12px var(--mono); color: var(--ink-soft); }
+.terminal .code-block { border-bottom: 1px dashed var(--rule); }
+.output--diagnostic { font-size: 12.5px; }
+@media (min-width: 960px) {
+  .section--split { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 56px; }
+}
+
+/* ----- home: habits (a table on large screens, cards on phones) ----------------------- */
+
+.habits { width: 100%; border-collapse: collapse; }
+.habits thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.habits tr {
+  display: grid; gap: 6px; padding: 16px; margin-bottom: 10px;
+  background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius);
+}
+.habits td { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.habits td::before { content: attr(data-label); font: 600 11px/1.6 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); }
+.habits td:last-child { color: var(--ink-soft); font-size: 15px; }
+.habit__other { color: var(--ink-soft); text-decoration: line-through; text-decoration-color: var(--err); text-decoration-thickness: 1.5px; }
+@media (min-width: 760px) {
+  .habits thead { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  .habits tr { display: table-row; background: none; border: 0; padding: 0; }
+  .habits th { text-align: left; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); padding: 0 16px 12px 0; border-bottom: 1px solid var(--rule); }
+  .habits td { display: table-cell; padding: 14px 16px 14px 0; border-bottom: 1px solid var(--rule); }
+  .habits td::before { content: none; }
+}
+
+/* ----- home: install ------------------------------------------------------------------ */
+
+.steps { list-style: none; display: grid; gap: 14px; }
+.step {
+  position: relative; background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius);
+  padding: 20px; display: grid; gap: 12px; align-content: start; min-width: 0;
+}
+.step > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; justify-items: start; min-width: 0; }
+.step > div .command { justify-self: stretch; }
+.step p { color: var(--ink-soft); font-size: 15px; }
+.step h3 { font-size: 20px; }
+.step__num {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--accent-ink); font: 700 14px/1 var(--mono);
+}
+@media (min-width: 900px) { .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+.commands { margin: 0; display: grid; border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; background: var(--staff); }
+.commands__row { display: grid; gap: 4px; padding: 12px 16px; border-bottom: 1px solid var(--rule); }
+.commands__row:last-child { border-bottom: 0; }
+.commands dt code { color: var(--accent); font-size: 14px; overflow-wrap: anywhere; }
+.commands dd { margin: 0; color: var(--ink-soft); font-size: 15px; }
+@media (min-width: 700px) {
+  .commands__row { grid-template-columns: minmax(0, 15em) minmax(0, 1fr); gap: 20px; align-items: baseline; }
+}
+
+/* ----- home: call to action ------------------------------------------------------------ */
+
+.cta {
+  margin: 8px 0 72px; padding: 44px 22px; border-radius: 20px; text-align: center;
+  background: var(--accent); color: var(--accent-ink);
+  display: grid; gap: 16px; justify-items: center;
+}
+.cta h2 { font-size: clamp(28px, 7vw, 44px); font-weight: 800; }
+.cta p { opacity: 0.85; max-width: 46ch; }
+.cta .btn--primary { background: var(--accent-ink); color: var(--accent); border-color: var(--accent-ink); margin-top: 8px; }
+.cta .beats i { background: color-mix(in srgb, var(--accent-ink) 35%, transparent); }
+.cta .beats i:first-child { background: var(--accent-ink); }
+
+/* ----- learn ----------------------------------------------------------------------------- */
+
+.tour { list-style: none; display: grid; gap: 18px; }
+.tour__step {
+  display: grid; gap: 16px; min-width: 0;
+  background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); padding: 20px;
+}
+.tour__text { display: grid; gap: 8px; align-content: start; }
+.tour__text h2 { font-size: 24px; }
+.tour__text p { color: var(--ink-soft); }
+.tour__code { min-width: 0; border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; background: var(--paper); }
+.tour__code .code-block { background: transparent; }
+.tour__links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px 6px; padding: 0 8px 8px; }
+@media (min-width: 900px) {
+  .tour__step { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 28px; padding: 28px; }
+}
+
+/* ----- examples ------------------------------------------------------------------------- */
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  flex: 0 1 auto; display: inline-flex; align-items: center; min-height: 44px; min-width: 0; padding: 0 14px;
+  border: 1px solid var(--rule); border-radius: 999px; background: var(--staff);
+  font: 500 13px/1 var(--mono); color: var(--ink); text-decoration: none;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+
+.examples { display: grid; gap: 22px; }
+.example { min-width: 0; background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; scroll-margin-top: calc(var(--bar-h) + 12px); }
+.example__head { flex-wrap: wrap; align-items: flex-start; padding: 16px; }
+.example__head h2 { font-size: 15px; letter-spacing: 0; }
+.example__head p { color: var(--ink-soft); font-size: 15px; margin-top: 6px; }
+.example__head .btn { flex: 1 1 100%; }
+.example__body { display: grid; min-width: 0; }
+.example__body .code-block { max-height: min(480px, 70svh); overflow-y: auto; }
+.example__out { border-top: 1px dashed var(--rule); padding-top: 12px; background: var(--paper); min-width: 0; }
+.example__out .score__label { padding: 0 16px; }
+.example__out .output { background: transparent; max-height: min(360px, 60svh); overflow-y: auto; }
+.example:target { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+@media (min-width: 560px) { .example__head .btn { flex: none; } }
+@media (min-width: 960px) {
+  .example__body { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+  .example__out { border-top: 0; border-left: 1px dashed var(--rule); }
+}
+
+/* ----- playground ----------------------------------------------------------------------- */
+
+.toolbar { display: grid; gap: 12px; }
+.picker { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
+.picker label, .help__nav h2 + p { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-weight: 600; }
+/* A select is as wide as its longest option unless told otherwise. */
+.picker select { flex: 1 1 10em; min-width: 0; }
+select {
+  min-height: 44px; border: 1px solid var(--rule); background: var(--staff); border-radius: 10px; padding: 8px 10px; max-width: 100%;
+}
+.actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 5.5em), 1fr)); gap: 8px; }
+.actions .btn { padding: 8px 10px; }
+.actions #run, .actions #stop { order: -1; grid-column: 1 / -1; }
+.kbd { display: none; font: 500 11px var(--mono); opacity: 0.75; }
+@media (hover: hover) and (pointer: fine) { .kbd { display: inline; } }
+/* The Seed option: a `details` among the actions, whose button shows the seed in use;
+   its panel hangs under the toolbar, never wider than it. */
+.toolbar { position: relative; }
+.seed { min-width: 0; }
+.seed[hidden] { display: none; }
+.seed__toggle { display: flex; width: 100%; min-width: 0; padding: 8px 10px; list-style: none; user-select: none; }
+.seed__toggle::-webkit-details-marker { display: none; }
+.seed__toggle::marker { content: ""; }
+.seed[open] .seed__toggle { border-color: var(--accent); }
+.seed__name { flex: 0 1 auto; min-width: 0; }
+.seed__value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 13px var(--mono); color: var(--accent); }
+.seed__value:empty { display: none; }
+.seed__panel {
+  position: absolute; left: 0; right: 0; top: calc(100% + 8px); z-index: 40;
+  display: grid; gap: 8px; padding: 14px;
+  background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+/* Closed, the panel has no box at all (rather than a hidden one that keeps the colors of
+   the theme it was last drawn in). */
+.seed:not([open]) .seed__panel { display: none; }
+.seed__label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-weight: 600; }
+.seed__row { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.seed__row input {
+  flex: 1 1 8em; min-width: 0; min-height: 44px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink);
+  border-radius: 10px; padding: 8px 12px; font: 16px var(--mono);
+}
+.seed__row input::placeholder { color: var(--ink-soft); opacity: 1; }
+.seed__row .btn { flex: none; min-height: 44px; }
+.seed__hint { font-size: 13px; color: var(--ink-soft); }
+.seed-used { margin-left: auto; min-width: 0; font: 500 12px var(--mono); color: var(--accent); }
+.seed-used[hidden] { display: none; }
+@media (min-width: 720px) {
+  .seed__panel { left: auto; width: min(26rem, 100%); }
+}
+@media (min-width: 720px) {
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+  .picker select { flex: none; min-width: 200px; }
+  .actions { display: flex; }
+  .actions #run, .actions #stop { order: 0; }
+}
+
+.workspace { display: grid; gap: 14px; }
+.panel__head { flex-wrap: wrap; }
+.panel__tools { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; margin-left: auto; min-width: 0; }
+.panel__tools .btn--sm { padding: 4px 10px; font-size: 13px; }
+@media (pointer: fine) { .panel__tools .btn--sm { min-height: 34px; } }
+.panel { background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.status { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; text-align: right; }
+.status.bad { color: var(--err); }
+.status.good { color: var(--ok); }
+
+/* 16px in the editor on phones and tablets: iOS zooms into a field with a smaller text
+   (in landscape too), and the page then scrolls sideways. Its height follows the
+   screen: the small one (`svh`, with the browser's bars shown), and with the keyboard
+   open the part of the screen left above it (`--keyboard-free`, set by the playground
+   from the visual viewport), so that the line being typed stays in sight. */
+.editor {
+  --code-size: 16px; position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr);
+  height: clamp(12rem, 55vh, 35rem); height: clamp(12rem, 55svh, 35rem);
+}
+.keyboard .editor { height: max(8rem, min(35rem, var(--keyboard-free, 55svh) - 1rem)); }
+/* The editor wraps long lines: the field (transparent) and its colors under it wrap
+   the same way, at the same width (the same reserved scrollbar gutter); each line of
+   the colors is a block, and the playground gives each line number the height of its
+   line, so that numbers stay level with wrapped lines. */
+.gutter {
+  font: var(--code-size)/1.6 var(--mono); color: var(--tok-com); text-align: right; padding: 14px 8px 14px 10px;
+  user-select: none; overflow: hidden; border-right: 1px solid var(--rule); white-space: pre; font-variant-numeric: tabular-nums;
+}
+.gutter > div { min-height: 1lh; }
+.editor__code { position: relative; min-width: 0; }
+.editor__code pre, .editor__code textarea {
+  position: absolute; inset: 0; margin: 0; padding: 14px 14px; border: 0;
+  font: var(--code-size)/1.6 var(--mono); tab-size: 2;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal;
+  overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable;
+  letter-spacing: 0; word-spacing: 0;
+}
+.editor__code pre { pointer-events: none; color: var(--ink); overflow-y: hidden; }
+.editor__code pre > span { display: block; }
+.editor__code textarea { background: transparent; color: transparent; caret-color: var(--ink); resize: none; outline: none; }
+.no-wasm .editor__code textarea { color: var(--ink); }
+.editor__code textarea::selection { background: var(--accent-soft); color: transparent; }
+.editor__code textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-soft); }
+.output--live {
+  flex: 1; min-height: 9rem; overflow-y: auto;
+  max-height: clamp(12rem, 55vh, 35rem); max-height: clamp(12rem, 55svh, 35rem);
+}
+.explain { font: inherit; background: var(--accent-soft); color: var(--accent); border: 0; border-radius: 4px; padding: 0 5px; cursor: pointer; }
+.explain:hover { text-decoration: underline; }
+/* 14px only with a mouse and no touch screen at all. */
+@media (min-width: 700px) and (pointer: fine) and (not (any-pointer: coarse)) { .editor { --code-size: 14px; } }
+@media (min-width: 960px) { .workspace { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); } }
+
+.help { display: grid; gap: 14px; }
+.help__nav { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-content: start; min-width: 0; }
+.help__nav h2 { font-size: 26px; font-weight: 800; }
+.help__nav h2 + p { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 14px; }
+.topics { display: flex; flex-wrap: wrap; gap: 6px; }
+.topic {
+  min-height: 44px; min-width: 0; border: 1px solid var(--rule); background: var(--staff); border-radius: 999px; padding: 0 12px; cursor: pointer;
+  font: 500 13px var(--mono);
+}
+@media (pointer: fine) { .topic { min-height: 36px; } }
+.topic[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.search { display: flex; gap: 6px; }
+.search input { flex: 1; min-width: 0; min-height: 44px; border: 1px solid var(--rule); background: var(--staff); border-radius: 10px; padding: 8px 12px; font-family: var(--mono); font-size: 16px; }
+.help__text {
+  margin: 0; background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); padding: 16px;
+  font: 13px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; overflow-y: auto; max-height: min(520px, 70svh); min-width: 0; min-height: 120px;
+}
+@media (min-width: 800px) { .help { grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); } }
+
+/* Sharing: the notice of a program opened from a link (with the way back to the
+   draft), and the box of the link made by Share. */
+.shared, .share { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; max-width: none; color: var(--ink); }
+.shared p { flex: 1 1 18em; min-width: 0; }
+.share__msg { flex: 1 1 18em; min-width: 0; }
+.share__msg:empty { display: none; }
+.share__msg.bad { color: var(--err); }
+.share__row { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+.share__label { flex: 1 1 100%; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-weight: 600; }
+.share__row input {
+  flex: 1 1 14em; min-width: 0; min-height: 44px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink);
+  border-radius: 10px; padding: 8px 12px; font: 16px var(--mono);
+}
+.share__close { margin-left: auto; }
+/* Copy for AI, when the clipboard says no: the Markdown, to select and copy. */
+.share__ai textarea {
+  flex: 1 1 100%; width: 100%; min-width: 0; min-height: 44px; resize: vertical; border: 1px solid var(--rule); background: var(--paper); color: var(--ink);
+  border-radius: 10px; padding: 8px 12px; font: 16px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere;
+}
+
+/* The steps of a calculation, one at a time, in the place of the output: the buttons
+   and the count, a slider, the step before (faint) and the step itself, whose long
+   lines wrap like code blocks (each line under its indentation, two columns further). */
+.stepper { display: grid; align-content: start; gap: 10px; padding: 12px 14px 16px; min-width: 0; }
+.stepper__nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.stepper__nav .btn--sm { padding: 4px 12px; font-size: 13px; }
+.stepper__count { flex: 1 1 6em; min-width: 0; text-align: center; font: 600 13px/1.3 var(--mono); font-variant-numeric: tabular-nums; }
+.stepper__range { width: 100%; min-width: 0; min-height: 44px; margin: 0; accent-color: var(--accent); }
+.stepper__keys { font-size: 12.5px; color: var(--ink-soft); }
+.stepper__keys { display: none; }
+@media (hover: hover) and (pointer: fine) { .stepper__keys { display: block; } }
+.stepper .output { padding: 10px 12px; border-radius: 8px; }
+.stepper .output .line {
+  --hang: min(calc((var(--indent, 0) + 2) * 1ch), 33vw);
+  display: block; padding-left: var(--hang); text-indent: calc(-1 * var(--hang));
+}
+.stepper__from { color: var(--ink-soft); border: 1px dashed var(--rule); background: transparent; }
+.stepper__from:empty { display: none; }
+.stepper__from .line > span { color: inherit; font-weight: inherit; font-style: inherit; }
+.stepper__now { border: 1px solid var(--rule); border-left: 3px solid var(--accent); background: var(--paper); }
+.stepper__printed { display: grid; gap: 4px; min-width: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+/* ----- teach (the guide) ---------------------------------------------------------------- */
+
+.doc { display: grid; gap: 28px; }
+.toc { background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); padding: 16px 18px; align-self: start; }
+.toc__title { font: 600 12px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin-bottom: 10px; }
+.toc ol { list-style: none; display: grid; gap: 2px; counter-reset: toc; }
+.toc li { counter-increment: toc; }
+.toc a { display: flex; gap: 10px; min-height: 44px; align-items: center; color: var(--ink); text-decoration: none; font-size: 15px; }
+.toc a::before { content: counter(toc, decimal-leading-zero); font: 500 12px var(--mono); color: var(--accent); }
+.toc a:hover { color: var(--accent); }
+@media (min-width: 960px) {
+  .doc { grid-template-columns: 240px minmax(0, 1fr); gap: 48px; }
+  .toc { position: sticky; top: calc(var(--bar-h) + 20px); }
+}
+
+.prose { min-width: 0; max-width: 76ch; display: grid; gap: 16px; }
+.prose h2 { font-size: clamp(24px, 6vw, 32px); font-weight: 800; margin-top: 24px; }
+.prose h3 { font-size: 20px; margin-top: 12px; }
+.prose ul, .prose ol { padding-left: 1.3em; display: grid; gap: 8px; }
+.prose li::marker { color: var(--accent); }
+.prose strong { color: var(--ink); }
+.prose p, .prose li { color: var(--ink-soft); }
+.prose :not(pre) > code { background: var(--staff); border: 1px solid var(--rule); border-radius: 5px; padding: 1px 5px; color: var(--ink); font-size: 0.86em; }
+.prose pre {
+  margin: 0; padding: 16px; background: var(--staff); border: 1px solid var(--rule); border-radius: 10px;
+  font: 13.5px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0;
+}
+/* The tables of the guide: cards on phones, one per row, each cell with the title of its
+   column (`data-label`, written by `teach.rs`); a table from 700px. */
+.prose table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+.prose thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.prose tr {
+  display: grid; gap: 4px; padding: 12px 14px; margin-bottom: 10px;
+  background: var(--staff); border: 1px solid var(--rule); border-radius: 10px;
+}
+.prose td { display: block; color: var(--ink-soft); overflow-wrap: anywhere; }
+.prose td::before { content: attr(data-label); display: block; font: 600 11px/1.6 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); }
+.prose td:empty { display: none; }
+@media (min-width: 700px) {
+  .prose thead { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  .prose tr { display: table-row; background: none; border: 0; padding: 0; }
+  .prose th, .prose td { display: table-cell; text-align: left; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  .prose th { font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); }
+  .prose td::before { content: none; }
+}
+
+/* ----- not found ------------------------------------------------------------------------ */
+
+.nf { min-height: 60vh; min-height: 60svh; align-content: center; justify-items: start; }
+.nf h1 { font-size: clamp(36px, 9vw, 60px); font-weight: 800; }
+.nf .eyebrow { font-size: 14px; margin: 0; }
+
+/* ----- footer --------------------------------------------------------------------------- */
+
+.foot { border-top: 1px solid var(--rule); background: var(--staff); }
+.foot__inner {
+  max-width: 1160px; margin: 0 auto;
+  padding: 36px max(var(--gutter), env(safe-area-inset-right)) calc(36px + env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
+  display: grid; gap: 24px;
+}
+.foot__brand { display: grid; gap: 6px; }
+.foot__brand p { color: var(--ink-soft); font-size: 15px; max-width: 40ch; }
+.foot__links, .foot__meta { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: center; }
+.foot__links a, .foot__meta a { color: var(--ink-soft); text-decoration: none; min-height: 44px; min-width: 44px; justify-content: center; display: inline-flex; align-items: center; font-size: 15px; }
+.foot__links a:hover, .foot__meta a:hover { color: var(--accent); }
+.foot__meta { font-size: 14px; }
+@media (min-width: 860px) {
+  .foot__inner { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+  .foot__meta { grid-column: 1 / -1; border-top: 1px solid var(--rule); padding-top: 16px; }
+  .foot__meta .lang { margin-left: auto; }
+}
+
+/* ----- color themes: the picker -------------------------------------------------------------- */
+
+/* In the menu of a phone the choices are listed; on a computer a button of the bar
+   opens them. Real radio buttons: the arrow keys choose, the focus ring follows. */
+.theme { position: relative; }
+.theme__toggle { display: none; border: 0; background: none; cursor: pointer; }
+.theme__panel { margin: 0; padding: 16px 0 8px; border: 0; min-width: 0; }
+.theme__legend {
+  float: left; width: 100%; padding: 0; margin-bottom: 10px;
+  font: 600 12px/1.2 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft);
+}
+.theme__options { clear: both; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)); gap: 8px; }
+.theme__option {
+  display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 12px; min-width: 0;
+  border: 1px solid var(--rule); border-radius: 10px; background: var(--staff); color: var(--ink);
+  font: 500 15px/1.25 var(--body); cursor: pointer;
+}
+.theme__option:hover { border-color: var(--accent); }
+.theme__option:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.theme__option:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme__option input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.theme__option input:focus-visible { outline: none; }
+.theme__name { min-width: 0; }
+/* Each swatch: the paper of the theme and its accent, as a beat. */
+.theme__swatch { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--rule); }
+.theme__swatch--auto { background: linear-gradient(135deg, #eef1f6 50%, #0e1118 50%); }
+.theme__swatch--light { background: radial-gradient(circle at 68% 32%, #3245c2 0 26%, #eef1f6 29%); }
+.theme__swatch--dark { background: radial-gradient(circle at 68% 32%, #8d9dff 0 26%, #0e1118 29%); }
+.theme__swatch--contrast { background: radial-gradient(circle at 68% 32%, #ffe14d 0 26%, #000000 29%); }
+.theme__swatch--sepia { background: radial-gradient(circle at 68% 32%, #8a3a12 0 26%, #f3ead6 29%); }
+.theme__swatch--tempo { background: radial-gradient(circle at 68% 32%, #ff7ac0 0 26%, #160f2e 29%); }
+@media (min-width: 860px) {
+  .theme__toggle { display: inline-flex; }
+  .theme__toggle-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .theme__panel {
+    position: absolute; right: 0; top: calc(100% + 8px); z-index: 70; width: 270px; padding: 14px;
+    background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .theme__options { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .nav__item--theme:not(.is-open) .theme__panel { display: none; }
+}
+
+/* ----- the installed app: new version, install on iOS ---------------------------------------- */
+
+.notices {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; pointer-events: none;
+  display: grid; gap: 8px; justify-items: center;
+  padding: 0 max(var(--gutter), env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
+}
+.notice {
+  pointer-events: auto; width: 100%; max-width: 560px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+  padding: 12px 14px; border-radius: 14px; background: var(--notice-bg); color: var(--notice-ink); box-shadow: var(--shadow);
+}
+.notice__text { flex: 1 1 14em; min-width: 0; font-size: 15px; }
+.notice__actions { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.notice .btn--ghost { color: inherit; border-color: color-mix(in srgb, currentColor 35%, transparent); }
+.notice__close {
+  flex: none; width: 44px; height: 44px; margin: -8px -8px -8px 0; border: 0; border-radius: 10px;
+  background: transparent; color: inherit; font-size: 24px; line-height: 1; cursor: pointer;
+}
+.notice__close:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
+.notice .icon { flex: none; }
+.notice--hint { flex-wrap: nowrap; }
+.notice--hint .notice__text { flex: 1 1 auto; min-width: 0; }
+
+/* ----- the five sections: install, reference, packages, at work, exercises ------------------ */
+
+/* In the menu: the five sections follow the other links, on a phone and without the
+   browser side (their item and list leave no box of their own); on a computer they
+   open from "More", a button that the browser side shows. */
+.nav__item--more, .nav__sub { display: contents; }
+.nav__sub { list-style: none; }
+.nav__more-toggle { display: none; }
+.js .nav__sub .nav__link { font-size: 21px; min-height: 52px; }
+@media (min-width: 860px) {
+  .js .nav__item--more { display: block; position: relative; }
+  .js .nav__more-toggle:not([hidden]) {
+    display: inline-flex; border: 0; background: none; cursor: pointer;
+    min-height: 40px; padding: 0 var(--nav-pad, 9px); font: 500 15px/1 var(--body); color: var(--ink-soft); border-radius: 8px;
+  }
+  .js .nav__more-toggle:hover { color: var(--ink); background: var(--accent-soft); }
+  .js .nav__more-toggle.is-active { color: var(--accent); }
+  .nav__more-toggle::after {
+    content: ""; width: 6px; height: 6px; margin: -3px 0 0 8px;
+    border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg);
+  }
+  .nav__item--more.is-open .nav__more-toggle::after { margin-top: 3px; transform: rotate(-135deg); }
+  .js .nav__more-toggle:not([hidden]) + .nav__sub {
+    display: grid; position: absolute; right: 0; top: calc(100% + 8px); z-index: 70;
+    width: max-content; min-width: 13em; max-width: min(20em, 100vw - 2 * var(--gutter)); padding: 6px;
+    background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .js .nav__item--more:not(.is-open) .nav__more-toggle:not([hidden]) + .nav__sub { display: none; }
+  .js .nav__sub li { border: 0; }
+  .js .nav__sub .nav__link { width: 100%; min-height: 44px; font: 500 15px/1.2 var(--body); color: var(--ink); }
+  .js .nav__sub .nav__link.is-active { color: var(--accent); }
+}
+/* The links of the bar get closer on a narrow computer, where five links, "More" and the
+   buttons must hold on one line in every language. */
+@media (min-width: 1000px) { :root { --nav-pad: 12px; } }
+
+/* Lists of commands, cards and steps keep to the width of a phone. */
+.more .steps--ways { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .more .steps--ways { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.way__body { display: grid; gap: 10px; min-width: 0; }
+.more .card { min-width: 0; }
+.more .card .snippet, .more .card .command { margin-top: 4px; }
+@media (min-width: 1000px) { .cards--editors { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.more__links { display: flex; flex-wrap: wrap; gap: 10px; min-width: 0; }
+.more .section > .btn { justify-self: start; }
+.more .example { scroll-margin-top: calc(var(--bar-h) + 12px); }
+.more .example__head h3 { font-size: 20px; }
+.more .terminal .code-block { border-bottom: 0; }
+
+/* Reference: the filter (shown by the browser side), the groups of functions, the codes. */
+.filter { display: grid; gap: 8px; min-width: 0; max-width: 40em; }
+.filter__label { font-weight: 600; }
+.filter input {
+  min-width: 0; width: 100%; min-height: 44px; padding: 8px 14px;
+  border: 1px solid var(--rule); border-radius: 10px; background: var(--staff); color: var(--ink); font-size: 16px;
+}
+.filter__count { color: var(--ink-soft); font-size: 14px; }
+.ref-groups { display: grid; gap: 36px; min-width: 0; }
+.ref-group { display: grid; gap: 14px; min-width: 0; scroll-margin-top: calc(var(--bar-h) + 12px); }
+.ref-group__title { font-size: 26px; }
+.fns { list-style: none; display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .fns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.fn, .code-entry {
+  min-width: 0; display: grid; gap: 8px; align-content: start; padding: 14px 16px;
+  background: var(--staff); border: 1px solid var(--rule); border-radius: var(--radius);
+  scroll-margin-top: calc(var(--bar-h) + 12px);
+}
+.fn:target, .code-entry:target { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.fn__name, .code-entry__title { font: 600 17px/1.3 var(--body); margin: 0; }
+.fn__name a, .code-entry__title a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; margin-block: -8px; text-decoration: none; }
+.fn__name code, .code-entry__title code { font-size: 16px; font-weight: 600; color: var(--accent); }
+.fn__sig { font-size: 14px; }
+.fn__doc { color: var(--ink-soft); font-size: 15px; }
+.fn__example .code-block, .rich .code-block { padding: 10px 12px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); }
+/* The explanations and the statements, written for a terminal, wrap again as prose. */
+.rich { display: grid; gap: 10px; min-width: 0; color: var(--ink-soft); font-size: 15px; }
+.rich__list { padding-left: 1.4em; display: grid; gap: 4px; }
+.codes { display: grid; gap: 12px; min-width: 0; }
+.code-entry__cmd { color: var(--ink-soft); font-size: 14px; }
+
+/* The page of a function (`/{lang}/reference/map/`): a path back to the reference, its
+   parts one after the other, and the functions before and after it. */
+.crumbs ol { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 0; margin: 0; font-size: 14px; color: var(--ink-soft); }
+.crumbs li { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.crumbs li + li::before { content: "›"; color: var(--ink-soft); }
+.crumbs a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; }
+.fn-page .page-head h1 code { font-size: inherit; color: var(--accent); overflow-wrap: anywhere; }
+.fn-page__parts { display: grid; gap: 28px; min-width: 0; max-width: 52em; }
+.fn-page__part { display: grid; gap: 10px; min-width: 0; scroll-margin-top: calc(var(--bar-h) + 12px); }
+.fn-page__part h2 { font-size: 22px; margin: 0; }
+.fn-page__part > .btn { justify-self: start; }
+.fn-page__code .code-block { padding: 10px 12px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); }
+.fn-page__names, .fn-page__see { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; min-width: 0; }
+.fn-page__names { grid-template-columns: repeat(auto-fill, minmax(min(100%, 16em), 1fr)); }
+.fn-page__names code { overflow-wrap: anywhere; }
+.fn-page__see { gap: 10px; }
+.fn-page__see li { display: grid; min-width: 0; overflow-wrap: anywhere; }
+.fn-page__see a { display: inline-flex; align-items: center; justify-self: start; min-height: 44px; min-width: 44px; margin-block: -8px; }
+.fn-page__short { color: var(--ink-soft); font-size: 15px; }
+/* On a phone, the link to the whole list goes under the previous and the next. */
+.pager { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 10px; max-width: 52em; padding-top: 16px; border-top: 1px solid var(--rule); }
+.pager__link { display: grid; gap: 2px; min-width: 0; min-height: 44px; align-content: center; text-decoration: none; overflow-wrap: anywhere; }
+.pager__next { text-align: right; }
+.pager__label { font-size: 13px; color: var(--ink-soft); }
+.pager__all { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; text-align: center; grid-column: 1 / -1; grid-row: 2; justify-self: center; }
+@media (min-width: 521px) {
+  .pager { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .pager__all { grid-column: 2; grid-row: 1; }
+}
+
+/* Exercises. */
+.cards--exos { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .cards--exos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1000px) { .cards--exos { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.exo { scroll-margin-top: calc(var(--bar-h) + 12px); }
+.exo:target { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.exo__title { font: 700 19px/1.2 var(--display); margin: 0; }
+.exo__details summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--accent); font-weight: 600; font-size: 15px; }
+.exo__details .rich { margin-top: 4px; }
+.exo__links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-width: 0; }
+.exo__cmd { color: var(--ink-soft); font-size: 13px; }
+
+/* Last, so that no `font` shorthand above turns ligatures back on: `|>` and `->`
+   stay two characters, as typed. */
+pre, code, textarea, .gutter, .help__text, .output, .code-block, .editor__code pre, .editor__code textarea {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}

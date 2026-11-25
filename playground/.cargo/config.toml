@@ -1,0 +1,6 @@
+[build]
+target = "wasm32-unknown-unknown"
+
+[target.wasm32-unknown-unknown]
+# Room for the interpreter's stack (in the WebAssembly memory).
+rustflags = ["-C", "link-arg=-zstack-size=16777216"]

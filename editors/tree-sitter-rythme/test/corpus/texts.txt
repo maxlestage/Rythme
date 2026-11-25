@@ -1,0 +1,108 @@
+================================================================================
+Texts
+================================================================================
+
+""
+"hello"
+"  # not a comment "
+"a\n\t\"b\" \{c\} \u{e9}"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (string)
+  (string
+    (string_content))
+  (string
+    (string_content))
+  (string
+    (string_content)
+    (escape_sequence)
+    (escape_sequence)
+    (escape_sequence)
+    (string_content)
+    (escape_sequence)
+    (string_content)
+    (escape_sequence)
+    (string_content)
+    (escape_sequence)
+    (string_content)
+    (escape_sequence)))
+
+================================================================================
+Interpolation
+================================================================================
+
+"total: {x + 1}!"
+"{a}{b}"
+"nested {f("inner {y}")} end"
+"record {{a: 1}.a}"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (string
+    (string_content)
+    (interpolation
+      (binary_expression
+        (identifier)
+        (integer)))
+    (string_content))
+  (string
+    (interpolation
+      (identifier))
+    (interpolation
+      (identifier)))
+  (string
+    (string_content)
+    (interpolation
+      (call
+        (identifier)
+        (arguments
+          (string
+            (string_content)
+            (interpolation
+              (identifier))))))
+    (string_content))
+  (string
+    (string_content)
+    (interpolation
+      (field_expression
+        (record
+          (record_field
+            (field_name)
+            (integer)))
+        (field_name)))))
+
+================================================================================
+A text on several lines
+================================================================================
+
+t = "first
+second"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (definition
+    (identifier)
+    (string
+      (string_content))))
+
+================================================================================
+Comments
+================================================================================
+
+# a comment
+## a documentation comment
+x = 1 # at the end of a line
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (comment)
+  (comment)
+  (definition
+    (identifier)
+    (integer))
+  (comment))

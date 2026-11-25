@@ -1,0 +1,10 @@
+Ada     17.75
+Alan    17.50
+Grace   17.25
+Best: Ada; comments: ["curious; asks why", "says \"it's a bug\""]
+name,average
+Ada,17.75
+Alan,17.5
+Grace,17.25
+Oral exams, in this order: Grace, Alan, Ada
+Err("line 2: 3 field(s), but the header has 2 column(s)")
